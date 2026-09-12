@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://d4nv5v42botyg"]
+
+[ext_resource type="Script" uid="uid://rjkuvabafi40" path="res://board/tile.gd" id="1_n2v4y"]
+
+[node name="Tile" type="Node2D" unique_id=966796831]
+script = ExtResource("1_n2v4y")

@@ -1,0 +1,11 @@
+[gd_scene format=3 uid="uid://c0jp2bhbxi30j"]
+
+[ext_resource type="Script" uid="uid://c01cox04amu8s" path="res://board_view.gd" id="1_0xm2m"]
+
+[node name="Main" type="Node2D" unique_id=1803922969]
+
+[node name="BoardView" type="Node2D" parent="." unique_id=1588643596]
+position = Vector2(480, 160)
+script = ExtResource("1_0xm2m")
+
+[node name="Tiles" type="Node2D" parent="BoardView" unique_id=1754100614]
