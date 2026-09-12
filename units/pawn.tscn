@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dcrbvo7di5wtn"]
+
+[ext_resource type="Script" uid="uid://blmnneotjptq" path="res://units/pawn.gd" id="1_hg821"]
+
+[node name="Pawn" type="Node2D" unique_id=1853174505]
+script = ExtResource("1_hg821")
