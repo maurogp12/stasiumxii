@@ -43,7 +43,9 @@ func _run() -> void:
 	_test_hud_chrome_kit_gated()
 	_test_handoff_timer_is_client_only()
 	_test_advance_manhattan_costs()
+	_test_advance_manhattan_range_gate()
 	_test_turn_clock_auto_end_turn()
+	_test_turn_clock_ticks_during_hops()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -62,6 +64,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "manhattan", "Advance MP is Locked Manhattan")
+	eq(snap["advance_range"], "manhattan", "Advance range gate is Locked Manhattan 1–2")
 	eq(snap["advance_path"], "horizontal_first", "Advance path is H-first like walk")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
@@ -169,17 +172,9 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
 	eq(_unit(1)["hp"], 72, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
-	_sim.reset_match({
-		"seed": 1,
-		"kestrel_pos": Vector2i(3, 3),
-		"ironjaw_pos": Vector2i(0, 0),
-	})
-	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 1)})
-	eq(result["ok"], true, "Advance dash range stays Chebyshev 2 (Manhattan 3 would exceed dash max if walk leaked)")
-	eq(_unit(1)["pos"], Vector2i(2, 1), "Ironjaw dashed to a Chebyshev-2 tile")
-	eq(_unit(1)["mp"], 0, "Advance Chebyshev-2 dest spends Manhattan 3 MP")
-	eq(_unit(1)["ap"], 5, "Advance still spends 1 AP")
+	# Strike / Mark Shot stay Chebyshev. Advance range is Manhattan (see range-gate test).
+	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", "chebyshev"), "chebyshev", "Mark Shot range_mode defaults to Chebyshev")
+	eq(SpellKits.spell(SpellKits.ADVANCE).get("range_mode", ""), "manhattan", "Advance range_mode is Manhattan")
 
 
 func _test_face_costs_zero() -> void:
@@ -513,37 +508,37 @@ func _test_advance_manhattan_costs() -> void:
 	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(3, 3)], "Advance path is H-first ortho")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
 
-	# Chebyshev 2 diagonal is range-legal but Manhattan 4 exceeds the 3 MP pool.
+	# Chebyshev 2 diagonal is outside the Manhattan 1–2 diamond (Manhattan 4).
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(2, 2)), 2, "two-tile diagonal is Chebyshev 2")
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "two-tile diagonal is Manhattan 4")
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 2)})
-	eq(result["illegal"], true, "Chebyshev-2 diagonal Advance is rejected for MP")
-	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
+	eq(result["illegal"], true, "Chebyshev-2 diagonal Advance is rejected as out of Manhattan range")
+	eq(result["reason"], "out_of_range", "reject reason is out_of_range, not MP")
 	eq(_unit(1)["pos"], Vector2i(0, 0), "Ironjaw did not dash")
-	eq(_unit(1)["ap"], 6, "insufficient MP refunds AP")
-	eq(_unit(1)["mp"], 3, "insufficient MP refunds MP")
+	eq(_unit(1)["ap"], 6, "out-of-range refunds AP")
+	eq(_unit(1)["mp"], 3, "out-of-range refunds MP")
 
-	# Range gate stays Chebyshev: orthogonal 3 is out of range even though Manhattan 3 fits the pool.
+	# Orthogonal 3 is out of Manhattan range even though it fits the 3 MP pool.
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 0)})
-	eq(result["illegal"], true, "Chebyshev 3 is out of Advance range")
+	eq(result["illegal"], true, "Manhattan 3 is out of Advance range")
 	eq(result["reason"], "out_of_range", "range reject, not MP")
 	eq(_unit(1)["pos"], Vector2i(0, 0), "out-of-range dest does not move Ironjaw")
 
 	# Client path is ignored; CombatSim expands H-first.
-	var forged: Array = [Vector2i(0, 1), Vector2i(0, 2), Vector2i(1, 2)]
+	var forged: Array = [Vector2i(0, 1), Vector2i(1, 1)]
 	result = _sim.submit({
 		"type": "cast",
 		"spell": "advance",
-		"to": Vector2i(2, 1),
+		"to": Vector2i(1, 1),
 		"path": forged,
 	})
 	eq(result["ok"], true, "Advance dest-click still accepted when a client path is supplied")
-	eq(result["events"][0]["path"], [Vector2i(1, 0), Vector2i(2, 0), Vector2i(2, 1)], "CombatSim Advance path is H-first, not the client path")
+	eq(result["events"][0]["path"], [Vector2i(1, 0), Vector2i(1, 1)], "CombatSim Advance path is H-first, not the client path")
 	eq(result["events"][0]["path"] == forged, false, "forged vertical-first Advance path is not used")
-	eq(result["events"][0]["mp_spent"], 3, "(2,1) dest spends Manhattan 3 MP")
-	eq(_unit(1)["pos"], Vector2i(2, 1), "Ironjaw ends on the dest-click tile")
+	eq(result["events"][0]["mp_spent"], 2, "(1,1) dest spends Manhattan 2 MP")
+	eq(_unit(1)["pos"], Vector2i(1, 1), "Ironjaw ends on the dest-click tile")
 
 	# Occupant on the H-first corridor blocks Advance the same as walk.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
@@ -580,6 +575,70 @@ func _test_advance_manhattan_costs() -> void:
 	eq(result["illegal"], true, "diagonal Advance with 1 MP is rejected")
 	eq(result["reason"], "insufficient_mp", "1 MP diagonal is insufficient_mp")
 	eq(_unit(1)["pos"], Vector2i(4, 2), "Ironjaw did not spend the illegal diagonal")
+
+
+func _test_advance_manhattan_range_gate() -> void:
+	# Mauro's diamond around the caster (Manhattan 1–2):
+	#   0 0 1 0 0
+	#   0 1 1 1 0
+	#   1 1 x 1 1
+	#   0 1 1 1 0
+	#   0 0 1 0 0
+	var origin := Vector2i(3, 3)
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": origin})
+	_sim.submit({"type": "end_turn"})
+	var expected: Dictionary = {}
+	for cell in [
+		Vector2i(3, 2), Vector2i(3, 4), Vector2i(2, 3), Vector2i(4, 3),
+		Vector2i(3, 1), Vector2i(3, 5), Vector2i(1, 3), Vector2i(5, 3),
+		Vector2i(2, 2), Vector2i(2, 4), Vector2i(4, 2), Vector2i(4, 4),
+	]:
+		expected[cell] = true
+	eq(expected.size(), 12, "Manhattan 1–2 diamond has 12 tiles")
+	var offered: Dictionary = {}
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != "advance":
+			continue
+		offered[intent["to"]] = true
+	eq(offered.size(), 12, "legal_intents Advance dests match the diamond when unobstructed")
+	for cell in expected.keys():
+		truthy(offered.has(cell), "diamond tile %s is offered" % str(cell))
+	for cell in offered.keys():
+		truthy(expected.has(cell), "no extra Advance dest %s outside the diamond" % str(cell))
+
+	# Chebyshev 2 / Manhattan 3 "knight" tiles used to be in the square gate.
+	eq(_sim.chebyshev(origin, Vector2i(4, 5)), 2, "(1,2) offset is Chebyshev 2")
+	eq(_sim.manhattan(origin, Vector2i(4, 5)), 3, "(1,2) offset is Manhattan 3")
+	eq(offered.has(Vector2i(4, 5)), false, "Chebyshev-2 knight tile is not offered")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 5)})
+	eq(result["illegal"], true, "Manhattan 3 Advance dest is rejected")
+	eq(result["reason"], "out_of_range", "knight tile reject is out_of_range")
+	eq(_unit(1)["pos"], origin, "Ironjaw stays put on a diamond miss")
+	eq(_unit(1)["ap"], 6, "diamond miss refunds AP")
+	eq(_unit(1)["mp"], 3, "diamond miss refunds MP")
+
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 5)})
+	eq(result["illegal"], true, "Chebyshev-2 corner (Manhattan 4) is out of range")
+	eq(result["reason"], "out_of_range", "corner reject is out_of_range")
+
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "orthogonal Manhattan 2 is inside the diamond")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw dashed two tiles east")
+	eq(_unit(1)["mp"], 1, "ortho 2 spends 2 MP")
+	eq(_unit(1)["ap"], 5, "Advance still spends 1 AP")
+	eq(result["events"][0]["path"], [Vector2i(4, 3), Vector2i(5, 3)], "H-first ortho path for east dest")
+
+	# Highlights come from legal_intents; board_view paints Advance dests as "advance".
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("legal_intents"), "board highlights come from CombatSim legal_intents")
+	truthy(view.contains('highlight := "advance"'), "Advance dests use advance highlight")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	eq(hud.contains("range %d–%d Chebyshev"), false, "Advance selected label is not Chebyshev")
+	truthy(hud.contains("range %d–%d %s"), "Advance selected label uses range_mode metric")
+	truthy(hud.contains("Manhattan"), "HUD still names Manhattan MP/range")
+	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
+	eq(hud.contains("Shoulder"), false, "range patch does not add Shoulder")
+	eq(hud.contains("Crush"), false, "range patch does not add Crush")
 
 
 func _test_turn_clock_auto_end_turn() -> void:
@@ -627,6 +686,37 @@ func _test_turn_clock_auto_end_turn() -> void:
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
 	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+
+
+func _test_turn_clock_ticks_during_hops() -> void:
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var process_idx := view.find("func _process")
+	var sync_idx := view.find("func _sync_turn_clock")
+	truthy(process_idx >= 0 and sync_idx > process_idx, "_process and _sync_turn_clock exist")
+	var process_src := view.substr(process_idx, sync_idx - process_idx)
+	truthy(process_src.contains("_turn_clock.tick(delta)"), "_process ticks the 30s clock")
+	eq(process_src.contains("if _busy"), false, "_process does not freeze the clock while hop-busy")
+
+	var play_idx := view.find("func _play_walk")
+	var animate_idx := view.find("func _animate_path")
+	truthy(play_idx >= 0 and animate_idx > play_idx, "_play_walk and _animate_path exist")
+	var play_src := view.substr(play_idx, animate_idx - play_idx)
+	eq(play_src.contains("_turn_clock.pause"), false, "walk/Advance hops do not pause the seat clock")
+	eq(play_src.contains("_turn_clock.stop"), false, "walk/Advance hops do not stop the seat clock")
+	truthy(view.contains("_clock_expired_pending"), "expiry during hops is deferred, not dropped")
+	truthy(view.contains("_on_end_turn_button_pressed()"), "queued expiry still uses the End Turn path")
+
+	# Handoff banner may remain; pause() is reserved for that next-seat hold, not hops.
+	var end_idx := view.find("func _on_end_turn_button_pressed")
+	var expired_idx := view.find("func _on_turn_clock_expired")
+	truthy(end_idx >= 0 and expired_idx > end_idx, "end-turn and expiry handlers exist")
+	var end_src := view.substr(end_idx, expired_idx - end_idx)
+	truthy(end_src.contains("_turn_clock.pause()"), "handoff still pauses so the next 30s does not drain during the banner")
+	truthy(end_src.contains("_turn_clock.start()"), "next seat clock starts at 30s on End Turn")
+
+	eq(view.contains("Detonate"), false, "clock hop patch does not add Detonate")
+	eq(view.contains("Shoulder"), false, "clock hop patch does not add Shoulder")
+	eq(view.contains("Crush"), false, "clock hop patch does not add Crush")
 
 
 func _unit(seat: int) -> Dictionary:
