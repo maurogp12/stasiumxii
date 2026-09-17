@@ -8,8 +8,8 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 2. **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
 3. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**.
 4. Click a highlighted empty tile to **walk** (Chebyshev / king-move; each tile of distance costs 1 MP).
-5. Select a spell, then click a legal tile:
-   - **Advance** (Ironjaw only) — 1 AP + 1 MP, dash 1–2 tiles, no roll. +1 Impact if you land Chebyshev-adjacent to an enemy. Kestrel cannot Advance and never gains Impact.
+5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile:
+   - **Advance** (Ironjaw only) — 1 AP + 1 MP, dash 1–2 tiles, no roll. +1 Impact if you land Chebyshev-adjacent to an enemy. Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5, 8 Air. +1 Mark on the target if it connects.
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it connects.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Back hits deal ×1.20; front/side are ×1.00.

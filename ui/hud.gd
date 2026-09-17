@@ -12,6 +12,7 @@ const IRONJAW_RED := Color("#8B2E2E")
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
 var _face_buttons: Dictionary = {}
+var _action_bar: HBoxContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
 var _turn_label: Label
@@ -19,6 +20,37 @@ var _coach_label: Label
 var _selected_label: Label
 var _ap_pips: HBoxContainer
 var _mp_pips: HBoxContainer
+
+
+## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
+## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
+static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
+	var offered: Array = []
+	if active.is_empty():
+		return offered
+	var class_id := str(active.get("class_id", ""))
+	for spell_id in active.get("spells", []):
+		var id := str(spell_id)
+		if id == "":
+			continue
+		if id == SpellKits.ADVANCE and class_id != SpellKits.CLASS_IRONJAW:
+			continue
+		if not SpellKits.has_spell(class_id, id):
+			continue
+		if not offered.has(id):
+			offered.append(id)
+	return offered
+
+
+static func legal_cast_ids(legal: Array) -> Dictionary:
+	var out := {}
+	for intent in legal:
+		if str(intent.get("type", "")) != "cast":
+			continue
+		var id := str(intent.get("spell", ""))
+		if id != "":
+			out[id] = true
+	return out
 
 
 func _ready() -> void:
@@ -54,21 +86,27 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
 	_coach_label.text = str(snap.get("coach", ""))
+
+	var offered: Array = offered_cast_ids(active, legal)
+	_sync_spell_buttons(offered)
+	if _selected_spell != "" and not offered.has(_selected_spell):
+		_selected_spell = ""
 	_update_selected_label()
 
-	var legal_spells := {}
-	for intent in legal:
-		if str(intent.get("type", "")) == "cast":
-			legal_spells[str(intent.get("spell", ""))] = true
+	var legal_spells := legal_cast_ids(legal)
+	var match_over := bool(snap.get("match_over", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var in_kit := false
-		if not active.is_empty():
-			in_kit = spell_id in active.get("spells", [])
-		button.disabled = snap.get("match_over", false) or not in_kit
-		button.modulate = Color(1, 1, 1, 1) if legal_spells.has(spell_id) else Color(1, 1, 1, 0.72)
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over
+		button.disabled = not can_submit
+		if _selected_spell == spell_id:
+			button.modulate = Color(1.15, 1.1, 0.7)
+		elif can_submit:
+			button.modulate = Color(1, 1, 1, 1)
+		else:
+			button.modulate = Color(1, 1, 1, 0.72)
 	for button in _face_buttons.values():
-		button.disabled = snap.get("match_over", false)
+		button.disabled = match_over
 
 
 func _build() -> void:
@@ -110,33 +148,24 @@ func _build() -> void:
 	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	root.add_child(_selected_label)
 
-	var action_bar := HBoxContainer.new()
-	action_bar.position = Vector2(90, 650)
-	action_bar.size = Vector2(780, 36)
-	action_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	action_bar.add_theme_constant_override("separation", 8)
-	root.add_child(action_bar)
-
-	for spell_id in [SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.MARK_SHOT]:
-		var def: Dictionary = SpellKits.spell(spell_id)
-		var button := Button.new()
-		button.text = "%s  %dAP/%dMP" % [def["name"], def["ap"], def["mp"]]
-		button.custom_minimum_size = Vector2(150, 32)
-		button.pressed.connect(_on_spell_pressed.bind(spell_id))
-		action_bar.add_child(button)
-		_spell_buttons[spell_id] = button
+	_action_bar = HBoxContainer.new()
+	_action_bar.position = Vector2(90, 650)
+	_action_bar.size = Vector2(780, 36)
+	_action_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	_action_bar.add_theme_constant_override("separation", 8)
+	root.add_child(_action_bar)
 
 	var end_btn := Button.new()
 	end_btn.text = "End Turn"
 	end_btn.custom_minimum_size = Vector2(110, 32)
 	end_btn.pressed.connect(func() -> void: end_turn_requested.emit())
-	action_bar.add_child(end_btn)
+	_action_bar.add_child(end_btn)
 
 	var new_btn := Button.new()
 	new_btn.text = "New Match"
 	new_btn.custom_minimum_size = Vector2(110, 32)
 	new_btn.pressed.connect(func() -> void: new_match_requested.emit())
-	action_bar.add_child(new_btn)
+	_action_bar.add_child(new_btn)
 
 	var face_bar := HBoxContainer.new()
 	face_bar.position = Vector2(360, 578)
@@ -260,7 +289,41 @@ func _panel(color: Color) -> StyleBoxFlat:
 	return box
 
 
+func _sync_spell_buttons(offered: Array) -> void:
+	var offered_ids: Array = []
+	for spell_id in offered:
+		var id := str(spell_id)
+		if id != "" and not offered_ids.has(id):
+			offered_ids.append(id)
+	var stale: Array = []
+	for spell_id in _spell_buttons.keys():
+		if not offered_ids.has(spell_id):
+			stale.append(spell_id)
+	for spell_id in stale:
+		var button: Button = _spell_buttons[spell_id]
+		_spell_buttons.erase(spell_id)
+		if is_instance_valid(button):
+			_action_bar.remove_child(button)
+			button.free()
+	var insert_idx := 0
+	for spell_id in offered_ids:
+		var def: Dictionary = SpellKits.spell(spell_id)
+		if def.is_empty():
+			continue
+		if not _spell_buttons.has(spell_id):
+			var button := Button.new()
+			button.text = "%s  %dAP/%dMP" % [def["name"], def["ap"], def["mp"]]
+			button.custom_minimum_size = Vector2(150, 32)
+			button.pressed.connect(_on_spell_pressed.bind(spell_id))
+			_action_bar.add_child(button)
+			_spell_buttons[spell_id] = button
+		_action_bar.move_child(_spell_buttons[spell_id], insert_idx)
+		insert_idx += 1
+
+
 func _on_spell_pressed(spell_id: String) -> void:
+	if not _spell_buttons.has(spell_id):
+		return
 	if _selected_spell == spell_id:
 		_selected_spell = ""
 	else:

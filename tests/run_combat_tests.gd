@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_wind_mod_omitted()
 	_test_legal_intents_empty_for_other_seat()
 	_test_view_does_not_roll_or_own_hp()
+	_test_hud_chrome_kit_gated()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -349,6 +350,30 @@ func _test_view_does_not_roll_or_own_hp() -> void:
 	eq(view.contains("randi"), false, "board_view does not roll")
 	eq(pawn.contains("randi"), false, "pawn does not roll")
 	eq(view.contains("hp"), false, "board_view does not mention hp")
+
+
+func _test_hud_chrome_kit_gated() -> void:
+	_sim.reset_match({"seed": 1})
+	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
+	eq(kestrel_offered, ["mark_shot"], "Kestrel HUD offers Mark Shot only")
+	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")
+	var kestrel_legal := CombatHUD.legal_cast_ids(_sim.legal_intents(0))
+	eq(kestrel_legal.has("mark_shot"), true, "Kestrel legal_intents enable Mark Shot")
+	eq(kestrel_legal.has("advance"), false, "Kestrel legal_intents do not enable Advance")
+	_sim.submit({"type": "end_turn"})
+	var ironjaw_offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
+	eq(ironjaw_offered, ["advance", "strike"], "Ironjaw HUD offers Advance and Strike")
+	eq(ironjaw_offered.has("mark_shot"), false, "Ironjaw HUD does not offer Mark Shot")
+	var ironjaw_legal := CombatHUD.legal_cast_ids(_sim.legal_intents(1))
+	eq(ironjaw_legal.has("advance"), true, "Ironjaw legal_intents enable Advance")
+	var fake_kestrel_advance := _unit(0).duplicate(true)
+	fake_kestrel_advance["spells"] = ["advance", "mark_shot"]
+	fake_kestrel_advance["class_id"] = "kestrel"
+	eq(CombatHUD.offered_cast_ids(fake_kestrel_advance), ["mark_shot"], "Advance chrome stays Ironjaw-only even if kit array is wrong")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	eq(hud.contains("SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.MARK_SHOT"), false, "HUD does not hardcode both kits on one action bar")
+	eq(hud.contains("WindMod"), false, "HUD has no WindMod chrome")
+	eq(hud.contains("Detonate"), false, "HUD has no Detonate chrome")
 
 
 func _unit(seat: int) -> Dictionary:

@@ -71,6 +71,11 @@ func _handle_left_click(cell: Vector2i) -> void:
 	if spell_id == "":
 		_submit({"type": "move", "to": cell})
 		return
+	var actor := _active_unit(CombatSim.snapshot())
+	if actor.is_empty() or not CombatHUD.offered_cast_ids(actor).has(spell_id):
+		_hud.clear_spell()
+		_paint_highlights()
+		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
 	if spell_id != SpellKits.ADVANCE:
 		_hud.clear_spell()
@@ -161,6 +166,9 @@ func _paint_highlights() -> void:
 		return
 	var legal: Array = CombatSim.legal_intents(int(snap.get("active_seat", 0)))
 	var spell_id := _hud.selected_spell()
+	var actor := _active_unit(snap)
+	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
+		spell_id = ""
 	for intent in legal:
 		var kind := str(intent.get("type", ""))
 		if kind == "move" and spell_id == "" and intent.has("to"):
