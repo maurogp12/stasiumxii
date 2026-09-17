@@ -20,6 +20,12 @@ var _coach_label: Label
 var _selected_label: Label
 var _ap_pips: HBoxContainer
 var _mp_pips: HBoxContainer
+var _end_turn_button: Button
+var _new_match_button: Button
+var _handoff_overlay: ColorRect
+var _handoff_panel: Panel
+var _handoff_label: Label
+var _locked: bool = false
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -68,6 +74,24 @@ func clear_spell() -> void:
 	_update_selected_label()
 
 
+func set_locked(locked: bool) -> void:
+	_locked = locked
+	_apply_controls(false)
+
+
+func show_turn_banner(unit_name: String, class_id: String) -> void:
+	_handoff_label.text = "%s's turn" % unit_name
+	var fill := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
+	_handoff_panel.add_theme_stylebox_override("panel", _panel(fill))
+	_handoff_overlay.visible = true
+	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func hide_turn_banner() -> void:
+	_handoff_overlay.visible = false
+	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+
 func render(snap: Dictionary, legal: Array) -> void:
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
@@ -105,8 +129,20 @@ func render(snap: Dictionary, legal: Array) -> void:
 			button.modulate = Color(1, 1, 1, 1)
 		else:
 			button.modulate = Color(1, 1, 1, 0.72)
+	_apply_controls(match_over)
+
+
+func _apply_controls(match_over: bool) -> void:
+	var block := match_over or _locked
+	for spell_id in _spell_buttons.keys():
+		if block:
+			(_spell_buttons[spell_id] as Button).disabled = true
 	for button in _face_buttons.values():
-		button.disabled = match_over
+		(button as Button).disabled = block
+	if _end_turn_button != null:
+		_end_turn_button.disabled = block
+	if _new_match_button != null:
+		_new_match_button.disabled = _locked
 
 
 func _build() -> void:
@@ -155,17 +191,17 @@ func _build() -> void:
 	_action_bar.add_theme_constant_override("separation", 8)
 	root.add_child(_action_bar)
 
-	var end_btn := Button.new()
-	end_btn.text = "End Turn"
-	end_btn.custom_minimum_size = Vector2(110, 32)
-	end_btn.pressed.connect(func() -> void: end_turn_requested.emit())
-	_action_bar.add_child(end_btn)
+	_end_turn_button = Button.new()
+	_end_turn_button.text = "End Turn"
+	_end_turn_button.custom_minimum_size = Vector2(110, 32)
+	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
+	_action_bar.add_child(_end_turn_button)
 
-	var new_btn := Button.new()
-	new_btn.text = "New Match"
-	new_btn.custom_minimum_size = Vector2(110, 32)
-	new_btn.pressed.connect(func() -> void: new_match_requested.emit())
-	_action_bar.add_child(new_btn)
+	_new_match_button = Button.new()
+	_new_match_button.text = "New Match"
+	_new_match_button.custom_minimum_size = Vector2(110, 32)
+	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
+	_action_bar.add_child(_new_match_button)
 
 	var face_bar := HBoxContainer.new()
 	face_bar.position = Vector2(360, 578)
@@ -193,6 +229,29 @@ func _build() -> void:
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
 	root.add_child(_coach_label)
+
+	_handoff_overlay = ColorRect.new()
+	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_handoff_overlay.color = Color(0.06, 0.05, 0.07, 0.42)
+	_handoff_overlay.visible = false
+	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_handoff_overlay)
+
+	_handoff_panel = Panel.new()
+	_handoff_panel.position = Vector2(230, 268)
+	_handoff_panel.size = Vector2(500, 140)
+	_handoff_panel.add_theme_stylebox_override("panel", _panel(KESTREL_GREEN))
+	_handoff_overlay.add_child(_handoff_panel)
+
+	_handoff_label = Label.new()
+	_handoff_label.position = Vector2(16, 28)
+	_handoff_label.size = Vector2(468, 84)
+	_handoff_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_handoff_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_handoff_label.add_theme_font_size_override("font_size", 36)
+	_handoff_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	_handoff_label.text = "Kestrel's turn"
+	_handoff_panel.add_child(_handoff_label)
 
 	_update_selected_label()
 
@@ -348,7 +407,7 @@ func _refresh_spell_buttons() -> void:
 
 func _update_selected_label() -> void:
 	if _selected_spell == "":
-		_selected_label.text = "Selected: Walk  ·  click an empty tile  ·  right-click to face"
+		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d" % [

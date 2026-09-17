@@ -22,8 +22,8 @@ const FACING_VEC := {
 	"W": Vector2i(-1, 0),
 }
 
-## A01–A07 are Open. These are provisional playable stubs, not Locked defaults.
-const OPEN_DECISIONS := ["A01", "A02", "A03", "A04", "A05", "A06", "A07"]
+## A01, A03–A07 are Open. A02 walk is Locked: dest-click Manhattan, H-first ortho path.
+const OPEN_DECISIONS := ["A01", "A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
@@ -121,8 +121,7 @@ func legal_intents(seat: int) -> Array:
 		for y in range(BOARD_SIZE):
 			for x in range(BOARD_SIZE):
 				var cell := Vector2i(x, y)
-				var dist := chebyshev(from, cell)
-				if dist >= 1 and dist <= mp and _is_empty(cell):
+				if _validate_walk(actor, cell) == "":
 					out.append({"type": "move", "to": cell, "seat": seat})
 
 	for spell_id in actor["spells"]:
@@ -188,9 +187,11 @@ func snapshot() -> Dictionary:
 		"coach": _last_coach,
 		"last_events": _last_events.duplicate(true),
 		"open_decisions": OPEN_DECISIONS.duplicate(),
+		"walk": "manhattan",
+		"walk_tie_break": "horizontal_first",
+		"spell_range": "chebyshev",
 		"open_notes": {
 			"A01": "Provisional Open: Marks live on the target; Impact lives on the caster. Caps 5 / 4.",
-			"A02": "Provisional Open: walk spends Chebyshev distance; destination must be empty. No pathing through occupants (destination rule only; no walls).",
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula.",
@@ -202,6 +203,26 @@ func snapshot() -> Dictionary:
 
 static func chebyshev(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
+static func manhattan(a: Vector2i, b: Vector2i) -> int:
+	return absi(a.x - b.x) + absi(a.y - b.y)
+
+
+## Canonical walk path: dest-click only. Horizontal (E/W) first, then vertical (N/S).
+## Client intent.path is never consulted.
+static func expand_ortho_path(from: Vector2i, to: Vector2i) -> Array:
+	var path: Array = []
+	var cursor := from
+	var step_x := 1 if to.x > from.x else -1
+	while cursor.x != to.x:
+		cursor = Vector2i(cursor.x + step_x, cursor.y)
+		path.append(cursor)
+	var step_y := 1 if to.y > from.y else -1
+	while cursor.y != to.y:
+		cursor = Vector2i(cursor.x, cursor.y + step_y)
+		path.append(cursor)
+	return path
 
 
 static func hit_chance(distance: int) -> int:
@@ -298,14 +319,17 @@ func _submit_face(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	# Dest-click only. CombatSim expands the ortho path; ignore client intent.path.
+	intent.erase("path")
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")
 	var dest: Vector2i = intent["to"]
 	var reason := _validate_walk(actor, dest)
 	if reason != "":
 		return _reject(intent, reason, "REJECT — illegal move (%s)." % reason)
-	var dist := chebyshev(actor["pos"], dest)
 	var from: Vector2i = actor["pos"]
+	var path: Array = expand_ortho_path(from, dest)
+	var dist := manhattan(from, dest)
 	actor["pos"] = dest
 	actor["mp"] = int(actor["mp"]) - dist
 	_intent_log.append(intent)
@@ -315,6 +339,7 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"seat": actor["seat"],
 		"from": from,
 		"to": dest,
+		"path": path.duplicate(),
 		"mp_spent": dist,
 		"coach": _last_coach,
 	})
@@ -505,9 +530,15 @@ func _validate_walk(actor: Dictionary, dest: Vector2i) -> String:
 		return "same_tile"
 	if not _is_empty(dest):
 		return "occupied"
-	var dist := chebyshev(actor["pos"], dest)
+	var dist := manhattan(actor["pos"], dest)
+	if dist < 1:
+		return "same_tile"
 	if dist > int(actor["mp"]):
 		return "insufficient_mp"
+	var path: Array = expand_ortho_path(actor["pos"], dest)
+	for cell in path:
+		if not _is_empty(cell):
+			return "path_blocked"
 	return ""
 
 
