@@ -8,7 +8,8 @@ extends Node2D
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
-const STEP_SEC: float = 0.18
+const STEP_SEC: float = 0.28
+const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
 
 var tiles: Dictionary = {}
@@ -187,6 +188,10 @@ func _play_walk(seat: int, path: Array) -> void:
 	_hud.render(snap, [])
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
+	for step in path:
+		var cell: Vector2i = _as_cell(step)
+		if tiles.has(cell):
+			_tile_at(cell).set_highlight("move")
 	await _animate_path(seat, path)
 	if not is_inside_tree():
 		return
@@ -199,15 +204,21 @@ func _animate_path(seat: int, path: Array) -> void:
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
-	_stop_walk_tween()
-	_walk_tween = create_tween()
-	_walk_tween.set_trans(Tween.TRANS_LINEAR)
-	_walk_tween.set_ease(Tween.EASE_IN_OUT)
+	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
 	for step in path:
+		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
+			return
 		var cell: Vector2i = _as_cell(step)
-		_walk_tween.tween_callback(_set_pawn_cell.bind(pawn, cell))
+		_stop_walk_tween()
+		_walk_tween = create_tween()
+		_walk_tween.set_parallel(false)
+		_walk_tween.set_trans(Tween.TRANS_LINEAR)
+		_walk_tween.set_ease(Tween.EASE_IN_OUT)
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
-	await _walk_tween.finished
+		await _walk_tween.finished
+		_set_pawn_cell(pawn, cell)
+		if STEP_PAUSE_SEC > 0.0:
+			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
 
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
