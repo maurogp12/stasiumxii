@@ -42,8 +42,9 @@ func _run() -> void:
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
 	_test_handoff_timer_is_client_only()
-	_test_advance_manhattan_costs()
+	_test_advance_teleport_costs()
 	_test_advance_manhattan_range_gate()
+	_test_mark_shot_range_highlights()
 	_test_turn_clock_auto_end_turn()
 	_test_turn_clock_ticks_during_hops()
 
@@ -63,9 +64,10 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["walk"], "manhattan", "walk is Locked Manhattan")
 	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
-	eq(snap["advance_mp"], "manhattan", "Advance MP is Locked Manhattan")
+	eq(snap["advance_mp"], "none", "Advance spends no MP")
+	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
 	eq(snap["advance_range"], "manhattan", "Advance range gate is Locked Manhattan 1–2")
-	eq(snap["advance_path"], "horizontal_first", "Advance path is H-first like walk")
+	eq(snap["advance_path"], "teleport", "Advance is a dest-click teleport")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
 
@@ -173,8 +175,12 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(_unit(1)["hp"], 72, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
 	# Strike / Mark Shot stay Chebyshev. Advance range is Manhattan (see range-gate test).
-	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", "chebyshev"), "chebyshev", "Mark Shot range_mode defaults to Chebyshev")
+	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", ""), "chebyshev", "Mark Shot range_mode is Chebyshev")
 	eq(SpellKits.spell(SpellKits.ADVANCE).get("range_mode", ""), "manhattan", "Advance range_mode is Manhattan")
+	eq(SpellKits.spell(SpellKits.ADVANCE).get("mp_mode", ""), "none", "Advance mp_mode is none")
+	eq(SpellKits.spell(SpellKits.ADVANCE).get("move_mode", ""), "teleport", "Advance move_mode is teleport")
+	eq(int(SpellKits.spell(SpellKits.ADVANCE)["ap"]), 3, "Advance costs 3 AP")
+	eq(int(SpellKits.spell(SpellKits.ADVANCE)["mp"]), 0, "Advance costs 0 MP")
 
 
 func _test_face_costs_zero() -> void:
@@ -301,11 +307,13 @@ func _test_advance_impact_adjacency() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
 	eq(result["ok"], true, "Ironjaw Advance 2 tiles with no roll")
 	eq(_unit(1)["pos"], Vector2i(2, 0), "dash landed")
-	eq(_unit(1)["ap"], 5, "Advance spends 1 AP")
-	eq(_unit(1)["mp"], 1, "Advance (0,0)->(2,0) spends Manhattan 2 MP")
+	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
+	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
 	eq(_unit(1)["impact"], 1, "ending Chebyshev 1 to Kestrel grants Impact")
 	eq(_unit(0)["impact"], 0, "Kestrel never gains Impact")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
+	eq(result["events"][0]["teleport"], true, "Advance event is a teleport")
+	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	_sim.reset_match({
 		"seed": 1,
 		"kestrel_pos": Vector2i(7, 7),
@@ -492,21 +500,24 @@ func _test_handoff_timer_is_client_only() -> void:
 	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
 
 
-func _test_advance_manhattan_costs() -> void:
-	# Diagonal neighbor: Chebyshev 1 (range legal) and Manhattan 2 (2 MP, not 1).
+func _test_advance_teleport_costs() -> void:
+	# Diagonal neighbor: Chebyshev 1 / Manhattan 2 is in the diamond; teleport spends 3 AP / 0 MP.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "Advance diagonal neighbor is Manhattan 2")
 	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "Advance diagonal neighbor is Chebyshev 1")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "diagonal Advance dest-click is legal")
-	eq(_unit(1)["pos"], Vector2i(3, 3), "Ironjaw dashed diagonally")
-	eq(_unit(1)["ap"], 5, "Advance spends 1 AP plus MP")
-	eq(_unit(1)["mp"], 1, "diagonal neighbor costs 2 MP, not 1")
-	eq(result["events"][0]["mp_spent"], 2, "advance event spends 2 MP")
-	eq(result["events"][0]["ap_spent"], 1, "advance event spends 1 AP")
-	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(3, 3)], "Advance path is H-first ortho")
+	eq(_unit(1)["pos"], Vector2i(3, 3), "Ironjaw snapped diagonally")
+	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
+	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
+	eq(result["events"][0]["mp_spent"], 0, "advance event spends 0 MP")
+	eq(result["events"][0]["ap_spent"], 3, "advance event spends 3 AP")
+	eq(result["events"][0]["teleport"], true, "Advance is a teleport snap")
+	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
+	truthy(str(result["events"][0]["coach"]).contains("3 AP"), "coach names the 3 AP spend")
+	eq(str(result["events"][0]["coach"]).contains("MP"), false, "coach does not mention MP spend")
 
 	# Chebyshev 2 diagonal is outside the Manhattan 1–2 diamond (Manhattan 4).
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
@@ -520,13 +531,13 @@ func _test_advance_manhattan_costs() -> void:
 	eq(_unit(1)["ap"], 6, "out-of-range refunds AP")
 	eq(_unit(1)["mp"], 3, "out-of-range refunds MP")
 
-	# Orthogonal 3 is out of Manhattan range even though it fits the 3 MP pool.
+	# Orthogonal 3 is out of Manhattan range.
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 0)})
 	eq(result["illegal"], true, "Manhattan 3 is out of Advance range")
 	eq(result["reason"], "out_of_range", "range reject, not MP")
 	eq(_unit(1)["pos"], Vector2i(0, 0), "out-of-range dest does not move Ironjaw")
 
-	# Client path is ignored; CombatSim expands H-first.
+	# Client path is ignored; teleport snaps to dest.
 	var forged: Array = [Vector2i(0, 1), Vector2i(1, 1)]
 	result = _sim.submit({
 		"type": "cast",
@@ -535,46 +546,69 @@ func _test_advance_manhattan_costs() -> void:
 		"path": forged,
 	})
 	eq(result["ok"], true, "Advance dest-click still accepted when a client path is supplied")
-	eq(result["events"][0]["path"], [Vector2i(1, 0), Vector2i(1, 1)], "CombatSim Advance path is H-first, not the client path")
-	eq(result["events"][0]["path"] == forged, false, "forged vertical-first Advance path is not used")
-	eq(result["events"][0]["mp_spent"], 2, "(1,1) dest spends Manhattan 2 MP")
+	eq(result["events"][0].has("path"), false, "CombatSim does not return a hop path for Advance")
+	eq(result["events"][0]["teleport"], true, "forged client path still resolves as teleport")
+	eq(result["events"][0]["mp_spent"], 0, "(1,1) dest spends 0 MP")
 	eq(_unit(1)["pos"], Vector2i(1, 1), "Ironjaw ends on the dest-click tile")
+	eq(_unit(1)["mp"], 3, "MP pool unchanged after teleport")
 
-	# Occupant on the H-first corridor blocks Advance the same as walk.
+	# Occupant on the old H-first corridor does not block a teleport.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 1)})
-	eq(result["illegal"], true, "H-first Advance path through Kestrel is blocked")
-	eq(result["reason"], "path_blocked", "blocked Advance corridor reason is path_blocked")
-	eq(_unit(1)["pos"], Vector2i(0, 0), "Ironjaw stays put when Advance H-first is blocked")
-	var found_blocked_dest := false
-	for intent in _sim.legal_intents(1):
-		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "advance" and intent.get("to") == Vector2i(1, 1):
-			found_blocked_dest = true
-	eq(found_blocked_dest, false, "legal_intents omit Advance dests whose H-first path is blocked")
+	eq(result["ok"], true, "teleport Advance past Kestrel is legal")
+	eq(_unit(1)["pos"], Vector2i(1, 1), "Ironjaw snapped past the occupant")
+	eq(_unit(1)["ap"], 3, "teleport past occupant still spends 3 AP")
+	eq(_unit(1)["mp"], 3, "teleport past occupant spends 0 MP")
+	eq(_unit(1)["impact"], 1, "landing Chebyshev-adjacent still grants Impact")
 
-	# With 1 MP left, only Manhattan-1 Advance dests are offered.
+	# 0 MP remaining: walk the pool away, then Advance still works.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
-	_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
-	eq(_unit(1)["mp"], 2, "ortho Advance spent 1 MP")
-	_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
-	eq(_unit(1)["mp"], 1, "second ortho Advance leaves 1 MP")
+	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
+	eq(result["ok"], true, "Ironjaw can walk the 3 MP pool first")
+	eq(_unit(1)["mp"], 0, "walk spent the MP pool")
+	eq(_unit(1)["ap"], 6, "walk spends no AP")
 	var found_diagonal := false
 	var found_ortho := false
 	for intent in _sim.legal_intents(1):
 		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != "advance":
 			continue
-		if intent.get("to") == Vector2i(5, 3):
+		if intent.get("to") == Vector2i(6, 3):
 			found_diagonal = true
-		if intent.get("to") == Vector2i(5, 2):
+		if intent.get("to") == Vector2i(6, 2):
 			found_ortho = true
-	eq(found_diagonal, false, "1 MP cannot Advance to a diagonal neighbor")
-	truthy(found_ortho, "1 MP can Advance to an orthogonal neighbor")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
-	eq(result["illegal"], true, "diagonal Advance with 1 MP is rejected")
-	eq(result["reason"], "insufficient_mp", "1 MP diagonal is insufficient_mp")
-	eq(_unit(1)["pos"], Vector2i(4, 2), "Ironjaw did not spend the illegal diagonal")
+	truthy(found_diagonal, "0 MP can Advance to a diagonal neighbor")
+	truthy(found_ortho, "0 MP can Advance to an orthogonal neighbor")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 3)})
+	eq(result["ok"], true, "diagonal Advance with 0 MP is legal")
+	eq(_unit(1)["pos"], Vector2i(6, 3), "Ironjaw teleported on empty MP")
+	eq(_unit(1)["mp"], 0, "Advance did not spend or refund MP")
+	eq(_unit(1)["ap"], 3, "0-MP Advance still spends 3 AP")
+
+	# Two Advances per turn (6 AP); a third is insufficient_ap.
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 2)})
+	eq(result["ok"], true, "second Advance spends the remaining 3 AP")
+	eq(_unit(1)["ap"], 0, "two Advances empty the AP pool")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 1)})
+	eq(result["illegal"], true, "third Advance is rejected")
+	eq(result["reason"], "insufficient_ap", "0 AP Advance is insufficient_ap")
+	eq(_unit(1)["pos"], Vector2i(6, 2), "Ironjaw stays after the rejected third Advance")
+
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var resolve_idx := sim_src.find("func _resolve_advance")
+	var rolling_idx := sim_src.find("func _resolve_rolling_cast")
+	truthy(resolve_idx >= 0 and rolling_idx > resolve_idx, "_resolve_advance and _resolve_rolling_cast exist")
+	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
+	eq(resolve_src.contains("expand_ortho_path"), false, "Advance resolve no longer expands an ortho hop path")
+	eq(resolve_src.contains('actor["mp"]'), false, "Advance resolve does not touch MP")
+	eq(sim_src.contains("Advance costs %d MP"), false, "Advance no longer has an MP-cost reject")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains('kind == "move" or kind == "advance"'), false, "board_view does not hop-play Advance")
+	truthy(view.contains('== "move"'), "board_view still hop-plays walk")
+	eq(view.contains("Detonate"), false, "teleport patch does not add Detonate")
+	eq(view.contains("Shoulder"), false, "teleport patch does not add Shoulder")
+	eq(view.contains("Crush"), false, "teleport patch does not add Crush")
 
 
 func _test_advance_manhattan_range_gate() -> void:
@@ -623,22 +657,100 @@ func _test_advance_manhattan_range_gate() -> void:
 
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
 	eq(result["ok"], true, "orthogonal Manhattan 2 is inside the diamond")
-	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw dashed two tiles east")
-	eq(_unit(1)["mp"], 1, "ortho 2 spends 2 MP")
-	eq(_unit(1)["ap"], 5, "Advance still spends 1 AP")
-	eq(result["events"][0]["path"], [Vector2i(4, 3), Vector2i(5, 3)], "H-first ortho path for east dest")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw snapped two tiles east")
+	eq(_unit(1)["mp"], 3, "ortho 2 teleport spends 0 MP")
+	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
+	eq(result["events"][0]["teleport"], true, "east dest is a teleport snap")
+	eq(result["events"][0].has("path"), false, "east dest has no hop path")
 
 	# Highlights come from legal_intents; board_view paints Advance dests as "advance".
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("legal_intents"), "board highlights come from CombatSim legal_intents")
 	truthy(view.contains('highlight := "advance"'), "Advance dests use advance highlight")
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
-	eq(hud.contains("range %d–%d Chebyshev"), false, "Advance selected label is not Chebyshev")
-	truthy(hud.contains("range %d–%d %s"), "Advance selected label uses range_mode metric")
-	truthy(hud.contains("Manhattan"), "HUD still names Manhattan MP/range")
+	eq(hud.contains("range %d–%d Chebyshev"), false, "Advance selected label is not hardcoded Chebyshev")
+	truthy(hud.contains("range %d–%d %s"), "selected label uses range_mode metric")
+	truthy(hud.contains("Manhattan"), "HUD still names Manhattan range")
+	eq(hud.contains("%d AP + Manhattan MP"), false, "HUD no longer advertises Manhattan MP for Advance")
+	eq(hud.contains("%dAP + MP"), false, "HUD Advance button is not AP + MP")
 	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
 	eq(hud.contains("Shoulder"), false, "range patch does not add Shoulder")
 	eq(hud.contains("Crush"), false, "range patch does not add Crush")
+
+
+func _test_mark_shot_range_highlights() -> void:
+	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	var origin := Vector2i(3, 3)
+	var expected: Dictionary = {}
+	for y in range(8):
+		for x in range(8):
+			var cell := Vector2i(x, y)
+			if cell == origin:
+				continue
+			var dist := int(_sim.chebyshev(origin, cell))
+			if dist >= 2 and dist <= 5:
+				expected[cell] = true
+	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
+	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
+	eq(expected.has(Vector2i(3, 0)), true, "Chebyshev 3 ortho is inside the ring")
+	eq(_sim.chebyshev(origin, Vector2i(0, 0)), 3, "(0,0) is Chebyshev 3 from (3,3)")
+	eq(expected.has(Vector2i(0, 0)), true, "Chebyshev 3 corner is inside the ring")
+	eq(expected.has(Vector2i(3, 3)), false, "caster tile is not in the ring")
+
+	var painted: Dictionary = {}
+	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
+		painted[cell] = true
+	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–5")
+	for cell in expected.keys():
+		truthy(painted.has(cell), "Chebyshev ring tile %s is highlighted" % str(cell))
+	for cell in painted.keys():
+		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
+
+	# legal_intents still only offer the enemy dest, not every ring tile.
+	var legal_dests := 0
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "mark_shot":
+			legal_dests += 1
+			eq(intent.get("to"), Vector2i(5, 3), "legal Mark Shot dest is the enemy")
+	eq(legal_dests, 1, "legal_intents still only list the enemy, not the whole ring")
+
+	# Ironjaw never gets Mark Shot range chrome.
+	eq(_sim.range_highlight_cells(1, SpellKits.MARK_SHOT).size(), 0, "Ironjaw has no Mark Shot range chrome")
+	# Walk tiles are a different set; the ring is not the walk diamond.
+	var walk_dests := {}
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "move":
+			walk_dests[intent["to"]] = true
+	eq(walk_dests.has(Vector2i(3, 4)), true, "ortho neighbor is a walk dest")
+	eq(painted.has(Vector2i(3, 4)), false, "walk neighbor is not in Mark Shot chrome")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	var has_r5 := false
+	var has_r6 := false
+	var has_r1 := false
+	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
+		var dist := int(_sim.chebyshev(Vector2i(0, 0), cell))
+		if dist == 5:
+			has_r5 = true
+		if dist == 6:
+			has_r6 = true
+		if dist == 1:
+			has_r1 = true
+	truthy(has_r5, "Chebyshev 5 tiles are in Mark Shot chrome")
+	eq(has_r6, false, "Chebyshev 6 is outside Mark Shot chrome")
+	eq(has_r1, false, "Chebyshev 1 is outside Mark Shot chrome")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("range_highlight_cells"), "board_view paints Mark Shot from range_highlight_cells")
+	truthy(view.contains("SpellKits.MARK_SHOT"), "board_view special-cases Mark Shot range chrome")
+	truthy(view.contains('set_highlight("range")'), "Mark Shot ring uses range highlight")
+	truthy(view.contains("kind == \"move\" and spell_id == \"\""), "walk highlights stay off while a spell is selected")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	truthy(tile_src.contains("\"range\""), "tiles have a range highlight color")
+	eq(view.contains("Detonate"), false, "Mark Shot chrome does not add Detonate")
+	eq(view.contains("Shoulder"), false, "Mark Shot chrome does not add Shoulder")
+	eq(view.contains("Crush"), false, "Mark Shot chrome does not add Crush")
 
 
 func _test_turn_clock_auto_end_turn() -> void:
@@ -701,10 +813,12 @@ func _test_turn_clock_ticks_during_hops() -> void:
 	var animate_idx := view.find("func _animate_path")
 	truthy(play_idx >= 0 and animate_idx > play_idx, "_play_walk and _animate_path exist")
 	var play_src := view.substr(play_idx, animate_idx - play_idx)
-	eq(play_src.contains("_turn_clock.pause"), false, "walk/Advance hops do not pause the seat clock")
-	eq(play_src.contains("_turn_clock.stop"), false, "walk/Advance hops do not stop the seat clock")
+	eq(play_src.contains("_turn_clock.pause"), false, "walk hops do not pause the seat clock")
+	eq(play_src.contains("_turn_clock.stop"), false, "walk hops do not stop the seat clock")
 	truthy(view.contains("_clock_expired_pending"), "expiry during hops is deferred, not dropped")
 	truthy(view.contains("_on_end_turn_button_pressed()"), "queued expiry still uses the End Turn path")
+	eq(view.contains('kind == "move" or kind == "advance"'), false, "Advance teleport is not hop-played")
+	truthy(view.contains("teleport"), "board_view documents Advance as a teleport snap")
 
 	# Handoff banner may remain; pause() is reserved for that next-seat hold, not hops.
 	var end_idx := view.find("func _on_end_turn_button_pressed")

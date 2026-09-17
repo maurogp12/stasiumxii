@@ -443,8 +443,6 @@ func _sync_spell_buttons(offered: Array) -> void:
 
 
 func _spell_button_text(def: Dictionary) -> String:
-	if str(def.get("mp_mode", "")) == "manhattan":
-		return "%s  %dAP + MP" % [def["name"], int(def.get("ap", 0))]
 	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
 
 
@@ -478,20 +476,12 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
-	if str(def.get("mp_mode", "")) == "manhattan":
-		var range_metric := "Manhattan" if str(def.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
-		_selected_label.text = "Selected: %s  ·  %d AP + Manhattan MP  ·  range %d–%d %s" % [
-			def.get("name", _selected_spell),
-			int(def.get("ap", 0)),
-			int(def.get("min_range", 0)),
-			int(def.get("max_range", 0)),
-			range_metric,
-		]
-		return
-	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d" % [
+	var range_metric := "Manhattan" if str(def.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
+	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d %s" % [
 		def.get("name", _selected_spell),
 		int(def.get("ap", 0)),
 		int(def.get("mp", 0)),
 		int(def.get("min_range", 0)),
 		int(def.get("max_range", 0)),
+		range_metric,
 	]

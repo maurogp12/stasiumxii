@@ -1,11 +1,13 @@
 extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
-## Walk and Advance: dest-click only. CombatSim expands the ortho path; this view
-## never sends intent.path. Pawns tween one ortho tile at a time along the returned path.
+## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
+## intent.path. Pawns tween one ortho tile at a time along the returned walk path.
+## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
+## Mark Shot: selected chrome paints the Chebyshev 2–5 range ring; walk chrome stays off.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
-## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Hop / Advance
-## animations lock input but do not pause the clock.
+## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input
+## but do not pause the clock.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -67,9 +69,9 @@ func _process(delta: float) -> void:
 		_turn_clock.stop()
 		_sync_turn_clock()
 		return
-	# Keep ticking during hop / Advance animations. _busy only locks input.
-	# The ~1s handoff banner still uses pause() so the next seat's 30s does
-	# not drain while they cannot act.
+	# Keep ticking during walk hop animations. _busy only locks input.
+	# Advance is an instant snap (no hop). The ~1s handoff banner still uses
+	# pause() so the next seat's 30s does not drain while they cannot act.
 	if _turn_clock.tick(delta):
 		_sync_turn_clock()
 		_on_turn_clock_expired()
@@ -232,8 +234,8 @@ func _submit(intent: Dictionary) -> void:
 
 func _path_event(events: Array) -> Dictionary:
 	for event in events:
-		var kind := str(event.get("type", ""))
-		if kind == "move" or kind == "advance":
+		# Walk hops only. Advance is a teleport snap — do not play cell-by-cell path.
+		if str(event.get("type", "")) == "move":
 			return event
 	return {}
 
@@ -333,6 +335,11 @@ func _paint_highlights() -> void:
 	var actor := _active_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
+	# Mark Shot: paint the Chebyshev 2–5 ring as soon as the spell is selected.
+	# Walk highlights stay off while a spell is selected.
+	if spell_id == SpellKits.MARK_SHOT:
+		for cell in CombatSim.range_highlight_cells(int(snap.get("active_seat", 0)), spell_id):
+			_tile_at(cell).set_highlight("range")
 	for intent in legal:
 		var kind := str(intent.get("type", ""))
 		if kind == "move" and spell_id == "" and intent.has("to"):

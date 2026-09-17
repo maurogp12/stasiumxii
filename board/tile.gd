@@ -24,6 +24,8 @@ func _draw() -> void:
 			color = Color(0.45, 0.78, 0.92, 1.0)
 		"advance":
 			color = Color(0.72, 0.58, 0.95, 1.0)
+		"range":
+			color = Color(0.95, 0.78, 0.32, 1.0)
 		"target":
 			color = Color(0.95, 0.55, 0.28, 1.0)
 		"selected":
