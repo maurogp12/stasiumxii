@@ -11,7 +11,6 @@ const START_HP := 80
 const CRIT_MULT := 1.0
 const MASTERY := 0.0
 const RESIST := 0.0
-const WIND_MOD := 1.0
 const PASSIVE := 1.0
 const BACK_FACING := 1.20
 const FRONT_SIDE_FACING := 1.00
@@ -127,6 +126,8 @@ func legal_intents(seat: int) -> Array:
 					out.append({"type": "move", "to": cell, "seat": seat})
 
 	for spell_id in actor["spells"]:
+		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
+			continue
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if def.is_empty():
 			continue
@@ -190,9 +191,9 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A01": "Provisional Open: Marks live on the target; Impact lives on the caster. Caps 5 / 4.",
 			"A02": "Provisional Open: walk spends Chebyshev distance; destination must be empty. No pathing through occupants (destination rule only; no walls).",
-			"A03": "Omitted: Gust/wind heading. WindMod held at 1.0.",
+			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Provisional Open: Resist 0, WindMod 1.0, damage rounded to nearest int.",
+			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula.",
 			"A06": "Provisional Open: Advance dashes to any empty Chebyshev 1–2 tile. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
@@ -325,6 +326,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
+	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
+		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit (refund)." % [def["name"], actor["name"]])
 	if not intent.has("to"):
@@ -357,6 +360,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
+		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
@@ -422,7 +427,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		})
 		return _accept()
 
-	var raw: float = float(def["base_damage"]) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult * WIND_MOD
+	var raw: float = float(def["base_damage"]) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
 	var damage := roundi(raw)
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
@@ -522,6 +527,8 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 
 
 func _gain_impact(unit: Dictionary, amount: int) -> int:
+	if str(unit.get("class_id", "")) != SpellKits.CLASS_IRONJAW:
+		return 0
 	var before: int = int(unit["impact"])
 	unit["impact"] = mini(before + amount, int(unit["impact_cap"]))
 	return int(unit["impact"]) - before

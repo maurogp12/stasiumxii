@@ -2,6 +2,7 @@ extends RefCounted
 class_name SpellKits
 
 ## Phase A locked kit only. Later spells stay out of this table.
+## Advance is Ironjaw-only (Locked). Kestrel never has Advance and never gains Impact.
 const ADVANCE := "advance"
 const STRIKE := "strike"
 const MARK_SHOT := "mark_shot"
@@ -13,6 +14,7 @@ const SPELLS := {
 	ADVANCE: {
 		"id": ADVANCE,
 		"name": "Advance",
+		"class_id": CLASS_IRONJAW,
 		"ap": 1,
 		"mp": 1,
 		"min_range": 1,
@@ -52,7 +54,7 @@ const SPELLS := {
 }
 
 const CLASS_SPELLS := {
-	CLASS_KESTREL: [ADVANCE, MARK_SHOT],
+	CLASS_KESTREL: [MARK_SHOT],
 	CLASS_IRONJAW: [ADVANCE, STRIKE],
 }
 

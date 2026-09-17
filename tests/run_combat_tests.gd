@@ -29,10 +29,12 @@ func _run() -> void:
 	_test_back_facing_multiplier()
 	_test_mark_shot_range_and_marks()
 	_test_advance_impact_adjacency()
+	_test_kestrel_cannot_advance()
 	_test_hit_bands()
 	_test_class_kits()
 	_test_match_over()
 	_test_crit_mult_held()
+	_test_wind_mod_omitted()
 	_test_legal_intents_empty_for_other_seat()
 	_test_view_does_not_roll_or_own_hp()
 
@@ -190,23 +192,55 @@ func _test_mark_shot_range_and_marks() -> void:
 func _test_advance_impact_adjacency() -> void:
 	_sim.reset_match({
 		"seed": 1,
-		"kestrel_pos": Vector2i(0, 0),
-		"ironjaw_pos": Vector2i(3, 0),
+		"kestrel_pos": Vector2i(3, 0),
+		"ironjaw_pos": Vector2i(0, 0),
 	})
+	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
-	eq(result["ok"], true, "Advance 2 tiles with no roll")
-	eq(_unit(0)["pos"], Vector2i(2, 0), "dash landed")
-	eq(_unit(0)["ap"], 5, "Advance spends 1 AP")
-	eq(_unit(0)["mp"], 2, "Advance spends 1 MP")
-	eq(_unit(0)["impact"], 1, "ending Chebyshev 1 to Ironjaw grants Impact")
+	eq(result["ok"], true, "Ironjaw Advance 2 tiles with no roll")
+	eq(_unit(1)["pos"], Vector2i(2, 0), "dash landed")
+	eq(_unit(1)["ap"], 5, "Advance spends 1 AP")
+	eq(_unit(1)["mp"], 2, "Advance spends 1 MP")
+	eq(_unit(1)["impact"], 1, "ending Chebyshev 1 to Kestrel grants Impact")
+	eq(_unit(0)["impact"], 0, "Kestrel never gains Impact")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
 	_sim.reset_match({
 		"seed": 1,
-		"kestrel_pos": Vector2i(0, 0),
-		"ironjaw_pos": Vector2i(7, 7),
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(0, 0),
 	})
+	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
-	eq(_unit(0)["impact"], 0, "Advance far from enemy grants no Impact")
+	eq(_unit(1)["impact"], 0, "Advance far from enemy grants no Impact")
+	eq(_unit(0)["impact"], 0, "Kestrel still has 0 Impact")
+
+
+func _test_kestrel_cannot_advance() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(3, 0),
+	})
+	eq(_unit(0)["spells"].has("advance"), false, "Kestrel kit does not include Advance")
+	eq(_unit(1)["spells"].has("advance"), true, "Ironjaw kit includes Advance")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
+	eq(result["illegal"], true, "Kestrel Advance is rejected")
+	eq(result["reason"], "spell_not_in_kit", "reject reason is spell_not_in_kit")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "Kestrel did not dash")
+	eq(_unit(0)["ap"], 6, "Kestrel Advance refunds AP")
+	eq(_unit(0)["mp"], 3, "Kestrel Advance refunds MP")
+	eq(_unit(0)["impact"], 0, "Kestrel never gains Impact")
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "advance":
+			fail("Kestrel legal_intents must not include advance")
+			return
+	_sim.submit({"type": "end_turn"})
+	var found_advance := false
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "advance":
+			found_advance = true
+			break
+	truthy(found_advance, "Ironjaw legal_intents include Advance")
 
 
 func _test_hit_bands() -> void:
@@ -226,6 +260,8 @@ func _test_class_kits() -> void:
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 	})
+	eq(_unit(0)["spells"], ["mark_shot"], "Kestrel kit is Mark Shot only")
+	eq(_unit(1)["spells"], ["advance", "strike"], "Ironjaw kit is Advance + Strike")
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(0, 0)})
 	eq(result["illegal"], true, "Ironjaw cannot Mark Shot")
@@ -278,6 +314,17 @@ func _test_crit_mult_held() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 0)})
 	eq(result["events"][0]["crit_mult"], 1.0, "CritMult stays 1.0 even on a connect")
 	eq(_sim.snapshot()["crit_mult"], 1.0, "snapshot exposes CritMult 1.0")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+
+
+func _test_wind_mod_omitted() -> void:
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(sim_src.contains("WIND_MOD"), false, "CombatSim has no WIND_MOD constant")
+	eq(sim_src.contains("wind_mod"), false, "CombatSim has no wind_mod term")
+	eq(sim_src.contains("* WindMod"), false, "CombatSim does not multiply by WindMod")
+	var hit_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	truthy(hit_src.contains("* facing_mult"), "damage still multiplies by facing")
+	eq(hit_src.contains("* facing_mult *"), false, "facing is the last damage multiplier")
 
 
 func _test_legal_intents_empty_for_other_seat() -> void:
@@ -291,6 +338,9 @@ func _test_legal_intents_empty_for_other_seat() -> void:
 	truthy(types.has("move"), "move is legal")
 	truthy(types.has("face"), "face is legal")
 	truthy(types.has("cast"), "cast is legal")
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "cast":
+			eq(str(intent.get("spell", "")), "mark_shot", "Kestrel legal casts are Mark Shot only")
 
 
 func _test_view_does_not_roll_or_own_hp() -> void:
