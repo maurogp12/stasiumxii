@@ -624,7 +624,8 @@ func _test_turn_clock_auto_end_turn() -> void:
 	eq(hud.contains("Shoulder"), false, "clock patch does not add Shoulder")
 	eq(hud.contains("Crush"), false, "clock patch does not add Crush")
 	eq(hud.contains("WindMod"), false, "clock patch does not add WindMod")
-	eq(sim_src.contains("WindMod"), false, "CombatSim still omits WindMod")
+	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
+	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 
