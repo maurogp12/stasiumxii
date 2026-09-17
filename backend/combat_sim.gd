@@ -164,6 +164,32 @@ func legal_intents(seat: int) -> Array:
 	return out
 
 
+## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
+## Mark Shot uses this for Chebyshev 2–5 chrome. Does not imply a legal cast dest.
+func range_highlight_cells(seat: int, spell_id: String) -> Array:
+	var out: Array = []
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not actor["alive"]:
+		return out
+	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
+		return out
+	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
+		return out
+	var def: Dictionary = SpellKits.spell(spell_id)
+	if def.is_empty():
+		return out
+	var from: Vector2i = actor["pos"]
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			if cell == from:
+				continue
+			var dist := _range_distance(def, from, cell)
+			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+				out.append(cell)
+	return out
+
+
 func snapshot() -> Dictionary:
 	var units: Array = []
 	for unit in _units:
@@ -192,15 +218,16 @@ func snapshot() -> Dictionary:
 		"walk": "manhattan",
 		"walk_tie_break": "horizontal_first",
 		"spell_range": "chebyshev",
-		"advance_mp": "manhattan",
+		"advance_mp": "none",
+		"advance_ap": 3,
 		"advance_range": "manhattan",
-		"advance_path": "horizontal_first",
+		"advance_path": "teleport",
 		"open_notes": {
 			"A01": "Provisional Open: Marks live on the target; Impact lives on the caster. Caps 5 / 4.",
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula.",
-			"A06": "Advance (Locked range + MP): dest-click, CombatSim expands H-first ortho path, client path ignored. Range gate Manhattan 1–2 (diamond; Chebyshev (1,2) tiles are out of range). MP = Manhattan |dx|+|dy| plus 1 AP. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
 	}
@@ -368,18 +395,16 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "out_of_bounds", "REJECT — %s target is off the board (refund)." % def["name"])
 
 	if spell_id == SpellKits.ADVANCE:
-		# Dest-click only. CombatSim expands the ortho path; ignore client intent.path.
+		# Dest-click teleport. Ignore client intent.path. No MP spend.
 		intent.erase("path")
 		var advance_ap := int(def["ap"])
-		var advance_mp := manhattan(actor["pos"], dest)
+		var advance_mp := int(def["mp"])
 		var reason := _validate_advance(actor, dest)
 		if reason == "out_of_range":
 			var range_dist := _range_distance(def, actor["pos"], dest)
 			return _reject(intent, "out_of_range", "REJECT — Advance range %d–%d Manhattan, target at %d (refund)." % [def["min_range"], def["max_range"], range_dist])
 		if reason == "insufficient_ap":
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
-		if reason == "insufficient_mp":
-			return _reject(intent, "insufficient_mp", "REJECT — Advance costs %d MP (refund)." % advance_mp)
 		if reason == "destination_occupied":
 			return _reject(intent, "destination_occupied", "REJECT — Advance needs an empty tile (refund).")
 		if reason != "":
@@ -407,9 +432,8 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
-	var path: Array = expand_ortho_path(from, dest)
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	# Teleport: dest-click snap. Never spend MP.
 	actor["pos"] = dest
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
 	var adjacent: bool = false
@@ -420,17 +444,17 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 		impact_gained = _gain_impact(actor, 1)
 	_intent_log.append(intent)
 	if adjacent and impact_gained > 0:
-		_last_coach = "%s Advance to %s (−%d MP). +1 Impact (adjacent)." % [actor["name"], _cell_text(dest), mp_cost]
+		_last_coach = "%s Advance to %s (−%d AP). +1 Impact (adjacent)." % [actor["name"], _cell_text(dest), ap_cost]
 	elif adjacent:
-		_last_coach = "%s Advance to %s (−%d MP). Adjacent, Impact already capped." % [actor["name"], _cell_text(dest), mp_cost]
+		_last_coach = "%s Advance to %s (−%d AP). Adjacent, Impact already capped." % [actor["name"], _cell_text(dest), ap_cost]
 	else:
-		_last_coach = "%s Advance to %s (−%d MP). No Impact (not adjacent)." % [actor["name"], _cell_text(dest), mp_cost]
+		_last_coach = "%s Advance to %s (−%d AP). No Impact (not adjacent)." % [actor["name"], _cell_text(dest), ap_cost]
 	_last_events.append({
 		"type": "advance",
 		"seat": actor["seat"],
 		"from": from,
 		"to": dest,
-		"path": path.duplicate(),
+		"teleport": true,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"rolled": false,
@@ -573,19 +597,13 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 	if not _is_empty(dest):
 		return "destination_occupied"
 	# Range gate is Manhattan 1–2 (diamond). Chebyshev (1,2) tiles are out of range.
+	# Teleport: dest occupancy only; corridor occupants do not block. 0 MP is legal.
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var range_dist := _range_distance(def, actor["pos"], dest)
 	if range_dist < int(def["min_range"]) or range_dist > int(def["max_range"]):
 		return "out_of_range"
-	var mp_cost := manhattan(actor["pos"], dest)
 	if int(actor["ap"]) < int(def["ap"]):
 		return "insufficient_ap"
-	if int(actor["mp"]) < mp_cost:
-		return "insufficient_mp"
-	var path: Array = expand_ortho_path(actor["pos"], dest)
-	for cell in path:
-		if not _is_empty(cell):
-			return "path_blocked"
 	return ""
 
 
