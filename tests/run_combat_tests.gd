@@ -42,6 +42,8 @@ func _run() -> void:
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
 	_test_handoff_timer_is_client_only()
+	_test_advance_manhattan_costs()
+	_test_turn_clock_auto_end_turn()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -59,6 +61,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["walk"], "manhattan", "walk is Locked Manhattan")
 	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
+	eq(snap["advance_mp"], "manhattan", "Advance MP is Locked Manhattan")
+	eq(snap["advance_path"], "horizontal_first", "Advance path is H-first like walk")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
 
@@ -174,7 +178,8 @@ func _test_spell_range_stays_chebyshev() -> void:
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 1)})
 	eq(result["ok"], true, "Advance dash range stays Chebyshev 2 (Manhattan 3 would exceed dash max if walk leaked)")
 	eq(_unit(1)["pos"], Vector2i(2, 1), "Ironjaw dashed to a Chebyshev-2 tile")
-	eq(_unit(1)["mp"], 2, "Advance still costs 1 MP, not Manhattan 3")
+	eq(_unit(1)["mp"], 0, "Advance Chebyshev-2 dest spends Manhattan 3 MP")
+	eq(_unit(1)["ap"], 5, "Advance still spends 1 AP")
 
 
 func _test_face_costs_zero() -> void:
@@ -302,7 +307,7 @@ func _test_advance_impact_adjacency() -> void:
 	eq(result["ok"], true, "Ironjaw Advance 2 tiles with no roll")
 	eq(_unit(1)["pos"], Vector2i(2, 0), "dash landed")
 	eq(_unit(1)["ap"], 5, "Advance spends 1 AP")
-	eq(_unit(1)["mp"], 2, "Advance spends 1 MP")
+	eq(_unit(1)["mp"], 1, "Advance (0,0)->(2,0) spends Manhattan 2 MP")
 	eq(_unit(1)["impact"], 1, "ending Chebyshev 1 to Kestrel grants Impact")
 	eq(_unit(0)["impact"], 0, "Kestrel never gains Impact")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
@@ -475,6 +480,8 @@ func _test_hud_chrome_kit_gated() -> void:
 	eq(hud.contains("SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.MARK_SHOT"), false, "HUD does not hardcode both kits on one action bar")
 	eq(hud.contains("WindMod"), false, "HUD has no WindMod chrome")
 	eq(hud.contains("Detonate"), false, "HUD has no Detonate chrome")
+	eq(hud.contains("Shoulder"), false, "HUD has no Shoulder chrome")
+	eq(hud.contains("Crush"), false, "HUD has no Crush chrome")
 
 
 func _test_handoff_timer_is_client_only() -> void:
@@ -488,6 +495,138 @@ func _test_handoff_timer_is_client_only() -> void:
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud.contains("show_turn_banner"), "HUD can show the End Turn banner")
 	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
+
+
+func _test_advance_manhattan_costs() -> void:
+	# Diagonal neighbor: Chebyshev 1 (range legal) and Manhattan 2 (2 MP, not 1).
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "Advance diagonal neighbor is Manhattan 2")
+	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "Advance diagonal neighbor is Chebyshev 1")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 3)})
+	eq(result["ok"], true, "diagonal Advance dest-click is legal")
+	eq(_unit(1)["pos"], Vector2i(3, 3), "Ironjaw dashed diagonally")
+	eq(_unit(1)["ap"], 5, "Advance spends 1 AP plus MP")
+	eq(_unit(1)["mp"], 1, "diagonal neighbor costs 2 MP, not 1")
+	eq(result["events"][0]["mp_spent"], 2, "advance event spends 2 MP")
+	eq(result["events"][0]["ap_spent"], 1, "advance event spends 1 AP")
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(3, 3)], "Advance path is H-first ortho")
+	eq(result["events"][0]["rolled"], false, "Advance never rolls")
+
+	# Chebyshev 2 diagonal is range-legal but Manhattan 4 exceeds the 3 MP pool.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(2, 2)), 2, "two-tile diagonal is Chebyshev 2")
+	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "two-tile diagonal is Manhattan 4")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 2)})
+	eq(result["illegal"], true, "Chebyshev-2 diagonal Advance is rejected for MP")
+	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
+	eq(_unit(1)["pos"], Vector2i(0, 0), "Ironjaw did not dash")
+	eq(_unit(1)["ap"], 6, "insufficient MP refunds AP")
+	eq(_unit(1)["mp"], 3, "insufficient MP refunds MP")
+
+	# Range gate stays Chebyshev: orthogonal 3 is out of range even though Manhattan 3 fits the pool.
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 0)})
+	eq(result["illegal"], true, "Chebyshev 3 is out of Advance range")
+	eq(result["reason"], "out_of_range", "range reject, not MP")
+	eq(_unit(1)["pos"], Vector2i(0, 0), "out-of-range dest does not move Ironjaw")
+
+	# Client path is ignored; CombatSim expands H-first.
+	var forged: Array = [Vector2i(0, 1), Vector2i(0, 2), Vector2i(1, 2)]
+	result = _sim.submit({
+		"type": "cast",
+		"spell": "advance",
+		"to": Vector2i(2, 1),
+		"path": forged,
+	})
+	eq(result["ok"], true, "Advance dest-click still accepted when a client path is supplied")
+	eq(result["events"][0]["path"], [Vector2i(1, 0), Vector2i(2, 0), Vector2i(2, 1)], "CombatSim Advance path is H-first, not the client path")
+	eq(result["events"][0]["path"] == forged, false, "forged vertical-first Advance path is not used")
+	eq(result["events"][0]["mp_spent"], 3, "(2,1) dest spends Manhattan 3 MP")
+	eq(_unit(1)["pos"], Vector2i(2, 1), "Ironjaw ends on the dest-click tile")
+
+	# Occupant on the H-first corridor blocks Advance the same as walk.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 1)})
+	eq(result["illegal"], true, "H-first Advance path through Kestrel is blocked")
+	eq(result["reason"], "path_blocked", "blocked Advance corridor reason is path_blocked")
+	eq(_unit(1)["pos"], Vector2i(0, 0), "Ironjaw stays put when Advance H-first is blocked")
+	var found_blocked_dest := false
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "advance" and intent.get("to") == Vector2i(1, 1):
+			found_blocked_dest = true
+	eq(found_blocked_dest, false, "legal_intents omit Advance dests whose H-first path is blocked")
+
+	# With 1 MP left, only Manhattan-1 Advance dests are offered.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_unit(1)["mp"], 2, "ortho Advance spent 1 MP")
+	_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
+	eq(_unit(1)["mp"], 1, "second ortho Advance leaves 1 MP")
+	var found_diagonal := false
+	var found_ortho := false
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != "advance":
+			continue
+		if intent.get("to") == Vector2i(5, 3):
+			found_diagonal = true
+		if intent.get("to") == Vector2i(5, 2):
+			found_ortho = true
+	eq(found_diagonal, false, "1 MP cannot Advance to a diagonal neighbor")
+	truthy(found_ortho, "1 MP can Advance to an orthogonal neighbor")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["illegal"], true, "diagonal Advance with 1 MP is rejected")
+	eq(result["reason"], "insufficient_mp", "1 MP diagonal is insufficient_mp")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Ironjaw did not spend the illegal diagonal")
+
+
+func _test_turn_clock_auto_end_turn() -> void:
+	eq(TurnClock.DURATION_SEC, 30.0, "seat clock is 30s; change TurnClock.DURATION_SEC to retune")
+	var clock := TurnClock.new()
+	clock.start()
+	eq(clock.display_seconds(), 30, "fresh clock shows 30")
+	eq(clock.tick(0.0), false, "zero delta does not expire")
+	eq(clock.tick(29.0), false, "29s elapsed is still the same seat")
+	eq(clock.display_seconds(), 1, "ceil remaining shows 1s left")
+	eq(clock.running, true, "clock still running before expiry")
+	eq(clock.tick(1.0), true, "clock expires at 30s")
+	eq(clock.display_seconds(), 0, "expired clock shows 0")
+	eq(clock.running, false, "expired clock stops")
+	eq(clock.tick(1.0), false, "already-expired clock does not fire again")
+	clock.start()
+	clock.pause()
+	eq(clock.tick(30.0), false, "paused clock does not expire")
+	eq(clock.display_seconds(), 30, "pause keeps the remaining 30s")
+	clock.resume()
+	eq(clock.tick(30.0), true, "resume then 30s expires")
+
+	# Expiry must submit the same end_turn as the HUD button, not a second rule.
+	_sim.reset_match({"seed": 1})
+	eq(_sim.snapshot()["active_seat"], 0, "Kestrel starts")
+	var result: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(result["ok"], true, "clock expiry uses the same end_turn submit")
+	eq(_sim.snapshot()["active_seat"], 1, "end_turn on expiry hands the seat to Ironjaw")
+	eq(_unit(1)["ap"], 6, "next seat refills AP after auto end-turn")
+	eq(_unit(1)["mp"], 3, "next seat refills MP after auto end-turn")
+
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(sim_src.contains("DURATION_SEC"), false, "CombatSim does not own the 30s clock")
+	eq(sim_src.contains("TurnClock"), false, "CombatSim does not reference TurnClock")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("func _on_turn_clock_expired"), "board_view handles clock expiry")
+	truthy(view.contains("_on_end_turn_button_pressed()"), "expiry calls the End Turn button path")
+	truthy(view.contains("HANDOFF_SEC"), "seat-handoff banner is kept")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud.contains("set_turn_clock"), "HUD has a visible clock indicator")
+	eq(hud.contains("Detonate"), false, "clock patch does not add Detonate")
+	eq(hud.contains("Shoulder"), false, "clock patch does not add Shoulder")
+	eq(hud.contains("Crush"), false, "clock patch does not add Crush")
+	eq(hud.contains("WindMod"), false, "clock patch does not add WindMod")
+	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
+	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 
 func _unit(seat: int) -> Dictionary:

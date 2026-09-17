@@ -1,9 +1,10 @@
 extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
-## Walk: dest-click only. CombatSim expands the ortho path; this view never
-## sends intent.path. Pawns tween one ortho tile at a time along the returned path.
-## Proposed timer: ~1.0s client-only seat handoff pause + turn banner on End Turn.
+## Walk and Advance: dest-click only. CombatSim expands the ortho path; this view
+## never sends intent.path. Pawns tween one ortho tile at a time along the returned path.
+## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
+## (TurnClock.DURATION_SEC) that auto End Turns on expiry.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -19,6 +20,7 @@ var _hud: CombatHUD
 var _booted: bool = false
 var _busy: bool = false
 var _walk_tween: Tween
+var _turn_clock := TurnClock.new()
 
 
 func _ready() -> void:
@@ -44,13 +46,39 @@ func _boot() -> void:
 	CombatSim.reset_match({})
 	_rebuild_pawns()
 	_booted = true
+	_turn_clock.start()
 	_refresh()
+	_sync_turn_clock()
 
 
 func local_to_grid(point: Vector2) -> Vector2i:
 	var grid_x := point.x / 64.0 + point.y / 32.0
 	var grid_y := point.y / 32.0 - point.x / 64.0
 	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
+
+
+func _process(delta: float) -> void:
+	if not _booted:
+		return
+	var snap := CombatSim.snapshot()
+	if snap.get("match_over", false):
+		_turn_clock.stop()
+		_sync_turn_clock()
+		return
+	if _busy:
+		_sync_turn_clock()
+		return
+	if _turn_clock.tick(delta):
+		_sync_turn_clock()
+		_on_turn_clock_expired()
+		return
+	_sync_turn_clock()
+
+
+func _sync_turn_clock() -> void:
+	if _hud == null:
+		return
+	_hud.set_turn_clock(_turn_clock.display_seconds(), _turn_clock.running, _turn_clock.fraction_left())
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -122,19 +150,28 @@ func _on_face_requested(dir: String) -> void:
 func _on_end_turn_button_pressed() -> void:
 	if _busy:
 		return
+	_busy = true
+	_turn_clock.pause()
 	_hud.clear_spell()
 	var result: Dictionary = CombatSim.submit({"type": "end_turn"})
 	if not result.get("ok", false):
+		_busy = false
+		_turn_clock.resume()
 		_refresh()
 		return
 	var snap := CombatSim.snapshot()
 	if snap.get("match_over", false):
+		_turn_clock.stop()
+		_busy = false
 		_refresh()
 		return
 	# Proposed: client-only ~1.0s seat handoff. CombatSim already advanced.
-	_busy = true
+	# Start the next seat's clock at 30s but pause it through the banner.
+	_turn_clock.start()
+	_turn_clock.pause()
 	_hud.set_locked(true)
 	_refresh()
+	_sync_turn_clock()
 	var next_unit := _active_unit(snap)
 	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")))
 	await get_tree().create_timer(HANDOFF_SEC).timeout
@@ -143,7 +180,14 @@ func _on_end_turn_button_pressed() -> void:
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
 	_busy = false
+	_turn_clock.resume()
 	_refresh()
+	_sync_turn_clock()
+
+
+func _on_turn_clock_expired() -> void:
+	# Same path as pressing End Turn.
+	_on_end_turn_button_pressed()
 
 
 func _on_new_match() -> void:
@@ -154,7 +198,9 @@ func _on_new_match() -> void:
 	_hud.clear_spell()
 	CombatSim.reset_match({})
 	_rebuild_pawns()
+	_turn_clock.start()
 	_refresh()
+	_sync_turn_clock()
 
 
 func _submit(intent: Dictionary) -> void:
@@ -166,17 +212,20 @@ func _submit(intent: Dictionary) -> void:
 		if _hud.selected_spell() == "" and str(intent.get("type", "")) == "move":
 			_refresh()
 			return
-	if result.get("ok", false) and str(intent.get("type", "")) == "move":
-		var move_event := _move_event(result.get("events", []))
-		if not move_event.is_empty() and move_event.has("path"):
-			await _play_walk(int(move_event.get("seat", 0)), move_event["path"])
-			return
+	if result.get("ok", false):
+		var path_event := _path_event(result.get("events", []))
+		if not path_event.is_empty() and path_event.has("path"):
+			var path: Array = path_event["path"]
+			if not path.is_empty():
+				await _play_walk(int(path_event.get("seat", 0)), path)
+				return
 	_refresh()
 
 
-func _move_event(events: Array) -> Dictionary:
+func _path_event(events: Array) -> Dictionary:
 	for event in events:
-		if str(event.get("type", "")) == "move":
+		var kind := str(event.get("type", ""))
+		if kind == "move" or kind == "advance":
 			return event
 	return {}
 
