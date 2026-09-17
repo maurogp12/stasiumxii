@@ -688,7 +688,7 @@ func _test_mark_shot_range_highlights() -> void:
 			var cell := Vector2i(x, y)
 			if cell == origin:
 				continue
-			var dist := _sim.chebyshev(origin, cell)
+			var dist := int(_sim.chebyshev(origin, cell))
 			if dist >= 2 and dist <= 5:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
@@ -730,7 +730,7 @@ func _test_mark_shot_range_highlights() -> void:
 	var has_r6 := false
 	var has_r1 := false
 	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
-		var dist := _sim.chebyshev(Vector2i(0, 0), cell)
+		var dist := int(_sim.chebyshev(Vector2i(0, 0), cell))
 		if dist == 5:
 			has_r5 = true
 		if dist == 6:
