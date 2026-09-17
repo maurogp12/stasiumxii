@@ -25,6 +25,10 @@ var _new_match_button: Button
 var _handoff_overlay: ColorRect
 var _handoff_panel: Panel
 var _handoff_label: Label
+var _clock_label: Label
+var _clock_bar: ColorRect
+var _clock_bar_max_width: float = 220.0
+var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 
 
@@ -92,6 +96,40 @@ func hide_turn_banner() -> void:
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 
+func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
+	if _clock_label == null:
+		return
+	_clock_label.text = "%ds" % maxi(seconds_left, 0)
+	_clock_seconds = maxi(seconds_left, 0)
+	var color := Color(0.15, 0.12, 0.12)
+	if not running:
+		color = Color(0.42, 0.4, 0.42)
+	elif seconds_left <= 5:
+		color = Color(0.78, 0.12, 0.12)
+	elif seconds_left <= 10:
+		color = Color(0.72, 0.4, 0.08)
+	_clock_label.add_theme_color_override("font_color", color)
+	if _clock_bar == null:
+		return
+	var width := _clock_bar_max_width * clampf(fraction, 0.0, 1.0)
+	_clock_bar.custom_minimum_size = Vector2(width, 8)
+	_clock_bar.size = Vector2(width, 8)
+	if not running:
+		_clock_bar.color = Color(0.7, 0.7, 0.74)
+	elif seconds_left <= 5:
+		_clock_bar.color = Color(0.82, 0.28, 0.28)
+	elif seconds_left <= 10:
+		_clock_bar.color = Color(0.92, 0.68, 0.28)
+	else:
+		_clock_bar.color = Color(0.35, 0.7, 0.55)
+	if _turn_label != null and not _turn_label.text.begins_with("Match over"):
+		var base := _turn_label.text
+		var sep := "  ·  "
+		var parts := base.split(sep)
+		if parts.size() >= 2:
+			_turn_label.text = "%s%s%s%s%ds" % [parts[0], sep, parts[1], sep, _clock_seconds]
+
+
 func render(snap: Dictionary, legal: Array) -> void:
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
@@ -105,7 +143,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
 		_turn_label.text = "Match over — %s wins" % str(winner.get("name", "—"))
 	else:
-		_turn_label.text = "Turn %d  ·  %s" % [int(snap.get("turn_index", 1)), active_name]
+		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), active_name, _clock_seconds]
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
@@ -164,7 +202,7 @@ func _build() -> void:
 
 	var resource_panel := Panel.new()
 	resource_panel.position = Vector2(300, 44)
-	resource_panel.size = Vector2(360, 52)
+	resource_panel.size = Vector2(360, 74)
 	resource_panel.add_theme_stylebox_override("panel", _panel(Color(1, 1, 1, 0.78)))
 	root.add_child(resource_panel)
 	var res_box := VBoxContainer.new()
@@ -175,6 +213,7 @@ func _build() -> void:
 	_mp_pips = _make_pip_row("MP")
 	res_box.add_child(_ap_pips)
 	res_box.add_child(_mp_pips)
+	res_box.add_child(_make_clock_row())
 
 	_selected_label = Label.new()
 	_selected_label.position = Vector2(220, 620)
@@ -296,6 +335,29 @@ func _make_pip_row(label_text: String) -> HBoxContainer:
 	return row
 
 
+func _make_clock_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 6)
+	var caption := Label.new()
+	caption.text = "TIME"
+	caption.custom_minimum_size = Vector2(36, 18)
+	caption.add_theme_font_size_override("font_size", 12)
+	caption.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	row.add_child(caption)
+	_clock_label = Label.new()
+	_clock_label.text = "%ds" % int(TurnClock.DURATION_SEC)
+	_clock_label.custom_minimum_size = Vector2(36, 18)
+	_clock_label.add_theme_font_size_override("font_size", 14)
+	_clock_label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	row.add_child(_clock_label)
+	_clock_bar = ColorRect.new()
+	_clock_bar.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
+	_clock_bar.size = Vector2(_clock_bar_max_width, 8)
+	_clock_bar.color = Color(0.35, 0.7, 0.55)
+	row.add_child(_clock_bar)
+	return row
+
+
 func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -> void:
 	while row.get_child_count() > 1:
 		var child := row.get_child(row.get_child_count() - 1)
@@ -371,13 +433,19 @@ func _sync_spell_buttons(offered: Array) -> void:
 			continue
 		if not _spell_buttons.has(spell_id):
 			var button := Button.new()
-			button.text = "%s  %dAP/%dMP" % [def["name"], def["ap"], def["mp"]]
-			button.custom_minimum_size = Vector2(150, 32)
+			button.text = _spell_button_text(def)
+			button.custom_minimum_size = Vector2(160, 32)
 			button.pressed.connect(_on_spell_pressed.bind(spell_id))
 			_action_bar.add_child(button)
 			_spell_buttons[spell_id] = button
 		_action_bar.move_child(_spell_buttons[spell_id], insert_idx)
 		insert_idx += 1
+
+
+func _spell_button_text(def: Dictionary) -> String:
+	if str(def.get("mp_mode", "")) == "manhattan":
+		return "%s  %dAP + MP" % [def["name"], int(def.get("ap", 0))]
+	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
 
 
 func _on_spell_pressed(spell_id: String) -> void:
@@ -410,6 +478,14 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
+	if str(def.get("mp_mode", "")) == "manhattan":
+		_selected_label.text = "Selected: %s  ·  %d AP + Manhattan MP  ·  range %d–%d Chebyshev" % [
+			def.get("name", _selected_spell),
+			int(def.get("ap", 0)),
+			int(def.get("min_range", 0)),
+			int(def.get("max_range", 0)),
+		]
+		return
 	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d" % [
 		def.get("name", _selected_spell),
 		int(def.get("ap", 0)),
