@@ -20,7 +20,10 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_reset_and_turn_order()
 	_test_only_active_seat_acts()
-	_test_chebyshev_not_manhattan()
+	_test_manhattan_walk_costs()
+	_test_horizontal_first_paths()
+	_test_client_path_ignored()
+	_test_spell_range_stays_chebyshev()
 	_test_face_costs_zero()
 	_test_end_turn_refills()
 	_test_illegal_cast_refunds()
@@ -38,6 +41,7 @@ func _run() -> void:
 	_test_legal_intents_empty_for_other_seat()
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
+	_test_handoff_timer_is_client_only()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -52,6 +56,10 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["crit_roll"], false, "crit roll off")
 	eq(snap["gust"], false, "Gust off")
 	eq(snap["momentum"], false, "Momentum off")
+	eq(snap["walk"], "manhattan", "walk is Locked Manhattan")
+	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
+	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
+	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
 
 
@@ -63,17 +71,110 @@ func _test_only_active_seat_acts() -> void:
 	eq(_sim.snapshot()["active_seat"], 0, "seat unchanged after reject")
 
 
-func _test_chebyshev_not_manhattan() -> void:
+func _test_manhattan_walk_costs() -> void:
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "diagonal is Manhattan 2")
+	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "same diagonal is Chebyshev 1")
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 3)})
-	eq(result["ok"], true, "diagonal king-step is legal (Chebyshev 1)")
-	eq(_unit(0)["mp"], 2, "diagonal costs 1 MP, not 2")
+	eq(result["ok"], true, "diagonal dest-click is legal when Manhattan 2 <= 3 MP")
+	eq(_unit(0)["mp"], 1, "diagonal costs 2 MP, not 1")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "Kestrel landed on (3,3)")
+	eq(result["events"][0]["mp_spent"], 2, "move event spends 2 MP")
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
-	eq(result["ok"], true, "orthogonal Chebyshev 2 costs 2 MP")
-	eq(_unit(0)["mp"], 0, "2 MP spent on a 2-tile orthogonal walk")
-	result = _sim.submit({"type": "move", "to": Vector2i(5, 4)})
-	eq(result["illegal"], true, "no MP left")
+	eq(result["illegal"], true, "orthogonal Manhattan 2 with 1 MP left is illegal")
+	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
+	eq(_unit(0)["pos"], Vector2i(3, 3), "pawn did not move")
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
+	eq(result["ok"], true, "3-tile orthogonal walk spends the full MP pool")
+	eq(_unit(0)["mp"], 0, "Manhattan 3 costs 3 MP")
+	eq(_unit(0)["pos"], Vector2i(5, 2), "Kestrel landed on (5,2)")
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	result = _sim.submit({"type": "move", "to": Vector2i(2, 2)})
+	eq(result["illegal"], true, "Manhattan 4 exceeds the 3 MP pool")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "over-budget dest-click is rejected")
+
+
+func _test_horizontal_first_paths() -> void:
+	eq(
+		_sim.expand_ortho_path(Vector2i(2, 2), Vector2i(4, 3)),
+		[Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)],
+		"NE dest expands E then N/S (H-first)"
+	)
+	eq(
+		_sim.expand_ortho_path(Vector2i(4, 3), Vector2i(2, 2)),
+		[Vector2i(3, 3), Vector2i(2, 3), Vector2i(2, 2)],
+		"SW dest expands W then N"
+	)
+	eq(
+		_sim.expand_ortho_path(Vector2i(1, 4), Vector2i(1, 2)),
+		[Vector2i(1, 3), Vector2i(1, 2)],
+		"pure vertical stays N/S only"
+	)
+	eq(
+		_sim.expand_ortho_path(Vector2i(3, 1), Vector2i(1, 1)),
+		[Vector2i(2, 1), Vector2i(1, 1)],
+		"pure horizontal stays E/W only"
+	)
+	eq(_sim.expand_ortho_path(Vector2i(2, 2), Vector2i(2, 2)), [], "same tile expands to empty path")
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "H-first Manhattan 3 walk is legal")
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "returned path is E then S")
+	eq(_unit(0)["mp"], 0, "H-first 3-step walk spends 3 MP")
+	# Occupant sits on the H-first corridor. V-first would work; Locked walk must refuse.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
+	result = _sim.submit({"type": "move", "to": Vector2i(1, 1)})
+	eq(result["illegal"], true, "H-first path through Ironjaw is blocked")
+	eq(result["reason"], "path_blocked", "blocked corridor reason is path_blocked")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "Kestrel stays put when H-first is blocked")
+	var found_blocked_dest := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) == "move" and intent.get("to") == Vector2i(1, 1):
+			found_blocked_dest = true
+	eq(found_blocked_dest, false, "legal_intents omit dests whose H-first path is blocked")
+	result = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
+	eq(result["ok"], true, "pure-vertical dest around the occupant is legal")
+	eq(result["events"][0]["path"], [Vector2i(0, 1), Vector2i(0, 2)], "vertical path does not go east first")
+
+
+func _test_client_path_ignored() -> void:
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	var forged: Array = [Vector2i(2, 3), Vector2i(2, 4), Vector2i(3, 4)]
+	var result: Dictionary = _sim.submit({
+		"type": "move",
+		"to": Vector2i(4, 3),
+		"path": forged,
+	})
+	eq(result["ok"], true, "dest-click still accepted when a client path is supplied")
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "CombatSim path is H-first, not the client path")
+	eq(result["events"][0]["path"] == forged, false, "forged vertical-first path is not used")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "unit ends on the dest-click tile")
+
+
+func _test_spell_range_stays_chebyshev() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 2),
+	})
+	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(2, 2)), 2, "Mark Shot diagonal is Chebyshev 2")
+	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "same tiles are Manhattan 4")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 2)})
+	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
+	eq(_unit(1)["hp"], 72, "8 Air on connect at Chebyshev 2")
+	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(0, 0),
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 1)})
+	eq(result["ok"], true, "Advance dash range stays Chebyshev 2 (Manhattan 3 would exceed dash max if walk leaked)")
+	eq(_unit(1)["pos"], Vector2i(2, 1), "Ironjaw dashed to a Chebyshev-2 tile")
+	eq(_unit(1)["mp"], 2, "Advance still costs 1 MP, not Manhattan 3")
 
 
 func _test_face_costs_zero() -> void:
@@ -374,6 +475,19 @@ func _test_hud_chrome_kit_gated() -> void:
 	eq(hud.contains("SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.MARK_SHOT"), false, "HUD does not hardcode both kits on one action bar")
 	eq(hud.contains("WindMod"), false, "HUD has no WindMod chrome")
 	eq(hud.contains("Detonate"), false, "HUD has no Detonate chrome")
+
+
+func _test_handoff_timer_is_client_only() -> void:
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(sim_src.contains("HANDOFF_SEC"), false, "CombatSim has no handoff timer")
+	eq(sim_src.contains("show_turn_banner"), false, "CombatSim does not own the turn banner")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("HANDOFF_SEC"), "board_view declares the Proposed handoff pause")
+	truthy(view.contains("1.0"), "handoff pause is ~1.0s")
+	eq(view.contains("intent.path"), true, "client documents that intent.path is not sent")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud.contains("show_turn_banner"), "HUD can show the End Turn banner")
+	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
 
 
 func _unit(seat: int) -> Dictionary:

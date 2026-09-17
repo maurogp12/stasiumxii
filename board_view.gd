@@ -1,16 +1,23 @@
 extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
+## Walk: dest-click only. CombatSim expands the ortho path; this view never
+## sends intent.path. Pawns tween one ortho tile at a time along the returned path.
+## Proposed timer: ~1.0s client-only seat handoff pause + turn banner on End Turn.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
+const STEP_SEC: float = 0.18
+const HANDOFF_SEC: float = 1.0
 
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
 var pawns_by_seat: Dictionary = {}
 var _hud: CombatHUD
 var _booted: bool = false
+var _busy: bool = false
+var _walk_tween: Tween
 
 
 func _ready() -> void:
@@ -46,6 +53,8 @@ func local_to_grid(point: Vector2) -> Vector2i:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _busy:
+		return
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
 		var cell := local_to_grid(mouse_position)
@@ -69,6 +78,7 @@ func select_tile(cell: Vector2i) -> void:
 func _handle_left_click(cell: Vector2i) -> void:
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
+		# Dest-click only. Do not send a client path.
 		_submit({"type": "move", "to": cell})
 		return
 	var actor := _active_unit(CombatSim.snapshot())
@@ -99,6 +109,8 @@ func _face_toward(cell: Vector2i) -> void:
 
 
 func _on_spell_selected(_spell_id: String) -> void:
+	if _busy:
+		return
 	_paint_highlights()
 
 
@@ -107,11 +119,37 @@ func _on_face_requested(dir: String) -> void:
 
 
 func _on_end_turn_button_pressed() -> void:
+	if _busy:
+		return
 	_hud.clear_spell()
-	_submit({"type": "end_turn"})
+	var result: Dictionary = CombatSim.submit({"type": "end_turn"})
+	if not result.get("ok", false):
+		_refresh()
+		return
+	var snap := CombatSim.snapshot()
+	if snap.get("match_over", false):
+		_refresh()
+		return
+	# Proposed: client-only ~1.0s seat handoff. CombatSim already advanced.
+	_busy = true
+	_hud.set_locked(true)
+	_refresh()
+	var next_unit := _active_unit(snap)
+	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")))
+	await get_tree().create_timer(HANDOFF_SEC).timeout
+	if not is_inside_tree():
+		return
+	_hud.hide_turn_banner()
+	_hud.set_locked(false)
+	_busy = false
+	_refresh()
 
 
 func _on_new_match() -> void:
+	_stop_walk_tween()
+	_hud.hide_turn_banner()
+	_hud.set_locked(false)
+	_busy = false
 	_hud.clear_spell()
 	CombatSim.reset_match({})
 	_rebuild_pawns()
@@ -119,13 +157,68 @@ func _on_new_match() -> void:
 
 
 func _submit(intent: Dictionary) -> void:
+	if _busy:
+		return
 	var result: Dictionary = CombatSim.submit(intent)
-	if not result.get("ok", false) and str(result.get("reason", "")) in ["occupied", "same_tile", "out_of_bounds", "insufficient_mp", "missing_destination"]:
+	if not result.get("ok", false) and str(result.get("reason", "")) in ["occupied", "same_tile", "out_of_bounds", "insufficient_mp", "missing_destination", "path_blocked"]:
 		# Keep idle tile clicks from drowning the coach when simply selecting.
 		if _hud.selected_spell() == "" and str(intent.get("type", "")) == "move":
 			_refresh()
 			return
+	if result.get("ok", false) and str(intent.get("type", "")) == "move":
+		var move_event := _move_event(result.get("events", []))
+		if not move_event.is_empty() and move_event.has("path"):
+			await _play_walk(int(move_event.get("seat", 0)), move_event["path"])
+			return
 	_refresh()
+
+
+func _move_event(events: Array) -> Dictionary:
+	for event in events:
+		if str(event.get("type", "")) == "move":
+			return event
+	return {}
+
+
+func _play_walk(seat: int, path: Array) -> void:
+	_busy = true
+	_hud.set_locked(true)
+	var snap := CombatSim.snapshot()
+	_hud.render(snap, [])
+	for tile in tiles.values():
+		(tile as BoardTile).set_highlight("")
+	await _animate_path(seat, path)
+	if not is_inside_tree():
+		return
+	_hud.set_locked(false)
+	_busy = false
+	_refresh()
+
+
+func _animate_path(seat: int, path: Array) -> void:
+	if not pawns_by_seat.has(seat):
+		return
+	var pawn: Pawn = pawns_by_seat[seat]
+	_stop_walk_tween()
+	_walk_tween = create_tween()
+	_walk_tween.set_trans(Tween.TRANS_LINEAR)
+	_walk_tween.set_ease(Tween.EASE_IN_OUT)
+	for step in path:
+		var cell: Vector2i = _as_cell(step)
+		_walk_tween.tween_callback(_set_pawn_cell.bind(pawn, cell))
+		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
+	await _walk_tween.finished
+
+
+func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
+	pawn.grid_position = cell
+	pawn.z_index = cell.x + cell.y + 16
+
+
+func _stop_walk_tween() -> void:
+	if _walk_tween != null and is_instance_valid(_walk_tween):
+		_walk_tween.kill()
+	_walk_tween = null
 
 
 func _refresh() -> void:
@@ -162,7 +255,7 @@ func _paint_highlights() -> void:
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
 	var snap := CombatSim.snapshot()
-	if snap.get("match_over", false):
+	if snap.get("match_over", false) or _busy:
 		return
 	var legal: Array = CombatSim.legal_intents(int(snap.get("active_seat", 0)))
 	var spell_id := _hud.selected_spell()
@@ -196,3 +289,15 @@ func _cell_to_local(cell: Vector2i) -> Vector2:
 
 func _in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < BOARD_SIZE and cell.y < BOARD_SIZE
+
+
+func _as_cell(value: Variant) -> Vector2i:
+	if value is Vector2i:
+		return value
+	if value is Vector2:
+		return Vector2i(value)
+	if value is Dictionary:
+		return Vector2i(int(value.get("x", 0)), int(value.get("y", 0)))
+	if value is Array and value.size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i.ZERO
