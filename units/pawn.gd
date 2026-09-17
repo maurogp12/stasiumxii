@@ -55,4 +55,9 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var label := unit_name
 	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 12)
-	draw_string(font, Vector2(-size.x * 0.5, -32), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.08, 0.1))
+	var label_x := -size.x * 0.5
+	if class_id == SpellKits.CLASS_IRONJAW:
+		label_x += 10.0
+	else:
+		label_x -= 10.0
+	draw_string(font, Vector2(label_x, 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.08, 0.1))

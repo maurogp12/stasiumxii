@@ -402,7 +402,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	_intent_log.append(intent)
 
 	if not connected:
-		_last_coach = "MISS — %d AP gone. %s %s (%d vs %d%% at range %d)." % [ap_cost, actor["name"], def["name"], roll, chance, dist]
+		_last_coach = "MISS — %d AP gone (%d vs %d%%, range %d)." % [ap_cost, roll, chance, dist]
 		_last_events.append({
 			"type": "miss",
 			"seat": actor["seat"],
@@ -441,7 +441,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var engine_note := ""
 	if engine_gained > 0:
 		engine_note = " +1 %s." % engine_name
-	_last_coach = "HIT %d %s. %s %s vs %s (%d vs %d%%). %s.%s" % [damage, str(def["element"]).capitalize(), actor["name"], def["name"], target["name"], roll, chance, facing_note, engine_note]
+	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), def["name"], target["name"], roll, chance, facing_note, engine_note]
 	_last_events.append({
 		"type": "hit",
 		"seat": actor["seat"],

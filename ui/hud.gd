@@ -157,9 +157,10 @@ func _build() -> void:
 		_face_buttons[dir] = button
 
 	_coach_label = Label.new()
-	_coach_label.position = Vector2(40, 690)
-	_coach_label.size = Vector2(880, 24)
+	_coach_label.position = Vector2(40, 682)
+	_coach_label.size = Vector2(880, 34)
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
 	root.add_child(_coach_label)
