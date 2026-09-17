@@ -4,7 +4,8 @@ extends Node2D
 ## Walk and Advance: dest-click only. CombatSim expands the ortho path; this view
 ## never sends intent.path. Pawns tween one ortho tile at a time along the returned path.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
-## (TurnClock.DURATION_SEC) that auto End Turns on expiry.
+## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Hop / Advance
+## animations lock input but do not pause the clock.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -19,6 +20,7 @@ var pawns_by_seat: Dictionary = {}
 var _hud: CombatHUD
 var _booted: bool = false
 var _busy: bool = false
+var _clock_expired_pending: bool = false
 var _walk_tween: Tween
 var _turn_clock := TurnClock.new()
 
@@ -65,9 +67,9 @@ func _process(delta: float) -> void:
 		_turn_clock.stop()
 		_sync_turn_clock()
 		return
-	if _busy:
-		_sync_turn_clock()
-		return
+	# Keep ticking during hop / Advance animations. _busy only locks input.
+	# The ~1s handoff banner still uses pause() so the next seat's 30s does
+	# not drain while they cannot act.
 	if _turn_clock.tick(delta):
 		_sync_turn_clock()
 		_on_turn_clock_expired()
@@ -186,7 +188,12 @@ func _on_end_turn_button_pressed() -> void:
 
 
 func _on_turn_clock_expired() -> void:
-	# Same path as pressing End Turn.
+	# Same path as pressing End Turn. If hops are in flight, finish them first
+	# so the already-applied dest is visible, then auto End Turn.
+	if _busy:
+		_clock_expired_pending = true
+		return
+	_clock_expired_pending = false
 	_on_end_turn_button_pressed()
 
 
@@ -195,6 +202,7 @@ func _on_new_match() -> void:
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
 	_busy = false
+	_clock_expired_pending = false
 	_hud.clear_spell()
 	CombatSim.reset_match({})
 	_rebuild_pawns()
@@ -247,6 +255,9 @@ func _play_walk(seat: int, path: Array) -> void:
 	_hud.set_locked(false)
 	_busy = false
 	_refresh()
+	if _clock_expired_pending:
+		_clock_expired_pending = false
+		_on_end_turn_button_pressed()
 
 
 func _animate_path(seat: int, path: Array) -> void:

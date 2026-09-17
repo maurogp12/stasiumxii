@@ -479,11 +479,13 @@ func _update_selected_label() -> void:
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	if str(def.get("mp_mode", "")) == "manhattan":
-		_selected_label.text = "Selected: %s  ·  %d AP + Manhattan MP  ·  range %d–%d Chebyshev" % [
+		var range_metric := "Manhattan" if str(def.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
+		_selected_label.text = "Selected: %s  ·  %d AP + Manhattan MP  ·  range %d–%d %s" % [
 			def.get("name", _selected_spell),
 			int(def.get("ap", 0)),
 			int(def.get("min_range", 0)),
 			int(def.get("max_range", 0)),
+			range_metric,
 		]
 		return
 	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d" % [

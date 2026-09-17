@@ -23,6 +23,7 @@ const FACING_VEC := {
 }
 
 ## A01, A03–A07 are Open. A02 walk is Locked: dest-click Manhattan, H-first ortho path.
+## Advance range is Locked Manhattan 1–2 (diamond). MP is Locked Manhattan dest-click.
 const OPEN_DECISIONS := ["A01", "A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
@@ -192,13 +193,14 @@ func snapshot() -> Dictionary:
 		"walk_tie_break": "horizontal_first",
 		"spell_range": "chebyshev",
 		"advance_mp": "manhattan",
+		"advance_range": "manhattan",
 		"advance_path": "horizontal_first",
 		"open_notes": {
 			"A01": "Provisional Open: Marks live on the target; Impact lives on the caster. Caps 5 / 4.",
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula.",
-			"A06": "Advance (Locked MP): dest-click, CombatSim expands H-first ortho path, client path ignored. Range gate Chebyshev 1–2. MP = Manhattan |dx|+|dy| plus 1 AP. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
+			"A06": "Advance (Locked range + MP): dest-click, CombatSim expands H-first ortho path, client path ignored. Range gate Manhattan 1–2 (diamond; Chebyshev (1,2) tiles are out of range). MP = Manhattan |dx|+|dy| plus 1 AP. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
 	}
@@ -372,8 +374,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var advance_mp := manhattan(actor["pos"], dest)
 		var reason := _validate_advance(actor, dest)
 		if reason == "out_of_range":
-			var range_dist := chebyshev(actor["pos"], dest)
-			return _reject(intent, "out_of_range", "REJECT — Advance range %d–%d, target at %d (refund)." % [def["min_range"], def["max_range"], range_dist])
+			var range_dist := _range_distance(def, actor["pos"], dest)
+			return _reject(intent, "out_of_range", "REJECT — Advance range %d–%d Manhattan, target at %d (refund)." % [def["min_range"], def["max_range"], range_dist])
 		if reason == "insufficient_ap":
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
 		if reason == "insufficient_mp":
@@ -570,8 +572,9 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "same_tile"
 	if not _is_empty(dest):
 		return "destination_occupied"
+	# Range gate is Manhattan 1–2 (diamond). Chebyshev (1,2) tiles are out of range.
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
-	var range_dist := chebyshev(actor["pos"], dest)
+	var range_dist := _range_distance(def, actor["pos"], dest)
 	if range_dist < int(def["min_range"]) or range_dist > int(def["max_range"]):
 		return "out_of_range"
 	var mp_cost := manhattan(actor["pos"], dest)
@@ -584,6 +587,12 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		if not _is_empty(cell):
 			return "path_blocked"
 	return ""
+
+
+func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
+	if str(def.get("range_mode", "chebyshev")) == "manhattan":
+		return manhattan(from, to)
+	return chebyshev(from, to)
 
 
 func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_facing: String) -> float:

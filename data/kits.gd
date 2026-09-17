@@ -18,6 +18,7 @@ const SPELLS := {
 		"ap": 1,
 		"mp": 1, # minimum; actual spend is Manhattan |dx|+|dy|
 		"mp_mode": "manhattan",
+		"range_mode": "manhattan",
 		"min_range": 1,
 		"max_range": 2,
 		"rolls": false,
