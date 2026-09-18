@@ -27,13 +27,14 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	if needs_marks:
 		var gate := str(preview.get("gate_text", "")).strip_edges()
 		lines.append(gate if gate != "" else "needs Marks")
-	var metric := "Manhattan" if str(preview.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
-	lines.append("%d AP / %d MP · range %d–%d %s" % [
+	lines.append("%d AP / %d MP · %s" % [
 		int(preview.get("ap", 0)),
 		int(preview.get("mp", 0)),
-		int(preview.get("min_range", 0)),
-		int(preview.get("max_range", 0)),
-		metric,
+		range_caption(
+			int(preview.get("min_range", 0)),
+			int(preview.get("max_range", 0)),
+			str(preview.get("range_mode", "")),
+		),
 	])
 	var on_connect := str(preview.get("on_connect_text", "")).strip_edges()
 	if on_connect != "":
@@ -66,6 +67,13 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 			if not on_connect.contains("Teleport") and not on_connect.contains("Facing unchanged"):
 				lines.append(text)
 	return lines
+
+
+## Player chrome: default spells say "range 2–5". Advance keeps Manhattan.
+static func range_caption(min_range: int, max_range: int, range_mode: String) -> String:
+	if str(range_mode) == "manhattan":
+		return "range %d–%d Manhattan" % [min_range, max_range]
+	return "range %d–%d" % [min_range, max_range]
 
 
 static func _preview_needs_marks(preview: Dictionary) -> bool:

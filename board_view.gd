@@ -8,7 +8,7 @@ extends Node2D
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
-## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
+## Rolling enemy spells: selected chrome paints the range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
 ## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input

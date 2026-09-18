@@ -816,14 +816,15 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
-	var range_metric := "Manhattan" if str(def.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
-	var text := "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d %s" % [
+	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
 		def.get("name", _selected_spell),
 		int(def.get("ap", 0)),
 		int(def.get("mp", 0)),
-		int(def.get("min_range", 0)),
-		int(def.get("max_range", 0)),
-		range_metric,
+		SpellTooltip.range_caption(
+			int(def.get("min_range", 0)),
+			int(def.get("max_range", 0)),
+			str(def.get("range_mode", "")),
+		),
 	]
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
