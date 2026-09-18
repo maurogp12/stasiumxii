@@ -403,6 +403,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		"range_mode": str(def.get("range_mode", "")),
 		"min_range": int(def.get("min_range", 0)),
 		"max_range": int(def.get("max_range", 0)),
+		"range_text": SpellKits.range_text(def),
 		"in_range": false,
 		"hit_chance": null,
 		"on_connect_text": str(lines.get("on_connect", "")),
@@ -453,7 +454,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 Chebyshev along the line. Occupied/OOB dest is Locked Push (1): no-move + push_blocked.")
+		notes.append("Push 1 along the line. Occupied/OOB dest is Locked Push (1): no-move + push_blocked.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -525,7 +526,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.CRUSH:
 			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
-			return {"on_connect": "Teleport snap. +1 Impact if Chebyshev-adjacent. Facing unchanged.", "on_miss": "No roll."}
+			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
 		_:
 			return {"on_connect": "", "on_miss": ""}
 
