@@ -130,6 +130,9 @@ func legal_intents(seat: int) -> Array:
 	var from: Vector2i = actor["pos"]
 	var mp: int = int(actor["mp"])
 	var ap: int = int(actor["ap"])
+	# Walk dests whenever mp>0, regardless of remaining AP. Advance is 3 AP / 0 MP, so
+	# leftover MP after teleport still offers moves (including at 0 AP). Do not invent
+	# auto-face on walk (Open).
 	if mp > 0:
 		for y in range(BOARD_SIZE):
 			for x in range(BOARD_SIZE):
@@ -241,7 +244,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Stun 1 (OPEN A05): stun_remaining on the unit; reject casts/moves/face with stunned_cannot_act; end_turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Exact suppress list not locked. Push into occupied/OOB (OPEN): do not move the target; still deal damage/Impact; emit push_blocked.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged. Walks do not auto-face (Open).",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
 	}
@@ -416,6 +419,7 @@ func _submit_face(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	# Dest-click only. CombatSim expands the ortho path; ignore client intent.path.
+	# Facing is unchanged — do not invent auto-face on walk (Open).
 	intent.erase("path")
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")

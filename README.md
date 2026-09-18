@@ -9,7 +9,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 3. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. A **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune.
 4. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path. The client never sends `intent.path`.
 5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
-   - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. Kestrel never sees Advance chrome and never gains Impact.
+   - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. Kestrel never sees Advance chrome and never gains Impact. Walks do not auto-face.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it connects.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On connect: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it connects.
@@ -37,8 +37,8 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 
 - 8×8 flat board, no walls, no LOS
 - 80 HP, 6 AP / 3 MP refilled at turn start
-- Walk: dest-click only, Manhattan `|dx|+|dy|` MP, pool 3, CombatSim expands ortho path, horizontal-first (E/W before N/S) tie-break
-- Advance: dest-click teleport, **3 AP / 0 MP**, instant snap. Range gate **Manhattan 1–2** (diamond). Ironjaw-only. No MP spend. Client path ignored.
+- Walk: dest-click only, Manhattan `|dx|+|dy|` MP, pool 3, CombatSim expands ortho path, horizontal-first (E/W before N/S) tie-break. `legal_intents` enumerates walks whenever leftover **MP > 0**, regardless of remaining AP. Walks do not auto-face (Open).
+- Advance: dest-click teleport, **3 AP / 0 MP**, instant snap. Range gate **Manhattan 1–2** (diamond). Ironjaw-only. No MP spend (`submit` does not zero leftover MP). After Advance, leftover MP still walks. Client path ignored.
 - Spell range stays Chebyshev for Strike / Mark Shot / Detonate / Shoulder / Crush. Advance range is Manhattan.
 - Hit bands 1=90%, 2–3=80%, 4–5=75%, 6–8=70%
 - Damage pipeline: Base × CritMult × Passive × (1+Mastery/100) × (1−Resist/100) × Facing. Mastery 0, CritMult held at **1.0** (crit *roll* off). WindMod omitted (not invented as 1.0).
@@ -73,7 +73,7 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
 | A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **OPEN:** Stun 1 suppress list — provisional: `stun_remaining` on the unit; reject casts/moves/face with `stunned_cannot_act`; End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **OPEN:** push into occupied/OOB — provisional no-move + `push_blocked` event. |
-| A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. Adjacency = Chebyshev 1 after landing. Facing unchanged. |
+| A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. `submit` does not zero leftover MP; leftover MP still walks (`legal_intents` is mp>0, not AP). Adjacency = Chebyshev 1 after landing. Facing unchanged. Walks do not auto-face (Open). |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 
 ## Tests
