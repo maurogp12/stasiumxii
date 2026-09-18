@@ -15,6 +15,7 @@ Click a cyan tile to walk. Numbers on tiles are cheapest MP. Gold is the Dijkstr
 ## Headless tests
 
 ```bash
+godot --headless --path . --import
 godot --headless --path . -s res://tests/run_elevation_movement_tests.gd
 ```
 

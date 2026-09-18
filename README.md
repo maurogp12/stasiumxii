@@ -103,6 +103,7 @@ Proposed starters (Director; labeled Proposed in code): Ground 1 / Mud 2 / Water
 Prototype tests (cost math, climb/drop reject, lava, Dijkstra cheap-long vs expensive-short):
 
 ```bash
+godot --headless --path . --import
 godot --headless --path . -s res://tests/run_elevation_movement_tests.gd
 ```
 

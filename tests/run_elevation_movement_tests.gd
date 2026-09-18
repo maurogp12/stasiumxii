@@ -3,6 +3,15 @@ extends SceneTree
 ## Headless Phase B+ prototype checks. Proposed rules — not Locked.
 ## Does not mutate Phase A CombatSim walk.
 ## Run: godot --headless --path . -s res://tests/run_elevation_movement_tests.gd
+## Preloads keep class names resolvable on a fresh clone before the editor cache exists.
+
+const TerrainCatalog := preload("res://prototypes/elevation_movement/terrain_catalog.gd")
+const ElevationRules := preload("res://prototypes/elevation_movement/elevation_rules.gd")
+const MovementCost := preload("res://prototypes/elevation_movement/movement_cost.gd")
+const MovementPathfinder := preload("res://prototypes/elevation_movement/pathfinder.gd")
+const MovementReachability := preload("res://prototypes/elevation_movement/reachability.gd")
+const ProtoBoard := preload("res://prototypes/elevation_movement/proto_board.gd")
+const ZSortHelper := preload("res://prototypes/elevation_movement/z_sort.gd")
 
 var _failed: int = 0
 var _passed: int = 0

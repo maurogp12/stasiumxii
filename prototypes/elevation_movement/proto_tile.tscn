@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3]
 
-[ext_resource type="Script" path="res://prototypes/elevation_movement/proto_tile.gd" id="1_tile"]
+[ext_resource type="Script" uid="uid://cl2n65tmcvfvb" path="res://prototypes/elevation_movement/proto_tile.gd" id="1_tile"]
 
 [node name="ProtoTile" type="Node2D"]
 script = ExtResource("1_tile")
