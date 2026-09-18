@@ -263,7 +263,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
-	# Locked Stun (A): grey Walk / Face / spells; End Turn stays enabled.
+	# Locked Stun (A): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
+	# Grey Walk / Face / spells; End Turn stays enabled.
 	_stunned = unit_is_stunned(active) and not match_over
 	if _stunned and _selected_spell != "":
 		_selected_spell = ""

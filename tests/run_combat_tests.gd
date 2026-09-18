@@ -52,9 +52,9 @@ func _run() -> void:
 	_test_detonate_gates_and_damage()
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
-	_test_shoulder_push_blocked()
+	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
-	_test_stun_suppresses_move_cast_face()
+	_test_stun_suppresses_actions_locked()
 	_test_stun_hud_greys_walk_face_spells()
 	_test_push_blocked_client_toast_no_hop()
 	_test_legal_intents_new_spell_gates()
@@ -1254,7 +1254,7 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(_unit(1)["ap"], 6, "range reject refunds")
 
 
-func _test_shoulder_push_blocked() -> void:
+func _test_shoulder_push_blocked_locked() -> void:
 	# Locked Push (1): push off-board — do not move; still deal damage/Impact; emit push_blocked.
 	_sim.reset_match({
 		"seed": 1,
@@ -1267,7 +1267,7 @@ func _test_shoulder_push_blocked() -> void:
 	eq(_sim.push_destination(Vector2i(1, 0), Vector2i(0, 0)), Vector2i(-1, 0), "west edge push is OOB")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "OOB push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB push does not move the target")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "Locked (1): OOB push does not move the target")
 	eq(_unit(0)["hp"], 74, "OOB push still deals 6 Earth")
 	eq(_unit(1)["impact"], 1, "OOB push still grants Impact")
 	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
@@ -1277,7 +1277,7 @@ func _test_shoulder_push_blocked() -> void:
 	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "push_blocked event is labeled Locked (1)")
 	eq(result["events"][1].has("open"), false, "push_blocked event is not labeled OPEN")
 
-	# Locked Push (1): occupied dest — blockers are a test fixture (Phase A has no walls).
+	# Locked Push (1): push into occupied — blockers are a test fixture, not a board feature.
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1289,7 +1289,7 @@ func _test_shoulder_push_blocked() -> void:
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "occupied push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied dest does not move the target")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "Locked (1): occupied dest does not move the target")
 	eq(_unit(0)["hp"], 74, "occupied push still deals damage")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
 	eq(result["events"][1]["type"], "push_blocked", "occupied dest emits push_blocked")
@@ -1403,7 +1403,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
 
 
-func _test_stun_suppresses_move_cast_face() -> void:
+func _test_stun_suppresses_actions_locked() -> void:
 	# Locked Stun (A): suppress = move/cast/face. end_turn allowed.
 	# Decrement at start of the stunned unit's turn after setting stunned-this-turn.
 	_sim.reset_match({
@@ -1420,8 +1420,8 @@ func _test_stun_suppresses_move_cast_face() -> void:
 	eq(_unit(0)["stun_remaining"], 1, "Kestrel carries Stun 1 into the handoff")
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.snapshot()["active_seat"], 0, "Kestrel's stunned turn starts")
-	eq(_unit(0)["stunned"], true, "stunned-this-turn is set at turn start")
-	eq(_unit(0)["stun_remaining"], 0, "remaining decremented at start after the flag")
+	eq(_unit(0)["stunned"], true, "Locked A: stunned-this-turn is set at turn start")
+	eq(_unit(0)["stun_remaining"], 0, "Locked A: remaining decremented at start after the flag")
 	var legal: Array = _sim.legal_intents(0)
 	eq(legal.size(), 1, "stunned legal_intents is end_turn only")
 	eq(str(legal[0].get("type", "")), "end_turn", "only end_turn is offered while stunned")

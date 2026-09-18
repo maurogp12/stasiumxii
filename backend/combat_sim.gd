@@ -678,7 +678,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	var push_result := {}
 	if int(def.get("push_cells", 0)) > 0:
-		# Locked Push (1): occupied / OOB dest → no-move + push_blocked; damage/Impact still apply.
+		# Locked Push (1): occupied / off-board = no-move + push_blocked; damage/Impact still apply.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
 
 	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
@@ -948,8 +948,8 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 
 
 func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
-	# Chebyshev push 1 along the caster→target line. Locked Push (1): occupied or OOB
-	# dest does not move the target; damage/Impact from the hit still apply; emit push_blocked.
+	# Chebyshev push 1 along the caster→target line. Locked Push (1) if dest occupied or OOB:
+	# do not move; still keep damage/Impact from the hit; emit push_blocked.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
