@@ -22,7 +22,7 @@ const FACING_VEC := {
 	"W": Vector2i(-1, 0),
 }
 
-## A01, A03–A07 are Open. A02 walk is Locked: dest-click Manhattan, H-first ortho path.
+## A03–A07 are Open. A01 Marks-on-target is Locked. A02 walk is Locked.
 ## Advance range is Locked Manhattan 1–2 (diamond). MP is Locked Manhattan dest-click.
 const OPEN_DECISIONS := ["A01", "A03", "A04", "A05", "A06", "A07"]
 
@@ -37,10 +37,13 @@ var _scripted_rolls: Array[int] = []
 var _last_events: Array = []
 var _last_coach: String = ""
 var _intent_log: Array = []
+## Test/setup occupancy only. OPEN: push into occupied is not a director-locked board feature.
+var _blocked_cells: Array[Vector2i] = []
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	_units.clear()
+	_blocked_cells.clear()
 	_active_seat = 0
 	_turn_index = 1
 	_match_over = false
@@ -63,6 +66,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 
 	_units.append(_make_unit(0, SpellKits.CLASS_KESTREL, "Kestrel", "air", kestrel_pos, kestrel_facing))
 	_units.append(_make_unit(1, SpellKits.CLASS_IRONJAW, "Ironjaw", "earth", ironjaw_pos, ironjaw_facing))
+	_apply_setup_overrides(config)
 
 	_last_events = [{
 		"type": "turn_start",
@@ -89,6 +93,10 @@ func submit(intent: Dictionary) -> Dictionary:
 		return _reject(normalized, "dead", "REJECT — dead units cannot act.")
 
 	var kind := str(normalized.get("type", ""))
+	# OPEN A05: exact Stun suppress list is not locked. Provisional: reject
+	# casts / moves / face while stunned; end_turn is allowed.
+	if kind != "end_turn" and _is_stunned(actor):
+		return _reject(normalized, "stunned_cannot_act", "REJECT — stunned (OPEN A05: suppress list not locked).")
 	match kind:
 		"end_turn":
 			return _submit_end_turn(normalized, actor)
@@ -108,6 +116,10 @@ func legal_intents(seat: int) -> Array:
 		return out
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"]:
+		return out
+	# OPEN A05: Stun 1 suppress list not locked. Provisional: only end_turn.
+	if _is_stunned(actor):
+		out.append({"type": "end_turn", "seat": seat})
 		return out
 
 	for dir in FACING_VEC.keys():
@@ -149,6 +161,8 @@ func legal_intents(seat: int) -> Array:
 				continue
 			var enemy := _enemy_of(seat)
 			if enemy.is_empty() or not enemy["alive"]:
+				continue
+			if _cast_gate_reason(actor, enemy, def) != "":
 				continue
 			var range_dist := chebyshev(from, enemy["pos"])
 			if range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"]):
@@ -223,10 +237,10 @@ func snapshot() -> Dictionary:
 		"advance_range": "manhattan",
 		"advance_path": "teleport",
 		"open_notes": {
-			"A01": "Provisional Open: Marks live on the target; Impact lives on the caster. Caps 5 / 4.",
+			"A01": "Locked: Marks live on the target (cap 5). Mark Shot +1 on connect. Detonate reads/consumes target Marks; miss retains Marks. Impact lives on the caster (cap 4). OPEN: engine init-reset; Rain (later) caster Marks.",
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula.",
+			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Stun 1 (OPEN A05): stun_remaining on the unit; reject casts/moves/face with stunned_cannot_act; end_turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Exact suppress list not locked. Push into occupied/OOB (OPEN): do not move the target; still deal damage/Impact; emit push_blocked.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
@@ -286,6 +300,9 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
+		# OPEN A05: stun_remaining + stunned-this-turn. Exact suppress list not locked.
+		"stun_remaining": 0,
+		"stunned": false,
 		"alive": true,
 		"spells": SpellKits.class_spells(class_id).duplicate(),
 	}
@@ -313,9 +330,13 @@ func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 	_active_seat = next_seat
 	_turn_index += 1
+	_begin_unit_turn(next_unit)
 	next_unit["ap"] = MAX_AP
 	next_unit["mp"] = MAX_MP
-	_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
+	if _is_stunned(next_unit):
+		_last_coach = "%s's turn. Stunned (OPEN A05) — End Turn only. AP/MP refilled to 6/3." % next_unit["name"]
+	else:
+		_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
 	_last_events.append({
 		"type": "end_turn",
 		"seat": actor["seat"],
@@ -425,6 +446,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var target := _living_unit_at(dest)
 	if target.is_empty() or int(target["seat"]) == int(actor["seat"]):
 		return _reject(intent, "no_target", "REJECT — %s needs an enemy (refund)." % def["name"])
+	var gate := _cast_gate_reason(actor, target, def)
+	if gate != "":
+		return _reject(intent, gate, "REJECT — %s failed gate %s (refund)." % [def["name"], gate])
 	return _resolve_rolling_cast(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
 
 
@@ -466,7 +490,8 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 
 
 func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
-	# Spend before the d100. Miss keeps AP/MP; engine cost would refund here (none in A).
+	# Spend before the d100. Miss keeps AP/MP; engine cost would refund here (none prepaid in A).
+	# Locked: miss retains Marks (Detonate) and Impact (Crush). AP/MP stay spent.
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance: int = hit_chance(dist)
@@ -474,14 +499,17 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var connected: bool = roll <= chance
 	var facing_mult: float = _facing_multiplier(actor["pos"], target["pos"], str(target["facing"]))
 	var is_back: bool = facing_mult > FRONT_SIDE_FACING + 0.001
+	var spell_id := str(def["id"])
+	var marks_on_target: int = int(target.get("marks", 0))
+	var impact_before: int = int(actor.get("impact", 0))
 	_intent_log.append(intent)
 
 	if not connected:
 		_last_coach = "MISS — %d AP gone (%d vs %d%%, range %d)." % [ap_cost, roll, chance, dist]
-		_last_events.append({
+		var miss_event := {
 			"type": "miss",
 			"seat": actor["seat"],
-			"spell": def["id"],
+			"spell": spell_id,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -494,16 +522,28 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"damage": 0,
 			"crit_mult": CRIT_MULT,
 			"coach": _last_coach,
-		})
+		}
+		if spell_id == SpellKits.DETONATE:
+			miss_event["marks_retained"] = true
+			miss_event["marks_on_target"] = marks_on_target
+		if spell_id == SpellKits.CRUSH:
+			miss_event["impact_retained"] = true
+			miss_event["impact"] = impact_before
+		if spell_id == SpellKits.SHOULDER:
+			miss_event["pushed"] = false
+		_last_events.append(miss_event)
 		return _accept()
 
-	var raw: float = float(def["base_damage"]) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
+	var base := _connect_base_damage(def, target)
+	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
 	var damage := roundi(raw)
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
 	var engine_gained := 0
+	var engine_spent := 0
 	var engine_name := ""
+	var marks_consumed := 0
 	match str(def["engine_on_connect"]):
 		"impact":
 			engine_gained = _gain_impact(actor, 1)
@@ -511,16 +551,32 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"mark":
 			engine_gained = _gain_marks(target, 1)
 			engine_name = "Mark"
+		"consume_marks":
+			# A01 Locked: consume Marks from the target on connect.
+			marks_consumed = _consume_marks(target)
+			engine_name = "Mark"
+			engine_spent = marks_consumed
+		"spend_impact":
+			engine_spent = _spend_impact(actor, int(def.get("spend_impact", 2)))
+			engine_name = "Impact"
+
+	var stun_applied := 0
+	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
+		# OPEN A05: Stun 1 if Impact was 4 before the spend. Exact suppress list not locked.
+		stun_applied = _apply_stun(target, int(def.get("stun_remaining", 1)))
+
+	var push_result := {}
+	if int(def.get("push_cells", 0)) > 0:
+		# OPEN: push into occupied / off-board. Provisional: no-move + push_blocked.
+		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
 
 	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
-	var engine_note := ""
-	if engine_gained > 0:
-		engine_note = " +1 %s." % engine_name
-	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), def["name"], target["name"], roll, chance, facing_note, engine_note]
-	_last_events.append({
+	var extra_note := _connect_extra_note(engine_gained, engine_name, marks_consumed, engine_spent, stun_applied, push_result)
+	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), def["name"], target["name"], roll, chance, facing_note, extra_note]
+	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
-		"spell": def["id"],
+		"spell": spell_id,
 		"target_seat": target["seat"],
 		"to": dest,
 		"range": dist,
@@ -528,7 +584,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"roll": roll,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
-		"base_damage": def["base_damage"],
+		"base_damage": base,
 		"facing_mult": facing_mult,
 		"back": is_back,
 		"crit_mult": CRIT_MULT,
@@ -536,8 +592,47 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"element": def["element"],
 		"engine": engine_name.to_lower(),
 		"engine_gained": engine_gained,
+		"engine_spent": engine_spent,
 		"coach": _last_coach,
-	})
+	}
+	if spell_id == SpellKits.DETONATE:
+		hit_event["marks_consumed"] = marks_consumed
+		hit_event["marks_remaining"] = int(target.get("marks", 0))
+	if spell_id == SpellKits.CRUSH:
+		hit_event["impact_before"] = impact_before
+		hit_event["impact_spent"] = engine_spent
+		hit_event["stun_applied"] = stun_applied
+		# OPEN A05: Stun 1 semantics (what it suppresses and when) not locked.
+		hit_event["open_a05_stun"] = true
+	if not push_result.is_empty():
+		hit_event["pushed"] = bool(push_result.get("moved", false))
+		hit_event["push_from"] = push_result.get("from")
+		hit_event["push_to"] = push_result.get("to")
+		hit_event["push_blocked"] = bool(push_result.get("blocked", false))
+		hit_event["push_block_reason"] = str(push_result.get("reason", ""))
+	_last_events.append(hit_event)
+	if bool(push_result.get("blocked", false)):
+		_last_events.append({
+			"type": "push_blocked",
+			# OPEN: destination occupied or off-board — do not invent a slide/crush-into.
+			"open": "push into occupied/OOB is OPEN — provisional no-move",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "Push blocked (%s). OPEN: dest occupied/OOB." % str(push_result.get("reason", "")),
+		})
+	if stun_applied > 0:
+		_last_events.append({
+			"type": "status",
+			"status": "stun",
+			"remaining": stun_applied,
+			"target_seat": target["seat"],
+			# OPEN A05: exact suppress list not locked.
+			"open": "A05 — Stun 1 suppress list provisional (casts/moves/face rejected; end_turn allowed)",
+			"coach": "%s is stunned (OPEN A05)." % target["name"],
+		})
 	_check_death(target)
 	return _accept()
 
@@ -628,6 +723,79 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 	return FRONT_SIDE_FACING
 
 
+func _apply_setup_overrides(config: Dictionary) -> void:
+	# Test/setup hooks only. Not a play default — matches start at 0 Marks/Impact/stun.
+	if config.has("kestrel_marks"):
+		_units[0]["marks"] = mini(maxi(int(config["kestrel_marks"]), 0), int(_units[0]["marks_cap"]))
+	if config.has("ironjaw_marks"):
+		_units[1]["marks"] = mini(maxi(int(config["ironjaw_marks"]), 0), int(_units[1]["marks_cap"]))
+	if config.has("kestrel_impact"):
+		_units[0]["impact"] = mini(maxi(int(config["kestrel_impact"]), 0), int(_units[0]["impact_cap"]))
+	if config.has("ironjaw_impact"):
+		_units[1]["impact"] = mini(maxi(int(config["ironjaw_impact"]), 0), int(_units[1]["impact_cap"]))
+	if config.has("kestrel_stun"):
+		_units[0]["stun_remaining"] = maxi(int(config["kestrel_stun"]), 0)
+	if config.has("ironjaw_stun"):
+		_units[1]["stun_remaining"] = maxi(int(config["ironjaw_stun"]), 0)
+	if config.has("blockers"):
+		for cell in config["blockers"]:
+			_blocked_cells.append(_as_cell(cell))
+
+
+func _begin_unit_turn(unit: Dictionary) -> void:
+	# OPEN A05: decrement stun at start of that unit's turn.
+	# Stun 1 must cover this incoming turn. Decrementing remaining and then
+	# checking remaining would expire Stun 1 before suppress. Provisional:
+	# set stunned-this-turn from remaining>0, then decrement remaining.
+	var remaining := int(unit.get("stun_remaining", 0))
+	unit["stunned"] = remaining > 0
+	if remaining > 0:
+		unit["stun_remaining"] = remaining - 1
+
+
+func _is_stunned(unit: Dictionary) -> bool:
+	# OPEN A05: exact suppress list not locked. Provisional: remaining or this-turn flag.
+	return int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
+
+
+func _cast_gate_reason(actor: Dictionary, target: Dictionary, def: Dictionary) -> String:
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.DETONATE and int(target.get("marks", 0)) < int(def.get("requires_marks_on_target", 1)):
+		return "insufficient_marks"
+	if spell_id == SpellKits.CRUSH and int(actor.get("impact", 0)) < int(def.get("requires_impact", 2)):
+		return "insufficient_impact"
+	return ""
+
+
+func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.DETONATE:
+		# Locked: 6 + 6×M Air, M = Marks on the target consumed on connect.
+		return int(def.get("base_damage", 6)) + int(def.get("damage_per_mark", 6)) * int(target.get("marks", 0))
+	return int(def.get("base_damage", 0))
+
+
+func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
+	var parts: Array[String] = []
+	if engine_gained > 0:
+		parts.append(" +1 %s." % engine_name)
+	if marks_consumed > 0:
+		parts.append(" Marks consumed (%d)." % marks_consumed)
+	if engine_spent > 0 and engine_name == "Impact":
+		parts.append(" Impact spent (%d)." % engine_spent)
+	if stun_applied > 0:
+		parts.append(" Stun %d (OPEN A05)." % stun_applied)
+	if not push_result.is_empty():
+		if bool(push_result.get("blocked", false)):
+			parts.append(" Push blocked (OPEN: dest occupied/OOB).")
+		elif bool(push_result.get("moved", false)):
+			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
+	var note := ""
+	for part in parts:
+		note += part
+	return note
+
+
 func _gain_impact(unit: Dictionary, amount: int) -> int:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_IRONJAW:
 		return 0
@@ -636,10 +804,72 @@ func _gain_impact(unit: Dictionary, amount: int) -> int:
 	return int(unit["impact"]) - before
 
 
+func _spend_impact(unit: Dictionary, amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var before: int = int(unit.get("impact", 0))
+	if before < amount:
+		return 0
+	unit["impact"] = before - amount
+	return amount
+
+
 func _gain_marks(unit: Dictionary, amount: int) -> int:
+	# A01 Locked: Marks live on the target unit this helper is called with.
 	var before: int = int(unit["marks"])
 	unit["marks"] = mini(before + amount, int(unit["marks_cap"]))
 	return int(unit["marks"]) - before
+
+
+func _consume_marks(unit: Dictionary) -> int:
+	# A01 Locked: consume the target's Marks stack. Miss path never calls this.
+	var consumed: int = int(unit.get("marks", 0))
+	unit["marks"] = 0
+	return consumed
+
+
+func _apply_stun(unit: Dictionary, remaining: int) -> int:
+	# OPEN A05: store stun_remaining. Exact suppress list not locked.
+	if remaining <= 0:
+		return 0
+	unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), remaining)
+	return remaining
+
+
+func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
+	# Chebyshev push 1 along the caster→target line. OPEN if dest occupied or OOB:
+	# do not move; still keep damage/Impact from the hit; emit push_blocked.
+	var from: Vector2i = target["pos"]
+	var dest := push_destination(caster_pos, from, cells)
+	var result := {
+		"from": from,
+		"to": from,
+		"attempted": dest,
+		"moved": false,
+		"blocked": false,
+		"reason": "",
+	}
+	if not _in_bounds(dest):
+		result["blocked"] = true
+		result["reason"] = "out_of_bounds"
+		return result
+	if not _is_empty(dest):
+		result["blocked"] = true
+		result["reason"] = "occupied"
+		return result
+	target["pos"] = dest
+	result["to"] = dest
+	result["moved"] = true
+	return result
+
+
+static func push_destination(caster_pos: Vector2i, target_pos: Vector2i, cells: int = 1) -> Vector2i:
+	var delta: Vector2i = target_pos - caster_pos
+	var step := Vector2i(
+		0 if delta.x == 0 else (1 if delta.x > 0 else -1),
+		0 if delta.y == 0 else (1 if delta.y > 0 else -1)
+	)
+	return target_pos + step * cells
 
 
 func _roll_d100() -> int:
@@ -706,6 +936,9 @@ func _living_unit_at(cell: Vector2i) -> Dictionary:
 func _is_empty(cell: Vector2i) -> bool:
 	if not _in_bounds(cell):
 		return false
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return false
 	for unit in _units:
 		if unit["pos"] == cell:
 			return false

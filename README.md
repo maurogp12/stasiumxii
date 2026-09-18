@@ -8,10 +8,13 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 2. **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
 3. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. A **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune.
 4. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path. The client never sends `intent.path`.
-5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. **Strike / Mark Shot range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
+5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
    - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. Kestrel never sees Advance chrome and never gains Impact.
-   - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the target if it connects.
+   - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it connects.
+   - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On connect: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it connects.
+   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On connect: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **OPEN:** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`.
+   - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **OPEN A05:** Stun rejects casts/moves/face (`stunned_cannot_act`); End Turn is allowed. Exact suppress list is not locked.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Back hits deal ×1.20; front/side are ×1.00.
 7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
 8. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
@@ -25,7 +28,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint Mark Shot range chrome, and run the Proposed timers. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, and run the Proposed timers. |
 
 Intents: `end_turn` | `face` | `move` | `cast`.
 
@@ -35,14 +38,15 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - 80 HP, 6 AP / 3 MP refilled at turn start
 - Walk: dest-click only, Manhattan `|dx|+|dy|` MP, pool 3, CombatSim expands ortho path, horizontal-first (E/W before N/S) tie-break
 - Advance: dest-click teleport, **3 AP / 0 MP**, instant snap. Range gate **Manhattan 1–2** (diamond). Ironjaw-only. No MP spend. Client path ignored.
-- Spell range stays Chebyshev for Strike / Mark Shot. Advance range is Manhattan.
+- Spell range stays Chebyshev for Strike / Mark Shot / Detonate / Shoulder / Crush. Advance range is Manhattan.
 - Hit bands 1=90%, 2–3=80%, 4–5=75%, 6–8=70%
 - Damage pipeline: Base × CritMult × Passive × (1+Mastery/100) × (1−Resist/100) × Facing. Mastery 0, CritMult held at **1.0** (crit *roll* off). WindMod omitted (not invented as 1.0).
 - Facing front/side ×1.00, back ×1.20
-- Miss keeps AP/MP, refunds engine, no engine gain
+- Miss keeps AP/MP, refunds engine, no engine gain. Detonate miss retains Marks. Crush miss retains Impact.
 - Illegal cast reject + refund
-- Advance / Strike / Mark Shot values above
-- Advance is Ironjaw-only
+- **A01 Locked:** Marks live on the target (cap 5). Mark Shot +1 on connect. Detonate reads/consumes that stack.
+- Detonate / Shoulder / Crush / Advance / Strike / Mark Shot values above
+- Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw
 
 ## Proposed (not Locked)
@@ -53,21 +57,22 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 ## Omitted (not silent defaults)
 
 - Networking / MultiplayerSynchronizer
-- Detonate, Step-shot, Shoulder, Crush, Rain, Longbow, Avalanche
+- Step-shot, Rain, Longbow, Avalanche
 - Other classes (Mender, Gloam, Bastion)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
+- Aim hit-% chrome
 - Weapon fumbles, dual loadouts, WP/PW
 
 ## A01–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path) and is no longer listed as Open. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP). A06 still notes the adjacent-Impact stub.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path) and is no longer listed as Open. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP). **A01 Marks-on-target is Locked** (Detonate reads/consumes that stack). A06 still notes the adjacent-Impact stub. **Ask before inventing** further Stun/push defaults.
 
 | ID | Stub used here |
 | --- | --- |
-| A01 | Marks live on the target (cap 5). Impact lives on the caster (cap 4). |
+| A01 | **Locked:** Marks live on the target (cap 5). Impact lives on the caster (cap 4). OPEN: engine init-reset; Rain (later) caster Marks. |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
-| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. |
+| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **OPEN:** Stun 1 suppress list — provisional: `stun_remaining` on the unit; reject casts/moves/face with `stunned_cannot_act`; End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **OPEN:** push into occupied/OOB — provisional no-move + `push_blocked` event. |
 | A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. Adjacency = Chebyshev 1 after landing. Facing unchanged. |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 
