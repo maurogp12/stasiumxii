@@ -88,6 +88,26 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 godot --headless --path . -s res://tests/run_combat_tests.gd
 ```
 
+## Phase B+ prototype (Proposed, not Locked)
+
+Elevation + terrain MP + Dijkstra movement lives in `prototypes/elevation_movement/`. **Phase A hot-seat duel is unchanged.** `main.tscn` / `CombatSim` still use the flat 8×8 Manhattan dest-click walk (pool 3). Do not change the project main scene to the prototype.
+
+How to open:
+
+1. Open `project.godot` in Godot 4.7+.
+2. Open `prototypes/elevation_movement/elevation_movement_demo.tscn` and run **that** scene (F6). The main duel scene stays `main.tscn`.
+3. Click cyan reachable tiles. The pawn follows the cheapest-MP ortho path and spends that MP. **R** resets.
+
+Proposed starters (Director; labeled Proposed in code): Ground 1 / Mud 2 / Water 2 / Lava impassable; uphill +1 MP per full level (half-level +0.5 counts as +1); downhill +0; equal elevation = terrain only; max climb 1.0; max drop 2.0; ortho N/E/S/W only; occupied tiles blocked. Draw order comes from world Y + elevation (+ unit offset). `z_index` is not gameplay elevation.
+
+Prototype tests (cost math, climb/drop reject, lava, Dijkstra cheap-long vs expensive-short):
+
+```bash
+godot --headless --path . -s res://tests/run_elevation_movement_tests.gd
+```
+
+See `prototypes/elevation_movement/README.md` for the module list.
+
 ## How to test aim chrome
 
 1. Run the main scene. Select **Mark Shot**: Chebyshev 2–5 ring + **HIT 75%** vs default Ironjaw (range 5). Walk chrome stays off. Advance / Walk never show HIT %.

@@ -1,0 +1,54 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://prototypes/elevation_movement/elevation_movement_demo.gd" id="1_demo"]
+
+[node name="ElevationMovementDemo" type="Node2D"]
+script = ExtResource("1_demo")
+
+[node name="Backdrop" type="ColorRect" parent="."]
+offset_right = 960.0
+offset_bottom = 720.0
+mouse_filter = 2
+color = Color(0.10, 0.11, 0.14, 1)
+
+[node name="Board" type="Node2D" parent="."]
+position = Vector2(480, 168)
+
+[node name="Tiles" type="Node2D" parent="Board"]
+
+[node name="Units" type="Node2D" parent="Board"]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="Root" type="VBoxContainer" parent="HUD"]
+offset_left = 16.0
+offset_top = 12.0
+offset_right = 944.0
+offset_bottom = 150.0
+theme_override_constants/separation = 4
+
+[node name="Title" type="Label" parent="HUD/Root"]
+theme_override_font_sizes/font_size = 20
+text = "Phase B+ elevation + terrain MP prototype  (Proposed — not Locked)"
+
+[node name="Note" type="Label" parent="HUD/Root"]
+theme_override_colors/font_color = Color(0.82, 0.78, 0.70, 1)
+text = "Phase A hot-seat duel is unchanged. Keep running main.tscn for CombatSim's flat Manhattan walk. This scene is isolated."
+
+[node name="MP" type="Label" parent="HUD/Root"]
+theme_override_font_sizes/font_size = 16
+text = "MP  6 / 6"
+
+[node name="Coach" type="Label" parent="HUD/Root"]
+autowrap_mode = 3
+text = "Click a cyan tile to walk the cheapest MP path."
+
+[node name="Legend" type="Label" parent="HUD/Root"]
+theme_override_font_sizes/font_size = 12
+theme_override_colors/font_color = Color(0.75, 0.74, 0.70, 1)
+text = "Proposed: Ground 1 · Mud 2 · Water 2 · Lava impassable · uphill +1/level (half-level +0.5 counts as +1) · downhill +0 · max climb 1.0 · max drop 2.0 · ortho only · occupied blocked. Cyan = reachable (number = MP). Gold = Dijkstra path. Grey rock = occupied. Cliff +3 is illegal from 0."
+
+[node name="Reset" type="Button" parent="HUD/Root"]
+custom_minimum_size = Vector2(120, 28)
+size_flags_horizontal = 0
+text = "Reset (R)"
