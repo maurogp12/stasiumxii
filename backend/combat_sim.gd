@@ -730,7 +730,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	return _resolve_rolling_cast(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
 
 
-func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
 	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
