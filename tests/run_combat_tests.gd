@@ -1407,7 +1407,7 @@ func _test_aim_hit_preview() -> void:
 	eq(preview["show"], true, "Mark Shot in Chebyshev 5 shows hit percent")
 	eq(preview["rolls"], true, "Mark Shot preview is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 previews Locked 75%")
-	eq(preview["stun_telegraph"], false, "Mark Shot never telegraphs stun")
+	eq(preview.has("stun_telegraph"), false, "aim preview does not invent stun chrome")
 	preview = _sim.aim_hit_preview(0, SpellKits.DETONATE)
 	eq(preview["show"], true, "Detonate in Chebyshev 5 shows hit percent even without Marks")
 	eq(preview["hit_chance"], 75, "Detonate range 5 previews Locked 75%")
@@ -1423,32 +1423,11 @@ func _test_aim_hit_preview() -> void:
 	eq(preview["show"], true, "Strike in melee shows hit percent")
 	eq(preview["hit_chance"], 90, "melee rolling casts preview Locked 90%")
 	preview = _sim.aim_hit_preview(1, SpellKits.SHOULDER)
-	eq(preview["hit_chance"], 90, "Shoulder melee previews Locked 90%")
+	eq(preview["show"], false, "Shoulder aim has no hit-percent chrome (kit resolve is #7)")
 	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
-	eq(preview["hit_chance"], 90, "Crush melee previews Locked 90%")
-	eq(preview["stun_telegraph"], false, "stun telegraph stays off below Impact 4")
+	eq(preview["show"], false, "Crush aim has no hit-percent chrome (kit resolve is #7)")
 	preview = _sim.aim_hit_preview(1, SpellKits.ADVANCE)
 	eq(preview["show"], false, "Advance still has no hit percent when adjacent")
-
-	_sim.reset_match({
-		"seed": 1,
-		"kestrel_pos": Vector2i(3, 3),
-		"ironjaw_pos": Vector2i(4, 3),
-		"ironjaw_impact": 4,
-	})
-	_sim.submit({"type": "end_turn"})
-	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
-	eq(preview["stun_telegraph"], true, "stun telegraph only when Impact is 4 before spend")
-	eq(preview["show"], true, "Crush at range 1 still shows Locked 90%")
-	_sim.reset_match({
-		"seed": 1,
-		"kestrel_pos": Vector2i(3, 3),
-		"ironjaw_pos": Vector2i(4, 3),
-		"ironjaw_impact": 3,
-	})
-	_sim.submit({"type": "end_turn"})
-	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
-	eq(preview["stun_telegraph"], false, "Impact 3 does not telegraph stun")
 
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud.contains("set_aim_preview"), "HUD can show pre-cast hit percent")

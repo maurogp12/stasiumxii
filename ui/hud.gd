@@ -32,7 +32,6 @@ var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 var _aim_hit_label: Label
 var _aim_hit_chance: int = -1
-var _stun_telegraph: bool = false
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -105,16 +104,9 @@ func set_aim_preview(preview: Dictionary) -> void:
 		_aim_hit_chance = int(preview.get("hit_chance", 0))
 	else:
 		_aim_hit_chance = -1
-	_stun_telegraph = bool(preview.get("stun_telegraph", false))
 	if _aim_hit_label != null:
-		var text := aim_hit_caption(_aim_hit_chance)
-		if _stun_telegraph:
-			if text != "":
-				text += "  ·  STUN if it connects"
-			else:
-				text = "STUN if it connects"
-		_aim_hit_label.text = text
-		_aim_hit_label.visible = text != ""
+		_aim_hit_label.text = aim_hit_caption(_aim_hit_chance)
+		_aim_hit_label.visible = _aim_hit_chance >= 0
 	_update_selected_label()
 
 
@@ -194,10 +186,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
 		_aim_hit_chance = -1
-		_stun_telegraph = false
 	if _selected_spell == "":
 		_aim_hit_chance = -1
-		_stun_telegraph = false
 		if _aim_hit_label != null:
 			_aim_hit_label.text = ""
 			_aim_hit_label.visible = false
@@ -554,6 +544,4 @@ func _update_selected_label() -> void:
 	]
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
-	if _stun_telegraph:
-		text += "  ·  STUN if it connects"
 	_selected_label.text = text

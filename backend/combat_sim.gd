@@ -289,18 +289,16 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		"range": 0,
 		"rolls": false,
 		"spell": spell_id,
-		"stun_telegraph": false,
 	}
 	var def: Dictionary = SpellKits.spell(spell_id)
-	# Tight allowlist: Locked rolling kit only. No Advance, no +5, no invented bands.
+	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
+	# Mark Shot / Strike / Detonate aim. No +5. No Advance. No invented stun/push.
 	if def.is_empty() or not bool(def.get("rolls", false)):
 		return out
 	if not [
 		SpellKits.MARK_SHOT,
 		SpellKits.STRIKE,
 		SpellKits.DETONATE,
-		SpellKits.SHOULDER,
-		SpellKits.CRUSH,
 	].has(spell_id):
 		return out
 	out["rolls"] = true
@@ -320,9 +318,6 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	out["hit_chance"] = hit_chance(dist)
 	if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
 		out["show"] = true
-	# A05 telegraph only: Impact == 4 before a spend-2 connect. No new resolve rules.
-	if spell_id == SpellKits.CRUSH and int(actor.get("impact", 0)) == int(def.get("stun_if_impact_before", 4)):
-		out["stun_telegraph"] = true
 	return out
 
 
