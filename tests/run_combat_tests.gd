@@ -1450,9 +1450,11 @@ func _test_aim_hit_preview() -> void:
 
 
 func _test_legal_moves_after_advance() -> void:
-	# CombatSim already returns moves when MP>0. After Advance (3 AP / 0 MP),
-	# remaining MP (e.g. 0 AP / 3 MP) must still offer Manhattan walks.
+	# Godot Engineer: after Advance (or any cast), remaining MP still offers
+	# Manhattan walks — including 0 AP / 3 MP. Client clears spell + repaints
+	# from legal_intents. Crit roll stays OFF; this patch does not invent Stun/push.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	_sim.submit({"type": "end_turn"})
 	eq(_unit(1)["ap"], 6, "Ironjaw starts at 6 AP")
 	eq(_unit(1)["mp"], 3, "Ironjaw starts at 3 MP")
@@ -1480,14 +1482,44 @@ func _test_legal_moves_after_advance() -> void:
 	eq(_unit(1)["mp"], 2, "walk spends Manhattan MP after Advance")
 	eq(_unit(1)["pos"], Vector2i(6, 5), "pawn walked after Advance")
 
+	# Any dest-click cast, not only Advance: Strike spends AP, MP stays, walks remain.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100, 100],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "Strike dest-click is a cast, not Advance")
+	eq(_unit(1)["ap"], 3, "Strike spends 3 AP")
+	eq(_unit(1)["mp"], 3, "Strike spends 0 MP")
+	moves = _legal_move_dests(1)
+	truthy(moves.has(Vector2i(3, 4)), "after Strike, Manhattan walks remain while MP>0")
+	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3)})
+	eq(_unit(1)["ap"], 0, "second Strike reaches 0 AP")
+	eq(_unit(1)["mp"], 3, "MP still full at 0 AP after casts")
+	moves = _legal_move_dests(1)
+	truthy(moves.has(Vector2i(3, 4)), "0 AP / 3 MP after a non-Advance cast still offers Manhattan walks")
+	result = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
+	eq(result["ok"], true, "walk after a rolling cast is accepted")
+
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	eq(view.contains("if spell_id != SpellKits.ADVANCE:"), false, "Advance dest-click also clears spell selection")
-	truthy(view.contains("_hud.clear_spell()"), "board_view clears spell after dest-click casts")
-	truthy(view.contains("_paint_highlights()"), "board_view refreshes chrome after clearing Advance")
-	eq(view.contains("Detonate"), false, "walk-after-Advance patch does not add Detonate")
+	var click_idx := view.find("func _handle_left_click")
+	var face_idx := view.find("func _face_toward")
+	truthy(click_idx >= 0 and face_idx > click_idx, "_handle_left_click exists")
+	var click_src := view.substr(click_idx, face_idx - click_idx)
+	eq(click_src.contains("if spell_id != SpellKits.ADVANCE:"), false, "cast dest-click is not Advance-gated for chrome clear")
+	truthy(click_src.contains("_hud.clear_spell()"), "any dest-click cast clears spell selection")
+	truthy(click_src.contains("_paint_highlights()"), "any dest-click cast repaints chrome from legal_intents")
+	eq(view.contains("stun_remaining"), false, "walk-after-cast patch does not invent Stun")
+	eq(view.contains("push_blocked"), false, "walk-after-cast patch does not invent push")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after walk-after-cast checks")
 
 
 func _test_walk_facing_follows_last_hop() -> void:
+	# Godot Engineer Locked last-hop: each ortho hop faces that hop; final = last hop.
+	# Client anim uses hop_facing per hop. Manual face intent stays for standing turns.
 	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(3, 2)), "E", "east hop faces E")
 	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(1, 2)), "W", "west hop faces W")
 	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(2, 1)), "N", "north hop faces N")
@@ -1495,6 +1527,11 @@ func _test_walk_facing_follows_last_hop() -> void:
 	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(4, 3), "N"), "S", "H-first NE last hop is S")
 	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(1, 1), "E"), "N", "H-first SW last hop is N")
 	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(2, 2), "W"), "W", "empty path keeps fallback facing")
+	var path: Array = _sim.expand_ortho_path(Vector2i(2, 2), Vector2i(4, 1))
+	eq(path, [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 1)], "H-first NE path is E, E, N")
+	eq(_sim.hop_facing(Vector2i(2, 2), path[0]), "E", "hop 1 faces E")
+	eq(_sim.hop_facing(path[0], path[1]), "E", "hop 2 faces E")
+	eq(_sim.hop_facing(path[1], path[2]), "N", "hop 3 faces N — final face is last hop")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -1527,16 +1564,27 @@ func _test_walk_facing_follows_last_hop() -> void:
 	eq(_unit(0)["facing"], "N", "multi-hop walk snapshot facing is last hop")
 	eq(result["events"][0]["facing"], "N", "multi-hop move event facing is last hop")
 
+	var ap_before: int = int(_unit(0)["ap"])
+	var mp_before: int = int(_unit(0)["mp"])
 	result = _sim.submit({"type": "face", "dir": "W"})
 	eq(result["ok"], true, "in-place face remains legal after a walk")
 	eq(_unit(0)["facing"], "W", "manual face still sets in-place facing")
 	eq(_unit(0)["pos"], Vector2i(4, 1), "in-place face does not move")
+	eq(_unit(0)["ap"], ap_before, "standing face costs 0 AP")
+	eq(_unit(0)["mp"], mp_before, "standing face costs 0 MP")
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	truthy(view.contains("hop_facing"), "walk anim faces each ortho hop")
+	var anim_idx := view.find("func _animate_path")
+	var set_cell_idx := view.find("func _set_pawn_cell")
+	truthy(anim_idx >= 0 and set_cell_idx > anim_idx, "_animate_path exists")
+	var anim_src := view.substr(anim_idx, set_cell_idx - anim_idx)
+	truthy(anim_src.contains("hop_facing"), "walk anim faces each ortho hop")
+	truthy(anim_src.contains("set_facing"), "walk anim updates pawn facing with hops")
 	var pawn := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn.contains("func set_facing"), "pawn can update facing mid-hop")
-	eq(view.contains("Detonate"), false, "last-hop face patch does not add Detonate")
+	eq(view.contains("stun_remaining"), false, "last-hop face patch does not invent Stun")
+	eq(view.contains("push_blocked"), false, "last-hop face patch does not invent push")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 
 func _test_advance_faces_last_h_first_hop() -> void:
@@ -1594,6 +1642,9 @@ func _test_advance_faces_last_h_first_hop() -> void:
 	eq(result["ok"], true, "in-place face remains legal after Advance")
 	eq(_unit(1)["facing"], "E", "manual face after Advance still works")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "manual face does not move")
+	eq(_unit(1)["ap"], 3, "standing face after Advance costs 0 AP")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_mult"], 1.0, "CritMult stays 1.0")
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

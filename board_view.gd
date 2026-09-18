@@ -123,8 +123,8 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_paint_highlights()
 		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
-	# Including Advance: dest-click must drop spell chrome so remaining MP
-	# walk tiles come back from legal_intents (CombatSim already offers them).
+	# After any dest-click cast (including Advance): drop spell chrome and
+	# repaint walk tiles from legal_intents so remaining MP is selectable at 0 AP.
 	_hud.clear_spell()
 	_paint_highlights()
 
