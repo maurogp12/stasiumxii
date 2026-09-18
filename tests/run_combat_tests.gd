@@ -54,6 +54,7 @@ func _run() -> void:
 	_test_shoulder_push_and_impact()
 	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
+	_test_stun_auto_end_turn_after_crush()
 	_test_stun_suppresses_actions_locked()
 	_test_stun_hud_greys_walk_face_spells()
 	_test_push_blocked_client_toast_no_hop()
@@ -91,8 +92,9 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	eq(snap["open_decisions"].has("A01"), false, "A01 Marks-on-target is Locked, not Open")
 	eq(snap["marks_owner"], "target", "A01 Locked: Marks live on the target")
-	eq(snap["stun"], "locked_a", "Stun suppress is Locked (A)")
-	eq(snap["stun_blocks"], "move_cast_face", "Locked Stun (A) blocks move + cast + face")
+	eq(snap["stun"], "locked_a_prime", "Stun suppress is Locked (A′)")
+	eq(snap["stun_blocks"], "move_cast_face", "Locked Stun (A′) blocks move + cast + face")
+	eq(snap["stun_auto_end_turn"], true, "Locked A′ auto end_turn on turn start")
 	eq(snap["push"], "locked_1", "Push occupied/OOB is Locked (1)")
 	eq(snap["push_occupied_oob"], "no_move", "Locked Push (1) is no-move + push_blocked")
 	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
@@ -1358,7 +1360,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["impact"], 1, "3-2=1 Impact left")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun at Impact 3")
 
-	# Impact 4 before spend: Stun 1 (Locked A).
+	# Impact 4 before spend: Stun 1 (Locked A′).
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1405,9 +1407,8 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
 
 
-func _test_stun_suppresses_actions_locked() -> void:
-	# Locked Stun (A): suppress = move/cast/face. end_turn allowed.
-	# Decrement at start of the stunned unit's turn after setting stunned-this-turn.
+func _test_stun_auto_end_turn_after_crush() -> void:
+	# Locked Stun (A′): after Crush stun, that seat's next turn auto-ends.
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1415,18 +1416,74 @@ func _test_stun_suppresses_actions_locked() -> void:
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
 		"ironjaw_impact": 4,
-		"ironjaw_marks": 1,
 	})
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(_unit(0)["stun_remaining"], 1, "Kestrel carries Stun 1 into the handoff")
+	eq(_sim.snapshot()["active_seat"], 1, "Crush leaves Ironjaw active")
+	var result: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(result["ok"], true, "Ironjaw End Turn is accepted")
+	eq(_sim.snapshot()["active_seat"], 1, "stunned Kestrel turn auto-ended; Ironjaw acts again")
+	eq(_unit(0)["stunned"], true, "Kestrel served stunned-this-turn (tick at their turn start)")
+	eq(_unit(0)["stun_remaining"], 0, "stun remaining decremented on the skipped turn")
+	eq(_unit(1)["stunned"], false, "Ironjaw is not stunned")
+	var auto_end := {}
+	var kestrel_start := {}
+	for event in result["events"]:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "end_turn" and bool(event.get("auto", false)):
+			auto_end = event
+		if str(event.get("type", "")) == "turn_start" and int(event.get("seat", -1)) == 0:
+			kestrel_start = event
+	eq(auto_end.is_empty(), false, "stunned seat emits auto end_turn")
+	eq(int(auto_end.get("seat", -1)), 0, "auto end_turn is Kestrel's skipped turn")
+	eq(kestrel_start.is_empty(), false, "Kestrel still got a turn_start (the skipped one)")
+	eq(bool(kestrel_start.get("stunned_skip", false)), true, "Kestrel turn_start is the skipped stun turn")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Locked A"), "coach names Locked A′ skip")
+	var legal_ij: Array = _sim.legal_intents(1)
+	var legal_k: Array = _sim.legal_intents(0)
+	var ij_types := {}
+	for intent in legal_ij:
+		ij_types[str(intent["type"])] = true
+	truthy(ij_types.has("move"), "Ironjaw can walk after the skip")
+	truthy(ij_types.has("cast"), "Ironjaw can cast after the skip")
+	eq(legal_k.is_empty(), true, "Kestrel legal_intents empty (not their turn)")
+	eq(_unit(0)["ap"], 6, "skipped turn still refilled AP")
+	eq(_unit(0)["mp"], 3, "skipped turn still refilled MP")
+
 	_sim.submit({"type": "end_turn"})
-	eq(_sim.snapshot()["active_seat"], 0, "Kestrel's stunned turn starts")
-	eq(_unit(0)["stunned"], true, "Locked A: stunned-this-turn is set at turn start")
-	eq(_unit(0)["stun_remaining"], 0, "Locked A: remaining decremented at start after the flag")
+	eq(_sim.snapshot()["active_seat"], 0, "Kestrel acts after the skipped stun turn")
+	eq(_unit(0)["stunned"], false, "Stun 1 expired after the skipped turn")
+	eq(_unit(0)["stun_remaining"], 0, "no leftover stun_remaining")
+	var k_types := {}
+	for intent in _sim.legal_intents(0):
+		k_types[str(intent["type"])] = true
+	truthy(k_types.has("move"), "after skip, walk is legal")
+	truthy(k_types.has("cast"), "after skip, casts are legal")
+	truthy(k_types.has("face"), "after skip, face is legal")
+
+
+func _test_stun_suppresses_actions_locked() -> void:
+	# Locked Stun (A′): move/cast/face never become legal. Auto end_turn only.
+	# Force a stunned-active seat so the reject gate can be asserted without a Crush skip.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_marks": 1,
+	})
+	_unit(0)["stunned"] = true
 	var legal: Array = _sim.legal_intents(0)
-	eq(legal.size(), 1, "stunned legal_intents is end_turn only")
-	eq(str(legal[0].get("type", "")), "end_turn", "only end_turn is offered while stunned")
+	var kinds := {}
+	for intent in legal:
+		kinds[str(intent.get("type", ""))] = intent
+	eq(kinds.has("move"), false, "stunned legal_intents has no move")
+	eq(kinds.has("cast"), false, "stunned legal_intents has no cast")
+	eq(kinds.has("face"), false, "stunned legal_intents has no face")
+	eq(kinds.has("end_turn"), true, "auto end_turn path is listed")
+	eq(bool(kinds["end_turn"].get("auto", false)), true, "end_turn is the auto path")
 
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
 	eq(result["illegal"], true, "stunned move is rejected")
@@ -1446,32 +1503,25 @@ func _test_stun_suppresses_actions_locked() -> void:
 	eq(_unit(0)["ap"], 6, "stunned cast refunds")
 
 	result = _sim.submit({"type": "end_turn"})
-	eq(result["ok"], true, "end_turn is allowed while stunned")
-	eq(_sim.snapshot()["active_seat"], 1, "stunned seat can hand off")
-	_sim.submit({"type": "end_turn"})
-	eq(_sim.snapshot()["active_seat"], 0, "Kestrel acts again after serving Stun 1")
-	eq(_unit(0)["stunned"], false, "Stun 1 expired after one turn")
-	eq(_unit(0)["stun_remaining"], 0, "no leftover stun_remaining")
-	var types := {}
-	for intent in _sim.legal_intents(0):
-		types[str(intent["type"])] = true
-	truthy(types.has("move"), "after Stun 1, walk is legal again")
-	truthy(types.has("cast"), "after Stun 1, casts are legal again")
-	truthy(types.has("face"), "after Stun 1, face is legal again")
+	eq(result["ok"], true, "end_turn is allowed as the auto path")
+	eq(_sim.snapshot()["active_seat"], 1, "stunned seat hands off")
 
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(sim_src.contains("OPEN A05"), false, "CombatSim does not label Stun as OPEN A05")
 	eq(sim_src.contains("suppress list not locked"), false, "CombatSim does not leave the suppress list Open")
-	truthy(sim_src.contains("Locked Stun (A)"), "CombatSim labels Stun as Locked (A)")
+	truthy(sim_src.contains("Locked Stun (A"), "CombatSim labels Stun as Locked (A′)")
+	truthy(sim_src.contains("auto end_turn"), "CombatSim stamps auto end_turn for Locked A′")
 	truthy(sim_src.contains("Locked Push (1)"), "CombatSim labels Push as Locked (1)")
 	truthy(sim_src.contains("stunned_cannot_act"), "CombatSim uses reserved reject stunned_cannot_act")
 	eq(sim_src.contains("open_a05_stun"), false, "CombatSim no longer emits open_a05_stun")
 	eq(sim_src.contains("Step-shot"), false, "Stun patch does not add Step-shot")
 	eq(sim_src.contains("gust_heading"), false, "Stun patch does not invent Gust")
+	truthy(sim_src.contains("func _resolve_advance") and sim_src.contains("_def: Dictionary"), "Advance kit arg is _def (unused-parameter silence)")
 
 
 func _test_stun_hud_greys_walk_face_spells() -> void:
-	# Locked Stun (A) client: grey Walk / Face / spells; STUN badge; End Turn enabled.
+	# Locked Stun (A′) client: after Crush, the stunned turn auto-ends.
+	# Kestrel card still shows STUN; Ironjaw can act. Forced stunned-active still greys chrome.
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1483,17 +1533,32 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
-	eq(_unit(0)["stunned"], true, "Kestrel is stunned-this-turn")
+	eq(_sim.snapshot()["active_seat"], 1, "A′ auto-skip leaves Ironjaw active")
+	eq(_unit(0)["stunned"], true, "Kestrel is stunned-this-turn after the skip")
 	var hud := CombatHUD.new()
 	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(1))
+	eq(hud.stun_badge_visible(), false, "center STUN badge follows the active seat")
+	truthy(str(hud._kestrel_body.text).contains("[b]STUN[/b]"), "Kestrel card shows STUN after the skipped turn")
+	eq(hud.walk_suppressed(), false, "Ironjaw Walk is not greyed after the skip")
+	eq(hud.face_suppressed(), false, "Ironjaw Face is not greyed after the skip")
+	eq(hud.end_turn_enabled(), true, "Ironjaw End Turn stays enabled")
+
+	# Forced stunned-active chrome (gate still greys if that state is rendered).
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+	})
+	_unit(0)["stunned"] = true
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
-	eq(hud.stun_badge_visible(), true, "HUD shows STUN badge while stunned")
+	eq(hud.stun_badge_visible(), true, "HUD shows STUN badge while the active seat is stunned")
 	truthy(str(hud._kestrel_body.text).contains("[b]STUN[/b]"), "Kestrel card shows STUN badge")
 	eq(hud.walk_suppressed(), true, "Walk is greyed/disabled while stunned")
 	eq(hud.face_suppressed(), true, "Face is greyed/disabled while stunned")
 	eq(hud.spells_suppressed(), true, "spells are greyed/disabled while stunned")
-	eq(hud.end_turn_enabled(), true, "End Turn stays enabled while stunned")
-	eq(hud._selected_label.text, "Stunned — End Turn only", "selected line names Stun suppress")
+	eq(hud.end_turn_enabled(), true, "End Turn stays as a fallback")
+	eq(hud._selected_label.text, "Stunned — turn auto-ends", "selected line names Locked A′ auto-end")
 	eq(hud._walk_button.modulate, CombatHUD.STUN_GREY, "Walk modulate is stun grey")
 	for dir in hud._face_buttons.keys():
 		eq((hud._face_buttons[dir] as Button).modulate, CombatHUD.STUN_GREY, "Face %s modulate is stun grey" % dir)
@@ -1503,22 +1568,20 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 
 	hud._on_walk_pressed()
 	eq(hud.selected_spell(), "", "disabled Walk does not select a spell")
-	# Buttons are disabled; CombatSim still rejects if a stunned intent is forced.
 	eq(_sim.submit({"type": "move", "to": Vector2i(3, 4)})["reason"], "stunned_cannot_act", "stunned move still rejected")
 
-	_sim.submit({"type": "end_turn"})
-	_sim.submit({"type": "end_turn"})
+	_unit(0)["stunned"] = false
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
-	eq(_unit(0)["stunned"], false, "Stun 1 expired")
-	eq(hud.stun_badge_visible(), false, "STUN badge hides after expiry")
-	eq(hud.walk_suppressed(), false, "Walk re-enables after Stun 1")
-	eq(hud.face_suppressed(), false, "Face re-enables after Stun 1")
+	eq(hud.stun_badge_visible(), false, "STUN badge hides when not stunned")
+	eq(hud.walk_suppressed(), false, "Walk re-enables when not stunned")
+	eq(hud.face_suppressed(), false, "Face re-enables when not stunned")
 	eq(hud.end_turn_enabled(), true, "End Turn still enabled after Stun 1")
 	hud.free()
 
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("STUN_GREY"), "HUD greys stunned Walk/Face/spells")
 	truthy(hud_src.contains("[b]STUN[/b]"), "HUD unit card includes a STUN badge")
+	truthy(hud_src.contains("turn auto-ends"), "HUD names Locked A′ auto-end")
 	eq(hud_src.contains("OPEN A05"), false, "HUD does not call Stun Open")
 	eq(hud_src.contains("suppress list not locked"), false, "HUD does not leave Stun Open")
 	eq(hud_src.contains("Step-shot"), false, "Stun HUD does not add Step-shot")
@@ -1527,7 +1590,8 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	eq(readme.contains("OPEN A05"), false, "README does not call Stun OPEN A05")
 	eq(readme.contains("**OPEN:** if the dest"), false, "README does not call PushBlocked Open")
-	truthy(readme.contains("Locked Stun (A)"), "README stamps Locked Stun (A)")
+	truthy(readme.contains("Locked Stun (A"), "README stamps Locked Stun (A′)")
+	truthy(readme.contains("auto-ends") or readme.contains("auto-resolves"), "README documents A′ auto end_turn")
 	truthy(readme.contains("Locked Push (1)"), "README stamps Locked Push (1)")
 	truthy(readme.contains("are no longer Open"), "README says Stun/Push are no longer Open")
 
@@ -1882,7 +1946,10 @@ func _test_preview_cast() -> void:
 	eq(preview["legal"], false, "Detonate with M<1 is not legal")
 	eq(preview["reason"], "needs_marks", "Detonate M<1 reason is needs_marks")
 	eq(preview["marks_on_target"], 0, "Detonate M=0 still reports marks_on_target")
-	eq(preview["sample_damage"], 6, "Detonate M=0 samples 6+6*0")
+	eq(preview["sample_damage"], null, "Detonate M=0 does not lead with sample_damage=6")
+	eq(preview["formula"], "6+6*M", "needs_marks still names 6+6*M for when Marks exist")
+	eq(preview["on_connect_text"], "6+6×M Air. Consumes Marks on the target.", "needs_marks on_connect still explains 6+6×M")
+	truthy(_notes_has(preview["notes"], "6+6×M"), "needs_marks notes explain 6+6×M when Marks exist")
 	eq(_unit(0)["ap"], 6, "needs_marks preview does not spend AP")
 
 	# Crush: would_stun when Impact is 4 and would spend 2. Sample 24 Earth front.
@@ -2339,6 +2406,22 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(detonate.contains("M=3 (6+6*M)"), "Detonate card names current Marks and formula")
 	eq(detonate.contains("+5"), false, "Detonate card does not invent +5")
 
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_marks": 0,
+	})
+	var detonate_m0_preview: Dictionary = _sim.preview_cast(SpellKits.DETONATE, Vector2i(0, 0), Vector2i(2, 0), 1)
+	var detonate_m0 := SpellTooltip.card_text(detonate_m0_preview)
+	eq(detonate_m0_preview["legal"], false, "Detonate M=0 preview is not legal")
+	eq(detonate_m0_preview["reason"], "needs_marks", "Detonate M=0 card preview is needs_marks")
+	eq(detonate_m0_preview["sample_damage"], null, "Detonate M=0 preview omits sample_damage")
+	eq(detonate_m0.contains("sample 6"), false, "Detonate M=0 card does not lead with sample 6")
+	eq(detonate_m0.contains("sample "), false, "Detonate M=0 card has no damage sample")
+	truthy(detonate_m0.contains("6+6×M"), "Detonate M=0 card still explains 6+6×M")
+	truthy(detonate_m0.contains("Needs 1+ Marks"), "Detonate M=0 card names the Marks gate")
+
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
 	var advance_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
@@ -2388,7 +2471,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(crush.contains("4 AP / 0 MP"), "Crush card names AP/MP from preview")
 	truthy(crush.contains("On connect: 24 Earth. Spends 2 Impact. Stun 1 if Impact was 4."), "Crush connect line is preview kit text")
 	truthy(crush.contains("On miss: Impact retained. AP/MP stay spent."), "Crush miss line is preview kit text")
-	truthy(crush.contains("Stun 1 (Locked A) this cast."), "Crush card shows stun flag when preview would_stun")
+	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
 	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
 	truthy(crush.contains("HIT 90% (Locked)"), "Crush card uses preview melee 90%")
 	truthy(crush.contains("sample 24"), "Crush card uses preview sample_damage")
@@ -2402,7 +2485,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	var crush_no_stun := SpellTooltip.card_text(_sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0))
-	eq(crush_no_stun.contains("Stun 1 (Locked A) this cast."), false, "Crush stun flag stays off when Impact is 2")
+	eq(crush_no_stun.contains("Stun 1 (Locked A′) this cast."), false, "Crush stun flag stays off when Impact is 2")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -2437,7 +2520,7 @@ func _test_spell_tooltip_cards() -> void:
 	eq((hud._spell_buttons[SpellKits.CRUSH] as Button).mouse_filter, Control.MOUSE_FILTER_IGNORE, "grey Crush still lets the host receive hover")
 	hud._on_spell_hover(SpellKits.CRUSH)
 	eq(hud.tooltip_visible(), true, "grey Crush still shows its card")
-	eq(hud.tooltip_caption().contains("Stun 1 (Locked A) this cast."), false, "grey Crush at 0 Impact does not flag this-cast Stun")
+	eq(hud.tooltip_caption().contains("Stun 1 (Locked A′) this cast."), false, "grey Crush at 0 Impact does not flag this-cast Stun")
 	hud._on_spell_hover(SpellKits.ADVANCE)
 	eq(hud.tooltip_caption().contains("HIT "), false, "Advance hover still has no HIT %")
 	eq(hud.preview_for_spell(SpellKits.ADVANCE)["sample_damage"], null, "Advance hover preview has no sample")

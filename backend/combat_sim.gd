@@ -26,8 +26,9 @@ const FACING_VEC := {
 ## A03–A07 are Open (A05 Resist/rounding/WindMod still Open). A01 Marks-on-target
 ## is Locked. A02 walk is Locked (Manhattan dest-click, H-first ortho path,
 ## facing follows each hop). Advance range is Locked Manhattan 1–2 (diamond).
-## MP is Locked Manhattan dest-click. Locked Stun (A): blocks move + cast + face;
-## End Turn allowed. Locked Push (1): occupied/OOB = no-move + push_blocked.
+## MP is Locked Manhattan dest-click. Locked Stun (A′): blocks move + cast + face;
+## auto end_turn on that seat's turn start (player never presses End Turn).
+## Locked Push (1): occupied/OOB = no-move + push_blocked.
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
@@ -97,9 +98,10 @@ func submit(intent: Dictionary) -> Dictionary:
 		return _reject(normalized, "dead", "REJECT — dead units cannot act.")
 
 	var kind := str(normalized.get("type", ""))
-	# Locked Stun (A): reject casts / moves / face while stunned; end_turn is allowed.
+	# Locked Stun (A′): reject casts / moves / face while stunned.
+	# end_turn is the auto path (player never presses it).
 	if kind != "end_turn" and _is_stunned(actor):
-		return _reject(normalized, "stunned_cannot_act", "REJECT — stunned (Locked A — move/cast/face blocked).")
+		return _reject(normalized, "stunned_cannot_act", "REJECT — stunned (Locked A′ — move/cast/face blocked).")
 	match kind:
 		"end_turn":
 			return _submit_end_turn(normalized, actor)
@@ -120,9 +122,9 @@ func legal_intents(seat: int) -> Array:
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"]:
 		return out
-	# Locked Stun (A): only end_turn while stunned.
+	# Locked Stun (A′): no move/cast/face. Auto end_turn only — player never presses.
 	if _is_stunned(actor):
-		out.append({"type": "end_turn", "seat": seat})
+		out.append({"type": "end_turn", "seat": seat, "auto": true})
 		return out
 
 	for dir in FACING_VEC.keys():
@@ -244,14 +246,15 @@ func snapshot() -> Dictionary:
 		"advance_range": "manhattan",
 		"advance_path": "teleport",
 		"marks_owner": "target",
-		"stun": "locked_a",
+		"stun": "locked_a_prime",
 		"stun_blocks": "move_cast_face",
+		"stun_auto_end_turn": true,
 		"push": "locked_1",
 		"push_occupied_oob": "no_move",
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; End Turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
@@ -439,6 +442,11 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		var marks_on_target := int(target.get("marks", 0))
 		out["marks_on_target"] = marks_on_target
 		out["formula"] = "6+6*M"
+		if marks_on_target < 1:
+			# needs_marks: do not lead with sample_damage=6 (6+6×0).
+			# notes / on_connect still explain 6+6×M for when Marks exist.
+			out["sample_damage"] = null
+			notes.append("Needs 1+ Marks. 6+6×M Air when Marks exist.")
 	elif spell_id == SpellKits.CRUSH:
 		var impact_before := int(actor.get("impact", 0))
 		var spend := int(def.get("spend_impact", 2))
@@ -548,7 +556,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
-		# Locked Stun (A): stun_remaining + stunned-this-turn. Blocks move + cast + face.
+		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
 		"alive": true,
@@ -570,34 +578,69 @@ func _normalize_intent(intent: Dictionary) -> Dictionary:
 
 func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	_intent_log.append(intent)
+	_handoff_seat(actor, bool(intent.get("auto", false)))
+	# Locked Stun (A′): if the seat that just started is stunned, auto-resolve
+	# end_turn. Tick already ran in _begin_unit_turn, so this is the skipped turn.
+	_auto_skip_stunned_turns()
+	return _accept()
+
+
+func _handoff_seat(actor: Dictionary, auto_skip: bool) -> Dictionary:
 	var next_seat := 1 if _active_seat == 0 else 0
 	var next_unit := _unit_by_seat(next_seat)
 	if next_unit.is_empty() or not next_unit["alive"]:
 		_finish_match(_active_seat)
-		return _accept()
+		return {}
 
 	_active_seat = next_seat
 	_turn_index += 1
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = MAX_AP
 	next_unit["mp"] = MAX_MP
-	if _is_stunned(next_unit):
-		_last_coach = "%s's turn. Stunned (Locked A) — End Turn only. AP/MP refilled to 6/3." % next_unit["name"]
+	var stunned := _is_stunned(next_unit)
+	if stunned:
+		_last_coach = "%s's turn skipped — stunned (Locked A′)." % next_unit["name"]
 	else:
 		_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
-	_last_events.append({
+	var end_event := {
 		"type": "end_turn",
 		"seat": actor["seat"],
 		"next_seat": _active_seat,
 		"coach": _last_coach,
-	})
+	}
+	if auto_skip:
+		end_event["auto"] = true
+		end_event["reason"] = "stunned"
+		end_event["locked"] = "Locked Stun (A′) — auto end_turn on turn start"
+	_last_events.append(end_event)
 	_last_events.append({
 		"type": "turn_start",
 		"seat": _active_seat,
 		"turn": _turn_index,
+		"stunned_skip": stunned,
 		"coach": _last_coach,
 	})
-	return _accept()
+	return next_unit
+
+
+func _auto_skip_stunned_turns() -> void:
+	# Locked Stun (A′): player never presses End Turn. Keep skipping while the
+	# newly started seat is stunned. Depth-capped so a double-stun cannot loop.
+	var depth := 0
+	while not _match_over and depth < 4:
+		var unit := _unit_by_seat(_active_seat)
+		if unit.is_empty() or not _is_stunned(unit):
+			break
+		var auto_intent := {"type": "end_turn", "seat": int(unit["seat"]), "auto": true}
+		_intent_log.append(auto_intent)
+		_handoff_seat(unit, true)
+		depth += 1
+	if depth > 0 and not _match_over:
+		var active := _unit_by_seat(_active_seat)
+		if not active.is_empty() and not _is_stunned(active):
+			_last_coach = "Stunned seat skipped (Locked A′). %s's turn. AP/MP refilled to 6/3." % active["name"]
+			if not _last_events.is_empty():
+				_last_events[_last_events.size() - 1]["coach"] = _last_coach
 
 
 ## Locked: one ortho hop → N/E/S/W. Empty if the step is not a single cardinal cell.
@@ -730,7 +773,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	return _resolve_rolling_cast(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
 
 
-func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
 	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
@@ -839,7 +882,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	var stun_applied := 0
 	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
-		# Locked Stun (A): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
+		# Locked Stun (A′): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
 		stun_applied = _apply_stun(target, int(def.get("stun_remaining", 1)))
 
 	var push_result := {}
@@ -879,7 +922,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["impact_before"] = impact_before
 		hit_event["impact_spent"] = engine_spent
 		hit_event["stun_applied"] = stun_applied
-		# Locked Stun (A): blocks move + cast + face; End Turn allowed.
+		# Locked Stun (A′): blocks move + cast + face; auto end_turn on turn start.
 	if not push_result.is_empty():
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
@@ -905,10 +948,10 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"status": "stun",
 			"remaining": stun_applied,
 			"target_seat": target["seat"],
-			# Locked Stun (A): move/cast/face rejected; end_turn allowed.
-			"locked": "Locked Stun (A) — move/cast/face rejected; end_turn allowed",
+			# Locked Stun (A′): move/cast/face rejected; auto end_turn on turn start.
+			"locked": "Locked Stun (A′) — move/cast/face rejected; auto end_turn on turn start",
 			"suppress": ["move", "cast", "face"],
-			"coach": "%s is stunned (Locked A)." % target["name"],
+			"coach": "%s is stunned (Locked A′)." % target["name"],
 		})
 	_check_death(target)
 	return _accept()
@@ -1020,9 +1063,9 @@ func _apply_setup_overrides(config: Dictionary) -> void:
 
 
 func _begin_unit_turn(unit: Dictionary) -> void:
-	# Locked Stun (A): decrement stun at start of that unit's turn.
-	# Stun 1 must cover this incoming turn. Decrementing remaining and then
-	# checking remaining would expire Stun 1 before suppress.
+	# Locked Stun (A′): decrement stun at start of that unit's turn.
+	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
+	# then checking remaining would expire Stun 1 before the auto end_turn.
 	# Set stunned-this-turn from remaining>0, then decrement remaining.
 	var remaining := int(unit.get("stun_remaining", 0))
 	unit["stunned"] = remaining > 0
@@ -1031,7 +1074,7 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 
 
 func _is_stunned(unit: Dictionary) -> bool:
-	# Locked Stun (A): remaining or this-turn flag. Blocks move + cast + face.
+	# Locked Stun (A′): remaining or this-turn flag. Blocks move + cast + face.
 	return int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 
 
@@ -1061,7 +1104,7 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 	if engine_spent > 0 and engine_name == "Impact":
 		parts.append(" Impact spent (%d)." % engine_spent)
 	if stun_applied > 0:
-		parts.append(" Stun %d (Locked A)." % stun_applied)
+		parts.append(" Stun %d (Locked A′)." % stun_applied)
 	if not push_result.is_empty():
 		if bool(push_result.get("blocked", false)):
 			parts.append(" Push blocked (Locked (1): dest occupied/OOB).")
@@ -1106,7 +1149,7 @@ func _consume_marks(unit: Dictionary) -> int:
 
 
 func _apply_stun(unit: Dictionary, remaining: int) -> int:
-	# Locked Stun (A): store stun_remaining. Blocks move + cast + face; End Turn allowed.
+	# Locked Stun (A′): store stun_remaining. Blocks move + cast + face; auto end_turn.
 	if remaining <= 0:
 		return 0
 	unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), remaining)

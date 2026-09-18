@@ -44,8 +44,11 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 			var formula := str(preview.get("formula", "6+6*M"))
 			sample += "  ·  M=%d (%s)" % [int(preview["marks_on_target"]), formula]
 		lines.append(sample)
+	if str(preview.get("reason", "")) == "needs_marks":
+		# Do not lead with a fake sample 6 when M=0; on_connect already has 6+6×M.
+		lines.append("Needs 1+ Marks (no sample until Marks exist).")
 	if bool(preview.get("would_stun", false)):
-		lines.append("Stun 1 (Locked A) this cast.")
+		lines.append("Stun 1 (Locked A′) this cast.")
 	for note in preview.get("notes", []):
 		var text := str(note)
 		if text == "":

@@ -296,8 +296,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
-	# Locked Stun (A): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
-	# Grey Walk / Face / spells; End Turn stays enabled.
+	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
+	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
 	_stunned = unit_is_stunned(active) and not match_over
 	if _stunned and _selected_spell != "":
 		_selected_spell = ""
@@ -334,7 +334,7 @@ func _apply_controls(match_over: bool) -> void:
 		if _stunned and not block:
 			_walk_button.modulate = STUN_GREY
 	if _end_turn_button != null:
-		# Locked Stun (A): End Turn stays enabled while stunned.
+		# Locked Stun (A′): End Turn stays as a fallback; CombatSim auto-skips.
 		_end_turn_button.disabled = block
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
@@ -586,7 +586,7 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
 	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
-	# Locked Stun (A): STUN badge on the unit card while remaining or stunned-this-turn.
+	# Locked Stun (A′): STUN badge on the unit card while remaining or stunned-this-turn.
 	var stun_note := ""
 	if unit_is_stunned(unit):
 		stun_note = "  [b]STUN[/b]"
@@ -735,7 +735,7 @@ func _update_selected_label() -> void:
 	if _selected_label == null:
 		return
 	if _stunned:
-		_selected_label.text = "Stunned — End Turn only"
+		_selected_label.text = "Stunned — turn auto-ends"
 		return
 	if _selected_spell == "":
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"

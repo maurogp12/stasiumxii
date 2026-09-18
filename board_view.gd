@@ -13,7 +13,8 @@ extends Node2D
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
 ## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input
 ## but do not pause the clock.
-## Locked Stun (A): Walk / Face / spells grey on HUD; this view does not submit them.
+## Locked Stun (A′): Walk / Face / spells grey on HUD; this view does not submit them.
+## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Locked Push (1): toast PushBlocked, no hop; hit/Impact feedback still plays.
 
 const BOARD_SIZE: int = 8
