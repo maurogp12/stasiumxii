@@ -140,3 +140,10 @@ static func class_spells(class_id: String) -> Array:
 
 static func has_spell(class_id: String, spell_id: String) -> bool:
 	return spell_id in class_spells(class_id)
+
+
+static func rolls(spell_id: String) -> bool:
+	var def: Dictionary = spell(spell_id)
+	if def.is_empty():
+		return false
+	return bool(def.get("rolls", false))

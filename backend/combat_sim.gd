@@ -281,6 +281,49 @@ static func hit_chance(distance: int) -> int:
 	return 70
 
 
+## Presentation helper only. Locked Chebyshev bands; no +5. Advance / walks: show=false.
+func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dictionary:
+	var out := {
+		"show": false,
+		"hit_chance": 0,
+		"range": 0,
+		"rolls": false,
+		"spell": spell_id,
+	}
+	var def: Dictionary = SpellKits.spell(spell_id)
+	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
+	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush.
+	# No +5. No Advance. No invented stun/push.
+	if def.is_empty() or not bool(def.get("rolls", false)):
+		return out
+	if not [
+		SpellKits.MARK_SHOT,
+		SpellKits.STRIKE,
+		SpellKits.DETONATE,
+		SpellKits.SHOULDER,
+		SpellKits.CRUSH,
+	].has(spell_id):
+		return out
+	out["rolls"] = true
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not actor["alive"]:
+		return out
+	var cell: Vector2i
+	if dest == null:
+		var enemy := _enemy_of(seat)
+		if enemy.is_empty() or not enemy["alive"]:
+			return out
+		cell = enemy["pos"]
+	else:
+		cell = _as_cell(dest)
+	var dist := chebyshev(actor["pos"], cell)
+	out["range"] = dist
+	out["hit_chance"] = hit_chance(dist)
+	if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+		out["show"] = true
+	return out
+
+
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String) -> Dictionary:
 	return {
 		"seat": seat,

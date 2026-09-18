@@ -17,18 +17,19 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
    - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **OPEN A05:** Stun rejects casts/moves/face (`stunned_cannot_act`); End Turn is allowed. Exact suppress list is not locked.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Back hits deal ×1.20; front/side are ×1.00.
 7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
-8. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
-9. First combatant to 0 HP loses. **New Match** resets from `CombatSim.reset_match()`.
+8. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
+9. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
+10. First combatant to 0 HP loses. **New Match** resets from `CombatSim.reset_match()`.
 
 ## Architecture
 
 | Piece | Role |
 | --- | --- |
-| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)`, `submit(intent)`, `legal_intents(seat)`, `snapshot()`. Rolls and HP live here. Walk paths are expanded here. Advance is a dest-click teleport. |
+| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)`, `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`. Rolls and HP live here. Walk paths are expanded here. Advance is a dest-click teleport. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, and run the Proposed timers. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, and run the Proposed timers. |
 
 Intents: `end_turn` | `face` | `move` | `cast`.
 
@@ -53,6 +54,7 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 
 - ~1.0s client-only seat handoff pause + turn banner on End Turn. CombatSim still advances the seat immediately. The next seat's 30s is held during that banner so it does not drain before they can act.
 - 30s visible seat clock (`TurnClock.DURATION_SEC`). At 0, auto End Turn (same as the button). CombatSim does not own the clock. Walk hop animations do **not** pause the clock. Advance does not hop.
+- Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate / Shoulder / Crush (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
 
 ## Omitted (not silent defaults)
 
@@ -60,7 +62,6 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - Step-shot, Rain, Longbow, Avalanche
 - Other classes (Mender, Gloam, Bastion)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
-- Aim hit-% chrome
 - Weapon fumbles, dual loadouts, WP/PW
 
 ## A03–A07 (provisional Open, not Locked)
@@ -80,3 +81,9 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 ```bash
 godot --headless --path . -s res://tests/run_combat_tests.gd
 ```
+
+## How to test aim chrome
+
+1. Run the main scene. Select **Mark Shot**: Chebyshev 2–5 ring + **HIT 75%** vs default Ironjaw (range 5). Walk chrome stays off. Advance / Walk never show HIT %.
+2. After a Mark connects, select **Detonate**: 1–6 ring + HIT %.
+3. Kit buttons stay class-gated (Kestrel: Mark Shot / Detonate; Ironjaw: Advance / Strike / Shoulder / Crush). Crush stays disabled below 2 Impact.
