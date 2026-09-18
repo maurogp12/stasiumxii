@@ -1423,9 +1423,11 @@ func _test_aim_hit_preview() -> void:
 	eq(preview["show"], true, "Strike in melee shows hit percent")
 	eq(preview["hit_chance"], 90, "melee rolling casts preview Locked 90%")
 	preview = _sim.aim_hit_preview(1, SpellKits.SHOULDER)
-	eq(preview["show"], false, "Shoulder aim has no hit-percent chrome (kit resolve is #7)")
+	eq(preview["show"], true, "Shoulder melee shows Locked hit percent")
+	eq(preview["hit_chance"], 90, "Shoulder melee previews Locked 90%")
 	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
-	eq(preview["show"], false, "Crush aim has no hit-percent chrome (kit resolve is #7)")
+	eq(preview["show"], true, "Crush melee shows Locked hit percent")
+	eq(preview["hit_chance"], 90, "Crush melee previews Locked 90%")
 	preview = _sim.aim_hit_preview(1, SpellKits.ADVANCE)
 	eq(preview["show"], false, "Advance still has no hit percent when adjacent")
 

@@ -17,7 +17,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
    - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **OPEN A05:** Stun rejects casts/moves/face (`stunned_cannot_act`); End Turn is allowed. Exact suppress list is not locked.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Back hits deal ×1.20; front/side are ×1.00.
 7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
-8. While aiming **Mark Shot / Strike / Detonate**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll), walks, Shoulder, and Crush do not show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
+8. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
 9. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
 10. First combatant to 0 HP loses. **New Match** resets from `CombatSim.reset_match()`.
 
@@ -54,7 +54,7 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 
 - ~1.0s client-only seat handoff pause + turn banner on End Turn. CombatSim still advances the seat immediately. The next seat's 30s is held during that banner so it does not drain before they can act.
 - 30s visible seat clock (`TurnClock.DURATION_SEC`). At 0, auto End Turn (same as the button). CombatSim does not own the clock. Walk hop animations do **not** pause the clock. Advance does not hop.
-- Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
+- Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate / Shoulder / Crush (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
 
 ## Omitted (not silent defaults)
 
