@@ -47,6 +47,14 @@ func _run() -> void:
 	_test_mark_shot_range_highlights()
 	_test_turn_clock_auto_end_turn()
 	_test_turn_clock_ticks_during_hops()
+	_test_detonate_gates_and_damage()
+	_test_detonate_miss_retains_marks()
+	_test_shoulder_push_and_impact()
+	_test_shoulder_push_blocked_open()
+	_test_crush_spend_and_stun()
+	_test_stun_suppresses_actions_open_a05()
+	_test_legal_intents_new_spell_gates()
+	_test_kit_class_exclusions()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -69,7 +77,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["advance_range"], "manhattan", "Advance range gate is Locked Manhattan 1–2")
 	eq(snap["advance_path"], "teleport", "Advance is a dest-click teleport")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
-	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
+	eq(snap["open_decisions"].has("A01"), false, "A01 Marks-on-target is Locked, not Open")
+	eq(snap["marks_owner"], "target", "A01 Locked: Marks live on the target")
 
 
 func _test_only_active_seat_acts() -> void:
@@ -285,7 +294,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
 	eq(_unit(1)["hp"], 72, "8 Air on connect")
-	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 provisional)")
+	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	_sim.reset_match({
 		"seed": 1,
@@ -370,8 +379,8 @@ func _test_class_kits() -> void:
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 	})
-	eq(_unit(0)["spells"], ["mark_shot"], "Kestrel kit is Mark Shot only")
-	eq(_unit(1)["spells"], ["advance", "strike"], "Ironjaw kit is Advance + Strike")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit is Mark Shot + Detonate")
+	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit is Advance + Strike + Shoulder + Crush")
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(0, 0)})
 	eq(result["illegal"], true, "Ironjaw cannot Mark Shot")
@@ -450,7 +459,7 @@ func _test_legal_intents_empty_for_other_seat() -> void:
 	truthy(types.has("cast"), "cast is legal")
 	for intent in _sim.legal_intents(0):
 		if str(intent.get("type", "")) == "cast":
-			eq(str(intent.get("spell", "")), "mark_shot", "Kestrel legal casts are Mark Shot only")
+			eq(str(intent.get("spell", "")), "mark_shot", "Kestrel legal casts at 0 Marks are Mark Shot only")
 
 
 func _test_view_does_not_roll_or_own_hp() -> void:
@@ -464,27 +473,34 @@ func _test_view_does_not_roll_or_own_hp() -> void:
 func _test_hud_chrome_kit_gated() -> void:
 	_sim.reset_match({"seed": 1})
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
-	eq(kestrel_offered, ["mark_shot"], "Kestrel HUD offers Mark Shot only")
+	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate")
 	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")
+	eq(kestrel_offered.has("shoulder"), false, "Kestrel HUD does not offer Shoulder")
+	eq(kestrel_offered.has("crush"), false, "Kestrel HUD does not offer Crush")
 	var kestrel_legal := CombatHUD.legal_cast_ids(_sim.legal_intents(0))
 	eq(kestrel_legal.has("mark_shot"), true, "Kestrel legal_intents enable Mark Shot")
+	eq(kestrel_legal.has("detonate"), false, "Detonate stays gated at 0 Marks")
 	eq(kestrel_legal.has("advance"), false, "Kestrel legal_intents do not enable Advance")
 	_sim.submit({"type": "end_turn"})
 	var ironjaw_offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
-	eq(ironjaw_offered, ["advance", "strike"], "Ironjaw HUD offers Advance and Strike")
+	eq(ironjaw_offered, ["advance", "strike", "shoulder", "crush"], "Ironjaw HUD offers Advance, Strike, Shoulder, Crush")
 	eq(ironjaw_offered.has("mark_shot"), false, "Ironjaw HUD does not offer Mark Shot")
+	eq(ironjaw_offered.has("detonate"), false, "Ironjaw HUD does not offer Detonate")
 	var ironjaw_legal := CombatHUD.legal_cast_ids(_sim.legal_intents(1))
 	eq(ironjaw_legal.has("advance"), true, "Ironjaw legal_intents enable Advance")
+	eq(ironjaw_legal.has("strike"), false, "Strike stays gated until range 1")
+	eq(ironjaw_legal.has("crush"), false, "Crush stays gated at 0 Impact")
 	var fake_kestrel_advance := _unit(0).duplicate(true)
-	fake_kestrel_advance["spells"] = ["advance", "mark_shot"]
+	fake_kestrel_advance["spells"] = ["advance", "mark_shot", "detonate"]
 	fake_kestrel_advance["class_id"] = "kestrel"
-	eq(CombatHUD.offered_cast_ids(fake_kestrel_advance), ["mark_shot"], "Advance chrome stays Ironjaw-only even if kit array is wrong")
+	eq(CombatHUD.offered_cast_ids(fake_kestrel_advance), ["mark_shot", "detonate"], "Advance chrome stays Ironjaw-only even if kit array is wrong")
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
 	eq(hud.contains("SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.MARK_SHOT"), false, "HUD does not hardcode both kits on one action bar")
 	eq(hud.contains("WindMod"), false, "HUD has no WindMod chrome")
-	eq(hud.contains("Detonate"), false, "HUD has no Detonate chrome")
-	eq(hud.contains("Shoulder"), false, "HUD has no Shoulder chrome")
-	eq(hud.contains("Crush"), false, "HUD has no Crush chrome")
+	# Names come from SpellKits at runtime; HUD source does not hardcode the new spell labels.
+	eq(hud.contains("Detonate"), false, "HUD does not hardcode Detonate label")
+	eq(hud.contains("Shoulder"), false, "HUD does not hardcode Shoulder label")
+	eq(hud.contains("Crush"), false, "HUD does not hardcode Crush label")
 
 
 func _test_handoff_timer_is_client_only() -> void:
@@ -742,9 +758,8 @@ func _test_mark_shot_range_highlights() -> void:
 	eq(has_r1, false, "Chebyshev 1 is outside Mark Shot chrome")
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	truthy(view.contains("range_highlight_cells"), "board_view paints Mark Shot from range_highlight_cells")
-	truthy(view.contains("SpellKits.MARK_SHOT"), "board_view special-cases Mark Shot range chrome")
-	truthy(view.contains('set_highlight("range")'), "Mark Shot ring uses range highlight")
+	truthy(view.contains("range_highlight_cells"), "board_view paints range rings from range_highlight_cells")
+	truthy(view.contains('set_highlight("range")'), "enemy-spell ring uses range highlight")
 	truthy(view.contains("kind == \"move\" and spell_id == \"\""), "walk highlights stay off while a spell is selected")
 	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
 	truthy(tile_src.contains("\"range\""), "tiles have a range highlight color")
@@ -831,6 +846,548 @@ func _test_turn_clock_ticks_during_hops() -> void:
 	eq(view.contains("Detonate"), false, "clock hop patch does not add Detonate")
 	eq(view.contains("Shoulder"), false, "clock hop patch does not add Shoulder")
 	eq(view.contains("Crush"), false, "clock hop patch does not add Crush")
+
+
+func _test_detonate_gates_and_damage() -> void:
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["ap"]), 3, "Detonate costs 3 AP")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["mp"]), 0, "Detonate costs 0 MP")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range 1 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 6, "Detonate max range 6 Chebyshev")
+	eq(str(SpellKits.spell(SpellKits.DETONATE).get("range_mode", "")), "chebyshev", "Detonate range is Chebyshev")
+
+	# No Marks on the target: reject + refund. A01 Locked: Marks live on the target.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+	})
+	eq(_unit(1)["marks"], 0, "Ironjaw starts with 0 Marks")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(2, 0)})
+	eq(result["illegal"], true, "Detonate without Marks is illegal")
+	eq(result["reason"], "insufficient_marks", "reject reason is insufficient_marks")
+	eq(_unit(0)["ap"], 6, "Detonate gate refunds AP")
+	eq(_unit(1)["hp"], 80, "Detonate gate deals no damage")
+	eq(_unit(1)["marks"], 0, "Detonate gate does not invent Marks")
+
+	# Range 7 is illegal even with Marks.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(7, 0),
+		"ironjaw_marks": 2,
+	})
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(7, 0)})
+	eq(result["illegal"], true, "Detonate range 7 is illegal")
+	eq(result["reason"], "out_of_range", "range 7 reject is out_of_range")
+	eq(_unit(0)["ap"], 6, "out-of-range Detonate refunds")
+	eq(_unit(1)["marks"], 2, "out-of-range does not consume Marks")
+
+	# Range 1 with 1 Mark: 6+6*1 = 12 Air, consume Marks.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_facing": "W",
+		"ironjaw_marks": 1,
+	})
+	eq(_sim.chebyshev(Vector2i(3, 3), Vector2i(4, 3)), 1, "adjacent is Chebyshev 1")
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "Detonate at range 1 with 1 Mark connects")
+	eq(result["events"][0]["type"], "hit", "Detonate hit event")
+	eq(result["events"][0]["base_damage"], 12, "Detonate base is 6+6*1")
+	eq(result["events"][0]["damage"], 12, "front Detonate deals 12 Air")
+	eq(result["events"][0]["marks_consumed"], 1, "connect consumes 1 Mark")
+	eq(_unit(1)["marks"], 0, "A01: target Marks consumed on connect")
+	eq(_unit(0)["marks"], 0, "caster Marks stay 0 (stack is on the target)")
+	eq(_unit(1)["hp"], 68, "80-12=68")
+	eq(_unit(0)["ap"], 3, "Detonate spends 3 AP")
+	eq(_unit(0)["mp"], 3, "Detonate spends 0 MP")
+
+	# 3 Marks: 6+18=24. 5 Marks: 6+30=36.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(6, 0),
+		"ironjaw_facing": "W",
+		"ironjaw_marks": 3,
+	})
+	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(6, 0)), 6, "range 6 is legal for Detonate")
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(6, 0)})
+	eq(result["ok"], true, "Detonate at Chebyshev 6 is legal")
+	eq(result["events"][0]["base_damage"], 24, "3 Marks → base 24")
+	eq(result["events"][0]["damage"], 24, "front 24 Air")
+	eq(result["events"][0]["hit_chance"], 70, "range 6 uses the 70% band")
+	eq(_unit(1)["marks"], 0, "3 Marks consumed")
+	eq(_unit(1)["hp"], 56, "80-24=56")
+
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_facing": "E",
+		"ironjaw_marks": 5,
+	})
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(2, 0)})
+	eq(result["events"][0]["base_damage"], 36, "5 Marks → base 36")
+	eq(result["events"][0]["back"], true, "Detonate still applies facing")
+	eq(result["events"][0]["damage"], 43, "36 × 1.20 rounds to 43")
+	eq(_unit(1)["marks"], 0, "cap stack consumed")
+	eq(_unit(1)["hp"], 37, "80-43=37")
+
+	# Mark Shot then Detonate same turn: +1 Mark on target, then consume.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1, 1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_facing": "E",
+	})
+	result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 0)})
+	eq(_unit(1)["marks"], 1, "Mark Shot writes Marks on the target")
+	eq(_unit(0)["ap"], 4, "Mark Shot spent 2 AP")
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(2, 0)})
+	eq(result["ok"], true, "same-turn Detonate after Mark Shot")
+	eq(result["events"][0]["base_damage"], 12, "consumes the Mark just applied")
+	eq(_unit(1)["marks"], 0, "same-turn consume clears the target stack")
+	eq(_unit(0)["ap"], 1, "2+3 AP spent")
+
+
+func _test_detonate_miss_retains_marks() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(3, 0),
+		"ironjaw_marks": 4,
+	})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(3, 0)})
+	eq(result["ok"], true, "Detonate miss is a legal resolution")
+	eq(result["events"][0]["type"], "miss", "miss event")
+	eq(result["events"][0]["marks_retained"], true, "miss retains Marks")
+	eq(result["events"][0]["marks_on_target"], 4, "miss event reports retained stack")
+	eq(_unit(1)["marks"], 4, "A01: miss does not consume target Marks")
+	eq(_unit(1)["hp"], 80, "miss deals 0")
+	eq(_unit(0)["ap"], 3, "miss keeps the 3 AP spend")
+	eq(_unit(0)["mp"], 3, "miss keeps the 0 MP spend")
+
+
+func _test_shoulder_push_and_impact() -> void:
+	eq(int(SpellKits.spell(SpellKits.SHOULDER)["ap"]), 2, "Shoulder costs 2 AP")
+	eq(int(SpellKits.spell(SpellKits.SHOULDER)["mp"]), 0, "Shoulder costs 0 MP")
+	eq(int(SpellKits.spell(SpellKits.SHOULDER)["min_range"]), 1, "Shoulder range 1")
+	eq(int(SpellKits.spell(SpellKits.SHOULDER)["max_range"]), 1, "Shoulder range max 1")
+
+	# Orthogonal push east: Ironjaw (3,3) → Kestrel (4,3) → (5,3).
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.push_destination(Vector2i(3, 3), Vector2i(4, 3)), Vector2i(5, 3), "Chebyshev push is one cell away along the line")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "Shoulder connects")
+	eq(result["events"][0]["type"], "hit", "Shoulder hit event")
+	eq(result["events"][0]["damage"], 6, "front Shoulder deals 6 Earth")
+	eq(result["events"][0]["engine_gained"], 1, "+1 Impact on connect")
+	eq(result["events"][0]["pushed"], true, "Shoulder pushed the target")
+	eq(result["events"][0]["push_to"], Vector2i(5, 3), "pushed one cell east")
+	eq(result["events"][0]["push_blocked"], false, "empty in-bounds dest is not blocked")
+	eq(_unit(0)["pos"], Vector2i(5, 3), "Kestrel landed one cell away")
+	eq(_unit(0)["hp"], 74, "80-6=74")
+	eq(_unit(1)["impact"], 1, "Shoulder grants Impact on connect")
+	eq(_unit(1)["ap"], 4, "Shoulder spends 2 AP")
+	eq(_unit(1)["mp"], 3, "Shoulder spends 0 MP")
+
+	# Diagonal push.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 4),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.chebyshev(Vector2i(3, 3), Vector2i(4, 4)), 1, "diagonal neighbor is range 1")
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 4)})
+	eq(result["ok"], true, "diagonal Shoulder connects")
+	eq(result["events"][0]["push_to"], Vector2i(5, 5), "diagonal push continues along the line")
+	eq(_unit(0)["pos"], Vector2i(5, 5), "Kestrel moved diagonally away")
+
+	# Miss: no push, no Impact, AP stays spent.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "Shoulder miss is legal")
+	eq(result["events"][0]["type"], "miss", "Shoulder miss event")
+	eq(result["events"][0]["pushed"], false, "miss does not push")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "miss leaves the target in place")
+	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["impact"], 0, "miss grants no Impact")
+	eq(_unit(1)["ap"], 4, "miss keeps the 2 AP spend")
+
+	# Range 2 is illegal.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(5, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3)})
+	eq(result["illegal"], true, "Shoulder range 2 is illegal")
+	eq(result["reason"], "out_of_range", "Shoulder range reject")
+	eq(_unit(1)["ap"], 6, "range reject refunds")
+
+
+func _test_shoulder_push_blocked_open() -> void:
+	# OPEN: push off-board — do not move; still deal damage/Impact; emit push_blocked.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"kestrel_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.push_destination(Vector2i(1, 0), Vector2i(0, 0)), Vector2i(-1, 0), "west edge push is OOB")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
+	eq(result["ok"], true, "OOB push still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "OPEN: OOB push does not move the target")
+	eq(_unit(0)["hp"], 74, "OOB push still deals 6 Earth")
+	eq(_unit(1)["impact"], 1, "OOB push still grants Impact")
+	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
+	eq(result["events"][0]["push_block_reason"], "out_of_bounds", "block reason is out_of_bounds")
+	eq(result["events"][1]["type"], "push_blocked", "OPEN event type is push_blocked")
+	eq(result["events"][1]["reason"], "out_of_bounds", "push_blocked reason is out_of_bounds")
+	truthy(str(result["events"][1].get("open", "")).contains("OPEN"), "push_blocked event is labeled OPEN")
+
+	# OPEN: push into occupied — blockers are a test fixture, not a locked board feature.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"blockers": [Vector2i(5, 3)],
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "occupied push still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "OPEN: occupied dest does not move the target")
+	eq(_unit(0)["hp"], 74, "occupied push still deals damage")
+	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
+	eq(result["events"][1]["type"], "push_blocked", "occupied dest emits push_blocked")
+	eq(result["events"][1]["reason"], "occupied", "block reason is occupied")
+	truthy(str(result["events"][1].get("open", "")).contains("OPEN"), "occupied push_blocked is labeled OPEN")
+
+
+func _test_crush_spend_and_stun() -> void:
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["ap"]), 4, "Crush costs 4 AP")
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["mp"]), 0, "Crush costs 0 MP")
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 24, "Crush base is 24 Earth")
+
+	# Gate: fewer than 2 Impact rejects and refunds.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_impact": 1,
+	})
+	_sim.submit({"type": "end_turn"})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(result["illegal"], true, "Crush with 1 Impact is illegal")
+	eq(result["reason"], "insufficient_impact", "reject reason is insufficient_impact")
+	eq(_unit(1)["ap"], 6, "Crush gate refunds AP")
+	eq(_unit(1)["impact"], 1, "Crush gate does not spend Impact")
+	eq(_unit(0)["hp"], 80, "Crush gate deals no damage")
+
+	# Connect at Impact 2: spend 2, 24 Earth, no Stun.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 2,
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(result["ok"], true, "Crush at 2 Impact connects")
+	eq(result["events"][0]["damage"], 24, "front Crush deals 24 Earth")
+	eq(result["events"][0]["impact_before"], 2, "Impact before spend is 2")
+	eq(result["events"][0]["impact_spent"], 2, "connect spends 2 Impact")
+	eq(result["events"][0]["stun_applied"], 0, "Impact 2 before spend does not Stun")
+	eq(_unit(1)["impact"], 0, "2-2=0 Impact left")
+	eq(_unit(0)["hp"], 56, "80-24=56")
+	eq(_unit(0)["stun_remaining"], 0, "no Stun stored")
+	eq(_unit(1)["ap"], 2, "Crush spends 4 AP")
+	eq(_unit(1)["mp"], 3, "Crush spends 0 MP")
+
+	# Impact 3 before spend: spend 2, no Stun.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 3,
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(result["events"][0]["stun_applied"], 0, "Impact 3 before spend does not Stun")
+	eq(_unit(1)["impact"], 1, "3-2=1 Impact left")
+	eq(_unit(0)["stun_remaining"], 0, "no Stun at Impact 3")
+
+	# Impact 4 before spend: Stun 1 (OPEN A05).
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "W",
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(result["ok"], true, "Crush at Impact 4 connects")
+	eq(result["events"][0]["impact_before"], 4, "Impact was 4 before the spend")
+	eq(result["events"][0]["impact_spent"], 2, "still spends 2")
+	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
+	eq(result["events"][0]["open_a05_stun"], true, "Stun application labeled OPEN A05")
+	eq(result["events"][0]["back"], true, "Crush still applies facing")
+	eq(result["events"][0]["damage"], 29, "24 × 1.20 rounds to 29")
+	eq(_unit(1)["impact"], 2, "4-2=2 Impact left")
+	eq(_unit(0)["stun_remaining"], 1, "Stun 1 stored on the target")
+	eq(result["events"][1]["type"], "status", "status event for Stun")
+	eq(result["events"][1]["status"], "stun", "status id is stun")
+	eq(result["events"][1]["remaining"], 1, "status remaining is 1")
+	truthy(str(result["events"][1].get("open", "")).contains("A05"), "Stun status event labeled OPEN A05")
+
+	# Miss retains Impact; no Stun.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(result["ok"], true, "Crush miss is legal")
+	eq(result["events"][0]["type"], "miss", "Crush miss event")
+	eq(result["events"][0]["impact_retained"], true, "miss retains Impact")
+	eq(_unit(1)["impact"], 4, "miss does not spend Impact")
+	eq(_unit(0)["stun_remaining"], 0, "miss does not Stun")
+	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
+
+
+func _test_stun_suppresses_actions_open_a05() -> void:
+	# OPEN A05: provisional suppress = casts/moves/face. end_turn allowed.
+	# Decrement at start of the stunned unit's turn after setting stunned-this-turn.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 4,
+		"ironjaw_marks": 1,
+	})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	eq(_unit(0)["stun_remaining"], 1, "Kestrel carries Stun 1 into the handoff")
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.snapshot()["active_seat"], 0, "Kestrel's stunned turn starts")
+	eq(_unit(0)["stunned"], true, "OPEN A05: stunned-this-turn is set at turn start")
+	eq(_unit(0)["stun_remaining"], 0, "OPEN A05: remaining decremented at start after the flag")
+	var legal: Array = _sim.legal_intents(0)
+	eq(legal.size(), 1, "stunned legal_intents is end_turn only")
+	eq(str(legal[0].get("type", "")), "end_turn", "only end_turn is offered while stunned")
+
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
+	eq(result["illegal"], true, "stunned move is rejected")
+	eq(result["reason"], "stunned_cannot_act", "move reason is stunned_cannot_act")
+	eq(_unit(0)["pos"], Vector2i(3, 3), "stunned unit did not walk")
+	eq(_unit(0)["mp"], 3, "stunned move refunds")
+
+	result = _sim.submit({"type": "face", "dir": "N"})
+	eq(result["illegal"], true, "stunned face is rejected")
+	eq(result["reason"], "stunned_cannot_act", "face reason is stunned_cannot_act")
+	eq(_unit(0)["facing"], "E", "facing unchanged")
+
+	result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 3)})
+	eq(result["illegal"], true, "stunned cast is rejected")
+	eq(result["reason"], "stunned_cannot_act", "cast reason is stunned_cannot_act")
+	eq(_unit(0)["ap"], 6, "stunned cast refunds")
+
+	result = _sim.submit({"type": "end_turn"})
+	eq(result["ok"], true, "end_turn is allowed while stunned")
+	eq(_sim.snapshot()["active_seat"], 1, "stunned seat can hand off")
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.snapshot()["active_seat"], 0, "Kestrel acts again after serving Stun 1")
+	eq(_unit(0)["stunned"], false, "Stun 1 expired after one turn")
+	eq(_unit(0)["stun_remaining"], 0, "no leftover stun_remaining")
+	var types := {}
+	for intent in _sim.legal_intents(0):
+		types[str(intent["type"])] = true
+	truthy(types.has("move"), "after Stun 1, walk is legal again")
+	truthy(types.has("cast"), "after Stun 1, casts are legal again")
+	truthy(types.has("face"), "after Stun 1, face is legal again")
+
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	truthy(sim_src.contains("OPEN A05"), "CombatSim labels Stun as OPEN A05")
+	truthy(sim_src.contains("stunned_cannot_act"), "CombatSim uses reserved reject stunned_cannot_act")
+
+
+func _test_legal_intents_new_spell_gates() -> void:
+	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–6.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+	})
+	eq(_has_legal_cast(0, "detonate"), false, "legal_intents omit Detonate at 0 Marks")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot still offered at range 2")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), true, "legal_intents include Detonate with 1 Mark in range")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot still offered alongside Detonate")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"ironjaw_marks": 2,
+	})
+	eq(_has_legal_cast(0, "detonate"), true, "Detonate offered at Chebyshev 1")
+	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot still min-range 2")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(6, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), true, "Detonate offered at Chebyshev 6")
+	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot max-range 5")
+
+	# Shoulder at range 1; Crush only with 2+ Impact.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_has_legal_cast(1, "shoulder"), true, "Shoulder offered at range 1")
+	eq(_has_legal_cast(1, "strike"), true, "Strike offered at range 1")
+	eq(_has_legal_cast(1, "crush"), false, "Crush omitted at 0 Impact")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_impact": 2,
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_has_legal_cast(1, "crush"), true, "Crush offered with 2 Impact at range 1")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(6, 3),
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_has_legal_cast(1, "crush"), false, "Crush omitted when out of range even at 4 Impact")
+	eq(_has_legal_cast(1, "shoulder"), false, "Shoulder omitted when out of range")
+
+	# Range chrome for Detonate is Chebyshev 1–6. No aim hit-% chrome.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	var painted: Dictionary = {}
+	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
+		painted[cell] = true
+	eq(painted.has(Vector2i(3, 4)), true, "Chebyshev 1 is inside Detonate chrome")
+	eq(painted.has(Vector2i(3, 3)), false, "caster tile is not in Detonate chrome")
+	truthy(painted.has(Vector2i(0, 3)), "Chebyshev 3 ortho is inside Detonate chrome")
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	var has_r6 := false
+	var has_r7 := false
+	var has_r1 := false
+	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
+		var d := int(_sim.chebyshev(Vector2i(0, 0), cell))
+		if d == 6:
+			has_r6 = true
+		if d == 7:
+			has_r7 = true
+		if d == 1:
+			has_r1 = true
+	truthy(has_r1, "Detonate chrome includes Chebyshev 1")
+	truthy(has_r6, "Detonate chrome includes Chebyshev 6")
+	eq(has_r7, false, "Detonate chrome excludes Chebyshev 7")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains("hit_chance"), false, "board_view has no aim hit-chance chrome")
+	eq(view.contains("hit-%"), false, "board_view has no hit-percent label")
+
+
+func _test_kit_class_exclusions() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_marks": 2,
+		"ironjaw_impact": 4,
+	})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["illegal"], true, "Kestrel cannot Shoulder")
+	eq(result["reason"], "spell_not_in_kit", "Kestrel Shoulder is spell_not_in_kit")
+	eq(_unit(0)["ap"], 6, "wrong-kit Shoulder refunds")
+	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(4, 3)})
+	eq(result["illegal"], true, "Kestrel cannot Crush")
+	eq(result["reason"], "spell_not_in_kit", "Kestrel Crush is spell_not_in_kit")
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(3, 3)})
+	eq(result["illegal"], true, "Ironjaw cannot Detonate")
+	eq(result["reason"], "spell_not_in_kit", "Ironjaw Detonate is spell_not_in_kit")
+	eq(_unit(1)["ap"], 6, "wrong-kit Detonate refunds")
+	eq(_unit(1)["impact"], 4, "wrong-kit Detonate does not spend Impact")
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "detonate":
+			fail("Ironjaw legal_intents must not include detonate")
+			return
+
+	# Locked slice still holds: Advance teleport, Walk Manhattan, crit off, WindMod omitted.
+	eq(_sim.snapshot()["advance_path"], "teleport", "Advance stays teleport")
+	eq(_sim.snapshot()["advance_ap"], 3, "Advance stays 3 AP")
+	eq(_sim.snapshot()["advance_mp"], "none", "Advance stays 0 MP")
+	eq(_sim.snapshot()["walk"], "manhattan", "Walk stays Manhattan")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
+	eq(sim_src.contains("wind_mod"), false, "CombatSim still has no wind_mod term")
+	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
+
+
+func _has_legal_cast(seat: int, spell_id: String) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
+			return true
+	return false
 
 
 func _unit(seat: int) -> Dictionary:

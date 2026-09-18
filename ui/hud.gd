@@ -157,9 +157,11 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
+	# OPEN A05: face/cast chrome follows CombatSim stun reject. Exact suppress list not locked.
+	var stunned := int(active.get("stun_remaining", 0)) > 0 or bool(active.get("stunned", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not stunned
 		button.disabled = not can_submit
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
@@ -168,6 +170,9 @@ func render(snap: Dictionary, legal: Array) -> void:
 		else:
 			button.modulate = Color(1, 1, 1, 0.72)
 	_apply_controls(match_over)
+	if stunned and not match_over:
+		for button in _face_buttons.values():
+			(button as Button).disabled = true
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -374,7 +379,11 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
 	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
-	return "[color=#ffffff]%s  HP %d/%d\nAP %d  MP %d  Face %s\nMarks %d/%d  Impact %d/%d\n%s[/color]" % [
+	# OPEN A05: stun_remaining / stunned-this-turn display only. Suppress list not locked.
+	var stun_note := ""
+	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
+		stun_note = "  STUN"
+	return "[color=#ffffff]%s  HP %d/%d\nAP %d  MP %d  Face %s\nMarks %d/%d  Impact %d/%d%s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
@@ -385,6 +394,7 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 		int(unit["marks_cap"]),
 		int(unit["impact"]),
 		int(unit["impact_cap"]),
+		stun_note,
 		str(unit["element"]).capitalize() + " · " + ", ".join(PackedStringArray(unit["spells"])),
 	]
 
@@ -434,7 +444,7 @@ func _sync_spell_buttons(offered: Array) -> void:
 		if not _spell_buttons.has(spell_id):
 			var button := Button.new()
 			button.text = _spell_button_text(def)
-			button.custom_minimum_size = Vector2(160, 32)
+			button.custom_minimum_size = Vector2(118, 32)
 			button.pressed.connect(_on_spell_pressed.bind(spell_id))
 			_action_bar.add_child(button)
 			_spell_buttons[spell_id] = button

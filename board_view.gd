@@ -335,11 +335,13 @@ func _paint_highlights() -> void:
 	var actor := _active_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
-	# Mark Shot: paint the Chebyshev 2–5 ring as soon as the spell is selected.
-	# Walk highlights stay off while a spell is selected.
-	if spell_id == SpellKits.MARK_SHOT:
-		for cell in CombatSim.range_highlight_cells(int(snap.get("active_seat", 0)), spell_id):
-			_tile_at(cell).set_highlight("range")
+	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
+	# Walk chrome stays off. Aim chance chrome is client and is not added here.
+	if spell_id != "" and spell_id != SpellKits.ADVANCE:
+		var def: Dictionary = SpellKits.spell(spell_id)
+		if str(def.get("target", "")) == "enemy":
+			for cell in CombatSim.range_highlight_cells(int(snap.get("active_seat", 0)), spell_id):
+				_tile_at(cell).set_highlight("range")
 	for intent in legal:
 		var kind := str(intent.get("type", ""))
 		if kind == "move" and spell_id == "" and intent.has("to"):
