@@ -13,6 +13,8 @@ extends Node2D
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
 ## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input
 ## but do not pause the clock.
+## Locked Stun (A): Walk / Face / spells grey on HUD; this view does not submit them.
+## Locked Push (1): toast PushBlocked, no hop; hit/Impact feedback still plays.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -118,6 +120,8 @@ func select_tile(cell: Vector2i) -> void:
 
 
 func _handle_left_click(cell: Vector2i) -> void:
+	if _active_is_stunned():
+		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		# Dest-click only. Do not send a client path.
@@ -136,6 +140,8 @@ func _handle_left_click(cell: Vector2i) -> void:
 
 
 func _face_toward(cell: Vector2i) -> void:
+	if _active_is_stunned():
+		return
 	var snap := CombatSim.snapshot()
 	var actor := _active_unit(snap)
 	if actor.is_empty():
@@ -166,6 +172,8 @@ func _return_to_walk() -> void:
 
 
 func _on_face_requested(dir: String) -> void:
+	if _active_is_stunned():
+		return
 	_submit({"type": "face", "dir": dir})
 
 
@@ -241,21 +249,60 @@ func _submit(intent: Dictionary) -> void:
 			_refresh()
 			return
 	if result.get("ok", false):
-		var path_event := _path_event(result.get("events", []))
-		if not path_event.is_empty() and path_event.has("path"):
-			var path: Array = path_event["path"]
-			if not path.is_empty():
-				await _play_walk(int(path_event.get("seat", 0)), path)
-				return
+		var events: Array = result.get("events", [])
+		_play_combat_feedback(events)
+		if CombatHUD.events_include_push_blocked(events):
+			_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
+			# Locked Push (1): no hop when dest is occupied/OOB. Snapshot already stayed put.
+			_refresh()
+			return
+		if CombatHUD.should_play_walk_hops(events):
+			var path_event := _path_event(events)
+			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			return
 	_refresh()
 
 
 func _path_event(events: Array) -> Dictionary:
 	for event in events:
 		# Walk hops only. Advance is a teleport snap — do not play cell-by-cell path.
+		# PushBlocked also never hops.
 		if str(event.get("type", "")) == "move":
 			return event
 	return {}
+
+
+func _play_combat_feedback(events: Array) -> void:
+	# Hit flash on the target and Impact flash on the caster. Plays even when push is blocked.
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		var target_seat := int(event.get("target_seat", -1))
+		if pawns_by_seat.has(target_seat):
+			var target_pawn: Pawn = pawns_by_seat[target_seat]
+			target_pawn.flash_hit()
+			_tween_pawn_modulate(target_pawn)
+		if int(event.get("engine_gained", 0)) > 0 and str(event.get("engine", "")) == "impact":
+			var caster_seat := int(event.get("seat", -1))
+			if pawns_by_seat.has(caster_seat):
+				var caster_pawn: Pawn = pawns_by_seat[caster_seat]
+				caster_pawn.flash_impact()
+				_tween_pawn_modulate(caster_pawn)
+
+
+func _tween_pawn_modulate(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn) or not is_inside_tree():
+		return
+	var tween := create_tween()
+	tween.tween_property(pawn, "modulate", Color.WHITE, 0.28)
+
+
+func _active_is_stunned(snap: Dictionary = {}) -> bool:
+	if snap.is_empty():
+		snap = CombatSim.snapshot()
+	return CombatHUD.unit_is_stunned(_active_unit(snap))
 
 
 func _play_walk(seat: int, path: Array) -> void:
