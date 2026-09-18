@@ -1,7 +1,8 @@
 extends Node
 
 ## Local Phase A combat brain. Godot nodes must not mutate HP or roll.
-## API: reset_match(config), submit(intent), legal_intents(seat), snapshot()
+## API: reset_match(config), submit(intent), legal_intents(seat), snapshot(),
+## preview_cast(spell_id, from, to, target_seat=-1) — also accepts an intent Dictionary.
 
 const RULES_VERSION := "phase-a-gdd-0.2"
 const BOARD_SIZE := 8
@@ -362,6 +363,172 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	return out
 
 
+## Read-only cast preview. Does not mutate match state, RNG, or the intent log.
+## Call as preview_cast(spell_id, from, to, target_seat=-1) or with an intent Dictionary
+## (keys: spell / spell_id, from, to, target_seat, seat). Crit roll stays OFF.
+func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = null, target_seat: int = -1) -> Dictionary:
+	var spell_id := ""
+	var seat_hint := -1
+	if spell_or_intent is Dictionary:
+		var intent: Dictionary = spell_or_intent
+		spell_id = str(intent.get("spell", intent.get("spell_id", "")))
+		if intent.has("from"):
+			from = intent["from"]
+		if intent.has("to"):
+			to = intent["to"]
+		if intent.has("target_seat"):
+			target_seat = int(intent["target_seat"])
+		if intent.has("seat"):
+			seat_hint = int(intent["seat"])
+	else:
+		spell_id = str(spell_or_intent)
+
+	spell_id = spell_id.to_lower()
+	var from_cell := _as_cell(from) if from != null else Vector2i.ZERO
+	var to_cell := _as_cell(to) if to != null else Vector2i.ZERO
+	var actor := _preview_actor(from_cell, from != null, seat_hint)
+	if from == null and not actor.is_empty():
+		from_cell = actor["pos"]
+
+	var def: Dictionary = SpellKits.spell(spell_id)
+	var lines: Dictionary = _preview_kit_lines(spell_id)
+	var out := {
+		"spell_id": spell_id,
+		"name": str(def.get("name", "")),
+		"ap": int(def.get("ap", 0)),
+		"mp": int(def.get("mp", 0)),
+		"range_mode": str(def.get("range_mode", "")),
+		"min_range": int(def.get("min_range", 0)),
+		"max_range": int(def.get("max_range", 0)),
+		"in_range": false,
+		"hit_chance": null,
+		"on_connect_text": str(lines.get("on_connect", "")),
+		"on_miss_text": str(lines.get("on_miss", "")),
+		"sample_damage": null,
+		"notes": [],
+		"rolling": bool(def.get("rolls", false)),
+		"legal": false,
+		"reason": "",
+	}
+	if def.is_empty():
+		out["reason"] = "unknown_spell"
+		return out
+
+	var range_dist := _range_distance(def, from_cell, to_cell)
+	out["in_range"] = range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
+	if bool(def.get("rolls", false)):
+		out["hit_chance"] = hit_chance(chebyshev(from_cell, to_cell))
+
+	var target := _preview_target(to_cell, target_seat, spell_id)
+	var notes: Array = []
+	if spell_id == SpellKits.ADVANCE:
+		notes.append("Dest-click teleport. Range Manhattan 1–2. 3 AP / 0 MP. Facing unchanged.")
+		out["sample_damage"] = null
+		out["hit_chance"] = null
+	else:
+		var facing_mult := FRONT_SIDE_FACING
+		if not target.is_empty() and bool(target.get("alive", true)):
+			facing_mult = _facing_multiplier(from_cell, target["pos"], str(target.get("facing", "")))
+		var base := _connect_base_damage(def, target)
+		# Locked Phase A sample: CritMult=1.0, Passive=1, Mastery=0. WindMod omitted.
+		# Resist 0 is not invented as Locked — provisional Open A05, labeled below.
+		out["sample_damage"] = _phase_a_damage(base, facing_mult)
+		notes.append("Resist 0 (provisional Open A05)")
+
+	if spell_id == SpellKits.DETONATE:
+		var marks_on_target := int(target.get("marks", 0))
+		out["marks_on_target"] = marks_on_target
+		out["formula"] = "6+6*M"
+	elif spell_id == SpellKits.CRUSH:
+		var impact_before := int(actor.get("impact", 0))
+		var spend := int(def.get("spend_impact", 2))
+		out["impact_before"] = impact_before
+		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
+	elif spell_id == SpellKits.SHOULDER:
+		notes.append("Push 1 Chebyshev along the line. Occupied/OOB dest is Locked Push (1): no-move + push_blocked.")
+
+	out["notes"] = notes
+	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
+	out["legal"] = str(out["reason"]) == ""
+	return out
+
+
+func _preview_actor(from_cell: Vector2i, has_from: bool, seat_hint: int) -> Dictionary:
+	if seat_hint >= 0:
+		var by_seat := _unit_by_seat(seat_hint)
+		if not by_seat.is_empty():
+			return by_seat
+	if has_from:
+		var at_from := _living_unit_at(from_cell)
+		if not at_from.is_empty():
+			return at_from
+	return _unit_by_seat(_active_seat)
+
+
+func _preview_target(to_cell: Vector2i, target_seat: int, spell_id: String) -> Dictionary:
+	if target_seat >= 0:
+		return _unit_by_seat(target_seat)
+	if spell_id == SpellKits.ADVANCE:
+		return {}
+	return _living_unit_at(to_cell)
+
+
+func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, from_cell: Vector2i, to_cell: Vector2i, in_range: bool) -> String:
+	var spell_id := str(def.get("id", ""))
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return "no_actor"
+	if str(actor.get("class_id", "")) != "" and not SpellKits.has_spell(str(actor["class_id"]), spell_id):
+		return "spell_not_in_kit"
+	if _is_stunned(actor):
+		return "stunned_cannot_act"
+	if not _in_bounds(to_cell):
+		return "out_of_bounds"
+	if not in_range:
+		return "out_of_range"
+	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
+		return "insufficient_ap"
+	if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+		return "insufficient_mp"
+	if spell_id == SpellKits.ADVANCE:
+		if to_cell == from_cell or to_cell == actor["pos"]:
+			return "same_tile"
+		if not _is_empty(to_cell):
+			return "destination_occupied"
+		return ""
+	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
+		return "no_target"
+	if spell_id == SpellKits.DETONATE and int(target.get("marks", 0)) < int(def.get("requires_marks_on_target", 1)):
+		return "needs_marks"
+	if spell_id == SpellKits.CRUSH and int(actor.get("impact", 0)) < int(def.get("requires_impact", 2)):
+		return "insufficient_impact"
+	return ""
+
+
+func _preview_kit_lines(spell_id: String) -> Dictionary:
+	match spell_id:
+		SpellKits.MARK_SHOT:
+			return {"on_connect": "8 Air. +1 Mark on the target.", "on_miss": "AP/MP stay spent. No Mark."}
+		SpellKits.DETONATE:
+			return {"on_connect": "6+6×M Air. Consumes Marks on the target.", "on_miss": "Marks stay. AP/MP stay spent."}
+		SpellKits.STRIKE:
+			return {"on_connect": "16 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
+		SpellKits.SHOULDER:
+			return {"on_connect": "6 Earth. +1 Impact. Push 1.", "on_miss": "No push. No Impact. AP/MP stay spent."}
+		SpellKits.CRUSH:
+			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "on_miss": "Impact retained. AP/MP stay spent."}
+		SpellKits.ADVANCE:
+			return {"on_connect": "Teleport snap. +1 Impact if Chebyshev-adjacent. Facing unchanged.", "on_miss": "No roll."}
+		_:
+			return {"on_connect": "", "on_miss": ""}
+
+
+## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1, Mastery 0.
+## WindMod omitted (not invented as 1.0). Resist 0 is Open A05.
+func _phase_a_damage(base: int, facing_mult: float) -> int:
+	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
+	return roundi(raw)
+
+
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String) -> Dictionary:
 	return {
 		"seat": seat,
@@ -646,8 +813,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
-	var damage := roundi(raw)
+	var damage := _phase_a_damage(base, facing_mult)
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0

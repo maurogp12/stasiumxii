@@ -60,6 +60,7 @@ func _run() -> void:
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
+	_test_preview_cast()
 	_test_legal_moves_after_advance()
 	_test_walk_facing_follows_last_hop()
 	_test_advance_facing_unchanged()
@@ -1777,6 +1778,240 @@ func _test_aim_hit_preview() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_sync_aim_preview"), "board_view syncs Locked hit-percent aim preview")
 	eq(view.contains("Detonate"), false, "aim chrome does not hardcode Detonate in the view")
+
+
+func _test_preview_cast() -> void:
+	# Read-only Locked kit preview. Crit roll stays OFF. No kit number changes.
+	eq(_sim.snapshot().get("crit_roll", true), false, "crit roll stays OFF before preview tests")
+
+	# Mark Shot: Chebyshev 5 → Locked 75%, sample 8 Air front, rolling.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(5, 0),
+		"ironjaw_facing": "W",
+	})
+	var before := _preview_state()
+	var preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(5, 0), 1)
+	eq(preview["spell_id"], "mark_shot", "Mark Shot spell_id")
+	eq(preview["name"], "Mark Shot", "Mark Shot name")
+	eq(preview["ap"], 2, "Mark Shot costs 2 AP")
+	eq(preview["mp"], 0, "Mark Shot costs 0 MP")
+	eq(preview["range_mode"], "chebyshev", "Mark Shot range_mode is Chebyshev")
+	eq(preview["min_range"], 2, "Mark Shot min 2")
+	eq(preview["max_range"], 5, "Mark Shot max 5")
+	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
+	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
+	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
+	eq(preview["sample_damage"], 8, "front Mark Shot samples 8 Air (CritMult 1.0, Passive 1, Mastery 0)")
+	eq(preview["on_connect_text"], "8 Air. +1 Mark on the target.", "Mark Shot connect kit line")
+	eq(preview["on_miss_text"], "AP/MP stay spent. No Mark.", "Mark Shot miss kit line")
+	eq(preview["legal"], true, "in-range Mark Shot with a target is legal")
+	truthy(_notes_has(preview["notes"], "Resist 0"), "sample damage labels Resist 0")
+	truthy(_notes_has(preview["notes"], "provisional"), "Resist 0 is labeled provisional")
+	eq(_notes_has(preview["notes"], "WindMod"), false, "preview does not invent WindMod")
+	_assert_preview_did_not_mutate(before, "Mark Shot preview is read-only")
+	var miss: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
+	eq(miss["events"][0]["type"], "miss", "scripted 100 still misses after preview — RNG/rolls untouched")
+	eq(_unit(1)["hp"], 80, "Mark Shot preview did not deal damage")
+	eq(_unit(1)["marks"], 0, "Mark Shot preview did not apply Marks")
+
+	# Intent Dictionary form uses the same Mark Shot preview.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(5, 0),
+		"ironjaw_facing": "W",
+	})
+	preview = _sim.preview_cast({
+		"type": "cast",
+		"spell": "mark_shot",
+		"to": Vector2i(5, 0),
+		"target_seat": 1,
+		"seat": 0,
+	})
+	eq(preview["hit_chance"], 75, "intent Dictionary Mark Shot still uses Locked 75%")
+	eq(preview["sample_damage"], 8, "intent Dictionary Mark Shot still samples 8")
+	eq(preview["rolling"], true, "intent Dictionary Mark Shot is rolling")
+
+	# Back facing uses live target facing (8 × 1.20 → 10).
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_facing": "E",
+	})
+	preview = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1)
+	eq(preview["hit_chance"], 80, "Mark Shot Chebyshev 2 uses Locked 80% band")
+	eq(preview["sample_damage"], 10, "back Mark Shot samples 8 × 1.20 = 10")
+
+	# Detonate M=3 → 24 Air. Formula 6+6*M. Needs marks when M<1.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [50],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_facing": "W",
+		"ironjaw_marks": 3,
+	})
+	before = _preview_state()
+	preview = _sim.preview_cast(SpellKits.DETONATE, Vector2i(0, 0), Vector2i(2, 0), 1)
+	eq(preview["name"], "Detonate", "Detonate name")
+	eq(preview["ap"], 3, "Detonate costs 3 AP")
+	eq(preview["rolling"], true, "Detonate is rolling")
+	eq(preview["marks_on_target"], 3, "Detonate preview reports current Marks")
+	eq(preview["formula"], "6+6*M", "Detonate formula is 6+6*M")
+	eq(preview["sample_damage"], 24, "Detonate M=3 samples 6+6*3 = 24")
+	eq(preview["hit_chance"], 80, "Detonate Chebyshev 2 uses Locked 80%")
+	eq(preview["legal"], true, "Detonate with M=3 is legal")
+	eq(preview["on_connect_text"], "6+6×M Air. Consumes Marks on the target.", "Detonate connect kit line")
+	eq(preview["on_miss_text"], "Marks stay. AP/MP stay spent.", "Detonate miss kit line")
+	_assert_preview_did_not_mutate(before, "Detonate preview is read-only")
+	eq(_unit(1)["marks"], 3, "Detonate preview does not consume Marks")
+	eq(_unit(1)["hp"], 80, "Detonate preview does not deal 24")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_marks": 0,
+	})
+	preview = _sim.preview_cast(SpellKits.DETONATE, Vector2i(0, 0), Vector2i(2, 0), 1)
+	eq(preview["legal"], false, "Detonate with M<1 is not legal")
+	eq(preview["reason"], "needs_marks", "Detonate M<1 reason is needs_marks")
+	eq(preview["marks_on_target"], 0, "Detonate M=0 still reports marks_on_target")
+	eq(preview["sample_damage"], 6, "Detonate M=0 samples 6+6*0")
+	eq(_unit(0)["ap"], 6, "needs_marks preview does not spend AP")
+
+	# Crush: would_stun when Impact is 4 and would spend 2. Sample 24 Earth front.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	before = _preview_state()
+	preview = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
+	eq(preview["name"], "Crush", "Crush name")
+	eq(preview["ap"], 4, "Crush costs 4 AP")
+	eq(preview["rolling"], true, "Crush is rolling")
+	eq(preview["hit_chance"], 90, "Crush melee uses Locked 90%")
+	eq(preview["impact_before"], 4, "Crush preview reports impact_before 4")
+	eq(preview["would_stun"], true, "Crush would_stun at Impact 4 spending 2")
+	eq(preview["sample_damage"], 24, "front Crush samples 24 Earth")
+	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "Crush connect kit line")
+	eq(preview["on_miss_text"], "Impact retained. AP/MP stay spent.", "Crush miss kit line")
+	eq(preview["legal"], true, "Crush at 4 Impact is legal")
+	_assert_preview_did_not_mutate(before, "Crush preview is read-only")
+	eq(_unit(1)["impact"], 4, "Crush preview does not spend Impact")
+	eq(_unit(0)["stun_remaining"], 0, "Crush preview does not apply Stun")
+	eq(_unit(0)["hp"], 80, "Crush preview does not deal 24")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 2,
+	})
+	_sim.submit({"type": "end_turn"})
+	preview = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
+	eq(preview["impact_before"], 2, "Crush at 2 Impact reports impact_before 2")
+	eq(preview["would_stun"], false, "Crush does not stun when Impact before is 2")
+	eq(preview["sample_damage"], 24, "Crush still samples 24 Earth at Impact 2")
+
+	# Shoulder: sample 6 + push note.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	preview = _sim.preview_cast(SpellKits.SHOULDER, Vector2i(3, 3), Vector2i(4, 3), 0)
+	eq(preview["sample_damage"], 6, "front Shoulder samples 6 Earth")
+	eq(preview["rolling"], true, "Shoulder is rolling")
+	eq(preview["hit_chance"], 90, "Shoulder melee uses Locked 90%")
+	truthy(_notes_has(preview["notes"], "Push"), "Shoulder preview notes the push")
+	eq(preview["on_connect_text"], "6 Earth. +1 Impact. Push 1.", "Shoulder connect kit line")
+
+	# Advance: teleport note, no hit_chance, sample_damage null.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(3, 3),
+		"ironjaw_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	before = _preview_state()
+	preview = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
+	eq(preview["name"], "Advance", "Advance name")
+	eq(preview["ap"], 3, "Advance costs 3 AP")
+	eq(preview["mp"], 0, "Advance costs 0 MP")
+	eq(preview["range_mode"], "manhattan", "Advance range_mode is Manhattan")
+	eq(preview["min_range"], 1, "Advance min 1")
+	eq(preview["max_range"], 2, "Advance max 2")
+	eq(preview["in_range"], true, "Manhattan 2 is in Advance range")
+	eq(preview["rolling"], false, "Advance is not a rolling cast")
+	eq(preview["hit_chance"], null, "Advance has no hit_chance")
+	eq(preview["sample_damage"], null, "Advance sample_damage is null")
+	eq(preview["legal"], true, "empty Manhattan 2 Advance dest is legal")
+	truthy(_notes_has(preview["notes"], "teleport"), "Advance notes teleport")
+	eq(preview["on_connect_text"], "Teleport snap. +1 Impact if Chebyshev-adjacent. Facing unchanged.", "Advance connect kit line")
+	eq(preview["on_miss_text"], "No roll.", "Advance has no roll")
+	_assert_preview_did_not_mutate(before, "Advance preview is read-only")
+	eq(_unit(1)["pos"], Vector2i(3, 3), "Advance preview does not teleport")
+	eq(_unit(1)["ap"], 6, "Advance preview does not spend AP")
+	eq(_unit(1)["impact"], 0, "Advance preview does not grant Impact")
+	eq(_unit(1)["facing"], "W", "Advance preview does not change facing")
+
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after preview_cast")
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	truthy(sim_src.contains("func preview_cast"), "CombatSim exposes preview_cast")
+	eq(sim_src.contains("WIND_MOD"), false, "preview patch does not add WIND_MOD")
+	eq(sim_src.contains("* WindMod"), false, "preview patch does not multiply by WindMod")
+
+
+func _preview_state() -> Dictionary:
+	return {
+		"snap": _sim.snapshot().duplicate(true),
+		"log_size": _sim._intent_log.size(),
+		"rolls": _sim._scripted_rolls.duplicate(),
+		"rng": _sim._rng.state,
+		"events": _sim._last_events.duplicate(true),
+		"coach": str(_sim._last_coach),
+		"turn": int(_sim._turn_index),
+		"seat": int(_sim._active_seat),
+	}
+
+
+func _assert_preview_did_not_mutate(before: Dictionary, msg: String) -> void:
+	var after := _preview_state()
+	eq(after["log_size"], before["log_size"], "%s (intent log)" % msg)
+	eq(after["rolls"], before["rolls"], "%s (scripted rolls)" % msg)
+	eq(after["rng"], before["rng"], "%s (RNG state)" % msg)
+	eq(after["events"], before["events"], "%s (last events)" % msg)
+	eq(after["coach"], before["coach"], "%s (coach)" % msg)
+	eq(after["turn"], before["turn"], "%s (turn index)" % msg)
+	eq(after["seat"], before["seat"], "%s (active seat)" % msg)
+	eq(after["snap"]["units"], before["snap"]["units"], "%s (units)" % msg)
+	eq(after["snap"]["match_over"], before["snap"]["match_over"], "%s (match_over)" % msg)
+	eq(after["snap"]["seed"], before["snap"]["seed"], "%s (seed)" % msg)
+	eq(after["snap"]["crit_roll"], false, "%s (crit roll stays OFF)" % msg)
+
+
+func _notes_has(notes: Variant, needle: String) -> bool:
+	if typeof(notes) != TYPE_ARRAY:
+		return false
+	for note in notes:
+		if str(note).contains(needle):
+			return true
+	return false
 
 
 func _test_legal_moves_after_advance() -> void:

@@ -25,7 +25,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 
 | Piece | Role |
 | --- | --- |
-| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)`, `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`. Rolls and HP live here. Walk paths are expanded here. Advance is a dest-click teleport. |
+| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)`, `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(spell, from, to, target_seat=-1)` (read-only; also accepts an intent Dictionary). Rolls and HP live here. Walk paths are expanded here. Advance is a dest-click teleport. `preview_cast` does not mutate match state, RNG, or the intent log. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
