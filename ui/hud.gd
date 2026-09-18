@@ -30,6 +30,9 @@ var _clock_bar: ColorRect
 var _clock_bar_max_width: float = 220.0
 var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
+var _aim_hit_label: Label
+var _aim_hit_chance: int = -1
+var _stun_telegraph: bool = false
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -45,11 +48,29 @@ static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 			continue
 		if id == SpellKits.ADVANCE and class_id != SpellKits.CLASS_IRONJAW:
 			continue
+		if id == SpellKits.DETONATE and class_id != SpellKits.CLASS_KESTREL:
+			continue
+		if (id == SpellKits.SHOULDER or id == SpellKits.CRUSH) and class_id != SpellKits.CLASS_IRONJAW:
+			continue
 		if not SpellKits.has_spell(class_id, id):
 			continue
 		if not offered.has(id):
 			offered.append(id)
 	return offered
+
+
+static func aim_hit_caption(chance: int) -> String:
+	if chance < 0:
+		return ""
+	return "HIT %d%%" % chance
+
+
+static func engine_pips(current: int, maximum: int) -> String:
+	var filled := clampi(current, 0, maximum)
+	var out := ""
+	for i in range(maximum):
+		out += "●" if i < filled else "○"
+	return out
 
 
 static func legal_cast_ids(legal: Array) -> Dictionary:
@@ -74,7 +95,26 @@ func selected_spell() -> String:
 
 func clear_spell() -> void:
 	_selected_spell = ""
+	set_aim_preview({})
 	_refresh_spell_buttons()
+	_update_selected_label()
+
+
+func set_aim_preview(preview: Dictionary) -> void:
+	if bool(preview.get("show", false)):
+		_aim_hit_chance = int(preview.get("hit_chance", 0))
+	else:
+		_aim_hit_chance = -1
+	_stun_telegraph = bool(preview.get("stun_telegraph", false))
+	if _aim_hit_label != null:
+		var text := aim_hit_caption(_aim_hit_chance)
+		if _stun_telegraph:
+			if text != "":
+				text += "  ·  STUN if it connects"
+			else:
+				text = "STUN if it connects"
+		_aim_hit_label.text = text
+		_aim_hit_label.visible = text != ""
 	_update_selected_label()
 
 
@@ -153,6 +193,14 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_sync_spell_buttons(offered)
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
+		_aim_hit_chance = -1
+		_stun_telegraph = false
+	if _selected_spell == "":
+		_aim_hit_chance = -1
+		_stun_telegraph = false
+		if _aim_hit_label != null:
+			_aim_hit_label.text = ""
+			_aim_hit_label.visible = false
 	_update_selected_label()
 
 	var legal_spells := legal_cast_ids(legal)
@@ -228,11 +276,20 @@ func _build() -> void:
 	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	root.add_child(_selected_label)
 
+	_aim_hit_label = Label.new()
+	_aim_hit_label.position = Vector2(220, 598)
+	_aim_hit_label.size = Vector2(520, 24)
+	_aim_hit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_aim_hit_label.add_theme_font_size_override("font_size", 20)
+	_aim_hit_label.add_theme_color_override("font_color", Color(0.72, 0.22, 0.16))
+	_aim_hit_label.visible = false
+	root.add_child(_aim_hit_label)
+
 	_action_bar = HBoxContainer.new()
-	_action_bar.position = Vector2(90, 650)
-	_action_bar.size = Vector2(780, 36)
+	_action_bar.position = Vector2(16, 650)
+	_action_bar.size = Vector2(928, 36)
 	_action_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	_action_bar.add_theme_constant_override("separation", 8)
+	_action_bar.add_theme_constant_override("separation", 6)
 	root.add_child(_action_bar)
 
 	_end_turn_button = Button.new()
@@ -383,17 +440,15 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 	var stun_note := ""
 	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
 		stun_note = "  STUN"
-	return "[color=#ffffff]%s  HP %d/%d\nAP %d  MP %d  Face %s\nMarks %d/%d  Impact %d/%d%s\n%s[/color]" % [
+	return "[color=#ffffff]%s  HP %d/%d\nAP %d  MP %d  Face %s\nMarks %s  Impact %s%s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
-		int(unit["marks"]),
-		int(unit["marks_cap"]),
-		int(unit["impact"]),
-		int(unit["impact_cap"]),
+		engine_pips(int(unit["marks"]), int(unit["marks_cap"])),
+		engine_pips(int(unit["impact"]), int(unit["impact_cap"])),
 		stun_note,
 		str(unit["element"]).capitalize() + " · " + ", ".join(PackedStringArray(unit["spells"])),
 	]
@@ -482,12 +537,14 @@ func _refresh_spell_buttons() -> void:
 
 
 func _update_selected_label() -> void:
+	if _selected_label == null:
+		return
 	if _selected_spell == "":
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	var range_metric := "Manhattan" if str(def.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
-	_selected_label.text = "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d %s" % [
+	var text := "Selected: %s  ·  %d AP / %d MP  ·  range %d–%d %s" % [
 		def.get("name", _selected_spell),
 		int(def.get("ap", 0)),
 		int(def.get("mp", 0)),
@@ -495,3 +552,8 @@ func _update_selected_label() -> void:
 		int(def.get("max_range", 0)),
 		range_metric,
 	]
+	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
+		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
+	if _stun_telegraph:
+		text += "  ·  STUN if it connects"
+	_selected_label.text = text
