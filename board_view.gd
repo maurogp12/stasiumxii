@@ -2,9 +2,12 @@ extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
-## intent.path. Pawns tween one ortho tile at a time along the returned walk path.
-## Walk facing follows each hop (final facing = last hop). Advance teleport does not auto-face.
+## intent.path. Pawns tween one ortho tile at a time along the returned walk path
+## and face each hop (final facing = last hop, matching the snapshot).
+## Advance teleport does not auto-face.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
+## After Advance, spell selection clears so walk chrome comes back from legal_intents.
+## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
@@ -90,6 +93,10 @@ func _sync_turn_clock() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _busy:
 		return
+	if event.is_action_pressed("ui_cancel"):
+		# Esc returns to Walk. Right-click stays face and is not a cancel.
+		_return_to_walk()
+		return
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
 		var cell := local_to_grid(mouse_position)
@@ -122,9 +129,10 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_paint_highlights()
 		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
-	if spell_id != SpellKits.ADVANCE:
-		_hud.clear_spell()
-		_paint_highlights()
+	# After any dest-click cast (including Advance): drop spell chrome and
+	# repaint walk tiles from legal_intents so remaining MP is selectable at 0 AP.
+	_hud.clear_spell()
+	_paint_highlights()
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -148,6 +156,13 @@ func _on_spell_selected(_spell_id: String) -> void:
 		return
 	_paint_highlights()
 	_sync_aim_preview()
+
+
+func _return_to_walk() -> void:
+	if _hud == null:
+		return
+	_hud.select_walk()
+	_paint_highlights()
 
 
 func _on_face_requested(dir: String) -> void:
@@ -277,9 +292,9 @@ func _animate_path(seat: int, path: Array) -> void:
 			return
 		var cell: Vector2i = _as_cell(step)
 		var dir := CombatSim.facing_from_step(prev, cell)
-		if dir != "":
-			pawn.facing = dir
-			pawn.queue_redraw()
+		if dir == "":
+			dir = CombatSim.hop_facing(prev, cell)
+		pawn.set_facing(dir)
 		_stop_walk_tween()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(false)

@@ -30,6 +30,13 @@ func apply_snapshot(unit: Dictionary, active_seat: int) -> void:
 	queue_redraw()
 
 
+func set_facing(dir: String) -> void:
+	if dir == "" or dir == facing:
+		return
+	facing = dir
+	queue_redraw()
+
+
 func _draw() -> void:
 	var fill := Color("#4a8a62")
 	if class_id == SpellKits.CLASS_IRONJAW:

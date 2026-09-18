@@ -58,6 +58,10 @@ func _run() -> void:
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
+	_test_legal_moves_after_advance()
+	_test_walk_facing_follows_last_hop()
+	_test_advance_facing_unchanged()
+	_test_walk_mode_cancel()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -101,6 +105,7 @@ func _test_manhattan_walk_costs() -> void:
 	eq(result["ok"], true, "diagonal dest-click is legal when Manhattan 2 <= 3 MP")
 	eq(_unit(0)["mp"], 1, "diagonal costs 2 MP, not 1")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "Kestrel landed on (3,3)")
+	eq(_unit(0)["facing"], "S", "H-first diagonal (E then S) faces last hop S")
 	eq(result["events"][0]["mp_spent"], 2, "move event spends 2 MP")
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
 	eq(result["illegal"], true, "orthogonal Manhattan 2 with 1 MP left is illegal")
@@ -623,6 +628,8 @@ func _test_advance_teleport_costs() -> void:
 	eq(result["events"][0]["teleport"], true, "Advance is a teleport snap")
 	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
+	eq(_unit(1)["facing"], "W", "diagonal Advance leaves default Face W unchanged")
+	eq(result["events"][0].has("facing"), false, "Advance event does not auto-face")
 	truthy(str(result["events"][0]["coach"]).contains("3 AP"), "coach names the 3 AP spend")
 	eq(str(result["events"][0]["coach"]).contains("MP"), false, "coach does not mention MP spend")
 
@@ -707,7 +714,9 @@ func _test_advance_teleport_costs() -> void:
 	var rolling_idx := sim_src.find("func _resolve_rolling_cast")
 	truthy(resolve_idx >= 0 and rolling_idx > resolve_idx, "_resolve_advance and _resolve_rolling_cast exist")
 	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
-	eq(resolve_src.contains("expand_ortho_path"), false, "Advance resolve no longer expands an ortho hop path")
+	eq(resolve_src.contains("expand_ortho_path"), false, "Advance resolve does not hop-expand a path itself")
+	eq(resolve_src.contains("last_hop_facing"), false, "Advance resolve does not auto-face from H-first hops")
+	eq(resolve_src.contains('actor["facing"]'), false, "Advance resolve does not write facing")
 	eq(resolve_src.contains('actor["mp"]'), false, "Advance resolve does not touch MP")
 	eq(sim_src.contains("Advance costs %d MP"), false, "Advance no longer has an MP-cost reject")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
@@ -1620,11 +1629,281 @@ func _test_aim_hit_preview() -> void:
 	eq(view.contains("Detonate"), false, "aim chrome does not hardcode Detonate in the view")
 
 
+func _test_legal_moves_after_advance() -> void:
+	# Godot Engineer: after Advance (or any cast), remaining MP still offers
+	# Manhattan walks — including 0 AP / 3 MP. Client clears spell + repaints
+	# from legal_intents. Crit roll stays OFF; this patch does not invent Stun/push.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	_sim.submit({"type": "end_turn"})
+	eq(_unit(1)["ap"], 6, "Ironjaw starts at 6 AP")
+	eq(_unit(1)["mp"], 3, "Ironjaw starts at 3 MP")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "first Advance spends 3 AP")
+	eq(_unit(1)["ap"], 3, "3 AP remain after Advance")
+	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw snapped east 2")
+	var moves := _legal_move_dests(1)
+	truthy(moves.size() > 0, "after Advance, legal_intents still includes moves while MP>0")
+	truthy(moves.has(Vector2i(6, 3)), "Manhattan 1 ortho walk is still offered")
+	truthy(moves.has(Vector2i(5, 6)), "Manhattan 3 walk is still offered at 3 MP")
+	eq(moves.has(Vector2i(5, 7)), false, "Manhattan 4 is still over the MP pool")
+
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 5)})
+	eq(result["ok"], true, "second Advance spends the remaining 3 AP")
+	eq(_unit(1)["ap"], 0, "0 AP remain after two Advances")
+	eq(_unit(1)["mp"], 3, "MP pool still full at 0 AP")
+	eq(_has_legal_cast(1, "advance"), false, "0 AP Advance is not offered")
+	moves = _legal_move_dests(1)
+	truthy(moves.size() > 0, "0 AP / 3 MP still offers Manhattan walks")
+	truthy(moves.has(Vector2i(6, 5)), "walk dest after 0 AP Advance is legal")
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 5)})
+	eq(result["ok"], true, "walk after Advance is accepted")
+	eq(_unit(1)["mp"], 2, "walk spends Manhattan MP after Advance")
+	eq(_unit(1)["pos"], Vector2i(6, 5), "pawn walked after Advance")
+
+	# Any dest-click cast, not only Advance: Strike spends AP, MP stays, walks remain.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [100, 100],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "Strike dest-click is a cast, not Advance")
+	eq(_unit(1)["ap"], 3, "Strike spends 3 AP")
+	eq(_unit(1)["mp"], 3, "Strike spends 0 MP")
+	moves = _legal_move_dests(1)
+	truthy(moves.has(Vector2i(3, 4)), "after Strike, Manhattan walks remain while MP>0")
+	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3)})
+	eq(_unit(1)["ap"], 0, "second Strike reaches 0 AP")
+	eq(_unit(1)["mp"], 3, "MP still full at 0 AP after casts")
+	moves = _legal_move_dests(1)
+	truthy(moves.has(Vector2i(3, 4)), "0 AP / 3 MP after a non-Advance cast still offers Manhattan walks")
+	result = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
+	eq(result["ok"], true, "walk after a rolling cast is accepted")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var click_idx := view.find("func _handle_left_click")
+	var face_idx := view.find("func _face_toward")
+	truthy(click_idx >= 0 and face_idx > click_idx, "_handle_left_click exists")
+	var click_src := view.substr(click_idx, face_idx - click_idx)
+	eq(click_src.contains("if spell_id != SpellKits.ADVANCE:"), false, "cast dest-click is not Advance-gated for chrome clear")
+	truthy(click_src.contains("_hud.clear_spell()"), "any dest-click cast clears spell selection")
+	truthy(click_src.contains("_paint_highlights()"), "any dest-click cast repaints chrome from legal_intents")
+	eq(view.contains("stun_remaining"), false, "walk-after-cast patch does not invent Stun")
+	eq(view.contains("push_blocked"), false, "walk-after-cast patch does not invent push")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after walk-after-cast checks")
+
+
+func _test_walk_facing_follows_last_hop() -> void:
+	# Godot Engineer Locked last-hop: each ortho hop faces that hop; final = last hop.
+	# Client anim uses hop_facing per hop. Manual face intent stays for standing turns.
+	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(3, 2)), "E", "east hop faces E")
+	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(1, 2)), "W", "west hop faces W")
+	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(2, 1)), "N", "north hop faces N")
+	eq(_sim.hop_facing(Vector2i(2, 2), Vector2i(2, 3)), "S", "south hop faces S")
+	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(4, 3), "N"), "S", "H-first NE last hop is S")
+	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(1, 1), "E"), "N", "H-first SW last hop is N")
+	eq(_sim.last_hop_facing(Vector2i(2, 2), Vector2i(2, 2), "W"), "W", "empty path keeps fallback facing")
+	var path: Array = _sim.expand_ortho_path(Vector2i(2, 2), Vector2i(4, 1))
+	eq(path, [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 1)], "H-first NE path is E, E, N")
+	eq(_sim.hop_facing(Vector2i(2, 2), path[0]), "E", "hop 1 faces E")
+	eq(_sim.hop_facing(path[0], path[1]), "E", "hop 2 faces E")
+	eq(_sim.hop_facing(path[1], path[2]), "N", "hop 3 faces N — final face is last hop")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"kestrel_facing": "N",
+		"ironjaw_pos": Vector2i(7, 7),
+	})
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
+	eq(result["ok"], true, "pure east walk is legal")
+	eq(_unit(0)["facing"], "E", "east walk faces E")
+	eq(result["events"][0]["facing"], "E", "move event facing is E")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"kestrel_facing": "E",
+		"ironjaw_pos": Vector2i(7, 7),
+	})
+	result = _sim.submit({"type": "move", "to": Vector2i(2, 0)})
+	eq(_unit(0)["facing"], "N", "north walk faces N")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"kestrel_facing": "E",
+		"ironjaw_pos": Vector2i(7, 7),
+	})
+	result = _sim.submit({"type": "move", "to": Vector2i(4, 1)})
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 1)], "H-first NE is E, E, N")
+	eq(_unit(0)["facing"], "N", "multi-hop walk snapshot facing is last hop")
+	eq(result["events"][0]["facing"], "N", "multi-hop move event facing is last hop")
+
+	var ap_before: int = int(_unit(0)["ap"])
+	var mp_before: int = int(_unit(0)["mp"])
+	result = _sim.submit({"type": "face", "dir": "W"})
+	eq(result["ok"], true, "in-place face remains legal after a walk")
+	eq(_unit(0)["facing"], "W", "manual face still sets in-place facing")
+	eq(_unit(0)["pos"], Vector2i(4, 1), "in-place face does not move")
+	eq(_unit(0)["ap"], ap_before, "standing face costs 0 AP")
+	eq(_unit(0)["mp"], mp_before, "standing face costs 0 MP")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var anim_idx := view.find("func _animate_path")
+	var set_cell_idx := view.find("func _set_pawn_cell")
+	truthy(anim_idx >= 0 and set_cell_idx > anim_idx, "_animate_path exists")
+	var anim_src := view.substr(anim_idx, set_cell_idx - anim_idx)
+	truthy(anim_src.contains("hop_facing"), "walk anim faces each ortho hop")
+	truthy(anim_src.contains("set_facing"), "walk anim updates pawn facing with hops")
+	var pawn := FileAccess.get_file_as_string("res://units/pawn.gd")
+	truthy(pawn.contains("func set_facing"), "pawn can update facing mid-hop")
+	eq(view.contains("stun_remaining"), false, "last-hop face patch does not invent Stun")
+	eq(view.contains("push_blocked"), false, "last-hop face patch does not invent push")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+
+
+func _test_advance_facing_unchanged() -> void:
+	# Locked: Advance teleport does not auto-face. Walk last-hop facing is separate.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(3, 3),
+		"ironjaw_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
+	eq(result["ok"], true, "diagonal Advance dest-click is legal")
+	eq(_unit(1)["pos"], Vector2i(4, 4), "Advance still snaps to dest")
+	eq(_unit(1)["facing"], "W", "SE Advance leaves facing W unchanged")
+	eq(result["events"][0].has("facing"), false, "Advance event does not set facing")
+	eq(result["events"][0].has("path"), false, "Advance still emits no hop path")
+	eq(result["events"][0]["teleport"], true, "Advance stays a teleport")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(3, 3),
+		"ironjaw_facing": "S",
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 3)})
+	eq(_unit(1)["facing"], "S", "west Advance leaves facing S unchanged")
+	eq(_unit(1)["pos"], Vector2i(1, 3), "west Advance snaps")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(3, 3),
+		"ironjaw_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 1)})
+	eq(_unit(1)["facing"], "E", "north Advance leaves facing E unchanged")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(3, 3),
+		"ironjaw_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 2)})
+	eq(_unit(1)["facing"], "E", "NW Advance leaves facing E unchanged")
+	eq(result["events"][0].has("path"), false, "NW Advance still has no hop path")
+	eq(result["events"][0].has("facing"), false, "NW Advance event has no facing field")
+
+	result = _sim.submit({"type": "face", "dir": "N"})
+	eq(result["ok"], true, "in-place face remains legal after Advance")
+	eq(_unit(1)["facing"], "N", "manual face after Advance still works")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "manual face does not move")
+	eq(_unit(1)["ap"], 3, "standing face after Advance costs 0 AP")
+
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var resolve_idx := sim_src.find("func _resolve_advance")
+	var rolling_idx := sim_src.find("func _resolve_rolling_cast")
+	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
+	eq(resolve_src.contains("last_hop_facing"), false, "Advance submit does not call last_hop_facing")
+	eq(resolve_src.contains("hop_facing"), false, "Advance submit does not call hop_facing")
+	eq(resolve_src.contains('actor["facing"]'), false, "Advance submit does not write actor facing")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains('kind == "move" or kind == "advance"'), false, "Advance teleport is not hop-played")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+	eq(_sim.snapshot()["crit_mult"], 1.0, "CritMult stays 1.0")
+
+
+func _test_walk_mode_cancel() -> void:
+	# Walk is a dedicated mode, not only a default. After selecting Advance,
+	# Walk / Esc returns to walk chrome without End Turn. Right-click stays face.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.submit({"type": "end_turn"})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(1))
+	eq(hud.selected_spell(), "", "default mode is Walk")
+	eq(hud.cancel_spell_selection(), false, "Esc is a no-op already in Walk")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "advance", "Advance can be selected")
+	eq(hud.cancel_spell_selection(), true, "Esc/cancel returns to Walk")
+	eq(hud.selected_spell(), "", "after Esc, Walk mode")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "advance", "Advance selected again")
+	hud.select_walk()
+	eq(hud.selected_spell(), "", "Walk button returns to Walk without End Turn")
+	hud._on_spell_pressed("advance")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "", "clicking Advance again also returns to Walk")
+	hud.free()
+
+	# Cast Advance then remaining MP walks (same contract as the sibling test).
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.submit({"type": "end_turn"})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "Advance dest-click resolves")
+	eq(_unit(1)["ap"], 3, "3 AP remain")
+	eq(_unit(1)["mp"], 3, "MP remains after Advance")
+	var moves := _legal_move_dests(1)
+	truthy(moves.has(Vector2i(6, 3)), "after Advance, legal_intents still include Manhattan walks")
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 3)})
+	eq(result["ok"], true, "walk with remaining MP after Advance is accepted")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains('text = "Walk"'), "HUD has a dedicated Walk button")
+	truthy(hud_src.contains("func select_walk"), "HUD exposes Walk mode")
+	truthy(hud_src.contains("ui_cancel"), "HUD Esc/ui_cancel clears spell selection")
+	truthy(hud_src.contains("func cancel_spell_selection"), "cancel is spell-only")
+	truthy(view.contains("ui_cancel"), "board_view Esc returns to Walk")
+	truthy(view.contains("func _return_to_walk"), "Walk cancel does not require End Turn")
+	var unhandled_idx := view.find("func _unhandled_input")
+	var select_idx := view.find("func select_tile")
+	truthy(unhandled_idx >= 0 and select_idx > unhandled_idx, "_unhandled_input exists")
+	var unhandled := view.substr(unhandled_idx, select_idx - unhandled_idx)
+	truthy(unhandled.contains("MOUSE_BUTTON_RIGHT"), "right-click is still handled")
+	truthy(unhandled.contains("_face_toward"), "right-click still faces")
+	truthy(unhandled.contains("_return_to_walk"), "Esc cancel is in the same input path")
+	eq(unhandled.find("ui_cancel") < unhandled.find("_face_toward"), true, "Esc cancel does not steal right-click face")
+	eq(hud_src.contains("Detonate"), false, "Walk-mode patch does not hardcode Detonate")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
+
+
 func _has_legal_cast(seat: int, spell_id: String) -> bool:
 	for intent in _sim.legal_intents(seat):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
 			return true
 	return false
+
+
+func _legal_move_dests(seat: int) -> Dictionary:
+	var dests := {}
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "move" and intent.has("to"):
+			dests[intent["to"]] = true
+	return dests
 
 
 func _has_legal_move(seat: int) -> bool:

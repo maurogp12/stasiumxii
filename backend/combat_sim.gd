@@ -277,6 +277,33 @@ static func expand_ortho_path(from: Vector2i, to: Vector2i) -> Array:
 	return path
 
 
+## Facing for one orthogonal hop. Horizontal-first if both axes are nonzero.
+static func hop_facing(from: Vector2i, to: Vector2i) -> String:
+	var delta: Vector2i = to - from
+	if delta == Vector2i.ZERO:
+		return ""
+	if delta.x != 0:
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
+
+
+## Last-hop facing along the H-first ortho expansion. Walks only.
+## Advance teleport does not auto-face.
+static func last_hop_facing(from: Vector2i, to: Vector2i, fallback: String = "") -> String:
+	var path: Array = expand_ortho_path(from, to)
+	if path.is_empty():
+		return fallback
+	var cursor := from
+	var facing := fallback
+	for step in path:
+		var cell: Vector2i = step
+		var dir := hop_facing(cursor, cell)
+		if dir != "":
+			facing = dir
+		cursor = cell
+	return facing
+
+
 static func hit_chance(distance: int) -> int:
 	if distance <= 1:
 		return 90

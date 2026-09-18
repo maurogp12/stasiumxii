@@ -20,6 +20,7 @@ var _coach_label: Label
 var _selected_label: Label
 var _ap_pips: HBoxContainer
 var _mp_pips: HBoxContainer
+var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
 var _handoff_overlay: ColorRect
@@ -88,6 +89,14 @@ func _ready() -> void:
 	_build()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if _locked:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		if cancel_spell_selection():
+			get_viewport().set_input_as_handled()
+
+
 func selected_spell() -> String:
 	return _selected_spell
 
@@ -97,6 +106,20 @@ func clear_spell() -> void:
 	set_aim_preview({})
 	_refresh_spell_buttons()
 	_update_selected_label()
+
+
+## Client Walk mode. Does not submit a CombatSim intent. Does not face.
+func select_walk() -> void:
+	clear_spell()
+	spell_selected.emit("")
+
+
+## Esc / Walk-button cancel. Clears spell chrome only; right-click face is unchanged.
+func cancel_spell_selection() -> bool:
+	if _selected_spell == "":
+		return false
+	select_walk()
+	return true
 
 
 func set_aim_preview(preview: Dictionary) -> void:
@@ -207,6 +230,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 			button.modulate = Color(1, 1, 1, 1)
 		else:
 			button.modulate = Color(1, 1, 1, 0.72)
+	_refresh_walk_button()
 	_apply_controls(match_over)
 	if stunned and not match_over:
 		for button in _face_buttons.values():
@@ -220,6 +244,8 @@ func _apply_controls(match_over: bool) -> void:
 			(_spell_buttons[spell_id] as Button).disabled = true
 	for button in _face_buttons.values():
 		(button as Button).disabled = block
+	if _walk_button != null:
+		_walk_button.disabled = block
 	if _end_turn_button != null:
 		_end_turn_button.disabled = block
 	if _new_match_button != null:
@@ -281,6 +307,12 @@ func _build() -> void:
 	_action_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	_action_bar.add_theme_constant_override("separation", 6)
 	root.add_child(_action_bar)
+
+	_walk_button = Button.new()
+	_walk_button.text = "Walk"
+	_walk_button.custom_minimum_size = Vector2(90, 32)
+	_walk_button.pressed.connect(_on_walk_pressed)
+	_action_bar.add_child(_walk_button)
 
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
@@ -482,6 +514,8 @@ func _sync_spell_buttons(offered: Array) -> void:
 			_action_bar.remove_child(button)
 			button.free()
 	var insert_idx := 0
+	if _walk_button != null and _walk_button.get_parent() == _action_bar:
+		insert_idx = _walk_button.get_index() + 1
 	for spell_id in offered_ids:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if def.is_empty():
@@ -501,13 +535,17 @@ func _spell_button_text(def: Dictionary) -> String:
 	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
 
 
+func _on_walk_pressed() -> void:
+	select_walk()
+
+
 func _on_spell_pressed(spell_id: String) -> void:
 	if not _spell_buttons.has(spell_id):
 		return
 	if _selected_spell == spell_id:
-		_selected_spell = ""
-	else:
-		_selected_spell = spell_id
+		select_walk()
+		return
+	_selected_spell = spell_id
 	_refresh_spell_buttons()
 	_update_selected_label()
 	spell_selected.emit(_selected_spell)
@@ -518,12 +556,22 @@ func _on_face_pressed(dir: String) -> void:
 
 
 func _refresh_spell_buttons() -> void:
+	_refresh_walk_button()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
 		else:
 			button.modulate = Color.WHITE
+
+
+func _refresh_walk_button() -> void:
+	if _walk_button == null:
+		return
+	if _selected_spell == "":
+		_walk_button.modulate = Color(1.15, 1.1, 0.7)
+	else:
+		_walk_button.modulate = Color.WHITE
 
 
 func _update_selected_label() -> void:
@@ -544,4 +592,5 @@ func _update_selected_label() -> void:
 	]
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
+	text += "  ·  Walk / Esc to cancel"
 	_selected_label.text = text
