@@ -1399,6 +1399,7 @@ func _test_aim_hit_preview() -> void:
 	eq(_sim.hit_chance(1), 90, "Locked band 1 stays 90%")
 	eq(_sim.hit_chance(3), 80, "Locked band 2–3 stays 80%")
 	eq(_sim.hit_chance(5), 75, "Locked band 4–5 stays 75%")
+	eq(_sim.hit_chance(5) == 80, false, "Mark Shot has no +5 longshot on the 4–5 band")
 	eq(_sim.hit_chance(6), 70, "Locked band 6–8 stays 70%")
 
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(5, 0)})

@@ -292,7 +292,16 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		"stun_telegraph": false,
 	}
 	var def: Dictionary = SpellKits.spell(spell_id)
+	# Tight allowlist: Locked rolling kit only. No Advance, no +5, no invented bands.
 	if def.is_empty() or not bool(def.get("rolls", false)):
+		return out
+	if not [
+		SpellKits.MARK_SHOT,
+		SpellKits.STRIKE,
+		SpellKits.DETONATE,
+		SpellKits.SHOULDER,
+		SpellKits.CRUSH,
+	].has(spell_id):
 		return out
 	out["rolls"] = true
 	var actor := _unit_by_seat(seat)
