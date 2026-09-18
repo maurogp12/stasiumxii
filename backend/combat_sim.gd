@@ -22,7 +22,8 @@ const FACING_VEC := {
 	"W": Vector2i(-1, 0),
 }
 
-## A03–A07 are Open. A01 Marks-on-target is Locked. A02 walk is Locked.
+## A03–A07 are Open. A01 Marks-on-target is Locked. A02 walk is Locked
+## (Manhattan dest-click, H-first ortho path, facing follows each hop).
 ## Advance range is Locked Manhattan 1–2 (diamond). MP is Locked Manhattan dest-click.
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 
@@ -130,6 +131,9 @@ func legal_intents(seat: int) -> Array:
 	var from: Vector2i = actor["pos"]
 	var mp: int = int(actor["mp"])
 	var ap: int = int(actor["ap"])
+	# Walk dests whenever mp>0, regardless of remaining AP. Advance is 3 AP / 0 MP, so
+	# leftover MP after teleport still offers moves (including at 0 AP). Walk facing
+	# is applied on submit (each hop), not here.
 	if mp > 0:
 		for y in range(BOARD_SIZE):
 			for x in range(BOARD_SIZE):
@@ -231,6 +235,7 @@ func snapshot() -> Dictionary:
 		"open_decisions": OPEN_DECISIONS.duplicate(),
 		"walk": "manhattan",
 		"walk_tie_break": "horizontal_first",
+		"walk_facing": "last_hop",
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
@@ -241,7 +246,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Stun 1 (OPEN A05): stun_remaining on the unit; reject casts/moves/face with stunned_cannot_act; end_turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Exact suppress list not locked. Push into occupied/OOB (OPEN): do not move the target; still deal damage/Impact; emit push_blocked.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
 	}
@@ -256,7 +261,8 @@ static func manhattan(a: Vector2i, b: Vector2i) -> int:
 
 
 ## Canonical walk path: dest-click only. Horizontal (E/W) first, then vertical (N/S).
-## Client intent.path is never consulted.
+## Client intent.path is never consulted. Locked: facing follows each ortho hop;
+## final facing is the last hop direction.
 static func expand_ortho_path(from: Vector2i, to: Vector2i) -> Array:
 	var path: Array = []
 	var cursor := from
@@ -395,6 +401,15 @@ func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	return _accept()
 
 
+## Locked: one ortho hop → N/E/S/W. Empty if the step is not a single cardinal cell.
+static func facing_from_step(from: Vector2i, to: Vector2i) -> String:
+	var delta: Vector2i = to - from
+	for dir in FACING_VEC.keys():
+		if FACING_VEC[dir] == delta:
+			return str(dir)
+	return ""
+
+
 func _submit_face(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var dir := str(intent.get("dir", ""))
 	if not FACING_VEC.has(dir):
@@ -416,6 +431,8 @@ func _submit_face(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	# Dest-click only. CombatSim expands the ortho path; ignore client intent.path.
+	# Locked: facing follows each ortho hop; final facing = last hop direction.
+	# Manual face intent stays for standing turns. Advance teleport does not auto-face.
 	intent.erase("path")
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")
@@ -426,6 +443,8 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var from: Vector2i = actor["pos"]
 	var path: Array = expand_ortho_path(from, dest)
 	var dist := manhattan(from, dest)
+	var facing_from: String = str(actor["facing"])
+	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
 	actor["mp"] = int(actor["mp"]) - dist
 	_intent_log.append(intent)
@@ -436,10 +455,27 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"from": from,
 		"to": dest,
 		"path": path.duplicate(),
+		"facing_from": facing_from,
+		"facing": str(actor["facing"]),
+		"facing_hops": facing_hops.duplicate(),
 		"mp_spent": dist,
 		"coach": _last_coach,
 	})
 	return _accept()
+
+
+## Locked A02: set actor facing from each hop. Final facing is the last hop dir.
+func _face_along_walk(actor: Dictionary, from: Vector2i, path: Array) -> Array:
+	var hops: Array = []
+	var prev: Vector2i = from
+	for cell in path:
+		var dest: Vector2i = cell
+		var dir := facing_from_step(prev, dest)
+		if dir != "":
+			actor["facing"] = dir
+			hops.append(dir)
+		prev = dest
+	return hops
 
 
 func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
@@ -500,7 +536,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	# Teleport: dest-click snap. Never spend MP.
+	# Teleport: dest-click snap. Never spend MP. Facing unchanged — no auto-face.
 	actor["pos"] = dest
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
 	var adjacent: bool = false
