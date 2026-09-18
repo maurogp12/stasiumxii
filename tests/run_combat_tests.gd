@@ -59,6 +59,7 @@ func _run() -> void:
 	_test_legal_moves_after_advance()
 	_test_walk_facing_follows_last_hop()
 	_test_advance_faces_last_h_first_hop()
+	_test_walk_mode_cancel()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -1645,6 +1646,61 @@ func _test_advance_faces_last_h_first_hop() -> void:
 	eq(_unit(1)["ap"], 3, "standing face after Advance costs 0 AP")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	eq(_sim.snapshot()["crit_mult"], 1.0, "CritMult stays 1.0")
+
+
+func _test_walk_mode_cancel() -> void:
+	# Walk is a dedicated mode, not only a default. After selecting Advance,
+	# Walk / Esc returns to walk chrome without End Turn. Right-click stays face.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.submit({"type": "end_turn"})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(1))
+	eq(hud.selected_spell(), "", "default mode is Walk")
+	eq(hud.cancel_spell_selection(), false, "Esc is a no-op already in Walk")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "advance", "Advance can be selected")
+	eq(hud.cancel_spell_selection(), true, "Esc/cancel returns to Walk")
+	eq(hud.selected_spell(), "", "after Esc, Walk mode")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "advance", "Advance selected again")
+	hud.select_walk()
+	eq(hud.selected_spell(), "", "Walk button returns to Walk without End Turn")
+	hud._on_spell_pressed("advance")
+	hud._on_spell_pressed("advance")
+	eq(hud.selected_spell(), "", "clicking Advance again also returns to Walk")
+	hud.free()
+
+	# Cast Advance then remaining MP walks (same contract as the sibling test).
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.submit({"type": "end_turn"})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "Advance dest-click resolves")
+	eq(_unit(1)["ap"], 3, "3 AP remain")
+	eq(_unit(1)["mp"], 3, "MP remains after Advance")
+	var moves := _legal_move_dests(1)
+	truthy(moves.has(Vector2i(6, 3)), "after Advance, legal_intents still include Manhattan walks")
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 3)})
+	eq(result["ok"], true, "walk with remaining MP after Advance is accepted")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains('text = "Walk"'), "HUD has a dedicated Walk button")
+	truthy(hud_src.contains("func select_walk"), "HUD exposes Walk mode")
+	truthy(hud_src.contains("ui_cancel"), "HUD Esc/ui_cancel clears spell selection")
+	truthy(hud_src.contains("func cancel_spell_selection"), "cancel is spell-only")
+	truthy(view.contains("ui_cancel"), "board_view Esc returns to Walk")
+	truthy(view.contains("func _return_to_walk"), "Walk cancel does not require End Turn")
+	var unhandled_idx := view.find("func _unhandled_input")
+	var select_idx := view.find("func select_tile")
+	truthy(unhandled_idx >= 0 and select_idx > unhandled_idx, "_unhandled_input exists")
+	var unhandled := view.substr(unhandled_idx, select_idx - unhandled_idx)
+	truthy(unhandled.contains("MOUSE_BUTTON_RIGHT"), "right-click is still handled")
+	truthy(unhandled.contains("_face_toward"), "right-click still faces")
+	truthy(unhandled.contains("_return_to_walk"), "Esc cancel is in the same input path")
+	eq(unhandled.find("ui_cancel") < unhandled.find("_face_toward"), true, "Esc cancel does not steal right-click face")
+	eq(hud_src.contains("Detonate"), false, "Walk-mode patch does not hardcode Detonate")
+	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

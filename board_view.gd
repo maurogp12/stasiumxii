@@ -6,6 +6,7 @@ extends Node2D
 ## and face each hop (final facing = last hop, matching the snapshot).
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
+## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
@@ -91,6 +92,10 @@ func _sync_turn_clock() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if _busy:
 		return
+	if event.is_action_pressed("ui_cancel"):
+		# Esc returns to Walk. Right-click stays face and is not a cancel.
+		_return_to_walk()
+		return
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
 		var cell := local_to_grid(mouse_position)
@@ -150,6 +155,13 @@ func _on_spell_selected(_spell_id: String) -> void:
 		return
 	_paint_highlights()
 	_sync_aim_preview()
+
+
+func _return_to_walk() -> void:
+	if _hud == null:
+		return
+	_hud.select_walk()
+	_paint_highlights()
 
 
 func _on_face_requested(dir: String) -> void:

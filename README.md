@@ -7,7 +7,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 1. Open `project.godot` in Godot 4.7 or later and run the main scene.
 2. **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
 3. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. A **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune.
-4. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). The client never sends `intent.path`.
+4. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel).
 5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
    - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). Facing follows the last hop of the H-first ortho expansion (path is facing-only; position still snaps). Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it connects.
@@ -90,6 +90,8 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 
 ## How to test walk-after-Advance and last-hop facing
 
-1. End Turn so **Ironjaw** acts (6 AP / 3 MP). Select **Advance** and dest-click a Manhattan 1–2 tile. The pawn snaps (no hops). Advance deselects; walk tiles highlight from remaining MP. With e.g. 3 AP / 3 MP (or a second Advance to 0 AP / 3 MP), click a Manhattan walk dest — it must be selectable and highlight.
-2. Walk a multi-hop dest (e.g. two east then one south). The pointer faces **each** hop; after landing it faces the last hop. HUD Face matches. In-place Face N/E/S/W still works without moving.
-3. Advance onto a diagonal dest: position snaps, facing is the last H-first hop (horizontal, then vertical). No HIT % on Advance or walks.
+1. End Turn so **Ironjaw** acts (6 AP / 3 MP).
+2. **Cancel checklist:** Select **Advance** (purple diamond, walk chrome off). Press **Walk** or **Esc** — selection returns to Walk, cyan Manhattan tiles come back. Right-click a tile still faces (does not cancel).
+3. Select **Advance** again and dest-click a Manhattan 1–2 tile. The pawn snaps (no hops). Advance deselects; walk tiles highlight from remaining MP. With e.g. 3 AP / 3 MP (or a second Advance to 0 AP / 3 MP), click a Manhattan walk dest — it must be selectable and highlight.
+4. Walk a multi-hop dest (e.g. two east then one south). The pointer faces **each** hop; after landing it faces the last hop. HUD Face matches. In-place Face N/E/S/W still works without moving.
+5. Advance onto a diagonal dest: position snaps, facing is the last H-first hop (horizontal, then vertical). No HIT % on Advance or walks.
