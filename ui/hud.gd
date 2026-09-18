@@ -40,6 +40,14 @@ var _stunned: bool = false
 var _stun_badge: Label
 var _toast_label: Label
 var _toast_token: int = 0
+var _spell_hosts: Dictionary = {}
+var _tooltip_panel: Panel
+var _tooltip_label: Label
+var _tooltip_spell: String = ""
+var _long_press_spell: String = ""
+var _long_press_elapsed: float = 0.0
+var _last_snap: Dictionary = {}
+var _preview_source: Node = null
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -130,9 +138,25 @@ static func toast_for_events(events: Array) -> String:
 	return ""
 
 
+## Proposed hover / long-press card. Formats CombatSim.preview_cast only.
+static func spell_card_text(preview: Dictionary) -> String:
+	return SpellTooltip.card_text(preview)
+
+
 func _ready() -> void:
 	layer = 10
+	set_process(false)
 	_build()
+
+
+func _process(delta: float) -> void:
+	if _long_press_spell == "":
+		set_process(false)
+		return
+	_long_press_elapsed += delta
+	if _long_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
+		show_spell_tooltip(_long_press_spell)
+		_cancel_long_press()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -152,6 +176,7 @@ func clear_spell() -> void:
 	set_aim_preview({})
 	_refresh_spell_buttons()
 	_update_selected_label()
+	hide_spell_tooltip()
 
 
 ## Client Walk mode. Does not submit a CombatSim intent. Does not face.
@@ -231,7 +256,12 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 			_turn_label.text = "%s%s%s%s%ds" % [parts[0], sep, parts[1], sep, _clock_seconds]
 
 
+func set_preview_source(sim: Node) -> void:
+	_preview_source = sim
+
+
 func render(snap: Dictionary, legal: Array) -> void:
+	_last_snap = snap
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
 	var ironjaw := _unit(units, 1)
@@ -255,11 +285,14 @@ func render(snap: Dictionary, legal: Array) -> void:
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
 		_aim_hit_chance = -1
+		hide_spell_tooltip()
 	if _selected_spell == "":
 		_aim_hit_chance = -1
 		if _aim_hit_label != null:
 			_aim_hit_label.text = ""
 			_aim_hit_label.visible = false
+	if _tooltip_spell != "" and not offered.has(_tooltip_spell):
+		hide_spell_tooltip()
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
@@ -276,7 +309,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned
-		button.disabled = not can_submit
+		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
 		elif can_submit:
@@ -292,7 +325,7 @@ func _apply_controls(match_over: bool) -> void:
 	var block := match_over or _locked
 	for spell_id in _spell_buttons.keys():
 		if block:
-			(_spell_buttons[spell_id] as Button).disabled = true
+			_set_spell_button_clickable(_spell_buttons[spell_id], false)
 	for button in _face_buttons.values():
 		(button as Button).disabled = block or _stunned
 		(button as Button).modulate = STUN_GREY if (_stunned and not block) else Color.WHITE
@@ -431,6 +464,22 @@ func _build() -> void:
 	_toast_label.add_theme_constant_override("outline_size", 6)
 	_toast_label.visible = false
 	root.add_child(_toast_label)
+
+	_tooltip_panel = Panel.new()
+	_tooltip_panel.position = Vector2(240, 348)
+	_tooltip_panel.size = Vector2(480, 248)
+	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_panel.visible = false
+	_tooltip_panel.add_theme_stylebox_override("panel", _card_panel())
+	root.add_child(_tooltip_panel)
+	_tooltip_label = Label.new()
+	_tooltip_label.position = Vector2(12, 8)
+	_tooltip_label.size = Vector2(456, 232)
+	_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_tooltip_label.add_theme_font_size_override("font_size", 13)
+	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tooltip_panel.add_child(_tooltip_label)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -576,6 +625,16 @@ func _panel(color: Color) -> StyleBoxFlat:
 	return box
 
 
+func _card_panel() -> StyleBoxFlat:
+	var box := _panel(Color(0.99, 0.97, 0.9, 0.97))
+	box.border_color = Color(0.18, 0.12, 0.1, 0.85)
+	box.border_width_left = 2
+	box.border_width_top = 2
+	box.border_width_right = 2
+	box.border_width_bottom = 2
+	return box
+
+
 func _sync_spell_buttons(offered: Array) -> void:
 	var offered_ids: Array = []
 	for spell_id in offered:
@@ -587,11 +646,12 @@ func _sync_spell_buttons(offered: Array) -> void:
 		if not offered_ids.has(spell_id):
 			stale.append(spell_id)
 	for spell_id in stale:
-		var button: Button = _spell_buttons[spell_id]
+		var host: Control = _spell_hosts.get(spell_id)
 		_spell_buttons.erase(spell_id)
-		if is_instance_valid(button):
-			_action_bar.remove_child(button)
-			button.free()
+		_spell_hosts.erase(spell_id)
+		if is_instance_valid(host):
+			_action_bar.remove_child(host)
+			host.free()
 	var insert_idx := 0
 	if _walk_button != null and _walk_button.get_parent() == _action_bar:
 		insert_idx = _walk_button.get_index() + 1
@@ -600,18 +660,34 @@ func _sync_spell_buttons(offered: Array) -> void:
 		if def.is_empty():
 			continue
 		if not _spell_buttons.has(spell_id):
+			var host := Control.new()
+			host.custom_minimum_size = Vector2(118, 32)
+			host.mouse_filter = Control.MOUSE_FILTER_STOP
+			host.mouse_entered.connect(_on_spell_hover.bind(spell_id))
+			host.mouse_exited.connect(_on_spell_unhover)
+			host.gui_input.connect(_on_spell_host_input.bind(spell_id))
 			var button := Button.new()
 			button.text = _spell_button_text(def)
-			button.custom_minimum_size = Vector2(118, 32)
+			button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			button.pressed.connect(_on_spell_pressed.bind(spell_id))
-			_action_bar.add_child(button)
+			button.button_down.connect(_begin_long_press.bind(spell_id))
+			button.button_up.connect(_cancel_long_press)
+			host.add_child(button)
+			_action_bar.add_child(host)
 			_spell_buttons[spell_id] = button
-		_action_bar.move_child(_spell_buttons[spell_id], insert_idx)
+			_spell_hosts[spell_id] = host
+		_action_bar.move_child(_spell_hosts[spell_id], insert_idx)
 		insert_idx += 1
 
 
 func _spell_button_text(def: Dictionary) -> String:
 	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
+
+
+## Disabled buttons still hover via the host: ignore their mouse so the wrapper receives it.
+func _set_spell_button_clickable(button: Button, clickable: bool) -> void:
+	button.disabled = not clickable
+	button.mouse_filter = Control.MOUSE_FILTER_STOP if clickable else Control.MOUSE_FILTER_IGNORE
 
 
 func _on_walk_pressed() -> void:
@@ -678,6 +754,133 @@ func _update_selected_label() -> void:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
 	text += "  ·  Walk / Esc to cancel"
 	_selected_label.text = text
+
+
+func show_spell_tooltip(spell_id: String) -> void:
+	var preview := preview_for_spell(spell_id)
+	var text := SpellTooltip.card_text(preview)
+	if text == "" or _tooltip_panel == null or _tooltip_label == null:
+		hide_spell_tooltip()
+		return
+	_tooltip_spell = spell_id
+	_tooltip_label.text = text
+	_tooltip_panel.visible = true
+
+
+func preview_for_spell(spell_id: String) -> Dictionary:
+	var sim := _preview_sim()
+	if sim == null or spell_id == "":
+		return {}
+	var args := _preview_dest_args(spell_id)
+	return sim.preview_cast(spell_id, args["from"], args["to"], int(args["target_seat"]))
+
+
+func _preview_sim() -> Node:
+	if _preview_source != null and is_instance_valid(_preview_source):
+		return _preview_source
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		return (tree as SceneTree).root.get_node_or_null("CombatSim")
+	return null
+
+
+func _preview_dest_args(spell_id: String) -> Dictionary:
+	var units: Array = _last_snap.get("units", [])
+	var seat := int(_last_snap.get("active_seat", 0))
+	var actor := _unit(units, seat)
+	var enemy := _unit(units, 1 - seat)
+	var from: Vector2i = _as_cell(actor.get("pos", Vector2i.ZERO))
+	if spell_id == SpellKits.ADVANCE:
+		return {
+			"from": from,
+			"to": _advance_hover_dest(from, units),
+			"target_seat": -1,
+		}
+	var to: Vector2i = _as_cell(enemy.get("pos", from))
+	return {
+		"from": from,
+		"to": to,
+		"target_seat": int(enemy.get("seat", -1)),
+	}
+
+
+func _advance_hover_dest(from: Vector2i, units: Array) -> Vector2i:
+	var occupied := {}
+	for unit in units:
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		occupied[_as_cell(unit.get("pos", Vector2i(-1, -1)))] = true
+	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+		var dest: Vector2i = from + delta
+		if dest.x < 0 or dest.y < 0 or dest.x > 7 or dest.y > 7:
+			continue
+		if occupied.has(dest):
+			continue
+		return dest
+	return from + Vector2i(1, 0)
+
+
+func _as_cell(value: Variant) -> Vector2i:
+	if value is Vector2i:
+		return value
+	if value is Dictionary:
+		return Vector2i(int(value.get("x", 0)), int(value.get("y", 0)))
+	if value is Array and value.size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i.ZERO
+
+
+func hide_spell_tooltip() -> void:
+	_tooltip_spell = ""
+	_cancel_long_press()
+	if _tooltip_panel != null:
+		_tooltip_panel.visible = false
+	if _tooltip_label != null:
+		_tooltip_label.text = ""
+
+
+func tooltip_visible() -> bool:
+	return _tooltip_panel != null and _tooltip_panel.visible
+
+
+func tooltip_caption() -> String:
+	if _tooltip_label == null or not tooltip_visible():
+		return ""
+	return _tooltip_label.text
+
+
+func _on_spell_hover(spell_id: String) -> void:
+	show_spell_tooltip(spell_id)
+
+
+func _on_spell_unhover() -> void:
+	hide_spell_tooltip()
+
+
+func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_begin_long_press(spell_id)
+		else:
+			_cancel_long_press()
+		return
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if event.pressed:
+			_begin_long_press(spell_id)
+		else:
+			_cancel_long_press()
+
+
+func _begin_long_press(spell_id: String) -> void:
+	_long_press_spell = spell_id
+	_long_press_elapsed = 0.0
+	set_process(true)
+
+
+func _cancel_long_press() -> void:
+	_long_press_spell = ""
+	_long_press_elapsed = 0.0
+	set_process(false)
 
 
 func show_toast(text: String) -> void:

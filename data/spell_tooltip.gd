@@ -1,0 +1,60 @@
+extends RefCounted
+class_name SpellTooltip
+
+## Proposed attack-card chrome. Formats CombatSim.preview_cast only.
+## Does not invent kit numbers, rolls, or Open rules. Mastery 0 is omitted.
+## Resist is shown only if the preview notes it (provisional/Open, never Locked).
+
+const LONG_PRESS_SEC := 0.45
+
+
+static func card_text(preview: Dictionary) -> String:
+	return "\n".join(card_lines(preview))
+
+
+static func card_lines(preview: Dictionary) -> PackedStringArray:
+	var lines: PackedStringArray = PackedStringArray()
+	if preview.is_empty():
+		return lines
+	var name := str(preview.get("name", ""))
+	if name == "" and str(preview.get("spell_id", "")) == "":
+		return lines
+	if name == "":
+		name = str(preview.get("spell_id", ""))
+	lines.append(name)
+	var metric := "Manhattan" if str(preview.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
+	lines.append("%d AP / %d MP · range %d–%d %s" % [
+		int(preview.get("ap", 0)),
+		int(preview.get("mp", 0)),
+		int(preview.get("min_range", 0)),
+		int(preview.get("max_range", 0)),
+		metric,
+	])
+	var connect := str(preview.get("on_connect_text", "")).strip_edges()
+	if connect != "":
+		lines.append("On connect: %s" % connect)
+	var miss := str(preview.get("on_miss_text", "")).strip_edges()
+	if miss != "":
+		lines.append("On miss: %s" % miss)
+	if preview.get("hit_chance", null) != null:
+		lines.append("HIT %d%% (Locked)" % int(preview["hit_chance"]))
+	if preview.get("sample_damage", null) != null:
+		var sample := "sample %d  ·  CritMult(1.0) × live Facing" % int(preview["sample_damage"])
+		if preview.has("marks_on_target"):
+			var formula := str(preview.get("formula", "6+6*M"))
+			sample += "  ·  M=%d (%s)" % [int(preview["marks_on_target"]), formula]
+		lines.append(sample)
+	if bool(preview.get("would_stun", false)):
+		lines.append("Stun 1 (Locked A) this cast.")
+	for note in preview.get("notes", []):
+		var text := str(note)
+		if text == "":
+			continue
+		if text.contains("Push") or text.contains("push_blocked"):
+			lines.append(text)
+		elif text.contains("Resist"):
+			lines.append(text)
+		elif text.contains("teleport") or text.contains("Facing unchanged"):
+			if not connect.contains("Teleport") and not connect.contains("Facing unchanged"):
+				lines.append(text)
+	return lines

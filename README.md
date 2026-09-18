@@ -29,7 +29,8 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A) chrome, toast PushBlocked, and run the Proposed timers. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed timers. |
+| `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
 Intents: `end_turn` | `face` | `move` | `cast`.
 
@@ -57,6 +58,7 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - ~1.0s client-only seat handoff pause + turn banner on End Turn. CombatSim still advances the seat immediately. The next seat's 30s is held during that banner so it does not drain before they can act.
 - 30s visible seat clock (`TurnClock.DURATION_SEC`). At 0, auto End Turn (same as the button). CombatSim does not own the clock. Walk hop animations do **not** pause the clock. Advance does not hop.
 - Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate / Shoulder / Crush (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
+- Hover / long-press **attack cards** on spell buttons, formatted from read-only `CombatSim.preview_cast` (costs, range, on-connect / on-miss, `sample_damage` with CritMult 1.0 × live Facing, Locked `hit_chance`). Detonate samples **current Marks**. Crush shows **Stun 1 (Locked A)** when `would_stun`. Advance has no HIT % / sample. Resist 0 is labeled provisional/Open if the preview notes it. CombatSim does not own the card.
 
 ## Omitted (not silent defaults)
 
@@ -89,6 +91,12 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 1. Run the main scene. Select **Mark Shot**: Chebyshev 2–5 ring + **HIT 75%** vs default Ironjaw (range 5). Walk chrome stays off. Advance / Walk never show HIT %.
 2. After a Mark connects, select **Detonate**: 1–6 ring + HIT %.
 3. Kit buttons stay class-gated (Kestrel: Mark Shot / Detonate; Ironjaw: Advance / Strike / Shoulder / Crush). Crush stays disabled below 2 Impact.
+
+## How to test attack hover cards
+
+1. Hover (or long-press) **Mark Shot**: card is `preview_cast` — 2 AP / 0 MP, Chebyshev 2–5, connect/miss kit lines, Locked HIT % for the current dest, and `sample_damage` from CritMult 1.0 × live Facing. No +5.
+2. After Marks land, hover **Detonate**: sample uses **current Marks** (`6+6*M`). Miss keeps Marks.
+3. End Turn. Hover **Advance**: Manhattan teleport, no HIT %, no sample. **Shoulder** passes through Locked Push (1). **Crush** at 4 Impact shows **Stun 1 (Locked A) this cast**; at 0–2 Impact that flag stays off.
 
 ## How to test walk-after-Advance and last-hop facing
 
