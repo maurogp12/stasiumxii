@@ -58,7 +58,7 @@ func _run() -> void:
 	_test_aim_hit_preview()
 	_test_legal_moves_after_advance()
 	_test_walk_facing_follows_last_hop()
-	_test_advance_faces_last_h_first_hop()
+	_test_advance_facing_unchanged()
 	_test_walk_mode_cancel()
 
 
@@ -543,8 +543,8 @@ func _test_advance_teleport_costs() -> void:
 	eq(result["events"][0]["teleport"], true, "Advance is a teleport snap")
 	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
-	eq(_unit(1)["facing"], "S", "diagonal Advance faces last H-first hop S")
-	eq(result["events"][0]["facing"], "S", "Advance event facing is last hop")
+	eq(_unit(1)["facing"], "W", "diagonal Advance leaves default Face W unchanged")
+	eq(result["events"][0].has("facing"), false, "Advance event does not auto-face")
 	truthy(str(result["events"][0]["coach"]).contains("3 AP"), "coach names the 3 AP spend")
 	eq(str(result["events"][0]["coach"]).contains("MP"), false, "coach does not mention MP spend")
 
@@ -630,7 +630,8 @@ func _test_advance_teleport_costs() -> void:
 	truthy(resolve_idx >= 0 and rolling_idx > resolve_idx, "_resolve_advance and _resolve_rolling_cast exist")
 	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
 	eq(resolve_src.contains("expand_ortho_path"), false, "Advance resolve does not hop-expand a path itself")
-	truthy(resolve_src.contains("last_hop_facing"), "Advance resolve faces the last H-first hop (facing-only)")
+	eq(resolve_src.contains("last_hop_facing"), false, "Advance resolve does not auto-face from H-first hops")
+	eq(resolve_src.contains('actor["facing"]'), false, "Advance resolve does not write facing")
 	eq(resolve_src.contains('actor["mp"]'), false, "Advance resolve does not touch MP")
 	eq(sim_src.contains("Advance costs %d MP"), false, "Advance no longer has an MP-cost reject")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
@@ -1588,8 +1589,8 @@ func _test_walk_facing_follows_last_hop() -> void:
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 
-func _test_advance_faces_last_h_first_hop() -> void:
-	# Diagonal dest: H-first is horizontal then vertical. Face the last hop only.
+func _test_advance_facing_unchanged() -> void:
+	# Locked: Advance teleport does not auto-face. Walk last-hop facing is separate.
 	_sim.reset_match({
 		"seed": 1,
 		"kestrel_pos": Vector2i(7, 7),
@@ -1597,12 +1598,11 @@ func _test_advance_faces_last_h_first_hop() -> void:
 		"ironjaw_facing": "W",
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim.last_hop_facing(Vector2i(3, 3), Vector2i(4, 4), "W"), "S", "SE Advance last hop is S")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
 	eq(result["ok"], true, "diagonal Advance dest-click is legal")
 	eq(_unit(1)["pos"], Vector2i(4, 4), "Advance still snaps to dest")
-	eq(_unit(1)["facing"], "S", "SE Advance faces last hop S")
-	eq(result["events"][0]["facing"], "S", "Advance event facing is last hop")
+	eq(_unit(1)["facing"], "W", "SE Advance leaves facing W unchanged")
+	eq(result["events"][0].has("facing"), false, "Advance event does not set facing")
 	eq(result["events"][0].has("path"), false, "Advance still emits no hop path")
 	eq(result["events"][0]["teleport"], true, "Advance stays a teleport")
 
@@ -1614,7 +1614,7 @@ func _test_advance_faces_last_h_first_hop() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 3)})
-	eq(_unit(1)["facing"], "W", "west Advance faces W")
+	eq(_unit(1)["facing"], "S", "west Advance leaves facing S unchanged")
 	eq(_unit(1)["pos"], Vector2i(1, 3), "west Advance snaps")
 
 	_sim.reset_match({
@@ -1625,7 +1625,7 @@ func _test_advance_faces_last_h_first_hop() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 1)})
-	eq(_unit(1)["facing"], "N", "north Advance faces N")
+	eq(_unit(1)["facing"], "E", "north Advance leaves facing E unchanged")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -1635,15 +1635,25 @@ func _test_advance_faces_last_h_first_hop() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 2)})
-	eq(_sim.expand_ortho_path(Vector2i(3, 3), Vector2i(2, 2)), [Vector2i(2, 3), Vector2i(2, 2)], "NW Advance H-first is W then N")
-	eq(_unit(1)["facing"], "N", "NW Advance faces last hop N")
+	eq(_unit(1)["facing"], "E", "NW Advance leaves facing E unchanged")
 	eq(result["events"][0].has("path"), false, "NW Advance still has no hop path")
+	eq(result["events"][0].has("facing"), false, "NW Advance event has no facing field")
 
-	result = _sim.submit({"type": "face", "dir": "E"})
+	result = _sim.submit({"type": "face", "dir": "N"})
 	eq(result["ok"], true, "in-place face remains legal after Advance")
-	eq(_unit(1)["facing"], "E", "manual face after Advance still works")
+	eq(_unit(1)["facing"], "N", "manual face after Advance still works")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "manual face does not move")
 	eq(_unit(1)["ap"], 3, "standing face after Advance costs 0 AP")
+
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var resolve_idx := sim_src.find("func _resolve_advance")
+	var rolling_idx := sim_src.find("func _resolve_rolling_cast")
+	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
+	eq(resolve_src.contains("last_hop_facing"), false, "Advance submit does not call last_hop_facing")
+	eq(resolve_src.contains("hop_facing"), false, "Advance submit does not call hop_facing")
+	eq(resolve_src.contains('actor["facing"]'), false, "Advance submit does not write actor facing")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains('kind == "move" or kind == "advance"'), false, "Advance teleport is not hop-played")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	eq(_sim.snapshot()["crit_mult"], 1.0, "CritMult stays 1.0")
 

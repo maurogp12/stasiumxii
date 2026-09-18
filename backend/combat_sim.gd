@@ -241,7 +241,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Stun 1 (OPEN A05): stun_remaining on the unit; reject casts/moves/face with stunned_cannot_act; end_turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Exact suppress list not locked. Push into occupied/OOB (OPEN): do not move the target; still deal damage/Impact; emit push_blocked.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing follows the last hop of the H-first ortho expansion (facing-only; position still snaps).",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP. No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 		},
 	}
@@ -281,8 +281,8 @@ static func hop_facing(from: Vector2i, to: Vector2i) -> String:
 	return "S" if delta.y > 0 else "N"
 
 
-## Last-hop facing along the H-first ortho expansion. Used by walks and Advance
-## (Advance computes this path for facing only; the pawn still snaps).
+## Last-hop facing along the H-first ortho expansion. Walks only.
+## Advance teleport does not auto-face.
 static func last_hop_facing(from: Vector2i, to: Vector2i, fallback: String = "") -> String:
 	var path: Array = expand_ortho_path(from, to)
 	if path.is_empty():
@@ -529,12 +529,9 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
-	# Facing-only: last hop of H-first ortho expansion. Position still snaps; no hop path.
-	var facing := last_hop_facing(from, dest, str(actor["facing"]))
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	# Teleport: dest-click snap. Never spend MP.
+	# Teleport: dest-click snap. Never spend MP. Facing unchanged (Locked).
 	actor["pos"] = dest
-	actor["facing"] = facing
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
 	var adjacent: bool = false
 	if not enemy.is_empty() and bool(enemy["alive"]):
@@ -555,7 +552,6 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, def: Dictionary, de
 		"from": from,
 		"to": dest,
 		"teleport": true,
-		"facing": facing,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"rolled": false,
