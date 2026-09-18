@@ -67,6 +67,9 @@ func _run() -> void:
 	_test_advance_facing_unchanged()
 	_test_walk_mode_cancel()
 	_test_spell_tooltip_cards()
+	_test_action_bar_wraps()
+	_test_stun_skip_chrome()
+	_test_playtest_warning_hush()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -2502,6 +2505,8 @@ func _test_spell_tooltip_cards() -> void:
 	eq(hud.tooltip_visible(), false, "tooltip starts hidden")
 	eq(CombatHUD.spell_card_text(mark_preview), mark, "HUD helper formats preview_cast")
 	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 8, "HUD hover preview_cast samples live facing")
+	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).disabled, false, "Mark Shot is enabled at start")
+	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Mark Shot button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.MARK_SHOT)
 	eq(hud.tooltip_visible(), true, "hover shows the Mark Shot card")
 	eq(hud.tooltip_caption(), SpellTooltip.card_text(hud.preview_for_spell(SpellKits.MARK_SHOT)), "hover caption is preview_cast formatted")
@@ -2523,11 +2528,54 @@ func _test_spell_tooltip_cards() -> void:
 	hud._on_spell_hover(SpellKits.CRUSH)
 	eq(hud.tooltip_visible(), true, "grey Crush still shows its card")
 	eq(hud.tooltip_caption().contains("Stun 1 (Locked A′) this cast."), false, "grey Crush at 0 Impact does not flag this-cast Stun")
+	eq((hud._spell_buttons[SpellKits.ADVANCE] as Button).disabled, false, "Advance is enabled on Ironjaw")
+	eq((hud._spell_buttons[SpellKits.ADVANCE] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Advance button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.ADVANCE)
 	eq(hud.tooltip_caption().contains("HIT "), false, "Advance hover still has no HIT %")
 	eq(hud.preview_for_spell(SpellKits.ADVANCE)["sample_damage"], null, "Advance hover preview has no sample")
+	truthy(hud.tooltip_caption().contains("range 1–2 Manhattan"), "Advance hover names Manhattan range from preview")
+	truthy(hud.tooltip_caption().contains("Teleport"), "Advance hover uses preview teleport text")
 	hud._on_spell_hover(SpellKits.SHOULDER)
 	truthy(hud.tooltip_caption().contains("Locked Push (1)"), "Shoulder hover names Locked Push (1) from preview")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(2, 0),
+		"ironjaw_facing": "W",
+		"ironjaw_marks": 0,
+	})
+	hud.set_preview_source(_sim)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var gated_preview: Dictionary = hud.preview_for_spell(SpellKits.DETONATE)
+	eq(gated_preview.get("reason", ""), "needs_marks", "Detonate hover preview_cast reports needs_marks at M=0")
+	eq(int(gated_preview.get("marks_on_target", -1)), 0, "Detonate hover preview reports M=0")
+	hud._on_spell_hover(SpellKits.DETONATE)
+	var gated_card := hud.tooltip_caption()
+	var gated_lines := gated_card.split("\n")
+	truthy(gated_lines.size() >= 2, "M=0 Detonate card has a lead-in")
+	eq(str(gated_lines[1]), "needs Marks", "M=0 Detonate card leads with needs Marks")
+	truthy(gated_card.contains("3 AP / 0 MP"), "M=0 Detonate card keeps costs")
+	truthy(gated_card.contains("range 1–6 Chebyshev"), "M=0 Detonate card keeps range")
+	truthy(gated_card.contains("HIT "), "M=0 Detonate card keeps HIT%")
+	eq(gated_card.contains("sample 6"), false, "M=0 Detonate card does not lead with sample 6")
+	var sample_first := SpellTooltip.card_text({
+		"name": "Detonate",
+		"ap": 3,
+		"mp": 0,
+		"range_mode": "chebyshev",
+		"min_range": 1,
+		"max_range": 6,
+		"hit_chance": 75,
+		"on_connect_text": "6+6×M Air. Consumes Marks on the target.",
+		"on_miss_text": "Marks stay. AP/MP stay spent.",
+		"sample_damage": 6,
+		"marks_on_target": 0,
+		"reason": "needs_marks",
+		"notes": ["Resist 0 (provisional Open A05)"],
+	})
+	eq(sample_first.split("\n")[1], "needs Marks", "formatter leads with needs Marks even if preview still samples 6")
+	eq(sample_first.contains("sample 6"), false, "formatter hides sample 6 when preview is needs_marks")
 	hud.free()
 
 	var tooltip_src := FileAccess.get_file_as_string("res://data/spell_tooltip.gd")
@@ -2556,6 +2604,121 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(readme.contains("attack cards"), "README documents Proposed attack cards")
 	truthy(readme.contains("preview_cast"), "README says cards read preview_cast")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll still OFF after tooltip tests")
+	truthy(tooltip_src.contains("needs Marks"), "tooltip formatter can lead with needs Marks")
+	eq(tooltip_src.contains("var connect :="), false, "tooltip no longer shadows Object.connect")
+	truthy(hud_src.contains("_bind_spell_hover"), "HUD binds hover on enabled spell buttons")
+	truthy(hud_src.contains("FlowContainer"), "HUD action bar wraps with FlowContainer")
+	eq(hud_src.contains("var show :="), false, "HUD no longer shadows CanvasLayer.show")
+
+
+func _test_action_bar_wraps() -> void:
+	# 960×720 playtest: Ironjaw's kit must wrap instead of overlapping labels.
+	_sim.reset_match({"seed": 1})
+	_sim.submit({"type": "end_turn"})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(1))
+	eq(hud._action_bar is FlowContainer, true, "action bar is a FlowContainer")
+	eq(hud._action_bar.custom_minimum_size.y >= 72, true, "action bar has room for a wrapped row")
+	eq(hud._walk_button.custom_minimum_size.x >= 80, true, "Walk keeps a readable min width")
+	eq(hud._end_turn_button.custom_minimum_size.x >= 100, true, "End Turn keeps a readable min width")
+	eq(hud._new_match_button.custom_minimum_size.x >= 100, true, "New Match keeps a readable min width")
+	eq(hud._face_buttons.size(), 4, "Face N/E/S/W stay present")
+	eq(hud.face_suppressed(), false, "Face stays usable while the bar wraps")
+	for spell_id in hud._spell_hosts.keys():
+		var host: Control = hud._spell_hosts[spell_id]
+		eq(host.custom_minimum_size.x >= 140, true, "spell host %s keeps a readable min width" % spell_id)
+		eq(host.custom_minimum_size.y >= 32, true, "spell host %s keeps a readable height" % spell_id)
+	var offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
+	eq(offered.size(), 4, "Ironjaw offers four kit buttons")
+	hud.free()
+
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("FlowContainer"), "HUD source uses FlowContainer")
+	truthy(hud_src.contains("h_separation"), "wrapped bar sets horizontal separation")
+	eq(hud_src.contains("Detonate"), false, "wrap patch does not hardcode Detonate")
+
+
+func _test_stun_skip_chrome() -> void:
+	# Client presents CombatSim's auto-skip event. Does not submit end_turn itself.
+	eq(CombatHUD.events_include_stun_skip([]), false, "empty events are not a skip")
+	eq(CombatHUD.events_include_stun_skip([{"type": "status", "status": "stun", "coach": "Kestrel is stunned (Locked A)."}]), false, "Crush stun status is not a skip")
+	eq(CombatHUD.events_include_stun_skip([{"type": "end_turn", "seat": 1, "next_seat": 0}]), false, "manual end_turn is not a skip")
+	var skip_event := {
+		"type": "end_turn",
+		"seat": 0,
+		"auto": true,
+		"stunned": true,
+		"name": "Kestrel",
+		"coach": "Kestrel stunned (Locked A′) — turn skipped.",
+	}
+	eq(CombatHUD.events_include_stun_skip([skip_event]), true, "auto stunned end_turn is a skip")
+	eq(CombatHUD.stun_skip_caption(skip_event), "Kestrel stunned — turn skipped", "skip banner names the stunned seat")
+	eq(CombatHUD.events_include_stun_skip([{"type": "stun_skip", "seat": 1, "name": "Ironjaw"}]), true, "stun_skip type is presented")
+	eq(CombatHUD.stun_skip_caption({"type": "stun_skip", "coach": "Ironjaw stunned (Locked A′) — turn skipped."}), "Ironjaw stunned (Locked A′) — turn skipped.", "coach-only skip events stay readable")
+	eq(CombatHUD.events_include_stun_skip([{
+		"type": "end_turn",
+		"seat": 1,
+		"next_seat": 0,
+		"coach": "Kestrel's turn skipped — stunned (Locked A′).",
+	}]), false, "handoff coach on the previous seat's end_turn is not itself the skip")
+	eq(CombatHUD.events_include_stun_skip([{
+		"type": "turn_start",
+		"seat": 0,
+		"stunned_skip": true,
+		"coach": "Kestrel's turn skipped — stunned (Locked A′).",
+	}]), true, "Locked A′ turn_start.stunned_skip is a skip")
+	eq(CombatHUD.events_include_stun_skip([{
+		"type": "status",
+		"status": "stun",
+		"coach": "Kestrel is stunned (Locked A′).",
+	}]), false, "Crush Locked A′ status is not a skip")
+
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	var live_skip_result: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(CombatHUD.events_include_stun_skip(live_skip_result.get("events", [])), true, "live Locked A′ auto end_turn is presented")
+	var live_skip: Dictionary = CombatHUD.stun_skip_event(live_skip_result.get("events", []))
+	eq(int(live_skip.get("seat", -1)), 0, "skip event belongs to the stunned seat")
+	eq(CombatHUD.stun_skip_caption(live_skip, _sim.snapshot()), "Kestrel stunned — turn skipped", "live skip banner names Kestrel")
+
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.show_turn_banner("Kestrel", SpellKits.CLASS_KESTREL, "Kestrel stunned — turn skipped")
+	eq(hud.banner_caption(), "Kestrel stunned — turn skipped", "skip banner caption is set")
+	hud.hide_turn_banner()
+	eq(hud.banner_caption(), "", "skip banner hides")
+	hud.free()
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("stun_skip_event"), "board_view presents CombatSim skip events")
+	truthy(view.contains("stun_skip_caption"), "board_view uses the skip caption helper")
+	eq(view.contains("submit({\"type\": \"end_turn\"})"), true, "board_view still submits end_turn only on the existing path")
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	eq(hud_src.contains("auto end_turn"), false, "HUD does not auto-submit end_turn")
+	eq(hud_src.contains("Step-shot"), false, "skip chrome does not invent Step-shot")
+
+
+func _test_playtest_warning_hush() -> void:
+	var tooltip_src := FileAccess.get_file_as_string("res://data/spell_tooltip.gd")
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(tooltip_src.contains("var connect :="), false, "spell_tooltip does not shadow Object.connect")
+	truthy(tooltip_src.contains("var on_connect :="), "spell_tooltip renamed the connect local")
+	eq(hud_src.contains("var show :="), false, "hud does not shadow CanvasLayer.show")
+	truthy(hud_src.contains("var stun_visible :="), "hud renamed the show local")
+	truthy(view.contains("COMBAT_SIM_SCRIPT.facing_from_step"), "walk hops call facing_from_step on the script type")
+	truthy(view.contains("COMBAT_SIM_SCRIPT.hop_facing"), "walk hops call hop_facing on the script type")
+	eq(view.contains("CombatSim.facing_from_step"), false, "facing_from_step is not called on the autoload instance")
+	eq(view.contains("CombatSim.hop_facing"), false, "hop_facing is not called on the autoload instance")
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

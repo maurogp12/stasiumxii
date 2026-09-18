@@ -15,7 +15,7 @@ const TOAST_SEC := 1.4
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
 var _face_buttons: Dictionary = {}
-var _action_bar: HBoxContainer
+var _action_bar: FlowContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
 var _turn_label: Label
@@ -138,6 +138,66 @@ static func toast_for_events(events: Array) -> String:
 	return ""
 
 
+## Presentation of a CombatSim auto-skip. Does not submit end_turn.
+## Prefer Locked A′ `end_turn auto` / `turn_start.stunned_skip` over coach text on
+## the previous seat's handoff (that coach mentions the skip but belongs to the actor).
+static func stun_skip_event(events: Array) -> Dictionary:
+	var turn_start_skip := {}
+	var coach_skip := {}
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var kind := str(event.get("type", ""))
+		var coach := str(event.get("coach", ""))
+		if kind in ["stun_skip", "turn_skipped", "stunned_skip"]:
+			return event
+		if kind == "end_turn" and (
+			bool(event.get("auto", false))
+			or bool(event.get("auto_end_turn", false))
+			or bool(event.get("stunned", false))
+			or bool(event.get("stun_skip", false))
+			or bool(event.get("stunned_skip", false))
+			or bool(event.get("skipped", false))
+			or str(event.get("reason", "")) == "stunned"
+		):
+			return event
+		if kind == "turn_start" and (
+			bool(event.get("skipped", false))
+			or bool(event.get("stun_skip", false))
+			or bool(event.get("stunned_skip", false))
+		):
+			if turn_start_skip.is_empty():
+				turn_start_skip = event
+		elif kind != "end_turn" and coach.contains("turn skipped"):
+			if coach_skip.is_empty():
+				coach_skip = event
+	if not turn_start_skip.is_empty():
+		return turn_start_skip
+	return coach_skip
+
+
+static func events_include_stun_skip(events: Array) -> bool:
+	return not stun_skip_event(events).is_empty()
+
+
+static func stun_skip_caption(event: Dictionary, snap: Dictionary = {}) -> String:
+	if event.is_empty():
+		return ""
+	var unit_name := str(event.get("name", event.get("unit_name", "")))
+	if unit_name == "" and not snap.is_empty():
+		var seat := int(event.get("seat", -1))
+		for unit in snap.get("units", []):
+			if int(unit.get("seat", -2)) == seat:
+				unit_name = str(unit.get("name", ""))
+				break
+	if unit_name != "":
+		return "%s stunned — turn skipped" % unit_name
+	var coach := str(event.get("coach", "")).strip_edges()
+	if coach != "":
+		return coach
+	return "Stunned — turn skipped"
+
+
 ## Proposed hover / long-press card. Formats CombatSim.preview_cast only.
 static func spell_card_text(preview: Dictionary) -> String:
 	return SpellTooltip.card_text(preview)
@@ -209,12 +269,18 @@ func set_locked(locked: bool) -> void:
 	_apply_controls(false)
 
 
-func show_turn_banner(unit_name: String, class_id: String) -> void:
-	_handoff_label.text = "%s's turn" % unit_name
+func show_turn_banner(unit_name: String, class_id: String, caption: String = "") -> void:
+	_handoff_label.text = caption if caption != "" else "%s's turn" % unit_name
 	var fill := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
 	_handoff_panel.add_theme_stylebox_override("panel", _panel(fill))
 	_handoff_overlay.visible = true
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+
+
+func banner_caption() -> String:
+	if _handoff_label == null or _handoff_overlay == null or not _handoff_overlay.visible:
+		return ""
+	return _handoff_label.text
 
 
 func hide_turn_banner() -> void:
@@ -385,54 +451,21 @@ func _build() -> void:
 	res_box.add_child(_mp_pips)
 	res_box.add_child(_make_clock_row())
 
-	_selected_label = Label.new()
-	_selected_label.position = Vector2(220, 620)
-	_selected_label.size = Vector2(520, 24)
-	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_label.add_theme_font_size_override("font_size", 16)
-	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
-	root.add_child(_selected_label)
-
-	_aim_hit_label = Label.new()
-	_aim_hit_label.position = Vector2(220, 598)
-	_aim_hit_label.size = Vector2(520, 24)
-	_aim_hit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_aim_hit_label.add_theme_font_size_override("font_size", 20)
-	_aim_hit_label.add_theme_color_override("font_color", Color(0.72, 0.22, 0.16))
-	_aim_hit_label.visible = false
-	root.add_child(_aim_hit_label)
-
-	_action_bar = HBoxContainer.new()
-	_action_bar.position = Vector2(16, 650)
-	_action_bar.size = Vector2(928, 36)
-	_action_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	_action_bar.add_theme_constant_override("separation", 6)
-	root.add_child(_action_bar)
-
-	_walk_button = Button.new()
-	_walk_button.text = "Walk"
-	_walk_button.custom_minimum_size = Vector2(90, 32)
-	_walk_button.pressed.connect(_on_walk_pressed)
-	_action_bar.add_child(_walk_button)
-
-	_end_turn_button = Button.new()
-	_end_turn_button.text = "End Turn"
-	_end_turn_button.custom_minimum_size = Vector2(110, 32)
-	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
-	_action_bar.add_child(_end_turn_button)
-
-	_new_match_button = Button.new()
-	_new_match_button.text = "New Match"
-	_new_match_button.custom_minimum_size = Vector2(110, 32)
-	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	_action_bar.add_child(_new_match_button)
+	var bottom := VBoxContainer.new()
+	bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom.offset_left = 16
+	bottom.offset_right = -16
+	bottom.offset_bottom = -8
+	bottom.offset_top = -168
+	bottom.add_theme_constant_override("separation", 4)
+	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(bottom)
 
 	var face_bar := HBoxContainer.new()
-	face_bar.position = Vector2(360, 578)
-	face_bar.size = Vector2(240, 32)
 	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	face_bar.add_theme_constant_override("separation", 6)
-	root.add_child(face_bar)
+	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom.add_child(face_bar)
 	var face_caption := Label.new()
 	face_caption.text = "Face"
 	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -445,14 +478,54 @@ func _build() -> void:
 		face_bar.add_child(button)
 		_face_buttons[dir] = button
 
+	_aim_hit_label = Label.new()
+	_aim_hit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_aim_hit_label.add_theme_font_size_override("font_size", 20)
+	_aim_hit_label.add_theme_color_override("font_color", Color(0.72, 0.22, 0.16))
+	_aim_hit_label.visible = false
+	bottom.add_child(_aim_hit_label)
+
+	_selected_label = Label.new()
+	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_selected_label.add_theme_font_size_override("font_size", 16)
+	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	bottom.add_child(_selected_label)
+
+	_action_bar = FlowContainer.new()
+	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
+	_action_bar.custom_minimum_size = Vector2(0, 72)
+	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_action_bar.add_theme_constant_override("h_separation", 6)
+	_action_bar.add_theme_constant_override("v_separation", 6)
+	bottom.add_child(_action_bar)
+
+	_walk_button = Button.new()
+	_walk_button.text = "Walk"
+	_walk_button.custom_minimum_size = Vector2(88, 32)
+	_walk_button.clip_text = true
+	_walk_button.pressed.connect(_on_walk_pressed)
+	_action_bar.add_child(_walk_button)
+
+	_end_turn_button = Button.new()
+	_end_turn_button.text = "End Turn"
+	_end_turn_button.custom_minimum_size = Vector2(112, 32)
+	_end_turn_button.clip_text = true
+	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
+	_action_bar.add_child(_end_turn_button)
+
+	_new_match_button = Button.new()
+	_new_match_button.text = "New Match"
+	_new_match_button.custom_minimum_size = Vector2(112, 32)
+	_new_match_button.clip_text = true
+	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
+	_action_bar.add_child(_new_match_button)
+
 	_coach_label = Label.new()
-	_coach_label.position = Vector2(40, 682)
-	_coach_label.size = Vector2(880, 34)
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
-	root.add_child(_coach_label)
+	bottom.add_child(_coach_label)
 
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(220, 540)
@@ -661,17 +734,19 @@ func _sync_spell_buttons(offered: Array) -> void:
 			continue
 		if not _spell_buttons.has(spell_id):
 			var host := Control.new()
-			host.custom_minimum_size = Vector2(118, 32)
+			host.custom_minimum_size = Vector2(152, 32)
 			host.mouse_filter = Control.MOUSE_FILTER_STOP
-			host.mouse_entered.connect(_on_spell_hover.bind(spell_id))
-			host.mouse_exited.connect(_on_spell_unhover)
+			_bind_spell_hover(host, spell_id)
 			host.gui_input.connect(_on_spell_host_input.bind(spell_id))
 			var button := Button.new()
 			button.text = _spell_button_text(def)
+			button.clip_text = true
 			button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			button.pressed.connect(_on_spell_pressed.bind(spell_id))
 			button.button_down.connect(_begin_long_press.bind(spell_id))
 			button.button_up.connect(_cancel_long_press)
+			# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
+			_bind_spell_hover(button, spell_id)
 			host.add_child(button)
 			_action_bar.add_child(host)
 			_spell_buttons[spell_id] = button
@@ -849,6 +924,11 @@ func tooltip_caption() -> String:
 	return _tooltip_label.text
 
 
+func _bind_spell_hover(control: Control, spell_id: String) -> void:
+	control.mouse_entered.connect(_on_spell_hover.bind(spell_id))
+	control.mouse_exited.connect(_on_spell_unhover)
+
+
 func _on_spell_hover(spell_id: String) -> void:
 	show_spell_tooltip(spell_id)
 
@@ -936,7 +1016,7 @@ func spells_suppressed() -> bool:
 func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:
 	if _stun_badge == null:
 		return
-	var show := (not match_over) and unit_is_stunned(active)
-	_stun_badge.visible = show
-	if show:
+	var stun_visible := (not match_over) and unit_is_stunned(active)
+	_stun_badge.visible = stun_visible
+	if stun_visible:
 		_stun_badge.text = "STUN"
