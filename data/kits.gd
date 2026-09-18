@@ -111,7 +111,7 @@ const SPELLS := {
 		"engine_on_connect": "spend_impact",
 		"requires_impact": 2,
 		"spend_impact": 2,
-		# OPEN A05: Stun 1 if Impact was 4 before the spend. Suppress list not locked.
+		# Locked Stun (A): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
 		"stun_if_impact_before": 4,
 		"stun_remaining": 1,
 	},

@@ -13,8 +13,8 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it connects.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On connect: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it connects.
-   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On connect: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **OPEN:** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`.
-   - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **OPEN A05:** Stun rejects casts/moves/face (`stunned_cannot_act`); End Turn is allowed. Exact suppress list is not locked.
+   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On connect: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Locked Push (1):** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`.
+   - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); End Turn is allowed.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
 7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
 8. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
@@ -49,6 +49,8 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - Detonate / Shoulder / Crush / Advance / Strike / Mark Shot values above
 - Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw
+- **Locked Stun (A):** Stun 1 blocks move + cast + face; End Turn allowed. `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn.
+- **Locked Push (1):** Shoulder into occupied/OOB = no-move + `push_blocked`; damage/Impact still apply.
 
 ## Proposed (not Locked)
 
@@ -66,13 +68,13 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 
 ## A03–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path, facing follows each hop). **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged). A06 still notes the adjacent-Impact stub. **Ask before inventing** further Stun/push defaults.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path, facing follows each hop). **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged). **Locked Stun (A)** (blocks move + cast + face; End Turn allowed) and **Locked Push (1)** (occupied/OOB = no-move + `push_blocked`) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults.
 
 | ID | Stub used here |
 | --- | --- |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
-| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **OPEN:** Stun 1 suppress list — provisional: `stun_remaining` on the unit; reject casts/moves/face with `stunned_cannot_act`; End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **OPEN:** push into occupied/OOB — provisional no-move + `push_blocked` event. |
+| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **Locked Push (1):** occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. |
 | A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. `submit` does not zero leftover MP; leftover MP still walks (`legal_intents` is mp>0, not AP). Adjacency = Chebyshev 1 after landing. Facing unchanged (Advance does not auto-face). |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 

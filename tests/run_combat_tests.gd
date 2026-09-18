@@ -52,9 +52,9 @@ func _run() -> void:
 	_test_detonate_gates_and_damage()
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
-	_test_shoulder_push_blocked_open()
+	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
-	_test_stun_suppresses_actions_open_a05()
+	_test_stun_suppresses_actions_locked()
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
@@ -87,6 +87,16 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	eq(snap["open_decisions"].has("A01"), false, "A01 Marks-on-target is Locked, not Open")
 	eq(snap["marks_owner"], "target", "A01 Locked: Marks live on the target")
+	eq(snap["stun"], "locked_a", "Stun suppress is Locked (A)")
+	eq(snap["stun_blocks"], "move_cast_face", "Locked Stun (A) blocks move + cast + face")
+	eq(snap["push"], "locked_1", "Push occupied/OOB is Locked (1)")
+	eq(snap["push_occupied_oob"], "no_move", "Locked Push (1) is no-move + push_blocked")
+	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
+	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A)"), "A05 note labels Stun Locked (A)")
+	truthy(str(snap["open_notes"]["A05"]).contains("Locked Push (1)"), "A05 note labels Push Locked (1)")
+	eq(str(snap["open_notes"]["A05"]).contains("Exact suppress list not locked"), false, "A05 note does not leave the suppress list Open")
+	eq(str(snap["open_notes"]["A05"]).contains("provisional"), false, "A05 note does not call Stun/Push provisional")
+	truthy(str(snap["open_notes"]["A05"]).contains("Resist 0"), "A05 still notes Open Resist 0")
 
 
 func _test_only_active_seat_acts() -> void:
@@ -1242,8 +1252,8 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(_unit(1)["ap"], 6, "range reject refunds")
 
 
-func _test_shoulder_push_blocked_open() -> void:
-	# OPEN: push off-board — do not move; still deal damage/Impact; emit push_blocked.
+func _test_shoulder_push_blocked_locked() -> void:
+	# Locked Push (1): push off-board — do not move; still deal damage/Impact; emit push_blocked.
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1255,16 +1265,17 @@ func _test_shoulder_push_blocked_open() -> void:
 	eq(_sim.push_destination(Vector2i(1, 0), Vector2i(0, 0)), Vector2i(-1, 0), "west edge push is OOB")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "OOB push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(0, 0), "OPEN: OOB push does not move the target")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "Locked (1): OOB push does not move the target")
 	eq(_unit(0)["hp"], 74, "OOB push still deals 6 Earth")
 	eq(_unit(1)["impact"], 1, "OOB push still grants Impact")
 	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
 	eq(result["events"][0]["push_block_reason"], "out_of_bounds", "block reason is out_of_bounds")
-	eq(result["events"][1]["type"], "push_blocked", "OPEN event type is push_blocked")
+	eq(result["events"][1]["type"], "push_blocked", "event type is push_blocked")
 	eq(result["events"][1]["reason"], "out_of_bounds", "push_blocked reason is out_of_bounds")
-	truthy(str(result["events"][1].get("open", "")).contains("OPEN"), "push_blocked event is labeled OPEN")
+	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "push_blocked event is labeled Locked (1)")
+	eq(result["events"][1].has("open"), false, "push_blocked event is not labeled OPEN")
 
-	# OPEN: push into occupied — blockers are a test fixture, not a locked board feature.
+	# Locked Push (1): push into occupied — blockers are a test fixture, not a board feature.
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1276,12 +1287,13 @@ func _test_shoulder_push_blocked_open() -> void:
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "occupied push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(4, 3), "OPEN: occupied dest does not move the target")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "Locked (1): occupied dest does not move the target")
 	eq(_unit(0)["hp"], 74, "occupied push still deals damage")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
 	eq(result["events"][1]["type"], "push_blocked", "occupied dest emits push_blocked")
 	eq(result["events"][1]["reason"], "occupied", "block reason is occupied")
-	truthy(str(result["events"][1].get("open", "")).contains("OPEN"), "occupied push_blocked is labeled OPEN")
+	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "occupied push_blocked is labeled Locked (1)")
+	eq(str(result["events"][0]["coach"]).contains("Locked (1)"), true, "hit coach names Locked (1) when push is blocked")
 
 
 func _test_crush_spend_and_stun() -> void:
@@ -1341,7 +1353,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["impact"], 1, "3-2=1 Impact left")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun at Impact 3")
 
-	# Impact 4 before spend: Stun 1 (OPEN A05).
+	# Impact 4 before spend: Stun 1 (Locked A).
 	_sim.reset_match({
 		"seed": 1,
 		"rolls": [1],
@@ -1356,7 +1368,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["impact_before"], 4, "Impact was 4 before the spend")
 	eq(result["events"][0]["impact_spent"], 2, "still spends 2")
 	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
-	eq(result["events"][0]["open_a05_stun"], true, "Stun application labeled OPEN A05")
+	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
 	eq(result["events"][0]["damage"], 29, "24 × 1.20 rounds to 29")
 	eq(_unit(1)["impact"], 2, "4-2=2 Impact left")
@@ -1364,7 +1376,9 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][1]["type"], "status", "status event for Stun")
 	eq(result["events"][1]["status"], "stun", "status id is stun")
 	eq(result["events"][1]["remaining"], 1, "status remaining is 1")
-	truthy(str(result["events"][1].get("open", "")).contains("A05"), "Stun status event labeled OPEN A05")
+	truthy(str(result["events"][1].get("locked", "")).contains("Locked Stun (A)"), "Stun status event labeled Locked Stun (A)")
+	eq(result["events"][1].has("open"), false, "Stun status event is not labeled OPEN")
+	truthy(str(result["events"][1].get("coach", "")).contains("Locked A"), "Stun coach names Locked A")
 
 	# Miss retains Impact; no Stun.
 	_sim.reset_match({
@@ -1385,8 +1399,8 @@ func _test_crush_spend_and_stun() -> void:
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
 
 
-func _test_stun_suppresses_actions_open_a05() -> void:
-	# OPEN A05: provisional suppress = casts/moves/face. end_turn allowed.
+func _test_stun_suppresses_actions_locked() -> void:
+	# Locked Stun (A): suppress = casts/moves/face. end_turn allowed.
 	# Decrement at start of the stunned unit's turn after setting stunned-this-turn.
 	_sim.reset_match({
 		"seed": 1,
@@ -1402,8 +1416,8 @@ func _test_stun_suppresses_actions_open_a05() -> void:
 	eq(_unit(0)["stun_remaining"], 1, "Kestrel carries Stun 1 into the handoff")
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.snapshot()["active_seat"], 0, "Kestrel's stunned turn starts")
-	eq(_unit(0)["stunned"], true, "OPEN A05: stunned-this-turn is set at turn start")
-	eq(_unit(0)["stun_remaining"], 0, "OPEN A05: remaining decremented at start after the flag")
+	eq(_unit(0)["stunned"], true, "Locked A: stunned-this-turn is set at turn start")
+	eq(_unit(0)["stun_remaining"], 0, "Locked A: remaining decremented at start after the flag")
 	var legal: Array = _sim.legal_intents(0)
 	eq(legal.size(), 1, "stunned legal_intents is end_turn only")
 	eq(str(legal[0].get("type", "")), "end_turn", "only end_turn is offered while stunned")
@@ -1413,6 +1427,7 @@ func _test_stun_suppresses_actions_open_a05() -> void:
 	eq(result["reason"], "stunned_cannot_act", "move reason is stunned_cannot_act")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "stunned unit did not walk")
 	eq(_unit(0)["mp"], 3, "stunned move refunds")
+	truthy(str(result["events"][0].get("coach", "")).contains("Locked A"), "stun reject coach names Locked A")
 
 	result = _sim.submit({"type": "face", "dir": "N"})
 	eq(result["illegal"], true, "stunned face is rejected")
@@ -1439,8 +1454,12 @@ func _test_stun_suppresses_actions_open_a05() -> void:
 	truthy(types.has("face"), "after Stun 1, face is legal again")
 
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
-	truthy(sim_src.contains("OPEN A05"), "CombatSim labels Stun as OPEN A05")
+	eq(sim_src.contains("OPEN A05"), false, "CombatSim does not label Stun as OPEN A05")
+	eq(sim_src.contains("suppress list not locked"), false, "CombatSim does not leave the suppress list Open")
+	truthy(sim_src.contains("Locked Stun (A)"), "CombatSim labels Stun as Locked (A)")
+	truthy(sim_src.contains("Locked Push (1)"), "CombatSim labels Push as Locked (1)")
 	truthy(sim_src.contains("stunned_cannot_act"), "CombatSim uses reserved reject stunned_cannot_act")
+	eq(sim_src.contains("open_a05_stun"), false, "CombatSim no longer emits open_a05_stun")
 
 
 func _test_legal_intents_new_spell_gates() -> void:

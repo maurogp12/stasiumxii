@@ -218,7 +218,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
-	# OPEN A05: face/cast chrome follows CombatSim stun reject. Exact suppress list not locked.
+	# Locked Stun (A): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	var stunned := int(active.get("stun_remaining", 0)) > 0 or bool(active.get("stunned", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
@@ -458,7 +458,7 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
 	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
-	# OPEN A05: stun_remaining / stunned-this-turn display only. Suppress list not locked.
+	# Locked Stun (A): stun_remaining / stunned-this-turn display only.
 	var stun_note := ""
 	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
 		stun_note = "  STUN"
