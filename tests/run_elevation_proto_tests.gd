@@ -124,6 +124,12 @@ func _test_validate_gates() -> void:
 
 	sim.set_tile(Vector2i(1, 0), TerrainDef.Id.LAVA, 0.0)
 	eq(sim.validate_move(Vector2i(0, 0), Vector2i(1, 0), 6)["reason"], "not_walkable", "Lava dest is not_walkable")
+	sim.set_tile(Vector2i(2, 2), TerrainDef.Id.LAVA, 0.0)
+	eq(sim.validate_move(Vector2i(0, 0), Vector2i(2, 2), 6)["reason"], "not_walkable", "far Lava is not_walkable, not merely unreachable")
+	sim.set_tile(Vector2i(2, 2), TerrainDef.Id.GROUND, 0.0)
+	sim.occupy(Vector2i(2, 2))
+	eq(sim.validate_move(Vector2i(0, 0), Vector2i(2, 2), 6)["reason"], "occupied", "far occupied dest is occupied")
+	sim.vacate(Vector2i(2, 2))
 
 	sim.set_tile(Vector2i(1, 0), TerrainDef.Id.GROUND, 0.0)
 	sim.occupy(Vector2i(1, 0))

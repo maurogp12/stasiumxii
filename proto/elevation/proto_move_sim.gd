@@ -133,6 +133,11 @@ func validate_move(from: Vector2i, dest: Vector2i, remaining_mp: int) -> Diction
 		return _move_fail("out_of_bounds")
 	if not in_bounds(from):
 		return _move_fail("out_of_bounds")
+	# Dest gates first so lava / occupied clicks are not just "unreachable".
+	if not is_walkable(dest):
+		return _move_fail("not_walkable")
+	if is_occupied(dest, from):
+		return _move_fail("occupied")
 	var reach := reachable(from, remaining_mp)
 	if reach.has(dest):
 		return {
