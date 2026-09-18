@@ -55,6 +55,8 @@ func _run() -> void:
 	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
 	_test_stun_suppresses_actions_locked()
+	_test_stun_hud_greys_walk_face_spells()
+	_test_push_blocked_client_toast_no_hop()
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
@@ -1293,6 +1295,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 	eq(result["events"][1]["type"], "push_blocked", "occupied dest emits push_blocked")
 	eq(result["events"][1]["reason"], "occupied", "block reason is occupied")
 	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "occupied push_blocked is labeled Locked (1)")
+	eq(result["events"][1].has("open"), false, "occupied push_blocked is not labeled OPEN")
 	eq(str(result["events"][0]["coach"]).contains("Locked (1)"), true, "hit coach names Locked (1) when push is blocked")
 
 
@@ -1376,6 +1379,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][1]["type"], "status", "status event for Stun")
 	eq(result["events"][1]["status"], "stun", "status id is stun")
 	eq(result["events"][1]["remaining"], 1, "status remaining is 1")
+	eq(result["events"][1]["suppress"], ["move", "cast", "face"], "Stun (A) suppress is move/cast/face")
 	truthy(str(result["events"][1].get("locked", "")).contains("Locked Stun (A)"), "Stun status event labeled Locked Stun (A)")
 	eq(result["events"][1].has("open"), false, "Stun status event is not labeled OPEN")
 	truthy(str(result["events"][1].get("coach", "")).contains("Locked A"), "Stun coach names Locked A")
@@ -1400,7 +1404,7 @@ func _test_crush_spend_and_stun() -> void:
 
 
 func _test_stun_suppresses_actions_locked() -> void:
-	# Locked Stun (A): suppress = casts/moves/face. end_turn allowed.
+	# Locked Stun (A): suppress = move/cast/face. end_turn allowed.
 	# Decrement at start of the stunned unit's turn after setting stunned-this-turn.
 	_sim.reset_match({
 		"seed": 1,
@@ -1460,6 +1464,133 @@ func _test_stun_suppresses_actions_locked() -> void:
 	truthy(sim_src.contains("Locked Push (1)"), "CombatSim labels Push as Locked (1)")
 	truthy(sim_src.contains("stunned_cannot_act"), "CombatSim uses reserved reject stunned_cannot_act")
 	eq(sim_src.contains("open_a05_stun"), false, "CombatSim no longer emits open_a05_stun")
+	eq(sim_src.contains("Step-shot"), false, "Stun patch does not add Step-shot")
+	eq(sim_src.contains("gust_heading"), false, "Stun patch does not invent Gust")
+
+
+func _test_stun_hud_greys_walk_face_spells() -> void:
+	# Locked Stun (A) client: grey Walk / Face / spells; STUN badge; End Turn enabled.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
+	_sim.submit({"type": "end_turn"})
+	eq(_unit(0)["stunned"], true, "Kestrel is stunned-this-turn")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud.stun_badge_visible(), true, "HUD shows STUN badge while stunned")
+	truthy(str(hud._kestrel_body.text).contains("[b]STUN[/b]"), "Kestrel card shows STUN badge")
+	eq(hud.walk_suppressed(), true, "Walk is greyed/disabled while stunned")
+	eq(hud.face_suppressed(), true, "Face is greyed/disabled while stunned")
+	eq(hud.spells_suppressed(), true, "spells are greyed/disabled while stunned")
+	eq(hud.end_turn_enabled(), true, "End Turn stays enabled while stunned")
+	eq(hud._selected_label.text, "Stunned — End Turn only", "selected line names Stun suppress")
+	eq(hud._walk_button.modulate, CombatHUD.STUN_GREY, "Walk modulate is stun grey")
+	for dir in hud._face_buttons.keys():
+		eq((hud._face_buttons[dir] as Button).modulate, CombatHUD.STUN_GREY, "Face %s modulate is stun grey" % dir)
+	for spell_id in hud._spell_buttons.keys():
+		eq((hud._spell_buttons[spell_id] as Button).disabled, true, "spell %s disabled while stunned" % spell_id)
+		eq((hud._spell_buttons[spell_id] as Button).modulate, CombatHUD.STUN_GREY, "spell %s modulate is stun grey" % spell_id)
+
+	hud._on_walk_pressed()
+	eq(hud.selected_spell(), "", "disabled Walk does not select a spell")
+	# Buttons are disabled; CombatSim still rejects if a stunned intent is forced.
+	eq(_sim.submit({"type": "move", "to": Vector2i(3, 4)})["reason"], "stunned_cannot_act", "stunned move still rejected")
+
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "end_turn"})
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(_unit(0)["stunned"], false, "Stun 1 expired")
+	eq(hud.stun_badge_visible(), false, "STUN badge hides after expiry")
+	eq(hud.walk_suppressed(), false, "Walk re-enables after Stun 1")
+	eq(hud.face_suppressed(), false, "Face re-enables after Stun 1")
+	eq(hud.end_turn_enabled(), true, "End Turn still enabled after Stun 1")
+	hud.free()
+
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("STUN_GREY"), "HUD greys stunned Walk/Face/spells")
+	truthy(hud_src.contains("[b]STUN[/b]"), "HUD unit card includes a STUN badge")
+	eq(hud_src.contains("OPEN A05"), false, "HUD does not call Stun Open")
+	eq(hud_src.contains("suppress list not locked"), false, "HUD does not leave Stun Open")
+	eq(hud_src.contains("Step-shot"), false, "Stun HUD does not add Step-shot")
+	eq(hud_src.contains("Detonate"), false, "Stun HUD still does not hardcode Detonate")
+
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	eq(readme.contains("OPEN A05"), false, "README does not call Stun OPEN A05")
+	eq(readme.contains("**OPEN:** if the dest"), false, "README does not call PushBlocked Open")
+	truthy(readme.contains("Locked Stun (A)"), "README stamps Locked Stun (A)")
+	truthy(readme.contains("Locked Push (1)"), "README stamps Locked Push (1)")
+	truthy(readme.contains("are no longer Open"), "README says Stun/Push are no longer Open")
+
+	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
+	truthy(pawn_src.contains("STUN"), "pawn draws a STUN badge")
+	eq(pawn_src.contains("step_shot"), false, "pawn does not invent Step-shot")
+
+
+func _test_push_blocked_client_toast_no_hop() -> void:
+	# Locked Push (1) client: toast PushBlocked, do not hop, still hit/Impact feedback.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"kestrel_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
+	eq(CombatHUD.events_include_push_blocked(result["events"]), true, "OOB Shoulder is push_blocked")
+	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "PushBlocked does not animate a hop")
+	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.PUSH_BLOCKED_TOAST, "toast text is PushBlocked")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
+	eq(_unit(0)["hp"], 74, "hit damage still applied")
+	eq(_unit(1)["impact"], 1, "Impact still applied")
+
+	var walk_events: Array = [{
+		"type": "move",
+		"path": [Vector2i(1, 0), Vector2i(2, 0)],
+	}]
+	eq(CombatHUD.should_play_walk_hops(walk_events), true, "normal walks still hop")
+	eq(CombatHUD.toast_for_events(walk_events), "", "walks do not toast PushBlocked")
+	eq(CombatHUD.should_play_walk_hops([{"type": "advance", "to": Vector2i(2, 0)}]), false, "Advance still does not hop")
+
+	var occupied: Dictionary = _sim.reset_match({
+		"seed": 1,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"blockers": [Vector2i(5, 3)],
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "occupied PushBlocked does not hop")
+	eq(CombatHUD.toast_for_events(result["events"]), "PushBlocked", "occupied dest still toasts PushBlocked")
+
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
+	eq(hud.toast_caption(), "PushBlocked", "HUD toast caption is PushBlocked")
+	hud.free()
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("PUSH_BLOCKED_TOAST"), "board_view toasts PushBlocked")
+	truthy(view.contains("events_include_push_blocked"), "board_view gates hops on push_blocked")
+	truthy(view.contains("should_play_walk_hops"), "board_view uses hop gate that excludes PushBlocked")
+	truthy(view.contains("flash_impact"), "board_view still plays Impact feedback")
+	eq(view.contains("Step-shot"), false, "PushBlocked client does not add Step-shot")
+	eq(view.contains("Gust"), false, "PushBlocked client does not invent Gust")
+	eq(view.contains("longshot"), false, "PushBlocked client does not invent Mark Shot +5")
+	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
+	truthy(pawn_src.contains("flash_hit"), "pawn can flash on hit")
+	truthy(pawn_src.contains("flash_impact"), "pawn can flash Impact")
+	eq(occupied["crit_roll"], false, "crit roll stays OFF")
 
 
 func _test_legal_intents_new_spell_gates() -> void:
@@ -1711,8 +1842,8 @@ func _test_legal_moves_after_advance() -> void:
 	eq(click_src.contains("if spell_id != SpellKits.ADVANCE:"), false, "cast dest-click is not Advance-gated for chrome clear")
 	truthy(click_src.contains("_hud.clear_spell()"), "any dest-click cast clears spell selection")
 	truthy(click_src.contains("_paint_highlights()"), "any dest-click cast repaints chrome from legal_intents")
-	eq(view.contains("stun_remaining"), false, "walk-after-cast patch does not invent Stun")
-	eq(view.contains("push_blocked"), false, "walk-after-cast patch does not invent push")
+	eq(click_src.contains("stun_remaining"), false, "walk-after-cast dest-click does not invent Stun")
+	eq(click_src.contains("push_blocked"), false, "walk-after-cast dest-click does not invent push")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF after walk-after-cast checks")
 
 
@@ -1781,8 +1912,8 @@ func _test_walk_facing_follows_last_hop() -> void:
 	truthy(anim_src.contains("set_facing"), "walk anim updates pawn facing with hops")
 	var pawn := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn.contains("func set_facing"), "pawn can update facing mid-hop")
-	eq(view.contains("stun_remaining"), false, "last-hop face patch does not invent Stun")
-	eq(view.contains("push_blocked"), false, "last-hop face patch does not invent push")
+	eq(anim_src.contains("stun_remaining"), false, "last-hop face anim does not invent Stun")
+	eq(anim_src.contains("push_blocked"), false, "last-hop face anim does not invent push")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 
 

@@ -9,6 +9,8 @@ var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
 var is_active: bool = false
+var stunned: bool = false
+var _hit_flash: bool = false
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -27,6 +29,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int) -> void:
 	max_hp = int(unit["max_hp"])
 	alive = bool(unit["alive"])
 	is_active = int(unit["seat"]) == active_seat and alive
+	_hit_flash = false
+	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 	queue_redraw()
 
 
@@ -34,6 +38,17 @@ func set_facing(dir: String) -> void:
 	if dir == "" or dir == facing:
 		return
 	facing = dir
+	queue_redraw()
+
+
+func flash_hit() -> void:
+	_hit_flash = true
+	modulate = Color(1.85, 1.55, 1.15)
+	queue_redraw()
+
+
+func flash_impact() -> void:
+	modulate = Color(1.35, 1.2, 0.75)
 	queue_redraw()
 
 
@@ -45,7 +60,12 @@ func _draw() -> void:
 		fill = Color(0.35, 0.35, 0.38, 0.85)
 	if is_active:
 		draw_circle(Vector2(0, -12), 14.0, Color(1, 0.92, 0.45, 0.55))
-	draw_circle(Vector2(0, -12), 10.0, fill)
+	if stunned:
+		draw_circle(Vector2(0, -12), 16.0, Color(0.95, 0.78, 0.2, 0.35))
+	var body := fill
+	if _hit_flash:
+		body = body.lightened(0.35)
+	draw_circle(Vector2(0, -12), 10.0, body)
 	draw_arc(Vector2(0, -12), 10.0, 0.0, TAU, 24, Color(0.12, 0.08, 0.1), 1.6, true)
 
 	var pointer: Vector2 = FACING_ISO.get(facing, Vector2(20, 10))
@@ -68,3 +88,8 @@ func _draw() -> void:
 	else:
 		label_x -= 10.0
 	draw_string(font, Vector2(label_x, 10), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.08, 0.1))
+	if stunned:
+		var stun_size := font.get_string_size("STUN", HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
+		var badge := Rect2(Vector2(-stun_size.x * 0.5 - 3, -44), Vector2(stun_size.x + 6, 12))
+		draw_rect(badge, Color(0.95, 0.78, 0.18, 0.95))
+		draw_string(font, Vector2(-stun_size.x * 0.5, -34), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))

@@ -8,6 +8,9 @@ signal new_match_requested
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
+const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
+const PUSH_BLOCKED_TOAST := "PushBlocked"
+const TOAST_SEC := 1.4
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -33,6 +36,10 @@ var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 var _aim_hit_label: Label
 var _aim_hit_chance: int = -1
+var _stunned: bool = false
+var _stun_badge: Label
+var _toast_label: Label
+var _toast_token: int = 0
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -82,6 +89,45 @@ static func legal_cast_ids(legal: Array) -> Dictionary:
 		if id != "":
 			out[id] = true
 	return out
+
+
+static func unit_is_stunned(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
+
+
+static func events_include_push_blocked(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "push_blocked":
+			return true
+		if bool(event.get("push_blocked", false)):
+			return true
+	return false
+
+
+static func should_play_walk_hops(events: Array) -> bool:
+	if events_include_push_blocked(events):
+		return false
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "move":
+			continue
+		if not event.has("path"):
+			continue
+		var path: Array = event["path"]
+		if not path.is_empty():
+			return true
+	return false
+
+
+static func toast_for_events(events: Array) -> String:
+	if events_include_push_blocked(events):
+		return PUSH_BLOCKED_TOAST
+	return ""
 
 
 func _ready() -> void:
@@ -214,27 +260,32 @@ func render(snap: Dictionary, legal: Array) -> void:
 		if _aim_hit_label != null:
 			_aim_hit_label.text = ""
 			_aim_hit_label.visible = false
-	_update_selected_label()
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
 	# Locked Stun (A): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
-	var stunned := int(active.get("stun_remaining", 0)) > 0 or bool(active.get("stunned", false))
+	# Grey Walk / Face / spells; End Turn stays enabled.
+	_stunned = unit_is_stunned(active) and not match_over
+	if _stunned and _selected_spell != "":
+		_selected_spell = ""
+		_aim_hit_chance = -1
+		if _aim_hit_label != null:
+			_aim_hit_label.text = ""
+			_aim_hit_label.visible = false
+	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not stunned
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned
 		button.disabled = not can_submit
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
 		elif can_submit:
 			button.modulate = Color(1, 1, 1, 1)
 		else:
-			button.modulate = Color(1, 1, 1, 0.72)
+			button.modulate = STUN_GREY if _stunned else Color(1, 1, 1, 0.72)
 	_refresh_walk_button()
 	_apply_controls(match_over)
-	if stunned and not match_over:
-		for button in _face_buttons.values():
-			(button as Button).disabled = true
+	_sync_stun_badge(active, units, match_over)
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -243,11 +294,16 @@ func _apply_controls(match_over: bool) -> void:
 		if block:
 			(_spell_buttons[spell_id] as Button).disabled = true
 	for button in _face_buttons.values():
-		(button as Button).disabled = block
+		(button as Button).disabled = block or _stunned
+		(button as Button).modulate = STUN_GREY if (_stunned and not block) else Color.WHITE
 	if _walk_button != null:
-		_walk_button.disabled = block
+		_walk_button.disabled = block or _stunned
+		if _stunned and not block:
+			_walk_button.modulate = STUN_GREY
 	if _end_turn_button != null:
+		# Locked Stun (A): End Turn stays enabled while stunned.
 		_end_turn_button.disabled = block
+		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 
@@ -268,6 +324,18 @@ func _build() -> void:
 	_turn_label.add_theme_font_size_override("font_size", 18)
 	_turn_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	root.add_child(_turn_label)
+
+	_stun_badge = Label.new()
+	_stun_badge.text = "STUN"
+	_stun_badge.position = Vector2(430, 120)
+	_stun_badge.size = Vector2(100, 22)
+	_stun_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_stun_badge.add_theme_font_size_override("font_size", 14)
+	_stun_badge.add_theme_color_override("font_color", Color(0.18, 0.1, 0.04))
+	_stun_badge.add_theme_color_override("font_outline_color", Color(0.98, 0.82, 0.28))
+	_stun_badge.add_theme_constant_override("outline_size", 6)
+	_stun_badge.visible = false
+	root.add_child(_stun_badge)
 
 	var resource_panel := Panel.new()
 	resource_panel.position = Vector2(300, 44)
@@ -352,6 +420,17 @@ func _build() -> void:
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
 	root.add_child(_coach_label)
+
+	_toast_label = Label.new()
+	_toast_label.position = Vector2(220, 540)
+	_toast_label.size = Vector2(520, 32)
+	_toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_toast_label.add_theme_font_size_override("font_size", 22)
+	_toast_label.add_theme_color_override("font_color", Color(0.92, 0.22, 0.14))
+	_toast_label.add_theme_color_override("font_outline_color", Color(1, 1, 1))
+	_toast_label.add_theme_constant_override("outline_size", 6)
+	_toast_label.visible = false
+	root.add_child(_toast_label)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -458,20 +537,20 @@ func _unit_card_text(unit: Dictionary, active: bool) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
 	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
-	# Locked Stun (A): stun_remaining / stunned-this-turn display only.
+	# Locked Stun (A): STUN badge on the unit card while remaining or stunned-this-turn.
 	var stun_note := ""
-	if int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false)):
-		stun_note = "  STUN"
-	return "[color=#ffffff]%s  HP %d/%d\nAP %d  MP %d  Face %s\nMarks %s  Impact %s%s\n%s[/color]" % [
+	if unit_is_stunned(unit):
+		stun_note = "  [b]STUN[/b]"
+	return "[color=#ffffff]%s  HP %d/%d%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
+		stun_note,
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
 		engine_pips(int(unit["marks"]), int(unit["marks_cap"])),
 		engine_pips(int(unit["impact"]), int(unit["impact_cap"])),
-		stun_note,
 		str(unit["element"]).capitalize() + " · " + ", ".join(PackedStringArray(unit["spells"])),
 	]
 
@@ -568,7 +647,9 @@ func _refresh_spell_buttons() -> void:
 func _refresh_walk_button() -> void:
 	if _walk_button == null:
 		return
-	if _selected_spell == "":
+	if _stunned:
+		_walk_button.modulate = STUN_GREY
+	elif _selected_spell == "":
 		_walk_button.modulate = Color(1.15, 1.1, 0.7)
 	else:
 		_walk_button.modulate = Color.WHITE
@@ -576,6 +657,9 @@ func _refresh_walk_button() -> void:
 
 func _update_selected_label() -> void:
 	if _selected_label == null:
+		return
+	if _stunned:
+		_selected_label.text = "Stunned — End Turn only"
 		return
 	if _selected_spell == "":
 		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
@@ -594,3 +678,62 @@ func _update_selected_label() -> void:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
 	text += "  ·  Walk / Esc to cancel"
 	_selected_label.text = text
+
+
+func show_toast(text: String) -> void:
+	if _toast_label == null:
+		return
+	_toast_label.text = text
+	_toast_label.visible = text != ""
+	_toast_token += 1
+	var token := _toast_token
+	if text == "" or not is_inside_tree():
+		return
+	await get_tree().create_timer(TOAST_SEC).timeout
+	if not is_instance_valid(self) or _toast_label == null:
+		return
+	if token == _toast_token:
+		_toast_label.visible = false
+
+
+func toast_caption() -> String:
+	if _toast_label == null or not _toast_label.visible:
+		return ""
+	return _toast_label.text
+
+
+func stun_badge_visible() -> bool:
+	return _stun_badge != null and _stun_badge.visible
+
+
+func walk_suppressed() -> bool:
+	return _walk_button != null and _walk_button.disabled
+
+
+func end_turn_enabled() -> bool:
+	return _end_turn_button != null and not _end_turn_button.disabled
+
+
+func face_suppressed() -> bool:
+	for button in _face_buttons.values():
+		if not (button as Button).disabled:
+			return false
+	return not _face_buttons.is_empty()
+
+
+func spells_suppressed() -> bool:
+	if _spell_buttons.is_empty():
+		return false
+	for button in _spell_buttons.values():
+		if not (button as Button).disabled:
+			return false
+	return true
+
+
+func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:
+	if _stun_badge == null:
+		return
+	var show := (not match_over) and unit_is_stunned(active)
+	_stun_badge.visible = show
+	if show:
+		_stun_badge.text = "STUN"

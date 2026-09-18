@@ -741,6 +741,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"target_seat": target["seat"],
 			# Locked Stun (A): move/cast/face rejected; end_turn allowed.
 			"locked": "Locked Stun (A) — move/cast/face rejected; end_turn allowed",
+			"suppress": ["move", "cast", "face"],
 			"coach": "%s is stunned (Locked A)." % target["name"],
 		})
 	_check_death(target)
