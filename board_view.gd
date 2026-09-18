@@ -36,6 +36,7 @@ var _turn_clock := TurnClock.new()
 
 func _ready() -> void:
 	_hud = $"../HUD" as CombatHUD
+	_hud.set_preview_source(CombatSim)
 	_hud.spell_selected.connect(_on_spell_selected)
 	_hud.face_requested.connect(_on_face_requested)
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
