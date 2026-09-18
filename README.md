@@ -88,6 +88,20 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 godot --headless --path . -s res://tests/run_combat_tests.gd
 ```
 
+## Phase B+ prototype (Proposed, not wired)
+
+Elevation / terrain MP scaffolding lives in `prototype/elevation/`. It does **not** change Phase A Manhattan walk or `CombatSim.submit(move)`. The live duel still opens from `main.tscn`.
+
+```bash
+# Isolated prototype scene (F6 on proto_scene.tscn; F5 still launches the duel)
+godot --path . res://prototype/elevation/proto_scene.tscn
+
+# Headless Proposed cost / climb / lava / detour tests
+godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
+```
+
+See `prototype/elevation/README.md`. All starter costs there are **Proposed**, not Locked.
+
 ## How to test aim chrome
 
 1. Run the main scene. Select **Mark Shot**: Chebyshev 2–5 ring + **HIT 75%** vs default Ironjaw (range 5). Walk chrome stays off. Advance / Walk never show HIT %.
