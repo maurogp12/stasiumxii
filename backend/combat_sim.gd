@@ -24,7 +24,7 @@ const FACING_VEC := {
 
 ## A03–A07 are Open. A01 Marks-on-target is Locked. A02 walk is Locked.
 ## Advance range is Locked Manhattan 1–2 (diamond). MP is Locked Manhattan dest-click.
-const OPEN_DECISIONS := ["A01", "A03", "A04", "A05", "A06", "A07"]
+const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
@@ -236,8 +236,8 @@ func snapshot() -> Dictionary:
 		"advance_ap": 3,
 		"advance_range": "manhattan",
 		"advance_path": "teleport",
+		"marks_owner": "target",
 		"open_notes": {
-			"A01": "Locked: Marks live on the target (cap 5). Mark Shot +1 on connect. Detonate reads/consumes target Marks; miss retains Marks. Impact lives on the caster (cap 4). OPEN: engine init-reset; Rain (later) caster Marks.",
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Provisional Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Stun 1 (OPEN A05): stun_remaining on the unit; reject casts/moves/face with stunned_cannot_act; end_turn allowed. Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming turn. Exact suppress list not locked. Push into occupied/OOB (OPEN): do not move the target; still deal damage/Impact; emit push_blocked.",

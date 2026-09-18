@@ -63,13 +63,12 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - Aim hit-% chrome
 - Weapon fumbles, dual loadouts, WP/PW
 
-## A01–A07 (provisional Open, not Locked)
+## A03–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path) and is no longer listed as Open. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP). **A01 Marks-on-target is Locked** (Detonate reads/consumes that stack). A06 still notes the adjacent-Impact stub. **Ask before inventing** further Stun/push defaults.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path) and is no longer listed as Open. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP). A06 still notes the adjacent-Impact stub. **Ask before inventing** further Stun/push defaults.
 
 | ID | Stub used here |
 | --- | --- |
-| A01 | **Locked:** Marks live on the target (cap 5). Impact lives on the caster (cap 4). OPEN: engine init-reset; Rain (later) caster Marks. |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
 | A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **OPEN:** Stun 1 suppress list — provisional: `stun_remaining` on the unit; reject casts/moves/face with `stunned_cannot_act`; End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **OPEN:** push into occupied/OOB — provisional no-move + `push_blocked` event. |

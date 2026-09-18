@@ -77,7 +77,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["advance_range"], "manhattan", "Advance range gate is Locked Manhattan 1–2")
 	eq(snap["advance_path"], "teleport", "Advance is a dest-click teleport")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
-	truthy(snap["open_decisions"].has("A01"), "A01 listed as Open")
+	eq(snap["open_decisions"].has("A01"), false, "A01 Marks-on-target is Locked, not Open")
+	eq(snap["marks_owner"], "target", "A01 Locked: Marks live on the target")
 
 
 func _test_only_active_seat_acts() -> void:
