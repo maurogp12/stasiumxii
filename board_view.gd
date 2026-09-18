@@ -4,6 +4,7 @@ extends Node2D
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
 ## intent.path. Pawns tween one ortho tile at a time along the returned walk path
 ## and face each hop (final facing = last hop, matching the snapshot).
+## Advance teleport does not auto-face.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
@@ -284,13 +285,16 @@ func _animate_path(seat: int, path: Array) -> void:
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
-	# Face each hop so the pawn points the way it moved; snapshot facing is the last hop.
+	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
 			return
 		var cell: Vector2i = _as_cell(step)
-		pawn.set_facing(CombatSim.hop_facing(prev, cell))
+		var dir := CombatSim.facing_from_step(prev, cell)
+		if dir == "":
+			dir = CombatSim.hop_facing(prev, cell)
+		pawn.set_facing(dir)
 		_stop_walk_tween()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(false)
