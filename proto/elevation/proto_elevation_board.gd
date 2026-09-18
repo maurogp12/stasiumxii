@@ -221,41 +221,41 @@ func _reject_text(reason: String, dest: Vector2i) -> String:
 func _build_hud() -> void:
 	var hud := CanvasLayer.new()
 	add_child(hud)
-	var panel := VBoxContainer.new()
-	panel.position = Vector2(16, 10)
-	panel.size = Vector2(928, 140)
-	hud.add_child(panel)
 
-	_title = Label.new()
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.10, 0.10, 0.12, 0.92)
+	backdrop.position = Vector2(0, 0)
+	backdrop.size = Vector2(960, 132)
+	hud.add_child(backdrop)
+
+	_title = _hud_label(hud, Vector2(16, 8), 14)
 	_title.text = "Phase B+ elevation prototype  ·  Proposed numbers — not Locked  ·  Phase A duel is unchanged on main.tscn"
-	_title.add_theme_font_size_override("font_size", 15)
-	panel.add_child(_title)
+	_mp_label = _hud_label(hud, Vector2(16, 30), 18)
+	_coach = _hud_label(hud, Vector2(16, 54), 14)
+	var legend := _hud_label(hud, Vector2(16, 76), 12)
+	legend.text = "G Ground 1 MP    M Mud 2    W Water 2    L Lava impassable    ·    uphill +1/level (half-level +1)    downhill +0    climb<=1.0 drop<=2.0    ortho only"
 
-	_mp_label = Label.new()
-	_mp_label.add_theme_font_size_override("font_size", 16)
-	panel.add_child(_mp_label)
-
-	_coach = Label.new()
-	_coach.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_coach.custom_minimum_size = Vector2(900, 36)
-	panel.add_child(_coach)
-
-	var legend := Label.new()
-	legend.text = "G Ground 1 MP   M Mud 2   W Water 2   L Lava impassable   ·   uphill +1/level (half-level +1)   downhill +0   climb≤1.0 drop≤2.0   ortho only"
-	legend.add_theme_font_size_override("font_size", 12)
-	panel.add_child(legend)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	panel.add_child(row)
 	var refill := Button.new()
 	refill.text = "Refill MP"
+	refill.position = Vector2(16, 100)
+	refill.size = Vector2(110, 26)
 	refill.pressed.connect(_refill_mp)
-	row.add_child(refill)
+	hud.add_child(refill)
 	var reset := Button.new()
 	reset.text = "Reset board"
+	reset.position = Vector2(134, 100)
+	reset.size = Vector2(120, 26)
 	reset.pressed.connect(_reset_board)
-	row.add_child(reset)
-	var note := Label.new()
-	note.text = "  Tile labels: letter = terrain, number = elevation. Cyan = reachable. Z-sort is visual-only."
-	row.add_child(note)
+	hud.add_child(reset)
+	var note := _hud_label(hud, Vector2(266, 104), 12)
+	note.text = "Tile labels: terrain + elevation. Cyan = reachable. Z-sort is visual-only."
+
+
+func _hud_label(host: Node, pos: Vector2, font_size: int) -> Label:
+	var lab := Label.new()
+	lab.position = pos
+	lab.size = Vector2(928, 22)
+	lab.add_theme_font_size_override("font_size", font_size)
+	lab.add_theme_color_override("font_color", Color(0.94, 0.93, 0.90))
+	host.add_child(lab)
+	return lab

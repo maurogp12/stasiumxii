@@ -40,24 +40,21 @@ func _draw() -> void:
 	])
 	var color := _terrain_color()
 	if highlight == "move":
-		color = color.lerp(Color(0.35, 0.85, 0.95, 1.0), 0.55)
+		color = Color(0.28, 0.78, 0.94)
 	if is_selected or highlight == "selected":
-		color = color.lerp(Color(1.0, 0.88, 0.25, 1.0), 0.45)
+		color = Color(1.0, 0.84, 0.22)
 	draw_colored_polygon(points, color)
 	var outline := PackedVector2Array(points)
 	outline.append(points[0])
 	var line := Color(0.18, 0.12, 0.12, 0.95)
 	if is_selected:
-		line = Color(1.0, 0.9, 0.2)
-	draw_polyline(outline, line, 1.4 if is_selected else 1.0, true)
+		line = Color(1.0, 0.92, 0.25)
+	draw_polyline(outline, line, 1.6 if is_selected else 1.0, true)
 
 	var font := ThemeDB.fallback_font
-	var elev_text := _elev_text()
-	var elev_size := font.get_string_size(elev_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 11)
-	draw_string(font, Vector2(-elev_size.x * 0.5, 3), elev_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.08, 0.06, 0.06))
-	var name_text := _terrain_letter()
-	var name_size := font.get_string_size(name_text, HORIZONTAL_ALIGNMENT_CENTER, -1, 9)
-	draw_string(font, Vector2(-name_size.x * 0.5, -6), name_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 9, Color(0.12, 0.08, 0.08, 0.85))
+	var label := "%s %s" % [_terrain_letter(), _elev_text()]
+	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
+	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
 
 
 func _terrain_color() -> Color:
