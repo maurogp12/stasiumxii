@@ -46,6 +46,8 @@ var _tooltip_label: Label
 var _tooltip_spell: String = ""
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
+var _last_snap: Dictionary = {}
+var _preview_source: Node = null
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -136,9 +138,9 @@ static func toast_for_events(events: Array) -> String:
 	return ""
 
 
-## Proposed hover / long-press card. Copy lives in SpellTooltip (kit-driven).
-static func spell_card_text(spell_id: String) -> String:
-	return SpellTooltip.card_text(spell_id)
+## Proposed hover / long-press card. Formats CombatSim.preview_cast only.
+static func spell_card_text(preview: Dictionary) -> String:
+	return SpellTooltip.card_text(preview)
 
 
 func _ready() -> void:
@@ -254,7 +256,12 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 			_turn_label.text = "%s%s%s%s%ds" % [parts[0], sep, parts[1], sep, _clock_seconds]
 
 
+func set_preview_source(sim: Node) -> void:
+	_preview_source = sim
+
+
 func render(snap: Dictionary, legal: Array) -> void:
+	_last_snap = snap
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
 	var ironjaw := _unit(units, 1)
@@ -750,13 +757,77 @@ func _update_selected_label() -> void:
 
 
 func show_spell_tooltip(spell_id: String) -> void:
-	var text := SpellTooltip.card_text(spell_id)
+	var preview := preview_for_spell(spell_id)
+	var text := SpellTooltip.card_text(preview)
 	if text == "" or _tooltip_panel == null or _tooltip_label == null:
 		hide_spell_tooltip()
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
 	_tooltip_panel.visible = true
+
+
+func preview_for_spell(spell_id: String) -> Dictionary:
+	var sim := _preview_sim()
+	if sim == null or spell_id == "":
+		return {}
+	var args := _preview_dest_args(spell_id)
+	return sim.preview_cast(spell_id, args["from"], args["to"], int(args["target_seat"]))
+
+
+func _preview_sim() -> Node:
+	if _preview_source != null and is_instance_valid(_preview_source):
+		return _preview_source
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		return (tree as SceneTree).root.get_node_or_null("CombatSim")
+	return null
+
+
+func _preview_dest_args(spell_id: String) -> Dictionary:
+	var units: Array = _last_snap.get("units", [])
+	var seat := int(_last_snap.get("active_seat", 0))
+	var actor := _unit(units, seat)
+	var enemy := _unit(units, 1 - seat)
+	var from: Vector2i = _as_cell(actor.get("pos", Vector2i.ZERO))
+	if spell_id == SpellKits.ADVANCE:
+		return {
+			"from": from,
+			"to": _advance_hover_dest(from, units),
+			"target_seat": -1,
+		}
+	var to: Vector2i = _as_cell(enemy.get("pos", from))
+	return {
+		"from": from,
+		"to": to,
+		"target_seat": int(enemy.get("seat", -1)),
+	}
+
+
+func _advance_hover_dest(from: Vector2i, units: Array) -> Vector2i:
+	var occupied := {}
+	for unit in units:
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		occupied[_as_cell(unit.get("pos", Vector2i(-1, -1)))] = true
+	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+		var dest: Vector2i = from + delta
+		if dest.x < 0 or dest.y < 0 or dest.x > 7 or dest.y > 7:
+			continue
+		if occupied.has(dest):
+			continue
+		return dest
+	return from + Vector2i(1, 0)
+
+
+func _as_cell(value: Variant) -> Vector2i:
+	if value is Vector2i:
+		return value
+	if value is Dictionary:
+		return Vector2i(int(value.get("x", 0)), int(value.get("y", 0)))
+	if value is Array and value.size() >= 2:
+		return Vector2i(int(value[0]), int(value[1]))
+	return Vector2i.ZERO
 
 
 func hide_spell_tooltip() -> void:
