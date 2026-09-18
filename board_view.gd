@@ -3,6 +3,7 @@ extends Node2D
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
 ## intent.path. Pawns tween one ortho tile at a time along the returned walk path.
+## Walk facing follows each hop (final facing = last hop). Advance teleport does not auto-face.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
@@ -269,10 +270,16 @@ func _animate_path(seat: int, path: Array) -> void:
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
+	var prev: Vector2i = pawn.grid_position
 	for step in path:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
 			return
 		var cell: Vector2i = _as_cell(step)
+		var dir := CombatSim.facing_from_step(prev, cell)
+		if dir != "":
+			pawn.facing = dir
+			pawn.queue_redraw()
 		_stop_walk_tween()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(false)
@@ -281,6 +288,7 @@ func _animate_path(seat: int, path: Array) -> void:
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
 		await _walk_tween.finished
 		_set_pawn_cell(pawn, cell)
+		prev = cell
 		if STEP_PAUSE_SEC > 0.0:
 			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
 

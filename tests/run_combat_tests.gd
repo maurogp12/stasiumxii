@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_manhattan_walk_costs()
 	_test_horizontal_first_paths()
 	_test_client_path_ignored()
+	_test_walk_facing_follows_hops()
 	_test_spell_range_stays_chebyshev()
 	_test_face_costs_zero()
 	_test_end_turn_refills()
@@ -73,6 +74,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["momentum"], false, "Momentum off")
 	eq(snap["walk"], "manhattan", "walk is Locked Manhattan")
 	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
+	eq(snap["walk_facing"], "last_hop", "walk facing is Locked last-hop")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
 	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
@@ -141,6 +143,9 @@ func _test_horizontal_first_paths() -> void:
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "H-first Manhattan 3 walk is legal")
 	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "returned path is E then S")
+	eq(result["events"][0]["facing_hops"], ["E", "E", "S"], "H-first NE hop facing is E, E, then S")
+	eq(result["events"][0]["facing"], "S", "final facing is the last hop")
+	eq(_unit(0)["facing"], "S", "actor facing is last hop S")
 	eq(_unit(0)["mp"], 0, "H-first 3-step walk spends 3 MP")
 	# Occupant sits on the H-first corridor. V-first would work; Locked walk must refuse.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
@@ -156,6 +161,8 @@ func _test_horizontal_first_paths() -> void:
 	result = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
 	eq(result["ok"], true, "pure-vertical dest around the occupant is legal")
 	eq(result["events"][0]["path"], [Vector2i(0, 1), Vector2i(0, 2)], "vertical path does not go east first")
+	eq(result["events"][0]["facing_hops"], ["S", "S"], "pure-south hops face S then S")
+	eq(_unit(0)["facing"], "S", "vertical walk ends facing last hop S")
 
 
 func _test_client_path_ignored() -> void:
@@ -169,7 +176,85 @@ func _test_client_path_ignored() -> void:
 	eq(result["ok"], true, "dest-click still accepted when a client path is supplied")
 	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "CombatSim path is H-first, not the client path")
 	eq(result["events"][0]["path"] == forged, false, "forged vertical-first path is not used")
+	eq(result["events"][0]["facing"], "S", "facing follows CombatSim last hop, not forged last hop E")
+	eq(_unit(0)["facing"], "S", "actor facing is H-first last hop S")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unit ends on the dest-click tile")
+
+
+func _test_walk_facing_follows_hops() -> void:
+	# Locked: facing follows each ortho hop; final facing = last hop direction.
+	# H-first means last cell step is the vertical remainder when both axes move.
+	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(3, 2)), "E", "east hop is E")
+	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(1, 2)), "W", "west hop is W")
+	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(2, 3)), "S", "south hop is S")
+	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(2, 1)), "N", "north hop is N")
+	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(3, 3)), "", "diagonal is not a hop facing")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "N"})
+	eq(_unit(0)["facing"], "N", "Kestrel starts facing N")
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
+	eq(result["ok"], true, "pure-east walk is legal")
+	eq(result["events"][0]["facing_from"], "N", "move event records facing before the walk")
+	eq(result["events"][0]["facing_hops"], ["E", "E", "E"], "east hops face E each step")
+	eq(result["events"][0]["facing"], "E", "pure-east final facing is E")
+	eq(_unit(0)["facing"], "E", "actor facing is E after east walk")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	result = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
+	eq(result["events"][0]["facing_hops"], ["W", "W"], "west hops face W")
+	eq(_unit(0)["facing"], "W", "pure-west final facing is W")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	result = _sim.submit({"type": "move", "to": Vector2i(2, 0)})
+	eq(result["events"][0]["facing_hops"], ["N", "N"], "north hops face N")
+	eq(_unit(0)["facing"], "N", "pure-north final facing is N")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "W"})
+	result = _sim.submit({"type": "move", "to": Vector2i(4, 3)})
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "NE dest is H-first E then S")
+	eq(result["events"][0]["facing_hops"], ["E", "E", "S"], "H-first NE faces E then S")
+	eq(_unit(0)["facing"], "S", "H-first NE final facing is last hop S")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(4, 3), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	result = _sim.submit({"type": "move", "to": Vector2i(2, 2)})
+	eq(result["events"][0]["path"], [Vector2i(3, 3), Vector2i(2, 3), Vector2i(2, 2)], "SW dest is H-first W then N")
+	eq(result["events"][0]["facing_hops"], ["W", "W", "N"], "H-first SW faces W then N")
+	eq(_unit(0)["facing"], "N", "H-first SW final facing is last hop N")
+
+	# Illegal walk does not rotate.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "S"})
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 2)})
+	eq(result["illegal"], true, "Manhattan 4 is over budget")
+	eq(_unit(0)["facing"], "S", "rejected walk leaves facing unchanged")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "rejected walk leaves the pawn put")
+
+	# Manual face intent still turns in place after a walk.
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	_sim.submit({"type": "move", "to": Vector2i(4, 2)})
+	eq(_unit(0)["facing"], "E", "east walk ends facing E")
+	result = _sim.submit({"type": "face", "dir": "N"})
+	eq(result["ok"], true, "manual face after a walk is legal")
+	eq(_unit(0)["facing"], "N", "standing face overrides last-hop facing")
+	eq(_unit(0)["pos"], Vector2i(4, 2), "manual face does not walk")
+	eq(_unit(0)["mp"], 1, "manual face spends 0 MP")
+
+	# Advance teleport does not auto-face.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
+		"ironjaw_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
+	eq(result["ok"], true, "Advance east teleport is legal")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Advance snapped east")
+	eq(_unit(1)["facing"], "W", "Advance teleport leaves facing unchanged")
+	eq(result["events"][0].has("facing_hops"), false, "Advance event has no hop facing trail")
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("facing_from_step"), "walk hop playback applies CombatSim hop facing")
+	eq(view.contains("do not invent auto-face"), false, "board_view does not keep the Open no-auto-face note")
 
 
 func _test_spell_range_stays_chebyshev() -> void:
@@ -202,6 +287,7 @@ func _test_face_costs_zero() -> void:
 	eq(_unit(0)["facing"], "N", "facing is N")
 	eq(_unit(0)["ap"], ap, "face costs 0 AP")
 	eq(_unit(0)["mp"], 3, "face costs 0 MP")
+	eq(_unit(0)["pos"], Vector2i(1, 1), "manual face is in-place (standing turn)")
 
 
 func _test_end_turn_refills() -> void:
@@ -635,7 +721,7 @@ func _test_advance_teleport_costs() -> void:
 func _test_advance_then_remaining_mp_still_walks() -> void:
 	# Advance is 3 AP / 0 MP teleport. leftover MP>0 must still offer at least one move.
 	# legal_intents enumerates walks on mp>0 regardless of AP. submit must not zero MP.
-	# Walks do not auto-face (Open — do not invent).
+	# Advance does not auto-face. The leftover walk then faces last hop (Locked).
 	_sim.reset_match({
 		"seed": 1,
 		"kestrel_pos": Vector2i(7, 7),
@@ -653,7 +739,7 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	eq(_unit(1)["mp"], 3, "submit Advance does not zero leftover MP")
 	eq(result["events"][0]["mp_spent"], 0, "advance event mp_spent is 0")
 	eq(result["events"][0]["ap_spent"], 3, "advance event ap_spent is 3")
-	eq(_unit(1)["facing"], "W", "Advance leaves facing unchanged")
+	eq(_unit(1)["facing"], "W", "Advance teleport leaves facing unchanged")
 
 	var move_count := 0
 	var found_ortho := false
@@ -666,14 +752,15 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	truthy(move_count > 0, "after Advance with MP>0, legal_intents still includes a move")
 	truthy(found_ortho, "after Advance, orthogonal neighbor is a walk dest")
 
-	# Walk after Advance still spends leftover MP and does not auto-face.
+	# Walk after Advance still spends leftover MP; facing follows the east hop.
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
 	eq(result["ok"], true, "walk after Advance is legal")
 	eq(_unit(1)["pos"], Vector2i(5, 2), "Ironjaw walked one tile east")
 	eq(_unit(1)["mp"], 2, "walk spends 1 MP from leftover pool")
 	eq(_unit(1)["ap"], 3, "walk spends no AP")
-	eq(_unit(1)["facing"], "W", "walk does not auto-face (Open)")
-	eq(result["events"][0].get("dir", ""), "", "move event has no invented facing dir")
+	eq(_unit(1)["facing"], "E", "walk after Advance faces last hop E")
+	eq(result["events"][0]["facing_hops"], ["E"], "one-tile leftover walk is a single E hop")
+	eq(result["events"][0]["facing_from"], "W", "leftover walk started from Advance facing W")
 
 	# Two Advances empty AP; leftover MP still enumerates walks (mp-gated, not ap-gated).
 	_sim.reset_match({
@@ -686,17 +773,19 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "first Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "first Advance leaves MP at 3")
+	eq(_unit(1)["facing"], "W", "first Advance still does not auto-face")
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
 	eq(result["ok"], true, "second Advance spends remaining AP")
 	eq(_unit(1)["ap"], 0, "two Advances empty the AP pool")
 	eq(_unit(1)["mp"], 3, "second Advance still does not zero MP")
 	eq(_unit(1)["pos"], Vector2i(4, 4), "Ironjaw snapped after the second Advance")
+	eq(_unit(1)["facing"], "W", "second Advance still leaves facing unchanged")
 	eq(_has_legal_move(1), true, "at 0 AP with MP>0, legal_intents still includes a move")
 	result = _sim.submit({"type": "move", "to": Vector2i(4, 5)})
 	eq(result["ok"], true, "walk at 0 AP is legal when leftover MP remains")
 	eq(_unit(1)["mp"], 2, "0-AP walk spends leftover MP")
 	eq(_unit(1)["ap"], 0, "0-AP walk does not invent AP spend")
-	eq(_unit(1)["facing"], "W", "0-AP walk still does not auto-face")
+	eq(_unit(1)["facing"], "S", "0-AP leftover walk faces last hop S")
 
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	var legal_idx := sim_src.find("func legal_intents")
@@ -710,14 +799,16 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	var cast_idx := sim_src.find("func _submit_cast")
 	truthy(move_idx >= 0 and cast_idx > move_idx, "_submit_move and _submit_cast exist")
 	var move_src := sim_src.substr(move_idx, cast_idx - move_idx)
-	eq(move_src.contains('actor["facing"]'), false, "_submit_move does not invent auto-face")
-	truthy(move_src.contains("do not invent auto-face"), "_submit_move documents no auto-face on walk")
+	truthy(move_src.contains('actor["facing"]'), "_submit_move sets facing from walk hops")
+	truthy(move_src.contains("last hop"), "_submit_move documents last-hop facing")
+	eq(move_src.contains("do not invent auto-face"), false, "walk last-hop facing is Locked, not Open")
 	var resolve_idx := sim_src.find("func _resolve_advance")
 	var rolling_idx := sim_src.find("func _resolve_rolling_cast")
 	truthy(resolve_idx >= 0 and rolling_idx > resolve_idx, "_resolve_advance exists")
 	var resolve_src := sim_src.substr(resolve_idx, rolling_idx - resolve_idx)
 	eq(resolve_src.contains('actor["mp"]'), false, "Advance resolve still does not touch MP")
 	eq(resolve_src.contains("actor[\"facing\"]"), false, "Advance resolve does not change facing")
+	truthy(resolve_src.contains("Facing unchanged"), "Advance resolve documents no auto-face")
 
 
 func _test_advance_manhattan_range_gate() -> void:
