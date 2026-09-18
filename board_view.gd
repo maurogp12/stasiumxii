@@ -2,8 +2,10 @@ extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
-## intent.path. Pawns tween one ortho tile at a time along the returned walk path.
+## intent.path. Pawns tween one ortho tile at a time along the returned walk path
+## and face each hop (final facing = last hop, matching the snapshot).
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
+## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
@@ -121,9 +123,10 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_paint_highlights()
 		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
-	if spell_id != SpellKits.ADVANCE:
-		_hud.clear_spell()
-		_paint_highlights()
+	# Including Advance: dest-click must drop spell chrome so remaining MP
+	# walk tiles come back from legal_intents (CombatSim already offers them).
+	_hud.clear_spell()
+	_paint_highlights()
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -269,10 +272,13 @@ func _animate_path(seat: int, path: Array) -> void:
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# Face each hop so the pawn points the way it moved; snapshot facing is the last hop.
+	var prev: Vector2i = pawn.grid_position
 	for step in path:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
 			return
 		var cell: Vector2i = _as_cell(step)
+		pawn.set_facing(CombatSim.hop_facing(prev, cell))
 		_stop_walk_tween()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(false)
@@ -281,6 +287,7 @@ func _animate_path(seat: int, path: Array) -> void:
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
 		await _walk_tween.finished
 		_set_pawn_cell(pawn, cell)
+		prev = cell
 		if STEP_PAUSE_SEC > 0.0:
 			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
 
