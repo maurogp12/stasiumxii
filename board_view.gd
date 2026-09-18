@@ -15,11 +15,13 @@ extends Node2D
 ## but do not pause the clock.
 ## Locked Stun (A′): Walk / Face / spells grey on HUD; this view does not submit them.
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
+## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
 ## Locked Push (1): toast PushBlocked, no hop; hit/Impact feedback still plays.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
+const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const STEP_SEC: float = 0.28
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
@@ -199,11 +201,20 @@ func _on_end_turn_button_pressed() -> void:
 		return
 	# Proposed: client-only ~1.0s seat handoff. CombatSim already advanced.
 	# Start the next seat's clock at 30s but pause it through the banner.
+	# Locked A′: if the sim auto-skipped a stunned seat, present that event first.
 	_turn_clock.start()
 	_turn_clock.pause()
 	_hud.set_locked(true)
 	_refresh()
 	_sync_turn_clock()
+	var skip: Dictionary = CombatHUD.stun_skip_event(result.get("events", []))
+	if not skip.is_empty():
+		var skip_unit := _unit_from_event(snap, skip)
+		var skip_caption := CombatHUD.stun_skip_caption(skip, snap)
+		_hud.show_turn_banner(str(skip_unit.get("name", "Seat")), str(skip_unit.get("class_id", "")), skip_caption)
+		await get_tree().create_timer(HANDOFF_SEC).timeout
+		if not is_inside_tree():
+			return
 	var next_unit := _active_unit(snap)
 	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")))
 	await get_tree().create_timer(HANDOFF_SEC).timeout
@@ -340,9 +351,9 @@ func _animate_path(seat: int, path: Array) -> void:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
 			return
 		var cell: Vector2i = _as_cell(step)
-		var dir := CombatSim.facing_from_step(prev, cell)
+		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if dir == "":
-			dir = CombatSim.hop_facing(prev, cell)
+			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		pawn.set_facing(dir)
 		_stop_walk_tween()
 		_walk_tween = create_tween()
@@ -446,6 +457,19 @@ func _active_unit(snap: Dictionary) -> Dictionary:
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == seat:
 			return unit
+	return {}
+
+
+func _unit_from_event(snap: Dictionary, event: Dictionary) -> Dictionary:
+	if event.has("seat"):
+		for unit in snap.get("units", []):
+			if int(unit.get("seat", -1)) == int(event["seat"]):
+				return unit
+	var named := str(event.get("name", event.get("unit_name", "")))
+	if named != "":
+		for unit in snap.get("units", []):
+			if str(unit.get("name", "")) == named:
+				return unit
 	return {}
 
 

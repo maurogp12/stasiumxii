@@ -22,6 +22,11 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	if name == "":
 		name = str(preview.get("spell_id", ""))
 	lines.append(name)
+	# Presentation only: preview_cast reason / marks_on_target. No client kit math.
+	var needs_marks := _preview_needs_marks(preview)
+	if needs_marks:
+		var gate := str(preview.get("gate_text", "")).strip_edges()
+		lines.append(gate if gate != "" else "needs Marks")
 	var metric := "Manhattan" if str(preview.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
 	lines.append("%d AP / %d MP · range %d–%d %s" % [
 		int(preview.get("ap", 0)),
@@ -30,15 +35,15 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		int(preview.get("max_range", 0)),
 		metric,
 	])
-	var connect := str(preview.get("on_connect_text", "")).strip_edges()
-	if connect != "":
-		lines.append("On connect: %s" % connect)
+	var on_connect := str(preview.get("on_connect_text", "")).strip_edges()
+	if on_connect != "":
+		lines.append("On connect: %s" % on_connect)
 	var miss := str(preview.get("on_miss_text", "")).strip_edges()
 	if miss != "":
 		lines.append("On miss: %s" % miss)
 	if preview.get("hit_chance", null) != null:
 		lines.append("HIT %d%% (Locked)" % int(preview["hit_chance"]))
-	if preview.get("sample_damage", null) != null:
+	if preview.get("sample_damage", null) != null and not needs_marks:
 		var sample := "sample %d  ·  CritMult(1.0) × live Facing" % int(preview["sample_damage"])
 		if preview.has("marks_on_target"):
 			var formula := str(preview.get("formula", "6+6*M"))
@@ -58,6 +63,16 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		elif text.contains("Resist"):
 			lines.append(text)
 		elif text.contains("teleport") or text.contains("Facing unchanged"):
-			if not connect.contains("Teleport") and not connect.contains("Facing unchanged"):
+			if not on_connect.contains("Teleport") and not on_connect.contains("Facing unchanged"):
 				lines.append(text)
 	return lines
+
+
+static func _preview_needs_marks(preview: Dictionary) -> bool:
+	if str(preview.get("reason", "")) == "needs_marks":
+		return true
+	if bool(preview.get("needs_marks", false)):
+		return true
+	if preview.has("marks_on_target") and int(preview["marks_on_target"]) == 0:
+		return true
+	return false
