@@ -147,3 +147,12 @@ static func rolls(spell_id: String) -> bool:
 	if def.is_empty():
 		return false
 	return bool(def.get("rolls", false))
+
+
+## Player-facing band. Internal range_mode stays chebyshev / manhattan.
+static func range_text(def: Dictionary) -> String:
+	var lo := int(def.get("min_range", 0))
+	var hi := int(def.get("max_range", 0))
+	if str(def.get("range_mode", "chebyshev")) == "manhattan":
+		return "range %d–%d Manhattan" % [lo, hi]
+	return "range %d–%d" % [lo, hi]

@@ -27,13 +27,13 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	if needs_marks:
 		var gate := str(preview.get("gate_text", "")).strip_edges()
 		lines.append(gate if gate != "" else "needs Marks")
-	var metric := "Manhattan" if str(preview.get("range_mode", "chebyshev")) == "manhattan" else "Chebyshev"
-	lines.append("%d AP / %d MP · range %d–%d %s" % [
+	var range_line := str(preview.get("range_text", "")).strip_edges()
+	if range_line == "":
+		range_line = SpellKits.range_text(preview)
+	lines.append("%d AP / %d MP · %s" % [
 		int(preview.get("ap", 0)),
 		int(preview.get("mp", 0)),
-		int(preview.get("min_range", 0)),
-		int(preview.get("max_range", 0)),
-		metric,
+		range_line,
 	])
 	var on_connect := str(preview.get("on_connect_text", "")).strip_edges()
 	if on_connect != "":
