@@ -4,7 +4,8 @@ extends Node2D
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
 ## intent.path. Pawns tween one ortho tile at a time along the returned walk path.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
-## Mark Shot: selected chrome paints the Chebyshev 2–5 range ring; walk chrome stays off.
+## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
+## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
 ## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input
 ## but do not pause the clock.
@@ -145,6 +146,7 @@ func _on_spell_selected(_spell_id: String) -> void:
 	if _busy:
 		return
 	_paint_highlights()
+	_sync_aim_preview()
 
 
 func _on_face_requested(dir: String) -> void:
@@ -336,7 +338,7 @@ func _paint_highlights() -> void:
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
 	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
-	# Walk chrome stays off. Aim chance chrome is client and is not added here.
+	# Walk chrome stays off. Rolling casts also get Locked hit percent aim preview.
 	if spell_id != "" and spell_id != SpellKits.ADVANCE:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if str(def.get("target", "")) == "enemy":
@@ -349,6 +351,18 @@ func _paint_highlights() -> void:
 		elif kind == "cast" and str(intent.get("spell", "")) == spell_id and intent.has("to"):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(intent["to"]).set_highlight(highlight)
+	_sync_aim_preview()
+
+
+func _sync_aim_preview() -> void:
+	if _hud == null:
+		return
+	var spell_id := _hud.selected_spell()
+	if spell_id == "" or not SpellKits.rolls(spell_id):
+		_hud.set_aim_preview({})
+		return
+	var snap := CombatSim.snapshot()
+	_hud.set_aim_preview(CombatSim.aim_hit_preview(int(snap.get("active_seat", 0)), spell_id))
 
 
 func _tile_at(cell: Vector2i) -> BoardTile:

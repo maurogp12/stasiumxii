@@ -55,6 +55,7 @@ func _run() -> void:
 	_test_stun_suppresses_actions_open_a05()
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
+	_test_aim_hit_preview()
 
 
 func _test_reset_and_turn_order() -> void:
@@ -501,6 +502,9 @@ func _test_hud_chrome_kit_gated() -> void:
 	eq(hud.contains("Detonate"), false, "HUD does not hardcode Detonate label")
 	eq(hud.contains("Shoulder"), false, "HUD does not hardcode Shoulder label")
 	eq(hud.contains("Crush"), false, "HUD does not hardcode Crush label")
+	truthy(hud.contains("aim_hit_caption"), "HUD exposes Locked hit-percent aim chrome")
+	truthy(hud.contains("HIT %d%%"), "HUD hit-percent caption uses Locked bands")
+	truthy(hud.contains("engine_pips"), "HUD shows Marks/Impact as pips")
 
 
 func _test_handoff_timer_is_client_only() -> void:
@@ -1317,7 +1321,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(_has_legal_cast(1, "crush"), false, "Crush omitted when out of range even at 4 Impact")
 	eq(_has_legal_cast(1, "shoulder"), false, "Shoulder omitted when out of range")
 
-	# Range chrome for Detonate is Chebyshev 1–6. No aim hit-% chrome.
+	# Range chrome for Detonate is Chebyshev 1–6. Hit-percent chrome is tested separately.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
@@ -1341,8 +1345,9 @@ func _test_legal_intents_new_spell_gates() -> void:
 	truthy(has_r6, "Detonate chrome includes Chebyshev 6")
 	eq(has_r7, false, "Detonate chrome excludes Chebyshev 7")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	eq(view.contains("hit_chance"), false, "board_view has no aim hit-chance chrome")
-	eq(view.contains("hit-%"), false, "board_view has no hit-percent label")
+	truthy(view.contains("aim_hit_preview"), "board_view feeds Locked hit-percent preview")
+	eq(view.contains("hit_chance"), false, "board_view does not call hit_chance itself")
+	eq(view.contains("hit-%"), false, "board_view has no hardcoded hit-percent label")
 
 
 func _test_kit_class_exclusions() -> void:
@@ -1381,6 +1386,76 @@ func _test_kit_class_exclusions() -> void:
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
 	eq(sim_src.contains("wind_mod"), false, "CombatSim still has no wind_mod term")
 	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
+
+
+func _test_aim_hit_preview() -> void:
+	eq(CombatHUD.aim_hit_caption(90), "HIT 90%", "melee aim caption is HIT 90%")
+	eq(CombatHUD.aim_hit_caption(80), "HIT 80%", "short aim caption is HIT 80%")
+	eq(CombatHUD.aim_hit_caption(75), "HIT 75%", "mid aim caption is HIT 75%")
+	eq(CombatHUD.aim_hit_caption(70), "HIT 70%", "long aim caption is HIT 70%")
+	eq(CombatHUD.aim_hit_caption(-1), "", "hidden aim caption is empty")
+	eq(CombatHUD.engine_pips(1, 5), "●○○○○", "A01 Marks pips show 1/5 on the target")
+	eq(CombatHUD.engine_pips(4, 4), "●●●●", "Impact pips show a full stack")
+	eq(_sim.hit_chance(1), 90, "Locked band 1 stays 90%")
+	eq(_sim.hit_chance(3), 80, "Locked band 2–3 stays 80%")
+	eq(_sim.hit_chance(5), 75, "Locked band 4–5 stays 75%")
+	eq(_sim.hit_chance(6), 70, "Locked band 6–8 stays 70%")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(5, 0)})
+	var preview: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT)
+	eq(preview["show"], true, "Mark Shot in Chebyshev 5 shows hit percent")
+	eq(preview["rolls"], true, "Mark Shot preview is a rolling cast")
+	eq(preview["hit_chance"], 75, "Mark Shot range 5 previews Locked 75%")
+	eq(preview["stun_telegraph"], false, "Mark Shot never telegraphs stun")
+	preview = _sim.aim_hit_preview(0, SpellKits.DETONATE)
+	eq(preview["show"], true, "Detonate in Chebyshev 5 shows hit percent even without Marks")
+	eq(preview["hit_chance"], 75, "Detonate range 5 previews Locked 75%")
+	preview = _sim.aim_hit_preview(0, SpellKits.ADVANCE)
+	eq(preview["show"], false, "Advance never shows hit percent")
+	eq(preview["rolls"], false, "Advance preview is not a rolling cast")
+	preview = _sim.aim_hit_preview(0, "")
+	eq(preview["show"], false, "walk / empty spell has no hit percent")
+
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(4, 3)})
+	_sim.submit({"type": "end_turn"})
+	preview = _sim.aim_hit_preview(1, SpellKits.STRIKE)
+	eq(preview["show"], true, "Strike in melee shows hit percent")
+	eq(preview["hit_chance"], 90, "melee rolling casts preview Locked 90%")
+	preview = _sim.aim_hit_preview(1, SpellKits.SHOULDER)
+	eq(preview["hit_chance"], 90, "Shoulder melee previews Locked 90%")
+	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
+	eq(preview["hit_chance"], 90, "Crush melee previews Locked 90%")
+	eq(preview["stun_telegraph"], false, "stun telegraph stays off below Impact 4")
+	preview = _sim.aim_hit_preview(1, SpellKits.ADVANCE)
+	eq(preview["show"], false, "Advance still has no hit percent when adjacent")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn"})
+	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
+	eq(preview["stun_telegraph"], true, "stun telegraph only when Impact is 4 before spend")
+	eq(preview["show"], true, "Crush at range 1 still shows Locked 90%")
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"ironjaw_impact": 3,
+	})
+	_sim.submit({"type": "end_turn"})
+	preview = _sim.aim_hit_preview(1, SpellKits.CRUSH)
+	eq(preview["stun_telegraph"], false, "Impact 3 does not telegraph stun")
+
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud.contains("set_aim_preview"), "HUD can show pre-cast hit percent")
+	eq(hud.contains("Detonate"), false, "aim chrome still does not hardcode Detonate")
+	eq(hud.contains("WindMod"), false, "aim chrome does not add WindMod")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_sync_aim_preview"), "board_view syncs Locked hit-percent aim preview")
+	eq(view.contains("Detonate"), false, "aim chrome does not hardcode Detonate in the view")
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:
