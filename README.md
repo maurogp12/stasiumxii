@@ -14,7 +14,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On connect: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it connects.
    - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On connect: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Locked Push (1):** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`. Client toasts **PushBlocked** and does not hop; hit/Impact feedback still plays.
-   - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); End Turn is allowed. HUD greys Walk/Face/spells, shows a STUN badge, and keeps End Turn enabled.
+   - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on connect; miss retains Impact). 24 Earth on connect. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`). When that seat's turn starts, CombatSim **auto-resolves `end_turn`** — the player never presses End Turn. `legal_intents` is empty of move/cast/face (auto path only). HUD greys Walk/Face/spells and shows a STUN badge.
 6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
 7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
 8. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
@@ -29,7 +29,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed timers. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed timers. |
 | `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
 Intents: `end_turn` | `face` | `move` | `cast`.
@@ -50,7 +50,7 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - Detonate / Shoulder / Crush / Advance / Strike / Mark Shot values above
 - Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw
-- **Locked Stun (A):** Stun 1 blocks move + cast + face; End Turn allowed. `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn. HUD greys Walk/Face/spells, shows a STUN badge, End Turn stays enabled.
+- **Locked Stun (A′):** Stun 1 blocks move + cast + face. When that seat's turn starts, CombatSim auto-resolves `end_turn` (player never presses End Turn). `legal_intents` has no move/cast/face (auto path only). `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is the one that is skipped. HUD greys Walk/Face/spells and shows a STUN badge.
 - **Locked Push (1):** Shoulder into occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. Client toasts **PushBlocked**, does not hop, still plays hit/Impact feedback.
 
 ## Proposed (not Locked)
@@ -58,7 +58,7 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - ~1.0s client-only seat handoff pause + turn banner on End Turn. CombatSim still advances the seat immediately. The next seat's 30s is held during that banner so it does not drain before they can act.
 - 30s visible seat clock (`TurnClock.DURATION_SEC`). At 0, auto End Turn (same as the button). CombatSim does not own the clock. Walk hop animations do **not** pause the clock. Advance does not hop.
 - Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate / Shoulder / Crush (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
-- Hover / long-press **attack cards** on spell buttons, formatted from read-only `CombatSim.preview_cast` (costs, range, on-connect / on-miss, `sample_damage` with CritMult 1.0 × live Facing, Locked `hit_chance`). Detonate samples **current Marks**. Crush shows **Stun 1 (Locked A)** when `would_stun`. Advance has no HIT % / sample. Resist 0 is labeled provisional/Open if the preview notes it. CombatSim does not own the card.
+- Hover / long-press **attack cards** on spell buttons, formatted from read-only `CombatSim.preview_cast` (costs, range, on-connect / on-miss, `sample_damage` with CritMult 1.0 × live Facing, Locked `hit_chance`). Detonate samples **current Marks** when M≥1. At M=0, `legal=false`, `reason=needs_marks`, and `sample_damage` is null (do not lead with 6); notes/on_connect still explain 6+6×M. Crush shows **Stun 1 (Locked A′)** when `would_stun`. Advance has no HIT % / sample. Resist 0 is labeled provisional/Open if the preview notes it. CombatSim does not own the card.
 
 ## Omitted (not silent defaults)
 
@@ -70,13 +70,13 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 
 ## A03–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path, facing follows each hop). **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged). **Locked Stun (A)** (blocks move + cast + face; End Turn allowed) and **Locked Push (1)** (occupied/OOB = no-move + `push_blocked`) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, or other Opens.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (Manhattan dest-click, H-first ortho path, facing follows each hop). **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged). **Locked Stun (A′)** (blocks move + cast + face; auto `end_turn` on turn start) and **Locked Push (1)** (occupied/OOB = no-move + `push_blocked`) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, or other Opens.
 
 | ID | Stub used here |
 | --- | --- |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
-| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); End Turn allowed; decrement at start of that unit's turn after setting stunned-this-turn. **Locked Push (1):** occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. |
+| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); auto `end_turn` on that seat's turn start (player never presses End Turn); decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is skipped. **Locked Push (1):** occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. |
 | A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. `submit` does not zero leftover MP; leftover MP still walks (`legal_intents` is mp>0, not AP). Adjacency = Chebyshev 1 after landing. Facing unchanged (Advance does not auto-face). |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 
@@ -95,8 +95,8 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 ## How to test attack hover cards
 
 1. Hover (or long-press) **Mark Shot**: card is `preview_cast` — 2 AP / 0 MP, Chebyshev 2–5, connect/miss kit lines, Locked HIT % for the current dest, and `sample_damage` from CritMult 1.0 × live Facing. No +5.
-2. After Marks land, hover **Detonate**: sample uses **current Marks** (`6+6*M`). Miss keeps Marks.
-3. End Turn. Hover **Advance**: Manhattan teleport, no HIT %, no sample. **Shoulder** passes through Locked Push (1). **Crush** at 4 Impact shows **Stun 1 (Locked A) this cast**; at 0–2 Impact that flag stays off.
+2. After Marks land, hover **Detonate**: sample uses **current Marks** (`6+6*M`). Miss keeps Marks. With **0 Marks**, the card is `needs_marks` and does **not** lead with sample 6; on-connect still explains 6+6×M for when Marks exist.
+3. End Turn. Hover **Advance**: Manhattan teleport, no HIT %, no sample. **Shoulder** passes through Locked Push (1). **Crush** at 4 Impact shows **Stun 1 (Locked A′) this cast**; at 0–2 Impact that flag stays off.
 
 ## How to test walk-after-Advance and last-hop facing
 
@@ -108,6 +108,6 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 
 ## How to test Stun suppress and PushBlocked
 
-1. Get Ironjaw to **4 Impact** (Strike/Shoulder connects), then **Crush** Kestrel. On Kestrel's next turn: **Walk / Face / spells are grey**, a **STUN** badge shows, **End Turn stays enabled**. Move, Face, and spells do not submit (`stunned_cannot_act`). End Turn hands the seat off; after serving Stun 1, Walk/Face/spells return.
+1. Get Ironjaw to **4 Impact** (Strike/Shoulder connects), then **Crush** Kestrel. **End Turn**. Kestrel's turn **auto-ends** (Locked A′ — player never presses End Turn). Ironjaw acts again. Kestrel's card/pawn still show **STUN** while that skipped turn is served. After Ironjaw Ends again, Kestrel acts normally (Walk/Face/spells return). Move/cast/face never become legal on the stunned turn (`stunned_cannot_act`).
 2. Shoulder Kestrel into the west edge (Ironjaw at (1,0), Kestrel at (0,0) facing E): toast **PushBlocked**, Kestrel does not hop, HP still drops and Ironjaw Impact still ticks.
 
