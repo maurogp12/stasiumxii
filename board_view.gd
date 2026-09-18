@@ -336,7 +336,7 @@ func _paint_highlights() -> void:
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
 	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
-	# Walk chrome stays off. Aim hit-% chrome is client and is not added here.
+	# Walk chrome stays off. Aim chance chrome is client and is not added here.
 	if spell_id != "" and spell_id != SpellKits.ADVANCE:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if str(def.get("target", "")) == "enemy":

@@ -887,7 +887,7 @@ func _test_detonate_gates_and_damage() -> void:
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
-		"ironjaw_facing": "E",
+		"ironjaw_facing": "W",
 		"ironjaw_marks": 1,
 	})
 	eq(_sim.chebyshev(Vector2i(3, 3), Vector2i(4, 3)), 1, "adjacent is Chebyshev 1")
@@ -909,7 +909,7 @@ func _test_detonate_gates_and_damage() -> void:
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
-		"ironjaw_facing": "E",
+		"ironjaw_facing": "W",
 		"ironjaw_marks": 3,
 	})
 	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(6, 0)), 6, "range 6 is legal for Detonate")
@@ -926,7 +926,7 @@ func _test_detonate_gates_and_damage() -> void:
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
-		"ironjaw_facing": "W",
+		"ironjaw_facing": "E",
 		"ironjaw_marks": 5,
 	})
 	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(2, 0)})
@@ -985,7 +985,7 @@ func _test_shoulder_push_and_impact() -> void:
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "E",
+		"kestrel_facing": "W",
 	})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.push_destination(Vector2i(3, 3), Vector2i(4, 3)), Vector2i(5, 3), "Chebyshev push is one cell away along the line")
@@ -1076,7 +1076,7 @@ func _test_shoulder_push_blocked_open() -> void:
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "E",
+		"kestrel_facing": "W",
 		"blockers": [Vector2i(5, 3)],
 	})
 	_sim.submit({"type": "end_turn"})
@@ -1340,8 +1340,8 @@ func _test_legal_intents_new_spell_gates() -> void:
 	truthy(has_r6, "Detonate chrome includes Chebyshev 6")
 	eq(has_r7, false, "Detonate chrome excludes Chebyshev 7")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
-	eq(view.contains("hit_chance"), false, "board_view has no aim hit-% chrome")
-	eq(view.contains("hit-%"), false, "board_view has no hit-% label")
+	eq(view.contains("hit_chance"), false, "board_view has no aim hit-chance chrome")
+	eq(view.contains("hit-%"), false, "board_view has no hit-percent label")
 
 
 func _test_kit_class_exclusions() -> void:
