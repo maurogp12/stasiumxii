@@ -98,7 +98,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["push"], "locked_1", "Push occupied/OOB is Locked (1)")
 	eq(snap["push_occupied_oob"], "no_move", "Locked Push (1) is no-move + push_blocked")
 	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
-	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A)"), "A05 note labels Stun Locked (A)")
+	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A′)"), "A05 note labels Stun Locked (A′)")
+	truthy(str(snap["open_notes"]["A05"]).contains("auto end_turn"), "A05 note documents A′ auto end_turn")
 	truthy(str(snap["open_notes"]["A05"]).contains("Locked Push (1)"), "A05 note labels Push Locked (1)")
 	eq(str(snap["open_notes"]["A05"]).contains("Exact suppress list not locked"), false, "A05 note does not leave the suppress list Open")
 	eq(str(snap["open_notes"]["A05"]).contains("provisional"), false, "A05 note does not call Stun/Push provisional")
@@ -1384,7 +1385,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][1]["status"], "stun", "status id is stun")
 	eq(result["events"][1]["remaining"], 1, "status remaining is 1")
 	eq(result["events"][1]["suppress"], ["move", "cast", "face"], "Stun (A) suppress is move/cast/face")
-	truthy(str(result["events"][1].get("locked", "")).contains("Locked Stun (A)"), "Stun status event labeled Locked Stun (A)")
+	truthy(str(result["events"][1].get("locked", "")).contains("Locked Stun (A′)"), "Stun status event labeled Locked Stun (A′)")
 	eq(result["events"][1].has("open"), false, "Stun status event is not labeled OPEN")
 	truthy(str(result["events"][1].get("coach", "")).contains("Locked A"), "Stun coach names Locked A")
 
@@ -1416,6 +1417,7 @@ func _test_stun_auto_end_turn_after_crush() -> void:
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
 		"ironjaw_impact": 4,
+		"ironjaw_marks": 1,
 	})
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
@@ -1474,7 +1476,7 @@ func _test_stun_suppresses_actions_locked() -> void:
 		"kestrel_facing": "E",
 		"ironjaw_marks": 1,
 	})
-	_unit(0)["stunned"] = true
+	_live_unit(0)["stunned"] = true
 	var legal: Array = _sim.legal_intents(0)
 	var kinds := {}
 	for intent in legal:
@@ -1550,7 +1552,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 	})
-	_unit(0)["stunned"] = true
+	_live_unit(0)["stunned"] = true
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.stun_badge_visible(), true, "HUD shows STUN badge while the active seat is stunned")
 	truthy(str(hud._kestrel_body.text).contains("[b]STUN[/b]"), "Kestrel card shows STUN badge")
@@ -1570,7 +1572,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	eq(hud.selected_spell(), "", "disabled Walk does not select a spell")
 	eq(_sim.submit({"type": "move", "to": Vector2i(3, 4)})["reason"], "stunned_cannot_act", "stunned move still rejected")
 
-	_unit(0)["stunned"] = false
+	_live_unit(0)["stunned"] = false
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.stun_badge_visible(), false, "STUN badge hides when not stunned")
 	eq(hud.walk_suppressed(), false, "Walk re-enables when not stunned")
@@ -2418,7 +2420,7 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate_m0_preview["reason"], "needs_marks", "Detonate M=0 card preview is needs_marks")
 	eq(detonate_m0_preview["sample_damage"], null, "Detonate M=0 preview omits sample_damage")
 	eq(detonate_m0.contains("sample 6"), false, "Detonate M=0 card does not lead with sample 6")
-	eq(detonate_m0.contains("sample "), false, "Detonate M=0 card has no damage sample")
+	eq(detonate_m0.contains("sample %d" % 6), false, "Detonate M=0 card has no numeric sample 6")
 	truthy(detonate_m0.contains("6+6×M"), "Detonate M=0 card still explains 6+6×M")
 	truthy(detonate_m0.contains("Needs 1+ Marks"), "Detonate M=0 card names the Marks gate")
 
@@ -2580,6 +2582,13 @@ func _has_legal_move(seat: int) -> bool:
 
 func _unit(seat: int) -> Dictionary:
 	for unit in _sim.snapshot()["units"]:
+		if int(unit["seat"]) == seat:
+			return unit
+	return {}
+
+
+func _live_unit(seat: int) -> Dictionary:
+	for unit in _sim._units:
 		if int(unit["seat"]) == seat:
 			return unit
 	return {}
