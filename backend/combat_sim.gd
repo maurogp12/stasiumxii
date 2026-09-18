@@ -292,13 +292,16 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	}
 	var def: Dictionary = SpellKits.spell(spell_id)
 	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
-	# Mark Shot / Strike / Detonate aim. No +5. No Advance. No invented stun/push.
+	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush.
+	# No +5. No Advance. No invented stun/push.
 	if def.is_empty() or not bool(def.get("rolls", false)):
 		return out
 	if not [
 		SpellKits.MARK_SHOT,
 		SpellKits.STRIKE,
 		SpellKits.DETONATE,
+		SpellKits.SHOULDER,
+		SpellKits.CRUSH,
 	].has(spell_id):
 		return out
 	out["rolls"] = true
