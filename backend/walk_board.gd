@@ -4,6 +4,7 @@ extends RefCounted
 ## Proto stays reference. CombatSim owns occupancy and submit.
 ## Locked: dest terrain MP + elevation Δ, ortho-only, Dijkstra cheapest path.
 ## Legal dests = reachable within remaining MP.
+## stand_on_gate is shared with Advance teleport (walkable / occupied / climb / drop).
 
 const _TerrainDef := preload("res://backend/terrain_def.gd")
 const _BoardTileData := preload("res://backend/board_tile_data.gd")
@@ -77,39 +78,63 @@ func snapshot_tiles() -> Dictionary:
 	return out
 
 
-func step_cost(from: Vector2i, to: Vector2i, occupied: Callable) -> Dictionary:
-	var delta_cell: Vector2i = to - from
-	if absi(delta_cell.x) + absi(delta_cell.y) != 1:
-		return _step_fail("not_ortho")
-	if not in_bounds(from) or not in_bounds(to):
-		return _step_fail("out_of_bounds")
-	var dest_tile = tile_at(to)
+## Shared dest stand-on gates for walk hops and Advance teleport.
+## Walkable (lava / override), not occupied, climb<=1 / drop<=2 from `from` to `dest`.
+## Does not require ortho. Does not charge terrain or elevation MP.
+func stand_on_gate(from: Vector2i, dest: Vector2i, occupied: Callable) -> Dictionary:
+	if dest == from:
+		return _stand_fail("same_tile")
+	if not in_bounds(from) or not in_bounds(dest):
+		return _stand_fail("out_of_bounds")
+	var dest_tile = tile_at(dest)
 	var src_tile = tile_at(from)
 	if dest_tile == null or src_tile == null:
-		return _step_fail("out_of_bounds")
+		return _stand_fail("out_of_bounds")
 	var dest_def: Dictionary = terrains[dest_tile.terrain_type]
 	if not dest_tile.is_walkable(dest_def):
-		return _step_fail("not_walkable")
-	if _is_occupied(to, from, occupied):
-		return _step_fail("occupied")
+		return _stand_fail("not_walkable")
+	if _is_occupied(dest, from, occupied):
+		return _stand_fail("occupied")
 	var elev: Dictionary = _ElevationCost.analyze(src_tile.elevation, dest_tile.elevation)
 	if not bool(elev["legal"]):
 		return {
 			"ok": false,
-			"cost": 0,
 			"reason": str(elev["reason"]),
 			"terrain_mp": int(dest_def["base_mp"]),
 			"climb_mp": 0,
 			"delta": elev["delta"],
 		}
-	var climb_mp := int(elev["climb_mp"])
 	return {
 		"ok": true,
-		"cost": int(dest_def["base_mp"]) + climb_mp,
 		"reason": "",
 		"terrain_mp": int(dest_def["base_mp"]),
-		"climb_mp": climb_mp,
+		"climb_mp": int(elev["climb_mp"]),
 		"delta": elev["delta"],
+	}
+
+
+func step_cost(from: Vector2i, to: Vector2i, occupied: Callable) -> Dictionary:
+	var delta_cell: Vector2i = to - from
+	if absi(delta_cell.x) + absi(delta_cell.y) != 1:
+		return _step_fail("not_ortho")
+	var gate: Dictionary = stand_on_gate(from, to, occupied)
+	if not bool(gate.get("ok", false)):
+		return {
+			"ok": false,
+			"cost": 0,
+			"reason": str(gate.get("reason", "not_walkable")),
+			"terrain_mp": int(gate.get("terrain_mp", 0)),
+			"climb_mp": 0,
+			"delta": gate.get("delta", 0),
+		}
+	var climb_mp := int(gate["climb_mp"])
+	return {
+		"ok": true,
+		"cost": int(gate["terrain_mp"]) + climb_mp,
+		"reason": "",
+		"terrain_mp": int(gate["terrain_mp"]),
+		"climb_mp": climb_mp,
+		"delta": gate["delta"],
 	}
 
 
@@ -213,6 +238,16 @@ func _pop_cheapest(frontier: Array[Vector2i], best: Dictionary) -> Vector2i:
 	var cell: Vector2i = frontier[best_i]
 	frontier.remove_at(best_i)
 	return cell
+
+
+func _stand_fail(reason: String) -> Dictionary:
+	return {
+		"ok": false,
+		"reason": reason,
+		"terrain_mp": 0,
+		"climb_mp": 0,
+		"delta": 0,
+	}
 
 
 func _step_fail(reason: String) -> Dictionary:

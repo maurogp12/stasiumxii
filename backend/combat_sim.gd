@@ -37,7 +37,7 @@ const FACING_VEC := {
 ## is Locked. A02 walk is Locked (dest-click weighted pathfinder; cost = dest
 ## terrain MP + uphill elevation). Facing follows each hop of that path. Phase A
 ## flat Manhattan / H-first expansion is superseded. Advance range is Locked
-## Manhattan 1–2 (diamond). Advance onto illegal climb stays Open — do not gate.
+## Manhattan 1–2 (diamond). Advance dest uses the same stand-on gates as walk.
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Locked Push (1): occupied/OOB = no-move + push_blocked.
@@ -58,10 +58,12 @@ var _intent_log: Array = []
 var _blocked_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile integer elevation + terrain. Director-stamped 8×8 Mauro crop on reset.
+## Per-tile integer elevation + terrain. #38 crop terrain + seeded noise z on reset.
 ## Godot reads snapshot.tiles. skip_deploy uses the same map unless flat_board.
 var _board = _WalkBoard.new()
 var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
+var _elev_seed: int = 0
+var _elevation_gen: String = "seeded_noise"
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
@@ -76,14 +78,20 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_intent_log.clear()
 	_board = _WalkBoard.new()
 	_demo_map = ""
-	if _wants_demo_map(config):
-		_MatchFlow.seed_phase_a_demo(_board)
-		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
-	_apply_tile_overrides(config)
-
+	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
+	_elev_seed = int(config.get("elev_seed", _seed))
 	_rng.seed = _seed
-	_flow.reset(_seed, config)
+	_elevation_gen = "flat"
+	if _wants_demo_map(config):
+		var noise_elev := _wants_noise_elev(config)
+		_MatchFlow.seed_phase_a_demo(_board, _elev_seed, noise_elev)
+		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
+		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+	_apply_tile_overrides(config)
+	var flow_config := config.duplicate(true)
+	flow_config["elev_seed"] = _elev_seed
+	_flow.reset(_seed, flow_config)
 	if config.has("rolls"):
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
@@ -312,6 +320,12 @@ func snapshot() -> Dictionary:
 		"match_over": _match_over,
 		"winner_seat": _winner_seat,
 		"seed": _seed,
+		"elev_seed": _elev_seed,
+		"elevation_gen": _elevation_gen,
+		"match_config": {
+			"seed": _seed,
+			"elev_seed": _elev_seed,
+		},
 		"wind": "calm",
 		"crit_roll": false,
 		"crit_mult": CRIT_MULT,
@@ -345,6 +359,7 @@ func snapshot() -> Dictionary:
 		"advance_ap": 3,
 		"advance_range": "manhattan",
 		"advance_path": "teleport",
+		"advance_stand_on": "walk_gates",
 		"marks_owner": "target",
 		"stun": "locked_a_prime",
 		"stun_blocks": "move_cast_face",
@@ -377,12 +392,12 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Terrain is the #38 Mauro 8×8 crop (fixed). Elevation is smooth seeded noise z 0–3 on each New Match / reset_match (MatchConfig.seed / elev_seed). Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying.",
 		},
-		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"],
+		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
 
 
@@ -626,9 +641,7 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 	if spell_id == SpellKits.ADVANCE:
 		if to_cell == from_cell or to_cell == actor["pos"]:
 			return "same_tile"
-		if not _is_empty(to_cell):
-			return "destination_occupied"
-		return ""
+		return _advance_stand_reason(from_cell, to_cell)
 	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
 		return "no_target"
 	if spell_id == SpellKits.DETONATE and int(target.get("marks", 0)) < int(def.get("requires_marks_on_target", 1)):
@@ -1289,18 +1302,26 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_bounds"
 	if dest == actor["pos"]:
 		return "same_tile"
-	if not _is_empty(dest):
-		return "destination_occupied"
 	# Range gate is Manhattan 1–2 (diamond). Chebyshev (1,2) tiles are out of range.
-	# Teleport: dest occupancy only; corridor occupants do not block. 0 MP is legal.
-	# Open: Advance onto illegal climb — do not invent a height gate here.
+	# Teleport: shared walk stand-on gates at dest. Corridor occupants do not block.
+	# 0 MP is legal. No terrain+elev MP spend — gate only.
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var range_dist := _range_distance(def, actor["pos"], dest)
 	if range_dist < int(def["min_range"]) or range_dist > int(def["max_range"]):
 		return "out_of_range"
 	if int(actor["ap"]) < int(def["ap"]):
 		return "insufficient_ap"
-	return ""
+	return _advance_stand_reason(actor["pos"], dest)
+
+
+func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
+	var gate: Dictionary = _board.stand_on_gate(from, dest, Callable(self, "_walk_occupied"))
+	if bool(gate.get("ok", false)):
+		return ""
+	var reason := str(gate.get("reason", "not_walkable"))
+	if reason == "occupied":
+		return "destination_occupied"
+	return reason
 
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
@@ -1335,10 +1356,21 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 
 
 func _wants_demo_map(config: Dictionary) -> bool:
-	# Same stamped map on live + skip_deploy unless a fixture asks for flat Ground 0.
+	# Same stamped terrain on live + skip_deploy unless a fixture asks for flat Ground 0.
 	if config.has("demo_map"):
 		return bool(config["demo_map"])
 	if bool(config.get("flat_board", false)):
+		return false
+	return true
+
+
+func _wants_noise_elev(config: Dictionary) -> bool:
+	# Default: regenerate z from elev_seed / seed. Fixtures may pin crop z or skip.
+	if bool(config.get("flat_board", false)):
+		return false
+	if config.has("noise_elev"):
+		return bool(config["noise_elev"])
+	if bool(config.get("crop_elev", false)):
 		return false
 	return true
 

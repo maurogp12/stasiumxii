@@ -39,7 +39,8 @@ func _run() -> void:
 	_test_weighted_prefers_flat()
 	_test_deploy_rejects_lava()
 	_test_hit_bands_ignore_height()
-	_test_advance_ignores_climb()
+	_test_advance_stand_on_gates()
+	_test_noise_elevation_per_match()
 	_test_walk_facing_follows_hops()
 	_test_spell_range_stays_chebyshev()
 	_test_face_costs_zero()
@@ -114,12 +115,18 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["terrain_mp"]["mud"], 2, "Mud MP is 2")
 	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
 	eq(snap["terrain_mp"]["lava"], 0, "Lava MP stamp is 0 / impassable")
-	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"], "height hit/facing/LoS, stairs/ramps/flying, Advance climb stay Open")
+	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"], "height hit/facing/LoS, stairs/ramps/flying stay Open")
+	eq(str(snap["open_elevation"]).contains("advance_climb"), false, "Advance stand-on is Locked, not Open")
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
 	eq(snap["demo_map"], "phase_a_fixed", "skip_deploy seeds the Director demo map")
+	eq(snap["elevation_gen"], "seeded_noise", "skip_deploy uses seeded noise elevation")
+	eq(snap["elev_seed"], 1, "elev_seed is stored on the snapshot")
+	eq(snap["match_config"]["seed"], 1, "MatchConfig.seed is stored for replay")
+	eq(snap["match_config"]["elev_seed"], 1, "MatchConfig.elev_seed is stored for replay")
+	eq(snap["advance_stand_on"], "walk_gates", "Advance reuses walk stand-on gates")
 	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "crop (0,0) is Ground")
-	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 3, "crop (0,0) elevation is integer 3")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], _noise_elev(1, Vector2i(0, 0)), "crop (0,0) elevation is seeded noise")
 	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
 	eq(snap["tiles"].size(), 64, "snapshot lists all 8×8 tiles")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
@@ -518,14 +525,16 @@ func _test_client_path_ignored() -> void:
 
 
 func _test_phase_a_demo_map() -> void:
-	# Director-stamped Locked 8×8 crop of Mauro's 12×12. Same cells on live + skip_deploy.
+	# Director-stamped Locked 8×8 crop terrain. Elevation is seeded noise on live + skip_deploy.
 	var live: Dictionary = _sim.reset_match({"seed": 1})
-	_assert_phase_a_demo_tiles(live, "live reset")
+	_assert_phase_a_demo_tiles(live, "live reset", 1)
 	eq(live["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
 	eq(live["demo_map"], "phase_a_fixed", "live snap stamps the demo map id")
+	eq(live["elevation_gen"], "seeded_noise", "live reset generates noise elevation")
+	eq(live["elev_seed"], 1, "live reset stores elev_seed")
 
 	var skip: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true})
-	_assert_phase_a_demo_tiles(skip, "skip_deploy")
+	_assert_phase_a_demo_tiles(skip, "skip_deploy", 1)
 	eq(skip["units"][0]["pos"], Vector2i(1, 1), "skip_deploy fixture still uses (1,1)")
 	eq(skip["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "skip_deploy (1,1) stays Ground")
 	eq(skip["tiles"][Vector2i(1, 1)]["walkable"], true, "skip_deploy (1,1) stays walkable")
@@ -570,15 +579,20 @@ func _test_phase_a_demo_map() -> void:
 	truthy(flow.contains("PHASE_A_CROP_ORIGIN_ROW := 2"), "MatchFlow stamps crop origin row 2")
 	truthy(flow.contains("PHASE_A_CROP_ORIGIN_COL := 2"), "MatchFlow stamps crop origin col 2")
 	truthy(flow.contains("MAURO_12X12"), "MatchFlow keeps Mauro's 12×12 source")
+	truthy(flow.contains("generate_noise_elevations"), "MatchFlow owns seeded noise elevation")
+	var walk := FileAccess.get_file_as_string("res://backend/walk_board.gd")
+	truthy(walk.contains("func stand_on_gate"), "WalkBoard exposes the shared stand-on helper")
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	truthy(readme.contains("row **2**, col **2**"), "README documents crop origin (2, 2)")
 	truthy(readme.contains("G3 G3 M3 W2 L2 W1 W1 M1"), "README documents the 8×8 ASCII crop")
+	truthy(readme.contains("seeded noise"), "README documents seeded noise elevation")
 
 
-func _assert_phase_a_demo_tiles(snap: Dictionary, label: String) -> void:
+func _assert_phase_a_demo_tiles(snap: Dictionary, label: String, seed: int) -> void:
 	var tiles: Dictionary = snap["tiles"]
 	eq(tiles.size(), 64, "%s lists all 64 tiles" % label)
 	var expected: Array = load("res://backend/match_flow.gd").phase_a_demo_tiles()
+	var noise: Dictionary = load("res://backend/match_flow.gd").generate_noise_elevations(seed)
 	eq(expected.size(), 64, "%s crop list is 64 cells" % label)
 	var saw := {"mud": 0, "water": 0, "lava": 0, "ground": 0}
 	var elevs := {}
@@ -586,8 +600,9 @@ func _assert_phase_a_demo_tiles(snap: Dictionary, label: String) -> void:
 		var cell: Vector2i = row["pos"]
 		var rec: Dictionary = tiles[cell]
 		eq(rec["terrain_type"], row["terrain"], "%s %s terrain" % [label, str(cell)])
-		eq(rec["elevation"], int(row["elevation"]), "%s %s elevation" % [label, str(cell)])
+		eq(rec["elevation"], int(noise[cell]), "%s %s elevation matches seed %d" % [label, str(cell), seed])
 		eq(typeof(rec["elevation"]), TYPE_INT, "%s %s elevation is int" % [label, str(cell)])
+		eq(int(rec["elevation"]) >= 0 and int(rec["elevation"]) <= 3, true, "%s %s elevation is z 0–3" % [label, str(cell)])
 		if rec["terrain_type"] == "lava":
 			eq(rec["walkable"], false, "%s lava %s is impassable" % [label, str(cell)])
 		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
@@ -595,16 +610,11 @@ func _assert_phase_a_demo_tiles(snap: Dictionary, label: String) -> void:
 	eq(saw["mud"] > 0, true, "%s crop has Mud" % label)
 	eq(saw["water"] > 0, true, "%s crop has Water" % label)
 	eq(saw["lava"] > 0, true, "%s crop has Lava" % label)
-	eq(elevs.size() >= 3, true, "%s crop has multi-z elev variety" % label)
-	eq(elevs.has(0) and elevs.has(1) and elevs.has(2) and elevs.has(3), true, "%s crop uses z 0–3" % label)
+	eq(elevs.size() >= 2, true, "%s noise elev has variety" % label)
 	eq(tiles[Vector2i(4, 0)]["terrain_type"], "lava", "%s lava cluster at (4,0)" % label)
 	eq(tiles[Vector2i(2, 0)]["terrain_type"], "mud", "%s mud at (2,0)" % label)
 	eq(tiles[Vector2i(3, 0)]["terrain_type"], "water", "%s water at (3,0)" % label)
 	eq(tiles[Vector2i(6, 5)]["terrain_type"], "ground", "%s SE ridge Ground" % label)
-	eq(tiles[Vector2i(6, 5)]["elevation"], 3, "%s SE ridge elev 3" % label)
-	eq(tiles[Vector2i(6, 6)]["elevation"], 3, "%s ridge continues at (6,6)" % label)
-	eq(tiles[Vector2i(5, 6)]["elevation"], 2, "%s ridge steps to elev 2" % label)
-	eq(tiles[Vector2i(6, 7)]["elevation"], 2, "%s ridge drop 1 from (6,6)" % label)
 
 
 func _test_snapshot_exposes_tiles() -> void:
@@ -829,22 +839,165 @@ func _test_hit_bands_ignore_height() -> void:
 	eq(hit_src.contains("terrain"), false, "hit_chance does not read terrain")
 
 
-func _test_advance_ignores_climb() -> void:
-	# Open: Advance onto illegal climb — do not invent a gate.
+func _test_advance_stand_on_gates() -> void:
+	# Locked: Advance dest uses the same stand-on gates as walk. Gate only — 0 MP.
+	var walk := FileAccess.get_file_as_string("res://backend/walk_board.gd")
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	truthy(walk.contains("func stand_on_gate"), "shared stand-on helper lives on WalkBoard")
+	truthy(sim_src.contains("_advance_stand_reason"), "Advance validate calls the shared helper")
+	eq(sim_src.contains("Open: Advance onto illegal climb"), false, "Advance climb is no longer Open")
+
+	# Lava dest.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0}],
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "not_walkable", "Advance lava dest is not_walkable")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["ok"], false, "Advance onto lava is rejected")
+	eq(result["illegal"], true, "illegal Advance is refunded")
+	eq(result["reason"], "not_walkable", "lava Advance reason is not_walkable")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "lava Advance leaves Ironjaw put")
+	eq(_unit(1)["ap"], 6, "lava Advance refunds AP")
+	eq(_unit(1)["mp"], 3, "lava Advance spends 0 MP")
+	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit lava Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "not_walkable", "preview_cast reflects lava gate")
+
+	# Occupied dest.
+	_sim.reset_match({
+		"seed": 1,
 		"flat_board": true,
+		"kestrel_pos": Vector2i(3, 2),
+		"ironjaw_pos": Vector2i(2, 2),
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "destination_occupied", "Advance occupied dest is destination_occupied")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["illegal"], true, "occupied Advance is rejected")
+	eq(result["reason"], "destination_occupied", "occupied Advance reason is destination_occupied")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "occupied Advance leaves Ironjaw put")
+	eq(_unit(1)["ap"], 6, "occupied Advance refunds AP")
+	eq(_unit(1)["mp"], 3, "occupied Advance spends 0 MP")
+	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit occupied Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "destination_occupied", "preview_cast reflects occupied gate")
+
+	# Climb > 1 (z0 → z2).
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
 		"tiles": [{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 2}],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "Advance range/occupancy still pass on a climb-2 dest")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
-	eq(result["ok"], true, "Advance onto a climb-2 dest stays legal (Open — not invented)")
-	eq(result["reason"], "", "Advance does not reject climb_too_steep")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped onto the steep tile")
-	eq(_unit(1)["mp"], 3, "Advance still spends 0 MP")
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "climb_too_steep", "Advance climb 2 is climb_too_steep")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["illegal"], true, "climb-2 Advance is rejected")
+	eq(result["reason"], "climb_too_steep", "climb Advance reason is climb_too_steep")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "climb Advance leaves Ironjaw put")
+	eq(_unit(1)["ap"], 6, "climb Advance refunds AP")
+	eq(_unit(1)["mp"], 3, "climb Advance spends 0 MP")
+	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit climb-2 Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "climb_too_steep", "preview_cast reflects climb gate")
+
+	# Drop > 2 (z3 → z0).
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
+		"tiles": [
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 3},
+			{"pos": Vector2i(4, 2), "terrain": "ground", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "drop_too_far", "Advance drop 3 is drop_too_far")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
+	eq(result["illegal"], true, "drop-3 Advance is rejected")
+	eq(result["reason"], "drop_too_far", "drop Advance reason is drop_too_far")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "drop Advance leaves Ironjaw put")
+	eq(_unit(1)["ap"], 6, "drop Advance refunds AP")
+	eq(_unit(1)["mp"], 3, "drop Advance spends 0 MP")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit drop-3 Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "drop_too_far", "preview_cast reflects drop gate")
+
+	# Legal dest: climb 1 onto mud, 0 MP spent.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 1}],
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "legal Advance dest passes shared stand-on gates")
+	eq(_has_legal_advance_to(1, Vector2i(3, 2)), true, "legal_intents include a legal Advance dest")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["legal"], true, "preview_cast marks a legal dest")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["ok"], true, "legal Advance dest is accepted")
+	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped onto the legal dest")
+	eq(_unit(1)["ap"], 3, "legal Advance spends 3 AP")
+	eq(_unit(1)["mp"], 3, "legal Advance spends 0 MP (gate only, no mud/climb tax)")
+	eq(result["events"][0]["mp_spent"], 0, "advance event spends 0 MP")
+
+
+func _test_noise_elevation_per_match() -> void:
+	# New Match / reset_match: new seed → new elev, same #38 crop terrain. Same seed replays.
+	var a: Dictionary = _sim.reset_match({"seed": 1})
+	var b: Dictionary = _sim.reset_match({"seed": 2})
+	var again: Dictionary = _sim.reset_match({"seed": 1})
+	eq(a["board_size"], 8, "noise elev stays on Locked 8×8")
+	eq(b["board_size"], 8, "second seed stays on Locked 8×8")
+	eq(a["elevation_gen"], "seeded_noise", "seed 1 uses seeded noise")
+	eq(b["elevation_gen"], "seeded_noise", "seed 2 uses seeded noise")
+	eq(a["elev_seed"], 1, "seed 1 stores elev_seed 1")
+	eq(b["elev_seed"], 2, "seed 2 stores elev_seed 2")
+	eq(a["seed"], 1, "snapshot.seed is 1")
+	eq(again["elev_seed"], 1, "reset with the same seed stores elev_seed 1 again")
+	eq(a["tiles"].size(), 64, "seed 1 still paints 64 tiles")
+	var terrain_same := true
+	var elev_diff := false
+	var elev_same_replay := true
+	for y in range(8):
+		for x in range(8):
+			var cell := Vector2i(x, y)
+			eq(a["tiles"][cell]["terrain_type"], b["tiles"][cell]["terrain_type"], "seed 1 vs 2 keep crop terrain at %s" % str(cell))
+			eq(a["tiles"][cell]["terrain_type"], again["tiles"][cell]["terrain_type"], "replay keeps crop terrain at %s" % str(cell))
+			if a["tiles"][cell]["terrain_type"] != b["tiles"][cell]["terrain_type"]:
+				terrain_same = false
+			if int(a["tiles"][cell]["elevation"]) != int(b["tiles"][cell]["elevation"]):
+				elev_diff = true
+			if int(a["tiles"][cell]["elevation"]) != int(again["tiles"][cell]["elevation"]):
+				elev_same_replay = false
+			eq(int(a["tiles"][cell]["elevation"]), _noise_elev(1, cell), "seed 1 elev at %s is reproducible from helper" % str(cell))
+	eq(terrain_same, true, "different seeds keep the same crop terrain")
+	eq(elev_diff, true, "different seeds produce different elevation")
+	eq(elev_same_replay, true, "reset with the same seed reproduces elevation")
+
+	var pinned: Dictionary = _sim.reset_match({"seed": 1, "elev_seed": 7})
+	eq(pinned["seed"], 1, "elev_seed override leaves match seed 1")
+	eq(pinned["elev_seed"], 7, "MatchConfig.elev_seed override is stored")
+	eq(int(pinned["tiles"][Vector2i(0, 0)]["elevation"]), _noise_elev(7, Vector2i(0, 0)), "elev_seed override drives noise")
+	eq(pinned["tiles"][Vector2i(4, 0)]["terrain_type"], "lava", "elev_seed override keeps crop lava")
+
+	var crop: Dictionary = _sim.reset_match({"seed": 1, "crop_elev": true})
+	eq(crop["elevation_gen"], "crop", "crop_elev skips noise")
+	eq(int(crop["tiles"][Vector2i(0, 0)]["elevation"]), 3, "crop_elev keeps #38 z at (0,0)")
+
+	var live_a: Dictionary = _sim.reset_match({})
+	var live_b: Dictionary = _sim.reset_match({})
+	eq(live_a["elevation_gen"], "seeded_noise", "New Match without a seed still uses noise")
+	eq(live_a.has("elev_seed"), true, "New Match stores elev_seed")
+	eq(live_a["seed"] == live_b["seed"], false, "New Match generates a new seed")
+
+	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
+	eq(flow.contains("12×12") or flow.contains("12x12") or flow.contains("MAURO_MAP_SIZE := 12"), true, "12×12 stays crop source only")
+	eq(flow.contains("BOARD_SIZE := 8"), true, "board stays Locked 8×8")
 
 
 func _test_walk_facing_follows_hops() -> void:
@@ -3717,6 +3870,17 @@ func _has_legal_cast(seat: int, spell_id: String) -> bool:
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
 			return true
 	return false
+
+
+func _has_legal_advance_to(seat: int, dest: Vector2i) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "advance" and intent.get("to") == dest:
+			return true
+	return false
+
+
+func _noise_elev(seed: int, cell: Vector2i) -> int:
+	return int(load("res://backend/match_flow.gd").generate_noise_elevations(seed)[cell])
 
 
 func _face_pad(hud: Node) -> GridContainer:
