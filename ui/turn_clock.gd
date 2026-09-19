@@ -1,16 +1,25 @@
 extends RefCounted
 class_name TurnClock
 
-## Proposed playtest seat clock. Change DURATION_SEC to retune.
-## CombatSim does not own this; expiry submits the same end_turn as the HUD button.
+## Display helper for the host-owned 30s seat clock.
+## Remaining comes from snapshot.turn_time_remaining. Do not treat this as
+## authority on a guest. Change DURATION_SEC with CombatSim.TURN_TIME_LIMIT.
 const DURATION_SEC := 30.0
 
 var remaining: float = DURATION_SEC
 var running: bool = false
+var duration: float = DURATION_SEC
+
+
+func hydrate(remaining_sec: float, is_running: bool, limit: float = DURATION_SEC) -> void:
+	remaining = remaining_sec
+	running = is_running
+	duration = limit if limit > 0.0 else DURATION_SEC
 
 
 func start() -> void:
 	remaining = DURATION_SEC
+	duration = DURATION_SEC
 	running = true
 
 
@@ -45,6 +54,6 @@ func display_seconds() -> int:
 
 
 func fraction_left() -> float:
-	if DURATION_SEC <= 0.0:
+	if duration <= 0.0:
 		return 0.0
-	return clampf(remaining / DURATION_SEC, 0.0, 1.0)
+	return clampf(remaining / duration, 0.0, 1.0)

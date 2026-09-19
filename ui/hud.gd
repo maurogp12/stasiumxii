@@ -60,8 +60,51 @@ var _preview_source: Node = null
 var _terrain_legend: Label
 
 
-## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
+## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
+## falls back to active_seat. Snapshot does not encode "show active kit".
+## Advance is never offered unless class_id is ironjaw.
 ## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
+static func kit_seat(snap: Dictionary) -> int:
+	var local_seat := int(snap.get("local_seat", -1))
+	if local_seat >= 0:
+		return local_seat
+	return int(snap.get("active_seat", 0))
+
+
+static func is_local_turn(snap: Dictionary) -> bool:
+	var local_seat := int(snap.get("local_seat", -1))
+	if local_seat < 0:
+		return true
+	return local_seat == int(snap.get("active_seat", -2))
+
+
+static func turn_status_text(snap: Dictionary) -> String:
+	var local_seat := int(snap.get("local_seat", -1))
+	if local_seat < 0:
+		return ""
+	if is_local_turn(snap):
+		return "Your Turn"
+	return "Opponent's Turn"
+
+
+static func turn_clock_seconds(snap: Dictionary) -> int:
+	if snap.has("turn_time_seconds"):
+		return maxi(int(snap.get("turn_time_seconds", 0)), 0)
+	if not snap.has("turn_time_remaining"):
+		return -1
+	var remaining := float(snap.get("turn_time_remaining", 0.0))
+	if remaining <= 0.0:
+		return 0
+	return int(ceili(remaining))
+
+
+static func turn_clock_fraction(snap: Dictionary) -> float:
+	var limit := float(snap.get("turn_time_limit", TurnClock.DURATION_SEC))
+	if limit <= 0.0:
+		return 0.0
+	return clampf(float(snap.get("turn_time_remaining", 0.0)) / limit, 0.0, 1.0)
+
+
 static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 	var offered: Array = []
 	if active.is_empty():
@@ -255,7 +298,7 @@ static func stun_skip_event(events: Array) -> Dictionary:
 		var coach := str(event.get("coach", ""))
 		if kind in ["stun_skip", "turn_skipped", "stunned_skip"]:
 			return event
-		if kind == "end_turn" and (
+		if kind == "end_turn" and str(event.get("reason", "")) != "timer" and (
 			bool(event.get("auto", false))
 			or bool(event.get("auto_end_turn", false))
 			or bool(event.get("stunned", false))
@@ -440,14 +483,21 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_ironjaw_body.text = _unit_card_text(ironjaw, int(snap.get("active_seat", 0)) == 1, snap)
 
 	var active := _unit(units, int(snap.get("active_seat", 0)))
+	var chrome := _unit(units, kit_seat(snap))
 	var active_name := str(active.get("name", "—"))
+	var clock_sec := turn_clock_seconds(snap)
+	if clock_sec >= 0:
+		_clock_seconds = clock_sec
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
 		_turn_label.text = "Match over — %s wins" % str(winner.get("name", "—"))
 	elif _deploying:
 		_turn_label.text = "DEPLOYMENT  ·  place both fighters"
 	else:
-		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), active_name, _clock_seconds]
+		var whose := turn_status_text(snap)
+		if whose == "":
+			whose = active_name
+		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), whose, _clock_seconds]
 	var net_prefix := _net_prefix(snap)
 	if net_prefix != "" and _turn_label != null:
 		_turn_label.text = "%s%s" % [net_prefix, _turn_label.text]
@@ -459,7 +509,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	else:
 		_coach_label.text = str(snap.get("coach", ""))
 
-	var offered: Array = [] if _deploying else offered_cast_ids(active, legal)
+	var offered: Array = [] if _deploying else offered_cast_ids(chrome, legal)
 	_sync_spell_buttons(offered)
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
@@ -477,7 +527,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var match_over := bool(snap.get("match_over", false))
 	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
-	_stunned = unit_is_stunned(active) and not match_over and not _deploying
+	_stunned = unit_is_stunned(chrome) and not match_over and not _deploying
 	if _stunned and _selected_spell != "":
 		_selected_spell = ""
 		_aim_hit_chance = -1
@@ -498,25 +548,27 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_refresh_walk_button()
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
-	_sync_stun_badge(active, units, match_over)
+	_sync_stun_badge(chrome, units, match_over)
 
 
 func _apply_controls(match_over: bool) -> void:
 	var block := match_over or _locked or _deploying
+	var not_your_turn := int(_last_snap.get("local_seat", -1)) >= 0 and not is_local_turn(_last_snap)
 	for spell_id in _spell_buttons.keys():
 		if block:
 			_set_spell_button_clickable(_spell_buttons[spell_id], false)
 	for button in _face_buttons.values():
-		(button as Button).disabled = block or _stunned
-		(button as Button).modulate = STUN_GREY if ((_stunned or _deploying) and not match_over and not _locked) else Color.WHITE
+		(button as Button).disabled = block or _stunned or not_your_turn
+		(button as Button).modulate = STUN_GREY if ((_stunned or _deploying or not_your_turn) and not match_over and not _locked) else Color.WHITE
 	if _walk_button != null:
-		_walk_button.disabled = block or _stunned
-		if (_stunned or _deploying) and not match_over and not _locked:
+		_walk_button.disabled = block or _stunned or not_your_turn
+		if (_stunned or _deploying or not_your_turn) and not match_over and not _locked:
 			_walk_button.modulate = STUN_GREY
 	if _end_turn_button != null:
 		# Locked Stun (A′): End Turn stays as a fallback; CombatSim auto-skips.
 		# Deploy: End Turn stays off until both Ready leave DEPLOYMENT.
-		_end_turn_button.disabled = block
+		# Online: only the owner of active_seat can End Turn.
+		_end_turn_button.disabled = block or not_your_turn
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
@@ -1023,7 +1075,7 @@ func _preview_sim() -> Node:
 
 func _preview_dest_args(spell_id: String) -> Dictionary:
 	var units: Array = _last_snap.get("units", [])
-	var seat := int(_last_snap.get("active_seat", 0))
+	var seat := kit_seat(_last_snap)
 	var actor := _unit(units, seat)
 	var enemy := _unit(units, 1 - seat)
 	var from: Vector2i = _as_cell(actor.get("pos", Vector2i.ZERO))
