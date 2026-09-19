@@ -29,6 +29,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live) and seeds the Director Locked 8×8 Mauro **terrain** crop plus **seeded noise elevation** onto `WalkBoard`. `MatchConfig.seed` / `elev_seed` override for fixtures/replay (`snapshot.seed`, `snapshot.elev_seed`). `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Walk is dest-click weighted pathfinder (`backend/walk_board.gd`); Advance reuses `stand_on_gate`. `snapshot().tiles` exposes per-tile **integer** elevation / terrain_type for Godot. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup; same crop terrain + noise unless `flat_board`). Rolls and HP live here. |
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
+| `backend/host_validate.gd` + `MIGRATION_PHASE_E.md` | Phase E draft: Intent/`submit` identical; seed/RNG host-owned. Shape gate only. No netcode. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -101,7 +102,10 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd
 godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
+godot --headless --path . -s res://tests/run_host_validate_tests.gd
 ```
+
+Phase E online schema is draft-only (`MIGRATION_PHASE_E.md` + `backend/host_validate.gd`): Intent/`submit` stay identical; seed/RNG stay host-owned. Networking stays OFF.
 
 ## Live elevation chrome (Phase A cutover)
 
