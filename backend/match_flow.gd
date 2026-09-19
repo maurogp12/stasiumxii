@@ -416,6 +416,39 @@ func legal_place_cells(seat: int, occupant_at: Callable) -> Array[Vector2i]:
 	return out
 
 
+## Client replica only. Restore phase / ready / zones from a host snapshot.
+## Does not sample new blobs or invent fog / timers.
+func apply_host_snapshot(snap: Dictionary) -> void:
+	var phase_name := str(snap.get("phase_name", snap.get("phase", "DEPLOYMENT")))
+	phase = Phase.TURN_1 if phase_name == "TURN_1" else Phase.DEPLOYMENT
+	board_size = int(snap.get("board_size", BOARD_SIZE))
+	elev_seed = int(snap.get("elev_seed", snap.get("seed", 0)))
+	zone_seed = int(snap.get("seed", 0))
+	zone_distance = int(snap.get("deploy_zone_distance", 0))
+	zone_preferred = bool(snap.get("deploy_zone_preferred", false))
+	var ready_raw: Dictionary = snap.get("ready", {})
+	ready = {
+		SEAT_0: _flag(ready_raw, SEAT_0),
+		SEAT_1: _flag(ready_raw, SEAT_1),
+	}
+	var combat := phase == Phase.TURN_1
+	locked = {
+		SEAT_0: combat or bool(ready[SEAT_0]),
+		SEAT_1: combat or bool(ready[SEAT_1]),
+	}
+	placed = {SEAT_0: false, SEAT_1: false}
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var seat := int(unit.get("seat", -1))
+		if seat == SEAT_0 or seat == SEAT_1:
+			placed[seat] = bool(unit.get("placed", false))
+	var zones_raw: Dictionary = snap.get("deploy_zones", {})
+	_set_zone(SEAT_0, _cells_from_config(zones_raw.get(SEAT_0, zones_raw.get("0", []))))
+	_set_zone(SEAT_1, _cells_from_config(zones_raw.get(SEAT_1, zones_raw.get("1", []))))
+	last_seat = int(snap.get("active_seat", SEAT_0))
+
+
 func snapshot() -> Dictionary:
 	return {
 		"phase": phase,
@@ -749,6 +782,10 @@ func _cells_from_config(raw: Variant) -> Array[Vector2i]:
 		elif typeof(item) == TYPE_DICTIONARY:
 			out.append(Vector2i(int(item.get("x", 0)), int(item.get("y", 0))))
 	return out
+
+
+func _flag(raw: Dictionary, seat: int) -> bool:
+	return bool(raw.get(seat, raw.get(str(seat), false)))
 
 
 func _fail(reason: String) -> Dictionary:

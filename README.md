@@ -1,6 +1,6 @@
 # STASIUM XII
 
-Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client.
+Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client. Clients submit Intent; only the host rolls.
 
 ## How to play
 
@@ -29,6 +29,9 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live) and seeds the Director Locked 8×8 Mauro **terrain** crop plus **seeded noise elevation** onto `WalkBoard`. `MatchConfig.seed` / `elev_seed` override for fixtures/replay (`snapshot.seed`, `snapshot.elev_seed`). `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Walk is dest-click weighted pathfinder (`backend/walk_board.gd`); Advance reuses `stand_on_gate`. `snapshot().tiles` exposes per-tile **integer** elevation / terrain_type for Godot. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup; same crop terrain + noise unless `flat_board`). Rolls and HP live here. |
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
+| `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
+| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto. ENet / MultiplayerAPI RPC. Host owns CombatSim. Guest submits Intent. HOTSEAT mode leaves `main.tscn` on the local path. RPC only (no scene sync). Not a dedicated server. |
+| `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked vs Bounce, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -38,7 +41,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 
 ## Locked in this slice (GDD v0.2)
 
-- **Locked deploy flow:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready; networking OFF). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only). #31 1-deep S+W / N+E border halves are the previous Locked zone baseline and are no longer the live legal cells.
+- **Locked deploy flow:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready, or one seat per listen-host window). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only). #31 1-deep S+W / N+E border halves are the previous Locked zone baseline and are no longer the live legal cells.
 - 8×8 board, per-tile **integer elevation** + **terrain_type**. Terrain is the Director-stamped Locked 8×8 crop of Mauro’s 12×12 (origin row 2, col 2; all 64 cells). Elevation is **seeded noise** z 0–3 on each New Match / `reset_match` (stored as `seed` / `elev_seed` for replay). Do **not** grow to 12×12. No walls. Spell LoS stays unused (no height mods).
 - 80 HP, 6 AP / 3 MP refilled at turn start
 - Walk: dest-click only. Cost = dest terrain MP + uphill integer z. Terrain MP: Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per z step (units of 1; no 0.5 half-steps); downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. CombatSim runs a weighted pathfinder; legal cells = reachable with remaining MP (pool 3). Facing follows each ortho hop of that path; **final facing = last hop direction**. Manual face intent stays for standing turns. `legal_intents` enumerates walks whenever leftover **MP > 0**, regardless of remaining AP. Phase A flat Manhattan / H-first expansion is superseded. Snapshot `tiles` exposes terrain + elevation **ints** for Godot; board chrome stays Godot-side.
@@ -76,7 +79,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Omitted (not silent defaults)
 
-- Networking / MultiplayerSynchronizer
+- Dedicated server / matchmaking / login / MultiplayerSynchronizer (listen-host ENet proto is in; see below)
 - Step-shot, Rain, Longbow, Avalanche
 - Other classes (Mender, Gloam, Bastion)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
@@ -101,7 +104,33 @@ godot --headless --path . -s res://tests/run_combat_tests.gd
 godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd
 godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
+godot --headless --path . -s res://tests/run_host_validate_tests.gd
+godot --headless --path . -s res://tests/run_net_session_tests.gd
 ```
+
+## How to playtest online (listen-host proto)
+
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Picked over WebSocket because this is a desktop playtest (two windows on localhost/LAN). WebSocket stays the later HTML5 option; same Intent RPC surface. **Listen-host only** — the host window is Kestrel (seat 0) and the CombatSim authority. No dedicated server. No login.
+
+Local hot-seat is still the default `main.tscn` path.
+
+**Two instances, one duel:**
+
+```bash
+# Window A — host (Kestrel / seat 0). Owns seed + RNG.
+godot --path . --position 40,40 -- --host 7777
+
+# Window B — guest (Ironjaw / seat 1). Submits Intent only.
+godot --path . --position 1000,40 -- --join 127.0.0.1:7777
+```
+
+Or open `scenes/online_lobby.tscn`, **Host match** on one window and **Join match** (`127.0.0.1` / `7777`) on the other. **Local hot-seat** on that lobby returns to the unchanged single-window path.
+
+Play: each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. Guest never rolls. New Match is host-only.
+
+LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
+
+Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
 
 ## Live elevation chrome (Phase A cutover)
 
