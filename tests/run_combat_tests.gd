@@ -75,6 +75,7 @@ func _run() -> void:
 	_test_walk_mode_cancel()
 	_test_spell_tooltip_cards()
 	_test_action_bar_wraps()
+	_test_face_pad_layout()
 	_test_stun_skip_chrome()
 	_test_playtest_warning_hush()
 	_test_deploy_main_chrome()
@@ -2934,6 +2935,42 @@ func _test_action_bar_wraps() -> void:
 	eq(hud_src.contains("Detonate"), false, "wrap patch does not hardcode Detonate")
 
 
+func _test_face_pad_layout() -> void:
+	# Chrome-only: N/W/E/S sit on a cardinal pad. face_requested dirs stay N/E/S/W.
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._face_buttons.size(), 4, "Face N/E/S/W stay present")
+	for dir in ["N", "E", "S", "W"]:
+		eq(hud._face_buttons.has(dir), true, "Face button %s is wired" % dir)
+		eq((hud._face_buttons[dir] as Button).text, dir, "Face button label is %s" % dir)
+	var pad := _face_pad(hud)
+	eq(pad != null, true, "Face bar hosts a GridContainer pad")
+	eq(pad.columns, 3, "Face pad is 3 columns")
+	eq(pad.get_child_count(), 9, "Face pad is a 3x3 with spacer cells")
+	eq(pad.get_child(1), hud._face_buttons["N"], "N is top-center")
+	eq(pad.get_child(3), hud._face_buttons["W"], "W is middle-left")
+	eq(pad.get_child(5), hud._face_buttons["E"], "E is middle-right")
+	eq(pad.get_child(7), hud._face_buttons["S"], "S is bottom-center")
+	eq(pad.get_child(4) is Button, false, "center cell is a spacer, not a Face button")
+	eq(hud.face_suppressed(), false, "Face stays usable after the pad layout")
+
+	var got: Array = []
+	hud.face_requested.connect(func(dir: String) -> void: got.append(dir))
+	for dir in ["N", "E", "S", "W"]:
+		(hud._face_buttons[dir] as Button).pressed.emit()
+	eq(got, ["N", "E", "S", "W"], "Face buttons still emit N/E/S/W")
+
+	hud.free()
+
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("GridContainer"), "HUD Face pad uses GridContainer")
+	truthy(hud_src.contains("face_requested.emit(dir)"), "_on_face_pressed still emits dir")
+	eq(hud_src.contains("for dir in [\"N\", \"E\", \"S\", \"W\"]"), false, "Face buttons are not a single NESW row")
+	eq(hud_src.contains("OPEN A05"), false, "Face pad does not invent Stun Open")
+
+
 func _test_stun_skip_chrome() -> void:
 	# Client presents CombatSim's auto-skip event. Does not submit end_turn itself.
 	eq(CombatHUD.events_include_stun_skip([]), false, "empty events are not a skip")
@@ -3215,6 +3252,13 @@ func _has_legal_cast(seat: int, spell_id: String) -> bool:
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
 			return true
 	return false
+
+
+func _face_pad(hud: CombatHUD) -> GridContainer:
+	for child in hud._face_bar.get_children():
+		if child is GridContainer:
+			return child
+	return null
 
 
 func _legal_move_dests(seat: int) -> Dictionary:

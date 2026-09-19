@@ -537,7 +537,7 @@ func _build() -> void:
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
-	bottom.offset_top = -168
+	bottom.offset_top = -232
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
@@ -545,19 +545,32 @@ func _build() -> void:
 	var face_bar := HBoxContainer.new()
 	_face_bar = face_bar
 	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	face_bar.add_theme_constant_override("separation", 6)
+	face_bar.add_theme_constant_override("separation", 8)
 	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bottom.add_child(face_bar)
 	var face_caption := Label.new()
 	face_caption.text = "Face"
 	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	face_bar.add_child(face_caption)
-	for dir in ["N", "E", "S", "W"]:
+	var face_pad := GridContainer.new()
+	face_pad.columns = 3
+	face_pad.add_theme_constant_override("h_separation", 4)
+	face_pad.add_theme_constant_override("v_separation", 4)
+	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_bar.add_child(face_pad)
+	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
+	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
+		if dir == "":
+			var spacer := Control.new()
+			spacer.custom_minimum_size = Vector2(36, 28)
+			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			face_pad.add_child(spacer)
+			continue
 		var button := Button.new()
 		button.text = dir
 		button.custom_minimum_size = Vector2(36, 28)
 		button.pressed.connect(_on_face_pressed.bind(dir))
-		face_bar.add_child(button)
+		face_pad.add_child(button)
 		_face_buttons[dir] = button
 
 	_aim_hit_label = Label.new()
