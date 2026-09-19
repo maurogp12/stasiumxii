@@ -276,16 +276,18 @@ func _test_scene_instantiates() -> void:
 	truthy(packed is PackedScene, "proto scene resource loads")
 	var scene: Node = packed.instantiate()
 	truthy(scene != null, "proto scene instantiates")
-	root.add_child(scene)
+	# SceneTree -s scripts do not enter the editor tree; call _ready to build HUD.
+	scene._ready()
 	eq(str(scene.get_script().resource_path), "res://proto/deployment/proto_deployment_board.gd", "scene script is proto_deployment_board")
 	var mgr: DeploymentManager = scene._mgr
 	eq(mgr.phase, MatchPhase.DEPLOYMENT, "scene manager boots in DEPLOYMENT")
 	eq(mgr.can_confirm(0), false, "scene Ready P1 starts disabled")
+	eq(scene._ready_p1_btn.disabled, true, "Ready P1 starts disabled before a place")
+	eq(scene._ready_p2_btn.disabled, true, "Ready P2 starts disabled before a place")
 	eq(mgr.place_unit("kestrel", Vector2i(0, 3))["ok"], true, "scene manager can place P1 on the west ring")
 	eq(mgr.place_unit("ironjaw", Vector2i(7, 3))["ok"], true, "scene manager can place P2 on the east ring at the same time")
 	eq(scene._ready_p1_btn.disabled, false, "Ready P1 enables after Kestrel is placed")
 	eq(scene._ready_p2_btn.disabled, false, "Ready P2 enables after Ironjaw is placed")
-	root.remove_child(scene)
 	scene.free()
 
 
