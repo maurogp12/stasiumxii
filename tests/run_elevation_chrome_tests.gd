@@ -246,13 +246,12 @@ func _test_hud_legend_and_face_untouched() -> void:
 
 func _test_deploy_chrome_untouched() -> void:
 	_sim.reset_match({"seed": 1})
-	var zones: Dictionary = _sim.snapshot().get("deploy_zones", {})
 	truthy(_sim.deploy_zone_cells(0).size() > 0, "seat 0 still has a deploy zone")
 	truthy(_sim.deploy_zone_cells(1).size() > 0, "seat 1 still has a deploy zone")
 	var p1: Vector2i = _sim.deploy_zone_cells(0)[0]
 	var p2: Vector2i = _sim.deploy_zone_cells(1)[0]
-	eq(HUD.deploy_seat_for_cell(p1, -1, zones), 0, "P1 zone click still routes to seat 0")
-	eq(HUD.deploy_seat_for_cell(p2, -1, zones), 1, "P2 zone click still routes to seat 1")
+	eq(HUD.deploy_seat_for_cell(p1, -1), 0, "P1 zone click still routes to seat 0")
+	eq(HUD.deploy_seat_for_cell(p2, -1), 1, "P2 zone click still routes to seat 1")
 
 	var hud = HUD.new()
 	hud._build()

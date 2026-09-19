@@ -56,7 +56,7 @@ static func has_board_data(snap: Dictionary) -> bool:
 	return false
 
 
-## Sim-legal walk dests only. Chrome must not Dijkstra / invent climb costs.
+## Sim-legal walk dests only. Chrome must not invent climb costs or client reachability.
 static func walk_dests(legal: Array) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	for intent in legal:
