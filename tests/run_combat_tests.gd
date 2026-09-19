@@ -30,6 +30,15 @@ func _run() -> void:
 	_test_manhattan_walk_costs()
 	_test_horizontal_first_paths()
 	_test_client_path_ignored()
+	_test_snapshot_exposes_tiles()
+	_test_mud_walk_cost()
+	_test_lava_impassable()
+	_test_climb_reject()
+	_test_downhill_free()
+	_test_weighted_prefers_flat()
+	_test_deploy_rejects_lava()
+	_test_hit_bands_ignore_height()
+	_test_advance_ignores_climb()
 	_test_walk_facing_follows_hops()
 	_test_spell_range_stays_chebyshev()
 	_test_face_costs_zero()
@@ -93,9 +102,23 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["crit_roll"], false, "crit roll off")
 	eq(snap["gust"], false, "Gust off")
 	eq(snap["momentum"], false, "Momentum off")
-	eq(snap["walk"], "manhattan", "walk is Locked Manhattan")
-	eq(snap["walk_tie_break"], "horizontal_first", "walk tie-break is horizontal-first")
+	eq(snap["walk"], "weighted", "walk is Locked weighted pathfinder")
+	eq(snap["walk_cost"], "terrain_plus_elevation", "walk cost is terrain + elevation")
+	eq(snap["walk_edges"], "ortho", "walk edges are ortho-only")
+	eq(snap["walk_tie_break"], "cheapest_mp", "walk tie-break is cheapest MP")
 	eq(snap["walk_facing"], "last_hop", "walk facing is Locked last-hop")
+	eq(snap["max_climb"], 1.0, "max climb is Locked 1.0")
+	eq(snap["max_drop"], 2.0, "max drop is Locked 2.0")
+	eq(snap["terrain_mp"]["ground"], 1, "Ground MP is 1")
+	eq(snap["terrain_mp"]["mud"], 2, "Mud MP is 2")
+	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
+	eq(snap["terrain_mp"]["lava"], 0, "Lava MP stamp is 0 / impassable")
+	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"], "height hit/facing/LoS, stairs/ramps/flying, Advance climb stay Open")
+	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
+	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "default tile is Ground")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0.0, "default elevation is 0")
+	eq(snap["tiles"].size(), 64, "snapshot lists all 8×8 tiles")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
 	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
@@ -452,17 +475,20 @@ func _test_horizontal_first_paths() -> void:
 	eq(result["events"][0]["facing"], "S", "final facing is the last hop")
 	eq(_unit(0)["facing"], "S", "actor facing is last hop S")
 	eq(_unit(0)["mp"], 0, "H-first 3-step walk spends 3 MP")
-	# Occupant sits on the H-first corridor. V-first would work; Locked walk must refuse.
+	# Occupant sits on the old H-first corridor. Weighted walk may route around.
 	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
 	result = _sim.submit({"type": "move", "to": Vector2i(1, 1)})
-	eq(result["illegal"], true, "H-first path through Ironjaw is blocked")
-	eq(result["reason"], "path_blocked", "blocked corridor reason is path_blocked")
-	eq(_unit(0)["pos"], Vector2i(0, 0), "Kestrel stays put when H-first is blocked")
-	var found_blocked_dest := false
-	for intent in _sim.legal_intents(0):
-		if str(intent.get("type", "")) == "move" and intent.get("to") == Vector2i(1, 1):
-			found_blocked_dest = true
-	eq(found_blocked_dest, false, "legal_intents omit dests whose H-first path is blocked")
+	eq(result["ok"], true, "weighted path routes south then east around Ironjaw")
+	eq(result["events"][0]["path"], [Vector2i(0, 1), Vector2i(1, 1)], "path is S then E, not through the occupant")
+	eq(result["events"][0]["mp_spent"], 2, "two Ground hops cost 2")
+	eq(_unit(0)["pos"], Vector2i(1, 1), "Kestrel lands on (1,1)")
+	eq(_unit(0)["facing"], "E", "last hop around the occupant faces E")
+	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
+	eq(_has_legal_move_to(0, Vector2i(1, 1)), true, "legal_intents include dests reachable around an occupant")
+	eq(_has_legal_move_to(0, Vector2i(1, 0)), false, "legal_intents omit the occupied dest")
+	result = _sim.submit({"type": "move", "to": Vector2i(1, 0)})
+	eq(result["illegal"], true, "walking onto Ironjaw is still occupied")
+	eq(result["reason"], "occupied", "occupied dest reason is occupied")
 	result = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
 	eq(result["ok"], true, "pure-vertical dest around the occupant is legal")
 	eq(result["events"][0]["path"], [Vector2i(0, 1), Vector2i(0, 2)], "vertical path does not go east first")
@@ -484,6 +510,231 @@ func _test_client_path_ignored() -> void:
 	eq(result["events"][0]["facing"], "S", "facing follows CombatSim last hop, not forged last hop E")
 	eq(_unit(0)["facing"], "S", "actor facing is H-first last hop S")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unit ends on the dest-click tile")
+
+
+func _test_snapshot_exposes_tiles() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.5},
+			{"pos": Vector2i(4, 2), "terrain": "water", "elevation": 0.0},
+			{"pos": Vector2i(5, 2), "terrain": "lava", "elevation": 1.0},
+		],
+	})
+	var snap: Dictionary = _sim.snapshot()
+	eq(snap["tiles"][Vector2i(3, 2)]["terrain_type"], "mud", "painted mud is in the snapshot")
+	eq(snap["tiles"][Vector2i(3, 2)]["elevation"], 0.5, "painted elevation is in the snapshot")
+	eq(snap["tiles"][Vector2i(4, 2)]["terrain_type"], "water", "painted water is in the snapshot")
+	eq(snap["tiles"][Vector2i(5, 2)]["terrain_type"], "lava", "painted lava is in the snapshot")
+	eq(snap["tiles"][Vector2i(5, 2)]["walkable"], false, "lava snapshot walkable is false")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "unpainted tiles stay Ground")
+	eq(_sim.tile_at(Vector2i(3, 2))["terrain_type"], "mud", "tile_at matches snapshot")
+	var combat := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(combat.contains("proto/elevation"), false, "CombatSim does not import proto/elevation")
+	eq(combat.contains("ProtoMoveSim"), false, "CombatSim does not reference ProtoMoveSim")
+
+
+func _test_mud_walk_cost() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.0}],
+	})
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), true, "adjacent mud is legal at 3 MP")
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(result["ok"], true, "mud hop is legal")
+	eq(result["events"][0]["mp_spent"], 2, "mud dest costs 2 MP")
+	eq(_unit(0)["mp"], 1, "3 MP minus mud 2 leaves 1")
+	eq(_unit(0)["pos"], Vector2i(3, 2), "Kestrel landed on mud")
+	eq(_has_legal_move_to(0, Vector2i(4, 2)), true, "1 MP still reaches adjacent Ground")
+	_sim.set_tile(Vector2i(4, 2), "mud", 0.0)
+	eq(_has_legal_move_to(0, Vector2i(4, 2)), false, "1 MP cannot pay a second mud hop")
+	result = _sim.submit({"type": "move", "to": Vector2i(4, 2)})
+	eq(result["illegal"], true, "second mud hop at 1 MP is rejected")
+	eq(result["reason"], "insufficient_mp", "short mud hop reason is insufficient_mp")
+	eq(_unit(0)["pos"], Vector2i(3, 2), "rejected mud hop leaves the pawn put")
+
+
+func _test_lava_impassable() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0.0},
+			{"pos": Vector2i(4, 4), "terrain": "lava", "elevation": 0.0},
+		],
+	})
+	var adjacent: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(adjacent["illegal"], true, "adjacent lava is rejected")
+	eq(adjacent["reason"], "not_walkable", "lava reason is not_walkable")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "lava hop does not move the pawn")
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "legal_intents omit lava")
+	var far: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 4)})
+	eq(far["reason"], "not_walkable", "far lava is not_walkable, not merely unreachable")
+	# Path around lava still works: east is lava, so go north then east.
+	var around: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 1)})
+	eq(around["ok"], true, "Ground next to lava is still walkable")
+	eq(around["events"][0]["mp_spent"], 2, "two Ground hops around lava cost 2")
+
+
+func _test_climb_reject() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 1.5},
+			{"pos": Vector2i(2, 3), "terrain": "ground", "elevation": 1.0},
+			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 0.5},
+		],
+	})
+	var steep: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(steep["illegal"], true, "climb 1.5 is rejected")
+	eq(steep["reason"], "climb_too_steep", "climb reject reason is climb_too_steep")
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "legal_intents omit a 1.5 climb")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "steep climb leaves the pawn put")
+
+	var full: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 3)})
+	eq(full["ok"], true, "full-level climb 1.0 is legal")
+	eq(full["events"][0]["mp_spent"], 2, "ground 1 + climb 1 = 2")
+	eq(_unit(0)["mp"], 1, "climb spends 2 of 3 MP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 0.5}],
+	})
+	var half: Dictionary = _sim.submit({"type": "move", "to": Vector2i(1, 2)})
+	eq(half["ok"], true, "half-level climb is legal")
+	eq(half["events"][0]["mp_spent"], 2, "leftover half-level climb costs +1")
+
+
+func _test_downhill_free() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 1.0},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
+			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 2.0},
+			{"pos": Vector2i(2, 1), "terrain": "ground", "elevation": 2.5},
+		],
+	})
+	var down: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(down["ok"], true, "downhill 1.0 is legal")
+	eq(down["events"][0]["mp_spent"], 1, "downhill Ground costs terrain only")
+	eq(_unit(0)["mp"], 2, "downhill spends 1 MP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 2.0},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
+		],
+	})
+	var drop2: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(drop2["ok"], true, "drop of exactly 2.0 is legal")
+	eq(drop2["events"][0]["mp_spent"], 1, "legal drop still pays dest terrain MP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 2.5},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
+		],
+	})
+	var far: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(far["illegal"], true, "drop 2.5 is rejected")
+	eq(far["reason"], "drop_too_far", "far drop reason is drop_too_far")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "illegal drop leaves the pawn put")
+
+
+func _test_weighted_prefers_flat() -> void:
+	# Start (2,2) G0. Dest (3,3) G0.
+	# Flat: (2,2)->(3,2) G0 cost 1 ->(3,3) G0 cost 1  total 2
+	# Mud+climb: (2,2)->(2,3) M1 cost 2+1=3 ->(3,3) drop/ground 1  total 4
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [{"pos": Vector2i(2, 3), "terrain": "mud", "elevation": 1.0}],
+	})
+	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 3)})
+	eq(result["ok"], true, "diagonal dest is reachable")
+	eq(result["events"][0]["mp_spent"], 2, "cheapest path is flat Ground cost 2, not mud+climb 4")
+	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(3, 3)], "reconstruct prefers the flat corridor")
+	eq(_unit(0)["mp"], 1, "flat path leaves 1 MP")
+	eq(_has_legal_move_to(0, Vector2i(2, 3)), false, "1 leftover MP cannot enter the mud+climb tile")
+
+
+func _test_deploy_rejects_lava() -> void:
+	# Paint lava onto a sampled blob cell. #31 S+W ring is no longer the live zone.
+	_sim.reset_match({"seed": 1})
+	var lava: Vector2i = _zone_cell(0, 0)
+	var ground: Vector2i = _zone_cell(0, 1)
+	var p2: Vector2i = _zone_cell(1, 0)
+	_sim.set_tile(lava, "lava", 0.0)
+	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
+	eq(_sim.can_place(0, lava)["reason"], "not_walkable", "lava blob cell is not_walkable")
+	eq(_sim.place_unit(0, lava)["reason"], "not_walkable", "place onto lava is rejected")
+	eq(_unit(0)["placed"], false, "failed lava place leaves Kestrel unplaced")
+	eq(_sim.legal_deploy_cells(0).has(lava), false, "legal deploy cells omit lava")
+	eq(_sim.legal_deploy_cells(0).size(), 5, "6-cell blob drops the lava cell")
+	eq(_sim.place_unit(0, ground)["ok"], true, "adjacent Ground blob cell still places")
+	eq(_sim.place_unit(1, p2)["ok"], true, "P2 still places on Ground")
+	eq(_sim.ready_seat(0)["ok"], true, "Ready P1 still works")
+	eq(_sim.ready_seat(1)["ok"], true, "Ready P2 still works")
+	eq(_sim.snapshot()["phase"], "TURN_1", "deploy+kits path still starts combat after lava paint")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit still loads after lava deploy")
+	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit still loads after lava deploy")
+
+
+func _test_hit_bands_ignore_height() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(6, 1),
+		"tiles": [
+			{"pos": Vector2i(1, 1), "terrain": "ground", "elevation": 2.0},
+			{"pos": Vector2i(6, 1), "terrain": "ground", "elevation": 0.0},
+		],
+	})
+	eq(_sim.chebyshev(Vector2i(1, 1), Vector2i(6, 1)), 5, "Chebyshev range is still 5")
+	eq(_sim.hit_chance(5), 75, "band 4–5 stays 75% with a height delta")
+	var preview: Dictionary = _sim.aim_hit_preview(0, "mark_shot", Vector2i(6, 1))
+	eq(preview["hit_chance"], 75, "aim preview ignores elevation")
+	eq(preview["range"], 5, "aim range stays Chebyshev, not height-adjusted")
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var hit_idx := sim_src.find("static func hit_chance")
+	var hit_src := sim_src.substr(hit_idx, 220)
+	eq(hit_src.contains("elevation"), false, "hit_chance does not read elevation")
+	eq(hit_src.contains("terrain"), false, "hit_chance does not read terrain")
+
+
+func _test_advance_ignores_climb() -> void:
+	# Open: Advance onto illegal climb — do not invent a gate.
+	_sim.reset_match({
+		"seed": 1,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": Vector2i(2, 2),
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 1.5}],
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "Advance range/occupancy still pass on a 1.5 climb dest")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["ok"], true, "Advance onto a 1.5 climb dest stays legal (Open — not invented)")
+	eq(result["reason"], "", "Advance does not reject climb_too_steep")
+	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped onto the steep tile")
+	eq(_unit(1)["mp"], 3, "Advance still spends 0 MP")
 
 
 func _test_walk_facing_follows_hops() -> void:
@@ -2073,7 +2324,7 @@ func _test_kit_class_exclusions() -> void:
 	eq(_sim.snapshot()["advance_path"], "teleport", "Advance stays teleport")
 	eq(_sim.snapshot()["advance_ap"], 3, "Advance stays 3 AP")
 	eq(_sim.snapshot()["advance_mp"], "none", "Advance stays 0 MP")
-	eq(_sim.snapshot()["walk"], "manhattan", "Walk stays Manhattan")
+	eq(_sim.snapshot()["walk"], "weighted", "Walk stays weighted")
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
@@ -3274,6 +3525,10 @@ func _has_legal_move(seat: int) -> bool:
 		if str(intent.get("type", "")) == "move":
 			return true
 	return false
+
+
+func _has_legal_move_to(seat: int, dest: Vector2i) -> bool:
+	return bool(_legal_move_dests(seat).get(dest, false))
 
 
 func _unit(seat: int) -> Dictionary:

@@ -300,7 +300,7 @@ func _test_phase_a_untouched() -> void:
 	eq(combat.contains("proto/deployment"), false, "CombatSim does not import proto/deployment")
 	eq(combat.contains("DeploymentManager"), false, "CombatSim does not reference DeploymentManager")
 	eq(combat.contains("MatchPhase"), false, "CombatSim does not reference proto MatchPhase")
-	truthy(combat.contains("expand_ortho_path"), "Phase A still owns flat H-first walk expansion")
+	truthy(combat.contains("expand_ortho_path") or combat.contains("walk_board.gd"), "live CombatSim still owns walk expansion")
 	truthy(combat.contains("reset_match"), "Phase A reset_match is still the live match start")
 	truthy(combat.contains("kestrel_pos"), "Phase A still has a Kestrel seat override for skip_deploy")
 	truthy(combat.contains("ironjaw_pos"), "Phase A still has an Ironjaw seat override for skip_deploy")

@@ -6,10 +6,15 @@ extends Node
 ## Locked deploy flow (live duel): place / reposition / ready, then Turn 1 combat.
 ## Proposed zones (shipped live): seed-sampled ~6-cell blobs, not #31 border halves.
 ## Godot chrome binds place_unit / ready_seat / legal_deploy_cells / can_ready.
+## Locked walk: per-tile elevation + terrain_type; dest-click weighted pathfinder.
+## Proto/elevation stays reference — this file does not import it.
 
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
 const _MatchFlow := preload("res://backend/match_flow.gd")
+const _WalkBoard := preload("res://backend/walk_board.gd")
+const _TerrainDef := preload("res://backend/terrain_def.gd")
+const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const BOARD_SIZE := 8
 const MAX_AP := 6
 const MAX_MP := 3
@@ -29,11 +34,13 @@ const FACING_VEC := {
 }
 
 ## A03–A07 are Open (A05 Resist/rounding/WindMod still Open). A01 Marks-on-target
-## is Locked. A02 walk is Locked (Manhattan dest-click, H-first ortho path,
-## facing follows each hop). Advance range is Locked Manhattan 1–2 (diamond).
-## MP is Locked Manhattan dest-click. Locked Stun (A′): blocks move + cast + face;
-## auto end_turn on that seat's turn start (player never presses End Turn).
-## Locked Push (1): occupied/OOB = no-move + push_blocked.
+## is Locked. A02 walk is Locked (dest-click weighted pathfinder; cost = dest
+## terrain MP + uphill elevation). Facing follows each hop of that path. Phase A
+## flat Manhattan / H-first expansion is superseded. Advance range is Locked
+## Manhattan 1–2 (diamond). Advance onto illegal climb stays Open — do not gate.
+## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
+## blocks move + cast + face; auto end_turn on that seat's turn start (player
+## never presses End Turn). Locked Push (1): occupied/OOB = no-move + push_blocked.
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
@@ -51,6 +58,8 @@ var _intent_log: Array = []
 var _blocked_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
+## Per-tile elevation + terrain. Default 8×8 Ground 0. Godot reads snapshot.tiles.
+var _board = _WalkBoard.new()
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
@@ -63,6 +72,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_scripted_rolls.clear()
 	_last_events.clear()
 	_intent_log.clear()
+	_board = _WalkBoard.new()
+	_apply_tile_overrides(config)
 
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_rng.seed = _seed
@@ -164,13 +175,10 @@ func legal_intents(seat: int) -> Array:
 	var ap: int = int(actor["ap"])
 	# Walk dests whenever mp>0, regardless of remaining AP. Advance is 3 AP / 0 MP, so
 	# leftover MP after teleport still offers moves (including at 0 AP). Walk facing
-	# is applied on submit (each hop), not here.
+	# is applied on submit (each hop), not here. Legal cells = weighted reachable.
 	if mp > 0:
-		for y in range(BOARD_SIZE):
-			for x in range(BOARD_SIZE):
-				var cell := Vector2i(x, y)
-				if _validate_walk(actor, cell) == "":
-					out.append({"type": "move", "to": cell, "seat": seat})
+		for cell in _board.reachable_dests(from, mp, Callable(self, "_walk_occupied")):
+			out.append({"type": "move", "to": cell, "seat": seat})
 
 	for spell_id in actor["spells"]:
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
@@ -228,11 +236,27 @@ func can_ready(seat: int) -> bool:
 
 
 func can_place(seat: int, cell: Variant) -> Dictionary:
-	return _flow.place_gate(seat, _as_cell(cell), _occupant_seat(_as_cell(cell)))
+	return _deploy_place_gate(seat, _as_cell(cell))
 
 
 func legal_deploy_cells(seat: int) -> Array[Vector2i]:
-	return _flow.legal_place_cells(seat, Callable(self, "_occupant_seat"))
+	var out: Array[Vector2i] = []
+	for cell in _flow.legal_place_cells(seat, Callable(self, "_occupant_seat")):
+		if _board.is_walkable(cell):
+			out.append(cell)
+	return out
+
+
+## Test / setup: paint a live tile. Default board is Ground 0.
+func set_tile(cell: Variant, terrain_type: Variant, elevation: float = 0.0, walkable_override: Variant = null) -> void:
+	_board.set_tile(_as_cell(cell), terrain_type, elevation, walkable_override)
+
+
+func tile_at(cell: Variant) -> Dictionary:
+	var tile = _board.tile_at(_as_cell(cell))
+	if tile == null:
+		return {}
+	return tile.snapshot()
 
 
 func deploy_zone_cells(seat: int) -> Array[Vector2i]:
@@ -295,9 +319,20 @@ func snapshot() -> Dictionary:
 		"coach": _last_coach,
 		"last_events": _last_events.duplicate(true),
 		"open_decisions": OPEN_DECISIONS.duplicate(),
-		"walk": "manhattan",
-		"walk_tie_break": "horizontal_first",
+		"walk": "weighted",
+		"walk_cost": "terrain_plus_elevation",
+		"walk_edges": "ortho",
+		"walk_tie_break": "cheapest_mp",
 		"walk_facing": "last_hop",
+		"max_climb": _ElevationCost.MAX_CLIMB,
+		"max_drop": _ElevationCost.MAX_DROP,
+		"terrain_mp": {
+			"ground": 1,
+			"mud": 2,
+			"water": 2,
+			"lava": 0,
+		},
+		"tiles": _board.snapshot_tiles(),
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
@@ -338,7 +373,9 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
+			"elevation": "Locked walk: per-tile elevation + terrain_type. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1/full level (+1 leftover half); downhill 0. Max climb 1 / drop 2; ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb.",
 		},
+		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"],
 	}
 
 
@@ -668,7 +705,7 @@ func _submit_place(intent: Dictionary) -> Dictionary:
 		return _reject(intent, "missing_destination", "REJECT — place needs a destination.")
 	var seat := int(intent["seat"])
 	var dest: Vector2i = intent["to"]
-	var gate := _flow.place_gate(seat, dest, _occupant_seat(dest))
+	var gate := _deploy_place_gate(seat, dest)
 	if not bool(gate.get("ok", false)):
 		return _reject(intent, str(gate.get("reason", "outside_zone")), _deploy_reject_coach(seat, dest, gate))
 	var actor := _unit_by_seat(seat)
@@ -759,6 +796,8 @@ func _deploy_reject_coach(seat: int, dest: Vector2i, gate: Dictionary) -> String
 		if kind == "wrong_zone" or kind == "wrong_half":
 			return "REJECT — %s is the other side's deploy zone." % _cell_text(dest)
 		return "REJECT — %s is outside this side's deployment zone." % _cell_text(dest)
+	if reason == "not_walkable":
+		return "REJECT — %s is not walkable." % _cell_text(dest)
 	return "REJECT — illegal place (%s)." % reason
 
 
@@ -916,19 +955,21 @@ func _submit_face(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
-	# Dest-click only. CombatSim expands the ortho path; ignore client intent.path.
-	# Locked: facing follows each ortho hop; final facing = last hop direction.
+	# Dest-click only. CombatSim expands the cheapest weighted ortho path; ignore client intent.path.
+	# Locked: facing follows each ortho hop of that path; final facing = last hop direction.
 	# Manual face intent stays for standing turns. Advance teleport does not auto-face.
+	# Height does not change facing cones.
 	intent.erase("path")
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")
 	var dest: Vector2i = intent["to"]
-	var reason := _validate_walk(actor, dest)
-	if reason != "":
+	var planned: Dictionary = _board.validate_move(actor["pos"], dest, int(actor["mp"]), Callable(self, "_walk_occupied"))
+	if not bool(planned.get("ok", false)):
+		var reason := str(planned.get("reason", "unreachable"))
 		return _reject(intent, reason, "REJECT — illegal move (%s)." % reason)
 	var from: Vector2i = actor["pos"]
-	var path: Array = expand_ortho_path(from, dest)
-	var dist := manhattan(from, dest)
+	var path: Array = planned.get("path", [])
+	var dist := int(planned.get("cost", 0))
 	var facing_from: String = str(actor["facing"])
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
@@ -1228,22 +1269,10 @@ func _finish_match(winner: int) -> void:
 
 
 func _validate_walk(actor: Dictionary, dest: Vector2i) -> String:
-	if not _in_bounds(dest):
-		return "out_of_bounds"
-	if dest == actor["pos"]:
-		return "same_tile"
-	if not _is_empty(dest):
-		return "occupied"
-	var dist := manhattan(actor["pos"], dest)
-	if dist < 1:
-		return "same_tile"
-	if dist > int(actor["mp"]):
-		return "insufficient_mp"
-	var path: Array = expand_ortho_path(actor["pos"], dest)
-	for cell in path:
-		if not _is_empty(cell):
-			return "path_blocked"
-	return ""
+	var planned: Dictionary = _board.validate_move(actor["pos"], dest, int(actor["mp"]), Callable(self, "_walk_occupied"))
+	if bool(planned.get("ok", false)):
+		return ""
+	return str(planned.get("reason", "unreachable"))
 
 
 func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
@@ -1257,6 +1286,7 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "destination_occupied"
 	# Range gate is Manhattan 1–2 (diamond). Chebyshev (1,2) tiles are out of range.
 	# Teleport: dest occupancy only; corridor occupants do not block. 0 MP is legal.
+	# Open: Advance onto illegal climb — do not invent a height gate here.
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var range_dist := _range_distance(def, actor["pos"], dest)
 	if range_dist < int(def["min_range"]) or range_dist > int(def["max_range"]):
@@ -1285,6 +1315,45 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 	if along < 0 and absi(along) >= perp:
 		return BACK_FACING
 	return FRONT_SIDE_FACING
+
+
+func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
+	var gate := _flow.place_gate(seat, cell, _occupant_seat(cell))
+	if not bool(gate.get("ok", false)):
+		return gate
+	# Deploy: occupancy + walkable (lava / override). No elevation MP / climb cost.
+	if not _board.is_walkable(cell):
+		return {"ok": false, "reason": "not_walkable", "zone_kind": ""}
+	return gate
+
+
+func _apply_tile_overrides(config: Dictionary) -> void:
+	if not config.has("tiles"):
+		return
+	var painted: Variant = config["tiles"]
+	if painted is Dictionary:
+		for key in painted.keys():
+			_paint_tile_entry(_as_cell(key), painted[key])
+		return
+	if painted is Array:
+		for entry in painted:
+			if entry is Dictionary:
+				_paint_tile_entry(_as_cell(entry.get("pos", entry.get("cell", Vector2i.ZERO))), entry)
+
+
+func _paint_tile_entry(cell: Vector2i, entry: Variant) -> void:
+	if not (entry is Dictionary):
+		return
+	var terrain: Variant = entry.get("terrain", entry.get("terrain_type", _TerrainDef.Id.GROUND))
+	var elevation := float(entry.get("elevation", 0.0))
+	var walkable_override: Variant = entry.get("walkable", entry.get("walkable_override", null))
+	_board.set_tile(cell, terrain, elevation, walkable_override)
+
+
+func _walk_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
+	if cell == ignore:
+		return false
+	return not _is_empty(cell)
 
 
 func _apply_setup_overrides(config: Dictionary) -> void:

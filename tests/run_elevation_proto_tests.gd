@@ -240,9 +240,8 @@ func _test_phase_a_untouched() -> void:
 	var combat := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(combat.contains("proto/elevation"), false, "CombatSim does not import proto/elevation")
 	eq(combat.contains("ProtoMoveSim"), false, "CombatSim does not reference ProtoMoveSim")
-	eq(combat.contains("ElevationCost"), false, "CombatSim does not reference ElevationCost")
-	eq(combat.contains("TerrainDef"), false, "CombatSim does not reference TerrainDef")
-	truthy(combat.contains("expand_ortho_path"), "Phase A still owns flat H-first walk expansion")
+	truthy(combat.contains("walk_board.gd"), "live CombatSim owns the ported walk board")
+	truthy(combat.contains("tiles"), "live snapshot exposes tiles")
 
 	var board := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(board.contains("ProtoMoveSim"), false, "Phase A board_view does not use ProtoMoveSim")
@@ -252,11 +251,11 @@ func _test_phase_a_untouched() -> void:
 	eq(main_scene.contains("proto_elevation"), false, "main.tscn still points at the Phase A duel")
 
 	var scene := FileAccess.get_file_as_string("res://scenes/proto_elevation_board.tscn")
-	truthy(scene.contains("proto_elevation_board.gd"), "prototype scene exists")
+	truthy(scene.contains("proto_elevation_board.gd"), "prototype scene exists as reference")
 
 	var readme := FileAccess.get_file_as_string("res://README.md")
-	truthy(readme.contains("Phase B+ elevation prototype"), "README has the Phase B+ section")
-	truthy(readme.contains("Proposed"), "README stamps Proposed")
+	truthy(readme.contains("Phase B+ elevation prototype"), "README keeps the proto as reference")
+	truthy(readme.contains("Proposed"), "README still stamps Proposed on proto")
 	truthy(readme.contains("Ground 1"), "README lists Ground 1")
 	truthy(readme.contains("Max climb"), "README lists max climb")
 
