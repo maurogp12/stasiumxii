@@ -11,6 +11,7 @@ const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
+const BOUNCE_TOAST := "Bounce"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 
@@ -195,8 +196,30 @@ static func events_include_push_blocked(events: Array) -> bool:
 	return false
 
 
+static func events_include_push_bounce(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "push_bounce":
+			return true
+		if bool(event.get("bounced", false)):
+			return true
+	return false
+
+
+static func events_include_stagger(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "stagger":
+			return true
+		if bool(event.get("staggered", false)):
+			return true
+	return false
+
+
 static func should_play_walk_hops(events: Array) -> bool:
-	if events_include_push_blocked(events):
+	if events_include_push_blocked(events) or events_include_push_bounce(events):
 		return false
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
@@ -214,6 +237,8 @@ static func should_play_walk_hops(events: Array) -> bool:
 static func toast_for_events(events: Array) -> String:
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
+	if events_include_push_bounce(events):
+		return BOUNCE_TOAST
 	return ""
 
 

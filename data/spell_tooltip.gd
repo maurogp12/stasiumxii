@@ -58,7 +58,7 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 		var text := str(note)
 		if text == "":
 			continue
-		if text.contains("Push") or text.contains("push_blocked"):
+		if text.contains("Push") or text.contains("push_blocked") or text.contains("bounce") or text.contains("stagger"):
 			lines.append(text)
 		elif text.contains("Resist"):
 			lines.append(text)

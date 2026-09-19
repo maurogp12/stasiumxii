@@ -14,7 +14,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it hits.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On hit: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it hits.
-   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On hit: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Locked Push (1):** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`. Client toasts **PushBlocked** and does not hop; hit/Impact feedback still plays.
+   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On hit: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Director Locked Shoulder:** walkable empty dest still pushes (damage/Impact unchanged). **Occupied dest** is a hard body-block: no bounce, no stagger; CombatSim emits `push_blocked`; client toasts **PushBlocked** and does not hop. **Unwalkable / lava / OOB dest** bounces (target stays/returns) and **staggers** the pushed unit: **4 HP**, plus **1 MP** if current MP ≥ 1 (HP only if MP is 0). CombatSim emits `push_bounce` + `stagger` with hp/mp deltas; client toasts **Bounce** and does not hop. Hit/Impact feedback still plays.
    - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on hit; miss retains Impact). 24 Earth on hit. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`). When that seat's turn starts, CombatSim **auto-resolves `end_turn`** — the player never presses End Turn. `legal_intents` is empty of move/cast/face (auto path only). HUD greys Walk/Face/spells, shows a STUN badge, and presents a **skip banner** from that auto `end_turn` event (the coach line is the log).
 7. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
 8. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
@@ -31,7 +31,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked vs Bounce, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
 | `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
 Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready` / `confirm`. During DEPLOYMENT only `place` / `reposition` / `ready` are legal.
@@ -54,7 +54,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 - Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw
 - **Locked Stun (A′):** Stun 1 blocks move + cast + face. When that seat's turn starts, CombatSim auto-resolves `end_turn` (player never presses End Turn). `legal_intents` has no move/cast/face (auto path only). `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is the one that is skipped. HUD greys Walk/Face/spells and shows a STUN badge. Client shows a skip banner/log from that event and does not re-implement the skip.
-- **Locked Push (1):** Shoulder into occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. Client toasts **PushBlocked**, does not hop, still plays hit/Impact feedback.
+- **Director Locked Shoulder:** occupied dest = no-move + `push_blocked` (hard body-block, no stagger). Unwalkable / lava / OOB dest = bounce (target stays) + stagger **4 HP** (+ **1 MP** if current MP ≥ 1). Walkable empty dest still pushes. Damage/Impact on the hit are unchanged. Client toasts **PushBlocked** vs **Bounce**, does not hop, still plays hit/Impact feedback.
 
 ## Open (not Locked) — deploy leftovers
 
@@ -84,13 +84,13 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## A03–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (dest-click weighted pathfinder; cost = dest terrain MP + uphill elevation; facing follows each hop). Phase A flat Manhattan / H-first is superseded. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged; same stand-on gates as walk). **Locked Stun (A′)** (blocks move + cast + face; auto `end_turn` on turn start) and **Locked Push (1)** (occupied/OOB = no-move + `push_blocked`) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, height→hit/facing/LoS, stairs/ramps/flying, or other Opens.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (dest-click weighted pathfinder; cost = dest terrain MP + uphill elevation; facing follows each hop). Phase A flat Manhattan / H-first is superseded. **Advance is Locked** (Manhattan 1–2 diamond dest-click teleport, 3 AP / 0 MP; facing unchanged; same stand-on gates as walk). **Locked Stun (A′)** (blocks move + cast + face; auto `end_turn` on turn start) and **Director Locked Shoulder** (occupied = `push_blocked`; unwalkable/lava/OOB = bounce + stagger) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, height→hit/facing/LoS, stairs/ramps/flying, or other Opens.
 
 | ID | Stub used here |
 | --- | --- |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
-| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); auto `end_turn` on that seat's turn start (player never presses End Turn); decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is skipped. **Locked Push (1):** occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. |
+| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); auto `end_turn` on that seat's turn start (player never presses End Turn); decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is skipped. **Director Locked Shoulder:** occupied dest = `push_blocked` (no bounce/stagger). Unwalkable / lava / OOB dest = bounce + stagger 4 HP (+1 MP if current MP ≥ 1). Walkable empty dest still pushes. |
 | A06 | Advance dest-click teleport, Manhattan range 1–2 (diamond), 3 AP / 0 MP, instant snap. Dest uses the same stand-on gates as walk (walkable / occupied / lava / climb≤1 / drop≤2). Gate only — no MP spend. `submit` does not zero leftover MP; leftover MP still walks (`legal_intents` is mp>0, not AP). Adjacency = Chebyshev 1 after landing. Facing unchanged (Advance does not auto-face). |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 
@@ -249,7 +249,7 @@ Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `
 1. Hover (or long-press) **Mark Shot**: card is `preview_cast` — 2 AP / 0 MP, range 2–5, hit/miss kit lines, Locked HIT % for the current dest, and `sample_damage` from CritMult 1.0 × live Facing. No +5. Enabled buttons must show the card (same path as Detonate).
 2. Hover **Detonate** at **0 Marks**: card **leads with “needs Marks”**. Keep costs / range / HIT %. Do not lead with sample 6. `preview_cast` is `legal=false`, `reason=needs_marks`, `sample_damage` is null; on-hit still explains 6+6×M.
 3. After Marks land, hover **Detonate**: sample uses **current Marks** (`6+6*M`). Miss keeps Marks.
-4. End Turn. Hover **Advance**: Manhattan teleport, no HIT %, no sample. **Shoulder** passes through Locked Push (1). **Crush** at 4 Impact shows **Stun 1 (Locked A′) this cast**; at 0–2 Impact that flag stays off.
+4. End Turn. Hover **Advance**: Manhattan teleport, no HIT %, no sample. **Shoulder** passes through Director Locked Shoulder (occupied `push_blocked`; unwalkable/lava/OOB bounce + stagger). **Crush** at 4 Impact shows **Stun 1 (Locked A′) this cast**; at 0–2 Impact that flag stays off.
 5. At **960×720**, Ironjaw's seven action buttons wrap instead of overlapping. Face N/E/S/W stay usable.
 
 ## How to test walk-after-Advance and last-hop facing
@@ -260,8 +260,8 @@ Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `
 4. Walk a multi-hop dest (e.g. two east then one south). The pointer faces **each** hop; after landing it faces the last hop. HUD Face matches. In-place Face N/E/S/W still works without moving.
 5. Advance onto a diagonal dest: position snaps, **facing is unchanged**. Walk last-hop facing still applies after. No HIT % on Advance or walks.
 
-## How to test Stun suppress and PushBlocked
+## How to test Stun suppress and Shoulder bounce / PushBlocked
 
 1. Get Ironjaw to **4 Impact** (Strike/Shoulder hits), then **Crush** Kestrel. **End Turn**. Kestrel's turn **auto-ends** (Locked A′ — player never presses End Turn). The HUD shows a **skip banner** (e.g. “Kestrel stunned — turn skipped”) and the coach line logs the event. Ironjaw acts again. Kestrel's card/pawn still show **STUN** while that skipped turn is served. After Ironjaw Ends again, Kestrel acts normally (Walk/Face/spells return). Move/cast/face never become legal on the stunned turn (`stunned_cannot_act`). The client does not press End Turn for the skip.
-2. Shoulder Kestrel into the west edge (Ironjaw at (1,0), Kestrel at (0,0) facing E): toast **PushBlocked**, Kestrel does not hop, HP still drops and Ironjaw Impact still ticks.
+2. Shoulder Kestrel into the west edge (Ironjaw at (1,0), Kestrel at (0,0) facing E): toast **Bounce**, Kestrel does not hop, 6 Earth + stagger **4 HP** (+ **1 MP** if they had MP) apply, and Ironjaw Impact still ticks. Shoulder into an occupied dest still toasts **PushBlocked** with no stagger.
 

@@ -21,7 +21,8 @@ extends Node2D
 ## Locked Stun (A′): Walk / Face / spells grey on HUD; this view does not submit them.
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
-## Locked Push (1): toast PushBlocked, no hop; hit/Impact feedback still plays.
+## Director Locked Shoulder: occupied dest toasts PushBlocked (no hop).
+## Unwalkable / lava / OOB dest toasts Bounce (no hop) and emits stagger HP/MP.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -303,7 +304,12 @@ func _submit(intent: Dictionary) -> void:
 		_play_combat_feedback(events)
 		if CombatHUD.events_include_push_blocked(events):
 			_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-			# Locked Push (1): no hop when dest is occupied/OOB. Snapshot already stayed put.
+			# Occupied dest is a hard body-block. Snapshot already stayed put.
+			_refresh()
+			return
+		if CombatHUD.events_include_push_bounce(events):
+			_hud.show_toast(CombatHUD.BOUNCE_TOAST)
+			# Bounce: unit stayed. Stagger HP/MP already applied in CombatSim.
 			_refresh()
 			return
 		if CombatHUD.should_play_walk_hops(events):
@@ -316,7 +322,7 @@ func _submit(intent: Dictionary) -> void:
 func _path_event(events: Array) -> Dictionary:
 	for event in events:
 		# Walk hops only. Advance is a teleport snap — do not play cell-by-cell path.
-		# PushBlocked also never hops.
+		# PushBlocked and bounce also never hop.
 		if str(event.get("type", "")) == "move":
 			return event
 	return {}
