@@ -19,6 +19,12 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_test_reset_and_turn_order()
+	_test_live_deploy_starts_before_turn_1()
+	_test_deploy_zones_and_rejects()
+	_test_deploy_occupied_and_reposition()
+	_test_deploy_ready_gate_and_combat_intents()
+	_test_both_ready_starts_combat()
+	_test_kits_still_pass_after_deploy()
 	_test_only_active_seat_acts()
 	_test_manhattan_walk_costs()
 	_test_horizontal_first_paths()
@@ -73,7 +79,7 @@ func _run() -> void:
 
 
 func _test_reset_and_turn_order() -> void:
-	var snap: Dictionary = _sim.reset_match({"seed": 1})
+	var snap: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true})
 	eq(snap["active_seat"], 0, "Kestrel (seat 0) acts first")
 	eq(snap["units"][0]["name"], "Kestrel", "seat 0 is Kestrel")
 	eq(snap["units"][1]["name"], "Ironjaw", "seat 1 is Ironjaw")
@@ -107,10 +113,229 @@ func _test_reset_and_turn_order() -> void:
 	eq(str(snap["open_notes"]["A05"]).contains("Exact suppress list not locked"), false, "A05 note does not leave the suppress list Open")
 	eq(str(snap["open_notes"]["A05"]).contains("provisional"), false, "A05 note does not call Stun/Push provisional")
 	truthy(str(snap["open_notes"]["A05"]).contains("Resist 0"), "A05 still notes Open Resist 0")
+	eq(snap["deploy"], "locked", "deploy is Locked")
+	eq(snap["phase"], "TURN_1", "skip_deploy starts in TURN_1")
+	eq(snap["combat_enabled"], true, "skip_deploy enables combat")
+	eq(snap["open_deploy"], ["fog", "hidden_enemy", "deploy_timer", "multi_unit"], "fog/timer/multi-unit stay Open")
+	eq(snap["networking"], false, "networking stays OFF")
+	eq(snap["units"][0]["pos"], Vector2i(1, 1), "skip_deploy fixture still uses (1,1)")
+	eq(snap["units"][1]["pos"], Vector2i(6, 6), "skip_deploy fixture still uses (6,6)")
+
+
+func _test_live_deploy_starts_before_turn_1() -> void:
+	var snap: Dictionary = _sim.reset_match({"seed": 1})
+	eq(snap["phase"], "DEPLOYMENT", "live reset starts in DEPLOYMENT")
+	eq(snap["phase_name"], "DEPLOYMENT", "phase_name is DEPLOYMENT")
+	eq(snap["turn_index"], 0, "Turn 1 has not started")
+	eq(snap["combat_enabled"], false, "combat off until both ready")
+	eq(snap["walk_enabled"], false, "walk off during deploy")
+	eq(snap["end_turn_enabled"], false, "end_turn off during deploy")
+	eq(snap["positions_locked"], false, "positions are open")
+	eq(snap["both_ready"], false, "neither seat is ready")
+	eq(snap["ready"][0], false, "seat 0 ready flag starts false")
+	eq(snap["ready"][1], false, "seat 1 ready flag starts false")
+	eq(snap["deploy"], "locked", "live deploy is Locked")
+	eq(snap["deploy_simultaneous"], true, "deploy is simultaneous")
+	eq(snap["deploy_legal_cells"], "border_ring_1_deep", "legal cells are the 1-deep ring")
+	eq(snap["deploy_zone_split"], "p1_south_west_p2_north_east", "halves are S+W vs N+E")
+	eq(snap["units"][0]["placed"], false, "Kestrel is not pre-spawned")
+	eq(snap["units"][1]["placed"], false, "Ironjaw is not pre-spawned")
+	eq(snap["units"][0]["pos"], Vector2i(-1, -1), "live path does not use (1,1)")
+	eq(snap["units"][1]["pos"], Vector2i(-1, -1), "live path does not use (6,6)")
+	eq(snap["units"][0]["ap"], 0, "AP stays 0 until combat")
+	eq(snap["units"][0]["mp"], 0, "MP stays 0 until combat")
+	eq(_sim.legal_intents(0).is_empty(), false, "seat 0 has place dests")
+	var combat_kinds := {}
+	for intent in _sim.legal_intents(0):
+		combat_kinds[str(intent["type"])] = true
+	eq(combat_kinds.has("move"), false, "no move intents during deploy")
+	eq(combat_kinds.has("cast"), false, "no cast intents during deploy")
+	eq(combat_kinds.has("face"), false, "no face intents during deploy")
+	eq(combat_kinds.has("end_turn"), false, "no end_turn intents during deploy")
+	eq(combat_kinds.has("place"), true, "place intents are offered")
+	eq(combat_kinds.has("ready"), false, "ready is gated until placed")
+	eq(_sim.can_ready(0), false, "can_ready is false before place")
+	eq(_sim.can_ready(1), false, "can_ready is false before P2 place")
+
+
+func _test_deploy_zones_and_rejects() -> void:
+	_sim.reset_match({"seed": 1})
+	eq(_sim.deploy_zone_cells(0).size(), 14, "seat 0 half-ring is 14 cells")
+	eq(_sim.deploy_zone_cells(1).size(), 14, "seat 1 half-ring is 14 cells")
+	eq(_sim.legal_deploy_cells(0).size(), 14, "all 14 S+W cells start legal")
+	eq(_sim.legal_deploy_cells(1).size(), 14, "all 14 N+E cells start legal")
+
+	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
+	eq(oob["illegal"], true, "negative x is rejected")
+	eq(oob["reason"], "out_of_bounds", "OOB reason is out_of_bounds")
+	eq(_sim.place_unit(0, Vector2i(8, 2))["reason"], "out_of_bounds", "x=8 is out_of_bounds")
+	eq(_sim.place_unit(1, Vector2i(3, -1))["reason"], "out_of_bounds", "negative y is out_of_bounds")
+
+	var interior: Dictionary = _sim.place_unit(0, Vector2i(3, 3))
+	eq(interior["illegal"], true, "interior cell is rejected")
+	eq(interior["reason"], "outside_zone", "interior reason is outside_zone")
+	eq(_sim.can_place(0, Vector2i(1, 1))["reason"], "outside_zone", "superseded (1,1) is outside_zone")
+	eq(_sim.can_place(1, Vector2i(6, 6))["reason"], "outside_zone", "superseded (6,6) is outside_zone")
+	eq(_sim.can_place(0, Vector2i(1, 3))["reason"], "outside_zone", "old west-box inner cell is outside_zone")
+
+	var wrong_half: Dictionary = _sim.place_unit(0, Vector2i(3, 0))
+	eq(wrong_half["illegal"], true, "seat 0 cannot place on north")
+	eq(wrong_half["reason"], "outside_zone", "wrong-half reason is outside_zone")
+	eq(_sim.place_unit(0, Vector2i(7, 3))["reason"], "outside_zone", "seat 0 cannot place on east")
+	eq(_sim.place_unit(1, Vector2i(3, 7))["reason"], "outside_zone", "seat 1 cannot place on south")
+	eq(_sim.place_unit(1, Vector2i(0, 3))["reason"], "outside_zone", "seat 1 cannot place on west")
+
+	eq(_sim.can_place(0, Vector2i(0, 3))["ok"], true, "seat 0 legal on west")
+	eq(_sim.can_place(0, Vector2i(3, 7))["ok"], true, "seat 0 legal on south")
+	eq(_sim.can_place(0, Vector2i(0, 7))["ok"], true, "seat 0 owns SW")
+	eq(_sim.can_place(0, Vector2i(7, 7))["ok"], true, "seat 0 owns SE")
+	eq(_sim.can_place(1, Vector2i(3, 0))["ok"], true, "seat 1 legal on north")
+	eq(_sim.can_place(1, Vector2i(7, 3))["ok"], true, "seat 1 legal on east")
+	eq(_sim.can_place(1, Vector2i(0, 0))["ok"], true, "seat 1 owns NW")
+	eq(_sim.can_place(1, Vector2i(7, 0))["ok"], true, "seat 1 owns NE")
+	eq(_unit(0)["placed"], false, "failed places leave Kestrel unplaced")
+
+
+func _test_deploy_occupied_and_reposition() -> void:
+	_sim.reset_match({"seed": 1})
+	eq(_sim.place_unit(0, Vector2i(0, 3))["ok"], true, "seat 0 places on west")
+	eq(_unit(0)["pos"], Vector2i(0, 3), "Kestrel sits on (0,3)")
+	eq(_unit(0)["placed"], true, "Kestrel is placed")
+	# Simultaneous: seat 1 can place without waiting.
+	eq(_sim.place_unit(1, Vector2i(7, 3))["ok"], true, "seat 1 places at the same time")
+	eq(_sim.place_unit(1, Vector2i(0, 3))["reason"], "outside_zone", "P2 on P1's west cell is outside_zone")
+	# Occupied on a cell both... they never share cells. Occupied is same-half only if two units.
+	# One fighter each: occupied is tested by trying to place seat 0 onto seat 1... wrong half.
+	# Use extra blocker via a second place onto a cell after we... actually one fighter per seat.
+	# Reposition of the same fighter onto a cell is fine; stacking would need two units.
+	# Blocker: place seat 0, then the only occupied reject on seat 0's half is... nobody else.
+	# Test occupied via legal_deploy_cells omitting the enemy? They don't share.
+	# Occupied path: CombatSim still rejects if a unit is there. Place Kestrel, then
+	# we cannot have another seat-0 unit. The gate still runs occupant vs other seat.
+	# Adjacent corner: Kestrel (0,1) west, Ironjaw (0,0) NW — shared? No, different cells.
+	# If Ironjaw is on (0,0) and Kestrel tries (0,0) that's wrong_half (SW vs NW).
+	# Occupied on the same cell can happen if we force-spawn a blocker? Or if we
+	# treat reposition of the other fighter... they never share a legal cell.
+	# The Locked rule still rejects occupied; use skip path: place Kestrel (0,3),
+	# then manually occupy via place_unit after we move Ironjaw? Can't.
+	# Test occupied by placing Kestrel then asking can_place for seat 0 on that
+	# cell — same seat is allowed (reposition onto self).
+	eq(_sim.can_place(0, Vector2i(0, 3))["ok"], true, "same fighter may stay on their cell")
+	var moved: Dictionary = _sim.place_unit(0, Vector2i(4, 7))
+	eq(moved["ok"], true, "reposition before ready is legal")
+	eq(_unit(0)["pos"], Vector2i(4, 7), "Kestrel moved to the south ring")
+	eq(moved["events"][0]["repositioned"], true, "second place is a reposition")
+	# Occupied: after both sit on the ring, a place onto the other seat's cell is
+	# wrong_half. Occupied is still reachable if we put a test blocker.
+	_sim._blocked_cells.append(Vector2i(0, 4))
+	# Blockers are combat occupancy (_is_empty), not deploy occupant_seat.
+	# Deploy occupant is units only. Force a unit stack by moving Ironjaw onto
+	# a west cell is outside_zone. So occupied is: two placed units on one cell
+	# only if zones overlap — they don't. Still test the gate with occupant_seat.
+	_sim._force_spawn(1, Vector2i(0, 2))
+	eq(_sim.place_unit(0, Vector2i(0, 2))["reason"], "occupied", "place rejects an occupied ring cell")
+	eq(_unit(0)["pos"], Vector2i(4, 7), "failed occupied place does not move Kestrel")
+
+
+func _test_deploy_ready_gate_and_combat_intents() -> void:
+	_sim.reset_match({"seed": 1})
+	eq(_sim.ready_seat(0)["reason"], "units_not_placed", "ready without a unit is units_not_placed")
+	eq(_sim.snapshot()["ready"][0], false, "failed ready does not set the flag")
+	_sim.place_unit(0, Vector2i(0, 2))
+	eq(_sim.can_ready(0), true, "Ready enables after the required unit is placed")
+	eq(_sim.can_ready(1), false, "Ready P2 stays gated")
+	eq(_sim.submit({"type": "move", "seat": 0, "to": Vector2i(0, 3)})["reason"], "wrong_phase", "move rejected during deploy")
+	eq(_sim.submit({"type": "cast", "seat": 0, "spell": "mark_shot", "to": Vector2i(7, 2)})["reason"], "wrong_phase", "cast rejected during deploy")
+	eq(_sim.submit({"type": "face", "seat": 0, "dir": "N"})["reason"], "wrong_phase", "face rejected during deploy")
+	eq(_sim.submit({"type": "end_turn", "seat": 0})["reason"], "wrong_phase", "end_turn rejected during deploy")
+	eq(_sim.ready_seat(0)["ok"], true, "P1 ready succeeds once placed")
+	eq(_sim.snapshot()["ready"][0], true, "P1 ready flag is set")
+	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "one ready does not start combat")
+	eq(_sim.place_unit(0, Vector2i(0, 4))["reason"], "side_locked", "ready side cannot reposition")
+	eq(_sim.ready_seat(0)["reason"], "already_ready", "cannot ready twice")
+	# Simultaneous: P2 still open.
+	eq(_sim.place_unit(1, Vector2i(7, 2))["ok"], true, "P2 can still place after P1 ready")
+	eq(_sim.snapshot()["combat_enabled"], false, "combat still off after only one ready")
+
+
+func _test_both_ready_starts_combat() -> void:
+	_sim.reset_match({"seed": 1})
+	eq(_sim.place_unit(1, Vector2i(7, 2))["ok"], true, "P2 can place first")
+	eq(_sim.place_unit(0, Vector2i(0, 2))["ok"], true, "P1 places after P2")
+	eq(_sim.ready_seat(1)["ok"], true, "P2 can ready first")
+	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "still DEPLOYMENT after only P2 ready")
+	eq(_sim.place_unit(0, Vector2i(3, 7))["ok"], true, "P1 may reposition after P2 is ready")
+	var started: Dictionary = _sim.ready_seat(0)
+	eq(started["ok"], true, "second ready succeeds")
+	var snap: Dictionary = _sim.snapshot()
+	eq(snap["phase"], "TURN_1", "both ready → TURN_1")
+	eq(snap["both_ready"], true, "both_ready is true")
+	eq(snap["positions_locked"], true, "positions lock")
+	eq(snap["combat_enabled"], true, "combat on")
+	eq(snap["walk_enabled"], true, "walk on")
+	eq(snap["end_turn_enabled"], true, "end_turn on")
+	eq(snap["turn_index"], 1, "Turn index is 1")
+	eq(snap["active_seat"], 0, "Kestrel acts first in combat")
+	eq(_unit(0)["pos"], Vector2i(3, 7), "combat spawn is the confirmed P1 cell")
+	eq(_unit(1)["pos"], Vector2i(7, 2), "combat spawn is the confirmed P2 cell")
+	eq(_unit(0)["locked"], true, "P1 locks")
+	eq(_unit(1)["locked"], true, "P2 locks")
+	eq(_unit(0)["ap"], 6, "Kestrel refills 6 AP on combat start")
+	eq(_unit(0)["mp"], 3, "Kestrel refills 3 MP on combat start")
+	eq(_unit(1)["ap"], 6, "Ironjaw has 6 AP when combat starts")
+	eq(_sim.place_unit(0, Vector2i(0, 4))["reason"], "wrong_phase", "place closed in TURN_1")
+	eq(_sim.ready_seat(1)["reason"], "wrong_phase", "ready closed in TURN_1")
+	var kinds := {}
+	for intent in _sim.legal_intents(0):
+		kinds[str(intent["type"])] = true
+	truthy(kinds.has("move"), "move is legal after deploy")
+	truthy(kinds.has("cast"), "cast is legal after deploy")
+	truthy(kinds.has("face"), "face is legal after deploy")
+	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
+	eq(kinds.has("place"), false, "place is not a combat intent")
+	var events: Array = started.get("events", [])
+	var saw_combat := false
+	var saw_turn := false
+	for event in events:
+		if str(event.get("type", "")) == "combat_start":
+			saw_combat = true
+		if str(event.get("type", "")) == "turn_start":
+			saw_turn = true
+	eq(saw_combat, true, "both ready emits combat_start")
+	eq(saw_turn, true, "both ready emits turn_start")
+
+
+func _test_kits_still_pass_after_deploy() -> void:
+	# Adjacent ring cells: seat 0 west (0,1), seat 1 NW (0,0). Kits must still resolve.
+	_sim.reset_match({"seed": 1, "rolls": [1, 1]})
+	_sim.place_unit(0, Vector2i(0, 1))
+	_sim.place_unit(1, Vector2i(0, 0))
+	_sim.ready_seat(0)
+	_sim.ready_seat(1)
+	eq(_sim.snapshot()["phase"], "TURN_1", "kits run after both ready")
+	eq(_unit(0)["spells"], ["mark_shot", "detonate"], "Kestrel kit is Mark Shot + Detonate after deploy")
+	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit is Advance + Strike + Shoulder + Crush after deploy")
+	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
+	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate after deploy")
+	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot stays range-gated (Chebyshev 1)")
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate stays gated at 0 Marks")
+	var end_turn: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(end_turn["ok"], true, "end_turn works after deploy")
+	eq(_sim.snapshot()["active_seat"], 1, "Ironjaw becomes active after deploy")
+	var ironjaw_offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
+	eq(ironjaw_offered, ["advance", "strike", "shoulder", "crush"], "Ironjaw HUD offers the Locked kit after deploy")
+	eq(_has_legal_cast(1, "strike"), true, "Strike is legal at Chebyshev 1 after deploy")
+	eq(_has_legal_cast(1, "advance"), true, "Advance is legal after deploy")
+	eq(_has_legal_cast(1, "mark_shot"), false, "Ironjaw still cannot Mark Shot")
+	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(0, 1)})
+	eq(strike["ok"], true, "Strike resolves after deploy")
+	eq(strike["illegal"], false, "Strike is not rejected")
+	eq(_unit(0)["hp"] < 80, true, "Strike dealt damage after deploy")
+	eq(_unit(1)["impact"], 1, "Strike still grants Impact after deploy")
 
 
 func _test_only_active_seat_acts() -> void:
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	var result: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	eq(result["illegal"], true, "Ironjaw cannot end Kestrel's turn")
 	eq(result["reason"], "not_your_turn", "reject reason is not_your_turn")
@@ -305,7 +530,7 @@ func _test_spell_range_stays_chebyshev() -> void:
 
 
 func _test_face_costs_zero() -> void:
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	var ap: int = int(_unit(0)["ap"])
 	var result: Dictionary = _sim.submit({"type": "face", "dir": "N"})
 	eq(result["ok"], true, "face accepted")
@@ -560,7 +785,7 @@ func _test_wind_mod_omitted() -> void:
 
 
 func _test_legal_intents_empty_for_other_seat() -> void:
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	eq(_sim.legal_intents(1).size(), 0, "Ironjaw has no legal intents on Kestrel's turn")
 	truthy(_sim.legal_intents(0).size() > 0, "Kestrel has legal intents")
 	var types := {}
@@ -584,7 +809,7 @@ func _test_view_does_not_roll_or_own_hp() -> void:
 
 
 func _test_hud_chrome_kit_gated() -> void:
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
 	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate")
 	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")
@@ -1005,7 +1230,7 @@ func _test_turn_clock_auto_end_turn() -> void:
 	eq(clock.tick(30.0), true, "resume then 30s expires")
 
 	# Expiry must submit the same end_turn as the HUD button, not a second rule.
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	eq(_sim.snapshot()["active_seat"], 0, "Kestrel starts")
 	var result: Dictionary = _sim.submit({"type": "end_turn"})
 	eq(result["ok"], true, "clock expiry uses the same end_turn submit")
@@ -2629,7 +2854,7 @@ func _test_spell_tooltip_cards() -> void:
 
 func _test_action_bar_wraps() -> void:
 	# 960×720 playtest: Ironjaw's kit must wrap instead of overlapping labels.
-	_sim.reset_match({"seed": 1})
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	_sim.submit({"type": "end_turn"})
 	var hud := CombatHUD.new()
 	hud._build()

@@ -5,37 +5,40 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 ## How to play
 
 1. Open `project.godot` in Godot 4.7 or later and run the main scene.
-2. **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
-3. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. A **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune.
-4. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel).
-5. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** stay on their own row. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
+2. **Locked deploy** before Turn 1: both seats place / reposition at once on their half of the **1-deep border ring** (seat 0 south+west, seat 1 north+east; corners on the N/S edges). One fighter each. **Ready** is gated until that seat’s unit is placed. Both Ready → lock positions → Turn 1 combat. During deploy, move / cast / face / end_turn are rejected. No fog, no deploy timer, no networking.
+3. After deploy, **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
+4. Each turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. A **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune.
+5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands an orthogonal path (horizontal E/W first, then N/S). MP cost is Manhattan `|dx|+|dy|` from a pool of 3. The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel).
+6. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** stay on their own row. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
    - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). **Facing is unchanged** on Advance (no auto-face). Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it hits.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On hit: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it hits.
    - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On hit: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Locked Push (1):** if the dest is occupied or off-board, the target does not move; damage/Impact still apply; CombatSim emits `push_blocked`. Client toasts **PushBlocked** and does not hop; hit/Impact feedback still plays.
    - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on hit; miss retains Impact). 24 Earth on hit. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`). When that seat's turn starts, CombatSim **auto-resolves `end_turn`** — the player never presses End Turn. `legal_intents` is empty of move/cast/face (auto path only). HUD greys Walk/Face/spells, shows a STUN badge, and presents a **skip banner** from that auto `end_turn` event (the coach line is the log).
-6. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
-7. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
-8. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
-9. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
-10. First combatant to 0 HP loses. **New Match** resets from `CombatSim.reset_match()`.
+7. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
+8. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
+9. While aiming **Mark Shot / Strike / Detonate / Shoulder / Crush**, the HUD shows the Locked **HIT %** for the current Chebyshev band before you click. Advance (no roll) and walks never show hit %. Bands are Locked: 1→90%, 2–3→80%, 4–5→75%, 6–8→70%.
+10. **End Turn** (button or clock expiry) shows a ~1.0s client-only turn banner, then hands the seat to the other player (Proposed presentation; not a CombatSim rule).
+11. First combatant to 0 HP loses. **New Match** resets from `CombatSim.reset_match()` (live path starts in DEPLOYMENT again).
 
 ## Architecture
 
 | Piece | Role |
 | --- | --- |
-| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)`, `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(spell, from, to, target_seat=-1)` (read-only; also accepts an intent Dictionary). Rolls and HP live here. Walk paths are expanded here. Advance is a dest-click teleport. `preview_cast` does not mutate match state, RNG, or the intent log. |
+| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live). `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup). Rolls and HP live here. |
+| `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + 1-deep half-ring zones + simultaneous ready. Copied from proto/deployment (studio #27/#29). Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. They submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed timers. |
 | `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
-Intents: `end_turn` | `face` | `move` | `cast`.
+Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready` / `confirm`. During DEPLOYMENT only `place` / `reposition` / `ready` are legal.
 
 ## Locked in this slice (GDD v0.2)
 
+- **Locked deploy:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready; networking OFF). Legal cells = 1-deep border ring only on 8×8. 1v1 halves: seat 0 = South+West of the ring; seat 1 = North+East; corners belong to the N/S edges (NW+NE → seat 1, SW+SE → seat 0). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only).
 - 8×8 flat board, no walls, no LOS
 - 80 HP, 6 AP / 3 MP refilled at turn start
 - Walk: dest-click only, Manhattan `|dx|+|dy|` MP, pool 3, CombatSim expands ortho path, horizontal-first (E/W before N/S) tie-break. Facing follows each ortho hop; **final facing = last hop direction**. Manual face intent stays for standing turns. `legal_intents` enumerates walks whenever leftover **MP > 0**, regardless of remaining AP.
@@ -52,6 +55,14 @@ Intents: `end_turn` | `face` | `move` | `cast`.
 - Kestrel then Ironjaw
 - **Locked Stun (A′):** Stun 1 blocks move + cast + face. When that seat's turn starts, CombatSim auto-resolves `end_turn` (player never presses End Turn). `legal_intents` has no move/cast/face (auto path only). `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is the one that is skipped. HUD greys Walk/Face/spells and shows a STUN badge. Client shows a skip banner/log from that event and does not re-implement the skip.
 - **Locked Push (1):** Shoulder into occupied/OOB = no-move + `push_blocked`; damage/Impact still apply. Client toasts **PushBlocked**, does not hop, still plays hit/Impact feedback.
+
+## Open (not Locked) — deploy leftovers
+
+- Fog / hidden enemy during deploy
+- Deploy timer
+- Multi-unit rosters
+
+Do **not** invent those. Godot main chrome for deploy is left for the Godot Engineer; CombatSim exposes `place_unit` / `ready_seat` / `legal_deploy_cells` / `snapshot().phase`.
 
 ## Proposed (not Locked)
 
@@ -121,7 +132,7 @@ Modules (all under `proto/elevation/`, unused by the Phase A combat path):
 
 ## Phase B+ deployment prototype
 
-**Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel seats or `CombatSim.reset_match()` / match start on `main.tscn` (Kestrel still `(1,1)`, Ironjaw still `(6,6)`). No Backend deploy-schema/API branch existed, so this PR keeps a local `DeploymentManager` instead of rewriting Phase A `CombatSim`. No networking, no hidden fog, no deploy timer.
+**Prototype only. Reference — live Phase A deploy is Locked on CombatSim / MatchFlow.** Keep this scene as the chrome sandbox. Do not import `proto/deployment` from CombatSim. Live `reset_match()` starts in DEPLOYMENT; `(1,1)` / `(6,6)` are skip_deploy fixtures only. Proto still has no networking, no hidden fog, no deploy timer.
 
 Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). **Simultaneous** deploy: both seats may place / reposition at once on their opposite half of the **1-deep map border ring**. Each side has its own **Ready** control. When **both** are ready, positions lock and the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
 
@@ -151,6 +162,10 @@ Modules (all under `proto/deployment/`, unused by the Phase A combat path):
 5. `scenes/proto_deployment_board.tscn` — both half-rings highlighted; click a green S+W cell to place Kestrel or a red N+E cell to place Ironjaw
 6. Ready P1 / Ready P2 — each disabled until that side’s required fighter is placed
 7. After both ready: lock positions, emit start, show Turn 1 label (CombatSim not wired)
+
+## How to test Locked deploy (CombatSim)
+
+Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `reset_match()` starts DEPLOYMENT (no `(1,1)` / `(6,6)`). `place_unit` / `ready_seat` reject OOB, interior, wrong-half (`outside_zone`), and occupied. Both Ready locks the confirmed cells and starts Turn 1; kit tests still pass after that. `skip_deploy` or an explicit `kestrel_pos` / `ironjaw_pos` skips to combat for fixtures. Godot main chrome is not rewritten here — bind `legal_deploy_cells`, `can_ready`, and `snapshot().phase`.
 
 ## How to test the deployment prototype
 
