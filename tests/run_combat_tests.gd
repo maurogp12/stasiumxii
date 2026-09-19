@@ -3254,7 +3254,7 @@ func _has_legal_cast(seat: int, spell_id: String) -> bool:
 	return false
 
 
-func _face_pad(hud: CombatHUD) -> GridContainer:
+func _face_pad(hud: Node) -> GridContainer:
 	for child in hud._face_bar.get_children():
 		if child is GridContainer:
 			return child
