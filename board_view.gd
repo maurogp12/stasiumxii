@@ -47,6 +47,7 @@ var _walk_tween: Tween
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
+var _skip_local_net_echo: bool = false
 
 
 func _ready() -> void:
@@ -116,12 +117,18 @@ func _can_control_seat(seat: int) -> bool:
 	return net.owns_seat(seat)
 
 
+func _mark_local_net_echo() -> void:
+	if _online():
+		_skip_local_net_echo = true
+
+
 func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if not _booted:
+		_skip_local_net_echo = false
 		_finish_boot()
 		return
-	var net := _net()
-	if net != null and net.is_host():
+	if _skip_local_net_echo:
+		_skip_local_net_echo = false
 		return
 	if _busy:
 		return
@@ -186,14 +193,20 @@ func _hydrate_turn_clock(snap: Dictionary = {}) -> void:
 	var view: Dictionary = snap if not snap.is_empty() else _sim().snapshot()
 	var remaining := float(view.get("turn_time_remaining", 0.0))
 	var limit := float(view.get("turn_time_limit", TurnClock.DURATION_SEC))
-	_turn_clock.hydrate(remaining, bool(view.get("turn_time_running", false)), limit)
-	_sync_turn_clock()
+	_turn_clock.hydrate(remaining, CombatHUD.turn_clock_running(view), limit)
+	_sync_turn_clock(view)
 
 
-func _sync_turn_clock() -> void:
+func _sync_turn_clock(snap: Dictionary = {}) -> void:
 	if _hud == null:
 		return
-	_hud.set_turn_clock(_turn_clock.display_seconds(), _turn_clock.running, _turn_clock.fraction_left())
+	var view: Dictionary = snap if not snap.is_empty() else _sim().snapshot()
+	var seconds := CombatHUD.turn_clock_seconds(view)
+	if seconds < 0:
+		seconds = _turn_clock.display_seconds()
+	var running := CombatHUD.turn_clock_running(view) if CombatHUD.has_host_turn_clock(view) else _turn_clock.running
+	var fraction := CombatHUD.turn_clock_fraction(view) if view.has("turn_time_remaining") else _turn_clock.fraction_left()
+	_hud.set_turn_clock(seconds, running, fraction)
 
 
 func _timer_expired(result: Dictionary) -> bool:
@@ -316,6 +329,7 @@ func _on_end_turn_button_pressed() -> void:
 		return
 	_busy = true
 	_hud.clear_spell()
+	_mark_local_net_echo()
 	var result: Dictionary
 	if _online() and _net().is_client():
 		result = await _sim().submit_wait({"type": "end_turn"})
@@ -397,6 +411,7 @@ func _on_new_match() -> void:
 	_hud.clear_deploy_note()
 	if _online() and not _sim().can_reset_match():
 		return
+	_mark_local_net_echo()
 	_sim().reset_match({})
 	_rebuild_pawns()
 	_refresh()
@@ -406,6 +421,7 @@ func _on_new_match() -> void:
 func _submit(intent: Dictionary) -> void:
 	if _busy:
 		return
+	_mark_local_net_echo()
 	var result: Dictionary
 	if _online() and _net().is_client():
 		result = await _sim().submit_wait(intent)
@@ -655,6 +671,7 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 		_hud.set_deploy_note("That deploy zone belongs to the other seat.")
 		return
 	var result: Dictionary
+	_mark_local_net_echo()
 	if _online() and _net().is_client():
 		result = await _sim().place_unit_wait(seat, cell)
 	elif _online():
@@ -674,6 +691,7 @@ func _on_ready_requested(seat: int) -> void:
 	if not _can_control_seat(seat):
 		return
 	var result: Dictionary
+	_mark_local_net_echo()
 	if _online() and _net().is_client():
 		result = await _sim().ready_seat_wait(seat)
 	elif _online():

@@ -261,6 +261,19 @@ func _test_local_vs_active_seat_semantics() -> void:
 	eq(CombatHUD.kit_seat(_guest.snapshot()), 1, "guest kit chrome uses local_seat 1")
 	eq(CombatHUD.turn_status_text(_guest.snapshot()), "Opponent's Turn", "guest starts on Opponent's Turn")
 	eq(_guest.snapshot().has("show_active_kit"), false, "guest snapshot does not encode show_active_kit")
+	eq(int(_host.snapshot()["net"]["local_seat"]), 0, "host net.local_seat is 0")
+	eq(int(_guest.snapshot()["net"]["local_seat"]), 1, "guest net.local_seat is 1")
+	eq(_host.snapshot().has("turn_time_seconds"), true, "host decorate keeps turn_time_seconds")
+	eq(str(_host.snapshot().get("turn_timer", "")), "host", "snapshot.turn_timer stamp is host")
+	var net_only: Dictionary = _host.decorate_snapshot({
+		"turn_time_remaining": 22.0,
+		"turn_time_limit": 30,
+		"turn_time_running": true,
+		"turn_time_seconds": 22,
+		"turn_timer": "host",
+	})
+	eq(CombatHUD.snap_local_seat({"net": net_only.get("net", {})}), 0, "HUD reads net.local_seat from decorated net")
+	eq(CombatHUD.turn_clock_seconds(net_only), 22, "decorated snap paints turn_time_seconds")
 
 
 func _first_zone_cell(seat: int) -> Vector2i:
