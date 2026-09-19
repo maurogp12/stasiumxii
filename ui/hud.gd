@@ -16,6 +16,7 @@ const TOAST_SEC := 1.4
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
 var _face_buttons: Dictionary = {}
+var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
@@ -535,6 +536,7 @@ func _build() -> void:
 	root.add_child(bottom)
 
 	var face_bar := HBoxContainer.new()
+	_face_bar = face_bar
 	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	face_bar.add_theme_constant_override("separation", 6)
 	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1116,6 +1118,8 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_walk_button.visible = not deploying
 	if _end_turn_button != null:
 		_end_turn_button.visible = not deploying
+	if _face_bar != null:
+		_face_bar.visible = not deploying
 	for button in _face_buttons.values():
 		(button as Button).visible = not deploying
 
