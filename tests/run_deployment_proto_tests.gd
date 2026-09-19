@@ -302,10 +302,14 @@ func _test_phase_a_untouched() -> void:
 	eq(combat.contains("MatchPhase"), false, "CombatSim does not reference proto MatchPhase")
 	truthy(combat.contains("expand_ortho_path"), "Phase A still owns flat H-first walk expansion")
 	truthy(combat.contains("reset_match"), "Phase A reset_match is still the live match start")
-	truthy(combat.contains("kestrel_pos"), "Phase A still has a fixed Kestrel seat override")
-	truthy(combat.contains("ironjaw_pos"), "Phase A still has a fixed Ironjaw seat override")
-	truthy(combat.contains("Vector2i(1, 1)"), "Phase A default Kestrel seat stays (1,1)")
-	truthy(combat.contains("Vector2i(6, 6)"), "Phase A default Ironjaw seat stays (6,6)")
+	truthy(combat.contains("kestrel_pos"), "Phase A still has a Kestrel seat override for skip_deploy")
+	truthy(combat.contains("ironjaw_pos"), "Phase A still has an Ironjaw seat override for skip_deploy")
+	truthy(combat.contains("skip_deploy"), "CombatSim keeps a skip_deploy combat fixture")
+	truthy(combat.contains("Vector2i(1, 1)"), "skip_deploy fixture can still spawn (1,1)")
+	truthy(combat.contains("Vector2i(6, 6)"), "skip_deploy fixture can still spawn (6,6)")
+	truthy(combat.contains("place_unit"), "live CombatSim exposes place_unit")
+	truthy(combat.contains("ready_seat"), "live CombatSim exposes ready_seat")
+	truthy(combat.contains("match_flow.gd"), "CombatSim owns MatchFlow, not the proto manager")
 
 	var board := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(board.contains("DeploymentManager"), false, "Phase A board_view does not use DeploymentManager")
@@ -319,12 +323,12 @@ func _test_phase_a_untouched() -> void:
 	truthy(scene.contains("south+west") or scene.contains("border-ring"), "proto scene stamps the half-split")
 
 	var readme := FileAccess.get_file_as_string("res://README.md")
-	truthy(readme.contains("Phase B+ deployment prototype"), "README has the Phase B+ deployment section")
-	truthy(readme.contains("Proposed"), "README stamps Proposed")
+	truthy(readme.contains("Phase B+ deployment prototype"), "README keeps the proto as reference")
+	truthy(readme.contains("Proposed"), "README still stamps Proposed on proto")
 	truthy(readme.contains("simultaneous") or readme.contains("Simultaneous"), "README lists simultaneous deploy")
 	truthy(readme.contains("border ring") or readme.contains("1-deep"), "README lists the 1-deep border ring")
 	truthy(readme.contains("south") and readme.contains("west"), "README documents the S+W / N+E half split")
-	truthy(readme.contains("supersede"), "README notes that sequential 2×3 is superseded")
+	truthy(readme.contains("Locked"), "README stamps Locked live deploy")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

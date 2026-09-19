@@ -3,8 +3,12 @@ extends Node
 ## Local Phase A combat brain. Godot nodes must not mutate HP or roll.
 ## API: reset_match(config), submit(intent), legal_intents(seat), snapshot(),
 ## preview_cast(spell_id, from, to, target_seat=-1) — also accepts an intent Dictionary.
+## Locked deploy (live duel): place / reposition / ready, then Turn 1 combat.
+## Godot chrome binds place_unit / ready_seat / legal_deploy_cells / can_ready.
 
 const RULES_VERSION := "phase-a-gdd-0.2"
+const UNPLACED := Vector2i(-1, -1)
+const _MatchFlow := preload("res://backend/match_flow.gd")
 const BOARD_SIZE := 8
 const MAX_AP := 6
 const MAX_MP := 3
@@ -44,19 +48,21 @@ var _last_coach: String = ""
 var _intent_log: Array = []
 ## Test/setup occupancy only. Locked Push (1): dest occupied/OOB is no-move + push_blocked.
 var _blocked_cells: Array[Vector2i] = []
+## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
+var _flow = _MatchFlow.new()
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	_units.clear()
 	_blocked_cells.clear()
 	_active_seat = 0
-	_turn_index = 1
+	_turn_index = 0
 	_match_over = false
 	_winner_seat = -1
 	_scripted_rolls.clear()
 	_last_events.clear()
 	_intent_log.clear()
-	_last_coach = "Kestrel's turn. 6 AP / 3 MP."
+	_flow.reset()
 
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_rng.seed = _seed
@@ -64,21 +70,30 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
 
-	var kestrel_pos: Vector2i = _as_cell(config.get("kestrel_pos", Vector2i(1, 1)))
-	var ironjaw_pos: Vector2i = _as_cell(config.get("ironjaw_pos", Vector2i(6, 6)))
 	var kestrel_facing: String = str(config.get("kestrel_facing", "E"))
 	var ironjaw_facing: String = str(config.get("ironjaw_facing", "W"))
-
-	_units.append(_make_unit(0, SpellKits.CLASS_KESTREL, "Kestrel", "air", kestrel_pos, kestrel_facing))
-	_units.append(_make_unit(1, SpellKits.CLASS_IRONJAW, "Ironjaw", "earth", ironjaw_pos, ironjaw_facing))
+	# Live path: no board seats until place. skip_deploy / explicit pos is combat fixture.
+	_units.append(_make_unit(0, SpellKits.CLASS_KESTREL, "Kestrel", "air", UNPLACED, kestrel_facing, false))
+	_units.append(_make_unit(1, SpellKits.CLASS_IRONJAW, "Ironjaw", "earth", UNPLACED, ironjaw_facing, false))
 	_apply_setup_overrides(config)
 
-	_last_events = [{
-		"type": "turn_start",
-		"seat": _active_seat,
-		"turn": _turn_index,
-		"coach": _last_coach,
-	}]
+	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos")
+	if skip_deploy:
+		# Test/setup only. Live duel no longer defaults to (1,1)/(6,6).
+		var kestrel_pos: Vector2i = _as_cell(config.get("kestrel_pos", Vector2i(1, 1)))
+		var ironjaw_pos: Vector2i = _as_cell(config.get("ironjaw_pos", Vector2i(6, 6)))
+		_force_spawn(0, kestrel_pos)
+		_force_spawn(1, ironjaw_pos)
+		_flow.skip_to_combat()
+		_begin_combat("Kestrel's turn. 6 AP / 3 MP.")
+	else:
+		_last_coach = "Deployment. Place one fighter on your half of the border ring, then Ready."
+		_last_events = [{
+			"type": "deploy_start",
+			"phase": _flow.phase_name(),
+			"coach": _last_coach,
+		}]
+
 	_broadcast()
 	return snapshot()
 
@@ -89,6 +104,12 @@ func submit(intent: Dictionary) -> Dictionary:
 	if _match_over:
 		return _reject(normalized, "match_over", "REJECT — match is over.")
 
+	var kind := str(normalized.get("type", ""))
+	if _flow.is_deployment():
+		return _submit_deploy(normalized, kind)
+	if kind in ["place", "reposition", "ready", "confirm"]:
+		return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
+
 	var seat := _active_seat
 	if normalized.has("seat") and int(normalized["seat"]) != seat:
 		return _reject(normalized, "not_your_turn", "REJECT — only the active seat can act.")
@@ -97,7 +118,6 @@ func submit(intent: Dictionary) -> Dictionary:
 	if actor.is_empty() or not actor["alive"]:
 		return _reject(normalized, "dead", "REJECT — dead units cannot act.")
 
-	var kind := str(normalized.get("type", ""))
 	# Locked Stun (A′): reject casts / moves / face while stunned.
 	# end_turn is the auto path (player never presses it).
 	if kind != "end_turn" and _is_stunned(actor):
@@ -111,13 +131,19 @@ func submit(intent: Dictionary) -> Dictionary:
 			return _submit_move(normalized, actor)
 		"cast":
 			return _submit_cast(normalized, actor)
+		"place", "reposition", "ready", "confirm":
+			return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
 		_:
 			return _reject(normalized, "unknown_intent", "REJECT — unknown intent.")
 
 
 func legal_intents(seat: int) -> Array:
 	var out: Array = []
-	if _match_over or seat != _active_seat:
+	if _match_over:
+		return out
+	if _flow.is_deployment():
+		return _legal_deploy_intents(seat)
+	if seat != _active_seat:
 		return out
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"]:
@@ -186,6 +212,36 @@ func legal_intents(seat: int) -> Array:
 	return out
 
 
+## Godot bind: place / reposition this seat's one fighter. Simultaneous; no turn gate.
+func place_unit(seat: int, cell: Variant) -> Dictionary:
+	return submit({"type": "place", "seat": seat, "to": _as_cell(cell)})
+
+
+## Godot bind: Ready this seat. Gated on unit placed. Both ready → lock → Turn 1.
+func ready_seat(seat: int) -> Dictionary:
+	return submit({"type": "ready", "seat": seat})
+
+
+func can_ready(seat: int) -> bool:
+	return _flow.can_ready(seat)
+
+
+func can_place(seat: int, cell: Variant) -> Dictionary:
+	return _flow.place_gate(seat, _as_cell(cell), _occupant_seat(_as_cell(cell)))
+
+
+func legal_deploy_cells(seat: int) -> Array[Vector2i]:
+	return _flow.legal_place_cells(seat, Callable(self, "_occupant_seat"))
+
+
+func deploy_zone_cells(seat: int) -> Array[Vector2i]:
+	return _flow.zone_cells(seat)
+
+
+func match_phase_name() -> String:
+	return _flow.phase_name()
+
+
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
 ## Mark Shot uses this for Chebyshev 2–5 chrome. Does not imply a legal cast dest.
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
@@ -216,6 +272,7 @@ func snapshot() -> Dictionary:
 	var units: Array = []
 	for unit in _units:
 		units.append(unit.duplicate(true))
+	var flow_snap := _flow.snapshot()
 	return {
 		"rules_version": RULES_VERSION,
 		"board_size": BOARD_SIZE,
@@ -251,12 +308,31 @@ func snapshot() -> Dictionary:
 		"stun_auto_end_turn": true,
 		"push": "locked_1",
 		"push_occupied_oob": "no_move",
+		"phase": flow_snap["phase_name"],
+		"phase_name": flow_snap["phase_name"],
+		"deploy": "locked",
+		"deploy_simultaneous": true,
+		"deploy_legal_cells": "border_ring_1_deep",
+		"deploy_zone_split": "p1_south_west_p2_north_east",
+		"deploy_zones": {
+			0: _flow.zone_cells(0).duplicate(),
+			1: _flow.zone_cells(1).duplicate(),
+		},
+		"ready": flow_snap["ready"],
+		"both_ready": flow_snap["both_ready"],
+		"positions_locked": flow_snap["positions_locked"],
+		"combat_enabled": flow_snap["combat_enabled"],
+		"walk_enabled": flow_snap["walk_enabled"],
+		"end_turn_enabled": flow_snap["end_turn_enabled"],
+		"networking": false,
+		"open_deploy": ["fog", "hidden_enemy", "deploy_timer", "multi_unit"],
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
+			"deploy": "Locked: simultaneous 1-deep border-ring halves (seat 0 S+W, seat 1 N+E, corners on N/S), one fighter each, Ready gated on place, both ready → lock → Turn 1. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 		},
 	}
 
@@ -538,7 +614,8 @@ func _phase_a_damage(base: int, facing_mult: float) -> int:
 	return roundi(raw)
 
 
-func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String) -> Dictionary:
+func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String, placed: bool = true) -> Dictionary:
+	var in_combat := placed
 	return {
 		"seat": seat,
 		"id": class_id,
@@ -549,8 +626,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"facing": facing,
 		"hp": START_HP,
 		"max_hp": START_HP,
-		"ap": MAX_AP,
-		"mp": MAX_MP,
+		"ap": MAX_AP if in_combat else 0,
+		"mp": MAX_MP if in_combat else 0,
 		"max_ap": MAX_AP,
 		"max_mp": MAX_MP,
 		"marks": 0,
@@ -561,8 +638,171 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"stun_remaining": 0,
 		"stunned": false,
 		"alive": true,
+		"placed": placed,
+		"locked": false,
 		"spells": SpellKits.class_spells(class_id).duplicate(),
 	}
+
+
+func _submit_deploy(intent: Dictionary, kind: String) -> Dictionary:
+	match kind:
+		"place", "reposition":
+			return _submit_place(intent)
+		"ready", "confirm":
+			return _submit_ready(intent)
+		"move", "cast", "face", "end_turn":
+			return _reject(intent, "wrong_phase", "REJECT — only place, reposition, or ready during deploy.")
+		_:
+			return _reject(intent, "unknown_intent", "REJECT — unknown intent.")
+
+
+func _submit_place(intent: Dictionary) -> Dictionary:
+	if not intent.has("seat"):
+		return _reject(intent, "missing_seat", "REJECT — place needs a seat.")
+	if not intent.has("to"):
+		return _reject(intent, "missing_destination", "REJECT — place needs a destination.")
+	var seat := int(intent["seat"])
+	var dest: Vector2i = intent["to"]
+	var gate := _flow.place_gate(seat, dest, _occupant_seat(dest))
+	if not bool(gate.get("ok", false)):
+		return _reject(intent, str(gate.get("reason", "outside_zone")), _deploy_reject_coach(seat, dest, gate))
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty():
+		return _reject(intent, "unknown_unit", "REJECT — unknown seat.")
+	var was_placed := bool(actor.get("placed", false))
+	var from: Vector2i = actor["pos"]
+	actor["pos"] = dest
+	actor["placed"] = true
+	_flow.mark_placed(seat)
+	_intent_log.append(intent)
+	if was_placed:
+		_last_coach = "%s repositions to %s." % [actor["name"], _cell_text(dest)]
+	else:
+		_last_coach = "%s places on %s." % [actor["name"], _cell_text(dest)]
+	_last_events.append({
+		"type": "reposition" if was_placed else "place",
+		"seat": seat,
+		"from": from,
+		"to": dest,
+		"repositioned": was_placed,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _submit_ready(intent: Dictionary) -> Dictionary:
+	if not intent.has("seat"):
+		return _reject(intent, "missing_seat", "REJECT — ready needs a seat.")
+	var seat := int(intent["seat"])
+	var result := _flow.mark_ready(seat)
+	if not bool(result.get("ok", false)):
+		var reason := str(result.get("reason", "units_not_placed"))
+		var coach := "REJECT — place the required fighter before Ready."
+		if reason == "already_ready":
+			coach = "REJECT — already ready."
+		elif reason == "wrong_phase":
+			coach = "REJECT — deploy is over."
+		return _reject(intent, reason, coach)
+	var actor := _unit_by_seat(seat)
+	if not actor.is_empty():
+		actor["locked"] = true
+	_intent_log.append(intent)
+	if _flow.is_combat():
+		_lock_all_units()
+		_begin_combat("Positions locked. Kestrel's turn. 6 AP / 3 MP.")
+		# _begin_combat replaces last_events; prepend the ready that triggered it.
+		_last_events.insert(0, {
+			"type": "ready",
+			"seat": seat,
+			"both_ready": true,
+			"coach": "%s ready." % str(actor.get("name", "Seat %d" % seat)),
+		})
+		return _accept()
+	_last_coach = "%s ready. Waiting for the other seat." % str(actor.get("name", "Seat %d" % seat))
+	_last_events.append({
+		"type": "ready",
+		"seat": seat,
+		"both_ready": false,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _legal_deploy_intents(seat: int) -> Array:
+	var out: Array = []
+	if _flow.is_ready(seat):
+		return out
+	for cell in legal_deploy_cells(seat):
+		out.append({"type": "place", "to": cell, "seat": seat})
+	if _flow.can_ready(seat):
+		out.append({"type": "ready", "seat": seat})
+	return out
+
+
+func _deploy_reject_coach(seat: int, dest: Vector2i, gate: Dictionary) -> String:
+	var reason := str(gate.get("reason", ""))
+	var kind := str(gate.get("zone_kind", ""))
+	if reason == "out_of_bounds":
+		return "REJECT — out of bounds."
+	if reason == "occupied":
+		return "REJECT — %s is occupied." % _cell_text(dest)
+	if reason == "side_locked":
+		return "REJECT — this side is already ready."
+	if reason == "wrong_phase":
+		return "REJECT — deploy is over."
+	if reason == "outside_zone":
+		if kind == "interior":
+			return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % _cell_text(dest)
+		if kind == "wrong_half":
+			return "REJECT — %s is the other side's half of the border ring." % _cell_text(dest)
+		return "REJECT — %s is outside this side's deployment zone." % _cell_text(dest)
+	return "REJECT — illegal place (%s)." % reason
+
+
+func _force_spawn(seat: int, cell: Vector2i) -> void:
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty():
+		return
+	actor["pos"] = cell
+	actor["placed"] = true
+	actor["locked"] = true
+	actor["ap"] = MAX_AP
+	actor["mp"] = MAX_MP
+	_flow.mark_placed(seat)
+
+
+func _lock_all_units() -> void:
+	for unit in _units:
+		unit["locked"] = true
+		unit["placed"] = true
+
+
+func _begin_combat(coach: String) -> void:
+	_active_seat = 0
+	_turn_index = 1
+	for unit in _units:
+		unit["ap"] = MAX_AP
+		unit["mp"] = MAX_MP
+		unit["locked"] = true
+	_last_coach = coach
+	_last_events = [{
+		"type": "combat_start",
+		"phase": _flow.phase_name(),
+		"positions_locked": true,
+		"coach": coach,
+	}, {
+		"type": "turn_start",
+		"seat": _active_seat,
+		"turn": _turn_index,
+		"coach": coach,
+	}]
+
+
+func _occupant_seat(cell: Vector2i) -> int:
+	for unit in _units:
+		if bool(unit.get("placed", false)) and unit["pos"] == cell:
+			return int(unit["seat"])
+	return -1
 
 
 func _normalize_intent(intent: Dictionary) -> Dictionary:
@@ -1249,6 +1489,8 @@ func _enemy_of(seat: int) -> Dictionary:
 
 func _living_unit_at(cell: Vector2i) -> Dictionary:
 	for unit in _units:
+		if not bool(unit.get("placed", true)):
+			continue
 		if unit["pos"] == cell and unit["alive"]:
 			return unit
 	return {}
@@ -1261,6 +1503,8 @@ func _is_empty(cell: Vector2i) -> bool:
 		if blocked == cell:
 			return false
 	for unit in _units:
+		if not bool(unit.get("placed", true)):
+			continue
 		if unit["pos"] == cell:
 			return false
 	return true
