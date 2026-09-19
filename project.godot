@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 CombatSim="*res://backend/combat_sim.gd"
 EventBus="*res://backend/event_bus.gd"
+NetSession="*res://backend/net_session.gd"
 
 [display]
 

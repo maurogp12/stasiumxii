@@ -409,6 +409,57 @@ func snapshot() -> Dictionary:
 	}
 
 
+## Client replica only. Restore view + read-only queries from a host snapshot.
+## Does not roll, does not _broadcast, and is not authority. Host still owns submit.
+func apply_host_snapshot(snap: Dictionary) -> void:
+	_seed = int(snap.get("seed", 0))
+	_elev_seed = int(snap.get("elev_seed", _seed))
+	_rng.seed = _seed
+	_scripted_rolls.clear()
+	_blocked_cells.clear()
+	_intent_log.clear()
+	_active_seat = int(snap.get("active_seat", 0))
+	_turn_index = int(snap.get("turn_index", 0))
+	_match_over = bool(snap.get("match_over", false))
+	_winner_seat = int(snap.get("winner_seat", -1))
+	_last_coach = str(snap.get("coach", ""))
+	_last_events = []
+	for event in snap.get("last_events", []):
+		if typeof(event) == TYPE_DICTIONARY:
+			_last_events.append((event as Dictionary).duplicate(true))
+	_elevation_gen = str(snap.get("elevation_gen", "seeded_noise"))
+	_demo_map = str(snap.get("demo_map", _MatchFlow.PHASE_A_DEMO_MAP))
+	_units.clear()
+	for raw in snap.get("units", []):
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var unit: Dictionary = (raw as Dictionary).duplicate(true)
+		unit["pos"] = _as_cell(unit.get("pos", UNPLACED))
+		_units.append(unit)
+	_board = _WalkBoard.new()
+	_apply_snapshot_tiles(snap.get("tiles", {}))
+	_flow.apply_host_snapshot(snap)
+
+
+func _apply_snapshot_tiles(raw: Variant) -> void:
+	if typeof(raw) == TYPE_ARRAY:
+		for item in raw:
+			if typeof(item) != TYPE_DICTIONARY:
+				continue
+			var rec: Dictionary = item
+			_board.set_tile(_as_cell(rec.get("pos", rec)), str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)))
+		return
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
+	var tiles: Dictionary = raw
+	for key in tiles:
+		var rec: Variant = tiles[key]
+		if typeof(rec) != TYPE_DICTIONARY:
+			continue
+		var cell := key if key is Vector2i else _as_cell((rec as Dictionary).get("pos", key))
+		_board.set_tile(cell, str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)))
+
+
 static func chebyshev(a: Vector2i, b: Vector2i) -> int:
 	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 

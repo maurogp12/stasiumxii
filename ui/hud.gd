@@ -448,6 +448,9 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_turn_label.text = "DEPLOYMENT  ·  place both fighters"
 	else:
 		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), active_name, _clock_seconds]
+	var net_prefix := _net_prefix(snap)
+	if net_prefix != "" and _turn_label != null:
+		_turn_label.text = "%s%s" % [net_prefix, _turn_label.text]
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
@@ -517,6 +520,7 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
+		_new_match_button.visible = int(_last_snap.get("local_seat", -1)) != 1
 
 
 func _build() -> void:
@@ -1160,12 +1164,13 @@ func clear_deploy_note() -> void:
 func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
 	var ready: Dictionary = snap.get("ready", {})
+	var local_seat := int(snap.get("local_seat", -1))
 	if _ready_p1_button != null:
-		_ready_p1_button.visible = deploying
+		_ready_p1_button.visible = deploying and (local_seat < 0 or local_seat == 0)
 		_ready_p1_button.disabled = not can_ready_from_snap(snap, 0)
 		_ready_p1_button.text = "P1 ready" if bool(ready.get(0, false)) else "Ready P1"
 	if _ready_p2_button != null:
-		_ready_p2_button.visible = deploying
+		_ready_p2_button.visible = deploying and (local_seat < 0 or local_seat == 1)
 		_ready_p2_button.disabled = not can_ready_from_snap(snap, 1)
 		_ready_p2_button.text = "P2 ready" if bool(ready.get(1, false)) else "Ready P2"
 	if _clock_row != null:
@@ -1222,6 +1227,15 @@ func spells_suppressed() -> bool:
 		if not (button as Button).disabled:
 			return false
 	return true
+
+
+func _net_prefix(snap: Dictionary) -> String:
+	var seat := int(snap.get("local_seat", -1))
+	if seat == 0:
+		return "HOST · "
+	if seat == 1:
+		return "GUEST · "
+	return ""
 
 
 func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:
