@@ -239,6 +239,13 @@ func _test_hud_legend_and_face_untouched() -> void:
 	for dir in ["N", "E", "S", "W"]:
 		eq(hud._face_buttons.has(dir), true, "Face button %s stays wired" % dir)
 		eq((hud._face_buttons[dir] as Button).text, dir, "Face button label is %s" % dir)
+	var pad := _face_pad(hud)
+	eq(pad != null, true, "Face pad is still a GridContainer")
+	eq(pad.columns, 3, "Face pad stays 3 columns")
+	eq(pad.get_child(1), hud._face_buttons["N"], "N is still top-center")
+	eq(pad.get_child(3), hud._face_buttons["W"], "W is still middle-left")
+	eq(pad.get_child(5), hud._face_buttons["E"], "E is still middle-right")
+	eq(pad.get_child(7), hud._face_buttons["S"], "S is still bottom-center")
 	eq(hud.face_suppressed(), false, "Face stays usable after the terrain legend")
 	eq(hud._action_bar is FlowContainer, true, "action bar still wraps")
 	hud.free()
@@ -246,12 +253,13 @@ func _test_hud_legend_and_face_untouched() -> void:
 
 func _test_deploy_chrome_untouched() -> void:
 	_sim.reset_match({"seed": 1})
-	truthy(_sim.deploy_zone_cells(0).size() > 0, "seat 0 still has a deploy zone")
-	truthy(_sim.deploy_zone_cells(1).size() > 0, "seat 1 still has a deploy zone")
+	var zones: Dictionary = _sim.snapshot().get("deploy_zones", {})
+	eq(_sim.deploy_zone_cells(0).size(), 6, "seat 0 blob stays 6 cells")
+	eq(_sim.deploy_zone_cells(1).size(), 6, "seat 1 blob stays 6 cells")
 	var p1: Vector2i = _sim.deploy_zone_cells(0)[0]
 	var p2: Vector2i = _sim.deploy_zone_cells(1)[0]
-	eq(HUD.deploy_seat_for_cell(p1, -1), 0, "P1 zone click still routes to seat 0")
-	eq(HUD.deploy_seat_for_cell(p2, -1), 1, "P2 zone click still routes to seat 1")
+	eq(HUD.deploy_seat_for_cell(p1, -1, zones), 0, "P1 blob click still routes to seat 0")
+	eq(HUD.deploy_seat_for_cell(p2, -1, zones), 1, "P2 blob click still routes to seat 1")
 
 	var hud = HUD.new()
 	hud._build()
@@ -299,6 +307,16 @@ func _test_board_view_wires_adapter() -> void:
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("TERRAIN_LEGEND"), "HUD declares the terrain legend")
 	eq(hud_src.contains("Detonate"), false, "elevation HUD patch does not hardcode Detonate")
+	eq(hud_src.contains("for dir in [\"N\", \"E\", \"S\", \"W\"]"), false, "Face pad stays a cardinal grid")
+
+
+func _face_pad(hud: Node) -> GridContainer:
+	if hud._face_bar == null:
+		return null
+	for child in hud._face_bar.get_children():
+		if child is GridContainer:
+			return child
+	return null
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
