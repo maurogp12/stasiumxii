@@ -5,11 +5,11 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 ## How to play
 
 1. Open `project.godot` in Godot 4.7 or later and run the main scene.
-2. **Locked deploy** on `main.tscn` before Turn 1: the green **south+west** ring is Kestrel (seat 0); the red **north+east** ring is Ironjaw (seat 1); corners sit on the N/S edges. Click a legal cell to `place_unit` (reposition until Ready). **Ready P1** / **Ready P2** enable from `can_ready` after that seat’s fighter is placed. Both Ready → lock → Turn 1 combat. Walk / kit casts / Face / End Turn and the 30s TIME clock stay hidden during DEPLOYMENT. Interior vs wrong-half clicks show the #29 coach copy. No fog, no deploy timer, no networking.
+2. **Locked deploy flow** on `main.tscn` before Turn 1, with **Proposed random blobs** shipped live: each seat gets a seed-sampled ~6-cell zone (2×3 rectangle or organic blob; interior cells allowed). Click a highlighted zone cell to `place_unit` (reposition until Ready). **Ready P1** / **Ready P2** enable from `can_ready` after that seat’s fighter is placed. Both Ready → lock → Turn 1 combat. Walk / kit casts / Face / End Turn and the 30s TIME clock stay hidden during DEPLOYMENT. Outside-zone clicks name the other blob or an unclaimed cell. No fog, no deploy timer, no networking.
 3. After deploy, **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
 4. Each combat turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. After deploy, a **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune. The clock is hidden during DEPLOYMENT (no deploy timer).
 5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands the cheapest orthogonal path (weighted pathfinder). Walk cost is dest **terrain MP + uphill elevation**; downhill is free. Legal tiles come from remaining MP. Default board is Ground 0 (1 MP per hop, pool 3). The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel). Hit % / facing cones / spell LoS ignore height.
-6. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** stay on their own row. **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
+6. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** sit on a cardinal pad (N top, W left, E right, S bottom). **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
    - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). **Facing is unchanged** on Advance (no auto-face). Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it hits.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On hit: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
@@ -27,7 +27,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | Piece | Role |
 | --- | --- |
 | `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live). `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Walk is dest-click weighted pathfinder (`backend/walk_board.gd`); `snapshot().tiles` exposes per-tile elevation / terrain_type for Godot. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup). Rolls and HP live here. |
-| `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + 1-deep half-ring zones + simultaneous ready. Copied from proto/deployment (studio #27/#29). Proto stays reference. |
+| `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
@@ -38,7 +38,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 
 ## Locked in this slice (GDD v0.2)
 
-- **Locked deploy:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready; networking OFF). Legal cells = 1-deep border ring only on 8×8. 1v1 halves: seat 0 = South+West of the ring; seat 1 = North+East; corners belong to the N/S edges (NW+NE → seat 1, SW+SE → seat 0). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only).
+- **Locked deploy flow:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready; networking OFF). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only). #31 1-deep S+W / N+E border halves are the previous Locked zone baseline and are no longer the live legal cells.
 - 8×8 board, per-tile **elevation** + **terrain_type**. Default live paint is Ground 0. No walls. Spell LoS stays unused (no height mods).
 - 80 HP, 6 AP / 3 MP refilled at turn start
 - Walk: dest-click only. Cost = dest terrain MP + uphill elev Δ. Terrain MP: Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per full level (+1 leftover half); downhill 0. Max climb 1 / drop 2; ortho-only. CombatSim runs a weighted pathfinder; legal cells = reachable with remaining MP (pool 3). Facing follows each ortho hop of that path; **final facing = last hop direction**. Manual face intent stays for standing turns. `legal_intents` enumerates walks whenever leftover **MP > 0**, regardless of remaining AP. Phase A flat Manhattan / H-first expansion is superseded. Snapshot `tiles` exposes elev/terrain for Godot; board chrome stays Godot-side.
@@ -66,6 +66,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Proposed (not Locked)
 
+- **Proposed random deploy blobs (shipped live):** per match, each seat gets a seed-sampled ~6-cell blob (2×3 rectangle or organic contiguous blob). Interior cells are allowed. Opening Chebyshev between the two zones is at least **3** (sampler prefers 4–6). Overlapping blobs and same-edge camping (both zones hugging the same map edge) are rejected. `legal_deploy_cells` / `deploy_zone_cells` expose the sampled cells. This replaces the #31 fixed border-half zones on the live Phase A path.
 - ~1.0s client-only seat handoff pause + turn banner on End Turn. CombatSim still advances the seat immediately. The next seat's 30s is held during that banner so it does not drain before they can act.
 - 30s visible seat clock (`TurnClock.DURATION_SEC`). At 0, auto End Turn (same as the button). CombatSim does not own the clock. Walk hop animations do **not** pause the clock. Advance does not hop.
 - Pre-cast **HIT %** HUD/aim chrome for Mark Shot / Strike / Detonate / Shoulder / Crush (the bands themselves are Locked). Marks/Impact pips read from the snapshot.
@@ -167,16 +168,16 @@ Modules (all under `proto/deployment/`, unused by the Phase A combat path):
 
 ## How to test Locked deploy (CombatSim)
 
-Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `reset_match()` starts DEPLOYMENT (no `(1,1)` / `(6,6)`). `place_unit` / `ready_seat` reject OOB, interior, wrong-half (`outside_zone`), and occupied. Both Ready locks the confirmed cells and starts Turn 1; kit tests still pass after that. `skip_deploy` or an explicit `kestrel_pos` / `ironjaw_pos` skips to combat for fixtures. Main chrome binds `legal_deploy_cells`, `can_ready`, Ready P1 / Ready P2, and `snapshot().phase`.
+Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `reset_match()` starts DEPLOYMENT (no `(1,1)` / `(6,6)`). Zones are seed-sampled ~6-cell blobs. `place_unit` / `ready_seat` reject OOB, unclaimed / other-blob (`outside_zone`), and occupied. Interior cells inside a blob are legal. Both Ready locks the confirmed cells and starts Turn 1; kit tests still pass after that. `skip_deploy` or an explicit `kestrel_pos` / `ironjaw_pos` skips to combat for fixtures. Main chrome binds `legal_deploy_cells`, `deploy_zone_cells`, `can_ready`, Ready P1 / Ready P2, and `snapshot().phase`.
 
 ## How to test live deploy chrome (main.tscn)
 
-1. Open `main.tscn` (or run the main scene). Phase is **DEPLOYMENT**. Green S+W ring and red N+E ring are lit. Walk / kit casts / Face / End Turn / TIME are hidden. Ready P1 / Ready P2 start disabled.
-2. Click a **green south/west** tile — Kestrel places. Click another S+W tile to reposition. Ready P1 enables.
-3. Click a **red north/east** tile — Ironjaw places at the same time. Ready P2 enables.
-4. Click an **interior** tile — coach: interior, 1-deep border ring only. Click the other seat’s half with that fighter selected — coach: other side’s half.
+1. Open `main.tscn` (or run the main scene). Phase is **DEPLOYMENT**. Two seed-sampled ~6-cell blobs are lit (green seat 0, red seat 1). Walk / kit casts / Face / End Turn / TIME are hidden. Ready P1 / Ready P2 start disabled.
+2. Click a **green zone** tile — Kestrel places. Click another green zone tile to reposition. Ready P1 enables.
+3. Click a **red zone** tile — Ironjaw places at the same time. Ready P2 enables.
+4. Click an **unclaimed** tile — coach: outside this side’s deployment zone. Click the other seat’s blob with that fighter selected — coach: other side’s deploy zone. An interior cell inside your blob is legal.
 5. **Ready P1** then **Ready P2**. Phase leaves DEPLOYMENT. Deploy chrome hides. Walk / kits / Face / End Turn / TIME return. Turn 1 banner, Kestrel acts first with Locked kits from the confirmed cells.
-6. **New Match** returns to DEPLOYMENT. `scenes/proto_deployment_board.tscn` stays the reference sandbox.
+6. **New Match** returns to DEPLOYMENT with a new seed’s blobs. `scenes/proto_deployment_board.tscn` stays the #31 border-ring reference sandbox.
 
 ## How to test the deployment prototype
 

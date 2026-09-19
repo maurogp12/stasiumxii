@@ -122,11 +122,11 @@ static func can_ready_from_snap(snap: Dictionary, seat: int) -> bool:
 	return false
 
 
-## Click routing for simultaneous deploy. A selected seat on the other half
-## (or interior) keeps that seat so CombatSim can emit wrong-half / interior copy.
-static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1) -> int:
-	var in0 := MatchFlow.owns_south_west_half(cell)
-	var in1 := MatchFlow.owns_north_east_half(cell)
+## Click routing for simultaneous deploy. A selected seat on the other blob
+## (or an unclaimed cell) keeps that seat so CombatSim can emit wrong_zone / outside.
+static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1, zones: Dictionary = {}) -> int:
+	var in0 := _zone_has_cell(zones, 0, cell)
+	var in1 := _zone_has_cell(zones, 1, cell)
 	if selected_seat >= 0:
 		var selected_owns := in0 if selected_seat == 0 else in1
 		if not selected_owns:
@@ -138,17 +138,24 @@ static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1) -> int
 	return selected_seat if selected_seat >= 0 else 0
 
 
-## #29 coach: interior vs wrong-half share outside_zone; copy distinguishes them.
+static func _zone_has_cell(zones: Dictionary, seat: int, cell: Vector2i) -> bool:
+	var raw: Variant = zones.get(seat, zones.get(str(seat), []))
+	if typeof(raw) != TYPE_ARRAY:
+		return false
+	for owned in raw:
+		if owned is Vector2i and owned == cell:
+			return true
+	return false
+
+
+## outside_zone copy: other blob vs unclaimed cell. Interior cells are legal when sampled.
 static func deploy_reject_copy(reason: String, dest: Vector2i, zone_kind: String = "") -> String:
 	var where := "(%d,%d)" % [dest.x, dest.y] if dest.x >= 0 and dest.y >= 0 else "that tile"
 	match reason:
 		"outside_zone":
-			var kind := zone_kind
-			if kind == "":
-				kind = "interior" if not MatchFlow.is_border_cell(dest) else "wrong_half"
-			if kind == "interior":
-				return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % where
-			return "REJECT — %s is the other side's half of the border ring." % where
+			if zone_kind == "wrong_zone" or zone_kind == "wrong_half":
+				return "REJECT — %s is the other side's deploy zone." % where
+			return "REJECT — %s is outside this side's deployment zone." % where
 		"occupied":
 			return "REJECT — %s is occupied." % where
 		"out_of_bounds":
@@ -530,7 +537,7 @@ func _build() -> void:
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
-	bottom.offset_top = -168
+	bottom.offset_top = -232
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
@@ -538,19 +545,32 @@ func _build() -> void:
 	var face_bar := HBoxContainer.new()
 	_face_bar = face_bar
 	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	face_bar.add_theme_constant_override("separation", 6)
+	face_bar.add_theme_constant_override("separation", 8)
 	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bottom.add_child(face_bar)
 	var face_caption := Label.new()
 	face_caption.text = "Face"
 	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	face_bar.add_child(face_caption)
-	for dir in ["N", "E", "S", "W"]:
+	var face_pad := GridContainer.new()
+	face_pad.columns = 3
+	face_pad.add_theme_constant_override("h_separation", 4)
+	face_pad.add_theme_constant_override("v_separation", 4)
+	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_bar.add_child(face_pad)
+	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
+	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
+		if dir == "":
+			var spacer := Control.new()
+			spacer.custom_minimum_size = Vector2(36, 28)
+			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			face_pad.add_child(spacer)
+			continue
 		var button := Button.new()
 		button.text = dir
 		button.custom_minimum_size = Vector2(36, 28)
 		button.pressed.connect(_on_face_pressed.bind(dir))
-		face_bar.add_child(button)
+		face_pad.add_child(button)
 		_face_buttons[dir] = button
 
 	_aim_hit_label = Label.new()
@@ -908,7 +928,7 @@ func _update_selected_label() -> void:
 	if _selected_label == null:
 		return
 	if _deploying:
-		_selected_label.text = "Place on your half of the border ring  ·  Ready when placed"
+		_selected_label.text = "Place on your deploy zone  ·  Ready when placed"
 		return
 	if _stunned:
 		_selected_label.text = "Stunned — turn auto-ends"

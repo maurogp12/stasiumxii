@@ -496,10 +496,11 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 		if not bool(ready.get(occupant, false)):
 			_deploy_selected_seat = occupant
 			var unit := _unit_from_seat(snap, occupant)
-			_hud.set_deploy_note("Selected %s. Click another ring tile on that side to reposition." % str(unit.get("name", "fighter")))
+			_hud.set_deploy_note("Selected %s. Click another zone tile on that side to reposition." % str(unit.get("name", "fighter")))
 			_refresh()
 			return
-	var seat := CombatHUD.deploy_seat_for_cell(cell, _deploy_selected_seat)
+	var zones: Dictionary = CombatSim.snapshot().get("deploy_zones", {})
+	var seat := CombatHUD.deploy_seat_for_cell(cell, _deploy_selected_seat, zones)
 	var result: Dictionary = CombatSim.place_unit(seat, cell)
 	if result.get("ok", false):
 		_deploy_selected_seat = -1

@@ -3,7 +3,8 @@ extends Node
 ## Local Phase A combat brain. Godot nodes must not mutate HP or roll.
 ## API: reset_match(config), submit(intent), legal_intents(seat), snapshot(),
 ## preview_cast(spell_id, from, to, target_seat=-1) — also accepts an intent Dictionary.
-## Locked deploy (live duel): place / reposition / ready, then Turn 1 combat.
+## Locked deploy flow (live duel): place / reposition / ready, then Turn 1 combat.
+## Proposed zones (shipped live): seed-sampled ~6-cell blobs, not #31 border halves.
 ## Godot chrome binds place_unit / ready_seat / legal_deploy_cells / can_ready.
 ## Locked walk: per-tile elevation + terrain_type; dest-click weighted pathfinder.
 ## Proto/elevation stays reference — this file does not import it.
@@ -71,12 +72,12 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_scripted_rolls.clear()
 	_last_events.clear()
 	_intent_log.clear()
-	_flow.reset()
 	_board = _WalkBoard.new()
 	_apply_tile_overrides(config)
 
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_rng.seed = _seed
+	_flow.reset(_seed, config)
 	if config.has("rolls"):
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
@@ -98,7 +99,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		_flow.skip_to_combat()
 		_begin_combat("Kestrel's turn. 6 AP / 3 MP.")
 	else:
-		_last_coach = "Deployment. Place one fighter on your half of the border ring, then Ready."
+		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
 		_last_events = [{
 			"type": "deploy_start",
 			"phase": _flow.phase_name(),
@@ -347,8 +348,12 @@ func snapshot() -> Dictionary:
 		"phase_name": flow_snap["phase_name"],
 		"deploy": "locked",
 		"deploy_simultaneous": true,
-		"deploy_legal_cells": "border_ring_1_deep",
-		"deploy_zone_split": "p1_south_west_p2_north_east",
+		"deploy_legal_cells": "sampled_blob_6",
+		"deploy_zone_split": "seeded_random_blobs",
+		"deploy_zone_gen": "proposed_random_blobs",
+		"deploy_blob_size": _MatchFlow.BLOB_SIZE,
+		"deploy_min_chebyshev": _MatchFlow.MIN_ZONE_CHEBYSHEV,
+		"deploy_zone_distance": _flow.zone_distance,
 		"deploy_zones": {
 			0: _flow.zone_cells(0).duplicate(),
 			1: _flow.zone_cells(1).duplicate(),
@@ -367,7 +372,7 @@ func snapshot() -> Dictionary:
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
-			"deploy": "Locked: simultaneous 1-deep border-ring halves (seat 0 S+W, seat 1 N+E, corners on N/S), one fighter each, Ready gated on place, both ready → lock → Turn 1. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
+			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 			"elevation": "Locked walk: per-tile elevation + terrain_type. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1/full level (+1 leftover half); downhill 0. Max climb 1 / drop 2; ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"],
@@ -788,10 +793,8 @@ func _deploy_reject_coach(seat: int, dest: Vector2i, gate: Dictionary) -> String
 	if reason == "wrong_phase":
 		return "REJECT — deploy is over."
 	if reason == "outside_zone":
-		if kind == "interior":
-			return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % _cell_text(dest)
-		if kind == "wrong_half":
-			return "REJECT — %s is the other side's half of the border ring." % _cell_text(dest)
+		if kind == "wrong_zone" or kind == "wrong_half":
+			return "REJECT — %s is the other side's deploy zone." % _cell_text(dest)
 		return "REJECT — %s is outside this side's deployment zone." % _cell_text(dest)
 	if reason == "not_walkable":
 		return "REJECT — %s is not walkable." % _cell_text(dest)
