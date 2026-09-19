@@ -30,6 +30,14 @@ func _draw() -> void:
 			color = Color(0.95, 0.55, 0.28, 1.0)
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
+		"zone_p1":
+			color = Color(0.36, 0.72, 0.52, 1.0)
+		"zone_p2":
+			color = Color(0.78, 0.42, 0.42, 1.0)
+		"occupied":
+			color = Color(0.78, 0.62, 0.22, 1.0)
+		"locked":
+			color = Color(0.42, 0.40, 0.48, 1.0)
 	if is_selected:
 		color = Color(1.0, 0.85, 0.2, 1.0)
 	draw_colored_polygon(points, color)
