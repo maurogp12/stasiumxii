@@ -1890,17 +1890,17 @@ func _test_turn_clock_auto_end_turn() -> void:
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	eq(sim_src.contains("dedicated"), false, "CombatSim does not invent a dedicated server")
 
-	var host_snap := _sim.snapshot().duplicate(true)
+	var host_snap: Dictionary = _sim.snapshot().duplicate(true)
 	host_snap["local_seat"] = 0
 	eq(CombatHUD.kit_seat(host_snap), 0, "host kit chrome is local_seat 0")
 	eq(CombatHUD.is_local_turn(host_snap), false, "after expiry it is Ironjaw's turn; host is not local turn")
 	eq(CombatHUD.turn_status_text(host_snap), "Opponent's Turn", "host HUD shows Opponent's Turn")
-	var guest_snap := host_snap.duplicate(true)
+	var guest_snap: Dictionary = host_snap.duplicate(true)
 	guest_snap["local_seat"] = 1
 	eq(CombatHUD.kit_seat(guest_snap), 1, "guest kit chrome is local_seat 1")
 	eq(CombatHUD.is_local_turn(guest_snap), true, "guest HUD is Your Turn when active_seat is 1")
 	eq(CombatHUD.turn_status_text(guest_snap), "Your Turn", "guest HUD shows Your Turn")
-	eq(CombatHUD.kit_seat(_sim.snapshot()), 0, "hot-seat kit chrome falls back to active_seat")
+	eq(CombatHUD.kit_seat(_sim.snapshot()), 1, "hot-seat kit chrome falls back to active_seat")
 	eq(CombatHUD.turn_status_text(_sim.snapshot()), "", "hot-seat does not encode Your Turn")
 
 	var hud_node := CombatHUD.new()

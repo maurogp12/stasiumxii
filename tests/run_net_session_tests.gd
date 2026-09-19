@@ -232,7 +232,8 @@ func _test_host_timer_broadcast_and_guest_hydrate() -> void:
 	eq(bool(guest_tick.get("ok", false)), true, "guest tick returns the last view")
 
 	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
-	eq(net_src.contains("dedicated"), false, "net_session does not invent a dedicated server")
+	truthy(net_src.contains("no dedicated"), "net_session documents listen-host only")
+	eq(net_src.contains("DedicatedServer"), false, "net_session does not invent DedicatedServer")
 	truthy(net_src.contains("tick_turn_timer"), "net_session ticks the host clock")
 	var md := FileAccess.get_file_as_string("res://MIGRATION_PHASE_E.md")
 	truthy(md.contains("turn_time_remaining"), "Phase E docs name turn_time_remaining")
