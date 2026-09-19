@@ -120,21 +120,30 @@ func _draw_tile(cell: Vector2i) -> void:
 		origin + Vector2(0, TILE_H / 2.0),
 		origin + Vector2(-TILE_W / 2.0, 0),
 	])
-	var color := Color(0.42, 0.50, 0.44) if (cell.x + cell.y) % 2 == 0 else Color(0.36, 0.44, 0.38)
+	var color := Color(0.56, 0.56, 0.53) if (cell.x + cell.y) % 2 == 0 else Color(0.46, 0.46, 0.44)
 	if _mgr.zone_for(0) != null and _mgr.zone_for(0).contains(cell):
-		color = Color(0.28, 0.58, 0.38)
+		color = Color(0.18, 0.76, 0.40) if (cell.x + cell.y) % 2 == 0 else Color(0.14, 0.64, 0.34)
 	if _mgr.zone_for(1) != null and _mgr.zone_for(1).contains(cell):
-		color = Color(0.62, 0.32, 0.32)
+		color = Color(0.86, 0.30, 0.30) if (cell.x + cell.y) % 2 == 0 else Color(0.72, 0.22, 0.22)
+	var legal := false
 	if _mgr.phase == MatchPhase.Id.DEPLOYMENT:
 		var unit := _active_unit()
 		if not unit.is_empty() and bool(_mgr.can_deploy_unit(unit["id"], cell).get("ok", false)):
-			color = Color(0.30, 0.78, 0.90) if int(unit["player_id"]) == 0 else Color(0.90, 0.55, 0.40)
+			legal = true
 	if cell == _hover:
-		color = color.lightened(0.18)
+		color = color.lightened(0.10)
 	_board.draw_colored_polygon(points, color)
 	var outline := PackedVector2Array(points)
 	outline.append(points[0])
-	_board.draw_polyline(outline, Color(0.12, 0.10, 0.10, 0.9), 1.0, true)
+	var line := Color(0.12, 0.10, 0.10, 0.9)
+	var width := 1.0
+	if legal:
+		line = Color(0.25, 0.95, 1.0) if _mgr.active_player_id == 0 else Color(1.0, 0.72, 0.28)
+		width = 2.4
+	if cell == _hover:
+		line = Color(1.0, 0.94, 0.30)
+		width = 2.2
+	_board.draw_polyline(outline, line, width, true)
 	var font := ThemeDB.fallback_font
 	var label := "%d,%d" % [cell.x, cell.y]
 	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
@@ -185,7 +194,7 @@ func _build_hud() -> void:
 	_status = _hud_label(hud, Vector2(16, 30), 16)
 	_coach = _hud_label(hud, Vector2(16, 54), 14)
 	var legend := _hud_label(hud, Vector2(16, 76), 12)
-	legend.text = "Green 2×3 = seat 0 zone    Red 2×3 = seat 1 zone    Cyan/orange = legal place    Sequential hot-seat    Combat off until both Confirm"
+	legend.text = "Green 2×3 = seat 0 zone    Red 2×3 = seat 1 zone    Cyan/orange outline = legal place    Sequential hot-seat    Combat off until both Confirm"
 
 	_confirm = Button.new()
 	_confirm.text = "Confirm seat 0"
