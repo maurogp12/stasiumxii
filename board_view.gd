@@ -15,9 +15,9 @@ extends Node2D
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
-## Proposed timers: ~1.0s client-only seat handoff banner, plus a 30s seat clock
-## (TurnClock.DURATION_SEC) that auto End Turns on expiry. Walk hops lock input
-## but do not pause the clock.
+## Proposed timers: ~1.0s client-only seat handoff banner. The 30s seat clock is
+## host-owned (snapshot.turn_time_remaining). Guest hydrates; it does not tick.
+## Walk hops lock input but do not pause the host clock.
 ## Locked Stun (A′): Walk / Face / spells grey on HUD; this view does not submit them.
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
@@ -89,9 +89,8 @@ func _boot() -> void:
 func _finish_boot() -> void:
 	_rebuild_pawns()
 	_booted = true
-	_sync_clock_to_phase()
 	_refresh()
-	_sync_turn_clock()
+	_hydrate_turn_clock()
 
 
 func _net() -> Node:
@@ -141,8 +140,9 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
 			return
 	_refresh()
-	_sync_clock_to_phase()
-	_sync_turn_clock()
+	_hydrate_turn_clock()
+	if _has_turn_change(events) and not _busy:
+		_present_turn_handoff({"events": events, "snapshot": _sim().snapshot()})
 
 
 func local_to_grid(point: Vector2) -> Vector2i:
@@ -166,25 +166,27 @@ func _process(delta: float) -> void:
 	if not _booted:
 		return
 	var snap: Dictionary = _sim().snapshot()
-	if CombatHUD.is_deployment_phase(snap):
-		_turn_clock.stop()
-		_sync_turn_clock()
+	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
+		_hydrate_turn_clock(snap)
 		return
-	if snap.get("match_over", false):
-		_turn_clock.stop()
-		_sync_turn_clock()
-		return
-	if not _can_control_seat(int(snap.get("active_seat", 0))):
-		_turn_clock.pause()
-		_sync_turn_clock()
-		return
+	# Host / hot-seat tick CombatSim. Guest never ticks — remaining is snapshot-only.
 	# Keep ticking during walk hop animations. _busy only locks input.
-	# Advance is an instant snap (no hop). The ~1s handoff banner still uses
-	# pause() so the next seat's 30s does not drain while they cannot act.
-	if _turn_clock.tick(delta):
-		_sync_turn_clock()
-		_on_turn_clock_expired()
+	var result: Dictionary = {}
+	if not (_online() and _net().is_client()):
+		if _sim().has_method("tick_turn_timer"):
+			result = _sim().tick_turn_timer(delta)
+	_hydrate_turn_clock(_sim().snapshot())
+	if _timer_expired(result):
+		_on_turn_clock_expired(result)
+
+
+func _hydrate_turn_clock(snap: Dictionary = {}) -> void:
+	if _hud == null:
 		return
+	var view: Dictionary = snap if not snap.is_empty() else _sim().snapshot()
+	var remaining := float(view.get("turn_time_remaining", 0.0))
+	var limit := float(view.get("turn_time_limit", TurnClock.DURATION_SEC))
+	_turn_clock.hydrate(remaining, bool(view.get("turn_time_running", false)), limit)
 	_sync_turn_clock()
 
 
@@ -192,6 +194,19 @@ func _sync_turn_clock() -> void:
 	if _hud == null:
 		return
 	_hud.set_turn_clock(_turn_clock.display_seconds(), _turn_clock.running, _turn_clock.fraction_left())
+
+
+func _timer_expired(result: Dictionary) -> bool:
+	if result.is_empty():
+		return false
+	if bool(result.get("expired", false)):
+		return true
+	for event in result.get("events", []):
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "end_turn" and str(event.get("reason", "")) == "timer":
+			return true
+	return false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -300,7 +315,6 @@ func _on_end_turn_button_pressed() -> void:
 	if _busy:
 		return
 	_busy = true
-	_turn_clock.pause()
 	_hud.clear_spell()
 	var result: Dictionary
 	if _online() and _net().is_client():
@@ -311,23 +325,36 @@ func _on_end_turn_button_pressed() -> void:
 		result = CombatSim.submit({"type": "end_turn"})
 	if not result.get("ok", false):
 		_busy = false
-		_turn_clock.resume()
 		_refresh()
 		return
-	var snap: Dictionary = _sim().snapshot()
+	await _present_turn_handoff(result)
+
+
+func _on_turn_clock_expired(result: Dictionary = {}) -> void:
+	# Host already submitted end_turn. If hops are in flight, finish them first
+	# then present the seat change. Do not submit again.
+	if _busy:
+		_clock_expired_pending = true
+		return
+	_clock_expired_pending = false
+	await _present_turn_handoff(result)
+
+
+func _present_turn_handoff(result: Dictionary) -> void:
+	var snap: Dictionary = result.get("snapshot", _sim().snapshot())
+	if snap.is_empty():
+		snap = _sim().snapshot()
 	if snap.get("match_over", false):
-		_turn_clock.stop()
 		_busy = false
 		_refresh()
+		_hydrate_turn_clock(snap)
 		return
-	# Proposed: client-only ~1.0s seat handoff. CombatSim already advanced.
-	# Start the next seat's clock at 30s but pause it through the banner.
+	# Proposed: client-only ~1.0s seat handoff. Host clock already advanced.
 	# Locked A′: if the sim auto-skipped a stunned seat, present that event first.
-	_turn_clock.start()
-	_turn_clock.pause()
+	_busy = true
 	_hud.set_locked(true)
 	_refresh()
-	_sync_turn_clock()
+	_hydrate_turn_clock(snap)
 	var skip: Dictionary = CombatHUD.stun_skip_event(result.get("events", []))
 	if not skip.is_empty():
 		var skip_unit := _unit_from_event(snap, skip)
@@ -337,26 +364,26 @@ func _on_end_turn_button_pressed() -> void:
 		if not is_inside_tree():
 			return
 	var next_unit := _active_unit(snap)
-	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")))
+	var status := CombatHUD.turn_status_text(snap)
+	var caption := status if status != "" else ""
+	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
 	await get_tree().create_timer(HANDOFF_SEC).timeout
 	if not is_inside_tree():
 		return
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
 	_busy = false
-	_turn_clock.resume()
 	_refresh()
-	_sync_turn_clock()
+	_hydrate_turn_clock()
 
 
-func _on_turn_clock_expired() -> void:
-	# Same path as pressing End Turn. If hops are in flight, finish them first
-	# so the already-applied dest is visible, then auto End Turn.
-	if _busy:
-		_clock_expired_pending = true
-		return
-	_clock_expired_pending = false
-	_on_end_turn_button_pressed()
+func _has_turn_change(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) in ["turn_start", "end_turn"]:
+			return true
+	return false
 
 
 func _on_new_match() -> void:
@@ -372,9 +399,8 @@ func _on_new_match() -> void:
 		return
 	_sim().reset_match({})
 	_rebuild_pawns()
-	_sync_clock_to_phase()
 	_refresh()
-	_sync_turn_clock()
+	_hydrate_turn_clock()
 
 
 func _submit(intent: Dictionary) -> void:
@@ -473,7 +499,7 @@ func _play_walk(seat: int, path: Array) -> void:
 	_refresh()
 	if _clock_expired_pending:
 		_clock_expired_pending = false
-		_on_end_turn_button_pressed()
+		_on_turn_clock_expired()
 
 
 func _animate_path(seat: int, path: Array) -> void:
@@ -517,11 +543,12 @@ func _stop_walk_tween() -> void:
 
 func _refresh() -> void:
 	var snap: Dictionary = _sim().snapshot()
-	var legal: Array = _sim().legal_intents(int(snap.get("active_seat", 0)))
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
 	_hud.render(snap, legal)
 	_paint_highlights()
+	_hydrate_turn_clock(snap)
 
 
 func _rebuild_pawns() -> void:
@@ -560,9 +587,9 @@ func _paint_highlights() -> void:
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
 		return
-	var legal: Array = _sim().legal_intents(int(snap.get("active_seat", 0)))
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
-	var actor := _active_unit(snap)
+	var actor := _kit_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
 	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
@@ -570,7 +597,7 @@ func _paint_highlights() -> void:
 	if spell_id != "" and spell_id != SpellKits.ADVANCE:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if str(def.get("target", "")) == "enemy":
-			for cell in _sim().range_highlight_cells(int(snap.get("active_seat", 0)), spell_id):
+			for cell in _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id):
 				_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
@@ -669,31 +696,23 @@ func _maybe_enter_combat() -> void:
 func _enter_combat_chrome() -> void:
 	_deploy_selected_seat = -1
 	_hud.clear_deploy_note()
-	_turn_clock.start()
-	_turn_clock.pause()
 	_busy = true
 	_hud.set_locked(true)
 	_refresh()
-	_sync_turn_clock()
+	_hydrate_turn_clock()
 	var snap: Dictionary = _sim().snapshot()
 	var next_unit := _active_unit(snap)
-	_hud.show_turn_banner(str(next_unit.get("name", "Kestrel")), str(next_unit.get("class_id", "")), "Turn 1")
+	var status := CombatHUD.turn_status_text(snap)
+	var caption := status if status != "" else "Turn 1"
+	_hud.show_turn_banner(str(next_unit.get("name", "Kestrel")), str(next_unit.get("class_id", "")), caption)
 	await get_tree().create_timer(HANDOFF_SEC).timeout
 	if not is_inside_tree():
 		return
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
 	_busy = false
-	_turn_clock.resume()
 	_refresh()
-	_sync_turn_clock()
-
-
-func _sync_clock_to_phase() -> void:
-	if CombatHUD.is_deployment_phase(_sim().snapshot()):
-		_turn_clock.stop()
-	else:
-		_turn_clock.start()
+	_hydrate_turn_clock()
 
 
 func _placed_seat_at(cell: Vector2i) -> int:
@@ -720,7 +739,7 @@ func _sync_aim_preview() -> void:
 		_hud.set_aim_preview({})
 		return
 	var snap: Dictionary = _sim().snapshot()
-	_hud.set_aim_preview(_sim().aim_hit_preview(int(snap.get("active_seat", 0)), spell_id))
+	_hud.set_aim_preview(_sim().aim_hit_preview(CombatHUD.kit_seat(snap), spell_id))
 
 
 func _tile_at(cell: Vector2i) -> BoardTile:
@@ -728,11 +747,11 @@ func _tile_at(cell: Vector2i) -> BoardTile:
 
 
 func _active_unit(snap: Dictionary) -> Dictionary:
-	var seat := int(snap.get("active_seat", 0))
-	for unit in snap.get("units", []):
-		if int(unit.get("seat", -1)) == seat:
-			return unit
-	return {}
+	return _unit_from_seat(snap, int(snap.get("active_seat", 0)))
+
+
+func _kit_unit(snap: Dictionary) -> Dictionary:
+	return _unit_from_seat(snap, CombatHUD.kit_seat(snap))
 
 
 func _unit_from_event(snap: Dictionary, event: Dictionary) -> Dictionary:

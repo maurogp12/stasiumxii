@@ -46,7 +46,11 @@ const FACING_VEC := {
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
 ## push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces
 ## (target stays) and staggers (4 HP; +1 MP if current MP >= 1).
+## Host-owned 30s turn clock: starts on turn begin, ticks only on the authority
+## (listen-host / hot-seat). Expiry submits the same end_turn as the HUD button.
+## Guest replicas hydrate remaining from snapshot and must not tick.
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
+const TURN_TIME_LIMIT := 30.0
 
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
@@ -69,6 +73,11 @@ var _board = _WalkBoard.new()
 var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
 var _elev_seed: int = 0
 var _elevation_gen: String = "seeded_noise"
+var _turn_time_remaining: float = 0.0
+var _turn_time_limit: float = TURN_TIME_LIMIT
+var _turn_time_running: bool = false
+## True after apply_host_snapshot. Replica may paint; it must not tick or submit.
+var _replica: bool = false
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
@@ -81,6 +90,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_scripted_rolls.clear()
 	_last_events.clear()
 	_intent_log.clear()
+	_replica = false
+	_stop_turn_timer()
 	_board = _WalkBoard.new()
 	_demo_map = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
@@ -166,6 +177,35 @@ func submit(intent: Dictionary) -> Dictionary:
 			return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
 		_:
 			return _reject(normalized, "unknown_intent", "REJECT — unknown intent.")
+
+
+## Host / hot-seat only. Guest replicas no-op. On expiry, submit the same
+## end_turn Intent as the HUD button for the active seat.
+func tick_turn_timer(delta: float) -> Dictionary:
+	if _replica:
+		return _timer_tick_result(false)
+	if _match_over or _flow.is_deployment():
+		_stop_turn_timer()
+		return _timer_tick_result(false)
+	if not _turn_time_running:
+		return _timer_tick_result(false)
+	_turn_time_remaining = maxf(_turn_time_remaining - maxf(delta, 0.0), 0.0)
+	if _turn_time_remaining > 0.0:
+		return _timer_tick_result(false)
+	_turn_time_running = false
+	_turn_time_remaining = 0.0
+	var result: Dictionary = submit({
+		"type": "end_turn",
+		"seat": _active_seat,
+		"auto": true,
+		"reason": "timer",
+	})
+	result["expired"] = true
+	return result
+
+
+func turn_time_seconds() -> int:
+	return _clock_display_seconds(_turn_time_remaining)
 
 
 func legal_intents(seat: int) -> Array:
@@ -394,6 +434,11 @@ func snapshot() -> Dictionary:
 		"combat_enabled": flow_snap["combat_enabled"],
 		"walk_enabled": flow_snap["walk_enabled"],
 		"end_turn_enabled": flow_snap["end_turn_enabled"],
+		"turn_time_remaining": _turn_time_remaining,
+		"turn_time_limit": _turn_time_limit,
+		"turn_time_running": _turn_time_running,
+		"turn_time_seconds": _clock_display_seconds(_turn_time_remaining),
+		"turn_timer": "host",
 		"networking": false,
 		"open_deploy": ["fog", "hidden_enemy", "deploy_timer", "multi_unit"],
 		"open_notes": {
@@ -412,6 +457,7 @@ func snapshot() -> Dictionary:
 ## Client replica only. Restore view + read-only queries from a host snapshot.
 ## Does not roll, does not _broadcast, and is not authority. Host still owns submit.
 func apply_host_snapshot(snap: Dictionary) -> void:
+	_replica = true
 	_seed = int(snap.get("seed", 0))
 	_elev_seed = int(snap.get("elev_seed", _seed))
 	_rng.seed = _seed
@@ -422,6 +468,9 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_turn_index = int(snap.get("turn_index", 0))
 	_match_over = bool(snap.get("match_over", false))
 	_winner_seat = int(snap.get("winner_seat", -1))
+	_turn_time_limit = float(snap.get("turn_time_limit", TURN_TIME_LIMIT))
+	_turn_time_remaining = float(snap.get("turn_time_remaining", 0.0))
+	_turn_time_running = bool(snap.get("turn_time_running", false))
 	_last_coach = str(snap.get("coach", ""))
 	_last_events = []
 	for event in snap.get("last_events", []):
@@ -905,6 +954,7 @@ func _begin_combat(coach: String) -> void:
 		unit["ap"] = MAX_AP
 		unit["mp"] = MAX_MP
 		unit["locked"] = true
+	_start_turn_timer()
 	_last_coach = coach
 	_last_events = [{
 		"type": "combat_start",
@@ -915,6 +965,8 @@ func _begin_combat(coach: String) -> void:
 		"type": "turn_start",
 		"seat": _active_seat,
 		"turn": _turn_index,
+		"turn_time_remaining": _turn_time_remaining,
+		"turn_time_limit": _turn_time_limit,
 		"coach": coach,
 	}]
 
@@ -940,14 +992,14 @@ func _normalize_intent(intent: Dictionary) -> Dictionary:
 
 func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	_intent_log.append(intent)
-	_handoff_seat(actor, bool(intent.get("auto", false)))
+	_handoff_seat(actor, bool(intent.get("auto", false)), str(intent.get("reason", "")))
 	# Locked Stun (A′): if the seat that just started is stunned, auto-resolve
 	# end_turn. Tick already ran in _begin_unit_turn, so this is the skipped turn.
 	_auto_skip_stunned_turns()
 	return _accept()
 
 
-func _handoff_seat(actor: Dictionary, auto_skip: bool) -> Dictionary:
+func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "") -> Dictionary:
 	var next_seat := 1 if _active_seat == 0 else 0
 	var next_unit := _unit_by_seat(next_seat)
 	if next_unit.is_empty() or not next_unit["alive"]:
@@ -959,6 +1011,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool) -> Dictionary:
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = MAX_AP
 	next_unit["mp"] = MAX_MP
+	_start_turn_timer()
 	var stunned := _is_stunned(next_unit)
 	if stunned:
 		_last_coach = "%s's turn skipped — stunned (Locked A′)." % next_unit["name"]
@@ -972,14 +1025,19 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool) -> Dictionary:
 	}
 	if auto_skip:
 		end_event["auto"] = true
-		end_event["reason"] = "stunned"
-		end_event["locked"] = "Locked Stun (A′) — auto end_turn on turn start"
+		if skip_reason == "timer":
+			end_event["reason"] = "timer"
+		else:
+			end_event["reason"] = "stunned"
+			end_event["locked"] = "Locked Stun (A′) — auto end_turn on turn start"
 	_last_events.append(end_event)
 	_last_events.append({
 		"type": "turn_start",
 		"seat": _active_seat,
 		"turn": _turn_index,
 		"stunned_skip": stunned,
+		"turn_time_remaining": _turn_time_remaining,
+		"turn_time_limit": _turn_time_limit,
 		"coach": _last_coach,
 	})
 	return next_unit
@@ -1390,6 +1448,7 @@ func _check_death(target: Dictionary) -> void:
 func _finish_match(winner: int) -> void:
 	_match_over = true
 	_winner_seat = winner
+	_stop_turn_timer()
 	var winner_unit := _unit_by_seat(winner)
 	var winner_name := str(winner_unit.get("name", "Seat %d" % winner))
 	_last_coach = "Match over. %s wins." % winner_name
@@ -1741,6 +1800,35 @@ func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
 		"events": _last_events.duplicate(true),
 		"snapshot": snapshot(),
 	}
+
+
+func _start_turn_timer() -> void:
+	_turn_time_limit = TURN_TIME_LIMIT
+	_turn_time_remaining = TURN_TIME_LIMIT
+	_turn_time_running = not _match_over and not _flow.is_deployment()
+
+
+func _stop_turn_timer() -> void:
+	_turn_time_running = false
+	_turn_time_remaining = 0.0
+	_turn_time_limit = TURN_TIME_LIMIT
+
+
+func _timer_tick_result(expired: bool) -> Dictionary:
+	return {
+		"ok": true,
+		"expired": expired,
+		"illegal": false,
+		"reason": "",
+		"events": [],
+		"snapshot": snapshot(),
+	}
+
+
+static func _clock_display_seconds(remaining: float) -> int:
+	if remaining <= 0.0:
+		return 0
+	return int(ceili(remaining))
 
 
 func _broadcast() -> void:

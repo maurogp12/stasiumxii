@@ -74,11 +74,36 @@ Hot-seat is replaced by seat ownership when online:
 - Deploy: each window only places / readies its seat. Simultaneous still — both can act at once.
 - Combat: only the owner of `active_seat` can submit. The other window watches.
 
+## Host-owned turn timer (Godot HUD)
+
+The 30s TIME clock is **host authority**. `CombatSim` starts it on turn begin, ticks only on the host / hot-seat brain, and on expiry submits the same `end_turn` Intent as the HUD button (`auto: true`, `reason: "timer"`). Guests **hydrate** remaining from the snapshot. They do not tick, do not invent a second clock, and do not mutate the sim.
+
+Every host broadcast (after `submit`, and on each timer tick that changes the displayed second) includes `events` + `snapshot` + seat-filtered `legal_intents`.
+
+### Snapshot fields for the HUD
+
+| Field | Owner | Meaning |
+| --- | --- | --- |
+| `turn_time_remaining` | Host CombatSim | Seconds left on the **active** seat's clock (float). Present on **every** snapshot, including during the opponent's turn. |
+| `turn_time_limit` | Host CombatSim | Duration (30). Retune with `CombatSim.TURN_TIME_LIMIT` (keep `TurnClock.DURATION_SEC` in sync). |
+| `turn_time_running` | Host CombatSim | `true` while the host clock is ticking (combat, match not over). |
+| `turn_time_seconds` | Host CombatSim | `ceil(remaining)` for the TIME readout. |
+| `turn_timer` | Host CombatSim | Stamp `"host"` — not a client clock. |
+| `active_seat` | Host CombatSim | Whose turn it is. `turn_start` / `end_turn.next_seat` events fire on seat change. |
+| `local_seat` | NetSession decorate | This window's seat (`0` host, `1` guest, `-1` hot-seat). Also under `net.local_seat`. |
+| `net.active_seat` | NetSession decorate | Copy of `active_seat` next to `local_seat` so Godot can compare without inventing kit policy. |
+
+Godot HUD:
+
+- TIME bar = `turn_time_seconds` / `turn_time_limit` (or `ceil(turn_time_remaining)`).
+- **Your Turn** vs **Opponent's Turn** = `local_seat == active_seat` (hot-seat `local_seat < 0` keeps the active name).
+- Kit buttons = unit at `local_seat` (hot-seat falls back to `active_seat`). The snapshot does **not** encode “show active kit”.
+- Guest never starts its own countdown.
+
 ## Out of scope (do not invent)
 
 - Dedicated server, relay, matchmaking, auth
 - MultiplayerSynchronizer
-- Seat clock sync (the 30s TIME clock is still client-only, and only ticks on the owning seat)
 - Fog / hidden enemy
 - Height → hit / facing / LoS
 - New Advance costs

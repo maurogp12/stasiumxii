@@ -1,6 +1,7 @@
 extends Node
 
-## Listen-host proto. Host owns CombatSim + seed/RNG. Clients submit Intent.
+## Listen-host proto. Host owns CombatSim + seed/RNG + the 30s turn clock.
+## Clients submit Intent. Clients never roll, never tick the clock, never mutate sim.
 ## Transport: Godot 4 MultiplayerAPI + ENet (direct IP). RPC only; no scene sync.
 ## Local hot-seat stays the default (mode HOTSEAT → CombatSim.submit directly).
 ## Listen-host only — no dedicated process.
@@ -273,17 +274,54 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 
 func decorate_snapshot(snap: Dictionary) -> Dictionary:
 	var out: Dictionary = snap.duplicate(true) if not snap.is_empty() else {}
+	var active_seat := int(out.get("active_seat", -1))
+	# local_seat = this window. active_seat = whose turn it is (CombatSim).
+	# Godot kit chrome reads local_seat. Do not encode "show active kit".
 	out["local_seat"] = local_seat
+	out["active_seat"] = active_seat
 	out["net_active"] = is_online()
 	out["net"] = {
 		"transport": TRANSPORT,
 		"mode": mode_name(),
 		"listen_host": true,
 		"local_seat": local_seat,
+		"active_seat": active_seat,
 		"guest_connected": guest_peer_id != 0,
 		"port": listen_port,
 	}
 	return out
+
+
+## Host / hot-seat: tick CombatSim. Client: no-op (hydrate from snapshot only).
+## Host broadcasts events + snapshot + seat-filtered legal_intents when the
+## displayed remaining seconds change, and again on expiry auto end_turn.
+func tick_turn_timer(delta: float) -> Dictionary:
+	if mode == Mode.CLIENT:
+		return last_view_result()
+	var host_sim := sim()
+	if host_sim == null or not host_sim.has_method("tick_turn_timer"):
+		return _fail("no_sim")
+	var before := _clock_wire(host_sim.snapshot())
+	var result: Dictionary = host_sim.tick_turn_timer(delta)
+	if mode != Mode.HOST:
+		return result
+	var after := _clock_wire(host_sim.snapshot())
+	var expired := bool(result.get("expired", false))
+	if expired or before != after:
+		if not expired:
+			result = {
+				"ok": true,
+				"illegal": false,
+				"reason": "",
+				"events": [],
+				"snapshot": host_sim.snapshot(),
+			}
+		_cache_and_broadcast(result)
+		var view: Dictionary = last_view_result()
+		view["expired"] = expired
+		return view
+	result["expired"] = expired
+	return result
 
 
 func mode_name() -> String:
@@ -296,7 +334,7 @@ func mode_name() -> String:
 			return "hotseat"
 
 
-func pack_result(result: Dictionary) -> Dictionary:
+func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 	var host_sim := sim()
 	var snap: Dictionary = result.get("snapshot", {})
 	if snap.is_empty() and host_sim != null:
@@ -306,10 +344,12 @@ func pack_result(result: Dictionary) -> Dictionary:
 	var deploy0: Array[Vector2i] = []
 	var deploy1: Array[Vector2i] = []
 	if host_sim != null:
-		legal0 = host_sim.legal_intents(0)
-		legal1 = host_sim.legal_intents(1)
-		deploy0 = host_sim.legal_deploy_cells(0)
-		deploy1 = host_sim.legal_deploy_cells(1)
+		if viewer_seat != 1:
+			legal0 = host_sim.legal_intents(0)
+			deploy0 = host_sim.legal_deploy_cells(0)
+		if viewer_seat != 0:
+			legal1 = host_sim.legal_intents(1)
+			deploy1 = host_sim.legal_deploy_cells(1)
 	return IntentCodec.encode({
 		"ok": bool(result.get("ok", false)),
 		"illegal": bool(result.get("illegal", false)),
@@ -413,7 +453,7 @@ func _cache_and_broadcast(result: Dictionary) -> Dictionary:
 	# Host caches packed state for the guest; do not hydrate over the live brain.
 	apply_packed_state(packed, mode == Mode.CLIENT)
 	if mode == Mode.HOST and guest_peer_id != 0 and multiplayer.multiplayer_peer != null:
-		rpc_push_state.rpc_id(guest_peer_id, packed)
+		rpc_push_state.rpc_id(guest_peer_id, pack_result(result, GUEST_SEAT))
 	return last_view_result()
 
 
@@ -450,7 +490,15 @@ func _on_peer_connected(id: int) -> void:
 			"events": sim().snapshot().get("last_events", []),
 			"snapshot": sim().snapshot(),
 		})
-	if not last_packed.is_empty():
+	if sim() != null:
+		rpc_push_state.rpc_id(id, pack_result({
+			"ok": true,
+			"illegal": false,
+			"reason": "",
+			"events": last_events if not last_events.is_empty() else sim().snapshot().get("last_events", []),
+			"snapshot": sim().snapshot(),
+		}, GUEST_SEAT))
+	elif not last_packed.is_empty():
 		rpc_push_state.rpc_id(id, last_packed)
 
 
@@ -552,6 +600,23 @@ func _gate_reject(reason: String) -> Dictionary:
 		}],
 		"snapshot": snap,
 	}
+
+
+func _clock_wire(snap: Dictionary) -> Dictionary:
+	return {
+		"seconds": _clock_display_seconds(snap),
+		"running": bool(snap.get("turn_time_running", false)),
+		"active_seat": int(snap.get("active_seat", -1)),
+	}
+
+
+func _clock_display_seconds(snap: Dictionary) -> int:
+	if snap.has("turn_time_seconds"):
+		return int(snap.get("turn_time_seconds", 0))
+	var remaining := float(snap.get("turn_time_remaining", 0.0))
+	if remaining <= 0.0:
+		return 0
+	return int(ceili(remaining))
 
 
 func _fail(reason: String) -> Dictionary:
