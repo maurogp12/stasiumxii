@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_combat_disabled_until_both_confirm()
 	_test_reposition_then_lock()
 	_test_elevation_walkable_reuse()
+	_test_scene_instantiates()
 	_test_phase_a_untouched()
 
 
@@ -111,7 +112,7 @@ func _test_sequential_hotseat() -> void:
 	mgr.confirm()
 	eq(mgr.active_player, 1, "after P1 confirm, P2 becomes active")
 	eq(mgr.selected_unit_id, "ironjaw", "Ironjaw is selected for P2")
-	eq(mgr.can_deploy_unit("kestrel", Vector2i(1, 2))["reason"], "not_your_turn", "P1 is done after confirm")
+	eq(mgr.can_deploy_unit("kestrel", Vector2i(1, 2))["reason"], "side_locked", "P1 is done after confirm")
 	eq(mgr.place_unit("ironjaw", Vector2i(7, 4))["ok"], true, "P2 can place in the east box")
 
 
@@ -178,6 +179,19 @@ func _test_elevation_walkable_reuse() -> void:
 	eq(mgr.can_deploy_unit("kestrel", Vector2i(1, 2))["ok"], true, "high elevation is still deployable (no climb cost)")
 
 
+func _test_scene_instantiates() -> void:
+	var packed: PackedScene = load("res://scenes/proto_deployment_board.tscn")
+	truthy(packed is PackedScene, "proto scene resource loads")
+	var scene: Node = packed.instantiate()
+	truthy(scene != null, "proto scene instantiates")
+	eq(str(scene.get_script().resource_path), "res://proto/deployment/proto_deployment_board.gd", "scene script is proto_deployment_board")
+	var mgr: DeploymentManager = scene._mgr
+	eq(mgr.phase, MatchPhase.DEPLOYMENT, "scene manager boots in DEPLOYMENT")
+	eq(mgr.can_confirm(), false, "scene Confirm starts disabled")
+	eq(mgr.place_unit("kestrel", Vector2i(0, 3))["ok"], true, "scene manager can place P1")
+	scene.free()
+
+
 func _test_phase_a_untouched() -> void:
 	var combat := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(combat.contains("proto/deployment"), false, "CombatSim does not import proto/deployment")
@@ -199,7 +213,7 @@ func _test_phase_a_untouched() -> void:
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	truthy(readme.contains("Phase B+ deployment prototype"), "README has the Phase B+ deployment section")
 	truthy(readme.contains("Proposed"), "README stamps Proposed")
-	truthy(readme.contains("opposite 2×3"), "README lists opposite 2×3 boxes")
+	truthy(readme.contains("opposite 2×3") or readme.contains("opposite 2x3"), "README lists opposite 2×3 boxes")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

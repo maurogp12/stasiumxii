@@ -131,10 +131,10 @@ func can_deploy_unit(unit: Variant, cell: Vector2i) -> Dictionary:
 	if rec.is_empty():
 		return _fail("unknown_unit")
 	var player_id := int(rec["player_id"])
-	if player_id != active_player:
-		return _fail("not_your_turn")
 	if bool(confirmed.get(player_id, false)) or bool(rec.get("locked", false)):
 		return _fail("side_locked")
+	if player_id != active_player:
+		return _fail("not_your_turn")
 	if not in_bounds(cell):
 		return _fail("out_of_bounds")
 	var zone := zone_for(player_id)

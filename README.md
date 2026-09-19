@@ -123,7 +123,7 @@ Modules (all under `proto/elevation/`, unused by the Phase A combat path):
 
 **Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel seats or `CombatSim.reset_match()` / match start on `main.tscn`. No Backend deploy-schema/API branch existed, so this PR keeps a local `DeploymentManager` instead of rewriting Phase A `CombatSim`.
 
-Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). Sequential hot-seat: **P1 Kestrel** places in the west box and Confirms, then **P2 Ironjaw** places in the east box and Confirms. Walk / Combat / End Turn stay disabled until both confirm, then the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
+Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). Sequential hot-seat: **P1 Kestrel** places in the west box and Confirms, then **P2 Ironjaw** places in the east box and Confirms. Zones start as opposite 2×3 boxes on an 8×8. Walk / Combat / End Turn stay disabled until both confirm, then the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
 
 ### Proposed rules
 
