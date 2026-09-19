@@ -288,9 +288,9 @@ func _test_scene_instantiates() -> void:
 	eq(mgr.place_unit("ironjaw", Vector2i(7, 3))["ok"], true, "scene manager can place P2 on the east ring at the same time")
 	eq(scene._ready_p1_btn.disabled, false, "Ready P1 enables after Kestrel is placed")
 	eq(scene._ready_p2_btn.disabled, false, "Ready P2 enables after Ironjaw is placed")
-	var interior_copy := scene._reject_text("outside_zone", Vector2i(3, 3))
+	var interior_copy: String = scene._reject_text("outside_zone", Vector2i(3, 3))
 	truthy(interior_copy.contains("interior"), "scene coach distinguishes interior reject")
-	var wrong_half_copy := scene._reject_text("outside_zone", Vector2i(7, 3))
+	var wrong_half_copy: String = scene._reject_text("outside_zone", Vector2i(7, 3))
 	truthy(wrong_half_copy.contains("other side"), "scene coach distinguishes wrong-half reject")
 	scene.free()
 
