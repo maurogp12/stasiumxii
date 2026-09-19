@@ -1,9 +1,10 @@
 extends Node2D
 
 ## Thin client: input + presentation only. CombatSim owns rolls and combat state.
-## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
-## intent.path. Pawns tween one ortho tile at a time along the returned walk path
-## and face each hop (final facing = last hop, matching the snapshot).
+## Walk: dest-click only. CombatSim expands the cheapest weighted ortho path; this
+## view never sends intent.path. Pawns tween one ortho tile at a time along the
+## returned walk path and face each hop (final facing = last hop, matching the snapshot).
+## Tile elevation / terrain come from snapshot.tiles; this view does not paint them.
 ## Advance teleport does not auto-face.
 ## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
 ## deploy_zone_cells / can_ready / snapshot().phase. Hidden enemy stays Open.
@@ -275,7 +276,7 @@ func _submit(intent: Dictionary) -> void:
 	if _busy:
 		return
 	var result: Dictionary = CombatSim.submit(intent)
-	if not result.get("ok", false) and str(result.get("reason", "")) in ["occupied", "same_tile", "out_of_bounds", "insufficient_mp", "missing_destination", "path_blocked"]:
+	if not result.get("ok", false) and str(result.get("reason", "")) in ["occupied", "same_tile", "out_of_bounds", "insufficient_mp", "missing_destination", "path_blocked", "not_walkable", "climb_too_steep", "drop_too_far", "unreachable"]:
 		# Keep idle tile clicks from drowning the coach when simply selecting.
 		if _hud.selected_spell() == "" and str(intent.get("type", "")) == "move":
 			_refresh()
