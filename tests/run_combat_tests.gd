@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_horizontal_first_paths()
 	_test_client_path_ignored()
 	_test_snapshot_exposes_tiles()
+	_test_phase_a_demo_map()
 	_test_mud_walk_cost()
 	_test_lava_impassable()
 	_test_climb_reject()
@@ -116,8 +117,9 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"], "height hit/facing/LoS, stairs/ramps/flying, Advance climb stay Open")
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
-	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "default tile is Ground")
-	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0.0, "default elevation is 0")
+	eq(snap["demo_map"], "phase_a_fixed", "skip_deploy seeds the Director demo map")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "unlisted demo cells stay Ground")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0.0, "unlisted demo cells stay elevation 0")
 	eq(snap["tiles"].size(), 64, "snapshot lists all 8×8 tiles")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
@@ -251,8 +253,10 @@ func _test_deploy_zones_and_rejects() -> void:
 	_sim.reset_match({"seed": 1})
 	eq(_sim.deploy_zone_cells(0).size(), 6, "seat 0 blob is 6 cells")
 	eq(_sim.deploy_zone_cells(1).size(), 6, "seat 1 blob is 6 cells")
-	eq(_sim.legal_deploy_cells(0).size(), 6, "all 6 seat 0 cells start legal")
-	eq(_sim.legal_deploy_cells(1).size(), 6, "all 6 seat 1 cells start legal")
+	eq(_sim.legal_deploy_cells(0).size(), _walkable_zone_count(0), "legal deploy omits lava")
+	eq(_sim.legal_deploy_cells(1).size(), _walkable_zone_count(1), "legal deploy omits lava")
+	eq(_sim.legal_deploy_cells(0).size() >= 5, true, "seed 1 seat 0 still has a placeable blob")
+	eq(_sim.legal_deploy_cells(1).size() >= 5, true, "seed 1 seat 1 still has a placeable blob")
 
 	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
 	eq(oob["illegal"], true, "negative x is rejected")
@@ -512,6 +516,80 @@ func _test_client_path_ignored() -> void:
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unit ends on the dest-click tile")
 
 
+func _test_phase_a_demo_map() -> void:
+	# Director-stamped fixed map. Same cells on live reset and skip_deploy.
+	var live: Dictionary = _sim.reset_match({"seed": 1})
+	_assert_phase_a_demo_tiles(live, "live reset")
+	eq(live["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
+	eq(live["demo_map"], "phase_a_fixed", "live snap stamps the demo map id")
+
+	var skip: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true})
+	_assert_phase_a_demo_tiles(skip, "skip_deploy")
+	eq(skip["units"][0]["pos"], Vector2i(1, 1), "skip_deploy fixture still uses (1,1)")
+	eq(skip["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "skip_deploy (1,1) stays Ground")
+
+	var flat: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
+	eq(flat["demo_map"], "", "flat_board skips the demo seed")
+	eq(flat["tiles"][Vector2i(2, 4)]["terrain_type"], "ground", "flat_board mud cell is Ground")
+	eq(flat["tiles"][Vector2i(2, 6)]["terrain_type"], "ground", "flat_board lava cell is Ground")
+
+	# Deploy rejects the stamped lava cell when it sits in a zone.
+	_sim.reset_match({
+		"seed": 1,
+		"deploy_zones": {
+			0: [
+				Vector2i(1, 5), Vector2i(2, 5), Vector2i(2, 6),
+				Vector2i(1, 6), Vector2i(3, 6), Vector2i(2, 4),
+			],
+			1: [
+				Vector2i(6, 0), Vector2i(7, 0), Vector2i(6, 1),
+				Vector2i(7, 1), Vector2i(6, 2), Vector2i(7, 2),
+			],
+		},
+	})
+	eq(_sim.can_place(0, Vector2i(2, 6))["reason"], "not_walkable", "stamped lava in a blob is not_walkable")
+	eq(_sim.place_unit(0, Vector2i(2, 6))["reason"], "not_walkable", "place onto stamped lava is rejected")
+	eq(_sim.legal_deploy_cells(0).has(Vector2i(2, 6)), false, "legal deploy omits stamped lava")
+	eq(_sim.place_unit(0, Vector2i(2, 4))["ok"], true, "mud blob cell is still deployable (no climb tax)")
+	eq(_sim.tile_at(Vector2i(2, 4))["terrain_type"], "mud", "placed mud cell stays mud in snapshot")
+
+	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
+	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
+	truthy(flow.contains("(2,4)"), "MatchFlow comments the mud cells")
+	truthy(flow.contains("(2,6)"), "MatchFlow comments the lava cell")
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	truthy(readme.contains("(2,4)"), "README documents mud (2,4)")
+	truthy(readme.contains("(2,6)"), "README documents lava (2,6)")
+	truthy(readme.contains("(3,6)"), "README documents the +1 step")
+
+
+func _assert_phase_a_demo_tiles(snap: Dictionary, label: String) -> void:
+	var tiles: Dictionary = snap["tiles"]
+	eq(tiles.size(), 64, "%s lists all 64 tiles" % label)
+	eq(tiles[Vector2i(2, 4)]["terrain_type"], "mud", "%s mud (2,4)" % label)
+	eq(tiles[Vector2i(6, 4)]["terrain_type"], "mud", "%s mud (6,4)" % label)
+	eq(tiles[Vector2i(4, 6)]["terrain_type"], "mud", "%s mud (4,6)" % label)
+	eq(tiles[Vector2i(7, 1)]["terrain_type"], "water", "%s water (7,1)" % label)
+	eq(tiles[Vector2i(2, 6)]["terrain_type"], "lava", "%s lava (2,6)" % label)
+	eq(tiles[Vector2i(2, 6)]["walkable"], false, "%s lava is impassable" % label)
+	eq(tiles[Vector2i(1, 5)]["elevation"], 0.5, "%s ridge (1,5) is +0.5" % label)
+	eq(tiles[Vector2i(2, 5)]["elevation"], 0.5, "%s ridge (2,5) is +0.5" % label)
+	eq(tiles[Vector2i(3, 5)]["elevation"], 0.5, "%s ridge (3,5) is +0.5" % label)
+	eq(tiles[Vector2i(1, 5)]["terrain_type"], "ground", "%s ridge stays Ground" % label)
+	eq(tiles[Vector2i(3, 6)]["elevation"], 1.0, "%s step (3,6) is +1" % label)
+	eq(tiles[Vector2i(3, 6)]["terrain_type"], "ground", "%s step stays Ground" % label)
+	eq(tiles[Vector2i(0, 0)]["terrain_type"], "ground", "%s (0,0) stays Ground 0" % label)
+	eq(tiles[Vector2i(0, 0)]["elevation"], 0.0, "%s (0,0) elevation is 0" % label)
+	eq(tiles[Vector2i(3, 3)]["terrain_type"], "ground", "%s Mark Shot center stays Ground" % label)
+	eq(tiles[Vector2i(3, 3)]["elevation"], 0.0, "%s Mark Shot center stays flat" % label)
+	var special := 0
+	for cell in tiles.keys():
+		var rec: Dictionary = tiles[cell]
+		if str(rec.get("terrain_type", "ground")) != "ground" or not is_equal_approx(float(rec.get("elevation", 0.0)), 0.0):
+			special += 1
+	eq(special, 9, "%s only stamps the 9 Director cells" % label)
+
+
 func _test_snapshot_exposes_tiles() -> void:
 	_sim.reset_match({
 		"seed": 1,
@@ -677,19 +755,22 @@ func _test_weighted_prefers_flat() -> void:
 
 
 func _test_deploy_rejects_lava() -> void:
-	# Paint lava onto a sampled blob cell. #31 S+W ring is no longer the live zone.
+	# Paint lava onto a walkable blob cell. Demo lava may already sit in a zone.
 	_sim.reset_match({"seed": 1})
-	var lava: Vector2i = _zone_cell(0, 0)
-	var ground: Vector2i = _zone_cell(0, 1)
-	var p2: Vector2i = _zone_cell(1, 0)
+	var before := _walkable_zone_count(0)
+	var lava: Vector2i = _first_walkable_zone_cell(0)
+	var ground: Vector2i = _next_walkable_zone_cell(0, lava)
+	var p2: Vector2i = _first_walkable_zone_cell(1)
+	eq(lava.x >= 0, true, "seed 1 seat 0 has a walkable blob cell to paint")
+	eq(ground.x >= 0, true, "seed 1 seat 0 has a second walkable blob cell")
 	_sim.set_tile(lava, "lava", 0.0)
 	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
 	eq(_sim.can_place(0, lava)["reason"], "not_walkable", "lava blob cell is not_walkable")
 	eq(_sim.place_unit(0, lava)["reason"], "not_walkable", "place onto lava is rejected")
 	eq(_unit(0)["placed"], false, "failed lava place leaves Kestrel unplaced")
 	eq(_sim.legal_deploy_cells(0).has(lava), false, "legal deploy cells omit lava")
-	eq(_sim.legal_deploy_cells(0).size(), 5, "6-cell blob drops the lava cell")
-	eq(_sim.place_unit(0, ground)["ok"], true, "adjacent Ground blob cell still places")
+	eq(_sim.legal_deploy_cells(0).size(), before - 1, "painting lava drops one legal blob cell")
+	eq(_sim.place_unit(0, ground)["ok"], true, "remaining Ground blob cell still places")
 	eq(_sim.place_unit(1, p2)["ok"], true, "P2 still places on Ground")
 	eq(_sim.ready_seat(0)["ok"], true, "Ready P1 still works")
 	eq(_sim.ready_seat(1)["ok"], true, "Ready P2 still works")
@@ -3412,6 +3493,27 @@ func _test_deploy_main_chrome() -> void:
 	truthy(readme.contains("Ready P1"), "README documents Ready P1 on main")
 	truthy(readme.contains("main.tscn"), "README still points play at main.tscn")
 	eq(readme.contains("Godot Engineer"), false, "README no longer leaves main chrome for later")
+
+
+func _walkable_zone_count(seat: int) -> int:
+	var n := 0
+	for cell: Vector2i in _sim.deploy_zone_cells(seat):
+		if bool(_sim.tile_at(cell).get("walkable", true)):
+			n += 1
+	return n
+
+
+func _first_walkable_zone_cell(seat: int) -> Vector2i:
+	return _next_walkable_zone_cell(seat, Vector2i(-99, -99))
+
+
+func _next_walkable_zone_cell(seat: int, skip: Vector2i) -> Vector2i:
+	for cell: Vector2i in _sim.deploy_zone_cells(seat):
+		if cell == skip:
+			continue
+		if bool(_sim.tile_at(cell).get("walkable", true)):
+			return cell
+	return Vector2i(-1, -1)
 
 
 func _zone_cell(seat: int, index: int = 0) -> Vector2i:

@@ -8,7 +8,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 2. **Locked deploy flow** on `main.tscn` before Turn 1, with **Proposed random blobs** shipped live: each seat gets a seed-sampled ~6-cell zone (2×3 rectangle or organic blob; interior cells allowed). Click a highlighted zone cell to `place_unit` (reposition until Ready). **Ready P1** / **Ready P2** enable from `can_ready` after that seat’s fighter is placed. Both Ready → lock → Turn 1 combat. Walk / kit casts / Face / End Turn and the 30s TIME clock stay hidden during DEPLOYMENT. Outside-zone clicks name the other blob or an unclaimed cell. No fog, no deploy timer, no networking.
 3. After deploy, **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
 4. Each combat turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. After deploy, a **30s TIME** countdown is visible on the HUD; at 0 the seat auto End Turns (same as the button). The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `TurnClock.DURATION_SEC` to retune. The clock is hidden during DEPLOYMENT (no deploy timer).
-5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands the cheapest orthogonal path (weighted pathfinder). Walk cost is dest **terrain MP + uphill elevation**; downhill is free. Legal tiles come from remaining MP. Default board is Ground 0 (1 MP per hop, pool 3). The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel). Hit % / facing cones / spell LoS ignore height.
+5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands the cheapest orthogonal path (weighted pathfinder). Walk cost is dest **terrain MP + uphill elevation**; downhill is free. Legal tiles come from remaining MP. Live `reset_match` seeds the **Director-stamped Phase A demo map** (most cells Ground 0; mud/water/lava + a short ridge — see below). The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel). Hit % / facing cones / spell LoS ignore height.
 6. The action bar shows only the active kit (from `class_id` / `legal_intents`). Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** sit on a cardinal pad (N top, W left, E right, S bottom). **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is Manhattan 1–2** (diamond):
    - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Range gate Manhattan 1–2. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). **Facing is unchanged** on Advance (no auto-face). Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it hits.
@@ -26,8 +26,8 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 
 | Piece | Role |
 | --- | --- |
-| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live). `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Walk is dest-click weighted pathfinder (`backend/walk_board.gd`); `snapshot().tiles` exposes per-tile elevation / terrain_type for Godot. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup). Rolls and HP live here. |
-| `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. #31 border halves stay the previous Locked baseline. Proto stays reference. |
+| `backend/combat_sim.gd` (autoload `CombatSim`) | Sole authority. `reset_match(config)` starts **DEPLOYMENT** (live) and seeds the Director Phase A demo onto `WalkBoard`. `place_unit(seat, cell)`, `ready_seat(seat)`, `can_place`, `can_ready`, `legal_deploy_cells(seat)`, `deploy_zone_cells(seat)`. `submit(intent)`, `legal_intents(seat)`, `snapshot()`, `aim_hit_preview(seat, spell, dest?)`, `preview_cast(...)`. Walk is dest-click weighted pathfinder (`backend/walk_board.gd`); `snapshot().tiles` exposes per-tile elevation / terrain_type for Godot. Both Ready → lock → Turn 1 with spawn cells from confirmed positions. `skip_deploy` / `kestrel_pos` / `ironjaw_pos` skip to combat (tests/setup; same demo map unless `flat_board`). Rolls and HP live here. |
+| `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` (Director-stamped, fixed). #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
@@ -39,7 +39,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 ## Locked in this slice (GDD v0.2)
 
 - **Locked deploy flow:** MatchPhase DEPLOYMENT before Turn 1. Simultaneous place/reposition (local both-ready; networking OFF). One fighter each. Ready gated on unit placed. Both Ready → lock positions → Turn 1 / combat on, spawning from the confirmed cells. During deploy: reject move/cast/face/end_turn. Fixed seats `(1,1)` / `(6,6)` are superseded on the live duel path (`skip_deploy` test fixture only). #31 1-deep S+W / N+E border halves are the previous Locked zone baseline and are no longer the live legal cells.
-- 8×8 board, per-tile **elevation** + **terrain_type**. Default live paint is Ground 0. No walls. Spell LoS stays unused (no height mods).
+- 8×8 board, per-tile **elevation** + **terrain_type**. Live paint is the Director-stamped Phase A demo (fixed cells, not random). Unlisted cells are Ground 0. No walls. Spell LoS stays unused (no height mods).
 - 80 HP, 6 AP / 3 MP refilled at turn start
 - Walk: dest-click only. Cost = dest terrain MP + uphill elev Δ. Terrain MP: Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per full level (+1 leftover half); downhill 0. Max climb 1 / drop 2; ortho-only. CombatSim runs a weighted pathfinder; legal cells = reachable with remaining MP (pool 3). Facing follows each ortho hop of that path; **final facing = last hop direction**. Manual face intent stays for standing turns. `legal_intents` enumerates walks whenever leftover **MP > 0**, regardless of remaining AP. Phase A flat Manhattan / H-first expansion is superseded. Snapshot `tiles` exposes elev/terrain for Godot; board chrome stays Godot-side.
 - Advance: dest-click teleport, **3 AP / 0 MP**, instant snap. Range gate **Manhattan 1–2** (diamond). Ironjaw-only. No MP spend (`submit` does not zero leftover MP). After Advance, leftover MP still walks. **Facing unchanged** (does not auto-face). Client path ignored. After resolve, client clears Advance so walk chrome returns while MP>0. Walk / Esc cancel Advance aim (right-click still faces).
@@ -105,7 +105,7 @@ godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 
 ## Live elevation chrome (Phase A cutover)
 
-Godot chrome on `main.tscn` paints snapshot terrain + elevation. **CombatSim owns walk costs** ([#36](https://github.com/maurogp12/stasiumxii/pull/36) weighted pathfinder). `snapshot().tiles` is the live payload (default Ground 0). Walk dests are whatever `legal_intents` returns. Do **not** invent height→hit / facing / LoS.
+Godot chrome on `main.tscn` paints snapshot terrain + elevation. **CombatSim owns walk costs** ([#36](https://github.com/maurogp12/stasiumxii/pull/36) weighted pathfinder). `snapshot().tiles` is the live payload — `reset_match` seeds the Director-stamped Phase A demo (see cell list below). Walk dests are whatever `legal_intents` returns. Do **not** invent height→hit / facing / LoS.
 
 | Chrome | Source |
 | --- | --- |
@@ -115,11 +115,39 @@ Godot chrome on `main.tscn` paints snapshot terrain + elevation. **CombatSim own
 | HUD legend | Ground 1 / Mud 2 / Water 2 / Lava under the turn line |
 | Hit bands / Face / deploy chrome | Unchanged (no height mods) |
 
-**How to test live elevation chrome:** New Match on `main.tscn` shows terrain letters + elevation on every tile (default Ground 0). After both Ready, cyan walk tiles are only sim-legal dests. Face N/E/S/W and deploy chrome stay as they are. Headless: `godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd`.
+**How to test live elevation chrome:** New Match on `main.tscn` shows terrain letters + elevation on every tile (Director demo, not all Ground 0). After both Ready, cyan walk tiles are only sim-legal dests. Face N/E/S/W and deploy chrome stay as they are. Headless: `godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd`.
+
+## Phase A demo map (Director-stamped, fixed)
+
+Not random. Seeded in `MatchFlow.PHASE_A_DEMO_TILES` and applied on live `CombatSim.reset_match` / `WalkBoard` init (same map on `skip_deploy` unless `flat_board`). `snapshot().tiles` exposes every cell. Deploy still rejects lava (`not_walkable`); no elevation MP on place. No height→hit / facing / LoS.
+
+Godot paint checklist after **New Match** (x right, y down). Unlisted cells are **Ground 0**:
+
+| Cell | Terrain | Elev | Why |
+| --- | --- | --- | --- |
+| `(2,4)` `(6,4)` `(4,6)` | Mud | 0 | Mid-board approach tax (2 MP) |
+| `(7,1)` | Water | 0 | One water on the east edge |
+| `(2,6)` | Lava | 0 | One impassable blocker, not a maze |
+| `(1,5)` `(2,5)` `(3,5)` | Ground | +0.5 | Contiguous ridge |
+| `(3,6)` | Ground | +1 | Adjacent step off the ridge |
+
+```
+     0 1 2 3 4 5 6 7
+   0 . . . . . . . .
+   1 . . . . . . . W
+   2 . . . . . . . .
+   3 . . . . . . . .
+   4 . . M . . . M .
+   5 . r r r . . . .
+   6 . . L + M . . .
+   7 . . . . . . . .
+```
+
+`r` = Ground +0.5, `+` = Ground +1, `.` = Ground 0. Mark Shot lanes through the center / diagonal stay Ground 0.
 
 ## Phase B+ elevation prototype
 
-**Reference only.** Live CombatSim walk is the Locked cutover (per-tile elevation + terrain, weighted pathfinder). Keep `proto/elevation` and `scenes/proto_elevation_board.tscn` as the chrome sandbox. Do not import `proto/elevation` from CombatSim. Default live paint is Ground 0; Godot reads `snapshot().tiles` and paints it.
+**Reference only.** Live CombatSim walk is the Locked cutover (per-tile elevation + terrain, weighted pathfinder). Keep `proto/elevation` and `scenes/proto_elevation_board.tscn` as the chrome sandbox. Do not import `proto/elevation` from CombatSim. Live paint is the Director demo above; Godot reads `snapshot().tiles` and paints it.
 
 Open (do **not** invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb. Hit bands / facing / spell LoS stay unchanged — no height mods.
 
