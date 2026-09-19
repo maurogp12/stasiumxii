@@ -6,7 +6,7 @@ extends Node2D
 ## and face each hop (final facing = last hop, matching the snapshot).
 ## Advance teleport does not auto-face.
 ## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
-## deploy_zone_cells / can_ready / snapshot().phase. No fog. No deploy timer.
+## deploy_zone_cells / can_ready / snapshot().phase. Hidden enemy stays Open.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.

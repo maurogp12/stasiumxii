@@ -3048,7 +3048,8 @@ func _test_deploy_main_chrome() -> void:
 	truthy(view.contains("can_ready") or view.contains("ready_requested"), "board_view wires Ready")
 	eq(view.contains("DeploymentManager"), false, "main path does not use DeploymentManager")
 	eq(view.contains("proto/deployment"), false, "main path does not import proto/deployment")
-	eq(view.contains("fog"), false, "main path does not invent fog chrome")
+	eq(view.contains("fog_of_war"), false, "main path does not invent hidden-enemy chrome")
+	eq(view.contains("deploy_timer"), false, "main path does not invent a deploy timer")
 
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("Ready P1"), "HUD has Ready P1")
