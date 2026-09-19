@@ -20,6 +20,38 @@ const PREFERRED_ZONE_CHEBYSHEV_MIN := 4
 const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
+## Director-stamped Phase A demo map (fixed, not random).
+## Seeded on CombatSim.reset_match / WalkBoard init. Godot paints snapshot().tiles.
+##
+## Paint checklist (x right, y down). Unlisted cells are Ground 0:
+##   Mud 0   (2,4) (6,4) (4,6)   mid-board approach tax
+##   Water 0 (7,1)               east edge
+##   Lava 0  (2,6)               one blocker, not a maze
+##   Ridge   (1,5) (2,5) (3,5)   Ground +0.5 contiguous
+##   Step    (3,6)               Ground +1 adjacent to the ridge
+##
+##     0 1 2 3 4 5 6 7
+##   0 . . . . . . . .
+##   1 . . . . . . . W
+##   2 . . . . . . . .
+##   3 . . . . . . . .
+##   4 . . M . . . M .
+##   5 . r r r . . . .
+##   6 . . L + M . . .
+##   7 . . . . . . . .
+const PHASE_A_DEMO_MAP := "phase_a_fixed"
+const PHASE_A_DEMO_TILES := [
+	{"pos": Vector2i(2, 4), "terrain": "mud", "elevation": 0.0},
+	{"pos": Vector2i(6, 4), "terrain": "mud", "elevation": 0.0},
+	{"pos": Vector2i(4, 6), "terrain": "mud", "elevation": 0.0},
+	{"pos": Vector2i(7, 1), "terrain": "water", "elevation": 0.0},
+	{"pos": Vector2i(2, 6), "terrain": "lava", "elevation": 0.0},
+	{"pos": Vector2i(1, 5), "terrain": "ground", "elevation": 0.5},
+	{"pos": Vector2i(2, 5), "terrain": "ground", "elevation": 0.5},
+	{"pos": Vector2i(3, 5), "terrain": "ground", "elevation": 0.5},
+	{"pos": Vector2i(3, 6), "terrain": "ground", "elevation": 1.0},
+]
+
 var phase: int = Phase.DEPLOYMENT
 var board_size: int = BOARD_SIZE
 ## Last seat that placed or readied. Not a turn gate during deploy.
@@ -180,6 +212,16 @@ func zone_cells(seat: int) -> Array[Vector2i]:
 	for cell in raw:
 		out.append(cell as Vector2i)
 	return out
+
+
+## Director-stamped Phase A demo. Applies onto a WalkBoard (fill Ground 0 first).
+static func seed_phase_a_demo(board) -> void:
+	for row in PHASE_A_DEMO_TILES:
+		board.set_tile(row["pos"], row["terrain"], float(row["elevation"]))
+
+
+static func phase_a_demo_tiles() -> Array:
+	return PHASE_A_DEMO_TILES.duplicate(true)
 
 
 func legal_place_cells(seat: int, occupant_at: Callable) -> Array[Vector2i]:

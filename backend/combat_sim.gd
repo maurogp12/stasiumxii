@@ -58,8 +58,10 @@ var _intent_log: Array = []
 var _blocked_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile elevation + terrain. Default 8×8 Ground 0. Godot reads snapshot.tiles.
+## Per-tile elevation + terrain. Director-stamped Phase A demo on reset.
+## Godot reads snapshot.tiles. skip_deploy uses the same map unless flat_board.
 var _board = _WalkBoard.new()
+var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
 
 
 func reset_match(config: Dictionary = {}) -> Dictionary:
@@ -73,6 +75,10 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_last_events.clear()
 	_intent_log.clear()
 	_board = _WalkBoard.new()
+	_demo_map = ""
+	if _wants_demo_map(config):
+		_MatchFlow.seed_phase_a_demo(_board)
+		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
 	_apply_tile_overrides(config)
 
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
@@ -247,7 +253,7 @@ func legal_deploy_cells(seat: int) -> Array[Vector2i]:
 	return out
 
 
-## Test / setup: paint a live tile. Default board is Ground 0.
+## Test / setup: paint a live tile. Live reset seeds the Director Phase A demo.
 func set_tile(cell: Variant, terrain_type: Variant, elevation: float = 0.0, walkable_override: Variant = null) -> void:
 	_board.set_tile(_as_cell(cell), terrain_type, elevation, walkable_override)
 
@@ -333,6 +339,7 @@ func snapshot() -> Dictionary:
 			"lava": 0,
 		},
 		"tiles": _board.snapshot_tiles(),
+		"demo_map": _demo_map,
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
@@ -1325,6 +1332,15 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 	if not _board.is_walkable(cell):
 		return {"ok": false, "reason": "not_walkable", "zone_kind": ""}
 	return gate
+
+
+func _wants_demo_map(config: Dictionary) -> bool:
+	# Same stamped map on live + skip_deploy unless a fixture asks for flat Ground 0.
+	if config.has("demo_map"):
+		return bool(config["demo_map"])
+	if bool(config.get("flat_board", false)):
+		return false
+	return true
 
 
 func _apply_tile_overrides(config: Dictionary) -> void:
