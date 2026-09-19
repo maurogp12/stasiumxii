@@ -87,6 +87,7 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 ```bash
 godot --headless --path . -s res://tests/run_combat_tests.gd
 godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
+godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 ```
 
 ## Phase B+ elevation prototype
@@ -117,6 +118,45 @@ Modules (all under `proto/elevation/`, unused by the Phase A combat path):
 7. `ProtoMoveSim.reconstruct_path` — cheapest MP path
 8. `scenes/proto_elevation_board.tscn` — terrain paint, elevation labels, reachable highlight, click-to-move
 9. `ProtoVisualSort` — `z_index` / draw offset from iso Y + elevation (visual-only)
+
+## Phase B+ deployment prototype
+
+**Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel seats or `CombatSim.reset_match()` / match start on `main.tscn`. No Backend deploy-schema/API branch existed, so this PR keeps a local `DeploymentManager` instead of rewriting Phase A `CombatSim`.
+
+Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). Sequential hot-seat: **P1 Kestrel** places in the west box and Confirms, then **P2 Ironjaw** places in the east box and Confirms. Zones start as opposite 2×3 boxes on an 8×8. Walk / Combat / End Turn stay disabled until both confirm, then the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
+
+### Proposed rules
+
+| Rule | Proposed starter |
+| --- | --- |
+| Seats | Hot-seat sequential: P1 then P2 |
+| Roster | One fighter per side (Kestrel / Ironjaw stand-ins) |
+| Board | 8×8 |
+| Zones | Opposite **2×3** boxes (P1 west `x=0–1, y=2–4`; P2 east `x=6–7, y=2–4`) as cell sets |
+| Actions | Place / reposition on a legal zone cell; Confirm locks that side |
+| Confirm gate | Confirm disabled until that side’s required unit is placed |
+| Start | Both confirm → lock positions → `start_match` → `MatchPhase.TURN_1` |
+| Combat chrome | Walk / combat / end-turn disabled until both confirm |
+| Walkable | Reuses occupancy + optional `ProtoMoveSim.is_walkable` (lava / override). **No elevation MP / climb cost on deploy** |
+
+Modules (all under `proto/deployment/`, unused by the Phase A combat path):
+
+1. `MatchPhase` — proto-local `DEPLOYMENT` / `TURN_1`
+2. `DeploymentZone` — `player_id` + `Array[Vector2i]` cells
+3. `DeploymentManager` — active player, selected unit, place/reposition, confirm, both-ready → `start_match`
+4. `can_deploy_unit(unit, cell)` — phase, zone membership, in-bounds, walkable, not occupied
+5. `scenes/proto_deployment_board.tscn` — zone / selected / occupied chrome, click to place or move
+6. Confirm button — disabled until the required fighter is placed
+7. After both confirm: lock positions, emit start, show Turn 1 label (CombatSim not wired)
+
+## How to test the deployment prototype
+
+1. Open `scenes/proto_deployment_board.tscn`. Walk / Combat / End Turn start disabled. Confirm starts disabled.
+2. Click a **green west 2×3** tile — Kestrel places. Click another west-box tile to reposition. Confirm enables.
+3. Click a tile outside the west box — coach shows **outside_zone**. Confirm still enabled (Kestrel remains on the last legal cell).
+4. **Confirm P1** — west box locks. East box lights for Ironjaw. P1 cannot move Kestrel.
+5. Place Ironjaw on a **red east 2×3** tile and **Confirm P2**.
+6. Phase flips to **TURN 1**. Positions lock. Walk / Combat / End Turn enable as stubs (they do not call `CombatSim`).
 
 ## How to test aim chrome
 
