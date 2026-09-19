@@ -335,9 +335,14 @@ func _test_both_ready_starts_combat() -> void:
 	for intent in _sim.legal_intents(0):
 		kinds[str(intent["type"])] = true
 	truthy(kinds.has("move"), "move is legal after deploy")
-	truthy(kinds.has("cast"), "cast is legal after deploy")
 	truthy(kinds.has("face"), "face is legal after deploy")
 	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
+	var opening: int = _sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"])
+	eq(opening >= 3, true, "confirmed seats open at least Chebyshev 3")
+	if opening >= 2 and opening <= 5:
+		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5")
+	else:
+		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
 	eq(kinds.has("place"), false, "place is not a combat intent")
 	var events: Array = started.get("events", [])
 	var saw_combat := false
