@@ -1,7 +1,7 @@
 class_name DeploymentManager
 extends RefCounted
 
-## Phase B+ hot-seat sequential deploy brain. Pure data — does not touch CombatSim.
+## Phase B+ hot-seat sequential deploy brain. Pure data — does not touch Phase A combat.
 ## Proposed (not Locked): each side one fighter; place / reposition / confirm;
 ## combat stays disabled until both sides confirm, then Turn 1 via start_match.
 

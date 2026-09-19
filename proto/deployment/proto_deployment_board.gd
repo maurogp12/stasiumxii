@@ -1,7 +1,7 @@
 extends Node2D
 
 ## Phase B+ deployment prototype SCENE.
-## Does not call CombatSim. Phase A mainline duel stays on main.tscn.
+## Does not call the Phase A combat autoload. Mainline duel stays on main.tscn.
 ## Hot-seat sequential: each side places one fighter in its zone, then Confirm.
 
 const TILE_W := 64
@@ -200,7 +200,7 @@ func _build_hud() -> void:
 	reset.pressed.connect(_reset)
 	hud.add_child(reset)
 	var note := _hud_label(hud, Vector2(308, 100), 12)
-	note.text = "Open main.tscn for the Phase A CombatSim duel. This scene never calls CombatSim."
+	note.text = "Open main.tscn for the Phase A duel. This scene never starts that combat path."
 
 
 func _hud_label(host: Node, pos: Vector2, font_size: int) -> Label:
