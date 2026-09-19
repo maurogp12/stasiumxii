@@ -261,7 +261,9 @@ func _reject_text(reason: String, dest: Vector2i) -> String:
 	var where := _cell_text(dest) if dest.x >= 0 else "that tile"
 	match reason:
 		"outside_zone":
-			return "REJECT — %s is outside this side's half of the border ring." % where
+			if dest.x >= 0 and not DeploymentZone.is_border_cell(dest, _mgr.board_size):
+				return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % where
+			return "REJECT — %s is the other side's half of the border ring." % where
 		"occupied":
 			return "REJECT — %s is occupied." % where
 		"not_walkable":
