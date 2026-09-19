@@ -1,8 +1,8 @@
 class_name DeploymentManager
 extends RefCounted
 
-## Hot-seat sequential deploy brain. Pure data — does not touch CombatSim.
-## Proposed (not Locked): P1 then P2, one fighter each, confirm-gated start.
+## Simultaneous deploy brain. Pure data — does not touch CombatSim.
+## Proposed (not Locked): both seats place at once; each Readies; both ready → Turn 1.
 
 signal start_match(snapshot: Dictionary)
 signal changed()
@@ -13,11 +13,13 @@ const PLAYER_P2 := 1
 
 var phase: int = MatchPhase.DEPLOYMENT
 var board_size: int = BOARD_SIZE
+## Last seat that selected / placed / readied. Not a turn gate.
 var active_player: int = PLAYER_P1
 var selected_unit_id: String = ""
 var zones: Dictionary = {}
 var units: Dictionary = {}
-var confirmed: Dictionary = {}
+## Simultaneous ready flags. True after that seat Confirms/Readies.
+var ready: Dictionary = {}
 var extra_occupied: Array[Vector2i] = []
 var extra_blocked: Array[Vector2i] = []
 ## Optional walkable predicate. Elevation proto may pass ProtoMoveSim.is_walkable.
@@ -37,7 +39,7 @@ func reset() -> void:
 	selected_unit_id = ""
 	zones.clear()
 	units.clear()
-	confirmed = {PLAYER_P1: false, PLAYER_P2: false}
+	ready = {PLAYER_P1: false, PLAYER_P2: false}
 	extra_occupied.clear()
 	extra_blocked.clear()
 	_start_emitted = false
@@ -48,7 +50,7 @@ func reset() -> void:
 
 
 func _apply_default_zones() -> void:
-	for zone in DeploymentZone.opposite_2x3_on_8x8():
+	for zone in DeploymentZone.opposite_half_ring(board_size):
 		zones[zone.player_id] = zone
 
 
@@ -86,8 +88,8 @@ func add_unit(data: Dictionary) -> Dictionary:
 	if unit["id"] == "":
 		return _fail("unknown_unit")
 	units[unit["id"]] = unit
-	if not confirmed.has(unit["player_id"]):
-		confirmed[unit["player_id"]] = false
+	if not ready.has(unit["player_id"]):
+		ready[unit["player_id"]] = false
 	return {"ok": true, "reason": "", "unit": unit.duplicate(true)}
 
 
@@ -107,22 +109,35 @@ func unit_by_id(unit_id: String) -> Dictionary:
 	return {}
 
 
+func is_ready(player_id: int) -> bool:
+	return bool(ready.get(player_id, false))
+
+
+## Alias kept so proto callers can say confirm or ready.
+var confirmed: Dictionary:
+	get:
+		return ready
+	set(value):
+		ready = value
+
+
 func select_unit(unit_id: String) -> Dictionary:
 	var unit := unit_by_id(unit_id)
 	if unit.is_empty():
 		return _fail("unknown_unit")
-	if int(unit["player_id"]) != active_player:
-		return _fail("not_your_turn")
 	if phase != MatchPhase.DEPLOYMENT:
 		return _fail("wrong_phase")
-	if bool(confirmed.get(active_player, false)):
+	var player_id := int(unit["player_id"])
+	if bool(ready.get(player_id, false)):
 		return _fail("side_locked")
 	selected_unit_id = unit_id
+	active_player = player_id
 	changed.emit()
 	return {"ok": true, "reason": "", "unit_id": unit_id}
 
 
 ## Gate: phase, zone membership, in-bounds, walkable, not occupied.
+## Simultaneous: no turn-order gate. A ready side is locked.
 ## `unit` may be a unit id String or a unit Dictionary.
 func can_deploy_unit(unit: Variant, cell: Vector2i) -> Dictionary:
 	if phase != MatchPhase.DEPLOYMENT:
@@ -131,10 +146,8 @@ func can_deploy_unit(unit: Variant, cell: Vector2i) -> Dictionary:
 	if rec.is_empty():
 		return _fail("unknown_unit")
 	var player_id := int(rec["player_id"])
-	if bool(confirmed.get(player_id, false)) or bool(rec.get("locked", false)):
+	if bool(ready.get(player_id, false)) or bool(rec.get("locked", false)):
 		return _fail("side_locked")
-	if player_id != active_player:
-		return _fail("not_your_turn")
 	if not in_bounds(cell):
 		return _fail("out_of_bounds")
 	var zone := zone_for(player_id)
@@ -159,6 +172,7 @@ func place_unit(unit: Variant, cell: Vector2i) -> Dictionary:
 	live["cell"] = cell
 	live["placed"] = true
 	selected_unit_id = unit_id
+	active_player = int(live["player_id"])
 	changed.emit()
 	return {
 		"ok": true,
@@ -171,34 +185,29 @@ func place_unit(unit: Variant, cell: Vector2i) -> Dictionary:
 
 func confirm(player_id: int = -1) -> Dictionary:
 	if player_id < 0:
-		player_id = active_player
+		player_id = _player_for_selected()
 	if phase != MatchPhase.DEPLOYMENT:
 		return _fail("wrong_phase")
-	if player_id != active_player:
-		return _fail("not_your_turn")
-	if bool(confirmed.get(player_id, false)):
+	if bool(ready.get(player_id, false)):
 		return _fail("already_confirmed")
 	if not required_units_placed(player_id):
 		return _fail("units_not_placed")
-	confirmed[player_id] = true
+	ready[player_id] = true
 	_lock_side(player_id)
-	if both_confirmed():
+	active_player = player_id
+	if both_ready():
 		_begin_turn_1()
 	else:
-		active_player = _next_unconfirmed(player_id)
-		selected_unit_id = _first_unit_for(active_player)
 		changed.emit()
 	return {"ok": true, "reason": "", "player_id": player_id}
 
 
 func can_confirm(player_id: int = -1) -> bool:
 	if player_id < 0:
-		player_id = active_player
+		player_id = _player_for_selected()
 	if phase != MatchPhase.DEPLOYMENT:
 		return false
-	if player_id != active_player:
-		return false
-	if bool(confirmed.get(player_id, false)):
+	if bool(ready.get(player_id, false)):
 		return false
 	return required_units_placed(player_id)
 
@@ -217,7 +226,11 @@ func required_units_placed(player_id: int) -> bool:
 
 
 func both_confirmed() -> bool:
-	return bool(confirmed.get(PLAYER_P1, false)) and bool(confirmed.get(PLAYER_P2, false))
+	return both_ready()
+
+
+func both_ready() -> bool:
+	return bool(ready.get(PLAYER_P1, false)) and bool(ready.get(PLAYER_P2, false))
 
 
 func combat_actions_enabled() -> bool:
@@ -268,6 +281,13 @@ func legal_deploy_cells(unit: Variant = null) -> Array[Vector2i]:
 	return out
 
 
+func legal_deploy_cells_for_player(player_id: int) -> Array[Vector2i]:
+	var unit_id := _first_unit_for(player_id)
+	if unit_id == "":
+		return []
+	return legal_deploy_cells(unit_id)
+
+
 func snapshot() -> Dictionary:
 	var unit_list: Array = []
 	for unit in units.values():
@@ -279,8 +299,13 @@ func snapshot() -> Dictionary:
 		"active_player": active_player,
 		"selected_unit_id": selected_unit_id,
 		"units": unit_list,
-		"confirmed": confirmed.duplicate(true),
-		"both_confirmed": both_confirmed(),
+		"ready": ready.duplicate(true),
+		"confirmed": ready.duplicate(true),
+		"both_ready": both_ready(),
+		"both_confirmed": both_ready(),
+		"simultaneous": true,
+		"zone_split": "p1_south_west_p2_north_east",
+		"legal_cells": "border_ring_1_deep",
 		"turn_index": 1 if phase == MatchPhase.TURN_1 else 0,
 		"combat_enabled": combat_actions_enabled(),
 		"walk_enabled": combat_actions_enabled(),
@@ -314,21 +339,18 @@ func _lock_side(player_id: int) -> void:
 			unit["locked"] = true
 
 
-func _next_unconfirmed(after_player: int) -> int:
-	var order: Array[int] = [PLAYER_P1, PLAYER_P2]
-	for player_id in order:
-		if player_id == after_player:
-			continue
-		if not bool(confirmed.get(player_id, false)):
-			return player_id
-	return after_player
-
-
 func _first_unit_for(player_id: int) -> String:
 	for unit in units.values():
 		if int(unit["player_id"]) == player_id:
 			return str(unit["id"])
 	return ""
+
+
+func _player_for_selected() -> int:
+	var unit := unit_by_id(selected_unit_id)
+	if unit.is_empty():
+		return active_player
+	return int(unit["player_id"])
 
 
 func _as_unit(unit: Variant) -> Dictionary:
