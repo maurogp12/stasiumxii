@@ -58,35 +58,60 @@ var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
 var _preview_source: Node = null
 var _terrain_legend: Label
+var _turn_label_base: String = ""
 
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
 ## falls back to active_seat. Snapshot does not encode "show active kit".
+## Also reads net.local_seat / net.active_seat when the top-level keys are absent.
 ## Advance is never offered unless class_id is ironjaw.
 ## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
+static func _net_dict(snap: Dictionary) -> Dictionary:
+	var raw: Variant = snap.get("net", {})
+	return raw if typeof(raw) == TYPE_DICTIONARY else {}
+
+
+static func snap_local_seat(snap: Dictionary) -> int:
+	if snap.has("local_seat"):
+		return int(snap.get("local_seat", -1))
+	var net := _net_dict(snap)
+	if net.has("local_seat"):
+		return int(net.get("local_seat", -1))
+	return -1
+
+
+static func snap_active_seat(snap: Dictionary) -> int:
+	if snap.has("active_seat"):
+		return int(snap.get("active_seat", 0))
+	var net := _net_dict(snap)
+	if net.has("active_seat"):
+		return int(net.get("active_seat", 0))
+	return 0
+
+
 static func kit_seat(snap: Dictionary) -> int:
-	var local_seat := int(snap.get("local_seat", -1))
+	var local_seat := snap_local_seat(snap)
 	if local_seat >= 0:
 		return local_seat
-	return int(snap.get("active_seat", 0))
+	return snap_active_seat(snap)
 
 
 static func is_local_turn(snap: Dictionary) -> bool:
-	var local_seat := int(snap.get("local_seat", -1))
+	var local_seat := snap_local_seat(snap)
 	if local_seat < 0:
 		return true
-	return local_seat == int(snap.get("active_seat", -2))
+	return local_seat == snap_active_seat(snap)
 
 
 static func turn_status_text(snap: Dictionary) -> String:
-	var local_seat := int(snap.get("local_seat", -1))
-	if local_seat < 0:
+	if snap_local_seat(snap) < 0:
 		return ""
 	if is_local_turn(snap):
 		return "Your Turn"
 	return "Opponent's Turn"
 
 
+## Visible countdown. Prefer host turn_time_seconds (ceil). Missing fields → -1.
 static func turn_clock_seconds(snap: Dictionary) -> int:
 	if snap.has("turn_time_seconds"):
 		return maxi(int(snap.get("turn_time_seconds", 0)), 0)
@@ -96,6 +121,14 @@ static func turn_clock_seconds(snap: Dictionary) -> int:
 	if remaining <= 0.0:
 		return 0
 	return int(ceili(remaining))
+
+
+static func turn_clock_running(snap: Dictionary) -> bool:
+	return bool(snap.get("turn_time_running", false))
+
+
+static func has_host_turn_clock(snap: Dictionary) -> bool:
+	return snap.has("turn_time_seconds") or snap.has("turn_time_remaining")
 
 
 static func turn_clock_fraction(snap: Dictionary) -> float:
@@ -461,12 +494,7 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 		_clock_bar.color = Color(0.92, 0.68, 0.28)
 	else:
 		_clock_bar.color = Color(0.35, 0.7, 0.55)
-	if _turn_label != null and not _deploying and not _turn_label.text.begins_with("Match over"):
-		var base := _turn_label.text
-		var sep := "  ·  "
-		var parts := base.split(sep)
-		if parts.size() >= 2:
-			_turn_label.text = "%s%s%s%s%ds" % [parts[0], sep, parts[1], sep, _clock_seconds]
+	_apply_turn_label_clock()
 
 
 func set_preview_source(sim: Node) -> void:
@@ -479,10 +507,11 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
 	var ironjaw := _unit(units, 1)
-	_kestrel_body.text = _unit_card_text(kestrel, int(snap.get("active_seat", 0)) == 0, snap)
-	_ironjaw_body.text = _unit_card_text(ironjaw, int(snap.get("active_seat", 0)) == 1, snap)
+	var active_seat := snap_active_seat(snap)
+	_kestrel_body.text = _unit_card_text(kestrel, active_seat == 0, snap)
+	_ironjaw_body.text = _unit_card_text(ironjaw, active_seat == 1, snap)
 
-	var active := _unit(units, int(snap.get("active_seat", 0)))
+	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
 	var active_name := str(active.get("name", "—"))
 	var clock_sec := turn_clock_seconds(snap)
@@ -490,17 +519,21 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_clock_seconds = clock_sec
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
-		_turn_label.text = "Match over — %s wins" % str(winner.get("name", "—"))
+		_turn_label_base = "Match over — %s wins" % str(winner.get("name", "—"))
 	elif _deploying:
-		_turn_label.text = "DEPLOYMENT  ·  place both fighters"
+		_turn_label_base = "DEPLOYMENT  ·  place both fighters"
 	else:
 		var whose := turn_status_text(snap)
 		if whose == "":
 			whose = active_name
-		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), whose, _clock_seconds]
+		_turn_label_base = "Turn %d  ·  %s" % [int(snap.get("turn_index", 1)), whose]
 	var net_prefix := _net_prefix(snap)
-	if net_prefix != "" and _turn_label != null:
-		_turn_label.text = "%s%s" % [net_prefix, _turn_label.text]
+	if net_prefix != "":
+		_turn_label_base = "%s%s" % [net_prefix, _turn_label_base]
+	if has_host_turn_clock(snap):
+		set_turn_clock(clock_sec if clock_sec >= 0 else _clock_seconds, turn_clock_running(snap), turn_clock_fraction(snap))
+	else:
+		_apply_turn_label_clock()
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
@@ -527,7 +560,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var match_over := bool(snap.get("match_over", false))
 	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
-	_stunned = unit_is_stunned(chrome) and not match_over and not _deploying
+	# Online: stun-grey the local kit only while that seat is acting.
+	_stunned = unit_is_stunned(chrome) and is_local_turn(snap) and not match_over and not _deploying
 	if _stunned and _selected_spell != "":
 		_selected_spell = ""
 		_aim_hit_chance = -1
@@ -537,7 +571,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
@@ -553,7 +587,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 func _apply_controls(match_over: bool) -> void:
 	var block := match_over or _locked or _deploying
-	var not_your_turn := int(_last_snap.get("local_seat", -1)) >= 0 and not is_local_turn(_last_snap)
+	var not_your_turn := snap_local_seat(_last_snap) >= 0 and not is_local_turn(_last_snap)
 	for spell_id in _spell_buttons.keys():
 		if block:
 			_set_spell_button_clickable(_spell_buttons[spell_id], false)
@@ -572,7 +606,7 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
-		_new_match_button.visible = int(_last_snap.get("local_seat", -1)) != 1
+		_new_match_button.visible = snap_local_seat(_last_snap) != 1
 
 
 func _build() -> void:
@@ -1012,7 +1046,8 @@ func _refresh_spell_buttons() -> void:
 func _refresh_walk_button() -> void:
 	if _walk_button == null:
 		return
-	if _stunned or _deploying:
+	var waiting := snap_local_seat(_last_snap) >= 0 and not is_local_turn(_last_snap)
+	if _stunned or _deploying or waiting:
 		_walk_button.modulate = STUN_GREY
 	elif _selected_spell == "":
 		_walk_button.modulate = Color(1.15, 1.1, 0.7)
@@ -1025,6 +1060,9 @@ func _update_selected_label() -> void:
 		return
 	if _deploying:
 		_selected_label.text = "Place on your deploy zone  ·  Ready when placed"
+		return
+	if snap_local_seat(_last_snap) >= 0 and not is_local_turn(_last_snap):
+		_selected_label.text = "Opponent's turn — watching"
 		return
 	if _stunned:
 		_selected_label.text = "Stunned — turn auto-ends"
@@ -1216,7 +1254,7 @@ func clear_deploy_note() -> void:
 func _sync_deploy_chrome(snap: Dictionary) -> void:
 	var deploying := is_deployment_phase(snap)
 	var ready: Dictionary = snap.get("ready", {})
-	var local_seat := int(snap.get("local_seat", -1))
+	var local_seat := snap_local_seat(snap)
 	if _ready_p1_button != null:
 		_ready_p1_button.visible = deploying and (local_seat < 0 or local_seat == 0)
 		_ready_p1_button.disabled = not can_ready_from_snap(snap, 0)
@@ -1282,12 +1320,21 @@ func spells_suppressed() -> bool:
 
 
 func _net_prefix(snap: Dictionary) -> String:
-	var seat := int(snap.get("local_seat", -1))
+	var seat := snap_local_seat(snap)
 	if seat == 0:
 		return "HOST · "
 	if seat == 1:
 		return "GUEST · "
 	return ""
+
+
+func _apply_turn_label_clock() -> void:
+	if _turn_label == null or _turn_label_base == "":
+		return
+	if _deploying or _turn_label_base.begins_with("Match over"):
+		_turn_label.text = _turn_label_base
+		return
+	_turn_label.text = "%s  ·  %ds" % [_turn_label_base, _clock_seconds]
 
 
 func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:

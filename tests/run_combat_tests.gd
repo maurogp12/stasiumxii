@@ -1912,6 +1912,54 @@ func _test_turn_clock_auto_end_turn() -> void:
 	truthy(hud_node._turn_label.text.contains("Opponent's Turn"), "rendered host label names Opponent's Turn")
 	eq(hud_node.end_turn_enabled(), false, "host End Turn is off during the guest turn")
 	eq(hud_node._spell_buttons.has("mark_shot"), true, "host still shows Kestrel kit on opponent turn")
+	eq(hud_node.clock_visible(), true, "TIME stays visible on the watching host")
+	eq(hud_node._selected_label.text, "Opponent's turn — watching", "watching host selected line")
+
+	# Exact host fields: prefer turn_time_seconds; net.local_seat / net.active_seat fallbacks.
+	eq(CombatHUD.turn_clock_seconds({
+		"turn_time_remaining": 12.2,
+		"turn_time_seconds": 17,
+		"turn_time_limit": 30,
+	}), 17, "visible countdown prefers turn_time_seconds")
+	eq(CombatHUD.has_host_turn_clock(host_snap), true, "host snapshot carries the clock fields")
+	eq(CombatHUD.turn_clock_running({"turn_time_running": true}), true, "turn_time_running paints the bar")
+	var net_only: Dictionary = {
+		"units": host_snap.get("units", []),
+		"turn_index": 1,
+		"net": {"local_seat": 1, "active_seat": 0},
+		"turn_time_remaining": 9.1,
+		"turn_time_limit": 30,
+		"turn_time_running": true,
+		"turn_time_seconds": 10,
+		"turn_timer": "host",
+	}
+	eq(CombatHUD.snap_local_seat(net_only), 1, "net.local_seat is used when top-level local_seat is missing")
+	eq(CombatHUD.snap_active_seat(net_only), 0, "net.active_seat is used when top-level active_seat is missing")
+	eq(CombatHUD.kit_seat(net_only), 1, "kit chrome follows net.local_seat")
+	eq(CombatHUD.turn_status_text(net_only), "Opponent's Turn", "status uses net.local_seat vs net.active_seat")
+	eq(CombatHUD.turn_clock_seconds(net_only), 10, "net-only snap still prefers turn_time_seconds")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(6, 6),
+	})
+	var guest_watch: Dictionary = _sim.snapshot().duplicate(true)
+	guest_watch["local_seat"] = 1
+	guest_watch["net_active"] = true
+	eq(int(guest_watch.get("active_seat", -1)), 0, "fixture is Kestrel's turn")
+	eq(CombatHUD.kit_seat(guest_watch), 1, "guest kit stays Ironjaw while Kestrel acts")
+	hud_node.free()
+	hud_node = CombatHUD.new()
+	hud_node._build()
+	hud_node.render(guest_watch, _sim.legal_intents(1))
+	eq(hud_node._spell_buttons.has("advance"), true, "guest keeps Ironjaw spells during Kestrel's turn")
+	eq(hud_node._spell_buttons.has("mark_shot"), false, "guest does not swap to Kestrel spells")
+	truthy(hud_node._turn_label.text.contains("Opponent's Turn"), "guest label is Opponent's Turn on seat 0")
+	eq(hud_node.clock_visible(), true, "guest TIME is visible while watching")
+	truthy(hud_node._turn_label.text.contains("%ds" % int(guest_watch.get("turn_time_seconds", 30))), "guest turn line paints turn_time_seconds")
 	hud_node.free()
 
 
