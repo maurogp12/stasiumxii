@@ -58,7 +58,7 @@ var _intent_log: Array = []
 var _blocked_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile elevation + terrain. Director-stamped Phase A demo on reset.
+## Per-tile integer elevation + terrain. Director-stamped 8×8 Mauro crop on reset.
 ## Godot reads snapshot.tiles. skip_deploy uses the same map unless flat_board.
 var _board = _WalkBoard.new()
 var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
@@ -254,8 +254,8 @@ func legal_deploy_cells(seat: int) -> Array[Vector2i]:
 
 
 ## Test / setup: paint a live tile. Live reset seeds the Director Phase A demo.
-func set_tile(cell: Variant, terrain_type: Variant, elevation: float = 0.0, walkable_override: Variant = null) -> void:
-	_board.set_tile(_as_cell(cell), terrain_type, elevation, walkable_override)
+func set_tile(cell: Variant, terrain_type: Variant, elevation: Variant = 0, walkable_override: Variant = null) -> void:
+	_board.set_tile(_as_cell(cell), terrain_type, _ElevationCost.as_z(elevation), walkable_override)
 
 
 func tile_at(cell: Variant) -> Dictionary:
@@ -380,7 +380,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). No MP spend; legal at 0 MP; submit does not zero leftover MP. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile elevation + terrain_type. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1/full level (+1 leftover half); downhill 0. Max climb 1 / drop 2; ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying", "advance_climb"],
 	}
@@ -1361,7 +1361,7 @@ func _paint_tile_entry(cell: Vector2i, entry: Variant) -> void:
 	if not (entry is Dictionary):
 		return
 	var terrain: Variant = entry.get("terrain", entry.get("terrain_type", _TerrainDef.Id.GROUND))
-	var elevation := float(entry.get("elevation", 0.0))
+	var elevation := _ElevationCost.as_z(entry.get("elevation", 0))
 	var walkable_override: Variant = entry.get("walkable", entry.get("walkable_override", null))
 	_board.set_tile(cell, terrain, elevation, walkable_override)
 

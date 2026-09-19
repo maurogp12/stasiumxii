@@ -20,36 +20,41 @@ const PREFERRED_ZONE_CHEBYSHEV_MIN := 4
 const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
-## Director-stamped Phase A demo map (fixed, not random).
+## Director-stamped Locked 8×8 crop of Mauro's 12×12 (fixed, not random).
 ## Seeded on CombatSim.reset_match / WalkBoard init. Godot paints snapshot().tiles.
+## PHASE_A_DEMO_TILES is phase_a_demo_tiles() — all 64 cells, integer z.
 ##
-## Paint checklist (x right, y down). Unlisted cells are Ground 0:
-##   Mud 0   (2,4) (6,4) (4,6)   mid-board approach tax
-##   Water 0 (7,1)               east edge
-##   Lava 0  (2,6)               one blocker, not a maze
-##   Ridge   (1,5) (2,5) (3,5)   Ground +0.5 contiguous
-##   Step    (3,6)               Ground +1 adjacent to the ridge
+## Crop origin (row 2, col 2) on the 12×12. Terrain 0/1/2/3 = G/M/W/L.
+## z ladder: z1→0, z2→1, z3→2, z4→3. Max climb 1 / drop 2 (no z1→z3 hop).
 ##
-##     0 1 2 3 4 5 6 7
-##   0 . . . . . . . .
-##   1 . . . . . . . W
-##   2 . . . . . . . .
-##   3 . . . . . . . .
-##   4 . . M . . . M .
-##   5 . r r r . . . .
-##   6 . . L + M . . .
-##   7 . . . . . . . .
+##     0  1  2  3  4  5  6  7
+##   0 G3 G3 M3 W2 L2 W1 W1 M1
+##   1 M3 G3 M2 W2 L2 L1 L1 M0
+##   2 W3 M3 M2 W2 L2 L1 W1 M0
+##   3 W3 W2 W2 W2 W2 W2 M1 G1
+##   4 W1 W1 W2 W2 W2 M2 M2 G2
+##   5 M1 M1 M1 M1 M2 M2 G3 G3
+##   6 G0 G0 G1 M1 G1 G2 G3 G3
+##   7 G0 G0 G0 G0 G1 G1 G2 G3
 const PHASE_A_DEMO_MAP := "phase_a_fixed"
-const PHASE_A_DEMO_TILES := [
-	{"pos": Vector2i(2, 4), "terrain": "mud", "elevation": 0.0},
-	{"pos": Vector2i(6, 4), "terrain": "mud", "elevation": 0.0},
-	{"pos": Vector2i(4, 6), "terrain": "mud", "elevation": 0.0},
-	{"pos": Vector2i(7, 1), "terrain": "water", "elevation": 0.0},
-	{"pos": Vector2i(2, 6), "terrain": "lava", "elevation": 0.0},
-	{"pos": Vector2i(1, 5), "terrain": "ground", "elevation": 0.5},
-	{"pos": Vector2i(2, 5), "terrain": "ground", "elevation": 0.5},
-	{"pos": Vector2i(3, 5), "terrain": "ground", "elevation": 0.5},
-	{"pos": Vector2i(3, 6), "terrain": "ground", "elevation": 1.0},
+const PHASE_A_CROP_ORIGIN_ROW := 2
+const PHASE_A_CROP_ORIGIN_COL := 2
+const MAURO_MAP_SIZE := 12
+const _TERRAIN_NAMES := ["ground", "mud", "water", "lava"]
+## Mauro's 12×12, row-major tokens (terrain digit + z label).
+const MAURO_12X12 := [
+	"0z1 0z1 0z2 1z3 2z4 3z4 3z3 1z2 0z2 0z3 0z3 0z3",
+	"0z1 0z2 0z3 0z4 1z4 3z4 3z3 1z2 0z2 0z2 0z2 0z2",
+	"2z3 1z3 0z4 0z4 1z4 2z3 3z3 2z2 2z2 1z2 0z2 0z1",
+	"3z4 2z4 1z4 0z4 1z3 2z3 3z3 3z2 3z2 1z1 0z1 0z1",
+	"3z4 3z4 2z4 1z4 1z3 2z3 3z3 3z2 2z2 1z1 0z1 0z1",
+	"3z4 2z4 2z4 2z3 2z3 2z3 2z3 2z3 1z2 0z2 0z2 0z1",
+	"2z3 2z3 2z2 2z2 2z3 2z3 2z3 1z3 1z3 0z3 0z3 0z3",
+	"1z2 1z2 1z2 1z2 1z2 1z2 1z3 1z3 0z4 0z4 1z4 1z4",
+	"1z1 1z1 0z1 0z1 0z2 1z2 0z2 0z3 0z4 0z4 1z4 2z4",
+	"1z1 1z1 0z1 0z1 0z1 0z1 0z2 0z2 0z3 0z4 1z4 2z4",
+	"2z1 1z1 0z1 0z1 0z1 0z1 0z1 0z2 0z2 0z4 1z4 1z4",
+	"3z1 2z1 0z1 0z1 0z1 0z1 0z1 0z1 0z2 0z4 0z4 0z4",
 ]
 
 var phase: int = Phase.DEPLOYMENT
@@ -214,14 +219,68 @@ func zone_cells(seat: int) -> Array[Vector2i]:
 	return out
 
 
-## Director-stamped Phase A demo. Applies onto a WalkBoard (fill Ground 0 first).
+## Director-stamped Locked 8×8 crop. Applies all 64 cells onto a WalkBoard.
 static func seed_phase_a_demo(board) -> void:
-	for row in PHASE_A_DEMO_TILES:
-		board.set_tile(row["pos"], row["terrain"], float(row["elevation"]))
+	for row in phase_a_demo_tiles():
+		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
 
 
+## PHASE_A_DEMO_TILES — 64-cell Locked crop at origin (row 2, col 2).
 static func phase_a_demo_tiles() -> Array:
-	return PHASE_A_DEMO_TILES.duplicate(true)
+	var out := []
+	var grid: Array = parse_mauro_12x12()
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var src: Dictionary = grid[PHASE_A_CROP_ORIGIN_ROW + y][PHASE_A_CROP_ORIGIN_COL + x]
+			out.append({
+				"pos": Vector2i(x, y),
+				"terrain": src["terrain"],
+				"elevation": int(src["elevation"]),
+			})
+	return out
+
+
+static func parse_mauro_12x12() -> Array:
+	var grid := []
+	for line in MAURO_12X12:
+		var row := []
+		for token in str(line).split(" ", false):
+			row.append(parse_mauro_token(token))
+		grid.append(row)
+	return grid
+
+
+static func parse_mauro_token(token: String) -> Dictionary:
+	var raw := token.strip_edges()
+	var terrain_idx := 0
+	var z_label := 1
+	if raw.length() >= 1:
+		terrain_idx = clampi(int(raw.substr(0, 1)), 0, 3)
+	var z_at := raw.find("z")
+	if z_at >= 0 and z_at + 1 < raw.length():
+		z_label = clampi(int(raw.substr(z_at + 1)), 1, 4)
+	return {
+		"terrain": str(_TERRAIN_NAMES[terrain_idx]),
+		"elevation": z_label - 1,
+	}
+
+
+static func phase_a_crop_has_terrain(name: String) -> bool:
+	for row in phase_a_demo_tiles():
+		if str(row.get("terrain", "")) == name:
+			return true
+	return false
+
+
+static func phase_a_crop_elevations() -> Array:
+	var seen := {}
+	for row in phase_a_demo_tiles():
+		seen[int(row.get("elevation", 0))] = true
+	var out := []
+	for z in seen.keys():
+		out.append(int(z))
+	out.sort()
+	return out
 
 
 func legal_place_cells(seat: int, occupant_at: Callable) -> Array[Vector2i]:

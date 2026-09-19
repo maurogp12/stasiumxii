@@ -33,14 +33,14 @@ func fill_ground() -> void:
 	tiles.clear()
 	for y in range(height):
 		for x in range(width):
-			set_tile(Vector2i(x, y), _TerrainDef.Id.GROUND, 0.0)
+			set_tile(Vector2i(x, y), _TerrainDef.Id.GROUND, 0)
 
 
-func set_tile(pos: Vector2i, terrain_type: Variant, elevation: float, walkable_override: Variant = null) -> void:
+func set_tile(pos: Vector2i, terrain_type: Variant, elevation: Variant = 0, walkable_override: Variant = null) -> void:
 	var tile = _BoardTileData.new()
 	tile.grid_pos = pos
 	tile.terrain_type = _TerrainDef.parse(terrain_type)
-	tile.elevation = elevation
+	tile.elevation = _ElevationCost.as_z(elevation)
 	tile.walkable_override = walkable_override
 	tiles[pos] = tile
 
@@ -222,7 +222,7 @@ func _step_fail(reason: String) -> Dictionary:
 		"reason": reason,
 		"terrain_mp": 0,
 		"climb_mp": 0,
-		"delta": 0.0,
+		"delta": 0,
 	}
 
 

@@ -108,8 +108,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["walk_edges"], "ortho", "walk edges are ortho-only")
 	eq(snap["walk_tie_break"], "cheapest_mp", "walk tie-break is cheapest MP")
 	eq(snap["walk_facing"], "last_hop", "walk facing is Locked last-hop")
-	eq(snap["max_climb"], 1.0, "max climb is Locked 1.0")
-	eq(snap["max_drop"], 2.0, "max drop is Locked 2.0")
+	eq(snap["max_climb"], 1, "max climb is Locked 1")
+	eq(snap["max_drop"], 2, "max drop is Locked 2")
 	eq(snap["terrain_mp"]["ground"], 1, "Ground MP is 1")
 	eq(snap["terrain_mp"]["mud"], 2, "Mud MP is 2")
 	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
@@ -118,8 +118,9 @@ func _test_reset_and_turn_order() -> void:
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
 	eq(snap["demo_map"], "phase_a_fixed", "skip_deploy seeds the Director demo map")
-	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "unlisted demo cells stay Ground")
-	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0.0, "unlisted demo cells stay elevation 0")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "crop (0,0) is Ground")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 3, "crop (0,0) elevation is integer 3")
+	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
 	eq(snap["tiles"].size(), 64, "snapshot lists all 8×8 tiles")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
@@ -255,8 +256,8 @@ func _test_deploy_zones_and_rejects() -> void:
 	eq(_sim.deploy_zone_cells(1).size(), 6, "seat 1 blob is 6 cells")
 	eq(_sim.legal_deploy_cells(0).size(), _walkable_zone_count(0), "legal deploy omits lava")
 	eq(_sim.legal_deploy_cells(1).size(), _walkable_zone_count(1), "legal deploy omits lava")
-	eq(_sim.legal_deploy_cells(0).size() >= 5, true, "seed 1 seat 0 still has a placeable blob")
-	eq(_sim.legal_deploy_cells(1).size() >= 5, true, "seed 1 seat 1 still has a placeable blob")
+	eq(_sim.legal_deploy_cells(0).size() >= 1, true, "seed 1 seat 0 still has a placeable blob")
+	eq(_sim.legal_deploy_cells(1).size() >= 1, true, "seed 1 seat 1 still has a placeable blob")
 
 	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
 	eq(oob["illegal"], true, "negative x is rejected")
@@ -425,7 +426,7 @@ func _test_only_active_seat_acts() -> void:
 
 
 func _test_manhattan_walk_costs() -> void:
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "diagonal is Manhattan 2")
 	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "same diagonal is Chebyshev 1")
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 3)})
@@ -438,12 +439,12 @@ func _test_manhattan_walk_costs() -> void:
 	eq(result["illegal"], true, "orthogonal Manhattan 2 with 1 MP left is illegal")
 	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "pawn did not move")
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
 	eq(result["ok"], true, "3-tile orthogonal walk spends the full MP pool")
 	eq(_unit(0)["mp"], 0, "Manhattan 3 costs 3 MP")
 	eq(_unit(0)["pos"], Vector2i(5, 2), "Kestrel landed on (5,2)")
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	result = _sim.submit({"type": "move", "to": Vector2i(2, 2)})
 	eq(result["illegal"], true, "Manhattan 4 exceeds the 3 MP pool")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "over-budget dest-click is rejected")
@@ -471,7 +472,7 @@ func _test_horizontal_first_paths() -> void:
 		"pure horizontal stays E/W only"
 	)
 	eq(_sim.expand_ortho_path(Vector2i(2, 2), Vector2i(2, 2)), [], "same tile expands to empty path")
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "H-first Manhattan 3 walk is legal")
 	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "returned path is E then S")
@@ -480,14 +481,14 @@ func _test_horizontal_first_paths() -> void:
 	eq(_unit(0)["facing"], "S", "actor facing is last hop S")
 	eq(_unit(0)["mp"], 0, "H-first 3-step walk spends 3 MP")
 	# Occupant sits on the old H-first corridor. Weighted walk may route around.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
 	result = _sim.submit({"type": "move", "to": Vector2i(1, 1)})
 	eq(result["ok"], true, "weighted path routes south then east around Ironjaw")
 	eq(result["events"][0]["path"], [Vector2i(0, 1), Vector2i(1, 1)], "path is S then E, not through the occupant")
 	eq(result["events"][0]["mp_spent"], 2, "two Ground hops cost 2")
 	eq(_unit(0)["pos"], Vector2i(1, 1), "Kestrel lands on (1,1)")
 	eq(_unit(0)["facing"], "E", "last hop around the occupant faces E")
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
 	eq(_has_legal_move_to(0, Vector2i(1, 1)), true, "legal_intents include dests reachable around an occupant")
 	eq(_has_legal_move_to(0, Vector2i(1, 0)), false, "legal_intents omit the occupied dest")
 	result = _sim.submit({"type": "move", "to": Vector2i(1, 0)})
@@ -501,7 +502,7 @@ func _test_horizontal_first_paths() -> void:
 
 
 func _test_client_path_ignored() -> void:
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	var forged: Array = [Vector2i(2, 3), Vector2i(2, 4), Vector2i(3, 4)]
 	var result: Dictionary = _sim.submit({
 		"type": "move",
@@ -517,7 +518,7 @@ func _test_client_path_ignored() -> void:
 
 
 func _test_phase_a_demo_map() -> void:
-	# Director-stamped fixed map. Same cells on live reset and skip_deploy.
+	# Director-stamped Locked 8×8 crop of Mauro's 12×12. Same cells on live + skip_deploy.
 	var live: Dictionary = _sim.reset_match({"seed": 1})
 	_assert_phase_a_demo_tiles(live, "live reset")
 	eq(live["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
@@ -527,82 +528,100 @@ func _test_phase_a_demo_map() -> void:
 	_assert_phase_a_demo_tiles(skip, "skip_deploy")
 	eq(skip["units"][0]["pos"], Vector2i(1, 1), "skip_deploy fixture still uses (1,1)")
 	eq(skip["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "skip_deploy (1,1) stays Ground")
+	eq(skip["tiles"][Vector2i(1, 1)]["walkable"], true, "skip_deploy (1,1) stays walkable")
+	eq(skip["tiles"][Vector2i(6, 6)]["walkable"], true, "skip_deploy (6,6) stays walkable")
 
 	var flat: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	eq(flat["demo_map"], "", "flat_board skips the demo seed")
-	eq(flat["tiles"][Vector2i(2, 4)]["terrain_type"], "ground", "flat_board mud cell is Ground")
-	eq(flat["tiles"][Vector2i(2, 6)]["terrain_type"], "ground", "flat_board lava cell is Ground")
+	eq(flat["tiles"][Vector2i(4, 1)]["terrain_type"], "ground", "flat_board lava cell is Ground")
+	eq(flat["tiles"][Vector2i(4, 1)]["elevation"], 0, "flat_board elevation is 0")
 
-	# Deploy rejects the stamped lava cell when it sits in a zone.
+	# Deploy rejects a stamped lava cell when it sits in a zone.
 	_sim.reset_match({
 		"seed": 1,
 		"deploy_zones": {
 			0: [
-				Vector2i(1, 5), Vector2i(2, 5), Vector2i(2, 6),
-				Vector2i(1, 6), Vector2i(3, 6), Vector2i(2, 4),
+				Vector2i(4, 0), Vector2i(3, 0), Vector2i(2, 0),
+				Vector2i(4, 1), Vector2i(3, 1), Vector2i(2, 1),
 			],
 			1: [
-				Vector2i(6, 0), Vector2i(7, 0), Vector2i(6, 1),
-				Vector2i(7, 1), Vector2i(6, 2), Vector2i(7, 2),
+				Vector2i(6, 6), Vector2i(7, 6), Vector2i(6, 7),
+				Vector2i(7, 7), Vector2i(5, 6), Vector2i(5, 7),
 			],
 		},
 	})
-	eq(_sim.can_place(0, Vector2i(2, 6))["reason"], "not_walkable", "stamped lava in a blob is not_walkable")
-	eq(_sim.place_unit(0, Vector2i(2, 6))["reason"], "not_walkable", "place onto stamped lava is rejected")
-	eq(_sim.legal_deploy_cells(0).has(Vector2i(2, 6)), false, "legal deploy omits stamped lava")
-	eq(_sim.place_unit(0, Vector2i(2, 4))["ok"], true, "mud blob cell is still deployable (no climb tax)")
-	eq(_sim.tile_at(Vector2i(2, 4))["terrain_type"], "mud", "placed mud cell stays mud in snapshot")
+	eq(_sim.can_place(0, Vector2i(4, 0))["reason"], "not_walkable", "stamped lava in a blob is not_walkable")
+	eq(_sim.place_unit(0, Vector2i(4, 0))["reason"], "not_walkable", "place onto stamped lava is rejected")
+	eq(_sim.legal_deploy_cells(0).has(Vector2i(4, 0)), false, "legal deploy omits stamped lava")
+	eq(_sim.place_unit(0, Vector2i(2, 0))["ok"], true, "mud blob cell is still deployable (no climb tax)")
+	eq(_sim.tile_at(Vector2i(2, 0))["terrain_type"], "mud", "placed mud cell stays mud in snapshot")
+
+	# Random blobs still sample on 8×8 and leave a walkable place cell.
+	for seed in [1, 2, 3, 7, 11]:
+		_sim.reset_match({"seed": seed})
+		eq(_sim.snapshot()["board_size"], 8, "seed %d board stays 8×8" % seed)
+		eq(_sim.deploy_zone_cells(0).size(), 6, "seed %d seat 0 blob is 6 cells" % seed)
+		eq(_sim.deploy_zone_cells(1).size(), 6, "seed %d seat 1 blob is 6 cells" % seed)
+		truthy(_walkable_zone_count(0) > 0, "seed %d seat 0 still has a walkable blob cell" % seed)
+		truthy(_walkable_zone_count(1) > 0, "seed %d seat 1 still has a walkable blob cell" % seed)
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
-	truthy(flow.contains("(2,4)"), "MatchFlow comments the mud cells")
-	truthy(flow.contains("(2,6)"), "MatchFlow comments the lava cell")
+	truthy(flow.contains("PHASE_A_CROP_ORIGIN_ROW := 2"), "MatchFlow stamps crop origin row 2")
+	truthy(flow.contains("PHASE_A_CROP_ORIGIN_COL := 2"), "MatchFlow stamps crop origin col 2")
+	truthy(flow.contains("MAURO_12X12"), "MatchFlow keeps Mauro's 12×12 source")
 	var readme := FileAccess.get_file_as_string("res://README.md")
-	truthy(readme.contains("(2,4)"), "README documents mud (2,4)")
-	truthy(readme.contains("(2,6)"), "README documents lava (2,6)")
-	truthy(readme.contains("(3,6)"), "README documents the +1 step")
+	truthy(readme.contains("row **2**, col **2**"), "README documents crop origin (2, 2)")
+	truthy(readme.contains("G3 G3 M3 W2 L2 W1 W1 M1"), "README documents the 8×8 ASCII crop")
 
 
 func _assert_phase_a_demo_tiles(snap: Dictionary, label: String) -> void:
 	var tiles: Dictionary = snap["tiles"]
 	eq(tiles.size(), 64, "%s lists all 64 tiles" % label)
-	eq(tiles[Vector2i(2, 4)]["terrain_type"], "mud", "%s mud (2,4)" % label)
-	eq(tiles[Vector2i(6, 4)]["terrain_type"], "mud", "%s mud (6,4)" % label)
-	eq(tiles[Vector2i(4, 6)]["terrain_type"], "mud", "%s mud (4,6)" % label)
-	eq(tiles[Vector2i(7, 1)]["terrain_type"], "water", "%s water (7,1)" % label)
-	eq(tiles[Vector2i(2, 6)]["terrain_type"], "lava", "%s lava (2,6)" % label)
-	eq(tiles[Vector2i(2, 6)]["walkable"], false, "%s lava is impassable" % label)
-	eq(tiles[Vector2i(1, 5)]["elevation"], 0.5, "%s ridge (1,5) is +0.5" % label)
-	eq(tiles[Vector2i(2, 5)]["elevation"], 0.5, "%s ridge (2,5) is +0.5" % label)
-	eq(tiles[Vector2i(3, 5)]["elevation"], 0.5, "%s ridge (3,5) is +0.5" % label)
-	eq(tiles[Vector2i(1, 5)]["terrain_type"], "ground", "%s ridge stays Ground" % label)
-	eq(tiles[Vector2i(3, 6)]["elevation"], 1.0, "%s step (3,6) is +1" % label)
-	eq(tiles[Vector2i(3, 6)]["terrain_type"], "ground", "%s step stays Ground" % label)
-	eq(tiles[Vector2i(0, 0)]["terrain_type"], "ground", "%s (0,0) stays Ground 0" % label)
-	eq(tiles[Vector2i(0, 0)]["elevation"], 0.0, "%s (0,0) elevation is 0" % label)
-	eq(tiles[Vector2i(3, 3)]["terrain_type"], "ground", "%s Mark Shot center stays Ground" % label)
-	eq(tiles[Vector2i(3, 3)]["elevation"], 0.0, "%s Mark Shot center stays flat" % label)
-	var special := 0
-	for cell in tiles.keys():
+	var expected: Array = load("res://backend/match_flow.gd").phase_a_demo_tiles()
+	eq(expected.size(), 64, "%s crop list is 64 cells" % label)
+	var saw := {"mud": 0, "water": 0, "lava": 0, "ground": 0}
+	var elevs := {}
+	for row in expected:
+		var cell: Vector2i = row["pos"]
 		var rec: Dictionary = tiles[cell]
-		if str(rec.get("terrain_type", "ground")) != "ground" or not is_equal_approx(float(rec.get("elevation", 0.0)), 0.0):
-			special += 1
-	eq(special, 9, "%s only stamps the 9 Director cells" % label)
+		eq(rec["terrain_type"], row["terrain"], "%s %s terrain" % [label, str(cell)])
+		eq(rec["elevation"], int(row["elevation"]), "%s %s elevation" % [label, str(cell)])
+		eq(typeof(rec["elevation"]), TYPE_INT, "%s %s elevation is int" % [label, str(cell)])
+		if rec["terrain_type"] == "lava":
+			eq(rec["walkable"], false, "%s lava %s is impassable" % [label, str(cell)])
+		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
+		elevs[int(rec["elevation"])] = true
+	eq(saw["mud"] > 0, true, "%s crop has Mud" % label)
+	eq(saw["water"] > 0, true, "%s crop has Water" % label)
+	eq(saw["lava"] > 0, true, "%s crop has Lava" % label)
+	eq(elevs.size() >= 3, true, "%s crop has multi-z elev variety" % label)
+	eq(elevs.has(0) and elevs.has(1) and elevs.has(2) and elevs.has(3), true, "%s crop uses z 0–3" % label)
+	eq(tiles[Vector2i(4, 0)]["terrain_type"], "lava", "%s lava cluster at (4,0)" % label)
+	eq(tiles[Vector2i(2, 0)]["terrain_type"], "mud", "%s mud at (2,0)" % label)
+	eq(tiles[Vector2i(3, 0)]["terrain_type"], "water", "%s water at (3,0)" % label)
+	eq(tiles[Vector2i(6, 5)]["terrain_type"], "ground", "%s SE ridge Ground" % label)
+	eq(tiles[Vector2i(6, 5)]["elevation"], 3, "%s SE ridge elev 3" % label)
+	eq(tiles[Vector2i(6, 6)]["elevation"], 3, "%s ridge continues at (6,6)" % label)
+	eq(tiles[Vector2i(5, 6)]["elevation"], 2, "%s ridge steps to elev 2" % label)
+	eq(tiles[Vector2i(6, 7)]["elevation"], 2, "%s ridge drop 1 from (6,6)" % label)
 
 
 func _test_snapshot_exposes_tiles() -> void:
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
+		"flat_board": true,
 		"tiles": [
-			{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.5},
-			{"pos": Vector2i(4, 2), "terrain": "water", "elevation": 0.0},
-			{"pos": Vector2i(5, 2), "terrain": "lava", "elevation": 1.0},
+			{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 1},
+			{"pos": Vector2i(4, 2), "terrain": "water", "elevation": 0},
+			{"pos": Vector2i(5, 2), "terrain": "lava", "elevation": 2},
 		],
 	})
 	var snap: Dictionary = _sim.snapshot()
 	eq(snap["tiles"][Vector2i(3, 2)]["terrain_type"], "mud", "painted mud is in the snapshot")
-	eq(snap["tiles"][Vector2i(3, 2)]["elevation"], 0.5, "painted elevation is in the snapshot")
+	eq(snap["tiles"][Vector2i(3, 2)]["elevation"], 1, "painted elevation is an int in the snapshot")
+	eq(typeof(snap["tiles"][Vector2i(3, 2)]["elevation"]), TYPE_INT, "snapshot elevation type is int")
 	eq(snap["tiles"][Vector2i(4, 2)]["terrain_type"], "water", "painted water is in the snapshot")
 	eq(snap["tiles"][Vector2i(5, 2)]["terrain_type"], "lava", "painted lava is in the snapshot")
 	eq(snap["tiles"][Vector2i(5, 2)]["walkable"], false, "lava snapshot walkable is false")
@@ -616,6 +635,7 @@ func _test_snapshot_exposes_tiles() -> void:
 func _test_mud_walk_cost() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.0}],
@@ -638,6 +658,7 @@ func _test_mud_walk_cost() -> void:
 func _test_lava_impassable() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [
@@ -663,32 +684,34 @@ func _test_climb_reject() -> void:
 		"seed": 1,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
+		"flat_board": true,
 		"tiles": [
-			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 1.5},
-			{"pos": Vector2i(2, 3), "terrain": "ground", "elevation": 1.0},
-			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 0.5},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 2},
+			{"pos": Vector2i(2, 3), "terrain": "ground", "elevation": 1},
+			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 1},
 		],
 	})
 	var steep: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
-	eq(steep["illegal"], true, "climb 1.5 is rejected")
+	eq(steep["illegal"], true, "climb 2 (z1→z3 hop) is rejected")
 	eq(steep["reason"], "climb_too_steep", "climb reject reason is climb_too_steep")
-	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "legal_intents omit a 1.5 climb")
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "legal_intents omit a climb-2 hop")
 	eq(_unit(0)["pos"], Vector2i(2, 2), "steep climb leaves the pawn put")
 
 	var full: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 3)})
-	eq(full["ok"], true, "full-level climb 1.0 is legal")
+	eq(full["ok"], true, "integer climb 1 is legal")
 	eq(full["events"][0]["mp_spent"], 2, "ground 1 + climb 1 = 2")
 	eq(_unit(0)["mp"], 1, "climb spends 2 of 3 MP")
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
-		"tiles": [{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 0.5}],
+		"tiles": [{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 1}],
 	})
-	var half: Dictionary = _sim.submit({"type": "move", "to": Vector2i(1, 2)})
-	eq(half["ok"], true, "half-level climb is legal")
-	eq(half["events"][0]["mp_spent"], 2, "leftover half-level climb costs +1")
+	var step: Dictionary = _sim.submit({"type": "move", "to": Vector2i(1, 2)})
+	eq(step["ok"], true, "integer z step climb is legal")
+	eq(step["events"][0]["mp_spent"], 2, "climb of 1 costs +1 MP")
 
 
 func _test_downhill_free() -> void:
@@ -696,42 +719,45 @@ func _test_downhill_free() -> void:
 		"seed": 1,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
+		"flat_board": true,
 		"tiles": [
-			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 1.0},
-			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
-			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 2.0},
-			{"pos": Vector2i(2, 1), "terrain": "ground", "elevation": 2.5},
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 1},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0},
+			{"pos": Vector2i(1, 2), "terrain": "ground", "elevation": 2},
+			{"pos": Vector2i(2, 1), "terrain": "ground", "elevation": 3},
 		],
 	})
 	var down: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
-	eq(down["ok"], true, "downhill 1.0 is legal")
+	eq(down["ok"], true, "downhill 1 is legal")
 	eq(down["events"][0]["mp_spent"], 1, "downhill Ground costs terrain only")
 	eq(_unit(0)["mp"], 2, "downhill spends 1 MP")
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [
-			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 2.0},
-			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 2},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0},
 		],
 	})
 	var drop2: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
-	eq(drop2["ok"], true, "drop of exactly 2.0 is legal")
+	eq(drop2["ok"], true, "drop of exactly 2 is legal")
 	eq(drop2["events"][0]["mp_spent"], 1, "legal drop still pays dest terrain MP")
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [
-			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 2.5},
-			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0.0},
+			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 3},
+			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0},
 		],
 	})
 	var far: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
-	eq(far["illegal"], true, "drop 2.5 is rejected")
+	eq(far["illegal"], true, "drop 3 is rejected")
 	eq(far["reason"], "drop_too_far", "far drop reason is drop_too_far")
 	eq(_unit(0)["pos"], Vector2i(2, 2), "illegal drop leaves the pawn put")
 
@@ -742,6 +768,7 @@ func _test_weighted_prefers_flat() -> void:
 	# Mud+climb: (2,2)->(2,3) M1 cost 2+1=3 ->(3,3) drop/ground 1  total 4
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [{"pos": Vector2i(2, 3), "terrain": "mud", "elevation": 1.0}],
@@ -782,6 +809,7 @@ func _test_deploy_rejects_lava() -> void:
 func _test_hit_bands_ignore_height() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(1, 1),
 		"ironjaw_pos": Vector2i(6, 1),
 		"tiles": [
@@ -807,12 +835,13 @@ func _test_advance_ignores_climb() -> void:
 		"seed": 1,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
-		"tiles": [{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 1.5}],
+		"flat_board": true,
+		"tiles": [{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 2}],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "Advance range/occupancy still pass on a 1.5 climb dest")
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "Advance range/occupancy still pass on a climb-2 dest")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
-	eq(result["ok"], true, "Advance onto a 1.5 climb dest stays legal (Open — not invented)")
+	eq(result["ok"], true, "Advance onto a climb-2 dest stays legal (Open — not invented)")
 	eq(result["reason"], "", "Advance does not reject climb_too_steep")
 	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped onto the steep tile")
 	eq(_unit(1)["mp"], 3, "Advance still spends 0 MP")
@@ -827,7 +856,7 @@ func _test_walk_facing_follows_hops() -> void:
 	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(2, 1)), "N", "north hop is N")
 	eq(_sim.facing_from_step(Vector2i(2, 2), Vector2i(3, 3)), "", "diagonal is not a hop facing")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "N"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "N"})
 	eq(_unit(0)["facing"], "N", "Kestrel starts facing N")
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
 	eq(result["ok"], true, "pure-east walk is legal")
@@ -836,37 +865,37 @@ func _test_walk_facing_follows_hops() -> void:
 	eq(result["events"][0]["facing"], "E", "pure-east final facing is E")
 	eq(_unit(0)["facing"], "E", "actor facing is E after east walk")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
 	result = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
 	eq(result["events"][0]["facing_hops"], ["W", "W"], "west hops face W")
 	eq(_unit(0)["facing"], "W", "pure-west final facing is W")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
 	result = _sim.submit({"type": "move", "to": Vector2i(2, 0)})
 	eq(result["events"][0]["facing_hops"], ["N", "N"], "north hops face N")
 	eq(_unit(0)["facing"], "N", "pure-north final facing is N")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "W"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "W"})
 	result = _sim.submit({"type": "move", "to": Vector2i(4, 3)})
 	eq(result["events"][0]["path"], [Vector2i(3, 2), Vector2i(4, 2), Vector2i(4, 3)], "NE dest is H-first E then S")
 	eq(result["events"][0]["facing_hops"], ["E", "E", "S"], "H-first NE faces E then S")
 	eq(_unit(0)["facing"], "S", "H-first NE final facing is last hop S")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(4, 3), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(4, 3), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
 	result = _sim.submit({"type": "move", "to": Vector2i(2, 2)})
 	eq(result["events"][0]["path"], [Vector2i(3, 3), Vector2i(2, 3), Vector2i(2, 2)], "SW dest is H-first W then N")
 	eq(result["events"][0]["facing_hops"], ["W", "W", "N"], "H-first SW faces W then N")
 	eq(_unit(0)["facing"], "N", "H-first SW final facing is last hop N")
 
 	# Illegal walk does not rotate.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "S"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "S"})
 	result = _sim.submit({"type": "move", "to": Vector2i(6, 2)})
 	eq(result["illegal"], true, "Manhattan 4 is over budget")
 	eq(_unit(0)["facing"], "S", "rejected walk leaves facing unchanged")
 	eq(_unit(0)["pos"], Vector2i(2, 2), "rejected walk leaves the pawn put")
 
 	# Manual face intent still turns in place after a walk.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7), "kestrel_facing": "E"})
 	_sim.submit({"type": "move", "to": Vector2i(4, 2)})
 	eq(_unit(0)["facing"], "E", "east walk ends facing E")
 	result = _sim.submit({"type": "face", "dir": "N"})
@@ -878,6 +907,7 @@ func _test_walk_facing_follows_hops() -> void:
 	# Advance teleport does not auto-face.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
 		"ironjaw_facing": "W",
@@ -897,6 +927,7 @@ func _test_walk_facing_follows_hops() -> void:
 func _test_spell_range_stays_chebyshev() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 2),
@@ -928,7 +959,7 @@ func _test_face_costs_zero() -> void:
 
 
 func _test_end_turn_refills() -> void:
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	_sim.submit({"type": "move", "to": Vector2i(2, 0)})
 	eq(_unit(0)["mp"], 1, "spent 2 MP")
 	var result: Dictionary = _sim.submit({"type": "end_turn"})
@@ -944,7 +975,7 @@ func _test_end_turn_refills() -> void:
 
 
 func _test_illegal_cast_refunds() -> void:
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(1, 0)})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(1, 0)})
 	eq(result["illegal"], true, "Mark Shot range 1 is illegal")
 	eq(result["reason"], "out_of_range", "out_of_range")
@@ -959,6 +990,7 @@ func _test_illegal_cast_refunds() -> void:
 func _test_miss_keeps_ap_no_engine() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [91],
 		"kestrel_pos": Vector2i(2, 2),
 		"ironjaw_pos": Vector2i(4, 2),
@@ -977,6 +1009,7 @@ func _test_miss_keeps_ap_no_engine() -> void:
 func _test_strike_hit_and_impact() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -995,6 +1028,7 @@ func _test_strike_hit_and_impact() -> void:
 func _test_back_facing_multiplier() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -1012,6 +1046,7 @@ func _test_back_facing_multiplier() -> void:
 func _test_mark_shot_range_and_marks() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1, 1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(5, 0),
@@ -1023,6 +1058,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
 	})
@@ -1034,6 +1070,7 @@ func _test_mark_shot_range_and_marks() -> void:
 func _test_advance_impact_adjacency() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 0),
 		"ironjaw_pos": Vector2i(0, 0),
 	})
@@ -1050,6 +1087,7 @@ func _test_advance_impact_adjacency() -> void:
 	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(0, 0),
 	})
@@ -1062,6 +1100,7 @@ func _test_advance_impact_adjacency() -> void:
 func _test_kestrel_cannot_advance() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(3, 0),
 	})
@@ -1100,6 +1139,7 @@ func _test_hit_bands() -> void:
 func _test_class_kits() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
@@ -1115,6 +1155,7 @@ func _test_class_kits() -> void:
 func _test_match_over() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1, 1, 1, 1, 1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -1151,6 +1192,7 @@ func _unit_set_hp_via_hits() -> void:
 func _test_crit_mult_held() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
@@ -1246,7 +1288,7 @@ func _test_handoff_timer_is_client_only() -> void:
 
 func _test_advance_teleport_costs() -> void:
 	# Diagonal neighbor: Chebyshev 1 / Manhattan 2 is in the diamond; teleport spends 3 AP / 0 MP.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "Advance diagonal neighbor is Manhattan 2")
 	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "Advance diagonal neighbor is Chebyshev 1")
@@ -1266,7 +1308,7 @@ func _test_advance_teleport_costs() -> void:
 	eq(str(result["events"][0]["coach"]).contains("MP"), false, "coach does not mention MP spend")
 
 	# Chebyshev 2 diagonal is outside the Manhattan 1–2 diamond (Manhattan 4).
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(2, 2)), 2, "two-tile diagonal is Chebyshev 2")
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "two-tile diagonal is Manhattan 4")
@@ -1299,7 +1341,7 @@ func _test_advance_teleport_costs() -> void:
 	eq(_unit(1)["mp"], 3, "MP pool unchanged after teleport")
 
 	# Occupant on the old H-first corridor does not block a teleport.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 1)})
 	eq(result["ok"], true, "teleport Advance past Kestrel is legal")
@@ -1309,7 +1351,7 @@ func _test_advance_teleport_costs() -> void:
 	eq(_unit(1)["impact"], 1, "landing Chebyshev-adjacent still grants Impact")
 
 	# 0 MP remaining: walk the pool away, then Advance still works.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
 	eq(result["ok"], true, "Ironjaw can walk the 3 MP pool first")
@@ -1365,6 +1407,7 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	# Advance does not auto-face. The leftover walk then faces last hop (Locked).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
 		"ironjaw_facing": "W",
@@ -1406,6 +1449,7 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	# Two Advances empty AP; leftover MP still enumerates walks (mp-gated, not ap-gated).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
 		"ironjaw_facing": "W",
@@ -1460,7 +1504,7 @@ func _test_advance_manhattan_range_gate() -> void:
 	#   0 1 1 1 0
 	#   0 0 1 0 0
 	var origin := Vector2i(3, 3)
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": origin})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": origin})
 	_sim.submit({"type": "end_turn"})
 	var expected: Dictionary = {}
 	for cell in [
@@ -1524,7 +1568,7 @@ func _test_advance_manhattan_range_gate() -> void:
 
 func _test_mark_shot_range_highlights() -> void:
 	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
 	for y in range(8):
@@ -1569,7 +1613,7 @@ func _test_mark_shot_range_highlights() -> void:
 	eq(walk_dests.has(Vector2i(3, 4)), true, "ortho neighbor is a walk dest")
 	eq(painted.has(Vector2i(3, 4)), false, "walk neighbor is not in Mark Shot chrome")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	var has_r5 := false
 	var has_r6 := false
 	var has_r1 := false
@@ -1686,6 +1730,7 @@ func _test_detonate_gates_and_damage() -> void:
 	# No Marks on the target: reject + refund. A01 Locked: Marks live on the target.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 	})
@@ -1700,6 +1745,7 @@ func _test_detonate_gates_and_damage() -> void:
 	# Range 7 is illegal even with Marks.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(7, 0),
 		"ironjaw_marks": 2,
@@ -1713,6 +1759,7 @@ func _test_detonate_gates_and_damage() -> void:
 	# Range 1 with 1 Mark: 6+6*1 = 12 Air, consume Marks.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -1735,6 +1782,7 @@ func _test_detonate_gates_and_damage() -> void:
 	# 3 Marks: 6+18=24. 5 Marks: 6+30=36.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
@@ -1752,6 +1800,7 @@ func _test_detonate_gates_and_damage() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
@@ -1768,6 +1817,7 @@ func _test_detonate_gates_and_damage() -> void:
 	# Mark Shot then Detonate same turn: +1 Mark on target, then consume.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1, 1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
@@ -1786,6 +1836,7 @@ func _test_detonate_gates_and_damage() -> void:
 func _test_detonate_miss_retains_marks() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [100],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(3, 0),
@@ -1811,6 +1862,7 @@ func _test_shoulder_push_and_impact() -> void:
 	# Orthogonal push east: Ironjaw (3,3) → Kestrel (4,3) → (5,3).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -1835,6 +1887,7 @@ func _test_shoulder_push_and_impact() -> void:
 	# Diagonal push.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 4),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -1850,6 +1903,7 @@ func _test_shoulder_push_and_impact() -> void:
 	# Miss: no push, no Impact, AP stays spent.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [100],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -1867,6 +1921,7 @@ func _test_shoulder_push_and_impact() -> void:
 	# Range 2 is illegal.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(5, 3),
 		"ironjaw_pos": Vector2i(3, 3),
 	})
@@ -1881,6 +1936,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 	# Locked Push (1): push off-board — do not move; still deal damage/Impact; emit push_blocked.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
@@ -1903,6 +1959,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 	# Locked Push (1): push into occupied — blockers are a test fixture, not a board feature.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -1930,6 +1987,7 @@ func _test_crush_spend_and_stun() -> void:
 	# Gate: fewer than 2 Impact rejects and refunds.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"ironjaw_impact": 1,
@@ -1945,6 +2003,7 @@ func _test_crush_spend_and_stun() -> void:
 	# Connect at Impact 2: spend 2, 24 Earth, no Stun.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -1967,6 +2026,7 @@ func _test_crush_spend_and_stun() -> void:
 	# Impact 3 before spend: spend 2, no Stun.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -1982,6 +2042,7 @@ func _test_crush_spend_and_stun() -> void:
 	# Impact 4 before spend: Stun 1 (Locked A′).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -2010,6 +2071,7 @@ func _test_crush_spend_and_stun() -> void:
 	# Miss retains Impact; no Stun.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [100],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -2030,6 +2092,7 @@ func _test_stun_auto_end_turn_after_crush() -> void:
 	# Locked Stun (A′): after Crush stun, that seat's next turn auto-ends.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -2089,6 +2152,7 @@ func _test_stun_suppresses_actions_locked() -> void:
 	# Force a stunned-active seat so the reject gate can be asserted without a Crush skip.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
@@ -2144,6 +2208,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	# Kestrel card still shows STUN; Ironjaw can act. Forced stunned-active still greys chrome.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -2167,6 +2232,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	# Forced stunned-active chrome (gate still greys if that state is rendered).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 	})
@@ -2224,6 +2290,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	# Locked Push (1) client: toast PushBlocked, do not hop, still hit/Impact feedback.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
@@ -2248,6 +2315,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 
 	var occupied: Dictionary = _sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -2283,6 +2351,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–6.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 	})
@@ -2291,6 +2360,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_marks": 1,
@@ -2300,6 +2370,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 		"ironjaw_marks": 2,
@@ -2309,6 +2380,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
 		"ironjaw_marks": 1,
@@ -2319,6 +2391,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	# Shoulder at range 1; Crush only with 2+ Impact.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 	})
@@ -2329,6 +2402,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"ironjaw_impact": 2,
@@ -2338,6 +2412,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(6, 3),
 		"ironjaw_impact": 4,
@@ -2347,14 +2422,14 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(_has_legal_cast(1, "shoulder"), false, "Shoulder omitted when out of range")
 
 	# Range chrome for Detonate is Chebyshev 1–6. Hit-percent chrome is tested separately.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
 		painted[cell] = true
 	eq(painted.has(Vector2i(3, 4)), true, "Chebyshev 1 is inside Detonate chrome")
 	eq(painted.has(Vector2i(3, 3)), false, "caster tile is not in Detonate chrome")
 	truthy(painted.has(Vector2i(0, 3)), "Chebyshev 3 ortho is inside Detonate chrome")
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	var has_r6 := false
 	var has_r7 := false
 	var has_r1 := false
@@ -2378,6 +2453,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 func _test_kit_class_exclusions() -> void:
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"ironjaw_marks": 2,
@@ -2427,7 +2503,7 @@ func _test_aim_hit_preview() -> void:
 	eq(_sim.hit_chance(5) == 80, false, "Mark Shot has no +5 longshot on the 4–5 band")
 	eq(_sim.hit_chance(6), 70, "Locked band 6–8 stays 70%")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(5, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(5, 0)})
 	var preview: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT)
 	eq(preview["show"], true, "Mark Shot in Chebyshev 5 shows hit percent")
 	eq(preview["rolls"], true, "Mark Shot preview is a rolling cast")
@@ -2442,7 +2518,7 @@ func _test_aim_hit_preview() -> void:
 	preview = _sim.aim_hit_preview(0, "")
 	eq(preview["show"], false, "walk / empty spell has no hit percent")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(4, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(4, 3)})
 	_sim.submit({"type": "end_turn"})
 	preview = _sim.aim_hit_preview(1, SpellKits.STRIKE)
 	eq(preview["show"], true, "Strike in melee shows hit percent")
@@ -2472,6 +2548,7 @@ func _test_preview_cast() -> void:
 	# Mark Shot: Chebyshev 5 → Locked 75%, sample 8 Air front, rolling.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [100],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(5, 0),
@@ -2506,6 +2583,7 @@ func _test_preview_cast() -> void:
 	# Intent Dictionary form uses the same Mark Shot preview.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(5, 0),
 		"ironjaw_facing": "W",
@@ -2524,6 +2602,7 @@ func _test_preview_cast() -> void:
 	# Back facing uses live target facing (8 × 1.20 → 10).
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_facing": "E",
@@ -2535,6 +2614,7 @@ func _test_preview_cast() -> void:
 	# Detonate M=3 → 24 Air. Formula 6+6*M. Needs marks when M<1.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [50],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
@@ -2559,6 +2639,7 @@ func _test_preview_cast() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_marks": 0,
@@ -2576,6 +2657,7 @@ func _test_preview_cast() -> void:
 	# Crush: would_stun when Impact is 4 and would spend 2. Sample 24 Earth front.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -2602,6 +2684,7 @@ func _test_preview_cast() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
@@ -2616,6 +2699,7 @@ func _test_preview_cast() -> void:
 	# Shoulder: sample 6 + push note.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
 		"kestrel_facing": "W",
@@ -2632,6 +2716,7 @@ func _test_preview_cast() -> void:
 	# Advance: teleport note, no hit_chance, sample_damage null.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -2711,7 +2796,7 @@ func _test_legal_moves_after_advance() -> void:
 	# Godot Engineer: after Advance (or any cast), remaining MP still offers
 	# Manhattan walks — including 0 AP / 3 MP. Client clears spell + repaints
 	# from legal_intents. Crit roll stays OFF; this patch does not invent Stun/push.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	eq(_sim.snapshot()["crit_roll"], false, "crit roll stays OFF")
 	_sim.submit({"type": "end_turn"})
 	eq(_unit(1)["ap"], 6, "Ironjaw starts at 6 AP")
@@ -2743,6 +2828,7 @@ func _test_legal_moves_after_advance() -> void:
 	# Any dest-click cast, not only Advance: Strike spends AP, MP stays, walks remain.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [100, 100],
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
@@ -2793,6 +2879,7 @@ func _test_walk_facing_follows_last_hop() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"kestrel_facing": "N",
 		"ironjaw_pos": Vector2i(7, 7),
@@ -2804,6 +2891,7 @@ func _test_walk_facing_follows_last_hop() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"kestrel_facing": "E",
 		"ironjaw_pos": Vector2i(7, 7),
@@ -2813,6 +2901,7 @@ func _test_walk_facing_follows_last_hop() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(2, 2),
 		"kestrel_facing": "E",
 		"ironjaw_pos": Vector2i(7, 7),
@@ -2849,6 +2938,7 @@ func _test_advance_facing_unchanged() -> void:
 	# Locked: Advance teleport does not auto-face. Walk last-hop facing is separate.
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(3, 3),
 		"ironjaw_facing": "W",
@@ -2864,6 +2954,7 @@ func _test_advance_facing_unchanged() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(3, 3),
 		"ironjaw_facing": "S",
@@ -2875,6 +2966,7 @@ func _test_advance_facing_unchanged() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(3, 3),
 		"ironjaw_facing": "E",
@@ -2885,6 +2977,7 @@ func _test_advance_facing_unchanged() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(3, 3),
 		"ironjaw_facing": "E",
@@ -2917,7 +3010,7 @@ func _test_advance_facing_unchanged() -> void:
 func _test_walk_mode_cancel() -> void:
 	# Walk is a dedicated mode, not only a default. After selecting Advance,
 	# Walk / Esc returns to walk chrome without End Turn. Right-click stays face.
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
 	var hud := CombatHUD.new()
 	hud._build()
@@ -2938,7 +3031,7 @@ func _test_walk_mode_cancel() -> void:
 	hud.free()
 
 	# Cast Advance then remaining MP walks (same contract as the sibling test).
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
 	eq(result["ok"], true, "Advance dest-click resolves")
@@ -2976,6 +3069,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(5, 0),
 		"ironjaw_facing": "W",
@@ -3005,6 +3099,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_facing": "E",
@@ -3015,6 +3110,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_facing": "W",
@@ -3037,6 +3133,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_marks": 0,
@@ -3051,7 +3148,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(detonate_m0.contains("6+6×M"), "Detonate M=0 card still explains 6+6×M")
 	truthy(detonate_m0.contains("Needs 1+ Marks"), "Detonate M=0 card names the Marks gate")
 
-	_sim.reset_match({"seed": 1, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
 	var advance_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
 	var advance := SpellTooltip.card_text(advance_preview)
@@ -3067,6 +3164,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(4, 3),
 		"ironjaw_pos": Vector2i(3, 3),
 		"kestrel_facing": "W",
@@ -3089,6 +3187,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
@@ -3108,6 +3207,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
@@ -3119,6 +3219,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(5, 0),
 		"ironjaw_facing": "W",
@@ -3165,6 +3266,7 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(2, 0),
 		"ironjaw_facing": "W",
@@ -3340,6 +3442,7 @@ func _test_stun_skip_chrome() -> void:
 
 	_sim.reset_match({
 		"seed": 1,
+		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
@@ -3517,7 +3620,10 @@ func _next_walkable_zone_cell(seat: int, skip: Vector2i) -> Vector2i:
 
 
 func _zone_cell(seat: int, index: int = 0) -> Vector2i:
-	var cells: Array[Vector2i] = _sim.deploy_zone_cells(seat)
+	# Prefer walkable blob cells so place/ready fixtures skip stamped lava.
+	var cells: Array[Vector2i] = _sim.legal_deploy_cells(seat)
+	if cells.is_empty():
+		cells = _sim.deploy_zone_cells(seat)
 	if cells.is_empty():
 		return Vector2i(-1, -1)
 	return cells[clampi(index, 0, cells.size() - 1)]
@@ -3536,7 +3642,7 @@ func _unclaimed_cell() -> Vector2i:
 
 func _interior_zone_cell(seat: int) -> Vector2i:
 	var flow_script = load("res://backend/match_flow.gd")
-	for cell: Vector2i in _sim.deploy_zone_cells(seat):
+	for cell: Vector2i in _sim.legal_deploy_cells(seat):
 		if not flow_script.is_border_cell(cell):
 			return cell
 	return Vector2i(-1, -1)
@@ -3562,8 +3668,14 @@ func _rect_blob(origin: Vector2i, width: int, height: int) -> Array[Vector2i]:
 func _closest_zone_pair() -> Array:
 	var best_d := 999
 	var pair: Array = [Vector2i.ZERO, Vector2i.ZERO]
-	for a: Vector2i in _sim.deploy_zone_cells(0):
-		for b: Vector2i in _sim.deploy_zone_cells(1):
+	var a_cells: Array[Vector2i] = _sim.legal_deploy_cells(0)
+	var b_cells: Array[Vector2i] = _sim.legal_deploy_cells(1)
+	if a_cells.is_empty():
+		a_cells = _sim.deploy_zone_cells(0)
+	if b_cells.is_empty():
+		b_cells = _sim.deploy_zone_cells(1)
+	for a: Vector2i in a_cells:
+		for b: Vector2i in b_cells:
 			var d: int = _sim.chebyshev(a, b)
 			if d < best_d:
 				best_d = d
