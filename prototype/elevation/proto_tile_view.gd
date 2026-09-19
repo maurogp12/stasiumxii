@@ -49,13 +49,13 @@ func _draw() -> void:
 	var h := pillar_height()
 	var fill := _terrain_color()
 	if highlight == "reach":
-		fill = fill.lerp(Color(0.40, 0.82, 0.95), 0.45)
+		fill = fill.lerp(Color(0.25, 0.85, 1.0), 0.72)
 	elif highlight == "path":
-		fill = fill.lerp(Color(0.98, 0.86, 0.28), 0.55)
+		fill = Color(0.98, 0.84, 0.22)
 	elif highlight == "origin":
-		fill = fill.lerp(Color(1.0, 0.92, 0.35), 0.65)
+		fill = Color(1.0, 0.93, 0.38)
 	elif highlight == "dest":
-		fill = fill.lerp(Color(0.95, 0.55, 0.28), 0.55)
+		fill = Color(0.98, 0.48, 0.20)
 
 	if h > 0.5:
 		var left := PackedVector2Array([
@@ -84,18 +84,18 @@ func _draw() -> void:
 
 	var font := ThemeDB.fallback_font
 	var label := _abbrev()
-	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 11)
-	draw_string(font, Vector2(-size.x * 0.5, -h + 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.10, 0.08, 0.10))
+	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 13)
+	draw_string(font, Vector2(-size.x * 0.5, -h + 5), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.10, 0.08, 0.10))
 
 
 func _terrain_color() -> Color:
 	match tile.terrain_type:
 		TerrainDef.Kind.MUD:
-			return Color(0.62, 0.42, 0.24)
+			return Color(0.55, 0.32, 0.14)
 		TerrainDef.Kind.WATER:
-			return Color(0.28, 0.52, 0.78)
+			return Color(0.18, 0.46, 0.82)
 		TerrainDef.Kind.LAVA:
-			return Color(0.86, 0.28, 0.14)
+			return Color(0.92, 0.18, 0.08)
 		_:
 			var even := (tile.grid_pos.x + tile.grid_pos.y) % 2 == 0
 			if even:
