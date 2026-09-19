@@ -3,10 +3,13 @@ class_name BoardTile
 
 const TILE_WIDTH: int = 64
 const TILE_HEIGHT: int = 32
+const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
 var highlight: String = ""
+var elevation: float = 0.0
+var terrain_type: String = "ground"
 
 
 func _draw() -> void:
@@ -16,9 +19,7 @@ func _draw() -> void:
 		Vector2(0, TILE_HEIGHT / 2.0),
 		Vector2(-TILE_WIDTH / 2.0, 0)
 	])
-	var color := Color(0.93, 0.72, 0.86, 1.0)
-	if (grid_position.x + grid_position.y) % 2 == 0:
-		color = Color(0.86, 0.64, 0.80, 1.0)
+	var color := _terrain_color()
 	match highlight:
 		"move":
 			color = Color(0.45, 0.78, 0.92, 1.0)
@@ -45,6 +46,17 @@ func _draw() -> void:
 	outline.append(points[0])
 	draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
 
+	var font := ThemeDB.fallback_font
+	var label := "%s %s" % [terrain_letter(), elevation_text()]
+	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
+	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
+
+
+func apply_board_data(next_terrain: String, next_elevation: float) -> void:
+	terrain_type = SNAPSHOT_TILES.normalize_terrain(next_terrain)
+	elevation = SNAPSHOT_TILES.normalize_elevation(next_elevation)
+	queue_redraw()
+
 
 func set_selected(value: bool) -> void:
 	is_selected = value
@@ -54,3 +66,35 @@ func set_selected(value: bool) -> void:
 func set_highlight(kind: String) -> void:
 	highlight = kind
 	queue_redraw()
+
+
+func terrain_letter() -> String:
+	match terrain_type:
+		"mud":
+			return "M"
+		"water":
+			return "W"
+		"lava":
+			return "L"
+		_:
+			return "G"
+
+
+func elevation_text() -> String:
+	if is_equal_approx(elevation, roundf(elevation)):
+		return str(int(round(elevation)))
+	return "%.1f" % elevation
+
+
+func _terrain_color() -> Color:
+	match terrain_type:
+		"mud":
+			return Color(0.56, 0.38, 0.20)
+		"water":
+			return Color(0.28, 0.54, 0.80)
+		"lava":
+			return Color(0.86, 0.30, 0.12)
+		_:
+			if (grid_position.x + grid_position.y) % 2 == 0:
+				return Color(0.58, 0.74, 0.40)
+			return Color(0.48, 0.64, 0.34)

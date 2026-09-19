@@ -31,7 +31,7 @@ Phase A local hot-seat duel. Godot 4.7+. Combat lives in `CombatSim`; the board 
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed combat timers. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
 | `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
 Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready` / `confirm`. During DEPLOYMENT only `place` / `reposition` / `ready` are legal.
@@ -98,13 +98,28 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 
 ```bash
 godot --headless --path . -s res://tests/run_combat_tests.gd
+godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd
 godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 ```
 
+## Live elevation chrome (Phase A cutover)
+
+Godot chrome on `main.tscn` paints snapshot terrain + elevation. **CombatSim owns walk costs** ([#36](https://github.com/maurogp12/stasiumxii/pull/36) weighted pathfinder). `snapshot().tiles` is the live payload (default Ground 0). Walk dests are whatever `legal_intents` returns. Do **not** invent height→hit / facing / LoS.
+
+| Chrome | Source |
+| --- | --- |
+| Tile fill + `G/M/W/L` + elevation label | `board/snapshot_tiles.gd` reads `tiles` / `terrain_type` / `elevation` / mud-water-lava cell lists |
+| Walk highlights | `CombatSim.legal_intents` move dests only (`SnapshotTiles.walk_dests`) |
+| Z-sort / iso lift | `board/visual_sort.gd` — VIEW only |
+| HUD legend | Ground 1 / Mud 2 / Water 2 / Lava under the turn line |
+| Hit bands / Face / deploy chrome | Unchanged (no height mods) |
+
+**How to test live elevation chrome:** New Match on `main.tscn` shows terrain letters + elevation on every tile (default Ground 0). After both Ready, cyan walk tiles are only sim-legal dests. Face N/E/S/W and deploy chrome stay as they are. Headless: `godot --headless --path . -s res://tests/run_elevation_chrome_tests.gd`.
+
 ## Phase B+ elevation prototype
 
-**Reference only.** Live CombatSim walk is the Locked cutover (per-tile elevation + terrain, weighted pathfinder). Keep `proto/elevation` and `scenes/proto_elevation_board.tscn` as the chrome sandbox. Do not import `proto/elevation` from CombatSim. Default live paint is Ground 0; Godot reads `snapshot().tiles`. Board elevation chrome stays Godot-side.
+**Reference only.** Live CombatSim walk is the Locked cutover (per-tile elevation + terrain, weighted pathfinder). Keep `proto/elevation` and `scenes/proto_elevation_board.tscn` as the chrome sandbox. Do not import `proto/elevation` from CombatSim. Default live paint is Ground 0; Godot reads `snapshot().tiles` and paints it.
 
 Open (do **not** invent): height→hit/facing/LoS, stairs/ramps/flying, Advance onto illegal climb. Hit bands / facing / spell LoS stay unchanged — no height mods.
 
