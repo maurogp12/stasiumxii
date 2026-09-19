@@ -8,7 +8,7 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
 var highlight: String = ""
-var elevation: float = 0.0
+var elevation: int = 0
 var terrain_type: String = "ground"
 
 
@@ -52,7 +52,7 @@ func _draw() -> void:
 	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
 
 
-func apply_board_data(next_terrain: String, next_elevation: float) -> void:
+func apply_board_data(next_terrain: String, next_elevation: Variant = 0) -> void:
 	terrain_type = SNAPSHOT_TILES.normalize_terrain(next_terrain)
 	elevation = SNAPSHOT_TILES.normalize_elevation(next_elevation)
 	queue_redraw()
@@ -81,9 +81,7 @@ func terrain_letter() -> String:
 
 
 func elevation_text() -> String:
-	if is_equal_approx(elevation, roundf(elevation)):
-		return str(int(round(elevation)))
-	return "%.1f" % elevation
+	return str(int(elevation))
 
 
 func _terrain_color() -> Color:

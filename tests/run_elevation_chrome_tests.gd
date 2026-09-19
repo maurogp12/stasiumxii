@@ -47,7 +47,7 @@ func _test_adapter_defaults_flat_ground() -> void:
 	eq(tiles.size(), 64, "adapter fills an 8x8 when snapshot has no tiles")
 	var cell: Dictionary = tiles[Vector2i(3, 4)]
 	eq(cell["terrain_type"], "ground", "missing tiles default to ground")
-	eq(cell["elevation"], 0.0, "missing tiles default to elevation 0")
+	eq(cell["elevation"], 0, "missing tiles default to elevation 0")
 	eq(SNAPSHOT_TILES.has_board_data({}), false, "empty snap has no board data")
 	eq(SNAPSHOT_TILES.has_board_data({"tiles": []}), true, "tiles key counts as board data")
 
@@ -55,17 +55,17 @@ func _test_adapter_defaults_flat_ground() -> void:
 func _test_adapter_reads_tile_array() -> void:
 	var snap := {
 		"tiles": [
-			{"pos": Vector2i(1, 2), "elevation": 1.0, "terrain_type": "mud"},
-			{"cell": Vector2i(2, 2), "elevation": 0.5, "terrain": "water"},
-			{"grid_pos": Vector2i(3, 3), "height": 2, "type": "lava"},
+			{"pos": Vector2i(1, 2), "elevation": 1, "terrain_type": "mud"},
+			{"cell": Vector2i(2, 2), "elevation": 2, "terrain": "water"},
+			{"grid_pos": Vector2i(3, 3), "height": 3, "type": "lava"},
 		],
 	}
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(1, 2)), "mud", "array record terrain_type")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(1, 2)), 1.0, "array record elevation")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(1, 2)), 1, "array record elevation")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 2)), "water", "array record terrain alias")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 2)), 0.5, "half-level elevation is kept")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 2)), 2, "integer elevation is kept")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(3, 3)), "lava", "array record type=lava")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 3)), 2.0, "height alias maps to elevation")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 3)), 3, "height alias maps to elevation")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(0, 0)), "ground", "unlisted cells stay ground")
 
 
@@ -73,12 +73,12 @@ func _test_adapter_reads_named_fields() -> void:
 	var snap := {
 		"board": {
 			"tiles": {
-				"1,1": {"elevation": 1.5, "terrain_type": "MUD"},
+				"1,1": {"elevation": 2, "terrain_type": "MUD"},
 			},
 		},
 	}
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(1, 1)), "mud", "nested board.tiles dict")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(1, 1)), 1.5, "nested board.tiles elevation")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(1, 1)), 2, "nested board.tiles elevation")
 	eq(SNAPSHOT_TILES.has_board_data(snap), true, "board.tiles counts as board data")
 
 
@@ -89,12 +89,12 @@ func _test_adapter_reads_parallel_grids() -> void:
 		var erow: Array = []
 		var trow: Array = []
 		for x in range(8):
-			erow.append(1.0 if x == 5 and y == 3 else 0.0)
+			erow.append(1 if x == 5 and y == 3 else 0)
 			trow.append("lava" if x == 6 and y == 3 else "ground")
 		elev.append(erow)
 		terrain.append(trow)
 	var snap := {"elevation": elev, "terrain_type": terrain}
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(5, 3)), 1.0, "parallel elevation grid")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(5, 3)), 1, "parallel elevation grid")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(6, 3)), "lava", "parallel terrain_type grid")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(0, 0)), "ground", "parallel grid other cells stay ground")
 
@@ -148,21 +148,21 @@ func _test_live_snapshot_tiles_from_combatsim() -> void:
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
 	var snap: Dictionary = _sim.snapshot()
 	eq(SNAPSHOT_TILES.has_board_data(snap), true, "live snapshot exposes tiles")
-	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(0, 0)), "ground", "unlisted live tile is ground")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(0, 0)), 0.0, "unlisted live elevation is 0")
-	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 4)), "mud", "demo mud reaches chrome adapter")
-	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 6)), "lava", "demo lava reaches chrome adapter")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 6)), 1.0, "demo +1 step reaches chrome adapter")
+	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(0, 0)), "ground", "crop (0,0) is ground")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(0, 0)), 3, "crop (0,0) elevation is 3")
+	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 0)), "mud", "crop mud reaches chrome adapter")
+	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(4, 1)), "lava", "crop lava reaches chrome adapter")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(6, 5)), 3, "crop ridge elev 3 reaches chrome adapter")
 	if _sim.has_method("set_tile"):
-		_sim.set_tile(Vector2i(2, 1), "mud", 1.0)
-		_sim.set_tile(Vector2i(3, 1), "lava", 2.0)
+		_sim.set_tile(Vector2i(7, 3), "mud", 1)
+		_sim.set_tile(Vector2i(7, 2), "lava", 0)
 		var painted: Dictionary = _sim.snapshot()
-		eq(SNAPSHOT_TILES.terrain_at(painted, Vector2i(2, 1)), "mud", "set_tile mud reaches chrome adapter")
-		eq(SNAPSHOT_TILES.elevation_at(painted, Vector2i(2, 1)), 1.0, "set_tile elevation reaches chrome adapter")
-		eq(SNAPSHOT_TILES.terrain_at(painted, Vector2i(3, 1)), "lava", "set_tile lava reaches chrome adapter")
+		eq(SNAPSHOT_TILES.terrain_at(painted, Vector2i(7, 3)), "mud", "set_tile mud reaches chrome adapter")
+		eq(SNAPSHOT_TILES.elevation_at(painted, Vector2i(7, 3)), 1, "set_tile elevation reaches chrome adapter")
+		eq(SNAPSHOT_TILES.terrain_at(painted, Vector2i(7, 2)), "lava", "set_tile lava reaches chrome adapter")
 		var mud := TILE_SCRIPT.new()
-		var rec: Dictionary = SNAPSHOT_TILES.cell_record(painted, Vector2i(2, 1))
-		mud.apply_board_data(str(rec["terrain_type"]), float(rec["elevation"]))
+		var rec: Dictionary = SNAPSHOT_TILES.cell_record(painted, Vector2i(7, 3))
+		mud.apply_board_data(str(rec["terrain_type"]), rec["elevation"])
 		eq(mud.terrain_letter(), "M", "live mud tile paints M")
 		eq(mud.elevation_text(), "1", "live mud tile paints elevation 1")
 		mud.free()
@@ -173,36 +173,36 @@ func _test_demo_map_paints_from_snapshot() -> void:
 	var snap: Dictionary = _sim.snapshot()
 	eq(str(snap.get("demo_map", "")), "phase_a_fixed", "live chrome snap stamps the demo map")
 	var mud := TILE_SCRIPT.new()
-	mud.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 4)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 4)))
-	eq(mud.terrain_letter(), "M", "Godot paints M on demo mud (2,4)")
-	eq(mud.elevation_text(), "0", "demo mud elevation text is 0")
+	mud.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 0)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 0)))
+	eq(mud.terrain_letter(), "M", "Godot paints M on crop mud (2,0)")
+	eq(mud.elevation_text(), "3", "crop mud elevation text is 3")
 	mud.free()
 	var water := TILE_SCRIPT.new()
-	water.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(7, 1)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(7, 1)))
-	eq(water.terrain_letter(), "W", "Godot paints W on demo water (7,1)")
+	water.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(3, 0)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 0)))
+	eq(water.terrain_letter(), "W", "Godot paints W on crop water (3,0)")
 	water.free()
 	var lava := TILE_SCRIPT.new()
-	lava.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 6)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 6)))
-	eq(lava.terrain_letter(), "L", "Godot paints L on demo lava (2,6)")
+	lava.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(4, 0)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(4, 0)))
+	eq(lava.terrain_letter(), "L", "Godot paints L on crop lava (4,0)")
 	lava.free()
 	var ridge := TILE_SCRIPT.new()
-	ridge.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 5)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 5)))
-	eq(ridge.terrain_letter(), "G", "Godot paints G on the +0.5 ridge")
-	eq(ridge.elevation_text(), "0.5", "ridge elevation text is 0.5")
+	ridge.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(6, 5)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(6, 5)))
+	eq(ridge.terrain_letter(), "G", "Godot paints G on the multi-z ridge")
+	eq(ridge.elevation_text(), "3", "ridge elevation text is 3")
 	ridge.free()
 	var step := TILE_SCRIPT.new()
-	step.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(3, 6)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 6)))
-	eq(step.elevation_text(), "1", "adjacent +1 step paints 1")
+	step.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(5, 6)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(5, 6)))
+	eq(step.elevation_text(), "2", "adjacent ridge step paints 2")
 	step.free()
 
 
 func _test_live_tiles_paint_terrain_and_elevation() -> void:
 	var snap := {
 		"tiles": [
-			{"pos": Vector2i(0, 0), "terrain_type": "ground", "elevation": 0.0},
-			{"pos": Vector2i(1, 0), "terrain_type": "mud", "elevation": 1.0},
-			{"pos": Vector2i(2, 0), "terrain_type": "water", "elevation": 0.5},
-			{"pos": Vector2i(3, 0), "terrain_type": "lava", "elevation": 2.0},
+			{"pos": Vector2i(0, 0), "terrain_type": "ground", "elevation": 0},
+			{"pos": Vector2i(1, 0), "terrain_type": "mud", "elevation": 1},
+			{"pos": Vector2i(2, 0), "terrain_type": "water", "elevation": 2},
+			{"pos": Vector2i(3, 0), "terrain_type": "lava", "elevation": 3},
 		],
 	}
 	var painted := SNAPSHOT_TILES.from_snapshot(snap)
@@ -210,17 +210,17 @@ func _test_live_tiles_paint_terrain_and_elevation() -> void:
 	mud.grid_position = Vector2i(1, 0)
 	mud.apply_board_data(painted[Vector2i(1, 0)]["terrain_type"], painted[Vector2i(1, 0)]["elevation"])
 	eq(mud.terrain_type, "mud", "tile stores mud")
-	eq(mud.elevation, 1.0, "tile stores elevation 1")
+	eq(mud.elevation, 1, "tile stores elevation 1")
 	eq(mud.terrain_letter(), "M", "mud label letter")
-	eq(mud.elevation_text(), "1", "whole-level elevation text")
+	eq(mud.elevation_text(), "1", "integer elevation text")
 
 	var water := TILE_SCRIPT.new()
-	water.apply_board_data("water", 0.5)
+	water.apply_board_data("water", 2)
 	eq(water.terrain_letter(), "W", "water label letter")
-	eq(water.elevation_text(), "0.5", "half-level elevation text")
+	eq(water.elevation_text(), "2", "integer elevation text for water")
 
 	var lava := TILE_SCRIPT.new()
-	lava.apply_board_data("lava", 2.0)
+	lava.apply_board_data("lava", 3)
 	eq(lava.terrain_letter(), "L", "lava label letter")
 	eq(lava._terrain_color(), Color(0.86, 0.30, 0.12), "lava fill is proto red")
 

@@ -11,7 +11,7 @@ const TERRAIN_IDS := ["ground", "mud", "water", "lava"]
 
 static func default_cell() -> Dictionary:
 	return {
-		"elevation": 0.0,
+		"elevation": 0,
 		"terrain_type": DEFAULT_TERRAIN,
 	}
 
@@ -34,8 +34,8 @@ static func cell_record(snap: Dictionary, cell: Vector2i, board_size: int = 8) -
 	return default_cell()
 
 
-static func elevation_at(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> float:
-	return float(cell_record(snap, cell, board_size).get("elevation", 0.0))
+static func elevation_at(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> int:
+	return normalize_elevation(cell_record(snap, cell, board_size).get("elevation", 0))
 
 
 static func terrain_at(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> String:
@@ -96,12 +96,12 @@ static func normalize_terrain(value: Variant) -> String:
 	return DEFAULT_TERRAIN
 
 
-static func normalize_elevation(value: Variant) -> float:
+static func normalize_elevation(value: Variant) -> int:
 	if value == null:
-		return 0.0
+		return 0
 	if value is String or value is StringName:
-		return float(str(value))
-	return float(value)
+		return int(round(float(str(value))))
+	return int(round(float(value)))
 
 
 static func _tile_payload(snap: Dictionary) -> Variant:
