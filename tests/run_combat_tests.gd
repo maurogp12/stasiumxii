@@ -20,6 +20,7 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_reset_and_turn_order()
 	_test_live_deploy_starts_before_turn_1()
+	_test_deploy_zone_sampler_rules()
 	_test_deploy_zones_and_rejects()
 	_test_deploy_occupied_and_reposition()
 	_test_deploy_ready_gate_and_combat_intents()
@@ -135,10 +136,13 @@ func _test_live_deploy_starts_before_turn_1() -> void:
 	eq(snap["both_ready"], false, "neither seat is ready")
 	eq(snap["ready"][0], false, "seat 0 ready flag starts false")
 	eq(snap["ready"][1], false, "seat 1 ready flag starts false")
-	eq(snap["deploy"], "locked", "live deploy is Locked")
+	eq(snap["deploy"], "locked", "live deploy flow is Locked")
 	eq(snap["deploy_simultaneous"], true, "deploy is simultaneous")
-	eq(snap["deploy_legal_cells"], "border_ring_1_deep", "legal cells are the 1-deep ring")
-	eq(snap["deploy_zone_split"], "p1_south_west_p2_north_east", "halves are S+W vs N+E")
+	eq(snap["deploy_legal_cells"], "sampled_blob_6", "legal cells are sampled ~6-cell blobs")
+	eq(snap["deploy_zone_split"], "seeded_random_blobs", "zones are seed-sampled blobs")
+	eq(snap["deploy_zone_gen"], "proposed_random_blobs", "random blobs are Proposed, shipped live")
+	eq(snap["deploy_blob_size"], 6, "each seat blob is 6 cells")
+	eq(snap["deploy_min_chebyshev"], 3, "opening Chebyshev floor is 3")
 	eq(snap["units"][0]["placed"], false, "Kestrel is not pre-spawned")
 	eq(snap["units"][1]["placed"], false, "Ironjaw is not pre-spawned")
 	eq(snap["units"][0]["pos"], Vector2i(-1, -1), "live path does not use (1,1)")
@@ -159,12 +163,72 @@ func _test_live_deploy_starts_before_turn_1() -> void:
 	eq(_sim.can_ready(1), false, "can_ready is false before P2 place")
 
 
+func _test_deploy_zone_sampler_rules() -> void:
+	var flow_script = load("res://backend/match_flow.gd")
+	var west: Array[Vector2i] = _rect_blob(Vector2i(0, 1), 2, 3)
+	var west_south: Array[Vector2i] = _rect_blob(Vector2i(0, 5), 2, 3)
+	var overlap: Array[Vector2i] = _rect_blob(Vector2i(1, 1), 2, 3)
+	var too_close: Array[Vector2i] = _rect_blob(Vector2i(3, 1), 2, 3)
+	var far_east: Array[Vector2i] = _rect_blob(Vector2i(5, 1), 2, 3)
+	var exact_three: Array[Vector2i] = _rect_blob(Vector2i(4, 1), 2, 3)
+	var interior_a: Array[Vector2i] = _rect_blob(Vector2i(1, 2), 2, 3)
+	var interior_b: Array[Vector2i] = _rect_blob(Vector2i(5, 2), 2, 3)
+
+	eq(flow_script.pair_reject_reason(west, overlap), "overlap", "overlapping blobs reject")
+	eq(flow_script.pair_reject_reason(west, west_south), "same_edge", "same-edge camping rejects")
+	eq(flow_script.pair_reject_reason(west, too_close), "min_chebyshev", "opening Chebyshev 2 rejects")
+	eq(flow_script.min_chebyshev_between(west, too_close), 2, "west vs x=3 is Chebyshev 2")
+	eq(flow_script.pair_reject_reason(west, exact_three), "", "opening Chebyshev 3 is legal")
+	eq(flow_script.min_chebyshev_between(west, exact_three), 3, "west vs x=4 is Chebyshev 3")
+	eq(flow_script.pair_reject_reason(interior_a, interior_b), "", "interior pair at Chebyshev 3 is legal")
+	eq(flow_script.has_interior_cell(interior_a), true, "interior 2×3 is not border-only")
+	eq(flow_script.is_contiguous_blob(interior_a), true, "2×3 rectangle is contiguous")
+	eq(flow_script.is_filled_rect(interior_a), true, "2×3 is a filled rectangle")
+
+	var first: Dictionary = flow_script.sample_zone_pair(11)
+	var again: Dictionary = flow_script.sample_zone_pair(11)
+	eq(first["zones"][0], again["zones"][0], "same seed reseeds seat 0")
+	eq(first["zones"][1], again["zones"][1], "same seed reseeds seat 1")
+
+	var saw_interior := false
+	var saw_rect := false
+	var saw_organic := false
+	var saw_preferred := false
+	for seed in range(1, 49):
+		var sampled: Dictionary = flow_script.sample_zone_pair(seed)
+		var blob_a: Array[Vector2i] = sampled["zones"][0]
+		var blob_b: Array[Vector2i] = sampled["zones"][1]
+		eq(blob_a.size(), 6, "seed %d seat 0 blob is 6 cells" % seed)
+		eq(blob_b.size(), 6, "seed %d seat 1 blob is 6 cells" % seed)
+		eq(flow_script.is_contiguous_blob(blob_a), true, "seed %d seat 0 is contiguous" % seed)
+		eq(flow_script.is_contiguous_blob(blob_b), true, "seed %d seat 1 is contiguous" % seed)
+		eq(flow_script.pair_reject_reason(blob_a, blob_b), "", "seed %d pair is legal" % seed)
+		var distance: int = int(sampled["distance"])
+		eq(distance >= 3, true, "seed %d opening Chebyshev is at least 3" % seed)
+		if distance >= 4 and distance <= 6:
+			saw_preferred = true
+		if flow_script.has_interior_cell(blob_a) or flow_script.has_interior_cell(blob_b):
+			saw_interior = true
+		if flow_script.is_filled_rect(blob_a) or flow_script.is_filled_rect(blob_b):
+			saw_rect = true
+		if not flow_script.is_filled_rect(blob_a) or not flow_script.is_filled_rect(blob_b):
+			saw_organic = true
+	eq(saw_interior, true, "sampler can place interior cells")
+	eq(saw_rect, true, "sampler can emit a 2×3 rectangle")
+	eq(saw_organic, true, "sampler can emit an organic blob")
+	eq(saw_preferred, true, "sampler prefers opening Chebyshev 4–6 when it can")
+
+	_sim.reset_match({"seed": 1})
+	eq(_sim.snapshot()["deploy_zone_distance"] >= 3, true, "live seed 1 opening is at least Chebyshev 3")
+	eq(_sim.snapshot()["deploy_zone_gen"], "proposed_random_blobs", "live snap stamps Proposed blobs")
+
+
 func _test_deploy_zones_and_rejects() -> void:
 	_sim.reset_match({"seed": 1})
-	eq(_sim.deploy_zone_cells(0).size(), 14, "seat 0 half-ring is 14 cells")
-	eq(_sim.deploy_zone_cells(1).size(), 14, "seat 1 half-ring is 14 cells")
-	eq(_sim.legal_deploy_cells(0).size(), 14, "all 14 S+W cells start legal")
-	eq(_sim.legal_deploy_cells(1).size(), 14, "all 14 N+E cells start legal")
+	eq(_sim.deploy_zone_cells(0).size(), 6, "seat 0 blob is 6 cells")
+	eq(_sim.deploy_zone_cells(1).size(), 6, "seat 1 blob is 6 cells")
+	eq(_sim.legal_deploy_cells(0).size(), 6, "all 6 seat 0 cells start legal")
+	eq(_sim.legal_deploy_cells(1).size(), 6, "all 6 seat 1 cells start legal")
 
 	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
 	eq(oob["illegal"], true, "negative x is rejected")
@@ -172,100 +236,81 @@ func _test_deploy_zones_and_rejects() -> void:
 	eq(_sim.place_unit(0, Vector2i(8, 2))["reason"], "out_of_bounds", "x=8 is out_of_bounds")
 	eq(_sim.place_unit(1, Vector2i(3, -1))["reason"], "out_of_bounds", "negative y is out_of_bounds")
 
-	var interior: Dictionary = _sim.place_unit(0, Vector2i(3, 3))
-	eq(interior["illegal"], true, "interior cell is rejected")
-	eq(interior["reason"], "outside_zone", "interior reason is outside_zone")
-	eq(_sim.can_place(0, Vector2i(1, 1))["reason"], "outside_zone", "superseded (1,1) is outside_zone")
-	eq(_sim.can_place(1, Vector2i(6, 6))["reason"], "outside_zone", "superseded (6,6) is outside_zone")
-	eq(_sim.can_place(0, Vector2i(1, 3))["reason"], "outside_zone", "old west-box inner cell is outside_zone")
-
-	var wrong_half: Dictionary = _sim.place_unit(0, Vector2i(3, 0))
-	eq(wrong_half["illegal"], true, "seat 0 cannot place on north")
-	eq(wrong_half["reason"], "outside_zone", "wrong-half reason is outside_zone")
-	eq(_sim.place_unit(0, Vector2i(7, 3))["reason"], "outside_zone", "seat 0 cannot place on east")
-	eq(_sim.place_unit(1, Vector2i(3, 7))["reason"], "outside_zone", "seat 1 cannot place on south")
-	eq(_sim.place_unit(1, Vector2i(0, 3))["reason"], "outside_zone", "seat 1 cannot place on west")
-
-	eq(_sim.can_place(0, Vector2i(0, 3))["ok"], true, "seat 0 legal on west")
-	eq(_sim.can_place(0, Vector2i(3, 7))["ok"], true, "seat 0 legal on south")
-	eq(_sim.can_place(0, Vector2i(0, 7))["ok"], true, "seat 0 owns SW")
-	eq(_sim.can_place(0, Vector2i(7, 7))["ok"], true, "seat 0 owns SE")
-	eq(_sim.can_place(1, Vector2i(3, 0))["ok"], true, "seat 1 legal on north")
-	eq(_sim.can_place(1, Vector2i(7, 3))["ok"], true, "seat 1 legal on east")
-	eq(_sim.can_place(1, Vector2i(0, 0))["ok"], true, "seat 1 owns NW")
-	eq(_sim.can_place(1, Vector2i(7, 0))["ok"], true, "seat 1 owns NE")
+	var outside: Vector2i = _unclaimed_cell()
+	var other: Vector2i = _zone_cell(1, 0)
+	var own: Vector2i = _zone_cell(0, 0)
+	var miss: Dictionary = _sim.place_unit(0, outside)
+	eq(miss["illegal"], true, "unclaimed cell is rejected")
+	eq(miss["reason"], "outside_zone", "unclaimed reason is outside_zone")
+	eq(_sim.can_place(0, other)["reason"], "outside_zone", "other seat blob is outside_zone")
+	eq(_sim.can_place(1, own)["reason"], "outside_zone", "seat 1 cannot sit in seat 0's blob")
+	eq(_sim.can_place(0, own)["ok"], true, "seat 0 may place in its blob")
+	eq(_sim.can_place(1, other)["ok"], true, "seat 1 may place in its blob")
 	eq(_unit(0)["placed"], false, "failed places leave Kestrel unplaced")
+
+	var interior_seed := _seed_with_interior_zone()
+	_sim.reset_match({"seed": interior_seed})
+	var interior_seat := 0
+	var interior_cell: Vector2i = _interior_zone_cell(0)
+	if interior_cell.x < 0:
+		interior_seat = 1
+		interior_cell = _interior_zone_cell(1)
+	eq(interior_cell.x >= 0, true, "found an interior cell in a sampled blob")
+	eq(_sim.can_place(interior_seat, interior_cell)["ok"], true, "interior blob cell is legal")
+	eq(_sim.place_unit(interior_seat, interior_cell)["ok"], true, "interior place succeeds")
+	eq(_unit(interior_seat)["pos"], interior_cell, "fighter sits on an interior deploy cell")
 
 
 func _test_deploy_occupied_and_reposition() -> void:
 	_sim.reset_match({"seed": 1})
-	eq(_sim.place_unit(0, Vector2i(0, 3))["ok"], true, "seat 0 places on west")
-	eq(_unit(0)["pos"], Vector2i(0, 3), "Kestrel sits on (0,3)")
+	var home: Vector2i = _zone_cell(0, 0)
+	var next_home: Vector2i = _zone_cell(0, 1)
+	var enemy: Vector2i = _zone_cell(1, 0)
+	eq(_sim.place_unit(0, home)["ok"], true, "seat 0 places in its blob")
+	eq(_unit(0)["pos"], home, "Kestrel sits on the first blob cell")
 	eq(_unit(0)["placed"], true, "Kestrel is placed")
-	# Simultaneous: seat 1 can place without waiting.
-	eq(_sim.place_unit(1, Vector2i(7, 3))["ok"], true, "seat 1 places at the same time")
-	eq(_sim.place_unit(1, Vector2i(0, 3))["reason"], "outside_zone", "P2 on P1's west cell is outside_zone")
-	# Occupied on a cell both... they never share cells. Occupied is same-half only if two units.
-	# One fighter each: occupied is tested by trying to place seat 0 onto seat 1... wrong half.
-	# Use extra blocker via a second place onto a cell after we... actually one fighter per seat.
-	# Reposition of the same fighter onto a cell is fine; stacking would need two units.
-	# Blocker: place seat 0, then the only occupied reject on seat 0's half is... nobody else.
-	# Test occupied via legal_deploy_cells omitting the enemy? They don't share.
-	# Occupied path: CombatSim still rejects if a unit is there. Place Kestrel, then
-	# we cannot have another seat-0 unit. The gate still runs occupant vs other seat.
-	# Adjacent corner: Kestrel (0,1) west, Ironjaw (0,0) NW — shared? No, different cells.
-	# If Ironjaw is on (0,0) and Kestrel tries (0,0) that's wrong_half (SW vs NW).
-	# Occupied on the same cell can happen if we force-spawn a blocker? Or if we
-	# treat reposition of the other fighter... they never share a legal cell.
-	# The Locked rule still rejects occupied; use skip path: place Kestrel (0,3),
-	# then manually occupy via place_unit after we move Ironjaw? Can't.
-	# Test occupied by placing Kestrel then asking can_place for seat 0 on that
-	# cell — same seat is allowed (reposition onto self).
-	eq(_sim.can_place(0, Vector2i(0, 3))["ok"], true, "same fighter may stay on their cell")
-	var moved: Dictionary = _sim.place_unit(0, Vector2i(4, 7))
+	eq(_sim.place_unit(1, enemy)["ok"], true, "seat 1 places at the same time")
+	eq(_sim.place_unit(1, home)["reason"], "outside_zone", "P2 on P1's blob is outside_zone")
+	eq(_sim.can_place(0, home)["ok"], true, "same fighter may stay on their cell")
+	var moved: Dictionary = _sim.place_unit(0, next_home)
 	eq(moved["ok"], true, "reposition before ready is legal")
-	eq(_unit(0)["pos"], Vector2i(4, 7), "Kestrel moved to the south ring")
+	eq(_unit(0)["pos"], next_home, "Kestrel moved to another blob cell")
 	eq(moved["events"][0]["repositioned"], true, "second place is a reposition")
-	# Occupied: after both sit on the ring, a place onto the other seat's cell is
-	# wrong_half. Occupied is still reachable if we put a test blocker.
-	_sim._blocked_cells.append(Vector2i(0, 4))
-	# Blockers are combat occupancy (_is_empty), not deploy occupant_seat.
-	# Deploy occupant is units only. Force a unit stack by moving Ironjaw onto
-	# a west cell is outside_zone. So occupied is: two placed units on one cell
-	# only if zones overlap — they don't. Still test the gate with occupant_seat.
-	_sim._force_spawn(1, Vector2i(0, 2))
-	eq(_sim.place_unit(0, Vector2i(0, 2))["reason"], "occupied", "place rejects an occupied ring cell")
-	eq(_unit(0)["pos"], Vector2i(4, 7), "failed occupied place does not move Kestrel")
+	_sim._force_spawn(1, home)
+	eq(_sim.place_unit(0, home)["reason"], "occupied", "place rejects an occupied blob cell")
+	eq(_unit(0)["pos"], next_home, "failed occupied place does not move Kestrel")
 
 
 func _test_deploy_ready_gate_and_combat_intents() -> void:
 	_sim.reset_match({"seed": 1})
 	eq(_sim.ready_seat(0)["reason"], "units_not_placed", "ready without a unit is units_not_placed")
 	eq(_sim.snapshot()["ready"][0], false, "failed ready does not set the flag")
-	_sim.place_unit(0, Vector2i(0, 2))
+	_sim.place_unit(0, _zone_cell(0, 0))
 	eq(_sim.can_ready(0), true, "Ready enables after the required unit is placed")
 	eq(_sim.can_ready(1), false, "Ready P2 stays gated")
-	eq(_sim.submit({"type": "move", "seat": 0, "to": Vector2i(0, 3)})["reason"], "wrong_phase", "move rejected during deploy")
-	eq(_sim.submit({"type": "cast", "seat": 0, "spell": "mark_shot", "to": Vector2i(7, 2)})["reason"], "wrong_phase", "cast rejected during deploy")
+	eq(_sim.submit({"type": "move", "seat": 0, "to": _zone_cell(0, 1)})["reason"], "wrong_phase", "move rejected during deploy")
+	eq(_sim.submit({"type": "cast", "seat": 0, "spell": "mark_shot", "to": _zone_cell(1, 0)})["reason"], "wrong_phase", "cast rejected during deploy")
 	eq(_sim.submit({"type": "face", "seat": 0, "dir": "N"})["reason"], "wrong_phase", "face rejected during deploy")
 	eq(_sim.submit({"type": "end_turn", "seat": 0})["reason"], "wrong_phase", "end_turn rejected during deploy")
 	eq(_sim.ready_seat(0)["ok"], true, "P1 ready succeeds once placed")
 	eq(_sim.snapshot()["ready"][0], true, "P1 ready flag is set")
 	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "one ready does not start combat")
-	eq(_sim.place_unit(0, Vector2i(0, 4))["reason"], "side_locked", "ready side cannot reposition")
+	eq(_sim.place_unit(0, _zone_cell(0, 1))["reason"], "side_locked", "ready side cannot reposition")
 	eq(_sim.ready_seat(0)["reason"], "already_ready", "cannot ready twice")
-	# Simultaneous: P2 still open.
-	eq(_sim.place_unit(1, Vector2i(7, 2))["ok"], true, "P2 can still place after P1 ready")
+	eq(_sim.place_unit(1, _zone_cell(1, 0))["ok"], true, "P2 can still place after P1 ready")
 	eq(_sim.snapshot()["combat_enabled"], false, "combat still off after only one ready")
 
 
 func _test_both_ready_starts_combat() -> void:
 	_sim.reset_match({"seed": 1})
-	eq(_sim.place_unit(1, Vector2i(7, 2))["ok"], true, "P2 can place first")
-	eq(_sim.place_unit(0, Vector2i(0, 2))["ok"], true, "P1 places after P2")
+	var p2: Vector2i = _zone_cell(1, 0)
+	var p1: Vector2i = _zone_cell(0, 0)
+	var p1_move: Vector2i = _zone_cell(0, 1)
+	eq(_sim.place_unit(1, p2)["ok"], true, "P2 can place first")
+	eq(_sim.place_unit(0, p1)["ok"], true, "P1 places after P2")
 	eq(_sim.ready_seat(1)["ok"], true, "P2 can ready first")
 	eq(_sim.snapshot()["phase"], "DEPLOYMENT", "still DEPLOYMENT after only P2 ready")
-	eq(_sim.place_unit(0, Vector2i(3, 7))["ok"], true, "P1 may reposition after P2 is ready")
+	eq(_sim.place_unit(0, p1_move)["ok"], true, "P1 may reposition after P2 is ready")
 	var started: Dictionary = _sim.ready_seat(0)
 	eq(started["ok"], true, "second ready succeeds")
 	var snap: Dictionary = _sim.snapshot()
@@ -277,14 +322,14 @@ func _test_both_ready_starts_combat() -> void:
 	eq(snap["end_turn_enabled"], true, "end_turn on")
 	eq(snap["turn_index"], 1, "Turn index is 1")
 	eq(snap["active_seat"], 0, "Kestrel acts first in combat")
-	eq(_unit(0)["pos"], Vector2i(3, 7), "combat spawn is the confirmed P1 cell")
-	eq(_unit(1)["pos"], Vector2i(7, 2), "combat spawn is the confirmed P2 cell")
+	eq(_unit(0)["pos"], p1_move, "combat spawn is the confirmed P1 cell")
+	eq(_unit(1)["pos"], p2, "combat spawn is the confirmed P2 cell")
 	eq(_unit(0)["locked"], true, "P1 locks")
 	eq(_unit(1)["locked"], true, "P2 locks")
 	eq(_unit(0)["ap"], 6, "Kestrel refills 6 AP on combat start")
 	eq(_unit(0)["mp"], 3, "Kestrel refills 3 MP on combat start")
 	eq(_unit(1)["ap"], 6, "Ironjaw has 6 AP when combat starts")
-	eq(_sim.place_unit(0, Vector2i(0, 4))["reason"], "wrong_phase", "place closed in TURN_1")
+	eq(_sim.place_unit(0, _zone_cell(0, 2))["reason"], "wrong_phase", "place closed in TURN_1")
 	eq(_sim.ready_seat(1)["reason"], "wrong_phase", "ready closed in TURN_1")
 	var kinds := {}
 	for intent in _sim.legal_intents(0):
@@ -307,10 +352,13 @@ func _test_both_ready_starts_combat() -> void:
 
 
 func _test_kits_still_pass_after_deploy() -> void:
-	# Adjacent ring cells: seat 0 west (0,1), seat 1 NW (0,0). Kits must still resolve.
+	# Opening blobs are at least Chebyshev 3 apart. Walk into Strike range after Ready.
 	_sim.reset_match({"seed": 1, "rolls": [1, 1]})
-	_sim.place_unit(0, Vector2i(0, 1))
-	_sim.place_unit(1, Vector2i(0, 0))
+	var pair: Array = _closest_zone_pair()
+	var p1: Vector2i = pair[0]
+	var p2: Vector2i = pair[1]
+	_sim.place_unit(0, p1)
+	_sim.place_unit(1, p2)
 	_sim.ready_seat(0)
 	_sim.ready_seat(1)
 	eq(_sim.snapshot()["phase"], "TURN_1", "kits run after both ready")
@@ -318,17 +366,17 @@ func _test_kits_still_pass_after_deploy() -> void:
 	eq(_unit(1)["spells"], ["advance", "strike", "shoulder", "crush"], "Ironjaw kit is Advance + Strike + Shoulder + Crush after deploy")
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
 	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate after deploy")
-	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot stays range-gated (Chebyshev 1)")
 	eq(_has_legal_cast(0, "detonate"), false, "Detonate stays gated at 0 Marks")
 	var end_turn: Dictionary = _sim.submit({"type": "end_turn"})
 	eq(end_turn["ok"], true, "end_turn works after deploy")
 	eq(_sim.snapshot()["active_seat"], 1, "Ironjaw becomes active after deploy")
+	_walk_seat_toward(1, p1, 1)
 	var ironjaw_offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
 	eq(ironjaw_offered, ["advance", "strike", "shoulder", "crush"], "Ironjaw HUD offers the Locked kit after deploy")
-	eq(_has_legal_cast(1, "strike"), true, "Strike is legal at Chebyshev 1 after deploy")
+	eq(_has_legal_cast(1, "strike"), true, "Strike is legal after walking in from the opening")
 	eq(_has_legal_cast(1, "advance"), true, "Advance is legal after deploy")
 	eq(_has_legal_cast(1, "mark_shot"), false, "Ironjaw still cannot Mark Shot")
-	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(0, 1)})
+	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(0)["pos"]})
 	eq(strike["ok"], true, "Strike resolves after deploy")
 	eq(strike["illegal"], false, "Strike is not rejected")
 	eq(_unit(0)["hp"] < 80, true, "Strike dealt damage after deploy")
@@ -2966,23 +3014,24 @@ func _test_playtest_warning_hush() -> void:
 func _test_deploy_main_chrome() -> void:
 	# Live main chrome binds CombatSim deploy API. No fog / deploy timer / proto manager.
 	_sim.reset_match({"seed": 1})
+	var zones: Dictionary = _sim.snapshot().get("deploy_zones", {})
+	var p1: Vector2i = _zone_cell(0, 0)
+	var p2: Vector2i = _zone_cell(1, 0)
+	var unclaimed: Vector2i = _unclaimed_cell()
 	eq(CombatHUD.is_deployment_phase(_sim.snapshot()), true, "live snap is DEPLOYMENT")
 	eq(CombatHUD.can_ready_from_snap(_sim.snapshot(), 0), false, "HUD gate matches can_ready before place")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(0, 3)), 0, "west ring click is seat 0")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(3, 7)), 0, "south ring click is seat 0")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(3, 0)), 1, "north ring click is seat 1")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(7, 3)), 1, "east ring click is seat 1")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(3, 3)), 0, "interior with no selection routes to seat 0")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(7, 3), 0), 0, "selected P1 on P2 half stays seat 0 for wrong-half")
-	eq(CombatHUD.deploy_seat_for_cell(Vector2i(0, 3), 1), 1, "selected P2 on P1 half stays seat 1 for wrong-half")
+	eq(CombatHUD.deploy_seat_for_cell(p1, -1, zones), 0, "seat 0 blob click is seat 0")
+	eq(CombatHUD.deploy_seat_for_cell(p2, -1, zones), 1, "seat 1 blob click is seat 1")
+	eq(CombatHUD.deploy_seat_for_cell(unclaimed, -1, zones), 0, "unclaimed with no selection routes to seat 0")
+	eq(CombatHUD.deploy_seat_for_cell(p2, 0, zones), 0, "selected P1 on P2 blob stays seat 0 for wrong_zone")
+	eq(CombatHUD.deploy_seat_for_cell(p1, 1, zones), 1, "selected P2 on P1 blob stays seat 1 for wrong_zone")
 
-	var interior_copy := CombatHUD.deploy_reject_copy("outside_zone", Vector2i(3, 3))
-	truthy(interior_copy.contains("interior"), "HUD coach distinguishes interior reject")
-	var wrong_half_copy := CombatHUD.deploy_reject_copy("outside_zone", Vector2i(7, 3))
-	truthy(wrong_half_copy.contains("other side"), "HUD coach distinguishes wrong-half reject")
-	eq(interior_copy.contains("1-deep border ring"), true, "interior copy names the 1-deep ring")
-	eq(CombatHUD.deploy_reject_copy("outside_zone", Vector2i(3, 3), "interior").contains("interior"), true, "zone_kind interior is honored")
-	eq(CombatHUD.deploy_reject_copy("outside_zone", Vector2i(3, 3), "wrong_half").contains("other side"), true, "zone_kind wrong_half is honored")
+	var outside_copy := CombatHUD.deploy_reject_copy("outside_zone", unclaimed, "outside")
+	truthy(outside_copy.contains("outside this side"), "HUD coach names an unclaimed cell")
+	var wrong_zone_copy := CombatHUD.deploy_reject_copy("outside_zone", p2, "wrong_zone")
+	truthy(wrong_zone_copy.contains("other side"), "HUD coach names the other blob")
+	eq(CombatHUD.deploy_reject_copy("outside_zone", unclaimed, "outside").contains("deployment zone"), true, "outside copy names the deploy zone")
+	eq(CombatHUD.deploy_reject_copy("outside_zone", p2, "wrong_half").contains("other side"), true, "legacy wrong_half kind still names the other zone")
 
 	var hud := CombatHUD.new()
 	hud._build()
@@ -3000,11 +3049,11 @@ func _test_deploy_main_chrome() -> void:
 	eq(hud._spell_buttons.is_empty(), true, "kit casts are hidden during deploy")
 	truthy(hud._turn_label.text.contains("DEPLOYMENT"), "turn label names DEPLOYMENT")
 	eq(hud._turn_label.text.contains("Turn 1"), false, "Turn 1 is not shown before both Ready")
-	truthy(hud._selected_label.text.contains("border ring"), "selected line names the ring")
+	truthy(hud._selected_label.text.contains("deploy zone"), "selected line names the deploy zone")
 	truthy(str(hud._kestrel_body.text).contains("open"), "Kestrel card starts open")
 	truthy(str(hud._ironjaw_body.text).contains("open"), "Ironjaw card starts open")
 
-	_sim.place_unit(0, Vector2i(0, 3))
+	_sim.place_unit(0, p1)
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.ready_p1_enabled(), true, "Ready P1 enables after Kestrel is placed")
 	eq(hud.ready_p2_enabled(), false, "Ready P2 stays gated")
@@ -3012,7 +3061,7 @@ func _test_deploy_main_chrome() -> void:
 	truthy(str(hud._kestrel_body.text).contains("placed"), "Kestrel card shows placed")
 	eq(hud.walk_suppressed(), true, "Walk stays off after a place")
 
-	_sim.place_unit(1, Vector2i(7, 3))
+	_sim.place_unit(1, p2)
 	hud.render(_sim.snapshot(), _sim.legal_intents(1))
 	eq(hud.ready_p2_enabled(), true, "Ready P2 enables after Ironjaw is placed")
 	eq(hud.end_turn_enabled(), false, "End Turn stays off until both Ready")
@@ -3038,8 +3087,8 @@ func _test_deploy_main_chrome() -> void:
 	eq(hud._face_bar.visible, true, "Face bar returns in Turn 1")
 	truthy(hud._turn_label.text.contains("Turn 1"), "turn label shows Turn 1")
 	eq(hud._spell_buttons.has("mark_shot"), true, "Kestrel kit returns after deploy")
-	eq(_unit(0)["pos"], Vector2i(0, 3), "combat spawn is the confirmed P1 cell")
-	eq(_unit(1)["pos"], Vector2i(7, 3), "combat spawn is the confirmed P2 cell")
+	eq(_unit(0)["pos"], p1, "combat spawn is the confirmed P1 cell")
+	eq(_unit(1)["pos"], p2, "combat spawn is the confirmed P2 cell")
 	hud.free()
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
@@ -3056,9 +3105,10 @@ func _test_deploy_main_chrome() -> void:
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("Ready P1"), "HUD has Ready P1")
 	truthy(hud_src.contains("Ready P2"), "HUD has Ready P2")
-	truthy(hud_src.contains("deploy_reject_copy"), "HUD reuses #29 reject copy")
-	truthy(hud_src.contains("1-deep border ring only"), "HUD interior copy matches #29")
-	truthy(hud_src.contains("other side's half of the border ring"), "HUD wrong-half copy matches #29")
+	truthy(hud_src.contains("deploy_reject_copy"), "HUD still owns deploy reject copy")
+	truthy(hud_src.contains("other side's deploy zone"), "HUD names the other blob")
+	truthy(hud_src.contains("outside this side's deployment zone"), "HUD names an unclaimed cell")
+	eq(hud_src.contains("1-deep border ring only"), false, "HUD no longer claims the 1-deep ring")
 	eq(hud_src.contains("Detonate"), false, "deploy HUD still does not hardcode Detonate")
 
 	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
@@ -3069,6 +3119,90 @@ func _test_deploy_main_chrome() -> void:
 	truthy(readme.contains("Ready P1"), "README documents Ready P1 on main")
 	truthy(readme.contains("main.tscn"), "README still points play at main.tscn")
 	eq(readme.contains("Godot Engineer"), false, "README no longer leaves main chrome for later")
+
+
+func _zone_cell(seat: int, index: int = 0) -> Vector2i:
+	var cells: Array[Vector2i] = _sim.deploy_zone_cells(seat)
+	if cells.is_empty():
+		return Vector2i(-1, -1)
+	return cells[clampi(index, 0, cells.size() - 1)]
+
+
+func _unclaimed_cell() -> Vector2i:
+	var z0: Array[Vector2i] = _sim.deploy_zone_cells(0)
+	var z1: Array[Vector2i] = _sim.deploy_zone_cells(1)
+	for y in range(8):
+		for x in range(8):
+			var cell := Vector2i(x, y)
+			if not z0.has(cell) and not z1.has(cell):
+				return cell
+	return Vector2i(-1, -1)
+
+
+func _interior_zone_cell(seat: int) -> Vector2i:
+	var flow_script = load("res://backend/match_flow.gd")
+	for cell: Vector2i in _sim.deploy_zone_cells(seat):
+		if not flow_script.is_border_cell(cell):
+			return cell
+	return Vector2i(-1, -1)
+
+
+func _seed_with_interior_zone() -> int:
+	var flow_script = load("res://backend/match_flow.gd")
+	for seed in range(1, 80):
+		var sampled: Dictionary = flow_script.sample_zone_pair(seed)
+		if flow_script.has_interior_cell(sampled["zones"][0]) or flow_script.has_interior_cell(sampled["zones"][1]):
+			return seed
+	return 1
+
+
+func _rect_blob(origin: Vector2i, width: int, height: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for y in range(height):
+		for x in range(width):
+			out.append(Vector2i(origin.x + x, origin.y + y))
+	return out
+
+
+func _closest_zone_pair() -> Array:
+	var best_d := 999
+	var pair: Array = [Vector2i.ZERO, Vector2i.ZERO]
+	for a: Vector2i in _sim.deploy_zone_cells(0):
+		for b: Vector2i in _sim.deploy_zone_cells(1):
+			var d: int = _sim.chebyshev(a, b)
+			if d < best_d:
+				best_d = d
+				pair = [a, b]
+	return pair
+
+
+func _walk_seat_toward(seat: int, target: Vector2i, want: int) -> void:
+	var guard := 0
+	while guard < 16:
+		if int(_sim.snapshot().get("active_seat", -1)) != seat:
+			_sim.submit({"type": "end_turn"})
+			guard += 1
+			continue
+		var pos: Vector2i = _unit(seat)["pos"]
+		if _sim.chebyshev(pos, target) <= want:
+			return
+		if _has_legal_cast(seat, "strike"):
+			return
+		var best: Variant = null
+		var best_d := 999
+		for intent in _sim.legal_intents(seat):
+			if str(intent.get("type", "")) != "move":
+				continue
+			var dest: Vector2i = intent["to"]
+			var d: int = _sim.chebyshev(dest, target)
+			if d < best_d:
+				best_d = d
+				best = dest
+		if best == null:
+			_sim.submit({"type": "end_turn"})
+		else:
+			_sim.submit({"type": "move", "to": best})
+		guard += 1
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

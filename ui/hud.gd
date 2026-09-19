@@ -122,11 +122,11 @@ static func can_ready_from_snap(snap: Dictionary, seat: int) -> bool:
 	return false
 
 
-## Click routing for simultaneous deploy. A selected seat on the other half
-## (or interior) keeps that seat so CombatSim can emit wrong-half / interior copy.
-static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1) -> int:
-	var in0 := MatchFlow.owns_south_west_half(cell)
-	var in1 := MatchFlow.owns_north_east_half(cell)
+## Click routing for simultaneous deploy. A selected seat on the other blob
+## (or an unclaimed cell) keeps that seat so CombatSim can emit wrong_zone / outside.
+static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1, zones: Dictionary = {}) -> int:
+	var in0 := _zone_has_cell(zones, 0, cell)
+	var in1 := _zone_has_cell(zones, 1, cell)
 	if selected_seat >= 0:
 		var selected_owns := in0 if selected_seat == 0 else in1
 		if not selected_owns:
@@ -138,17 +138,24 @@ static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1) -> int
 	return selected_seat if selected_seat >= 0 else 0
 
 
-## #29 coach: interior vs wrong-half share outside_zone; copy distinguishes them.
+static func _zone_has_cell(zones: Dictionary, seat: int, cell: Vector2i) -> bool:
+	var raw: Variant = zones.get(seat, zones.get(str(seat), []))
+	if typeof(raw) != TYPE_ARRAY:
+		return false
+	for owned in raw:
+		if owned is Vector2i and owned == cell:
+			return true
+	return false
+
+
+## outside_zone copy: other blob vs unclaimed cell. Interior cells are legal when sampled.
 static func deploy_reject_copy(reason: String, dest: Vector2i, zone_kind: String = "") -> String:
 	var where := "(%d,%d)" % [dest.x, dest.y] if dest.x >= 0 and dest.y >= 0 else "that tile"
 	match reason:
 		"outside_zone":
-			var kind := zone_kind
-			if kind == "":
-				kind = "interior" if not MatchFlow.is_border_cell(dest) else "wrong_half"
-			if kind == "interior":
-				return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % where
-			return "REJECT — %s is the other side's half of the border ring." % where
+			if zone_kind == "wrong_zone" or zone_kind == "wrong_half":
+				return "REJECT — %s is the other side's deploy zone." % where
+			return "REJECT — %s is outside this side's deployment zone." % where
 		"occupied":
 			return "REJECT — %s is occupied." % where
 		"out_of_bounds":
@@ -908,7 +915,7 @@ func _update_selected_label() -> void:
 	if _selected_label == null:
 		return
 	if _deploying:
-		_selected_label.text = "Place on your half of the border ring  ·  Ready when placed"
+		_selected_label.text = "Place on your deploy zone  ·  Ready when placed"
 		return
 	if _stunned:
 		_selected_label.text = "Stunned — turn auto-ends"
