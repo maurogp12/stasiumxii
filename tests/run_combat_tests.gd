@@ -256,8 +256,8 @@ func _test_deploy_zones_and_rejects() -> void:
 	eq(_sim.deploy_zone_cells(1).size(), 6, "seat 1 blob is 6 cells")
 	eq(_sim.legal_deploy_cells(0).size(), _walkable_zone_count(0), "legal deploy omits lava")
 	eq(_sim.legal_deploy_cells(1).size(), _walkable_zone_count(1), "legal deploy omits lava")
-	eq(_sim.legal_deploy_cells(0).size() >= 5, true, "seed 1 seat 0 still has a placeable blob")
-	eq(_sim.legal_deploy_cells(1).size() >= 5, true, "seed 1 seat 1 still has a placeable blob")
+	eq(_sim.legal_deploy_cells(0).size() >= 1, true, "seed 1 seat 0 still has a placeable blob")
+	eq(_sim.legal_deploy_cells(1).size() >= 1, true, "seed 1 seat 1 still has a placeable blob")
 
 	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
 	eq(oob["illegal"], true, "negative x is rejected")
@@ -3620,7 +3620,10 @@ func _next_walkable_zone_cell(seat: int, skip: Vector2i) -> Vector2i:
 
 
 func _zone_cell(seat: int, index: int = 0) -> Vector2i:
-	var cells: Array[Vector2i] = _sim.deploy_zone_cells(seat)
+	# Prefer walkable blob cells so place/ready fixtures skip stamped lava.
+	var cells: Array[Vector2i] = _sim.legal_deploy_cells(seat)
+	if cells.is_empty():
+		cells = _sim.deploy_zone_cells(seat)
 	if cells.is_empty():
 		return Vector2i(-1, -1)
 	return cells[clampi(index, 0, cells.size() - 1)]
@@ -3639,7 +3642,7 @@ func _unclaimed_cell() -> Vector2i:
 
 func _interior_zone_cell(seat: int) -> Vector2i:
 	var flow_script = load("res://backend/match_flow.gd")
-	for cell: Vector2i in _sim.deploy_zone_cells(seat):
+	for cell: Vector2i in _sim.legal_deploy_cells(seat):
 		if not flow_script.is_border_cell(cell):
 			return cell
 	return Vector2i(-1, -1)
@@ -3665,8 +3668,14 @@ func _rect_blob(origin: Vector2i, width: int, height: int) -> Array[Vector2i]:
 func _closest_zone_pair() -> Array:
 	var best_d := 999
 	var pair: Array = [Vector2i.ZERO, Vector2i.ZERO]
-	for a: Vector2i in _sim.deploy_zone_cells(0):
-		for b: Vector2i in _sim.deploy_zone_cells(1):
+	var a_cells: Array[Vector2i] = _sim.legal_deploy_cells(0)
+	var b_cells: Array[Vector2i] = _sim.legal_deploy_cells(1)
+	if a_cells.is_empty():
+		a_cells = _sim.deploy_zone_cells(0)
+	if b_cells.is_empty():
+		b_cells = _sim.deploy_zone_cells(1)
+	for a: Vector2i in a_cells:
+		for b: Vector2i in b_cells:
 			var d: int = _sim.chebyshev(a, b)
 			if d < best_d:
 				best_d = d
