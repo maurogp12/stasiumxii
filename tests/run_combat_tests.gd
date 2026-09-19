@@ -70,6 +70,7 @@ func _run() -> void:
 	_test_detonate_gates_and_damage()
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
+	_test_shoulder_bounce_stagger_locked()
 	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
 	_test_stun_auto_end_turn_after_crush()
@@ -140,12 +141,15 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["stun"], "locked_a_prime", "Stun suppress is Locked (A′)")
 	eq(snap["stun_blocks"], "move_cast_face", "Locked Stun (A′) blocks move + cast + face")
 	eq(snap["stun_auto_end_turn"], true, "Locked A′ auto end_turn on turn start")
-	eq(snap["push"], "locked_1", "Push occupied/OOB is Locked (1)")
-	eq(snap["push_occupied_oob"], "no_move", "Locked Push (1) is no-move + push_blocked")
+	eq(snap["push"], "locked_shoulder", "Shoulder dest outcomes are Director Locked")
+	eq(snap["push_occupied"], "push_blocked", "occupied dest stays push_blocked")
+	eq(snap["push_unwalkable"], "bounce_stagger", "unwalkable/lava/OOB bounce + stagger")
+	eq(snap["push_stagger_hp"], 4, "stagger is 4 HP")
+	eq(snap["push_stagger_mp"], 1, "stagger is 1 MP when MP>=1")
 	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
 	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A′)"), "A05 note labels Stun Locked (A′)")
 	truthy(str(snap["open_notes"]["A05"]).contains("auto end_turn"), "A05 note documents A′ auto end_turn")
-	truthy(str(snap["open_notes"]["A05"]).contains("Locked Push (1)"), "A05 note labels Push Locked (1)")
+	truthy(str(snap["open_notes"]["A05"]).contains("Director Locked Shoulder"), "A05 note labels Director Locked Shoulder")
 	eq(str(snap["open_notes"]["A05"]).contains("Exact suppress list not locked"), false, "A05 note does not leave the suppress list Open")
 	eq(str(snap["open_notes"]["A05"]).contains("provisional"), false, "A05 note does not call Stun/Push provisional")
 	truthy(str(snap["open_notes"]["A05"]).contains("Resist 0"), "A05 still notes Open Resist 0")
@@ -2031,8 +2035,11 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(result["events"][0]["pushed"], true, "Shoulder pushed the target")
 	eq(result["events"][0]["push_to"], Vector2i(5, 3), "pushed one cell east")
 	eq(result["events"][0]["push_blocked"], false, "empty in-bounds dest is not blocked")
+	eq(result["events"][0]["bounced"], false, "walkable empty dest does not bounce")
+	eq(result["events"][0]["staggered"], false, "walkable empty dest does not stagger")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "Kestrel landed one cell away")
 	eq(_unit(0)["hp"], 74, "80-6=74")
+	eq(_unit(0)["mp"], 3, "walkable empty dest does not spend target MP")
 	eq(_unit(1)["impact"], 1, "Shoulder grants Impact on connect")
 	eq(_unit(1)["ap"], 4, "Shoulder spends 2 AP")
 	eq(_unit(1)["mp"], 3, "Shoulder spends 0 MP")
@@ -2085,8 +2092,9 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(_unit(1)["ap"], 6, "range reject refunds")
 
 
-func _test_shoulder_push_blocked_locked() -> void:
-	# Locked Push (1): push off-board — do not move; still deal damage/Impact; emit push_blocked.
+func _test_shoulder_bounce_stagger_locked() -> void:
+	# Director Locked Shoulder: OOB / lava / unwalkable dest bounce + stagger.
+	# Stagger is 4 HP + 1 MP when current MP >= 1; HP only when MP is 0.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2097,19 +2105,107 @@ func _test_shoulder_push_blocked_locked() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.push_destination(Vector2i(1, 0), Vector2i(0, 0)), Vector2i(-1, 0), "west edge push is OOB")
+	eq(_unit(0)["mp"], 3, "inactive Kestrel still has leftover MP")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
-	eq(result["ok"], true, "OOB push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(0, 0), "Locked (1): OOB push does not move the target")
-	eq(_unit(0)["hp"], 74, "OOB push still deals 6 Earth")
-	eq(_unit(1)["impact"], 1, "OOB push still grants Impact")
-	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
-	eq(result["events"][0]["push_block_reason"], "out_of_bounds", "block reason is out_of_bounds")
-	eq(result["events"][1]["type"], "push_blocked", "event type is push_blocked")
-	eq(result["events"][1]["reason"], "out_of_bounds", "push_blocked reason is out_of_bounds")
-	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "push_blocked event is labeled Locked (1)")
-	eq(result["events"][1].has("open"), false, "push_blocked event is not labeled OPEN")
+	eq(result["ok"], true, "OOB bounce still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB bounce leaves the target put")
+	eq(_unit(0)["hp"], 70, "OOB bounce is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["mp"], 2, "OOB bounce spends 1 stagger MP when MP>=1")
+	eq(_unit(1)["impact"], 1, "OOB bounce still grants Impact")
+	eq(result["events"][0]["type"], "hit", "hit event is first")
+	eq(result["events"][0]["damage"], 6, "Shoulder hit damage is unchanged")
+	eq(result["events"][0]["push_blocked"], false, "OOB is bounce, not push_blocked")
+	eq(result["events"][0]["bounced"], true, "hit records bounced")
+	eq(result["events"][0]["staggered"], true, "hit records staggered")
+	eq(result["events"][0]["bounce_reason"], "out_of_bounds", "bounce reason is out_of_bounds")
+	eq(result["events"][0]["stagger_hp"], 4, "hit records 4 stagger HP")
+	eq(result["events"][0]["stagger_mp"], 1, "hit records 1 stagger MP")
+	eq(result["events"][0]["hp_delta"], -4, "hit records stagger HP delta")
+	eq(result["events"][0]["mp_delta"], -1, "hit records stagger MP delta")
+	eq(result["events"][1]["type"], "push_bounce", "OOB emits push_bounce")
+	eq(result["events"][1]["reason"], "out_of_bounds", "push_bounce reason is out_of_bounds")
+	eq(result["events"][1]["hp_delta"], -4, "push_bounce carries HP delta")
+	eq(result["events"][1]["mp_delta"], -1, "push_bounce carries MP delta")
+	truthy(str(result["events"][1].get("locked", "")).contains("Director Locked Shoulder"), "push_bounce is labeled Director Locked Shoulder")
+	eq(result["events"][1].has("open"), false, "push_bounce is not labeled OPEN")
+	eq(result["events"][2]["type"], "stagger", "OOB emits stagger after bounce")
+	eq(result["events"][2]["hp_delta"], -4, "stagger HP delta is -4")
+	eq(result["events"][2]["mp_delta"], -1, "stagger MP delta is -1")
+	eq(result["events"][2]["hp"], 70, "stagger event reports remaining HP")
+	eq(result["events"][2]["mp"], 2, "stagger event reports remaining MP")
+	eq(_event_type_count(result["events"], "push_blocked"), 0, "OOB does not emit push_blocked")
 
-	# Locked Push (1): push into occupied — blockers are a test fixture, not a board feature.
+	# OOB with 0 MP: HP only.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"kestrel_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	_live_unit(0)["mp"] = 0
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
+	eq(result["ok"], true, "0 MP OOB bounce still hits")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "0 MP OOB bounce stays put")
+	eq(_unit(0)["hp"], 70, "0 MP OOB still applies 4 stagger HP")
+	eq(_unit(0)["mp"], 0, "0 MP OOB does not apply stagger MP")
+	eq(result["events"][0]["stagger_hp"], 4, "0 MP still records 4 stagger HP")
+	eq(result["events"][0]["stagger_mp"], 0, "0 MP records 0 stagger MP")
+	eq(result["events"][0]["mp_delta"], 0, "0 MP stagger MP delta is 0")
+	eq(result["events"][2]["mp_delta"], 0, "stagger event MP delta is 0 at 0 MP")
+	eq(result["events"][2]["mp"], 0, "stagger event remaining MP is 0")
+
+	# Lava dest: bounce + stagger, not a walk onto lava.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "lava dest still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "lava dest bounce leaves the target put")
+	eq(_unit(0)["hp"], 70, "lava dest is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["mp"], 2, "lava dest spends 1 stagger MP")
+	eq(result["events"][0]["push_blocked"], false, "lava dest is bounce, not push_blocked")
+	eq(result["events"][0]["bounced"], true, "lava dest records bounced")
+	eq(result["events"][1]["type"], "push_bounce", "lava dest emits push_bounce")
+	eq(result["events"][1]["reason"], "lava", "bounce reason is lava")
+	eq(result["events"][2]["type"], "stagger", "lava dest emits stagger")
+	eq(_event_type_count(result["events"], "push_blocked"), 0, "lava dest does not emit push_blocked")
+
+	# Unwalkable override (not lava): same bounce + stagger.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "ground", "elevation": 0, "walkable": false}],
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "unwalkable dest still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "unwalkable dest bounce leaves the target put")
+	eq(_unit(0)["hp"], 70, "unwalkable dest is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["mp"], 2, "unwalkable dest spends 1 stagger MP")
+	eq(result["events"][0]["bounced"], true, "unwalkable dest records bounced")
+	eq(result["events"][1]["type"], "push_bounce", "unwalkable dest emits push_bounce")
+	eq(result["events"][1]["reason"], "not_walkable", "bounce reason is not_walkable")
+	eq(result["events"][2]["type"], "stagger", "unwalkable dest emits stagger")
+	eq(result["events"][2]["hp_delta"], -4, "unwalkable stagger HP delta is -4")
+	eq(_event_type_count(result["events"], "push_blocked"), 0, "unwalkable dest does not emit push_blocked")
+
+
+func _test_shoulder_push_blocked_locked() -> void:
+	# Occupied dest stays push_blocked — hard body-block, no bounce, no stagger.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2120,16 +2216,25 @@ func _test_shoulder_push_blocked_locked() -> void:
 		"blockers": [Vector2i(5, 3)],
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	var before_mp: int = int(_unit(0)["mp"])
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "occupied push still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(4, 3), "Locked (1): occupied dest does not move the target")
-	eq(_unit(0)["hp"], 74, "occupied push still deals damage")
+	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied dest does not move the target")
+	eq(_unit(0)["hp"], 74, "occupied push deals hit damage only (no stagger)")
+	eq(_unit(0)["mp"], before_mp, "occupied dest does not spend stagger MP")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
+	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
+	eq(result["events"][0]["bounced"], false, "occupied dest does not bounce")
+	eq(result["events"][0]["staggered"], false, "occupied dest does not stagger")
+	eq(result["events"][0]["stagger_hp"], 0, "occupied dest has no stagger HP")
+	eq(result["events"][0]["stagger_mp"], 0, "occupied dest has no stagger MP")
 	eq(result["events"][1]["type"], "push_blocked", "occupied dest emits push_blocked")
 	eq(result["events"][1]["reason"], "occupied", "block reason is occupied")
-	truthy(str(result["events"][1].get("locked", "")).contains("Locked (1)"), "occupied push_blocked is labeled Locked (1)")
+	truthy(str(result["events"][1].get("locked", "")).contains("Director Locked Shoulder"), "occupied push_blocked is labeled Director Locked Shoulder")
 	eq(result["events"][1].has("open"), false, "occupied push_blocked is not labeled OPEN")
-	eq(str(result["events"][0]["coach"]).contains("Locked (1)"), true, "hit coach names Locked (1) when push is blocked")
+	eq(_event_type_count(result["events"], "push_bounce"), 0, "occupied dest does not emit push_bounce")
+	eq(_event_type_count(result["events"], "stagger"), 0, "occupied dest does not emit stagger")
+	truthy(str(result["events"][0]["coach"]).contains("hard body-block"), "hit coach names hard body-block when occupied")
 
 
 func _test_crush_spend_and_stun() -> void:
@@ -2348,7 +2453,7 @@ func _test_stun_suppresses_actions_locked() -> void:
 	eq(sim_src.contains("suppress list not locked"), false, "CombatSim does not leave the suppress list Open")
 	truthy(sim_src.contains("Locked Stun (A"), "CombatSim labels Stun as Locked (A′)")
 	truthy(sim_src.contains("auto end_turn"), "CombatSim stamps auto end_turn for Locked A′")
-	truthy(sim_src.contains("Locked Push (1)"), "CombatSim labels Push as Locked (1)")
+	truthy(sim_src.contains("Director Locked Shoulder"), "CombatSim labels Shoulder bounce/stagger Locked")
 	truthy(sim_src.contains("stunned_cannot_act"), "CombatSim uses reserved reject stunned_cannot_act")
 	eq(sim_src.contains("open_a05_stun"), false, "CombatSim no longer emits open_a05_stun")
 	eq(sim_src.contains("Step-shot"), false, "Stun patch does not add Step-shot")
@@ -2431,8 +2536,8 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 	eq(readme.contains("**OPEN:** if the dest"), false, "README does not call PushBlocked Open")
 	truthy(readme.contains("Locked Stun (A"), "README stamps Locked Stun (A′)")
 	truthy(readme.contains("auto-ends") or readme.contains("auto-resolves"), "README documents A′ auto end_turn")
-	truthy(readme.contains("Locked Push (1)"), "README stamps Locked Push (1)")
-	truthy(readme.contains("are no longer Open"), "README says Stun/Push are no longer Open")
+	truthy(readme.contains("Director Locked Shoulder"), "README stamps Director Locked Shoulder")
+	truthy(readme.contains("are no longer Open"), "README says Stun/Shoulder are no longer Open")
 
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn_src.contains("STUN"), "pawn draws a STUN badge")
@@ -2440,7 +2545,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 
 
 func _test_push_blocked_client_toast_no_hop() -> void:
-	# Locked Push (1) client: toast PushBlocked, do not hop, still hit/Impact feedback.
+	# Client: occupied toasts PushBlocked; OOB/lava bounce toasts Bounce. Neither hops.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2451,11 +2556,13 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
-	eq(CombatHUD.events_include_push_blocked(result["events"]), true, "OOB Shoulder is push_blocked")
-	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "PushBlocked does not animate a hop")
-	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.PUSH_BLOCKED_TOAST, "toast text is PushBlocked")
+	eq(CombatHUD.events_include_push_blocked(result["events"]), false, "OOB Shoulder is not push_blocked")
+	eq(CombatHUD.events_include_push_bounce(result["events"]), true, "OOB Shoulder is bounce")
+	eq(CombatHUD.events_include_stagger(result["events"]), true, "OOB Shoulder emits stagger")
+	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "Bounce does not animate a hop")
+	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.BOUNCE_TOAST, "OOB toast text is Bounce")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
-	eq(_unit(0)["hp"], 74, "hit damage still applied")
+	eq(_unit(0)["hp"], 70, "hit + stagger HP still applied")
 	eq(_unit(1)["impact"], 1, "Impact still applied")
 
 	var walk_events: Array = [{
@@ -2463,7 +2570,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 		"path": [Vector2i(1, 0), Vector2i(2, 0)],
 	}]
 	eq(CombatHUD.should_play_walk_hops(walk_events), true, "normal walks still hop")
-	eq(CombatHUD.toast_for_events(walk_events), "", "walks do not toast PushBlocked")
+	eq(CombatHUD.toast_for_events(walk_events), "", "walks do not toast PushBlocked or Bounce")
 	eq(CombatHUD.should_play_walk_hops([{"type": "advance", "to": Vector2i(2, 0)}]), false, "Advance still does not hop")
 
 	var occupied: Dictionary = _sim.reset_match({
@@ -2477,23 +2584,30 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(CombatHUD.events_include_push_blocked(result["events"]), true, "occupied dest is push_blocked")
+	eq(CombatHUD.events_include_push_bounce(result["events"]), false, "occupied dest is not bounce")
+	eq(CombatHUD.events_include_stagger(result["events"]), false, "occupied dest is not stagger")
 	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "occupied PushBlocked does not hop")
-	eq(CombatHUD.toast_for_events(result["events"]), "PushBlocked", "occupied dest still toasts PushBlocked")
+	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.PUSH_BLOCKED_TOAST, "occupied dest still toasts PushBlocked")
 
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
 	eq(hud.toast_caption(), "PushBlocked", "HUD toast caption is PushBlocked")
+	hud.show_toast(CombatHUD.BOUNCE_TOAST)
+	eq(hud.toast_caption(), "Bounce", "HUD toast caption is Bounce")
 	hud.free()
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("PUSH_BLOCKED_TOAST"), "board_view toasts PushBlocked")
+	truthy(view.contains("BOUNCE_TOAST"), "board_view toasts Bounce")
 	truthy(view.contains("events_include_push_blocked"), "board_view gates hops on push_blocked")
-	truthy(view.contains("should_play_walk_hops"), "board_view uses hop gate that excludes PushBlocked")
+	truthy(view.contains("events_include_push_bounce"), "board_view gates hops on bounce")
+	truthy(view.contains("should_play_walk_hops"), "board_view uses hop gate that excludes PushBlocked/Bounce")
 	truthy(view.contains("flash_impact"), "board_view still plays Impact feedback")
-	eq(view.contains("Step-shot"), false, "PushBlocked client does not add Step-shot")
-	eq(view.contains("Gust"), false, "PushBlocked client does not invent Gust")
-	eq(view.contains("longshot"), false, "PushBlocked client does not invent Mark Shot +5")
+	eq(view.contains("Step-shot"), false, "Shoulder client does not add Step-shot")
+	eq(view.contains("Gust"), false, "Shoulder client does not invent Gust")
+	eq(view.contains("longshot"), false, "Shoulder client does not invent Mark Shot +5")
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn_src.contains("flash_hit"), "pawn can flash on hit")
 	truthy(pawn_src.contains("flash_impact"), "pawn can flash Impact")
@@ -3333,7 +3447,7 @@ func _test_spell_tooltip_cards() -> void:
 	var shoulder_preview: Dictionary = _sim.preview_cast(SpellKits.SHOULDER, Vector2i(3, 3), Vector2i(4, 3), 0)
 	var shoulder := SpellTooltip.card_text(shoulder_preview)
 	truthy(shoulder.contains("On hit: 6 Earth. +1 Impact. Push 1."), "Shoulder hit line is preview kit text")
-	truthy(shoulder.contains("Locked Push (1)"), "Shoulder card passes through preview Push (1) note")
+	truthy(shoulder.contains("Director Locked Shoulder"), "Shoulder card passes through Locked Shoulder note")
 	eq(shoulder.contains("Open Push"), false, "Shoulder Push wording is Locked, not Open")
 	truthy(shoulder.contains("HIT 90% (Locked)"), "Shoulder card uses preview melee 90%")
 	truthy(shoulder.contains("sample 6"), "Shoulder card uses preview sample_damage")
@@ -3415,7 +3529,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(hud.tooltip_caption().contains("range 1–2 Manhattan"), "Advance hover names Manhattan range from preview")
 	truthy(hud.tooltip_caption().contains("Teleport"), "Advance hover uses preview teleport text")
 	hud._on_spell_hover(SpellKits.SHOULDER)
-	truthy(hud.tooltip_caption().contains("Locked Push (1)"), "Shoulder hover names Locked Push (1) from preview")
+	truthy(hud.tooltip_caption().contains("Director Locked Shoulder"), "Shoulder hover names Director Locked Shoulder from preview")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -3907,6 +4021,14 @@ func _has_legal_move(seat: int) -> bool:
 
 func _has_legal_move_to(seat: int, dest: Vector2i) -> bool:
 	return bool(_legal_move_dests(seat).get(dest, false))
+
+
+func _event_type_count(events: Array, kind: String) -> int:
+	var n := 0
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == kind:
+			n += 1
+	return n
 
 
 func _unit(seat: int) -> Dictionary:

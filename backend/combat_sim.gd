@@ -25,6 +25,9 @@ const RESIST := 0.0
 const PASSIVE := 1.0
 const BACK_FACING := 1.20
 const FRONT_SIDE_FACING := 1.00
+## Director Locked Shoulder stagger: 4 HP; +1 MP only when current MP >= 1.
+const STAGGER_HP := 4
+const STAGGER_MP := 1
 
 const FACING_VEC := {
 	"N": Vector2i(0, -1),
@@ -40,7 +43,9 @@ const FACING_VEC := {
 ## Manhattan 1–2 (diamond). Advance dest uses the same stand-on gates as walk.
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
-## never presses End Turn). Locked Push (1): occupied/OOB = no-move + push_blocked.
+## never presses End Turn). Director Locked Shoulder: occupied dest is
+## push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces
+## (target stays) and staggers (4 HP; +1 MP if current MP >= 1).
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 
 var _units: Array[Dictionary] = []
@@ -54,7 +59,7 @@ var _scripted_rolls: Array[int] = []
 var _last_events: Array = []
 var _last_coach: String = ""
 var _intent_log: Array = []
-## Test/setup occupancy only. Locked Push (1): dest occupied/OOB is no-move + push_blocked.
+## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
@@ -364,8 +369,11 @@ func snapshot() -> Dictionary:
 		"stun": "locked_a_prime",
 		"stun_blocks": "move_cast_face",
 		"stun_auto_end_turn": true,
-		"push": "locked_1",
-		"push_occupied_oob": "no_move",
+		"push": "locked_shoulder",
+		"push_occupied": "push_blocked",
+		"push_unwalkable": "bounce_stagger",
+		"push_stagger_hp": STAGGER_HP,
+		"push_stagger_mp": STAGGER_MP,
 		"phase": flow_snap["phase_name"],
 		"phase_name": flow_snap["phase_name"],
 		"deploy": "locked",
@@ -391,7 +399,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Locked Push (1): dest occupied/OOB does not move the target; still deal damage/Impact; emit push_blocked.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger). Unwalkable / lava / OOB dest bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1). Walkable empty dest still pushes. Damage/Impact on the Shoulder hit are unchanged.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate Manhattan 1–2 (diamond). Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -594,7 +602,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Occupied/OOB dest is Locked Push (1): no-move + push_blocked.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: occupied dest is push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces + staggers (4 HP; +1 MP if MP>=1).")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1192,7 +1200,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	var push_result := {}
 	if int(def.get("push_cells", 0)) > 0:
-		# Locked Push (1): occupied / off-board = no-move + push_blocked; damage/Impact still apply.
+		# Director Locked Shoulder: occupied = push_blocked; unwalkable/lava/OOB = bounce + stagger.
+		# Walkable empty dest still pushes. Shoulder damage/Impact are unchanged.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
 
 	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
@@ -1232,20 +1241,72 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
 		hit_event["push_to"] = push_result.get("to")
+		hit_event["push_attempted"] = push_result.get("attempted")
 		hit_event["push_blocked"] = bool(push_result.get("blocked", false))
-		hit_event["push_block_reason"] = str(push_result.get("reason", ""))
+		hit_event["push_block_reason"] = str(push_result.get("reason", "")) if bool(push_result.get("blocked", false)) else ""
+		hit_event["bounced"] = bool(push_result.get("bounced", false))
+		hit_event["staggered"] = bool(push_result.get("staggered", false))
+		hit_event["bounce_reason"] = str(push_result.get("reason", "")) if bool(push_result.get("bounced", false)) else ""
+		hit_event["stagger_hp"] = int(push_result.get("stagger_hp", 0))
+		hit_event["stagger_mp"] = int(push_result.get("stagger_mp", 0))
+		hit_event["hp_delta"] = int(push_result.get("hp_delta", 0))
+		hit_event["mp_delta"] = int(push_result.get("mp_delta", 0))
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
 		_last_events.append({
 			"type": "push_blocked",
-			# Locked Push (1): destination occupied or off-board — do not invent a slide/crush-into.
-			"locked": "push into occupied/OOB is Locked (1) — no-move + push_blocked",
+			# Occupied dest is a hard body-block — no bounce, no stagger.
+			"locked": "Director Locked Shoulder — occupied dest is hard body-block (push_blocked)",
 			"seat": actor["seat"],
 			"target_seat": target["seat"],
 			"from": push_result.get("from"),
 			"attempted": push_result.get("attempted"),
 			"reason": str(push_result.get("reason", "")),
-			"coach": "Push blocked (%s). Locked (1): dest occupied/OOB." % str(push_result.get("reason", "")),
+			"coach": "Push blocked (occupied). Hard body-block — no bounce, no stagger.",
+		})
+	if bool(push_result.get("bounced", false)):
+		var mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			mp_note = " / %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "push_bounce",
+			"locked": "Director Locked Shoulder — unwalkable/lava/OOB bounce + stagger",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"to": push_result.get("to"),
+			"reason": str(push_result.get("reason", "")),
+			"staggered": true,
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"coach": "Bounce (%s) + stagger %d HP%s." % [
+				str(push_result.get("reason", "")),
+				int(push_result.get("stagger_hp", 0)),
+				mp_note,
+			],
+		})
+		var stagger_mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			stagger_mp_note = ", %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "stagger",
+			"locked": "Director Locked Shoulder — stagger 4 HP + 1 MP if MP>=1",
+			"target_seat": target["seat"],
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"hp": int(target["hp"]),
+			"mp": int(target["mp"]),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "%s staggers (%d HP%s)." % [
+				target["name"],
+				int(push_result.get("stagger_hp", 0)),
+				stagger_mp_note,
+			],
 		})
 	if stun_applied > 0:
 		_last_events.append({
@@ -1468,7 +1529,16 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 		parts.append(" Stun %d (Locked A′)." % stun_applied)
 	if not push_result.is_empty():
 		if bool(push_result.get("blocked", false)):
-			parts.append(" Push blocked (Locked (1): dest occupied/OOB).")
+			parts.append(" Push blocked (occupied — hard body-block).")
+		elif bool(push_result.get("bounced", false)):
+			var mp_bit := ""
+			if int(push_result.get("stagger_mp", 0)) > 0:
+				mp_bit = " + %d MP" % int(push_result.get("stagger_mp", 0))
+			parts.append(" Bounce (%s) + stagger %d HP%s." % [
+				str(push_result.get("reason", "")),
+				int(push_result.get("stagger_hp", 0)),
+				mp_bit,
+			])
 		elif bool(push_result.get("moved", false)):
 			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
 	var note := ""
@@ -1518,8 +1588,10 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 
 
 func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
-	# Chebyshev push 1 along the caster→target line. Locked Push (1) if dest occupied or OOB:
-	# do not move; still keep damage/Impact from the hit; emit push_blocked.
+	# Chebyshev push 1 along the caster→target line.
+	# Director Locked Shoulder: occupied dest is hard body-block (push_blocked).
+	# Unwalkable / lava / OOB dest bounces (target stays) and staggers.
+	# Walkable empty dest still pushes. Do not invent climb/drop push rules.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
@@ -1528,19 +1600,51 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		"attempted": dest,
 		"moved": false,
 		"blocked": false,
+		"bounced": false,
+		"staggered": false,
 		"reason": "",
+		"stagger_hp": 0,
+		"stagger_mp": 0,
+		"hp_delta": 0,
+		"mp_delta": 0,
 	}
 	if not _in_bounds(dest):
-		result["blocked"] = true
-		result["reason"] = "out_of_bounds"
-		return result
+		return _apply_bounce_stagger(target, result, "out_of_bounds")
 	if not _is_empty(dest):
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
+	if not _board.is_walkable(dest):
+		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
 	target["pos"] = dest
 	result["to"] = dest
 	result["moved"] = true
+	return result
+
+
+func _unwalkable_push_reason(dest: Vector2i) -> String:
+	var terrain: Dictionary = _board.terrain_of(dest)
+	if int(terrain.get("id", _TerrainDef.Id.GROUND)) == _TerrainDef.Id.LAVA:
+		return "lava"
+	return "not_walkable"
+
+
+func _apply_bounce_stagger(target: Dictionary, result: Dictionary, reason: String) -> Dictionary:
+	# Bounce: unit stays/returns. Stagger: 4 HP; +1 MP only when current MP >= 1.
+	result["bounced"] = true
+	result["staggered"] = true
+	result["reason"] = reason
+	result["to"] = result["from"]
+	var hp_lost := STAGGER_HP
+	var mp_lost := 0
+	if int(target.get("mp", 0)) >= STAGGER_MP:
+		mp_lost = STAGGER_MP
+		target["mp"] = int(target["mp"]) - mp_lost
+	target["hp"] = maxi(0, int(target["hp"]) - hp_lost)
+	result["stagger_hp"] = hp_lost
+	result["stagger_mp"] = mp_lost
+	result["hp_delta"] = -hp_lost
+	result["mp_delta"] = -mp_lost
 	return result
 
 
