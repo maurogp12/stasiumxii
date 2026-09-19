@@ -350,8 +350,8 @@ static func generate_noise_elevations(seed: int, width: int = BOARD_SIZE, height
 
 
 static func _bilinear_smooth(lattice: Array, fx: float, fy: float) -> float:
-	var max_x := lattice[0].size() - 1
-	var max_y := lattice.size() - 1
+	var max_x: int = int((lattice[0] as Array).size()) - 1
+	var max_y: int = lattice.size() - 1
 	var x0 := clampi(int(floor(fx)), 0, max_x)
 	var y0 := clampi(int(floor(fy)), 0, max_y)
 	var x1 := mini(x0 + 1, max_x)
@@ -372,7 +372,7 @@ static func _smoothstep(t: float) -> float:
 
 static func _relax_elev_extremes(grid: Array) -> void:
 	# Pull ortho neighbors that differ by more than 2 so 0 never sits on 3.
-	var height := grid.size()
+	var height: int = grid.size()
 	if height <= 0:
 		return
 	var width: int = grid[0].size()
