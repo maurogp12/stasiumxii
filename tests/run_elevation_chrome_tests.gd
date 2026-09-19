@@ -149,10 +149,10 @@ func _test_live_snapshot_tiles_from_combatsim() -> void:
 	var snap: Dictionary = _sim.snapshot()
 	eq(SNAPSHOT_TILES.has_board_data(snap), true, "live snapshot exposes tiles")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(0, 0)), "ground", "crop (0,0) is ground")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(0, 0)), 3, "crop (0,0) elevation is 3")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(0, 0)), _noise_elev(1, Vector2i(0, 0)), "crop (0,0) elevation is seeded noise")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 0)), "mud", "crop mud reaches chrome adapter")
 	eq(SNAPSHOT_TILES.terrain_at(snap, Vector2i(4, 1)), "lava", "crop lava reaches chrome adapter")
-	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(6, 5)), 3, "crop ridge elev 3 reaches chrome adapter")
+	eq(SNAPSHOT_TILES.elevation_at(snap, Vector2i(6, 5)), _noise_elev(1, Vector2i(6, 5)), "ridge elevation is seeded noise")
 	if _sim.has_method("set_tile"):
 		_sim.set_tile(Vector2i(7, 3), "mud", 1)
 		_sim.set_tile(Vector2i(7, 2), "lava", 0)
@@ -175,7 +175,7 @@ func _test_demo_map_paints_from_snapshot() -> void:
 	var mud := TILE_SCRIPT.new()
 	mud.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(2, 0)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(2, 0)))
 	eq(mud.terrain_letter(), "M", "Godot paints M on crop mud (2,0)")
-	eq(mud.elevation_text(), "3", "crop mud elevation text is 3")
+	eq(mud.elevation_text(), str(_noise_elev(1, Vector2i(2, 0))), "crop mud elevation text is seeded noise")
 	mud.free()
 	var water := TILE_SCRIPT.new()
 	water.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(3, 0)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(3, 0)))
@@ -187,12 +187,12 @@ func _test_demo_map_paints_from_snapshot() -> void:
 	lava.free()
 	var ridge := TILE_SCRIPT.new()
 	ridge.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(6, 5)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(6, 5)))
-	eq(ridge.terrain_letter(), "G", "Godot paints G on the multi-z ridge")
-	eq(ridge.elevation_text(), "3", "ridge elevation text is 3")
+	eq(ridge.terrain_letter(), "G", "Godot paints G on the crop Ground cell")
+	eq(ridge.elevation_text(), str(_noise_elev(1, Vector2i(6, 5))), "Ground elevation text is seeded noise")
 	ridge.free()
 	var step := TILE_SCRIPT.new()
 	step.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, Vector2i(5, 6)), SNAPSHOT_TILES.elevation_at(snap, Vector2i(5, 6)))
-	eq(step.elevation_text(), "2", "adjacent ridge step paints 2")
+	eq(step.elevation_text(), str(_noise_elev(1, Vector2i(5, 6))), "adjacent cell paints seeded noise z")
 	step.free()
 
 
@@ -340,6 +340,10 @@ func _test_board_view_wires_adapter() -> void:
 	truthy(hud_src.contains("TERRAIN_LEGEND"), "HUD declares the terrain legend")
 	eq(hud_src.contains("Detonate"), false, "elevation HUD patch does not hardcode Detonate")
 	eq(hud_src.contains("for dir in [\"N\", \"E\", \"S\", \"W\"]"), false, "Face pad stays a cardinal grid")
+
+
+func _noise_elev(seed: int, cell: Vector2i) -> int:
+	return int(load("res://backend/match_flow.gd").generate_noise_elevations(seed)[cell])
 
 
 func _face_pad(hud: Node) -> GridContainer:

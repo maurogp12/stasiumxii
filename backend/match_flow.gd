@@ -20,26 +20,32 @@ const PREFERRED_ZONE_CHEBYSHEV_MIN := 4
 const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
-## Director-stamped Locked 8×8 crop of Mauro's 12×12 (fixed, not random).
+## Director-stamped Locked 8×8 crop of Mauro's 12×12 (terrain fixed, not random).
 ## Seeded on CombatSim.reset_match / WalkBoard init. Godot paints snapshot().tiles.
-## PHASE_A_DEMO_TILES is phase_a_demo_tiles() — all 64 cells, integer z.
+## PHASE_A_DEMO_TILES is phase_a_demo_tiles() — all 64 cells. Terrain stays the crop.
+## Elevation is regenerated each New Match from MatchConfig.seed (smooth noise, z 0–3).
 ##
 ## Crop origin (row 2, col 2) on the 12×12. Terrain 0/1/2/3 = G/M/W/L.
-## z ladder: z1→0, z2→1, z3→2, z4→3. Max climb 1 / drop 2 (no z1→z3 hop).
+## Crop z ladder (source only): z1→0, z2→1, z3→2, z4→3. Live z is noise, not this paint.
+## Max climb 1 / drop 2 (no z1→z3 hop).
 ##
 ##     0  1  2  3  4  5  6  7
-##   0 G3 G3 M3 W2 L2 W1 W1 M1
-##   1 M3 G3 M2 W2 L2 L1 L1 M0
-##   2 W3 M3 M2 W2 L2 L1 W1 M0
-##   3 W3 W2 W2 W2 W2 W2 M1 G1
-##   4 W1 W1 W2 W2 W2 M2 M2 G2
-##   5 M1 M1 M1 M1 M2 M2 G3 G3
-##   6 G0 G0 G1 M1 G1 G2 G3 G3
-##   7 G0 G0 G0 G0 G1 G1 G2 G3
+##   0 G  G  M  W  L  W  W  M
+##   1 M  G  M  W  L  L  L  M
+##   2 W  M  M  W  L  L  W  M
+##   3 W  W  W  W  W  W  M  G
+##   4 W  W  W  W  W  M  M  G
+##   5 M  M  M  M  M  M  G  G
+##   6 G  G  G  M  G  G  G  G
+##   7 G  G  G  G  G  G  G  G
 const PHASE_A_DEMO_MAP := "phase_a_fixed"
 const PHASE_A_CROP_ORIGIN_ROW := 2
 const PHASE_A_CROP_ORIGIN_COL := 2
 const MAURO_MAP_SIZE := 12
+const ELEV_MIN := 0
+const ELEV_MAX := 3
+const ELEV_LATTICE := 4
+const ELEV_MAX_NEIGHBOR_DELTA := 2
 const _TERRAIN_NAMES := ["ground", "mud", "water", "lava"]
 ## Mauro's 12×12, row-major tokens (terrain digit + z label).
 const MAURO_12X12 := [
@@ -67,6 +73,7 @@ var locked: Dictionary = {}
 var zones: Dictionary = {}
 var zone_distance: int = 0
 var zone_seed: int = 0
+var elev_seed: int = 0
 var zone_preferred: bool = false
 
 
@@ -82,6 +89,7 @@ func reset(seed: int = 0, config: Dictionary = {}) -> void:
 	placed = {SEAT_0: false, SEAT_1: false}
 	locked = {SEAT_0: false, SEAT_1: false}
 	zone_seed = seed
+	elev_seed = int(config.get("elev_seed", seed))
 	zone_distance = 0
 	zone_preferred = false
 	zones = {SEAT_0: [] as Array[Vector2i], SEAT_1: [] as Array[Vector2i]}
@@ -219,10 +227,25 @@ func zone_cells(seat: int) -> Array[Vector2i]:
 	return out
 
 
-## Director-stamped Locked 8×8 crop. Applies all 64 cells onto a WalkBoard.
-static func seed_phase_a_demo(board) -> void:
+## Director-stamped Locked 8×8 crop terrain. Elevation is seeded noise (z 0–3)
+## unless noise_elev is false (fixtures that want the crop z paint).
+static func seed_phase_a_demo(board, seed: int = 0, noise_elev: bool = true) -> void:
 	for row in phase_a_demo_tiles():
 		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
+	if noise_elev:
+		apply_noise_elevations(board, seed)
+
+
+## Overwrite elevation only. Terrain / walkable overrides stay put.
+static func apply_noise_elevations(board, seed: int) -> void:
+	var width := int(board.width)
+	var height := int(board.height)
+	var elevs: Dictionary = generate_noise_elevations(seed, width, height)
+	for cell in elevs.keys():
+		var tile = board.tile_at(cell)
+		if tile == null:
+			continue
+		board.set_tile(cell, tile.terrain_type, int(elevs[cell]), tile.walkable_override)
 
 
 ## PHASE_A_DEMO_TILES — 64-cell Locked crop at origin (row 2, col 2).
@@ -283,6 +306,101 @@ static func phase_a_crop_elevations() -> Array:
 	return out
 
 
+## Smooth value noise → integer z 0–3. Contiguous neighbors; no checkerboard 0/3.
+static func generate_noise_elevations(seed: int, width: int = BOARD_SIZE, height: int = BOARD_SIZE) -> Dictionary:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed
+	var lw := ELEV_LATTICE
+	var lh := ELEV_LATTICE
+	var lattice := []
+	for _ly in range(lh):
+		var lat_row := []
+		for _lx in range(lw):
+			lat_row.append(rng.randf())
+		lattice.append(lat_row)
+	var raw := []
+	var lo := 1.0
+	var hi := 0.0
+	for y in range(height):
+		var row := []
+		for x in range(width):
+			var fx := 0.0 if width <= 1 else float(x) / float(width - 1) * float(lw - 1)
+			var fy := 0.0 if height <= 1 else float(y) / float(height - 1) * float(lh - 1)
+			var sample := _bilinear_smooth(lattice, fx, fy)
+			row.append(sample)
+			lo = minf(lo, sample)
+			hi = maxf(hi, sample)
+		raw.append(row)
+	var grid := []
+	var span := hi - lo
+	for y in range(height):
+		var row := []
+		for x in range(width):
+			var u := 0.5
+			if span > 0.0001:
+				u = clampf((float(raw[y][x]) - lo) / span, 0.0, 0.9999)
+			row.append(clampi(int(floor(u * float(ELEV_MAX + 1))), ELEV_MIN, ELEV_MAX))
+		grid.append(row)
+	_relax_elev_extremes(grid)
+	var out := {}
+	for y in range(height):
+		for x in range(width):
+			out[Vector2i(x, y)] = int(grid[y][x])
+	return out
+
+
+static func _bilinear_smooth(lattice: Array, fx: float, fy: float) -> float:
+	var max_x := lattice[0].size() - 1
+	var max_y := lattice.size() - 1
+	var x0 := clampi(int(floor(fx)), 0, max_x)
+	var y0 := clampi(int(floor(fy)), 0, max_y)
+	var x1 := mini(x0 + 1, max_x)
+	var y1 := mini(y0 + 1, max_y)
+	var tx := _smoothstep(fx - float(x0))
+	var ty := _smoothstep(fy - float(y0))
+	var v00 := float(lattice[y0][x0])
+	var v10 := float(lattice[y0][x1])
+	var v01 := float(lattice[y1][x0])
+	var v11 := float(lattice[y1][x1])
+	return lerpf(lerpf(v00, v10, tx), lerpf(v01, v11, tx), ty)
+
+
+static func _smoothstep(t: float) -> float:
+	var u := clampf(t, 0.0, 1.0)
+	return u * u * (3.0 - 2.0 * u)
+
+
+static func _relax_elev_extremes(grid: Array) -> void:
+	# Pull ortho neighbors that differ by more than 2 so 0 never sits on 3.
+	var height := grid.size()
+	if height <= 0:
+		return
+	var width: int = grid[0].size()
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for _pass in range(width * height):
+		var changed := false
+		for y in range(height):
+			for x in range(width):
+				var z: int = int(grid[y][x])
+				for dir in dirs:
+					var nx: int = x + dir.x
+					var ny: int = y + dir.y
+					if nx < 0 or ny < 0 or nx >= width or ny >= height:
+						continue
+					var nz: int = int(grid[ny][nx])
+					var delta := z - nz
+					if delta > ELEV_MAX_NEIGHBOR_DELTA:
+						z = nz + ELEV_MAX_NEIGHBOR_DELTA
+						grid[y][x] = z
+						changed = true
+					elif -delta > ELEV_MAX_NEIGHBOR_DELTA:
+						z = nz - ELEV_MAX_NEIGHBOR_DELTA
+						grid[y][x] = z
+						changed = true
+		if not changed:
+			return
+
+
 func legal_place_cells(seat: int, occupant_at: Callable) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	if phase != Phase.DEPLOYMENT:
@@ -313,6 +431,8 @@ func snapshot() -> Dictionary:
 		"deploy_zone_distance": zone_distance,
 		"deploy_zone_preferred": zone_preferred,
 		"deploy_zone_seed": zone_seed,
+		"elev_seed": elev_seed,
+		"elevation_gen": "seeded_noise",
 		"combat_enabled": combat_enabled(),
 		"walk_enabled": combat_enabled(),
 		"end_turn_enabled": combat_enabled(),
