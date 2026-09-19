@@ -12,6 +12,7 @@ const IRONJAW_RED := Color("#8B2E2E")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const TOAST_SEC := 1.4
+const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -55,6 +56,7 @@ var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
 var _preview_source: Node = null
+var _terrain_legend: Label
 
 
 ## Kit chrome for the active seat. Advance is never offered unless class_id is ironjaw.
@@ -104,6 +106,10 @@ static func legal_cast_ids(legal: Array) -> Dictionary:
 		if id != "":
 			out[id] = true
 	return out
+
+
+static func terrain_legend_text() -> String:
+	return TERRAIN_LEGEND
 
 
 static func is_deployment_phase(snap: Dictionary) -> bool:
@@ -504,6 +510,15 @@ func _build() -> void:
 	_turn_label.add_theme_font_size_override("font_size", 18)
 	_turn_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	root.add_child(_turn_label)
+
+	_terrain_legend = Label.new()
+	_terrain_legend.text = TERRAIN_LEGEND
+	_terrain_legend.position = Vector2(16, 122)
+	_terrain_legend.size = Vector2(928, 20)
+	_terrain_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_terrain_legend.add_theme_font_size_override("font_size", 11)
+	_terrain_legend.add_theme_color_override("font_color", Color(0.22, 0.18, 0.16))
+	root.add_child(_terrain_legend)
 
 	_stun_badge = Label.new()
 	_stun_badge.text = "STUN"

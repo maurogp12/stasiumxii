@@ -4,7 +4,9 @@ extends Node2D
 ## Walk: dest-click only. CombatSim expands the cheapest weighted ortho path; this
 ## view never sends intent.path. Pawns tween one ortho tile at a time along the
 ## returned walk path and face each hop (final facing = last hop, matching the snapshot).
-## Tile elevation / terrain come from snapshot.tiles; this view does not paint them.
+## Live elevation chrome: tiles paint snapshot.tiles elevation + terrain_type.
+## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
+## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
 ## Advance teleport does not auto-face.
 ## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
 ## deploy_zone_cells / can_ready / snapshot().phase. Hidden enemy stays Open.
@@ -25,6 +27,8 @@ const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
+const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
+const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const STEP_SEC: float = 0.28
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
@@ -39,6 +43,7 @@ var _clock_expired_pending: bool = false
 var _walk_tween: Tween
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
+var _board_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -54,8 +59,9 @@ func _ready() -> void:
 		for x in range(BOARD_SIZE):
 			var tile := TILE_SCENE.instantiate() as BoardTile
 			tile.grid_position = Vector2i(x, y)
-			tile.position = _cell_to_local(tile.grid_position)
-			tile.z_index = x + y
+			tile.apply_board_data("ground", 0.0)
+			tile.position = VISUAL_SORT.cell_to_local(tile.grid_position, 0.0)
+			tile.z_index = VISUAL_SORT.tile_z_index(tile.grid_position, 0.0)
 			$Tiles.add_child(tile)
 			tiles[tile.grid_position] = tile
 
@@ -72,6 +78,17 @@ func _boot() -> void:
 
 
 func local_to_grid(point: Vector2) -> Vector2i:
+	# Nearest painted tile so elevated (view-offset) cells stay clickable.
+	var best := Vector2i(-1, -1)
+	var best_d := 22.0
+	for cell in tiles.keys():
+		var tile: BoardTile = tiles[cell]
+		var dist := point.distance_to(tile.position)
+		if dist < best_d:
+			best_d = dist
+			best = cell
+	if best.x >= 0:
+		return best
 	var grid_x := point.x / 64.0 + point.y / 32.0
 	var grid_y := point.y / 32.0 - point.x / 64.0
 	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
@@ -390,7 +407,7 @@ func _animate_path(seat: int, path: Array) -> void:
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
 	pawn.grid_position = cell
-	pawn.z_index = cell.x + cell.y + 16
+	pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
 
 
 func _stop_walk_tween() -> void:
@@ -402,6 +419,7 @@ func _stop_walk_tween() -> void:
 func _refresh() -> void:
 	var snap := CombatSim.snapshot()
 	var legal: Array = CombatSim.legal_intents(int(snap.get("active_seat", 0)))
+	_apply_board_tiles(snap)
 	_apply_units(snap)
 	_hud.render(snap, legal)
 	_paint_highlights()
@@ -431,7 +449,7 @@ func _apply_units(snap: Dictionary) -> void:
 			continue
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)))
 		pawn.position = _cell_to_local(cell)
-		pawn.z_index = int(cell.x) + int(cell.y) + 16
+		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
 
 
 func _paint_highlights() -> void:
@@ -455,11 +473,14 @@ func _paint_highlights() -> void:
 		if str(def.get("target", "")) == "enemy":
 			for cell in CombatSim.range_highlight_cells(int(snap.get("active_seat", 0)), spell_id):
 				_tile_at(cell).set_highlight("range")
+	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
+	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
+	for dest in SNAPSHOT_TILES.walk_dests(legal):
+		if spell_id == "" and tiles.has(dest):
+			_tile_at(dest).set_highlight("move")
 	for intent in legal:
 		var kind := str(intent.get("type", ""))
-		if kind == "move" and spell_id == "" and intent.has("to"):
-			_tile_at(intent["to"]).set_highlight("move")
-		elif kind == "cast" and str(intent.get("spell", "")) == spell_id and intent.has("to"):
+		if kind == "cast" and str(intent.get("spell", "")) == spell_id and intent.has("to"):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(intent["to"]).set_highlight(highlight)
 	_sync_aim_preview()
@@ -608,8 +629,24 @@ func _unit_from_event(snap: Dictionary, event: Dictionary) -> Dictionary:
 	return {}
 
 
+func _apply_board_tiles(snap: Dictionary) -> void:
+	_board_data = SNAPSHOT_TILES.from_snapshot(snap, BOARD_SIZE)
+	for cell in tiles.keys():
+		var rec: Dictionary = _board_data.get(cell, SNAPSHOT_TILES.default_cell())
+		var tile := _tile_at(cell)
+		tile.apply_board_data(str(rec.get("terrain_type", "ground")), float(rec.get("elevation", 0.0)))
+		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
+		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+
+
+func _elev_at(cell: Vector2i) -> float:
+	if _board_data.has(cell):
+		return float(_board_data[cell].get("elevation", 0.0))
+	return 0.0
+
+
 func _cell_to_local(cell: Vector2i) -> Vector2:
-	return Vector2((cell.x - cell.y) * 32, (cell.x + cell.y) * 16)
+	return VISUAL_SORT.cell_to_local(cell, _elev_at(cell))
 
 
 func _in_bounds(cell: Vector2i) -> bool:
