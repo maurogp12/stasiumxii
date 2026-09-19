@@ -87,6 +87,7 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 ```bash
 godot --headless --path . -s res://tests/run_combat_tests.gd
 godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
+godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 ```
 
 ## Phase B+ elevation prototype
@@ -117,6 +118,29 @@ Modules (all under `proto/elevation/`, unused by the Phase A combat path):
 7. `ProtoMoveSim.reconstruct_path` — cheapest MP path
 8. `scenes/proto_elevation_board.tscn` — terrain paint, elevation labels, reachable highlight, click-to-move
 9. `ProtoVisualSort` — `z_index` / draw offset from iso Y + elevation (visual-only)
+
+## Phase B+ deployment prototype
+
+**Prototype only. Proposed — not Locked.** Does not change the Phase A live CombatSim duel, fixed seats, or `main.tscn`. Sibling of `proto/elevation/`; unused by the Phase A combat path. How to open and play: `proto/deployment/README.md`.
+
+Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). Each side places **one fighter** in a configurable zone (starter: opposite 2×3 boxes), may reposition, then **Confirm** (gated until the required unit is placed). Confirm locks that side. Combat stays disabled until both confirm; then the proto hands off to Turn 1 via a stub `start_match` callback. Occupied / out-of-bounds / not-in-zone reject. No multi-unit roster, networking, or elevation placement gates.
+
+| Rule | Proposed starter |
+| --- | --- |
+| Mode | Local hot-seat sequential deploy |
+| Roster | One fighter per side |
+| Zones | Configurable cell sets; default opposite 2×3 boxes |
+| Actions | Select, place, reposition, confirm |
+| Confirm | Only when required units are placed; then that side locks |
+| Combat | Disabled until `both_ready`; then `DEPLOYMENT` → `COMBAT` (Turn 1 stub) |
+
+Modules (all under `proto/deployment/`, unused by the Phase A combat path):
+
+1. `MatchPhase` — enum including `DEPLOYMENT`
+2. `DeploymentZone` — `player_id` + `Array[Vector2i]` cells
+3. `DeploymentManager` — `select_unit`, `can_deploy_unit(unit, tile)`, `place`, `reposition`, `confirm`, `both_ready` → `start_combat`
+4. `scenes/proto_deployment_board.tscn` — zone paint, place / reposition / confirm
+5. `tests/run_deployment_proto_tests.gd` — out-of-zone, occupied, confirm gated, both confirm → phase change
 
 ## How to test aim chrome
 
