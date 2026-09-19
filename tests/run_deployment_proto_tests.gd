@@ -288,6 +288,10 @@ func _test_scene_instantiates() -> void:
 	eq(mgr.place_unit("ironjaw", Vector2i(7, 3))["ok"], true, "scene manager can place P2 on the east ring at the same time")
 	eq(scene._ready_p1_btn.disabled, false, "Ready P1 enables after Kestrel is placed")
 	eq(scene._ready_p2_btn.disabled, false, "Ready P2 enables after Ironjaw is placed")
+	var interior_copy: String = scene._reject_text("outside_zone", Vector2i(3, 3))
+	truthy(interior_copy.contains("interior"), "scene coach distinguishes interior reject")
+	var wrong_half_copy: String = scene._reject_text("outside_zone", Vector2i(7, 3))
+	truthy(wrong_half_copy.contains("other side"), "scene coach distinguishes wrong-half reject")
 	scene.free()
 
 
@@ -312,6 +316,7 @@ func _test_phase_a_untouched() -> void:
 
 	var scene := FileAccess.get_file_as_string("res://scenes/proto_deployment_board.tscn")
 	truthy(scene.contains("proto_deployment_board.gd"), "prototype scene exists")
+	truthy(scene.contains("south+west") or scene.contains("border-ring"), "proto scene stamps the half-split")
 
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	truthy(readme.contains("Phase B+ deployment prototype"), "README has the Phase B+ deployment section")

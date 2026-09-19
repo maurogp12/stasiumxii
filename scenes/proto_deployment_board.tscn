@@ -4,3 +4,4 @@
 
 [node name="ProtoDeploymentBoard" type="Node2D"]
 script = ExtResource("1_proto")
+editor_description = "Phase B+ deploy proto: simultaneous south+west / north+east 1-deep border-ring halves. Not the Phase A duel."
