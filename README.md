@@ -86,7 +86,37 @@ These are playable stubs so the duel runs. They are **not** approved defaults. *
 
 ```bash
 godot --headless --path . -s res://tests/run_combat_tests.gd
+godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 ```
+
+## Phase B+ elevation prototype
+
+**Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel (`main.tscn` / `CombatSim` still uses flat Manhattan dest-click). No Backend tile-schema branch existed, so this PR keeps a local `ProtoMoveSim` instead of rewriting Phase A `CombatSim`.
+
+Open `scenes/proto_elevation_board.tscn` (or `godot --path . res://scenes/proto_elevation_board.tscn`). Click a cyan reachable tile to spend MP along the cheapest ortho path. **Refill MP** / **Reset board** are prototype chrome.
+
+| Rule | Proposed starter |
+| --- | --- |
+| Terrain MP | Ground 1, Mud 2, Water 2, Lava impassable |
+| Uphill | +1 MP per full elevation level; a half-level climb (0.5) counts as +1 |
+| Downhill | +0 MP |
+| Max climb | 1.0 |
+| Max drop | 2.0 |
+| Edges | Ortho-only (no diagonal) |
+| Proto MP pool | 6 (Proposed play pool so mud+climb is reachable; not a Locked replacement for Phase A’s 3) |
+| Z-sort | VIEW function of iso world Y + elevation offset (`ProtoVisualSort`). **Not** the gameplay elevation source — that is `BoardTileData.elevation` / `ElevationCost`. |
+
+Modules (all under `proto/elevation/`, unused by the Phase A combat path):
+
+1. `TerrainDef` — id, display name, base_mp, walkable
+2. `BoardTileData` — grid_pos, elevation, terrain_type, optional walkable override
+3. `ElevationCost` — Δelev → climb/drop MP + legality vs max climb/drop
+4. `ProtoMoveSim.step_cost` — dest terrain MP + climb MP; rejects non-ortho
+5. `ProtoMoveSim.validate_move` — in-bounds, walkable, not occupied, climb/drop ok, MP remaining
+6. `ProtoMoveSim.reachable` — Dijkstra / uniform-cost on ortho edges
+7. `ProtoMoveSim.reconstruct_path` — cheapest MP path
+8. `scenes/proto_elevation_board.tscn` — terrain paint, elevation labels, reachable highlight, click-to-move
+9. `ProtoVisualSort` — `z_index` / draw offset from iso Y + elevation (visual-only)
 
 ## How to test aim chrome
 
