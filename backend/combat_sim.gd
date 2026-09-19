@@ -107,6 +107,8 @@ func submit(intent: Dictionary) -> Dictionary:
 	var kind := str(normalized.get("type", ""))
 	if _flow.is_deployment():
 		return _submit_deploy(normalized, kind)
+	if kind in ["place", "reposition", "ready", "confirm"]:
+		return _reject(normalized, "wrong_phase", "REJECT — deploy is over.")
 
 	var seat := _active_seat
 	if normalized.has("seat") and int(normalized["seat"]) != seat:
