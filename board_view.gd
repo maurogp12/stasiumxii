@@ -1,10 +1,12 @@
 extends Node2D
 
-## Thin client: input + presentation only. CombatSim owns HP/AP/MP/rolls.
+## Thin client: input + presentation only. CombatSim owns rolls and combat state.
 ## Walk: dest-click only. CombatSim expands the ortho path; this view never sends
 ## intent.path. Pawns tween one ortho tile at a time along the returned walk path
 ## and face each hop (final facing = last hop, matching the snapshot).
 ## Advance teleport does not auto-face.
+## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
+## deploy_zone_cells / can_ready / snapshot().phase. No fog. No deploy timer.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
@@ -35,6 +37,7 @@ var _busy: bool = false
 var _clock_expired_pending: bool = false
 var _walk_tween: Tween
 var _turn_clock := TurnClock.new()
+var _deploy_selected_seat: int = -1
 
 
 func _ready() -> void:
@@ -44,6 +47,7 @@ func _ready() -> void:
 	_hud.face_requested.connect(_on_face_requested)
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
+	_hud.ready_requested.connect(_on_ready_requested)
 
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
@@ -61,7 +65,7 @@ func _boot() -> void:
 	CombatSim.reset_match({})
 	_rebuild_pawns()
 	_booted = true
-	_turn_clock.start()
+	_sync_clock_to_phase()
 	_refresh()
 	_sync_turn_clock()
 
@@ -76,6 +80,10 @@ func _process(delta: float) -> void:
 	if not _booted:
 		return
 	var snap := CombatSim.snapshot()
+	if CombatHUD.is_deployment_phase(snap):
+		_turn_clock.stop()
+		_sync_turn_clock()
+		return
 	if snap.get("match_over", false):
 		_turn_clock.stop()
 		_sync_turn_clock()
@@ -110,6 +118,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		select_tile(cell)
 		if event.button_index == MOUSE_BUTTON_RIGHT:
+			if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+				return
 			_face_toward(cell)
 			return
 		if event.button_index == MOUSE_BUTTON_LEFT:
@@ -124,6 +134,9 @@ func select_tile(cell: Vector2i) -> void:
 
 
 func _handle_left_click(cell: Vector2i) -> void:
+	if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+		_handle_deploy_click(cell)
+		return
 	if _active_is_stunned():
 		return
 	var spell_id := _hud.selected_spell()
@@ -176,12 +189,16 @@ func _return_to_walk() -> void:
 
 
 func _on_face_requested(dir: String) -> void:
+	if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+		return
 	if _active_is_stunned():
 		return
 	_submit({"type": "face", "dir": dir})
 
 
 func _on_end_turn_button_pressed() -> void:
+	if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+		return
 	if _busy:
 		return
 	_busy = true
@@ -244,10 +261,12 @@ func _on_new_match() -> void:
 	_hud.set_locked(false)
 	_busy = false
 	_clock_expired_pending = false
+	_deploy_selected_seat = -1
 	_hud.clear_spell()
+	_hud.clear_deploy_note()
 	CombatSim.reset_match({})
 	_rebuild_pawns()
-	_turn_clock.start()
+	_sync_clock_to_phase()
 	_refresh()
 	_sync_turn_clock()
 
@@ -404,9 +423,14 @@ func _apply_units(snap: Dictionary) -> void:
 		if not pawns_by_seat.has(seat):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
+		var cell: Vector2i = _as_cell(unit.get("pos", Vector2i(-1, -1)))
+		var placed := bool(unit.get("placed", true)) and cell.x >= 0 and cell.y >= 0
+		pawn.visible = placed
+		if not placed:
+			continue
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)))
-		pawn.position = _cell_to_local(unit["pos"])
-		pawn.z_index = int(unit["pos"].x) + int(unit["pos"].y) + 16
+		pawn.position = _cell_to_local(cell)
+		pawn.z_index = int(cell.x) + int(cell.y) + 16
 
 
 func _paint_highlights() -> void:
@@ -414,6 +438,9 @@ func _paint_highlights() -> void:
 		(tile as BoardTile).set_highlight("")
 	var snap := CombatSim.snapshot()
 	if snap.get("match_over", false) or _busy:
+		return
+	if CombatHUD.is_deployment_phase(snap):
+		_paint_deploy_highlights(snap)
 		return
 	var legal: Array = CombatSim.legal_intents(int(snap.get("active_seat", 0)))
 	var spell_id := _hud.selected_spell()
@@ -435,6 +462,112 @@ func _paint_highlights() -> void:
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(intent["to"]).set_highlight(highlight)
 	_sync_aim_preview()
+
+
+func _paint_deploy_highlights(snap: Dictionary) -> void:
+	var ready: Dictionary = snap.get("ready", {})
+	var legal0: Array[Vector2i] = CombatSim.legal_deploy_cells(0)
+	var legal1: Array[Vector2i] = CombatSim.legal_deploy_cells(1)
+	for cell in CombatSim.deploy_zone_cells(0):
+		var kind := "locked" if bool(ready.get(0, false)) else "zone_p1"
+		if not bool(ready.get(0, false)) and not legal0.has(cell):
+			kind = "locked"
+		_tile_at(cell).set_highlight(kind)
+	for cell in CombatSim.deploy_zone_cells(1):
+		var kind := "locked" if bool(ready.get(1, false)) else "zone_p2"
+		if not bool(ready.get(1, false)) and not legal1.has(cell):
+			kind = "locked"
+		_tile_at(cell).set_highlight(kind)
+	for unit in snap.get("units", []):
+		if not bool(unit.get("placed", false)):
+			continue
+		var cell: Vector2i = _as_cell(unit.get("pos", Vector2i(-1, -1)))
+		if tiles.has(cell):
+			_tile_at(cell).set_highlight("occupied")
+
+
+func _handle_deploy_click(cell: Vector2i) -> void:
+	_hud.clear_deploy_note()
+	var occupant := _placed_seat_at(cell)
+	if occupant >= 0:
+		var snap := CombatSim.snapshot()
+		var ready: Dictionary = snap.get("ready", {})
+		if not bool(ready.get(occupant, false)):
+			_deploy_selected_seat = occupant
+			var unit := _unit_from_seat(snap, occupant)
+			_hud.set_deploy_note("Selected %s. Click another ring tile on that side to reposition." % str(unit.get("name", "fighter")))
+			_refresh()
+			return
+	var seat := CombatHUD.deploy_seat_for_cell(cell, _deploy_selected_seat)
+	var result: Dictionary = CombatSim.place_unit(seat, cell)
+	if result.get("ok", false):
+		_deploy_selected_seat = -1
+	_refresh()
+	_maybe_enter_combat()
+
+
+func _on_ready_requested(seat: int) -> void:
+	if _busy:
+		return
+	_hud.clear_deploy_note()
+	var result: Dictionary = CombatSim.ready_seat(seat)
+	if not result.get("ok", false):
+		_refresh()
+		return
+	_refresh()
+	_maybe_enter_combat()
+
+
+func _maybe_enter_combat() -> void:
+	if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+		return
+	_enter_combat_chrome()
+
+
+func _enter_combat_chrome() -> void:
+	_deploy_selected_seat = -1
+	_hud.clear_deploy_note()
+	_turn_clock.start()
+	_turn_clock.pause()
+	_busy = true
+	_hud.set_locked(true)
+	_refresh()
+	_sync_turn_clock()
+	var snap := CombatSim.snapshot()
+	var next_unit := _active_unit(snap)
+	_hud.show_turn_banner(str(next_unit.get("name", "Kestrel")), str(next_unit.get("class_id", "")), "Turn 1")
+	await get_tree().create_timer(HANDOFF_SEC).timeout
+	if not is_inside_tree():
+		return
+	_hud.hide_turn_banner()
+	_hud.set_locked(false)
+	_busy = false
+	_turn_clock.resume()
+	_refresh()
+	_sync_turn_clock()
+
+
+func _sync_clock_to_phase() -> void:
+	if CombatHUD.is_deployment_phase(CombatSim.snapshot()):
+		_turn_clock.stop()
+	else:
+		_turn_clock.start()
+
+
+func _placed_seat_at(cell: Vector2i) -> int:
+	for unit in CombatSim.snapshot().get("units", []):
+		if not bool(unit.get("placed", false)):
+			continue
+		if _as_cell(unit.get("pos", Vector2i(-1, -1))) == cell:
+			return int(unit.get("seat", -1))
+	return -1
+
+
+func _unit_from_seat(snap: Dictionary, seat: int) -> Dictionary:
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			return unit
+	return {}
 
 
 func _sync_aim_preview() -> void:

@@ -5,6 +5,7 @@ signal spell_selected(spell_id: String)
 signal face_requested(dir: String)
 signal end_turn_requested
 signal new_match_requested
+signal ready_requested(seat: int)
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
@@ -26,6 +27,11 @@ var _mp_pips: HBoxContainer
 var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
+var _ready_p1_button: Button
+var _ready_p2_button: Button
+var _clock_row: HBoxContainer
+var _deploying: bool = false
+var _deploy_note: String = ""
 var _handoff_overlay: ColorRect
 var _handoff_panel: Panel
 var _handoff_label: Label
@@ -97,6 +103,65 @@ static func legal_cast_ids(legal: Array) -> Dictionary:
 		if id != "":
 			out[id] = true
 	return out
+
+
+static func is_deployment_phase(snap: Dictionary) -> bool:
+	return str(snap.get("phase", snap.get("phase_name", ""))) == "DEPLOYMENT"
+
+
+static func can_ready_from_snap(snap: Dictionary, seat: int) -> bool:
+	if not is_deployment_phase(snap):
+		return false
+	var ready: Dictionary = snap.get("ready", {})
+	if bool(ready.get(seat, false)):
+		return false
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			return bool(unit.get("placed", false))
+	return false
+
+
+## Click routing for simultaneous deploy. A selected seat on the other half
+## (or interior) keeps that seat so CombatSim can emit wrong-half / interior copy.
+static func deploy_seat_for_cell(cell: Vector2i, selected_seat: int = -1) -> int:
+	var in0 := MatchFlow.owns_south_west_half(cell)
+	var in1 := MatchFlow.owns_north_east_half(cell)
+	if selected_seat >= 0:
+		var selected_owns := in0 if selected_seat == 0 else in1
+		if not selected_owns:
+			return selected_seat
+	if in0:
+		return 0
+	if in1:
+		return 1
+	return selected_seat if selected_seat >= 0 else 0
+
+
+## #29 coach: interior vs wrong-half share outside_zone; copy distinguishes them.
+static func deploy_reject_copy(reason: String, dest: Vector2i, zone_kind: String = "") -> String:
+	var where := "(%d,%d)" % [dest.x, dest.y] if dest.x >= 0 and dest.y >= 0 else "that tile"
+	match reason:
+		"outside_zone":
+			var kind := zone_kind
+			if kind == "":
+				kind = "interior" if not MatchFlow.is_border_cell(dest) else "wrong_half"
+			if kind == "interior":
+				return "REJECT — %s is interior. Legal cells are the 1-deep border ring only." % where
+			return "REJECT — %s is the other side's half of the border ring." % where
+		"occupied":
+			return "REJECT — %s is occupied." % where
+		"out_of_bounds":
+			return "REJECT — out of bounds."
+		"units_not_placed":
+			return "REJECT — place the required fighter before Ready."
+		"side_locked":
+			return "REJECT — this side is already ready."
+		"wrong_phase":
+			return "REJECT — deploy is over."
+		"already_ready":
+			return "REJECT — already ready."
+		_:
+			return "REJECT — %s." % reason
 
 
 static func unit_is_stunned(unit: Dictionary) -> bool:
@@ -314,7 +379,7 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 		_clock_bar.color = Color(0.92, 0.68, 0.28)
 	else:
 		_clock_bar.color = Color(0.35, 0.7, 0.55)
-	if _turn_label != null and not _turn_label.text.begins_with("Match over"):
+	if _turn_label != null and not _deploying and not _turn_label.text.begins_with("Match over"):
 		var base := _turn_label.text
 		var sep := "  ·  "
 		var parts := base.split(sep)
@@ -328,25 +393,31 @@ func set_preview_source(sim: Node) -> void:
 
 func render(snap: Dictionary, legal: Array) -> void:
 	_last_snap = snap
+	_deploying = is_deployment_phase(snap)
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
 	var ironjaw := _unit(units, 1)
-	_kestrel_body.text = _unit_card_text(kestrel, int(snap.get("active_seat", 0)) == 0)
-	_ironjaw_body.text = _unit_card_text(ironjaw, int(snap.get("active_seat", 0)) == 1)
+	_kestrel_body.text = _unit_card_text(kestrel, int(snap.get("active_seat", 0)) == 0, snap)
+	_ironjaw_body.text = _unit_card_text(ironjaw, int(snap.get("active_seat", 0)) == 1, snap)
 
 	var active := _unit(units, int(snap.get("active_seat", 0)))
 	var active_name := str(active.get("name", "—"))
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
 		_turn_label.text = "Match over — %s wins" % str(winner.get("name", "—"))
+	elif _deploying:
+		_turn_label.text = "DEPLOYMENT  ·  place both fighters"
 	else:
 		_turn_label.text = "Turn %d  ·  %s  ·  %ds" % [int(snap.get("turn_index", 1)), active_name, _clock_seconds]
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
-	_coach_label.text = str(snap.get("coach", ""))
+	if _deploy_note != "" and _deploying:
+		_coach_label.text = _deploy_note
+	else:
+		_coach_label.text = str(snap.get("coach", ""))
 
-	var offered: Array = offered_cast_ids(active, legal)
+	var offered: Array = [] if _deploying else offered_cast_ids(active, legal)
 	_sync_spell_buttons(offered)
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
@@ -364,7 +435,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var match_over := bool(snap.get("match_over", false))
 	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
-	_stunned = unit_is_stunned(active) and not match_over
+	_stunned = unit_is_stunned(active) and not match_over and not _deploying
 	if _stunned and _selected_spell != "":
 		_selected_spell = ""
 		_aim_hit_chance = -1
@@ -374,7 +445,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
@@ -384,23 +455,25 @@ func render(snap: Dictionary, legal: Array) -> void:
 			button.modulate = STUN_GREY if _stunned else Color(1, 1, 1, 0.72)
 	_refresh_walk_button()
 	_apply_controls(match_over)
+	_sync_deploy_chrome(snap)
 	_sync_stun_badge(active, units, match_over)
 
 
 func _apply_controls(match_over: bool) -> void:
-	var block := match_over or _locked
+	var block := match_over or _locked or _deploying
 	for spell_id in _spell_buttons.keys():
 		if block:
 			_set_spell_button_clickable(_spell_buttons[spell_id], false)
 	for button in _face_buttons.values():
 		(button as Button).disabled = block or _stunned
-		(button as Button).modulate = STUN_GREY if (_stunned and not block) else Color.WHITE
+		(button as Button).modulate = STUN_GREY if ((_stunned or _deploying) and not match_over and not _locked) else Color.WHITE
 	if _walk_button != null:
 		_walk_button.disabled = block or _stunned
-		if _stunned and not block:
+		if (_stunned or _deploying) and not match_over and not _locked:
 			_walk_button.modulate = STUN_GREY
 	if _end_turn_button != null:
 		# Locked Stun (A′): End Turn stays as a fallback; CombatSim auto-skips.
+		# Deploy: End Turn stays off until both Ready leave DEPLOYMENT.
 		_end_turn_button.disabled = block
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
@@ -505,6 +578,20 @@ func _build() -> void:
 	_walk_button.clip_text = true
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
+
+	_ready_p1_button = Button.new()
+	_ready_p1_button.text = "Ready P1"
+	_ready_p1_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p1_button.clip_text = true
+	_ready_p1_button.pressed.connect(func() -> void: ready_requested.emit(0))
+	_action_bar.add_child(_ready_p1_button)
+
+	_ready_p2_button = Button.new()
+	_ready_p2_button.text = "Ready P2"
+	_ready_p2_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p2_button.clip_text = true
+	_ready_p2_button.pressed.connect(func() -> void: ready_requested.emit(1))
+	_action_bar.add_child(_ready_p2_button)
 
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
@@ -622,6 +709,7 @@ func _make_pip_row(label_text: String) -> HBoxContainer:
 
 func _make_clock_row() -> HBoxContainer:
 	var row := HBoxContainer.new()
+	_clock_row = row
 	row.add_theme_constant_override("separation", 6)
 	var caption := Label.new()
 	caption.text = "TIME"
@@ -655,10 +743,18 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 		row.add_child(pip)
 
 
-func _unit_card_text(unit: Dictionary, active: bool) -> String:
+func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
 	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
+	if is_deployment_phase(snap):
+		var ready: Dictionary = snap.get("ready", {})
+		if bool(ready.get(int(unit.get("seat", -1)), false)) or bool(unit.get("locked", false)):
+			status = "READY"
+		elif bool(unit.get("placed", false)):
+			status = "placed"
+		else:
+			status = "open"
 	# Locked Stun (A′): STUN badge on the unit card while remaining or stunned-this-turn.
 	var stun_note := ""
 	if unit_is_stunned(unit):
@@ -798,7 +894,7 @@ func _refresh_spell_buttons() -> void:
 func _refresh_walk_button() -> void:
 	if _walk_button == null:
 		return
-	if _stunned:
+	if _stunned or _deploying:
 		_walk_button.modulate = STUN_GREY
 	elif _selected_spell == "":
 		_walk_button.modulate = Color(1.15, 1.1, 0.7)
@@ -808,6 +904,9 @@ func _refresh_walk_button() -> void:
 
 func _update_selected_label() -> void:
 	if _selected_label == null:
+		return
+	if _deploying:
+		_selected_label.text = "Place on your half of the border ring  ·  Ready when placed"
 		return
 	if _stunned:
 		_selected_label.text = "Stunned — turn auto-ends"
@@ -984,6 +1083,57 @@ func toast_caption() -> String:
 
 func stun_badge_visible() -> bool:
 	return _stun_badge != null and _stun_badge.visible
+
+
+func set_deploy_note(text: String) -> void:
+	_deploy_note = text
+	if _coach_label != null and text != "":
+		_coach_label.text = text
+
+
+func clear_deploy_note() -> void:
+	_deploy_note = ""
+
+
+func _sync_deploy_chrome(snap: Dictionary) -> void:
+	var deploying := is_deployment_phase(snap)
+	var ready: Dictionary = snap.get("ready", {})
+	if _ready_p1_button != null:
+		_ready_p1_button.visible = deploying
+		_ready_p1_button.disabled = not can_ready_from_snap(snap, 0)
+		_ready_p1_button.text = "P1 ready" if bool(ready.get(0, false)) else "Ready P1"
+	if _ready_p2_button != null:
+		_ready_p2_button.visible = deploying
+		_ready_p2_button.disabled = not can_ready_from_snap(snap, 1)
+		_ready_p2_button.text = "P2 ready" if bool(ready.get(1, false)) else "Ready P2"
+	if _clock_row != null:
+		_clock_row.visible = not deploying
+	if _clock_label != null:
+		_clock_label.visible = not deploying
+	if _clock_bar != null:
+		_clock_bar.visible = not deploying
+	if _walk_button != null:
+		_walk_button.visible = not deploying
+	if _end_turn_button != null:
+		_end_turn_button.visible = not deploying
+	for button in _face_buttons.values():
+		(button as Button).visible = not deploying
+
+
+func deploy_chrome_visible() -> bool:
+	return _ready_p1_button != null and _ready_p1_button.visible
+
+
+func ready_p1_enabled() -> bool:
+	return _ready_p1_button != null and _ready_p1_button.visible and not _ready_p1_button.disabled
+
+
+func ready_p2_enabled() -> bool:
+	return _ready_p2_button != null and _ready_p2_button.visible and not _ready_p2_button.disabled
+
+
+func clock_visible() -> bool:
+	return _clock_row != null and _clock_row.visible
 
 
 func walk_suppressed() -> bool:
