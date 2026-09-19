@@ -37,7 +37,7 @@ static func card_lines(preview: Dictionary) -> PackedStringArray:
 	])
 	var on_connect := str(preview.get("on_connect_text", "")).strip_edges()
 	if on_connect != "":
-		lines.append("On connect: %s" % on_connect)
+		lines.append("On hit: %s" % on_connect)
 	var miss := str(preview.get("on_miss_text", "")).strip_edges()
 	if miss != "":
 		lines.append("On miss: %s" % miss)
