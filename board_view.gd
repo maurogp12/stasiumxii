@@ -21,7 +21,7 @@ extends Node2D
 ## Locked Stun (A′): Walk / Face / spells grey on HUD; this view does not submit them.
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
-## Director Locked Shoulder: occupied dest toasts PushBlocked (no hop).
+## Occupied push dest toasts PushBlocked (no hop).
 ## Unwalkable / lava / OOB dest toasts Bounce (no hop) and emits stagger HP/MP.
 
 const BOARD_SIZE: int = 8
