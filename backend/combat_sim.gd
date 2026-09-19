@@ -456,7 +456,7 @@ func _apply_snapshot_tiles(raw: Variant) -> void:
 		var rec: Variant = tiles[key]
 		if typeof(rec) != TYPE_DICTIONARY:
 			continue
-		var cell := key if key is Vector2i else _as_cell((rec as Dictionary).get("pos", key))
+		var cell: Vector2i = key if key is Vector2i else _as_cell((rec as Dictionary).get("pos", key))
 		_board.set_tile(cell, str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)))
 
 

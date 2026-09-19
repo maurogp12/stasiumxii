@@ -165,7 +165,7 @@ func local_to_grid(point: Vector2) -> Vector2i:
 func _process(delta: float) -> void:
 	if not _booted:
 		return
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap):
 		_turn_clock.stop()
 		_sync_turn_clock()
@@ -251,7 +251,7 @@ func _handle_left_click(cell: Vector2i) -> void:
 func _face_toward(cell: Vector2i) -> void:
 	if _active_is_stunned():
 		return
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	if not _can_control_seat(int(snap.get("active_seat", 0))):
 		return
 	var actor := _active_unit(snap)
@@ -314,7 +314,7 @@ func _on_end_turn_button_pressed() -> void:
 		_turn_clock.resume()
 		_refresh()
 		return
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false):
 		_turn_clock.stop()
 		_busy = false
@@ -457,7 +457,7 @@ func _active_is_stunned(snap: Dictionary = {}) -> bool:
 func _play_walk(seat: int, path: Array) -> void:
 	_busy = true
 	_hud.set_locked(true)
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	_hud.render(snap, [])
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
@@ -516,7 +516,7 @@ func _stop_walk_tween() -> void:
 
 
 func _refresh() -> void:
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	var legal: Array = _sim().legal_intents(int(snap.get("active_seat", 0)))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
@@ -554,7 +554,7 @@ func _apply_units(snap: Dictionary) -> void:
 func _paint_highlights() -> void:
 	for tile in tiles.values():
 		(tile as BoardTile).set_highlight("")
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false) or _busy:
 		return
 	if CombatHUD.is_deployment_phase(snap):
@@ -611,7 +611,7 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 	_hud.clear_deploy_note()
 	var occupant := _placed_seat_at(cell)
 	if occupant >= 0:
-		var snap := _sim().snapshot()
+		var snap: Dictionary = _sim().snapshot()
 		var ready: Dictionary = snap.get("ready", {})
 		if not bool(ready.get(occupant, false)):
 			if not _can_control_seat(occupant):
@@ -675,7 +675,7 @@ func _enter_combat_chrome() -> void:
 	_hud.set_locked(true)
 	_refresh()
 	_sync_turn_clock()
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	var next_unit := _active_unit(snap)
 	_hud.show_turn_banner(str(next_unit.get("name", "Kestrel")), str(next_unit.get("class_id", "")), "Turn 1")
 	await get_tree().create_timer(HANDOFF_SEC).timeout
@@ -719,7 +719,7 @@ func _sync_aim_preview() -> void:
 	if spell_id == "" or not SpellKits.rolls(spell_id):
 		_hud.set_aim_preview({})
 		return
-	var snap := _sim().snapshot()
+	var snap: Dictionary = _sim().snapshot()
 	_hud.set_aim_preview(_sim().aim_hit_preview(int(snap.get("active_seat", 0)), spell_id))
 
 

@@ -160,7 +160,7 @@ func _test_guest_hydrate_from_packed_state() -> void:
 
 func _test_hotseat_still_direct() -> void:
 	var net_script := load("res://backend/net_session.gd")
-	var hot := net_script.new()
+	var hot: Node = net_script.new()
 	hot.attach_sim(_sim)
 	eq(hot.is_hotseat(), true, "fresh NetSession is hot-seat")
 	_sim.reset_match({

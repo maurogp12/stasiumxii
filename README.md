@@ -30,7 +30,7 @@ Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. 
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto. ENet / MultiplayerAPI RPC. Host owns CombatSim. Guest submits Intent. HOTSEAT mode leaves `main.tscn` on the local path. Not MultiplayerSynchronizer. Not a dedicated server. |
+| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto. ENet / MultiplayerAPI RPC. Host owns CombatSim. Guest submits Intent. HOTSEAT mode leaves `main.tscn` on the local path. RPC only (no scene sync). Not a dedicated server. |
 | `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Proposed 30s seat clock. Client-only; expiry submits `end_turn`. |

@@ -1,7 +1,7 @@
 extends Node
 
 ## Listen-host proto. Host owns CombatSim + seed/RNG. Clients submit Intent.
-## Transport: Godot 4 MultiplayerAPI + ENet (direct IP). Not MultiplayerSynchronizer.
+## Transport: Godot 4 MultiplayerAPI + ENet (direct IP). RPC only; no scene sync.
 ## Local hot-seat stays the default (mode HOTSEAT → CombatSim.submit directly).
 ## Listen-host only — no dedicated process.
 
