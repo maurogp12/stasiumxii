@@ -121,42 +121,45 @@ Modules (all under `proto/elevation/`, unused by the Phase A combat path):
 
 ## Phase B+ deployment prototype
 
-**Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel seats or `CombatSim.reset_match()` / match start on `main.tscn`. No Backend deploy-schema/API branch existed, so this PR keeps a local `DeploymentManager` instead of rewriting Phase A `CombatSim`.
+**Prototype only. Proposed — not Locked.** Does not change the Phase A hot-seat duel seats or `CombatSim.reset_match()` / match start on `main.tscn` (Kestrel still `(1,1)`, Ironjaw still `(6,6)`). No Backend deploy-schema/API branch existed, so this PR keeps a local `DeploymentManager` instead of rewriting Phase A `CombatSim`. No networking, no hidden fog, no deploy timer.
 
-Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). Sequential hot-seat: **P1 Kestrel** places in the west box and Confirms, then **P2 Ironjaw** places in the east box and Confirms. Zones start as opposite 2×3 boxes on an 8×8. Walk / Combat / End Turn stay disabled until both confirm, then the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
+Open `scenes/proto_deployment_board.tscn` (or `godot --path . res://scenes/proto_deployment_board.tscn`). **Simultaneous** deploy: both seats may place / reposition at once on their opposite half of the **1-deep map border ring**. Each side has its own **Ready** control. When **both** are ready, positions lock and the scene shows **Turn 1** chrome (stub — CombatSim is not wired).
+
+This stamp **supersedes** sequential hot-seat and the opposite 2×3 boxes.
 
 ### Proposed rules
 
 | Rule | Proposed starter |
 | --- | --- |
-| Seats | Hot-seat sequential: P1 then P2 |
+| Seats | Simultaneous: both players place / reposition at once (hot-seat clicks; no netcode) |
 | Roster | One fighter per side (Kestrel / Ironjaw stand-ins) |
 | Board | 8×8 |
-| Zones | Opposite **2×3** boxes (P1 west `x=0–1, y=2–4`; P2 east `x=6–7, y=2–4`) as cell sets |
-| Actions | Place / reposition on a legal zone cell; Confirm locks that side |
-| Confirm gate | Confirm disabled until that side’s required unit is placed |
-| Start | Both confirm → lock positions → `start_match` → `MatchPhase.TURN_1` |
-| Combat chrome | Walk / combat / end-turn disabled until both confirm |
+| Legal cells | **1-deep border ring** only (any cell with `x=0`, `y=0`, `x=7`, or `y=7`). Interior cells reject `outside_zone` |
+| 1v1 split | Opposite halves of that ring. **Seat 0 (P1): south + west. Seat 1 (P2): north + east.** Corners belong to the north/south edge: NW+NE → P2, SW+SE → P1. Halves never share an edge, so same-edge camp is impossible |
+| Actions | Place / reposition on a legal zone cell; Ready locks that side |
+| Ready gate | Ready disabled until that side’s required unit is placed |
+| Start | Both ready → lock positions → `start_match` → `MatchPhase.TURN_1` |
+| Combat chrome | Walk / combat / end-turn disabled until both ready |
 | Walkable | Reuses occupancy + optional `ProtoMoveSim.is_walkable` (lava / override). **No elevation MP / climb cost on deploy** |
 
 Modules (all under `proto/deployment/`, unused by the Phase A combat path):
 
 1. `MatchPhase` — proto-local `DEPLOYMENT` / `TURN_1`
-2. `DeploymentZone` — `player_id` + `Array[Vector2i]` cells
-3. `DeploymentManager` — active player, selected unit, place/reposition, confirm, both-ready → `start_match`
-4. `can_deploy_unit(unit, cell)` — phase, zone membership, in-bounds, walkable, not occupied
-5. `scenes/proto_deployment_board.tscn` — zone / selected / occupied chrome, click to place or move
-6. Confirm button — disabled until the required fighter is placed
-7. After both confirm: lock positions, emit start, show Turn 1 label (CombatSim not wired)
+2. `DeploymentZone` — `player_id` + `Array[Vector2i]` cells; `border_ring()` + `opposite_half_ring()` (S+W vs N+E)
+3. `DeploymentManager` — simultaneous ready flags, selected unit, place/reposition, both-ready → `start_match`
+4. `can_deploy_unit(unit, cell)` — phase, zone membership, in-bounds, walkable, not occupied (no turn-order gate)
+5. `scenes/proto_deployment_board.tscn` — both half-rings highlighted; click a green S+W cell to place Kestrel or a red N+E cell to place Ironjaw
+6. Ready P1 / Ready P2 — each disabled until that side’s required fighter is placed
+7. After both ready: lock positions, emit start, show Turn 1 label (CombatSim not wired)
 
 ## How to test the deployment prototype
 
-1. Open `scenes/proto_deployment_board.tscn`. Walk / Combat / End Turn start disabled. Confirm starts disabled.
-2. Click a **green west 2×3** tile — Kestrel places. Click another west-box tile to reposition. Confirm enables.
-3. Click a tile outside the west box — coach shows **outside_zone**. Confirm still enabled (Kestrel remains on the last legal cell).
-4. **Confirm P1** — west box locks. East box lights for Ironjaw. P1 cannot move Kestrel.
-5. Place Ironjaw on a **red east 2×3** tile and **Confirm P2**.
-6. Phase flips to **TURN 1**. Positions lock. Walk / Combat / End Turn enable as stubs (they do not call `CombatSim`).
+1. Open `scenes/proto_deployment_board.tscn`. Walk / Combat / End Turn start disabled. Both Ready buttons start disabled.
+2. Click a **green south/west ring** tile — Kestrel places. Click another S+W ring tile to reposition. Ready P1 enables. P2’s red N+E ring stays lit.
+3. Click a **red north/east ring** tile — Ironjaw places (no need to wait for P1 Ready). Ready P2 enables.
+4. Click an interior tile or the other seat’s half — coach shows **outside_zone**. The last legal cell stays.
+5. **Ready P1** — P1’s half locks. Ironjaw can still move until Ready P2.
+6. **Ready P2** — phase flips to **TURN 1**. Positions lock. Walk / Combat / End Turn enable as stubs (they do not call `CombatSim`).
 
 ## How to test aim chrome
 

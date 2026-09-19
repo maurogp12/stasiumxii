@@ -2,7 +2,8 @@ extends Node2D
 
 ## Phase B+ deployment prototype SCENE.
 ## Does not call CombatSim.reset_match / submit. Phase A duel stays on main.tscn.
-## Hot-seat sequential deploy: P1 Kestrel, then P2 Ironjaw. Both confirm → Turn 1 stub.
+## Simultaneous deploy: both seats place on opposite halves of the 1-deep border
+## ring, then Ready. Both ready → Turn 1 stub.
 
 var _mgr := DeploymentManager.new()
 var _terrain := ProtoMoveSim.new()
@@ -14,7 +15,8 @@ var _title: Label
 var _phase_label: Label
 var _coach: Label
 var _status: Label
-var _confirm_btn: Button
+var _ready_p1_btn: Button
+var _ready_p2_btn: Button
 var _walk_btn: Button
 var _combat_btn: Button
 var _end_turn_btn: Button
@@ -46,13 +48,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		if occupant != "" and occupant != "_blocked":
 			var owned: Dictionary = _mgr.select_unit(occupant)
 			if bool(owned.get("ok", false)):
-				_coach.text = "Selected %s. Click another zone tile to reposition." % _mgr.unit_by_id(occupant).get("name", occupant)
+				_coach.text = "Selected %s. Click another ring tile on that side to reposition." % _mgr.unit_by_id(occupant).get("name", occupant)
 				_paint()
 				return
-		var result: Dictionary = _mgr.place_unit(_mgr.selected_unit_id, cell)
+			_coach.text = _reject_text(str(owned.get("reason", "")), cell)
+			_paint()
+			return
+		var unit_id := _unit_for_cell(cell)
+		if unit_id == "":
+			_coach.text = _reject_text("outside_zone", cell)
+			_paint()
+			return
+		var result: Dictionary = _mgr.place_unit(unit_id, cell)
 		if bool(result.get("ok", false)):
 			var unit: Dictionary = _mgr.unit_by_id(str(result["unit_id"]))
-			_coach.text = "Placed %s on %s. Confirm to lock this side." % [unit.get("name", ""), _cell_text(cell)]
+			_coach.text = "Placed %s on %s. Ready locks this side." % [unit.get("name", ""), _cell_text(cell)]
 		else:
 			_coach.text = _reject_text(str(result.get("reason", "")), cell)
 		_paint()
@@ -66,30 +76,31 @@ func _reset_board() -> void:
 	_mgr.reset()
 	_rebuild_tiles()
 	_rebuild_pawns()
-	_coach.text = "P1 Kestrel deploys first. Click a highlighted west-box tile, then Confirm. Proposed — not Locked."
+	_coach.text = "Both sides deploy at once. Green south+west ring = Kestrel; red north+east ring = Ironjaw. Ready when placed. Proposed — not Locked."
 	_paint()
 
 
-func _confirm_pressed() -> void:
-	var result: Dictionary = _mgr.confirm()
+func _ready_pressed(player_id: int) -> void:
+	var result: Dictionary = _mgr.confirm(player_id)
 	if not bool(result.get("ok", false)):
 		_coach.text = _reject_text(str(result.get("reason", "")), Vector2i(-1, -1))
 		_paint()
 		return
 	if _mgr.phase == MatchPhase.DEPLOYMENT:
-		_coach.text = "P1 locked. P2 Ironjaw: place in the east 2×3 box, then Confirm."
+		var waiting := 2 if player_id == 0 else 1
+		_coach.text = "P%d ready. Waiting for P%d." % [player_id + 1, waiting]
 	_paint()
 
 
 func _on_start_match(snap: Dictionary) -> void:
 	_started = true
-	_coach.text = "Both sides confirmed. Positions locked. %s — CombatSim is not wired (Phase A duel unchanged)." % snap.get("phase_name", "TURN_1")
+	_coach.text = "Both sides ready. Positions locked. %s — CombatSim is not wired (Phase A duel unchanged)." % snap.get("phase_name", "TURN_1")
 	_paint()
 
 
 func _stub_action(kind: String) -> void:
 	if not _mgr.combat_actions_enabled():
-		_coach.text = "REJECT — %s disabled until both sides confirm deploy." % kind
+		_coach.text = "REJECT — %s disabled until both sides are ready." % kind
 	else:
 		_coach.text = "Turn 1 stub: %s is chrome-only. Phase A CombatSim still lives on main.tscn." % kind
 	_paint()
@@ -136,16 +147,21 @@ func _ensure_pawn(unit: Dictionary) -> ProtoPawnView:
 
 
 func _paint() -> void:
-	var legal := _mgr.legal_deploy_cells()
+	var legal_p1 := _mgr.legal_deploy_cells_for_player(0)
+	var legal_p2 := _mgr.legal_deploy_cells_for_player(1)
 	for cell in _tiles.keys():
 		var view: DeploymentTileView = _tiles[cell]
 		view.walkable = _mgr.is_walkable(cell)
 		var kind := ""
 		if _mgr.phase == MatchPhase.DEPLOYMENT:
-			if _in_zone(0, cell):
-				kind = "zone_p1" if _mgr.active_player == 0 and legal.has(cell) else ("locked" if bool(_mgr.confirmed.get(0, false)) else "")
-			elif _in_zone(1, cell):
-				kind = "zone_p2" if _mgr.active_player == 1 and legal.has(cell) else ("locked" if bool(_mgr.confirmed.get(1, false)) else "")
+			if legal_p1.has(cell):
+				kind = "zone_p1"
+			elif legal_p2.has(cell):
+				kind = "zone_p2"
+			elif _in_zone(0, cell) and bool(_mgr.ready.get(0, false)):
+				kind = "locked"
+			elif _in_zone(1, cell) and bool(_mgr.ready.get(1, false)):
+				kind = "locked"
 			if not view.walkable and (_in_zone(0, cell) or _in_zone(1, cell)):
 				kind = "invalid"
 			if _mgr.occupant_at(cell) != "":
@@ -179,24 +195,32 @@ func _sync_hud() -> void:
 	_phase_label.text = "Phase %s" % snap["phase_name"]
 	if _mgr.phase == MatchPhase.TURN_1:
 		_phase_label.text = "TURN 1  ·  positions locked  ·  Kestrel seat first (stub)"
-	var p1 := "placed" if _unit_placed("kestrel") else "open"
-	var p2 := "placed" if _unit_placed("ironjaw") else "open"
-	if bool(_mgr.confirmed.get(0, false)):
-		p1 = "locked"
-	if bool(_mgr.confirmed.get(1, false)):
-		p2 = "locked"
-	_status.text = "Active P%d  ·  Kestrel %s  ·  Ironjaw %s  ·  selected %s" % [
-		_mgr.active_player + 1, p1, p2, _mgr.selected_unit_id,
+	var p1 := _side_status(0, "kestrel")
+	var p2 := _side_status(1, "ironjaw")
+	_status.text = "Simultaneous  ·  Kestrel %s  ·  Ironjaw %s  ·  selected %s" % [
+		p1, p2, _mgr.selected_unit_id,
 	]
-	_confirm_btn.disabled = not _mgr.can_confirm()
-	_confirm_btn.text = "Confirm P%d" % (_mgr.active_player + 1)
+	_ready_p1_btn.disabled = not _mgr.can_confirm(0)
+	_ready_p2_btn.disabled = not _mgr.can_confirm(1)
+	_ready_p1_btn.text = "P1 ready" if bool(_mgr.ready.get(0, false)) else "Ready P1"
+	_ready_p2_btn.text = "P2 ready" if bool(_mgr.ready.get(1, false)) else "Ready P2"
 	if _mgr.phase == MatchPhase.TURN_1:
-		_confirm_btn.text = "Both confirmed"
-		_confirm_btn.disabled = true
+		_ready_p1_btn.text = "P1 ready"
+		_ready_p2_btn.text = "P2 ready"
+		_ready_p1_btn.disabled = true
+		_ready_p2_btn.disabled = true
 	var combat_on := _mgr.combat_actions_enabled()
 	_walk_btn.disabled = not combat_on
 	_combat_btn.disabled = not combat_on
 	_end_turn_btn.disabled = not combat_on
+
+
+func _side_status(player_id: int, unit_id: String) -> String:
+	if bool(_mgr.ready.get(player_id, false)):
+		return "ready"
+	if _unit_placed(unit_id):
+		return "placed"
+	return "open"
 
 
 func _pick_cell(local: Vector2) -> Vector2i:
@@ -216,6 +240,14 @@ func _in_zone(player_id: int, cell: Vector2i) -> bool:
 	return zone != null and zone.contains(cell)
 
 
+func _unit_for_cell(cell: Vector2i) -> String:
+	if _in_zone(0, cell):
+		return "kestrel"
+	if _in_zone(1, cell):
+		return "ironjaw"
+	return ""
+
+
 func _unit_placed(unit_id: String) -> bool:
 	var unit := _mgr.unit_by_id(unit_id)
 	return not unit.is_empty() and bool(unit.get("placed", false))
@@ -229,7 +261,7 @@ func _reject_text(reason: String, dest: Vector2i) -> String:
 	var where := _cell_text(dest) if dest.x >= 0 else "that tile"
 	match reason:
 		"outside_zone":
-			return "REJECT — %s is outside this side's deployment zone." % where
+			return "REJECT — %s is outside this side's half of the border ring." % where
 		"occupied":
 			return "REJECT — %s is occupied." % where
 		"not_walkable":
@@ -237,15 +269,13 @@ func _reject_text(reason: String, dest: Vector2i) -> String:
 		"out_of_bounds":
 			return "REJECT — out of bounds."
 		"units_not_placed":
-			return "REJECT — place the required fighter before Confirm."
+			return "REJECT — place the required fighter before Ready."
 		"side_locked":
-			return "REJECT — this side is already confirmed."
-		"not_your_turn":
-			return "REJECT — sequential hot-seat: wait for the active player."
+			return "REJECT — this side is already ready."
 		"wrong_phase":
 			return "REJECT — deployment is over. Turn 1 stub only."
 		"already_confirmed":
-			return "REJECT — already confirmed."
+			return "REJECT — already ready."
 		_:
 			return "REJECT — %s." % reason
 
@@ -266,44 +296,51 @@ func _build_hud() -> void:
 	_status = _hud_label(hud, Vector2(16, 52), 14)
 	_coach = _hud_label(hud, Vector2(16, 74), 13)
 
-	_confirm_btn = Button.new()
-	_confirm_btn.text = "Confirm P1"
-	_confirm_btn.position = Vector2(16, 104)
-	_confirm_btn.size = Vector2(128, 28)
-	_confirm_btn.pressed.connect(_confirm_pressed)
-	hud.add_child(_confirm_btn)
+	_ready_p1_btn = Button.new()
+	_ready_p1_btn.text = "Ready P1"
+	_ready_p1_btn.position = Vector2(16, 104)
+	_ready_p1_btn.size = Vector2(100, 28)
+	_ready_p1_btn.pressed.connect(_ready_pressed.bind(0))
+	hud.add_child(_ready_p1_btn)
+
+	_ready_p2_btn = Button.new()
+	_ready_p2_btn.text = "Ready P2"
+	_ready_p2_btn.position = Vector2(124, 104)
+	_ready_p2_btn.size = Vector2(100, 28)
+	_ready_p2_btn.pressed.connect(_ready_pressed.bind(1))
+	hud.add_child(_ready_p2_btn)
 
 	var reset := Button.new()
 	reset.text = "Reset deploy"
-	reset.position = Vector2(152, 104)
-	reset.size = Vector2(120, 28)
+	reset.position = Vector2(232, 104)
+	reset.size = Vector2(112, 28)
 	reset.pressed.connect(_reset_board)
 	hud.add_child(reset)
 
 	_walk_btn = Button.new()
 	_walk_btn.text = "Walk"
-	_walk_btn.position = Vector2(284, 104)
+	_walk_btn.position = Vector2(352, 104)
 	_walk_btn.size = Vector2(72, 28)
 	_walk_btn.pressed.connect(_stub_action.bind("Walk"))
 	hud.add_child(_walk_btn)
 
 	_combat_btn = Button.new()
 	_combat_btn.text = "Combat"
-	_combat_btn.position = Vector2(364, 104)
+	_combat_btn.position = Vector2(432, 104)
 	_combat_btn.size = Vector2(80, 28)
 	_combat_btn.pressed.connect(_stub_action.bind("Combat"))
 	hud.add_child(_combat_btn)
 
 	_end_turn_btn = Button.new()
 	_end_turn_btn.text = "End Turn"
-	_end_turn_btn.position = Vector2(452, 104)
+	_end_turn_btn.position = Vector2(520, 104)
 	_end_turn_btn.size = Vector2(92, 28)
 	_end_turn_btn.pressed.connect(_stub_action.bind("End Turn"))
 	hud.add_child(_end_turn_btn)
 
-	var legend := _hud_label(hud, Vector2(556, 108), 11)
-	legend.size = Vector2(392, 24)
-	legend.text = "Green west 2×3 = P1  ·  Red east 2×3 = P2  ·  gold = selected  ·  Walk/Combat/End Turn stub after both confirm"
+	var legend := _hud_label(hud, Vector2(624, 104), 11)
+	legend.size = Vector2(328, 32)
+	legend.text = "Green S+W ring = P1  ·  Red N+E ring = P2  ·  gold = selected  ·  Walk/Combat/End Turn stub after both Ready"
 
 
 func _hud_label(host: Node, pos: Vector2, font_size: int) -> Label:
