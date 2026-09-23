@@ -2,7 +2,9 @@ extends RefCounted
 class_name SpellKits
 
 ## Phase A locked kit only. Later spells stay out of this table.
-## Advance is Ironjaw-only (Locked). Kestrel never has Advance and never gains Impact.
+## Advance is Ironjaw-only (Locked). Legal dests are the 4 ortho neighbors
+## (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. No Manhattan 2,
+## no diagonal / (1,1). Kestrel never has Advance and never gains Impact.
 ## Detonate is Kestrel-only. Shoulder / Crush are Ironjaw-only.
 const ADVANCE := "advance"
 const STRIKE := "strike"
@@ -22,10 +24,11 @@ const SPELLS := {
 		"ap": 3,
 		"mp": 0,
 		"mp_mode": "none",
-		"range_mode": "manhattan",
+		# Cardinal only: Chebyshev 1 and Manhattan 1 (the 4 ortho neighbors).
+		"range_mode": "cardinal",
 		"move_mode": "teleport",
 		"min_range": 1,
-		"max_range": 2,
+		"max_range": 1,
 		"rolls": false,
 		"element": "neutral",
 		"base_damage": 0,
@@ -149,10 +152,14 @@ static func rolls(spell_id: String) -> bool:
 	return bool(def.get("rolls", false))
 
 
-## Player-facing band. Internal range_mode stays chebyshev / manhattan.
+## Player-facing band. Internal range_mode stays chebyshev / manhattan / cardinal.
+## Advance is cardinal: exactly the 4 orthogonal neighbors (N/S/E/W).
 static func range_text(def: Dictionary) -> String:
 	var lo := int(def.get("min_range", 0))
 	var hi := int(def.get("max_range", 0))
-	if str(def.get("range_mode", "chebyshev")) == "manhattan":
+	var mode := str(def.get("range_mode", "chebyshev"))
+	if mode == "cardinal":
+		return "4 orthogonal neighbors"
+	if mode == "manhattan":
 		return "range %d–%d Manhattan" % [lo, hi]
 	return "range %d–%d" % [lo, hi]
