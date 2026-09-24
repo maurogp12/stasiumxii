@@ -1,21 +1,34 @@
-# Phase E — listen-host proto
+# Phase E — host core (listen-host and dedicated)
 
-**Status:** listen-host playtest. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, not a dedicated server, and not matchmaking/auth.
+**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, and not matchmaking or login.
 
 Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` directly when `NetSession` is HOTSEAT.
 
 ## Why ENet (not WebSocket)
 
-- Desktop Godot 4 already ships high-level MultiplayerAPI + ENet. Two editor/export windows on localhost or LAN is the Mauro playtest.
+- Desktop Godot 4 already ships high-level MultiplayerAPI + ENet. The playtest is Godot windows on localhost or LAN, including a headless dedicated process.
 - Direct IP + port matches the proto (anonymous, no lobby service).
 - Reliable RPC is enough to send an Intent and broadcast `events` + `snapshot`.
-- WebSocket (`WebSocketMultiplayerPeer`) is the better pick for an HTML5 client. Same RPC surface later; do not invent it here.
+- Moving the dedicated process to another machine is `--join <ip>:<port>` on this same host core. It is not a new protocol.
+- WebSocket (`WebSocketMultiplayerPeer`) stays the later HTML5 option. Same RPC surface later; do not invent it here.
 
-## Why listen-host only
+## Dedicated process and listen-host
 
-The host window **is** seat 0 (Kestrel) **and** the CombatSim authority. There is no dedicated server process.
+The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Marks, Impact, Burn, terrain, elevation, pushes, and death. Clients send Intent and apply snapshot/events. They never roll.
 
-If Mauro later wants a headless dedicated host (no player on the server), **stop and Lock that** — do not invent it on top of this proto. The Intent/`submit` envelope would stay the same.
+```
+godot --headless --path . -- --dedicated 7777
+```
+
+First joiner is seat 0 (Kestrel). Second joiner is seat 1 (Ironjaw). Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request.
+
+A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
+
+**Listen-host** remains behind `--host`. That window is seat 0 and the authority. One guest is seat 1. After a guest disconnect, the listen-host slot can be taken again. The dedicated stub does not do that.
+
+Hot-seat is the default. `--hotseat` forces it.
+
+The Intent/`submit` envelope is the same on every path.
 
 ## Unchanged API
 
@@ -61,16 +74,17 @@ Walk is dest-click only. `intent.path` is **ignored** (not authoritative). Advan
 
 Implemented order:
 
-1. Host constructs / owns `CombatSim` (`NetSession` mode HOST).
+1. The authority owns `CombatSim` (`NetSession` mode HOST or DEDICATED). Same submit / tick / broadcast path.
 2. Client sends the same Intent it would `submit` locally today (`IntentCodec` over ENet RPC).
-3. Host stamps `intent.seat` from peer ownership (host=0, guest=1), then `HostValidate.validate_intent` → `CombatSim.submit`.
-4. Host broadcasts `events` + `snapshot` + `legal_intents` (today's `_accept` / `_reject` payload). Guest hydrates a read-only replica via `CombatSim.apply_host_snapshot` for HUD `preview_cast` only.
+3. The authority stamps `intent.seat` from peer ownership, then `HostValidate.validate_intent` → `CombatSim.submit`.
+4. The authority broadcasts `events` + `snapshot` + seat-filtered `legal_intents`, plus `viewer_seat`. Each client hydrates a read-only replica via `CombatSim.apply_host_snapshot` for HUD `preview_cast` only.
 
 ## Seat ownership
 
 Hot-seat is replaced by seat ownership when online:
 
-- Host owns seat 0 (Kestrel). Guest owns seat 1 (Ironjaw).
+- **Dedicated:** the server process owns neither seat. Join order assigns seat 0, then seat 1. Each client learns its seat from `viewer_seat`.
+- **Listen-host:** the host window owns seat 0 (Kestrel). The guest owns seat 1 (Ironjaw).
 - Deploy: each window only places / readies its seat. Simultaneous still — both can act at once.
 - Combat: only the owner of `active_seat` can submit. The other window watches.
 
@@ -90,7 +104,7 @@ Every host broadcast (after `submit`, and on each timer tick that changes the di
 | `turn_time_seconds` | Host CombatSim | `ceil(remaining)` for the TIME readout. |
 | `turn_timer` | Host CombatSim | Stamp `"host"` — not a client clock. |
 | `active_seat` | Host CombatSim | Whose turn it is. `turn_start` / `end_turn.next_seat` events fire on seat change. |
-| `local_seat` | NetSession decorate | This window's seat (`0` host, `1` guest, `-1` hot-seat). Also under `net.local_seat`. |
+| `local_seat` | NetSession decorate | This window's seat (`0` listen-host or first dedicated client, `1` guest or second client, `-1` hot-seat or the dedicated process). Also under `net.local_seat`. `viewer_seat` on the packet assigns it. |
 | `net.active_seat` | NetSession decorate | Copy of `active_seat` next to `local_seat` so Godot can compare without inventing kit policy. |
 
 Godot HUD:
@@ -102,14 +116,16 @@ Godot HUD:
 
 ## Out of scope (do not invent)
 
-- Dedicated server, relay, matchmaking, auth
+- Matchmaking, login, relay
+- Full reconnect (dedicated disconnect is a stub: the seat stays reserved)
 - MultiplayerSynchronizer
+- WebSocket / HTML5 client
 - Fog / hidden enemy
 - Height → hit / facing / LoS
 - New Advance costs
 - Changing Locked kit numbers
-- Blends / Residue / Gloam
+- Blends / Residue / Gloam / Pulse
 
 ## Local still works
 
-Hot-seat `main.tscn` keeps calling `CombatSim.submit` directly. Open `scenes/online_lobby.tscn` or pass `--host` / `--join` for the listen-host path.
+Hot-seat `main.tscn` keeps calling `CombatSim.submit` directly. Open `scenes/online_lobby.tscn` or pass `--host` / `--join` for listen-host. Pass `--dedicated 7777` for the headless authority (clients `--join` that IP).

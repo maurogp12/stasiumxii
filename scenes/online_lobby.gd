@@ -15,7 +15,7 @@ func _ready() -> void:
 	_build()
 	if not NetSession.connection_changed.is_connected(_on_connection):
 		NetSession.connection_changed.connect(_on_connection)
-	_status.text = "Listen-host proto. Host owns CombatSim + seed. Guest submits Intent."
+	_status.text = "Join a dedicated host by IP, or host a listen-host window. Clients send Intent."
 
 
 func _build() -> void:
@@ -38,7 +38,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "ENet (Godot MultiplayerAPI). Host is Kestrel (seat 0) and the only CombatSim. Guest is Ironjaw (seat 1) and never rolls. Local hot-seat is unchanged on main.tscn."
+	blurb.text = "ENet (Godot MultiplayerAPI). Host match is optional listen-host: this window is Kestrel and owns the sim. A dedicated process is headless (--dedicated 7777); Join match uses its IP. First joiner is Kestrel, second is Ironjaw. Clients send Intent only. Local hot-seat stays on main.tscn."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 

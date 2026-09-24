@@ -1,6 +1,6 @@
 # STASIUM XII
 
-Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client. Clients submit Intent; only the host rolls.
+Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicated** headless host. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client. Clients submit Intent; only the authority rolls.
 
 ## How to play
 
@@ -31,7 +31,7 @@ Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. 
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto. ENet / MultiplayerAPI RPC. Host owns CombatSim. Guest submits Intent. HOTSEAT mode leaves `main.tscn` on the local path. RPC only (no scene sync). Not a dedicated server. |
+| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. **Listen-host** (`--host`) is the same core with seat 0 in that window. Clients submit Intent and apply snapshot/events. HOTSEAT leaves `main.tscn` on the local path. RPC only (no scene sync). |
 | `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
@@ -59,7 +59,7 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 - Kestrel then Ironjaw
 - **Locked Stun (A′):** Stun 1 blocks move + cast + face. When that seat's turn starts, CombatSim auto-resolves `end_turn` (player never presses End Turn). `legal_intents` has no move/cast/face (auto path only). `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is the one that is skipped. HUD greys Walk/Face/spells and shows a STUN badge. Client shows a skip banner/log from that event and does not re-implement the skip.
 - **Director Locked Shoulder:** occupied dest = no-move + `push_blocked` (hard body-block, no stagger; Impact stays the hit +1). Walkable empty dest pushes for **+1 Impact**. OOB / truly blocked (not lava) = bounce + stagger **4 HP** (+ **1 MP** if current MP ≥ 1) for **+2 Impact only** (no stack with +1). Lava is hazardous for the forced push: the unit lands and gains **Burn**. Voluntary walk onto lava stays impassable. Client toasts **PushBlocked** vs **Bounce**, does not hop, still plays hit/Impact feedback.
-- **Director Locked Burn:** 4 HP at the start of the victim’s turn, duration 2. Re-apply refreshes duration and does not stack. Continues after leaving lava. Death check after each tick. Snapshot `burn_remaining` plus `status`/`burn` events feed Godot chrome and host sync. The fields stay on CombatSim so a later dedicated host can own the same state; this slice does not add that server.
+- **Director Locked Burn:** 4 HP at the start of the victim’s turn, duration 2. Re-apply refreshes duration and does not stack. Continues after leaving lava. Death check after each tick. Snapshot `burn_remaining` plus `status`/`burn` events feed Godot chrome. The dedicated host process owns that CombatSim state; clients only hydrate it.
 
 ## Open (not Locked) — deploy leftovers
 
@@ -81,7 +81,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Omitted (not silent defaults)
 
-- Dedicated server / matchmaking / login / MultiplayerSynchronizer (listen-host ENet proto is in; see below)
+- Matchmaking / login / MultiplayerSynchronizer (dedicated headless host and optional listen-host are in; see below)
 - Step-shot, Rain, Longbow, Avalanche
 - Other classes (Mender, Gloam, Bastion)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
@@ -110,11 +110,39 @@ godot --headless --path . -s res://tests/run_host_validate_tests.gd
 godot --headless --path . -s res://tests/run_net_session_tests.gd
 ```
 
-## How to playtest online (listen-host proto)
+## How to playtest a dedicated host (three processes)
 
-**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Picked over WebSocket because this is a desktop playtest (two windows on localhost/LAN). WebSocket stays the later HTML5 option; same Intent RPC surface. **Listen-host only** — the host window is Kestrel (seat 0) and the CombatSim authority. No dedicated server. No login.
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. Moving the server to another machine is the join address, not a new protocol. No login.
 
-Local hot-seat is still the default `main.tscn` path.
+The dedicated process and the listen-host window share one host core in `NetSession`. The server owns the match, the turn, the 30s timer, HP/MP, Marks, Impact, Burn, terrain, elevation, pushes, and death. Clients send Intent and paint snapshot/events. They never roll and never tick the clock.
+
+Local hot-seat is still the default `main.tscn` path. Listen-host remains `--host`.
+
+**Machine B — headless authority (no seat):**
+
+```bash
+godot --headless --path . -- --dedicated 7777
+```
+
+**Machine A — first client (Kestrel / seat 0).** Intent and presentation only:
+
+```bash
+godot --path . --position 40,40 -- --join <server-ip>:7777
+```
+
+**Machine C — second client (Ironjaw / seat 1):**
+
+```bash
+godot --path . --position 1000,40 -- --join <server-ip>:7777
+```
+
+Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats: first client is Kestrel, second is Ironjaw. Seat 0’s **New Match** asks the server to reset; the server picks the new seed. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+
+Or open `scenes/online_lobby.tscn` on each client and **Join match** with the server IP and `7777`. **Host match** on that lobby is the listen-host path below, not the dedicated process.
+
+## How to playtest online (listen-host, optional)
+
+**Listen-host** — one window is Kestrel (seat 0) **and** the CombatSim authority. One guest is Ironjaw. Same ENet host core as `--dedicated`.
 
 **Two instances, one duel:**
 
@@ -128,9 +156,9 @@ godot --path . --position 1000,40 -- --join 127.0.0.1:7777
 
 Or open `scenes/online_lobby.tscn`, **Host match** on one window and **Join match** (`127.0.0.1` / `7777`) on the other. **Local hot-seat** on that lobby returns to the unchanged single-window path.
 
-Play: each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (host always Kestrel spells, guest always Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Guest never rolls and never ticks the clock. Host expiry auto End Turns — chrome only paints. New Match is host-only.
+Play (dedicated or listen-host): each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (seat 0 always Kestrel spells, seat 1 always Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
 
-LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
+Listen-host LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
 
 Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
 
