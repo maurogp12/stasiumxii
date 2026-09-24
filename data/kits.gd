@@ -453,6 +453,21 @@ static func display_name(class_id: String) -> String:
 			return ""
 
 
+## Display name for a snapshot resource field. The value comes from the unit.
+static func resource_label(resource_id: String) -> String:
+	match resource_id:
+		"pulse":
+			return "Pulse"
+		"umbral":
+			return "Umbral"
+		"shades":
+			return "Shades"
+		"aegis":
+			return "Aegis"
+		_:
+			return ""
+
+
 static func element_of(class_id: String) -> String:
 	match normalize_class_id(class_id):
 		CLASS_KESTREL:

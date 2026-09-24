@@ -63,9 +63,7 @@ func flash_impact() -> void:
 
 
 func _draw() -> void:
-	var fill := Color("#4a8a62")
-	if class_id == SpellKits.CLASS_IRONJAW:
-		fill = Color("#b04a4a")
+	var fill := _body_color()
 	if not alive:
 		fill = Color(0.35, 0.35, 0.38, 0.85)
 	if is_active:
@@ -88,7 +86,7 @@ func _draw() -> void:
 	var bar_origin := Vector2(-14, -28)
 	draw_rect(Rect2(bar_origin, Vector2(28, 4)), Color(0.12, 0.1, 0.12))
 	var ratio := 0.0 if max_hp <= 0 else clampf(float(maxi(hp, 0)) / float(max_hp), 0.0, 1.0)
-	var hp_color := Color("#6fcf97") if class_id != SpellKits.CLASS_IRONJAW else Color("#f08a8a")
+	var hp_color := _body_color().lightened(0.25)
 	draw_rect(Rect2(bar_origin, Vector2(28.0 * ratio, 4)), hp_color)
 
 	var font := ThemeDB.fallback_font
@@ -115,6 +113,20 @@ func _draw() -> void:
 		draw_rect(burn_badge, Color(0.92, 0.28, 0.1, 0.95))
 		_draw_flame(Vector2(burn_badge.position.x - 8.0, burn_y + 6.0))
 		draw_string(font, Vector2(-burn_size.x * 0.5, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))
+
+
+func _body_color() -> Color:
+	match class_id:
+		SpellKits.CLASS_IRONJAW:
+			return Color("#b04a4a")
+		SpellKits.CLASS_MENDER:
+			return Color("#3d6ea8")
+		SpellKits.CLASS_GLOAM:
+			return Color("#6a5088")
+		SpellKits.CLASS_BASTION:
+			return Color("#7a7364")
+		_:
+			return Color("#4a8a62")
 
 
 func _draw_flame(origin: Vector2) -> void:

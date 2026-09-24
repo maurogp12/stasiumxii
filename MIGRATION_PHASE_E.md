@@ -20,7 +20,7 @@ The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Mar
 godot --headless --path . -- --dedicated 7777
 ```
 
-The process does not start Kestrel vs Ironjaw. Clients confirm a class (`rpc_select_class`, reply `rpc_class_result`) and enter the queue (`rpc_enqueue`, reply `rpc_queue_result`). A pair is `rpc_match_assigned`. Join order still assigns seat 0, then seat 1. The class on that seat is the confirmed `class_id`. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and respawns the paired class ids.
+The process does not start Kestrel vs Ironjaw. Clients confirm a class (`rpc_select_class` → `rpc_class_result` `{ok, class_id, reason}`) and enter the queue (`rpc_enqueue` → `rpc_queue_result` `{status, reason}` where status is `waiting`, `matched`, or `rejected`). A pair is `rpc_match_assigned` `{type: "match_assigned", seat, class_id, classes, match_id}`. The board hydrates from the snapshot push. `NetSession.match_assigned()` is true once that match is live. Join order assigns seat 0, then seat 1. The class on that seat is the confirmed `class_id`. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and respawns the paired class ids. Locked card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`. Nightfold and the other `open_can_wait` edges stay gated.
 
 A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
 

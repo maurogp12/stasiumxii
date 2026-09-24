@@ -32,6 +32,7 @@ extends Node2D
 ## CombatSim.submit directly. The view never rolls.
 ## The dedicated process does not start the default Kestrel / Ironjaw pair.
 ## It paints when the SELECT_CLASS queue has paired two Locked classes.
+## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -240,6 +241,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
 		var cell := local_to_grid(mouse_position)
 		if not _in_bounds(cell):
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT and _snap_wall_cell(cell):
 			return
 		select_tile(cell)
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -641,9 +644,11 @@ func _paint_highlights() -> void:
 		(tile as BoardTile).set_highlight("")
 	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false) or _busy:
+		_paint_blocked(snap)
 		return
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
+		_paint_blocked(snap)
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
@@ -667,7 +672,18 @@ func _paint_highlights() -> void:
 		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(dest).set_highlight(highlight)
+	_paint_blocked(snap)
 	_sync_aim_preview()
+
+
+func _paint_blocked(snap: Dictionary) -> void:
+	for cell in SNAPSHOT_TILES.blocked_cells(snap):
+		if tiles.has(cell):
+			_tile_at(cell).set_highlight("blocked")
+
+
+func _snap_wall_cell(cell: Vector2i) -> bool:
+	return SNAPSHOT_TILES.blocked_cells(_sim().snapshot()).has(cell)
 
 
 func _paint_deploy_highlights(snap: Dictionary) -> void:

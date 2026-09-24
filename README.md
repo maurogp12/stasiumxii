@@ -34,6 +34,7 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 | `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. It does not spawn a default pair: players `SELECT_CLASS` (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`) then queue. A pair starts a match whose seats use those class ids. **Listen-host** (`--host`) is the same core with seat 0 fixed as Kestrel and the guest as Ironjaw. HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
 | `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Rejects any other `class_id`. Pairs the next two confirmed sessions. |
 | `scenes/online_lobby.tscn` | Five-class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
+| `scenes/class_select.tscn` | Same five-class confirm and Find Match. `match_assigned()` is true once the pair is live. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -85,7 +86,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 - Login / MultiplayerSynchronizer (listen-host ENet, the dedicated process, and the Locked-roster queue are in; see below)
 - Pulse, reconnect, relay
 - Step-shot, Rain, Longbow, Avalanche
-- `open_can_wait` kit edges (Nightfold miss refund, Intercept multi-guard, Neutral primary scope, AoE vs Invisible, Heartstop immunity/heal-overflow/shield stack, Water Ward 24 rider, cone/ward masks). The workbook v0.6 numbers for Mender / Gloam / Bastion are in.
+- `open_can_wait` kit edges (Nightfold miss refund, Intercept multi-guard, Neutral primary scope, AoE vs Invisible, Heartstop immunity/heal-overflow/shield stack, Water Ward 24 rider, cone/ward masks). The workbook v0.6 numbers for Mender / Gloam / Bastion are in. Card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`.
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
@@ -110,38 +111,49 @@ godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 godot --headless --path . -s res://tests/run_host_validate_tests.gd
 godot --headless --path . -s res://tests/run_net_session_tests.gd
+godot --headless --path . -s res://tests/run_class_select_tests.gd
 godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 ```
 
-## How to playtest a dedicated host (three processes)
+## How to playtest SELECT_CLASS → dedicated match
 
-**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. Moving the server to another machine is the join address, not a new protocol. No login. The dedicated queue (class pick, then pair) is the next section. Listen-host stays a fixed Kestrel / Ironjaw duel.
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. Moving the server to another machine is the join address, not a new protocol. No login. Listen-host stays a fixed Kestrel / Ironjaw duel.
 
-The dedicated process and the listen-host window share one host core in `NetSession`. The server owns the match, the turn, the 30s timer, HP/MP, Marks, Impact, Burn, terrain, elevation, pushes, and death. Clients send Intent and paint snapshot/events. They never roll and never tick the clock.
+The dedicated process is not a fighter. Each player confirms a class, then joins the queue. The first two confirmed players become a match. Seat 0 is whoever queued first; seat 1 is whoever queued second. Allowlist: **kestrel**, **ironjaw**, **mender**, **gloam**, **bastion**. HUD paints Pulse / Umbral / Shades / Aegis from the snapshot (`unit.resources` mirrors those fields). Snap Wall paints `blocked_tiles` entries `{x, y, pos, turns}` and `snap_wall` events (`to`, `cells`). There is no `walls` key. Card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`. Nightfold stays gated (`open_can_wait`).
 
-Local hot-seat is still the default `main.tscn` path. Listen-host remains `--host`.
+RPC bind:
 
-**Machine B — headless authority (no seat):**
+- `NetSession.select_class(class_id)` → `rpc_select_class` → `rpc_class_result` `{ok, class_id, reason}`
+- `rpc_enqueue` → `rpc_queue_result` `{status, reason}` where status is `waiting`, `matched`, or `rejected`
+- `rpc_match_assigned` `{type: "match_assigned", seat, class_id, classes, match_id}` then the board hydrates from the snapshot. `NetSession.match_assigned()` is true when the match is live
+- Statuses on `connection_changed`: `class_selected`, `class_rejected`, `waiting`, `queue_rejected`, `matched`
 
-```bash
-godot --headless --path . -- --dedicated 7777
-```
-
-**Machine A — first client.** Intent and presentation only. Pass `--class` with one allowlist id (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`):
-
-```bash
-godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --queue <server-ip>:7777 --class kestrel
-```
-
-**Machine C — second client** (any other Locked class, including a mirror):
+**Three processes** (lobby scene). The dedicated host is not a fighter. `--class` accepts any allowlist id.
 
 ```bash
-godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue <server-ip>:7777 --class bastion
+# Machine B — dedicated host (no seat). Leave it open.
+godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --dedicated 7777
+
+# Machine A — first client
+godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class kestrel
+
+# Machine C — second client. Board opens when the pair matches.
+godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class ironjaw
 ```
 
-Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. The class on a seat is the class that peer confirmed, not a fixed Kestrel / Ironjaw pair. Seat 0’s **New Match** asks the server to reset with those same class ids; the server picks the new seed. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+Other pairs use the same two client lines with `--class mender`, `--class gloam`, or `--class bastion`. Machine B should read `Match m1 — seat 0 <first class>, seat 1 <second class>`. After deploy, the kit bar is that seat's Locked card ids (Mend / Cut / Bash, and so on). Nightfold is not on the bar.
 
-`--join` without `--queue` is the listen-host guest path below. **Host match** / **Join match** on the lobby are that fixed duel. **Host dedicated** / class button / **Join queue** are the dedicated path.
+Buttons: Machine B presses **Host dedicated**. Machine A and Machine C press a class, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
+
+Same computer: `127.0.0.1`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Seat 0’s **New Match** asks the server to reset with those same class ids. A dropped client is a stub: that seat stays reserved. No reconnect.
+
+Verify:
+
+```bash
+godot --headless --path . -s res://tests/run_class_select_tests.gd
+godot --headless --path . -s res://tests/run_net_session_tests.gd
+godot --headless --path . -s res://tests/run_matchmaking_tests.gd
+```
 
 ## How to playtest online (listen-host, optional)
 

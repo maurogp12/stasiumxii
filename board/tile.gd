@@ -39,9 +39,14 @@ func _draw() -> void:
 			color = Color(0.78, 0.62, 0.22, 1.0)
 		"locked":
 			color = Color(0.42, 0.40, 0.48, 1.0)
-	if is_selected:
+		"blocked":
+			color = Color(0.14, 0.14, 0.16, 1.0)
+	if is_selected and highlight != "blocked":
 		color = Color(1.0, 0.85, 0.2, 1.0)
 	draw_colored_polygon(points, color)
+	if highlight == "blocked":
+		draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
+		draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
 	var outline := PackedVector2Array(points)
 	outline.append(points[0])
 	draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
