@@ -195,16 +195,15 @@ Client → dedicated authority:
 | Field | RPC | Args |
 | --- | --- | --- |
 | `select_class` | `rpc_select_class` | `class_id: String` |
-| `queue` | `rpc_enter_matchmaking` | none |
+| `queue` | `rpc_enqueue` | none |
 
 Authority → client:
 
 | Field | RPC | Args |
 | --- | --- | --- |
-|  | `rpc_class_selected` | `class_id: String` |
-|  | `rpc_class_rejected` | `reason: String`, `class_id: String` |
-|  | `rpc_matchmaking_status` | `status: String` — `waiting`, then `matched`, or `rejected:<reason>` |
-| `match_assigned` | `rpc_match_found` | `{type: "match_assigned", seat, class_id, classes, match_id}` after the state push |
+|  | `rpc_class_result` | `{ok, class_id, reason}` |
+|  | `rpc_queue_result` | `{status, reason}` — `status` is `waiting`, `matched`, or `rejected` |
+| `match_assigned` | `rpc_match_assigned` | `{type: "match_assigned", seat, class_id, classes, match_id}` after the state push |
 |  | `rpc_push_state` | packed snapshot (existing) |
 
 Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_matched`, `not_dedicated`, `no_seat`.
@@ -213,7 +212,7 @@ Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_ma
 
 `snapshot.prematch`: `phase` is `SELECT_CLASS`, `MATCHMAKING`, or `MATCH`; `local_class_id`, `local_queued`, `opponent_queued`, `match_live`. `snapshot.server_mode` is `dedicated` or `host`. `snapshot.net.dedicated` stays true on a dedicated client's hydrated view.
 
-Unit fields: `umbral` / `umbral_cap` (Gloam, 0–4), `shades` (max 2) / `shade`, `pulse` / `pulse_cap` (Mender, 0–6), `aegis` / `aegis_cap` (Bastion, 0–4), `invisible`, `shield` / `shield_turns`, `hit_immunity`, `skip_next_mp`, `exit_tax`, `mastery`, `resist`. Snap Wall cells are `snapshot.blocked_tiles` (`pos`, `turns`) while a Bastion is in the match, else `[]`. `snapshot.snap_walls` and `snapshot.snap_wall_active` stay beside that key.
+Unit fields and `unit.resources`: `pulse` (Mender, 0–6), `umbral` (Gloam, 0–4), `shades` (max 2), `aegis` (Bastion, 0–4), plus `mastery` and `resist` at 0. Snap Wall cells are `snapshot.blocked_tiles` (`x`, `y`, `pos`, `turns`) while a Bastion is in the match, else `[]`. The cast event type is `snap_wall` (`to` and `cells`). There is no `walls` event.
 
 `open_can_wait` (submit reason, not resolved): Nightfold; Intercept when more than one Bastion could guard; Neutral primary scope; AoE versus Invisible; Heartstop immunity refresh, heal overflow, and shield stacking; the Water Ward 24 rider (Ward base stays 20); cone/ward masks.
 

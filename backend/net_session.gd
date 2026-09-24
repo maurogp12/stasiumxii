@@ -232,6 +232,11 @@ func match_is_live() -> bool:
 	return _match_live
 
 
+## Chrome name for the dedicated match. True after both seats are queued and paired.
+func match_assigned() -> bool:
+	return _match_live
+
+
 ## Local confirm before connect. Invalid ids do not clear a stored class.
 func select_class(class_id: String) -> Dictionary:
 	var normalized := SpellKits.normalize_class_id(class_id)
@@ -618,32 +623,31 @@ func rpc_select_class(class_id: String) -> void:
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
 	if mode != Mode.DEDICATED:
-		rpc_class_rejected.rpc_id(peer_id, "not_dedicated", class_id)
+		_send_class_result(peer_id, false, class_id, "not_dedicated")
 		return
 	var seat := seat_for_peer(peer_id)
 	if seat < 0:
-		rpc_class_rejected.rpc_id(peer_id, "no_seat", class_id)
+		_send_class_result(peer_id, false, class_id, "no_seat")
 		return
 	var session_id := _session_for_peer(peer_id)
 	_queue().bind_seat(session_id, seat)
 	var result: Dictionary = _queue().select_class(session_id, class_id)
 	if not bool(result.get("ok", false)):
-		rpc_class_rejected.rpc_id(peer_id, str(result.get("reason", "invalid_class")), class_id)
+		_send_class_result(peer_id, false, class_id, str(result.get("reason", "invalid_class")))
 		return
-	rpc_class_selected.rpc_id(peer_id, str(result.get("class_id", "")))
+	_send_class_result(peer_id, true, str(result.get("class_id", "")), "")
 
 
+## Authority → client. Fields: ok, class_id, reason.
 @rpc("authority", "reliable")
-func rpc_class_selected(class_id: String) -> void:
+func rpc_class_result(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
-	selected_class_id = class_id
-	connection_changed.emit("class_selected")
-
-
-@rpc("authority", "reliable")
-func rpc_class_rejected(reason: String, class_id: String) -> void:
-	if mode != Mode.CLIENT:
+	var class_id := str(payload.get("class_id", ""))
+	var reason := str(payload.get("reason", ""))
+	if bool(payload.get("ok", false)):
+		selected_class_id = class_id
+		connection_changed.emit("class_selected")
 		return
 	lobby_text = "Class rejected (%s)." % reason
 	connection_changed.emit("class_rejected")
@@ -653,34 +657,36 @@ func rpc_class_rejected(reason: String, class_id: String) -> void:
 
 ## Client → dedicated authority. Requires a confirmed class on that peer.
 @rpc("any_peer", "reliable")
-func rpc_enter_matchmaking() -> void:
+func rpc_enqueue() -> void:
 	if not is_authority():
 		return
 	var peer_id := multiplayer.get_remote_sender_id()
 	if mode != Mode.DEDICATED:
-		rpc_matchmaking_status.rpc_id(peer_id, "rejected:not_dedicated")
+		_send_queue_result(peer_id, "rejected", "not_dedicated")
 		return
 	var seat := seat_for_peer(peer_id)
 	if seat < 0:
-		rpc_matchmaking_status.rpc_id(peer_id, "rejected:no_seat")
+		_send_queue_result(peer_id, "rejected", "no_seat")
 		return
 	var session_id := _session_for_peer(peer_id)
 	_queue().bind_seat(session_id, seat)
 	var result: Dictionary = _queue().enqueue(session_id)
 	if not bool(result.get("ok", false)):
-		rpc_matchmaking_status.rpc_id(peer_id, "rejected:%s" % str(result.get("reason", "class_required")))
+		_send_queue_result(peer_id, "rejected", str(result.get("reason", "class_required")))
 		return
 	if bool(result.get("matched", false)):
 		var match: Dictionary = result.get("match", {})
 		_boot_dedicated_match(match)
 		return
-	rpc_matchmaking_status.rpc_id(peer_id, "waiting")
+	_send_queue_result(peer_id, "waiting", "")
 
 
+## Authority → client. Fields: status (waiting | matched | rejected), reason.
 @rpc("authority", "reliable")
-func rpc_matchmaking_status(status: String) -> void:
+func rpc_queue_result(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
+	var status := str(payload.get("status", ""))
 	if status == "waiting":
 		_local_queued = true
 		_opponent_queued = false
@@ -694,14 +700,14 @@ func rpc_matchmaking_status(status: String) -> void:
 		_match_live = true
 		_prematch_phase = "MATCH"
 		return
-	if status.begins_with("rejected:"):
-		lobby_text = "Queue rejected (%s)." % status.trim_prefix("rejected:")
+	if status == "rejected":
+		lobby_text = "Queue rejected (%s)." % str(payload.get("reason", ""))
 		connection_changed.emit("queue_rejected")
 
 
 ## Authority → client after the match snapshot push. Carries this seat's class_id.
 @rpc("authority", "reliable")
-func rpc_match_found(payload: Dictionary) -> void:
+func rpc_match_assigned(payload: Dictionary) -> void:
 	if mode != Mode.CLIENT:
 		return
 	var seat := int(payload.get("seat", -1))
@@ -899,7 +905,7 @@ func _on_connected_to_server() -> void:
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
 		if _queue_client and SpellKits.is_roster_class(selected_class_id):
 			rpc_select_class.rpc_id(1, selected_class_id)
-			rpc_enter_matchmaking.rpc_id(1)
+			rpc_enqueue.rpc_id(1)
 		_update_window_title()
 
 
@@ -1087,6 +1093,25 @@ func _class_ids_from_config(config: Dictionary) -> Array[String]:
 	return out
 
 
+func _send_class_result(peer_id: int, ok: bool, class_id: String, reason: String) -> void:
+	if peer_id <= 1:
+		return
+	rpc_class_result.rpc_id(peer_id, {
+		"ok": ok,
+		"class_id": class_id,
+		"reason": reason,
+	})
+
+
+func _send_queue_result(peer_id: int, status: String, reason: String) -> void:
+	if peer_id <= 1:
+		return
+	rpc_queue_result.rpc_id(peer_id, {
+		"status": status,
+		"reason": reason,
+	})
+
+
 func _boot_dedicated_match(match: Dictionary) -> void:
 	var raw: Array = match.get("class_ids", [])
 	if raw.size() < 2:
@@ -1102,7 +1127,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 		var peer_id := peer_for_seat(seat)
 		if peer_id <= 1:
 			continue
-		rpc_matchmaking_status.rpc_id(peer_id, "matched")
+		_send_queue_result(peer_id, "matched", "")
 		var payload: Dictionary = {
 			"type": "match_assigned",
 			"seat": seat,
@@ -1110,7 +1135,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 			"classes": ids,
 			"match_id": match_id,
 		}
-		rpc_match_found.rpc_id(peer_id, payload)
+		rpc_match_assigned.rpc_id(peer_id, payload)
 	connection_changed.emit("matched")
 
 

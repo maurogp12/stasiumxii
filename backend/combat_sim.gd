@@ -429,7 +429,7 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 func snapshot() -> Dictionary:
 	var units: Array = []
 	for unit in _units:
-		units.append(unit.duplicate(true))
+		units.append(_unit_snapshot(unit))
 	var flow_snap := _flow.snapshot()
 	var class_ids: Array = _class_ids()
 	var seat_classes: Dictionary = {0: "", 1: ""}
@@ -2629,10 +2629,11 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		_intent_log.append(intent)
 		_last_coach = "%s Snap Wall on %s (−%d AP, −%d Aegis)." % [actor["name"], _cell_text(dest), ap_cost, spent]
 		_last_events.append({
-			"type": "cast",
+			"type": "snap_wall",
 			"spell": spell_id,
 			"seat": actor["seat"],
 			"to": dest,
+			"cells": [dest],
 			"rolled": false,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
@@ -2919,17 +2920,40 @@ func _add_snap_wall(cell: Vector2i, turns: int, owner_seat: int) -> void:
 	})
 
 
+func _unit_snapshot(unit: Dictionary) -> Dictionary:
+	var copy: Dictionary = unit.duplicate(true)
+	# Unit fields are the live values. resources mirrors them for chrome readers.
+	copy["resources"] = {
+		"pulse": int(unit.get("pulse", 0)),
+		"umbral": int(unit.get("umbral", 0)),
+		"shades": int(unit.get("shades", 0)),
+		"aegis": int(unit.get("aegis", 0)),
+	}
+	return copy
+
+
 func _blocked_tile_snapshot() -> Array:
 	if not _bastion_in_match():
 		return []
 	var out: Array = []
 	for item in _snap_wall_state:
 		var wall: Dictionary = item
+		var cell: Vector2i = wall["pos"]
 		out.append({
-			"pos": wall["pos"],
+			"x": cell.x,
+			"y": cell.y,
+			"pos": cell,
 			"turns": int(wall.get("turns", 0)),
 		})
 	return out
+
+
+func _blocked_entry_cell(entry: Dictionary) -> Vector2i:
+	if entry.has("pos"):
+		return _as_cell(entry.get("pos", Vector2i.ZERO))
+	if entry.has("x") or entry.has("y"):
+		return Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+	return _as_cell(entry)
 
 
 func _restore_blocked_tiles(snap: Dictionary) -> void:
@@ -2940,7 +2964,7 @@ func _restore_blocked_tiles(snap: Dictionary) -> void:
 			if typeof(entry) != TYPE_DICTIONARY:
 				continue
 			var rec: Dictionary = entry
-			var cell := _as_cell(rec.get("pos", Vector2i.ZERO))
+			var cell := _blocked_entry_cell(rec)
 			var key := "%d,%d" % [cell.x, cell.y]
 			if bool(seen.get(key, false)):
 				continue

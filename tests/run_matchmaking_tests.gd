@@ -267,6 +267,15 @@ func _test_source_stamps() -> void:
 	eq(SpellKits.spell(SpellKits.AMBUSH).is_empty(), false, "Ambush has a Locked cost table")
 	eq(SpellKits.spell(SpellKits.AEGIS_BREAK).is_empty(), false, "Aegis Break has a Locked cost table")
 	eq(kits.contains("open_can_wait"), true, "open_can_wait stays named")
+	eq(sim_src.contains("backend_pending"), false, "card spells are resolved, not backend_pending")
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	eq(net_src.contains("func rpc_select_class"), true, "rpc_select_class stays")
+	eq(net_src.contains("func rpc_class_result"), true, "rpc_class_result is the class reply")
+	eq(net_src.contains("func rpc_enqueue"), true, "rpc_enqueue is the queue entry")
+	eq(net_src.contains("func rpc_queue_result"), true, "rpc_queue_result is the queue reply")
+	eq(net_src.contains("func rpc_match_assigned"), true, "rpc_match_assigned assigns the match")
+	eq(net_src.contains("rpc_enter_matchmaking"), false, "queue RPC is rpc_enqueue")
+	eq(net_src.contains("rpc_match_found"), false, "match RPC is rpc_match_assigned")
 	eq(queue_src.contains("SELECT_CLASS"), true, "queue names SELECT_CLASS")
 	eq(queue_src.contains("Pulse"), false, "queue does not invent Pulse")
 	eq(queue_src.contains("Blends"), false, "queue does not invent Blends")
@@ -337,6 +346,15 @@ func _test_proto_defaults() -> void:
 		eq(int(unit["mp"]), 3, "%s combat MP stays 3" % class_id)
 		eq(int(unit["mastery"]), 0, "%s mastery is 0" % class_id)
 		eq(int(unit["resist"]), 0, "%s resist is 0" % class_id)
+		eq(unit.has("pulse"), true, "%s snapshot has pulse" % class_id)
+		eq(unit.has("umbral"), true, "%s snapshot has umbral" % class_id)
+		eq(unit.has("shades"), true, "%s snapshot has shades" % class_id)
+		eq(unit.has("aegis"), true, "%s snapshot has aegis" % class_id)
+		var resources: Dictionary = unit.get("resources", {})
+		eq(int(resources.get("pulse", -1)), int(unit["pulse"]), "%s resources.pulse matches the field" % class_id)
+		eq(int(resources.get("umbral", -1)), int(unit["umbral"]), "%s resources.umbral matches the field" % class_id)
+		eq(int(resources.get("shades", -1)), int(unit["shades"]), "%s resources.shades matches the field" % class_id)
+		eq(int(resources.get("aegis", -1)), int(unit["aegis"]), "%s resources.aegis matches the field" % class_id)
 
 
 func _test_umbral_cap() -> void:
@@ -532,7 +550,18 @@ func _test_snap_wall_cast() -> void:
 	var tiles: Array = _sim.snapshot()["blocked_tiles"]
 	eq(tiles.size(), 1, "blocked_tiles lists the Snap Wall")
 	eq(tiles[0]["pos"], Vector2i(2, 1), "blocked_tiles pos is the wall cell")
+	eq(int(tiles[0]["x"]), 2, "blocked_tiles x is readable without a pos key")
+	eq(int(tiles[0]["y"]), 1, "blocked_tiles y is readable without a pos key")
 	eq(int(tiles[0]["turns"]), 2, "Snap Wall lasts 2 turns")
+	var painted := false
+	for event in casted.get("events", []):
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "walls":
+			eq(false, true, "Snap Wall event type is snap_wall")
+		if str(event.get("type", "")) == "snap_wall" and event.get("to") == Vector2i(2, 1):
+			painted = true
+	eq(painted, true, "Snap Wall emits type snap_wall")
 	eq(_move_offered(0, Vector2i(2, 1)), false, "Snap Wall blocks walk")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "wall ticks on the next turn start")

@@ -20,7 +20,7 @@ The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Mar
 godot --headless --path . -- --dedicated 7777
 ```
 
-The process does not start Kestrel vs Ironjaw. Clients confirm a class (`rpc_select_class`) and enter the queue (`rpc_enter_matchmaking`). Join order still assigns seat 0, then seat 1. The class on that seat is the confirmed `class_id`. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and respawns the paired class ids.
+The process does not start Kestrel vs Ironjaw. Clients confirm a class (`rpc_select_class`, reply `rpc_class_result`) and enter the queue (`rpc_enqueue`, reply `rpc_queue_result`). A pair is `rpc_match_assigned`. Join order still assigns seat 0, then seat 1. The class on that seat is the confirmed `class_id`. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and respawns the paired class ids.
 
 A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
 
