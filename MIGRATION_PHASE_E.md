@@ -1,6 +1,6 @@
 # Phase E — listen-host proto
 
-**Status:** listen-host playtest. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, not a dedicated server, and not matchmaking/auth.
+**Status:** listen-host playtest. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer. Listen-host is not the queue host. Pre-match `SELECT_CLASS` and the dedicated queue (Locked roster `kestrel` / `ironjaw` only) live beside this proto — see the README. No login.
 
 Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` directly when `NetSession` is HOTSEAT.
 
@@ -13,9 +13,9 @@ Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` di
 
 ## Why listen-host only
 
-The host window **is** seat 0 (Kestrel) **and** the CombatSim authority. There is no dedicated server process.
+The listen-host window **is** seat 0 (Kestrel) **and** the CombatSim authority. That path is not a dedicated server process: it does not run `SELECT_CLASS`, and it does not remap seats from the queue.
 
-If Mauro later wants a headless dedicated host (no player on the server), **stop and Lock that** — do not invent it on top of this proto. The Intent/`submit` envelope would stay the same.
+The dedicated queue host is a separate `NetSession` mode. It is not a fighter. Players confirm `kestrel` or `ironjaw` before they enqueue. Pairing writes those class ids onto seats in queue order. Do not fold that queue into listen-host's fixed Kestrel / Ironjaw seats. The Intent/`submit` envelope is unchanged. No login, Pulse, or reconnect.
 
 ## Unchanged API
 
@@ -102,7 +102,8 @@ Godot HUD:
 
 ## Out of scope (do not invent)
 
-- Dedicated server, relay, matchmaking, auth
+- Login / auth, relay, Pulse, reconnect
+- Folding the dedicated queue into listen-host (host stays Kestrel, guest stays Ironjaw on this path)
 - MultiplayerSynchronizer
 - Fog / hidden enemy
 - Height → hit / facing / LoS

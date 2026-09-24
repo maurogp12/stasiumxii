@@ -114,22 +114,27 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
 
-	var kestrel_facing: String = str(config.get("kestrel_facing", "E"))
-	var ironjaw_facing: String = str(config.get("ironjaw_facing", "W"))
-	# Live path: no board seats until place. skip_deploy / explicit pos is combat fixture.
-	_units.append(_make_unit(0, SpellKits.CLASS_KESTREL, "Kestrel", "air", UNPLACED, kestrel_facing, false))
-	_units.append(_make_unit(1, SpellKits.CLASS_IRONJAW, "Ironjaw", "earth", UNPLACED, ironjaw_facing, false))
+	# Hot-seat default is Kestrel (seat 0) then Ironjaw (seat 1).
+	# config.classes / seat_classes overrides both seats when every id is on
+	# the Locked roster. Unknown ids are ignored (no extra kits).
+	var roster: Array[String] = _roster_class_ids(config)
+	var facing_used: Dictionary = {}
+	for seat in 2:
+		var class_id: String = roster[seat]
+		var facing := _facing_for(config, class_id, facing_used)
+		_units.append(_make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false))
 	_apply_setup_overrides(config)
 
-	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos")
+	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos") or config.has("positions")
 	if skip_deploy:
 		# Test/setup only. Live duel no longer defaults to (1,1)/(6,6).
-		var kestrel_pos: Vector2i = _as_cell(config.get("kestrel_pos", Vector2i(1, 1)))
-		var ironjaw_pos: Vector2i = _as_cell(config.get("ironjaw_pos", Vector2i(6, 6)))
-		_force_spawn(0, kestrel_pos)
-		_force_spawn(1, ironjaw_pos)
+		# kestrel_pos / ironjaw_pos still name that class, not a fixed seat.
+		var class_pos_used: Dictionary = {}
+		for seat in 2:
+			var class_id: String = str(_units[seat]["class_id"])
+			_force_spawn(seat, _spawn_cell_for(config, seat, class_id, class_pos_used))
 		_flow.skip_to_combat()
-		_begin_combat("Kestrel's turn. 6 AP / 3 MP.")
+		_begin_combat(_opening_turn_coach(""))
 	else:
 		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
 		_last_events = [{
@@ -377,6 +382,7 @@ func snapshot() -> Dictionary:
 		"match_config": {
 			"seed": _seed,
 			"elev_seed": _elev_seed,
+			"classes": _class_ids(),
 		},
 		"wind": "calm",
 		"crit_roll": false,
@@ -897,7 +903,7 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 	_intent_log.append(intent)
 	if _flow.is_combat():
 		_lock_all_units()
-		_begin_combat("Positions locked. Kestrel's turn. 6 AP / 3 MP.")
+		_begin_combat(_opening_turn_coach("Positions locked."))
 		# _begin_combat replaces last_events; prepend the ready that triggered it.
 		_last_events.insert(0, {
 			"type": "ready",
@@ -1600,21 +1606,105 @@ func _walk_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
 
 func _apply_setup_overrides(config: Dictionary) -> void:
 	# Test/setup hooks only. Not a play default — matches start at 0 Marks/Impact/stun.
-	if config.has("kestrel_marks"):
-		_units[0]["marks"] = mini(maxi(int(config["kestrel_marks"]), 0), int(_units[0]["marks_cap"]))
-	if config.has("ironjaw_marks"):
-		_units[1]["marks"] = mini(maxi(int(config["ironjaw_marks"]), 0), int(_units[1]["marks_cap"]))
-	if config.has("kestrel_impact"):
-		_units[0]["impact"] = mini(maxi(int(config["kestrel_impact"]), 0), int(_units[0]["impact_cap"]))
-	if config.has("ironjaw_impact"):
-		_units[1]["impact"] = mini(maxi(int(config["ironjaw_impact"]), 0), int(_units[1]["impact_cap"]))
-	if config.has("kestrel_stun"):
-		_units[0]["stun_remaining"] = maxi(int(config["kestrel_stun"]), 0)
-	if config.has("ironjaw_stun"):
-		_units[1]["stun_remaining"] = maxi(int(config["ironjaw_stun"]), 0)
+	# Keys still name the class. The first seat of that class receives them.
+	_apply_class_setup(config, "kestrel_marks", SpellKits.CLASS_KESTREL, "marks")
+	_apply_class_setup(config, "ironjaw_marks", SpellKits.CLASS_IRONJAW, "marks")
+	_apply_class_setup(config, "kestrel_impact", SpellKits.CLASS_KESTREL, "impact")
+	_apply_class_setup(config, "ironjaw_impact", SpellKits.CLASS_IRONJAW, "impact")
+	_apply_class_setup(config, "kestrel_stun", SpellKits.CLASS_KESTREL, "stun_remaining")
+	_apply_class_setup(config, "ironjaw_stun", SpellKits.CLASS_IRONJAW, "stun_remaining")
 	if config.has("blockers"):
 		for cell in config["blockers"]:
 			_blocked_cells.append(_as_cell(cell))
+
+
+func _apply_class_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
+	if not config.has(key):
+		return
+	var unit := _first_unit_of_class(class_id)
+	if unit.is_empty():
+		return
+	var value := int(config[key])
+	if field == "stun_remaining":
+		unit[field] = maxi(value, 0)
+		return
+	var cap := int(unit.get("%s_cap" % field, value))
+	unit[field] = mini(maxi(value, 0), cap)
+
+
+func _roster_class_ids(config: Dictionary) -> Array[String]:
+	var fallback: Array[String] = [SpellKits.CLASS_KESTREL, SpellKits.CLASS_IRONJAW]
+	var raw: Variant = null
+	if config.has("classes"):
+		raw = config["classes"]
+	elif config.has("seat_classes"):
+		raw = config["seat_classes"]
+	if raw == null or not (raw is Array):
+		return fallback
+	var incoming: Array = raw
+	if incoming.size() < 2:
+		return fallback
+	var out: Array[String] = []
+	for i in 2:
+		var id := SpellKits.normalize_class_id(str(incoming[i]))
+		if not SpellKits.is_roster_class(id):
+			return fallback
+		out.append(id)
+	return out
+
+
+func _facing_for(config: Dictionary, class_id: String, facing_used: Dictionary) -> String:
+	var key := ""
+	if class_id == SpellKits.CLASS_KESTREL:
+		key = "kestrel_facing"
+	elif class_id == SpellKits.CLASS_IRONJAW:
+		key = "ironjaw_facing"
+	if key != "" and config.has(key) and not bool(facing_used.get(key, false)):
+		facing_used[key] = true
+		return str(config[key])
+	if class_id == SpellKits.CLASS_IRONJAW:
+		return "W"
+	return "E"
+
+
+func _spawn_cell_for(config: Dictionary, seat: int, class_id: String, class_pos_used: Dictionary) -> Vector2i:
+	if config.has("positions"):
+		var positions: Variant = config["positions"]
+		if positions is Array and (positions as Array).size() > seat:
+			return _as_cell((positions as Array)[seat])
+	var key := ""
+	if class_id == SpellKits.CLASS_KESTREL:
+		key = "kestrel_pos"
+	elif class_id == SpellKits.CLASS_IRONJAW:
+		key = "ironjaw_pos"
+	if key != "" and config.has(key) and not bool(class_pos_used.get(key, false)):
+		class_pos_used[key] = true
+		return _as_cell(config[key])
+	if seat == 0:
+		return Vector2i(1, 1)
+	return Vector2i(6, 6)
+
+
+func _first_unit_of_class(class_id: String) -> Dictionary:
+	for unit in _units:
+		if str(unit.get("class_id", "")) == class_id:
+			return unit
+	return {}
+
+
+func _class_ids() -> Array:
+	var ids: Array = []
+	for unit in _units:
+		ids.append(str(unit.get("class_id", "")))
+	return ids
+
+
+func _opening_turn_coach(lead: String) -> String:
+	var actor := _unit_by_seat(0)
+	var who := str(actor.get("name", "Kestrel"))
+	if lead == "":
+		return "%s's turn. 6 AP / 3 MP." % who
+	return "%s %s's turn. 6 AP / 3 MP." % [lead, who]
 
 
 func _begin_unit_turn(unit: Dictionary) -> void:

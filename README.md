@@ -30,8 +30,9 @@ Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. 
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto. ENet / MultiplayerAPI RPC. Host owns CombatSim. Guest submits Intent. HOTSEAT mode leaves `main.tscn` on the local path. RPC only (no scene sync). Not a dedicated server. |
-| `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. |
+| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto **and** the dedicated queue host. ENet / MultiplayerAPI RPC. Listen-host: the host window is Kestrel (seat 0) and owns CombatSim. Dedicated: the server is not a fighter. Players `SELECT_CLASS` (`kestrel` or `ironjaw`) before they join the queue. A pair starts a match whose seats use those class ids (queue order, not host=Kestrel / guest=Ironjaw). HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
+| `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Rejects any other `class_id`. Pairs the next two confirmed sessions. |
+| `scenes/online_lobby.tscn` | Class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked vs Bounce, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -79,7 +80,8 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Omitted (not silent defaults)
 
-- Dedicated server / matchmaking / login / MultiplayerSynchronizer (listen-host ENet proto is in; see below)
+- Login / MultiplayerSynchronizer (listen-host ENet and the Locked-roster queue are in; see below)
+- Pulse, reconnect, relay
 - Step-shot, Rain, Longbow, Avalanche
 - Other classes (Mender, Gloam, Bastion)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
@@ -106,11 +108,12 @@ godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 godot --headless --path . -s res://tests/run_host_validate_tests.gd
 godot --headless --path . -s res://tests/run_net_session_tests.gd
+godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 ```
 
 ## How to playtest online (listen-host proto)
 
-**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Picked over WebSocket because this is a desktop playtest (two windows on localhost/LAN). WebSocket stays the later HTML5 option; same Intent RPC surface. **Listen-host only** — the host window is Kestrel (seat 0) and the CombatSim authority. No dedicated server. No login.
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Picked over WebSocket because this is a desktop playtest (two windows on localhost/LAN). WebSocket stays the later HTML5 option; same Intent RPC surface. **Listen-host** — the host window is Kestrel (seat 0) and the CombatSim authority. No login. The dedicated queue (class pick, then pair) is the next section.
 
 Local hot-seat is still the default `main.tscn` path.
 
@@ -131,6 +134,29 @@ Play: each seat places in its deploy blob and presses its Ready. After both Read
 LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
 
 Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
+
+## How to playtest SELECT_CLASS → dedicated match
+
+Locked roster only: **Kestrel** or **Ironjaw**. The dedicated host is not a fighter. Each player confirms a class, then joins the queue. The first two confirmed players become a match. Seat 0 is whoever queued first; seat 1 is whoever queued second. Their kits are the classes they picked (two Ironjaws is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
+
+**Three windows** (lobby scene):
+
+```bash
+# Window A — dedicated host. No class. Leave this window open.
+godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --dedicated 7777
+
+# Window B — pick a class, then queue. CLI or the Kestrel / Ironjaw button + Join queue.
+godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class kestrel
+
+# Window C — the other class (or the same). The board opens when the pair matches.
+godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class ironjaw
+```
+
+Window A should read `Match m1 — seat 0 Kestrel, seat 1 Ironjaw`. Windows B and C open `main.tscn` on those seats. Deploy, then check the action bar: Kestrel has Mark Shot / Detonate; Ironjaw has Advance / Strike / Shoulder / Crush. Swap the `--class` flags and seat 0 should be Ironjaw (Advance on that window), not a fixed host kit.
+
+Buttons, no CLI: on the lobby, window A presses **Host dedicated**. Windows B and C press **Kestrel** or **Ironjaw**, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
+
+Headless: `godot --headless --path . -s res://tests/run_matchmaking_tests.gd`.
 
 ## Live elevation chrome (Phase A cutover)
 

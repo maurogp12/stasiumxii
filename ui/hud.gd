@@ -22,6 +22,8 @@ var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
+var _seat_panels: Array[Panel] = []
+var _seat_titles: Array[Label] = []
 var _turn_label: Label
 var _coach_label: Label
 var _selected_label: Label
@@ -508,6 +510,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var kestrel := _unit(units, 0)
 	var ironjaw := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
+	_apply_seat_banner(0, kestrel)
+	_apply_seat_banner(1, ironjaw)
 	_kestrel_body.text = _unit_card_text(kestrel, active_seat == 0, snap)
 	_ironjaw_body.text = _unit_card_text(ironjaw, active_seat == 1, snap)
 
@@ -606,7 +610,7 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
-		_new_match_button.visible = snap_local_seat(_last_snap) != 1
+		_new_match_button.visible = _show_new_match(_last_snap)
 
 
 func _build() -> void:
@@ -819,6 +823,29 @@ func _build() -> void:
 	_update_selected_label()
 
 
+func _show_new_match(snap: Dictionary) -> bool:
+	var seat := snap_local_seat(snap)
+	if seat < 0:
+		return true
+	return str(_net_dict(snap).get("mode", "")) == "host"
+
+
+func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
+	if seat < 0 or seat >= _seat_titles.size():
+		return
+	var class_id := str(unit.get("class_id", ""))
+	var unit_name := str(unit.get("name", ""))
+	if unit_name == "":
+		unit_name = SpellKits.display_name(class_id)
+	if unit_name == "":
+		unit_name = "Seat %d" % seat
+	_seat_titles[seat].text = unit_name
+	if seat >= _seat_panels.size():
+		return
+	var color := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
+	_seat_panels[seat].add_theme_stylebox_override("panel", _panel(color))
+
+
 func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(16, 12) if is_kestrel else Vector2(704, 12)
@@ -827,6 +854,8 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	panel.add_theme_stylebox_override("panel", _panel(color))
 	var title := Label.new()
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
+	_seat_panels.append(panel)
+	_seat_titles.append(title)
 	title.position = Vector2(12, 6)
 	title.size = Vector2(216, 22)
 	title.add_theme_font_size_override("font_size", 18)

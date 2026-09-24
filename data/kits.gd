@@ -15,6 +15,8 @@ const CRUSH := "crush"
 
 const CLASS_KESTREL := "kestrel"
 const CLASS_IRONJAW := "ironjaw"
+## Locked roster for pre-match SELECT_CLASS. No third class.
+const LOCKED_ROSTER: Array[String] = [CLASS_KESTREL, CLASS_IRONJAW]
 
 const SPELLS := {
 	ADVANCE: {
@@ -127,6 +129,35 @@ const CLASS_SPELLS := {
 
 const MARKS_CAP := 5
 const IMPACT_CAP := 4
+
+
+static func normalize_class_id(class_id: String) -> String:
+	return class_id.strip_edges().to_lower()
+
+
+static func is_roster_class(class_id: String) -> bool:
+	var id := normalize_class_id(class_id)
+	return id == CLASS_KESTREL or id == CLASS_IRONJAW
+
+
+static func display_name(class_id: String) -> String:
+	match normalize_class_id(class_id):
+		CLASS_KESTREL:
+			return "Kestrel"
+		CLASS_IRONJAW:
+			return "Ironjaw"
+		_:
+			return ""
+
+
+static func element_of(class_id: String) -> String:
+	match normalize_class_id(class_id):
+		CLASS_KESTREL:
+			return "air"
+		CLASS_IRONJAW:
+			return "earth"
+		_:
+			return ""
 
 
 static func spell(spell_id: String) -> Dictionary:

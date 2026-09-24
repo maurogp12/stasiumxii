@@ -25,6 +25,8 @@ extends Node2D
 ## Unwalkable / lava / OOB dest toasts Bounce (no hop) and emits stagger HP/MP.
 ## Online listen-host: NetSession owns submit when a peer is up. Hot-seat still
 ## calls CombatSim.submit directly. The view never rolls.
+## The queue host is not a fighter and does not start the default hot-seat pair.
+## A queue client paints when the paired snapshot arrives.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
