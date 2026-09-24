@@ -72,6 +72,7 @@ func _run() -> void:
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
 	_test_shoulder_bounce_stagger_locked()
+	_test_shoulder_lava_burn_locked()
 	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
 	_test_stun_auto_end_turn_after_crush()
@@ -144,9 +145,17 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["stun_auto_end_turn"], true, "Locked A′ auto end_turn on turn start")
 	eq(snap["push"], "locked_shoulder", "Shoulder dest outcomes are Director Locked")
 	eq(snap["push_occupied"], "push_blocked", "occupied dest stays push_blocked")
-	eq(snap["push_unwalkable"], "bounce_stagger", "unwalkable/lava/OOB bounce + stagger")
+	eq(snap["push_unwalkable"], "bounce_stagger", "OOB / truly blocked still bounce + stagger")
+	eq(snap["push_lava"], "displace_burn", "lava forced push displaces and burns")
 	eq(snap["push_stagger_hp"], 4, "stagger is 4 HP")
 	eq(snap["push_stagger_mp"], 1, "stagger is 1 MP when MP>=1")
+	eq(snap["shoulder_impact_connect"], 1, "clean Shoulder connect is +1 Impact")
+	eq(snap["shoulder_impact_bounce"], 2, "Shoulder bounce is +2 Impact")
+	eq(snap["burn"], "locked", "Burn is Locked")
+	eq(snap["burn_hp"], 4, "Burn tick is 4 HP")
+	eq(snap["burn_duration"], 2, "Burn duration is 2")
+	eq(snap["units"][0]["burn_remaining"], 0, "units start with no Burn")
+	eq(snap["units"][1]["burn_remaining"], 0, "Ironjaw starts with no Burn")
 	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
 	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A′)"), "A05 note labels Stun Locked (A′)")
 	truthy(str(snap["open_notes"]["A05"]).contains("auto end_turn"), "A05 note documents A′ auto end_turn")
@@ -2330,7 +2339,8 @@ func _test_shoulder_push_and_impact() -> void:
 
 
 func _test_shoulder_bounce_stagger_locked() -> void:
-	# Director Locked Shoulder: OOB / lava / unwalkable dest bounce + stagger.
+	# Director Locked Shoulder: OOB / truly blocked dest bounce + stagger.
+	# Bounce grants +2 Impact only (not +1 stacked with +2).
 	# Stagger is 4 HP + 1 MP when current MP >= 1; HP only when MP is 0.
 	_sim.reset_match({
 		"seed": 1,
@@ -2348,7 +2358,8 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB bounce leaves the target put")
 	eq(_unit(0)["hp"], 70, "OOB bounce is 6 Earth + 4 stagger HP")
 	eq(_unit(0)["mp"], 2, "OOB bounce spends 1 stagger MP when MP>=1")
-	eq(_unit(1)["impact"], 1, "OOB bounce still grants Impact")
+	eq(_unit(1)["impact"], 2, "OOB bounce grants +2 Impact only")
+	eq(result["events"][0]["engine_gained"], 2, "OOB bounce engine gain is +2, not +1 and +2")
 	eq(result["events"][0]["type"], "hit", "hit event is first")
 	eq(result["events"][0]["damage"], 6, "Shoulder hit damage is unchanged")
 	eq(result["events"][0]["push_blocked"], false, "OOB is bounce, not push_blocked")
@@ -2394,30 +2405,22 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][2]["mp_delta"], 0, "stagger event MP delta is 0 at 0 MP")
 	eq(result["events"][2]["mp"], 0, "stagger event remaining MP is 0")
 
-	# Lava dest: bounce + stagger, not a walk onto lava.
+	# Impact cap still clips a +2 bounce (3 + 2 cannot exceed 4).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"rolls": [1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 3,
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
-	eq(result["ok"], true, "lava dest still resolves the hit")
-	eq(_unit(0)["pos"], Vector2i(4, 3), "lava dest bounce leaves the target put")
-	eq(_unit(0)["hp"], 70, "lava dest is 6 Earth + 4 stagger HP")
-	eq(_unit(0)["mp"], 2, "lava dest spends 1 stagger MP")
-	eq(result["events"][0]["push_blocked"], false, "lava dest is bounce, not push_blocked")
-	eq(result["events"][0]["bounced"], true, "lava dest records bounced")
-	eq(result["events"][1]["type"], "push_bounce", "lava dest emits push_bounce")
-	eq(result["events"][1]["reason"], "lava", "bounce reason is lava")
-	eq(result["events"][2]["type"], "stagger", "lava dest emits stagger")
-	eq(_event_type_count(result["events"], "push_blocked"), 0, "lava dest does not emit push_blocked")
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
+	eq(result["events"][0]["engine_gained"], 1, "bounce +2 clips to the Impact cap")
+	eq(_unit(1)["impact"], 4, "Impact cap stays 4 after a bounce")
 
-	# Unwalkable override (not lava): same bounce + stagger.
+	# Unwalkable override (not lava): same bounce + stagger, +2 Impact.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2438,7 +2441,192 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][1]["reason"], "not_walkable", "bounce reason is not_walkable")
 	eq(result["events"][2]["type"], "stagger", "unwalkable dest emits stagger")
 	eq(result["events"][2]["hp_delta"], -4, "unwalkable stagger HP delta is -4")
+	eq(result["events"][0]["engine_gained"], 2, "truly blocked bounce is +2 Impact only")
+	eq(_unit(1)["impact"], 2, "unwalkable bounce stores +2 Impact")
 	eq(_event_type_count(result["events"], "push_blocked"), 0, "unwalkable dest does not emit push_blocked")
+	eq(_unit(0)["burn_remaining"], 0, "a non-lava bounce does not apply Burn")
+
+
+func _test_shoulder_lava_burn_locked() -> void:
+	# Lava is hazardous for a forced Shoulder, not a wall. Voluntary walk still rejects it.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [
+			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(6, 3), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(3, 4), "terrain": "lava", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
+	eq(walked["illegal"], true, "voluntary walk onto lava is rejected")
+	eq(walked["reason"], "not_walkable", "walk onto lava reason stays not_walkable")
+	eq(_unit(1)["pos"], Vector2i(3, 3), "rejected lava walk does not move Ironjaw")
+	eq(_has_legal_move_to(1, Vector2i(3, 4)), false, "legal_intents omit lava")
+
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(result["ok"], true, "lava Shoulder still resolves the hit")
+	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on lava")
+	eq(_unit(0)["hp"], 74, "lava land is 6 Earth and no stagger")
+	eq(_unit(0)["mp"], 3, "lava land does not spend stagger MP")
+	eq(_unit(0)["burn_remaining"], 2, "landing on lava applies Burn duration 2")
+	eq(_unit(1)["impact"], 1, "lava land is a clean connect (+1 Impact, not bounce +2)")
+	eq(result["events"][0]["engine_gained"], 1, "lava hit records +1 Impact")
+	eq(result["events"][0]["pushed"], true, "lava dest records a push")
+	eq(result["events"][0]["bounced"], false, "lava dest does not bounce")
+	eq(result["events"][0]["push_blocked"], false, "lava dest is not push_blocked")
+	eq(result["events"][0]["staggered"], false, "lava dest does not stagger")
+	eq(result["events"][0]["burn_applied"], true, "hit records Burn")
+	eq(result["events"][0]["burn_refreshed"], false, "first Burn is not a refresh")
+	eq(result["events"][0]["burn_remaining"], 2, "hit records Burn duration 2")
+	eq(_event_type_count(result["events"], "push_bounce"), 0, "lava dest does not emit push_bounce")
+	eq(_event_type_count(result["events"], "stagger"), 0, "lava dest does not emit stagger")
+	eq(_event_type_count(result["events"], "push_blocked"), 0, "lava dest does not emit push_blocked")
+	var applied := _first_event_where(result["events"], "status", "burn")
+	eq(applied.is_empty(), false, "lava land emits a Burn status")
+	eq(int(applied.get("remaining", 0)), 2, "Burn status duration is 2")
+	eq(int(applied.get("hp_per_tick", 0)), 4, "Burn status exposes 4 HP per tick")
+	eq(bool(applied.get("refreshed", true)), false, "first Burn status is not a refresh")
+	truthy(str(applied.get("locked", "")).contains("Director Locked Burn"), "Burn status is labeled Director Locked Burn")
+	eq(result["snapshot"]["units"][0]["burn_remaining"], 2, "snapshot unit exposes burn_remaining")
+	eq(result["snapshot"]["burn"], "locked", "snapshot stamps Burn locked")
+	var replica_script := load("res://backend/combat_sim.gd")
+	var replica = replica_script.new()
+	replica.apply_host_snapshot(result["snapshot"])
+	eq(replica.snapshot()["units"][0]["burn_remaining"], 2, "host snapshot restores Burn")
+	eq(_first_event_where(replica.snapshot()["last_events"], "status", "burn").is_empty(), false, "host snapshot keeps the Burn event")
+	replica.free()
+
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(result["snapshot"], [])
+	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] 2"), "Kestrel card shows Burn duration")
+	eq(str(hud._ironjaw_body.text).contains("BURN"), false, "caster card does not show Burn")
+	hud.free()
+	var pawn := Pawn.new()
+	pawn.apply_snapshot(_unit(0), 1)
+	eq(pawn.burning, true, "pawn reads Burn from the snapshot unit")
+	eq(pawn.burn_remaining, 2, "pawn keeps Burn duration for chrome")
+	pawn.free()
+
+	# Burn does not tick on the caster's turn. It ticks at the victim's turn start.
+	eq(_unit(0)["hp"], 74, "Burn does not damage on apply")
+	var ticked: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(_sim.snapshot()["active_seat"], 0, "victim's turn starts after the push")
+	eq(_unit(0)["hp"], 70, "first Burn tick is 4 HP (74-4)")
+	eq(_unit(0)["burn_remaining"], 1, "first tick leaves duration 1")
+	var burn_tick := _first_event_where(ticked["events"], "burn")
+	eq(burn_tick.is_empty(), false, "turn start emits a burn tick")
+	eq(int(burn_tick.get("hp_delta", 0)), -4, "burn tick hp_delta is -4")
+	eq(int(burn_tick.get("hp", 0)), 70, "burn tick reports remaining HP")
+	eq(int(burn_tick.get("remaining", -1)), 1, "burn tick reports duration left")
+	eq(_event_type_count(ticked["events"], "dead"), 0, "a non-lethal tick does not kill")
+
+	var onto_lava: Dictionary = _sim.submit({"type": "move", "to": Vector2i(6, 3)})
+	eq(onto_lava["illegal"], true, "victim still cannot walk onto lava")
+	eq(onto_lava["reason"], "not_walkable", "second lava step is not_walkable")
+	eq(_unit(0)["pos"], Vector2i(5, 3), "rejected walk leaves them on the first lava")
+	eq(_unit(0)["burn_remaining"], 1, "rejected walk does not clear Burn")
+
+	var left: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
+	eq(left["ok"], true, "leaving lava onto ground is allowed")
+	eq(_unit(0)["pos"], Vector2i(5, 2), "victim walked off lava")
+	eq(_unit(0)["burn_remaining"], 1, "Burn continues after leaving lava")
+	eq(_unit(0)["hp"], 70, "leaving lava does not tick Burn early")
+
+	_sim.submit({"type": "end_turn"})
+	var second: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(_sim.snapshot()["active_seat"], 0, "second victim turn starts")
+	eq(_unit(0)["pos"], Vector2i(5, 2), "second tick does not pull them back onto lava")
+	eq(_unit(0)["hp"], 66, "second Burn tick is another 4 HP")
+	eq(_unit(0)["burn_remaining"], 0, "duration 2 expires after two ticks")
+	eq(int(_first_event_where(second["events"], "burn").get("remaining", -1)), 0, "second tick reports duration 0")
+	_sim.submit({"type": "end_turn"})
+	var third: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(_event_type_count(third["events"], "burn"), 0, "Burn does not tick after duration 0")
+	eq(_unit(0)["hp"], 66, "no third Burn tick")
+	eq(_unit(0)["alive"], true, "two ticks at full HP do not kill")
+
+	# Re-apply refreshes duration to 2 and does not stack the tick.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1, 1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [
+			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(6, 3), "terrain": "lava", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	_sim.submit({"type": "end_turn"})
+	eq(_unit(0)["burn_remaining"], 1, "refresh setup has one tick left")
+	eq(_unit(0)["hp"], 70, "refresh setup HP is 70")
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.submit({"type": "move", "to": Vector2i(4, 3)})["ok"], true, "Ironjaw steps next to the lava tile")
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "second Shoulder connects")
+	eq(_unit(0)["pos"], Vector2i(6, 3), "second push lands on lava again")
+	eq(_unit(0)["hp"], 64, "refresh deals the 6 Earth hit and no extra Burn tick")
+	eq(_unit(0)["burn_remaining"], 2, "re-apply sets duration back to 2")
+	eq(_unit(1)["impact"], 2, "second clean push adds +1 Impact (1+1)")
+	applied = _first_event_where(result["events"], "status", "burn")
+	eq(bool(applied.get("refreshed", false)), true, "re-apply is a refresh")
+	eq(int(applied.get("previous", 0)), 1, "refresh replaces the leftover tick")
+	eq(int(applied.get("remaining", 0)), 2, "refresh does not stack to 3")
+	_sim.submit({"type": "end_turn"})
+	eq(_unit(0)["hp"], 60, "tick after refresh is 4 HP, not 8")
+	eq(_unit(0)["burn_remaining"], 1, "refresh still has one tick after the first new tick")
+
+	# Occupied lava is still a body-block: no displace, no Burn.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+		"blockers": [Vector2i(5, 3)],
+	})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied lava does not displace")
+	eq(result["events"][0]["push_blocked"], true, "occupied lava is push_blocked")
+	eq(result["events"][0]["bounced"], false, "occupied lava does not bounce")
+	eq(_unit(0)["burn_remaining"], 0, "occupied lava does not apply Burn")
+	eq(_unit(0)["hp"], 74, "occupied lava is hit damage only")
+	eq(_unit(1)["impact"], 1, "occupied lava keeps the hit +1 Impact")
+
+	# Death is checked after the tick.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+	})
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	_live_unit(0)["hp"] = 4
+	var lethal: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(_unit(0)["hp"], 0, "Burn tick can reduce HP to 0")
+	eq(_unit(0)["alive"], false, "death check after the tick marks the victim dead")
+	eq(_sim.snapshot()["match_over"], true, "lethal Burn ends the match")
+	eq(_sim.snapshot()["winner_seat"], 1, "Ironjaw wins when Burn kills Kestrel")
+	eq(int(_first_event_where(lethal["events"], "burn").get("hp_delta", 0)), -4, "lethal tick still reports 4 HP")
+	eq(_event_type_count(lethal["events"], "dead"), 1, "lethal tick emits dead")
+	eq(_event_type_count(lethal["events"], "match_over"), 1, "lethal tick emits match_over")
 
 
 func _test_shoulder_push_blocked_locked() -> void:
@@ -2460,6 +2648,8 @@ func _test_shoulder_push_blocked_locked() -> void:
 	eq(_unit(0)["hp"], 74, "occupied push deals hit damage only (no stagger)")
 	eq(_unit(0)["mp"], before_mp, "occupied dest does not spend stagger MP")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
+	eq(result["events"][0]["engine_gained"], 1, "occupied push does not invent Impact beyond +1")
+	eq(_unit(0)["burn_remaining"], 0, "occupied push does not apply Burn")
 	eq(result["events"][0]["push_blocked"], true, "hit records push_blocked")
 	eq(result["events"][0]["bounced"], false, "occupied dest does not bounce")
 	eq(result["events"][0]["staggered"], false, "occupied dest does not stagger")
@@ -2800,7 +2990,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.BOUNCE_TOAST, "OOB toast text is Bounce")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
 	eq(_unit(0)["hp"], 70, "hit + stagger HP still applied")
-	eq(_unit(1)["impact"], 1, "Impact still applied")
+	eq(_unit(1)["impact"], 2, "OOB bounce Impact is +2")
 
 	var walk_events: Array = [{
 		"type": "move",
@@ -4275,6 +4465,18 @@ func _has_legal_move(seat: int) -> bool:
 
 func _has_legal_move_to(seat: int, dest: Vector2i) -> bool:
 	return bool(_legal_move_dests(seat).get(dest, false))
+
+
+func _first_event_where(events: Array, kind: String, status: String = "") -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != kind:
+			continue
+		if status != "" and str(event.get("status", "")) != status:
+			continue
+		return event
+	return {}
 
 
 func _event_type_count(events: Array, kind: String) -> int:

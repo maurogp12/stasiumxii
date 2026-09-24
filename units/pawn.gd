@@ -10,6 +10,8 @@ var max_hp: int = 80
 var alive: bool = true
 var is_active: bool = false
 var stunned: bool = false
+var burning: bool = false
+var burn_remaining: int = 0
 var _hit_flash: bool = false
 
 const FACING_ISO := {
@@ -31,6 +33,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int) -> void:
 	is_active = int(unit["seat"]) == active_seat and alive
 	_hit_flash = false
 	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
+	burn_remaining = int(unit.get("burn_remaining", 0))
+	burning = burn_remaining > 0
 	queue_redraw()
 
 
@@ -62,6 +66,8 @@ func _draw() -> void:
 		draw_circle(Vector2(0, -12), 14.0, Color(1, 0.92, 0.45, 0.55))
 	if stunned:
 		draw_circle(Vector2(0, -12), 16.0, Color(0.95, 0.78, 0.2, 0.35))
+	if burning:
+		draw_circle(Vector2(0, -12), 18.0, Color(0.95, 0.32, 0.1, 0.28))
 	var body := fill
 	if _hit_flash:
 		body = body.lightened(0.35)
@@ -93,3 +99,10 @@ func _draw() -> void:
 		var badge := Rect2(Vector2(-stun_size.x * 0.5 - 3, -44), Vector2(stun_size.x + 6, 12))
 		draw_rect(badge, Color(0.95, 0.78, 0.18, 0.95))
 		draw_string(font, Vector2(-stun_size.x * 0.5, -34), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))
+	if burning:
+		var burn_label := "BURN"
+		var burn_size := font.get_string_size(burn_label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
+		var burn_y := -58.0 if stunned else -44.0
+		var burn_badge := Rect2(Vector2(-burn_size.x * 0.5 - 3, burn_y), Vector2(burn_size.x + 6, 12))
+		draw_rect(burn_badge, Color(0.92, 0.28, 0.1, 0.95))
+		draw_string(font, Vector2(-burn_size.x * 0.5, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))

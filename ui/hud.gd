@@ -263,6 +263,12 @@ static func unit_is_stunned(unit: Dictionary) -> bool:
 	return int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 
 
+static func unit_is_burning(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("burn_remaining", 0)) > 0
+
+
 static func events_include_push_blocked(events: Array) -> bool:
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
@@ -914,11 +920,16 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var stun_note := ""
 	if unit_is_stunned(unit):
 		stun_note = "  [b]STUN[/b]"
-	return "[color=#ffffff]%s  HP %d/%d%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
+	# Director Locked Burn: duration left is the snapshot field host replicas already carry.
+	var burn_note := ""
+	if unit_is_burning(unit):
+		burn_note = "  [b]BURN[/b] %d" % int(unit.get("burn_remaining", 0))
+	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
 		stun_note,
+		burn_note,
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),

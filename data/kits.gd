@@ -94,6 +94,7 @@ const SPELLS := {
 		"element": "earth",
 		"base_damage": 6,
 		"target": "enemy",
+		# CombatSim applies +1 after a clean push, or +2 only on bounce (not both).
 		"engine_on_connect": "impact",
 		"push_cells": 1,
 	},
