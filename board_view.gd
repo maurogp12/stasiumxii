@@ -30,6 +30,8 @@ extends Node2D
 ## Online: NetSession owns submit when a peer is up. Listen-host and the dedicated
 ## process share that authority. Clients send Intent only. Hot-seat still calls
 ## CombatSim.submit directly. The view never rolls.
+## The dedicated process does not start the default Kestrel / Ironjaw pair.
+## It paints when the SELECT_CLASS queue has paired two Locked classes.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -83,8 +85,14 @@ func _boot() -> void:
 		if not net.state_changed.is_connected(_on_net_state):
 			net.state_changed.connect(_on_net_state)
 		if net.is_online() or net.is_connecting():
-			if net.is_authority():
+			# Listen-host starts the fixed Kestrel / Ironjaw duel.
+			# The dedicated process waits until two Locked classes are paired.
+			if net.is_authority() and not net.is_dedicated():
 				net.reset_match({})
+			if net.is_dedicated():
+				if net.has_method("match_is_live") and bool(net.match_is_live()):
+					_finish_boot()
+				return
 			if net.is_authority() or net.has_view_state():
 				_finish_boot()
 			return
