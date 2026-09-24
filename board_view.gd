@@ -56,6 +56,7 @@ var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
 var _skip_local_net_echo: bool = false
+var _flash_tweens: Array = []
 
 
 func _ready() -> void:
@@ -423,6 +424,7 @@ func _has_turn_change(events: Array) -> bool:
 
 
 func _on_new_match() -> void:
+	_stop_flash_tweens()
 	_stop_walk_tween()
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
@@ -508,6 +510,8 @@ func _path_event(events: Array) -> Dictionary:
 
 func _play_combat_feedback(events: Array) -> void:
 	# Hit flash on the target and Impact flash on the caster. Plays even when push is blocked.
+	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage stays orange.
+	# Kind comes from the event spell id, healed amount, negative damage, or shield fields.
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -516,7 +520,13 @@ func _play_combat_feedback(events: Array) -> void:
 		var target_seat := int(event.get("target_seat", -1))
 		if pawns_by_seat.has(target_seat):
 			var target_pawn: Pawn = pawns_by_seat[target_seat]
-			target_pawn.flash_hit()
+			match Pawn.resolve_flash_kind(event):
+				"ward":
+					target_pawn.flash_ward()
+				"support":
+					target_pawn.flash_support()
+				_:
+					target_pawn.flash_hit()
 			_tween_pawn_modulate(target_pawn)
 		if int(event.get("engine_gained", 0)) > 0 and str(event.get("engine", "")) == "impact":
 			var caster_seat := int(event.get("seat", -1))
@@ -529,8 +539,28 @@ func _play_combat_feedback(events: Array) -> void:
 func _tween_pawn_modulate(pawn: Pawn) -> void:
 	if pawn == null or not is_instance_valid(pawn) or not is_inside_tree():
 		return
+	var canvas := pawn.flash_canvas()
+	var rest := pawn.rest_modulate()
 	var tween := create_tween()
-	tween.tween_property(pawn, "modulate", Color.WHITE, 0.28)
+	_flash_tweens.append(tween)
+	var seat := int(pawn.seat)
+	tween.tween_property(canvas, "modulate", rest, 0.28)
+	tween.finished.connect(_on_flash_settled.bind(seat), CONNECT_ONE_SHOT)
+
+
+func _on_flash_settled(seat: int) -> void:
+	if not pawns_by_seat.has(seat):
+		return
+	var pawn: Pawn = pawns_by_seat[seat]
+	if pawn != null and is_instance_valid(pawn):
+		pawn.note_flash_settled()
+
+
+func _stop_flash_tweens() -> void:
+	for tween in _flash_tweens:
+		if tween != null and is_instance_valid(tween):
+			tween.kill()
+	_flash_tweens.clear()
 
 
 func _active_is_stunned(snap: Dictionary = {}) -> bool:
@@ -611,6 +641,7 @@ func _refresh() -> void:
 
 
 func _rebuild_pawns() -> void:
+	_stop_flash_tweens()
 	for child in $Units.get_children():
 		$Units.remove_child(child)
 		child.free()
