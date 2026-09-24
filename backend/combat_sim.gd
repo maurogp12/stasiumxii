@@ -263,6 +263,9 @@ func legal_intents(seat: int) -> Array:
 	for spell_id in actor["spells"]:
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 			continue
+		# Card rows are chrome until Backend validates. Do not offer a resolvable cast.
+		if SpellKits.awaits_backend(str(spell_id)):
+			continue
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if def.is_empty():
 			continue
@@ -710,6 +713,14 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	}
 	if def.is_empty():
 		out["reason"] = "unknown_spell"
+		return out
+	# Card data only. No sample, no hit band, no Phase A resolve.
+	if SpellKits.awaits_backend(spell_id):
+		out["reason"] = "backend_pending"
+		out["legal"] = false
+		out["sample_damage"] = null
+		out["hit_chance"] = null
+		out["rolling"] = false
 		return out
 
 	if spell_id == SpellKits.ADVANCE:
@@ -1212,6 +1223,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
+	if SpellKits.awaits_backend(spell_id):
+		return _reject(intent, "backend_pending", "REJECT — %s waits for Backend validation (refund)." % str(def.get("name", spell_id)))
 	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):

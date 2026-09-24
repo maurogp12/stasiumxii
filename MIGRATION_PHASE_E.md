@@ -129,7 +129,9 @@ Chrome calls these names. The authority validates. Clients do not write the rost
 
 Locked roster is `kestrel`, `ironjaw`, `mender`, `gloam`, and `bastion`. Anything else is `invalid_class`. Picking only Kestrel and Ironjaw still queues a duel.
 
-`SpellKits.class_spells` has rows for `kestrel` and `ironjaw` only. `mender`, `gloam`, and `bastion` return `[]`, `class_element` returns `""`, and the HUD shows a disabled `—` slot plus the class label. Expected Backend fields still missing for those three: `CLASS_SPELLS` rows, spell definitions, element strings, and named class resources. Until a unit `resources` array exists, the card prints unlabeled `0/0  0/0`. HP is whatever the snapshot says (`hp` / `max_hp`; CombatSim still starts at 80).
+`SpellKits` holds the Locked card rows for `mender`, `gloam`, and `bastion` (spell ids, costs, ranges, element pairs, resource caps, proto 80/0/0, passive numbers). Those spells are marked `awaits_backend`. CombatSim does not resolve them: `legal_intents` omits them, `preview_cast` returns `backend_pending` with no sample, and `submit` rejects with `backend_pending` without spending AP or changing HP. The HUD still sends Intent `{"type":"cast","spell":"<card id>","to":...}` when that button is used. Backend must validate the roster and the resolution, including every Open item (Nightfold miss versus global refund, Intercept pipeline, Neutral primary, AoE versus Invisible, Heartstop immunity / CC / overflow / shield stack, Ward 24 versus base 20, cone and ward masks).
+
+Resource chrome reads snapshot fields `pulse`, `umbral`, `shades`, `aegis` (or `resources` entries with those ids). Missing fields display the card minimum, which is 0. Caps are Pulse 6, Umbral 4, Shades 2, Aegis 4.
 
 Snap Wall chrome binds `snapshot.blocked_tiles` and `last_events` where `type` is `snap_wall`. `walls` is not on main and is not read.
 

@@ -717,7 +717,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
+		# Card spells are selectable so the Intent spell id matches the card.
+		# Kestrel / Ironjaw still enable only from legal_intents.
+		var card_intent := SpellKits.awaits_backend(str(spell_id))
+		var can_submit: bool = (legal_spells.has(spell_id) or card_intent) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
@@ -1096,11 +1099,27 @@ func _unit(units: Array, seat: int) -> Dictionary:
 	return unit_for_seat(units, seat)
 
 
-## Classes with kit rows keep Marks / Impact. Classes with an empty table
-## show unlabeled 0/0 slots until the snapshot carries a resources array.
-## A host-supplied label is printed only when that entry includes one.
+## Kestrel / Ironjaw keep Marks / Impact. Card classes use SpellKits.class_resources.
+## Current values come from the snapshot; otherwise the card minimum.
 func _resource_meter_line(unit: Dictionary) -> String:
 	var class_id := str(unit.get("class_id", ""))
+	var specs: Array = SpellKits.class_resources(class_id)
+	if not specs.is_empty():
+		var parts := PackedStringArray()
+		for spec in specs:
+			if typeof(spec) != TYPE_DICTIONARY:
+				continue
+			var row: Dictionary = spec
+			parts.append("%s %d/%d" % [
+				str(row.get("label", "")),
+				SpellKits.resource_amount(unit, row),
+				int(row.get("max", 0)),
+			])
+		var proto := SpellKits.class_proto(class_id)
+		if not proto.is_empty():
+			parts.append("Mastery %d" % int(unit.get("mastery", proto.get("mastery", 0))))
+			parts.append("Resist %d" % int(unit.get("resist", proto.get("resist", 0))))
+		return " ".join(parts)
 	if not SpellKits.class_spells(class_id).is_empty():
 		return "Marks %s  Impact %s" % [
 			engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
@@ -1131,7 +1150,9 @@ func _kit_footer(unit: Dictionary) -> String:
 	var names := PackedStringArray()
 	for spell_id in unit.get("spells", []):
 		names.append(str(spell_id))
-	var element := str(unit.get("element", "")).capitalize()
+	var element := SpellKits.class_element_text(class_id)
+	if element == "":
+		element = str(unit.get("element", "")).capitalize()
 	if element == "":
 		return ", ".join(names)
 	if names.is_empty():

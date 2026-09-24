@@ -84,7 +84,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 - Matchmaking / login / MultiplayerSynchronizer (dedicated headless host and optional listen-host are in; see below)
 - Step-shot, Rain, Longbow, Avalanche
-- Spell rows, elements, passives, and named resources for Mender, Gloam, and Bastion (the select roster is live; kits stay empty until Backend adds them)
+- Combat resolution for Mender, Gloam, and Bastion (select + kit chrome read the Locked cards; CombatSim rejects those casts until Backend validates)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
@@ -138,7 +138,7 @@ godot --path . --position 40,40 -- --join <server-ip>:7777
 godot --path . --position 1000,40 -- --join <server-ip>:7777
 ```
 
-Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. Class is the Confirm step, not the seat: one client can be Ironjaw on seat 0 and the other Kestrel on seat 1, or either seat can be Mender, Gloam, or Bastion. The server rejects any class outside `kestrel` / `ironjaw` / `mender` / `gloam` / `bastion`. Find Match waits until both seats are queued, then the duel starts and the kit bar follows `SpellKits.class_spells(units[local_seat].class_id)`. Kestrel and Ironjaw still show their kits. Mender, Gloam, and Bastion show the class label and a disabled empty slot until Backend adds `CLASS_SPELLS` rows. Those three cards print snapshot HP (80/80 from `CombatSim.START_HP`) and unlabeled `0/0  0/0` resource slots. Seat 0’s **New Match** asks the server to reset; the server picks the new seed and keeps the confirmed classes. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. Class is the Confirm step, not the seat: one client can be Ironjaw on seat 0 and the other Kestrel on seat 1, or either seat can be Mender, Gloam, or Bastion. The server rejects any class outside `kestrel` / `ironjaw` / `mender` / `gloam` / `bastion`. Find Match waits until both seats are queued, then the duel starts and the kit bar follows `SpellKits.class_spells(units[local_seat].class_id)`. Kestrel and Ironjaw still show their kits. Mender, Gloam, and Bastion show the Locked card spell ids (Mend, Pulse Tap, Ward, Cleanse, Heartstop; Cut, Drop Shade, Ambush, Fade, Nightfold; Bash, Plant, Hold Line, Snap Wall, Aegis Break) and resource meters Pulse 0–6, Umbral 0–4 plus Shades 0–2, and Aegis 0–4. Current resource values come from the snapshot when present. Proto HP/mastery/resist display as 80/0/0. Selecting a card spell sends Intent `spell` as that id. CombatSim does not resolve those casts (`backend_pending`, no HP or AP change). A host that still only allows `kestrel` / `ironjaw` rejects the other three; the reject line is the chrome for that. Seat 0’s **New Match** asks the server to reset; the server picks the new seed and keeps the confirmed classes. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
 
 Snap Wall chrome reads `snapshot.blocked_tiles` (cell list: `Vector2i`, `{x,y}`, `[x,y]`, or `"x,y"`) and `last_events` entries with `type == "snap_wall"` (`cells` / `tiles` and/or `to`). Those cells paint as blocked. `walls` is not on main and is not bound.
 
