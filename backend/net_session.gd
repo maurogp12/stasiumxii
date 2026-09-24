@@ -8,6 +8,12 @@ extends Node
 ## Another machine is a different --join address on this same host core.
 ## Hot-seat is the default (mode HOTSEAT → CombatSim.submit directly).
 ## Dedicated disconnect is a stub: the seat stays reserved. No reconnect.
+## DEDICATED is the queue host: it is not a fighter. Players SELECT_CLASS
+## (allowlist kestrel|ironjaw) before ENQUEUE. A pair becomes a match whose
+## seats keep those class_ids in queue order. Listen-host still pins
+## seat 0 = Kestrel and seat 1 = Ironjaw.
+
+const _MatchQueueScript := preload("res://backend/matchmaking.gd")
 
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
@@ -15,7 +21,7 @@ const DEFAULT_PORT := 7777
 const HOST_SEAT := 0
 const GUEST_SEAT := 1
 const LISTEN_HOST_CLIENTS := 1
-const DEDICATED_CLIENTS := 2
+const DEDICATED_CLIENTS := 8
 const TRANSPORT := "enet"
 
 signal state_changed(events: Array, snapshot: Dictionary)
@@ -32,12 +38,21 @@ var last_packed: Dictionary = {}
 var guest_peer_id: int = 0
 var listen_port: int = DEFAULT_PORT
 var join_address: String = "127.0.0.1"
+var selected_class_id: String = ""
+var matched: bool = false
+var match_id: String = ""
+var lobby_text: String = ""
 
 var _sim: Node = null
 var _cli_host: bool = false
 var _cli_join: bool = false
 var _cli_dedicated: bool = false
+var _cli_queue: bool = false
+var _cli_class: String = ""
 var _signals_wired: bool = false
+var _queue_client: bool = false
+var _class_queue = null
+var _match_class_ids: Array = []
 ## peer id per seat. 0 means no live peer. Server peer id is 1 and is never stored.
 var _seat_peer: Array[int] = [0, 0]
 ## True once a seat has been given out. Dedicated keeps this after disconnect.
@@ -48,6 +63,12 @@ func _ready() -> void:
 	_parse_user_args()
 	if _cli_dedicated:
 		start_dedicated(listen_port)
+	elif _cli_queue:
+		var picked: Dictionary = select_class(_cli_class)
+		if not bool(picked.get("ok", false)):
+			print("SELECT_CLASS rejected (%s)." % str(picked.get("reason", "invalid_class")))
+		else:
+			start_queue_client(join_address, listen_port)
 	elif _cli_host:
 		start_host(listen_port)
 	elif _cli_join:
@@ -94,6 +115,10 @@ func is_hotseat() -> bool:
 	return mode == Mode.HOTSEAT
 
 
+func is_queue_client() -> bool:
+	return mode == Mode.CLIENT and _queue_client
+
+
 func is_connecting() -> bool:
 	return mode == Mode.CLIENT and last_snapshot.is_empty()
 
@@ -127,6 +152,7 @@ func enter_dedicated_offline() -> void:
 	mode = Mode.DEDICATED
 	local_seat = -1
 	_reset_seats()
+	_arm_dedicated_queue()
 
 
 func enter_client_offline() -> void:
@@ -149,6 +175,7 @@ func return_to_hotseat() -> void:
 	last_snapshot = {}
 	last_events = []
 	last_result = {}
+	_clear_queue_state()
 	connection_changed.emit("hotseat")
 	_update_window_title()
 
@@ -160,6 +187,8 @@ func start_host(port: int = DEFAULT_PORT) -> Dictionary:
 func start_dedicated(port: int = DEFAULT_PORT) -> Dictionary:
 	var opened := _open_server(port, DEDICATED_CLIENTS, Mode.DEDICATED, -1, "dedicated_listening")
 	if bool(opened.get("ok", false)):
+		_arm_dedicated_queue()
+		lobby_text = "Dedicated host on %d. Each player picks Kestrel or Ironjaw, then joins the queue." % port
 		print("STASIUM XII dedicated host listening on UDP %d" % port)
 	return opened
 
@@ -181,6 +210,108 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	connection_changed.emit("connecting")
 	_update_window_title()
 	return {"ok": true, "reason": "", "address": address, "port": port, "transport": TRANSPORT}
+
+
+## Class must already be confirmed. Connects as a queue client with no seat
+## until the host pairs this session.
+func start_queue_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
+	if not SpellKits.is_roster_class(selected_class_id):
+		_queue_client = false
+		return {
+			"ok": false,
+			"illegal": true,
+			"reason": "class_required",
+			"address": address,
+			"port": port,
+		}
+	_queue_client = true
+	var result: Dictionary = start_client(address, port)
+	if not bool(result.get("ok", false)):
+		_queue_client = false
+		return result
+	local_seat = -1
+	_update_window_title()
+	return result
+
+
+## Local confirm before join/queue. The dedicated host validates again.
+func select_class(class_id: String) -> Dictionary:
+	if mode == Mode.DEDICATED:
+		return _fail("server_has_no_class")
+	var id := SpellKits.normalize_class_id(class_id)
+	if not SpellKits.is_roster_class(id):
+		lobby_text = "Class rejected (%s)." % "invalid_class"
+		connection_changed.emit("class_rejected")
+		return {
+			"ok": false,
+			"illegal": true,
+			"reason": "invalid_class",
+			"class_id": "",
+		}
+	selected_class_id = id
+	if mode == Mode.CLIENT and _client_link_up():
+		rpc_select_class.rpc_id(1, id)
+	return {
+		"ok": true,
+		"illegal": false,
+		"reason": "",
+		"class_id": id,
+	}
+
+
+## Sends rpc_enqueue once the queue client is connected.
+func enqueue() -> Dictionary:
+	if mode == Mode.DEDICATED:
+		return _fail("server_has_no_class")
+	if not SpellKits.is_roster_class(selected_class_id):
+		return {
+			"ok": false,
+			"illegal": true,
+			"reason": "class_required",
+			"queued": false,
+		}
+	if mode == Mode.CLIENT and _client_link_up():
+		rpc_enqueue.rpc_id(1)
+		return {
+			"ok": true,
+			"illegal": false,
+			"reason": "",
+			"queued": false,
+			"pending": true,
+		}
+	return {
+		"ok": false,
+		"illegal": true,
+		"reason": "not_connected",
+		"queued": false,
+	}
+
+
+func server_select_class(session_id: String, class_id: String) -> Dictionary:
+	if mode != Mode.DEDICATED or _class_queue == null:
+		return _fail("not_dedicated")
+	return _class_queue.select_class(session_id, class_id)
+
+
+func server_enqueue(session_id: String) -> Dictionary:
+	if mode != Mode.DEDICATED or _class_queue == null:
+		return _fail("not_dedicated")
+	var result: Dictionary = _class_queue.enqueue(session_id)
+	if bool(result.get("matched", false)):
+		var opened: Dictionary = _open_dedicated_match(result.get("match", {}))
+		result["match"] = opened
+		result["snapshot"] = snapshot()
+	else:
+		var waiting := int(_class_queue.queued_count())
+		lobby_text = "Dedicated queue: %d confirmed fighter%s waiting." % [waiting, "" if waiting == 1 else "s"]
+		connection_changed.emit("player_queued")
+	return result
+
+
+func server_session(session_id: String) -> Dictionary:
+	if _class_queue == null:
+		return {}
+	return _class_queue.session(session_id)
 
 
 func _open_server(port: int, max_clients: int, next_mode: int, seat: int, status: String) -> Dictionary:
@@ -218,6 +349,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	var gate: Dictionary = HostValidate.validate_match_config(config, fixture)
 	if not bool(gate.get("ok", false)):
 		return _gate_reject(str(gate.get("reason", "client_must_not_roll")))
+	if mode == Mode.DEDICATED:
+		config = _with_match_classes(config)
 	var host_sim := sim()
 	if host_sim == null:
 		return _fail("no_sim")
@@ -495,6 +628,73 @@ func rpc_submit_intent(encoded: Dictionary) -> void:
 
 
 @rpc("any_peer", "reliable")
+func rpc_select_class(class_id: String) -> void:
+	if mode != Mode.DEDICATED:
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	var result: Dictionary = server_select_class(str(peer), class_id)
+	if _rpc_live():
+		rpc_class_result.rpc_id(peer, result)
+
+
+@rpc("authority", "reliable")
+func rpc_class_result(result: Dictionary) -> void:
+	if mode != Mode.CLIENT:
+		return
+	if bool(result.get("ok", false)):
+		selected_class_id = str(result.get("class_id", selected_class_id))
+		lobby_text = "Class confirmed: %s." % SpellKits.display_name(selected_class_id)
+		connection_changed.emit("class_selected")
+	else:
+		lobby_text = "Class rejected (%s)." % str(result.get("reason", "invalid_class"))
+		connection_changed.emit("class_rejected")
+
+
+@rpc("any_peer", "reliable")
+func rpc_enqueue() -> void:
+	if mode != Mode.DEDICATED:
+		return
+	var peer := multiplayer.get_remote_sender_id()
+	var result: Dictionary = server_enqueue(str(peer))
+	if bool(result.get("matched", false)):
+		return
+	if _rpc_live():
+		rpc_queue_result.rpc_id(peer, {
+			"ok": bool(result.get("ok", false)),
+			"reason": str(result.get("reason", "")),
+			"queued": bool(result.get("queued", false)),
+		})
+
+
+@rpc("authority", "reliable")
+func rpc_queue_result(result: Dictionary) -> void:
+	if mode != Mode.CLIENT:
+		return
+	if bool(result.get("ok", false)) and bool(result.get("queued", false)):
+		lobby_text = "In queue as %s. Waiting for an opponent." % SpellKits.display_name(selected_class_id)
+		connection_changed.emit("queued")
+	else:
+		lobby_text = "Queue rejected (%s)." % str(result.get("reason", "class_required"))
+		connection_changed.emit("queue_rejected")
+
+
+@rpc("authority", "reliable")
+func rpc_match_assigned(payload: Dictionary) -> void:
+	if mode != Mode.CLIENT:
+		return
+	local_seat = int(payload.get("seat", -1))
+	selected_class_id = str(payload.get("class_id", selected_class_id))
+	match_id = str(payload.get("match_id", ""))
+	matched = true
+	var packed: Variant = payload.get("packed", {})
+	if typeof(packed) == TYPE_DICTIONARY and not (packed as Dictionary).is_empty():
+		apply_packed_state(packed)
+	lobby_text = "Matched as %s (seat %d)." % [SpellKits.display_name(selected_class_id), local_seat]
+	connection_changed.emit("matched")
+	_update_window_title()
+
+
+@rpc("any_peer", "reliable")
 func rpc_request_reset(encoded: Dictionary) -> void:
 	if not is_authority():
 		return
@@ -646,6 +846,10 @@ func _wire_peer_signals() -> void:
 func _on_peer_connected(id: int) -> void:
 	if not is_authority():
 		return
+	if mode == Mode.DEDICATED:
+		lobby_text = "Player %d connected. Waiting for SELECT_CLASS, then the queue." % id
+		connection_changed.emit("player_connected")
+		return
 	var seat := assign_peer_seat(id)
 	if seat < 0:
 		multiplayer.multiplayer_peer.disconnect_peer(id)
@@ -671,6 +875,14 @@ func _on_peer_connected(id: int) -> void:
 func _on_peer_disconnected(id: int) -> void:
 	if not is_authority():
 		return
+	if mode == Mode.DEDICATED:
+		if _class_queue != null:
+			_class_queue.drop(str(id))
+		for seat in [HOST_SEAT, GUEST_SEAT]:
+			if int(_seat_peer[seat]) == id:
+				_seat_peer[seat] = 0
+		connection_changed.emit("player_left")
+		return
 	var seat := release_peer(id)
 	if seat < 0:
 		return
@@ -685,6 +897,9 @@ func _on_connected_to_server() -> void:
 	if mode == Mode.CLIENT:
 		connection_changed.emit("joined")
 		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
+		if _queue_client and SpellKits.is_roster_class(selected_class_id):
+			rpc_select_class.rpc_id(1, selected_class_id)
+			rpc_enqueue.rpc_id(1)
 		_update_window_title()
 
 
@@ -707,6 +922,7 @@ static func plan_from_args(args: PackedStringArray) -> Dictionary:
 	var planned := "hotseat"
 	var port := DEFAULT_PORT
 	var address := "127.0.0.1"
+	var class_id := ""
 	var i := 0
 	while i < args.size():
 		var arg := str(args[i])
@@ -720,8 +936,8 @@ static func plan_from_args(args: PackedStringArray) -> Dictionary:
 			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
 				i += 1
 				port = int(args[i])
-		elif arg == "--join":
-			planned = "client"
+		elif arg == "--queue":
+			planned = "queue"
 			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
 				i += 1
 				var spec := str(args[i])
@@ -731,20 +947,37 @@ static func plan_from_args(args: PackedStringArray) -> Dictionary:
 					port = int(parts[1])
 				else:
 					address = spec
+		elif arg == "--class":
+			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
+				i += 1
+				class_id = str(args[i])
+		elif arg == "--join":
+			planned = "client"
+			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
+				i += 1
+				var join_spec := str(args[i])
+				if join_spec.contains(":"):
+					var join_parts := join_spec.split(":")
+					address = join_parts[0]
+					port = int(join_parts[1])
+				else:
+					address = join_spec
 		elif arg == "--hotseat":
 			planned = "hotseat"
 		i += 1
-	return {"mode": planned, "port": port, "address": address}
+	return {"mode": planned, "port": port, "address": address, "class_id": class_id}
 
 
 func _parse_user_args() -> void:
 	var plan := plan_from_args(OS.get_cmdline_user_args())
 	listen_port = int(plan["port"])
 	join_address = str(plan["address"])
+	_cli_class = str(plan.get("class_id", ""))
 	var planned := str(plan["mode"])
 	_cli_dedicated = planned == "dedicated"
 	_cli_host = planned == "host"
 	_cli_join = planned == "client"
+	_cli_queue = planned == "queue"
 
 
 func _update_window_title() -> void:
@@ -759,7 +992,11 @@ func _update_window_title() -> void:
 		Mode.DEDICATED:
 			win.title = "STASIUM XII — DEDICATED (no seat)"
 		Mode.CLIENT:
-			if local_seat == HOST_SEAT:
+			if _queue_client and not matched:
+				win.title = "STASIUM XII — QUEUE (%s)" % SpellKits.display_name(selected_class_id)
+			elif matched:
+				win.title = "STASIUM XII — SEAT %d (%s)" % [local_seat, SpellKits.display_name(selected_class_id)]
+			elif local_seat == HOST_SEAT:
 				win.title = "STASIUM XII — CLIENT (Kestrel / seat 0)"
 			elif local_seat == GUEST_SEAT:
 				win.title = "STASIUM XII — CLIENT (Ironjaw / seat 1)"
@@ -816,6 +1053,95 @@ func _clock_display_seconds(snap: Dictionary) -> int:
 	if remaining <= 0.0:
 		return 0
 	return int(ceili(remaining))
+
+
+func _open_dedicated_match(match: Dictionary) -> Dictionary:
+	var class_ids: Array = match.get("class_ids", [])
+	_match_class_ids = class_ids.duplicate()
+	match_id = str(match.get("id", ""))
+	matched = true
+	for seat_info in match.get("seats", []):
+		if typeof(seat_info) != TYPE_DICTIONARY:
+			continue
+		var session_id := str(seat_info.get("session_id", ""))
+		var seat := int(seat_info.get("seat", -1))
+		if session_id.is_valid_int() and seat >= 0 and seat <= GUEST_SEAT:
+			var peer_id := int(session_id)
+			_seat_peer[seat] = peer_id
+			_seat_held[seat] = true
+			if seat == GUEST_SEAT:
+				guest_peer_id = peer_id
+	# Snapshot first, then tell each player their seat with that state packed in.
+	var opened: Dictionary = reset_match({"classes": _match_class_ids.duplicate()})
+	_notify_match_seats(match)
+	var name_0 := ""
+	var name_1 := ""
+	if _match_class_ids.size() > 0:
+		name_0 = SpellKits.display_name(str(_match_class_ids[0]))
+	if _match_class_ids.size() > 1:
+		name_1 = SpellKits.display_name(str(_match_class_ids[1]))
+	lobby_text = "Match %s — seat 0 %s, seat 1 %s." % [match_id, name_0, name_1]
+	connection_changed.emit("match_started")
+	var out: Dictionary = match.duplicate(true)
+	out["ok"] = bool(opened.get("ok", false))
+	return out
+
+
+func _notify_match_seats(match: Dictionary) -> void:
+	if not _rpc_live():
+		return
+	for seat_info in match.get("seats", []):
+		if typeof(seat_info) != TYPE_DICTIONARY:
+			continue
+		var session_id := str(seat_info.get("session_id", ""))
+		if not session_id.is_valid_int():
+			continue
+		var peer_id := int(session_id)
+		if peer_id <= 0:
+			continue
+		var seat := int(seat_info.get("seat", -1))
+		rpc_match_assigned.rpc_id(peer_id, {
+			"seat": seat,
+			"class_id": str(seat_info.get("class_id", "")),
+			"match_id": str(match.get("id", "")),
+			"packed": pack_result(last_result, seat),
+		})
+
+
+func _with_match_classes(config: Dictionary) -> Dictionary:
+	var out: Dictionary = config.duplicate(true)
+	if not out.has("classes") and not out.has("seat_classes") and not _match_class_ids.is_empty():
+		out["classes"] = _match_class_ids.duplicate()
+	return out
+
+
+func _arm_dedicated_queue() -> void:
+	_queue_client = false
+	selected_class_id = ""
+	matched = false
+	match_id = ""
+	_class_queue = _MatchQueueScript.new()
+	_match_class_ids = []
+
+
+func _clear_queue_state() -> void:
+	_queue_client = false
+	selected_class_id = ""
+	matched = false
+	match_id = ""
+	lobby_text = ""
+	_class_queue = null
+	_match_class_ids = []
+
+
+func _client_link_up() -> bool:
+	if not is_inside_tree() or multiplayer.multiplayer_peer == null:
+		return false
+	return multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+
+
+func _rpc_live() -> bool:
+	return is_inside_tree() and multiplayer.multiplayer_peer != null
 
 
 func _fail(reason: String) -> Dictionary:

@@ -56,6 +56,61 @@ static func has_board_data(snap: Dictionary) -> bool:
 	return false
 
 
+## Snap Wall cells. `blocked_tiles` is the snapshot key this chrome binds.
+## `last_events` entries with type `snap_wall` also paint (cells / tiles / to).
+## `walls` is not read. This client does not place the wall.
+static func blocked_cells(snap: Dictionary) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if snap.is_empty():
+		return out
+	_append_blocked_payload(out, snap.get("blocked_tiles", null))
+	var events: Variant = snap.get("last_events", [])
+	if typeof(events) != TYPE_ARRAY:
+		return out
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "snap_wall":
+			continue
+		if event.has("cells"):
+			_append_blocked_payload(out, event.get("cells", []))
+		elif event.has("tiles"):
+			_append_blocked_payload(out, event.get("tiles", []))
+		if event.has("to"):
+			_append_blocked_cell(out, event.get("to"))
+	return out
+
+
+static func _append_blocked_payload(out: Array[Vector2i], raw: Variant) -> void:
+	if raw == null:
+		return
+	if typeof(raw) == TYPE_ARRAY:
+		for item in raw:
+			_append_blocked_cell(out, item)
+		return
+	_append_blocked_cell(out, raw)
+
+
+static func _append_blocked_cell(out: Array[Vector2i], value: Variant) -> void:
+	if value == null:
+		return
+	if (value is String or value is StringName) and str(value).strip_edges() == "":
+		return
+	if not (value is Vector2i or value is Vector2 or value is Dictionary or value is Array or value is String or value is StringName):
+		return
+	if value is Dictionary:
+		var data: Dictionary = value
+		if not data.has("x") and not data.has("y") and not data.has("pos") and not data.has("cell") and not data.has("grid_pos"):
+			return
+	if value is Array and (value as Array).size() < 2:
+		return
+	var cell := _as_cell(value)
+	if cell.x < 0 or cell.y < 0:
+		return
+	if not out.has(cell):
+		out.append(cell)
+
+
 ## Sim-legal walk dests only. Chrome must not invent climb costs or client reachability.
 static func walk_dests(legal: Array) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []

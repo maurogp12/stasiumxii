@@ -1,6 +1,6 @@
 # Phase E — host core (listen-host and dedicated)
 
-**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, and not matchmaking or login.
+**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, and not login. The dedicated process is also the SELECT_CLASS queue host (`kestrel` / `ironjaw` allowlist).
 
 Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` directly when `NetSession` is HOTSEAT.
 
@@ -20,7 +20,9 @@ The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Mar
 godot --headless --path . -- --dedicated 7777
 ```
 
-First joiner is seat 0 (Kestrel). Second joiner is seat 1 (Ironjaw). Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request.
+Queue clients confirm a class, then enqueue. The RPC surface is `rpc_select_class` → `rpc_class_result` `{ok, illegal, reason, class_id}`, `rpc_enqueue` → `rpc_queue_result` `{ok, reason, queued}`, then `rpc_match_assigned` `{seat, class_id, match_id, packed}`. Seat 0 is the first confirmed player and seat 1 is the second. The allowlist is `kestrel` and `ironjaw`. Listen-host is unchanged: that window is seat 0 (Kestrel) and the guest is seat 1 (Ironjaw).
+
+Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request.
 
 A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
 
