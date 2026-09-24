@@ -1,6 +1,6 @@
 # STASIUM XII
 
-Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client. Clients submit Intent; only the host rolls.
+Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicated** headless host. Godot 4.7+. Combat lives in `CombatSim`; the board is a thin client. Clients submit Intent; only the authority rolls.
 
 ## How to play
 
@@ -10,11 +10,12 @@ Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. 
 4. Each combat turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. After deploy, a **30s TIME** countdown is visible on **both** windows (including the watching seat); at 0 the **host** auto End Turns (same as the button). The clock is host-owned: paint `turn_time_seconds` (ceil of `turn_time_remaining`), `turn_time_limit` 30, `turn_time_running`, `turn_timer: "host"`. Guests hydrate; they do not tick. The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `CombatSim.TURN_TIME_LIMIT` (and `TurnClock.DURATION_SEC`) to retune. The clock is hidden during DEPLOYMENT (no deploy timer).
 5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands the cheapest orthogonal path (weighted pathfinder). Walk cost is dest **terrain MP + uphill integer z**; downhill is free. Legal tiles come from remaining MP. Live `reset_match` seeds the **Director-stamped Locked 8×8 crop** terrain of Mauro’s 12×12 (origin row 2, col 2 — see below) and a **new elevation seed** (smooth noise z 0–3). The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel). Hit % / facing cones / spell LoS ignore height.
 6. The action bar shows the **local** kit online (`snapshot.local_seat`) and the active kit in hot-seat (`local_seat < 0` → `active_seat`). Snapshot does not encode “show active kit”. Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** sit on a cardinal pad (N top, W left, E right, S bottom). **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is the 4 orthogonal neighbors** (N/S/E/W only):
-   - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Legal dests are **exactly the 4 ortho neighbors** (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the **same stand-on gates as walk** (walkable, not occupied, not lava, climb≤1 / drop≤2). Gate only — no terrain+elev MP spend. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). **Facing is unchanged** on Advance (no auto-face). Kestrel never sees Advance chrome and never gains Impact.
+   - **Advance** (Ironjaw only) — dest-click teleport, **3 AP / 0 MP**. Legal dests are **exactly the 4 ortho neighbors** (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the **same stand-on gates as walk** (walkable, not occupied, not lava, climb≤1 / drop≤2). Gate only — no terrain+elev MP spend. Board highlights, the hover sample, and click-accept read those `legal_intents` cells only (hot-seat and NetSession). A click off that set is rejected with the existing refund coach. Instant snap (no hop animation). `CombatSim` ignores a client `intent.path`. Works at 0 MP. Does not zero leftover MP; after Advance, leftover MP still walks (`legal_intents` offers moves whenever MP > 0, even at 0 AP). No roll. +1 Impact if you land Chebyshev-adjacent to an enemy. After the snap, spell selection clears and walk chrome returns from `legal_intents` (remaining MP is still spendable). **Facing is unchanged** on Advance (no auto-face). Kestrel never sees Advance chrome and never gains Impact.
    - **Mark Shot** (Kestrel) — 2 AP, range 2–5 Chebyshev, 8 Air. Selecting it paints the Chebyshev 2–5 ring (walk chrome stays off). +1 Mark on the **target** if it hits.
    - **Detonate** (Kestrel) — 3 AP / 0 MP, range 1–6 Chebyshev. Needs 1+ Marks on that target. On hit: 6+6×M Air and **consumes** those Marks. On miss: Marks stay (AP/MP stay spent).
    - **Strike** (Ironjaw) — 3 AP, range 1, 16 Earth. +1 Impact on Ironjaw if it hits.
-   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On hit: 6 Earth, +1 Impact, push the target 1 Chebyshev cell away along the line. **Director Locked Shoulder:** walkable empty dest still pushes (damage/Impact unchanged). **Occupied dest** is a hard body-block: no bounce, no stagger; CombatSim emits `push_blocked`; client toasts **PushBlocked** and does not hop. **Unwalkable / lava / OOB dest** bounces (target stays/returns) and **staggers** the pushed unit: **4 HP**, plus **1 MP** if current MP ≥ 1 (HP only if MP is 0). CombatSim emits `push_bounce` + `stagger` with hp/mp deltas; client toasts **Bounce** and does not hop. Hit/Impact feedback still plays.
+   - **Shoulder** (Ironjaw) — 2 AP / 0 MP, range 1. On hit: 6 Earth, push the target 1 Chebyshev cell away along the line. **Director Locked Shoulder Impact:** a clean push onto walkable empty ground is **+1 Impact**. **OOB / truly blocked** (not lava) bounces and **staggers** (**4 HP**, plus **1 MP** if current MP ≥ 1) for **+2 Impact only** (that +2 does not stack with the +1). **Occupied dest** stays `push_blocked` (hard body-block, no bounce, no stagger, no Impact beyond the hit +1). **Lava** is hazardous, not a wall: the forced push **lands on lava** and applies **Burn** (no bounce, no stagger). Voluntary walk onto lava stays impassable. Client toasts **PushBlocked**, **Bounce** plus a single **+2 Impact** (never also +1), a clean Shoulder **+1 Impact**, or **Lava - Burn** when the push lands on lava (not Bounce). It does not hop on block or bounce. Hit/Impact feedback still plays. Burn icons and remaining turns paint from the host snapshot.
+   - **Burn** — applied when a forced Shoulder lands on lava. **4 HP** at the **start of the victim’s turn**, duration **2** (two ticks). Re-apply **refreshes** duration and does not stack. Burn continues after the unit leaves lava. Death is checked after each tick. `burn_remaining` is on the unit snapshot; apply emits `status`/`burn` and each tick emits `burn`, so Godot chrome and a host replica paint the same state.
    - **Crush** (Ironjaw) — 4 AP / 0 MP, range 1. Needs/spends 2 Impact (spend on hit; miss retains Impact). 24 Earth on hit. **Stun 1** if Impact was **4 before** the spend. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`). When that seat's turn starts, CombatSim **auto-resolves `end_turn`** — the player never presses End Turn. `legal_intents` is empty of move/cast/face (auto path only). HUD greys Walk/Face/spells, shows a STUN badge, and presents a **skip banner** from that auto `end_turn` event (the coach line is the log).
 7. **Face** with the N/E/S/W buttons, or right-click a tile to face that direction (0 AP). Walks set facing from each hop (final = last hop). Advance teleport leaves facing unchanged. In-place Face is still available. Back hits deal ×1.20; front/side are ×1.00.
 8. A **miss** still spends AP/MP and deals nothing. An **illegal** cast is rejected and refunded. The coach line under the board tells them apart.
@@ -30,12 +31,12 @@ Phase A local hot-seat duel, plus a **listen-host** 2-client proto. Godot 4.7+. 
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Listen-host proto **and** the dedicated queue host. ENet / MultiplayerAPI RPC. Listen-host: the host window is Kestrel (seat 0) and owns CombatSim. Dedicated: the server is not a fighter. Players `SELECT_CLASS` (`kestrel` or `ironjaw`) before they join the queue. A pair starts a match whose seats use those class ids (queue order, not host=Kestrel / guest=Ironjaw). HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
+| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. It does not spawn a default pair: players `SELECT_CLASS` (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`) then queue. A pair starts a match whose seats use those class ids. **Listen-host** (`--host`) is the same core with seat 0 fixed as Kestrel and the guest as Ironjaw. HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
 | `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Rejects any other `class_id`. Pairs the next two confirmed sessions. |
-| `scenes/online_lobby.tscn` | Class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
+| `scenes/online_lobby.tscn` | Five-class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
-| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked vs Bounce, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights are `legal_intents` dests only. Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
+| `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
 | `data/spell_tooltip.gd` | Proposed attack-card formatter. Reads `CombatSim.preview_cast` only. Does not invent kit numbers. |
 
 Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready` / `confirm`. During DEPLOYMENT only `place` / `reposition` / `ready` are legal.
@@ -58,7 +59,8 @@ Intents: `end_turn` | `face` | `move` | `cast` | `place` / `reposition` | `ready
 - Advance / Shoulder / Crush are Ironjaw-only. Detonate / Mark Shot are Kestrel-only.
 - Kestrel then Ironjaw
 - **Locked Stun (A′):** Stun 1 blocks move + cast + face. When that seat's turn starts, CombatSim auto-resolves `end_turn` (player never presses End Turn). `legal_intents` has no move/cast/face (auto path only). `stun_remaining` on the unit; decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is the one that is skipped. HUD greys Walk/Face/spells and shows a STUN badge. Client shows a skip banner/log from that event and does not re-implement the skip.
-- **Director Locked Shoulder:** occupied dest = no-move + `push_blocked` (hard body-block, no stagger). Unwalkable / lava / OOB dest = bounce (target stays) + stagger **4 HP** (+ **1 MP** if current MP ≥ 1). Walkable empty dest still pushes. Damage/Impact on the hit are unchanged. Client toasts **PushBlocked** vs **Bounce**, does not hop, still plays hit/Impact feedback.
+- **Director Locked Shoulder:** occupied dest = no-move + `push_blocked` (hard body-block, no stagger; Impact stays the hit +1). Walkable empty dest pushes for **+1 Impact**. OOB / truly blocked (not lava) = bounce + stagger **4 HP** (+ **1 MP** if current MP ≥ 1) for **+2 Impact only** (no stack with +1). Lava is hazardous for the forced push: the unit lands and gains **Burn**. Voluntary walk onto lava stays impassable. Client toasts **PushBlocked**, **Bounce +2 Impact** (not also +1), clean Shoulder **+1 Impact**, or **Lava - Burn** (not Bounce). It does not hop on block or bounce, and still plays hit/Impact feedback. Burn icons paint from `burn_remaining` on the host snapshot (no client tick).
+- **Director Locked Burn:** 4 HP at the start of the victim’s turn, duration 2. Re-apply refreshes duration and does not stack. Continues after leaving lava. Death check after each tick. Snapshot `burn_remaining` plus `status`/`burn` events feed Godot chrome. The dedicated host process owns that CombatSim state; clients only hydrate it.
 
 ## Open (not Locked) — deploy leftovers
 
@@ -80,22 +82,22 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Omitted (not silent defaults)
 
-- Login / MultiplayerSynchronizer (listen-host ENet and the Locked-roster queue are in; see below)
+- Login / MultiplayerSynchronizer (listen-host ENet, the dedicated process, and the Locked-roster queue are in; see below)
 - Pulse, reconnect, relay
 - Step-shot, Rain, Longbow, Avalanche
-- Other classes (Mender, Gloam, Bastion)
+- Mender / Gloam / Bastion spell numbers (the class ids are on the SELECT_CLASS allowlist; cost, range, damage, and element stay Open)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
 ## A03–A07 (provisional Open, not Locked)
 
-These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (dest-click weighted pathfinder; cost = dest terrain MP + uphill elevation; facing follows each hop). Phase A flat Manhattan / H-first is superseded. **Advance is Locked** (4 orthogonal neighbors only — Chebyshev/Manhattan 1 cardinal dest-click teleport, 3 AP / 0 MP; facing unchanged; same stand-on gates as walk). **Locked Stun (A′)** (blocks move + cast + face; auto `end_turn` on turn start) and **Director Locked Shoulder** (occupied = `push_blocked`; unwalkable/lava/OOB = bounce + stagger) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, height→hit/facing/LoS, stairs/ramps/flying, or other Opens.
+These are playable stubs so the duel runs. They are **not** approved defaults. **A01 Marks-on-target is Locked** (Marks live on the target, cap 5; Detonate reads/consumes that stack) and is no longer listed as Open. **A02 walk is Locked** (dest-click weighted pathfinder; cost = dest terrain MP + uphill elevation; facing follows each hop). Phase A flat Manhattan / H-first is superseded. **Advance is Locked** (4 orthogonal neighbors only — Chebyshev/Manhattan 1 cardinal dest-click teleport, 3 AP / 0 MP; facing unchanged; same stand-on gates as walk). **Locked Stun (A′)** (blocks move + cast + face; auto `end_turn` on turn start) and **Director Locked Shoulder** (occupied = `push_blocked`; OOB / truly blocked = bounce + stagger and +2 Impact; lava land applies Burn) are no longer Open. A06 still notes the adjacent-Impact stub. **Ask before inventing** further defaults. Do not invent Step-shot, Gust, Mark Shot +5, height→hit/facing/LoS, stairs/ramps/flying, or other Opens.
 
 | ID | Stub used here |
 | --- | --- |
 | A03 | Gust omitted. WindMod omitted (not invented as 1.0). Weather = Calm. |
 | A04 | No crit roll. No elemental riders. |
-| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); auto `end_turn` on that seat's turn start (player never presses End Turn); decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is skipped. **Director Locked Shoulder:** occupied dest = `push_blocked` (no bounce/stagger). Unwalkable / lava / OOB dest = bounce + stagger 4 HP (+1 MP if current MP ≥ 1). Walkable empty dest still pushes. |
+| A05 | Resist 0, damage `roundi` to nearest int. WindMod omitted from the formula. **Locked Stun (A′):** Stun 1 blocks move + cast + face (`stunned_cannot_act`); auto `end_turn` on that seat's turn start (player never presses End Turn); decrement at start of that unit's turn after setting stunned-this-turn so the stunned seat's turn is skipped. **Director Locked Shoulder:** occupied dest = `push_blocked` (no bounce/stagger; Impact stays +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) = bounce + stagger 4 HP (+1 MP if current MP ≥ 1) for +2 Impact only. Lava forced-push lands and applies **Burn** (4 HP at the victim’s turn start, duration 2, refresh no stack). Voluntary walk onto lava stays impassable. |
 | A06 | Advance dest-click teleport, exactly the 4 ortho neighbors (N/S/E/W; Chebyshev 1 and Manhattan 1, cardinal only). Manhattan 2 and any diagonal / (1,1) are rejected. 3 AP / 0 MP, instant snap. Dest uses the same stand-on gates as walk (walkable / occupied / lava / climb≤1 / drop≤2). Gate only — no MP spend. `submit` does not zero leftover MP; leftover MP still walks (`legal_intents` is mp>0, not AP). Adjacency = Chebyshev 1 after landing. Facing unchanged (Advance does not auto-face). |
 | A07 | Back = 90° rear cone (facing axis opposite and dominant), not exact-rear-tile-only. |
 
@@ -111,11 +113,39 @@ godot --headless --path . -s res://tests/run_net_session_tests.gd
 godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 ```
 
-## How to playtest online (listen-host proto)
+## How to playtest a dedicated host (three processes)
 
-**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Picked over WebSocket because this is a desktop playtest (two windows on localhost/LAN). WebSocket stays the later HTML5 option; same Intent RPC surface. **Listen-host** — the host window is Kestrel (seat 0) and the CombatSim authority. No login. The dedicated queue (class pick, then pair) is the next section.
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. Moving the server to another machine is the join address, not a new protocol. No login. The dedicated queue (class pick, then pair) is the next section. Listen-host stays a fixed Kestrel / Ironjaw duel.
 
-Local hot-seat is still the default `main.tscn` path.
+The dedicated process and the listen-host window share one host core in `NetSession`. The server owns the match, the turn, the 30s timer, HP/MP, Marks, Impact, Burn, terrain, elevation, pushes, and death. Clients send Intent and paint snapshot/events. They never roll and never tick the clock.
+
+Local hot-seat is still the default `main.tscn` path. Listen-host remains `--host`.
+
+**Machine B — headless authority (no seat):**
+
+```bash
+godot --headless --path . -- --dedicated 7777
+```
+
+**Machine A — first client.** Intent and presentation only. Pass `--class` with one allowlist id (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`):
+
+```bash
+godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --queue <server-ip>:7777 --class kestrel
+```
+
+**Machine C — second client** (any other Locked class, including a mirror):
+
+```bash
+godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue <server-ip>:7777 --class bastion
+```
+
+Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. The class on a seat is the class that peer confirmed, not a fixed Kestrel / Ironjaw pair. Seat 0’s **New Match** asks the server to reset with those same class ids; the server picks the new seed. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+
+`--join` without `--queue` is the listen-host guest path below. **Host match** / **Join match** on the lobby are that fixed duel. **Host dedicated** / class button / **Join queue** are the dedicated path.
+
+## How to playtest online (listen-host, optional)
+
+**Listen-host** — one window is Kestrel (seat 0) **and** the CombatSim authority. One guest is Ironjaw. Same ENet host core as `--dedicated`.
 
 **Two instances, one duel:**
 
@@ -129,15 +159,17 @@ godot --path . --position 1000,40 -- --join 127.0.0.1:7777
 
 Or open `scenes/online_lobby.tscn`, **Host match** on one window and **Join match** (`127.0.0.1` / `7777`) on the other. **Local hot-seat** on that lobby returns to the unchanged single-window path.
 
-Play: each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (host always Kestrel spells, guest always Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Guest never rolls and never ticks the clock. Host expiry auto End Turns — chrome only paints. New Match is host-only.
+Play (dedicated or listen-host): each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (the class on `local_seat`; listen-host is still Kestrel then Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
 
-LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
+Listen-host LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
 
 Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
 
 ## How to playtest SELECT_CLASS → dedicated match
 
-Locked roster only: **Kestrel** or **Ironjaw**. The dedicated host is not a fighter. Each player confirms a class, then joins the queue. The first two confirmed players become a match. Seat 0 is whoever queued first; seat 1 is whoever queued second. Their kits are the classes they picked (two Ironjaws is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
+Allowlist: `kestrel` | `ironjaw` | `mender` | `gloam` | `bastion`. The dedicated host is not a fighter and does not boot the default pair. Each player confirms a class, then joins the queue. Any two Locked classes pair. Seat 0 is the first queued session unless that session is bound to the other transport seat. Kits follow the chosen `class_id` (two of the same class is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
+
+Mender, Gloam, and Bastion have no stamped spell list. They spawn at **80 HP / 0 Marks / 0 Impact** and the Locked combat refill (**6 AP / 3 MP**). The action bar stays empty for those kits. Gloam carries Umbral 0–4. Snap Wall cells block only while a Bastion is in the match.
 
 **Three windows** (lobby scene):
 
@@ -145,16 +177,45 @@ Locked roster only: **Kestrel** or **Ironjaw**. The dedicated host is not a figh
 # Window A — dedicated host. No class. Leave this window open.
 godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --dedicated 7777
 
-# Window B — pick a class, then queue. CLI or the Kestrel / Ironjaw button + Join queue.
-godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class kestrel
+# Window B — pick a class, then queue.
+godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class gloam
 
-# Window C — the other class (or the same). The board opens when the pair matches.
-godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class ironjaw
+# Window C — any other Locked class. The board opens when the pair matches.
+godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class bastion
 ```
 
-Window A should read `Match m1 — seat 0 Kestrel, seat 1 Ironjaw`. Windows B and C open `main.tscn` on those seats. Deploy, then check the action bar: Kestrel has Mark Shot / Detonate; Ironjaw has Advance / Strike / Shoulder / Crush. Swap the `--class` flags and seat 0 should be Ironjaw (Advance on that window), not a fixed host kit.
+Window A should read `Match m1 — seat 0 Gloam, seat 1 Bastion`. Windows B and C open `main.tscn` on those seats. Swap the `--class` flags and the seats follow the new ids.
 
-Buttons, no CLI: on the lobby, window A presses **Host dedicated**. Windows B and C press **Kestrel** or **Ironjaw**, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
+Buttons, no CLI: window A presses **Host dedicated**. Windows B and C press one of **Kestrel**, **Ironjaw**, **Mender**, **Gloam**, **Bastion**, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the listen-host duel and ignore the class pick.
+
+### Godot chrome — RPC and snapshot fields
+
+Client → dedicated authority:
+
+| RPC | Args |
+| --- | --- |
+| `rpc_select_class` | `class_id: String` |
+| `rpc_enter_matchmaking` | none |
+
+Authority → client:
+
+| RPC | Args |
+| --- | --- |
+| `rpc_class_selected` | `class_id: String` |
+| `rpc_class_rejected` | `reason: String`, `class_id: String` |
+| `rpc_matchmaking_status` | `status: String` — `waiting`, then `matched`, or `rejected:<reason>` |
+| `rpc_match_found` | `{seat, class_id, classes, match_id}` after the state push |
+| `rpc_push_state` | packed snapshot (existing) |
+
+Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_matched`, `not_dedicated`, `no_seat`.
+
+`reset_match` config (authority): `classes: ["gloam", "bastion"]` or `seat_classes: {0: "gloam", 1: "bastion"}`. Unknown ids fall back to Kestrel then Ironjaw. Snapshot copies them on `match_config.classes` and `match_config.seat_classes`.
+
+`snapshot.prematch`: `phase` is `SELECT_CLASS`, `MATCHMAKING`, or `MATCH`; `local_class_id`, `local_queued`, `opponent_queued`, `match_live`. `snapshot.server_mode` is `dedicated` or `host`. `snapshot.net.dedicated` stays true on a dedicated client's hydrated view.
+
+Unit fields for the stamps: `umbral` / `umbral_cap` (Gloam, 0–4), `aegis`, `shade`, `invisible`. `snapshot.snap_walls` plus `snapshot.snap_wall_active` (true only while a Bastion is in the match).
+
+Open (no card, not on the action bar): Ambush and Aegis Break costs, range, damage, element, and class owner. Snap Wall placement. Mender / Gloam / Bastion spell lists. `CombatSim.apply_locked_resolve(spell_id, connected, actor_seat, target_seat)` is the stamped rule hook, not a client Intent.
 
 Headless: `godot --headless --path . -s res://tests/run_matchmaking_tests.gd`.
 
@@ -304,7 +365,7 @@ Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `
 1. Hover (or long-press) **Mark Shot**: card is `preview_cast` — 2 AP / 0 MP, range 2–5, hit/miss kit lines, Locked HIT % for the current dest, and `sample_damage` from CritMult 1.0 × live Facing. No +5. Enabled buttons must show the card (same path as Detonate).
 2. Hover **Detonate** at **0 Marks**: card **leads with “needs Marks”**. Keep costs / range / HIT %. Do not lead with sample 6. `preview_cast` is `legal=false`, `reason=needs_marks`, `sample_damage` is null; on-hit still explains 6+6×M.
 3. After Marks land, hover **Detonate**: sample uses **current Marks** (`6+6*M`). Miss keeps Marks.
-4. End Turn. Hover **Advance**: orthogonal-neighbor teleport, no HIT %, no sample. **Shoulder** passes through Director Locked Shoulder (occupied `push_blocked`; unwalkable/lava/OOB bounce + stagger). **Crush** at 4 Impact shows **Stun 1 (Locked A′) this cast**; at 0–2 Impact that flag stays off.
+4. End Turn. Hover **Advance**: orthogonal-neighbor teleport, no HIT %, no sample. **Shoulder** passes through Director Locked Shoulder (occupied `push_blocked`; OOB / truly blocked bounce + stagger for +2 Impact; lava land applies Burn). **Crush** at 4 Impact shows **Stun 1 (Locked A′) this cast**; at 0–2 Impact that flag stays off.
 5. At **960×720**, Ironjaw's seven action buttons wrap instead of overlapping. Face N/E/S/W stay usable.
 
 ## How to test walk-after-Advance and last-hop facing
@@ -318,5 +379,5 @@ Headless: `godot --headless --path . -s res://tests/run_combat_tests.gd`. Live `
 ## How to test Stun suppress and Shoulder bounce / PushBlocked
 
 1. Get Ironjaw to **4 Impact** (Strike/Shoulder hits), then **Crush** Kestrel. **End Turn**. Kestrel's turn **auto-ends** (Locked A′ — player never presses End Turn). The HUD shows a **skip banner** (e.g. “Kestrel stunned — turn skipped”) and the coach line logs the event. Ironjaw acts again. Kestrel's card/pawn still show **STUN** while that skipped turn is served. After Ironjaw Ends again, Kestrel acts normally (Walk/Face/spells return). Move/cast/face never become legal on the stunned turn (`stunned_cannot_act`). The client does not press End Turn for the skip.
-2. Shoulder Kestrel into the west edge (Ironjaw at (1,0), Kestrel at (0,0) facing E): toast **Bounce**, Kestrel does not hop, 6 Earth + stagger **4 HP** (+ **1 MP** if they had MP) apply, and Ironjaw Impact still ticks. Shoulder into an occupied dest still toasts **PushBlocked** with no stagger.
+2. Shoulder Kestrel into the west edge (Ironjaw at (1,0), Kestrel at (0,0) facing E): toast **Bounce** plus **+2 Impact** (not also +1), Kestrel does not hop, 6 Earth + stagger **4 HP** (+ **1 MP** if they had MP) apply. Shoulder into an occupied dest still toasts **PushBlocked** with no stagger. A forced push onto lava toasts **Lava - Burn** (not Bounce) and paints a **BURN** badge with the snapshot duration. Walking onto lava is still rejected.
 

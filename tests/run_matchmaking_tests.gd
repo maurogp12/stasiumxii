@@ -36,17 +36,30 @@ func _run() -> void:
 	_test_queue_client_needs_a_class()
 	_test_third_waits()
 	_test_source_stamps()
+	_test_five_class_pair()
+	_test_bound_seats_keep_class()
+	_test_proto_defaults()
+	_test_umbral_cap()
+	_test_ambush_miss_keeps_shade()
+	_test_aegis_break()
+	_test_snap_wall_blocks_only_with_bastion()
+	_test_open_spells_are_not_free_casts()
 
 
 func _test_roster_gate() -> void:
-	eq(SpellKits.LOCKED_ROSTER.size(), 2, "roster is two classes")
+	eq(SpellKits.LOCKED_ROSTER.size(), 5, "roster is five classes")
 	eq(SpellKits.is_roster_class("kestrel"), true, "kestrel is on the roster")
 	eq(SpellKits.is_roster_class(" Ironjaw "), true, "ironjaw normalizes")
-	eq(SpellKits.is_roster_class("mender"), false, "mender is not on the roster")
-	eq(SpellKits.is_roster_class("gloam"), false, "gloam is not on the roster")
-	eq(SpellKits.is_roster_class("bastion"), false, "bastion is not on the roster")
+	eq(SpellKits.is_roster_class("mender"), true, "mender is on the roster")
+	eq(SpellKits.is_roster_class("gloam"), true, "gloam is on the roster")
+	eq(SpellKits.is_roster_class("bastion"), true, "bastion is on the roster")
+	eq(SpellKits.is_roster_class("pulse"), false, "pulse is not on the roster")
 	eq(SpellKits.is_roster_class(""), false, "empty class is rejected")
-	eq(SpellKits.class_spells("mender").is_empty(), true, "no mender spell list")
+	eq(SpellKits.class_spells("mender").is_empty(), true, "mender has no invented spell list")
+	eq(SpellKits.class_spells("gloam").is_empty(), true, "gloam has no invented spell list")
+	eq(SpellKits.class_spells("bastion").is_empty(), true, "bastion has no invented spell list")
+	eq(SpellKits.element_of("gloam"), "", "gloam element stays Open")
+	eq(SpellKits.UMBRAL_CAP, 4, "Umbral cap is 4")
 	var advance: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	eq(int(advance.get("ap", -1)), 3, "Advance stays 3 AP")
 	eq(int(advance.get("mp", -1)), 0, "Advance stays 0 MP")
@@ -57,14 +70,14 @@ func _test_roster_gate() -> void:
 
 func _test_invalid_class_does_not_confirm() -> void:
 	var queue := MatchQueue.new()
-	for bad in ["mender", "gloam", "bastion", "pulse", "", "  "]:
+	for bad in ["pulse", "blends", "", "  "]:
 		var rejected: Dictionary = queue.handle("p1", {"type": MatchQueue.SELECT_CLASS, "class_id": bad})
 		eq(bool(rejected.get("ok", true)), false, "SELECT_CLASS rejects %s" % bad)
 		eq(str(rejected.get("reason", "")), "invalid_class", "reject reason is invalid_class for %s" % bad)
 		eq(queue.session("p1").is_empty(), true, "rejected SELECT_CLASS does not store %s" % bad)
 	var kept: Dictionary = queue.select_class("p2", "kestrel")
 	eq(bool(kept.get("ok", false)), true, "kestrel SELECT_CLASS confirms")
-	var again: Dictionary = queue.select_class("p2", "bastion")
+	var again: Dictionary = queue.select_class("p2", "pulse")
 	eq(bool(again.get("ok", true)), false, "later invalid SELECT_CLASS is rejected")
 	eq(str(queue.session("p2").get("class_id", "")), "kestrel", "confirmed class stays kestrel")
 	eq(bool(queue.session("p2").get("confirmed", false)), true, "session stays confirmed")
@@ -74,9 +87,9 @@ func _test_enqueue_requires_class() -> void:
 	var missing: Dictionary = _host.server_enqueue("nobody")
 	eq(bool(missing.get("ok", true)), false, "enqueue without a session fails")
 	eq(str(missing.get("reason", "")), "class_required", "reason is class_required")
-	var bad: Dictionary = _host.server_select_class("late", "mender")
-	eq(bool(bad.get("ok", true)), false, "server SELECT_CLASS rejects mender")
-	eq(_host.server_session("late").is_empty(), true, "server does not store mender")
+	var bad: Dictionary = _host.server_select_class("late", "pulse")
+	eq(bool(bad.get("ok", true)), false, "server SELECT_CLASS rejects pulse")
+	eq(_host.server_session("late").is_empty(), true, "server does not store pulse")
 	var queued: Dictionary = _host.server_enqueue("late")
 	eq(bool(queued.get("ok", true)), false, "unconfirmed session cannot queue")
 	eq(str(queued.get("reason", "")), "class_required", "unconfirmed enqueue is class_required")
@@ -177,11 +190,11 @@ func _test_invalid_config_does_not_invent_a_kit() -> void:
 		"seed": 1,
 		"skip_deploy": true,
 		"flat_board": true,
-		"classes": ["mender", "kestrel"],
+		"classes": ["pulse", "kestrel"],
 	})
 	eq(str(snap["units"][0]["class_id"]), "kestrel", "unknown class falls back to Kestrel")
 	eq(str(snap["units"][1]["class_id"]), "ironjaw", "unknown class falls back to Ironjaw")
-	eq(str(snap["units"][0]["class_id"]) != "mender", true, "mender is not spawned")
+	eq(str(snap["units"][0]["class_id"]) != "pulse", true, "pulse is not spawned")
 
 
 func _test_hotseat_default_pair() -> void:
@@ -194,8 +207,8 @@ func _test_hotseat_default_pair() -> void:
 func _test_queue_client_needs_a_class() -> void:
 	var net_script := load("res://backend/net_session.gd")
 	var client: Node = net_script.new()
-	var rejected: Dictionary = client.select_class("gloam")
-	eq(bool(rejected.get("ok", true)), false, "client rejects gloam before connect")
+	var rejected: Dictionary = client.select_class("pulse")
+	eq(bool(rejected.get("ok", true)), false, "client rejects pulse before connect")
 	eq(client.selected_class_id, "", "rejected class is not stored locally")
 	var blocked: Dictionary = client.start_queue_client("127.0.0.1", 7777)
 	eq(bool(blocked.get("ok", true)), false, "queue connect requires a class")
@@ -233,9 +246,12 @@ func _test_source_stamps() -> void:
 	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
 	var queue_src := FileAccess.get_file_as_string("res://backend/matchmaking.gd")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
-	eq(kits.contains("Mender"), false, "kits do not invent Mender")
-	eq(kits.contains("Gloam"), false, "kits do not invent Gloam")
-	eq(kits.contains("Bastion"), false, "kits do not invent Bastion")
+	eq(kits.contains("CLASS_MENDER"), true, "mender id is on the allowlist")
+	eq(kits.contains("CLASS_GLOAM"), true, "gloam id is on the allowlist")
+	eq(kits.contains("CLASS_BASTION"), true, "bastion id is on the allowlist")
+	eq(kits.contains("TODO"), true, "missing card fields stay Open")
+	eq(SpellKits.spell(SpellKits.AMBUSH).is_empty(), true, "Ambush has no invented cost table")
+	eq(SpellKits.spell(SpellKits.AEGIS_BREAK).is_empty(), true, "Aegis Break has no invented cost table")
 	eq(queue_src.contains("SELECT_CLASS"), true, "queue names SELECT_CLASS")
 	eq(queue_src.contains("Pulse"), false, "queue does not invent Pulse")
 	eq(queue_src.contains("Blends"), false, "queue does not invent Blends")
@@ -243,6 +259,206 @@ func _test_source_stamps() -> void:
 	eq(sim_src.contains("dedicated"), false, "CombatSim does not become a server")
 	eq(int(SpellKits.spell(SpellKits.ADVANCE)["ap"]), 3, "kit table Advance AP is still 3")
 	eq(int(SpellKits.spell(SpellKits.ADVANCE)["mp"]), 0, "kit table Advance MP is still 0")
+
+
+func _test_five_class_pair() -> void:
+	var host_script := load("res://backend/net_session.gd")
+	var sim_script := load("res://backend/combat_sim.gd")
+	var sim: Node = sim_script.new()
+	var host: Node = host_script.new()
+	host.attach_sim(sim)
+	host.enter_dedicated_offline()
+	host.server_select_class("g", "gloam")
+	host.server_enqueue("g")
+	host.server_select_class("b", "bastion")
+	var paired: Dictionary = host.server_enqueue("b")
+	eq(bool(paired.get("matched", false)), true, "gloam and bastion pair")
+	eq(str(sim.snapshot()["units"][0]["class_id"]), "gloam", "seat 0 is gloam")
+	eq(str(sim.snapshot()["units"][1]["class_id"]), "bastion", "seat 1 is bastion")
+	eq(sim.snapshot()["units"][0]["spells"], [], "gloam spell list stays empty")
+	eq(sim.snapshot()["units"][1]["spells"], [], "bastion spell list stays empty")
+	host.free()
+	sim.free()
+
+
+func _test_bound_seats_keep_class() -> void:
+	var host_script := load("res://backend/net_session.gd")
+	var sim_script := load("res://backend/combat_sim.gd")
+	var sim: Node = sim_script.new()
+	var host: Node = host_script.new()
+	host.attach_sim(sim)
+	host.enter_dedicated_offline()
+	host.server_select_class("early", "gloam")
+	host.server_bind_seat("early", 1)
+	host.server_select_class("late", "bastion")
+	host.server_bind_seat("late", 0)
+	host.server_enqueue("early")
+	var paired: Dictionary = host.server_enqueue("late")
+	eq(bool(paired.get("matched", false)), true, "bound seats still pair")
+	var class_ids: Array = paired.get("match", {}).get("class_ids", [])
+	eq(str(class_ids[0]), "bastion", "bound seat 0 keeps bastion")
+	eq(str(class_ids[1]), "gloam", "bound seat 1 keeps gloam")
+	eq(str(sim.snapshot()["units"][0]["class_id"]), "bastion", "sim seat 0 is bastion")
+	eq(str(sim.snapshot()["units"][1]["class_id"]), "gloam", "sim seat 1 is gloam")
+	host.free()
+	sim.free()
+
+
+func _test_proto_defaults() -> void:
+	for class_id in ["mender", "gloam", "bastion"]:
+		var snap: Dictionary = _sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": [class_id, "kestrel"],
+			"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		})
+		var unit: Dictionary = snap["units"][0]
+		eq(str(unit["class_id"]), class_id, "%s spawns from the class id" % class_id)
+		eq(int(unit["hp"]), 80, "%s proto HP is 80" % class_id)
+		eq(int(unit["marks"]), 0, "%s proto marks are 0" % class_id)
+		eq(int(unit["impact"]), 0, "%s proto impact is 0" % class_id)
+		eq(int(unit["ap"]), 6, "%s combat AP stays 6" % class_id)
+		eq(int(unit["mp"]), 3, "%s combat MP stays 3" % class_id)
+
+
+func _test_umbral_cap() -> void:
+	var snap: Dictionary = _sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"gloam_umbral": 9,
+		"kestrel_umbral": 3,
+	})
+	eq(int(snap["units"][0]["umbral"]), 4, "Gloam Umbral clamps to 4")
+	eq(int(snap["units"][0]["umbral_cap"]), 4, "Gloam Umbral cap is 4")
+	eq(int(snap["units"][1]["umbral"]), 0, "non-Gloam Umbral stays 0")
+	eq(int(snap["units"][1]["umbral_cap"]), 0, "non-Gloam has no Umbral cap")
+
+
+func _test_ambush_miss_keeps_shade() -> void:
+	var snap: Dictionary = _sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(6, 6)],
+		"gloam_shade": true,
+		"gloam_invisible": true,
+	})
+	var before: Vector2i = snap["units"][0]["pos"]
+	var missed: Dictionary = _sim.apply_locked_resolve(SpellKits.AMBUSH, false, 0, 1)
+	eq(bool(missed.get("teleported", true)), false, "Ambush miss does not teleport")
+	eq(bool(missed.get("shade_retained", false)), true, "Ambush miss keeps Shade")
+	eq(bool(missed.get("invisible_retained", false)), true, "Ambush miss keeps Invisible")
+	eq(_sim.snapshot()["units"][0]["pos"], before, "Ambush miss leaves the cell")
+	eq(bool(_sim.snapshot()["units"][0]["shade"]), true, "Shade flag stays set")
+	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "Invisible flag stays set")
+	var hit: Dictionary = _sim.apply_locked_resolve(SpellKits.AMBUSH, true, 0, 1)
+	eq(bool(hit.get("teleported", true)), false, "Ambush hit does not invent a teleport")
+	eq(bool(hit.get("open_hit", false)), true, "Ambush hit payload stays Open")
+	eq(_sim.snapshot()["units"][0]["pos"], before, "Open Ambush hit does not move")
+	eq(bool(_sim.snapshot()["units"][0]["shade"]), true, "Open Ambush hit does not clear Shade")
+
+
+func _test_aegis_break() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "gloam"],
+		"positions": [Vector2i(1, 1), Vector2i(4, 1)],
+		"gloam_marks": 3,
+		"gloam_impact": 2,
+		"gloam_umbral": 3,
+		"gloam_aegis": 2,
+		"gloam_shade": true,
+		"gloam_invisible": true,
+	})
+	var hit: Dictionary = _sim.apply_locked_resolve(SpellKits.AEGIS_BREAK, true, 0, 1)
+	eq(bool(hit.get("stacks_cleared", false)), true, "Aegis Break hit clears stacks")
+	var cleared: Dictionary = _sim.snapshot()["units"][1]
+	eq(int(cleared["marks"]), 0, "hit clears marks")
+	eq(int(cleared["impact"]), 0, "hit clears impact")
+	eq(int(cleared["umbral"]), 0, "hit clears umbral")
+	eq(int(cleared["aegis"]), 0, "hit clears aegis")
+	eq(bool(cleared["shade"]), false, "hit clears shade")
+	eq(bool(cleared["invisible"]), false, "hit clears invisible")
+	eq(int(cleared["hp"]), 80, "hit does not invent damage")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "gloam"],
+		"positions": [Vector2i(1, 1), Vector2i(4, 1)],
+		"gloam_marks": 3,
+		"gloam_umbral": 2,
+		"gloam_aegis": 4,
+		"gloam_shade": true,
+		"gloam_invisible": true,
+	})
+	var missed: Dictionary = _sim.apply_locked_resolve(SpellKits.AEGIS_BREAK, false, 0, 1)
+	eq(bool(missed.get("stacks_cleared", true)), false, "Aegis Break miss does not clear-all")
+	var kept: Dictionary = _sim.snapshot()["units"][1]
+	eq(int(kept["aegis"]), 0, "miss sets aegis to 0")
+	eq(int(kept["marks"]), 3, "miss keeps marks")
+	eq(int(kept["umbral"]), 2, "miss keeps umbral")
+	eq(bool(kept["shade"]), true, "miss keeps shade")
+	eq(bool(kept["invisible"]), true, "miss keeps invisible")
+
+
+func _test_snap_wall_blocks_only_with_bastion() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"snap_walls": [Vector2i(2, 1)],
+	})
+	var blocked := false
+	for intent in _sim.legal_intents(0):
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) == "move" and intent.get("to") == Vector2i(2, 1):
+			blocked = true
+	eq(blocked, false, "Snap Wall is not a walk dest while Bastion is in the match")
+	eq(bool(_sim.snapshot().get("snap_wall_active", false)), true, "snapshot marks Snap Wall active")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"snap_walls": [Vector2i(2, 1)],
+	})
+	var offered := false
+	for intent in _sim.legal_intents(0):
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) == "move" and intent.get("to") == Vector2i(2, 1):
+			offered = true
+	eq(offered, true, "Snap Wall cells do not block when Bastion is absent")
+	eq(bool(_sim.snapshot().get("snap_wall_active", true)), false, "snapshot marks Snap Wall inactive")
+
+
+func _test_open_spells_are_not_free_casts() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_aegis": 2,
+	})
+	var before := int(_sim.snapshot()["units"][0]["ap"])
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(3, 1), "seat": 0})
+	eq(bool(rejected.get("ok", true)), false, "Ambush submit is rejected")
+	eq(str(rejected.get("reason", "")), "unknown_spell", "Ambush is not a free cast")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), before, "rejected Ambush refunds AP")
+	eq(int(_sim.snapshot()["units"][1]["aegis"]), 2, "rejected cast does not clear aegis")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

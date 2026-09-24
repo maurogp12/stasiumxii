@@ -1,11 +1,12 @@
 class_name MatchQueue
 extends RefCounted
 
-## Pre-match queue for the Locked roster only (kestrel, ironjaw).
+## Pre-match queue for the Locked allowlist only
+## (kestrel, ironjaw, mender, gloam, bastion).
 ## SELECT_CLASS is stored on the session. Any other class_id is rejected
 ## and does not confirm the session. Two confirmed sessions pair in queue
-## order: seat 0 is the first, seat 1 is the second. Seats are not remapped
-## so that seat 0 is always Kestrel.
+## order unless both sessions have a bound transport seat: then the class
+## stays on that seat. Seats are not remapped so that seat 0 is always Kestrel.
 
 const SELECT_CLASS := "SELECT_CLASS"
 const ENQUEUE := "ENQUEUE"
@@ -13,6 +14,7 @@ const ENQUEUE := "ENQUEUE"
 var _sessions: Dictionary = {}
 var _queue: Array[String] = []
 var _matches: Dictionary = {}
+var _bound_seats: Dictionary = {}
 var _next_match: int = 1
 
 
@@ -38,6 +40,7 @@ func select_class(session_id: String, class_id: String) -> Dictionary:
 		return _fail("already_queued", id)
 	if str(existing.get("match_id", "")) != "":
 		return _fail("already_matched", id)
+	var bound := int(_bound_seats.get(id, -1))
 	_sessions[id] = {
 		"id": id,
 		"class_id": normalized,
@@ -45,8 +48,24 @@ func select_class(session_id: String, class_id: String) -> Dictionary:
 		"queued": false,
 		"match_id": "",
 		"seat": -1,
+		"bound_seat": bound,
 	}
 	return _ok(id, normalized)
+
+
+## Transport seat from the dedicated host. Does not by itself confirm a class.
+func bind_seat(session_id: String, seat: int) -> void:
+	var id := str(session_id)
+	if seat != 0 and seat != 1:
+		return
+	_bound_seats[id] = seat
+	if not _sessions.has(id):
+		return
+	var session: Dictionary = _sessions[id]
+	if str(session.get("match_id", "")) != "":
+		return
+	session["bound_seat"] = seat
+	_sessions[id] = session
 
 
 func enqueue(session_id: String) -> Dictionary:
@@ -134,6 +153,15 @@ func _try_pair() -> Dictionary:
 		return {}
 	var a: Dictionary = _sessions[first]
 	var b: Dictionary = _sessions[second]
+	var seat_a := int(a.get("bound_seat", -1))
+	var seat_b := int(b.get("bound_seat", -1))
+	if seat_a == 1 and seat_b == 0:
+		var swap_id := first
+		first = second
+		second = swap_id
+		var swap_session: Dictionary = a
+		a = b
+		b = swap_session
 	var match_id := "m%d" % _next_match
 	_next_match += 1
 	# Queue order is seat order. Do not force seat 0 = Kestrel.

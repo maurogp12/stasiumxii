@@ -28,6 +28,14 @@ const FRONT_SIDE_FACING := 1.00
 ## Director Locked Shoulder stagger: 4 HP; +1 MP only when current MP >= 1.
 const STAGGER_HP := 4
 const STAGGER_MP := 1
+## Clean push (walkable empty, or lava land — not a bounce): +1 Impact.
+## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
+const SHOULDER_CONNECT_IMPACT := 1
+const SHOULDER_BOUNCE_IMPACT := 2
+## Director Locked Burn: 4 HP at the start of the victim's turn, two ticks.
+## Re-apply refreshes duration. It does not stack. Impact cap still applies.
+const BURN_HP := 4
+const BURN_DURATION := 2
 
 const FACING_VEC := {
 	"N": Vector2i(0, -1),
@@ -46,8 +54,15 @@ const FACING_VEC := {
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
-## push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces
-## (target stays) and staggers (4 HP; +1 MP if current MP >= 1).
+## push_blocked (hard body-block; hit Impact stays +1). Walkable empty dest
+## pushes for +1 Impact. OOB / truly blocked (not lava) bounces and staggers
+## for +2 Impact only (no stack with +1). Lava is hazardous, not a wall:
+## forced push displaces onto lava and applies Burn. Voluntary walk onto
+## lava stays impassable.
+## Director Locked Burn: 4 HP at the start of the victim's turn, duration 2.
+## Re-apply refreshes duration and does not stack. Burn continues after
+## leaving lava. Death is checked after each tick. burn_remaining lives on
+## the unit snapshot for Godot chrome and host sync.
 ## Host-owned 30s turn clock: starts on turn begin, ticks only on the authority
 ## (listen-host / hot-seat). Expiry submits the same end_turn as the HUD button.
 ## Guest replicas hydrate remaining from snapshot and must not tick.
@@ -67,6 +82,10 @@ var _last_coach: String = ""
 var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
+## Snap Wall cells. They block pathing and occupancy only while a bastion
+## unit is in the match. How a wall is placed is Open (no place-spell card);
+## fixtures pass config snap_walls. TODO Class Architect: place spell missing.
+var _snap_wall_cells: Array[Vector2i] = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
 ## Per-tile integer elevation + terrain. #38 crop terrain + seeded noise z on reset.
@@ -85,6 +104,7 @@ var _replica: bool = false
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	_units.clear()
 	_blocked_cells.clear()
+	_snap_wall_cells.clear()
 	_active_seat = 0
 	_turn_index = 0
 	_match_over = false
@@ -116,7 +136,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 
 	# Hot-seat default is Kestrel (seat 0) then Ironjaw (seat 1).
 	# config.classes / seat_classes overrides both seats when every id is on
-	# the Locked roster. Unknown ids are ignored (no extra kits).
+	# the Locked allowlist. Any unknown id falls back to that default pair.
 	var roster: Array[String] = _roster_class_ids(config)
 	var facing_used: Dictionary = {}
 	for seat in 2:
@@ -336,6 +356,8 @@ func match_phase_name() -> String:
 
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
 ## Mark Shot uses this for Chebyshev 2–5 chrome. Does not imply a legal cast dest.
+## Advance is the exception: highlights are legal_intents dests only (the ortho
+## neighbors that pass stand-on). Not a Manhattan 1–2 ring.
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var out: Array = []
 	var actor := _unit_by_seat(seat)
@@ -348,15 +370,20 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return out
+	if spell_id == SpellKits.ADVANCE:
+		for intent in legal_intents(seat):
+			if typeof(intent) != TYPE_DICTIONARY:
+				continue
+			if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != SpellKits.ADVANCE:
+				continue
+			if intent.has("to"):
+				out.append(intent["to"])
+		return out
 	var from: Vector2i = actor["pos"]
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
 			var cell := Vector2i(x, y)
 			if cell == from:
-				continue
-			if spell_id == SpellKits.ADVANCE:
-				if is_cardinal_step(from, cell):
-					out.append(cell)
 				continue
 			var dist := _range_distance(def, from, cell)
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
@@ -369,6 +396,12 @@ func snapshot() -> Dictionary:
 	for unit in _units:
 		units.append(unit.duplicate(true))
 	var flow_snap := _flow.snapshot()
+	var class_ids: Array = _class_ids()
+	var seat_classes: Dictionary = {0: "", 1: ""}
+	if class_ids.size() > 0:
+		seat_classes[0] = str(class_ids[0])
+	if class_ids.size() > 1:
+		seat_classes[1] = str(class_ids[1])
 	return {
 		"rules_version": RULES_VERSION,
 		"board_size": BOARD_SIZE,
@@ -382,8 +415,13 @@ func snapshot() -> Dictionary:
 		"match_config": {
 			"seed": _seed,
 			"elev_seed": _elev_seed,
-			"classes": _class_ids(),
+			"classes": class_ids,
+			"seat_classes": seat_classes,
 		},
+		"snap_walls": _cell_list(_snap_wall_cells),
+		"snap_wall_active": _bastion_in_match(),
+		"umbral_cap": SpellKits.UMBRAL_CAP,
+		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
 		"crit_roll": false,
 		"crit_mult": CRIT_MULT,
@@ -425,8 +463,14 @@ func snapshot() -> Dictionary:
 		"push": "locked_shoulder",
 		"push_occupied": "push_blocked",
 		"push_unwalkable": "bounce_stagger",
+		"push_lava": "displace_burn",
 		"push_stagger_hp": STAGGER_HP,
 		"push_stagger_mp": STAGGER_MP,
+		"shoulder_impact_connect": SHOULDER_CONNECT_IMPACT,
+		"shoulder_impact_bounce": SHOULDER_BOUNCE_IMPACT,
+		"burn": "locked",
+		"burn_hp": BURN_HP,
+		"burn_duration": BURN_DURATION,
 		"phase": flow_snap["phase_name"],
 		"phase_name": flow_snap["phase_name"],
 		"deploy": "locked",
@@ -457,7 +501,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger). Unwalkable / lava / OOB dest bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1). Walkable empty dest still pushes. Damage/Impact on the Shoulder hit are unchanged.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -476,6 +520,11 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_rng.seed = _seed
 	_scripted_rolls.clear()
 	_blocked_cells.clear()
+	_snap_wall_cells.clear()
+	var walls: Variant = snap.get("snap_walls", [])
+	if walls is Array:
+		for wall in walls:
+			_snap_wall_cells.append(_as_cell(wall))
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
 	_turn_index = int(snap.get("turn_index", 0))
@@ -726,7 +775,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: occupied dest is push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces + staggers (4 HP; +1 MP if MP>=1).")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands and applies Burn (4 HP at the victim's turn start, duration 2, refresh no stack). Voluntary walk onto lava stays impassable.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -828,9 +877,23 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
+		# Proto default for every kit, including the three Open kits:
+		# 80 HP / marks 0 / impact 0. The Class Architect "0 / 0" was not on a
+		# card in the repo, so it is not a new AP/MP pool (combat refill stays
+		# 6 AP / 3 MP). TODO if 0/0 named a third unstamped stat.
+		# Umbral is Gloam only, cap 0–4. Other classes stay at 0.
+		"umbral": 0,
+		"umbral_cap": SpellKits.UMBRAL_CAP if class_id == SpellKits.CLASS_GLOAM else 0,
+		# Aegis cap is Open. Shade / Invisible start clear. Ambush class owner
+		# is Open; the miss stamp only keeps whatever is already set.
+		"aegis": 0,
+		"shade": false,
+		"invisible": false,
 		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
+		# Director Locked Burn. Duration ticks left; 0 means not burning.
+		"burn_remaining": 0,
 		"alive": true,
 		"placed": placed,
 		"locked": false,
@@ -1064,6 +1127,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		"turn_time_limit": _turn_time_limit,
 		"coach": _last_coach,
 	})
+	# Director Locked Burn ticks once this turn has started, including a stunned skip.
+	_tick_burn(next_unit)
 	return next_unit
 
 
@@ -1173,6 +1238,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
 	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
+	# Ambush / Aegis Break have no cost card, so they are not in SpellKits.SPELLS
+	# and fall through to unknown_spell. Do not spend 0 AP to apply them.
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit (refund)." % [def["name"], actor["name"]])
 	if not intent.has("to"):
@@ -1273,7 +1340,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	if not connected:
 		_last_coach = "MISS — %d AP gone (%d vs %d%%, range %d)." % [ap_cost, roll, chance, dist]
-		var miss_event := {
+		var miss_event: Dictionary = {
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": spell_id,
@@ -1298,6 +1365,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			miss_event["impact"] = impact_before
 		if spell_id == SpellKits.SHOULDER:
 			miss_event["pushed"] = false
+		_stamp_locked_event(miss_event, spell_id, false, int(actor["seat"]), int(target["seat"]))
 		_last_events.append(miss_event)
 		return _accept()
 
@@ -1310,10 +1378,16 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var engine_spent := 0
 	var engine_name := ""
 	var marks_consumed := 0
+	var defer_shoulder_impact := false
 	match str(def["engine_on_connect"]):
 		"impact":
-			engine_gained = _gain_impact(actor, 1)
-			engine_name = "Impact"
+			if spell_id == SpellKits.SHOULDER:
+				# Amount depends on the push. Bounce is +2 only, not +1 stacked with +2.
+				defer_shoulder_impact = true
+				engine_name = "Impact"
+			else:
+				engine_gained = _gain_impact(actor, 1)
+				engine_name = "Impact"
 		"mark":
 			engine_gained = _gain_marks(target, 1)
 			engine_name = "Mark"
@@ -1333,9 +1407,17 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	var push_result := {}
 	if int(def.get("push_cells", 0)) > 0:
-		# Director Locked Shoulder: occupied = push_blocked; unwalkable/lava/OOB = bounce + stagger.
-		# Walkable empty dest still pushes. Shoulder damage/Impact are unchanged.
+		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
+		# Lava is hazardous: displace and Burn. Walkable empty dest still pushes.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+	if defer_shoulder_impact:
+		var impact_amount := SHOULDER_CONNECT_IMPACT
+		if bool(push_result.get("bounced", false)):
+			impact_amount = SHOULDER_BOUNCE_IMPACT
+		engine_gained = _gain_impact(actor, impact_amount)
+	var burn_info := {}
+	if bool(push_result.get("burn", false)):
+		burn_info = _apply_burn(target)
 
 	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
 	var extra_note := _connect_extra_note(engine_gained, engine_name, marks_consumed, engine_spent, stun_applied, push_result)
@@ -1370,6 +1452,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["impact_spent"] = engine_spent
 		hit_event["stun_applied"] = stun_applied
 		# Locked Stun (A′): blocks move + cast + face; auto end_turn on turn start.
+	_stamp_locked_event(hit_event, spell_id, true, int(actor["seat"]), int(target["seat"]))
 	if not push_result.is_empty():
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
@@ -1384,6 +1467,10 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["stagger_mp"] = int(push_result.get("stagger_mp", 0))
 		hit_event["hp_delta"] = int(push_result.get("hp_delta", 0))
 		hit_event["mp_delta"] = int(push_result.get("mp_delta", 0))
+		hit_event["burn_applied"] = not burn_info.is_empty()
+		if not burn_info.is_empty():
+			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
+			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
 		_last_events.append({
@@ -1403,7 +1490,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			mp_note = " / %d MP" % int(push_result.get("stagger_mp", 0))
 		_last_events.append({
 			"type": "push_bounce",
-			"locked": "Director Locked Shoulder — unwalkable/lava/OOB bounce + stagger",
+			"locked": "Director Locked Shoulder — OOB / truly blocked bounce + stagger (+2 Impact)",
 			"seat": actor["seat"],
 			"target_seat": target["seat"],
 			"from": push_result.get("from"),
@@ -1440,6 +1527,22 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 				int(push_result.get("stagger_hp", 0)),
 				stagger_mp_note,
 			],
+		})
+	if not burn_info.is_empty():
+		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
+		if bool(burn_info.get("refreshed", false)):
+			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
+		_last_events.append({
+			"type": "status",
+			"status": "burn",
+			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
+			"duration": BURN_DURATION,
+			"hp_per_tick": BURN_HP,
+			"refreshed": bool(burn_info.get("refreshed", false)),
+			"previous": int(burn_info.get("previous", 0)),
+			"target_seat": target["seat"],
+			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
+			"coach": burn_coach,
 		})
 	if stun_applied > 0:
 		_last_events.append({
@@ -1546,6 +1649,8 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 
 
 func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
+	if _snap_wall_blocks(cell):
+		return {"ok": false, "reason": "occupied", "zone_kind": ""}
 	var gate := _flow.place_gate(seat, cell, _occupant_seat(cell))
 	if not bool(gate.get("ok", false)):
 		return gate
@@ -1607,15 +1712,29 @@ func _walk_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
 func _apply_setup_overrides(config: Dictionary) -> void:
 	# Test/setup hooks only. Not a play default — matches start at 0 Marks/Impact/stun.
 	# Keys still name the class. The first seat of that class receives them.
-	_apply_class_setup(config, "kestrel_marks", SpellKits.CLASS_KESTREL, "marks")
-	_apply_class_setup(config, "ironjaw_marks", SpellKits.CLASS_IRONJAW, "marks")
-	_apply_class_setup(config, "kestrel_impact", SpellKits.CLASS_KESTREL, "impact")
-	_apply_class_setup(config, "ironjaw_impact", SpellKits.CLASS_IRONJAW, "impact")
-	_apply_class_setup(config, "kestrel_stun", SpellKits.CLASS_KESTREL, "stun_remaining")
-	_apply_class_setup(config, "ironjaw_stun", SpellKits.CLASS_IRONJAW, "stun_remaining")
+	for class_id in SpellKits.LOCKED_ROSTER:
+		_apply_class_setup(config, "%s_marks" % class_id, class_id, "marks")
+		_apply_class_setup(config, "%s_impact" % class_id, class_id, "impact")
+		_apply_class_setup(config, "%s_stun" % class_id, class_id, "stun_remaining")
+		_apply_class_setup(config, "%s_aegis" % class_id, class_id, "aegis")
+		_apply_class_setup(config, "%s_umbral" % class_id, class_id, "umbral")
+		_apply_bool_setup(config, "%s_shade" % class_id, class_id, "shade")
+		_apply_bool_setup(config, "%s_invisible" % class_id, class_id, "invisible")
 	if config.has("blockers"):
 		for cell in config["blockers"]:
 			_blocked_cells.append(_as_cell(cell))
+	if config.has("snap_walls"):
+		for cell in config["snap_walls"]:
+			_snap_wall_cells.append(_as_cell(cell))
+
+
+func _apply_bool_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
+	if not config.has(key):
+		return
+	var unit := _first_unit_of_class(class_id)
+	if unit.is_empty():
+		return
+	unit[field] = bool(config[key])
 
 
 func _apply_class_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
@@ -1639,9 +1758,14 @@ func _roster_class_ids(config: Dictionary) -> Array[String]:
 		raw = config["classes"]
 	elif config.has("seat_classes"):
 		raw = config["seat_classes"]
-	if raw == null or not (raw is Array):
+	var incoming: Array = []
+	if raw is Array:
+		incoming = raw
+	elif raw is Dictionary:
+		var keyed: Dictionary = raw
+		incoming = [keyed.get(0, keyed.get("0", "")), keyed.get(1, keyed.get("1", ""))]
+	else:
 		return fallback
-	var incoming: Array = raw
 	if incoming.size() < 2:
 		return fallback
 	var out: Array[String] = []
@@ -1743,7 +1867,7 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
 	var parts: Array[String] = []
 	if engine_gained > 0:
-		parts.append(" +1 %s." % engine_name)
+		parts.append(" +%d %s." % [engine_gained, engine_name])
 	if marks_consumed > 0:
 		parts.append(" Marks consumed (%d)." % marks_consumed)
 	if engine_spent > 0 and engine_name == "Impact":
@@ -1764,6 +1888,8 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 			])
 		elif bool(push_result.get("moved", false)):
 			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
+			if bool(push_result.get("burn", false)):
+				parts.append(" Burn %d HP for %d turns." % [BURN_HP, BURN_DURATION])
 	var note := ""
 	for part in parts:
 		note += part
@@ -1812,9 +1938,12 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 
 func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
 	# Chebyshev push 1 along the caster→target line.
-	# Director Locked Shoulder: occupied dest is hard body-block (push_blocked).
-	# Unwalkable / lava / OOB dest bounces (target stays) and staggers.
-	# Walkable empty dest still pushes. Do not invent climb/drop push rules.
+	# Director Locked Shoulder:
+	# - occupied dest: push_blocked (no bounce, no stagger)
+	# - lava dest: hazardous, not a wall — displace and flag Burn
+	# - OOB / truly blocked (not lava): bounce + stagger
+	# - walkable empty: push
+	# Do not invent climb/drop push rules. Voluntary walk still rejects lava.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
@@ -1825,6 +1954,7 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		"blocked": false,
 		"bounced": false,
 		"staggered": false,
+		"burn": false,
 		"reason": "",
 		"stagger_hp": 0,
 		"stagger_mp": 0,
@@ -1837,12 +1967,70 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
+	if _is_lava(dest):
+		target["pos"] = dest
+		result["to"] = dest
+		result["moved"] = true
+		result["burn"] = true
+		result["reason"] = "lava"
+		return result
 	if not _board.is_walkable(dest):
 		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
 	target["pos"] = dest
 	result["to"] = dest
 	result["moved"] = true
 	return result
+
+
+func _is_lava(cell: Vector2i) -> bool:
+	if not _in_bounds(cell):
+		return false
+	var terrain: Dictionary = _board.terrain_of(cell)
+	return int(terrain.get("id", _TerrainDef.Id.GROUND)) == _TerrainDef.Id.LAVA
+
+
+func _apply_burn(unit: Dictionary) -> Dictionary:
+	# Re-apply refreshes duration to 2. Do not add durations or stack tick damage.
+	var previous := int(unit.get("burn_remaining", 0))
+	unit["burn_remaining"] = BURN_DURATION
+	return {
+		"applied": true,
+		"refreshed": previous > 0,
+		"previous": previous,
+		"remaining": BURN_DURATION,
+		"hp_per_tick": BURN_HP,
+	}
+
+
+func _tick_burn(unit: Dictionary) -> void:
+	# 4 HP at the start of this unit's turn. Leaving lava does not clear it.
+	if unit.is_empty() or not bool(unit.get("alive", false)):
+		return
+	var remaining := int(unit.get("burn_remaining", 0))
+	if remaining <= 0:
+		return
+	var lost := BURN_HP
+	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	unit["burn_remaining"] = remaining - 1
+	var left := int(unit["burn_remaining"])
+	_last_events.append({
+		"type": "burn",
+		"status": "burn",
+		"target_seat": int(unit["seat"]),
+		"hp_delta": -lost,
+		"damage": lost,
+		"hp": int(unit["hp"]),
+		"remaining": left,
+		"duration": BURN_DURATION,
+		"locked": "Director Locked Burn — 4 HP at start of turn, duration 2",
+		"coach": "%s burns for %d HP (%d tick%s left)." % [
+			str(unit.get("name", "Unit")),
+			lost,
+			left,
+			"" if left == 1 else "s",
+		],
+	})
+	_check_death(unit)
 
 
 func _unwalkable_push_reason(dest: Vector2i) -> String:
@@ -1972,8 +2160,118 @@ func _living_unit_at(cell: Vector2i) -> Dictionary:
 	return {}
 
 
+func _cell_list(cells: Array[Vector2i]) -> Array:
+	var out: Array = []
+	for cell in cells:
+		out.append(cell)
+	return out
+
+
+## Stamped resolve for Ambush and Aegis Break. Costs are Open, so submit does
+## not offer these. A future card can call this from the rolling-cast path.
+func apply_locked_resolve(spell_id: String, connected: bool, actor_seat: int, target_seat: int) -> Dictionary:
+	if spell_id == SpellKits.AMBUSH:
+		return _apply_ambush(_unit_by_seat(actor_seat), connected)
+	if spell_id == SpellKits.AEGIS_BREAK:
+		return _apply_aegis_break(_unit_by_seat(target_seat), connected)
+	return {"ok": false, "applied": false, "reason": "open_card", "spell": spell_id}
+
+
+func _stamp_locked_event(event: Dictionary, spell_id: String, connected: bool, actor_seat: int, target_seat: int) -> void:
+	if spell_id != SpellKits.AMBUSH and spell_id != SpellKits.AEGIS_BREAK:
+		return
+	var stamped: Dictionary = apply_locked_resolve(spell_id, connected, actor_seat, target_seat)
+	event["teleported"] = bool(stamped.get("teleported", false))
+	if spell_id == SpellKits.AMBUSH:
+		event["shade_retained"] = bool(stamped.get("shade_retained", false))
+		event["invisible_retained"] = bool(stamped.get("invisible_retained", false))
+		event["open_hit"] = bool(stamped.get("open_hit", false))
+	if spell_id == SpellKits.AEGIS_BREAK:
+		event["aegis"] = int(stamped.get("aegis", 0))
+		event["stacks_cleared"] = bool(stamped.get("stacks_cleared", false))
+
+
+## Ambush class owner is Open. Miss keeps Shade / Invisible and does not teleport.
+## Hit payload is Open — do not invent a teleport or a stack change.
+func _apply_ambush(actor: Dictionary, connected: bool) -> Dictionary:
+	if actor.is_empty():
+		return {"ok": false, "applied": false, "reason": "no_actor", "teleported": false}
+	var shade := bool(actor.get("shade", false))
+	var invisible := bool(actor.get("invisible", false))
+	actor["shade"] = shade
+	actor["invisible"] = invisible
+	return {
+		"ok": true,
+		"applied": true,
+		"spell": SpellKits.AMBUSH,
+		"connected": connected,
+		"teleported": false,
+		"pos": actor.get("pos", UNPLACED),
+		"shade_retained": shade,
+		"invisible_retained": invisible,
+		"shade": shade,
+		"invisible": invisible,
+		"open_hit": connected,
+	}
+
+
+## Aegis Break class owner is Open. HIT clears stacks. MISS sets aegis to 0 only.
+func _apply_aegis_break(target: Dictionary, connected: bool) -> Dictionary:
+	if target.is_empty():
+		return {"ok": false, "applied": false, "reason": "no_target", "aegis": 0, "stacks_cleared": false}
+	if connected:
+		target["marks"] = 0
+		target["impact"] = 0
+		target["umbral"] = 0
+		target["aegis"] = 0
+		target["shade"] = false
+		target["invisible"] = false
+		return {
+			"ok": true,
+			"applied": true,
+			"spell": SpellKits.AEGIS_BREAK,
+			"connected": true,
+			"teleported": false,
+			"stacks_cleared": true,
+			"aegis": 0,
+		}
+	target["aegis"] = 0
+	return {
+		"ok": true,
+		"applied": true,
+		"spell": SpellKits.AEGIS_BREAK,
+		"connected": false,
+		"teleported": false,
+		"stacks_cleared": false,
+		"aegis": 0,
+		"marks": int(target.get("marks", 0)),
+		"impact": int(target.get("impact", 0)),
+		"umbral": int(target.get("umbral", 0)),
+		"shade": bool(target.get("shade", false)),
+		"invisible": bool(target.get("invisible", false)),
+	}
+
+
+func _bastion_in_match() -> bool:
+	for unit in _units:
+		if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
+			return true
+	return false
+
+
+func _snap_wall_blocks(cell: Vector2i) -> bool:
+	if not _bastion_in_match():
+		return false
+	for wall in _snap_wall_cells:
+		if wall == cell:
+			return true
+	return false
+
+
 func _is_empty(cell: Vector2i) -> bool:
 	if not _in_bounds(cell):
+		return false
+	if _snap_wall_blocks(cell):
 		return false
 	for blocked in _blocked_cells:
 		if blocked == cell:

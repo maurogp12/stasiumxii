@@ -1,8 +1,8 @@
 extends Control
 
 ## Anonymous lobby. Listen-host duel stays fixed (host Kestrel, guest Ironjaw).
-## Dedicated queue: pick Kestrel or Ironjaw, then join. The host pairs two
-## confirmed classes onto seats in queue order.
+## Dedicated queue: pick one Locked class, then join. The host pairs any two
+## confirmed classes onto seats. class_id is the seat's choice, not a fixed kit.
 
 const MAIN_SCENE := "res://main.tscn"
 
@@ -12,8 +12,7 @@ var _host_port: LineEdit
 var _join_ip: LineEdit
 var _join_port: LineEdit
 var _queue_btn: Button
-var _kestrel_btn: Button
-var _ironjaw_btn: Button
+var _class_buttons: Dictionary = {}
 
 
 func _ready() -> void:
@@ -26,7 +25,7 @@ func _ready() -> void:
 	elif NetSession.is_queue_client():
 		_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
 	else:
-		_status.text = "Pick Kestrel or Ironjaw, then join the queue. Listen-host below stays Kestrel vs Ironjaw."
+		_status.text = "Pick a Locked class, then join the queue. Listen-host below stays Kestrel vs Ironjaw."
 	_sync_class_buttons()
 
 
@@ -38,7 +37,7 @@ func _build() -> void:
 
 	var col := VBoxContainer.new()
 	col.position = Vector2(80, 48)
-	col.size = Vector2(800, 640)
+	col.size = Vector2(920, 700)
 	col.add_theme_constant_override("separation", 12)
 	add_child(col)
 
@@ -50,17 +49,17 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster matchmaking. Choose Kestrel or Ironjaw before Join queue. The dedicated host stores that class on your session, pairs the next two confirmed players, and starts the match with those class ids on the seats."
+	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Join queue. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
 	var class_row := HBoxContainer.new()
 	class_row.add_theme_constant_override("separation", 8)
 	col.add_child(class_row)
-	_kestrel_btn = _button("Kestrel", _on_pick_kestrel)
-	_ironjaw_btn = _button("Ironjaw", _on_pick_ironjaw)
-	class_row.add_child(_kestrel_btn)
-	class_row.add_child(_ironjaw_btn)
+	for class_id in SpellKits.LOCKED_ROSTER:
+		var button := _button(SpellKits.display_name(class_id), _pick.bind(class_id))
+		_class_buttons[class_id] = button
+		class_row.add_child(button)
 	_class_label = Label.new()
 	_class_label.text = "Class: none"
 	_class_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -111,7 +110,7 @@ func _build() -> void:
 func _button(text: String, handler: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(160, 36)
+	button.custom_minimum_size = Vector2(140, 36)
 	button.pressed.connect(handler)
 	return button
 
@@ -130,14 +129,6 @@ func _label(text: String) -> Label:
 	return lab
 
 
-func _on_pick_kestrel() -> void:
-	_pick(SpellKits.CLASS_KESTREL)
-
-
-func _on_pick_ironjaw() -> void:
-	_pick(SpellKits.CLASS_IRONJAW)
-
-
 func _pick(class_id: String) -> void:
 	var result: Dictionary = NetSession.select_class(class_id)
 	if not bool(result.get("ok", false)):
@@ -152,8 +143,9 @@ func _pick(class_id: String) -> void:
 func _sync_class_buttons() -> void:
 	var picked := NetSession.selected_class_id
 	_queue_btn.disabled = not SpellKits.is_roster_class(picked)
-	_kestrel_btn.modulate = Color(0.55, 0.85, 0.6) if picked == SpellKits.CLASS_KESTREL else Color.WHITE
-	_ironjaw_btn.modulate = Color(0.9, 0.45, 0.4) if picked == SpellKits.CLASS_IRONJAW else Color.WHITE
+	for class_id in _class_buttons.keys():
+		var button: Button = _class_buttons[class_id]
+		button.modulate = Color(0.85, 0.78, 0.45) if str(class_id) == picked else Color.WHITE
 
 
 func _on_dedicated() -> void:
@@ -167,7 +159,7 @@ func _on_dedicated() -> void:
 
 func _on_queue() -> void:
 	if not SpellKits.is_roster_class(NetSession.selected_class_id):
-		_status.text = "Pick Kestrel or Ironjaw before joining the queue."
+		_status.text = "Pick a Locked class before joining the queue."
 		return
 	var result: Dictionary = NetSession.start_queue_client(_join_ip.text.strip_edges(), int(_join_port.text))
 	if not bool(result.get("ok", false)):

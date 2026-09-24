@@ -8,6 +8,9 @@ extends Node2D
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
 ## Advance teleport does not auto-face.
+## Advance highlights and click-accept read CombatSim.legal_intents only
+## (cast_dests). No client Manhattan-2 or diagonal ring. A click off that set
+## is forwarded so the sim's existing refund coach runs (hot-seat and NetSession).
 ## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
 ## deploy_zone_cells / can_ready / snapshot().phase. Hidden enemy stays Open.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
@@ -22,11 +25,13 @@ extends Node2D
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
 ## Occupied push dest toasts PushBlocked (no hop).
-## Unwalkable / lava / OOB dest toasts Bounce (no hop) and emits stagger HP/MP.
-## Online listen-host: NetSession owns submit when a peer is up. Hot-seat still
-## calls CombatSim.submit directly. The view never rolls.
-## The queue host is not a fighter and does not start the default hot-seat pair.
-## A queue client paints when the paired snapshot arrives.
+## OOB / truly blocked dest toasts Bounce plus one Impact gain (no hop).
+## Lava forced-push lands from the snapshot and toasts Burn, not Bounce.
+## Online: NetSession owns submit when a peer is up. Listen-host and the dedicated
+## process share that authority. Clients send Intent only. Hot-seat still calls
+## CombatSim.submit directly. The view never rolls.
+## The dedicated process does not start the default Kestrel / Ironjaw pair.
+## It paints when the SELECT_CLASS queue has paired two Locked classes.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -80,9 +85,15 @@ func _boot() -> void:
 		if not net.state_changed.is_connected(_on_net_state):
 			net.state_changed.connect(_on_net_state)
 		if net.is_online() or net.is_connecting():
-			if net.is_host():
+			# Listen-host starts the fixed Kestrel / Ironjaw duel.
+			# The dedicated process waits until two Locked classes are paired.
+			if net.is_authority() and not net.is_dedicated():
 				net.reset_match({})
-			if net.is_host() or net.has_view_state():
+			if net.is_dedicated():
+				if net.has_method("match_is_live") and bool(net.match_is_live()):
+					_finish_boot()
+				return
+			if net.is_authority() or net.has_view_state():
 				_finish_boot()
 			return
 	CombatSim.reset_match({})
@@ -134,14 +145,7 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 		return
 	if _busy:
 		return
-	_play_combat_feedback(events)
-	if CombatHUD.events_include_push_blocked(events):
-		_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-		_refresh()
-		return
-	if CombatHUD.events_include_push_bounce(events):
-		_hud.show_toast(CombatHUD.BOUNCE_TOAST)
-		_refresh()
+	if _present_resolve(events):
 		return
 	if CombatHUD.should_play_walk_hops(events):
 		var path_event := _path_event(events)
@@ -178,7 +182,8 @@ func _process(delta: float) -> void:
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
 		return
-	# Host / hot-seat tick CombatSim. Guest never ticks — remaining is snapshot-only.
+	# Authority / hot-seat tick CombatSim. Clients never tick — remaining is snapshot-only.
+	# Dedicated is the authority and is not a client, so this process ticks the host clock.
 	# Keep ticking during walk hop animations. _busy only locks input.
 	var result: Dictionary = {}
 	if not (_online() and _net().is_client()):
@@ -271,11 +276,23 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_hud.clear_spell()
 		_paint_highlights()
 		return
+	if spell_id == SpellKits.ADVANCE and not _advance_click_accepted(cell, spell_id):
+		# Not a highlighted dest. Still submit so CombatSim / NetSession reject
+		# it with the existing refund coach (pawn stays, AP unchanged).
+		_submit({"type": "cast", "spell": spell_id, "to": cell})
+		_hud.clear_spell()
+		_paint_highlights()
+		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
 	# After any dest-click cast (including Advance): drop spell chrome and
 	# repaint walk tiles from legal_intents so remaining MP is selectable at 0 AP.
 	_hud.clear_spell()
 	_paint_highlights()
+
+
+func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(_sim().snapshot()))
+	return SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell)
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -411,6 +428,13 @@ func _on_new_match() -> void:
 	_deploy_selected_seat = -1
 	_hud.clear_spell()
 	_hud.clear_deploy_note()
+	if _online() and _net().is_client():
+		if not _net().can_reset_match():
+			return
+		# Seat 0 asks the dedicated authority. The snapshot arrives on state_changed.
+		_skip_local_net_echo = false
+		_net().reset_match({})
+		return
 	if _online() and not _sim().can_reset_match():
 		return
 	_mark_local_net_echo()
@@ -438,22 +462,36 @@ func _submit(intent: Dictionary) -> void:
 			return
 	if result.get("ok", false):
 		var events: Array = result.get("events", [])
-		_play_combat_feedback(events)
-		if CombatHUD.events_include_push_blocked(events):
-			_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-			# Occupied dest is a hard body-block. Snapshot already stayed put.
-			_refresh()
-			return
-		if CombatHUD.events_include_push_bounce(events):
-			_hud.show_toast(CombatHUD.BOUNCE_TOAST)
-			# Bounce: unit stayed. Stagger HP/MP already applied in CombatSim.
-			_refresh()
+		if _present_resolve(events):
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
 			return
 	_refresh()
+
+
+## Hot-seat and NetSession both call this. Toasts come from sim events; Burn icons come from the snapshot on refresh.
+## Returns true when the pawn must not hop (occupied block or bounce).
+func _present_resolve(events: Array) -> bool:
+	_play_combat_feedback(events)
+	if CombatHUD.events_include_push_blocked(events):
+		# Occupied dest is a hard body-block. Snapshot already stayed put.
+		_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
+		_refresh()
+		return true
+	if CombatHUD.events_include_push_bounce(events):
+		# Bounce: unit stayed. The toast is Bounce plus the single sim Impact gain.
+		var bounce_toast := CombatHUD.toast_for_events(events)
+		if not bounce_toast.begins_with(CombatHUD.BOUNCE_TOAST):
+			bounce_toast = CombatHUD.BOUNCE_TOAST
+		_hud.show_toast(bounce_toast)
+		_refresh()
+		return true
+	var toast := CombatHUD.toast_for_events(events)
+	if toast != "":
+		_hud.show_toast(toast)
+	return false
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -591,7 +629,9 @@ func _apply_units(snap: Dictionary) -> void:
 		pawn.visible = placed
 		if not placed:
 			continue
-		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)))
+		var raw_events: Variant = snap.get("last_events", [])
+		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
+		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
 		pawn.position = _cell_to_local(cell)
 		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
 
@@ -622,11 +662,11 @@ func _paint_highlights() -> void:
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
 		if spell_id == "" and tiles.has(dest):
 			_tile_at(dest).set_highlight("move")
-	for intent in legal:
-		var kind := str(intent.get("type", ""))
-		if kind == "cast" and str(intent.get("spell", "")) == spell_id and intent.has("to"):
+	# Advance and other cast dest chrome: legal_intents only. No client range ring.
+	for dest in SNAPSHOT_TILES.cast_dests(legal, spell_id):
+		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
-			_tile_at(intent["to"]).set_highlight(highlight)
+			_tile_at(dest).set_highlight(highlight)
 	_sync_aim_preview()
 
 

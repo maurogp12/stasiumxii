@@ -12,8 +12,11 @@ const IRONJAW_RED := Color("#8B2E2E")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
+## Lava forced-push lands and applies Burn. Not a Bounce toast.
+const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
+const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -58,6 +61,7 @@ var _tooltip_spell: String = ""
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
+var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
@@ -263,6 +267,49 @@ static func unit_is_stunned(unit: Dictionary) -> bool:
 	return int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 
 
+static func unit_is_burning(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return unit_burn_remaining(unit) > 0
+
+
+## Snapshot `burn_remaining` wins when the unit carries it. Status / burn events
+## fill in only when that field is absent. Does not tick or add durations.
+static func unit_burn_remaining(unit: Dictionary, events: Array = []) -> int:
+	if unit.is_empty():
+		return 0
+	if unit.has("burn_remaining"):
+		return maxi(0, int(unit.get("burn_remaining", 0)))
+	var seat := int(unit.get("seat", -999))
+	var remaining := 0
+	var saw := false
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if int(event.get("target_seat", -999)) != seat:
+			continue
+		var kind := str(event.get("type", ""))
+		if kind == "status" and str(event.get("status", "")) == "burn":
+			remaining = int(event.get("remaining", 0))
+			saw = true
+		elif kind == "hit" and bool(event.get("burn_applied", false)):
+			remaining = int(event.get("burn_remaining", 0))
+			saw = true
+		elif kind == "burn" and event.has("remaining"):
+			remaining = int(event.get("remaining", 0))
+			saw = true
+	if not saw:
+		return 0
+	return maxi(0, remaining)
+
+
+## Icon caption. Empty when the snapshot has no turns left.
+static func burn_badge_text(remaining: int) -> String:
+	if remaining <= 0:
+		return ""
+	return "BURN %d" % remaining
+
+
 static func events_include_push_blocked(events: Array) -> bool:
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
@@ -274,7 +321,21 @@ static func events_include_push_blocked(events: Array) -> bool:
 	return false
 
 
+static func events_include_lava_burn(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if bool(event.get("burn_applied", false)):
+			return true
+		if str(event.get("type", "")) == "status" and str(event.get("status", "")) == "burn":
+			return true
+	return false
+
+
 static func events_include_push_bounce(events: Array) -> bool:
+	# A lava land is a displace, not a bounce, even if a bounce flag is also present.
+	if events_include_lava_burn(events):
+		return false
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -312,12 +373,43 @@ static func should_play_walk_hops(events: Array) -> bool:
 	return false
 
 
+## One Impact number from the hit event. Bounce is that gain only — never +1 stacked with +2.
+static func shoulder_impact_gained(events: Array) -> int:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		if str(event.get("spell", "")) != SpellKits.SHOULDER:
+			continue
+		if str(event.get("engine", "")) != "impact":
+			continue
+		return maxi(0, int(event.get("engine_gained", 0)))
+	return 0
+
+
+static func impact_gain_toast(amount: int) -> String:
+	if amount <= 0:
+		return ""
+	return "+%d Impact" % amount
+
+
 static func toast_for_events(events: Array) -> String:
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
+	if events_include_lava_burn(events):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), LAVA_BURN_TOAST)
 	if events_include_push_bounce(events):
-		return BOUNCE_TOAST
-	return ""
+		return _join_toast(BOUNCE_TOAST, impact_gain_toast(shoulder_impact_gained(events)))
+	return impact_gain_toast(shoulder_impact_gained(events))
+
+
+static func _join_toast(left: String, right: String) -> String:
+	if left == "":
+		return right
+	if right == "":
+		return left
+	return "%s  %s" % [left, right]
 
 
 ## Presentation of a CombatSim auto-skip. Does not submit end_turn.
@@ -451,9 +543,18 @@ func set_locked(locked: bool) -> void:
 	_apply_controls(false)
 
 
+func _banner_color(class_id: String) -> Color:
+	if class_id == SpellKits.CLASS_KESTREL:
+		return KESTREL_GREEN
+	if class_id == SpellKits.CLASS_IRONJAW:
+		return IRONJAW_RED
+	# Chrome only. Not a kit stat. Open kits share one neutral panel.
+	return Color("#3a3a3a")
+
+
 func show_turn_banner(unit_name: String, class_id: String, caption: String = "") -> void:
 	_handoff_label.text = caption if caption != "" else "%s's turn" % unit_name
-	var fill := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
+	var fill := _banner_color(class_id)
 	_handoff_panel.add_theme_stylebox_override("panel", _panel(fill))
 	_handoff_overlay.visible = true
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -505,6 +606,7 @@ func set_preview_source(sim: Node) -> void:
 
 func render(snap: Dictionary, legal: Array) -> void:
 	_last_snap = snap
+	_last_legal = legal.duplicate()
 	_deploying = is_deployment_phase(snap)
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
@@ -827,7 +929,10 @@ func _show_new_match(snap: Dictionary) -> bool:
 	var seat := snap_local_seat(snap)
 	if seat < 0:
 		return true
-	return str(_net_dict(snap).get("mode", "")) == "host"
+	var net := _net_dict(snap)
+	if str(net.get("mode", "")) == "host":
+		return true
+	return bool(net.get("dedicated", false)) and seat == 0
 
 
 func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
@@ -842,7 +947,7 @@ func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
 	_seat_titles[seat].text = unit_name
 	if seat >= _seat_panels.size():
 		return
-	var color := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
+	var color := _banner_color(class_id)
 	_seat_panels[seat].add_theme_stylebox_override("panel", _panel(color))
 
 
@@ -940,11 +1045,16 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var stun_note := ""
 	if unit_is_stunned(unit):
 		stun_note = "  [b]STUN[/b]"
-	return "[color=#ffffff]%s  HP %d/%d%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
+	# Director Locked Burn: duration left is the snapshot field host replicas already carry.
+	var burn_note := ""
+	if unit_is_burning(unit):
+		burn_note = "  [b]BURN[/b] %d" % unit_burn_remaining(unit)
+	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
 		stun_note,
+		burn_note,
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
@@ -1149,7 +1259,7 @@ func _preview_dest_args(spell_id: String) -> Dictionary:
 	if spell_id == SpellKits.ADVANCE:
 		return {
 			"from": from,
-			"to": _advance_hover_dest(from, units),
+			"to": _advance_hover_dest(from),
 			"target_seat": -1,
 		}
 	var to: Vector2i = _as_cell(enemy.get("pos", from))
@@ -1160,21 +1270,12 @@ func _preview_dest_args(spell_id: String) -> Dictionary:
 	}
 
 
-func _advance_hover_dest(from: Vector2i, units: Array) -> Vector2i:
-	var occupied := {}
-	for unit in units:
-		if typeof(unit) != TYPE_DICTIONARY:
-			continue
-		occupied[_as_cell(unit.get("pos", Vector2i(-1, -1)))] = true
-	# Advance hover samples an orthogonal neighbor. Diagonals and Manhattan 2 are illegal.
-	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
-		var dest: Vector2i = from + delta
-		if dest.x < 0 or dest.y < 0 or dest.x > 7 or dest.y > 7:
-			continue
-		if occupied.has(dest):
-			continue
-		return dest
-	return from + Vector2i(1, 0)
+## Hover sample is a sim-legal Advance dest. No client neighbor scan.
+func _advance_hover_dest(from: Vector2i) -> Vector2i:
+	var dests: Array[Vector2i] = SNAPSHOT_TILES.cast_dests(_last_legal, SpellKits.ADVANCE)
+	if dests.is_empty():
+		return from
+	return dests[0]
 
 
 func _as_cell(value: Variant) -> Vector2i:

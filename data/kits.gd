@@ -15,8 +15,26 @@ const CRUSH := "crush"
 
 const CLASS_KESTREL := "kestrel"
 const CLASS_IRONJAW := "ironjaw"
-## Locked roster for pre-match SELECT_CLASS. No third class.
-const LOCKED_ROSTER: Array[String] = [CLASS_KESTREL, CLASS_IRONJAW]
+const CLASS_MENDER := "mender"
+const CLASS_GLOAM := "gloam"
+const CLASS_BASTION := "bastion"
+## SELECT_CLASS allowlist (workbook SELECT_CLASS_Lock). Server rejects anything else.
+const LOCKED_ROSTER: Array[String] = [
+	CLASS_KESTREL,
+	CLASS_IRONJAW,
+	CLASS_MENDER,
+	CLASS_GLOAM,
+	CLASS_BASTION,
+]
+## Gloam Umbral resource. Cap is stamped 0–4. Gain/spend spells are not on a card.
+const UMBRAL_CAP := 4
+## Spell ids for stamped resolve rules. Costs, range, damage, element, and
+## class owner are Open — these ids are NOT in SPELLS and NOT in CLASS_SPELLS.
+## TODO Class Architect: no Ambush / Aegis Break card in the repo. Do not invent
+## AP, MP, range, damage, or element. CombatSim.apply_locked_resolve owns the
+## miss/hit stamps only.
+const AMBUSH := "ambush"
+const AEGIS_BREAK := "aegis_break"
 
 const SPELLS := {
 	ADVANCE: {
@@ -96,6 +114,7 @@ const SPELLS := {
 		"element": "earth",
 		"base_damage": 6,
 		"target": "enemy",
+		# CombatSim applies +1 after a clean push, or +2 only on bounce (not both).
 		"engine_on_connect": "impact",
 		"push_cells": 1,
 	},
@@ -125,6 +144,13 @@ const SPELLS := {
 const CLASS_SPELLS := {
 	CLASS_KESTREL: [MARK_SHOT, DETONATE],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
+	# TODO Class Architect: mender / gloam / bastion spell lists are not in the
+	# repo. Empty until a card stamps cost, range, element, and damage.
+	# Proto start is 80 HP / marks 0 / impact 0 (see CombatSim). That is not
+	# an AP/MP change: combat refill stays 6 AP / 3 MP. Advance stays 3/0.
+	CLASS_MENDER: [],
+	CLASS_GLOAM: [],
+	CLASS_BASTION: [],
 }
 
 const MARKS_CAP := 5
@@ -136,8 +162,7 @@ static func normalize_class_id(class_id: String) -> String:
 
 
 static func is_roster_class(class_id: String) -> bool:
-	var id := normalize_class_id(class_id)
-	return id == CLASS_KESTREL or id == CLASS_IRONJAW
+	return LOCKED_ROSTER.has(normalize_class_id(class_id))
 
 
 static func display_name(class_id: String) -> String:
@@ -146,11 +171,18 @@ static func display_name(class_id: String) -> String:
 			return "Kestrel"
 		CLASS_IRONJAW:
 			return "Ironjaw"
+		CLASS_MENDER:
+			return "Mender"
+		CLASS_GLOAM:
+			return "Gloam"
+		CLASS_BASTION:
+			return "Bastion"
 		_:
 			return ""
 
 
 static func element_of(class_id: String) -> String:
+	# TODO Class Architect: mender / gloam / bastion elements are not on a card.
 	match normalize_class_id(class_id):
 		CLASS_KESTREL:
 			return "air"
