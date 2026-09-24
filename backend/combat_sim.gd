@@ -82,10 +82,13 @@ var _last_coach: String = ""
 var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
-## Snap Wall cells. They block pathing and occupancy only while a bastion
-## unit is in the match. How a wall is placed is Open (no place-spell card);
-## fixtures pass config snap_walls. TODO Class Architect: place spell missing.
+## Snap Wall cells. They block walk (and would block Gust) only while a
+## bastion is in the match. Each wall is one tile for wall_turns (card: 2).
+## Gust itself is not implemented (A03).
 var _snap_wall_cells: Array[Vector2i] = []
+var _snap_wall_state: Array = []
+var _shade_tokens: Array = []
+var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
 ## Per-tile integer elevation + terrain. #38 crop terrain + seeded noise z on reset.
@@ -105,6 +108,9 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_units.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
+	_snap_wall_state.clear()
+	_shade_tokens.clear()
+	_plant_tiles.clear()
 	_active_seat = 0
 	_turn_index = 0
 	_match_over = false
@@ -154,6 +160,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 			var class_id: String = str(_units[seat]["class_id"])
 			_force_spawn(seat, _spawn_cell_for(config, seat, class_id, class_pos_used))
 		_flow.skip_to_combat()
+		_apply_shade_setup(config)
 		_begin_combat(_opening_turn_coach(""))
 	else:
 		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
@@ -258,6 +265,8 @@ func legal_intents(seat: int) -> Array:
 
 	var from: Vector2i = actor["pos"]
 	var mp: int = int(actor["mp"])
+	if int(actor.get("exit_tax", 0)) > 0:
+		mp = maxi(mp - 1, 0)
 	var ap: int = int(actor["ap"])
 	# Walk dests whenever mp>0, regardless of remaining AP. Advance is 3 AP / 0 MP, so
 	# leftover MP after teleport still offers moves (including at 0 AP). Walk facing
@@ -269,11 +278,37 @@ func legal_intents(seat: int) -> Array:
 	for spell_id in actor["spells"]:
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 			continue
-		var def: Dictionary = SpellKits.spell(spell_id)
-		if def.is_empty():
+		var def: Dictionary = SpellKits.spell(str(spell_id))
+		if def.is_empty() or SpellKits.is_gated(str(spell_id)):
 			continue
 		if ap < int(def["ap"]):
 			continue
+		if _resource_gate(actor, def) != "":
+			continue
+		if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+			continue
+		var target_kind := str(def.get("target", "enemy"))
+		if target_kind == "self":
+			out.append({"type": "cast", "spell": spell_id, "to": from, "seat": seat})
+			continue
+		if target_kind == "empty_tile" and str(spell_id) != SpellKits.ADVANCE:
+			_append_ranged_cells(out, actor, def, str(spell_id), true)
+			continue
+		if target_kind == "tile":
+			_append_ranged_cells(out, actor, def, str(spell_id), false)
+			continue
+		if target_kind == "cone":
+			if _cone_enemies(actor, false).is_empty():
+				continue
+			if not _cone_enemies(actor, true).is_empty():
+				continue
+			out.append({"type": "cast", "spell": spell_id, "to": from + _facing_step(actor), "seat": seat})
+			continue
+		if target_kind == "ally" or target_kind == "any":
+			if _in_spell_range(def, from, from):
+				out.append({"type": "cast", "spell": spell_id, "to": from, "target_seat": seat, "seat": seat})
+			if target_kind == "ally":
+				continue
 		if def["target"] == "empty_tile":
 			# Advance: exactly the 4 ortho neighbors that pass stand-on gates.
 			for dir in FACING_VEC.keys():
@@ -420,6 +455,7 @@ func snapshot() -> Dictionary:
 		},
 		"snap_walls": _cell_list(_snap_wall_cells),
 		"snap_wall_active": _bastion_in_match(),
+		"blocked_tiles": _blocked_tile_snapshot(),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
@@ -521,10 +557,10 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_scripted_rolls.clear()
 	_blocked_cells.clear()
 	_snap_wall_cells.clear()
-	var walls: Variant = snap.get("snap_walls", [])
-	if walls is Array:
-		for wall in walls:
-			_snap_wall_cells.append(_as_cell(wall))
+	_snap_wall_state.clear()
+	_shade_tokens.clear()
+	_plant_tiles.clear()
+	_restore_blocked_tiles(snap)
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
 	_turn_index = int(snap.get("turn_index", 0))
@@ -823,6 +859,34 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if to_cell == from_cell or to_cell == actor["pos"]:
 			return "same_tile"
 		return _advance_stand_reason(from_cell, to_cell)
+	if SpellKits.is_gated(spell_id):
+		return "open_can_wait"
+	var target_kind := str(def.get("target", "enemy"))
+	if target_kind == "self":
+		if to_cell != actor["pos"]:
+			return "no_target"
+		return ""
+	if target_kind == "empty_tile":
+		if not _is_empty(to_cell):
+			return "destination_occupied"
+		return ""
+	if target_kind == "tile":
+		return ""
+	if target_kind == "cone":
+		if not _cone_enemies(actor, true).is_empty():
+			return "open_can_wait"
+		if _cone_enemies(actor, false).is_empty():
+			return "no_target"
+		return ""
+	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and int(target.get("seat", -1)) == int(actor.get("seat", -2)))
+	if ally_cast:
+		if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) != int(actor.get("seat", -2)):
+			return "no_target"
+		if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
+			return "open_can_wait"
+		if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
+			return "open_can_wait"
+		return ""
 	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
 		return "no_target"
 	if spell_id == SpellKits.DETONATE and int(target.get("marks", 0)) < int(def.get("requires_marks_on_target", 1)):
@@ -877,18 +941,26 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
-		# Proto default for every kit, including the three Open kits:
-		# 80 HP / marks 0 / impact 0. The Class Architect "0 / 0" was not on a
-		# card in the repo, so it is not a new AP/MP pool (combat refill stays
-		# 6 AP / 3 MP). TODO if 0/0 named a third unstamped stat.
-		# Umbral is Gloam only, cap 0–4. Other classes stay at 0.
+		# Workbook v0.6 proto: HP 80, Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
+		"mastery": 0,
+		"resist": 0,
+		# Umbral 0–4 is Gloam only. Pulse 0–6 is Mender only. Aegis 0–4 is Bastion only.
 		"umbral": 0,
 		"umbral_cap": SpellKits.UMBRAL_CAP if class_id == SpellKits.CLASS_GLOAM else 0,
-		# Aegis cap is Open. Shade / Invisible start clear. Ambush class owner
-		# is Open; the miss stamp only keeps whatever is already set.
+		"pulse": 0,
+		"pulse_cap": SpellKits.PULSE_CAP if class_id == SpellKits.CLASS_MENDER else 0,
 		"aegis": 0,
+		"aegis_cap": SpellKits.AEGIS_CAP if class_id == SpellKits.CLASS_BASTION else 0,
+		# shade bool mirrors shades > 0. Tokens live on the board (max 2).
 		"shade": false,
+		"shades": 0,
 		"invisible": false,
+		"shield": 0,
+		"shield_turns": 0,
+		"hit_immunity": 0,
+		"skip_next_mp": false,
+		"exit_tax": 0,
+		"intercept_used": false,
 		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
@@ -1093,11 +1165,16 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_finish_match(_active_seat)
 		return {}
 
+	if int(actor.get("exit_tax", 0)) > 0:
+		actor["exit_tax"] = int(actor["exit_tax"]) - 1
 	_active_seat = next_seat
 	_turn_index += 1
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = MAX_AP
 	next_unit["mp"] = MAX_MP
+	if bool(next_unit.get("skip_next_mp", false)):
+		next_unit["mp"] = 0
+		next_unit["skip_next_mp"] = false
 	_start_turn_timer()
 	var stunned := _is_stunned(next_unit)
 	if stunned:
@@ -1189,7 +1266,9 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if not intent.has("to"):
 		return _reject(intent, "missing_destination", "REJECT — move needs a destination.")
 	var dest: Vector2i = intent["to"]
-	var planned: Dictionary = _board.validate_move(actor["pos"], dest, int(actor["mp"]), Callable(self, "_walk_occupied"))
+	var tax := 1 if int(actor.get("exit_tax", 0)) > 0 else 0
+	var budget := maxi(int(actor["mp"]) - tax, 0)
+	var planned: Dictionary = _board.validate_move(actor["pos"], dest, budget, Callable(self, "_walk_occupied"))
 	if not bool(planned.get("ok", false)):
 		var reason := str(planned.get("reason", "unreachable"))
 		return _reject(intent, reason, "REJECT — illegal move (%s)." % reason)
@@ -1199,9 +1278,9 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var facing_from: String = str(actor["facing"])
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
-	actor["mp"] = int(actor["mp"]) - dist
+	actor["mp"] = int(actor["mp"]) - dist - tax
 	_intent_log.append(intent)
-	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), dist]
+	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), dist + tax]
 	_last_events.append({
 		"type": "move",
 		"seat": actor["seat"],
@@ -1211,7 +1290,7 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		"facing_from": facing_from,
 		"facing": str(actor["facing"]),
 		"facing_hops": facing_hops.duplicate(),
-		"mp_spent": dist,
+		"mp_spent": dist + tax,
 		"coach": _last_coach,
 	})
 	return _accept()
@@ -1238,10 +1317,10 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
 	if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
-	# Ambush / Aegis Break have no cost card, so they are not in SpellKits.SPELLS
-	# and fall through to unknown_spell. Do not spend 0 AP to apply them.
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit (refund)." % [def["name"], actor["name"]])
+	if SpellKits.is_gated(spell_id):
+		return _reject(intent, "open_can_wait", "REJECT — %s is open (can-wait) and is not resolved." % def["name"])
 	if not intent.has("to"):
 		return _reject(intent, "missing_target", "REJECT — %s needs a target (refund)." % def["name"])
 
@@ -1276,9 +1355,43 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "insufficient_ap", "REJECT — %s costs %d AP (refund)." % [def["name"], ap_cost])
 	if int(actor["mp"]) < mp_cost:
 		return _reject(intent, "insufficient_mp", "REJECT — %s costs %d MP (refund)." % [def["name"], mp_cost])
+	if spell_id == SpellKits.WARD or spell_id == SpellKits.HEARTSTOP:
+		var early := _living_unit_at(dest)
+		if not early.is_empty() and int(early["seat"]) == int(actor["seat"]):
+			if spell_id == SpellKits.WARD and int(early.get("shield", 0)) > 0:
+				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
+			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
+				return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
+	var resource_gate := _resource_gate(actor, def)
+	if resource_gate != "":
+		return _reject(intent, resource_gate, "REJECT — %s failed gate %s (refund)." % [def["name"], resource_gate])
+
+	var target_kind := str(def.get("target", "enemy"))
+	if target_kind == "empty_tile":
+		return _resolve_empty_tile(intent, actor, def, dest, ap_cost, mp_cost)
+	if target_kind == "tile":
+		return _resolve_plant(intent, actor, def, dest, ap_cost, mp_cost)
+	if target_kind == "self":
+		if dest != actor["pos"]:
+			return _reject(intent, "no_target", "REJECT — %s is self only (refund)." % def["name"])
+		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
+	if target_kind == "cone":
+		return _resolve_hold_line(intent, actor, def, ap_cost, mp_cost)
+	if spell_id == SpellKits.AMBUSH:
+		var ambush_target := _living_unit_at(dest)
+		if ambush_target.is_empty() or int(ambush_target["seat"]) == int(actor["seat"]):
+			return _reject(intent, "no_target", "REJECT — Ambush needs an enemy (refund).")
+		return _resolve_ambush(intent, actor, ambush_target, def, dest, dist, ap_cost, mp_cost)
 
 	var target := _living_unit_at(dest)
-	if target.is_empty() or int(target["seat"]) == int(actor["seat"]):
+	if target.is_empty():
+		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
+	var support := target_kind == "ally" or (target_kind == "any" and int(target["seat"]) == int(actor["seat"]))
+	if support:
+		if target_kind == "ally" and int(target["seat"]) != int(actor["seat"]):
+			return _reject(intent, "no_target", "REJECT — %s needs an ally (refund)." % def["name"])
+		return _resolve_support(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
+	if int(target["seat"]) == int(actor["seat"]):
 		return _reject(intent, "no_target", "REJECT — %s needs an enemy (refund)." % def["name"])
 	var gate := _cast_gate_reason(actor, target, def)
 	if gate != "":
@@ -1333,6 +1446,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var connected: bool = roll <= chance
 	var facing_mult: float = _facing_multiplier(actor["pos"], target["pos"], str(target["facing"]))
 	var is_back: bool = facing_mult > FRONT_SIDE_FACING + 0.001
+	if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
+		facing_mult = SpellKits.BACKSTAB_MULT
 	var spell_id := str(def["id"])
 	var marks_on_target: int = int(target.get("marks", 0))
 	var impact_before: int = int(actor.get("impact", 0))
@@ -1365,12 +1480,16 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			miss_event["impact"] = impact_before
 		if spell_id == SpellKits.SHOULDER:
 			miss_event["pushed"] = false
-		_stamp_locked_event(miss_event, spell_id, false, int(actor["seat"]), int(target["seat"]))
+		if spell_id == SpellKits.AEGIS_BREAK:
+			# MISS spends 0 Aegis. The gate already required 3; the stack stays.
+			miss_event["aegis_spent"] = 0
+			miss_event["aegis"] = int(actor.get("aegis", 0))
 		_last_events.append(miss_event)
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
 	var damage := _phase_a_damage(base, facing_mult)
+	damage = _mitigate_hit(actor, target, damage)
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
@@ -1399,7 +1518,24 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"spend_impact":
 			engine_spent = _spend_impact(actor, int(def.get("spend_impact", 2)))
 			engine_name = "Impact"
+		"umbral":
+			engine_gained = _gain_resource(actor, "umbral", 1)
+			engine_name = "Umbral"
+		"aegis":
+			engine_gained = _gain_resource(actor, "aegis", 1)
+			engine_name = "Aegis"
+		"pulse":
+			engine_gained = _gain_resource(actor, "pulse", 1)
+			engine_name = "Pulse"
+		"spend_pulse":
+			engine_spent = _spend_resource(actor, "pulse", int(def.get("spend_pulse", 1)))
+			engine_name = "Pulse"
+		"clear_aegis":
+			engine_spent = _clear_resource(actor, "aegis")
+			engine_name = "Aegis"
 
+	if bool(def.get("enemy_skip_mp", false)):
+		target["skip_next_mp"] = true
 	var stun_applied := 0
 	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
 		# Locked Stun (A′): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
@@ -1419,7 +1555,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if bool(push_result.get("burn", false)):
 		burn_info = _apply_burn(target)
 
-	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
+	var facing_note := "front/side ×1.00"
+	if is_back:
+		facing_note = "BACK ×1.35" if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM else "BACK ×1.20"
 	var extra_note := _connect_extra_note(engine_gained, engine_name, marks_consumed, engine_spent, stun_applied, push_result)
 	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), def["name"], target["name"], roll, chance, facing_note, extra_note]
 	var hit_event := {
@@ -1452,7 +1590,10 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["impact_spent"] = engine_spent
 		hit_event["stun_applied"] = stun_applied
 		# Locked Stun (A′): blocks move + cast + face; auto end_turn on turn start.
-	_stamp_locked_event(hit_event, spell_id, true, int(actor["seat"]), int(target["seat"]))
+	if spell_id == SpellKits.AEGIS_BREAK:
+		hit_event["aegis_spent"] = engine_spent
+		hit_event["aegis"] = int(actor.get("aegis", 0))
+		hit_event["stacks_cleared"] = engine_spent > 0
 	if not push_result.is_empty():
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
@@ -1718,6 +1859,9 @@ func _apply_setup_overrides(config: Dictionary) -> void:
 		_apply_class_setup(config, "%s_stun" % class_id, class_id, "stun_remaining")
 		_apply_class_setup(config, "%s_aegis" % class_id, class_id, "aegis")
 		_apply_class_setup(config, "%s_umbral" % class_id, class_id, "umbral")
+		_apply_class_setup(config, "%s_pulse" % class_id, class_id, "pulse")
+		_apply_class_setup(config, "%s_hp" % class_id, class_id, "hp")
+		_apply_class_setup(config, "%s_hit_immunity" % class_id, class_id, "hit_immunity")
 		_apply_bool_setup(config, "%s_shade" % class_id, class_id, "shade")
 		_apply_bool_setup(config, "%s_invisible" % class_id, class_id, "invisible")
 	if config.has("blockers"):
@@ -1725,7 +1869,13 @@ func _apply_setup_overrides(config: Dictionary) -> void:
 			_blocked_cells.append(_as_cell(cell))
 	if config.has("snap_walls"):
 		for cell in config["snap_walls"]:
-			_snap_wall_cells.append(_as_cell(cell))
+			var pos := _as_cell(cell)
+			_snap_wall_cells.append(pos)
+			_snap_wall_state.append({
+				"pos": pos,
+				"turns": 2,
+				"owner_seat": -1,
+			})
 
 
 func _apply_bool_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
@@ -1744,8 +1894,11 @@ func _apply_class_setup(config: Dictionary, key: String, class_id: String, field
 	if unit.is_empty():
 		return
 	var value := int(config[key])
-	if field == "stun_remaining":
+	if field == "stun_remaining" or field == "hit_immunity":
 		unit[field] = maxi(value, 0)
+		return
+	if field == "hp":
+		unit["hp"] = mini(maxi(value, 0), int(unit.get("max_hp", START_HP)))
 		return
 	var cap := int(unit.get("%s_cap" % field, value))
 	unit[field] = mini(maxi(value, 0), cap)
@@ -1840,6 +1993,10 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["stunned"] = remaining > 0
 	if remaining > 0:
 		unit["stun_remaining"] = remaining - 1
+	_decay_board_durations()
+	_tick_shield(unit)
+	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
+		unit["intercept_used"] = false
 
 
 func _is_stunned(unit: Dictionary) -> bool:
@@ -1872,6 +2029,10 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 		parts.append(" Marks consumed (%d)." % marks_consumed)
 	if engine_spent > 0 and engine_name == "Impact":
 		parts.append(" Impact spent (%d)." % engine_spent)
+	if engine_spent > 0 and engine_name == "Aegis":
+		parts.append(" Aegis cleared (%d)." % engine_spent)
+	if engine_spent > 0 and engine_name == "Pulse":
+		parts.append(" Pulse spent (%d)." % engine_spent)
 	if stun_applied > 0:
 		parts.append(" Stun %d (Locked A′)." % stun_applied)
 	if not push_result.is_empty():
@@ -1961,6 +2122,10 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		"hp_delta": 0,
 		"mp_delta": 0,
 	}
+	if _consume_plant_resist(target):
+		result["blocked"] = true
+		result["reason"] = "plant_resist"
+		return result
 	if not _in_bounds(dest):
 		return _apply_bounce_stagger(target, result, "out_of_bounds")
 	if not _is_empty(dest):
@@ -2167,89 +2332,680 @@ func _cell_list(cells: Array[Vector2i]) -> Array:
 	return out
 
 
-## Stamped resolve for Ambush and Aegis Break. Costs are Open, so submit does
-## not offer these. A future card can call this from the rolling-cast path.
-func apply_locked_resolve(spell_id: String, connected: bool, actor_seat: int, target_seat: int) -> Dictionary:
-	if spell_id == SpellKits.AMBUSH:
-		return _apply_ambush(_unit_by_seat(actor_seat), connected)
-	if spell_id == SpellKits.AEGIS_BREAK:
-		return _apply_aegis_break(_unit_by_seat(target_seat), connected)
-	return {"ok": false, "applied": false, "reason": "open_card", "spell": spell_id}
+func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
+	if int(def.get("requires_aegis", 0)) > int(actor.get("aegis", 0)):
+		return "insufficient_aegis"
+	if int(def.get("requires_pulse", 0)) > int(actor.get("pulse", 0)):
+		return "insufficient_pulse"
+	if int(def.get("requires_umbral", 0)) > int(actor.get("umbral", 0)):
+		return "insufficient_umbral"
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.DROP_SHADE and _shade_count(actor) >= SpellKits.SHADE_CAP:
+		return "shade_cap"
+	if spell_id == SpellKits.AMBUSH and not bool(actor.get("invisible", false)) and _shade_count(actor) <= 0:
+		return "no_shade"
+	return ""
 
 
-func _stamp_locked_event(event: Dictionary, spell_id: String, connected: bool, actor_seat: int, target_seat: int) -> void:
-	if spell_id != SpellKits.AMBUSH and spell_id != SpellKits.AEGIS_BREAK:
-		return
-	var stamped: Dictionary = apply_locked_resolve(spell_id, connected, actor_seat, target_seat)
-	event["teleported"] = bool(stamped.get("teleported", false))
-	if spell_id == SpellKits.AMBUSH:
-		event["shade_retained"] = bool(stamped.get("shade_retained", false))
-		event["invisible_retained"] = bool(stamped.get("invisible_retained", false))
-		event["open_hit"] = bool(stamped.get("open_hit", false))
-	if spell_id == SpellKits.AEGIS_BREAK:
-		event["aegis"] = int(stamped.get("aegis", 0))
-		event["stacks_cleared"] = bool(stamped.get("stacks_cleared", false))
+func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	var dist := _range_distance(def, from_cell, to_cell)
+	return dist >= int(def.get("min_range", 0)) and dist <= int(def.get("max_range", 0))
 
 
-## Ambush class owner is Open. Miss keeps Shade / Invisible and does not teleport.
-## Hit payload is Open — do not invent a teleport or a stack change.
-func _apply_ambush(actor: Dictionary, connected: bool) -> Dictionary:
-	if actor.is_empty():
-		return {"ok": false, "applied": false, "reason": "no_actor", "teleported": false}
-	var shade := bool(actor.get("shade", false))
-	var invisible := bool(actor.get("invisible", false))
-	actor["shade"] = shade
-	actor["invisible"] = invisible
-	return {
-		"ok": true,
-		"applied": true,
-		"spell": SpellKits.AMBUSH,
-		"connected": connected,
-		"teleported": false,
-		"pos": actor.get("pos", UNPLACED),
-		"shade_retained": shade,
-		"invisible_retained": invisible,
-		"shade": shade,
-		"invisible": invisible,
-		"open_hit": connected,
-	}
+func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:
+	var from_cell: Vector2i = actor["pos"]
+	var seat := int(actor["seat"])
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			if not _in_spell_range(def, from_cell, cell):
+				continue
+			if empty_only and (not _is_empty(cell) or not _board.is_walkable(cell)):
+				continue
+			out.append({"type": "cast", "spell": spell_id, "to": cell, "seat": seat})
 
 
-## Aegis Break class owner is Open. HIT clears stacks. MISS sets aegis to 0 only.
-func _apply_aegis_break(target: Dictionary, connected: bool) -> Dictionary:
-	if target.is_empty():
-		return {"ok": false, "applied": false, "reason": "no_target", "aegis": 0, "stacks_cleared": false}
-	if connected:
-		target["marks"] = 0
-		target["impact"] = 0
-		target["umbral"] = 0
-		target["aegis"] = 0
-		target["shade"] = false
-		target["invisible"] = false
-		return {
-			"ok": true,
-			"applied": true,
-			"spell": SpellKits.AEGIS_BREAK,
-			"connected": true,
+func _facing_step(actor: Dictionary) -> Vector2i:
+	var facing := str(actor.get("facing", "E"))
+	if FACING_VEC.has(facing):
+		return FACING_VEC[facing]
+	return Vector2i.ZERO
+
+
+func _cone_cells(actor: Dictionary) -> Array[Vector2i]:
+	var facing := _facing_step(actor)
+	var perp := Vector2i(-facing.y, facing.x)
+	var origin: Vector2i = actor["pos"]
+	return [origin + facing, origin + facing + perp, origin + facing - perp]
+
+
+## invisible_only selects invisible enemies. Otherwise visible enemies only.
+func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
+	var out: Array = []
+	for cell in _cone_cells(actor):
+		if not _in_bounds(cell):
+			continue
+		var unit := _living_unit_at(cell)
+		if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+			continue
+		var invisible := bool(unit.get("invisible", false))
+		if invisible_only == invisible:
+			out.append(unit)
+	return out
+
+
+func _gain_resource(unit: Dictionary, field: String, amount: int) -> int:
+	var cap_key := "%s_cap" % field
+	if not unit.has(cap_key):
+		return 0
+	var cap := int(unit[cap_key])
+	if cap <= 0 or amount <= 0:
+		return 0
+	var before := int(unit.get(field, 0))
+	unit[field] = mini(before + amount, cap)
+	return int(unit[field]) - before
+
+
+func _spend_resource(unit: Dictionary, field: String, amount: int) -> int:
+	var before := int(unit.get(field, 0))
+	var spent := mini(before, maxi(amount, 0))
+	unit[field] = before - spent
+	return spent
+
+
+func _clear_resource(unit: Dictionary, field: String) -> int:
+	var before := int(unit.get(field, 0))
+	unit[field] = 0
+	return before
+
+
+## Immunity consumes the hit (damage 0, shield untouched). Then one adjacent
+## same-seat Bastion may take 40% once. Shield absorbs the rest. Zero shield
+## and zero immunity leave the formula damage unchanged.
+func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
+	if int(target.get("hit_immunity", 0)) > 0:
+		target["hit_immunity"] = int(target["hit_immunity"]) - 1
+		return 0
+	var transferred := _intercept_transfer(actor, target, damage)
+	var remaining := damage - transferred
+	var shield := int(target.get("shield", 0))
+	if shield > 0 and remaining > 0:
+		var absorbed := mini(shield, remaining)
+		target["shield"] = shield - absorbed
+		remaining -= absorbed
+		if int(target["shield"]) <= 0:
+			target["shield"] = 0
+			target["shield_turns"] = 0
+	return remaining
+
+
+func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
+	if damage <= 0:
+		return 0
+	if int(actor.get("seat", -1)) == int(target.get("seat", -2)):
+		return 0
+	var guards: Array = []
+	for unit in _units:
+		if str(unit.get("class_id", "")) != SpellKits.CLASS_BASTION:
+			continue
+		if not bool(unit.get("alive", false)):
+			continue
+		if int(unit.get("seat", -1)) != int(target.get("seat", -2)):
+			continue
+		if unit["pos"] == target["pos"]:
+			continue
+		if bool(unit.get("intercept_used", false)):
+			continue
+		if chebyshev(unit["pos"], target["pos"]) != 1:
+			continue
+		guards.append(unit)
+	# Two Bastions on the same ally is open_can_wait. Do not transfer.
+	if guards.size() != 1:
+		return 0
+	var bastion: Dictionary = guards[0]
+	var moved := roundi(float(damage) * SpellKits.INTERCEPT_TRANSFER)
+	if moved <= 0:
+		return 0
+	bastion["intercept_used"] = true
+	bastion["hp"] = maxi(0, int(bastion["hp"]) - moved)
+	_check_death(bastion)
+	return mini(moved, damage)
+
+
+func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary) -> int:
+	var base := int(def.get("base_heal", 0))
+	if base <= 0:
+		return 0
+	var facing := FRONT_SIDE_FACING
+	if not bool(def.get("no_facing", false)):
+		facing = _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
+	var passive := PASSIVE
+	if bool(def.get("triage", false)):
+		var max_hp := maxi(int(target.get("max_hp", START_HP)), 1)
+		if float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD:
+			passive = SpellKits.TRIAGE_MULT
+	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + MASTERY / 100.0) * facing
+	return roundi(raw)
+
+
+func _apply_heal(target: Dictionary, amount: int) -> int:
+	if amount <= 0:
+		return 0
+	var room := int(target.get("max_hp", START_HP)) - int(target.get("hp", 0))
+	var healed := mini(amount, maxi(room, 0))
+	target["hp"] = int(target["hp"]) + healed
+	return healed
+
+
+func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
+		return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
+	if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
+		return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var chance := 0
+	var roll := 0
+	var connected := true
+	if bool(def.get("rolls", false)):
+		chance = hit_chance(dist)
+		roll = _roll_d100()
+		connected = roll <= chance
+	_intent_log.append(intent)
+	if not connected:
+		_last_coach = "MISS — %s (%d vs %d%%). Resources stay." % [def["name"], roll, chance]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": spell_id,
+			"target_seat": target["seat"],
+			"to": dest,
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"damage": 0,
+			"healed": 0,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var healed := 0
+	if spell_id != SpellKits.WARD and spell_id != SpellKits.CLEANSE:
+		healed = _apply_heal(target, _support_heal_amount(actor, target, def))
+	var engine_gained := 0
+	var engine_spent := 0
+	match str(def.get("engine_on_connect", "")):
+		"pulse":
+			engine_gained = _gain_resource(actor, "pulse", 1)
+		"spend_pulse":
+			engine_spent = _spend_resource(actor, "pulse", int(def.get("spend_pulse", 1)))
+	if spell_id == SpellKits.WARD:
+		target["shield"] = int(def.get("shield", 20))
+		target["shield_turns"] = int(def.get("shield_turns", 2))
+	if spell_id == SpellKits.CLEANSE:
+		target["stun_remaining"] = 0
+		target["stunned"] = false
+	if spell_id == SpellKits.HEARTSTOP:
+		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
+	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
+	_last_events.append({
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": spell_id,
+		"target_seat": target["seat"],
+		"to": dest,
+		"range": dist,
+		"hit_chance": chance,
+		"roll": roll,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"healed": healed,
+		"damage": 0,
+		"shield": int(target.get("shield", 0)),
+		"engine_gained": engine_gained,
+		"engine_spent": engine_spent,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var gained := _gain_resource(actor, "umbral", 1)
+	actor["invisible"] = true
+	_intent_log.append(intent)
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible. +%d Umbral." % [actor["name"], ap_cost, mp_cost, gained]
+	_last_events.append({
+		"type": "cast",
+		"spell": SpellKits.FADE,
+		"seat": actor["seat"],
+		"rolled": false,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"invisible": true,
+		"engine_gained": gained,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	if not _is_empty(dest) or not _board.is_walkable(dest):
+		return _reject(intent, "destination_occupied", "REJECT — %s needs an empty tile (refund)." % def["name"])
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.DROP_SHADE:
+		if _shade_count(actor) >= SpellKits.SHADE_CAP:
+			return _reject(intent, "shade_cap", "REJECT — Shade cap is %d (refund)." % SpellKits.SHADE_CAP)
+		actor["ap"] = int(actor["ap"]) - ap_cost
+		actor["mp"] = int(actor["mp"]) - mp_cost
+		_shade_tokens.append({
+			"pos": dest,
+			"turns": int(def.get("shade_turns", 3)),
+			"owner_seat": int(actor["seat"]),
+		})
+		_sync_shade_flags()
+		_intent_log.append(intent)
+		_last_coach = "%s drops a Shade on %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"seat": actor["seat"],
+			"to": dest,
+			"rolled": false,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"shades": int(actor.get("shades", 0)),
+			"coach": _last_coach,
+		})
+		return _accept()
+	if spell_id == SpellKits.SNAP_WALL:
+		var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
+		actor["ap"] = int(actor["ap"]) - ap_cost
+		actor["mp"] = int(actor["mp"]) - mp_cost
+		_add_snap_wall(dest, int(def.get("wall_turns", 2)), int(actor["seat"]))
+		_intent_log.append(intent)
+		_last_coach = "%s Snap Wall on %s (−%d AP, −%d Aegis)." % [actor["name"], _cell_text(dest), ap_cost, spent]
+		_last_events.append({
+			"type": "cast",
+			"spell": spell_id,
+			"seat": actor["seat"],
+			"to": dest,
+			"rolled": false,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"aegis_spent": spent,
+			"turns": int(def.get("wall_turns", 2)),
+			"coach": _last_coach,
+		})
+		return _accept()
+	return _reject(intent, "unknown_spell", "REJECT — unknown empty-tile spell.")
+
+
+func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var gained := _gain_resource(actor, "aegis", 1)
+	_plant_tiles.append({
+		"pos": dest,
+		"turns": int(def.get("plant_turns", 3)),
+		"owner_seat": int(actor["seat"]),
+		"push_resist": true,
+	})
+	_intent_log.append(intent)
+	_last_coach = "%s Plant on %s (−%d AP). +%d Aegis." % [actor["name"], _cell_text(dest), ap_cost, gained]
+	_last_events.append({
+		"type": "cast",
+		"spell": SpellKits.PLANT,
+		"seat": actor["seat"],
+		"to": dest,
+		"rolled": false,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"engine_gained": gained,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	if not _cone_enemies(actor, true).is_empty():
+		return _reject(intent, "open_can_wait", "REJECT — AoE versus Invisible is open (can-wait).")
+	var bodies: Array = _cone_enemies(actor, false)
+	if bodies.is_empty():
+		return _reject(intent, "no_target", "REJECT — Hold Line needs an enemy in the cone (refund).")
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var dist := 1
+	var chance := hit_chance(dist)
+	var roll := _roll_d100()
+	var connected := roll <= chance
+	_intent_log.append(intent)
+	if not connected:
+		_last_coach = "MISS — Hold Line (%d vs %d%%)." % [roll, chance]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": SpellKits.HOLD_LINE,
+			"roll": roll,
+			"hit_chance": chance,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"damage": 0,
+			"bodies": 0,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var total := 0
+	var hit_bodies := 0
+	for body in bodies:
+		var target: Dictionary = body
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
+		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
+		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
+			facing_mult = SpellKits.BACKSTAB_MULT
+		var damage := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
+		damage = _mitigate_hit(actor, target, damage)
+		target["hp"] = maxi(0, int(target["hp"]) - damage)
+		target["exit_tax"] = maxi(int(target.get("exit_tax", 0)), int(def.get("exit_tax_turns", 1)))
+		total += damage
+		hit_bodies += 1
+		_check_death(target)
+		if _match_over:
+			break
+	var gained := 0
+	if hit_bodies > 0 and not _match_over:
+		gained = _gain_resource(actor, "aegis", 1)
+	_last_coach = "HIT Hold Line %d across %d." % [total, hit_bodies]
+	_last_events.append({
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": SpellKits.HOLD_LINE,
+		"roll": roll,
+		"hit_chance": chance,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"damage": total,
+		"bodies": hit_bodies,
+		"engine_gained": gained,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var landing: Dictionary = _ambush_landing(actor, target)
+	if not bool(landing.get("ok", false)):
+		return _reject(intent, "no_landing", "REJECT — Ambush has no empty landing (refund).")
+	var from_shade := not bool(actor.get("invisible", false))
+	var origin: Dictionary = {}
+	if from_shade:
+		origin = _first_shade(actor)
+		if origin.is_empty():
+			return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var chance := hit_chance(dist)
+	var roll := _roll_d100()
+	var connected := roll <= chance
+	_intent_log.append(intent)
+	if not connected:
+		_last_coach = "MISS — Ambush (%d vs %d%%). No teleport. Shade and Invisible stay. −%d AP." % [roll, chance, ap_cost]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": SpellKits.AMBUSH,
+			"target_seat": target["seat"],
+			"to": dest,
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
 			"teleported": false,
-			"stacks_cleared": true,
-			"aegis": 0,
-		}
-	target["aegis"] = 0
-	return {
-		"ok": true,
-		"applied": true,
-		"spell": SpellKits.AEGIS_BREAK,
-		"connected": false,
-		"teleported": false,
-		"stacks_cleared": false,
-		"aegis": 0,
-		"marks": int(target.get("marks", 0)),
-		"impact": int(target.get("impact", 0)),
-		"umbral": int(target.get("umbral", 0)),
-		"shade": bool(target.get("shade", false)),
-		"invisible": bool(target.get("invisible", false)),
-	}
+			"shade_retained": bool(actor.get("shade", false)),
+			"invisible_retained": bool(actor.get("invisible", false)),
+			"damage": 0,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var cell: Vector2i = landing["cell"]
+	var backstab: bool = bool(landing.get("backstab", false))
+	actor["pos"] = cell
+	if from_shade:
+		_remove_shade_at(origin["pos"], int(actor["seat"]))
+		_sync_shade_flags()
+	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
+	var damage := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
+	damage = _mitigate_hit(actor, target, damage)
+	target["hp"] = maxi(0, int(target["hp"]) - damage)
+	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
+	_last_events.append({
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": SpellKits.AMBUSH,
+		"target_seat": target["seat"],
+		"to": cell,
+		"from": dest,
+		"range": dist,
+		"hit_chance": chance,
+		"roll": roll,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"teleported": true,
+		"backstab": backstab,
+		"facing_mult": facing_mult,
+		"damage": damage,
+		"shade_retained": not from_shade and bool(actor.get("shade", false)),
+		"invisible_retained": bool(actor.get("invisible", false)),
+		"shades": int(actor.get("shades", 0)),
+		"coach": _last_coach,
+	})
+	_check_death(target)
+	return _accept()
+
+
+func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
+	var facing := str(target.get("facing", "E"))
+	var back: Vector2i = target["pos"]
+	if FACING_VEC.has(facing):
+		back = target["pos"] - FACING_VEC[facing]
+	var caster_pos: Vector2i = actor["pos"]
+	if _ambush_cell_ok(back, caster_pos):
+		return {"ok": true, "cell": back, "backstab": true}
+	var best := UNPLACED
+	var best_d := 99
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			if chebyshev(cell, target["pos"]) != 1:
+				continue
+			if not _ambush_cell_ok(cell, caster_pos):
+				continue
+			var gap := chebyshev(cell, back)
+			var better := best == UNPLACED or gap < best_d or (gap == best_d and (cell.x < best.x or (cell.x == best.x and cell.y < best.y)))
+			if better:
+				best = cell
+				best_d = gap
+	if best == UNPLACED:
+		return {"ok": false}
+	return {"ok": true, "cell": best, "backstab": false}
+
+
+func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
+	if cell == caster_pos or not _in_bounds(cell):
+		return false
+	if not _is_empty(cell):
+		return false
+	return _board.is_walkable(cell)
+
+
+func _first_shade(actor: Dictionary) -> Dictionary:
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) == int(actor["seat"]) and int(token.get("turns", 0)) > 0:
+			return token
+	return {}
+
+
+func _remove_shade_at(cell: Vector2i, seat: int) -> void:
+	var next: Array = []
+	var removed := false
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if not removed and token.get("pos") == cell and int(token.get("owner_seat", -1)) == seat:
+			removed = true
+			continue
+		next.append(token)
+	_shade_tokens = next
+
+
+func _shade_count(actor: Dictionary) -> int:
+	var count := 0
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) == int(actor["seat"]) and int(token.get("turns", 0)) > 0:
+			count += 1
+	return count
+
+
+func _sync_shade_flags() -> void:
+	for unit in _units:
+		var count := _shade_count(unit)
+		unit["shades"] = count
+		unit["shade"] = count > 0
+
+
+func _apply_shade_setup(config: Dictionary) -> void:
+	var unit := _first_unit_of_class(SpellKits.CLASS_GLOAM)
+	if unit.is_empty():
+		return
+	var want := bool(config.get("gloam_shade", false)) or bool(unit.get("shade", false))
+	if want and _shade_count(unit) <= 0:
+		var cell := _shade_setup_cell(unit)
+		if cell != UNPLACED:
+			_shade_tokens.append({
+				"pos": cell,
+				"turns": 3,
+				"owner_seat": int(unit["seat"]),
+			})
+	_sync_shade_flags()
+
+
+func _shade_setup_cell(unit: Dictionary) -> Vector2i:
+	var origin: Vector2i = unit["pos"]
+	var best := UNPLACED
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			var dist := chebyshev(origin, cell)
+			if dist < 1 or dist > 2:
+				continue
+			if not _is_empty(cell) or not _board.is_walkable(cell):
+				continue
+			if best == UNPLACED or cell.x < best.x or (cell.x == best.x and cell.y < best.y):
+				best = cell
+	return best
+
+
+func _add_snap_wall(cell: Vector2i, turns: int, owner_seat: int) -> void:
+	_snap_wall_cells.append(cell)
+	_snap_wall_state.append({
+		"pos": cell,
+		"turns": turns,
+		"owner_seat": owner_seat,
+	})
+
+
+func _blocked_tile_snapshot() -> Array:
+	if not _bastion_in_match():
+		return []
+	var out: Array = []
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		out.append({
+			"pos": wall["pos"],
+			"turns": int(wall.get("turns", 0)),
+		})
+	return out
+
+
+func _restore_blocked_tiles(snap: Dictionary) -> void:
+	var seen: Dictionary = {}
+	var blocked: Variant = snap.get("blocked_tiles", [])
+	if blocked is Array:
+		for entry in blocked:
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			var rec: Dictionary = entry
+			var cell := _as_cell(rec.get("pos", Vector2i.ZERO))
+			var key := "%d,%d" % [cell.x, cell.y]
+			if bool(seen.get(key, false)):
+				continue
+			seen[key] = true
+			_add_snap_wall(cell, int(rec.get("turns", 2)), int(rec.get("owner_seat", -1)))
+	var walls: Variant = snap.get("snap_walls", [])
+	if walls is Array:
+		for wall in walls:
+			var cell := _as_cell(wall)
+			var key := "%d,%d" % [cell.x, cell.y]
+			if bool(seen.get(key, false)):
+				continue
+			seen[key] = true
+			_add_snap_wall(cell, 2, -1)
+
+
+func _decay_board_durations() -> void:
+	var shades: Array = []
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		token["turns"] = int(token.get("turns", 0)) - 1
+		if int(token["turns"]) > 0:
+			shades.append(token)
+	_shade_tokens = shades
+	var walls: Array = []
+	_snap_wall_cells.clear()
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		wall["turns"] = int(wall.get("turns", 0)) - 1
+		if int(wall["turns"]) > 0:
+			walls.append(wall)
+			_snap_wall_cells.append(wall["pos"])
+	_snap_wall_state = walls
+	var plants: Array = []
+	for item in _plant_tiles:
+		var tile: Dictionary = item
+		tile["turns"] = int(tile.get("turns", 0)) - 1
+		if int(tile["turns"]) > 0:
+			plants.append(tile)
+	_plant_tiles = plants
+	_sync_shade_flags()
+
+
+func _tick_shield(unit: Dictionary) -> void:
+	var turns := int(unit.get("shield_turns", 0))
+	if turns <= 0:
+		return
+	unit["shield_turns"] = turns - 1
+	if int(unit["shield_turns"]) <= 0:
+		unit["shield"] = 0
+		unit["shield_turns"] = 0
+
+
+func _consume_plant_resist(target: Dictionary) -> bool:
+	for item in _plant_tiles:
+		var tile: Dictionary = item
+		if tile.get("pos") != target["pos"]:
+			continue
+		if int(tile.get("owner_seat", -1)) != int(target.get("seat", -2)):
+			continue
+		if not bool(tile.get("push_resist", false)):
+			continue
+		tile["push_resist"] = false
+		return true
+	return false
 
 
 func _bastion_in_match() -> bool:

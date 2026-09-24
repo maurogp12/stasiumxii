@@ -85,7 +85,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 - Login / MultiplayerSynchronizer (listen-host ENet, the dedicated process, and the Locked-roster queue are in; see below)
 - Pulse, reconnect, relay
 - Step-shot, Rain, Longbow, Avalanche
-- Mender / Gloam / Bastion spell numbers (the class ids are on the SELECT_CLASS allowlist; cost, range, damage, and element stay Open)
+- `open_can_wait` kit edges (Nightfold miss refund, Intercept multi-guard, Neutral primary scope, AoE vs Invisible, Heartstop immunity/heal-overflow/shield stack, Water Ward 24 rider, cone/ward masks). The workbook v0.6 numbers for Mender / Gloam / Bastion are in.
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
@@ -169,7 +169,7 @@ Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
 
 Allowlist: `kestrel` | `ironjaw` | `mender` | `gloam` | `bastion`. The dedicated host is not a fighter and does not boot the default pair. Each player confirms a class, then joins the queue. Any two Locked classes pair. Seat 0 is the first queued session unless that session is bound to the other transport seat. Kits follow the chosen `class_id` (two of the same class is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
 
-Mender, Gloam, and Bastion have no stamped spell list. They spawn at **80 HP / 0 Marks / 0 Impact** and the Locked combat refill (**6 AP / 3 MP**). The action bar stays empty for those kits. Gloam carries Umbral 0–4. Snap Wall cells block only while a Bastion is in the match.
+Mender, Gloam, and Bastion use workbook v0.6 (`data/select_class_lock_kits_v0.6.json`). Proto is **80 HP / Mastery 0 / Resist 0** with the Locked combat refill (**6 AP / 3 MP**). Umbral is 0–4. Shades max 2. Ambush miss does not teleport, keeps Shade and Invisible, and spends 4 AP. Aegis Break hit clears all Aegis; a miss spends 0. Snap Wall is one blocked tile for 2 turns (walk, and a future Gust) only while a Bastion is in the match. Nightfold and the other `open_can_wait` edges reject instead of guessing.
 
 **Three windows** (lobby scene):
 
@@ -192,20 +192,20 @@ Buttons, no CLI: window A presses **Host dedicated**. Windows B and C press one 
 
 Client → dedicated authority:
 
-| RPC | Args |
-| --- | --- |
-| `rpc_select_class` | `class_id: String` |
-| `rpc_enter_matchmaking` | none |
+| Field | RPC | Args |
+| --- | --- | --- |
+| `select_class` | `rpc_select_class` | `class_id: String` |
+| `queue` | `rpc_enter_matchmaking` | none |
 
 Authority → client:
 
-| RPC | Args |
-| --- | --- |
-| `rpc_class_selected` | `class_id: String` |
-| `rpc_class_rejected` | `reason: String`, `class_id: String` |
-| `rpc_matchmaking_status` | `status: String` — `waiting`, then `matched`, or `rejected:<reason>` |
-| `rpc_match_found` | `{seat, class_id, classes, match_id}` after the state push |
-| `rpc_push_state` | packed snapshot (existing) |
+| Field | RPC | Args |
+| --- | --- | --- |
+|  | `rpc_class_selected` | `class_id: String` |
+|  | `rpc_class_rejected` | `reason: String`, `class_id: String` |
+|  | `rpc_matchmaking_status` | `status: String` — `waiting`, then `matched`, or `rejected:<reason>` |
+| `match_assigned` | `rpc_match_found` | `{type: "match_assigned", seat, class_id, classes, match_id}` after the state push |
+|  | `rpc_push_state` | packed snapshot (existing) |
 
 Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_matched`, `not_dedicated`, `no_seat`.
 
@@ -213,9 +213,9 @@ Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_ma
 
 `snapshot.prematch`: `phase` is `SELECT_CLASS`, `MATCHMAKING`, or `MATCH`; `local_class_id`, `local_queued`, `opponent_queued`, `match_live`. `snapshot.server_mode` is `dedicated` or `host`. `snapshot.net.dedicated` stays true on a dedicated client's hydrated view.
 
-Unit fields for the stamps: `umbral` / `umbral_cap` (Gloam, 0–4), `aegis`, `shade`, `invisible`. `snapshot.snap_walls` plus `snapshot.snap_wall_active` (true only while a Bastion is in the match).
+Unit fields: `umbral` / `umbral_cap` (Gloam, 0–4), `shades` (max 2) / `shade`, `pulse` / `pulse_cap` (Mender, 0–6), `aegis` / `aegis_cap` (Bastion, 0–4), `invisible`, `shield` / `shield_turns`, `hit_immunity`, `skip_next_mp`, `exit_tax`, `mastery`, `resist`. Snap Wall cells are `snapshot.blocked_tiles` (`pos`, `turns`) while a Bastion is in the match, else `[]`. `snapshot.snap_walls` and `snapshot.snap_wall_active` stay beside that key.
 
-Open (no card, not on the action bar): Ambush and Aegis Break costs, range, damage, element, and class owner. Snap Wall placement. Mender / Gloam / Bastion spell lists. `CombatSim.apply_locked_resolve(spell_id, connected, actor_seat, target_seat)` is the stamped rule hook, not a client Intent.
+`open_can_wait` (submit reason, not resolved): Nightfold; Intercept when more than one Bastion could guard; Neutral primary scope; AoE versus Invisible; Heartstop immunity refresh, heal overflow, and shield stacking; the Water Ward 24 rider (Ward base stays 20); cone/ward masks.
 
 Headless: `godot --headless --path . -s res://tests/run_matchmaking_tests.gd`.
 

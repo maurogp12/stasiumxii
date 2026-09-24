@@ -126,7 +126,7 @@ Godot HUD:
 - New Advance costs
 - Changing Locked kit numbers
 - Blends / Residue / Pulse
-- Invented Mender / Gloam / Bastion spell numbers (allowlist ids only; missing card fields stay Open)
+- Invented resolution for workbook `open_can_wait` edges (Nightfold, multi-guard Intercept, AoE vs Invisible, shield stack, Ward 24). Mender / Gloam / Bastion Locked numbers are in.
 
 ## Local still works
 

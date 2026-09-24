@@ -161,6 +161,8 @@ static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 			continue
 		if not SpellKits.has_spell(class_id, id):
 			continue
+		if SpellKits.is_gated(id):
+			continue
 		if not offered.has(id):
 			offered.append(id)
 	return offered

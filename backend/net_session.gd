@@ -1104,6 +1104,7 @@ func _boot_dedicated_match(match: Dictionary) -> void:
 			continue
 		rpc_matchmaking_status.rpc_id(peer_id, "matched")
 		var payload: Dictionary = {
+			"type": "match_assigned",
 			"seat": seat,
 			"class_id": ids[seat],
 			"classes": ids,
