@@ -1,16 +1,21 @@
 extends Node
 
-## Listen-host proto. Host owns CombatSim + seed/RNG + the 30s turn clock.
-## Clients submit Intent. Clients never roll, never tick the clock, never mutate sim.
+## Host core shared by listen-host (--host) and the dedicated process (--dedicated).
+## Authority owns CombatSim: match, turn, 30s timer, HP/MP, Marks, Impact, Burn,
+## terrain, elevation, pushes, and death. Clients send Intent and apply
+## snapshot/events. Clients never roll, never tick the clock, never mutate sim.
 ## Transport: Godot 4 MultiplayerAPI + ENet (direct IP). RPC only; no scene sync.
-## Local hot-seat stays the default (mode HOTSEAT → CombatSim.submit directly).
-## Listen-host only — no dedicated process.
+## Another machine is a different --join address on this same host core.
+## Hot-seat is the default (mode HOTSEAT → CombatSim.submit directly).
+## Dedicated disconnect is a stub: the seat stays reserved. No reconnect.
 
-enum Mode { HOTSEAT, HOST, CLIENT }
+enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
 const DEFAULT_PORT := 7777
 const HOST_SEAT := 0
 const GUEST_SEAT := 1
+const LISTEN_HOST_CLIENTS := 1
+const DEDICATED_CLIENTS := 2
 const TRANSPORT := "enet"
 
 signal state_changed(events: Array, snapshot: Dictionary)
@@ -31,12 +36,19 @@ var join_address: String = "127.0.0.1"
 var _sim: Node = null
 var _cli_host: bool = false
 var _cli_join: bool = false
+var _cli_dedicated: bool = false
 var _signals_wired: bool = false
+## peer id per seat. 0 means no live peer. Server peer id is 1 and is never stored.
+var _seat_peer: Array[int] = [0, 0]
+## True once a seat has been given out. Dedicated keeps this after disconnect.
+var _seat_held: Array[bool] = [false, false]
 
 
 func _ready() -> void:
 	_parse_user_args()
-	if _cli_host:
+	if _cli_dedicated:
+		start_dedicated(listen_port)
+	elif _cli_host:
 		start_host(listen_port)
 	elif _cli_join:
 		start_client(join_address, listen_port)
@@ -56,11 +68,22 @@ func sim() -> Node:
 
 
 func is_online() -> bool:
-	return mode == Mode.HOST or mode == Mode.CLIENT
+	return mode == Mode.HOST or mode == Mode.CLIENT or mode == Mode.DEDICATED
 
 
+## Listen-host window: this process is seat 0 and the authority.
 func is_host() -> bool:
 	return mode == Mode.HOST
+
+
+## Headless (or windowed) authority with no seat. Same host core as listen-host.
+func is_dedicated() -> bool:
+	return mode == Mode.DEDICATED
+
+
+## Listen-host and dedicated share this. Clients and hot-seat do not.
+func is_authority() -> bool:
+	return mode == Mode.HOST or mode == Mode.DEDICATED
 
 
 func is_client() -> bool:
@@ -76,7 +99,9 @@ func is_connecting() -> bool:
 
 
 func has_view_state() -> bool:
-	return not last_snapshot.is_empty() or (mode == Mode.HOST and sim() != null)
+	if not last_snapshot.is_empty():
+		return true
+	return is_authority() and sim() != null
 
 
 func owns_seat(seat: int) -> bool:
@@ -85,19 +110,34 @@ func owns_seat(seat: int) -> bool:
 	return seat == local_seat
 
 
+## Authority may reset. A dedicated client may ask only for seat 0.
 func can_reset_match() -> bool:
-	return mode != Mode.CLIENT
+	if mode == Mode.CLIENT:
+		return local_seat == HOST_SEAT
+	return true
 
 
 func enter_host_offline() -> void:
 	mode = Mode.HOST
 	local_seat = HOST_SEAT
-	guest_peer_id = 0
+	_reset_seats()
+
+
+func enter_dedicated_offline() -> void:
+	mode = Mode.DEDICATED
+	local_seat = -1
+	_reset_seats()
 
 
 func enter_client_offline() -> void:
 	mode = Mode.CLIENT
 	local_seat = GUEST_SEAT
+	guest_peer_id = 0
+
+
+func enter_client_unassigned() -> void:
+	mode = Mode.CLIENT
+	local_seat = -1
 	guest_peer_id = 0
 
 
@@ -114,21 +154,14 @@ func return_to_hotseat() -> void:
 
 
 func start_host(port: int = DEFAULT_PORT) -> Dictionary:
-	var peer := ENetMultiplayerPeer.new()
-	var err := peer.create_server(port, 1)
-	if err != OK:
-		connection_changed.emit("host_bind_failed")
-		return {"ok": false, "reason": "bind_failed", "port": port}
-	_close_peer()
-	multiplayer.multiplayer_peer = peer
-	mode = Mode.HOST
-	local_seat = HOST_SEAT
-	listen_port = port
-	guest_peer_id = 0
-	_wire_peer_signals()
-	connection_changed.emit("host_listening")
-	_update_window_title()
-	return {"ok": true, "reason": "", "port": port, "transport": TRANSPORT}
+	return _open_server(port, LISTEN_HOST_CLIENTS, Mode.HOST, HOST_SEAT, "host_listening")
+
+
+func start_dedicated(port: int = DEFAULT_PORT) -> Dictionary:
+	var opened := _open_server(port, DEDICATED_CLIENTS, Mode.DEDICATED, -1, "dedicated_listening")
+	if bool(opened.get("ok", false)):
+		print("STASIUM XII dedicated host listening on UDP %d" % port)
+	return opened
 
 
 func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
@@ -140,7 +173,8 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	_close_peer()
 	multiplayer.multiplayer_peer = peer
 	mode = Mode.CLIENT
-	local_seat = GUEST_SEAT
+	# Seat comes from the authority packet (listen-host guest = 1, dedicated = join order).
+	local_seat = -1
 	join_address = address
 	listen_port = port
 	_wire_peer_signals()
@@ -149,9 +183,32 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	return {"ok": true, "reason": "", "address": address, "port": port, "transport": TRANSPORT}
 
 
+func _open_server(port: int, max_clients: int, next_mode: int, seat: int, status: String) -> Dictionary:
+	var peer := ENetMultiplayerPeer.new()
+	var err := peer.create_server(port, max_clients)
+	if err != OK:
+		connection_changed.emit("host_bind_failed")
+		return {"ok": false, "reason": "bind_failed", "port": port}
+	_close_peer()
+	multiplayer.multiplayer_peer = peer
+	mode = next_mode
+	local_seat = seat
+	listen_port = port
+	_reset_seats()
+	_wire_peer_signals()
+	connection_changed.emit(status)
+	_update_window_title()
+	return {"ok": true, "reason": "", "port": port, "transport": TRANSPORT, "mode": mode_name()}
+
+
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	if mode == Mode.CLIENT:
-		return last_view_result()
+		if local_seat != HOST_SEAT:
+			return last_view_result()
+		if not is_inside_tree() or multiplayer.multiplayer_peer == null:
+			return _fail("not_connected")
+		rpc_request_reset.rpc_id(1, IntentCodec.encode(config) as Dictionary)
+		return {"ok": true, "pending": true, "reason": "", "events": [], "snapshot": snapshot()}
 	if mode == Mode.HOTSEAT:
 		var local_sim := sim()
 		if local_sim == null:
@@ -283,10 +340,12 @@ func decorate_snapshot(snap: Dictionary) -> Dictionary:
 	out["net"] = {
 		"transport": TRANSPORT,
 		"mode": mode_name(),
-		"listen_host": true,
+		"listen_host": mode == Mode.HOST,
+		"dedicated": mode == Mode.DEDICATED,
+		"authority": is_authority(),
 		"local_seat": local_seat,
 		"active_seat": active_seat,
-		"guest_connected": guest_peer_id != 0,
+		"guest_connected": guest_peer_id != 0 or int(_seat_peer[0]) != 0 or int(_seat_peer[1]) != 0,
 		"port": listen_port,
 	}
 	return out
@@ -303,7 +362,7 @@ func tick_turn_timer(delta: float) -> Dictionary:
 		return _fail("no_sim")
 	var before := _clock_wire(host_sim.snapshot())
 	var result: Dictionary = host_sim.tick_turn_timer(delta)
-	if mode != Mode.HOST:
+	if not is_authority():
 		return result
 	var after := _clock_wire(host_sim.snapshot())
 	var expired := bool(result.get("expired", false))
@@ -330,6 +389,8 @@ func mode_name() -> String:
 			return "host"
 		Mode.CLIENT:
 			return "client"
+		Mode.DEDICATED:
+			return "dedicated"
 		_:
 			return "hotseat"
 
@@ -358,6 +419,7 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 		"snapshot": decorate_snapshot(snap),
 		"legal_intents": {0: legal0, 1: legal1},
 		"legal_deploy_cells": {0: deploy0, 1: deploy1},
+		"viewer_seat": viewer_seat,
 	}) as Dictionary
 
 
@@ -386,6 +448,13 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 		0: deploy_raw.get(0, deploy_raw.get("0", [])),
 		1: deploy_raw.get(1, deploy_raw.get("1", [])),
 	}
+	if mode == Mode.CLIENT:
+		var viewer := int(decoded.get("viewer_seat", -1))
+		if viewer >= 0 and viewer != local_seat:
+			local_seat = viewer
+			if is_inside_tree():
+				print("STASIUM XII client assigned seat %d" % local_seat)
+			_update_window_title()
 	if hydrate and mode == Mode.CLIENT:
 		var view := sim()
 		if view != null and view.has_method("apply_host_snapshot"):
@@ -417,12 +486,22 @@ func submit_for_seat(intent: Dictionary, seat: int) -> Dictionary:
 
 @rpc("any_peer", "reliable")
 func rpc_submit_intent(encoded: Dictionary) -> void:
-	if mode != Mode.HOST:
+	if not is_authority():
 		return
 	var sender := multiplayer.get_remote_sender_id()
-	var seat := _seat_for_peer(sender)
+	var seat := seat_for_peer(sender)
 	var intent := IntentCodec.decode_intent(encoded)
 	_authoritative_submit(intent, seat)
+
+
+@rpc("any_peer", "reliable")
+func rpc_request_reset(encoded: Dictionary) -> void:
+	if not is_authority():
+		return
+	var sender := multiplayer.get_remote_sender_id()
+	var decoded: Variant = IntentCodec.decode(encoded)
+	var config: Dictionary = decoded if typeof(decoded) == TYPE_DICTIONARY else {}
+	accept_reset_request(config, seat_for_peer(sender))
 
 
 @rpc("authority", "reliable")
@@ -433,6 +512,8 @@ func rpc_push_state(packed: Dictionary) -> void:
 
 
 func _authoritative_submit(intent: Dictionary, seat: int) -> Dictionary:
+	if seat != HOST_SEAT and seat != GUEST_SEAT:
+		return _cache_and_broadcast(_gate_reject("not_your_seat"))
 	var stamped: Dictionary = intent.duplicate(true)
 	if stamped.has("seat") and int(stamped["seat"]) != seat:
 		return _cache_and_broadcast(_gate_reject("not_your_seat"))
@@ -452,15 +533,103 @@ func _cache_and_broadcast(result: Dictionary) -> Dictionary:
 	last_packed = packed
 	# Host caches packed state for the guest; do not hydrate over the live brain.
 	apply_packed_state(packed, mode == Mode.CLIENT)
-	if mode == Mode.HOST and guest_peer_id != 0 and multiplayer.multiplayer_peer != null:
-		rpc_push_state.rpc_id(guest_peer_id, pack_result(result, GUEST_SEAT))
+	_push_viewers(result)
 	return last_view_result()
 
 
-func _seat_for_peer(peer_id: int) -> int:
-	if peer_id == 1 or peer_id == 0:
+func _push_viewers(result: Dictionary) -> void:
+	if not is_authority() or not is_inside_tree():
+		return
+	if multiplayer.multiplayer_peer == null:
+		return
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		var peer_id := int(_seat_peer[seat])
+		if peer_id <= 1:
+			continue
+		rpc_push_state.rpc_id(peer_id, pack_result(result, seat))
+
+
+## Seat 0 may request a fresh match. The server ignores client seed/rolls/positions.
+func accept_reset_request(_config: Dictionary, seat: int) -> Dictionary:
+	if not is_authority():
+		return _fail("not_authority")
+	if seat != HOST_SEAT:
+		return _cache_and_broadcast(_gate_reject("not_your_seat"))
+	return reset_match({})
+
+
+func assign_peer_seat(peer_id: int) -> int:
+	if peer_id <= 1:
+		return -1
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		if int(_seat_peer[seat]) == peer_id:
+			return seat
+	if mode == Mode.HOST:
+		if _seat_held[GUEST_SEAT]:
+			return -1
+		_seat_peer[GUEST_SEAT] = peer_id
+		_seat_held[GUEST_SEAT] = true
+		guest_peer_id = peer_id
+		return GUEST_SEAT
+	if mode != Mode.DEDICATED:
+		return -1
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		if not _seat_held[seat]:
+			_seat_peer[seat] = peer_id
+			_seat_held[seat] = true
+			if seat == GUEST_SEAT:
+				guest_peer_id = peer_id
+			return seat
+	return -1
+
+
+## Listen-host frees the guest slot. Dedicated keeps the seat reserved (stub).
+func release_peer(peer_id: int) -> int:
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		if int(_seat_peer[seat]) != peer_id or peer_id == 0:
+			continue
+		_seat_peer[seat] = 0
+		if mode == Mode.HOST:
+			_seat_held[seat] = false
+		if guest_peer_id == peer_id:
+			guest_peer_id = int(_seat_peer[GUEST_SEAT])
+		return seat
+	return -1
+
+
+func peer_for_seat(seat: int) -> int:
+	if seat != HOST_SEAT and seat != GUEST_SEAT:
+		return 0
+	return int(_seat_peer[seat])
+
+
+func seat_reserved(seat: int) -> bool:
+	if seat != HOST_SEAT and seat != GUEST_SEAT:
+		return false
+	return bool(_seat_held[seat])
+
+
+func seat_for_peer(peer_id: int) -> int:
+	if mode == Mode.HOST and (peer_id == 0 or peer_id == 1):
 		return HOST_SEAT
-	return GUEST_SEAT
+	if peer_id <= 1:
+		return -1
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		if int(_seat_peer[seat]) == peer_id:
+			return seat
+	return -1
+
+
+func _seat_for_peer(peer_id: int) -> int:
+	return seat_for_peer(peer_id)
+
+
+func _reset_seats() -> void:
+	_seat_peer[HOST_SEAT] = 0
+	_seat_peer[GUEST_SEAT] = 0
+	_seat_held[HOST_SEAT] = false
+	_seat_held[GUEST_SEAT] = false
+	guest_peer_id = 0
 
 
 func _wire_peer_signals() -> void:
@@ -475,47 +644,53 @@ func _wire_peer_signals() -> void:
 
 
 func _on_peer_connected(id: int) -> void:
-	if mode != Mode.HOST:
+	if not is_authority():
 		return
-	if guest_peer_id != 0:
+	var seat := assign_peer_seat(id)
+	if seat < 0:
 		multiplayer.multiplayer_peer.disconnect_peer(id)
+		connection_changed.emit("seat_refused")
 		return
-	guest_peer_id = id
-	connection_changed.emit("guest_joined")
-	if last_packed.is_empty() and sim() != null:
-		last_packed = pack_result({
-			"ok": true,
-			"illegal": false,
-			"reason": "",
-			"events": sim().snapshot().get("last_events", []),
-			"snapshot": sim().snapshot(),
-		})
-	if sim() != null:
-		rpc_push_state.rpc_id(id, pack_result({
-			"ok": true,
-			"illegal": false,
-			"reason": "",
-			"events": last_events if not last_events.is_empty() else sim().snapshot().get("last_events", []),
-			"snapshot": sim().snapshot(),
-		}, GUEST_SEAT))
-	elif not last_packed.is_empty():
-		rpc_push_state.rpc_id(id, last_packed)
+	connection_changed.emit("seat_%d_joined" % seat)
+	print("STASIUM XII seat %d joined (peer %d)" % [seat, id])
+	if mode == Mode.HOST:
+		connection_changed.emit("guest_joined")
+	if sim() == null and last_packed.is_empty():
+		return
+	var snap: Dictionary = sim().snapshot() if sim() != null else last_snapshot
+	var events: Array = last_events if not last_events.is_empty() else snap.get("last_events", [])
+	rpc_push_state.rpc_id(id, pack_result({
+		"ok": true,
+		"illegal": false,
+		"reason": "",
+		"events": events,
+		"snapshot": snap,
+	}, seat))
 
 
 func _on_peer_disconnected(id: int) -> void:
-	if mode == Mode.HOST and id == guest_peer_id:
-		guest_peer_id = 0
+	if not is_authority():
+		return
+	var seat := release_peer(id)
+	if seat < 0:
+		return
+	# Dedicated: seat stays reserved. Listen-host: guest slot can be taken again.
+	connection_changed.emit("seat_%d_left" % seat)
+	print("STASIUM XII seat %d left (peer %d)" % [seat, id])
+	if mode == Mode.HOST:
 		connection_changed.emit("guest_left")
 
 
 func _on_connected_to_server() -> void:
 	if mode == Mode.CLIENT:
 		connection_changed.emit("joined")
+		print("STASIUM XII client connected to %s:%d" % [join_address, listen_port])
 		_update_window_title()
 
 
 func _on_connection_failed() -> void:
 	connection_changed.emit("join_failed")
+	print("STASIUM XII client join failed for %s:%d" % [join_address, listen_port])
 
 
 func _on_server_disconnected() -> void:
@@ -528,31 +703,48 @@ func _close_peer() -> void:
 		multiplayer.multiplayer_peer = null
 
 
-func _parse_user_args() -> void:
-	var args := OS.get_cmdline_user_args()
+static func plan_from_args(args: PackedStringArray) -> Dictionary:
+	var planned := "hotseat"
+	var port := DEFAULT_PORT
+	var address := "127.0.0.1"
 	var i := 0
 	while i < args.size():
 		var arg := str(args[i])
 		if arg == "--host":
-			_cli_host = true
+			planned = "host"
 			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
 				i += 1
-				listen_port = int(args[i])
+				port = int(args[i])
+		elif arg == "--dedicated":
+			planned = "dedicated"
+			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
+				i += 1
+				port = int(args[i])
 		elif arg == "--join":
-			_cli_join = true
+			planned = "client"
 			if i + 1 < args.size() and not str(args[i + 1]).begins_with("-"):
 				i += 1
 				var spec := str(args[i])
 				if spec.contains(":"):
 					var parts := spec.split(":")
-					join_address = parts[0]
-					listen_port = int(parts[1])
+					address = parts[0]
+					port = int(parts[1])
 				else:
-					join_address = spec
+					address = spec
 		elif arg == "--hotseat":
-			_cli_host = false
-			_cli_join = false
+			planned = "hotseat"
 		i += 1
+	return {"mode": planned, "port": port, "address": address}
+
+
+func _parse_user_args() -> void:
+	var plan := plan_from_args(OS.get_cmdline_user_args())
+	listen_port = int(plan["port"])
+	join_address = str(plan["address"])
+	var planned := str(plan["mode"])
+	_cli_dedicated = planned == "dedicated"
+	_cli_host = planned == "host"
+	_cli_join = planned == "client"
 
 
 func _update_window_title() -> void:
@@ -564,8 +756,15 @@ func _update_window_title() -> void:
 	match mode:
 		Mode.HOST:
 			win.title = "STASIUM XII — HOST (Kestrel / seat 0)"
+		Mode.DEDICATED:
+			win.title = "STASIUM XII — DEDICATED (no seat)"
 		Mode.CLIENT:
-			win.title = "STASIUM XII — GUEST (Ironjaw / seat 1)"
+			if local_seat == HOST_SEAT:
+				win.title = "STASIUM XII — CLIENT (Kestrel / seat 0)"
+			elif local_seat == GUEST_SEAT:
+				win.title = "STASIUM XII — CLIENT (Ironjaw / seat 1)"
+			else:
+				win.title = "STASIUM XII — CLIENT (joining)"
 		_:
 			win.title = "STASIUM XII"
 

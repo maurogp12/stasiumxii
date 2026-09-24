@@ -42,6 +42,7 @@ func _run() -> void:
 	_test_hotseat_still_direct()
 	_test_host_timer_broadcast_and_guest_hydrate()
 	_test_local_vs_active_seat_semantics()
+	_test_dedicated_host_core()
 
 
 func _test_source_stamps() -> void:
@@ -240,14 +241,15 @@ func _test_host_timer_broadcast_and_guest_hydrate() -> void:
 	eq(bool(guest_tick.get("ok", false)), true, "guest tick returns the last view")
 
 	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
-	truthy(net_src.contains("no dedicated"), "net_session documents listen-host only")
-	eq(net_src.contains("DedicatedServer"), false, "net_session does not invent DedicatedServer")
+	truthy(net_src.contains("--dedicated"), "net_session accepts a dedicated process")
+	truthy(net_src.contains("func is_authority"), "listen-host and dedicated share is_authority")
+	eq(net_src.contains("DedicatedServer"), false, "host core stays inside NetSession")
 	truthy(net_src.contains("tick_turn_timer"), "net_session ticks the host clock")
 	var md := FileAccess.get_file_as_string("res://MIGRATION_PHASE_E.md")
 	truthy(md.contains("turn_time_remaining"), "Phase E docs name turn_time_remaining")
 	truthy(md.contains("local_seat"), "Phase E docs name local_seat")
 	truthy(md.contains("active_seat"), "Phase E docs name active_seat")
-	eq(md.contains("dedicated server process"), true, "Phase E still forbids inventing a dedicated server")
+	truthy(md.contains("dedicated server process"), "Phase E docs name the dedicated server process")
 
 
 func _test_local_vs_active_seat_semantics() -> void:
@@ -282,6 +284,153 @@ func _test_local_vs_active_seat_semantics() -> void:
 	})
 	eq(CombatHUD.snap_local_seat({"net": net_only.get("net", {})}), 0, "HUD reads net.local_seat from decorated net")
 	eq(CombatHUD.turn_clock_seconds(net_only), 22, "decorated snap paints turn_time_seconds")
+
+
+func _test_dedicated_host_core() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var net_script := load("res://backend/net_session.gd")
+	var brain: Node = sim_script.new()
+	var view0: Node = sim_script.new()
+	var view1: Node = sim_script.new()
+	var dedicated: Node = net_script.new()
+	var seat0: Node = net_script.new()
+	var seat1: Node = net_script.new()
+	dedicated.attach_sim(brain)
+	dedicated.enter_dedicated_offline()
+	seat0.attach_sim(view0)
+	seat1.attach_sim(view1)
+	seat0.enter_client_unassigned()
+	seat1.enter_client_unassigned()
+
+	eq(dedicated.is_authority(), true, "dedicated is the shared authority")
+	eq(dedicated.is_dedicated(), true, "dedicated mode is set")
+	eq(dedicated.is_host(), false, "dedicated is not the listen-host window")
+	eq(dedicated.owns_seat(0), false, "dedicated process owns no seat 0")
+	eq(dedicated.owns_seat(1), false, "dedicated process owns no seat 1")
+	eq(int(dedicated.local_seat), -1, "dedicated local_seat stays unassigned")
+	eq(dedicated.can_reset_match(), true, "dedicated authority can reset")
+	eq(bool(dedicated.snapshot()["net"]["dedicated"]), true, "decorate stamps dedicated")
+	eq(bool(dedicated.snapshot()["net"]["authority"]), true, "decorate stamps authority")
+	eq(bool(dedicated.snapshot()["net"]["listen_host"]), false, "dedicated is not listen-host")
+
+	var plan: Dictionary = net_script.plan_from_args(PackedStringArray(["--dedicated", "7777"]))
+	eq(str(plan["mode"]), "dedicated", "--dedicated plans a dedicated process")
+	eq(int(plan["port"]), 7777, "--dedicated keeps port 7777")
+	var remote: Dictionary = net_script.plan_from_args(PackedStringArray(["--join", "10.0.0.8:7777"]))
+	eq(str(remote["mode"]), "client", "--join plans a client")
+	eq(str(remote["address"]), "10.0.0.8", "--join keeps the remote IP")
+	eq(int(remote["port"]), 7777, "--join keeps the remote port")
+	var listen: Dictionary = net_script.plan_from_args(PackedStringArray(["--host", "7777"]))
+	eq(str(listen["mode"]), "host", "--host still plans listen-host")
+
+	eq(dedicated.assign_peer_seat(2), 0, "first dedicated peer is seat 0")
+	eq(dedicated.assign_peer_seat(3), 1, "second dedicated peer is seat 1")
+	eq(dedicated.assign_peer_seat(4), -1, "third dedicated peer is refused")
+	eq(dedicated.release_peer(2), 0, "dedicated stub records seat 0 leaving")
+	eq(dedicated.peer_for_seat(0), 0, "left dedicated peer is cleared")
+	eq(dedicated.seat_reserved(0), true, "dedicated seat stays reserved")
+	eq(dedicated.assign_peer_seat(5), -1, "reserved dedicated seat is not reassigned")
+
+	_host.enter_host_offline()
+	eq(_host.assign_peer_seat(2), 1, "listen-host guest is seat 1")
+	eq(_host.release_peer(2), 1, "listen-host guest can leave")
+	eq(_host.assign_peer_seat(3), 1, "listen-host guest slot can be taken again")
+	_host.enter_host_offline()
+
+	dedicated.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"fixture": true,
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [
+			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
+		],
+	})
+	eq(dedicated.submit_for_seat({"type": "end_turn"}, 0)["ok"], true, "dedicated accepts seat 0 end_turn")
+	var shoulder: Dictionary = dedicated.submit_for_seat({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)}, 1)
+	eq(shoulder["ok"], true, "dedicated authority resolves Shoulder")
+	eq(brain.snapshot()["units"][0]["pos"], Vector2i(5, 3), "server owns the lava push")
+	eq(int(brain.snapshot()["units"][0]["hp"]), 74, "server owns HP")
+	eq(int(brain.snapshot()["units"][0]["burn_remaining"]), 2, "server owns Burn")
+	eq(int(brain.snapshot()["units"][1]["impact"]), 1, "server owns Impact")
+	eq(int(brain.snapshot()["units"][0]["mp"]), 3, "server owns MP")
+	eq(int(brain.snapshot()["units"][0]["marks"]), 0, "server owns Marks")
+
+	seat0.apply_packed_state(dedicated.pack_result(shoulder, 0))
+	seat1.apply_packed_state(dedicated.pack_result(shoulder, 1))
+	eq(int(seat0.local_seat), 0, "viewer_seat assigns the first client to seat 0")
+	eq(int(seat1.local_seat), 1, "viewer_seat assigns the second client to seat 1")
+	eq(seat0.snapshot()["units"][0]["pos"], Vector2i(5, 3), "client hydrates the push")
+	eq(int(seat0.snapshot()["units"][0]["hp"]), 74, "client hydrates HP")
+	eq(int(seat0.snapshot()["units"][0]["burn_remaining"]), 2, "client hydrates Burn")
+	eq(int(seat1.snapshot()["units"][1]["impact"]), 1, "client hydrates Impact")
+	eq(str(seat0.snapshot()["tiles"][Vector2i(5, 3)]["terrain_type"]), "lava", "client hydrates terrain")
+	eq(seat0.can_reset_match(), true, "seat 0 client may request New Match")
+	eq(seat1.can_reset_match(), false, "seat 1 client cannot reset")
+
+	var hp_before := int(brain.snapshot()["units"][0]["hp"])
+	var client_submit: Dictionary = seat0.submit({"type": "end_turn"})
+	eq(str(client_submit.get("reason", "")), "not_connected", "offline client does not submit locally")
+	eq(int(brain.snapshot()["units"][0]["hp"]), hp_before, "client submit does not change server HP")
+	eq(int(brain.snapshot()["active_seat"]), 1, "client submit does not change the turn")
+
+	var expired: Dictionary = dedicated.tick_turn_timer(30.0)
+	eq(bool(expired.get("expired", false)), true, "dedicated clock expiry ends the turn")
+	eq(int(brain.snapshot()["active_seat"]), 0, "dedicated timer hands the seat back")
+	eq(int(brain.snapshot()["units"][0]["hp"]), 70, "dedicated timer owns the Burn tick")
+	eq(int(brain.snapshot()["units"][0]["burn_remaining"]), 1, "dedicated timer decrements Burn")
+	seat0.apply_packed_state(dedicated.pack_result(expired, 0))
+	eq(int(seat0.snapshot()["units"][0]["hp"]), 70, "client hydrates the Burn tick")
+	eq(int(seat0.snapshot()["turn_time_seconds"]), 30, "client hydrates the reset clock")
+	var client_tick: Dictionary = seat0.tick_turn_timer(30.0)
+	eq(int(brain.snapshot()["active_seat"]), 0, "client tick does not change the server seat")
+	eq(int(brain.snapshot()["units"][0]["hp"]), 70, "client tick does not apply Burn")
+	eq(bool(client_tick.get("ok", false)), true, "client tick returns the last view")
+
+	var seed_before := int(brain.snapshot()["seed"])
+	var denied: Dictionary = dedicated.accept_reset_request({
+		"seed": 1,
+		"rolls": [1],
+		"skip_deploy": true,
+		"fixture": true,
+	}, 1)
+	eq(denied["ok"], false, "seat 1 cannot reset the dedicated match")
+	eq(int(brain.snapshot()["seed"]), seed_before, "rejected reset keeps the server seed")
+	var accepted: Dictionary = dedicated.accept_reset_request({
+		"seed": 1,
+		"rolls": [99],
+		"skip_deploy": true,
+		"fixture": true,
+		"kestrel_pos": Vector2i(1, 1),
+	}, 0)
+	eq(accepted["ok"], true, "seat 0 reset request starts a server match")
+	eq(str(brain.snapshot()["phase"]), "DEPLOYMENT", "server ignores client skip_deploy")
+	eq(int(brain.snapshot()["seed"]) == 1, false, "server ignores the client seed")
+
+	var rolled: Dictionary = dedicated.submit_for_seat({"type": "move", "to": Vector2i(2, 1), "roll": 4}, 0)
+	eq(str(rolled.get("reason", "")), "client_must_not_roll", "dedicated host-validate still rejects client rolls")
+
+	var net_src := FileAccess.get_file_as_string("res://backend/net_session.gd")
+	truthy(net_src.contains("func start_dedicated"), "net_session has a dedicated entry")
+	eq(net_src.contains("WebSocketMultiplayerPeer"), false, "remote playtest stays on ENet")
+	eq(net_src.contains("matchmaking"), false, "net_session does not invent matchmaking")
+	eq(net_src.contains("Gloam"), false, "net_session does not invent Gloam")
+	var lobby := FileAccess.get_file_as_string("res://scenes/online_lobby.gd")
+	eq(lobby.contains("auth"), false, "lobby still does not invent auth")
+	var readme := FileAccess.get_file_as_string("res://README.md")
+	truthy(readme.contains("--dedicated 7777"), "README documents the dedicated command")
+	truthy(readme.contains("Machine A"), "README documents the three-process playtest")
+	truthy(readme.contains("Machine C"), "README documents the second client")
+
+	dedicated.free()
+	seat0.free()
+	seat1.free()
+	brain.free()
+	view0.free()
+	view1.free()
 
 
 func _first_zone_cell(seat: int) -> Vector2i:

@@ -26,8 +26,9 @@ extends Node2D
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
 ## Occupied push dest toasts PushBlocked (no hop).
 ## OOB / truly blocked dest toasts Bounce (no hop). Lava forced-push lands from the snapshot.
-## Online listen-host: NetSession owns submit when a peer is up. Hot-seat still
-## calls CombatSim.submit directly. The view never rolls.
+## Online: NetSession owns submit when a peer is up. Listen-host and the dedicated
+## process share that authority. Clients send Intent only. Hot-seat still calls
+## CombatSim.submit directly. The view never rolls.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -81,9 +82,9 @@ func _boot() -> void:
 		if not net.state_changed.is_connected(_on_net_state):
 			net.state_changed.connect(_on_net_state)
 		if net.is_online() or net.is_connecting():
-			if net.is_host():
+			if net.is_authority():
 				net.reset_match({})
-			if net.is_host() or net.has_view_state():
+			if net.is_authority() or net.has_view_state():
 				_finish_boot()
 			return
 	CombatSim.reset_match({})
@@ -179,7 +180,8 @@ func _process(delta: float) -> void:
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
 		return
-	# Host / hot-seat tick CombatSim. Guest never ticks — remaining is snapshot-only.
+	# Authority / hot-seat tick CombatSim. Clients never tick — remaining is snapshot-only.
+	# Dedicated is the authority and is not a client, so this process ticks the host clock.
 	# Keep ticking during walk hop animations. _busy only locks input.
 	var result: Dictionary = {}
 	if not (_online() and _net().is_client()):
@@ -424,6 +426,13 @@ func _on_new_match() -> void:
 	_deploy_selected_seat = -1
 	_hud.clear_spell()
 	_hud.clear_deploy_note()
+	if _online() and _net().is_client():
+		if not _net().can_reset_match():
+			return
+		# Seat 0 asks the dedicated authority. The snapshot arrives on state_changed.
+		_skip_local_net_echo = false
+		_net().reset_match({})
+		return
 	if _online() and not _sim().can_reset_match():
 		return
 	_mark_local_net_echo()
