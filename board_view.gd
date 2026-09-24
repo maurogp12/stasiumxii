@@ -22,7 +22,7 @@ extends Node2D
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
 ## Occupied push dest toasts PushBlocked (no hop).
-## Unwalkable / lava / OOB dest toasts Bounce (no hop) and emits stagger HP/MP.
+## OOB / truly blocked dest toasts Bounce (no hop). Lava forced-push lands from the snapshot.
 ## Online listen-host: NetSession owns submit when a peer is up. Hot-seat still
 ## calls CombatSim.submit directly. The view never rolls.
 

@@ -28,6 +28,14 @@ const FRONT_SIDE_FACING := 1.00
 ## Director Locked Shoulder stagger: 4 HP; +1 MP only when current MP >= 1.
 const STAGGER_HP := 4
 const STAGGER_MP := 1
+## Clean push (walkable empty, or lava land — not a bounce): +1 Impact.
+## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
+const SHOULDER_CONNECT_IMPACT := 1
+const SHOULDER_BOUNCE_IMPACT := 2
+## Director Locked Burn: 4 HP at the start of the victim's turn, two ticks.
+## Re-apply refreshes duration. It does not stack. Impact cap still applies.
+const BURN_HP := 4
+const BURN_DURATION := 2
 
 const FACING_VEC := {
 	"N": Vector2i(0, -1),
@@ -46,8 +54,15 @@ const FACING_VEC := {
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
-## push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces
-## (target stays) and staggers (4 HP; +1 MP if current MP >= 1).
+## push_blocked (hard body-block; hit Impact stays +1). Walkable empty dest
+## pushes for +1 Impact. OOB / truly blocked (not lava) bounces and staggers
+## for +2 Impact only (no stack with +1). Lava is hazardous, not a wall:
+## forced push displaces onto lava and applies Burn. Voluntary walk onto
+## lava stays impassable.
+## Director Locked Burn: 4 HP at the start of the victim's turn, duration 2.
+## Re-apply refreshes duration and does not stack. Burn continues after
+## leaving lava. Death is checked after each tick. burn_remaining lives on
+## the unit snapshot for Godot chrome and host sync.
 ## Host-owned 30s turn clock: starts on turn begin, ticks only on the authority
 ## (listen-host / hot-seat). Expiry submits the same end_turn as the HUD button.
 ## Guest replicas hydrate remaining from snapshot and must not tick.
@@ -419,8 +434,14 @@ func snapshot() -> Dictionary:
 		"push": "locked_shoulder",
 		"push_occupied": "push_blocked",
 		"push_unwalkable": "bounce_stagger",
+		"push_lava": "displace_burn",
 		"push_stagger_hp": STAGGER_HP,
 		"push_stagger_mp": STAGGER_MP,
+		"shoulder_impact_connect": SHOULDER_CONNECT_IMPACT,
+		"shoulder_impact_bounce": SHOULDER_BOUNCE_IMPACT,
+		"burn": "locked",
+		"burn_hp": BURN_HP,
+		"burn_duration": BURN_DURATION,
 		"phase": flow_snap["phase_name"],
 		"phase_name": flow_snap["phase_name"],
 		"deploy": "locked",
@@ -451,7 +472,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger). Unwalkable / lava / OOB dest bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1). Walkable empty dest still pushes. Damage/Impact on the Shoulder hit are unchanged.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -720,7 +741,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: occupied dest is push_blocked (hard body-block). Unwalkable / lava / OOB dest bounces + staggers (4 HP; +1 MP if MP>=1).")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands and applies Burn (4 HP at the victim's turn start, duration 2, refresh no stack). Voluntary walk onto lava stays impassable.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -825,6 +846,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
+		# Director Locked Burn. Duration ticks left; 0 means not burning.
+		"burn_remaining": 0,
 		"alive": true,
 		"placed": placed,
 		"locked": false,
@@ -1058,6 +1081,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		"turn_time_limit": _turn_time_limit,
 		"coach": _last_coach,
 	})
+	# Director Locked Burn ticks once this turn has started, including a stunned skip.
+	_tick_burn(next_unit)
 	return next_unit
 
 
@@ -1304,10 +1329,16 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var engine_spent := 0
 	var engine_name := ""
 	var marks_consumed := 0
+	var defer_shoulder_impact := false
 	match str(def["engine_on_connect"]):
 		"impact":
-			engine_gained = _gain_impact(actor, 1)
-			engine_name = "Impact"
+			if spell_id == SpellKits.SHOULDER:
+				# Amount depends on the push. Bounce is +2 only, not +1 stacked with +2.
+				defer_shoulder_impact = true
+				engine_name = "Impact"
+			else:
+				engine_gained = _gain_impact(actor, 1)
+				engine_name = "Impact"
 		"mark":
 			engine_gained = _gain_marks(target, 1)
 			engine_name = "Mark"
@@ -1327,9 +1358,17 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 	var push_result := {}
 	if int(def.get("push_cells", 0)) > 0:
-		# Director Locked Shoulder: occupied = push_blocked; unwalkable/lava/OOB = bounce + stagger.
-		# Walkable empty dest still pushes. Shoulder damage/Impact are unchanged.
+		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
+		# Lava is hazardous: displace and Burn. Walkable empty dest still pushes.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+	if defer_shoulder_impact:
+		var impact_amount := SHOULDER_CONNECT_IMPACT
+		if bool(push_result.get("bounced", false)):
+			impact_amount = SHOULDER_BOUNCE_IMPACT
+		engine_gained = _gain_impact(actor, impact_amount)
+	var burn_info := {}
+	if bool(push_result.get("burn", false)):
+		burn_info = _apply_burn(target)
 
 	var facing_note := "BACK ×1.20" if is_back else "front/side ×1.00"
 	var extra_note := _connect_extra_note(engine_gained, engine_name, marks_consumed, engine_spent, stun_applied, push_result)
@@ -1378,6 +1417,10 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["stagger_mp"] = int(push_result.get("stagger_mp", 0))
 		hit_event["hp_delta"] = int(push_result.get("hp_delta", 0))
 		hit_event["mp_delta"] = int(push_result.get("mp_delta", 0))
+		hit_event["burn_applied"] = not burn_info.is_empty()
+		if not burn_info.is_empty():
+			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
+			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
 		_last_events.append({
@@ -1397,7 +1440,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			mp_note = " / %d MP" % int(push_result.get("stagger_mp", 0))
 		_last_events.append({
 			"type": "push_bounce",
-			"locked": "Director Locked Shoulder — unwalkable/lava/OOB bounce + stagger",
+			"locked": "Director Locked Shoulder — OOB / truly blocked bounce + stagger (+2 Impact)",
 			"seat": actor["seat"],
 			"target_seat": target["seat"],
 			"from": push_result.get("from"),
@@ -1434,6 +1477,22 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 				int(push_result.get("stagger_hp", 0)),
 				stagger_mp_note,
 			],
+		})
+	if not burn_info.is_empty():
+		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
+		if bool(burn_info.get("refreshed", false)):
+			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
+		_last_events.append({
+			"type": "status",
+			"status": "burn",
+			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
+			"duration": BURN_DURATION,
+			"hp_per_tick": BURN_HP,
+			"refreshed": bool(burn_info.get("refreshed", false)),
+			"previous": int(burn_info.get("previous", 0)),
+			"target_seat": target["seat"],
+			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
+			"coach": burn_coach,
 		})
 	if stun_applied > 0:
 		_last_events.append({
@@ -1653,7 +1712,7 @@ func _connect_base_damage(def: Dictionary, target: Dictionary) -> int:
 func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed: int, engine_spent: int, stun_applied: int, push_result: Dictionary) -> String:
 	var parts: Array[String] = []
 	if engine_gained > 0:
-		parts.append(" +1 %s." % engine_name)
+		parts.append(" +%d %s." % [engine_gained, engine_name])
 	if marks_consumed > 0:
 		parts.append(" Marks consumed (%d)." % marks_consumed)
 	if engine_spent > 0 and engine_name == "Impact":
@@ -1674,6 +1733,8 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 			])
 		elif bool(push_result.get("moved", false)):
 			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
+			if bool(push_result.get("burn", false)):
+				parts.append(" Burn %d HP for %d turns." % [BURN_HP, BURN_DURATION])
 	var note := ""
 	for part in parts:
 		note += part
@@ -1722,9 +1783,12 @@ func _apply_stun(unit: Dictionary, remaining: int) -> int:
 
 func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictionary:
 	# Chebyshev push 1 along the caster→target line.
-	# Director Locked Shoulder: occupied dest is hard body-block (push_blocked).
-	# Unwalkable / lava / OOB dest bounces (target stays) and staggers.
-	# Walkable empty dest still pushes. Do not invent climb/drop push rules.
+	# Director Locked Shoulder:
+	# - occupied dest: push_blocked (no bounce, no stagger)
+	# - lava dest: hazardous, not a wall — displace and flag Burn
+	# - OOB / truly blocked (not lava): bounce + stagger
+	# - walkable empty: push
+	# Do not invent climb/drop push rules. Voluntary walk still rejects lava.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
@@ -1735,6 +1799,7 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		"blocked": false,
 		"bounced": false,
 		"staggered": false,
+		"burn": false,
 		"reason": "",
 		"stagger_hp": 0,
 		"stagger_mp": 0,
@@ -1747,12 +1812,70 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
+	if _is_lava(dest):
+		target["pos"] = dest
+		result["to"] = dest
+		result["moved"] = true
+		result["burn"] = true
+		result["reason"] = "lava"
+		return result
 	if not _board.is_walkable(dest):
 		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
 	target["pos"] = dest
 	result["to"] = dest
 	result["moved"] = true
 	return result
+
+
+func _is_lava(cell: Vector2i) -> bool:
+	if not _in_bounds(cell):
+		return false
+	var terrain: Dictionary = _board.terrain_of(cell)
+	return int(terrain.get("id", _TerrainDef.Id.GROUND)) == _TerrainDef.Id.LAVA
+
+
+func _apply_burn(unit: Dictionary) -> Dictionary:
+	# Re-apply refreshes duration to 2. Do not add durations or stack tick damage.
+	var previous := int(unit.get("burn_remaining", 0))
+	unit["burn_remaining"] = BURN_DURATION
+	return {
+		"applied": true,
+		"refreshed": previous > 0,
+		"previous": previous,
+		"remaining": BURN_DURATION,
+		"hp_per_tick": BURN_HP,
+	}
+
+
+func _tick_burn(unit: Dictionary) -> void:
+	# 4 HP at the start of this unit's turn. Leaving lava does not clear it.
+	if unit.is_empty() or not bool(unit.get("alive", false)):
+		return
+	var remaining := int(unit.get("burn_remaining", 0))
+	if remaining <= 0:
+		return
+	var lost := BURN_HP
+	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
+	unit["burn_remaining"] = remaining - 1
+	var left := int(unit["burn_remaining"])
+	_last_events.append({
+		"type": "burn",
+		"status": "burn",
+		"target_seat": int(unit["seat"]),
+		"hp_delta": -lost,
+		"damage": lost,
+		"hp": int(unit["hp"]),
+		"remaining": left,
+		"duration": BURN_DURATION,
+		"locked": "Director Locked Burn — 4 HP at start of turn, duration 2",
+		"coach": "%s burns for %d HP (%d tick%s left)." % [
+			str(unit.get("name", "Unit")),
+			lost,
+			left,
+			"" if left == 1 else "s",
+		],
+	})
+	_check_death(unit)
 
 
 func _unwalkable_push_reason(dest: Vector2i) -> String:
