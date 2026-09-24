@@ -30,8 +30,8 @@ extends Node2D
 ## Online: NetSession owns submit when a peer is up. Listen-host and the dedicated
 ## process share that authority. Clients send Intent only. Hot-seat still calls
 ## CombatSim.submit directly. The view never rolls.
-## The queue host is not a fighter and does not start the default hot-seat pair.
-## A queue client paints when the paired snapshot arrives.
+## The dedicated process does not start the default Kestrel / Ironjaw pair.
+## It paints when the SELECT_CLASS queue has paired two Locked classes.
 ## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
 
 const BOARD_SIZE: int = 8
@@ -87,11 +87,14 @@ func _boot() -> void:
 			net.state_changed.connect(_on_net_state)
 		if net.is_online() or net.is_connecting():
 			# Listen-host starts the fixed Kestrel / Ironjaw duel.
-			# The dedicated queue host waits for SELECT_CLASS pairing.
-			if net.is_host():
+			# The dedicated process waits until two Locked classes are paired.
+			if net.is_authority() and not net.is_dedicated():
 				net.reset_match({})
-			var waiting_on_queue: bool = bool(net.is_dedicated()) and not bool(net.matched)
-			if not waiting_on_queue and (net.is_host() or net.has_view_state()):
+			if net.is_dedicated():
+				if net.has_method("match_is_live") and bool(net.match_is_live()):
+					_finish_boot()
+				return
+			if net.is_authority() or net.has_view_state():
 				_finish_boot()
 			return
 	CombatSim.reset_match({})

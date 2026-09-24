@@ -18,15 +18,50 @@ const CLASS_IRONJAW := "ironjaw"
 const CLASS_MENDER := "mender"
 const CLASS_GLOAM := "gloam"
 const CLASS_BASTION := "bastion"
-## Server allowlist for SELECT_CLASS. Chrome may still show CHROME_ROSTER.
-const LOCKED_ROSTER: Array[String] = [CLASS_KESTREL, CLASS_IRONJAW]
-## Display roster. mender / gloam / bastion wait on the server allowlist.
-const CHROME_ROSTER: Array[String] = [
+## SELECT_CLASS allowlist (workbook SELECT_CLASS_Lock). Server rejects anything else.
+const LOCKED_ROSTER: Array[String] = [
 	CLASS_KESTREL,
 	CLASS_IRONJAW,
 	CLASS_MENDER,
 	CLASS_GLOAM,
 	CLASS_BASTION,
+]
+## Workbook v0.6 SELECT_CLASS_Lock. Numeric card wins. See
+## data/select_class_lock_kits_v0.6.json.
+const UMBRAL_CAP := 4
+const SHADE_CAP := 2
+const PULSE_CAP := 6
+const AEGIS_CAP := 4
+const BACKSTAB_MULT := 1.35
+const TRIAGE_MULT := 1.25
+const TRIAGE_HP_THRESHOLD := 0.4
+const INTERCEPT_TRANSFER := 0.4
+
+const MEND := "mend"
+const PULSE_TAP := "pulse_tap"
+const WARD := "ward"
+const CLEANSE := "cleanse"
+const HEARTSTOP := "heartstop"
+const CUT := "cut"
+const DROP_SHADE := "drop_shade"
+const AMBUSH := "ambush"
+const FADE := "fade"
+const NIGHTFOLD := "nightfold"
+const BASH := "bash"
+const PLANT := "plant"
+const HOLD_LINE := "hold_line"
+const SNAP_WALL := "snap_wall"
+const AEGIS_BREAK := "aegis_break"
+
+## TODO open_can_wait: do not resolve these. No silent default.
+const OPEN_CAN_WAIT: Array[String] = [
+	"nightfold_miss_shade_vs_global_refund",
+	"intercept_reset_multi_guard_pipeline",
+	"neutral_primary_scope",
+	"aoe_vs_invisible",
+	"heartstop_immunity_clock_cc_priority_heal_overflow_shield_stack",
+	"water_ward_rider_24_vs_ward_base_20",
+	"cone_ward_masks",
 ]
 
 const SPELLS := {
@@ -132,10 +167,8 @@ const SPELLS := {
 		"stun_if_impact_before": 4,
 		"stun_remaining": 1,
 	},
-	# Card rows below are Locked workbook v0.6 data for chrome.
-	# awaits_backend: CombatSim must not resolve them. Open items stay unimplemented.
-	"mend": {
-		"id": "mend",
+	MEND: {
+		"id": MEND,
 		"name": "Mend",
 		"class_id": CLASS_MENDER,
 		"ap": 3,
@@ -143,14 +176,16 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 4,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 pulse",
-		"effect": "16H FLEX ally",
-		"notes": "miss/crit OK; no facing",
+		"rolls": true,
+		"element": "water",
+		"base_heal": 16,
+		"target": "ally",
+		"engine_on_connect": "pulse",
+		"no_facing": true,
+		"triage": true,
 	},
-	"pulse_tap": {
-		"id": "pulse_tap",
+	PULSE_TAP: {
+		"id": PULSE_TAP,
 		"name": "Pulse Tap",
 		"class_id": CLASS_MENDER,
 		"ap": 2,
@@ -158,14 +193,17 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 3,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "spend 1 pulse",
-		"effect": "10H FLEX ally",
-		"notes": "miss/crit OK",
+		"rolls": true,
+		"element": "water",
+		"base_heal": 10,
+		"target": "ally",
+		"engine_on_connect": "spend_pulse",
+		"requires_pulse": 1,
+		"spend_pulse": 1,
+		"triage": true,
 	},
-	"ward": {
-		"id": "ward",
+	WARD: {
+		"id": WARD,
 		"name": "Ward",
 		"class_id": CLASS_MENDER,
 		"ap": 3,
@@ -173,14 +211,19 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 3,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "spend 2 pulse",
-		"effect": "20HP shield 2 turns FLEX",
-		"notes": "miss OK; no crit",
+		"rolls": true,
+		"element": "water",
+		"base_heal": 0,
+		"shield": 20,
+		"shield_turns": 2,
+		"target": "ally",
+		"engine_on_connect": "spend_pulse",
+		"requires_pulse": 2,
+		"spend_pulse": 2,
+		"no_crit": true,
 	},
-	"cleanse": {
-		"id": "cleanse",
+	CLEANSE: {
+		"id": CLEANSE,
 		"name": "Cleanse",
 		"class_id": CLASS_MENDER,
 		"ap": 2,
@@ -189,13 +232,13 @@ const SPELLS := {
 		"min_range": 0,
 		"max_range": 4,
 		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 pulse",
-		"effect": "LOCK Neutral remove 1 CC",
-		"notes": "no roll",
+		"element": "neutral",
+		"target": "ally",
+		"engine_on_connect": "pulse",
+		"remove_cc": 1,
 	},
-	"heartstop": {
-		"id": "heartstop",
+	HEARTSTOP: {
+		"id": HEARTSTOP,
 		"name": "Heartstop",
 		"class_id": CLASS_MENDER,
 		"ap": 5,
@@ -203,15 +246,20 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 3,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "spend 4 pulse",
-		"effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=10 + skip next MP",
-		"enemy_base_damage": 10,
-		"notes": "FLEX; miss/crit OK",
+		"rolls": true,
+		"element": "water",
+		"base_heal": 32,
+		"base_damage": 10,
+		"target": "any",
+		"engine_on_connect": "spend_pulse",
+		"requires_pulse": 4,
+		"spend_pulse": 4,
+		"triage": true,
+		"ally_immunity_hits": 1,
+		"enemy_skip_mp": true,
 	},
-	"cut": {
-		"id": "cut",
+	CUT: {
+		"id": CUT,
 		"name": "Cut",
 		"class_id": CLASS_GLOAM,
 		"ap": 3,
@@ -219,14 +267,14 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 1,
 		"max_range": 1,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 umbral",
-		"effect": "13D FLEX weapon",
-		"notes": "backstab applies",
+		"rolls": true,
+		"element": "air",
+		"base_damage": 13,
+		"target": "enemy",
+		"engine_on_connect": "umbral",
 	},
-	"drop_shade": {
-		"id": "drop_shade",
+	DROP_SHADE: {
+		"id": DROP_SHADE,
 		"name": "Drop Shade",
 		"class_id": CLASS_GLOAM,
 		"ap": 1,
@@ -235,13 +283,12 @@ const SPELLS := {
 		"min_range": 1,
 		"max_range": 2,
 		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 shade max 2",
-		"effect": "LOCK Neutral Shade 3 turns",
-		"notes": "no roll",
+		"element": "neutral",
+		"target": "empty_tile",
+		"shade_turns": 3,
 	},
-	"ambush": {
-		"id": "ambush",
+	AMBUSH: {
+		"id": AMBUSH,
 		"name": "Ambush",
 		"class_id": CLASS_GLOAM,
 		"ap": 4,
@@ -249,30 +296,29 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 1,
 		"max_range": 4,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "spend shade only if origin shade",
-		"effect": "22D after jump FLEX",
-		"card_damage": 22,
-		"notes": "origin=self if Invisible else Shade; dest empty back; MISS: no teleport, shade kept, invisible kept, 4AP spent",
+		"rolls": true,
+		"element": "air",
+		"base_damage": 22,
+		"target": "enemy",
+		"engine_on_connect": "ambush",
 	},
-	"fade": {
-		"id": "fade",
+	FADE: {
+		"id": FADE,
 		"name": "Fade",
 		"class_id": CLASS_GLOAM,
 		"ap": 2,
 		"mp": 1,
-		"range_mode": "self",
+		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 0,
 		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 umbral",
-		"effect": "LOCK Neutral Invisible",
-		"notes": "no roll",
+		"element": "neutral",
+		"target": "self",
+		"engine_on_connect": "umbral",
 	},
-	"nightfold": {
-		"id": "nightfold",
+	# Nightfold's miss/Shade refund is open_can_wait. Gated: not resolved.
+	NIGHTFOLD: {
+		"id": NIGHTFOLD,
 		"name": "Nightfold",
 		"class_id": CLASS_GLOAM,
 		"ap": 4,
@@ -280,15 +326,15 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 0,
 		"max_range": 6,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "shade + umbral 2+; clear umbral",
-		"effect": "22D each adjacent after blink to Shade",
-		"card_damage": 22,
-		"notes": "can-wait: shade commit-on-cast vs global miss refund",
+		"rolls": true,
+		"element": "air",
+		"base_damage": 22,
+		"target": "enemy",
+		"gated": true,
+		"open_id": "nightfold_miss_shade_vs_global_refund",
 	},
-	"bash": {
-		"id": "bash",
+	BASH: {
+		"id": BASH,
 		"name": "Bash",
 		"class_id": CLASS_BASTION,
 		"ap": 3,
@@ -296,13 +342,14 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 1,
 		"max_range": 1,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 aegis",
-		"effect": "11D FLEX melee",
+		"rolls": true,
+		"element": "earth",
+		"base_damage": 11,
+		"target": "enemy",
+		"engine_on_connect": "aegis",
 	},
-	"plant": {
-		"id": "plant",
+	PLANT: {
+		"id": PLANT,
 		"name": "Plant",
 		"class_id": CLASS_BASTION,
 		"ap": 2,
@@ -311,13 +358,13 @@ const SPELLS := {
 		"min_range": 1,
 		"max_range": 2,
 		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 aegis",
-		"effect": "LOCK Neutral ward tile 3 turns; allies resist next push",
-		"notes": "no roll",
+		"element": "neutral",
+		"target": "tile",
+		"engine_on_connect": "aegis",
+		"plant_turns": 3,
 	},
-	"hold_line": {
-		"id": "hold_line",
+	HOLD_LINE: {
+		"id": HOLD_LINE,
 		"name": "Hold Line",
 		"class_id": CLASS_BASTION,
 		"ap": 3,
@@ -325,13 +372,17 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 1,
 		"max_range": 1,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "+1 aegis",
-		"effect": "7D/body FLEX front cone 3; +1MP exit tax 1 turn on connect",
+		"rolls": true,
+		"element": "earth",
+		"base_damage": 7,
+		"target": "cone",
+		"engine_on_connect": "aegis",
+		"cone": 3,
+		"exit_tax_mp": 1,
+		"exit_tax_turns": 1,
 	},
-	"snap_wall": {
-		"id": "snap_wall",
+	SNAP_WALL: {
+		"id": SNAP_WALL,
 		"name": "Snap Wall",
 		"class_id": CLASS_BASTION,
 		"ap": 1,
@@ -340,15 +391,15 @@ const SPELLS := {
 		"min_range": 1,
 		"max_range": 2,
 		"rolls": false,
-		"awaits_backend": true,
-		"engine": "spend 2 aegis",
-		"effect": "LOCK Neutral 1-tile blocked 2 turns",
-		"blocked_tiles": 1,
-		"blocked_turns": 2,
-		"notes": "blocks walk/Gust; ships with Bastion; 2-class board stays wall-less",
+		"element": "neutral",
+		"target": "empty_tile",
+		"engine_on_connect": "spend_aegis",
+		"requires_aegis": 2,
+		"spend_aegis": 2,
+		"wall_turns": 2,
 	},
-	"aegis_break": {
-		"id": "aegis_break",
+	AEGIS_BREAK: {
+		"id": AEGIS_BREAK,
 		"name": "Aegis Break",
 		"class_id": CLASS_BASTION,
 		"ap": 4,
@@ -356,60 +407,22 @@ const SPELLS := {
 		"range_mode": "chebyshev",
 		"min_range": 1,
 		"max_range": 2,
-		"rolls": false,
-		"awaits_backend": true,
-		"engine": "gate aegis 3+",
-		"effect": "HIT: 26D/body + push1 + clear ALL aegis; MISS: spend 0",
-		"card_damage": 26,
-		"miss_spend": 0,
+		"rolls": true,
+		"element": "earth",
+		"base_damage": 26,
+		"target": "enemy",
+		"engine_on_connect": "clear_aegis",
+		"requires_aegis": 3,
+		"push_cells": 1,
 	},
 }
 
 const CLASS_SPELLS := {
 	CLASS_KESTREL: [MARK_SHOT, DETONATE],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
-	CLASS_MENDER: ["mend", "pulse_tap", "ward", "cleanse", "heartstop"],
-	CLASS_GLOAM: ["cut", "drop_shade", "ambush", "fade", "nightfold"],
-	CLASS_BASTION: ["bash", "plant", "hold_line", "snap_wall", "aegis_break"],
-}
-
-## Display + caps from the Locked cards. Current value is read from the snapshot.
-const CLASS_RESOURCES := {
-	CLASS_MENDER: [
-		{"id": "pulse", "label": "Pulse", "min": 0, "max": 6},
-	],
-	CLASS_GLOAM: [
-		{"id": "umbral", "label": "Umbral", "min": 0, "max": 4},
-		{"id": "shades", "label": "Shades", "min": 0, "max": 2},
-	],
-	CLASS_BASTION: [
-		{"id": "aegis", "label": "Aegis", "min": 0, "max": 4},
-	],
-}
-
-## Proto stamp. Not a damage formula.
-const CLASS_PROTO := {
-	CLASS_MENDER: {"hp": 80, "mastery": 0, "resist": 0},
-	CLASS_GLOAM: {"hp": 80, "mastery": 0, "resist": 0},
-	CLASS_BASTION: {"hp": 80, "mastery": 0, "resist": 0},
-}
-
-## Stored so the card is not dropped. CombatSim does not apply these.
-const CLASS_PASSIVES := {
-	CLASS_MENDER: {
-		"id": "triage",
-		"heal_mult": 1.25,
-		"hp_threshold": 0.4,
-		"applies_to_ally_heartstop": true,
-		"applies_to_enemy_heartstop": false,
-	},
-	CLASS_GLOAM: {"id": "backstab", "mult": 1.35, "replaces_back": 1.2},
-	CLASS_BASTION: {
-		"id": "intercept",
-		"transfer": 0.4,
-		"once_per_bastion_turn_cycle": true,
-		"excludes": ["miss", "magma_ticks", "self_damage"],
-	},
+	CLASS_MENDER: [MEND, PULSE_TAP, WARD, CLEANSE, HEARTSTOP],
+	CLASS_GLOAM: [CUT, DROP_SHADE, AMBUSH, FADE, NIGHTFOLD],
+	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, AEGIS_BREAK],
 }
 
 const MARKS_CAP := 5
@@ -420,15 +433,8 @@ static func normalize_class_id(class_id: String) -> String:
 	return class_id.strip_edges().to_lower()
 
 
-## Dedicated queue allowlist. kestrel and ironjaw only until Backend expands it.
 static func is_roster_class(class_id: String) -> bool:
-	var id := normalize_class_id(class_id)
-	return id == CLASS_KESTREL or id == CLASS_IRONJAW
-
-
-## Chrome roster, including classes the server still rejects.
-static func is_chrome_class(class_id: String) -> bool:
-	return normalize_class_id(class_id) in CHROME_ROSTER
+	return LOCKED_ROSTER.has(normalize_class_id(class_id))
 
 
 static func display_name(class_id: String) -> String:
@@ -447,8 +453,19 @@ static func display_name(class_id: String) -> String:
 			return ""
 
 
-static func class_label(class_id: String) -> String:
-	return display_name(class_id)
+## Display name for a snapshot resource field. The value comes from the unit.
+static func resource_label(resource_id: String) -> String:
+	match resource_id:
+		"pulse":
+			return "Pulse"
+		"umbral":
+			return "Umbral"
+		"shades":
+			return "Shades"
+		"aegis":
+			return "Aegis"
+		_:
+			return ""
 
 
 static func element_of(class_id: String) -> String:
@@ -457,70 +474,19 @@ static func element_of(class_id: String) -> String:
 			return "air"
 		CLASS_IRONJAW:
 			return "earth"
-		_:
-			return ""
-
-
-## Card element pair. Kestrel and Ironjaw keep their single sim element.
-static func class_element_text(class_id: String) -> String:
-	match normalize_class_id(class_id):
 		CLASS_MENDER:
-			return "Water/Water"
+			return "water"
 		CLASS_GLOAM:
-			return "Air/Neutral"
+			return "air"
 		CLASS_BASTION:
-			return "Earth/Earth"
+			return "earth"
 		_:
 			return ""
 
 
-static func class_resources(class_id: String) -> Array:
-	var id := normalize_class_id(class_id)
-	if CLASS_RESOURCES.has(id):
-		return CLASS_RESOURCES[id]
-	return []
-
-
-static func class_proto(class_id: String) -> Dictionary:
-	var id := normalize_class_id(class_id)
-	if CLASS_PROTO.has(id):
-		return CLASS_PROTO[id]
-	return {}
-
-
-static func class_passive(class_id: String) -> Dictionary:
-	var id := normalize_class_id(class_id)
-	if CLASS_PASSIVES.has(id):
-		return CLASS_PASSIVES[id]
-	return {}
-
-
-## True when the row is card data only. CombatSim must reject instead of resolving.
-static func awaits_backend(spell_id: String) -> bool:
-	return bool(spell(spell_id).get("awaits_backend", false))
-
-
-## Snapshot current, else the card minimum. Does not invent a gain.
-static func resource_amount(unit: Dictionary, spec: Dictionary) -> int:
-	var id := str(spec.get("id", ""))
-	var floor_n := int(spec.get("min", 0))
-	if id != "" and unit.has(id):
-		return int(unit[id])
-	var bag: Variant = unit.get("resources", null)
-	if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has(id):
-		var entry: Variant = (bag as Dictionary)[id]
-		if typeof(entry) == TYPE_DICTIONARY:
-			return int((entry as Dictionary).get("current", (entry as Dictionary).get("value", floor_n)))
-		return int(entry)
-	if typeof(bag) == TYPE_ARRAY:
-		for raw in bag:
-			if typeof(raw) != TYPE_DICTIONARY:
-				continue
-			var row: Dictionary = raw
-			var row_id := str(row.get("id", ""))
-			if row_id == id or (row_id == "" and str(row.get("label", "")) == str(spec.get("label", ""))):
-				return int(row.get("current", floor_n))
-	return floor_n
+static func is_gated(spell_id: String) -> bool:
+	var def: Dictionary = spell(spell_id)
+	return bool(def.get("gated", false))
 
 
 static func spell(spell_id: String) -> Dictionary:
@@ -552,8 +518,6 @@ static func range_text(def: Dictionary) -> String:
 	var lo := int(def.get("min_range", 0))
 	var hi := int(def.get("max_range", 0))
 	var mode := str(def.get("range_mode", "chebyshev"))
-	if mode == "self":
-		return "self"
 	if mode == "cardinal":
 		return "4 orthogonal neighbors"
 	if mode == "manhattan":

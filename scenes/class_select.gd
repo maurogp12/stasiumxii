@@ -3,8 +3,8 @@ extends Control
 ## Dedicated pre-match chrome. Pick a Locked class, Confirm, then Find Match.
 ## Confirm calls NetSession.select_class. Find Match joins the dedicated queue
 ## (rpc_select_class + rpc_enqueue on connect). Results arrive as
-## connection_changed: class_selected, class_rejected, queued, queue_rejected, matched.
-## The server allowlist is kestrel|ironjaw. The other cards stay on screen.
+## connection_changed: class_selected, class_rejected, waiting, queue_rejected, matched.
+## Allowlist is kestrel|ironjaw|mender|gloam|bastion. Nightfold stays gated.
 
 const MAIN_SCENE := "res://main.tscn"
 const LOBBY_SCENE := "res://scenes/online_lobby.tscn"
@@ -29,7 +29,7 @@ func _ready() -> void:
 		NetSession.connection_changed.connect(_on_connection)
 	_picked = NetSession.selected_class_id
 	_refresh_buttons()
-	if NetSession.matched and NetSession.is_queue_client():
+	if NetSession.match_assigned() and NetSession.is_queue_client():
 		_go_main()
 
 
@@ -53,7 +53,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Confirm sends the class to the server. Find Match queues you until another confirmed player pairs. The server allowlist today is Kestrel and Ironjaw."
+	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Confirm sends the class to the server. Find Match queues you until another confirmed player pairs."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
@@ -116,7 +116,7 @@ func _build() -> void:
 
 
 func _add_roster_rows(col: VBoxContainer) -> void:
-	var ids: Array = SpellKits.CHROME_ROSTER
+	var ids: Array = SpellKits.LOCKED_ROSTER
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	col.add_child(row)
@@ -126,7 +126,7 @@ func _add_roster_rows(col: VBoxContainer) -> void:
 			row = HBoxContainer.new()
 			row.add_theme_constant_override("separation", 12)
 			col.add_child(row)
-		var button := _class_button(SpellKits.class_label(str(class_id)), _roster_color(str(class_id)))
+		var button := _class_button(SpellKits.display_name(str(class_id)), _roster_color(str(class_id)))
 		button.pressed.connect(_on_pick.bind(str(class_id)))
 		row.add_child(button)
 		_class_buttons[str(class_id)] = button
@@ -164,14 +164,14 @@ func _class_button(text: String, color: Color) -> Button:
 
 
 func _refresh_buttons() -> void:
-	var queued := NetSession.matched
+	var live := NetSession.match_assigned()
 	for class_id in _class_buttons.keys():
 		var button: Button = _class_buttons[class_id]
-		button.disabled = queued
+		button.disabled = live
 		button.modulate = Color(1.15, 1.12, 1.05) if _picked == str(class_id) else Color(0.72, 0.72, 0.72)
-	_confirm_button.disabled = queued or _picked == ""
-	_find_button.disabled = queued or not SpellKits.is_roster_class(NetSession.selected_class_id)
-	_queue_panel.visible = NetSession.is_queue_client() and not NetSession.matched and NetSession.lobby_text.contains("queue")
+	_confirm_button.disabled = live or _picked == ""
+	_find_button.disabled = live or not SpellKits.is_roster_class(NetSession.selected_class_id)
+	_queue_panel.visible = NetSession.is_queue_client() and not live
 
 
 func _on_pick(class_id: String) -> void:
@@ -184,12 +184,12 @@ func _on_confirm() -> void:
 	if _picked == "":
 		return
 	_reject.text = ""
-	_status.text = "Sending %s…" % SpellKits.class_label(_picked)
+	_status.text = "Sending %s…" % SpellKits.display_name(_picked)
 	var result: Dictionary = NetSession.select_class(_picked)
 	if not bool(result.get("ok", false)):
 		_show_reject(str(result.get("reason", "invalid_class")), _picked)
 		return
-	_status.text = "Class stored: %s. Find Match to join the queue." % SpellKits.class_label(str(result.get("class_id", _picked)))
+	_status.text = "Class stored: %s. Find Match to join the queue." % SpellKits.display_name(str(result.get("class_id", _picked)))
 	_refresh_buttons()
 
 
@@ -199,9 +199,7 @@ func _on_find_match() -> void:
 		return
 	_status.text = "Entering queue…"
 	if NetSession.is_queue_client():
-		var queued: Dictionary = NetSession.enqueue()
-		if not bool(queued.get("ok", false)) and not bool(queued.get("pending", false)):
-			_show_reject(str(queued.get("reason", "class_required")), NetSession.selected_class_id)
+		_queue_panel.visible = true
 		return
 	var result: Dictionary = NetSession.start_queue_client(_join_ip.text.strip_edges(), int(_join_port.text))
 	if not bool(result.get("ok", false)):
@@ -219,7 +217,7 @@ func _on_connection(status: String) -> void:
 		_refresh_buttons()
 	elif status == "class_rejected":
 		_show_reject("invalid_class", _picked)
-	elif status == "queued":
+	elif status == "waiting":
 		_reject.text = ""
 		_status.text = "Queued. Waiting for an opponent."
 		_queue_panel.visible = true
@@ -238,7 +236,7 @@ func _on_connection(status: String) -> void:
 
 
 func _show_reject(reason: String, class_id: String) -> void:
-	var who := SpellKits.class_label(class_id)
+	var who := SpellKits.display_name(class_id)
 	if who == "":
 		who = class_id if class_id != "" else "that class"
 	match reason:

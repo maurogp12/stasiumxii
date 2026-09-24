@@ -31,6 +31,8 @@ var _ironjaw_body: RichTextLabel
 ## Left card is seat 0, right card is seat 1. Titles follow units[].class_id.
 var _banner_panels: Array[Panel] = []
 var _banner_titles: Array[Label] = []
+var _seat_panels: Array[Panel] = []
+var _seat_titles: Array[Label] = []
 var _turn_label: Label
 var _coach_label: Label
 var _selected_label: Label
@@ -78,9 +80,8 @@ var _turn_label_base: String = ""
 ## Also reads net.local_seat / net.active_seat when the top-level keys are absent.
 ## Advance is never offered unless class_id is ironjaw.
 ## Spell buttons follow units[kit_seat].class_id via SpellKits.class_spells.
-## Card rows stay clickable so the Intent carries the card id. CombatSim
-## still returns backend_pending until Backend resolves them.
-## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
+## Intent spell ids are the Locked card ids. Enablement follows legal_intents.
+## Gated open_can_wait rows (Nightfold) stay off the bar.
 static func _net_dict(snap: Dictionary) -> Dictionary:
 	var raw: Variant = snap.get("net", {})
 	return raw if typeof(raw) == TYPE_DICTIONARY else {}
@@ -194,6 +195,8 @@ static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 		if (id == SpellKits.SHOULDER or id == SpellKits.CRUSH) and class_id != SpellKits.CLASS_IRONJAW:
 			continue
 		if not SpellKits.has_spell(class_id, id):
+			continue
+		if SpellKits.is_gated(id):
 			continue
 		if not offered.has(id):
 			offered.append(id)
@@ -591,9 +594,18 @@ func set_locked(locked: bool) -> void:
 	_apply_controls(false)
 
 
+func _banner_color(class_id: String) -> Color:
+	if class_id == SpellKits.CLASS_KESTREL:
+		return KESTREL_GREEN
+	if class_id == SpellKits.CLASS_IRONJAW:
+		return IRONJAW_RED
+	# Chrome only. Not a kit stat. Open kits share one neutral panel.
+	return Color("#3a3a3a")
+
+
 func show_turn_banner(unit_name: String, class_id: String, caption: String = "") -> void:
 	_handoff_label.text = caption if caption != "" else "%s's turn" % unit_name
-	var fill := KESTREL_GREEN if class_id == SpellKits.CLASS_KESTREL else IRONJAW_RED
+	var fill := _banner_color(class_id)
 	_handoff_panel.add_theme_stylebox_override("panel", _panel(fill))
 	_handoff_overlay.visible = true
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -651,10 +663,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var seat0 := _unit(units, 0)
 	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
+	_apply_seat_banner(0, seat0)
+	_apply_seat_banner(1, seat1)
 	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
 	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
-	_paint_seat_banner(0, seat0)
-	_paint_seat_banner(1, seat1)
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
@@ -717,10 +729,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_update_selected_label()
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		# Card spells are selectable so the Intent spell id matches the card.
-		# Kestrel / Ironjaw still enable only from legal_intents.
-		var card_intent := SpellKits.awaits_backend(str(spell_id))
-		var can_submit: bool = (legal_spells.has(spell_id) or card_intent) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
@@ -755,7 +764,7 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.modulate = Color.WHITE
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
-		_new_match_button.visible = snap_local_seat(_last_snap) != 1
+		_new_match_button.visible = _show_new_match(_last_snap)
 
 
 func _build() -> void:
@@ -983,6 +992,32 @@ func _build() -> void:
 	_update_selected_label()
 
 
+func _show_new_match(snap: Dictionary) -> bool:
+	var seat := snap_local_seat(snap)
+	if seat < 0:
+		return true
+	var net := _net_dict(snap)
+	if str(net.get("mode", "")) == "host":
+		return true
+	return bool(net.get("dedicated", false)) and seat == 0
+
+
+func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
+	if seat < 0 or seat >= _seat_titles.size():
+		return
+	var class_id := str(unit.get("class_id", ""))
+	var unit_name := str(unit.get("name", ""))
+	if unit_name == "":
+		unit_name = SpellKits.display_name(class_id)
+	if unit_name == "":
+		unit_name = "Seat %d" % seat
+	_seat_titles[seat].text = unit_name
+	if seat >= _seat_panels.size():
+		return
+	var color := _banner_color(class_id)
+	_seat_panels[seat].add_theme_stylebox_override("panel", _panel(color))
+
+
 func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
 	panel.position = Vector2(16, 12) if is_kestrel else Vector2(704, 12)
@@ -991,6 +1026,8 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	panel.add_theme_stylebox_override("panel", _panel(color))
 	var title := Label.new()
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
+	_seat_panels.append(panel)
+	_seat_titles.append(title)
 	title.position = Vector2(12, 6)
 	title.size = Vector2(216, 22)
 	title.add_theme_font_size_override("font_size", 18)
@@ -1099,31 +1136,38 @@ func _unit(units: Array, seat: int) -> Dictionary:
 	return unit_for_seat(units, seat)
 
 
-## Kestrel / Ironjaw keep Marks / Impact. Card classes use SpellKits.class_resources.
-## Current values come from the snapshot; otherwise the card minimum.
+## Kestrel / Ironjaw keep Marks / Impact. Card classes paint snapshot fields.
+## `unit.resources` mirrors pulse / umbral / shades / aegis when the field is absent.
 func _resource_meter_line(unit: Dictionary) -> String:
 	var class_id := str(unit.get("class_id", ""))
-	var specs: Array = SpellKits.class_resources(class_id)
-	if not specs.is_empty():
-		var parts := PackedStringArray()
-		for spec in specs:
-			if typeof(spec) != TYPE_DICTIONARY:
-				continue
-			var row: Dictionary = spec
-			parts.append("%s %d/%d" % [
-				str(row.get("label", "")),
-				SpellKits.resource_amount(unit, row),
-				int(row.get("max", 0)),
-			])
-		var proto := SpellKits.class_proto(class_id)
-		if not proto.is_empty():
-			parts.append("Mastery %d" % int(unit.get("mastery", proto.get("mastery", 0))))
-			parts.append("Resist %d" % int(unit.get("resist", proto.get("resist", 0))))
-		return " ".join(parts)
-	if not SpellKits.class_spells(class_id).is_empty():
-		return "Marks %s  Impact %s" % [
-			engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
-			engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
+	var mastery := int(unit.get("mastery", 0))
+	var resist := int(unit.get("resist", 0))
+	if class_id == SpellKits.CLASS_MENDER:
+		return "%s %d/%d  Mastery %d  Resist %d" % [
+			SpellKits.resource_label("pulse"),
+			_resource_current(unit, "pulse"),
+			int(unit.get("pulse_cap", SpellKits.PULSE_CAP)),
+			mastery,
+			resist,
+		]
+	if class_id == SpellKits.CLASS_GLOAM:
+		return "%s %d/%d  %s %d/%d  Mastery %d  Resist %d" % [
+			SpellKits.resource_label("umbral"),
+			_resource_current(unit, "umbral"),
+			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
+			SpellKits.resource_label("shades"),
+			_resource_current(unit, "shades"),
+			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
+			mastery,
+			resist,
+		]
+	if class_id == SpellKits.CLASS_BASTION:
+		return "%s %d/%d  Mastery %d  Resist %d" % [
+			SpellKits.resource_label("aegis"),
+			_resource_current(unit, "aegis"),
+			int(unit.get("aegis_cap", SpellKits.AEGIS_CAP)),
+			mastery,
+			resist,
 		]
 	return "Marks %s  Impact %s" % [
 		engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
@@ -1131,14 +1175,24 @@ func _resource_meter_line(unit: Dictionary) -> String:
 	]
 
 
+func _resource_current(unit: Dictionary, id: String) -> int:
+	if unit.has(id):
+		return int(unit[id])
+	var bag: Variant = unit.get("resources", null)
+	if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has(id):
+		return int((bag as Dictionary)[id])
+	return 0
+
+
 func _kit_footer(unit: Dictionary) -> String:
 	var class_id := str(unit.get("class_id", ""))
 	var names := PackedStringArray()
 	for spell_id in unit.get("spells", []):
 		names.append(str(spell_id))
-	var element := SpellKits.class_element_text(class_id)
+	var element := str(unit.get("element", ""))
 	if element == "":
-		element = str(unit.get("element", "")).capitalize()
+		element = SpellKits.element_of(class_id)
+	element = element.capitalize()
 	if element == "":
 		return ", ".join(names)
 	if names.is_empty():
@@ -1150,11 +1204,11 @@ func _paint_seat_banner(seat: int, unit: Dictionary) -> void:
 	if unit.is_empty() or seat < 0 or seat >= _banner_titles.size():
 		return
 	var class_id := str(unit.get("class_id", ""))
-	if not SpellKits.is_chrome_class(class_id):
+	if not SpellKits.is_roster_class(class_id):
 		return
 	var title := _banner_titles[seat]
 	var panel := _banner_panels[seat]
-	var label := SpellKits.class_label(class_id)
+	var label := SpellKits.display_name(class_id)
 	if label != "":
 		title.text = label
 	panel.add_theme_stylebox_override("panel", _panel(banner_color(class_id)))
@@ -1165,13 +1219,13 @@ func _sync_empty_kit(chrome: Dictionary, offered: Array) -> void:
 	var empty_slot := (
 		not _deploying
 		and not chrome.is_empty()
-		and SpellKits.is_chrome_class(class_id)
+		and SpellKits.is_roster_class(class_id)
 		and SpellKits.class_spells(class_id).is_empty()
 		and offered.is_empty()
 	)
 	if _empty_kit_label != null:
 		_empty_kit_label.visible = empty_slot
-		_empty_kit_label.text = SpellKits.class_label(class_id) if empty_slot else ""
+		_empty_kit_label.text = SpellKits.display_name(class_id) if empty_slot else ""
 	if _empty_kit_button != null:
 		_empty_kit_button.visible = empty_slot
 		_empty_kit_button.disabled = true

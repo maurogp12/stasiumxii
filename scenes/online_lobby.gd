@@ -1,16 +1,12 @@
 extends Control
 
 ## Anonymous lobby. Listen-host duel stays fixed (host Kestrel, guest Ironjaw).
-## Dedicated queue: pick a class, then join. The host pairs two confirmed
-## allowlist classes onto seats in queue order. Chrome still shows the
-## other Locked cards; the server reject line is the response until the
-## allowlist expands.
+## Dedicated queue: pick one Locked class, then join. The host pairs any two
+## confirmed classes onto seats. class_id is the seat's choice, not a fixed kit.
 
 const MAIN_SCENE := "res://main.tscn"
-const CLASS_SELECT_SCENE := "res://scenes/class_select.tscn"
 
 var _status: Label
-var _reject: Label
 var _class_label: Label
 var _host_port: LineEdit
 var _join_ip: LineEdit
@@ -29,7 +25,7 @@ func _ready() -> void:
 	elif NetSession.is_queue_client():
 		_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
 	else:
-		_status.text = "Pick a class, then Join queue. Listen-host below stays Kestrel vs Ironjaw."
+		_status.text = "Pick a Locked class, then join the queue. Listen-host below stays Kestrel vs Ironjaw."
 	_sync_class_buttons()
 
 
@@ -40,8 +36,8 @@ func _build() -> void:
 	add_child(bg)
 
 	var col := VBoxContainer.new()
-	col.position = Vector2(80, 36)
-	col.size = Vector2(840, 660)
+	col.position = Vector2(80, 48)
+	col.size = Vector2(920, 700)
 	col.add_theme_constant_override("separation", 12)
 	add_child(col)
 
@@ -53,14 +49,21 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Choose a Locked class, then Join queue. The dedicated host stores an allowlist class on your session and pairs the next two confirmed players. Other cards stay visible; the server reject line is the response until Backend expands the allowlist."
+	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Join queue. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
-	_add_class_rows(col)
+	var class_row := HBoxContainer.new()
+	class_row.add_theme_constant_override("separation", 8)
+	col.add_child(class_row)
+	for class_id in SpellKits.LOCKED_ROSTER:
+		var button := _button(SpellKits.display_name(class_id), _pick.bind(class_id))
+		_class_buttons[class_id] = button
+		class_row.add_child(button)
 	_class_label = Label.new()
 	_class_label.text = "Class: none"
-	col.add_child(_class_label)
+	_class_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	class_row.add_child(_class_label)
 
 	var host_row := HBoxContainer.new()
 	host_row.add_theme_constant_override("separation", 8)
@@ -68,7 +71,8 @@ func _build() -> void:
 	_host_port = _field("7777")
 	host_row.add_child(_label("Port"))
 	host_row.add_child(_host_port)
-	host_row.add_child(_button("Host dedicated", _on_dedicated))
+	var dedicated_btn := _button("Host dedicated", _on_dedicated)
+	host_row.add_child(dedicated_btn)
 
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 8)
@@ -84,18 +88,10 @@ func _build() -> void:
 	_queue_btn.disabled = true
 	join_row.add_child(_queue_btn)
 
-	_reject = Label.new()
-	_reject.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_reject.add_theme_color_override("font_color", Color(0.95, 0.45, 0.38))
-	col.add_child(_reject)
-
 	_status = Label.new()
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.add_theme_color_override("font_color", Color(0.9, 0.82, 0.5))
 	col.add_child(_status)
-
-	var screen := _button("Class screen", _on_class_screen)
-	col.add_child(screen)
 
 	var legacy := Label.new()
 	legacy.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -111,22 +107,10 @@ func _build() -> void:
 	legacy_row.add_child(_button("Local hot-seat", _on_hotseat))
 
 
-func _add_class_rows(col: VBoxContainer) -> void:
-	var ids: Array = SpellKits.CHROME_ROSTER
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	col.add_child(row)
-	for class_id in ids:
-		var button := _button(SpellKits.class_label(str(class_id)), _on_pick.bind(str(class_id)))
-		button.custom_minimum_size = Vector2(140, 36)
-		row.add_child(button)
-		_class_buttons[str(class_id)] = button
-
-
 func _button(text: String, handler: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(160, 36)
+	button.custom_minimum_size = Vector2(140, 36)
 	button.pressed.connect(handler)
 	return button
 
@@ -145,14 +129,12 @@ func _label(text: String) -> Label:
 	return lab
 
 
-func _on_pick(class_id: String) -> void:
+func _pick(class_id: String) -> void:
 	var result: Dictionary = NetSession.select_class(class_id)
 	if not bool(result.get("ok", false)):
-		_reject.text = _reject_line(str(result.get("reason", "invalid_class")), class_id)
-		_status.text = ""
+		_status.text = "Rejected class (%s)." % str(result.get("reason", "invalid_class"))
 		_sync_class_buttons()
 		return
-	_reject.text = ""
 	_class_label.text = "Class: %s" % SpellKits.display_name(str(result.get("class_id", "")))
 	_status.text = "Class confirmed. Join queue, or host a dedicated match in another window."
 	_sync_class_buttons()
@@ -163,7 +145,7 @@ func _sync_class_buttons() -> void:
 	_queue_btn.disabled = not SpellKits.is_roster_class(picked)
 	for class_id in _class_buttons.keys():
 		var button: Button = _class_buttons[class_id]
-		button.modulate = Color(1.15, 1.12, 1.05) if picked == str(class_id) else Color.WHITE
+		button.modulate = Color(0.85, 0.78, 0.45) if str(class_id) == picked else Color.WHITE
 
 
 func _on_dedicated() -> void:
@@ -177,13 +159,12 @@ func _on_dedicated() -> void:
 
 func _on_queue() -> void:
 	if not SpellKits.is_roster_class(NetSession.selected_class_id):
-		_reject.text = _reject_line("class_required", "")
+		_status.text = "Pick a Locked class before joining the queue."
 		return
 	var result: Dictionary = NetSession.start_queue_client(_join_ip.text.strip_edges(), int(_join_port.text))
 	if not bool(result.get("ok", false)):
 		_status.text = "Queue failed: %s" % str(result.get("reason", "class_required"))
 		return
-	_reject.text = ""
 	_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
 
 
@@ -211,49 +192,15 @@ func _on_hotseat() -> void:
 	_go_main()
 
 
-func _on_class_screen() -> void:
-	get_tree().change_scene_to_file(CLASS_SELECT_SCENE)
-
-
 func _on_connection(status: String) -> void:
-	if status == "class_rejected":
-		_reject.text = NetSession.lobby_text if NetSession.lobby_text != "" else "Server rejected that class."
-		_sync_class_buttons()
-		return
-	if status == "queue_rejected":
-		_reject.text = NetSession.lobby_text if NetSession.lobby_text != "" else "Queue rejected."
-		return
-	if status == "class_selected" or status == "queued":
-		_reject.text = ""
-		if NetSession.lobby_text != "":
-			_status.text = NetSession.lobby_text
-		_sync_class_buttons()
-		return
 	if status == "matched" and NetSession.is_queue_client():
 		_status.text = "Matched as %s (seat %d). Opening the board…" % [SpellKits.display_name(NetSession.selected_class_id), NetSession.local_seat]
 		_go_main()
 		return
 	if NetSession.lobby_text != "":
 		_status.text = NetSession.lobby_text
-	elif status != "":
+	else:
 		_status.text = status
-
-
-func _reject_line(reason: String, class_id: String) -> String:
-	var who := SpellKits.class_label(class_id)
-	if who == "":
-		who = "that class"
-	match reason:
-		"invalid_class":
-			return "Server rejected %s." % who
-		"class_required":
-			return "Server rejected queue: confirm Kestrel or Ironjaw first."
-		"already_queued":
-			return "Server rejected a class change: already queued."
-		"not_connected":
-			return "Server rejected the class: not connected."
-		_:
-			return "Server rejected %s (%s)." % [who, reason]
 
 
 func _go_main() -> void:

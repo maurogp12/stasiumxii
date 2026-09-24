@@ -31,10 +31,10 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. It is also the SELECT_CLASS queue host. **Listen-host** (`--host`) is the same core with seat 0 in that window. Queue clients call `select_class` then `rpc_enqueue`. HOTSEAT leaves `main.tscn` on the local path. RPC only (no scene sync). |
-| `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Allowlist is `kestrel` and `ironjaw`. Pairs the next two confirmed sessions. |
-| `scenes/online_lobby.tscn` | Class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
-| `scenes/class_select.tscn` | Five-class chrome. Confirm calls `select_class`. Find Match joins the queue. Server rejects off-allowlist ids. |
+| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. It does not spawn a default pair: players `SELECT_CLASS` (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`) then queue. A pair starts a match whose seats use those class ids. **Listen-host** (`--host`) is the same core with seat 0 fixed as Kestrel and the guest as Ironjaw. HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
+| `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Rejects any other `class_id`. Pairs the next two confirmed sessions. |
+| `scenes/online_lobby.tscn` | Five-class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
+| `scenes/class_select.tscn` | Same five-class confirm and Find Match. `match_assigned()` is true once the pair is live. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -83,9 +83,10 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 ## Omitted (not silent defaults)
 
-- Matchmaking / login / MultiplayerSynchronizer (dedicated headless host and optional listen-host are in; see below)
+- Login / MultiplayerSynchronizer (listen-host ENet, the dedicated process, and the Locked-roster queue are in; see below)
+- Pulse, reconnect, relay
 - Step-shot, Rain, Longbow, Avalanche
-- Mender, Gloam, and Bastion combat resolve (chrome cards are in; the allowlist and casts stay Backend)
+- `open_can_wait` kit edges (Nightfold miss refund, Intercept multi-guard, Neutral primary scope, AoE vs Invisible, Heartstop immunity/heal-overflow/shield stack, Water Ward 24 rider, cone/ward masks). The workbook v0.6 numbers for Mender / Gloam / Bastion are in. Card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`.
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
@@ -116,18 +117,18 @@ godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 
 ## How to playtest SELECT_CLASS → dedicated match
 
-**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. No login.
+**Transport:** Godot 4 **ENet** (`ENetMultiplayerPeer` + MultiplayerAPI RPC). Same choice as listen-host: desktop / LAN, not HTML5. WebSocket stays the later HTML5 option; the Intent RPC surface does not change. Moving the server to another machine is the join address, not a new protocol. No login. Listen-host stays a fixed Kestrel / Ironjaw duel.
 
-The dedicated process is not a fighter. Each player confirms a class, then joins the queue. The first two confirmed players become a match. Seat 0 is whoever queued first; seat 1 is whoever queued second. Allowlist today: **Kestrel** or **Ironjaw**. The class screen still shows Mender, Gloam, and Bastion; the server reject line is the response until Backend expands `SpellKits.is_roster_class`. Those three kits paint from the Locked cards (Pulse / Umbral / Shades / Aegis, Snap Wall from `blocked_tiles` / `snap_wall`). CombatSim does not resolve those casts (`backend_pending`).
+The dedicated process is not a fighter. Each player confirms a class, then joins the queue. The first two confirmed players become a match. Seat 0 is whoever queued first; seat 1 is whoever queued second. Allowlist: **kestrel**, **ironjaw**, **mender**, **gloam**, **bastion**. HUD paints Pulse / Umbral / Shades / Aegis from the snapshot (`unit.resources` mirrors those fields). Snap Wall paints `blocked_tiles` entries `{x, y, pos, turns}` and `snap_wall` events (`to`, `cells`). There is no `walls` key. Card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`. Nightfold stays gated (`open_can_wait`).
 
 RPC bind:
 
-- `NetSession.select_class(class_id)` → `rpc_select_class` → `rpc_class_result` `{ok, illegal, reason, class_id}`
-- `rpc_enqueue` → `rpc_queue_result` `{ok, reason, queued}`
-- `rpc_match_assigned` `{seat, class_id, match_id, packed}` then the board hydrates from the packed snapshot
-- Statuses on `connection_changed`: `class_selected`, `class_rejected`, `queued`, `queue_rejected`, `matched`
+- `NetSession.select_class(class_id)` → `rpc_select_class` → `rpc_class_result` `{ok, class_id, reason}`
+- `rpc_enqueue` → `rpc_queue_result` `{status, reason}` where status is `waiting`, `matched`, or `rejected`
+- `rpc_match_assigned` `{type: "match_assigned", seat, class_id, classes, match_id}` then the board hydrates from the snapshot. `NetSession.match_assigned()` is true when the match is live
+- Statuses on `connection_changed`: `class_selected`, `class_rejected`, `waiting`, `queue_rejected`, `matched`
 
-**Three processes** (lobby scene). The dedicated host is not a fighter.
+**Three processes** (lobby scene). The dedicated host is not a fighter. `--class` accepts any allowlist id.
 
 ```bash
 # Machine B — dedicated host (no seat). Leave it open.
@@ -140,13 +141,11 @@ godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0
 godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class ironjaw
 ```
 
-Machine B should read `Match m1 — seat 0 Kestrel, seat 1 Ironjaw`. Machine A and Machine C open the board on those seats. After deploy, Kestrel has Mark Shot / Detonate and Ironjaw has Advance / Strike / Shoulder / Crush.
+Other pairs use the same two client lines with `--class mender`, `--class gloam`, or `--class bastion`. Machine B should read `Match m1 — seat 0 <first class>, seat 1 <second class>`. After deploy, the kit bar is that seat's Locked card ids (Mend / Cut / Bash, and so on). Nightfold is not on the bar.
 
-Swap the `--class` flags and seat 0 should be Ironjaw (Advance on that window).
+Buttons: Machine B presses **Host dedicated**. Machine A and Machine C press a class, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
 
-Buttons: Machine B presses **Host dedicated**. Machine A and Machine C press **Kestrel** or **Ironjaw**, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick. Mender, Gloam, and Bastion use the same buttons and show the reject line.
-
-Headless: `godot --headless --path . -s res://tests/run_matchmaking_tests.gd` and `godot --headless --path . -s res://tests/run_class_select_tests.gd`.
+Same computer: `127.0.0.1`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Seat 0’s **New Match** asks the server to reset with those same class ids. A dropped client is a stub: that seat stays reserved. No reconnect.
 
 Verify:
 
@@ -172,11 +171,64 @@ godot --path . --position 1000,40 -- --join 127.0.0.1:7777
 
 Or open `scenes/online_lobby.tscn`, **Host match** on one window and **Join match** (`127.0.0.1` / `7777`) on the other. **Local hot-seat** on that lobby returns to the unchanged single-window path.
 
-Play: each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome follows `units[local_seat].class_id`.** Listen-host stays Kestrel vs Ironjaw. A queued match uses the classes those players confirmed. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
+Play (dedicated or listen-host): each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (the class on `local_seat`; listen-host is still Kestrel then Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
 
 Listen-host LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
 
 Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
+
+## How to playtest SELECT_CLASS → dedicated match
+
+Allowlist: `kestrel` | `ironjaw` | `mender` | `gloam` | `bastion`. The dedicated host is not a fighter and does not boot the default pair. Each player confirms a class, then joins the queue. Any two Locked classes pair. Seat 0 is the first queued session unless that session is bound to the other transport seat. Kits follow the chosen `class_id` (two of the same class is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
+
+Mender, Gloam, and Bastion use workbook v0.6 (`data/select_class_lock_kits_v0.6.json`). Proto is **80 HP / Mastery 0 / Resist 0** with the Locked combat refill (**6 AP / 3 MP**). Umbral is 0–4. Shades max 2. Ambush miss does not teleport, keeps Shade and Invisible, and spends 4 AP. Aegis Break hit clears all Aegis; a miss spends 0. Snap Wall is one blocked tile for 2 turns (walk, and a future Gust) only while a Bastion is in the match. Nightfold and the other `open_can_wait` edges reject instead of guessing.
+
+**Three windows** (lobby scene):
+
+```bash
+# Window A — dedicated host. No class. Leave this window open.
+godot --path . --position 40,40 res://scenes/online_lobby.tscn -- --dedicated 7777
+
+# Window B — pick a class, then queue.
+godot --path . --position 40,420 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class gloam
+
+# Window C — any other Locked class. The board opens when the pair matches.
+godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.0.0.1:7777 --class bastion
+```
+
+Window A should read `Match m1 — seat 0 Gloam, seat 1 Bastion`. Windows B and C open `main.tscn` on those seats. Swap the `--class` flags and the seats follow the new ids.
+
+Buttons, no CLI: window A presses **Host dedicated**. Windows B and C press one of **Kestrel**, **Ironjaw**, **Mender**, **Gloam**, **Bastion**, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the listen-host duel and ignore the class pick.
+
+### Godot chrome — RPC and snapshot fields
+
+Client → dedicated authority:
+
+| Field | RPC | Args |
+| --- | --- | --- |
+| `select_class` | `rpc_select_class` | `class_id: String` |
+| `queue` | `rpc_enqueue` | none |
+
+Authority → client:
+
+| Field | RPC | Args |
+| --- | --- | --- |
+|  | `rpc_class_result` | `{ok, class_id, reason}` |
+|  | `rpc_queue_result` | `{status, reason}` — `status` is `waiting`, `matched`, or `rejected` |
+| `match_assigned` | `rpc_match_assigned` | `{type: "match_assigned", seat, class_id, classes, match_id}` after the state push |
+|  | `rpc_push_state` | packed snapshot (existing) |
+
+Reject reasons: `invalid_class`, `class_required`, `already_queued`, `already_matched`, `not_dedicated`, `no_seat`.
+
+`reset_match` config (authority): `classes: ["gloam", "bastion"]` or `seat_classes: {0: "gloam", 1: "bastion"}`. Unknown ids fall back to Kestrel then Ironjaw. Snapshot copies them on `match_config.classes` and `match_config.seat_classes`.
+
+`snapshot.prematch`: `phase` is `SELECT_CLASS`, `MATCHMAKING`, or `MATCH`; `local_class_id`, `local_queued`, `opponent_queued`, `match_live`. `snapshot.server_mode` is `dedicated` or `host`. `snapshot.net.dedicated` stays true on a dedicated client's hydrated view.
+
+Unit fields and `unit.resources`: `pulse` (Mender, 0–6), `umbral` (Gloam, 0–4), `shades` (max 2), `aegis` (Bastion, 0–4), plus `mastery` and `resist` at 0. Snap Wall cells are `snapshot.blocked_tiles` (`x`, `y`, `pos`, `turns`) while a Bastion is in the match, else `[]`. The cast event type is `snap_wall` (`to` and `cells`). There is no `walls` event.
+
+`open_can_wait` (submit reason, not resolved): Nightfold; Intercept when more than one Bastion could guard; Neutral primary scope; AoE versus Invisible; Heartstop immunity refresh, heal overflow, and shield stacking; the Water Ward 24 rider (Ward base stays 20); cone/ward masks.
+
+Headless: `godot --headless --path . -s res://tests/run_matchmaking_tests.gd`.
 
 ## Live elevation chrome (Phase A cutover)
 

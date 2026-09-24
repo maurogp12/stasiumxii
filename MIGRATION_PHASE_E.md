@@ -1,6 +1,6 @@
 # Phase E — host core (listen-host and dedicated)
 
-**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, and not login. The dedicated process is also the SELECT_CLASS queue host (`kestrel` / `ironjaw` allowlist).
+**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. It also runs pre-match `SELECT_CLASS` for the Locked allowlist `kestrel` | `ironjaw` | `mender` | `gloam` | `bastion`. The optional **listen-host** window is the same host core with seat 0 on that process and stays a fixed Kestrel / Ironjaw duel. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer and not login.
 
 Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` directly when `NetSession` is HOTSEAT.
 
@@ -20,17 +20,15 @@ The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Mar
 godot --headless --path . -- --dedicated 7777
 ```
 
-Queue clients confirm a class, then enqueue. The RPC surface is `rpc_select_class` → `rpc_class_result` `{ok, illegal, reason, class_id}`, `rpc_enqueue` → `rpc_queue_result` `{ok, reason, queued}`, then `rpc_match_assigned` `{seat, class_id, match_id, packed}`. Seat 0 is the first confirmed player and seat 1 is the second. The allowlist is `kestrel` and `ironjaw`. Listen-host is unchanged: that window is seat 0 (Kestrel) and the guest is seat 1 (Ironjaw).
-
-Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request.
+The process does not start Kestrel vs Ironjaw. Clients confirm a class (`rpc_select_class` → `rpc_class_result` `{ok, class_id, reason}`) and enter the queue (`rpc_enqueue` → `rpc_queue_result` `{status, reason}` where status is `waiting`, `matched`, or `rejected`). A pair is `rpc_match_assigned` `{type: "match_assigned", seat, class_id, classes, match_id}`. The board hydrates from the snapshot push. `NetSession.match_assigned()` is true once that match is live. Join order assigns seat 0, then seat 1. The class on that seat is the confirmed `class_id`. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and respawns the paired class ids. Locked card spells resolve in CombatSim. Chrome does not stub them as `backend_pending`. Nightfold and the other `open_can_wait` edges stay gated.
 
 A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
 
-**Listen-host** remains behind `--host`. That window is seat 0 and the authority. One guest is seat 1. After a guest disconnect, the listen-host slot can be taken again. The dedicated stub does not do that.
+**Listen-host** remains behind `--host`. That window is seat 0 (Kestrel) and the authority. One guest is seat 1 (Ironjaw). It does not run `SELECT_CLASS`. After a guest disconnect, the listen-host slot can be taken again. The dedicated stub does not do that.
 
 Hot-seat is the default. `--hotseat` forces it.
 
-The Intent/`submit` envelope is the same on every path.
+The Intent/`submit` envelope is the same on every path. No login, Pulse, or reconnect.
 
 ## Unchanged API
 
@@ -118,7 +116,8 @@ Godot HUD:
 
 ## Out of scope (do not invent)
 
-- Matchmaking, login, relay
+- Login, relay, Pulse, reconnect
+- Folding the dedicated queue into listen-host (host stays Kestrel, guest stays Ironjaw on that path)
 - Full reconnect (dedicated disconnect is a stub: the seat stays reserved)
 - MultiplayerSynchronizer
 - WebSocket / HTML5 client
@@ -126,7 +125,8 @@ Godot HUD:
 - Height → hit / facing / LoS
 - New Advance costs
 - Changing Locked kit numbers
-- Blends / Residue / Gloam / Pulse
+- Blends / Residue / Pulse
+- Invented resolution for workbook `open_can_wait` edges (Nightfold, multi-guard Intercept, AoE vs Invisible, shield stack, Ward 24). Mender / Gloam / Bastion Locked numbers are in.
 
 ## Local still works
 

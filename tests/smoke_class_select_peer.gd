@@ -54,13 +54,13 @@ func _boot() -> void:
 		quit(1)
 		return
 	var deadline := Time.get_ticks_msec() + 8000
-	while not net.matched and _status != "class_rejected" and _status != "queue_rejected" and Time.get_ticks_msec() < deadline:
+	while not net.match_assigned() and _status != "class_rejected" and _status != "queue_rejected" and Time.get_ticks_msec() < deadline:
 		await process_frame
 	if _status == "class_rejected" or _status == "queue_rejected":
 		print("REJECT %s" % _status)
 		quit(1)
 		return
-	if not net.matched:
+	if not net.match_assigned():
 		print("NO MATCH")
 		quit(1)
 		return

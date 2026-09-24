@@ -1,0 +1,57 @@
+{
+  "stamp": "workbook_v0.6_SELECT_CLASS_Lock_2026-09-23",
+  "roster": ["kestrel", "ironjaw", "mender", "gloam", "bastion"],
+  "kits": {
+    "mender": {
+      "display": "Mender",
+      "element": ["Water", "Water"],
+      "resource": {"id": "pulse", "min": 0, "max": 6},
+      "hp": 80, "mastery": 0, "resist": 0,
+      "passive": {"id": "triage", "heal_mult": 1.25, "hp_threshold": 0.4, "applies_to_ally_heartstop": true, "applies_to_enemy_heartstop": false},
+      "spells": [
+        {"id": "mend", "ap": 3, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "16H FLEX ally", "notes": "miss/crit OK; no facing"},
+        {"id": "pulse_tap", "ap": 2, "mp": 0, "range": [0, 3], "engine": "spend 1 pulse", "effect": "10H FLEX ally", "notes": "miss/crit OK"},
+        {"id": "ward", "ap": 3, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "20HP shield 2 turns FLEX", "notes": "miss OK; no crit"},
+        {"id": "cleanse", "ap": 2, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "LOCK Neutral remove 1 CC", "notes": "no roll"},
+        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 4 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=10 + skip next MP", "notes": "FLEX; miss/crit OK"}
+      ]
+    },
+    "gloam": {
+      "display": "Gloam",
+      "element": ["Air", "Neutral"],
+      "resource": {"umbral": {"min": 0, "max": 4}, "shades": {"max": 2}},
+      "hp": 80, "mastery": 0, "resist": 0,
+      "passive": {"id": "backstab", "mult": 1.35, "replaces_back": 1.2},
+      "spells": [
+        {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "13D FLEX weapon", "notes": "backstab applies"},
+        {"id": "drop_shade", "ap": 1, "mp": 0, "range": [1, 2], "engine": "+1 shade max 2", "effect": "LOCK Neutral Shade 3 turns", "notes": "no roll"},
+        {"id": "ambush", "ap": 4, "mp": 0, "range": [1, 4], "engine": "spend shade only if origin shade", "effect": "22D after jump FLEX", "notes": "origin=self if Invisible else Shade; dest empty back; MISS: no teleport, shade kept, invisible kept, 4AP spent"},
+        {"id": "fade", "ap": 2, "mp": 1, "range": "self", "engine": "+1 umbral", "effect": "LOCK Neutral Invisible", "notes": "no roll"},
+        {"id": "nightfold", "ap": 4, "mp": 0, "range": [0, 6], "engine": "shade + umbral 2+; clear umbral", "effect": "22D each adjacent after blink to Shade", "notes": "can-wait: shade commit-on-cast vs global miss refund"}
+      ]
+    },
+    "bastion": {
+      "display": "Bastion",
+      "element": ["Earth", "Earth"],
+      "resource": {"id": "aegis", "min": 0, "max": 4},
+      "hp": 80, "mastery": 0, "resist": 0,
+      "passive": {"id": "intercept", "transfer": 0.4, "once_per_bastion_turn_cycle": true, "excludes": ["miss", "magma_ticks", "self_damage"]},
+      "spells": [
+        {"id": "bash", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "11D FLEX melee"},
+        {"id": "plant", "ap": 2, "mp": 0, "range": [1, 2], "engine": "+1 aegis", "effect": "LOCK Neutral ward tile 3 turns; allies resist next push", "notes": "no roll"},
+        {"id": "hold_line", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "7D/body FLEX front cone 3; +1MP exit tax 1 turn on connect"},
+        {"id": "snap_wall", "ap": 1, "mp": 0, "range": [1, 2], "engine": "spend 2 aegis", "effect": "LOCK Neutral 1-tile blocked 2 turns", "notes": "blocks walk/Gust; ships with Bastion; 2-class board stays wall-less"},
+        {"id": "aegis_break", "ap": 4, "mp": 0, "range": [1, 2], "engine": "gate aegis 3+", "effect": "HIT: 26D/body + push1 + clear ALL aegis; MISS: spend 0"}
+      ]
+    }
+  },
+  "open_can_wait": [
+    "nightfold_miss_shade_vs_global_refund",
+    "intercept_reset_multi_guard_pipeline",
+    "neutral_primary_scope",
+    "aoe_vs_invisible",
+    "heartstop_immunity_clock_cc_priority_heal_overflow_shield_stack",
+    "water_ward_rider_24_vs_ward_base_20",
+    "cone_ward_masks"
+  ]
+}
