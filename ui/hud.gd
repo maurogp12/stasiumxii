@@ -1137,7 +1137,8 @@ func _advance_hover_dest(from: Vector2i, units: Array) -> Vector2i:
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
 		occupied[_as_cell(unit.get("pos", Vector2i(-1, -1)))] = true
-	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+	# Advance hover samples an orthogonal neighbor. Diagonals and Manhattan 2 are illegal.
+	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
 		var dest: Vector2i = from + delta
 		if dest.x < 0 or dest.y < 0 or dest.x > 7 or dest.y > 7:
 			continue
