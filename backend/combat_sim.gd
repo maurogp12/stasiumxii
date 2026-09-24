@@ -132,8 +132,12 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	var kestrel_facing: String = str(config.get("kestrel_facing", "E"))
 	var ironjaw_facing: String = str(config.get("ironjaw_facing", "W"))
 	# Live path: no board seats until place. skip_deploy / explicit pos is combat fixture.
-	_units.append(_make_unit(0, SpellKits.CLASS_KESTREL, "Kestrel", "air", UNPLACED, kestrel_facing, false))
-	_units.append(_make_unit(1, SpellKits.CLASS_IRONJAW, "Ironjaw", "earth", UNPLACED, ironjaw_facing, false))
+	# Optional seat_classes {0: class_id, 1: class_id}. Missing or unknown ids keep
+	# the Locked default roster (seat 0 Kestrel, seat 1 Ironjaw). Keys may be int or "0"/"1".
+	var class0 := _roster_class(config, 0, SpellKits.CLASS_KESTREL)
+	var class1 := _roster_class(config, 1, SpellKits.CLASS_IRONJAW)
+	_units.append(_make_unit(0, class0, SpellKits.class_label(class0), SpellKits.class_element(class0), UNPLACED, kestrel_facing, false))
+	_units.append(_make_unit(1, class1, SpellKits.class_label(class1), SpellKits.class_element(class1), UNPLACED, ironjaw_facing, false))
 	_apply_setup_overrides(config)
 
 	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos")
@@ -144,7 +148,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		_force_spawn(0, kestrel_pos)
 		_force_spawn(1, ironjaw_pos)
 		_flow.skip_to_combat()
-		_begin_combat("Kestrel's turn. 6 AP / 3 MP.")
+		_begin_combat("%s's turn. 6 AP / 3 MP." % str(_units[0].get("name", "Kestrel")))
 	else:
 		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
 		_last_events = [{
@@ -830,6 +834,17 @@ func _phase_a_damage(base: int, facing_mult: float) -> int:
 	return roundi(raw)
 
 
+func _roster_class(config: Dictionary, seat: int, fallback: String) -> String:
+	var raw: Variant = config.get("seat_classes", {})
+	if typeof(raw) != TYPE_DICTIONARY:
+		return fallback
+	var table: Dictionary = raw
+	var picked := str(table.get(seat, table.get(str(seat), ""))).strip_edges().to_lower()
+	if SpellKits.is_locked_class(picked):
+		return picked
+	return fallback
+
+
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String, placed: bool = true) -> Dictionary:
 	var in_combat := placed
 	return {
@@ -927,7 +942,7 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 	_intent_log.append(intent)
 	if _flow.is_combat():
 		_lock_all_units()
-		_begin_combat("Positions locked. Kestrel's turn. 6 AP / 3 MP.")
+		_begin_combat("Positions locked. %s's turn. 6 AP / 3 MP." % str(_units[0].get("name", "Kestrel")))
 		# _begin_combat replaces last_events; prepend the ready that triggered it.
 		_last_events.insert(0, {
 			"type": "ready",

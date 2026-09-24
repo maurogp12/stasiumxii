@@ -1,6 +1,6 @@
 # Phase E — host core (listen-host and dedicated)
 
-**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer, and not matchmaking or login.
+**Status:** Director milestone A. The **dedicated server process** owns CombatSim and has no seat. The optional **listen-host** window is the same host core with seat 0 on that process. Transport is **ENet** via Godot 4 `MultiplayerAPI` (`ENetMultiplayerPeer` + RPC). This is **not** MultiplayerSynchronizer and not login. Dedicated clients pick a Locked class before the duel (see SELECT_CLASS).
 
 Local hot-seat on `main.tscn` is unchanged: it still calls `CombatSim.submit` directly when `NetSession` is HOTSEAT.
 
@@ -20,7 +20,7 @@ The dedicated server process owns the match, the turn, the 30s timer, HP/MP, Mar
 godot --headless --path . -- --dedicated 7777
 ```
 
-First joiner is seat 0 (Kestrel). Second joiner is seat 1 (Ironjaw). Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request.
+First joiner is seat 0. Second joiner is seat 1. Class is not the seat: each client confirms `kestrel` or `ironjaw`, then queues. Seat 0 may ask the server for a fresh `reset_match`. The server ignores any seed, rolls, or positions on that request and keeps the confirmed classes.
 
 A disconnect is a stub: that seat stays reserved and is not given to a new joiner. There is no reconnect policy.
 
@@ -111,12 +111,47 @@ Godot HUD:
 
 - TIME bar = `turn_time_seconds` / `turn_time_limit` (or `ceil(turn_time_remaining)`).
 - **Your Turn** vs **Opponent's Turn** = `local_seat == active_seat` (hot-seat `local_seat < 0` keeps the active name).
-- Kit buttons = unit at `local_seat` (hot-seat falls back to `active_seat`). The snapshot does **not** encode “show active kit”.
+- Kit buttons = the unit at `local_seat`, using that unit's `class_id` (hot-seat falls back to `active_seat`). The snapshot does **not** encode “show active kit”. Seat 0 is not hard-coded to Kestrel when `class_id` is present.
 - Guest never starts its own countdown.
+
+## SELECT_CLASS (dedicated clients)
+
+Chrome calls these names. The authority validates. Clients do not write the roster.
+
+| Call / signal | Direction | Meaning |
+| --- | --- | --- |
+| `select_class(class_id: String)` | Client → `rpc_select_class` | Ask the server to lock this seat's class. |
+| `signal class_selected(class_id: String)` | Server → `rpc_class_selected` | Accept. `class_id` is lowercase `kestrel` or `ironjaw`. |
+| `signal class_rejected(reason: String, class_id: String)` | Server → `rpc_class_rejected` | Reject. `reason` is `invalid_class`, `no_seat`, `not_connected`, `not_your_seat`, `already_queued`, or `class_not_confirmed`. |
+| `enter_matchmaking()` | Client → `rpc_enter_matchmaking` | Queue after a confirmed class. |
+| `signal matchmaking_changed(status: String)` | Server → `rpc_matchmaking_status` | `waiting` until the other seat queues, then `matched`. |
+| `signal match_found(snapshot: Dictionary)` | Server → `rpc_match_found` | Duel snapshot is ready. Kit bar reads `units[].class_id`. |
+
+Locked roster is only `kestrel` and `ironjaw`. Anything else is `invalid_class`.
+
+`reset_match` config key the authority passes (clients never send this):
+
+```
+seat_classes: { 0: "ironjaw", 1: "kestrel" }
+```
+
+Int keys or `"0"` / `"1"`. Missing or unknown ids keep the default roster (seat 0 Kestrel, seat 1 Ironjaw) so hot-seat and listen-host stay unchanged.
+
+Per-viewer snapshot block `prematch` (also `server_mode`: `dedicated` or `host`):
+
+| Field | Meaning |
+| --- | --- |
+| `phase` | `SELECT_CLASS`, `MATCHMAKING`, or `MATCH` |
+| `local_class_id` | This viewer's confirmed class, or `""` |
+| `local_queued` | This viewer has entered the queue |
+| `opponent_queued` | The other seat has entered the queue |
+| `match_live` | The duel snapshot is the one to paint |
+
+After `match_live`, `units[].class_id` (and that unit's `spells`) is the kit. `kestrel_pos` / `ironjaw_pos` remain seat-slot fixture keys, not class identity.
 
 ## Out of scope (do not invent)
 
-- Matchmaking, login, relay
+- Login, relay
 - Full reconnect (dedicated disconnect is a stub: the seat stays reserved)
 - MultiplayerSynchronizer
 - WebSocket / HTML5 client

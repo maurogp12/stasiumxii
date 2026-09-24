@@ -31,8 +31,9 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 | `backend/match_flow.gd` (`MatchFlow`, owned by CombatSim) | Locked phase + simultaneous ready. Proposed (shipped live) seed-based ~6-cell blob sampler; `legal_deploy_cells` / `deploy_zone_cells` come from those blobs. Owns `PHASE_A_DEMO_TILES` / `phase_a_demo_tiles()` — Locked 8×8 **terrain** crop of Mauro’s 12×12 at origin (row 2, col 2) — and `generate_noise_elevations(seed)` for z 0–3. #31 border halves stay the previous Locked baseline. Proto stays reference. |
 | `backend/event_bus.gd` (autoload `EventBus`) | Forwards events to listeners. Does not mutate combat. |
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
-| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. **Listen-host** (`--host`) is the same core with seat 0 in that window. Clients submit Intent and apply snapshot/events. HOTSEAT leaves `main.tscn` on the local path. RPC only (no scene sync). |
-| `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. |
+| `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. **Listen-host** (`--host`) is the same core with seat 0 in that window. Dedicated clients call `select_class` / `enter_matchmaking` before the duel. Clients submit Intent and apply snapshot/events. HOTSEAT leaves `main.tscn` on the local path. RPC only (no scene sync). |
+| `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. Join opens class select when the server is dedicated. |
+| `scenes/class_select.tscn` | Kestrel or Ironjaw, Confirm, Find Match. Server reject and queue wait live here. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -108,6 +109,7 @@ godot --headless --path . -s res://tests/run_elevation_proto_tests.gd
 godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 godot --headless --path . -s res://tests/run_host_validate_tests.gd
 godot --headless --path . -s res://tests/run_net_session_tests.gd
+godot --headless --path . -s res://tests/run_class_select_tests.gd
 ```
 
 ## How to playtest a dedicated host (three processes)
@@ -124,21 +126,29 @@ Local hot-seat is still the default `main.tscn` path. Listen-host remains `--hos
 godot --headless --path . -- --dedicated 7777
 ```
 
-**Machine A — first client (Kestrel / seat 0).** Intent and presentation only:
+**Machine A — first client (seat 0).** Intent and presentation only. After connect, pick Kestrel or Ironjaw, Confirm, then Find Match:
 
 ```bash
 godot --path . --position 40,40 -- --join <server-ip>:7777
 ```
 
-**Machine C — second client (Ironjaw / seat 1):**
+**Machine C — second client (seat 1).** Pick the other class, Confirm, Find Match:
 
 ```bash
 godot --path . --position 1000,40 -- --join <server-ip>:7777
 ```
 
-Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats: first client is Kestrel, second is Ironjaw. Seat 0’s **New Match** asks the server to reset; the server picks the new seed. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. Class is the Confirm step, not the seat: one client can be Ironjaw on seat 0 and the other Kestrel on seat 1. The server rejects any class outside `kestrel` / `ironjaw`. Find Match waits until both seats are queued, then the duel starts and the kit bar follows `units[local_seat].class_id`. Seat 0’s **New Match** asks the server to reset; the server picks the new seed and keeps the confirmed classes. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
 
-Or open `scenes/online_lobby.tscn` on each client and **Join match** with the server IP and `7777`. **Host match** on that lobby is the listen-host path below, not the dedicated process.
+Or open `scenes/online_lobby.tscn` on each client and **Join match**. That opens class select. **Host match** on that lobby is still listen-host (no class pick). **Local hot-seat** stays the single-window path.
+
+Opposite classes over ENet (seat 0 Ironjaw, seat 1 Kestrel). Start the server first. Each client prints `SEAT n CLASS class_id`. `--class mender` prints `REJECT invalid_class`.
+
+```bash
+godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --serve 17777
+godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --play 127.0.0.1:17777 --class ironjaw
+godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --play 127.0.0.1:17777 --class kestrel
+```
 
 ## How to playtest online (listen-host, optional)
 
@@ -156,11 +166,11 @@ godot --path . --position 1000,40 -- --join 127.0.0.1:7777
 
 Or open `scenes/online_lobby.tscn`, **Host match** on one window and **Join match** (`127.0.0.1` / `7777`) on the other. **Local hot-seat** on that lobby returns to the unchanged single-window path.
 
-Play (dedicated or listen-host): each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter** (seat 0 always Kestrel spells, seat 1 always Ironjaw) even while watching. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
+Play (dedicated or listen-host): each seat places in its deploy blob and presses its Ready. After both Ready, only the active seat can walk / cast / End Turn. **Kit chrome stays on your fighter.** Dedicated duels paint that kit from `units[local_seat].class_id` (seat 0 can be Ironjaw). Listen-host still seats Kestrel then Ironjaw. The bar stays on your class while you watch. Both windows show the host 30s TIME clock from `turn_time_seconds` (ceil of `turn_time_remaining`, limit 30, `turn_timer: "host"`) and **Your Turn** / **Opponent's Turn** (`local_seat` vs `active_seat`, also `net.local_seat` / `net.active_seat`). Clients never roll and never tick the clock. Authority expiry auto End Turns — chrome only paints. On listen-host, New Match is the host window. On a dedicated server, New Match is seat 0’s request.
 
 Listen-host LAN: replace `127.0.0.1` with the host machine’s IP. UDP **7777** must be reachable. Anonymous — anyone who can reach the port joins as Ironjaw (one guest).
 
-Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
+Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd` + `run_class_select_tests.gd`.
 
 ## Live elevation chrome (Phase A cutover)
 

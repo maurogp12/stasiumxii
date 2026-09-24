@@ -142,6 +142,27 @@ static func class_spells(class_id: String) -> Array:
 	return []
 
 
+## Locked roster for SELECT_CLASS. Unknown ids are not a kit.
+static func is_locked_class(class_id: String) -> bool:
+	return class_id == CLASS_KESTREL or class_id == CLASS_IRONJAW
+
+
+static func class_label(class_id: String) -> String:
+	if class_id == CLASS_IRONJAW:
+		return "Ironjaw"
+	if class_id == CLASS_KESTREL:
+		return "Kestrel"
+	return ""
+
+
+static func class_element(class_id: String) -> String:
+	if class_id == CLASS_IRONJAW:
+		return "earth"
+	if class_id == CLASS_KESTREL:
+		return "air"
+	return ""
+
+
 static func has_spell(class_id: String, spell_id: String) -> bool:
 	return spell_id in class_spells(class_id)
 

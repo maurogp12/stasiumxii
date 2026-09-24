@@ -40,6 +40,7 @@ const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const STEP_SEC: float = 0.28
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
+const CLASS_SELECT_SCENE := "res://scenes/class_select.tscn"
 
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
@@ -53,6 +54,7 @@ var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
 var _skip_local_net_echo: bool = false
+var _left_for_class: bool = false
 
 
 func _ready() -> void:
@@ -82,6 +84,12 @@ func _boot() -> void:
 	if net != null:
 		if not net.state_changed.is_connected(_on_net_state):
 			net.state_changed.connect(_on_net_state)
+		if net.is_client() and net.awaiting_class_select():
+			_go_class_select()
+			return
+		# Dedicated waits for SELECT_CLASS + queue. Do not seed the default roster.
+		if net.is_dedicated() and not net.match_assigned():
+			return
 		if net.is_online() or net.is_connecting():
 			if net.is_authority():
 				net.reset_match({})
@@ -97,6 +105,13 @@ func _finish_boot() -> void:
 	_booted = true
 	_refresh()
 	_hydrate_turn_clock()
+
+
+func _go_class_select() -> void:
+	if _left_for_class:
+		return
+	_left_for_class = true
+	get_tree().change_scene_to_file(CLASS_SELECT_SCENE)
 
 
 func _net() -> Node:
@@ -130,6 +145,12 @@ func _mark_local_net_echo() -> void:
 func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if not _booted:
 		_skip_local_net_echo = false
+		var net := _net()
+		if net != null and net.is_client() and net.awaiting_class_select():
+			_go_class_select()
+			return
+		if net != null and net.is_dedicated() and not net.match_assigned():
+			return
 		_finish_boot()
 		return
 	if _skip_local_net_echo:

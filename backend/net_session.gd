@@ -8,6 +8,13 @@ extends Node
 ## Another machine is a different --join address on this same host core.
 ## Hot-seat is the default (mode HOTSEAT → CombatSim.submit directly).
 ## Dedicated disconnect is a stub: the seat stays reserved. No reconnect.
+## SELECT_CLASS stub for dedicated clients (Backend can replace the RPC bodies):
+## select_class(class_id: String) → authority validates the Locked roster
+## (kestrel, ironjaw only). signal class_selected(class_id) on accept.
+## signal class_rejected(reason, class_id) on reject (invalid_class, no_seat, …).
+## enter_matchmaking() after a confirmed class. Both seats queued → reset_match
+## with seat_classes {0, 1}. Snapshot units[].class_id is the kit source.
+## Clients send the call only. They do not write the roster.
 
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
@@ -20,6 +27,13 @@ const TRANSPORT := "enet"
 
 signal state_changed(events: Array, snapshot: Dictionary)
 signal connection_changed(status: String)
+## Accepted class_id. Fired on the authority and, via RPC, on that client.
+signal class_selected(class_id: String)
+## reason: invalid_class | no_seat | not_connected | not_your_seat | not_authority | already_queued | class_not_confirmed
+signal class_rejected(reason: String, class_id: String)
+## status: waiting | matched
+signal matchmaking_changed(status: String)
+signal match_found(snapshot: Dictionary)
 
 var mode: int = Mode.HOTSEAT
 var local_seat: int = -1
@@ -42,6 +56,14 @@ var _signals_wired: bool = false
 var _seat_peer: Array[int] = [0, 0]
 ## True once a seat has been given out. Dedicated keeps this after disconnect.
 var _seat_held: Array[bool] = [false, false]
+## Server-owned roster. Clients read confirmed_class_id only after the server accepts.
+var confirmed_class_id: String = ""
+var queue_status: String = ""
+var _client_match_live: bool = false
+var _queue_match_started: bool = false
+var _seat_class: Array[String] = ["", ""]
+var _seat_confirmed: Array[bool] = [false, false]
+var _seat_queued: Array[bool] = [false, false]
 
 
 func _ready() -> void:
@@ -149,6 +171,8 @@ func return_to_hotseat() -> void:
 	last_snapshot = {}
 	last_events = []
 	last_result = {}
+	_clear_client_prematch()
+	_clear_roster()
 	connection_changed.emit("hotseat")
 	_update_window_title()
 
@@ -175,6 +199,7 @@ func start_client(address: String, port: int = DEFAULT_PORT) -> Dictionary:
 	mode = Mode.CLIENT
 	# Seat comes from the authority packet (listen-host guest = 1, dedicated = join order).
 	local_seat = -1
+	_clear_client_prematch()
 	join_address = address
 	listen_port = port
 	_wire_peer_signals()
@@ -201,6 +226,73 @@ func _open_server(port: int, max_clients: int, next_mode: int, seat: int, status
 	return {"ok": true, "reason": "", "port": port, "transport": TRANSPORT, "mode": mode_name()}
 
 
+## Client entry. Sends class_id to the authority. Does not apply it locally.
+func select_class(class_id: String) -> Dictionary:
+	return select_class_for_seat(local_seat, class_id)
+
+
+## Authority entry (RPC and tests). Seat is the peer's seat, never a client argument.
+func select_class_for_seat(seat: int, class_id: String) -> Dictionary:
+	var id := _normalize_class_id(class_id)
+	if is_client():
+		if seat < 0:
+			class_rejected.emit("no_seat", id)
+			return _class_fail("no_seat", id)
+		if seat != local_seat:
+			class_rejected.emit("not_your_seat", id)
+			return _class_fail("not_your_seat", id)
+		if not _rpc_ready():
+			class_rejected.emit("not_connected", id)
+			return _class_fail("not_connected", id)
+		rpc_select_class.rpc_id(1, id)
+		return {"ok": true, "pending": true, "reason": "", "class_id": id}
+	if not is_authority():
+		class_rejected.emit("not_authority", id)
+		return _class_fail("not_authority", id)
+	return _authority_select_class(seat, id)
+
+
+## Client entry. Queues the confirmed class. Match starts when both seats queue.
+func enter_matchmaking() -> Dictionary:
+	return enter_matchmaking_for_seat(local_seat)
+
+
+func enter_matchmaking_for_seat(seat: int) -> Dictionary:
+	if is_client():
+		if seat < 0:
+			return _class_fail("no_seat", confirmed_class_id)
+		if not _rpc_ready():
+			return _class_fail("not_connected", confirmed_class_id)
+		rpc_enter_matchmaking.rpc_id(1)
+		return {"ok": true, "pending": true, "reason": "", "status": "queued", "class_id": confirmed_class_id}
+	if not is_authority():
+		return _class_fail("not_authority", "")
+	return _authority_enter_matchmaking(seat)
+
+
+## Dedicated clients stay on class select until the server starts the duel.
+## Listen-host packets set this false so that join path still opens the board.
+func awaiting_class_select() -> bool:
+	if not is_client():
+		return false
+	return not _client_match_live
+
+
+## True once a dedicated queue has started the duel. Listen-host is always assigned.
+func match_assigned() -> bool:
+	if is_client():
+		return _client_match_live
+	if is_dedicated():
+		return _queue_match_started
+	return true
+
+
+func server_mode() -> String:
+	if is_authority() or is_hotseat():
+		return mode_name()
+	return str(last_snapshot.get("server_mode", ""))
+
+
 func reset_match(config: Dictionary = {}) -> Dictionary:
 	if mode == Mode.CLIENT:
 		if local_seat != HOST_SEAT:
@@ -214,6 +306,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		if local_sim == null:
 			return _fail("no_sim")
 		return local_sim.reset_match(config)
+	config = _apply_locked_roster(config)
 	var fixture := bool(config.get("fixture", false)) or bool(config.get("skip_deploy", false)) or config.has("rolls")
 	var gate: Dictionary = HostValidate.validate_match_config(config, fixture)
 	if not bool(gate.get("ok", false)):
@@ -332,11 +425,19 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 func decorate_snapshot(snap: Dictionary) -> Dictionary:
 	var out: Dictionary = snap.duplicate(true) if not snap.is_empty() else {}
 	var active_seat := int(out.get("active_seat", -1))
+	var incoming_mode := str(out.get("server_mode", ""))
 	# local_seat = this window. active_seat = whose turn it is (CombatSim).
 	# Godot kit chrome reads local_seat. Do not encode "show active kit".
 	out["local_seat"] = local_seat
 	out["active_seat"] = active_seat
 	out["net_active"] = is_online()
+	# Clients keep the authority stamp. Their own mode is "client".
+	if is_authority():
+		out["server_mode"] = mode_name()
+	elif is_hotseat():
+		out["server_mode"] = "hotseat"
+	else:
+		out["server_mode"] = incoming_mode
 	out["net"] = {
 		"transport": TRANSPORT,
 		"mode": mode_name(),
@@ -411,12 +512,14 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 		if viewer_seat != 0:
 			legal1 = host_sim.legal_intents(1)
 			deploy1 = host_sim.legal_deploy_cells(1)
+	var stamped := decorate_snapshot(snap)
+	stamped["prematch"] = _prematch_for_viewer(viewer_seat)
 	return IntentCodec.encode({
 		"ok": bool(result.get("ok", false)),
 		"illegal": bool(result.get("illegal", false)),
 		"reason": str(result.get("reason", "")),
 		"events": result.get("events", []),
-		"snapshot": decorate_snapshot(snap),
+		"snapshot": stamped,
 		"legal_intents": {0: legal0, 1: legal1},
 		"legal_deploy_cells": {0: deploy0, 1: deploy1},
 		"viewer_seat": viewer_seat,
@@ -438,6 +541,7 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 	}
 	last_events = last_result["events"]
 	last_snapshot = last_result["snapshot"]
+	_note_client_match(last_snapshot)
 	var legal_raw: Dictionary = decoded.get("legal_intents", {})
 	last_legal = {
 		0: legal_raw.get(0, legal_raw.get("0", [])),
@@ -492,6 +596,55 @@ func rpc_submit_intent(encoded: Dictionary) -> void:
 	var seat := seat_for_peer(sender)
 	var intent := IntentCodec.decode_intent(encoded)
 	_authoritative_submit(intent, seat)
+
+
+@rpc("any_peer", "reliable")
+func rpc_select_class(class_id: String) -> void:
+	if not is_authority():
+		return
+	var seat := seat_for_peer(multiplayer.get_remote_sender_id())
+	_authority_select_class(seat, _normalize_class_id(class_id))
+
+
+@rpc("any_peer", "reliable")
+func rpc_enter_matchmaking() -> void:
+	if not is_authority():
+		return
+	_authority_enter_matchmaking(seat_for_peer(multiplayer.get_remote_sender_id()))
+
+
+@rpc("authority", "reliable")
+func rpc_class_selected(class_id: String) -> void:
+	if mode != Mode.CLIENT:
+		return
+	confirmed_class_id = class_id
+	class_selected.emit(class_id)
+
+
+@rpc("authority", "reliable")
+func rpc_class_rejected(reason: String, class_id: String) -> void:
+	if mode != Mode.CLIENT:
+		return
+	class_rejected.emit(reason, class_id)
+
+
+@rpc("authority", "reliable")
+func rpc_matchmaking_status(status: String) -> void:
+	if mode != Mode.CLIENT:
+		return
+	queue_status = status
+	if status == "matched":
+		_client_match_live = true
+	matchmaking_changed.emit(status)
+
+
+@rpc("authority", "reliable")
+func rpc_match_found() -> void:
+	if mode != Mode.CLIENT:
+		return
+	_client_match_live = true
+	queue_status = "matched"
+	match_found.emit(snapshot())
 
 
 @rpc("any_peer", "reliable")
@@ -630,6 +783,7 @@ func _reset_seats() -> void:
 	_seat_held[HOST_SEAT] = false
 	_seat_held[GUEST_SEAT] = false
 	guest_peer_id = 0
+	_clear_roster()
 
 
 func _wire_peer_signals() -> void:
@@ -759,14 +913,198 @@ func _update_window_title() -> void:
 		Mode.DEDICATED:
 			win.title = "STASIUM XII — DEDICATED (no seat)"
 		Mode.CLIENT:
-			if local_seat == HOST_SEAT:
-				win.title = "STASIUM XII — CLIENT (Kestrel / seat 0)"
-			elif local_seat == GUEST_SEAT:
-				win.title = "STASIUM XII — CLIENT (Ironjaw / seat 1)"
-			else:
+			if local_seat < 0:
 				win.title = "STASIUM XII — CLIENT (joining)"
+			else:
+				var label := _client_class_label()
+				if label == "":
+					win.title = "STASIUM XII — CLIENT (seat %d)" % local_seat
+				else:
+					win.title = "STASIUM XII — CLIENT (%s / seat %d)" % [label, local_seat]
 		_:
 			win.title = "STASIUM XII"
+
+
+func _authority_select_class(seat: int, class_id: String) -> Dictionary:
+	if seat != HOST_SEAT and seat != GUEST_SEAT:
+		_emit_class_reject(seat, "no_seat", class_id)
+		return _class_fail("no_seat", class_id)
+	if _seat_queued[seat] or _queue_match_started:
+		_emit_class_reject(seat, "already_queued", class_id)
+		return _class_fail("already_queued", class_id)
+	if not SpellKits.is_locked_class(class_id):
+		_emit_class_reject(seat, "invalid_class", class_id)
+		return _class_fail("invalid_class", class_id)
+	_seat_class[seat] = class_id
+	_seat_confirmed[seat] = true
+	class_selected.emit(class_id)
+	_send_class_selected(seat, class_id)
+	return {"ok": true, "pending": false, "reason": "", "class_id": class_id}
+
+
+func _authority_enter_matchmaking(seat: int) -> Dictionary:
+	if seat != HOST_SEAT and seat != GUEST_SEAT:
+		return _class_fail("no_seat", "")
+	if not _seat_confirmed[seat] or not SpellKits.is_locked_class(_seat_class[seat]):
+		_emit_class_reject(seat, "class_not_confirmed", _seat_class[seat])
+		return _class_fail("class_not_confirmed", _seat_class[seat])
+	if _queue_match_started:
+		_send_status(seat, "matched")
+		return {"ok": true, "pending": false, "reason": "", "status": "matched", "class_id": _seat_class[seat]}
+	_seat_queued[seat] = true
+	if _seat_queued[HOST_SEAT] and _seat_queued[GUEST_SEAT]:
+		return _start_queued_match(seat)
+	queue_status = "waiting"
+	matchmaking_changed.emit("waiting")
+	_send_status(seat, "waiting")
+	return {"ok": true, "pending": false, "reason": "", "status": "waiting", "class_id": _seat_class[seat]}
+
+
+func _start_queued_match(seat: int) -> Dictionary:
+	_queue_match_started = true
+	var config := {
+		"seat_classes": {
+			0: _seat_class[0],
+			1: _seat_class[1],
+		},
+	}
+	var view := reset_match(config)
+	view["status"] = "matched"
+	view["class_id"] = _seat_class[seat]
+	queue_status = "matched"
+	_announce_matched()
+	return view
+
+
+func _announce_matched() -> void:
+	matchmaking_changed.emit("matched")
+	match_found.emit(snapshot())
+	for seat in [HOST_SEAT, GUEST_SEAT]:
+		_send_status(seat, "matched")
+		_send_match_found(seat)
+
+
+func _apply_locked_roster(config: Dictionary) -> Dictionary:
+	if mode != Mode.DEDICATED:
+		return config
+	if not SpellKits.is_locked_class(_seat_class[0]) or not SpellKits.is_locked_class(_seat_class[1]):
+		return config
+	var out := config.duplicate(true)
+	if not out.has("seat_classes"):
+		out["seat_classes"] = {0: _seat_class[0], 1: _seat_class[1]}
+	return out
+
+
+func _prematch_for_viewer(viewer_seat: int) -> Dictionary:
+	var local_class := ""
+	var local_queued := false
+	var opponent_queued := false
+	if viewer_seat == HOST_SEAT or viewer_seat == GUEST_SEAT:
+		local_class = _seat_class[viewer_seat]
+		local_queued = _seat_queued[viewer_seat]
+		var other := GUEST_SEAT if viewer_seat == HOST_SEAT else HOST_SEAT
+		opponent_queued = _seat_queued[other]
+	var live := mode != Mode.DEDICATED or _queue_match_started
+	var phase := "MATCH"
+	if not live:
+		phase = "MATCHMAKING" if local_queued else "SELECT_CLASS"
+	return {
+		"phase": phase,
+		"local_class_id": local_class,
+		"local_queued": local_queued,
+		"opponent_queued": opponent_queued,
+		"match_live": live,
+	}
+
+
+func _note_client_match(snap: Dictionary) -> void:
+	if mode != Mode.CLIENT or snap.is_empty():
+		return
+	var pre := _as_dict(snap.get("prematch", {}))
+	var local_class := str(pre.get("local_class_id", ""))
+	if local_class != "":
+		confirmed_class_id = local_class
+	if bool(pre.get("local_queued", false)) and queue_status != "matched":
+		queue_status = "waiting"
+	if bool(pre.get("match_live", false)) or str(snap.get("server_mode", "")) == "host":
+		_client_match_live = true
+
+
+func _emit_class_reject(seat: int, reason: String, class_id: String) -> void:
+	class_rejected.emit(reason, class_id)
+	if not _can_rpc(peer_for_seat(seat)):
+		return
+	rpc_class_rejected.rpc_id(peer_for_seat(seat), reason, class_id)
+
+
+func _send_class_selected(seat: int, class_id: String) -> void:
+	if not _can_rpc(peer_for_seat(seat)):
+		return
+	rpc_class_selected.rpc_id(peer_for_seat(seat), class_id)
+
+
+func _send_status(seat: int, status: String) -> void:
+	if not _can_rpc(peer_for_seat(seat)):
+		return
+	rpc_matchmaking_status.rpc_id(peer_for_seat(seat), status)
+
+
+func _send_match_found(seat: int) -> void:
+	if not _can_rpc(peer_for_seat(seat)):
+		return
+	rpc_match_found.rpc_id(peer_for_seat(seat))
+
+
+func _clear_roster() -> void:
+	_queue_match_started = false
+	_seat_class = ["", ""]
+	_seat_confirmed = [false, false]
+	_seat_queued = [false, false]
+
+
+func _clear_client_prematch() -> void:
+	confirmed_class_id = ""
+	queue_status = ""
+	_client_match_live = false
+
+
+func _normalize_class_id(class_id: String) -> String:
+	return class_id.strip_edges().to_lower()
+
+
+func _class_fail(reason: String, class_id: String) -> Dictionary:
+	return {"ok": false, "pending": false, "reason": reason, "class_id": class_id}
+
+
+func _client_class_label() -> String:
+	var class_id := confirmed_class_id
+	if class_id == "":
+		class_id = _class_on_seat(local_seat)
+	return SpellKits.class_label(class_id)
+
+
+func _class_on_seat(seat: int) -> String:
+	var units: Array = last_snapshot.get("units", [])
+	for unit in units:
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -1)) == seat:
+			return str(unit.get("class_id", ""))
+	return ""
+
+
+func _rpc_ready() -> bool:
+	return is_inside_tree() and multiplayer.multiplayer_peer != null
+
+
+func _can_rpc(peer_id: int) -> bool:
+	return peer_id > 1 and _rpc_ready()
+
+
+func _as_dict(raw: Variant) -> Dictionary:
+	if typeof(raw) == TYPE_DICTIONARY:
+		return raw
+	return {}
 
 
 func _as_cell_array(raw: Variant) -> Array[Vector2i]:

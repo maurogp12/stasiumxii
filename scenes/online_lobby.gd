@@ -3,6 +3,7 @@ extends Control
 ## Anonymous listen-host lobby. Direct IP join.
 
 const MAIN_SCENE := "res://main.tscn"
+const CLASS_SELECT_SCENE := "res://scenes/class_select.tscn"
 
 var _status: Label
 var _host_port: LineEdit
@@ -38,7 +39,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "ENet (Godot MultiplayerAPI). Host match is optional listen-host: this window is Kestrel and owns the sim. A dedicated process is headless (--dedicated 7777); Join match uses its IP. First joiner is Kestrel, second is Ironjaw. Clients send Intent only. Local hot-seat stays on main.tscn."
+	blurb.text = "ENet (Godot MultiplayerAPI). Host match is optional listen-host: this window is Kestrel and owns the sim. A dedicated process is headless (--dedicated 7777). Join match connects, then you pick Kestrel or Ironjaw before the duel. Clients send Intent only. Local hot-seat stays on main.tscn."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
@@ -112,7 +113,7 @@ func _on_join() -> void:
 		_status.text = "Join failed: %s" % str(result.get("reason", "connect_failed"))
 		return
 	_status.text = "Connecting to %s:%s…" % [_join_ip.text, _join_port.text]
-	_go_main()
+	_go_class_select()
 
 
 func _on_hotseat() -> void:
@@ -126,3 +127,7 @@ func _on_connection(status: String) -> void:
 
 func _go_main() -> void:
 	get_tree().change_scene_to_file(MAIN_SCENE)
+
+
+func _go_class_select() -> void:
+	get_tree().change_scene_to_file(CLASS_SELECT_SCENE)

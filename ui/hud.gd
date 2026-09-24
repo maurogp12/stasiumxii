@@ -25,6 +25,9 @@ var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
+## Left card is seat 0, right card is seat 1. Titles follow units[].class_id.
+var _banner_panels: Array[Panel] = []
+var _banner_titles: Array[Label] = []
 var _turn_label: Label
 var _coach_label: Label
 var _selected_label: Label
@@ -67,6 +70,7 @@ var _turn_label_base: String = ""
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
 ## falls back to active_seat. Snapshot does not encode "show active kit".
+## Spell buttons follow units[kit_seat].class_id, not a hard-coded seat→class map.
 ## Also reads net.local_seat / net.active_seat when the top-level keys are absent.
 ## Advance is never offered unless class_id is ironjaw.
 ## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
@@ -98,6 +102,20 @@ static func kit_seat(snap: Dictionary) -> int:
 	if local_seat >= 0:
 		return local_seat
 	return snap_active_seat(snap)
+
+
+static func unit_for_seat(units: Array, seat: int) -> Dictionary:
+	for unit in units:
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == seat:
+			return unit
+	return {}
+
+
+## Class of the fighter whose kit bar is showing. Empty when that unit has no class_id.
+static func kit_class_id(snap: Dictionary) -> String:
+	var units: Array = snap.get("units", [])
+	var unit := unit_for_seat(units, kit_seat(snap))
+	return str(unit.get("class_id", ""))
 
 
 static func is_local_turn(snap: Dictionary) -> bool:
@@ -598,11 +616,13 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_last_legal = legal.duplicate()
 	_deploying = is_deployment_phase(snap)
 	var units: Array = snap.get("units", [])
-	var kestrel := _unit(units, 0)
-	var ironjaw := _unit(units, 1)
+	var seat0 := _unit(units, 0)
+	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
-	_kestrel_body.text = _unit_card_text(kestrel, active_seat == 0, snap)
-	_ironjaw_body.text = _unit_card_text(ironjaw, active_seat == 1, snap)
+	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
+	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
+	_paint_seat_banner(0, seat0)
+	_paint_seat_banner(1, seat1)
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
@@ -925,6 +945,8 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", Color(1, 1, 1))
 	panel.add_child(title)
+	_banner_panels.append(panel)
+	_banner_titles.append(title)
 	var body := RichTextLabel.new()
 	body.position = Vector2(10, 30)
 	body.size = Vector2(220, 96)
@@ -1024,10 +1046,20 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 
 
 func _unit(units: Array, seat: int) -> Dictionary:
-	for unit in units:
-		if int(unit.get("seat", -1)) == seat:
-			return unit
-	return {}
+	return unit_for_seat(units, seat)
+
+
+func _paint_seat_banner(seat: int, unit: Dictionary) -> void:
+	if unit.is_empty() or seat < 0 or seat >= _banner_titles.size():
+		return
+	var class_id := str(unit.get("class_id", ""))
+	if not SpellKits.is_locked_class(class_id):
+		return
+	var title := _banner_titles[seat]
+	var panel := _banner_panels[seat]
+	var is_kestrel := class_id == SpellKits.CLASS_KESTREL
+	title.text = SpellKits.class_label(class_id)
+	panel.add_theme_stylebox_override("panel", _panel(KESTREL_GREEN if is_kestrel else IRONJAW_RED))
 
 
 func _panel(color: Color) -> StyleBoxFlat:
