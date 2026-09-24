@@ -25,7 +25,8 @@ extends Node2D
 ## CombatSim auto-resolves end_turn when a stunned seat's turn starts.
 ## Client chrome: if CombatSim auto end_turns a stunned seat, show a skip banner.
 ## Occupied push dest toasts PushBlocked (no hop).
-## OOB / truly blocked dest toasts Bounce (no hop). Lava forced-push lands from the snapshot.
+## OOB / truly blocked dest toasts Bounce plus one Impact gain (no hop).
+## Lava forced-push lands from the snapshot and toasts Burn, not Bounce.
 ## Online: NetSession owns submit when a peer is up. Listen-host and the dedicated
 ## process share that authority. Clients send Intent only. Hot-seat still calls
 ## CombatSim.submit directly. The view never rolls.
@@ -136,14 +137,7 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 		return
 	if _busy:
 		return
-	_play_combat_feedback(events)
-	if CombatHUD.events_include_push_blocked(events):
-		_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-		_refresh()
-		return
-	if CombatHUD.events_include_push_bounce(events):
-		_hud.show_toast(CombatHUD.BOUNCE_TOAST)
-		_refresh()
+	if _present_resolve(events):
 		return
 	if CombatHUD.should_play_walk_hops(events):
 		var path_event := _path_event(events)
@@ -460,22 +454,36 @@ func _submit(intent: Dictionary) -> void:
 			return
 	if result.get("ok", false):
 		var events: Array = result.get("events", [])
-		_play_combat_feedback(events)
-		if CombatHUD.events_include_push_blocked(events):
-			_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-			# Occupied dest is a hard body-block. Snapshot already stayed put.
-			_refresh()
-			return
-		if CombatHUD.events_include_push_bounce(events):
-			_hud.show_toast(CombatHUD.BOUNCE_TOAST)
-			# Bounce: unit stayed. Stagger HP/MP already applied in CombatSim.
-			_refresh()
+		if _present_resolve(events):
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
 			return
 	_refresh()
+
+
+## Hot-seat and NetSession both call this. Toasts come from sim events; Burn icons come from the snapshot on refresh.
+## Returns true when the pawn must not hop (occupied block or bounce).
+func _present_resolve(events: Array) -> bool:
+	_play_combat_feedback(events)
+	if CombatHUD.events_include_push_blocked(events):
+		# Occupied dest is a hard body-block. Snapshot already stayed put.
+		_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
+		_refresh()
+		return true
+	if CombatHUD.events_include_push_bounce(events):
+		# Bounce: unit stayed. The toast is Bounce plus the single sim Impact gain.
+		var bounce_toast := CombatHUD.toast_for_events(events)
+		if not bounce_toast.begins_with(CombatHUD.BOUNCE_TOAST):
+			bounce_toast = CombatHUD.BOUNCE_TOAST
+		_hud.show_toast(bounce_toast)
+		_refresh()
+		return true
+	var toast := CombatHUD.toast_for_events(events)
+	if toast != "":
+		_hud.show_toast(toast)
+	return false
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -613,7 +621,9 @@ func _apply_units(snap: Dictionary) -> void:
 		pawn.visible = placed
 		if not placed:
 			continue
-		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)))
+		var raw_events: Variant = snap.get("last_events", [])
+		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
+		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
 		pawn.position = _cell_to_local(cell)
 		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
 

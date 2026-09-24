@@ -12,6 +12,8 @@ const IRONJAW_RED := Color("#8B2E2E")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
+## Lava forced-push lands and applies Burn. Not a Bounce toast.
+const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -266,7 +268,44 @@ static func unit_is_stunned(unit: Dictionary) -> bool:
 static func unit_is_burning(unit: Dictionary) -> bool:
 	if unit.is_empty():
 		return false
-	return int(unit.get("burn_remaining", 0)) > 0
+	return unit_burn_remaining(unit) > 0
+
+
+## Snapshot `burn_remaining` wins when the unit carries it. Status / burn events
+## fill in only when that field is absent. Does not tick or add durations.
+static func unit_burn_remaining(unit: Dictionary, events: Array = []) -> int:
+	if unit.is_empty():
+		return 0
+	if unit.has("burn_remaining"):
+		return maxi(0, int(unit.get("burn_remaining", 0)))
+	var seat := int(unit.get("seat", -999))
+	var remaining := 0
+	var saw := false
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if int(event.get("target_seat", -999)) != seat:
+			continue
+		var kind := str(event.get("type", ""))
+		if kind == "status" and str(event.get("status", "")) == "burn":
+			remaining = int(event.get("remaining", 0))
+			saw = true
+		elif kind == "hit" and bool(event.get("burn_applied", false)):
+			remaining = int(event.get("burn_remaining", 0))
+			saw = true
+		elif kind == "burn" and event.has("remaining"):
+			remaining = int(event.get("remaining", 0))
+			saw = true
+	if not saw:
+		return 0
+	return maxi(0, remaining)
+
+
+## Icon caption. Empty when the snapshot has no turns left.
+static func burn_badge_text(remaining: int) -> String:
+	if remaining <= 0:
+		return ""
+	return "BURN %d" % remaining
 
 
 static func events_include_push_blocked(events: Array) -> bool:
@@ -280,7 +319,21 @@ static func events_include_push_blocked(events: Array) -> bool:
 	return false
 
 
+static func events_include_lava_burn(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if bool(event.get("burn_applied", false)):
+			return true
+		if str(event.get("type", "")) == "status" and str(event.get("status", "")) == "burn":
+			return true
+	return false
+
+
 static func events_include_push_bounce(events: Array) -> bool:
+	# A lava land is a displace, not a bounce, even if a bounce flag is also present.
+	if events_include_lava_burn(events):
+		return false
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -318,12 +371,43 @@ static func should_play_walk_hops(events: Array) -> bool:
 	return false
 
 
+## One Impact number from the hit event. Bounce is that gain only — never +1 stacked with +2.
+static func shoulder_impact_gained(events: Array) -> int:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		if str(event.get("spell", "")) != SpellKits.SHOULDER:
+			continue
+		if str(event.get("engine", "")) != "impact":
+			continue
+		return maxi(0, int(event.get("engine_gained", 0)))
+	return 0
+
+
+static func impact_gain_toast(amount: int) -> String:
+	if amount <= 0:
+		return ""
+	return "+%d Impact" % amount
+
+
 static func toast_for_events(events: Array) -> String:
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
+	if events_include_lava_burn(events):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), LAVA_BURN_TOAST)
 	if events_include_push_bounce(events):
-		return BOUNCE_TOAST
-	return ""
+		return _join_toast(BOUNCE_TOAST, impact_gain_toast(shoulder_impact_gained(events)))
+	return impact_gain_toast(shoulder_impact_gained(events))
+
+
+static func _join_toast(left: String, right: String) -> String:
+	if left == "":
+		return right
+	if right == "":
+		return left
+	return "%s  %s" % [left, right]
 
 
 ## Presentation of a CombatSim auto-skip. Does not submit end_turn.
@@ -923,7 +1007,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	# Director Locked Burn: duration left is the snapshot field host replicas already carry.
 	var burn_note := ""
 	if unit_is_burning(unit):
-		burn_note = "  [b]BURN[/b] %d" % int(unit.get("burn_remaining", 0))
+		burn_note = "  [b]BURN[/b] %d" % unit_burn_remaining(unit)
 	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),

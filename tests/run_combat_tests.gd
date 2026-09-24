@@ -79,6 +79,7 @@ func _run() -> void:
 	_test_stun_suppresses_actions_locked()
 	_test_stun_hud_greys_walk_face_spells()
 	_test_push_blocked_client_toast_no_hop()
+	_test_shoulder_impact_lava_burn_chrome()
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
@@ -2972,7 +2973,7 @@ func _test_stun_hud_greys_walk_face_spells() -> void:
 
 
 func _test_push_blocked_client_toast_no_hop() -> void:
-	# Client: occupied toasts PushBlocked; OOB/lava bounce toasts Bounce. Neither hops.
+	# Client: occupied toasts PushBlocked; OOB bounce toasts Bounce plus +2 Impact. Neither hops.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2987,7 +2988,8 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	eq(CombatHUD.events_include_push_bounce(result["events"]), true, "OOB Shoulder is bounce")
 	eq(CombatHUD.events_include_stagger(result["events"]), true, "OOB Shoulder emits stagger")
 	eq(CombatHUD.should_play_walk_hops(result["events"]), false, "Bounce does not animate a hop")
-	eq(CombatHUD.toast_for_events(result["events"]), CombatHUD.BOUNCE_TOAST, "OOB toast text is Bounce")
+	eq(CombatHUD.toast_for_events(result["events"]), "Bounce  +2 Impact", "OOB toast is Bounce plus +2 Impact")
+	eq(CombatHUD.toast_for_events(result["events"]).contains("+1"), false, "OOB bounce toast is not also +1")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
 	eq(_unit(0)["hp"], 70, "hit + stagger HP still applied")
 	eq(_unit(1)["impact"], 2, "OOB bounce Impact is +2")
@@ -3039,6 +3041,187 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	truthy(pawn_src.contains("flash_hit"), "pawn can flash on hit")
 	truthy(pawn_src.contains("flash_impact"), "pawn can flash Impact")
 	eq(occupied["crit_roll"], false, "crit roll stays OFF")
+	truthy(view.contains("_present_resolve"), "hot-seat and online share resolve chrome")
+	eq(view.split("_present_resolve(").size() >= 3, true, "net state and submit both present resolve chrome")
+	eq(view.contains("hp"), false, "board_view still does not mention hp")
+	eq(pawn_src.contains("burn_remaining -"), false, "pawn does not tick Burn")
+	eq(pawn_src.contains("tick_burn"), false, "pawn does not own Burn ticks")
+	eq(pawn_src.contains("Pulse"), false, "pawn does not invent Pulse")
+
+
+func _test_shoulder_impact_lava_burn_chrome() -> void:
+	# Clean Shoulder: one +1 Impact toast. Not Bounce, not +2.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	var clean: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	var clean_toast := CombatHUD.toast_for_events(clean["events"])
+	eq(clean_toast, "+1 Impact", "clean Shoulder toasts +1 Impact")
+	eq(clean_toast.contains("+2"), false, "clean Shoulder toast is not +2")
+	eq(clean_toast.contains(CombatHUD.BOUNCE_TOAST), false, "clean Shoulder toast is not Bounce")
+	eq(CombatHUD.events_include_push_bounce(clean["events"]), false, "clean Shoulder is not a bounce")
+	eq(CombatHUD.should_play_walk_hops(clean["events"]), false, "Shoulder push does not hop")
+
+	# Advance adjacency Impact stays off this toast. Strike does too.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(4, 4),
+		"kestrel_facing": "N",
+	})
+	_sim.submit({"type": "end_turn"})
+	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 4)})
+	eq(advanced["ok"], true, "Advance still resolves")
+	eq(CombatHUD.toast_for_events(advanced["events"]), "", "Advance does not toast Shoulder Impact")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+	})
+	_sim.submit({"type": "end_turn"})
+	var struck: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3)})
+	eq(struck["ok"], true, "Strike still resolves")
+	eq(CombatHUD.toast_for_events(struck["events"]), "", "Strike does not use the Shoulder Impact toast")
+
+	# Illegal Shoulder still refunds and keeps the REJECT coach. No Impact toast.
+	var illegal: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 3)})
+	eq(illegal["illegal"], true, "out-of-range Shoulder stays illegal")
+	eq(illegal["reason"], "out_of_range", "range reject reason is unchanged")
+	eq(_unit(1)["ap"], 3, "range reject still refunds AP")
+	eq(CombatHUD.toast_for_events(illegal["events"]), "", "illegal Shoulder does not toast Impact")
+	truthy(str(illegal["snapshot"].get("coach", "")).begins_with("REJECT"), "illegal coach stays a REJECT line")
+
+	# Capped bounce: one sim gain, not +1 and +2.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(1, 0),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 3,
+	})
+	_sim.submit({"type": "end_turn"})
+	var clipped: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
+	eq(int(clipped["events"][0]["engine_gained"]), 1, "capped bounce stores the clipped gain")
+	var clipped_toast := CombatHUD.toast_for_events(clipped["events"])
+	eq(clipped_toast, "Bounce  +1 Impact", "capped bounce toasts Bounce and the single sim gain")
+	eq(clipped_toast.contains("+2"), false, "capped bounce does not also toast +2")
+
+	# Lava land: +1 Impact and Burn, never Bounce. Both peers paint the same icon.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+	})
+	_sim.submit({"type": "end_turn"})
+	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
+	eq(walked["illegal"], true, "walk onto lava stays rejected")
+	eq(CombatHUD.toast_for_events(walked["events"]), "", "rejected lava walk does not toast Burn")
+	var lava: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	var lava_toast := CombatHUD.toast_for_events(lava["events"])
+	eq(lava_toast, "+1 Impact  Lava - Burn", "lava land toasts +1 Impact and Burn")
+	eq(lava_toast.contains(CombatHUD.BOUNCE_TOAST), false, "lava land toast is not Bounce")
+	eq(lava_toast.contains("+2"), false, "lava land toast is not +2 Impact")
+	eq(CombatHUD.events_include_push_bounce(lava["events"]), false, "lava land is not a bounce")
+	eq(CombatHUD.events_include_lava_burn(lava["events"]), true, "lava land is a Burn apply")
+	eq(CombatHUD.should_play_walk_hops(lava["events"]), false, "lava land does not hop")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.show_toast(lava_toast)
+	eq(hud.toast_caption(), "+1 Impact  Lava - Burn", "HUD shows the lava Burn toast")
+	hud.render(lava["snapshot"], [])
+	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] 2"), "host card shows Burn duration")
+	var replica_script := load("res://backend/combat_sim.gd")
+	var replica = replica_script.new()
+	replica.apply_host_snapshot(lava["snapshot"])
+	var guest_snap: Dictionary = replica.snapshot()
+	var guest_hud := CombatHUD.new()
+	guest_hud._build()
+	guest_hud.render(guest_snap, [])
+	eq(str(guest_hud._kestrel_body.text), str(hud._kestrel_body.text), "guest card matches the host Burn line")
+	var host_pawn := Pawn.new()
+	host_pawn.apply_snapshot(lava["snapshot"]["units"][0], 1, lava["snapshot"]["last_events"])
+	var guest_pawn := Pawn.new()
+	guest_pawn.apply_snapshot(guest_snap["units"][0], 1, guest_snap["last_events"])
+	eq(host_pawn.burn_badge_label(), "BURN 2", "host pawn badge shows remaining turns")
+	eq(guest_pawn.burn_badge_label(), host_pawn.burn_badge_label(), "guest pawn badge matches the host")
+	eq(host_pawn.burning, true, "host pawn is burning")
+	eq(guest_pawn.burn_remaining, 2, "guest pawn remaining is the snapshot value")
+	var partial: Dictionary = lava["snapshot"]["units"][0].duplicate(true)
+	partial.erase("burn_remaining")
+	var from_events := Pawn.new()
+	from_events.apply_snapshot(partial, 1, lava["snapshot"]["last_events"])
+	eq(from_events.burn_remaining, 2, "status events paint Burn when the unit field is absent")
+	eq(from_events.burn_badge_label(), "BURN 2", "event fallback still shows remaining turns")
+	var authoritative: Dictionary = lava["snapshot"]["units"][0].duplicate(true)
+	authoritative["burn_remaining"] = 1
+	var pinned := Pawn.new()
+	pinned.apply_snapshot(authoritative, 1, lava["snapshot"]["last_events"])
+	eq(pinned.burn_remaining, 1, "snapshot burn_remaining wins over older status events")
+	eq(pinned.burn_badge_label(), "BURN 1", "badge follows the snapshot, not a client add")
+	var held := host_pawn.burn_remaining
+	var ticked: Dictionary = _sim.submit({"type": "end_turn"})
+	eq(host_pawn.burn_remaining, held, "pawn does not tick Burn when the sim does")
+	eq(CombatHUD.events_include_lava_burn(ticked["events"]), false, "a Burn tick is not a new lava land")
+	eq(CombatHUD.toast_for_events(ticked["events"]), "", "a Burn tick does not toast Lava - Burn")
+	var after := Pawn.new()
+	after.apply_snapshot(_unit(0), int(_sim.snapshot()["active_seat"]))
+	eq(after.burn_badge_label(), "BURN 1", "the next snapshot paints the ticked remaining")
+	eq(after.burn_remaining, 1, "ticked remaining comes from the snapshot")
+	host_pawn.free()
+	guest_pawn.free()
+	from_events.free()
+	pinned.free()
+	after.free()
+	hud.free()
+	guest_hud.free()
+	replica.free()
+
+	# A stray bounce flag must not stack +1 and +2 or win over lava.
+	var mixed: Array = [
+		{
+			"type": "hit",
+			"spell": "shoulder",
+			"engine": "impact",
+			"engine_gained": 1,
+			"bounced": true,
+			"burn_applied": true,
+			"burn_remaining": 2,
+		},
+		{"type": "push_bounce"},
+		{"type": "status", "status": "burn", "remaining": 2, "target_seat": 0},
+	]
+	eq(CombatHUD.events_include_push_bounce(mixed), false, "lava events are not Bounce")
+	eq(CombatHUD.toast_for_events(mixed), "+1 Impact  Lava - Burn", "mixed lava events toast Burn once")
+	eq(CombatHUD.toast_for_events(mixed).contains("+2"), false, "mixed lava events do not add +2")
+	var stacked: Array = [
+		{"type": "hit", "spell": "shoulder", "engine": "impact", "engine_gained": 2, "bounced": true},
+		{"type": "push_bounce"},
+		{"type": "hit", "spell": "shoulder", "engine": "impact", "engine_gained": 1},
+	]
+	eq(CombatHUD.toast_for_events(stacked), "Bounce  +2 Impact", "only the first Shoulder gain is toasted")
+	eq(CombatHUD.toast_for_events(stacked).contains("+1"), false, "a second hit does not add +1")
+
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("LAVA_BURN_TOAST"), "HUD names the lava Burn toast")
+	eq(hud_src.contains("Pulse"), false, "HUD does not invent Pulse")
+	eq(hud_src.contains("tick_burn"), false, "HUD does not tick Burn")
 
 
 func _test_legal_intents_new_spell_gates() -> void:
