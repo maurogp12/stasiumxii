@@ -39,7 +39,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "ENet (Godot MultiplayerAPI). Host match is optional listen-host: this window is Kestrel and owns the sim. A dedicated process is headless (--dedicated 7777). Join match connects, then you pick Kestrel or Ironjaw before the duel. Clients send Intent only. Local hot-seat stays on main.tscn."
+	blurb.text = "ENet (Godot MultiplayerAPI). Host match is optional listen-host: this window is Kestrel and owns the sim. A dedicated process is headless (--dedicated 7777). Join match connects, then you pick Kestrel, Ironjaw, Mender, Gloam, or Bastion before the duel. Clients send Intent only. Local hot-seat stays on main.tscn."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 

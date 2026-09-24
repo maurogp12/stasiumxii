@@ -1,7 +1,8 @@
 extends SceneTree
 
-## SELECT_CLASS stub: server validates kestrel/ironjaw, queue starts the duel,
-## kit chrome follows units[].class_id. Hot-seat roster stays the default.
+## SELECT_CLASS stub: server validates the five-id Locked roster, queue starts
+## the duel, kit chrome follows units[].class_id. Hot-seat roster stays the default.
+## mender / gloam / bastion have no kit rows, so the bar stays empty.
 ## Run: godot --headless --path . -s res://tests/run_class_select_tests.gd
 
 var _failed: int = 0
@@ -17,6 +18,8 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_source_contract()
 	_test_server_rejects_invalid_class()
+	_test_five_class_roster_empty_kits()
+	_test_blocked_tiles_chrome()
 	_test_opposite_classes_queue_into_kits()
 	_test_same_class_is_allowed()
 	_test_hotseat_roster_unchanged()
@@ -34,17 +37,33 @@ func _test_source_contract() -> void:
 	truthy(net_src.contains("rpc_select_class"), "client select goes through rpc_select_class")
 	truthy(net_src.contains("rpc_enter_matchmaking"), "queue goes through rpc_enter_matchmaking")
 	truthy(net_src.contains("seat_classes"), "match start passes seat_classes")
-	eq(net_src.contains("Gloam"), false, "net_session does not name an unlocked class")
-	eq(net_src.contains("Mender"), false, "net_session does not name Mender")
-	eq(net_src.contains("Bastion"), false, "net_session does not name Bastion")
+	eq(net_src.contains("Gloam"), false, "net_session does not hardcode a display name")
+	eq(net_src.contains("Mender"), false, "net_session does not hardcode Mender")
+	eq(net_src.contains("Bastion"), false, "net_session does not hardcode Bastion")
+	truthy(net_src.contains("mender, gloam, bastion"), "net_session allowlist comment lists the new ids")
 	var chrome := FileAccess.get_file_as_string("res://scenes/class_select.gd")
 	truthy(chrome.contains("select_class"), "class select calls select_class")
 	truthy(chrome.contains("enter_matchmaking"), "Find Match calls enter_matchmaking")
 	truthy(chrome.contains("Find Match"), "chrome has a Find Match control")
 	truthy(chrome.contains("class_rejected"), "chrome shows a server reject")
-	eq(chrome.contains("Gloam"), false, "class select does not invent Gloam")
-	eq(chrome.contains("Mender"), false, "class select does not invent Mender")
-	eq(chrome.contains("Bastion"), false, "class select does not invent Bastion")
+	truthy(chrome.contains("LOCKED_ROSTER"), "class select paints the Locked roster")
+	truthy(chrome.contains("Kestrel, Ironjaw, Mender, Gloam, Bastion"), "class select shows the five display names")
+	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
+	var spell_block := kits.substr(kits.find("const CLASS_SPELLS"))
+	spell_block = spell_block.substr(0, spell_block.find("const MARKS_CAP"))
+	eq(spell_block.contains("mender"), false, "CLASS_SPELLS has no mender row")
+	eq(spell_block.contains("gloam"), false, "CLASS_SPELLS has no gloam row")
+	eq(spell_block.contains("bastion"), false, "CLASS_SPELLS has no bastion row")
+	eq(SpellKits.LOCKED_ROSTER, ["kestrel", "ironjaw", "mender", "gloam", "bastion"], "roster ids are the five lowercase classes")
+	eq(SpellKits.class_label("mender"), "Mender", "mender display name")
+	eq(SpellKits.class_label("gloam"), "Gloam", "gloam display name")
+	eq(SpellKits.class_label("bastion"), "Bastion", "bastion display name")
+	eq(SpellKits.class_element("mender"), "", "mender has no invented element")
+	eq(SpellKits.class_element("gloam"), "", "gloam has no invented element")
+	eq(SpellKits.class_element("bastion"), "", "bastion has no invented element")
+	eq(SpellKits.class_spells("mender"), [], "mender has no kit row")
+	eq(SpellKits.class_spells("gloam"), [], "gloam has no kit row")
+	eq(SpellKits.class_spells("bastion"), [], "bastion has no kit row")
 	var lobby := FileAccess.get_file_as_string("res://scenes/online_lobby.gd")
 	eq(lobby.contains("matchmaking"), false, "lobby scene does not own the queue")
 	eq(lobby.contains("auth"), false, "lobby does not invent auth")
@@ -58,7 +77,7 @@ func _test_server_rejects_invalid_class() -> void:
 	dedicated.class_rejected.connect(func(reason: String, _class_id: String) -> void:
 		reasons.append(reason)
 	)
-	for bad in ["mender", "gloam", "bastion", "", "  Pulse  "]:
+	for bad in ["pulse", "", "  Pulse  ", "warden"]:
 		var result: Dictionary = dedicated.select_class_for_seat(0, bad)
 		eq(bool(result.get("ok", true)), false, "server rejects %s" % bad)
 		eq(str(result.get("reason", "")), "invalid_class", "reject reason is invalid_class for %s" % bad)
@@ -67,6 +86,80 @@ func _test_server_rejects_invalid_class() -> void:
 	eq(str(early.get("reason", "")), "class_not_confirmed", "queue before confirm is class_not_confirmed")
 	eq(dedicated.match_assigned(), false, "invalid picks do not start a match")
 	_free_dedicated(dedicated)
+
+
+func _test_five_class_roster_empty_kits() -> void:
+	var dedicated := _dedicated()
+	eq(bool(dedicated.select_class_for_seat(0, "Mender").get("ok", false)), true, "seat 0 mender is accepted")
+	eq(bool(dedicated.select_class_for_seat(1, "bastion").get("ok", false)), true, "seat 1 bastion is accepted")
+	eq(str(dedicated.select_class_for_seat(0, "gloam").get("class_id", "")), "gloam", "gloam normalizes and replaces before queue")
+	dedicated.select_class_for_seat(0, "mender")
+	dedicated.enter_matchmaking_for_seat(0)
+	dedicated.enter_matchmaking_for_seat(1)
+	dedicated.reset_match({"fixture": true, "skip_deploy": true, "flat_board": true, "seed": 9})
+	var snap: Dictionary = dedicated.snapshot()
+	var units: Array = snap["units"]
+	eq(str(units[0]["class_id"]), "mender", "seat 0 class_id is mender")
+	eq(str(units[1]["class_id"]), "bastion", "seat 1 class_id is bastion")
+	eq(str(units[0]["name"]), "Mender", "seat 0 name is the display label")
+	eq(int(units[0]["hp"]), 80, "mender HP comes from the snapshot")
+	eq(int(units[0]["max_hp"]), 80, "mender max HP is the sim start value")
+	eq(units[0]["spells"], [], "mender spells stay empty")
+	eq(units[1]["spells"], [], "bastion spells stay empty")
+	eq(str(units[0]["element"]), "", "mender element stays empty")
+	var stuffed: Dictionary = units[0].duplicate(true)
+	stuffed["spells"] = ["mark_shot", "advance"]
+	eq(CombatHUD.offered_cast_ids(stuffed), [], "empty class_spells hides stray spell ids")
+	eq(CombatHUD.offered_cast_ids(units[1]), [], "bastion kit bar has no spells")
+	snap["local_seat"] = 0
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(snap, [])
+	eq(hud._banner_titles[0].text, "Mender", "seat 0 banner is Mender")
+	eq(hud._banner_titles[1].text, "Bastion", "seat 1 banner is Bastion")
+	eq(hud._spell_buttons.is_empty(), true, "empty kit does not invent spell buttons")
+	eq(hud._empty_kit_button.visible, true, "empty kit bar is visible")
+	eq(hud._empty_kit_button.disabled, true, "empty kit bar is disabled")
+	eq(hud._empty_kit_button.text, "—", "empty kit slot is not an ability name")
+	eq(hud._empty_kit_label.text, "Mender", "empty kit bar keeps the class label")
+	var card := hud._kestrel_body.text
+	truthy(card.contains("HP 80/80"), "card prints snapshot HP")
+	truthy(card.contains("0/0  0/0"), "card shows unlabeled resource slots")
+	eq(card.contains("Marks"), false, "empty kit card does not invent Marks")
+	eq(card.contains("Impact"), false, "empty kit card does not invent Impact")
+	var labeled: Dictionary = units[0].duplicate(true)
+	labeled["resources"] = [{"current": 1, "max": 3, "label": "HostRes"}, {"current": 0, "max": 2}]
+	var labeled_card := hud._unit_card_text(labeled, true, snap)
+	truthy(labeled_card.contains("HostRes 1/3"), "a host-supplied resource label is printed")
+	truthy(labeled_card.contains("0/2"), "a resource entry without a label stays numeric")
+	eq(labeled_card.contains("Marks"), false, "host resources do not add Marks")
+	hud.free()
+	_free_dedicated(dedicated)
+
+
+func _test_blocked_tiles_chrome() -> void:
+	var cells := SnapshotTiles.blocked_cells({
+		"blocked_tiles": [Vector2i(2, 3), {"x": 1, "y": 1}, [4, 5], "3,4"],
+		"walls": [Vector2i(7, 0)],
+		"last_events": [
+			{"type": "snap_wall", "to": Vector2i(6, 6)},
+			{"type": "snap_wall", "cells": [[0, 7]]},
+			{"type": "hit", "to": Vector2i(3, 3)},
+		],
+	})
+	eq(cells.has(Vector2i(2, 3)), true, "blocked_tiles Vector2i is painted")
+	eq(cells.has(Vector2i(1, 1)), true, "blocked_tiles dict cell is painted")
+	eq(cells.has(Vector2i(4, 5)), true, "blocked_tiles array cell is painted")
+	eq(cells.has(Vector2i(3, 4)), true, "blocked_tiles string cell is painted")
+	eq(cells.has(Vector2i(6, 6)), true, "snap_wall to is painted")
+	eq(cells.has(Vector2i(0, 7)), true, "snap_wall cells are painted")
+	eq(cells.has(Vector2i(7, 0)), false, "walls is not a bound snapshot key")
+	eq(cells.has(Vector2i(3, 3)), false, "non-snap_wall events are not walls")
+	eq(SnapshotTiles.blocked_cells({}).is_empty(), true, "a snapshot without the key paints nothing")
+	var tile := BoardTile.new()
+	tile.highlight = "blocked"
+	eq(tile.highlight, "blocked", "tile highlight kind blocked is the wall chrome")
+	tile.free()
 
 
 func _test_opposite_classes_queue_into_kits() -> void:

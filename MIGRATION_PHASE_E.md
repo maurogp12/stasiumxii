@@ -121,13 +121,17 @@ Chrome calls these names. The authority validates. Clients do not write the rost
 | Call / signal | Direction | Meaning |
 | --- | --- | --- |
 | `select_class(class_id: String)` | Client → `rpc_select_class` | Ask the server to lock this seat's class. |
-| `signal class_selected(class_id: String)` | Server → `rpc_class_selected` | Accept. `class_id` is lowercase `kestrel` or `ironjaw`. |
+| `signal class_selected(class_id: String)` | Server → `rpc_class_selected` | Accept. `class_id` is lowercase `kestrel`, `ironjaw`, `mender`, `gloam`, or `bastion`. |
 | `signal class_rejected(reason: String, class_id: String)` | Server → `rpc_class_rejected` | Reject. `reason` is `invalid_class`, `no_seat`, `not_connected`, `not_your_seat`, `already_queued`, or `class_not_confirmed`. |
 | `enter_matchmaking()` | Client → `rpc_enter_matchmaking` | Queue after a confirmed class. |
 | `signal matchmaking_changed(status: String)` | Server → `rpc_matchmaking_status` | `waiting` until the other seat queues, then `matched`. |
 | `signal match_found(snapshot: Dictionary)` | Server → `rpc_match_found` | Duel snapshot is ready. Kit bar reads `units[].class_id`. |
 
-Locked roster is only `kestrel` and `ironjaw`. Anything else is `invalid_class`.
+Locked roster is `kestrel`, `ironjaw`, `mender`, `gloam`, and `bastion`. Anything else is `invalid_class`. Picking only Kestrel and Ironjaw still queues a duel.
+
+`SpellKits.class_spells` has rows for `kestrel` and `ironjaw` only. `mender`, `gloam`, and `bastion` return `[]`, `class_element` returns `""`, and the HUD shows a disabled `—` slot plus the class label. Expected Backend fields still missing for those three: `CLASS_SPELLS` rows, spell definitions, element strings, and named class resources. Until a unit `resources` array exists, the card prints unlabeled `0/0  0/0`. HP is whatever the snapshot says (`hp` / `max_hp`; CombatSim still starts at 80).
+
+Snap Wall chrome binds `snapshot.blocked_tiles` and `last_events` where `type` is `snap_wall`. `walls` is not on main and is not read.
 
 `reset_match` config key the authority passes (clients never send this):
 

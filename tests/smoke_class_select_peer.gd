@@ -5,6 +5,7 @@ extends SceneTree
 ##   godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --serve 17777
 ##   godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --play 127.0.0.1:17777 --class ironjaw
 ##   godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --play 127.0.0.1:17777 --class kestrel
+##   --class pulse prints REJECT invalid_class. mender / gloam / bastion are accepted.
 ##
 ## Each client prints "SEAT <n> CLASS <class_id>" and exits 0 when the kit matches.
 

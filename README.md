@@ -33,7 +33,7 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 | `backend/host_validate.gd` + `backend/intent_codec.gd` + `MIGRATION_PHASE_E.md` | Phase E: Intent/`submit` identical; seed/RNG host-owned. Shape gate + JSON/RPC encode. |
 | `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. **Listen-host** (`--host`) is the same core with seat 0 in that window. Dedicated clients call `select_class` / `enter_matchmaking` before the duel. Clients submit Intent and apply snapshot/events. HOTSEAT leaves `main.tscn` on the local path. RPC only (no scene sync). |
 | `scenes/online_lobby.tscn` | Anonymous host / direct-IP join / local hot-seat. Join opens class select when the server is dedicated. |
-| `scenes/class_select.tscn` | Kestrel or Ironjaw, Confirm, Find Match. Server reject and queue wait live here. |
+| `scenes/class_select.tscn` | Kestrel, Ironjaw, Mender, Gloam, or Bastion, Confirm, Find Match. Server reject and queue wait live here. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -84,7 +84,7 @@ Do **not** invent those. Main (`main.tscn` / `board_view.gd` / `ui/hud.gd`) bind
 
 - Matchmaking / login / MultiplayerSynchronizer (dedicated headless host and optional listen-host are in; see below)
 - Step-shot, Rain, Longbow, Avalanche
-- Other classes (Mender, Gloam, Bastion)
+- Spell rows, elements, passives, and named resources for Mender, Gloam, and Bastion (the select roster is live; kits stay empty until Backend adds them)
 - Crit roll, Longshot, Momentum, Residue, Blends, Gust / WindMod
 - Weapon fumbles, dual loadouts, WP/PW
 
@@ -126,7 +126,7 @@ Local hot-seat is still the default `main.tscn` path. Listen-host remains `--hos
 godot --headless --path . -- --dedicated 7777
 ```
 
-**Machine A — first client (seat 0).** Intent and presentation only. After connect, pick Kestrel or Ironjaw, Confirm, then Find Match:
+**Machine A — first client (seat 0).** Intent and presentation only. After connect, pick Kestrel, Ironjaw, Mender, Gloam, or Bastion, Confirm, then Find Match:
 
 ```bash
 godot --path . --position 40,40 -- --join <server-ip>:7777
@@ -138,11 +138,13 @@ godot --path . --position 40,40 -- --join <server-ip>:7777
 godot --path . --position 1000,40 -- --join <server-ip>:7777
 ```
 
-Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. Class is the Confirm step, not the seat: one client can be Ironjaw on seat 0 and the other Kestrel on seat 1. The server rejects any class outside `kestrel` / `ironjaw`. Find Match waits until both seats are queued, then the duel starts and the kit bar follows `units[local_seat].class_id`. Seat 0’s **New Match** asks the server to reset; the server picks the new seed and keeps the confirmed classes. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+Same computer: use `127.0.0.1` as `<server-ip>`. On a LAN, use Machine B’s IP. UDP **7777** must be reachable. Join order assigns seats. Class is the Confirm step, not the seat: one client can be Ironjaw on seat 0 and the other Kestrel on seat 1, or either seat can be Mender, Gloam, or Bastion. The server rejects any class outside `kestrel` / `ironjaw` / `mender` / `gloam` / `bastion`. Find Match waits until both seats are queued, then the duel starts and the kit bar follows `SpellKits.class_spells(units[local_seat].class_id)`. Kestrel and Ironjaw still show their kits. Mender, Gloam, and Bastion show the class label and a disabled empty slot until Backend adds `CLASS_SPELLS` rows. Those three cards print snapshot HP (80/80 from `CombatSim.START_HP`) and unlabeled `0/0  0/0` resource slots. Seat 0’s **New Match** asks the server to reset; the server picks the new seed and keeps the confirmed classes. A dropped client is a stub: that seat stays reserved and is not given to a new joiner. No reconnect.
+
+Snap Wall chrome reads `snapshot.blocked_tiles` (cell list: `Vector2i`, `{x,y}`, `[x,y]`, or `"x,y"`) and `last_events` entries with `type == "snap_wall"` (`cells` / `tiles` and/or `to`). Those cells paint as blocked. `walls` is not on main and is not bound.
 
 Or open `scenes/online_lobby.tscn` on each client and **Join match**. That opens class select. **Host match** on that lobby is still listen-host (no class pick). **Local hot-seat** stays the single-window path.
 
-Opposite classes over ENet (seat 0 Ironjaw, seat 1 Kestrel). Start the server first. Each client prints `SEAT n CLASS class_id`. `--class mender` prints `REJECT invalid_class`.
+Opposite classes over ENet (seat 0 Ironjaw, seat 1 Kestrel). Start the server first. Each client prints `SEAT n CLASS class_id`. `--class pulse` prints `REJECT invalid_class`. `--class mender` is accepted.
 
 ```bash
 godot --headless --path . -s res://tests/smoke_class_select_peer.gd -- --serve 17777

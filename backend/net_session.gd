@@ -10,7 +10,7 @@ extends Node
 ## Dedicated disconnect is a stub: the seat stays reserved. No reconnect.
 ## SELECT_CLASS stub for dedicated clients (Backend can replace the RPC bodies):
 ## select_class(class_id: String) → authority validates the Locked roster
-## (kestrel, ironjaw only). signal class_selected(class_id) on accept.
+## (kestrel, ironjaw, mender, gloam, bastion). signal class_selected(class_id) on accept.
 ## signal class_rejected(reason, class_id) on reject (invalid_class, no_seat, …).
 ## enter_matchmaking() after a confirmed class. Both seats queued → reset_match
 ## with seat_classes {0, 1}. Snapshot units[].class_id is the kit source.

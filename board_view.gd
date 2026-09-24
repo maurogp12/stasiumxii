@@ -8,6 +8,8 @@ extends Node2D
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
 ## Advance teleport does not auto-face.
+## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
+## The snapshot key walls is not read.
 ## Advance highlights and click-accept read CombatSim.legal_intents only
 ## (cast_dests). No client Manhattan-2 or diagonal ring. A click off that set
 ## is forwarded so the sim's existing refund coach runs (hot-seat and NetSession).
@@ -253,6 +255,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
 		var cell := local_to_grid(mouse_position)
 		if not _in_bounds(cell):
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT and _snap_wall_cell(cell):
 			return
 		select_tile(cell)
 		if event.button_index == MOUSE_BUTTON_RIGHT:
@@ -654,9 +658,11 @@ func _paint_highlights() -> void:
 		(tile as BoardTile).set_highlight("")
 	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false) or _busy:
+		_paint_blocked(snap)
 		return
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
+		_paint_blocked(snap)
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
@@ -680,6 +686,7 @@ func _paint_highlights() -> void:
 		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(dest).set_highlight(highlight)
+	_paint_blocked(snap)
 	_sync_aim_preview()
 
 
@@ -703,6 +710,16 @@ func _paint_deploy_highlights(snap: Dictionary) -> void:
 		var cell: Vector2i = _as_cell(unit.get("pos", Vector2i(-1, -1)))
 		if tiles.has(cell):
 			_tile_at(cell).set_highlight("occupied")
+
+
+func _paint_blocked(snap: Dictionary) -> void:
+	for cell in SNAPSHOT_TILES.blocked_cells(snap):
+		if tiles.has(cell):
+			_tile_at(cell).set_highlight("blocked")
+
+
+func _snap_wall_cell(cell: Vector2i) -> bool:
+	return SNAPSHOT_TILES.blocked_cells(_sim().snapshot()).has(cell)
 
 
 func _handle_deploy_click(cell: Vector2i) -> void:

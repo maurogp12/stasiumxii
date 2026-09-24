@@ -15,6 +15,18 @@ const CRUSH := "crush"
 
 const CLASS_KESTREL := "kestrel"
 const CLASS_IRONJAW := "ironjaw"
+const CLASS_MENDER := "mender"
+const CLASS_GLOAM := "gloam"
+const CLASS_BASTION := "bastion"
+## SELECT_CLASS allowlist. Display names live in class_label. No spell rows
+## for mender, gloam, or bastion until Backend adds CombatSim kits.
+const LOCKED_ROSTER: Array[String] = [
+	CLASS_KESTREL,
+	CLASS_IRONJAW,
+	CLASS_MENDER,
+	CLASS_GLOAM,
+	CLASS_BASTION,
+]
 
 const SPELLS := {
 	ADVANCE: {
@@ -144,17 +156,27 @@ static func class_spells(class_id: String) -> Array:
 
 ## Locked roster for SELECT_CLASS. Unknown ids are not a kit.
 static func is_locked_class(class_id: String) -> bool:
-	return class_id == CLASS_KESTREL or class_id == CLASS_IRONJAW
+	return class_id in LOCKED_ROSTER
 
 
 static func class_label(class_id: String) -> String:
-	if class_id == CLASS_IRONJAW:
-		return "Ironjaw"
-	if class_id == CLASS_KESTREL:
-		return "Kestrel"
-	return ""
+	match class_id:
+		CLASS_IRONJAW:
+			return "Ironjaw"
+		CLASS_KESTREL:
+			return "Kestrel"
+		CLASS_MENDER:
+			return "Mender"
+		CLASS_GLOAM:
+			return "Gloam"
+		CLASS_BASTION:
+			return "Bastion"
+		_:
+			return ""
 
 
+## Element strings exist only for classes that already have kit rows.
+## mender / gloam / bastion stay "" until Backend publishes an element.
 static func class_element(class_id: String) -> String:
 	if class_id == CLASS_IRONJAW:
 		return "earth"

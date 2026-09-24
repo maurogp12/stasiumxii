@@ -9,6 +9,9 @@ signal ready_requested(seat: int)
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
+const MENDER_BLUE := Color("#2E4A6E")
+const GLOAM_PURPLE := Color("#4A3A62")
+const BASTION_SLATE := Color("#5C5648")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
@@ -56,6 +59,8 @@ var _stun_badge: Label
 var _toast_label: Label
 var _toast_token: int = 0
 var _spell_hosts: Dictionary = {}
+var _empty_kit_button: Button
+var _empty_kit_label: Label
 var _tooltip_panel: Panel
 var _tooltip_label: Label
 var _tooltip_spell: String = ""
@@ -73,6 +78,8 @@ var _turn_label_base: String = ""
 ## Spell buttons follow units[kit_seat].class_id, not a hard-coded seat→class map.
 ## Also reads net.local_seat / net.active_seat when the top-level keys are absent.
 ## Advance is never offered unless class_id is ironjaw.
+## Offered spells come from SpellKits.class_spells(class_id). An empty table
+## (mender, gloam, bastion until Backend adds rows) yields an empty bar.
 ## legal_intents cannot add a spell the kit does not own; enablement uses legal_cast_ids().
 static func _net_dict(snap: Dictionary) -> Dictionary:
 	var raw: Variant = snap.get("net", {})
@@ -165,9 +172,20 @@ static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 	if active.is_empty():
 		return offered
 	var class_id := str(active.get("class_id", ""))
-	for spell_id in active.get("spells", []):
+	var from_table: Array = SpellKits.class_spells(class_id)
+	if from_table.is_empty():
+		return offered
+	var owned: Variant = active.get("spells", [])
+	var filter := typeof(owned) == TYPE_ARRAY and not (owned as Array).is_empty()
+	var owned_ids := {}
+	if filter:
+		for spell_id in owned:
+			owned_ids[str(spell_id)] = true
+	for spell_id in from_table:
 		var id := str(spell_id)
 		if id == "":
+			continue
+		if filter and not bool(owned_ids.get(id, false)):
 			continue
 		if id == SpellKits.ADVANCE and class_id != SpellKits.CLASS_IRONJAW:
 			continue
@@ -180,6 +198,20 @@ static func offered_cast_ids(active: Dictionary, _legal: Array = []) -> Array:
 		if not offered.has(id):
 			offered.append(id)
 	return offered
+
+
+static func banner_color(class_id: String) -> Color:
+	match class_id:
+		SpellKits.CLASS_IRONJAW:
+			return IRONJAW_RED
+		SpellKits.CLASS_MENDER:
+			return MENDER_BLUE
+		SpellKits.CLASS_GLOAM:
+			return GLOAM_PURPLE
+		SpellKits.CLASS_BASTION:
+			return BASTION_SLATE
+		_:
+			return KESTREL_GREEN
 
 
 static func aim_hit_caption(chance: int) -> String:
@@ -657,6 +689,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var offered: Array = [] if _deploying else offered_cast_ids(chrome, legal)
 	_sync_spell_buttons(offered)
+	_sync_empty_kit(chrome, offered)
 	if _selected_spell != "" and not offered.has(_selected_spell):
 		_selected_spell = ""
 		_aim_hit_chance = -1
@@ -844,6 +877,21 @@ func _build() -> void:
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
 
+	_empty_kit_label = Label.new()
+	_empty_kit_label.visible = false
+	_empty_kit_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_empty_kit_label.add_theme_font_size_override("font_size", 14)
+	_empty_kit_label.add_theme_color_override("font_color", Color(0.22, 0.18, 0.16))
+	_action_bar.add_child(_empty_kit_label)
+	_empty_kit_button = Button.new()
+	_empty_kit_button.text = "—"
+	_empty_kit_button.disabled = true
+	_empty_kit_button.visible = false
+	_empty_kit_button.focus_mode = Control.FOCUS_NONE
+	_empty_kit_button.custom_minimum_size = Vector2(88, 32)
+	_empty_kit_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_bar.add_child(_empty_kit_button)
+
 	_ready_p1_button = Button.new()
 	_ready_p1_button.text = "Ready P1"
 	_ready_p1_button.custom_minimum_size = Vector2(100, 32)
@@ -1030,7 +1078,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var burn_note := ""
 	if unit_is_burning(unit):
 		burn_note = "  [b]BURN[/b] %d" % unit_burn_remaining(unit)
-	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\nMarks %s  Impact %s\n%s[/color]" % [
+	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\n%s\n%s[/color]" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
@@ -1039,14 +1087,56 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
-		engine_pips(int(unit["marks"]), int(unit["marks_cap"])),
-		engine_pips(int(unit["impact"]), int(unit["impact_cap"])),
-		str(unit["element"]).capitalize() + " · " + ", ".join(PackedStringArray(unit["spells"])),
+		_resource_meter_line(unit),
+		_kit_footer(unit),
 	]
 
 
 func _unit(units: Array, seat: int) -> Dictionary:
 	return unit_for_seat(units, seat)
+
+
+## Classes with kit rows keep Marks / Impact. Classes with an empty table
+## show unlabeled 0/0 slots until the snapshot carries a resources array.
+## A host-supplied label is printed only when that entry includes one.
+func _resource_meter_line(unit: Dictionary) -> String:
+	var class_id := str(unit.get("class_id", ""))
+	if not SpellKits.class_spells(class_id).is_empty():
+		return "Marks %s  Impact %s" % [
+			engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
+			engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
+		]
+	var raw: Variant = unit.get("resources", [])
+	if typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty():
+		var parts: PackedStringArray = []
+		for entry in raw:
+			if typeof(entry) != TYPE_DICTIONARY:
+				continue
+			var current := int(entry.get("current", 0))
+			var maximum := int(entry.get("max", entry.get("maximum", 0)))
+			var label := str(entry.get("label", "")).strip_edges()
+			if label == "":
+				parts.append("%d/%d" % [current, maximum])
+			else:
+				parts.append("%s %d/%d" % [label, current, maximum])
+		if not parts.is_empty():
+			return " ".join(parts)
+	return "0/0  0/0"
+
+
+func _kit_footer(unit: Dictionary) -> String:
+	var class_id := str(unit.get("class_id", ""))
+	if SpellKits.is_locked_class(class_id) and SpellKits.class_spells(class_id).is_empty():
+		return SpellKits.class_label(class_id)
+	var names := PackedStringArray()
+	for spell_id in unit.get("spells", []):
+		names.append(str(spell_id))
+	var element := str(unit.get("element", "")).capitalize()
+	if element == "":
+		return ", ".join(names)
+	if names.is_empty():
+		return element
+	return element + " · " + ", ".join(names)
 
 
 func _paint_seat_banner(seat: int, unit: Dictionary) -> void:
@@ -1057,9 +1147,26 @@ func _paint_seat_banner(seat: int, unit: Dictionary) -> void:
 		return
 	var title := _banner_titles[seat]
 	var panel := _banner_panels[seat]
-	var is_kestrel := class_id == SpellKits.CLASS_KESTREL
 	title.text = SpellKits.class_label(class_id)
-	panel.add_theme_stylebox_override("panel", _panel(KESTREL_GREEN if is_kestrel else IRONJAW_RED))
+	panel.add_theme_stylebox_override("panel", _panel(banner_color(class_id)))
+
+
+func _sync_empty_kit(chrome: Dictionary, offered: Array) -> void:
+	var class_id := str(chrome.get("class_id", ""))
+	var empty_slot := (
+		not _deploying
+		and not chrome.is_empty()
+		and SpellKits.is_locked_class(class_id)
+		and SpellKits.class_spells(class_id).is_empty()
+		and offered.is_empty()
+	)
+	if _empty_kit_label != null:
+		_empty_kit_label.visible = empty_slot
+		_empty_kit_label.text = SpellKits.class_label(class_id) if empty_slot else ""
+	if _empty_kit_button != null:
+		_empty_kit_button.visible = empty_slot
+		_empty_kit_button.disabled = true
+		_empty_kit_button.text = "—"
 
 
 func _panel(color: Color) -> StyleBoxFlat:

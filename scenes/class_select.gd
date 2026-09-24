@@ -1,7 +1,8 @@
 extends Control
 
-## Dedicated pre-match chrome. Pick Kestrel or Ironjaw, Confirm, then Find Match.
-## The server validates the class. This scene only calls NetSession and paints signals.
+## Dedicated pre-match chrome. Pick a Locked class, Confirm, then Find Match.
+## Roster ids come from SpellKits.LOCKED_ROSTER. Display names come from class_label.
+## This scene does not define spells or passives. The server validates the class.
 ## Listen-host join skips this screen. Hot-seat never opens it from main.tscn.
 
 const MAIN_SCENE := "res://main.tscn"
@@ -12,8 +13,7 @@ var _seat_label: Label
 var _reject: Label
 var _queue_panel: Panel
 var _queue_label: Label
-var _kestrel_button: Button
-var _ironjaw_button: Button
+var _class_buttons: Dictionary = {}
 var _confirm_button: Button
 var _find_button: Button
 var _picked: String = ""
@@ -59,7 +59,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster. Confirm sends the class to the server. Find Match queues you until the other seat is in. The server rejects anything outside this roster."
+	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Confirm sends the class to the server. Find Match queues you until the other seat is in. The server rejects anything outside this roster."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
@@ -68,15 +68,7 @@ func _build() -> void:
 	_seat_label.add_theme_color_override("font_color", Color(0.9, 0.86, 0.78))
 	col.add_child(_seat_label)
 
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	col.add_child(row)
-	_kestrel_button = _class_button("Kestrel", Color("#2E5A3C"))
-	_kestrel_button.pressed.connect(_on_pick_kestrel)
-	row.add_child(_kestrel_button)
-	_ironjaw_button = _class_button("Ironjaw", Color("#8B2E2E"))
-	_ironjaw_button.pressed.connect(_on_pick_ironjaw)
-	row.add_child(_ironjaw_button)
+	_add_roster_rows(col)
 
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 12)
@@ -122,11 +114,45 @@ func _build() -> void:
 	_refresh_buttons()
 
 
+func _add_roster_rows(col: VBoxContainer) -> void:
+	var ids: Array = SpellKits.LOCKED_ROSTER
+	var splits: Array[int] = [3, ids.size()]
+	var start := 0
+	for split in splits:
+		if start >= ids.size():
+			break
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 12)
+		col.add_child(row)
+		var end := mini(split, ids.size())
+		for i in range(start, end):
+			var class_id := str(ids[i])
+			var button := _class_button(SpellKits.class_label(class_id), _roster_color(class_id))
+			button.pressed.connect(_on_pick.bind(class_id))
+			row.add_child(button)
+			_class_buttons[class_id] = button
+		start = end
+
+
+func _roster_color(class_id: String) -> Color:
+	match class_id:
+		SpellKits.CLASS_IRONJAW:
+			return Color("#8B2E2E")
+		SpellKits.CLASS_MENDER:
+			return Color("#2E4A6E")
+		SpellKits.CLASS_GLOAM:
+			return Color("#4A3A62")
+		SpellKits.CLASS_BASTION:
+			return Color("#5C5648")
+		_:
+			return Color("#2E5A3C")
+
+
 func _class_button(text: String, color: Color) -> Button:
 	var button := Button.new()
 	button.text = text
-	button.custom_minimum_size = Vector2(220, 64)
-	button.add_theme_font_size_override("font_size", 22)
+	button.custom_minimum_size = Vector2(168, 56)
+	button.add_theme_font_size_override("font_size", 20)
 	button.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
 	var style := StyleBoxFlat.new()
 	style.bg_color = color
@@ -157,10 +183,10 @@ func _refresh_buttons() -> void:
 	else:
 		_seat_label.text = "Seat %d" % seat
 	var queued := NetSession.queue_status == "waiting" or NetSession.queue_status == "matched"
-	_kestrel_button.disabled = queued or _pending
-	_ironjaw_button.disabled = queued or _pending
-	_kestrel_button.modulate = Color(1.15, 1.15, 1.05) if _picked == SpellKits.CLASS_KESTREL else Color(0.72, 0.72, 0.72)
-	_ironjaw_button.modulate = Color(1.15, 1.1, 1.05) if _picked == SpellKits.CLASS_IRONJAW else Color(0.72, 0.72, 0.72)
+	for class_id in _class_buttons.keys():
+		var button: Button = _class_buttons[class_id]
+		button.disabled = queued or _pending
+		button.modulate = Color(1.15, 1.12, 1.05) if _picked == str(class_id) else Color(0.72, 0.72, 0.72)
 	_confirm_button.disabled = queued or _pending or _picked == "" or seat < 0
 	var confirmed := NetSession.confirmed_class_id != ""
 	_find_button.disabled = queued or not confirmed
@@ -171,14 +197,8 @@ func _refresh_buttons() -> void:
 		_status.text = "Server accepted %s. Find Match when you are ready." % SpellKits.class_label(NetSession.confirmed_class_id)
 
 
-func _on_pick_kestrel() -> void:
-	_picked = SpellKits.CLASS_KESTREL
-	_reject.text = ""
-	_refresh_buttons()
-
-
-func _on_pick_ironjaw() -> void:
-	_picked = SpellKits.CLASS_IRONJAW
+func _on_pick(class_id: String) -> void:
+	_picked = class_id
 	_reject.text = ""
 	_refresh_buttons()
 
