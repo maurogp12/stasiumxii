@@ -64,6 +64,7 @@ func _run() -> void:
 	_test_advance_teleport_costs()
 	_test_advance_then_remaining_mp_still_walks()
 	_test_advance_cardinal_range_gate()
+	_test_advance_chrome_follows_legal_intents()
 	_test_mark_shot_range_highlights()
 	_test_turn_clock_auto_end_turn()
 	_test_turn_clock_ticks_during_hops()
@@ -1769,6 +1770,84 @@ func _test_advance_cardinal_range_gate() -> void:
 	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
 	eq(hud.contains("Shoulder"), false, "range patch does not add Shoulder")
 	eq(hud.contains("Crush"), false, "range patch does not add Crush")
+
+
+func _test_advance_chrome_follows_legal_intents() -> void:
+	# Board / HUD / range helper paint Advance only from legal_intents.
+	var origin := Vector2i(3, 3)
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": origin})
+	_sim.submit({"type": "end_turn"})
+	var legal: Array = _sim.legal_intents(1)
+	var painted: Array[Vector2i] = SnapshotTiles.cast_dests(legal, SpellKits.ADVANCE)
+	var ring: Array = _sim.range_highlight_cells(1, SpellKits.ADVANCE)
+	eq(painted.size(), 4, "Advance chrome lists the 4 ortho neighbors")
+	eq(ring.size(), painted.size(), "range highlighter matches legal Advance dests")
+	for cell in painted:
+		truthy(_sim.is_cardinal_step(origin, cell), "highlighted Advance dest %s is a cardinal step" % str(cell))
+		truthy(ring.has(cell), "range highlighter includes legal dest %s" % str(cell))
+	eq(painted.has(Vector2i(5, 3)), false, "Manhattan 2 is not an Advance highlight")
+	eq(painted.has(Vector2i(4, 4)), false, "diagonal is not an Advance highlight")
+	eq(ring.has(Vector2i(5, 3)), false, "range highlighter omits Manhattan 2")
+	eq(ring.has(Vector2i(4, 4)), false, "range highlighter omits a diagonal")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(7, 7),
+		"ironjaw_pos": origin,
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(4, 3), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(3, 4), "terrain": "lava", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	legal = _sim.legal_intents(1)
+	painted = SnapshotTiles.cast_dests(legal, SpellKits.ADVANCE)
+	ring = _sim.range_highlight_cells(1, SpellKits.ADVANCE)
+	eq(painted.size(), 1, "illegal stand-on neighbors drop out of Advance chrome")
+	eq(painted[0], Vector2i(2, 3), "the open west neighbor is the only Advance highlight")
+	eq(ring.has(Vector2i(3, 2)), false, "lava north is not an Advance highlight")
+	eq(ring.has(Vector2i(4, 3)), false, "lava east is not an Advance highlight")
+	eq(ring.has(Vector2i(4, 4)), false, "diagonal stays unhighlighted beside lava")
+
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
+	eq(result["illegal"], true, "diagonal Advance click is rejected")
+	eq(result["reason"], "out_of_range", "diagonal reject stays out_of_range")
+	eq(_unit(1)["pos"], origin, "diagonal click does not move Ironjaw")
+	eq(_unit(1)["ap"], 6, "diagonal click refunds AP")
+	truthy(str(result["snapshot"].get("coach", "")).contains("refund"), "diagonal click uses the existing refund coach")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["illegal"], true, "Manhattan 2 Advance click is rejected")
+	eq(_unit(1)["ap"], 6, "Manhattan 2 click refunds AP")
+	eq(_unit(1)["mp"], 3, "Manhattan 2 click spends 0 MP")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("refund"), "Manhattan 2 click uses the existing refund coach")
+
+	var hud_node := CombatHUD.new()
+	hud_node._build()
+	hud_node.set_preview_source(_sim)
+	hud_node.render(_sim.snapshot(), legal)
+	eq(hud_node._advance_hover_dest(origin), Vector2i(2, 3), "Advance hover samples the sim-legal dest")
+	var preview: Dictionary = hud_node.preview_for_spell(SpellKits.ADVANCE)
+	eq(preview["legal"], true, "hover preview_cast uses a legal Advance dest")
+	eq(preview["reason"], "", "hover preview has no reject reason")
+	hud_node.free()
+
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("cast_dests"), "board paints Advance from cast_dests")
+	truthy(view.contains('highlight := "advance"'), "Advance dests use advance highlight")
+	truthy(view.contains("_advance_click_accepted"), "Advance clicks are gated on sim-legal dests")
+	var click_idx := view.find("func _handle_left_click")
+	var face_idx := view.find("func _face_toward")
+	var click_src := view.substr(click_idx, face_idx - click_idx)
+	truthy(click_src.contains("_submit("), "an off-set Advance click still reaches submit for the refund coach")
+	eq(click_src.contains("Vector2i(1, 1)"), false, "click handler does not hardcode a diagonal hop")
+	eq(click_src.contains("Vector2i(2, 0)"), false, "click handler does not hardcode Manhattan 2")
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("cast_dests"), "HUD Advance hover reads cast_dests")
+	eq(hud_src.contains("Vector2i(1, 0)"), false, "HUD does not scan client orthogonal deltas")
+	eq(hud_src.contains("Vector2i(1, 1)"), false, "HUD does not scan client diagonal hops")
+	eq(hud_src.contains("Chebyshev"), false, "HUD still does not name Chebyshev")
 
 
 func _test_mark_shot_range_highlights() -> void:
