@@ -22,7 +22,9 @@ const FACING_ISO := {
 }
 
 
-func apply_snapshot(unit: Dictionary, active_seat: int) -> void:
+## `events` supply Burn only when the unit dict has no `burn_remaining`.
+## This pawn does not tick Burn; the next host snapshot replaces the number.
+func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> void:
 	grid_position = unit["pos"]
 	unit_name = str(unit["name"])
 	class_id = str(unit["class_id"])
@@ -33,9 +35,13 @@ func apply_snapshot(unit: Dictionary, active_seat: int) -> void:
 	is_active = int(unit["seat"]) == active_seat and alive
 	_hit_flash = false
 	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
-	burn_remaining = int(unit.get("burn_remaining", 0))
+	burn_remaining = CombatHUD.unit_burn_remaining(unit, events)
 	burning = burn_remaining > 0
 	queue_redraw()
+
+
+func burn_badge_label() -> String:
+	return CombatHUD.burn_badge_text(burn_remaining)
 
 
 func set_facing(dir: String) -> void:
@@ -100,9 +106,31 @@ func _draw() -> void:
 		draw_rect(badge, Color(0.95, 0.78, 0.18, 0.95))
 		draw_string(font, Vector2(-stun_size.x * 0.5, -34), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))
 	if burning:
-		var burn_label := "BURN"
+		var burn_label := burn_badge_label()
+		if burn_label == "":
+			burn_label = "BURN"
 		var burn_size := font.get_string_size(burn_label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 		var burn_y := -58.0 if stunned else -44.0
 		var burn_badge := Rect2(Vector2(-burn_size.x * 0.5 - 3, burn_y), Vector2(burn_size.x + 6, 12))
 		draw_rect(burn_badge, Color(0.92, 0.28, 0.1, 0.95))
+		_draw_flame(Vector2(burn_badge.position.x - 8.0, burn_y + 6.0))
 		draw_string(font, Vector2(-burn_size.x * 0.5, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))
+
+
+func _draw_flame(origin: Vector2) -> void:
+	draw_colored_polygon(PackedVector2Array([
+		origin + Vector2(0, -7),
+		origin + Vector2(3.5, -1),
+		origin + Vector2(1.5, 0),
+		origin + Vector2(3, 5),
+		origin + Vector2(0, 2.5),
+		origin + Vector2(-3, 5),
+		origin + Vector2(-1.5, 0),
+		origin + Vector2(-3.5, -1),
+	]), Color(1.0, 0.42, 0.08, 0.98))
+	draw_colored_polygon(PackedVector2Array([
+		origin + Vector2(0, -1),
+		origin + Vector2(1.6, 2.2),
+		origin + Vector2(0, 4),
+		origin + Vector2(-1.6, 2.2),
+	]), Color(1.0, 0.88, 0.4, 0.98))

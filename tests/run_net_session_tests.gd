@@ -39,6 +39,7 @@ func _run() -> void:
 	_test_client_must_not_roll_on_wire()
 	_test_seat_ownership()
 	_test_guest_hydrate_from_packed_state()
+	_test_guest_paints_lava_burn_from_host()
 	_test_hotseat_still_direct()
 	_test_host_timer_broadcast_and_guest_hydrate()
 	_test_local_vs_active_seat_semantics()
@@ -160,6 +161,42 @@ func _test_guest_hydrate_from_packed_state() -> void:
 	var preview: Dictionary = _guest.preview_cast("mark_shot")
 	eq(str(preview.get("spell_id", "")), "mark_shot", "guest replica still serves preview_cast")
 	eq(preview.has("hit_chance"), true, "guest preview_cast does not roll a new API")
+
+
+func _test_guest_paints_lava_burn_from_host() -> void:
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
+		"fixture": true,
+	})
+	eq(_host.submit({"type": "end_turn"})["ok"], true, "host ends Kestrel's turn")
+	var cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)}, 1)
+	eq(cast["ok"], true, "host resolves the Shoulder onto lava")
+	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 2, "host unit carries burn_remaining")
+	_guest.apply_packed_state(_host.pack_result(cast, 1))
+	eq(int(_guest.snapshot()["units"][0]["burn_remaining"]), 2, "guest hydrate copies burn_remaining")
+	eq(_guest.snapshot()["units"][0]["pos"], Vector2i(5, 3), "guest hydrate copies the lava cell")
+	var host_toast := CombatHUD.toast_for_events(cast["events"])
+	var guest_events: Array = _guest.snapshot().get("last_events", [])
+	eq(host_toast, "+1 Impact  Lava - Burn", "host events toast +1 Impact and Burn")
+	eq(CombatHUD.toast_for_events(guest_events), host_toast, "guest events toast the same line")
+	eq(host_toast.contains(CombatHUD.BOUNCE_TOAST), false, "lava push does not toast Bounce")
+	var host_pawn := Pawn.new()
+	host_pawn.apply_snapshot(_sim.snapshot()["units"][0], 1, _sim.snapshot().get("last_events", []))
+	var guest_pawn := Pawn.new()
+	guest_pawn.apply_snapshot(_guest.snapshot()["units"][0], 1, guest_events)
+	eq(host_pawn.burn_badge_label(), "BURN 2", "host pawn paints remaining turns")
+	eq(guest_pawn.burn_badge_label(), host_pawn.burn_badge_label(), "guest pawn paints the same Burn badge")
+	var before := int(_guest.snapshot()["units"][0]["burn_remaining"])
+	_guest.tick_turn_timer(30.0)
+	eq(int(_guest.snapshot()["units"][0]["burn_remaining"]), before, "guest does not tick Burn")
+	host_pawn.free()
+	guest_pawn.free()
 
 
 func _test_hotseat_still_direct() -> void:
@@ -367,6 +404,19 @@ func _test_dedicated_host_core() -> void:
 	eq(int(seat0.snapshot()["units"][0]["hp"]), 74, "client hydrates HP")
 	eq(int(seat0.snapshot()["units"][0]["burn_remaining"]), 2, "client hydrates Burn")
 	eq(int(seat1.snapshot()["units"][1]["impact"]), 1, "client hydrates Impact")
+	var lava_toast := CombatHUD.toast_for_events(shoulder["events"])
+	eq(lava_toast, "+1 Impact  Lava - Burn", "dedicated Shoulder toasts +1 Impact and Burn")
+	eq(lava_toast.contains(CombatHUD.BOUNCE_TOAST), false, "dedicated lava push is not Bounce")
+	eq(CombatHUD.toast_for_events(seat0.snapshot().get("last_events", [])), lava_toast, "seat 0 paints the same toast")
+	eq(CombatHUD.toast_for_events(seat1.snapshot().get("last_events", [])), lava_toast, "seat 1 paints the same toast")
+	var seat0_pawn := Pawn.new()
+	seat0_pawn.apply_snapshot(seat0.snapshot()["units"][0], 1, seat0.snapshot().get("last_events", []))
+	var seat1_pawn := Pawn.new()
+	seat1_pawn.apply_snapshot(seat1.snapshot()["units"][0], 1, seat1.snapshot().get("last_events", []))
+	eq(seat0_pawn.burn_badge_label(), "BURN 2", "seat 0 paints Burn duration")
+	eq(seat1_pawn.burn_badge_label(), seat0_pawn.burn_badge_label(), "seat 1 paints the same Burn badge")
+	seat0_pawn.free()
+	seat1_pawn.free()
 	eq(str(seat0.snapshot()["tiles"][Vector2i(5, 3)]["terrain_type"]), "lava", "client hydrates terrain")
 	eq(seat0.can_reset_match(), true, "seat 0 client may request New Match")
 	eq(seat1.can_reset_match(), false, "seat 1 client cannot reset")
@@ -385,6 +435,11 @@ func _test_dedicated_host_core() -> void:
 	seat0.apply_packed_state(dedicated.pack_result(expired, 0))
 	eq(int(seat0.snapshot()["units"][0]["hp"]), 70, "client hydrates the Burn tick")
 	eq(int(seat0.snapshot()["turn_time_seconds"]), 30, "client hydrates the reset clock")
+	var ticked_pawn := Pawn.new()
+	ticked_pawn.apply_snapshot(seat0.snapshot()["units"][0], 0)
+	eq(ticked_pawn.burn_badge_label(), "BURN 1", "client paints the host's ticked duration")
+	eq(ticked_pawn.burn_remaining, 1, "client badge follows the host snapshot")
+	ticked_pawn.free()
 	var client_tick: Dictionary = seat0.tick_turn_timer(30.0)
 	eq(int(brain.snapshot()["active_seat"]), 0, "client tick does not change the server seat")
 	eq(int(brain.snapshot()["units"][0]["hp"]), 70, "client tick does not apply Burn")
