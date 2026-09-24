@@ -14,6 +14,7 @@ const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
+const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -56,6 +57,7 @@ var _tooltip_spell: String = ""
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
+var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
@@ -503,6 +505,7 @@ func set_preview_source(sim: Node) -> void:
 
 func render(snap: Dictionary, legal: Array) -> void:
 	_last_snap = snap
+	_last_legal = legal.duplicate()
 	_deploying = is_deployment_phase(snap)
 	var units: Array = snap.get("units", [])
 	var kestrel := _unit(units, 0)
@@ -1120,7 +1123,7 @@ func _preview_dest_args(spell_id: String) -> Dictionary:
 	if spell_id == SpellKits.ADVANCE:
 		return {
 			"from": from,
-			"to": _advance_hover_dest(from, units),
+			"to": _advance_hover_dest(from),
 			"target_seat": -1,
 		}
 	var to: Vector2i = _as_cell(enemy.get("pos", from))
@@ -1131,21 +1134,12 @@ func _preview_dest_args(spell_id: String) -> Dictionary:
 	}
 
 
-func _advance_hover_dest(from: Vector2i, units: Array) -> Vector2i:
-	var occupied := {}
-	for unit in units:
-		if typeof(unit) != TYPE_DICTIONARY:
-			continue
-		occupied[_as_cell(unit.get("pos", Vector2i(-1, -1)))] = true
-	# Advance hover samples an orthogonal neighbor. Diagonals and Manhattan 2 are illegal.
-	for delta in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
-		var dest: Vector2i = from + delta
-		if dest.x < 0 or dest.y < 0 or dest.x > 7 or dest.y > 7:
-			continue
-		if occupied.has(dest):
-			continue
-		return dest
-	return from + Vector2i(1, 0)
+## Hover sample is a sim-legal Advance dest. No client neighbor scan.
+func _advance_hover_dest(from: Vector2i) -> Vector2i:
+	var dests: Array[Vector2i] = SNAPSHOT_TILES.cast_dests(_last_legal, SpellKits.ADVANCE)
+	if dests.is_empty():
+		return from
+	return dests[0]
 
 
 func _as_cell(value: Variant) -> Vector2i:

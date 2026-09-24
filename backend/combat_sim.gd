@@ -331,6 +331,8 @@ func match_phase_name() -> String:
 
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
 ## Mark Shot uses this for Chebyshev 2–5 chrome. Does not imply a legal cast dest.
+## Advance is the exception: highlights are legal_intents dests only (the ortho
+## neighbors that pass stand-on). Not a Manhattan 1–2 ring.
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var out: Array = []
 	var actor := _unit_by_seat(seat)
@@ -343,15 +345,20 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return out
+	if spell_id == SpellKits.ADVANCE:
+		for intent in legal_intents(seat):
+			if typeof(intent) != TYPE_DICTIONARY:
+				continue
+			if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != SpellKits.ADVANCE:
+				continue
+			if intent.has("to"):
+				out.append(intent["to"])
+		return out
 	var from: Vector2i = actor["pos"]
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
 			var cell := Vector2i(x, y)
 			if cell == from:
-				continue
-			if spell_id == SpellKits.ADVANCE:
-				if is_cardinal_step(from, cell):
-					out.append(cell)
 				continue
 			var dist := _range_distance(def, from, cell)
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):

@@ -72,6 +72,27 @@ static func walk_dests(legal: Array) -> Array[Vector2i]:
 	return out
 
 
+## Sim-legal cast dests for one spell. Advance chrome reads this and must not
+## invent a Manhattan 1–2 or diagonal ring on the client.
+static func cast_dests(legal: Array, spell_id: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if spell_id == "":
+		return out
+	for intent in legal:
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) != "cast":
+			continue
+		if str(intent.get("spell", "")) != spell_id:
+			continue
+		if not intent.has("to"):
+			continue
+		var cell := _as_cell(intent["to"])
+		if not out.has(cell):
+			out.append(cell)
+	return out
+
+
 static func normalize_terrain(value: Variant) -> String:
 	if value == null:
 		return DEFAULT_TERRAIN

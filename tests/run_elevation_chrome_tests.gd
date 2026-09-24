@@ -32,6 +32,7 @@ func _run() -> void:
 	_test_adapter_reads_terrain_cell_lists()
 	_test_adapter_normalizes_terrain_aliases()
 	_test_walk_dests_follow_legal_intents_only()
+	_test_cast_dests_follow_legal_intents_only()
 	_test_live_snapshot_tiles_from_combatsim()
 	_test_demo_map_paints_from_snapshot()
 	_test_live_tiles_paint_terrain_and_elevation()
@@ -142,6 +143,23 @@ func _test_walk_dests_follow_legal_intents_only() -> void:
 			truthy(live_dests.has(intent["to"]), "live walk dest %s comes from legal_intents" % str(intent["to"]))
 	eq(live_dests.size(), counted, "adapter dest count matches legal move intents")
 	truthy(live_dests.size() > 0, "skip_deploy Kestrel has sim-legal walks")
+
+
+func _test_cast_dests_follow_legal_intents_only() -> void:
+	var legal: Array = [
+		{"type": "move", "to": Vector2i(2, 0)},
+		{"type": "cast", "spell": "advance", "to": Vector2i(4, 3)},
+		{"type": "cast", "spell": "advance", "to": Vector2i(3, 4)},
+		{"type": "cast", "spell": "strike", "to": Vector2i(5, 5)},
+		{"type": "end_turn"},
+	]
+	var advance: Array[Vector2i] = SNAPSHOT_TILES.cast_dests(legal, "advance")
+	eq(advance.size(), 2, "cast_dests keeps only the named spell")
+	eq(advance.has(Vector2i(4, 3)), true, "first Advance dest is kept")
+	eq(advance.has(Vector2i(3, 4)), true, "second Advance dest is kept")
+	eq(advance.has(Vector2i(2, 0)), false, "walk dests are not Advance highlights")
+	eq(advance.has(Vector2i(5, 5)), false, "other casts are not Advance highlights")
+	eq(SNAPSHOT_TILES.cast_dests(legal, "").is_empty(), true, "empty spell id paints nothing")
 
 
 func _test_live_snapshot_tiles_from_combatsim() -> void:

@@ -8,6 +8,9 @@ extends Node2D
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
 ## Advance teleport does not auto-face.
+## Advance highlights and click-accept read CombatSim.legal_intents only
+## (cast_dests). No client Manhattan-2 or diagonal ring. A click off that set
+## is forwarded so the sim's existing refund coach runs (hot-seat and NetSession).
 ## Locked deploy chrome: bind place_unit / ready_seat / legal_deploy_cells /
 ## deploy_zone_cells / can_ready / snapshot().phase. Hidden enemy stays Open.
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
@@ -269,11 +272,23 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_hud.clear_spell()
 		_paint_highlights()
 		return
+	if spell_id == SpellKits.ADVANCE and not _advance_click_accepted(cell, spell_id):
+		# Not a highlighted dest. Still submit so CombatSim / NetSession reject
+		# it with the existing refund coach (pawn stays, AP unchanged).
+		_submit({"type": "cast", "spell": spell_id, "to": cell})
+		_hud.clear_spell()
+		_paint_highlights()
+		return
 	_submit({"type": "cast", "spell": spell_id, "to": cell})
 	# After any dest-click cast (including Advance): drop spell chrome and
 	# repaint walk tiles from legal_intents so remaining MP is selectable at 0 AP.
 	_hud.clear_spell()
 	_paint_highlights()
+
+
+func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
+	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(_sim().snapshot()))
+	return SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell)
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -620,11 +635,11 @@ func _paint_highlights() -> void:
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
 		if spell_id == "" and tiles.has(dest):
 			_tile_at(dest).set_highlight("move")
-	for intent in legal:
-		var kind := str(intent.get("type", ""))
-		if kind == "cast" and str(intent.get("spell", "")) == spell_id and intent.has("to"):
+	# Advance and other cast dest chrome: legal_intents only. No client range ring.
+	for dest in SNAPSHOT_TILES.cast_dests(legal, spell_id):
+		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
-			_tile_at(intent["to"]).set_highlight(highlight)
+			_tile_at(dest).set_highlight(highlight)
 	_sync_aim_preview()
 
 
