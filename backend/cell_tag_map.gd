@@ -1,7 +1,8 @@
 class_name CellTagMap
 extends RefCounted
 
-## Crosshaven combat tags. The JSON is the authority for terrain + elevation.
+## Optional cell-tag loader. Applied only when the file size matches the board.
+## The ship map is the Mauro 12×12 token grid, not this file.
 ## `paint_only` (and the Tiled `props_paint` layer) is visual only: never pathing,
 ## LoS, or MP. The sibling `.tmx` is recorded for the Technical Artist pipeline
 ## and is not parsed into blockers.

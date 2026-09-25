@@ -18,7 +18,7 @@ const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const _BoardSize := preload("res://backend/board_size.gd")
 const _CellTagMap := preload("res://backend/cell_tag_map.gd")
 const _HitBands := preload("res://backend/hit_bands.gd")
-## Ship default. MatchConfig.board_size overrides (8 proto crop, 12 proto ground).
+## Ship default is 12×12. MatchConfig.board_size 8 is the proto crop.
 const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
@@ -95,7 +95,7 @@ var _shade_tokens: Array = []
 var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile integer elevation + terrain. Ship map is Crosshaven 15×15 tags.
+## Per-tile integer elevation + terrain. Ship map is the Mauro 12×12 grid.
 ## Proto board_size 8 keeps the 8×8 crop. Godot reads snapshot.tiles.
 ## skip_deploy uses the same map unless flat_board. paint_only is not walk data.
 var _board = _WalkBoard.new()
@@ -556,7 +556,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation come from Crosshaven 15×15 tags (paint_only / props_paint ignored). Proto board_size 8 keeps the 8×8 crop plus seeded noise. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist >14 has no hit %. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation are the Mauro 12×12 tokens. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 8 (see HitBands). Chebyshev 9+ is open (reject, no hit %). Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 8.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
@@ -733,9 +733,8 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
-	# Locked % for this Chebyshev dist (1–14). Past 14 stays hidden (no invented %).
-	# Spell min/max still gates the cast; the caption is the band, not a second table.
-	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
+	# Locked % only for Chebyshev 1–8. Dist 9+ stays hidden (no invented %).
+	if chance >= 0 and dist >= 1 and not _HitBands.is_open(dist):
 		out["show"] = true
 	return out
 
@@ -798,8 +797,9 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	else:
 		var range_dist := _range_distance(def, from_cell, to_cell)
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
-		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
-		if bool(def.get("rolls", false)):
+		var open_band := _HitBands.is_open(range_dist)
+		out["in_range"] = in_kit and not open_band
+		if bool(def.get("rolls", false)) and not open_band:
 			var chance := hit_chance(range_dist)
 			if chance >= 0:
 				out["hit_chance"] = chance
@@ -1372,10 +1372,10 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
 
 	var dist := chebyshev(actor["pos"], dest)
+	if _HitBands.is_open(dist):
+		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d is open (no hit %%) (refund)." % [def["name"], dist])
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
-	if dist > _HitBands.MAX_DISTANCE:
-		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -1845,8 +1845,9 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 
 
 func _seed_play_board(config: Dictionary) -> void:
-	# flat_board: Ground z0. Proto 8: 8×8 crop. Proto 12: open ground, no 12×12 pack.
-	# Ship 15: Crosshaven tags (terrain + elevation). paint_only is stored aside.
+	# flat_board: Ground z0. Proto 8: 8×8 crop + noise.
+	# Ship 12: Mauro 12×12 tokens (terrain + elevation). Optional cell_tags
+	# apply only when the file size matches the board (never a made-up crop).
 	if bool(config.get("flat_board", false)):
 		return
 	if _board_size == _BoardSize.PROTO:
@@ -1856,18 +1857,20 @@ func _seed_play_board(config: Dictionary) -> void:
 		_map_id = _demo_map
 		_elevation_gen = "seeded_noise" if noise_elev else "crop"
 		return
-	if _board_size == _BoardSize.PROTO_12:
+	if config.has("cell_tags"):
+		var tags: Dictionary = _CellTagMap.load_file(str(config["cell_tags"]))
+		if _CellTagMap.apply(_board, tags):
+			_paint_only = (tags.get("paint_only", {}) as Dictionary).duplicate(true)
+			_map_id = str(tags.get("map_id", ""))
+			_demo_map = _map_id
+			_elevation_gen = "tags"
 		return
-	var tags_path := str(config.get("cell_tags", _CellTagMap.DEFAULT_TAGS))
-	if _board_size != _BoardSize.SHIP and not config.has("cell_tags"):
+	if _board_size != _BoardSize.SHIP:
 		return
-	var tags: Dictionary = _CellTagMap.load_file(tags_path)
-	if not _CellTagMap.apply(_board, tags):
-		return
-	_paint_only = (tags.get("paint_only", {}) as Dictionary).duplicate(true)
-	_map_id = str(tags.get("map_id", _CellTagMap.MAP_ID))
+	_MatchFlow.seed_mauro_12(_board)
+	_map_id = _MatchFlow.MAURO_SHIP_MAP
 	_demo_map = _map_id
-	_elevation_gen = "tags"
+	_elevation_gen = "mauro"
 
 
 func _paint_only_snapshot() -> Dictionary:
@@ -1893,7 +1896,7 @@ func _paint_only_from_snap(raw: Variant) -> Dictionary:
 
 
 func _wants_demo_map(config: Dictionary) -> bool:
-	# Proto crop helper. Ship Crosshaven does not use this flag.
+	# Proto crop helper. The ship Mauro map does not use this flag.
 	if config.has("demo_map"):
 		return bool(config["demo_map"])
 	if bool(config.get("flat_board", false)):

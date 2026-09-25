@@ -1,12 +1,11 @@
 class_name BoardSize
 extends RefCounted
 
-## Koliseo playable size. Mauro stamped 15×15 (12×12 superseded, 8×8 is proto only).
-## Ship matches omit board_size and get SHIP. Proto fixtures pass PROTO or PROTO_12.
+## Koliseo playable size. Rules Keeper + Mauro: ship is 12×12. 8×8 is proto only.
+## Ship matches omit board_size and get SHIP. Proto fixtures pass PROTO.
 
-const SHIP := 15
+const SHIP := 12
 const PROTO := 8
-const PROTO_12 := 12
 
 
 static func resolve(config: Dictionary, fallback: int = SHIP) -> int:

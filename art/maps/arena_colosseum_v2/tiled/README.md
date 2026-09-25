@@ -1,6 +1,6 @@
 # Crosshaven 15×15 — Koliseo Tiled map (STASIUM XV)
 
-Built for Mauro · Sep 24 2026 (ET). Ship size is now **15×15**; **12×12 was interim** (8×8 is proto only).
+Built for Mauro · Sep 24 2026 (ET). This pack is an optional `cell_tags` map (15×15). The ship board is Mauro’s **12×12** token grid; 8×8 is proto only. It loads only when the board size matches.
 
 ## Orientation (locked)
 

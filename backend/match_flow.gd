@@ -11,8 +11,8 @@ enum Phase {
 	TURN_1,
 }
 
-## Ship playable size. Proto fixtures pass board_size 8 (crop) or 12 (open ground).
-## 12×12 tokens below are the crop source only — not the ship map.
+## Ship playable size is 12×12. Proto fixtures pass board_size 8 (crop).
+## The 12×12 tokens below are the ship map. The 8×8 crop is proto only.
 const BOARD_SIZE := BoardSize.SHIP
 const PROTO_BOARD_SIZE := BoardSize.PROTO
 const SEAT_0 := 0
@@ -23,15 +23,15 @@ const PREFERRED_ZONE_CHEBYSHEV_MIN := 4
 const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
-## Proto-only 8×8 crop of the in-code 12×12 token grid (not the ship map).
-## Ship matches load Crosshaven 15×15 tags (`CellTagMap`). This crop is seeded
-## only when board_size is PROTO (8). PHASE_A_DEMO_TILES is phase_a_demo_tiles().
+## Proto-only 8×8 crop of the in-code 12×12 token grid.
+## Ship matches seed this full 12×12 grid (`seed_mauro_12`). The 8×8 crop is
+## proto only (`board_size` PROTO). PHASE_A_DEMO_TILES is phase_a_demo_tiles().
 ## Proto elevation is noise from MatchConfig.seed (smooth noise, z 0–3).
-## Ship elevation is the tag integer, not this crop and not noise.
+## Ship elevation is the token integer, not this crop and not noise.
 ##
 ## Crop origin (row 2, col 2) on the 12×12 token grid. Terrain 0/1/2/3 = G/M/W/L.
 ## Crop z ladder (source only): z1→0, z2→1, z3→2, z4→3. Proto live z is noise.
-## Max climb 1 / drop 2 (no z1→z3 hop). 12×12 stays crop source only.
+## Max climb 1 / drop 2 (no z1→z3 hop). Ship matches use the token z.
 ##
 ##     0  1  2  3  4  5  6  7
 ##   0 G  G  M  W  L  W  W  M
@@ -231,8 +231,32 @@ func zone_cells(seat: int) -> Array[Vector2i]:
 	return out
 
 
+const MAURO_SHIP_MAP := "mauro_12"
+
+
+## Full Mauro 12×12. Terrain and token elevation. Not the 8×8 proto crop.
+static func mauro_12_tiles() -> Array:
+	var out := []
+	var grid: Array = parse_mauro_12x12()
+	for y in range(grid.size()):
+		var row: Array = grid[y]
+		for x in range(row.size()):
+			var src: Dictionary = row[x]
+			out.append({
+				"pos": Vector2i(x, y),
+				"terrain": src["terrain"],
+				"elevation": int(src["elevation"]),
+			})
+	return out
+
+
+static func seed_mauro_12(board) -> void:
+	for row in mauro_12_tiles():
+		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
+
+
 ## Proto 8×8 crop terrain. Elevation is seeded noise (z 0–3) unless noise_elev
-## is false (fixtures that want the crop z paint). Not used for the 15×15 ship map.
+## is false (fixtures that want the crop z paint). Not the 12×12 ship map.
 static func seed_phase_a_demo(board, seed: int = 0, noise_elev: bool = true) -> void:
 	for row in phase_a_demo_tiles():
 		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
@@ -253,7 +277,7 @@ static func apply_noise_elevations(board, seed: int) -> void:
 
 
 ## PHASE_A_DEMO_TILES — 64-cell proto crop at origin (row 2, col 2).
-## 12×12 stays crop source only. The ship board does not load this grid.
+## The ship board loads the full 12×12 via seed_mauro_12, not this crop.
 static func phase_a_demo_tiles() -> Array:
 	var out := []
 	var grid: Array = parse_mauro_12x12()
