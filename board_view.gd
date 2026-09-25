@@ -46,6 +46,7 @@ extends Node2D
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
+const BOARD_AMBIENT := preload("res://board/board_ambient.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -90,6 +91,8 @@ var _queued_net_events: Array = []
 var _vfx: Node
 var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
+var _ambient: BoardAmbient
+var _hovered_tile: BoardTile = null
 var _fit_camera_pos := Vector2.ZERO
 var _panning := false
 var _pan_origin := Vector2.ZERO
@@ -117,6 +120,7 @@ func _ready() -> void:
 	_shade_layer()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
+	_ensure_ambient()
 	call_deferred("_boot")
 
 
@@ -313,6 +317,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_pan_origin = motion.position
 		_camera.position -= delta / _camera.zoom
 		_clamp_camera()
+		_set_board_hover(_cell_under_pointer(event))
 		get_viewport().set_input_as_handled()
 		return
 	if _hud_claims_pointer(event):
@@ -322,6 +327,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if gesture == TOUCH.AIM:
 		var hover := _cell_under_pointer(event)
+		if event is InputEventMouseMotion:
+			_set_board_hover(hover)
 		if _in_bounds(hover):
 			_sync_aim_preview(hover)
 			if TOUCH.is_touch_press(event):
@@ -1428,6 +1435,29 @@ func _in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < _board_size and cell.y < _board_size
 
 
+func _ensure_ambient() -> void:
+	if _ambient != null and is_instance_valid(_ambient):
+		_ambient.fit_to_size(_board_size)
+		return
+	_ambient = BOARD_AMBIENT.new()
+	_ambient.name = "BoardAmbient"
+	add_child(_ambient)
+	_ambient.bind(self)
+
+
+func _set_board_hover(cell: Vector2i) -> void:
+	var next: BoardTile = null
+	if _in_bounds(cell) and tiles.has(cell):
+		next = tiles[cell] as BoardTile
+	if next == _hovered_tile:
+		return
+	if _hovered_tile != null and is_instance_valid(_hovered_tile):
+		_hovered_tile.set_hovered(false)
+	_hovered_tile = next
+	if _hovered_tile != null:
+		_hovered_tile.set_hovered(true)
+
+
 func _ensure_camera() -> void:
 	if _camera != null and is_instance_valid(_camera):
 		return
@@ -1442,6 +1472,7 @@ func _rebuild_grid(size: int) -> void:
 	if next == _board_size and tiles.size() == next * next and not tiles.is_empty():
 		return
 	_board_size = next
+	_hovered_tile = null
 	for child in $Tiles.get_children():
 		$Tiles.remove_child(child)
 		child.free()
@@ -1457,6 +1488,8 @@ func _rebuild_grid(size: int) -> void:
 			$Tiles.add_child(tile)
 			tiles[tile.grid_position] = tile
 	_fit_board_camera()
+	if _ambient != null and is_instance_valid(_ambient):
+		_ambient.fit_to_size(_board_size)
 
 
 ## Zoom the 15×15 diamond into the 960×720 play band. Cell size stays 64×32.
