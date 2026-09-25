@@ -40,6 +40,16 @@ Hub doors stay 72px. Class select still has **Back to hub**.
 4. With the mouse, or with the Game workspace's touch emulation: tap **Walk** and a highlighted cell, tap the large attack circle (the spell arms, the skill card stays hidden). Hold the circle to open the card; release or tap the board to dismiss it. Drag across the enemy figure and release. The cast spends AP. Tap **Face** N/E/S/W, tap **End Turn**. Tapping the empty diamond behind a fighter still refunds.
 5. **Back to hub** on class select returns to the hub. It is still there.
 
+## Combat motion (view chrome)
+
+Mobile track only. This does not change kits, hit bands, AP/MP, marks, or CombatSim.
+
+A legal walk hops one orthogonal tile at a time (`Pawn.WALK_HOP_SEC`, 0.25s). The pawn node slides along the path. The hop is sprite-local (`ViewMotion.hop_offset`) so the feet land on the tile center. Advance stays a teleport snap and does not hop.
+
+On spell commit the caster plays the same short body motion for a hit and a miss: about a 6px lunge for melee (`ViewMotion.ATTACK_LUNGE_PX`) or the cast wind-up otherwise. The target recoils or lifts only when the spell connects. Existing impact VFX still fire on their own timing. One action locks input for at most 0.6s.
+
+Facing art stays `art/characters/<class>/<class>_<n|e|s|w>.png` until walk and attack strips exist. Batch 1 (Kestrel and Ironjaw, SE/NE) is not in the repo. Later, an `AnimatedSprite2D` child with frames for that facing (`walk_se` / `walk_ne`, `attack_se` / `attack_ne`, or generic `walk` / `attack`) plays for the hop or lunge. `speed_scale` matches the window (`Pawn.walk_strip_speed_scale` is 1.0 for a 6-frame, 24fps hop). A missing node or empty frames keeps the static sprite. No placeholder strips are shipped.
+
 ## Headless check
 
 ```text
