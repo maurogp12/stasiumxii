@@ -6,11 +6,11 @@ class_name Pawn
 ## `art/characters/<class>/<class>_<n|e|s|w>.png`. Mirrors are baked into the
 ## files — never set flip_h. Bastion _n/_w are placeholder back views loaded
 ## from those same filenames.
-## Mobile-track chrome. Batch 1 strips (Kestrel/Ironjaw SE/NE) load from
-## `art/grok_project/anims/` when the files exist (see that folder's README).
-## An AnimatedSprite2D plays only when it has frames for this facing:
-## `walk_se` / `walk_ne` (and `attack_se` / `attack_ne`), then
-## `walk_<n|e|s|w>` / `attack_<n|e|s|w>`, then generic `walk` / `attack`.
+## Mobile-track chrome. Batch 1 strips load from
+## `art/export_2x/characters/<class>/anims/` when the files exist
+## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
+## (SE→e, SW→s, NE→n, NW→w). A drawn master name (`walk_se`, `attack_ne`)
+## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
 ## A resolved walk strip loops at authored fps for the whole path and skips
 ## the hop arc. Missing strips keep the hop and this static sprite.
 ## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
@@ -571,15 +571,16 @@ func _plant_sprite() -> void:
 	_sprite.visible = true
 
 
-## Facing diagonals first (Batch 1 SE/NE), then the cardinal name, then the generic clip.
+## Locked letters first (SE→e, SW→s, NE→n, NW→w), then the drawn-master
+## name (`walk_se` / `attack_ne`), then the generic clip.
 func body_anim_candidates(kind: String) -> Array:
 	var face := facing.strip_edges().to_lower()
 	var diag := str({"n": "ne", "e": "se", "s": "sw", "w": "nw"}.get(face, ""))
 	var names: Array = []
-	if str(diag) != "":
-		names.append("%s_%s" % [kind, diag])
 	if face != "":
 		names.append("%s_%s" % [kind, face])
+	if str(diag) != "":
+		names.append("%s_%s" % [kind, diag])
 	names.append(kind)
 	return names
 

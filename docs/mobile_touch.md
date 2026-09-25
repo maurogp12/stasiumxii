@@ -48,7 +48,7 @@ A legal walk moves one orthogonal tile at a time (`Pawn.WALK_HOP_SEC`, 0.25s). T
 
 On spell commit the caster plays the same short body motion for a hit and a miss: about a 6px lunge for melee (`ViewMotion.ATTACK_LUNGE_PX`) or the cast wind-up otherwise. The target recoils or lifts only when the spell connects. Existing impact VFX still fire on their own timing. One action locks input for at most 0.6s.
 
-Facing art stays `art/characters/<class>/<class>_<n|e|s|w>.png` when a strip is missing. Batch 1 (Kestrel and Ironjaw, SE/NE walk and attack, optional Kestrel cast) loads from `art/grok_project/anims/` — see that README for the exact drop paths, including TA `export_2x` `.tres` files. An `AnimatedSprite2D` plays `walk_se` / `walk_ne`, then `walk_<n|e|s|w>`, then generic `walk` (same order for attack and cast). Walk loops at authored fps (`Pawn.walk_strip_speed_scale` is 1.0; the cycle is 6 frames at 12 fps, not one cycle squeezed into the 0.25s tile). Attack stays a one-shot plus the lunge. A missing file keeps the static sprite and, for walks, the hop. No placeholder strips are shipped.
+Facing art stays `art/characters/<class>/<class>_<n|e|s|w>.png` when a strip is missing. Batch 1 loads lettered sheets from `art/export_2x/characters/<class>/anims/<class>_<walk|attack>_<n|e|s|w>.png` (optional `<class>_frames.tres` beside that). Facing map: SE→`e`, SW→`s`, NE→`n`, NW→`w`. The pawn tries `walk_e` before a drawn-master name like `walk_se`. Walk loops at 12 fps (`Pawn.walk_strip_speed_scale` is 1.0; the cycle is not squeezed into the 0.25s tile). Attack is a one-shot plus the lunge; impact frame index is 3. A missing file keeps the static sprite and, for walks, the hop. No placeholder strips are shipped.
 
 ## Headless check
 
