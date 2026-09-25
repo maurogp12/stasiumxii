@@ -36,12 +36,14 @@ func _run() -> void:
 	_test_stacks_and_lock_cap()
 	_test_every_event_type()
 	_test_view_wiring_does_not_touch_rules()
+	_test_class_choreography()
 
 
 func _test_budgets() -> void:
 	eq(BUDGET.LOCK_MAX <= 0.6, true, "input lock cap is 0.6s")
 	eq(BUDGET.SHAKE_PX, 4.0, "shake amplitude is 4px")
 	eq(BUDGET.SPARK_AMOUNT <= 24, true, "spark burst stays under the particle cap")
+	eq(BUDGET.SPARK_CAP, 24, "a scaled burst never passes 24 particles")
 	eq(BUDGET.PUFF_AMOUNT <= 24, true, "puff burst stays under the particle cap")
 	eq(BUDGET.MOTE_AMOUNT <= 24, true, "mote burst stays under the particle cap")
 	eq(BUDGET.POOL_SPARK, 4, "sparks are pooled")
@@ -488,6 +490,12 @@ func _test_view_wiring_does_not_touch_rules() -> void:
 			if str(beat_name).begins_with(needed):
 				found = true
 		truthy(found, "F9 includes %s" % needed)
+	for needed in ["K1", "K2", "I1", "I2", "I3", "I4", "M1", "M2", "M3", "M4", "M5", "Gl1", "Gl2", "Gl3", "Gl4", "Gl5", "B1", "B2", "B3", "B4", "B5", "B6"]:
+		var found_class := false
+		for beat_name in names:
+			if str(beat_name).begins_with(needed):
+				found_class = true
+		truthy(found_class, "F9 includes %s" % needed)
 
 
 func _test_live_director() -> void:
@@ -524,6 +532,7 @@ func _test_live_director() -> void:
 	eq(director.pool_size("spark"), BUDGET.POOL_SPARK, "combat playback does not grow the spark pool")
 	eq(director.pool_size("number"), BUDGET.POOL_NUMBER, "combat playback does not grow the number pool")
 	eq(director.pool_size("ring"), BUDGET.POOL_RING, "combat playback does not grow the ring pool")
+	director.dismiss_all()
 	var shade_snap := {
 		"units": [],
 		"shade_tokens": [{"pos": Vector2i(2, 2), "turns": 3, "owner_seat": 0}],
@@ -543,6 +552,20 @@ func _test_live_director() -> void:
 		"owner_seat": 0,
 	}], {"units": [], "shade_tokens": []})
 	eq(director.linger_count(), 0, "expire removes the shade ring")
+	director.play([], {
+		"units": [{
+			"seat": 1,
+			"pos": Vector2i(4, 3),
+			"alive": true,
+			"marks": 3,
+			"invisible": true,
+			"hit_immunity": 1,
+			"skip_next_mp": false,
+		}],
+	})
+	eq(director.linger_count(), 3, "snapshot marks, invisible, and immunity linger")
+	director.play([], {"units": [{"seat": 1, "pos": Vector2i(4, 3), "alive": true}]})
+	eq(director.linger_count(), 0, "a cleared snapshot drops those tells")
 	DIRECTOR.set_reduce_shake(true)
 	director.play([_damage("crush", 24)], {})
 	await process_frame
@@ -559,6 +582,304 @@ func _test_live_director() -> void:
 	DIRECTOR.clear_reduce_shake()
 	ProjectSettings.set_setting("stasium/view/reduce_shake", false)
 	board.queue_free()
+
+
+func _test_class_choreography() -> void:
+	var caster := Vector2i(2, 3)
+	var foe := Vector2i(4, 3)
+	var marked: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "mark_shot",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 8,
+		"engine": "mark",
+		"engine_gained": 1,
+	}])
+	eq(_first(marked, "projectile")["from"], caster, "Mark Shot leaves the caster cell")
+	eq(_first(marked, "projectile")["to"], foe, "Mark Shot arrives on the target cell")
+	eq(is_equal_approx(float(_first(marked, "projectile")["arc"]), 10.0), true, "Mark Shot arcs")
+	eq(_first(marked, "status_on")["status"], "marks", "Mark Shot pins Marks on the target")
+	eq(int(_first(marked, "status_on")["seat"]), 1, "Marks sit on the target seat")
+	eq(_first(marked, "status_on")["cell"], foe, "Mark cells stay Vector2i")
+	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
+	var stacked: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "mark_shot",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 8,
+		"engine_gained": 1,
+	}], {"units": [{"seat": 1, "pos": foe, "marks": 4, "alive": true}]})
+	eq(int(_first(stacked, "status_on")["count"]), 4, "Marks count comes from the snapshot")
+	var boom: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "detonate",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 24,
+		"marks_consumed": 3,
+		"marks_remaining": 0,
+		"engine": "mark",
+		"engine_spent": 3,
+	}])
+	eq(int(_first(boom, "spark")["amount"]), 16, "Detonate scales the burst with marks consumed")
+	eq(_first(boom, "status_off")["status"], "marks", "Detonate clears Marks when none remain")
+	eq(_has(boom, "shake"), false, "Detonate still does not shake")
+	eq(_first(boom, "number")["text"], "24", "Detonate still leads with the damage number")
+	var kept: Array = ROUTER.recipes_for([{
+		"type": "miss",
+		"spell": "detonate",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 0,
+		"marks_retained": true,
+		"marks_on_target": 2,
+	}])
+	eq(_has(kept, "status_off"), false, "a Detonate miss keeps the Marks")
+	eq(_first(kept, "number")["text"], "MISS", "a Detonate miss still reads MISS")
+	var step: Array = ROUTER.recipes_for([{
+		"type": "advance",
+		"seat": 0,
+		"from": Vector2i(2, 2),
+		"to": Vector2i(2, 3),
+		"impact_gained": 1,
+	}])
+	eq(_has(step, "slide"), false, "Advance teleports, it does not slide")
+	eq(_first(step, "puff")["cell"], Vector2i(2, 2), "Advance leaves dust on the origin cell")
+	eq(_first(step, "ring")["style"], "crack", "Advance cracks the landing cell")
+	eq(_first(step, "number")["text"], "+1 Impact", "Advance still reports the Impact gain")
+	var slam: Array = ROUTER.recipes_for([_damage("strike", 16)])
+	eq(_first(slam, "ring")["style"], "crack", "Strike slams a ground crack")
+	eq(_has(slam, "shake"), false, "Strike does not shake")
+	var crush: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "crush",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 24,
+		"impact_before": 4,
+		"impact_spent": 2,
+		"stun_applied": 1,
+	}])
+	eq(bool(_first(crush, "status_on")["glow"]), true, "Crush at 4 Impact glows the pips before the spend")
+	eq(float(_first(crush, "shake")["amplitude"]), 4.0, "Crush still shakes at 4px")
+	var plain: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "mend",
+		"seat": 0,
+		"target_seat": 0,
+		"caster_cell": caster,
+		"to": caster,
+		"healed": 16,
+		"damage": 0,
+		"engine": "pulse",
+		"engine_gained": 1,
+	}])
+	eq(_first_kind(plain, "triage").is_empty(), true, "Mend omits the triage tag when the event has no triage flag")
+	eq(_has(plain, "projectile"), false, "a self Mend does not travel")
+	var triage: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "mend",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"healed": 20,
+		"damage": 0,
+		"triage": true,
+	}])
+	eq(_first_kind(triage, "triage")["text"], "x1.25", "triage true flashes the multiplier")
+	eq(_first_kind(triage, "heal")["text"], "+20", "the heal number stays the event amount")
+	eq(_has(triage, "spark"), false, "a triage heal is not a damage spark")
+	var tap: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "pulse_tap",
+		"seat": 0,
+		"target_seat": 0,
+		"caster_cell": caster,
+		"to": caster,
+		"healed": 10,
+		"damage": 0,
+		"engine_spent": 1,
+	}])
+	eq(_has(tap, "projectile"), false, "a self Pulse Tap spends in place")
+	var washed: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "cleanse",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 0,
+		"healed": 0,
+		"cc_removed": ["stun"],
+		"engine_gained": 1,
+	}])
+	eq(_first(washed, "status_flash")["status"], "wash", "Cleanse plays the wash")
+	eq(_first_kind(washed, "cleansed")["text"], "CLEANSED", "Cleanse names stun when cc_removed lists it")
+	eq(_first(washed, "status_off")["status"], "stun", "Cleanse drops the stun marker")
+	var empty_cc: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "cleanse",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 0,
+		"cc_removed": [],
+	}])
+	eq(_first_kind(empty_cc, "cleansed").is_empty(), true, "an empty cc_removed list does not claim a cleanse")
+	eq(_has(empty_cc, "status_off"), false, "Cleanse leaves stun alone when nothing was removed")
+	var ally: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "heartstop",
+		"seat": 0,
+		"target_seat": 0,
+		"caster_cell": caster,
+		"to": caster,
+		"healed": 32,
+		"damage": 0,
+		"hit_immunity": 1,
+		"triage": true,
+		"engine_spent": 4,
+	}])
+	eq(_first(ally, "status_on")["status"], "hit_immunity", "ally Heartstop locks the immunity rim")
+	eq(_first_kind(ally, "triage")["text"], "x1.25", "ally Heartstop shows triage when the flag is set")
+	eq(_has(ally, "spark"), false, "ally Heartstop is a heal")
+	var full: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "heartstop",
+		"seat": 0,
+		"target_seat": 0,
+		"caster_cell": caster,
+		"to": caster,
+		"healed": 0,
+		"damage": 0,
+		"hit_immunity": 1,
+	}])
+	eq(_first(full, "status_on")["status"], "hit_immunity", "a full-HP ally Heartstop still grants the rim")
+	eq(_has(full, "spark"), false, "a zero heal is not drawn as damage")
+	eq(bool(_first(ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "detonate",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 12,
+		"marks_consumed": 1,
+		"marks_remaining": 0,
+	}]), "projectile").get("head", true)), false, "Detonate's signal line is not an arrow")
+	var enemy: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "heartstop",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 10,
+		"skip_next_mp": true,
+		"engine_spent": 4,
+	}])
+	eq(_first(enemy, "status_on")["status"], "skip_next_mp", "enemy Heartstop marks skip-next-MP")
+	eq(_first(enemy, "number")["text"], "10", "enemy Heartstop keeps the damage number")
+	eq(_first_kind(enemy, "triage").is_empty(), true, "enemy Heartstop never shows triage")
+	var both: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "heartstop",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 10,
+		"skip_next_mp": true,
+		"triage": true,
+	}])
+	eq(_first_kind(both, "triage").is_empty(), true, "skip-next-MP suppresses a stray triage tag")
+	var faded: Array = ROUTER.recipes_for([{
+		"type": "cast",
+		"spell": "fade",
+		"seat": 0,
+		"caster_cell": caster,
+		"invisible": true,
+		"engine_gained": 1,
+	}])
+	eq(_first(faded, "number")["text"], "+1 Umbral", "Fade still leads with the Umbral gain")
+	var veil: Dictionary = _first(faded, "status_on")
+	eq(veil["status"], "invisible", "Fade sets the invisible rim")
+	eq(veil.has("turns"), false, "Invisible has no turn count")
+	var fold: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "nightfold",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": caster,
+		"to": foe,
+		"damage": 22,
+	}])
+	eq(_has(fold, "spark"), false, "Nightfold stays parked and does not deal a body spark")
+	eq(_first_kind(fold, "damage").is_empty(), true, "Nightfold does not invent per-body damage")
+	truthy(_has(fold, "ring"), "Nightfold shows only the parked swirl")
+	var taxed: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "hold_line",
+		"seat": 0,
+		"caster_cell": caster,
+		"damage": 7,
+		"bodies": 1,
+		"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
+		"targets": [{"target_seat": 1, "cell": foe, "hit": true, "damage": 7, "exit_tax": 1}],
+	}])
+	eq(_count(taxed, "spark"), 1, "Hold Line still sparks only the listed bodies")
+	eq(_count(taxed, "ring"), 3, "Hold Line still outlines only the cone")
+	eq(_first(taxed, "status_on")["status"], "exit_tax", "Hold Line locks exit tax from the body row")
+	var lance: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "aegis_break",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": Vector2i(1, 1),
+		"to": Vector2i(3, 1),
+		"damage": 26,
+		"aegis_spent": 4,
+		"stacks_cleared": true,
+	}])
+	eq(_cheby_shot(lance), true, "Aegis Break at range 2 throws the lance")
+	eq(_first(lance, "status_off")["status"], "aegis", "Aegis Break clears the facets")
+	truthy(_has(lance, "shake"), "Aegis Break still shakes")
+	var adjacent: Array = ROUTER.recipes_for([_damage("aegis_break", 26)])
+	eq(_has(adjacent, "projectile"), false, "Aegis Break at range 1 has no lance")
+	var burned: Array = ROUTER.recipes_for([{"type": "dead", "seat": 1, "name": "Kestrel", "cause": "burn"}])
+	eq(_first(burned, "death")["cause"], "burn", "death keeps the burn cause")
+	eq(_has(burned, "shake"), false, "a burn death does not shake")
+	var struck: Array = ROUTER.recipes_for([{"type": "dead", "seat": 1, "name": "Ironjaw", "cause": "damage"}])
+	eq(_first(struck, "death")["cause"], "damage", "death keeps the damage cause")
+	var unnamed: Array = ROUTER.recipes_for([{"type": "dead", "seat": 1, "name": "Ironjaw"}])
+	eq(_first(unnamed, "death")["cause"], "damage", "a death without a cause reads as damage")
+	eq(ROUTER.blocking_sec(boom) <= 0.6, true, "Detonate stays inside the input lock")
+	eq(ROUTER.blocking_sec(lance) <= 0.6, true, "Aegis Break stays inside the input lock")
+
+
+func _cheby_shot(recipes: Array) -> bool:
+	for item in recipes:
+		if str(item.get("id", "")) != "projectile":
+			continue
+		var origin: Vector2i = item.get("from", Vector2i.ZERO)
+		var dest: Vector2i = item.get("to", Vector2i.ZERO)
+		if origin == Vector2i(1, 1) and dest == Vector2i(3, 1):
+			return true
+	return false
 
 
 func _catalogue() -> Array:

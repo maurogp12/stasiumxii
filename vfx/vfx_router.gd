@@ -7,12 +7,13 @@ class_name VfxRouter
 const SHAKE_SPELLS := ["crush", "aegis_break"]
 
 
-static func recipes_for(events: Array, _snapshot: Dictionary = {}) -> Array:
+static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
 	var out: Array = []
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
 		var chunk: Array = _recipes_for_event(event)
+		chunk.append_array(_choreography(event, snapshot))
 		out.append_array(chunk)
 	return out
 
@@ -93,6 +94,38 @@ static func debug_beats() -> Array:
 			"engine_gained": 1,
 		}]},
 		{"name": "expire", "events": [{"type": "expire", "status": "stun", "target_seat": 1, "pos": target, "owner_seat": 1}]},
+		{"name": "K1 Mark Shot", "events": [_hit("mark_shot", 8, caster, target, {"engine": "mark", "engine_gained": 1})]},
+		{"name": "K2 Detonate", "events": [_hit("detonate", 24, caster, target, {"marks_consumed": 3, "marks_remaining": 0, "engine": "mark", "engine_spent": 3})]},
+		{"name": "K2 Detonate miss", "events": [_miss("detonate", caster, target, {"marks_retained": true, "marks_on_target": 2})]},
+		{"name": "I1 Advance", "events": [{"type": "advance", "seat": 0, "from": caster, "to": Vector2i(2, 4), "teleport": true, "impact_gained": 1, "adjacent": true}]},
+		{"name": "I2 Strike", "events": [_hit("strike", 16, caster, target, {"engine": "impact", "engine_gained": 1})]},
+		{"name": "I3 Shoulder", "events": [_hit("shoulder", 6, caster, target, {"pushed": true, "push_from": target, "push_to": pushed, "engine": "impact", "engine_gained": 1})]},
+		{"name": "I4 Crush", "events": [_hit("crush", 24, caster, target, {"impact_before": 4, "impact_spent": 2, "stun_applied": 1, "engine": "impact", "engine_spent": 2})]},
+		{"name": "M1 Mend", "events": [_hit("mend", 0, caster, target, {"healed": 16, "damage": 0, "engine": "pulse", "engine_gained": 1})]},
+		{"name": "M1 Mend triage", "events": [_hit("mend", 0, caster, target, {"healed": 20, "damage": 0, "triage": true, "engine": "pulse", "engine_gained": 1})]},
+		{"name": "M2 Pulse Tap", "events": [_hit("pulse_tap", 0, caster, caster, {"target_seat": 0, "healed": 10, "damage": 0, "to": caster, "engine": "pulse", "engine_spent": 1})]},
+		{"name": "M3 Ward", "events": [_hit("ward", 0, caster, caster, {"target_seat": 0, "healed": 0, "damage": 0, "to": caster, "shield": 20, "engine": "pulse", "engine_spent": 2})]},
+		{"name": "M4 Cleanse", "events": [_hit("cleanse", 0, caster, target, {"healed": 0, "damage": 0, "cc_removed": ["stun"], "engine": "pulse", "engine_gained": 1})]},
+		{"name": "M4 Cleanse empty", "events": [_hit("cleanse", 0, caster, target, {"healed": 0, "damage": 0, "cc_removed": [], "engine": "pulse", "engine_gained": 1})]},
+		{"name": "M5 Heartstop ally", "events": [_hit("heartstop", 0, caster, caster, {"target_seat": 0, "healed": 40, "damage": 0, "to": caster, "triage": true, "hit_immunity": 1, "engine": "pulse", "engine_spent": 4})]},
+		{"name": "M5 Heartstop enemy", "events": [_hit("heartstop", 10, caster, target, {"skip_next_mp": true, "engine": "pulse", "engine_spent": 4})]},
+		{"name": "Gl1 Cut", "events": [_hit("cut", 13, caster, target, {"engine": "umbral", "engine_gained": 1})]},
+		{"name": "Gl2 Drop Shade", "events": [{"type": "cast", "spell": "drop_shade", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 4), "shades": 1}]},
+		{"name": "Gl3 Ambush", "events": [_hit("ambush", 30, caster, target, {"teleported": true, "origin": Vector2i(2, 4), "destination": Vector2i(4, 4), "backstab": true, "facing_mult": 1.35})]},
+		{"name": "Gl4 Fade", "events": [{"type": "cast", "spell": "fade", "seat": 0, "caster_cell": caster, "invisible": true, "engine": "umbral", "engine_gained": 1}]},
+		{"name": "Gl5 Nightfold parked", "events": [{"type": "cast", "spell": "nightfold", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 5)}]},
+		{"name": "B1 Bash", "events": [_hit("bash", 11, caster, target, {"engine": "aegis", "engine_gained": 1})]},
+		{"name": "B2 Plant", "events": [{"type": "cast", "spell": "plant", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 3), "engine": "aegis", "engine_gained": 1}]},
+		{"name": "B3 Hold Line", "events": [{
+			"type": "hit", "spell": "hold_line", "seat": 0, "caster_cell": caster, "damage": 7, "bodies": 1,
+			"cone": [Vector2i(3, 3), Vector2i(3, 2), Vector2i(3, 4)],
+			"targets": [{"target_seat": 1, "cell": target, "hit": true, "damage": 7, "exit_tax": 1, "back": false}],
+			"engine": "aegis", "engine_gained": 1,
+		}]},
+		{"name": "B4 Snap Wall", "events": [{"type": "snap_wall", "spell": "snap_wall", "seat": 0, "caster_cell": caster, "to": Vector2i(3, 2), "aegis_spent": 2, "turns": 2}]},
+		{"name": "B5 Aegis Break", "events": [_hit("aegis_break", 26, caster, Vector2i(4, 3), {"aegis_spent": 4, "stacks_cleared": true, "engine": "aegis", "engine_spent": 4})]},
+		{"name": "B6 Intercept", "events": [{"type": "intercept", "interceptor_seat": 0, "for_seat": 1, "interceptor_cell": caster, "for_cell": target, "damage": 4, "hp": 76}]},
+		{"name": "G11 burn", "events": [{"type": "dead", "seat": 1, "name": "Kestrel", "cause": "burn"}]},
 	]
 
 
@@ -114,7 +147,12 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 		"burn":
 			return _burn_tick_recipes(event)
 		"dead":
-			return [{"id": "death", "block": 0.0, "seat": int(event.get("seat", -1))}]
+			return [{
+				"id": "death",
+				"block": 0.0,
+				"seat": int(event.get("seat", -1)),
+				"cause": str(event.get("cause", "damage")),
+			}]
 		"match_over":
 			return [{"id": "winner", "block": 0.0, "seat": int(event.get("winner_seat", -1))}]
 		"advance":
@@ -137,6 +175,9 @@ static func _recipes_for_event(event: Dictionary) -> Array:
 
 static func _hit_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
+	if spell_id == "nightfold":
+		# Gated. No per-body damage until the rule is stamped.
+		return []
 	var out: Array = []
 	if spell_id == "hold_line":
 		out.append_array(_hold_line_recipes(event, true))
@@ -181,16 +222,21 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 	var target_seat := int(event.get("target_seat", -1))
 	var cell := _target_cell(event)
 	var damage := int(event.get("damage", 0))
-	var tint: Color = VfxPalette.spell_tint(str(event.get("spell", "")))
+	var spell_id := str(event.get("spell", ""))
+	var tint: Color = VfxPalette.spell_tint(spell_id)
 	if damage > 0:
-		out.append({
+		var spark := {
 			"id": "spark",
 			"block": 0.0,
 			"seat": target_seat,
 			"cell": cell,
 			"tint": tint,
 			"chest": true,
-		})
+		}
+		if spell_id == "detonate":
+			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
+			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
+		out.append(spark)
 		out.append(_number(target_seat, cell, str(damage), "damage", 0.0, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
@@ -199,6 +245,7 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 	if absorbed > 0:
 		out.append(_number(target_seat, cell, str(absorbed), "absorb", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 		out.append(_ring(cell, VfxPalette.SHIELD_TOP, false, 0.22, 0.0))
+		out.append({"id": "status_pulse", "block": 0.0, "status": "shield", "seat": target_seat})
 	if bool(event.get("shield_broken", false)):
 		out.append(_puff(target_seat, cell, VfxPalette.SHIELD_TOP, 0.9))
 	if bool(event.get("immunity_absorbed", false)):
@@ -266,6 +313,8 @@ static func _hold_line_recipes(event: Dictionary, connected: bool) -> Array:
 
 static func _miss_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
+	if spell_id == "nightfold":
+		return []
 	var out: Array = []
 	var caster_seat := int(event.get("seat", -1))
 	var caster_cell := cell_of(event.get("caster_cell", Vector2i.ZERO))
@@ -381,9 +430,9 @@ static func _cast_recipes(event: Dictionary) -> Array:
 	var out: Array = []
 	var cell := cell_of(event.get("to", Vector2i.ZERO))
 	if spell_id == "drop_shade" and event.has("to"):
-		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.35))
+		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.35, "pool"))
 	elif spell_id == "plant" and event.has("to"):
-		out.append(_ring(cell, VfxPalette.BASTION, true, 0.0, 0.0))
+		out.append(_ring(cell, VfxPalette.BASTION, true, 0.0, 0.0, "sigil"))
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
 	return out
 
@@ -391,7 +440,7 @@ static func _cast_recipes(event: Dictionary) -> Array:
 static func _wall_recipes(event: Dictionary) -> Array:
 	var out: Array = []
 	if event.has("to"):
-		out.append(_ring(cell_of(event.get("to")), VfxPalette.BASTION_BLACK, true, 0.0, 0.0))
+		out.append(_ring(cell_of(event.get("to")), VfxPalette.BASTION_BLACK, true, 0.0, 0.0, "slab"))
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", event.get("to", Vector2i.ZERO)))))
 	return out
 
@@ -569,8 +618,8 @@ static func _puff(seat: int, cell: Vector2i, tint: Color, alpha: float) -> Dicti
 	}
 
 
-static func _ring(cell: Vector2i, tint: Color, linger: bool, life: float, swirl: float) -> Dictionary:
-	return {
+static func _ring(cell: Vector2i, tint: Color, linger: bool, life: float, swirl: float, style: String = "") -> Dictionary:
+	var spec := {
 		"id": "ring",
 		"block": 0.0,
 		"cell": cell,
@@ -579,6 +628,9 @@ static func _ring(cell: Vector2i, tint: Color, linger: bool, life: float, swirl:
 		"life": life,
 		"swirl": swirl,
 	}
+	if style != "":
+		spec["style"] = style
+	return spec
 
 
 static func _chevron(seat: int, cell: Vector2i, event: Dictionary) -> Dictionary:
@@ -604,6 +656,246 @@ static func _centroid(cells: Array) -> Vector2i:
 	return Vector2i(int(x / cells.size()), int(y / cells.size()))
 
 
+## Per-class beats from the VFX plan. Appended after the generic recipes so
+## pass-1 numbers, shakes, and slides stay first. Nothing here rolls or mitigates.
+static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
+	var spell_id := str(event.get("spell", ""))
+	var typ := str(event.get("type", ""))
+	var out: Array = []
+	var caster := int(event.get("seat", -1))
+	var caster_cell := cell_of(event.get("caster_cell", Vector2i.ZERO))
+	var target := int(event.get("target_seat", -1))
+	var to_cell := cell_of(event.get("to", caster_cell)) if event.has("to") else caster_cell
+	if typ == "advance":
+		var origin := cell_of(event.get("from", caster_cell))
+		var dest := cell_of(event.get("to", origin))
+		out.append(_puff(caster, origin, VfxPalette.IRONJAW_EARTH, 0.8))
+		out.append(_ring(dest, VfxPalette.IRONJAW_DUST, false, 0.22, 0.0, "crack"))
+		if int(event.get("impact_gained", 0)) > 0:
+			out.append(_status_on("impact", caster, dest, _stack_count(snapshot, caster, "impact", int(event.get("impact_gained", 1)))))
+		return out
+	if typ == "intercept":
+		out.append(_ring(cell_of(event.get("interceptor_cell", Vector2i.ZERO)), VfxPalette.BASTION, false, 0.24, 0.0))
+		return out
+	match spell_id:
+		"mark_shot":
+			if typ == "hit":
+				out.append(_puff(caster, caster_cell, VfxPalette.KESTREL_AIR, 0.75))
+				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5))
+				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
+		"detonate":
+			if typ == "hit":
+				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false))
+				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
+					out.append(_status_off("marks", target, to_cell))
+				elif int(event.get("marks_remaining", 0)) > 0:
+					out.append(_status_on("marks", target, to_cell, int(event.get("marks_remaining", 0))))
+			elif typ == "miss" and bool(event.get("marks_retained", false)):
+				out.append(_ring(to_cell, VfxPalette.KESTREL, false, 0.16, 0.0))
+		"strike":
+			if typ == "hit":
+				out.append(_ring(to_cell, VfxPalette.IRONJAW, false, 0.24, 0.0, "crack"))
+				out.append(_puff(target, to_cell, VfxPalette.IRONJAW_EARTH, 0.7))
+				if int(event.get("engine_gained", 0)) > 0:
+					out.append(_status_on("impact", caster, caster_cell, _stack_count(snapshot, caster, "impact", int(event.get("engine_gained", 1)))))
+			elif typ == "miss":
+				out.append(_ring(to_cell, VfxPalette.IRONJAW_DUST, false, 0.18, 0.0, "crack"))
+		"shoulder":
+			if typ == "hit" or typ == "miss":
+				out.append(_shot(caster_cell, to_cell, VfxPalette.IRONJAW, 0.0, 0.1, 5.0))
+			if typ == "hit" and int(event.get("engine_gained", 0)) > 0:
+				out.append(_status_on("impact", caster, caster_cell, _stack_count(snapshot, caster, "impact", int(event.get("engine_gained", 1)))))
+		"crush":
+			if typ == "hit":
+				out.append(_ring(to_cell, VfxPalette.IRONJAW_EARTH, false, 0.32, 0.0, "crack"))
+				var left := _stack_count(snapshot, caster, "impact", -1)
+				if left < 0 and event.has("impact_before"):
+					left = maxi(int(event.get("impact_before", 0)) - int(event.get("impact_spent", 0)), 0)
+				if left == 0:
+					out.append(_status_off("impact", caster, caster_cell))
+				elif left > 0:
+					var pip := _status_on("impact", caster, caster_cell, left)
+					if int(event.get("impact_before", 0)) >= 4:
+						pip["glow"] = true
+					out.append(pip)
+			elif typ == "miss":
+				out.append(_ring(to_cell, VfxPalette.IRONJAW_DUST, false, 0.2, 0.0, "crack"))
+		"mend", "pulse_tap":
+			if typ == "hit":
+				out.append(_ring(caster_cell, VfxPalette.MENDER_CREAM if spell_id == "mend" else VfxPalette.MENDER, false, 0.18, 0.0))
+				if not _same_cell(caster_cell, to_cell):
+					var travel: Color = VfxPalette.MENDER_CREAM if spell_id == "mend" else VfxPalette.MENDER
+					out.append(_shot(caster_cell, to_cell, travel, 8.0 if spell_id == "mend" else 6.0, 0.2 if spell_id == "mend" else 0.15, 2.0))
+				if bool(event.get("triage", false)):
+					out.append(_number(target, to_cell, "x1.25", "triage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
+				if spell_id == "mend" and int(event.get("engine_gained", 0)) > 0:
+					out.append(_status_on("pulse", caster, caster_cell, _stack_count(snapshot, caster, "pulse", int(event.get("engine_gained", 1)))))
+				if spell_id == "pulse_tap":
+					var pulses := _stack_count(snapshot, caster, "pulse", -1)
+					if pulses == 0:
+						out.append(_status_off("pulse", caster, caster_cell))
+					elif pulses > 0:
+						out.append(_status_on("pulse", caster, caster_cell, pulses))
+		"ward":
+			if typ == "hit" and not _same_cell(caster_cell, to_cell):
+				out.append(_shot(caster_cell, to_cell, VfxPalette.MENDER_CREAM, 6.0, 0.16, 2.0))
+			elif typ == "miss":
+				out.append(_ring(to_cell, VfxPalette.MENDER_CREAM, false, 0.18, 0.0))
+		"cleanse":
+			if typ == "hit":
+				out.append(_flash("wash", target, to_cell, 0.28))
+				if _removed_stun(event):
+					out.append(_number(target, to_cell, "CLEANSED", "cleansed", 0.0, 1.0, "", Color(0, 0, 0, 0)))
+					out.append(_status_off("stun", target, to_cell))
+		"heartstop":
+			if typ == "hit" and not _same_cell(caster_cell, to_cell):
+				var tint: Color = VfxPalette.MENDER_DEEP if bool(event.get("skip_next_mp", false)) else VfxPalette.MENDER
+				out.append(_shot(caster_cell, to_cell, tint, 4.0, 0.15, 2.5))
+			if typ == "hit" and event.has("hit_immunity"):
+				out.append(_status_on("hit_immunity", target, to_cell, maxi(int(event.get("hit_immunity", 1)), 1)))
+				out.append(_ring(to_cell, VfxPalette.MENDER, false, 0.28, 0.0))
+			if typ == "hit" and bool(event.get("skip_next_mp", false)):
+				out.append(_status_on("skip_next_mp", target, to_cell, 1))
+				out.append(_puff(target, to_cell, VfxPalette.MENDER_DEEP, 0.9))
+			if typ == "hit" and bool(event.get("triage", false)) and not bool(event.get("skip_next_mp", false)):
+				out.append(_number(target, to_cell, "x1.25", "triage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
+		"cut":
+			if typ == "hit" or typ == "miss":
+				out.append(_flash("slash", target if typ == "hit" else caster, to_cell, 0.28))
+			if typ == "hit" and int(event.get("engine_gained", 0)) > 0:
+				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
+		"drop_shade":
+			if typ == "cast" and event.has("to"):
+				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_VOID, 8.0, 0.15, 3.0))
+		"ambush":
+			if typ == "hit" and bool(event.get("teleported", false)):
+				var origin_cell := cell_of(event.get("origin", caster_cell))
+				if origin_cell != caster_cell:
+					out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
+				out.append(_flash("slash", target, cell_of(event.get("destination", to_cell)), 0.26))
+		"fade":
+			if typ == "cast" and bool(event.get("invisible", false)):
+				out.append(_status_on("invisible", caster, caster_cell, 1))
+				out.append(_puff(caster, caster_cell, VfxPalette.GLOAM_RIM, 0.8))
+		"nightfold":
+			# Parked until the cast is ungated. Swirl only: no bodies, no damage.
+			var at := to_cell if event.has("to") else caster_cell
+			out.append(_ring(at, VfxPalette.GLOAM_RIM, false, 0.3, 0.55, "pool"))
+			out.append(_puff(caster, caster_cell, VfxPalette.GLOAM, 0.55))
+		"bash":
+			if typ == "hit":
+				out.append(_ring(to_cell, VfxPalette.BASTION, false, 0.22, 0.0))
+				if int(event.get("engine_gained", 0)) > 0:
+					out.append(_status_on("aegis", caster, caster_cell, _stack_count(snapshot, caster, "aegis", int(event.get("engine_gained", 1)))))
+			elif typ == "miss":
+				out.append(_puff(caster, caster_cell, VfxPalette.BASTION, 0.45))
+		"plant":
+			if typ == "cast" and event.has("to"):
+				out.append(_shot(caster_cell, to_cell, VfxPalette.BASTION, 0.0, 0.12, 2.0))
+				if int(event.get("engine_gained", 0)) > 0:
+					out.append(_status_on("aegis", caster, caster_cell, _stack_count(snapshot, caster, "aegis", int(event.get("engine_gained", 1)))))
+		"hold_line":
+			if typ == "hit":
+				for raw in event.get("targets", []):
+					if typeof(raw) != TYPE_DICTIONARY:
+						continue
+					var row: Dictionary = raw
+					if int(row.get("exit_tax", 0)) <= 0:
+						continue
+					out.append(_status_on("exit_tax", int(row.get("target_seat", -1)), cell_of(row.get("cell", Vector2i.ZERO)), int(row.get("exit_tax", 1))))
+		"snap_wall":
+			if typ == "snap_wall" and event.has("to"):
+				out.append(_puff(caster, cell_of(event.get("to")), VfxPalette.IRONJAW_DUST, 0.7))
+		"aegis_break":
+			if typ == "hit":
+				if _chebyshev(caster_cell, to_cell) >= 2:
+					out.append(_shot(caster_cell, to_cell, VfxPalette.BASTION_PALE, 0.0, 0.1, 8.0))
+				out.append(_ring(to_cell, VfxPalette.BASTION, false, 0.3, 0.0, "crack"))
+				if bool(event.get("stacks_cleared", false)) or int(event.get("aegis_spent", 0)) > 0:
+					out.append(_status_off("aegis", caster, caster_cell))
+			elif typ == "miss":
+				out.append(_ring(caster_cell, VfxPalette.BASTION, false, 0.18, 0.0))
+	return out
+
+
+static func _stack_count(snapshot: Dictionary, seat: int, field: String, fallback: int) -> int:
+	for unit in snapshot.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = unit
+		if int(rec.get("seat", -2)) != seat:
+			continue
+		if rec.has(field):
+			return int(rec[field])
+		return fallback
+	return fallback
+
+
+static func _same_cell(a: Vector2i, b: Vector2i) -> bool:
+	return a == b
+
+
+static func _chebyshev(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
+static func _removed_stun(event: Dictionary) -> bool:
+	if not event.has("cc_removed"):
+		return false
+	var removed: Variant = event.get("cc_removed", [])
+	return removed is Array and removed.has("stun")
+
+
+static func _shot(from_cell: Vector2i, to_cell: Vector2i, tint: Color, arc: float, duration: float, width: float, head: bool = true) -> Dictionary:
+	var spec := {
+		"id": "projectile",
+		"block": 0.0,
+		"from": from_cell,
+		"to": to_cell,
+		"arc": arc,
+		"overshoot": 0.0,
+		"duration": duration,
+		"tint": tint,
+		"width": width,
+	}
+	if not head:
+		spec["head"] = false
+	return spec
+
+
+static func _status_on(status: String, seat: int, cell: Vector2i, count: int) -> Dictionary:
+	return {
+		"id": "status_on",
+		"block": 0.0,
+		"pool": "status",
+		"status": status,
+		"seat": seat,
+		"cell": cell,
+		"count": count,
+	}
+
+
+static func _status_off(status: String, seat: int, cell: Vector2i) -> Dictionary:
+	return {
+		"id": "status_off",
+		"block": 0.0,
+		"status": status,
+		"seat": seat,
+		"cell": cell,
+	}
+
+
+static func _flash(status: String, seat: int, cell: Vector2i, life: float) -> Dictionary:
+	return {
+		"id": "status_flash",
+		"block": 0.0,
+		"status": status,
+		"seat": seat,
+		"cell": cell,
+		"life": life,
+	}
+
+
 static func _hit(spell_id: String, damage: int, caster: Vector2i, target: Vector2i, extra: Dictionary = {}) -> Dictionary:
 	var event := {
 		"type": "hit",
@@ -620,8 +912,8 @@ static func _hit(spell_id: String, damage: int, caster: Vector2i, target: Vector
 	return event
 
 
-static func _miss(spell_id: String, caster: Vector2i, target: Vector2i) -> Dictionary:
-	return {
+static func _miss(spell_id: String, caster: Vector2i, target: Vector2i, extra: Dictionary = {}) -> Dictionary:
+	var event := {
 		"type": "miss",
 		"spell": spell_id,
 		"seat": 0,
@@ -630,3 +922,6 @@ static func _miss(spell_id: String, caster: Vector2i, target: Vector2i) -> Dicti
 		"to": target,
 		"damage": 0,
 	}
+	for key in extra.keys():
+		event[key] = extra[key]
+	return event

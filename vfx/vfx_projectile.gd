@@ -45,6 +45,7 @@ func play(spec: Dictionary) -> void:
 	_line.default_color = tint
 	_line.width = float(spec.get("width", 3.0))
 	_head.color = tint
+	_head.visible = bool(spec.get("head", true))
 	z_as_relative = false
 	z_index = int(spec.get("z", 80))
 	position = Vector2.ZERO

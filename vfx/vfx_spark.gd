@@ -40,6 +40,10 @@ func play(spec: Dictionary) -> void:
 	z_as_relative = false
 	z_index = int(spec.get("z", 40))
 	var tint: Color = spec.get("tint", VfxPalette.KESTREL_AIR)
+	var amount := VfxBudget.SPARK_AMOUNT
+	if spec.has("amount"):
+		amount = clampi(int(spec.get("amount", amount)), 1, VfxBudget.SPARK_CAP)
+	_particles.amount = amount
 	_particles.color = tint
 	_particles.emitting = true
 	_particles.restart()
@@ -66,4 +70,5 @@ func _draw() -> void:
 func release() -> void:
 	if _particles != null:
 		_particles.emitting = false
+		_particles.amount = VfxBudget.SPARK_AMOUNT
 	super.release()

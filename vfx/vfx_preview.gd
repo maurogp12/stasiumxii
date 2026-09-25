@@ -1,6 +1,7 @@
 extends Node2D
 
-## Standalone review scene. F9 steps every generic effect. No match and no combat rules.
+## Standalone review scene. F9 steps generic effects, then each Locked class ability.
+## No match and no combat rules.
 ## Run: godot --path . res://vfx/vfx_preview.tscn
 
 const _Director := preload("res://vfx/vfx_director.gd")
@@ -82,10 +83,10 @@ func _build_caption() -> void:
 	_caption.position = Vector2(16, 44)
 	_caption.add_theme_font_size_override("font_size", 16)
 	_caption.add_theme_color_override("font_color", Color("F3E9D2"))
-	_caption.text = "F9 steps generic VFX on the test cells. Numbers do not lock input."
+	_caption.text = "F9 steps generic VFX, then each Locked class ability. Numbers do not lock input."
 	layer.add_child(_caption)
 
 
 func _on_beat(beat_name: String) -> void:
 	if _caption != null:
-		_caption.text = "Preview  %s    —  F9 next generic effect" % beat_name
+		_caption.text = "Preview  %s    —  F9 next" % beat_name

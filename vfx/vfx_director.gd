@@ -136,6 +136,17 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 			wanted["burn:%d" % seat] = {"pool": "status", "status": "burn", "seat": seat, "cell": cell}
 		if int(rec.get("shield", 0)) > 0:
 			wanted["shield:%d" % seat] = {"pool": "status", "status": "shield", "seat": seat, "cell": cell, "tint": VfxPalette.MENDER}
+		_want_count(wanted, rec, "marks", seat, cell, VfxPalette.KESTREL)
+		_want_count(wanted, rec, "impact", seat, cell, VfxPalette.IRONJAW)
+		_want_count(wanted, rec, "aegis", seat, cell, VfxPalette.BASTION)
+		_want_count(wanted, rec, "umbral", seat, cell, VfxPalette.GLOAM_RIM)
+		_want_count(wanted, rec, "pulse", seat, cell, VfxPalette.MENDER)
+		_want_count(wanted, rec, "hit_immunity", seat, cell, VfxPalette.MENDER)
+		_want_count(wanted, rec, "exit_tax", seat, cell, VfxPalette.BASTION)
+		if bool(rec.get("skip_next_mp", false)):
+			wanted["skip_next_mp:%d" % seat] = {"pool": "status", "status": "skip_next_mp", "seat": seat, "cell": cell, "tint": VfxPalette.MENDER_DEEP}
+		if bool(rec.get("invisible", false)):
+			wanted["invisible:%d" % seat] = {"pool": "status", "status": "invisible", "seat": seat, "cell": cell, "tint": VfxPalette.GLOAM_RIM}
 	var stale: Array = []
 	for key in _linger.keys():
 		if not wanted.has(key):
@@ -218,6 +229,8 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 			_dismiss_linger(_status_key(spec))
 		"status_pulse":
 			_pulse_status(spec)
+		"status_flash":
+			_play_status_flash(spec)
 		"shake":
 			_start_shake(float(spec.get("amplitude", 0.0)), float(spec.get("duration", VfxBudget.SHAKE_SEC)))
 		"death":
@@ -234,12 +247,15 @@ func _play_burst(kind: String, spec: Dictionary, chest: bool) -> void:
 	var node := _acquire(kind)
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var at := _body_pos(int(spec.get("seat", -1)), cell, chest)
-	node.play({
+	var payload := {
 		"pos": at,
 		"tint": spec.get("tint", VfxPalette.KESTREL_AIR),
 		"alpha": float(spec.get("alpha", 1.0)),
 		"z": _z_air(cell),
-	})
+	}
+	if spec.has("amount"):
+		payload["amount"] = int(spec["amount"])
+	node.play(payload)
 
 
 func _play_number(spec: Dictionary) -> void:
@@ -331,7 +347,20 @@ func _play_death(spec: Dictionary) -> void:
 	var seat := int(spec.get("seat", -1))
 	var pawn := _pawn(seat)
 	var at := pawn.position if pawn != null else Vector2.ZERO
-	_puff_at(at + Vector2(0, -8), Color(0.55, 0.52, 0.48, 0.85))
+	var cause := str(spec.get("cause", "damage"))
+	var tint := Color(0.55, 0.52, 0.48, 0.85)
+	if cause == "burn":
+		tint = VfxPalette.BURN
+	_puff_at(at + Vector2(0, -8), tint)
+	var ring := _acquire("ring")
+	ring.play({
+		"pos": at,
+		"tint": VfxPalette.EMBER if cause == "burn" else Color(0.75, 0.72, 0.7),
+		"linger": false,
+		"life": 0.36,
+		"style": "crack" if cause == "burn" else "",
+		"z": 30,
+	})
 
 
 func _play_winner(spec: Dictionary) -> void:
@@ -356,8 +385,23 @@ func _play_winner(spec: Dictionary) -> void:
 	})
 
 
+func _play_status_flash(spec: Dictionary) -> void:
+	var node := _acquire("status")
+	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
+	var seat := int(spec.get("seat", -1))
+	node.set("follow", _follow_seat.bind(seat) if seat >= 0 else Callable())
+	node.play({
+		"status": str(spec.get("status", "slash")),
+		"pos": _body_pos(seat, cell, false),
+		"tint": spec.get("tint", VfxPalette.KESTREL_AIR),
+		"life": float(spec.get("life", 0.28)),
+		"count": int(spec.get("count", 1)),
+		"z": _z_air(cell),
+	})
+
+
 func _pulse_status(spec: Dictionary) -> void:
-	var key := "stun:%d" % int(spec.get("seat", -1))
+	var key := _status_key(spec)
 	if not _linger.has(key):
 		return
 	var node: Node = _linger[key]
@@ -423,23 +467,25 @@ func _motion_node(spec: Dictionary, ghost_motion: bool, origin: Vector2) -> Node
 func _ensure_linger(key: String, spec: Dictionary) -> void:
 	if key == "" or key.ends_with(":-1") or key.ends_with(":-999"):
 		return
-	if _linger.has(key):
-		var existing: Node = _linger[key]
-		if existing != null and is_instance_valid(existing) and bool(existing.get("in_use")):
-			if bool(spec.get("flare", false)) and existing.has_method("pulse"):
-				existing.pulse(0.25)
-			if bool(spec.get("dim", false)):
-				existing.modulate.a = 0.4
-			return
-	var pool_name := "status" if str(spec.get("status", "")) in ["stun", "burn", "shield"] else "ring"
+	var pool_name := "ring"
 	if str(spec.get("pool", "")) != "":
 		pool_name = str(spec.get("pool", pool_name))
-	var node := _acquire(pool_name)
+	elif str(spec.get("status", "")) != "":
+		pool_name = "status"
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var payload := spec.duplicate()
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
-	payload["z"] = _z_air(cell) if pool_name == "status" else _z_ground(cell)
+	payload["z"] = _z_air(cell) if pool_name == "status" or str(spec.get("style", "")) == "slab" else _z_ground(cell)
 	payload["linger"] = true
+	if _linger.has(key):
+		var existing: Node = _linger[key]
+		if existing != null and is_instance_valid(existing) and bool(existing.get("in_use")):
+			if existing.has_method("retarget"):
+				existing.retarget(payload)
+			if bool(spec.get("flare", false)) and existing.has_method("pulse"):
+				existing.pulse(0.25)
+			return
+	var node := _acquire(pool_name)
 	if pool_name == "status":
 		var seat := int(spec.get("seat", -1))
 		node.set("follow", _follow_seat.bind(seat) if seat >= 0 else Callable())
@@ -488,12 +534,21 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 		var rec: Dictionary = item
 		var cell := _Router.cell_of(rec.get("pos", Vector2i(int(rec.get("x", 0)), int(rec.get("y", 0)))))
 		var key := "%s:%d,%d" % [kind, cell.x, cell.y]
+		var style := ""
+		if kind == "shade":
+			style = "pool"
+		elif kind == "plant":
+			style = "sigil"
+		elif kind == "wall":
+			style = "slab"
 		wanted[key] = {
 			"pool": "ring",
 			"cell": cell,
 			"tint": tint,
 			"linger": true,
 			"swirl": swirl,
+			"style": style,
+			"turns": int(rec.get("turns", 0)),
 			"dim": kind == "plant" and rec.has("push_resist") and not bool(rec.get("push_resist", true)),
 		}
 
@@ -585,9 +640,33 @@ func _acquire(kind: String) -> Node2D:
 	var index := int(_recycle.get(kind, 0))
 	_recycle[kind] = index + 1
 	var recycled: Node2D = pool[index % pool.size()]
+	_drop_linger_node(recycled)
 	if recycled.has_method("release"):
 		recycled.release()
 	return recycled
+
+
+func _drop_linger_node(node: Node) -> void:
+	var stale: Array = []
+	for key in _linger.keys():
+		if _linger[key] == node:
+			stale.append(key)
+	for key in stale:
+		_linger.erase(key)
+
+
+func _want_count(wanted: Dictionary, rec: Dictionary, field: String, seat: int, cell: Vector2i, tint: Color) -> void:
+	var count := int(rec.get(field, 0))
+	if count <= 0:
+		return
+	wanted["%s:%d" % [field, seat]] = {
+		"pool": "status",
+		"status": field,
+		"seat": seat,
+		"cell": cell,
+		"count": count,
+		"tint": tint,
+	}
 
 
 func _prewarm() -> void:

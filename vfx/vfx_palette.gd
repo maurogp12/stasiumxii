@@ -21,15 +21,20 @@ const STUN := Color(0.95, 0.78, 0.2, 1.0)
 
 const KESTREL := Color("3FA35B")
 const KESTREL_AIR := Color("EAF6F0")
+const KESTREL_MINT := Color("B8F0C8")
 const IRONJAW := Color("C23B2E")
 const IRONJAW_EARTH := Color("7A5230")
 const IRONJAW_DUST := Color("B89468")
 const MENDER := Color("4FD1B5")
 const MENDER_CREAM := Color("F3E9D2")
+const MENDER_CORE := Color("FFF4C2")
+const MENDER_DEEP := Color("2FA89A")
 const GLOAM := Color("6B4FA0")
 const GLOAM_RIM := Color("9F8CFF")
 const GLOAM_VOID := Color("140F24")
+const GLOAM_BLUE := Color("1E2A4A")
 const BASTION := Color("D4A437")
+const BASTION_PALE := Color("F2D67A")
 const BASTION_BLACK := Color("15151A")
 
 static var _dot: Texture2D
@@ -79,6 +84,10 @@ static func number_colors(kind: String) -> Dictionary:
 			return {"top": EMBER, "bottom": BURN, "size": VfxBudget.NUMBER_SIZE}
 		"resource", "mp":
 			return {"top": KESTREL_AIR, "bottom": KESTREL_AIR.darkened(0.25), "size": VfxBudget.NUMBER_SIZE_SMALL}
+		"triage":
+			return {"top": BASTION_PALE, "bottom": MENDER, "size": VfxBudget.NUMBER_SIZE_SMALL}
+		"cleansed":
+			return {"top": MENDER_CREAM, "bottom": MENDER_DEEP, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		"stagger":
 			return {"top": DAMAGE_TOP, "bottom": DAMAGE_BOTTOM, "size": VfxBudget.NUMBER_SIZE_SMALL}
 		_:
