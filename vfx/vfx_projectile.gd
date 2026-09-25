@@ -9,6 +9,8 @@ var _to: Vector2 = Vector2.ZERO
 var _arc: float = 0.0
 var _duration: float = 0.2
 var _elapsed: float = 0.0
+var _delay: float = 0.0
+var _show_head: bool = true
 var _points: PackedVector2Array = PackedVector2Array()
 
 
@@ -39,21 +41,33 @@ func play(spec: Dictionary) -> void:
 		_to = _to + dir * overshoot
 	_arc = float(spec.get("arc", 0.0))
 	_duration = maxf(0.08, float(spec.get("duration", 0.2)))
-	_elapsed = 0.0
+	_delay = maxf(0.0, float(spec.get("delay", 0.0)))
+	_elapsed = -_delay
 	_points = PackedVector2Array()
 	var tint: Color = spec.get("tint", VfxPalette.KESTREL_AIR)
 	_line.default_color = tint
 	_line.width = float(spec.get("width", 3.0))
 	_head.color = tint
-	_head.visible = bool(spec.get("head", true))
+	_show_head = bool(spec.get("head", true))
+	_head.visible = false
 	z_as_relative = false
 	z_index = int(spec.get("z", 80))
 	position = Vector2.ZERO
-	_sample(0.0)
+	if _delay <= 0.0:
+		_head.visible = _show_head
+		_sample(0.0)
+	else:
+		visible = false
+		_line.points = PackedVector2Array()
 
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	if _elapsed < 0.0:
+		visible = false
+		return
+	visible = true
+	_head.visible = _show_head
 	var t := clampf(_elapsed / _duration, 0.0, 1.0)
 	_sample(t)
 	if t >= 1.0:

@@ -1,26 +1,33 @@
 extends RefCounted
 class_name StripLibrary
 
-## Load-or-null SpriteFrames for pawn walk / attack / cast strips.
+## Load-or-null SpriteFrames for pawn strips.
 ## Prefer TA export_2x lettered facings. Grok drawn masters are an optional
 ## fallback and are not required at runtime. Missing files return null.
+## Never load gen_raw `*_gen.png` (identity drift).
+## Batch-1c names (`cast_mark`, `cast`, `hit`, `death`, gloam_*) hot-swap
+## from the same folder when the PNG is on disk. This cut's disk has v3
+## walk + attack for Kestrel and Ironjaw only.
 ## See art/export_2x/characters/README.md.
+## TODO(TA): Batch-1c `cast_mark` / `cast` / `hit` / `death` and Gloam anims
+## are not in this tree. Do not invent those strips.
 
 const EXPORT_ROOT := "res://art/export_2x/characters/"
 const GROK_DIR := "res://art/grok_project/anims/"
 
-const KINDS: Array[String] = ["walk", "attack", "cast"]
+const KINDS: Array[String] = ["walk", "attack", "cast", "cast_mark", "hit", "death"]
 const LETTERS: Array[String] = ["n", "e", "s", "w"]
 ## Drawn-master suffix → locked pawn letter. SE→e, SW→s, NE→n, NW→w.
 const GROK_SHEETS: Array[String] = ["se", "sw", "ne", "nw"]
 
 ## Horizontal PNG when a SpriteFrames .tres does not carry timing.
-## Walk: 6 frames @ 12 fps, loop. Attack: 6 frames, one-shot.
+## Walk: 6 frames @ 12 fps, loop. Attack: 6 frames @ 12, one-shot (Gloam attack is 5).
 const WALK_FRAMES := 6
 const WALK_FPS := 12.0
 const ACTION_FRAMES := 6
 const ACTION_FPS := 12.0
-## Attack impact pose, 0-based, both kits. VFX reads this; the strip does not invent a hit.
+const CELL_W := 144
+## Attack impact pose, 0-based, Kestrel and Ironjaw. VFX reads this.
 const ATTACK_IMPACT_FRAME := 3
 
 static var _cache: Dictionary = {}
@@ -61,6 +68,9 @@ static func frames_from_texture(tex: Texture2D, kind: String, facing: String, fr
 ## Null when the path is missing or is not a Resource. Does not print a load error.
 static func try_load(path: String) -> Resource:
 	if path == "":
+		return null
+	# gen_raw sheets drift identity. Never promote them to playback.
+	if path.get_file().contains("_gen"):
 		return null
 	if not ResourceLoader.exists(path):
 		return null
@@ -132,7 +142,7 @@ static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:
 			var res := try_load(export_png_path(class_id, kind, face))
 			if not (res is Texture2D):
 				continue
-			if _install_clip(built, "%s_%s" % [kind, face], _clip_from_texture(res as Texture2D, kind)):
+			if _install_clip(built, "%s_%s" % [kind, face], _clip_from_texture(res as Texture2D, kind, class_id)):
 				any = true
 	return any
 
@@ -166,17 +176,55 @@ static func _load_grok_fallback(built: SpriteFrames, class_id: String) -> bool:
 			var res := try_load(grok_png_path(class_id, kind, sheet))
 			if not (res is Texture2D):
 				continue
-			if _install_clip(built, anim, _clip_from_texture(res as Texture2D, kind)):
+			if _install_clip(built, anim, _clip_from_texture(res as Texture2D, kind, class_id)):
 				any = true
 	return any
 
 
-static func _clip_from_texture(tex: Texture2D, kind: String) -> Dictionary:
-	var count := WALK_FRAMES if kind == "walk" else ACTION_FRAMES
-	var fps := WALK_FPS if kind == "walk" else ACTION_FPS
+## 0-based impact cell. Death holds the last frame in playback; this index is the collapse.
+static func impact_frame(class_id: String, kind: String) -> int:
+	var cls := SpellKits.normalize_class_id(class_id)
+	match kind:
+		"hit":
+			return 0
+		"death":
+			return 4
+		"attack":
+			return 2 if cls == "gloam" else ATTACK_IMPACT_FRAME
+		"cast":
+			return 2 if cls == "gloam" else ATTACK_IMPACT_FRAME
+		"cast_mark":
+			return ATTACK_IMPACT_FRAME
+		_:
+			return ATTACK_IMPACT_FRAME
+
+
+static func kind_fps(kind: String) -> float:
+	if kind == "cast" or kind == "death":
+		return 10.0
+	return 12.0
+
+
+static func kind_frame_hint(class_id: String, kind: String) -> int:
+	var cls := SpellKits.normalize_class_id(class_id)
+	if kind == "hit":
+		return 4
+	if kind == "death":
+		return 6
+	if cls == "gloam" and kind == "cast":
+		return 4
+	if cls == "gloam" and kind == "attack":
+		return 5
+	if kind == "walk":
+		return WALK_FRAMES
+	return ACTION_FRAMES
+
+
+static func _clip_from_texture(tex: Texture2D, kind: String, class_id: String = "") -> Dictionary:
+	var count := kind_frame_hint(class_id, kind)
 	return {
 		"textures": _slice_texture(tex, count),
-		"fps": fps,
+		"fps": kind_fps(kind),
 		"loop": kind == "walk",
 	}
 
@@ -189,7 +237,11 @@ static func _slice_texture(tex: Texture2D, frame_count: int) -> Array[Texture2D]
 	var height := tex.get_height()
 	if width <= 0 or height <= 0:
 		return out
-	var cells := frame_count if width % frame_count == 0 else 1
+	var cells := 1
+	if width % frame_count == 0:
+		cells = frame_count
+	elif width % CELL_W == 0:
+		cells = width / CELL_W
 	var frame_w := width / cells
 	if frame_w <= 0:
 		return out

@@ -32,7 +32,7 @@ func play(spec: Dictionary) -> void:
 	if delay > 0.0:
 		_tween.tween_interval(delay)
 	_tween.tween_callback(_show_pop)
-	_tween.tween_property(self, "scale", Vector2(1.25, 1.25) * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_tween.tween_property(self, "scale", Vector2(1.45, 1.45) * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_tween.tween_property(self, "scale", Vector2.ONE * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_rise = create_tween()
 	if delay > 0.0:

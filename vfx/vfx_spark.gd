@@ -5,6 +5,8 @@ extends "res://vfx/vfx_pooled.gd"
 var _particles: CPUParticles2D
 var _flash: float = 0.0
 var _life: float = 0.0
+var _wait: float = 0.0
+var _pending: Dictionary = {}
 
 
 func _ready() -> void:
@@ -39,6 +41,19 @@ func play(spec: Dictionary) -> void:
 	position = spec.get("pos", Vector2.ZERO)
 	z_as_relative = false
 	z_index = int(spec.get("z", 40))
+	_wait = maxf(0.0, float(spec.get("delay", 0.0)))
+	_pending = spec
+	if _wait > 0.0:
+		visible = false
+		_particles.emitting = false
+		_flash = 0.0
+		_life = 0.28
+		return
+	_emit(spec)
+
+
+func _emit(spec: Dictionary) -> void:
+	visible = true
 	var tint: Color = spec.get("tint", VfxPalette.KESTREL_AIR)
 	var amount := VfxBudget.SPARK_AMOUNT
 	if spec.has("amount"):
@@ -53,6 +68,13 @@ func play(spec: Dictionary) -> void:
 
 
 func _process(delta: float) -> void:
+	if _wait > 0.0:
+		_wait -= delta
+		if _wait > 0.0:
+			return
+		_wait = 0.0
+		_emit(_pending)
+		return
 	_life -= delta
 	_flash = maxf(0.0, _flash - delta / 0.08)
 	queue_redraw()

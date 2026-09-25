@@ -3,7 +3,8 @@ extends Node2D
 ## Thin client: input + presentation only. CombatSim owns rolls and combat state.
 ## Walk: dest-click only. CombatSim expands the cheapest weighted ortho path; this
 ## view never sends intent.path. Pawns tween one ortho tile at a time along the
-## returned walk path and face each hop (final facing = last hop, matching the snapshot).
+## returned walk path and face each hop before the translate (final facing snaps
+## after the land, matching the snapshot's last hop).
 ## Live elevation chrome: tiles paint snapshot.tiles elevation + terrain_type.
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
@@ -736,7 +737,7 @@ func _path_event(events: Array) -> Dictionary:
 
 func _play_combat_feedback(events: Array) -> void:
 	# Hit flash on the target and Impact flash on the caster. Plays even when push is blocked.
-	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage stays orange.
+	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage flashes white.
 	# Kind comes from the event spell id, healed amount, negative damage, or shield fields.
 	# A dying pawn keeps the flash color for the slump; the grey state is applied after.
 	var dying := _dying_seats(events)
@@ -830,8 +831,10 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
 	# before the slide, or a refresh snaps it and the walk reads as a teleport.
-	# Facing snaps with set_facing at each cell. hop_facing covers a diagonal step.
-	# Zero turn frames. The step bounce loops on the pawn for the whole path.
+	# Face the step before the body moves. hop_facing covers a non-cardinal
+	# step, then a diagonal uses the screen vector so the pawn does not slide
+	# sideways. Two turn frames soften the swap. The snapshot facing snaps
+	# only after the last land. The walk strip loops the whole path.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -845,24 +848,38 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			pawn.end_path_walk()
 			pawn.release_idle()
 		return
-	var first_dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cells[0])
-	if first_dir == "":
-		first_dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cells[0])
-	if first_dir != "":
-		pawn.set_facing(first_dir)
-	pawn.begin_path_walk()
+	var committed := _seat_facing(seat)
+	var visual := pawn.facing
 	_stop_walk_tween()
 	_walk_tween = create_tween()
 	_walk_tween.set_trans(Tween.TRANS_LINEAR)
+	var walk_armed := false
 	for cell in cells:
 		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if dir == "":
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
-		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
+			if prev.x != cell.x and prev.y != cell.y:
+				var along := _facing_along(_cell_to_local(cell) - _cell_to_local(prev))
+				if along != "":
+					dir = along
+		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
+		if turn.is_empty():
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
+		else:
+			for face in turn:
+				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(face)))
+				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+		if not walk_armed:
+			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
+			walk_armed = true
+		if dir != "":
+			visual = dir
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
 		_walk_tween.parallel().tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
+	if committed != "":
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
 	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
 		var last: Vector2i = cells[cells.size() - 1]
@@ -870,6 +887,36 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		_set_pawn_cell(pawn, last)
 		pawn.end_path_walk()
 		pawn.release_idle()
+
+
+func _arm_path_walk(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.begin_path_walk()
+
+
+func _seat_facing(seat: int) -> String:
+	for unit in _sim().snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) == seat:
+			return str(unit.get("facing", ""))
+	return ""
+
+
+func _facing_along(delta: Vector2) -> String:
+	if delta.length_squared() < 1.0:
+		return ""
+	var best := ""
+	var best_dot := -2.0
+	var aim := delta.normalized()
+	for face in ["N", "E", "S", "W"]:
+		var axis: Vector2 = Pawn.FACING_ISO[face]
+		var dotted := aim.dot(axis.normalized())
+		if dotted > best_dot:
+			best_dot = dotted
+			best = face
+	return best
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:

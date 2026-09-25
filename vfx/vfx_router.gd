@@ -5,6 +5,8 @@ class_name VfxRouter
 ## Values come only from the event and the snapshot. This file does not roll or mitigate.
 
 const SHAKE_SPELLS := ["crush", "aegis_break"]
+## Camera shake on heavy connects. Crush and Aegis Break always shake.
+const HEAVY_HIT_DAMAGE := 20
 
 
 static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
@@ -236,11 +238,14 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			"tint": tint,
 			"chest": true,
 		}
+		if spell_id == "strike" or spell_id == "shoulder" or spell_id == "crush":
+			spark["delay"] = VfxBudget.MELEE_IMPACT_DELAY
 		if spell_id == "detonate":
 			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
 		out.append(spark)
-		out.append(_number(target_seat, cell, str(damage), "damage", 0.0, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
+		var number_delay := float(spark.get("delay", 0.0))
+		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
 			out.append(_chevron(target_seat, cell, event))
@@ -331,7 +336,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("to") or event.has("caster_cell"):
-		out.append({
+		var whiff := {
 			"id": "projectile",
 			"block": 0.0,
 			"from": caster_cell,
@@ -341,7 +346,12 @@ static func _miss_recipes(event: Dictionary) -> Array:
 			"duration": 0.22,
 			"tint": tint,
 			"width": 3.0,
-		})
+		}
+		if spell_id == "mark_shot" or spell_id == "detonate":
+			whiff["hand"] = true
+		if spell_id == "mark_shot":
+			whiff["delay"] = VfxBudget.MARK_RELEASE_DELAY
+		out.append(whiff)
 	if event.has("origin"):
 		out.append(_puff(caster_seat, cell_of(event.get("origin")), VfxPalette.GLOAM, 0.45))
 	return out
@@ -529,7 +539,11 @@ static func _engine_name(event: Dictionary) -> String:
 
 
 static func _wants_shake(event: Dictionary) -> bool:
-	return str(event.get("type", "")) == "hit" and str(event.get("spell", "")) in SHAKE_SPELLS
+	if str(event.get("type", "")) != "hit":
+		return false
+	if str(event.get("spell", "")) in SHAKE_SPELLS:
+		return true
+	return int(event.get("damage", 0)) >= HEAVY_HIT_DAMAGE
 
 
 static func _is_shield_grant(event: Dictionary) -> bool:
@@ -682,11 +696,16 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		"mark_shot":
 			if typ == "hit":
 				out.append(_puff(caster, caster_cell, VfxPalette.KESTREL_AIR, 0.75))
-				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5))
+				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5)
+				bolt["hand"] = true
+				bolt["delay"] = VfxBudget.MARK_RELEASE_DELAY
+				out.append(bolt)
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":
-				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false))
+				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false)
+				line["hand"] = true
+				out.append(line)
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))
 				elif int(event.get("marks_remaining", 0)) > 0:
