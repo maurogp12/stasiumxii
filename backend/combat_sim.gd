@@ -1183,6 +1183,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	if bool(next_unit.get("skip_next_mp", false)):
 		next_unit["mp"] = 0
 		next_unit["skip_next_mp"] = false
+		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
+		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
 	_start_turn_timer()
 	var stunned := _is_stunned(next_unit)
 	if stunned:
@@ -1545,8 +1547,10 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			engine_spent = _clear_resource(actor, "aegis")
 			engine_name = "Aegis"
 
+	var skip_next_mp := false
 	if bool(def.get("enemy_skip_mp", false)):
 		target["skip_next_mp"] = true
+		skip_next_mp = true
 	var stun_applied := 0
 	if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
 		# Locked Stun (A′): Stun 1 if Impact was 4 before the spend. Blocks move + cast + face.
@@ -1624,6 +1628,8 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
+	if skip_next_mp:
+		hit_event["skip_next_mp"] = true
 	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
@@ -1709,11 +1715,16 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"suppress": ["move", "cast", "face"],
 			"coach": "%s is stunned (Locked A′)." % target["name"],
 		})
+	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
 	return _accept()
 
 
-func _check_death(target: Dictionary) -> void:
+## Reached only after an existing HP loss. cause names that path for the view.
+## "damage" is a spell hit, Hold Line, Ambush, or an Intercept transfer.
+## "burn" is a Director Locked Burn tick. Stagger does not call this.
+## There is no separate execute path.
+func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	if int(target["hp"]) > 0:
 		return
 	target["alive"] = false
@@ -1721,6 +1732,7 @@ func _check_death(target: Dictionary) -> void:
 		"type": "dead",
 		"seat": target["seat"],
 		"name": target["name"],
+		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
 	_finish_match(_enemy_of(int(target["seat"]))["seat"])
@@ -2212,7 +2224,7 @@ func _tick_burn(unit: Dictionary) -> void:
 			"" if left == 1 else "s",
 		],
 	})
-	_check_death(unit)
+	_check_death(unit, "burn")
 
 
 func _unwalkable_push_reason(dest: Vector2i) -> String:
@@ -2504,6 +2516,16 @@ func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
 	event["intercepted"] = int(report.get("intercepted", 0))
 
 
+## Heartstop ally immunity is a hit charge, not a turn clock. The badge ends
+## when the last charge is spent. A leftover charge stays on the unit.
+func _emit_immunity_spent(target: Dictionary, report: Dictionary) -> void:
+	if not bool(report.get("immunity_absorbed", false)):
+		return
+	if int(target.get("hit_immunity", 0)) > 0:
+		return
+	_emit_expire("hit_immunity", target["pos"], int(target["seat"]), int(target["seat"]))
+
+
 func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
 	if damage <= 0:
 		return 0
@@ -2555,12 +2577,19 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	if not bool(def.get("no_facing", false)):
 		facing = _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 	var passive := PASSIVE
-	if bool(def.get("triage", false)):
-		var max_hp := maxi(int(target.get("max_hp", START_HP)), 1)
-		if float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD:
-			passive = SpellKits.TRIAGE_MULT
+	if _triage_applied(target, def):
+		passive = SpellKits.TRIAGE_MULT
 	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + MASTERY / 100.0) * facing
 	return roundi(raw)
+
+
+## Locked Triage ×1.25 when the target is below 40% HP before the heal.
+## Ally Heartstop uses it. Enemy Heartstop is a damage hit and does not.
+func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
+	if not bool(def.get("triage", false)):
+		return false
+	var max_hp := maxi(int(target.get("max_hp", START_HP)), 1)
+	return float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD
 
 
 func _apply_heal(target: Dictionary, amount: int) -> int:
@@ -2609,7 +2638,10 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		})
 		return _accept()
 	var healed := 0
+	var triage := false
 	if spell_id != SpellKits.WARD and spell_id != SpellKits.CLEANSE:
+		# Read Triage before the heal so the threshold sees pre-heal HP.
+		triage = _triage_applied(target, def)
 		healed = _apply_heal(target, _support_heal_amount(actor, target, def))
 	var engine_gained := 0
 	var engine_spent := 0
@@ -2621,13 +2653,17 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	if spell_id == SpellKits.WARD:
 		target["shield"] = int(def.get("shield", 20))
 		target["shield_turns"] = int(def.get("shield_turns", 2))
+	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
+		# Cleanse clears Stun only. Burn and other statuses stay.
+		if int(target.get("stun_remaining", 0)) > 0 or bool(target.get("stunned", false)):
+			cc_removed.append("stun")
 		target["stun_remaining"] = 0
 		target["stunned"] = false
 	if spell_id == SpellKits.HEARTSTOP:
 		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
 	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
-	_last_events.append({
+	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
@@ -2645,10 +2681,19 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		"engine_gained": engine_gained,
 		"engine_spent": engine_spent,
 		"coach": _last_coach,
-	})
+	}
+	if triage:
+		hit_event["triage"] = true
+	if spell_id == SpellKits.CLEANSE:
+		hit_event["cc_removed"] = cc_removed
+	if spell_id == SpellKits.HEARTSTOP:
+		hit_event["hit_immunity"] = int(target.get("hit_immunity", 0))
+	_last_events.append(hit_event)
 	return _accept()
 
 
+## Invisible has no duration. The cast (invisible, seat, caster_cell) and the
+## unit snapshot (invisible, seat, pos) are the linger. No turns field, no expire.
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
@@ -2816,6 +2861,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		targets.append(row)
 		total += damage
 		hit_bodies += 1
+		_emit_immunity_spent(target, mitigation)
 		_check_death(target)
 		if _match_over:
 			break
@@ -2920,6 +2966,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"coach": _last_coach,
 	})
 	_stamp_mitigation(_last_events[_last_events.size() - 1], mitigation)
+	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
 	return _accept()
 
@@ -3039,6 +3086,8 @@ func _add_snap_wall(cell: Vector2i, turns: int, owner_seat: int) -> void:
 func _unit_snapshot(unit: Dictionary) -> Dictionary:
 	var copy: Dictionary = unit.duplicate(true)
 	# Unit fields are the live values. resources mirrors them for chrome readers.
+	# Linger flags already on the unit: invisible (no turn count), hit_immunity
+	# (Heartstop ally charges), skip_next_mp (Heartstop enemy, until next turn).
 	copy["resources"] = {
 		"pulse": int(unit.get("pulse", 0)),
 		"umbral": int(unit.get("umbral", 0)),
