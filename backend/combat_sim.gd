@@ -52,9 +52,9 @@ const FACING_VEC := {
 ## is Locked. A02 walk is Locked (dest-click weighted pathfinder; cost = dest
 ## terrain MP + uphill elevation). Facing follows each hop of that path. Phase A
 ## flat Manhattan / H-first expansion is superseded. Advance range is Locked
-## to the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal
-## only. Manhattan 2 and any diagonal / (1,1) are rejected. Advance dest
-## uses the same stand-on gates as walk.
+## to exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1,
+## diagonals, and any non-cardinal are rejected. Advance dest uses the same
+## stand-on gates as walk.
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
@@ -337,10 +337,11 @@ func legal_intents(seat: int) -> Array:
 			if target_kind == "ally":
 				continue
 		if def["target"] == "empty_tile":
-			# Advance: exactly the 4 ortho neighbors that pass stand-on gates.
+			# Advance: exactly 2 cardinal spaces (N/S/E/W) that pass stand-on gates.
+			var reach := int(def.get("max_range", 2))
 			for dir in FACING_VEC.keys():
 				var step: Vector2i = FACING_VEC[dir]
-				var dest := from + step
+				var dest := from + step * reach
 				if _validate_advance(actor, dest) == "":
 					out.append({
 						"type": "cast",
@@ -417,8 +418,8 @@ func match_phase_name() -> String:
 
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
 ## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
-## Advance is the exception: highlights are legal_intents dests only (the ortho
-## neighbors that pass stand-on). Not a Manhattan 1–2 ring.
+## Advance is the exception: highlights are legal_intents dests only (exactly 2
+## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var out: Array = []
 	var actor := _unit_by_seat(seat)
@@ -523,7 +524,7 @@ func snapshot() -> Dictionary:
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
-		"advance_range": "cardinal",
+		"advance_range": "cardinal_2",
 		"advance_path": "teleport",
 		"advance_stand_on": "walk_gates",
 		"marks_owner": "target",
@@ -572,7 +573,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
@@ -664,11 +665,25 @@ static func manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
 
-## Advance Locked range: N/S/E/W only. Chebyshev 1 and Manhattan 1, one axis zero.
-## False for Manhattan 2, diagonals / (1,1), and the caster tile.
+## One orthogonal hop (walk). Not the Advance range gate.
 static func is_cardinal_step(from: Vector2i, to: Vector2i) -> bool:
 	var delta: Vector2i = to - from
 	return absi(delta.x) + absi(delta.y) == 1
+
+
+## Advance Locked range: exactly 2 tiles on one cardinal axis (N/S/E/W).
+## False for Manhattan 1, diagonals / (1,1), knights, and the caster tile.
+static func is_advance_cardinal(from: Vector2i, to: Vector2i) -> bool:
+	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
+	var dist := int(def.get("max_range", 2))
+	if int(def.get("min_range", dist)) != dist:
+		return false
+	var delta: Vector2i = to - from
+	var ax := absi(delta.x)
+	var ay := absi(delta.y)
+	if ax != 0 and ay != 0:
+		return false
+	return ax + ay == dist
 
 
 ## Canonical walk path: dest-click only. Horizontal (E/W) first, then vertical (N/S).
@@ -817,8 +832,8 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		return out
 
 	if spell_id == SpellKits.ADVANCE:
-		# Exactly the 4 ortho neighbors. Manhattan 2 and (1,1) are out of range.
-		out["in_range"] = is_cardinal_step(from_cell, to_cell)
+		# Exactly 2 cardinal spaces. Manhattan 1 and (1,1) are out of range.
+		out["in_range"] = is_advance_cardinal(from_cell, to_cell)
 	else:
 		var range_dist := _range_distance(def, from_cell, to_cell)
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
@@ -831,7 +846,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	var target := _preview_target(to_cell, target_seat, spell_id)
 	var notes: Array = []
 	if spell_id == SpellKits.ADVANCE:
-		notes.append("Dest-click teleport. Exactly the 4 orthogonal neighbors (N/S/E/W). 3 AP / 0 MP. Facing unchanged.")
+		notes.append("Dest-click teleport. Exactly 2 cardinal spaces (N/S/E/W). 3 AP / 0 MP. Facing unchanged.")
 		out["sample_damage"] = null
 		out["hit_chance"] = null
 	else:
@@ -1396,7 +1411,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var reason := _validate_advance(actor, dest)
 		if reason == "out_of_range":
 			var range_dist := manhattan(actor["pos"], dest)
-			return _reject(intent, "out_of_range", "REJECT — Advance is an orthogonal neighbor only, target at Manhattan %d (refund)." % range_dist)
+			return _reject(intent, "out_of_range", "REJECT — Advance is exactly 2 cardinal spaces, target at Manhattan %d (refund)." % range_dist)
 		if reason == "insufficient_ap":
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
 		if reason == "destination_occupied":
@@ -1812,11 +1827,11 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_bounds"
 	if dest == actor["pos"]:
 		return "same_tile"
-	# Range gate is the 4 ortho neighbors only (Chebyshev 1 and Manhattan 1).
-	# Manhattan 2 and any diagonal / (1,1) are out of range.
+	# Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2).
+	# Manhattan 1, diagonals, and any non-cardinal are out of range.
 	# Teleport: shared walk stand-on gates at dest. 0 MP is legal.
-	# No terrain+elev MP spend — gate only.
-	if not is_cardinal_step(actor["pos"], dest):
+	# No terrain+elev MP spend — gate only. The tile between is not a path.
+	if not is_advance_cardinal(actor["pos"], dest):
 		return "out_of_range"
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var range_dist := _range_distance(def, actor["pos"], dest)
@@ -1839,7 +1854,8 @@ func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
 	var mode := str(def.get("range_mode", "chebyshev"))
-	# Cardinal Advance uses Manhattan so a (1,1) step is distance 2, not Chebyshev 1.
+	# Cardinal Advance uses Manhattan. A (1,1) step is distance 2, so the
+	# cardinal-axis check (not this distance alone) rejects diagonals.
 	if mode == "manhattan" or mode == "cardinal":
 		return manhattan(from, to)
 	return chebyshev(from, to)

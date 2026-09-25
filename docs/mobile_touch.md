@@ -20,7 +20,7 @@ Combat rules, kits, hit bands, AP/MP, and map tags are unchanged. The adapter on
 | --- | --- | --- |
 | Select unit / cell | Finger down highlights the cell. Finger up commits it (walk, Advance, or the armed spell). | Mouse left press still commits immediately. |
 | Cast / ability | Tap the spell circle (72px, primary larger) to arm it. The skill card stays hidden; the status line and range chrome update. Hold the circle to open the card. Release, a board tap, or Walk dismisses it. | Hover still shows the card and hides it on exit. |
-| Move / Advance | Walk is the default. Tap a highlighted cell. Advance is the spell button, then a tap on a highlighted neighbor. | Same clicks as before. |
+| Move / Advance | Walk is the default. Tap a highlighted cell. Advance is the spell button, then a tap on a highlighted tile exactly 2 cardinal spaces away. | Same clicks as before. |
 | Facing | Face pad, N/E/S/W, each 48×48. | Right-click a cell still faces. |
 | End Turn | End Turn button, 72px tall. | Same button. |
 
