@@ -20,6 +20,7 @@ const NUMBER_FADE_SEC := 0.20
 const NUMBER_TILT_DEG := 6.0
 
 const SPARK_AMOUNT := 12
+const SPARK_CAP := 24
 const PUFF_AMOUNT := 8
 const MOTE_AMOUNT := 6
 const SPARK_LIFE := 0.25
@@ -29,10 +30,10 @@ const MOTE_LIFE := 0.55
 const POOL_SPARK := 4
 const POOL_NUMBER := 6
 const POOL_PROJECTILE := 2
-const POOL_RING := 4
+const POOL_RING := 8
 const POOL_PUFF := 4
 const POOL_MOTE := 2
-const POOL_STATUS := 4
+const POOL_STATUS := 12
 
 const BLOCK_SLIDE := 0.18
 const BLOCK_JOLT := 0.12
