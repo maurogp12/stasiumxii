@@ -12,6 +12,11 @@ func _initialize() -> void:
 	var script := load("res://backend/combat_sim.gd")
 	_sim = script.new()
 	_run()
+	call_deferred("_finish_shade_board")
+
+
+func _finish_shade_board() -> void:
+	await _test_shade_markers_survive_rebuild()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -2320,6 +2325,9 @@ func _test_mark_shot_range_highlights() -> void:
 	truthy(view.contains("empty_tile"), "empty-tile spells such as Drop Shade paint a range ring")
 	truthy(view.contains("_stamp_range_rim"), "Drop Shade keeps a gold rim on the max-range shell")
 	truthy(view.contains("_sync_shade_markers"), "a resolved Drop Shade places a board token")
+	truthy(view.contains("ShadeMarkers"), "Shade markers live on their own layer")
+	truthy(view.contains("_shade_layer"), "refresh parents Shade markers off Units")
+	eq(view.contains("$Units.add_child(marker)"), false, "pawn rebuild cannot free a Shade marker parented under Units")
 	truthy(view.contains("kind == \"move\" and spell_id == \"\""), "walk highlights stay off while a spell is selected")
 	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
 	truthy(tile_src.contains("\"range\""), "tiles have a range highlight color")
@@ -2701,6 +2709,51 @@ func _test_drop_shade_range() -> void:
 	var far_preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(7, 0))
 	eq(far_preview["in_range"], false, "Chebyshev 7 is outside Drop Shade preview range")
 	eq(far_preview["max_range"], 6, "Drop Shade preview max stays 6 at dist 7")
+	var marker_script: Script = load("res://board/shade_marker.gd")
+	eq(float(marker_script.CLOAK_PEAK) >= 120.0, true, "Shade silhouette is tall enough to read on a phone")
+	eq(int(marker_script.LABEL_SIZE) >= 22, true, "Shade label plate is phone-readable")
+	eq(marker_script.RIM.get_luminance() > VfxPalette.GLOAM_RIM.get_luminance(), true, "Shade rim is brighter than the gloam rim")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var scene := FileAccess.get_file_as_string("res://main.tscn")
+	truthy(scene.contains("ShadeMarkers"), "main scene owns a ShadeMarkers layer")
+	truthy(view.contains("func _sync_shade_markers"), "refresh still syncs shade markers")
+	truthy(view.contains("_includes_drop_shade"), "Drop Shade accept syncs the marker in the same resolve")
+	eq(view.contains("$Units.add_child(marker)"), false, "sync does not parent the marker under Units")
+	_test_ambush_shade_affordance()
+
+
+func _test_ambush_shade_affordance() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+	})
+	eq(CombatHUD.gloam_has_live_shade(_sim.snapshot()), false, "Ambush chrome stays quiet before a Shade")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var before: Button = hud._spell_buttons[SpellKits.AMBUSH]
+	eq(before.disabled, true, "Ambush stays disabled until a Shade or Invisible exists")
+	eq(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "the Ambush tip stays off with no Shade")
+	var dropped: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(dropped.get("ok", false)), true, "Drop Shade still plants a token for the Ambush cue")
+	eq(_unit(0)["pos"], gloam, "Drop Shade still does not relocate Gloam")
+	var snap: Dictionary = _sim.snapshot()
+	eq(CombatHUD.gloam_has_live_shade(snap), true, "a live Shade flags the Ambush cue")
+	eq(CombatHUD.legal_cast_ids(_sim.legal_intents(0)).has(SpellKits.AMBUSH), true, "Ambush is legal once a Shade and a back tile exist")
+	hud.render(snap, _sim.legal_intents(0))
+	var ambush: Button = hud._spell_buttons[SpellKits.AMBUSH]
+	eq(ambush.disabled, false, "Ambush enables on the cluster when a Shade is live")
+	eq(ambush.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "Ambush highlights when a Shade is live")
+	truthy(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "the status line says Ambush from Shade")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 6, "Drop Shade range stays 6")
+	hud.free()
 
 
 func _test_detonate_miss_retains_marks() -> void:
@@ -5456,3 +5509,8 @@ func truthy(value: Variant, msg: String) -> void:
 func fail(msg: String) -> void:
 	_failed += 1
 	print("FAIL: %s" % msg)
+
+
+func _test_shade_markers_survive_rebuild() -> void:
+	var live := load("res://tests/shade_marker_live.gd")
+	await live.run(self)

@@ -15,6 +15,8 @@ const MENDER_BLUE := Color("#2E4A6E")
 const GLOAM_PURPLE := Color("#4A3A62")
 const BASTION_SLATE := Color("#5C5648")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
+const AMBUSH_SHADE_TIP := "Ambush from Shade"
+const AMBUSH_SHADE_MODULATE := Color(1.45, 1.15, 1.7)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
 ## Lava forced-push lands and applies Burn. Not a Bounce toast.
@@ -263,6 +265,23 @@ static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 			continue
 		return other
 	return unit
+
+
+## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
+## CombatSim still owns legality, spends, and the blink.
+static func gloam_has_live_shade(snap: Dictionary) -> bool:
+	if not is_local_turn(snap):
+		return false
+	var seat := kit_seat(snap)
+	var unit := unit_for_seat(snap.get("units", []), seat)
+	if str(unit.get("class_id", "")) != SpellKits.CLASS_GLOAM:
+		return false
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		if int(token.get("owner_seat", -1)) == seat and int(token.get("turns", 0)) > 0:
+			return true
+	return int(unit.get("shades", 0)) > 0
 
 
 static func legal_cast_ids(legal: Array) -> Dictionary:
@@ -782,12 +801,15 @@ func render(snap: Dictionary, legal: Array) -> void:
 			_aim_hit_label.text = ""
 			_aim_hit_label.visible = false
 	_update_selected_label()
+	var shade_ready := gloam_has_live_shade(snap)
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
+		elif str(spell_id) == SpellKits.AMBUSH and shade_ready and can_submit:
+			button.modulate = AMBUSH_SHADE_MODULATE
 		elif can_submit:
 			button.modulate = Color(1, 1, 1, 1)
 		else:
@@ -1663,7 +1685,7 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Stunned — turn auto-ends"
 		return
 	if _selected_spell == "":
-		_selected_label.text = "Selected: Walk  ·  tap a destination  ·  Face pad turns"
+		_selected_label.text = _with_shade_tip("Selected: Walk  ·  tap a destination  ·  Face pad turns")
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
@@ -1675,7 +1697,13 @@ func _update_selected_label() -> void:
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
 	text += "  ·  tap a cell  ·  Walk / Esc to cancel"
-	_selected_label.text = text
+	_selected_label.text = _with_shade_tip(text)
+
+
+func _with_shade_tip(text: String) -> String:
+	if not gloam_has_live_shade(_last_snap):
+		return text
+	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
 
 
 func show_spell_tooltip(spell_id: String) -> void:

@@ -1,55 +1,118 @@
 extends Node2D
 
-## Board-owned Shade. Not a shader pool: the phone was resolving Drop Shade
-## (AP, log, HUD) with nothing on the tile. This node is the token.
+## Board-owned Shade. Not a shader pool and not a blink: Ambush is the relocate.
+## TA token uses the unit foot pivot. The tile decal plus the "Shade" plate
+## stay readable after the cast floater fades. The node lives on ShadeMarkers
+## so pawn rebuild cannot free it.
+
+const TOKEN_PATH := "res://art/vfx/shade/neutral_shade_token.png"
+const TILE_PATH := "res://art/vfx/shade/neutral_shade_tile_marker.png"
+const TOKEN_OFFSET := Vector2(0, -72)
+const TOKEN_SCALE := Vector2(0.5, 0.5)
+const CLOAK_PEAK := 140.0
+const LABEL_SIZE := 26
+const RIM := Color(0.97, 0.91, 1.0)
 
 var turns: int = 3
+var _pulse_t: float = 1.0
+var _token: Sprite2D
+var _tile: Sprite2D
+var _plate: ShadePlate
 
 
-func show_token(at: Vector2, sort_z: int, remaining: int) -> void:
+func _ready() -> void:
+	_ensure_art()
+	set_process(false)
+
+
+func show_token(at: Vector2, sort_z: int, remaining: int, spawned: bool = false) -> void:
 	position = at
 	z_index = sort_z
-	z_as_relative = true
+	z_as_relative = false
 	turns = maxi(remaining, 0)
+	_ensure_art()
+	if spawned and is_inside_tree():
+		_pulse_in()
 	queue_redraw()
+	if _plate != null:
+		_plate.queue_redraw()
+
+
+func _pulse_in() -> void:
+	_pulse_t = 0.0
+	scale = Vector2(0.72, 0.72)
+	set_process(true)
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector2.ONE, 0.28).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _process(delta: float) -> void:
+	_pulse_t = minf(_pulse_t + delta / 0.36, 1.0)
+	queue_redraw()
+	if _plate != null:
+		_plate.queue_redraw()
+	if _pulse_t >= 1.0:
+		set_process(false)
+
+
+func _ensure_art() -> void:
+	if _tile == null or not is_instance_valid(_tile):
+		_tile = Sprite2D.new()
+		_tile.name = "TileMarker"
+		_tile.centered = true
+		_tile.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_tile.z_index = 0
+		_tile.z_as_relative = true
+		add_child(_tile)
+	if _token == null or not is_instance_valid(_token):
+		_token = Sprite2D.new()
+		_token.name = "Token"
+		_token.centered = true
+		_token.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_token.z_index = 1
+		_token.z_as_relative = true
+		add_child(_token)
+	_token.offset = TOKEN_OFFSET
+	_token.scale = TOKEN_SCALE
+	# Authored alpha is a soft silhouette. Lift the violet so it beats map props.
+	_token.modulate = Color(1.35, 1.22, 1.55)
+	if _token.texture == null:
+		_token.texture = load(TOKEN_PATH) as Texture2D
+	if _tile.texture == null:
+		_tile.texture = load(TILE_PATH) as Texture2D
+	if _plate == null or not is_instance_valid(_plate):
+		_plate = ShadePlate.new()
+		_plate.name = "Plate"
+		_plate.host = self
+		_plate.z_index = 4
+		_plate.z_as_relative = true
+		add_child(_plate)
 
 
 func _draw() -> void:
-	var pool := _ellipse(22.0, 9.0)
-	var fill := PackedVector2Array()
-	for i in pool.size() - 1:
-		fill.append(pool[i])
-	var wash := Color(VfxPalette.GLOAM.r, VfxPalette.GLOAM.g, VfxPalette.GLOAM.b, 0.88)
-	draw_colored_polygon(fill, wash)
-	draw_polyline(pool, VfxPalette.GLOAM_RIM, 2.4, true)
-	var cloak := PackedVector2Array([
-		Vector2(-16, -6),
-		Vector2(16, -6),
-		Vector2(22, -40),
-		Vector2(0, -78),
-		Vector2(-22, -40),
-	])
-	draw_colored_polygon(cloak, VfxPalette.GLOAM)
-	cloak.append(cloak[0])
-	draw_polyline(cloak, VfxPalette.OUTLINE, 3.6, true)
-	draw_polyline(cloak, VfxPalette.GLOAM_RIM, 2.0, true)
-	draw_circle(Vector2(-7, -48), 3.2, VfxPalette.GLOAM_RIM)
-	draw_circle(Vector2(7, -48), 3.2, VfxPalette.GLOAM_RIM)
+	if _pulse_t >= 1.0:
+		return
+	var ring := _ellipse(lerpf(28.0, 58.0, _pulse_t), lerpf(12.0, 24.0, _pulse_t))
+	var flash := Color(RIM.r, RIM.g, RIM.b, (1.0 - _pulse_t) * 0.9)
+	draw_polyline(ring, flash, 4.0, true)
+
+
+func paint_plate(canvas: CanvasItem) -> void:
 	var font := ThemeDB.fallback_font
 	var text := "Shade"
-	var font_size := 16
-	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size)
-	var origin := Vector2(-text_size.x * 0.5, -90.0)
-	var ascent := font.get_ascent(font_size)
-	var descent := font.get_descent(font_size)
-	var plate := Rect2(origin.x - 6.0, origin.y - ascent - 2.0, text_size.x + 12.0, ascent + descent + 4.0)
-	draw_rect(plate, Color(0.08, 0.05, 0.12, 0.94))
-	draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, Color(0.96, 0.92, 1.0))
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, LABEL_SIZE)
+	var origin := Vector2(-text_size.x * 0.5, -CLOAK_PEAK - 16.0)
+	var ascent := font.get_ascent(LABEL_SIZE)
+	var descent := font.get_descent(LABEL_SIZE)
+	var plate := Rect2(origin.x - 10.0, origin.y - ascent - 6.0, text_size.x + 20.0, ascent + descent + 12.0)
+	canvas.draw_rect(plate.grow(3.0), RIM)
+	canvas.draw_rect(plate, Color(0.07, 0.03, 0.12, 0.96))
+	canvas.draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_SIZE, Color(1.0, 0.97, 1.0))
 	var n := mini(turns, 3)
 	for i in n:
-		var pip := Vector2(26.0, -62.0 + float(i) * 12.0)
-		draw_circle(pip, 4.4, VfxPalette.OUTLINE)
-		draw_circle(pip, 3.2, VfxPalette.GLOAM_RIM)
+		var pip := Vector2(48.0, -96.0 + float(i) * 16.0)
+		canvas.draw_circle(pip, 7.0, Color(0.05, 0.02, 0.08, 1.0))
+		canvas.draw_circle(pip, 5.0, RIM)
 
 
 func _ellipse(rx: float, ry: float) -> PackedVector2Array:
@@ -60,3 +123,11 @@ func _ellipse(rx: float, ry: float) -> PackedVector2Array:
 		pts.append(Vector2(cos(ang) * rx, sin(ang) * ry))
 	pts.append(pts[0])
 	return pts
+
+
+class ShadePlate extends Node2D:
+	var host: Node2D
+
+	func _draw() -> void:
+		if host != null and host.has_method("paint_plate"):
+			host.paint_plate(self)

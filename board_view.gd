@@ -52,6 +52,9 @@ const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const SHADE_MARKER := preload("res://board/shade_marker.gd")
+## Marker z is this plus the cell, above every tile and pawn, under combat
+## numbers (z 900) so the "Shade" floater still reads.
+const SHADE_LAYER_Z := 640
 const TOUCH := preload("res://ui/touch_adapter.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
@@ -110,6 +113,7 @@ func _ready() -> void:
 	_vfx.name = "VfxDirector"
 	add_child(_vfx)
 	_vfx.bind_board(self)
+	_shade_layer()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
 	call_deferred("_boot")
@@ -694,6 +698,9 @@ func _present_resolve(events: Array) -> bool:
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
+	# Same accept that wrote shade_tokens. Do not wait for a second action.
+	if _includes_drop_shade(events):
+		_sync_shade_markers(_sim().snapshot())
 	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
@@ -1008,7 +1015,13 @@ func _refresh() -> void:
 
 func _rebuild_pawns() -> void:
 	_stop_flash_tweens()
+	# Pawns only. Shade markers live on ShadeMarkers. A marker that raced onto
+	# Units is moved, not freed — this pass used to free the token.
+	var layer := _shade_layer()
 	for child in $Units.get_children():
+		if child.get_script() == SHADE_MARKER:
+			child.reparent(layer)
+			continue
 		$Units.remove_child(child)
 		child.free()
 	pawns_by_seat.clear()
@@ -1045,8 +1058,9 @@ func _apply_units(snap: Dictionary) -> void:
 			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
 
 
-## Drop Shade's body lives on the board. The VFX pool was a shader puddle the
-## phone never showed, while the HUD and log still updated.
+## Drop Shade's body lives on ShadeMarkers, not under Units. Rebuild frees every
+## Units child, which used to delete the token before the next refresh. Shade is
+## a standing token. Ambush is the blink.
 func _sync_shade_markers(snap: Dictionary) -> void:
 	var live: Dictionary = {}
 	for token in snap.get("shade_tokens", []):
@@ -1066,14 +1080,38 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 		if gone != null and is_instance_valid(gone):
 			gone.queue_free()
 		_shade_markers.erase(cell)
+	var layer := _shade_layer()
 	for cell in live.keys():
 		var marker: Node = _shade_markers.get(cell)
-		if marker == null or not is_instance_valid(marker):
+		var spawned := marker == null or not is_instance_valid(marker)
+		if spawned:
 			marker = SHADE_MARKER.new()
-			$Units.add_child(marker)
+			layer.add_child(marker)
 			_shade_markers[cell] = marker
+		elif marker.get_parent() != layer:
+			marker.reparent(layer)
 		var at: Vector2i = cell
-		marker.call("show_token", _cell_to_local(at), VISUAL_SORT.unit_z_index(at, _elev_at(at)) + 1, int(live[cell]))
+		marker.call("show_token", _cell_to_local(at), SHADE_LAYER_Z + at.x + at.y, int(live[cell]), spawned)
+
+
+func _shade_layer() -> Node2D:
+	var layer := get_node_or_null("ShadeMarkers") as Node2D
+	if layer == null:
+		layer = Node2D.new()
+		layer.name = "ShadeMarkers"
+		add_child(layer)
+	layer.z_as_relative = false
+	layer.z_index = SHADE_LAYER_Z
+	return layer
+
+
+func _includes_drop_shade(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "cast" and str(event.get("spell", "")) == SpellKits.DROP_SHADE:
+			return true
+	return false
 
 
 func _paint_highlights() -> void:
