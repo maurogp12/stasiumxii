@@ -6,6 +6,8 @@ signal face_requested(dir: String)
 signal end_turn_requested
 signal new_match_requested
 signal ready_requested(seat: int)
+## Finger moved on an ability button. committing is the release.
+signal aim_dragged(screen_pos: Vector2, committing: bool)
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
@@ -27,6 +29,8 @@ var _spell_buttons: Dictionary = {}
 var _face_buttons: Dictionary = {}
 var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
+var _ability_cluster: Control
+var _bottom_box: VBoxContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
 ## Left card is seat 0, right card is seat 1. Titles follow units[].class_id.
@@ -69,6 +73,10 @@ var _tooltip_label: Label
 var _tooltip_spell: String = ""
 ## Touch card stays up after the finger lifts. Mouse hover still hides on exit.
 var _tooltip_pinned: bool = false
+## Spell armed on button-down. The matching release must not toggle it off.
+var _suppress_toggle_spell: String = ""
+var _press_gesture_armed: String = ""
+var _press_release_token: int = 0
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
@@ -824,6 +832,7 @@ func _build() -> void:
 	res_box.add_child(_make_clock_row())
 
 	var bottom := VBoxContainer.new()
+	_bottom_box = bottom
 	bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	bottom.offset_left = 16
 	bottom.offset_right = -16
@@ -954,6 +963,18 @@ func _build() -> void:
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
 	bottom.add_child(_coach_label)
+
+	_ability_cluster = Control.new()
+	_ability_cluster.name = "AbilityCluster"
+	_ability_cluster.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_ability_cluster.offset_left = -(TOUCH.CLUSTER_SIZE.x + TOUCH.CLUSTER_EDGE)
+	_ability_cluster.offset_top = -(TOUCH.CLUSTER_SIZE.y + TOUCH.CLUSTER_EDGE)
+	_ability_cluster.offset_right = -TOUCH.CLUSTER_EDGE
+	_ability_cluster.offset_bottom = -TOUCH.CLUSTER_EDGE
+	_ability_cluster.custom_minimum_size = TOUCH.CLUSTER_SIZE
+	_ability_cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ability_cluster.visible = false
+	root.add_child(_ability_cluster)
 
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(220, 540)
@@ -1288,42 +1309,122 @@ func _sync_spell_buttons(offered: Array) -> void:
 		_spell_buttons.erase(spell_id)
 		_spell_hosts.erase(spell_id)
 		if is_instance_valid(host):
-			_action_bar.remove_child(host)
+			var parent := host.get_parent()
+			if parent != null:
+				parent.remove_child(host)
 			host.free()
-	var insert_idx := 0
-	if _walk_button != null and _walk_button.get_parent() == _action_bar:
-		insert_idx = _walk_button.get_index() + 1
+	var primary := TOUCH.primary_spell_id(offered_ids)
+	var arc: Array = []
+	for spell_id in offered_ids:
+		if spell_id != primary:
+			arc.append(spell_id)
 	for spell_id in offered_ids:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if def.is_empty():
 			continue
 		if not _spell_buttons.has(spell_id):
-			var host := Control.new()
-			host.custom_minimum_size = TOUCH.SPELL_BUTTON_SIZE
-			host.mouse_filter = Control.MOUSE_FILTER_STOP
-			_bind_spell_hover(host, spell_id)
-			host.gui_input.connect(_on_spell_host_input.bind(spell_id))
-			var button := Button.new()
-			button.text = _spell_button_text(def)
-			button.clip_text = true
-			button.add_theme_font_size_override("font_size", 16)
-			button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			button.pressed.connect(_on_spell_pressed.bind(spell_id))
-			button.button_down.connect(_begin_long_press.bind(spell_id))
-			button.button_up.connect(_cancel_long_press)
-			button.gui_input.connect(_on_spell_host_input.bind(spell_id))
-			# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
-			_bind_spell_hover(button, spell_id)
-			host.add_child(button)
-			_action_bar.add_child(host)
-			_spell_buttons[spell_id] = button
-			_spell_hosts[spell_id] = host
-		_action_bar.move_child(_spell_hosts[spell_id], insert_idx)
-		insert_idx += 1
+			_create_spell_button(spell_id, def)
+	_layout_ability_cluster(primary, arc)
+	_sync_bottom_inset()
+
+
+func _create_spell_button(spell_id: String, def: Dictionary) -> void:
+	var host := Control.new()
+	host.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bind_spell_hover(host, spell_id)
+	host.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	var button := Button.new()
+	button.text = _spell_button_text(def)
+	button.clip_text = true
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.pressed.connect(_on_spell_pressed.bind(spell_id))
+	button.button_down.connect(_on_spell_button_down.bind(spell_id))
+	button.button_up.connect(_on_spell_button_up)
+	button.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
+	_bind_spell_hover(button, spell_id)
+	host.add_child(button)
+	if _ability_cluster != null:
+		_ability_cluster.add_child(host)
+	_spell_buttons[spell_id] = button
+	_spell_hosts[spell_id] = host
+
+
+func _layout_ability_cluster(primary: String, arc: Array) -> void:
+	if _ability_cluster == null:
+		return
+	var centers: Dictionary = TOUCH.cluster_centers(arc.size())
+	var primary_center: Vector2 = centers.get("primary", Vector2.ZERO)
+	var arc_centers: Array = centers.get("arc", [])
+	if primary != "" and _spell_hosts.has(primary):
+		_place_spell_host(primary, primary_center, true)
+	for i in arc.size():
+		var spell_id := str(arc[i])
+		if i < arc_centers.size() and _spell_hosts.has(spell_id):
+			_place_spell_host(spell_id, arc_centers[i], false)
+	_ability_cluster.visible = primary != "" or not arc.is_empty()
+
+
+func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void:
+	var host: Control = _spell_hosts[spell_id]
+	var size := TOUCH.cluster_button_size(primary)
+	host.custom_minimum_size = size
+	host.size = size
+	host.position = center - size * 0.5
+	host.set_meta("cluster_primary", primary)
+	var button: Button = _spell_buttons[spell_id]
+	button.add_theme_font_size_override("font_size", 15 if primary else 12)
+	button.text = _spell_button_text(SpellKits.spell(spell_id))
+	_apply_circle_style(button, size.x, primary)
+
+
+func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void:
+	var fill := Color(0.62, 0.16, 0.2, 0.96) if primary else Color(0.15, 0.14, 0.2, 0.94)
+	var border := Color(1, 0.92, 0.72, 0.9) if primary else Color(1, 1, 1, 0.28)
+	button.add_theme_stylebox_override("normal", _circle_style(fill, diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("hover", _circle_style(fill.lightened(0.12), diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("pressed", _circle_style(fill.darkened(0.1), diameter, Color(0.98, 0.84, 0.4), 4))
+	button.add_theme_stylebox_override("focus", _circle_style(fill, diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("disabled", _circle_style(Color(0.28, 0.28, 0.32, 0.78), diameter, Color(1, 1, 1, 0.12), 2))
+
+
+func _circle_style(fill: Color, diameter: float, border: Color, border_width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	var radius := int(round(diameter * 0.5))
+	box.corner_radius_top_left = radius
+	box.corner_radius_top_right = radius
+	box.corner_radius_bottom_left = radius
+	box.corner_radius_bottom_right = radius
+	box.border_color = border
+	box.border_width_left = border_width
+	box.border_width_top = border_width
+	box.border_width_right = border_width
+	box.border_width_bottom = border_width
+	box.content_margin_left = 6
+	box.content_margin_right = 6
+	box.content_margin_top = 6
+	box.content_margin_bottom = 6
+	return box
+
+
+func _sync_bottom_inset() -> void:
+	if _bottom_box == null:
+		return
+	var cluster_open := _ability_cluster != null and _ability_cluster.visible
+	_bottom_box.offset_right = -(TOUCH.CLUSTER_SIZE.x + 12.0) if cluster_open else -16.0
 
 
 func _spell_button_text(def: Dictionary) -> String:
-	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
+	if def.is_empty():
+		return ""
+	var ap := int(def.get("ap", 0))
+	var mp := int(def.get("mp", 0))
+	if mp > 0:
+		return "%s\n%d AP\n%d MP" % [str(def.get("name", "")), ap, mp]
+	return "%s\n%d AP" % [str(def.get("name", "")), ap]
 
 
 ## Disabled buttons still hover via the host: ignore their mouse so the wrapper receives it.
@@ -1336,9 +1437,56 @@ func _on_walk_pressed() -> void:
 	select_walk()
 
 
+func _on_spell_button_down(spell_id: String) -> void:
+	_begin_long_press(spell_id)
+	_arm_spell_from_press(spell_id)
+
+
+func _on_spell_button_up() -> void:
+	_cancel_long_press()
+	# pressed() runs in this same release when the finger is still on the button.
+	# A drag-off never emits pressed, so drop the toggle lock after that.
+	_press_release_token += 1
+	var token := _press_release_token
+	if is_inside_tree():
+		_clear_press_lock.call_deferred(token)
+
+
+func _clear_press_lock(token: int) -> void:
+	if token != _press_release_token:
+		return
+	_suppress_toggle_spell = ""
+	_press_gesture_armed = ""
+
+
+func _arm_spell_from_press(spell_id: String) -> void:
+	if not _spell_buttons.has(spell_id):
+		return
+	var button: Button = _spell_buttons[spell_id]
+	if button.disabled:
+		return
+	if _press_gesture_armed == spell_id:
+		return
+	if _selected_spell == spell_id:
+		_press_gesture_armed = ""
+		return
+	_press_gesture_armed = spell_id
+	_suppress_toggle_spell = spell_id
+	_selected_spell = spell_id
+	_refresh_spell_buttons()
+	_update_selected_label()
+	spell_selected.emit(_selected_spell)
+
+
 func _on_spell_pressed(spell_id: String) -> void:
 	if not _spell_buttons.has(spell_id):
 		return
+	if _suppress_toggle_spell == spell_id:
+		_suppress_toggle_spell = ""
+		_press_gesture_armed = ""
+		_press_release_token += 1
+		return
+	_press_gesture_armed = ""
 	if _selected_spell == spell_id:
 		select_walk()
 		return
@@ -1516,18 +1664,58 @@ func _on_spell_unhover() -> void:
 	hide_spell_tooltip()
 
 
+func claims_screen_point(point: Vector2) -> bool:
+	if not is_inside_tree():
+		return false
+	for spell_id in _spell_hosts.keys():
+		if _control_claims(_spell_hosts[spell_id], point):
+			return true
+	if _control_claims(_walk_button, point):
+		return true
+	if _control_claims(_end_turn_button, point):
+		return true
+	if _control_claims(_new_match_button, point):
+		return true
+	if _control_claims(_ready_p1_button, point):
+		return true
+	if _control_claims(_ready_p2_button, point):
+		return true
+	for button in _face_buttons.values():
+		if _control_claims(button, point):
+			return true
+	return false
+
+
+func _control_claims(control: Control, point: Vector2) -> bool:
+	if control == null or not is_instance_valid(control) or not control.visible:
+		return false
+	if not control.is_inside_tree():
+		return false
+	return control.get_global_rect().has_point(point)
+
+
 func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
 	if TOUCH.is_emulated_mouse(event):
 		return
-	if event is InputEventScreenTouch:
-		var touch := event as InputEventScreenTouch
-		if touch.pressed:
-			_begin_long_press(spell_id)
-			# Tap/press shows the card. Hover is only the desktop path.
-			show_spell_tooltip(spell_id)
-			_tooltip_pinned = tooltip_visible()
-		else:
-			_cancel_long_press()
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		var screen_pos := TOUCH.pointer_position(event)
+		var committing := TOUCH.is_touch_release(event)
+		if event is InputEventScreenTouch:
+			var touch := event as InputEventScreenTouch
+			if touch.index != 0:
+				return
+			if touch.pressed:
+				_arm_spell_from_press(spell_id)
+				_begin_long_press(spell_id)
+				# Tap/press shows the card. Hover is only the desktop path.
+				show_spell_tooltip(spell_id)
+				_tooltip_pinned = tooltip_visible()
+			else:
+				_on_spell_button_up()
+		elif (event as InputEventScreenDrag).index != 0:
+			return
+		if _selected_spell != "":
+			aim_dragged.emit(screen_pos, committing)
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -1610,6 +1798,9 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_face_bar.visible = not deploying
 	for button in _face_buttons.values():
 		(button as Button).visible = not deploying
+	if _ability_cluster != null and deploying:
+		_ability_cluster.visible = false
+	_sync_bottom_inset()
 
 
 func deploy_chrome_visible() -> bool:
