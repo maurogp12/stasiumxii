@@ -22,6 +22,7 @@ func _finish_live() -> void:
 	await _test_strip_fallback()
 	await _test_failed_strip_falls_back_to_hop()
 	await _test_batch1_disk_strips()
+	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
@@ -40,7 +41,6 @@ func _run() -> void:
 	_test_reduce_motion_skips()
 	_test_view_wiring()
 	_test_strip_library_missing_and_slice()
-	_test_batch1c_hot_swap()
 
 
 func _test_tunables_and_budget() -> void:
@@ -637,6 +637,7 @@ func _add_anim(frames: SpriteFrames, anim: String, count: int, fps: float) -> vo
 func _test_batch1c_hot_swap() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
+	await process_frame
 	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
 	var frames := SpriteFrames.new()
 	_add_anim(frames, "attack_e", 6, 12.0)
@@ -644,12 +645,14 @@ func _test_batch1c_hot_swap() -> void:
 	_add_anim(frames, "cast_e", 6, 10.0)
 	pawn.bind_motion_frames(frames)
 	pawn.play_view_plan({"cast": true, "strip": "cast_mark", "aim": Vector2(32, 0)})
+	await process_frame
 	var strip := _visible_strip(pawn)
 	truthy(strip != null, "cast_mark hot-swap shows a strip")
 	if strip != null:
 		eq(String(strip.animation), "cast_mark_e", "Mark Shot prefers cast_mark over attack")
 	pawn.settle_motion()
 	pawn.play_view_plan({"cast": true, "strip": "cast", "aim": Vector2(32, 0)})
+	await process_frame
 	strip = _visible_strip(pawn)
 	truthy(strip != null, "cast hot-swap shows a strip")
 	if strip != null:

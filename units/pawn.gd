@@ -477,7 +477,7 @@ func flash_canvas() -> CanvasItem:
 
 func rest_modulate() -> Color:
 	if not alive:
-		return Color(0.45, 0.45, 0.45, 1)
+		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
 	return Color.WHITE
 
 
