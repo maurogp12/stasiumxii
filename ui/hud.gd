@@ -66,6 +66,8 @@ var _stun_badge: Label
 var _toast_label: Label
 var _toast_token: int = 0
 var _spell_hosts: Dictionary = {}
+## spell path -> Texture2D or null when the stub is missing.
+var _ability_textures: Dictionary = {}
 var _empty_kit_button: Button
 var _empty_kit_label: Label
 var _tooltip_panel: Panel
@@ -767,12 +769,14 @@ func _apply_controls(match_over: bool) -> void:
 		_walk_button.disabled = block or _stunned or not_your_turn
 		if (_stunned or _deploying or not_your_turn) and not match_over and not _locked:
 			_walk_button.modulate = STUN_GREY
+		_sync_ability_icon(_walk_button)
 	if _end_turn_button != null:
 		# Locked Stun (A′): End Turn stays as a fallback; CombatSim auto-skips.
 		# Deploy: End Turn stays off until both Ready leave DEPLOYMENT.
 		# Online: only the owner of active_seat can End Turn.
 		_end_turn_button.disabled = block or not_your_turn
 		_end_turn_button.modulate = Color.WHITE
+		_sync_ability_icon(_end_turn_button)
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
@@ -909,6 +913,7 @@ func _build() -> void:
 	_walk_button.add_theme_font_size_override("font_size", 18)
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
+	_bind_ability_icon(_walk_button, "walk", "Walk")
 
 	_empty_kit_label = Label.new()
 	_empty_kit_label.visible = false
@@ -948,6 +953,7 @@ func _build() -> void:
 	_end_turn_button.clip_text = true
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
 	_action_bar.add_child(_end_turn_button)
+	_bind_ability_icon(_end_turn_button, "end_turn", "End Turn")
 
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
@@ -1346,6 +1352,7 @@ func _create_spell_button(spell_id: String, def: Dictionary) -> void:
 	# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
 	_bind_spell_hover(button, spell_id)
 	host.add_child(button)
+	_bind_ability_icon(button, spell_id, _spell_button_text(def))
 	if _ability_cluster != null:
 		_ability_cluster.add_child(host)
 	_spell_buttons[spell_id] = button
@@ -1376,7 +1383,7 @@ func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void
 	host.set_meta("cluster_primary", primary)
 	var button: Button = _spell_buttons[spell_id]
 	button.add_theme_font_size_override("font_size", 15 if primary else 12)
-	button.text = _spell_button_text(SpellKits.spell(spell_id))
+	button.set_meta("ability_fallback_text", _spell_button_text(SpellKits.spell(spell_id)))
 	_apply_circle_style(button, size.x, primary)
 
 
@@ -1388,6 +1395,7 @@ func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void
 	button.add_theme_stylebox_override("pressed", _circle_style(fill.darkened(0.1), diameter, Color(0.98, 0.84, 0.4), 4))
 	button.add_theme_stylebox_override("focus", _circle_style(fill, diameter, border, 3 if primary else 2))
 	button.add_theme_stylebox_override("disabled", _circle_style(Color(0.28, 0.28, 0.32, 0.78), diameter, Color(1, 1, 1, 0.12), 2))
+	_sync_ability_icon(button)
 
 
 func _circle_style(fill: Color, diameter: float, border: Color, border_width: int) -> StyleBoxFlat:
@@ -1431,6 +1439,82 @@ func _spell_button_text(def: Dictionary) -> String:
 func _set_spell_button_clickable(button: Button, clickable: bool) -> void:
 	button.disabled = not clickable
 	button.mouse_filter = Control.MOUSE_FILTER_STOP if clickable else Control.MOUSE_FILTER_IGNORE
+	_sync_ability_icon(button)
+
+
+## res://art/ui/mobile/abilities/<spell_id>_icon.png and _icon_disabled.png.
+static func _ability_icon_path(spell_id: String, disabled: bool) -> String:
+	return "res://art/ui/mobile/abilities/%s_icon%s.png" % [spell_id, "_disabled" if disabled else ""]
+
+
+func _bind_ability_icon(button: Button, spell_id: String, fallback_text: String) -> void:
+	button.set_meta("ability_spell_id", spell_id)
+	button.set_meta("ability_fallback_text", fallback_text)
+	_ensure_ability_icon(button)
+	_sync_ability_icon(button)
+
+
+func _ensure_ability_icon(button: Button) -> TextureRect:
+	var existing := button.get_node_or_null("AbilityIcon")
+	if existing is TextureRect:
+		return existing as TextureRect
+	var icon := TextureRect.new()
+	icon.name = "AbilityIcon"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	icon.offset_left = 8
+	icon.offset_top = 8
+	icon.offset_right = -8
+	icon.offset_bottom = -8
+	# No EXPAND_FIT in Godot 4.7. Ignore Size fills the circle; Keep Aspect Centered fits the stub.
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.visible = false
+	button.add_child(icon)
+	return icon
+
+
+func _load_ability_texture(spell_id: String, disabled: bool) -> Texture2D:
+	var path := _ability_icon_path(spell_id, disabled)
+	if path == "":
+		return null
+	if _ability_textures.has(path):
+		var cached: Variant = _ability_textures[path]
+		return cached as Texture2D if cached is Texture2D else null
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		var res: Resource = ResourceLoader.load(path)
+		if res is Texture2D:
+			tex = res as Texture2D
+	_ability_textures[path] = tex
+	return tex
+
+
+## Disabled / illegal uses the _disabled stub. If that file is missing, keep the
+## enabled texture and let the button modulate grey it.
+func _ability_texture_for_state(spell_id: String, disabled: bool) -> Texture2D:
+	if disabled:
+		var off := _load_ability_texture(spell_id, true)
+		if off != null:
+			return off
+	return _load_ability_texture(spell_id, false)
+
+
+func _sync_ability_icon(button: Button) -> void:
+	if button == null or not is_instance_valid(button) or not button.has_meta("ability_spell_id"):
+		return
+	var spell_id := str(button.get_meta("ability_spell_id"))
+	var fallback := str(button.get_meta("ability_fallback_text", ""))
+	var icon := _ensure_ability_icon(button)
+	var tex := _ability_texture_for_state(spell_id, button.disabled)
+	if tex == null:
+		icon.texture = null
+		icon.visible = false
+		button.text = fallback
+		return
+	icon.texture = tex
+	icon.visible = true
+	button.text = ""
 
 
 func _on_walk_pressed() -> void:
