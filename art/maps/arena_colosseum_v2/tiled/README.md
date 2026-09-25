@@ -4,8 +4,8 @@
 
 1. Open `project.godot` in Godot 4.7+. The main scene is `res://scenes/class_select.tscn` (960×720).
 2. Press **F5 / Play**.
-3. Click **Hot-seat**, then a map: Crosshaven, Brinewake, Slagcrown, Windmere, or Stormspire.
-4. P1 picks a class, then P2. The duel opens `res://main.tscn`.
+3. Click **Hot-seat**. There is no map chooser.
+4. P1 picks a class, then P2. The duel opens `res://main.tscn` on a uniform random arena: Crosshaven, Brinewake, Slagcrown, Windmere, or Stormspire. **New Match** rolls again.
 5. `BoardView` paints that arena from `{arena}_15x15_tags.json` on the 64×32 diamonds. `paint_only` never blocks pathing, LoS, or MP. Middle-mouse pans.
 6. Online queue stays on Crosshaven (the dedicated host does not share a map pick).
 
