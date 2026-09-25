@@ -376,10 +376,10 @@ func legal_intents(seat: int) -> Array:
 	return out
 
 
-## Locked Ambush: 4 AP / 0 MP, range 1–4 from Gloam, blink to the empty back tile.
-## Spends a Shade only when the origin was a Shade (submit). Invisible origin
-## keeps the token. This offer does not call the pathfinder and does not read
-## the walk budget, so MP 0 does not hide the cast.
+## Locked Ambush: 4 AP / 0 MP, range 1–4 from the origin, blink to the empty back tile.
+## Origin is Gloam while Invisible, otherwise the Shade. Spends a Shade only when
+## the origin was a Shade (submit). This offer does not call the pathfinder and
+## does not read the walk budget, so MP 0 does not hide the cast.
 func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void:
 	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
 		return
@@ -393,7 +393,10 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 		return
 	if _cast_gate_reason(actor, enemy, def) != "":
 		return
-	if not _in_spell_range(def, actor["pos"], enemy["pos"]):
+	var origin_cell := _ambush_range_origin(actor)
+	if origin_cell == UNPLACED:
+		return
+	if not _in_spell_range(def, origin_cell, enemy["pos"]):
 		return
 	out.append({
 		"type": "cast",
@@ -455,7 +458,7 @@ func match_phase_name() -> String:
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
 ## Chrome only. Origin is Gloam's cell while Invisible, otherwise the first live Shade.
-## Does not change the 4 AP / 0 MP cast or the caster range check.
+## The 1–4 check uses this same cell.
 func ambush_origin(seat: int) -> Dictionary:
 	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
 	var actor := _unit_by_seat(seat)
@@ -504,6 +507,11 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 				out.append(intent["to"])
 		return out
 	var from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell == UNPLACED:
+			return out
+		from = origin_cell
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
@@ -808,7 +816,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	var def: Dictionary = SpellKits.spell(spell_id)
 	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
 	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush / Ambush.
-	# No +5. No Advance. No invented stun/push. Ambush % is still Gloam-to-target.
+	# No +5. No Advance. No invented stun/push. Ambush % is origin-to-target.
 	if def.is_empty() or not bool(def.get("rolls", false)):
 		return out
 	if not [
@@ -835,7 +843,12 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		cell = enemy["pos"]
 	else:
 		cell = _as_cell(dest)
-	var dist := chebyshev(actor["pos"], cell)
+	var aim_from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			aim_from = origin_cell
+	var dist := chebyshev(aim_from, cell)
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
@@ -897,11 +910,16 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["reason"] = "unknown_spell"
 		return out
 
+	var range_from := from_cell
+	if spell_id == SpellKits.AMBUSH and not actor.is_empty():
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			range_from = origin_cell
 	if spell_id == SpellKits.ADVANCE:
 		# Exactly 2 cardinal spaces. Manhattan 1 and (1,1) are out of range.
 		out["in_range"] = is_advance_cardinal(from_cell, to_cell)
 	else:
-		var range_dist := _range_distance(def, from_cell, to_cell)
+		var range_dist := _range_distance(def, range_from, to_cell)
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
 		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
 		if bool(def.get("rolls", false)):
@@ -1490,7 +1508,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
 
-	var dist := chebyshev(actor["pos"], dest)
+	var range_from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			range_from = origin_cell
+	var dist := chebyshev(range_from, dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
@@ -3422,6 +3445,17 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	if not _is_empty(cell):
 		return false
 	return _board.is_walkable(cell)
+
+
+## Locked range origin. Invisible uses Gloam. Otherwise the first live Shade.
+## UNPLACED when Ambush has neither, so the no_shade gate still runs.
+func _ambush_range_origin(actor: Dictionary) -> Vector2i:
+	if bool(actor.get("invisible", false)):
+		return actor["pos"]
+	var shade := _first_shade(actor)
+	if shade.is_empty():
+		return UNPLACED
+	return shade["pos"]
 
 
 func _first_shade(actor: Dictionary) -> Dictionary:

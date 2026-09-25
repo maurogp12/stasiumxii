@@ -54,6 +54,7 @@ func _run() -> void:
 	_test_ambush_destination_locked()
 	_test_ambush_arms_at_zero_mp()
 	_test_ambush_origin_chrome()
+	_test_ambush_range_from_origin()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1396,9 +1397,10 @@ func _test_ambush_destination_locked() -> void:
 		"classes": ["gloam", "kestrel"],
 		"positions": [gloam, prey],
 		"kestrel_facing": "W",
-		"gloam_shade": true,
 		"rolls": [1],
 	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Shade-origin fixture plants a Shade inside 1–4 of the prey")
 	var shade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(shade_hit.get("ok", false)), true, "Shade-origin Ambush hit on an empty back tile resolves")
 	eq(_unit(0)["pos"], back, "Shade-origin Ambush lands on the empty back tile")
@@ -1418,9 +1420,10 @@ func _test_ambush_arms_at_zero_mp() -> void:
 		"classes": ["gloam", "kestrel"],
 		"positions": [gloam, prey],
 		"kestrel_facing": "W",
-		"gloam_shade": true,
 		"rolls": [1],
 	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "MP 0 fixture plants a Shade inside Ambush range")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Ambush cost stays 0 MP")
 	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
@@ -1505,6 +1508,7 @@ func _test_ambush_origin_chrome() -> void:
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "origin chrome does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "origin chrome does not change Drop Shade MP")
 	var shade_cell: Vector2i = _sim.snapshot()["shade_tokens"][0]["pos"]
+	var chebyshev_shade := int(_sim.chebyshev(shade_cell, prey))
 	var origin: Dictionary = _sim.ambush_origin(0)
 	eq(bool(origin.get("show", false)), true, "a live Shade opens Ambush origin chrome")
 	eq(bool(origin.get("from_self", true)), false, "a Shade origin is not Gloam")
@@ -1514,8 +1518,8 @@ func _test_ambush_origin_chrome() -> void:
 	eq(landing.get("cell"), Vector2i(6, 2), "Ambush aim preview lands on the locked back tile")
 	var aim: Dictionary = _sim.aim_hit_preview(0, SpellKits.AMBUSH, shade_cell)
 	eq(bool(aim.get("show", false)), true, "Ambush aim preview shows the locked hit percent")
-	eq(int(aim.get("hit_chance", 0)), 80, "Ambush percent stays Chebyshev from Gloam, not from the Shade tile")
-	eq(int(aim.get("range", 0)), 3, "hovering the Shade does not retarget the Ambush percent")
+	eq(int(aim.get("hit_chance", 0)), _sim.hit_chance(chebyshev_shade), "Ambush percent is Chebyshev from the Shade origin")
+	eq(int(aim.get("range", 0)), chebyshev_shade, "hovering the Shade does not retarget the Ambush percent")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1546,6 +1550,57 @@ func _test_ambush_origin_chrome() -> void:
 	var marker := FileAccess.get_file_as_string("res://board/shade_marker.gd")
 	truthy(marker.contains("Ambush"), "the Shade token plate can read as the Ambush origin")
 	truthy(marker.contains("Shade"), "a Shade that is not the origin still labels itself Shade")
+
+
+func _test_ambush_range_from_origin() -> void:
+	# GDD v0.6: Chebyshev 1–4 is origin to target. Body can sit outside that band.
+	var gloam := Vector2i(2, 8)
+	var prey := Vector2i(6, 2)
+	var shade_at := Vector2i(4, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(gloam, prey), 6, "the body sits outside Ambush 1–4")
+	eq(_sim.chebyshev(shade_at, prey), 2, "the Shade sits inside Ambush 1–4")
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants the origin inside range of the prey")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Ambush is legal from the Shade when the body is out of range")
+	var ring: Array = _sim.range_highlight_cells(0, SpellKits.AMBUSH)
+	eq(ring.has(prey), true, "the Ambush ring includes the enemy measured from the Shade")
+	eq(ring.has(Vector2i(0, 8)), false, "a tile near the body and far from the Shade is outside the ring")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "Ambush resolves from a Shade inside 1–4")
+	eq(int(hit["events"][0].get("range", -1)), 2, "the roll distance is Shade to enemy")
+	eq(_unit(0)["pos"], Vector2i(7, 2), "Shade-origin Ambush still lands on the empty back tile")
+	eq(int(_unit(0)["shades"]), 0, "Shade origin still spends the Shade")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "origin range does not change Ambush AP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "origin range does not change Ambush damage")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var far_shade := Vector2i(0, 2)
+	eq(_sim.chebyshev(Vector2i(2, 2), prey), 4, "this body is inside 1–4")
+	eq(_sim.chebyshev(far_shade, prey), 6, "this Shade is outside 1–4")
+	var far_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": far_shade, "seat": 0})
+	eq(bool(far_plant.get("ok", false)), true, "Drop Shade can plant outside Ambush range")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a far Shade does not arm Ambush just because the body is in range")
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(str(rejected.get("reason", "")), "out_of_range", "Shade-origin range reject is out_of_range")
+	_live_unit(0)["invisible"] = true
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible Ambush uses the body, ignoring the far Shade")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
