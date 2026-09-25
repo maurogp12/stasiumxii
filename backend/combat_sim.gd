@@ -2892,7 +2892,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
-		return _reject(intent, "no_landing", "REJECT — Ambush has no empty landing (refund).")
+		return _reject(intent, "no_landing", "REJECT — Ambush back tile is occupied or illegal (refund).")
 	var from_shade := not bool(actor.get("invisible", false))
 	var origin: Dictionary = {}
 	if from_shade:
@@ -2971,31 +2971,16 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
+## Locked destination is the target's empty back tile only.
+## Occupied, out of bounds, or otherwise illegal back rejects the cast.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
 	var facing := str(target.get("facing", "E"))
-	var back: Vector2i = target["pos"]
-	if FACING_VEC.has(facing):
-		back = target["pos"] - FACING_VEC[facing]
-	var caster_pos: Vector2i = actor["pos"]
-	if _ambush_cell_ok(back, caster_pos):
-		return {"ok": true, "cell": back, "backstab": true}
-	var best := UNPLACED
-	var best_d := 99
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
-			var cell := Vector2i(x, y)
-			if chebyshev(cell, target["pos"]) != 1:
-				continue
-			if not _ambush_cell_ok(cell, caster_pos):
-				continue
-			var gap := chebyshev(cell, back)
-			var better := best == UNPLACED or gap < best_d or (gap == best_d and (cell.x < best.x or (cell.x == best.x and cell.y < best.y)))
-			if better:
-				best = cell
-				best_d = gap
-	if best == UNPLACED:
+	if not FACING_VEC.has(facing):
 		return {"ok": false}
-	return {"ok": true, "cell": best, "backstab": false}
+	var back: Vector2i = target["pos"] - FACING_VEC[facing]
+	if not _ambush_cell_ok(back, actor["pos"]):
+		return {"ok": false}
+	return {"ok": true, "cell": back, "backstab": true}
 
 
 func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:

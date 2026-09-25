@@ -46,6 +46,7 @@ func _run() -> void:
 	_test_face_costs_zero()
 	_test_end_turn_refills()
 	_test_illegal_cast_refunds()
+	_test_ambush_destination_locked()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1163,6 +1164,106 @@ func _test_illegal_cast_refunds() -> void:
 	eq(result["illegal"], true, "Kestrel Strike is not in kit")
 	eq(result["reason"], "spell_not_in_kit", "spell_not_in_kit")
 	eq(_unit(0)["ap"], 6, "wrong-kit cast refunds")
+
+
+func _test_ambush_destination_locked() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(5, 2)
+	var back := Vector2i(6, 2)
+	# Neighbors other than (6,1) are blocked, so a substitute landing would use (6,1).
+	var blocked_setup: Dictionary = _sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"gloam_invisible": true,
+		"rolls": [1],
+		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), back, Vector2i(6, 3)],
+	})
+	var ap_before := int(blocked_setup["units"][0]["ap"])
+	var mp_before := int(blocked_setup["units"][0]["mp"])
+	var shades_before := int(blocked_setup["units"][0]["shades"])
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(blocked.get("illegal", false)), true, "blocked back tile is an illegal Ambush")
+	eq(bool(blocked.get("ok", true)), false, "blocked back is not a resolved cast")
+	eq(str(blocked.get("reason", "")), "no_landing", "blocked back refunds as no_landing")
+	eq(_unit(0)["pos"], gloam, "blocked back leaves Gloam on the cast cell")
+	eq(int(_unit(0)["ap"]), ap_before, "blocked back refunds AP")
+	eq(int(_unit(0)["mp"]), mp_before, "blocked back does not spend MP")
+	eq(int(_unit(0)["shades"]), shades_before, "blocked back does not spend Shade")
+	eq(bool(_unit(0)["shade"]), true, "blocked back keeps Shade")
+	eq(bool(_unit(0)["invisible"]), true, "blocked back keeps Invisible")
+	eq(int(_unit(1)["hp"]), 80, "blocked back deals no damage")
+	eq(_unit(1)["pos"], prey, "blocked back does not move the target")
+
+	var miss_setup: Dictionary = _sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"gloam_invisible": true,
+		"rolls": [100],
+	})
+	var shades_miss := int(miss_setup["units"][0]["shades"])
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Ambush miss on a legal back tile resolves")
+	eq(bool(missed.get("illegal", true)), false, "Ambush miss is not an illegal cast")
+	eq(_unit(0)["pos"], gloam, "Ambush miss does not teleport")
+	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
+	eq(int(_unit(0)["mp"]), 3, "Ambush miss does not spend MP")
+	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade token")
+	eq(bool(_unit(0)["shade"]), true, "Ambush miss keeps Shade")
+	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+	var miss_event: Dictionary = missed["events"][0]
+	eq(str(miss_event.get("type", "")), "miss", "Ambush miss emits miss")
+	eq(bool(miss_event.get("teleported", true)), false, "Ambush miss teleported is false")
+	eq(miss_event.has("destination"), false, "Ambush miss emits no destination")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"gloam_shade": true,
+		"rolls": [1],
+	})
+	var shades_hit := int(_unit(0)["shades"])
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "Ambush hit on an empty back tile resolves")
+	eq(_unit(0)["pos"], back, "Invisible Ambush lands on the empty back tile")
+	eq(int(_unit(0)["shades"]), shades_hit, "Invisible origin does not spend Shade")
+	eq(bool(_unit(0)["invisible"]), true, "Ambush hit keeps Invisible")
+	eq(int(_unit(1)["hp"]), 50, "empty back hit is 22 × 1.35 = 30")
+	var hit_event: Dictionary = hit["events"][0]
+	eq(hit_event.get("destination"), back, "Ambush hit destination is the back tile")
+	eq(bool(hit_event.get("backstab", false)), true, "empty back tile is a backstab")
+	eq(bool(hit_event.get("teleported", false)), true, "Ambush hit teleports")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"rolls": [1],
+	})
+	var shade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(shade_hit.get("ok", false)), true, "Shade-origin Ambush hit on an empty back tile resolves")
+	eq(_unit(0)["pos"], back, "Shade-origin Ambush lands on the empty back tile")
+	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
+	eq(int(_unit(1)["hp"]), 50, "Shade-origin back hit is 22 × 1.35 = 30")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
