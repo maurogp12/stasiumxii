@@ -11,7 +11,10 @@ enum Phase {
 	TURN_1,
 }
 
-const BOARD_SIZE := 8
+## Ship playable size is 15×15. Proto fixtures pass board_size 8 (crop) or 12.
+## The tokens below are the proto 12×12 grid and the 8×8 crop source.
+const BOARD_SIZE := BoardSize.SHIP
+const PROTO_BOARD_SIZE := BoardSize.PROTO
 const SEAT_0 := 0
 const SEAT_1 := 1
 const BLOB_SIZE := 6
@@ -20,14 +23,16 @@ const PREFERRED_ZONE_CHEBYSHEV_MIN := 4
 const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
-## Director-stamped Locked 8×8 crop of Mauro's 12×12 (terrain fixed, not random).
-## Seeded on CombatSim.reset_match / WalkBoard init. Godot paints snapshot().tiles.
-## PHASE_A_DEMO_TILES is phase_a_demo_tiles() — all 64 cells. Terrain stays the crop.
-## Elevation is regenerated each New Match from MatchConfig.seed (smooth noise, z 0–3).
+## Proto-only 8×8 crop of the in-code 12×12 token grid.
+## Ship matches load Crosshaven tags at 15×15, not this crop. Explicit
+## board_size 12 seeds the full token grid (`seed_mauro_12`) as proto only.
+## PHASE_A_DEMO_TILES is phase_a_demo_tiles().
+## Proto 8 elevation is noise from MatchConfig.seed (smooth noise, z 0–3).
+## Ship elevation is the tag integer when a matching tags file is present.
 ##
-## Crop origin (row 2, col 2) on the 12×12. Terrain 0/1/2/3 = G/M/W/L.
-## Crop z ladder (source only): z1→0, z2→1, z3→2, z4→3. Live z is noise, not this paint.
-## Max climb 1 / drop 2 (no z1→z3 hop).
+## Crop origin (row 2, col 2) on the 12×12 token grid. Terrain 0/1/2/3 = G/M/W/L.
+## Crop z ladder (source only): z1→0, z2→1, z3→2, z4→3. Proto live z is noise.
+## Max climb 1 / drop 2 (no z1→z3 hop). 12×12 stays proto only.
 ##
 ##     0  1  2  3  4  5  6  7
 ##   0 G  G  M  W  L  W  W  M
@@ -227,8 +232,32 @@ func zone_cells(seat: int) -> Array[Vector2i]:
 	return out
 
 
-## Director-stamped Locked 8×8 crop terrain. Elevation is seeded noise (z 0–3)
-## unless noise_elev is false (fixtures that want the crop z paint).
+const MAURO_PROTO_MAP := "mauro_12"
+
+
+## Full Mauro 12×12. Terrain and token elevation. Not the 8×8 proto crop.
+static func mauro_12_tiles() -> Array:
+	var out := []
+	var grid: Array = parse_mauro_12x12()
+	for y in range(grid.size()):
+		var row: Array = grid[y]
+		for x in range(row.size()):
+			var src: Dictionary = row[x]
+			out.append({
+				"pos": Vector2i(x, y),
+				"terrain": src["terrain"],
+				"elevation": int(src["elevation"]),
+			})
+	return out
+
+
+static func seed_mauro_12(board) -> void:
+	for row in mauro_12_tiles():
+		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
+
+
+## Proto 8×8 crop terrain. Elevation is seeded noise (z 0–3) unless noise_elev
+## is false (fixtures that want the crop z paint). Not the 12×12 ship map.
 static func seed_phase_a_demo(board, seed: int = 0, noise_elev: bool = true) -> void:
 	for row in phase_a_demo_tiles():
 		board.set_tile(row["pos"], row["terrain"], int(row["elevation"]))
@@ -248,12 +277,13 @@ static func apply_noise_elevations(board, seed: int) -> void:
 		board.set_tile(cell, tile.terrain_type, int(elevs[cell]), tile.walkable_override)
 
 
-## PHASE_A_DEMO_TILES — 64-cell Locked crop at origin (row 2, col 2).
+## PHASE_A_DEMO_TILES — 64-cell proto crop at origin (row 2, col 2).
+## The ship board does not load this crop.
 static func phase_a_demo_tiles() -> Array:
 	var out := []
 	var grid: Array = parse_mauro_12x12()
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(PROTO_BOARD_SIZE):
+		for x in range(PROTO_BOARD_SIZE):
 			var src: Dictionary = grid[PHASE_A_CROP_ORIGIN_ROW + y][PHASE_A_CROP_ORIGIN_COL + x]
 			out.append({
 				"pos": Vector2i(x, y),
@@ -307,7 +337,7 @@ static func phase_a_crop_elevations() -> Array:
 
 
 ## Smooth value noise → integer z 0–3. Contiguous neighbors; no checkerboard 0/3.
-static func generate_noise_elevations(seed: int, width: int = BOARD_SIZE, height: int = BOARD_SIZE) -> Dictionary:
+static func generate_noise_elevations(seed: int, width: int = PROTO_BOARD_SIZE, height: int = PROTO_BOARD_SIZE) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var lw := ELEV_LATTICE

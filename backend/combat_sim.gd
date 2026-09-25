@@ -15,7 +15,11 @@ const _MatchFlow := preload("res://backend/match_flow.gd")
 const _WalkBoard := preload("res://backend/walk_board.gd")
 const _TerrainDef := preload("res://backend/terrain_def.gd")
 const _ElevationCost := preload("res://backend/elevation_cost.gd")
-const BOARD_SIZE := 8
+const _BoardSize := preload("res://backend/board_size.gd")
+const _CellTagMap := preload("res://backend/cell_tag_map.gd")
+const _HitBands := preload("res://backend/hit_bands.gd")
+## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
+const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
 const START_HP := 80
@@ -91,12 +95,16 @@ var _shade_tokens: Array = []
 var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile integer elevation + terrain. #38 crop terrain + seeded noise z on reset.
-## Godot reads snapshot.tiles. skip_deploy uses the same map unless flat_board.
+## Per-tile integer elevation + terrain. Ship map loads Crosshaven tags when
+## the file size is 15×15. Proto 8 is the crop. Proto 12 is Mauro's token grid.
+## Godot reads snapshot.tiles. paint_only is not walk data.
 var _board = _WalkBoard.new()
-var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
+var _board_size: int = BOARD_SIZE
+var _paint_only: Dictionary = {}
+var _map_id: String = ""
+var _demo_map: String = ""
 var _elev_seed: int = 0
-var _elevation_gen: String = "seeded_noise"
+var _elevation_gen: String = "tags"
 var _turn_time_remaining: float = 0.0
 var _turn_time_limit: float = TURN_TIME_LIMIT
 var _turn_time_running: bool = false
@@ -120,20 +128,20 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_intent_log.clear()
 	_replica = false
 	_stop_turn_timer()
-	_board = _WalkBoard.new()
+	_board_size = _BoardSize.resolve(config)
+	_board = _WalkBoard.new(_board_size, _board_size)
+	_paint_only = {}
+	_map_id = ""
 	_demo_map = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = int(config.get("elev_seed", _seed))
 	_rng.seed = _seed
 	_elevation_gen = "flat"
-	if _wants_demo_map(config):
-		var noise_elev := _wants_noise_elev(config)
-		_MatchFlow.seed_phase_a_demo(_board, _elev_seed, noise_elev)
-		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
-		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+	_seed_play_board(config)
 	_apply_tile_overrides(config)
 	var flow_config := config.duplicate(true)
+	flow_config["board_size"] = _board_size
 	flow_config["elev_seed"] = _elev_seed
 	_flow.reset(_seed, flow_config)
 	if config.has("rolls"):
@@ -329,8 +337,7 @@ func legal_intents(seat: int) -> Array:
 				continue
 			if _cast_gate_reason(actor, enemy, def) != "":
 				continue
-			var range_dist := chebyshev(from, enemy["pos"])
-			if range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"]):
+			if _in_spell_range(def, from, enemy["pos"]):
 				out.append({
 					"type": "cast",
 					"spell": spell_id,
@@ -415,12 +422,14 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 				out.append(intent["to"])
 		return out
 	var from: Vector2i = actor["pos"]
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			if cell == from:
 				continue
 			var dist := _range_distance(def, from, cell)
+			if dist > _HitBands.MAX_DISTANCE:
+				continue
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
 				out.append(cell)
 	return out
@@ -439,7 +448,7 @@ func snapshot() -> Dictionary:
 		seat_classes[1] = str(class_ids[1])
 	return {
 		"rules_version": RULES_VERSION,
-		"board_size": BOARD_SIZE,
+		"board_size": _board_size,
 		"active_seat": _active_seat,
 		"turn_index": _turn_index,
 		"match_over": _match_over,
@@ -450,6 +459,8 @@ func snapshot() -> Dictionary:
 		"match_config": {
 			"seed": _seed,
 			"elev_seed": _elev_seed,
+			"board_size": _board_size,
+			"map_id": _map_id,
 			"classes": class_ids,
 			"seat_classes": seat_classes,
 		},
@@ -487,7 +498,9 @@ func snapshot() -> Dictionary:
 			"lava": 0,
 		},
 		"tiles": _board.snapshot_tiles(),
+		"paint_only": _paint_only_snapshot(),
 		"demo_map": _demo_map,
+		"map_id": _map_id,
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
@@ -543,7 +556,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Terrain is the #38 Mauro 8×8 crop (fixed). Elevation is smooth seeded noise z 0–3 on each New Match / reset_match (MatchConfig.seed / elev_seed). Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from Crosshaven tags when size is 15×15 (no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
@@ -580,8 +593,11 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	for event in snap.get("last_events", []):
 		if typeof(event) == TYPE_DICTIONARY:
 			_last_events.append((event as Dictionary).duplicate(true))
-	_elevation_gen = str(snap.get("elevation_gen", "seeded_noise"))
-	_demo_map = str(snap.get("demo_map", _MatchFlow.PHASE_A_DEMO_MAP))
+	_elevation_gen = str(snap.get("elevation_gen", "tags"))
+	_board_size = int(snap.get("board_size", BOARD_SIZE))
+	_map_id = str(snap.get("map_id", ""))
+	_demo_map = str(snap.get("demo_map", _map_id))
+	_paint_only = _paint_only_from_snap(snap.get("paint_only", {}))
 	_units.clear()
 	for raw in snap.get("units", []):
 		if typeof(raw) != TYPE_DICTIONARY:
@@ -597,7 +613,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_units.append(unit)
 	if snap.has("shade_tokens"):
 		_sync_shade_flags()
-	_board = _WalkBoard.new()
+	_board = _WalkBoard.new(_board_size, _board_size)
 	_apply_snapshot_tiles(snap.get("tiles", {}))
 	_flow.apply_host_snapshot(snap)
 
@@ -681,13 +697,7 @@ static func last_hop_facing(from: Vector2i, to: Vector2i, fallback: String = "")
 
 
 static func hit_chance(distance: int) -> int:
-	if distance <= 1:
-		return 90
-	if distance <= 3:
-		return 80
-	if distance <= 5:
-		return 75
-	return 70
+	return _HitBands.chance(distance)
 
 
 ## Presentation helper only. Locked Chebyshev bands; no +5. Advance / walks: show=false.
@@ -727,8 +737,10 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		cell = _as_cell(dest)
 	var dist := chebyshev(actor["pos"], cell)
 	out["range"] = dist
-	out["hit_chance"] = hit_chance(dist)
-	if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+	var chance := hit_chance(dist)
+	out["hit_chance"] = chance
+	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
+	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
 		out["show"] = true
 	return out
 
@@ -790,9 +802,12 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["in_range"] = is_cardinal_step(from_cell, to_cell)
 	else:
 		var range_dist := _range_distance(def, from_cell, to_cell)
-		out["in_range"] = range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
-	if bool(def.get("rolls", false)):
-		out["hit_chance"] = hit_chance(chebyshev(from_cell, to_cell))
+		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
+		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
+		if bool(def.get("rolls", false)):
+			var chance := hit_chance(range_dist)
+			if chance >= 0:
+				out["hit_chance"] = chance
 
 	var target := _preview_target(to_cell, target_seat, spell_id)
 	var notes: Array = []
@@ -1364,6 +1379,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var dist := chebyshev(actor["pos"], dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
+	if dist > _HitBands.MAX_DISTANCE:
+		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -1832,13 +1849,68 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 	return gate
 
 
+func _seed_play_board(config: Dictionary) -> void:
+	# flat_board: Ground z0. Proto 8: crop + noise. Proto 12: Mauro tokens.
+	# Ship 15: Crosshaven tags only when the file size matches. No invented cells.
+	# paint_only stays visual. An explicit cell_tags path uses the same hook.
+	if bool(config.get("flat_board", false)):
+		return
+	if _board_size == _BoardSize.PROTO:
+		var noise_elev := _wants_noise_elev(config)
+		_MatchFlow.seed_phase_a_demo(_board, _elev_seed, noise_elev)
+		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
+		_map_id = _demo_map
+		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+		return
+	if _board_size == _BoardSize.PROTO_12:
+		_MatchFlow.seed_mauro_12(_board)
+		_map_id = _MatchFlow.MAURO_PROTO_MAP
+		_demo_map = _map_id
+		_elevation_gen = "mauro"
+		return
+	var tags_path := str(config.get("cell_tags", ""))
+	if tags_path == "" and _board_size == _BoardSize.SHIP:
+		tags_path = _CellTagMap.DEFAULT_TAGS
+	if tags_path == "":
+		return
+	var tags: Dictionary = _CellTagMap.load_file(tags_path)
+	if not _CellTagMap.apply(_board, tags):
+		return
+	_paint_only = (tags.get("paint_only", {}) as Dictionary).duplicate(true)
+	_map_id = str(tags.get("map_id", ""))
+	_demo_map = _map_id
+	_elevation_gen = "tags"
+
+
+func _paint_only_snapshot() -> Dictionary:
+	var out := {}
+	for key in _paint_only.keys():
+		var props: Variant = _paint_only[key]
+		if props is Array:
+			out[key] = (props as Array).duplicate()
+	return out
+
+
+func _paint_only_from_snap(raw: Variant) -> Dictionary:
+	var out := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+	var paint: Dictionary = raw
+	for key in paint.keys():
+		var cell: Vector2i = key if key is Vector2i else _as_cell(key)
+		var props: Variant = paint[key]
+		if props is Array:
+			out[cell] = (props as Array).duplicate()
+	return out
+
+
 func _wants_demo_map(config: Dictionary) -> bool:
-	# Same stamped terrain on live + skip_deploy unless a fixture asks for flat Ground 0.
+	# Proto crop helper. The ship Crosshaven map does not use this flag.
 	if config.has("demo_map"):
 		return bool(config["demo_map"])
 	if bool(config.get("flat_board", false)):
 		return false
-	return true
+	return _board_size == _BoardSize.PROTO
 
 
 func _wants_noise_elev(config: Dictionary) -> bool:
@@ -2384,14 +2456,16 @@ func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
 
 func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
 	var dist := _range_distance(def, from_cell, to_cell)
+	if dist > _HitBands.MAX_DISTANCE:
+		return false
 	return dist >= int(def.get("min_range", 0)) and dist <= int(def.get("max_range", 0))
 
 
 func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:
 	var from_cell: Vector2i = actor["pos"]
 	var seat := int(actor["seat"])
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			if not _in_spell_range(def, from_cell, cell):
 				continue
@@ -3052,8 +3126,8 @@ func _apply_shade_setup(config: Dictionary) -> void:
 func _shade_setup_cell(unit: Dictionary) -> Vector2i:
 	var origin: Vector2i = unit["pos"]
 	var best := UNPLACED
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			var dist := chebyshev(origin, cell)
 			if dist < 1 or dist > 2:
@@ -3275,7 +3349,7 @@ func _is_empty(cell: Vector2i) -> bool:
 
 
 func _in_bounds(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.y >= 0 and cell.x < BOARD_SIZE and cell.y < BOARD_SIZE
+	return cell.x >= 0 and cell.y >= 0 and cell.x < _board_size and cell.y < _board_size
 
 
 func _as_cell(value: Variant) -> Vector2i:

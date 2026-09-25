@@ -4,6 +4,7 @@ class_name BoardTile
 const TILE_WIDTH: int = 64
 const TILE_HEIGHT: int = 32
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
+const _KoliseoArt := preload("res://board/koliseo_art.gd")
 ## Relative to this tile. Stays under BoardVisualSort.UNIT_Z_BIAS so the
 ## seat ring and pawn sprite still paint after the overlay, including on
 ## elevated tiles (the overlay is a child, so it lifts with the diamond).
@@ -16,6 +17,7 @@ var is_selected: bool = false
 var highlight: String = ""
 var elevation: int = 0
 var terrain_type: String = "ground"
+var _paint_props: Array = []
 var _overlay: HighlightOverlay
 
 
@@ -33,10 +35,18 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var points := _diamond_points()
-	draw_colored_polygon(points, fill_color())
-	var outline := PackedVector2Array(points)
-	outline.append(points[0])
-	draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
+	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation)
+	if tex == null:
+		draw_colored_polygon(points, fill_color())
+		var outline := PackedVector2Array(points)
+		outline.append(points[0])
+		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
+	else:
+		_paint_terrain(tex)
+	for prop_name in _paint_props:
+		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
+		if prop_tex != null:
+			_paint_prop(prop_tex)
 	var label := drawn_label()
 	if label == "":
 		return
@@ -49,6 +59,30 @@ func apply_board_data(next_terrain: String, next_elevation: Variant = 0) -> void
 	terrain_type = SNAPSHOT_TILES.normalize_terrain(next_terrain)
 	elevation = SNAPSHOT_TILES.normalize_elevation(next_elevation)
 	_request_paint()
+
+
+func set_paint_props(props: Array) -> void:
+	_paint_props = props.duplicate()
+	_request_paint()
+
+
+func _draw_centered(tex: Texture2D) -> void:
+	var size := tex.get_size()
+	draw_texture(tex, Vector2(-size.x * 0.5, -size.y * 0.5))
+
+
+func _paint_terrain(tex: Texture2D) -> void:
+	var placed: Dictionary = _KoliseoArt.terrain_placement(tex)
+	if placed.is_empty():
+		_draw_centered(tex)
+		return
+	draw_texture_rect_region(tex, placed["dest"], placed["source"])
+
+
+## Props stand on the south tip of the diamond. paint_only never affects pathing.
+func _paint_prop(tex: Texture2D) -> void:
+	var size := tex.get_size()
+	draw_texture(tex, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 - size.y))
 
 
 func set_selected(value: bool) -> void:
