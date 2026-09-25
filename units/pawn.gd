@@ -179,7 +179,7 @@ func play_view_plan(plan: Dictionary) -> float:
 			tw.tween_interval(sec)
 		elif kind == "attack":
 			_begin_body_strip("attack", sec)
-			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
+			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO), float(step.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX))), 0.0, 1.0, sec)
 			tw.tween_callback(_end_body_strip)
 		elif kind == "cast":
 			tw.tween_callback(_end_body_strip)
@@ -437,11 +437,20 @@ func _on_action_finished(gen: int) -> void:
 
 
 func _sample_hop(t: float) -> void:
-	_place_body(VIEW_MOTION.hop_offset(t))
+	var hop := VIEW_MOTION.hop_offset(t)
+	_place_body(hop)
+	# Name and HP ride the arc. The seat ring stays on the pawn, so the gap reads.
+	_ride_chrome(hop)
+	var mul: Vector2 = VIEW_MOTION.hop_scale(t)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 
 
-func _sample_attack(t: float, dir: Vector2) -> void:
-	_place_body(VIEW_MOTION.attack_offset(t, dir))
+func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
+	_ride_chrome(Vector2.ZERO)
+	_place_body(VIEW_MOTION.attack_offset(t, dir, reach))
 
 
 func _sample_cast(t: float) -> void:
@@ -509,6 +518,7 @@ func _stop_idle() -> void:
 
 func _plant_sprite() -> void:
 	_end_body_strip()
+	_ride_chrome(Vector2.ZERO)
 	if _sprite == null or not is_instance_valid(_sprite):
 		return
 	_sprite.position = Vector2.ZERO
@@ -655,6 +665,11 @@ func _hide_body_strips() -> void:
 			(child as AnimatedSprite2D).visible = false
 
 
+func _ride_chrome(pos: Vector2) -> void:
+	if _chrome != null and is_instance_valid(_chrome):
+		_chrome.position = pos
+
+
 func _place_body(pos: Vector2) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.position = pos
@@ -699,9 +714,8 @@ func _paint_status(canvas: CanvasItem) -> void:
 	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
 
 
-## Baseline of the overhead name. Above the HP bar, so it clears the sprite
-## and the seat ring. Chrome is not parented to the sprite, so hops, lunges,
-## and the idle bob do not move it.
+## Baseline of the overhead name, in chrome-local space. The chrome node
+## itself rides a walk hop. Lunges and the idle bob leave it on the pawn.
 func name_baseline() -> float:
 	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 

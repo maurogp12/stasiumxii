@@ -51,6 +51,7 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
+const SHADE_MARKER := preload("res://board/shade_marker.gd")
 const TOUCH := preload("res://ui/touch_adapter.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
@@ -69,6 +70,9 @@ var _booted: bool = false
 var _busy: bool = false
 var _clock_expired_pending: bool = false
 var _walk_tween: Tween
+## Seat whose body is mid hop. Refresh must not snap it to the destination.
+var _hop_seat: int = -1
+var _shade_markers: Dictionary = {}
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
@@ -193,10 +197,10 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if swallowed:
 		_maybe_drain_net()
 		return
-	if CombatHUD.should_play_walk_hops(events):
-		var path_event := _path_event(events)
-		if not path_event.is_empty():
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+		if CombatHUD.should_play_walk_hops(events):
+			var path_event := _path_event(events)
+			if not path_event.is_empty():
+				await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -677,7 +681,7 @@ func _submit(intent: Dictionary) -> void:
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -786,8 +790,9 @@ func _active_is_stunned(snap: Dictionary = {}) -> bool:
 	return CombatHUD.unit_is_stunned(_active_unit(snap))
 
 
-func _play_walk(seat: int, path: Array) -> void:
+func _play_walk(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	_busy = true
+	_hop_seat = seat
 	_hud.set_locked(true)
 	var snap: Dictionary = _sim().snapshot()
 	_hud.render(snap, [])
@@ -797,9 +802,10 @@ func _play_walk(seat: int, path: Array) -> void:
 		var cell: Vector2i = _as_cell(step)
 		if tiles.has(cell):
 			_tile_at(cell).set_highlight("move")
-	await _animate_path(seat, path)
+	await _animate_path(seat, path, origin)
 	if not is_inside_tree():
 		return
+	_hop_seat = -1
 	_hud.set_locked(false)
 	_busy = false
 	_refresh()
@@ -808,13 +814,18 @@ func _play_walk(seat: int, path: Array) -> void:
 		_on_turn_clock_expired()
 
 
-func _animate_path(seat: int, path: Array) -> void:
+func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# The sim has already moved the unit. Put the body back on the departure tile
+	# before the first hop, or a refresh snaps it and the walk reads as a teleport.
 	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
-	# The step arc is sprite-local and lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	# The step arc lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	if _in_bounds(origin):
+		pawn.position = _cell_to_local(origin)
+		_set_pawn_cell(pawn, origin)
 	pawn.hold_idle()
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
@@ -829,7 +840,8 @@ func _animate_path(seat: int, path: Array) -> void:
 		pawn.play_step_hop()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(true)
-		_walk_tween.set_trans(Tween.TRANS_LINEAR)
+		# Slow off the tile and into the landing so the crest reads as a hop.
+		_walk_tween.set_trans(Tween.TRANS_QUAD)
 		_walk_tween.set_ease(Tween.EASE_IN_OUT)
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
 		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
@@ -986,6 +998,7 @@ func _refresh() -> void:
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
+	_sync_shade_markers(snap)
 	_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
@@ -1020,9 +1033,47 @@ func _apply_units(snap: Dictionary) -> void:
 			continue
 		var raw_events: Variant = snap.get("last_events", [])
 		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
+		var hopping := _busy and seat == _hop_seat
+		var kept_cell := pawn.grid_position
+		var kept_pos := pawn.position
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
-		pawn.position = _cell_to_local(cell)
-		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+		if hopping:
+			pawn.grid_position = kept_cell
+			pawn.position = kept_pos
+		else:
+			pawn.position = _cell_to_local(cell)
+			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+
+
+## Drop Shade's body lives on the board. The VFX pool was a shader puddle the
+## phone never showed, while the HUD and log still updated.
+func _sync_shade_markers(snap: Dictionary) -> void:
+	var live: Dictionary = {}
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = token
+		var cell := _as_cell(rec.get("pos", Vector2i(int(rec.get("x", -1)), int(rec.get("y", -1)))))
+		if not _in_bounds(cell):
+			continue
+		live[cell] = int(rec.get("turns", 3))
+	var stale: Array = []
+	for cell in _shade_markers.keys():
+		if not live.has(cell):
+			stale.append(cell)
+	for cell in stale:
+		var gone: Node = _shade_markers[cell]
+		if gone != null and is_instance_valid(gone):
+			gone.queue_free()
+		_shade_markers.erase(cell)
+	for cell in live.keys():
+		var marker: Node = _shade_markers.get(cell)
+		if marker == null or not is_instance_valid(marker):
+			marker = SHADE_MARKER.new()
+			$Units.add_child(marker)
+			_shade_markers[cell] = marker
+		var at: Vector2i = cell
+		marker.call("show_token", _cell_to_local(at), VISUAL_SORT.unit_z_index(at, _elev_at(at)) + 1, int(live[cell]))
 
 
 func _paint_highlights() -> void:
@@ -1041,13 +1092,23 @@ func _paint_highlights() -> void:
 	var actor := _kit_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
-	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
+	# Paint the range ring as soon as the spell is selected. Enemy casts leave
+	# empty in-range tiles gold. Empty-tile casts (Drop Shade, Snap Wall, Plant)
+	# used to paint only legal dests, so the ring was wiped and a tap past the
+	# edge looked like the spell did nothing. Advance stays legal-dest only.
 	# Walk chrome stays off. Rolling casts also get Locked hit percent aim preview.
+	var range_cells: Array = []
+	var range_def: Dictionary = {}
+	var stamp_rim := false
 	if spell_id != "" and spell_id != SpellKits.ADVANCE:
-		var def: Dictionary = SpellKits.spell(spell_id)
-		if str(def.get("target", "")) == "enemy":
-			for cell in _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id):
-				_tile_at(cell).set_highlight("range")
+		range_def = SpellKits.spell(spell_id)
+		var target_kind := str(range_def.get("target", ""))
+		if target_kind == "enemy" or target_kind == "ally" or target_kind == "any" or target_kind == "empty_tile" or target_kind == "tile":
+			range_cells = _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id)
+			stamp_rim = target_kind == "empty_tile" or target_kind == "tile"
+			for cell in range_cells:
+				if tiles.has(cell):
+					_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
@@ -1058,8 +1119,25 @@ func _paint_highlights() -> void:
 		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(dest).set_highlight(highlight)
+	if stamp_rim and not actor.is_empty():
+		_stamp_range_rim(range_cells, _as_cell(actor.get("pos", Vector2i.ZERO)), int(range_def.get("max_range", 0)))
 	_paint_blocked(snap)
 	_sync_aim_preview()
+
+
+## Keep the max-range shell gold after legal dests repaint the interior.
+## Drop Shade's legal tiles are the empty tiles, so a target pass used to erase
+## the whole ring and the edge was invisible on the phone.
+func _stamp_range_rim(cells: Array, origin: Vector2i, max_range: int) -> void:
+	if max_range <= 0:
+		return
+	for cell in cells:
+		var at := _as_cell(cell)
+		if not tiles.has(at):
+			continue
+		if COMBAT_SIM_SCRIPT.chebyshev(origin, at) != max_range:
+			continue
+		_tile_at(at).set_highlight("range")
 
 
 func _paint_blocked(snap: Dictionary) -> void:

@@ -119,7 +119,7 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	if _suppressed() or snapshot.is_empty():
 		return
 	var wanted: Dictionary = {}
-	_want_tokens(wanted, snapshot.get("shade_tokens", []), "shade", VfxPalette.GLOAM_RIM, 0.35)
+	# Shade bodies are board markers (board_view). A shader ring here was invisible on device.
 	_want_tokens(wanted, snapshot.get("plant_tiles", []), "plant", VfxPalette.BASTION, 0.0)
 	_want_tokens(wanted, snapshot.get("blocked_tiles", []), "wall", VfxPalette.BASTION_BLACK, 0.0)
 	for unit in snapshot.get("units", []):
@@ -475,7 +475,9 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var payload := spec.duplicate()
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
-	payload["z"] = _z_air(cell) if pool_name == "status" or str(spec.get("style", "")) == "slab" else _z_ground(cell)
+	var style := str(spec.get("style", ""))
+	var standing := pool_name == "status" or style == "slab" or style == "figure"
+	payload["z"] = _z_air(cell) if standing else _z_ground(cell)
 	payload["linger"] = true
 	if _linger.has(key):
 		var existing: Node = _linger[key]
@@ -536,7 +538,7 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 		var key := "%s:%d,%d" % [kind, cell.x, cell.y]
 		var style := ""
 		if kind == "shade":
-			style = "pool"
+			continue
 		elif kind == "plant":
 			style = "sigil"
 		elif kind == "wall":

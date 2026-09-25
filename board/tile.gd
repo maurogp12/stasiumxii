@@ -171,7 +171,8 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		var line := Color(color.r, color.g, color.b, 0.95)
-		canvas.draw_polyline(outline, line, 1.8, true)
+		var width := 3.4 if highlight == "range" else 1.8
+		canvas.draw_polyline(outline, line, width, true)
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
 		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48), 2.0, true)

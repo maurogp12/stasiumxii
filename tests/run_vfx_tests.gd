@@ -463,6 +463,10 @@ func _test_every_event_type() -> void:
 		eq(recipes is Array, true, "router returns recipes for %s" % str(sample.get("type", "empty")))
 	var mixed: Array = ROUTER.recipes_for([null, "nope", 3, {"type": "hit", "spell": "cut", "damage": 13, "seat": 0, "target_seat": 1, "to": Vector2i(2, 2), "caster_cell": Vector2i(1, 2)}])
 	truthy(_has(mixed, "spark"), "non-dictionary entries are skipped")
+	var shade_cast: Array = ROUTER.recipes_for([samples[3]])
+	eq(_has(shade_cast, "ring"), false, "Drop Shade does not leave a shader puddle")
+	eq(_first(shade_cast, "number")["text"], "Shade", "Drop Shade floater says Shade")
+	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
 	var wall: Array = ROUTER.recipes_for([samples[6]])
@@ -544,7 +548,11 @@ func _test_live_director() -> void:
 		"caster_cell": Vector2i(1, 1),
 		"to": Vector2i(2, 2),
 	}], shade_snap)
-	eq(director.linger_count() >= 1, true, "a shade token becomes a lingering ring")
+	eq(director.linger_count(), 0, "a shade token is not a shader linger")
+	var marker_src := FileAccess.get_file_as_string("res://board/shade_marker.gd")
+	var board_src := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(marker_src.contains("Shade"), "the board marker labels the token")
+	truthy(board_src.contains("_sync_shade_markers"), "refresh places the shade on the tile")
 	director.play([{
 		"type": "expire",
 		"status": "shade",

@@ -205,7 +205,7 @@ func _test_name_sits_above_the_sprite() -> void:
 		eq(chrome.position, Vector2.ZERO, "%s name rests on the pawn" % class_id)
 		var rested := origin.y
 		pawn._sample_hop(0.5)
-		eq(chrome.position, Vector2.ZERO, "%s hop does not move the name" % class_id)
+		eq(chrome.position.y, -ViewMotion.HOP_PX, "%s name rides the walk hop" % class_id)
 		eq(sprite.position.y < -1.0, true, "%s hop moves the sprite" % class_id)
 		eq(pawn.name_label_origin().y, rested, "%s name anchor stays put during a hop" % class_id)
 		pawn._sample_attack(0.4, Vector2(20, 10))
