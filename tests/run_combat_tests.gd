@@ -407,10 +407,10 @@ func _test_both_ready_starts_combat() -> void:
 	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
 	var opening: int = _sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"])
 	eq(opening >= 3, true, "confirmed seats open at least Chebyshev 3")
-	if opening >= 2 and opening <= 5:
-		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5")
+	if opening >= 2 and opening <= 7:
+		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–7")
 	else:
-		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
+		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–7")
 	eq(kinds.has("place"), false, "place is not a combat intent")
 	var events: Array = started.get("events", [])
 	var saw_combat := false
@@ -1464,11 +1464,36 @@ func _test_mark_shot_range_and_marks() -> void:
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
+		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
 	})
 	result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(6, 0)})
-	eq(result["illegal"], true, "Mark Shot range 6 is illegal")
+	eq(result["ok"], true, "Mark Shot at range 6 is legal")
+	eq(_unit(1)["hp"], 72, "range 6 still deals 8 Air")
+	eq(_unit(1)["marks"], 1, "range 6 still writes 1 Mark")
+	eq(result["events"][0]["hit_chance"], 70, "range 6 uses the 70% long band")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(7, 0),
+	})
+	result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(7, 0)})
+	eq(result["ok"], true, "Mark Shot at range 7 is legal")
+	eq(_unit(1)["hp"], 72, "range 7 still deals 8 Air")
+	eq(_unit(1)["marks"], 1, "range 7 still writes 1 Mark")
+	eq(result["events"][0]["hit_chance"], 70, "range 7 uses the 70% long band")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(8, 0),
+	})
+	result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(8, 0)})
+	eq(result["illegal"], true, "Mark Shot range 8 is illegal")
+	eq(result["reason"], "out_of_range", "range 8 reject is out_of_range")
 	eq(_unit(0)["ap"], 6, "range reject refunds")
 
 
@@ -1574,7 +1599,8 @@ func _test_hit_bands() -> void:
 	_assert_aim_matches_resolve(1, SpellKits.STRIKE, 90)
 	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 80)
 	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
-	_assert_aim_matches_resolve(6, SpellKits.DETONATE, 70)
+	_assert_aim_matches_resolve(6, SpellKits.MARK_SHOT, 70)
+	_assert_aim_matches_resolve(7, SpellKits.MARK_SHOT, 70)
 	for dist in [9, 10, 11, 12, 13, 14]:
 		_assert_far_band_chrome(dist, int(locked[dist]))
 	_assert_past_locked_band()
@@ -2135,7 +2161,7 @@ func _test_advance_cardinal_range_gate() -> void:
 	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
 	truthy(kits.contains("Manhattan"), "kit range_text still names Manhattan")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "4 orthogonal neighbors", "Advance selected range is the 4 ortho neighbors")
-	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–5", "Mark Shot selected range omits Chebyshev")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–7", "Mark Shot selected range omits Chebyshev")
 	eq(hud.contains("%d AP + Manhattan MP"), false, "HUD no longer advertises Manhattan MP for Advance")
 	eq(hud.contains("%dAP + MP"), false, "HUD Advance button is not AP + MP")
 	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
@@ -2222,7 +2248,7 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 
 
 func _test_mark_shot_range_highlights() -> void:
-	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
+	# Selecting Mark Shot must show the Chebyshev 2–7 ring, not only the enemy tile.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
@@ -2233,7 +2259,7 @@ func _test_mark_shot_range_highlights() -> void:
 			if cell == origin:
 				continue
 			var dist := int(_sim.chebyshev(origin, cell))
-			if dist >= 2 and dist <= 5:
+			if dist >= 2 and dist <= 7:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
 	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
@@ -2245,11 +2271,11 @@ func _test_mark_shot_range_highlights() -> void:
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
 		painted[cell] = true
-	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–5")
+	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–7")
 	for cell in expected.keys():
 		truthy(painted.has(cell), "Chebyshev ring tile %s is highlighted" % str(cell))
 	for cell in painted.keys():
-		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
+		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–7" % str(cell))
 
 	# legal_intents still only offer the enemy dest, not every ring tile.
 	var legal_dests := 0
@@ -2271,18 +2297,22 @@ func _test_mark_shot_range_highlights() -> void:
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
 	var has_r5 := false
-	var has_r6 := false
+	var has_r7 := false
+	var has_r8 := false
 	var has_r1 := false
 	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
 		var dist := int(_sim.chebyshev(Vector2i(0, 0), cell))
 		if dist == 5:
 			has_r5 = true
-		if dist == 6:
-			has_r6 = true
+		if dist == 7:
+			has_r7 = true
+		if dist == 8:
+			has_r8 = true
 		if dist == 1:
 			has_r1 = true
 	truthy(has_r5, "Chebyshev 5 tiles are in Mark Shot chrome")
-	eq(has_r6, false, "Chebyshev 6 is outside Mark Shot chrome")
+	truthy(has_r7, "Chebyshev 7 tiles are in Mark Shot chrome")
+	eq(has_r8, false, "Chebyshev 8 is outside Mark Shot chrome")
 	eq(has_r1, false, "Chebyshev 1 is outside Mark Shot chrome")
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
@@ -2490,7 +2520,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["ap"]), 3, "Detonate costs 3 AP")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["mp"]), 0, "Detonate costs 0 MP")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range 1 Chebyshev")
-	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 6, "Detonate max range 6 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range 4 Chebyshev")
 	eq(str(SpellKits.spell(SpellKits.DETONATE).get("range_mode", "")), "chebyshev", "Detonate range is Chebyshev")
 
 	# No Marks on the target: reject + refund. A01 Locked: Marks live on the target.
@@ -2545,22 +2575,38 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(_unit(0)["ap"], 3, "Detonate spends 3 AP")
 	eq(_unit(0)["mp"], 3, "Detonate spends 0 MP")
 
-	# 3 Marks: 6+18=24. 5 Marks: 6+30=36.
+	# Dist 5–6 are outside the locked r1–4 cap even with Marks.
+	for far in [5, 6]:
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"kestrel_pos": Vector2i(0, 0),
+			"ironjaw_pos": Vector2i(far, 0),
+			"ironjaw_marks": 3,
+		})
+		result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(far, 0)})
+		eq(result["illegal"], true, "Detonate at Chebyshev %d is out of range" % far)
+		eq(result["reason"], "out_of_range", "dist %d Detonate reject is out_of_range" % far)
+		eq(_unit(0)["ap"], 6, "dist %d Detonate refunds" % far)
+		eq(_unit(1)["marks"], 3, "dist %d Detonate does not consume Marks" % far)
+		eq(_unit(1)["hp"], 80, "dist %d Detonate deals no damage" % far)
+
+	# Dist 4 with 3 Marks: 6+18=24. 5 Marks: 6+30=36 (below).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
-		"ironjaw_pos": Vector2i(6, 0),
+		"ironjaw_pos": Vector2i(4, 0),
 		"ironjaw_facing": "W",
 		"ironjaw_marks": 3,
 	})
-	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(6, 0)), 6, "range 6 is legal for Detonate")
-	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(6, 0)})
-	eq(result["ok"], true, "Detonate at Chebyshev 6 is legal")
+	eq(_sim.chebyshev(Vector2i(0, 0), Vector2i(4, 0)), 4, "range 4 is legal for Detonate")
+	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0)})
+	eq(result["ok"], true, "Detonate at Chebyshev 4 is legal")
 	eq(result["events"][0]["base_damage"], 24, "3 Marks → base 24")
 	eq(result["events"][0]["damage"], 24, "front 24 Air")
-	eq(result["events"][0]["hit_chance"], 70, "range 6 uses the 70% band")
+	eq(result["events"][0]["hit_chance"], 75, "range 4 uses the 75% band")
 	eq(_unit(1)["marks"], 0, "3 Marks consumed")
 	eq(_unit(1)["hp"], 56, "80-24=56")
 
@@ -3587,7 +3633,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 
 
 func _test_legal_intents_new_spell_gates() -> void:
-	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–6.
+	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–4.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3621,11 +3667,51 @@ func _test_legal_intents_new_spell_gates() -> void:
 		"seed": 1,
 		"flat_board": true,
 		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(4, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), true, "Detonate offered at Chebyshev 4")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot offered at Chebyshev 4")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(5, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev 5")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot offered at Chebyshev 5")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": Vector2i(6, 0),
 		"ironjaw_marks": 1,
 	})
-	eq(_has_legal_cast(0, "detonate"), true, "Detonate offered at Chebyshev 6")
-	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot max-range 5")
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev 6")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot offered at Chebyshev 6")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(7, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev 7")
+	eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot offered at Chebyshev 7")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(8, 0),
+		"ironjaw_marks": 1,
+	})
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev 8")
+	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot out of range past max 7")
 
 	# Shoulder at range 1; Crush only with 2+ Impact.
 	_sim.reset_match({
@@ -3660,7 +3746,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(_has_legal_cast(1, "crush"), false, "Crush omitted when out of range even at 4 Impact")
 	eq(_has_legal_cast(1, "shoulder"), false, "Shoulder omitted when out of range")
 
-	# Range chrome for Detonate is Chebyshev 1–6. Hit-percent chrome is tested separately.
+	# Range chrome for Detonate is Chebyshev 1–4. Hit-percent chrome is tested separately.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
@@ -3669,20 +3755,20 @@ func _test_legal_intents_new_spell_gates() -> void:
 	eq(painted.has(Vector2i(3, 3)), false, "caster tile is not in Detonate chrome")
 	truthy(painted.has(Vector2i(0, 3)), "Chebyshev 3 ortho is inside Detonate chrome")
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(0, 0), "ironjaw_pos": Vector2i(7, 7)})
-	var has_r6 := false
-	var has_r7 := false
+	var has_r4 := false
+	var has_r5 := false
 	var has_r1 := false
 	for cell in _sim.range_highlight_cells(0, SpellKits.DETONATE):
 		var d := int(_sim.chebyshev(Vector2i(0, 0), cell))
-		if d == 6:
-			has_r6 = true
-		if d == 7:
-			has_r7 = true
+		if d == 4:
+			has_r4 = true
+		if d == 5:
+			has_r5 = true
 		if d == 1:
 			has_r1 = true
 	truthy(has_r1, "Detonate chrome includes Chebyshev 1")
-	truthy(has_r6, "Detonate chrome includes Chebyshev 6")
-	eq(has_r7, false, "Detonate chrome excludes Chebyshev 7")
+	truthy(has_r4, "Detonate chrome includes Chebyshev 4")
+	eq(has_r5, false, "Detonate chrome excludes Chebyshev 5")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("aim_hit_preview"), "board_view feeds Locked hit-percent preview")
 	eq(view.contains("hit_chance"), false, "board_view does not call hit_chance itself")
@@ -3801,8 +3887,8 @@ func _test_preview_cast() -> void:
 	eq(preview["mp"], 0, "Mark Shot costs 0 MP")
 	eq(preview["range_mode"], "chebyshev", "Mark Shot range_mode is Chebyshev")
 	eq(preview["min_range"], 2, "Mark Shot min 2")
-	eq(preview["max_range"], 5, "Mark Shot max 5")
-	eq(preview["range_text"], "range 2–5", "Mark Shot HUD range_text omits Chebyshev")
+	eq(preview["max_range"], 7, "Mark Shot max 7")
+	eq(preview["range_text"], "range 2–7", "Mark Shot HUD range_text omits Chebyshev")
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
@@ -4335,8 +4421,8 @@ func _test_spell_tooltip_cards() -> void:
 	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
-	eq(mark_preview["range_text"], "range 2–5", "Mark Shot preview_cast range_text is player-facing")
-	truthy(mark.contains("range 2–5"), "Mark Shot card names range from preview")
+	eq(mark_preview["range_text"], "range 2–7", "Mark Shot preview_cast range_text is player-facing")
+	truthy(mark.contains("range 2–7"), "Mark Shot card names range from preview")
 	eq(mark.contains("Chebyshev"), false, "Mark Shot card does not name Chebyshev")
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
@@ -4376,8 +4462,9 @@ func _test_spell_tooltip_cards() -> void:
 	eq(detonate_preview["marks_on_target"], 3, "Detonate preview uses current Marks")
 	eq(detonate_preview["sample_damage"], 24, "Detonate M=3 samples 24")
 	truthy(detonate.contains("3 AP / 0 MP"), "Detonate card names AP/MP from preview")
-	eq(detonate_preview["range_text"], "range 1–6", "Detonate preview_cast range_text is player-facing")
-	truthy(detonate.contains("range 1–6"), "Detonate card names range from preview")
+	eq(detonate_preview["max_range"], 4, "Detonate preview max 4")
+	eq(detonate_preview["range_text"], "range 1–4", "Detonate preview_cast range_text is player-facing")
+	truthy(detonate.contains("range 1–4"), "Detonate card names range from preview")
 	eq(detonate.contains("Chebyshev"), false, "Detonate card does not name Chebyshev")
 	truthy(detonate.contains("On hit: 6+6×M Air. Consumes Marks on the target."), "Detonate hit line is preview kit text")
 	truthy(detonate.contains("On miss: Marks stay. AP/MP stay spent."), "Detonate miss line is preview kit text")
@@ -4539,7 +4626,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(gated_lines.size() >= 2, "M=0 Detonate card has a lead-in")
 	eq(str(gated_lines[1]), "needs Marks", "M=0 Detonate card leads with needs Marks")
 	truthy(gated_card.contains("3 AP / 0 MP"), "M=0 Detonate card keeps costs")
-	truthy(gated_card.contains("range 1–6"), "M=0 Detonate card keeps range")
+	truthy(gated_card.contains("range 1–4"), "M=0 Detonate card keeps range")
 	eq(gated_card.contains("Chebyshev"), false, "M=0 Detonate card does not name Chebyshev")
 	truthy(gated_card.contains("HIT "), "M=0 Detonate card keeps HIT%")
 	eq(gated_card.contains("sample 6"), false, "M=0 Detonate card does not lead with sample 6")
@@ -4549,7 +4636,7 @@ func _test_spell_tooltip_cards() -> void:
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 1,
-		"max_range": 6,
+		"max_range": 4,
 		"hit_chance": 75,
 		"on_connect_text": "6+6×M Air. Consumes Marks on the target.",
 		"on_miss_text": "Marks stay. AP/MP stay spent.",
