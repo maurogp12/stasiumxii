@@ -1412,7 +1412,11 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var planned: Dictionary = _board.validate_move(actor["pos"], dest, budget, Callable(self, "_walk_occupied"))
 	if not bool(planned.get("ok", false)):
 		var reason := str(planned.get("reason", "unreachable"))
-		return _reject(intent, reason, "REJECT — illegal move (%s)." % reason)
+		var coach := "REJECT — illegal move (%s)." % reason
+		# MP 0 is a walk. Name it so the toast is not read as a failed Ambush.
+		if reason == "insufficient_mp" and int(actor.get("mp", 0)) <= 0:
+			coach = "REJECT — no MP to walk."
+		return _reject(intent, reason, coach)
 	var from: Vector2i = actor["pos"]
 	var path: Array = planned.get("path", [])
 	var dist := int(planned.get("cost", 0))

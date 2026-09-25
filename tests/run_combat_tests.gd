@@ -498,6 +498,7 @@ func _test_manhattan_walk_costs() -> void:
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
 	eq(result["illegal"], true, "orthogonal Manhattan 2 with 1 MP left is illegal")
 	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
+	eq(str(result["snapshot"].get("coach", "")), "REJECT — illegal move (insufficient_mp).", "short MP still names an illegal move")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "pawn did not move")
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
@@ -1406,8 +1407,8 @@ func _test_ambush_destination_locked() -> void:
 
 
 func _test_ambush_arms_at_zero_mp() -> void:
-	# Playtest 0.1.6: Drop Shade, Shades 2/2, MP 0, toast "illegal move (insufficient mp)".
-	# Ambush is 4 AP / 0 MP. The walk budget must not hide it. 1 AP still cannot arm it.
+	# Playtest 0.1.6: Walk at MP 0 coaches a move reject. Ambush is 4 AP / 0 MP
+	# and stays grey until it is legal. 1 AP still cannot arm it.
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(5, 2)
 	_sim.reset_match({
@@ -1436,6 +1437,8 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	var ambush_button: Button = hud._spell_buttons[SpellKits.AMBUSH]
 	eq(ambush_button.disabled, false, "Ambush arms on the cluster at MP 0")
+	eq(ambush_button.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "legal Ambush keeps the shade highlight on Walk")
+	truthy(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "Walk names Ambush when the cast is legal")
 	hud.free()
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Ambush resolves at MP 0")
@@ -1461,14 +1464,25 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 3), "seat": 0})
 	eq(str(walked.get("reason", "")), "insufficient_mp", "a walk at MP 0 is still an illegal move")
 	eq(bool(walked.get("ok", true)), false, "the walk reject is not a resolved Ambush")
+	var walk_coach := str(walked.get("snapshot", {}).get("coach", ""))
+	eq(walk_coach, "REJECT — no MP to walk.", "MP 0 names the walk, not a failed cast")
+	eq(walk_coach.contains("Ambush"), false, "the walk toast does not name Ambush")
+	var grey_hud := CombatHUD.new()
+	grey_hud._build()
+	grey_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(grey_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "Walk at 0 MP does not say Ambush from Shade")
+	var grey: Button = grey_hud._spell_buttons[SpellKits.AMBUSH]
+	eq(grey.disabled, true, "Ambush stays grey when it is not a legal cast")
+	eq(grey.modulate == CombatHUD.AMBUSH_SHADE_MODULATE, false, "a grey Ambush does not wear the shade highlight")
+	grey_hud._selected_spell = SpellKits.AMBUSH
+	grey_hud._update_selected_label()
+	truthy(grey_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "selecting Ambush shows the shade tip")
+	grey_hud.free()
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	var click_idx := view.find("func _handle_left_click")
 	var next_idx := view.find("func _advance_click_accepted")
 	var click_src := view.substr(click_idx, next_idx - click_idx)
-	truthy(click_src.contains("walk_dests"), "a board tap reads walk highlights before submitting a move")
-	var empty_at := click_src.find("is_empty()")
-	var submit_at := click_src.find("_submit({\"type\": \"move\"")
-	truthy(empty_at >= 0 and submit_at > empty_at, "empty walk highlights return before the move submit")
+	truthy(click_src.contains("_submit({\"type\": \"move\""), "Walk still submits a move when no spell is selected")
 
 
 func _test_ambush_origin_chrome() -> void:

@@ -466,12 +466,7 @@ func _handle_left_click(cell: Vector2i) -> void:
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		# Dest-click only. Do not send a client path.
-		# MP 0 has no walk highlight. Submitting anyway coaches
-		# "illegal move (insufficient mp)" and was read as Ambush failing
-		# after Drop Shade. Ambush is a 0 MP cast, armed from the kit.
-		var seat := CombatHUD.kit_seat(_sim().snapshot())
-		if SNAPSHOT_TILES.walk_dests(_sim().legal_intents(seat)).is_empty():
-			return
+		# MP 0 still submits a walk. The coach says there is no MP to walk.
 		_submit({"type": "move", "to": cell})
 		return
 	var actor := _active_unit(_sim().snapshot())
@@ -1184,10 +1179,13 @@ func _paint_highlights() -> void:
 	_sync_aim_preview()
 
 
-## Locked chrome. A live Shade is the Ambush origin. Invisible aims from Gloam only,
-## even when a Shade is also on the board. The cast itself is unchanged.
+## Locked chrome. Origin highlight only while Ambush is selected or legal.
+## A live Shade is the origin. Invisible aims from Gloam only. Range stays the body.
 func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 	var seat := CombatHUD.kit_seat(snap)
+	var legal: Array = _sim().legal_intents(seat)
+	if spell_id != SpellKits.AMBUSH and not CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH):
+		return
 	var origin: Dictionary = _sim().ambush_origin(seat)
 	if not bool(origin.get("show", false)):
 		return
