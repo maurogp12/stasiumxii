@@ -8,6 +8,8 @@ const MAIN_SCENE := "res://main.tscn"
 
 var _status: Label
 var _class_label: Label
+var _blurb: Label
+var _class_row: HBoxContainer
 var _host_port: LineEdit
 var _join_ip: LineEdit
 var _join_port: LineEdit
@@ -20,8 +22,12 @@ func _ready() -> void:
 	_build()
 	if not NetSession.connection_changed.is_connected(_on_connection):
 		NetSession.connection_changed.connect(_on_connection)
-	if NetSession.is_dedicated() and NetSession.lobby_text != "":
-		_status.text = NetSession.lobby_text
+	if NetSession.is_dedicated():
+		_hide_class_picker()
+		if NetSession.lobby_text != "":
+			_status.text = NetSession.lobby_text
+		else:
+			_status.text = "Dedicated host. This window has no seat."
 	elif NetSession.is_queue_client():
 		_status.text = "Connecting as %s…" % SpellKits.display_name(NetSession.selected_class_id)
 	else:
@@ -47,15 +53,16 @@ func _build() -> void:
 	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.82))
 	col.add_child(title)
 
-	var blurb := Label.new()
-	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Join queue. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
-	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
-	col.add_child(blurb)
+	_blurb = Label.new()
+	_blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Choose one before Join queue. The dedicated host stores that class_id on your session and starts the match with each seat's choice."
+	_blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
+	col.add_child(_blurb)
 
-	var class_row := HBoxContainer.new()
-	class_row.add_theme_constant_override("separation", 8)
-	col.add_child(class_row)
+	_class_row = HBoxContainer.new()
+	_class_row.add_theme_constant_override("separation", 8)
+	col.add_child(_class_row)
+	var class_row := _class_row
 	for class_id in SpellKits.LOCKED_ROSTER:
 		var button := _button(SpellKits.display_name(class_id), _pick.bind(class_id))
 		_class_buttons[class_id] = button
@@ -154,6 +161,7 @@ func _on_dedicated() -> void:
 	if not bool(result.get("ok", false)):
 		_status.text = "Dedicated host failed: %s (is the port free?)" % str(result.get("reason", "bind_failed"))
 		return
+	_hide_class_picker()
 	_status.text = NetSession.lobby_text
 
 
@@ -201,6 +209,15 @@ func _on_connection(status: String) -> void:
 		_status.text = NetSession.lobby_text
 	else:
 		_status.text = status
+
+
+func _hide_class_picker() -> void:
+	if _class_row != null:
+		_class_row.visible = false
+	if _class_label != null:
+		_class_label.visible = false
+	if _blurb != null:
+		_blurb.text = "Dedicated host. This window has no seat and does not pick a class."
 
 
 func _go_main() -> void:

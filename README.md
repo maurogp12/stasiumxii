@@ -4,9 +4,15 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 
 ## How to play
 
+Press **F5 / Play**. `run/main_scene` is `scenes/class_select.tscn`.
+
+- **Hot-seat:** choose Hot-seat. P1 picks a class, then P2 picks a class (seat colors). The local duel on `main.tscn` starts with those two kits. Kestrel vs Ironjaw is still that pair if you pick those two.
+- **Online:** choose Online, keep `127.0.0.1` / `7777` or enter a host, pick a class (that calls `select_class`), then **Queue**. A dedicated host is `godot --path . -- --dedicated 7777` and does not show the picker.
+- **Dev shortcuts** skip the screen: `--class`, `--queue`, `--join`, and `--host`. `--dedicated` never shows the picker.
+
 1. Open `project.godot` in Godot 4.7 or later and run the main scene.
 2. **Locked deploy flow** on `main.tscn` before Turn 1, with **Proposed random blobs** shipped live: each seat gets a seed-sampled ~6-cell zone (2×3 rectangle or organic blob; interior cells allowed). Click a highlighted zone cell to `place_unit` (reposition until Ready). **Ready P1** / **Ready P2** enable from `can_ready` after that seat’s fighter is placed. Both Ready → lock → Turn 1 combat. Walk / kit casts / Face / End Turn and the 30s TIME clock stay hidden during DEPLOYMENT. Outside-zone clicks name the other blob or an unclaimed cell. No fog, no deploy timer, no networking.
-3. After deploy, **Kestrel** (green, seat 0) always acts first, then **Ironjaw** (red).
+3. After deploy, seat 0 acts first, then seat 1. Hot-seat **Kestrel** (green) vs **Ironjaw** (red) is still that order when those two are picked.
 4. Each combat turn starts with **6 AP** and **3 MP**. Spend them in any order, then **End Turn**. After deploy, a **30s TIME** countdown is visible on **both** windows (including the watching seat); at 0 the **host** auto End Turns (same as the button). The clock is host-owned: paint `turn_time_seconds` (ceil of `turn_time_remaining`), `turn_time_limit` 30, `turn_time_running`, `turn_timer: "host"`. Guests hydrate; they do not tick. The clock keeps ticking during walk hop animations. Advance is an instant snap (no hops). Change `CombatSim.TURN_TIME_LIMIT` (and `TurnClock.DURATION_SEC`) to retune. The clock is hidden during DEPLOYMENT (no deploy timer).
 5. Click a highlighted empty tile to **walk**. Dest-click only: `CombatSim` expands the cheapest orthogonal path (weighted pathfinder). Walk cost is dest **terrain MP + uphill integer z**; downhill is free. Legal tiles come from remaining MP. Live `reset_match` seeds the **Director-stamped Locked 8×8 crop** terrain of Mauro’s 12×12 (origin row 2, col 2 — see below) and a **new elevation seed** (smooth noise z 0–3). The pawn animates one ortho tile at a time along the returned path and **faces each hop** (final facing = last hop). Manual **Face** still turns in place (0 AP). The client never sends `intent.path`. Walk is the default mode. After selecting a spell, press **Walk** or **Esc** to cancel back to walk chrome (right-click still faces; it does not cancel). Hit % / facing cones / spell LoS ignore height.
 6. The action bar shows the **local** kit online (`snapshot.local_seat`) and the active kit in hot-seat (`local_seat < 0` → `active_seat`). Snapshot does not encode “show active kit”. Select a spell, then click a legal tile. At **960×720** the bar **wraps** (FlowContainer) so Walk / kit buttons / End Turn / New Match stay readable. **Face N/E/S/W** sit on a cardinal pad (N top, W left, E right, S bottom). **Strike / Mark Shot / Detonate / Shoulder / Crush range stays Chebyshev**. **Advance range is the 4 orthogonal neighbors** (N/S/E/W only):
@@ -34,7 +40,7 @@ Phase A local hot-seat duel, an optional **listen-host** window, and a **dedicat
 | `backend/net_session.gd` (autoload `NetSession`) | Shared host core. ENet / MultiplayerAPI RPC. **Dedicated** (`--dedicated`) owns CombatSim and has no seat. It does not spawn a default pair: players `SELECT_CLASS` (`kestrel`, `ironjaw`, `mender`, `gloam`, `bastion`) then queue. A pair starts a match whose seats use those class ids. **Listen-host** (`--host`) is the same core with seat 0 fixed as Kestrel and the guest as Ironjaw. HOTSEAT still calls `CombatSim.submit` directly. RPC only (no scene sync). |
 | `backend/matchmaking.gd` (`MatchQueue`) | Server-side `SELECT_CLASS` + queue. Stores the confirmed class on the session. Rejects any other `class_id`. Pairs the next two confirmed sessions. |
 | `scenes/online_lobby.tscn` | Five-class pick, dedicated host, join queue. Listen-host host / direct-IP join / local hot-seat stay on the same scene. |
-| `scenes/class_select.tscn` | Same five-class confirm and Find Match. `match_assigned()` is true once the pair is live. |
+| `scenes/class_select.tscn` | Main scene. Hot-seat P1 then P2, or Online class pick plus Queue (Find Match / `start_queue_client`). `match_assigned()` opens `main.tscn`. `--dedicated` shows host status and no picker. |
 | `data/kits.gd` | Locked Phase A kit data only. |
 | `ui/turn_clock.gd` | Display helper for the host 30s clock. Remaining comes from the snapshot. |
 | `board_view.gd`, `ui/hud.gd`, `units/pawn.gd` | Input and presentation. Live deploy chrome binds `place_unit` / `ready_seat` / `legal_deploy_cells` / `deploy_zone_cells` / `can_ready` / `snapshot().phase`. They also submit dest-clicks, animate walk hops, snap Advance teleports, paint enemy-spell range rings, show Locked hit %, grey Locked Stun (A′) chrome, toast PushBlocked, Bounce +2 Impact, clean Shoulder +1 Impact, and Lava - Burn, show Proposed hover/long-press attack cards, and run the Proposed combat timers. Live tiles paint snapshot `elevation` + `terrain_type` (Ground/Mud/Water/Lava) via `board/snapshot_tiles.gd`. Walk highlights and Advance dest highlights are `legal_intents` dests only (`cast_dests`). Z-sort is VIEW-only (`board/visual_sort.gd`). Hit bands / facing / spell LoS stay flat. |
@@ -112,6 +118,7 @@ godot --headless --path . -s res://tests/run_deployment_proto_tests.gd
 godot --headless --path . -s res://tests/run_host_validate_tests.gd
 godot --headless --path . -s res://tests/run_net_session_tests.gd
 godot --headless --path . -s res://tests/run_class_select_tests.gd
+godot --headless --path . -s res://tests/run_class_picker_tests.gd
 godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 ```
 
@@ -142,6 +149,19 @@ godot --path . --position 1000,40 res://scenes/online_lobby.tscn -- --queue 127.
 ```
 
 Other pairs use the same two client lines with `--class mender`, `--class gloam`, or `--class bastion`. Machine B should read `Match m1 — seat 0 <first class>, seat 1 <second class>`. After deploy, the kit bar is that seat's Locked card ids (Mend / Cut / Bash, and so on). Nightfold is not on the bar.
+
+**Editor F5** opens the class select screen. Hot-seat: P1 picks, P2 picks, `main.tscn` starts with those class ids. Online without flags: run the dedicated host, then two clients with no `--class` or `--queue` and use the screen (Online, `127.0.0.1:7777`, a class, Queue).
+
+```bash
+# Dedicated host. No picker.
+godot --path . --position 40,40 -- --dedicated 7777
+
+# Two clients. Class select is the main scene.
+godot --path . --position 40,420
+godot --path . --position 1000,40
+```
+
+The `--queue` / `--class` lines above stay the dev shortcut and skip the screen.
 
 Buttons: Machine B presses **Host dedicated**. Machine A and Machine C press a class, then **Join queue** (`127.0.0.1` / `7777`). **Host match** / **Join match** are the old listen-host duel and ignore the class pick.
 
