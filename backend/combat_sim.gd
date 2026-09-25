@@ -454,6 +454,34 @@ func match_phase_name() -> String:
 ## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
+## Chrome only. Origin is Gloam's cell while Invisible, otherwise the first live Shade.
+## Does not change the 4 AP / 0 MP cast or the caster range check.
+func ambush_origin(seat: int) -> Dictionary:
+	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return hidden
+	if str(actor.get("class_id", "")) != SpellKits.CLASS_GLOAM:
+		return hidden
+	if bool(actor.get("invisible", false)):
+		return {"show": true, "from_self": true, "origin": actor["pos"]}
+	var shade := _first_shade(actor)
+	if shade.is_empty():
+		return hidden
+	return {"show": true, "from_self": false, "origin": shade["pos"]}
+
+
+## Chrome only. The locked empty back tile, for the aim highlight. Same gate as resolve.
+func ambush_landing_preview(seat: int) -> Dictionary:
+	var actor := _unit_by_seat(seat)
+	var enemy := _enemy_of(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return {"ok": false}
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return {"ok": false}
+	return _ambush_landing(actor, enemy)
+
+
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var out: Array = []
 	var actor := _unit_by_seat(seat)
@@ -779,8 +807,8 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	}
 	var def: Dictionary = SpellKits.spell(spell_id)
 	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
-	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush.
-	# No +5. No Advance. No invented stun/push.
+	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush / Ambush.
+	# No +5. No Advance. No invented stun/push. Ambush % is still Gloam-to-target.
 	if def.is_empty() or not bool(def.get("rolls", false)):
 		return out
 	if not [
@@ -789,8 +817,12 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		SpellKits.DETONATE,
 		SpellKits.SHOULDER,
 		SpellKits.CRUSH,
+		SpellKits.AMBUSH,
 	].has(spell_id):
 		return out
+	# Ambush has one legal body. A hover tile must not invent a second percent.
+	if spell_id == SpellKits.AMBUSH:
+		dest = null
 	out["rolls"] = true
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"]:

@@ -171,7 +171,7 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		var line := Color(color.r, color.g, color.b, 0.95)
-		var width := 3.4 if highlight == "range" else 1.8
+		var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
 		canvas.draw_polyline(outline, line, width, true)
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
@@ -216,6 +216,10 @@ func _highlight_flat_color() -> Color:
 			color = Color(0.95, 0.78, 0.32, 1.0)
 		"target":
 			color = Color(0.95, 0.55, 0.28, 1.0)
+		"origin":
+			color = Color(0.72, 0.32, 1.0, 1.0)
+		"landing":
+			color = Color(0.86, 0.62, 1.0, 1.0)
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":

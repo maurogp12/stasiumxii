@@ -51,6 +51,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(token.scale, Vector2(0.5, 0.5), "Shade token uses the unit scale")
 	host.truthy(token.texture != null, "Shade token texture is loaded")
 	host.truthy(tile.texture != null, "Shade tile decal texture is loaded")
+	host.eq(marker.plate_text(), "Ambush", "a live Shade token reads as the Ambush origin")
+	host.eq(bool(marker.get("_as_origin")), true, "the marker lifts the origin token")
 	host.eq(token.texture.get_width(), 144, "Shade token is the 144px TA sheet")
 	host.eq(token.texture.get_height(), 160, "Shade token is the 160px TA sheet")
 	host.eq(tile.texture.get_width(), 64, "Shade decal is 64px wide")

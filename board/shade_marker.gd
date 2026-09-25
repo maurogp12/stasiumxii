@@ -1,9 +1,11 @@
 extends Node2D
 
 ## Board-owned Shade. Not a shader pool and not a blink: Ambush is the relocate.
-## TA token uses the unit foot pivot. The tile decal plus the "Shade" plate
-## stay readable after the cast floater fades. The node lives on ShadeMarkers
-## so pawn rebuild cannot free it.
+## TA token uses the unit foot pivot. The tile decal plus the plate stay
+## readable after the cast floater fades. A live Shade that is the Ambush
+## origin wears the louder "Ambush" plate. Invisible origin is Gloam, so the
+## token stays a Neutral Shade. The node lives on ShadeMarkers so pawn rebuild
+## cannot free it.
 
 const TOKEN_PATH := "res://art/vfx/shade/neutral_shade_token.png"
 const TILE_PATH := "res://art/vfx/shade/neutral_shade_tile_marker.png"
@@ -11,9 +13,13 @@ const TOKEN_OFFSET := Vector2(0, -72)
 const TOKEN_SCALE := Vector2(0.5, 0.5)
 const CLOAK_PEAK := 140.0
 const LABEL_SIZE := 26
+const ORIGIN_LABEL_SIZE := 36
 const RIM := Color(0.97, 0.91, 1.0)
+const REST_MODULATE := Color(1.35, 1.22, 1.55)
+const ORIGIN_MODULATE := Color(1.9, 1.55, 2.2)
 
 var turns: int = 3
+var _as_origin: bool = false
 var _pulse_t: float = 1.0
 var _token: Sprite2D
 var _tile: Sprite2D
@@ -25,17 +31,23 @@ func _ready() -> void:
 	set_process(false)
 
 
-func show_token(at: Vector2, sort_z: int, remaining: int, spawned: bool = false) -> void:
+func show_token(at: Vector2, sort_z: int, remaining: int, spawned: bool = false, as_origin: bool = false) -> void:
 	position = at
 	z_index = sort_z
 	z_as_relative = false
 	turns = maxi(remaining, 0)
+	_as_origin = as_origin
 	_ensure_art()
+	_apply_loudness()
 	if spawned and is_inside_tree():
 		_pulse_in()
 	queue_redraw()
 	if _plate != null:
 		_plate.queue_redraw()
+
+
+func plate_text() -> String:
+	return "Ambush" if _as_origin else "Shade"
 
 
 func _pulse_in() -> void:
@@ -74,8 +86,7 @@ func _ensure_art() -> void:
 		add_child(_token)
 	_token.offset = TOKEN_OFFSET
 	_token.scale = TOKEN_SCALE
-	# Authored alpha is a soft silhouette. Lift the violet so it beats map props.
-	_token.modulate = Color(1.35, 1.22, 1.55)
+	_apply_loudness()
 	if _token.texture == null:
 		_token.texture = load(TOKEN_PATH) as Texture2D
 	if _tile.texture == null:
@@ -89,7 +100,19 @@ func _ensure_art() -> void:
 		add_child(_plate)
 
 
+func _apply_loudness() -> void:
+	if _token != null and is_instance_valid(_token):
+		# Authored alpha is a soft silhouette. The origin lift beats map props.
+		_token.modulate = ORIGIN_MODULATE if _as_origin else REST_MODULATE
+	if _tile != null and is_instance_valid(_tile):
+		_tile.modulate = Color(1.7, 1.35, 2.0) if _as_origin else Color.WHITE
+
+
 func _draw() -> void:
+	if _as_origin:
+		var halo := _ellipse(62.0, 26.0)
+		draw_colored_polygon(halo, Color(0.62, 0.28, 1.0, 0.42))
+		draw_polyline(halo, RIM, 5.0, true)
 	if _pulse_t >= 1.0:
 		return
 	var ring := _ellipse(lerpf(28.0, 58.0, _pulse_t), lerpf(12.0, 24.0, _pulse_t))
@@ -99,15 +122,16 @@ func _draw() -> void:
 
 func paint_plate(canvas: CanvasItem) -> void:
 	var font := ThemeDB.fallback_font
-	var text := "Shade"
-	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, LABEL_SIZE)
+	var text := plate_text()
+	var size := ORIGIN_LABEL_SIZE if _as_origin else LABEL_SIZE
+	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, size)
 	var origin := Vector2(-text_size.x * 0.5, -CLOAK_PEAK - 16.0)
-	var ascent := font.get_ascent(LABEL_SIZE)
-	var descent := font.get_descent(LABEL_SIZE)
+	var ascent := font.get_ascent(size)
+	var descent := font.get_descent(size)
 	var plate := Rect2(origin.x - 10.0, origin.y - ascent - 6.0, text_size.x + 20.0, ascent + descent + 12.0)
-	canvas.draw_rect(plate.grow(3.0), RIM)
-	canvas.draw_rect(plate, Color(0.07, 0.03, 0.12, 0.96))
-	canvas.draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_SIZE, Color(1.0, 0.97, 1.0))
+	canvas.draw_rect(plate.grow(4.0 if _as_origin else 3.0), RIM)
+	canvas.draw_rect(plate, Color(0.16, 0.04, 0.28, 0.96) if _as_origin else Color(0.07, 0.03, 0.12, 0.96))
+	canvas.draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1.0, 0.97, 1.0))
 	var n := mini(turns, 3)
 	for i in n:
 		var pip := Vector2(48.0, -96.0 + float(i) * 16.0)

@@ -53,6 +53,7 @@ func _run() -> void:
 	_test_illegal_cast_refunds()
 	_test_ambush_destination_locked()
 	_test_ambush_arms_at_zero_mp()
+	_test_ambush_origin_chrome()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1468,6 +1469,69 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	var empty_at := click_src.find("is_empty()")
 	var submit_at := click_src.find("_submit({\"type\": \"move\"")
 	truthy(empty_at >= 0 and submit_at > empty_at, "empty walk highlights return before the move submit")
+
+
+func _test_ambush_origin_chrome() -> void:
+	# Chrome only. Ambush stays 4 AP / 0 MP / 22. Drop Shade stays a placement.
+	# A live Shade is the aim origin. Invisible aims from Gloam and ignores the Shade.
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+	})
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "origin chrome does not change Ambush AP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "origin chrome does not change Ambush MP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "origin chrome does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "origin chrome does not change Drop Shade AP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "origin chrome does not change Drop Shade MP")
+	var shade_cell: Vector2i = _sim.snapshot()["shade_tokens"][0]["pos"]
+	var origin: Dictionary = _sim.ambush_origin(0)
+	eq(bool(origin.get("show", false)), true, "a live Shade opens Ambush origin chrome")
+	eq(bool(origin.get("from_self", true)), false, "a Shade origin is not Gloam")
+	eq(origin.get("origin"), shade_cell, "Ambush origin chrome uses the Shade tile")
+	var landing: Dictionary = _sim.ambush_landing_preview(0)
+	eq(bool(landing.get("ok", false)), true, "Ambush aim preview names the empty back tile")
+	eq(landing.get("cell"), Vector2i(6, 2), "Ambush aim preview lands on the locked back tile")
+	var aim: Dictionary = _sim.aim_hit_preview(0, SpellKits.AMBUSH, shade_cell)
+	eq(bool(aim.get("show", false)), true, "Ambush aim preview shows the locked hit percent")
+	eq(int(aim.get("hit_chance", 0)), 80, "Ambush percent stays Chebyshev from Gloam, not from the Shade tile")
+	eq(int(aim.get("range", 0)), 3, "hovering the Shade does not retarget the Ambush percent")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"gloam_invisible": true,
+	})
+	eq(_sim.snapshot()["shade_tokens"].size() > 0, true, "Invisible keeps the planted Shade on the board")
+	origin = _sim.ambush_origin(0)
+	eq(bool(origin.get("from_self", false)), true, "Invisible Ambush origin is Gloam")
+	eq(origin.get("origin"), gloam, "Invisible chrome does not aim from the Shade")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+	})
+	origin = _sim.ambush_origin(0)
+	eq(bool(origin.get("show", true)), false, "Ambush origin chrome stays off with no Shade and no Invisible")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains('set_highlight("origin")'), "the board paints the Ambush origin tile")
+	truthy(view.contains('set_highlight("landing")'), "the board paints the Ambush back tile while aiming")
+	var marker := FileAccess.get_file_as_string("res://board/shade_marker.gd")
+	truthy(marker.contains("Ambush"), "the Shade token plate can read as the Ambush origin")
+	truthy(marker.contains("Shade"), "a Shade that is not the origin still labels itself Shade")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
