@@ -831,9 +831,31 @@ func _test_batch1_disk_strips() -> void:
 	truthy(strip != null, "kestrel attack shows the export strip")
 	eq(String(strip.animation), "attack_e", "kestrel east plays attack_e")
 	eq(strip.sprite_frames.get_animation_loop("attack_e"), false, "disk attack is one-shot")
-	eq(dur > 0.0 and dur <= 0.6, true, "disk attack still fits the action lock")
+	eq(dur > 0.45 and dur <= 0.6, true, "disk attack plays the 12 fps cycle inside the lock")
+	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk attack stays at authored 12 fps")
+	_assert_attack_impact(strip, "kestrel attack")
 	await create_timer(0.12).timeout
 	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
+	pawn.settle_motion()
+	var mark_plans: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.MARK_SHOT,
+		"seat": 0,
+		"target_seat": 1,
+		"to": Vector2i(4, 1),
+	}])
+	var mark_plan: Dictionary = mark_plans.get(0, {})
+	eq(bool(mark_plan.get("cast", false)), true, "Mark Shot stays a cast in the kit")
+	eq(bool(mark_plan.get("attack", false)), false, "Mark Shot is not reclassified as melee")
+	mark_plan["aim"] = Vector2(40, 8)
+	var bow := pawn.play_view_plan(mark_plan)
+	await process_frame
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "kestrel bow shows the attack strip")
+	eq(String(strip.animation), "attack_e", "Mark Shot plays attack_e")
+	eq(bow > 0.45 and bow <= 0.6, true, "the bow cycle fits the action lock")
+	eq(is_equal_approx(strip.speed_scale, 1.0), true, "the bow cycle stays at 12 fps")
+	_assert_attack_impact(strip, "Mark Shot")
 	pawn.settle_motion()
 	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
 	pawn.free()
@@ -849,6 +871,24 @@ func _test_batch1_disk_strips() -> void:
 	eq(String(jaw_strip.animation), "walk_n", "ironjaw north plays walk_n")
 	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "ironjaw walk does not hop")
 	jaw.end_path_walk()
+	var strike_plans: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.STRIKE,
+		"seat": 1,
+		"target_seat": 0,
+	}])
+	var strike_plan: Dictionary = strike_plans.get(1, {})
+	eq(bool(strike_plan.get("attack", false)), true, "Ironjaw Strike is an attack plan")
+	strike_plan["aim"] = Vector2(0, 24)
+	var slam := jaw.play_view_plan(strike_plan)
+	await process_frame
+	jaw_strip = _visible_strip(jaw)
+	truthy(jaw_strip != null, "ironjaw strike shows the attack strip")
+	eq(String(jaw_strip.animation), "attack_n", "ironjaw north plays attack_n")
+	eq(slam > 0.45 and slam <= 0.6, true, "ironjaw strike plays the authored cycle")
+	eq(is_equal_approx(jaw_strip.speed_scale, 1.0), true, "ironjaw attack stays at 12 fps")
+	_assert_attack_impact(jaw_strip, "Ironjaw Strike")
+	jaw.settle_motion()
 	jaw.free()
 	var other := Pawn.new()
 	get_root().add_child(other)
@@ -860,6 +900,15 @@ func _test_batch1_disk_strips() -> void:
 	eq((other.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a class without strips still hops")
 	other.settle_motion()
 	other.free()
+
+
+func _assert_attack_impact(strip: AnimatedSprite2D, msg: String) -> void:
+	var anim := String(strip.animation)
+	eq(strip.sprite_frames.get_frame_count(anim) > StripLibrary.ATTACK_IMPACT_FRAME, true, "%s reaches the impact frame" % msg)
+	var cell := strip.sprite_frames.get_frame_texture(anim, StripLibrary.ATTACK_IMPACT_FRAME) as AtlasTexture
+	truthy(cell != null, "%s impact frame is a strip cell" % msg)
+	eq(is_equal_approx(cell.region.position.x, 144.0 * float(StripLibrary.ATTACK_IMPACT_FRAME)), true, "%s impact is frame index 3" % msg)
+	eq(cell.region.size, Vector2(144, 160), "%s impact cell is 144x160" % msg)
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:

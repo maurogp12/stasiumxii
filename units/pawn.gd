@@ -13,6 +13,9 @@ class_name Pawn
 ## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
 ## A resolved walk strip loops at authored fps for the whole path and skips
 ## the hop arc. Missing strips keep the hop and this static sprite.
+## Attack strips play one-shot on attack plans. A cast with no cast strip
+## (Kestrel Mark Shot / Detonate) uses the attack strip and the 6px lunge.
+## The clip keeps authored fps when that length still fits the 0.6s lock.
 ## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
 ## AnimatedSprite2D is kept as BodyStrip and the static sprite is recreated.
 ## Missing nodes, empty frames, or null textures keep the static sprite.
@@ -182,6 +185,49 @@ static func walk_strip_speed_scale() -> float:
 	return 1.0
 
 
+## A cast plays the attack cycle when this class has attack frames and no cast strip.
+func _cast_uses_attack_strip() -> bool:
+	return _strip_choice("cast").is_empty() and not _strip_choice("attack").is_empty()
+
+
+## Authored clip length. 6 frames at 12 fps is 0.5s. Zero when the strip is missing.
+func _strip_natural_sec(kind: String) -> float:
+	var choice := _strip_choice(kind)
+	if choice.is_empty():
+		return 0.0
+	var strip: AnimatedSprite2D = choice["node"]
+	if strip == null or not is_instance_valid(strip) or strip.sprite_frames == null:
+		return 0.0
+	var anim := StringName(str(choice["anim"]))
+	var frames := strip.sprite_frames
+	if not frames.has_animation(anim):
+		return 0.0
+	var fps := frames.get_animation_speed(anim)
+	if fps <= 0.0:
+		return 0.0
+	var span := 0.0
+	var count := frames.get_frame_count(anim)
+	for i in count:
+		span += frames.get_frame_duration(anim, i)
+	return span / fps
+
+
+## Keep the motion window when the clip is shorter. Stretch to authored length
+## when the 0.6s lock still has room, so a 12 fps attack is not squeezed.
+func _fit_strip_window(kind: String, sec: float, steps: Array) -> float:
+	var others := 0.0
+	for step in steps:
+		var s := float(step.get("sec", 0.0))
+		if s > 0.0:
+			others += s
+	others = maxf(0.0, others - sec)
+	var room := VIEW_MOTION.ACTION_LOCK_MAX - others
+	var natural := _strip_natural_sec(kind)
+	if natural <= sec or room <= sec:
+		return sec
+	return minf(natural, room)
+
+
 ## Fit `frame_count` frames at `fps` into `window_sec`. Empty input stays at 1.
 static func strip_speed_scale(frame_count: int, fps: float, window_sec: float) -> float:
 	if frame_count <= 0 or fps <= 0.0 or window_sec <= 0.0:
@@ -193,6 +239,7 @@ func play_view_plan(plan: Dictionary) -> float:
 	_plan_died = false
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return 0.0
+	_ensure_motion_strips()
 	_plan_died = bool(plan.get("death", false))
 	var steps: Array = VIEW_MOTION.steps_for(plan)
 	if steps.is_empty():
@@ -210,10 +257,16 @@ func play_view_plan(plan: Dictionary) -> float:
 		total += sec
 		if kind == "wait":
 			tw.tween_interval(sec)
-		elif kind == "attack":
-			_begin_body_strip("attack", sec)
-			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO), float(step.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX))), 0.0, 1.0, sec)
+		elif kind == "attack" or (kind == "cast" and _cast_uses_attack_strip()):
+			var play_sec := _fit_strip_window("attack", sec, steps)
+			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
+			if aim.length_squared() < 0.01:
+				aim = facing_screen()
+			var reach := float(step.get("reach", plan.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX)))
+			_begin_body_strip("attack", play_sec)
+			tw.tween_method(_sample_attack.bind(aim, reach), 0.0, 1.0, play_sec)
 			tw.tween_callback(_end_body_strip)
+			total += play_sec - sec
 		elif kind == "cast":
 			tw.tween_callback(_begin_body_strip.bind("cast", sec))
 			tw.tween_method(_sample_cast, 0.0, 1.0, sec)
