@@ -801,14 +801,13 @@ func render(snap: Dictionary, legal: Array) -> void:
 			_aim_hit_label.text = ""
 			_aim_hit_label.visible = false
 	_update_selected_label()
-	var shade_ready := gloam_has_live_shade(snap)
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
 		if _selected_spell == spell_id:
 			button.modulate = Color(1.15, 1.1, 0.7)
-		elif str(spell_id) == SpellKits.AMBUSH and shade_ready and can_submit:
+		elif str(spell_id) == SpellKits.AMBUSH and can_submit:
 			button.modulate = AMBUSH_SHADE_MODULATE
 		elif can_submit:
 			button.modulate = Color(1, 1, 1, 1)
@@ -1701,7 +1700,8 @@ func _update_selected_label() -> void:
 
 
 func _with_shade_tip(text: String) -> String:
-	if not gloam_has_live_shade(_last_snap):
+	# A live Shade alone is not the cue. Walk at 0 MP must not read as Ambush.
+	if _selected_spell != SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		return text
 	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
 

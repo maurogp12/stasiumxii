@@ -144,9 +144,10 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
 		"positions": [gloam, Vector2i(5, 2)],
-		"gloam_shade": true,
 		"rolls": [100],
 	})
+	var ambush_shade: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(ambush_shade.get("ok", false)), true, "Ambush miss fixture plants a Shade inside 1–4")
 	var ambush_miss: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
 	eq(_event_of(ambush_miss.get("events", []), "miss").get("caster_cell"), gloam, "Ambush miss caster_cell is Gloam")
 	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still does not teleport")
@@ -246,17 +247,18 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back stays 22 × 1.35 = 30")
 
+	var near := Vector2i(4, 2)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, prey],
+		"positions": [gloam, near],
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [100],
 	})
-	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var miss := _event_of(missed.get("events", []), "miss")
 	eq(miss.get("origin"), shade_cell, "Shade Ambush miss origin is the Shade cell")
 	eq(miss.has("destination"), false, "Ambush miss emits no destination")
@@ -270,15 +272,15 @@ func _test_ambush_origin_and_destination() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, prey],
+		"positions": [gloam, near],
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [1],
 	})
-	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var shade_hit := _event_of(shade_cast.get("events", []), "hit")
 	eq(shade_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
-	eq(shade_hit.get("destination"), Vector2i(6, 2), "Shade Ambush destination is the empty back tile")
+	eq(shade_hit.get("destination"), Vector2i(5, 2), "Shade Ambush destination is the empty back tile")
 	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "empty back stays 22 × 1.35 = 30")

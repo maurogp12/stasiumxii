@@ -429,10 +429,11 @@ func _test_ambush_hit() -> void:
 		"classes": ["gloam", "kestrel"],
 		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
 		"kestrel_facing": "W",
-		"gloam_shade": true,
 		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
+	var planted_block: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(planted_block.get("ok", false)), true, "blocked-back fixture plants a Shade inside 1–4")
 	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var ap_blocked := int(_sim.snapshot()["units"][0]["ap"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})

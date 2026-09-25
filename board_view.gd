@@ -466,6 +466,7 @@ func _handle_left_click(cell: Vector2i) -> void:
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		# Dest-click only. Do not send a client path.
+		# MP 0 still submits a walk. The coach says there is no MP to walk.
 		_submit({"type": "move", "to": cell})
 		return
 	var actor := _active_unit(_sim().snapshot())
@@ -1094,6 +1095,7 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 			gone.queue_free()
 		_shade_markers.erase(cell)
 	var layer := _shade_layer()
+	var origin_cell := _ambush_shade_origin(_sim().ambush_origin(CombatHUD.kit_seat(snap)))
 	for cell in live.keys():
 		var marker: Node = _shade_markers.get(cell)
 		var spawned := marker == null or not is_instance_valid(marker)
@@ -1104,7 +1106,7 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 		elif marker.get_parent() != layer:
 			marker.reparent(layer)
 		var at: Vector2i = cell
-		marker.call("show_token", _cell_to_local(at), SHADE_LAYER_Z + at.x + at.y, int(live[cell]), spawned)
+		marker.call("show_token", _cell_to_local(at), SHADE_LAYER_Z + at.x + at.y, int(live[cell]), spawned, at == origin_cell)
 
 
 func _shade_layer() -> Node2D:
@@ -1173,7 +1175,35 @@ func _paint_highlights() -> void:
 	if stamp_rim and not actor.is_empty():
 		_stamp_range_rim(range_cells, _as_cell(actor.get("pos", Vector2i.ZERO)), int(range_def.get("max_range", 0)))
 	_paint_blocked(snap)
+	_paint_ambush_chrome(snap, spell_id)
 	_sync_aim_preview()
+
+
+## Locked chrome. Origin highlight only while Ambush is selected or legal.
+## A live Shade is the origin. Invisible aims from Gloam only. Range is that origin.
+func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
+	var seat := CombatHUD.kit_seat(snap)
+	var legal: Array = _sim().legal_intents(seat)
+	if spell_id != SpellKits.AMBUSH and not CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH):
+		return
+	var origin: Dictionary = _sim().ambush_origin(seat)
+	if not bool(origin.get("show", false)):
+		return
+	var cell: Vector2i = origin["origin"]
+	var walking := spell_id == "" and SNAPSHOT_TILES.walk_dests(_sim().legal_intents(seat)).has(cell)
+	if tiles.has(cell) and not walking:
+		_tile_at(cell).set_highlight("origin")
+	if spell_id != SpellKits.AMBUSH:
+		return
+	var landing: Dictionary = _sim().ambush_landing_preview(seat)
+	if bool(landing.get("ok", false)) and tiles.has(landing.get("cell", Vector2i(-1, -1))):
+		_tile_at(landing["cell"]).set_highlight("landing")
+
+
+func _ambush_shade_origin(origin: Dictionary) -> Vector2i:
+	if bool(origin.get("show", false)) and not bool(origin.get("from_self", false)):
+		return origin["origin"]
+	return Vector2i(-999, -999)
 
 
 ## Keep the max-range shell gold after legal dests repaint the interior.
