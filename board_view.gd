@@ -41,7 +41,8 @@ extends Node2D
 ## View motions (idle, step arc, lunge, wind-up, recoil, lift, slump) tween the
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
-## Mobile-track chrome. Batch 1 walk/attack strips land later; static facings hop until then.
+## Mobile-track chrome. Kestrel and Ironjaw walk strips skip the hop.
+## Other classes still hop on the static facing.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -933,7 +934,7 @@ func _arm_view_motions(events: Array) -> void:
 		if pawn == null or not is_instance_valid(pawn):
 			continue
 		var plan: Dictionary = plans[seat]
-		if bool(plan.get("attack", false)) and int(caster_event.get("seat", -2)) == seat_n:
+		if int(caster_event.get("seat", -2)) == seat_n and (bool(plan.get("attack", false)) or bool(plan.get("cast", false))):
 			plan["aim"] = _aim_vector(seat_n, caster_event)
 		if bool(plan.get("hit", false)):
 			plan["away"] = _away_vector(seat_n, VIEW_MOTION.hit_event_for(events, seat_n))

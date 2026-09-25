@@ -83,7 +83,7 @@ static func grok_png_path(class_id: String, kind: String, sheet: String) -> Stri
 	return "%s%s_%s_%s.png" % [GROK_DIR, cls, kind, sheet]
 
 
-## Batch-1 export_2x PNGs. Tests assert these stay absent until a real drop.
+## Batch-1 export_2x PNGs (Kestrel and Ironjaw walk + attack, four letters).
 static func batch1_png_paths() -> Array[String]:
 	var out: Array[String] = []
 	for cls in ["kestrel", "ironjaw"]:
