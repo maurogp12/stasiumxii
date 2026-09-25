@@ -24,21 +24,22 @@ Combat rules, kits, hit bands, maps, and the PC HUD are untouched.
 | Format | APK (`gradle_build/export_format=0`) |
 | ABI | `arm64-v8a` only |
 | Min / target SDK | blank in the preset. The debug APK below resolved to min SDK 24 and target SDK 36 |
-| Signing | on, keystores left empty (no secrets in git) |
+| Signing | on. Debug uses the shared keystore in `build_tools/mobile/` (see that README). Release keystore stays empty and outside git |
 | Permission | `INTERNET` (online lobby). Every other Android permission is off |
 | Screen | immersive mode on. This hides the system bars. It does not change the 960×720 viewport |
 | Output path | `builds/android/stasiumxii-mobile.apk` (`/builds/` is gitignored) |
 
 An x86_64 emulator needs `architectures/x86_64` turned on in this preset. A physical arm64 phone matches the preset as committed.
 
-Release signing uses a keystore that stays outside the repo. Godot 4.7 stores keystore paths and passwords in `.godot/export_credentials.cfg` (already gitignored) or in these environment variables:
+Debug sideload signing uses the shared keystore committed at `build_tools/mobile/stasiumxii-mobile-debug.keystore`. The Android preset already sets `keystore/debug`, `keystore/debug_user`, and `keystore/debug_password` to that file. Cloud cuts must leave those fields in place and must not set `GODOT_ANDROID_KEYSTORE_DEBUG_PATH`, `GODOT_ANDROID_KEYSTORE_DEBUG_USER`, or `GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD`. Godot prefers those variables over the preset, which is how earlier cuts each got a new cert. Alias, password, and the pinned cert SHA-256 are in `build_tools/mobile/README.md`.
 
-- `GODOT_ANDROID_KEYSTORE_DEBUG_PATH` / `_USER` / `_PASSWORD`
+Release signing uses a different keystore that stays outside the repo. `keystore/release`, `keystore/release_user`, and `keystore/release_password` stay empty. Godot 4.7 can also read a release keystore from `.godot/export_credentials.cfg` (already gitignored) or from:
+
 - `GODOT_ANDROID_KEYSTORE_RELEASE_PATH` / `_USER` / `_PASSWORD`
 
 ## Debug APK (sideload)
 
-Built 2026-09-25 on this branch with Godot `4.7.2.stable.official.ed1daf0bf` and the matching official templates (`android_debug.apk` and `android_release.apk` in `~/.local/share/godot/export_templates/4.7.2.stable/`). OpenJDK 21 was at `/usr/lib/jvm/java-21-openjdk-amd64`. The Android SDK root was `/home/ubuntu/android-sdk` (command-line tools `13114758`, platform-tools `37.0.1`, build-tools `35.0.1`). Editor Settings pointed Java and the SDK at those paths. The preset keystore fields stayed empty. Godot signed with the debug keystore it generated at `~/.local/share/godot/keystores/debug.keystore` (not in git).
+Built 2026-09-25 on this branch with Godot `4.7.2.stable.official.ed1daf0bf` and the matching official templates (`android_debug.apk` and `android_release.apk` in `~/.local/share/godot/export_templates/4.7.2.stable/`). OpenJDK 21 was at `/usr/lib/jvm/java-21-openjdk-amd64`. The Android SDK root was `/home/ubuntu/android-sdk` (command-line tools `13114758`, platform-tools `37.0.1`, build-tools `35.0.1`). Editor Settings pointed Java and the SDK at those paths. The preset keystore fields stayed empty on that cut. Godot signed with the debug keystore it generated at `~/.local/share/godot/keystores/debug.keystore` (not in git). Later sideload exports use the shared debug keystore wired in the preset. Phones that still have this pre-pin APK need one uninstall before the first build signed with the pinned cert.
 
 ```text
 godot --headless --path . --export-debug "Android" builds/android/stasiumxii-mobile-debug.apk
