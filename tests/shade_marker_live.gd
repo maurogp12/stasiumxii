@@ -80,7 +80,7 @@ static func run(host: SceneTree) -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [ambush_from, Vector2i(5, 4)],
+		"positions": [ambush_from, Vector2i(7, 4)],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"rolls": [1],
@@ -88,11 +88,11 @@ static func run(host: SceneTree) -> void:
 	var ambush: Dictionary = CombatSim.submit({
 		"type": "cast",
 		"spell": "ambush",
-		"to": Vector2i(5, 4),
+		"to": Vector2i(7, 4),
 		"seat": 0,
 	})
 	host.eq(bool(ambush.get("ok", false)), true, "Ambush still resolves")
-	host.eq(_seat_pos(CombatSim.snapshot(), 0), Vector2i(6, 4), "Ambush is still the blink")
+	host.eq(_seat_pos(CombatSim.snapshot(), 0), Vector2i(8, 4), "Ambush is still the blink")
 	main.queue_free()
 	await host.process_frame
 

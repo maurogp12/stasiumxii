@@ -427,19 +427,21 @@ func _test_ambush_hit() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 4), Vector2i(5, 2)],
 		"kestrel_facing": "W",
 		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
-	var planted_block: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 2), "seat": 0})
-	eq(bool(planted_block.get("ok", false)), true, "blocked-back fixture plants a Shade inside 1–4")
+	eq(_sim.chebyshev(Vector2i(2, 4), Vector2i(2, 2)), 2, "blocked-back plant is Chebyshev 2 from Gloam")
+	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(5, 2), 3), true, "blocked-back plant is exactly 3 cardinal from the prey")
+	var planted_block: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(planted_block.get("ok", false)), true, "blocked-back fixture plants a Shade exactly 3 cardinal from the prey")
 	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var ap_blocked := int(_sim.snapshot()["units"][0]["ap"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
 	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
 	eq(str(blocked.get("reason", "")), "no_landing", "blocked back refunds")
-	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(2, 2), "blocked back does not move onto an adjacent cell")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(2, 4), "blocked back does not move onto an adjacent cell")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_blocked, "blocked back refunds AP")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")

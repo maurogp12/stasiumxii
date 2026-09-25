@@ -376,7 +376,7 @@ func legal_intents(seat: int) -> Array:
 	return out
 
 
-## Locked Ambush: 4 AP / 0 MP, range 1–4 from the origin, blink to the empty back tile.
+## Locked Ambush: 4 AP / 0 MP, exactly 3 cardinal from the origin, blink to the empty back tile.
 ## Origin is Gloam while Invisible, otherwise the Shade. Spends a Shade only when
 ## the origin was a Shade (submit). This offer does not call the pathfinder and
 ## does not read the walk budget, so MP 0 does not hide the cast.
@@ -458,7 +458,7 @@ func match_phase_name() -> String:
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
 ## Chrome only. Origin is Gloam's cell while Invisible, otherwise the first live Shade.
-## The 1–4 check uses this same cell.
+## The exactly-3 cardinal check uses this same cell.
 func ambush_origin(seat: int) -> Dictionary:
 	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
 	var actor := _unit_by_seat(seat)
@@ -512,6 +512,8 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 		if origin_cell == UNPLACED:
 			return out
 		from = origin_cell
+	# Cardinal kits share _range_distance: one axis is 0 and the other is in
+	# [min, max]. Ambush is exactly 3 N/E/S/W. A Chebyshev ring is not legal.
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
@@ -741,19 +743,29 @@ static func is_cardinal_step(from: Vector2i, to: Vector2i) -> bool:
 	return absi(delta.x) + absi(delta.y) == 1
 
 
-## Advance Locked range: exactly 2 tiles on one cardinal axis (N/S/E/W).
-## False for Manhattan 1, diagonals / (1,1), knights, and the caster tile.
+## Advance Locked range: exactly N tiles on one cardinal axis, N from the kit (2).
+## False for any other distance, diagonals / (1,1), knights, and the caster tile.
 static func is_advance_cardinal(from: Vector2i, to: Vector2i) -> bool:
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var dist := int(def.get("max_range", 2))
 	if int(def.get("min_range", dist)) != dist:
 		return false
+	return is_cardinal_exact(from, to, dist)
+
+
+## Pure N/E/S/W of exactly dist tiles. Both axes nonzero is never cardinal.
+static func is_cardinal_exact(from: Vector2i, to: Vector2i, dist: int) -> bool:
+	return _cardinal_axis_len(from, to) == dist
+
+
+## Axis length when one of Δx/Δy is 0. -1 when both axes are nonzero.
+static func _cardinal_axis_len(from: Vector2i, to: Vector2i) -> int:
 	var delta: Vector2i = to - from
 	var ax := absi(delta.x)
 	var ay := absi(delta.y)
 	if ax != 0 and ay != 0:
-		return false
-	return ax + ay == dist
+		return -1
+	return ax + ay
 
 
 ## Canonical walk path: dest-click only. Horizontal (E/W) first, then vertical (N/S).
@@ -916,7 +928,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
 	if spell_id == SpellKits.ADVANCE:
-		# Exactly 2 cardinal spaces. Manhattan 1 and (1,1) are out of range.
+		# Exactly 2 cardinal spaces, dist read from the Advance kit. Manhattan 1 and (1,1) are out of range.
 		out["in_range"] = is_advance_cardinal(from_cell, to_cell)
 	else:
 		var range_dist := _range_distance(def, range_from, to_cell)
@@ -1513,7 +1525,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var origin_cell := _ambush_range_origin(actor)
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
-	var dist := chebyshev(range_from, dest)
+	# Cardinal kits (Ambush) share the axis gate: one of Δx/Δy is 0 and
+	# |Δx|+|Δy| is inside min/max. Chebyshev would accept a diagonal ring.
+	var dist := _range_distance(def, range_from, dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
@@ -1947,9 +1961,15 @@ func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
 	var mode := str(def.get("range_mode", "chebyshev"))
-	# Cardinal Advance uses Manhattan. A (1,1) step is distance 2, so the
-	# cardinal-axis check (not this distance alone) rejects diagonals.
-	if mode == "manhattan" or mode == "cardinal":
+	# Cardinal is axis-only (Ambush exactly 3, Advance exactly 2). A knight
+	# such as (2,1) is Manhattan 3 but both axes are nonzero, so it is not
+	# in range. The sentinel stays above every kit max and the hit-band cap.
+	if mode == "cardinal":
+		var axis := _cardinal_axis_len(from, to)
+		if axis < 0:
+			return _HitBands.MAX_DISTANCE + 1
+		return axis
+	if mode == "manhattan":
 		return manhattan(from, to)
 	return chebyshev(from, to)
 
