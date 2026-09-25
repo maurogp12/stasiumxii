@@ -456,6 +456,8 @@ func snapshot() -> Dictionary:
 		"snap_walls": _cell_list(_snap_wall_cells),
 		"snap_wall_active": _bastion_in_match(),
 		"blocked_tiles": _blocked_tile_snapshot(),
+		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
+		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
@@ -560,6 +562,10 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_snap_wall_state.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	if snap.has("shade_tokens"):
+		_restore_placed_tokens(_shade_tokens, snap.get("shade_tokens", []))
+	if snap.has("plant_tiles"):
+		_restore_placed_tokens(_plant_tiles, snap.get("plant_tiles", []))
 	_restore_blocked_tiles(snap)
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
@@ -583,6 +589,8 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		var unit: Dictionary = (raw as Dictionary).duplicate(true)
 		unit["pos"] = _as_cell(unit.get("pos", UNPLACED))
 		_units.append(unit)
+	if snap.has("shade_tokens"):
+		_sync_shade_flags()
 	_board = _WalkBoard.new()
 	_apply_snapshot_tiles(snap.get("tiles", {}))
 	_flow.apply_host_snapshot(snap)
@@ -3034,6 +3042,41 @@ func _unit_snapshot(unit: Dictionary) -> Dictionary:
 		"aegis": int(unit.get("aegis", 0)),
 	}
 	return copy
+
+
+func _placed_token_snapshot(items: Array, include_resist: bool) -> Array:
+	var out: Array = []
+	for item in items:
+		var token: Dictionary = item
+		var cell: Vector2i = token["pos"]
+		var rec := {
+			"x": cell.x,
+			"y": cell.y,
+			"pos": cell,
+			"turns": int(token.get("turns", 0)),
+			"owner_seat": int(token.get("owner_seat", -1)),
+		}
+		if include_resist:
+			rec["push_resist"] = bool(token.get("push_resist", false))
+		out.append(rec)
+	return out
+
+
+func _restore_placed_tokens(into: Array, raw: Variant) -> void:
+	if typeof(raw) != TYPE_ARRAY:
+		return
+	for entry in raw:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = entry
+		var token := {
+			"pos": _blocked_entry_cell(rec),
+			"turns": int(rec.get("turns", 0)),
+			"owner_seat": int(rec.get("owner_seat", -1)),
+		}
+		if rec.has("push_resist"):
+			token["push_resist"] = bool(rec.get("push_resist", false))
+		into.append(token)
 
 
 func _blocked_tile_snapshot() -> Array:

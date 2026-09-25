@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_ambush_origin_and_destination()
 	_test_hold_line_cone_and_targets()
 	_test_absorbed_damage_and_intercept()
+	_test_shade_and_plant_snapshot()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -494,6 +495,83 @@ func _test_absorbed_damage_and_intercept() -> void:
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
 	eq(bool(guest.get("immunity_absorbed", false)), true, "guest hit keeps immunity_absorbed")
 	eq(int(_guest.snapshot()["units"][0]["hp"]), 80, "guest HP matches the immune host")
+
+
+func _test_shade_and_plant_snapshot() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	eq((_sim.snapshot().get("shade_tokens", null) as Array).is_empty(), true, "a match with no Shades lists none")
+	eq((_sim.snapshot().get("plant_tiles", null) as Array).is_empty(), true, "a match with no Plants lists none")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1), "seat": 0}).get("ok", false)), true, "Shade places")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0}).get("ok", false)), true, "second Shade places")
+	var shades: Array = _sim.snapshot()["shade_tokens"]
+	eq(shades.size(), 2, "snapshot lists both Shade tokens")
+	eq(shades[0].get("pos"), Vector2i(2, 1), "first Shade pos")
+	eq(int(shades[0].get("x", -1)), 2, "first Shade x")
+	eq(int(shades[0].get("y", -1)), 1, "first Shade y")
+	eq(int(shades[0].get("turns", -1)), 3, "Shade duration is 3")
+	eq(int(shades[0].get("owner_seat", -1)), 0, "Shade owner is Gloam's seat")
+	eq(shades[1].get("pos"), Vector2i(2, 2), "second Shade pos")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 2, "unit Shade count stays 2")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(3, 1), "seat": 0}).get("ok", false)), true, "Plant places")
+	var plants: Array = _sim.snapshot()["plant_tiles"]
+	eq(plants.size(), 1, "snapshot lists the Plant")
+	eq(plants[0].get("pos"), Vector2i(3, 1), "Plant pos")
+	eq(int(plants[0].get("turns", -1)), 3, "Plant duration is 3")
+	eq(int(plants[0].get("owner_seat", -1)), 0, "Plant owner is Bastion's seat")
+	eq(bool(plants[0].get("push_resist", false)), true, "Plant still resists the next push")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "bastion"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"fixture": true,
+	})
+	var shade_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2)}, 0)
+	var packed: Dictionary = _host.pack_result(shade_cast, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire_shades: Array = (decoded as Dictionary).get("snapshot", {}).get("shade_tokens", [])
+	eq(wire_shades.size(), 1, "packed snapshot includes the Shade")
+	eq(wire_shades[0].get("pos"), Vector2i(2, 2), "packed Shade pos survives encode")
+	_guest.apply_packed_state(packed)
+	var guest_shades: Array = _guest.snapshot()["shade_tokens"]
+	eq(guest_shades.size(), 1, "guest rebuilds the Shade token")
+	eq(guest_shades[0].get("pos"), Vector2i(2, 2), "guest Shade pos matches the host")
+	eq(int(guest_shades[0].get("turns", -1)), 3, "guest Shade turns match the host")
+	eq(int(_guest.snapshot()["units"][0]["shades"]), 1, "guest unit Shade count matches the token")
+
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var plant_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "plant", "to": Vector2i(5, 6)}, 1)
+	eq(bool(plant_cast.get("ok", false)), true, "host Plant resolves")
+	_guest.apply_packed_state(_host.pack_result(plant_cast, 0))
+	var guest_plants: Array = _guest.snapshot()["plant_tiles"]
+	eq(guest_plants.size(), 1, "guest rebuilds the Plant")
+	eq(guest_plants[0].get("pos"), Vector2i(5, 6), "guest Plant pos matches the host")
+	eq(bool(guest_plants[0].get("push_resist", false)), true, "guest Plant keeps push resist")
+	eq((_guest.snapshot().get("shade_tokens", []) as Array).size(), 1, "guest still has the Shade after Plant")
 
 
 func _live_unit(seat: int) -> Dictionary:
