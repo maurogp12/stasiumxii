@@ -73,7 +73,7 @@ var _empty_kit_label: Label
 var _tooltip_panel: Panel
 var _tooltip_label: Label
 var _tooltip_spell: String = ""
-## Touch card stays up after the finger lifts. Mouse hover still hides on exit.
+## Hold card ignores synthetic mouse-exit until the finger lifts, a board tap, or Walk.
 var _tooltip_pinned: bool = false
 ## Spell armed on button-down. The matching release must not toggle it off.
 var _suppress_toggle_spell: String = ""
@@ -81,6 +81,10 @@ var _press_gesture_armed: String = ""
 var _press_release_token: int = 0
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
+## True while the open long-press started from a finger, not a mouse click.
+var _long_press_touch: bool = false
+## Finger contact. Desktop hover must not open the card during a tap.
+var _hover_suppressed: bool = false
 var _last_snap: Dictionary = {}
 var _last_legal: Array = []
 var _preview_source: Node = null
@@ -553,8 +557,29 @@ func _process(delta: float) -> void:
 		return
 	_long_press_elapsed += delta
 	if _long_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
-		show_spell_tooltip(_long_press_spell)
+		var spell_id := _long_press_spell
+		var from_touch := _long_press_touch
+		show_spell_tooltip(spell_id)
+		if from_touch and tooltip_visible():
+			_tooltip_pinned = true
+			# Release dismisses the card and must not toggle the armed spell off.
+			_suppress_toggle_spell = spell_id
 		_cancel_long_press()
+
+
+func _input(event: InputEvent) -> void:
+	if TOUCH.is_emulated_mouse(event):
+		return
+	if not event is InputEventScreenTouch:
+		return
+	var touch := event as InputEventScreenTouch
+	if touch.index != 0:
+		return
+	if touch.pressed:
+		# Before emulated mouse_entered, so a tap does not flash the card.
+		_hover_suppressed = true
+		return
+	_finish_touch_tooltip()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1527,7 +1552,7 @@ func _on_spell_button_down(spell_id: String) -> void:
 
 
 func _on_spell_button_up() -> void:
-	_cancel_long_press()
+	_finish_touch_tooltip()
 	# pressed() runs in this same release when the finger is still on the button.
 	# A drag-off never emits pressed, so drop the toggle lock after that.
 	_press_release_token += 1
@@ -1738,6 +1763,8 @@ func _bind_spell_hover(control: Control, spell_id: String) -> void:
 
 
 func _on_spell_hover(spell_id: String) -> void:
+	if _hover_suppressed:
+		return
 	show_spell_tooltip(spell_id)
 
 
@@ -1789,15 +1816,17 @@ func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
 			if touch.index != 0:
 				return
 			if touch.pressed:
+				# Tap arms only. The card waits for the long-press timer.
+				hide_spell_tooltip()
+				_hover_suppressed = true
 				_arm_spell_from_press(spell_id)
-				_begin_long_press(spell_id)
-				# Tap/press shows the card. Hover is only the desktop path.
-				show_spell_tooltip(spell_id)
-				_tooltip_pinned = tooltip_visible()
+				_begin_long_press(spell_id, true)
 			else:
 				_on_spell_button_up()
 		elif (event as InputEventScreenDrag).index != 0:
 			return
+		else:
+			_drop_hold_if_finger_left(spell_id, screen_pos)
 		if _selected_spell != "":
 			aim_dragged.emit(screen_pos, committing)
 		return
@@ -1808,16 +1837,42 @@ func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
 			_cancel_long_press()
 
 
-func _begin_long_press(spell_id: String) -> void:
+func _begin_long_press(spell_id: String, from_touch: bool = false) -> void:
+	# Emulated mouse button_down follows the finger and must not reset the hold.
+	if _long_press_spell == spell_id and _long_press_touch and not from_touch:
+		return
 	_long_press_spell = spell_id
+	_long_press_touch = from_touch
 	_long_press_elapsed = 0.0
 	set_process(true)
 
 
 func _cancel_long_press() -> void:
 	_long_press_spell = ""
+	_long_press_touch = false
 	_long_press_elapsed = 0.0
 	set_process(false)
+
+
+## Finger up. Drops a hold card. Mouse hover cards stay unpinned.
+func _finish_touch_tooltip() -> void:
+	var dismiss_hold_card := _tooltip_pinned
+	_cancel_long_press()
+	_hover_suppressed = false
+	if dismiss_hold_card:
+		hide_spell_tooltip()
+
+
+## A drag off the circle is aim, not a hold. Keep the card off the board.
+func _drop_hold_if_finger_left(spell_id: String, screen_pos: Vector2) -> void:
+	var host: Control = _spell_hosts.get(spell_id)
+	if host == null or not is_instance_valid(host) or not host.visible:
+		return
+	if host.get_global_rect().has_point(screen_pos):
+		return
+	_cancel_long_press()
+	if _tooltip_pinned:
+		hide_spell_tooltip()
 
 
 func show_toast(text: String) -> void:

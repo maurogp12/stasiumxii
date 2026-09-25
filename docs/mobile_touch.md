@@ -19,7 +19,7 @@ Combat rules, kits, hit bands, AP/MP, and map tags are unchanged. The adapter on
 | Action | Tap path | Desktop still works |
 | --- | --- | --- |
 | Select unit / cell | Finger down highlights the cell. Finger up commits it (walk, Advance, or the armed spell). | Mouse left press still commits immediately. |
-| Cast / ability | Tap the spell button (72px tall). The card opens on that press and stays until you tap the board or Walk. Range rings still paint when the spell is selected. | Hover still shows the card and hides it on exit. |
+| Cast / ability | Tap the spell circle (72px, primary larger) to arm it. The skill card stays hidden; the status line and range chrome update. Hold the circle to open the card. Release, a board tap, or Walk dismisses it. | Hover still shows the card and hides it on exit. |
 | Move / Advance | Walk is the default. Tap a highlighted cell. Advance is the spell button, then a tap on a highlighted neighbor. | Same clicks as before. |
 | Facing | Face pad, N/E/S/W, each 48×48. | Right-click a cell still faces. |
 | End Turn | End Turn button, 72px tall. | Same button. |
@@ -37,7 +37,7 @@ Hub doors stay 72px. Class select still has **Back to hub**.
 1. Press **F5 / Play**. The hub opens (`scenes/mobile_hub.tscn`).
 2. Tap **Koliseo**.
 3. Tap **Hot-seat**, then two class cards. The duel opens on a random arena.
-4. With the mouse, or with the Game workspace's touch emulation: tap **Walk** and a highlighted cell, tap the large attack circle (the card appears without hovering), drag across the enemy figure and release. The cast spends AP. Tap **Face** N/E/S/W, tap **End Turn**. Tapping the empty diamond behind a fighter still refunds.
+4. With the mouse, or with the Game workspace's touch emulation: tap **Walk** and a highlighted cell, tap the large attack circle (the spell arms, the skill card stays hidden). Hold the circle to open the card; release or tap the board to dismiss it. Drag across the enemy figure and release. The cast spends AP. Tap **Face** N/E/S/W, tap **End Turn**. Tapping the empty diamond behind a fighter still refunds.
 5. **Back to hub** on class select returns to the hub. It is still there.
 
 ## Headless check
