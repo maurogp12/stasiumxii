@@ -396,6 +396,7 @@ const SPELLS := {
 		"engine_on_connect": "spend_aegis",
 		"requires_aegis": 2,
 		"spend_aegis": 2,
+		# Locked: 2 owner Bastion turn-starts remaining (Burn tick family). Not every seat turn.
 		"wall_turns": 2,
 	},
 	AEGIS_BREAK: {
@@ -410,7 +411,8 @@ const SPELLS := {
 		"rolls": true,
 		"element": "earth",
 		"base_damage": 26,
-		"target": "enemy",
+		# Locked v0.6 "26D/body": every enemy in the range band, one roll.
+		"target": "burst",
 		"engine_on_connect": "clear_aegis",
 		"requires_aegis": 3,
 		"push_cells": 1,

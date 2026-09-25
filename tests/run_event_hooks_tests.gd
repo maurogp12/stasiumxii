@@ -274,15 +274,36 @@ func _test_ambush_origin_and_destination() -> void:
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [1],
+	})
+	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var shade_hit := _event_of(shade_cast.get("events", []), "hit")
+	eq(shade_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
+	eq(shade_hit.get("destination"), Vector2i(6, 2), "Shade Ambush destination is the empty back tile")
+	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "empty back stays 22 × 1.35 = 30")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"gloam_invisible": true,
+		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
+	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	var blocked_hit := _event_of(blocked.get("events", []), "hit")
-	eq(blocked_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
-	eq(blocked_hit.get("destination"), Vector2i(6, 1), "blocked back destination is the adjacent empty cell")
-	eq(bool(blocked_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
-	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 58, "blocked back stays 22 at facing ×1.00")
+	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
+	eq(_event_of(blocked.get("events", []), "hit").is_empty(), true, "blocked back emits no hit")
+	eq(_event_of(blocked.get("events", []), "reject").get("reason"), "no_landing", "blocked back reject reason is no_landing")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "blocked back does not teleport")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
+	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "blocked back keeps Invisible")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")
 
 	_host.reset_match({
 		"seed": 1,
@@ -296,15 +317,23 @@ func _test_ambush_origin_and_destination() -> void:
 		"fixture": true,
 	})
 	var packed_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "ambush", "to": prey}, 0)
+	var owner_packed: Dictionary = _host.pack_result(packed_cast, 0)
+	var owner_decoded: Variant = _IntentCodec.decode(owner_packed)
+	var owner_wire := _event_of((owner_decoded as Dictionary).get("events", []), "hit")
+	eq(owner_wire.get("origin"), gloam, "owner Ambush origin survives encode")
+	eq(owner_wire.get("destination"), Vector2i(6, 2), "owner Ambush destination survives encode")
 	var packed: Dictionary = _host.pack_result(packed_cast, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
-	eq(wire.get("origin"), gloam, "packed Ambush origin survives encode")
-	eq(wire.get("destination"), Vector2i(6, 2), "packed Ambush destination survives encode")
+	eq(wire.get("origin"), null, "opponent Ambush origin is redacted")
+	eq(wire.get("destination"), null, "opponent Ambush destination is redacted")
+	eq(bool(wire.get("invisible_retained", false)), true, "opponent Ambush hit still keeps Invisible")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 2), "authority Ambush landing stays on the sim")
 	_guest.apply_packed_state(packed)
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
-	eq(guest.get("origin"), gloam, "guest Ambush origin matches the host")
-	eq(guest.get("destination"), Vector2i(6, 2), "guest Ambush destination matches the host")
+	eq(guest.get("origin"), null, "guest Ambush origin stays redacted")
+	eq(guest.get("destination"), null, "guest Ambush destination stays redacted")
+	eq(_unit_in(_guest.snapshot(), 0).get("pos"), null, "guest snapshot redacts the Invisible landing")
 
 
 func _test_hold_line_cone_and_targets() -> void:
@@ -625,9 +654,13 @@ func _test_expiry_events() -> void:
 		"bastion_aegis": 2,
 	})
 	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
-	var wall_tick: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
-	eq(_expire(wall_tick.get("events", []), "wall").is_empty(), true, "wall does not expire after one turn start")
-	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "wall still ticks to 1")
+	var wall_enemy: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(_expire(wall_enemy.get("events", []), "wall").is_empty(), true, "wall does not expire on the enemy turn-start")
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 2, "enemy turn-start leaves Snap Wall at 2")
+	var wall_tick: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_expire(wall_tick.get("events", []), "wall").is_empty(), true, "wall does not expire on the first Bastion turn-start")
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "first Bastion turn-start ticks 2 to 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
 	var wall_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var wall_expire := _expire(wall_end.get("events", []), "wall")
 	eq(wall_expire.get("pos"), Vector2i(2, 1), "wall expiry names the blocked cell")
@@ -1012,16 +1045,23 @@ func _test_fade_and_heartstop_linger() -> void:
 		"fixture": true,
 	})
 	var host_fade: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "fade", "to": gloam}, 0)
+	var owner_fade: Dictionary = _host.pack_result(host_fade, 0)
+	var owner_fade_wire: Variant = _IntentCodec.decode(owner_fade)
+	var owner_cast := _event_of((owner_fade_wire as Dictionary).get("events", []), "cast")
+	eq(owner_cast.get("caster_cell"), gloam, "owner Fade pack keeps the cell")
+	eq(_unit_in((owner_fade_wire as Dictionary).get("snapshot", {}), 0).get("pos"), gloam, "owner snapshot keeps the Invisible cell")
 	var fade_packed: Dictionary = _host.pack_result(host_fade, 1)
 	var fade_wire: Variant = _IntentCodec.decode(fade_packed)
 	var wire_fade := _event_of((fade_wire as Dictionary).get("events", []), "cast")
 	eq(bool(wire_fade.get("invisible", false)), true, "packed Fade keeps invisible")
-	eq(wire_fade.get("caster_cell"), gloam, "packed Fade keeps the cell")
+	eq(wire_fade.get("caster_cell"), null, "opponent Fade pack redacts the cell")
 	_guest.apply_packed_state(fade_packed)
 	var guest_fade := _unit_in(_guest.snapshot(), 0)
 	eq(bool(guest_fade.get("invisible", false)), true, "guest snapshot keeps Invisible")
-	eq(guest_fade.get("pos"), gloam, "guest Invisible cell matches the host")
+	eq(guest_fade.get("pos"), null, "guest Invisible cell is redacted")
+	eq(bool(guest_fade.get("pos_hidden", false)), true, "guest Invisible pos is marked hidden")
 	eq(int(guest_fade.get("seat", -1)), 0, "guest Invisible seat matches the host")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "authority Fade cell stays on the sim")
 
 	_sim.reset_match({
 		"seed": 1,

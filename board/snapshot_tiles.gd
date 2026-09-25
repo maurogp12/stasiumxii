@@ -16,7 +16,9 @@ static func default_cell() -> Dictionary:
 	}
 
 
-static func from_snapshot(snap: Dictionary, board_size: int = 8) -> Dictionary:
+static func from_snapshot(snap: Dictionary, board_size: int = -1) -> Dictionary:
+	if board_size < 1:
+		board_size = int(snap.get("board_size", BoardSize.SHIP))
 	var out := {}
 	for y in range(board_size):
 		for x in range(board_size):
@@ -27,18 +29,18 @@ static func from_snapshot(snap: Dictionary, board_size: int = 8) -> Dictionary:
 	return out
 
 
-static func cell_record(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> Dictionary:
+static func cell_record(snap: Dictionary, cell: Vector2i, board_size: int = -1) -> Dictionary:
 	var tiles: Dictionary = from_snapshot(snap, board_size)
 	if tiles.has(cell):
 		return tiles[cell]
 	return default_cell()
 
 
-static func elevation_at(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> int:
+static func elevation_at(snap: Dictionary, cell: Vector2i, board_size: int = -1) -> int:
 	return normalize_elevation(cell_record(snap, cell, board_size).get("elevation", 0))
 
 
-static func terrain_at(snap: Dictionary, cell: Vector2i, board_size: int = 8) -> String:
+static func terrain_at(snap: Dictionary, cell: Vector2i, board_size: int = -1) -> String:
 	return normalize_terrain(cell_record(snap, cell, board_size).get("terrain_type", DEFAULT_TERRAIN))
 
 

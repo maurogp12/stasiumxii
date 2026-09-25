@@ -1440,6 +1440,8 @@ func _advance_hover_dest(from: Vector2i) -> Vector2i:
 
 
 func _as_cell(value: Variant) -> Vector2i:
+	if value == null:
+		return Vector2i(-1, -1)
 	if value is Vector2i:
 		return value
 	if value is Dictionary:

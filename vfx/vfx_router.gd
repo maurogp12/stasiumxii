@@ -42,6 +42,9 @@ static func assign_stacks(recipes: Array) -> Array:
 
 
 static func cell_of(value: Variant) -> Vector2i:
+	# A redacted Invisible cell is null. That is off the board, not tile (0,0).
+	if value == null:
+		return Vector2i(-1, -1)
 	if value is Vector2i:
 		return value
 	if value is Vector2:

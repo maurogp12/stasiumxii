@@ -15,7 +15,11 @@ const _MatchFlow := preload("res://backend/match_flow.gd")
 const _WalkBoard := preload("res://backend/walk_board.gd")
 const _TerrainDef := preload("res://backend/terrain_def.gd")
 const _ElevationCost := preload("res://backend/elevation_cost.gd")
-const BOARD_SIZE := 8
+const _BoardSize := preload("res://backend/board_size.gd")
+const _CellTagMap := preload("res://backend/cell_tag_map.gd")
+const _HitBands := preload("res://backend/hit_bands.gd")
+## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
+const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
 const START_HP := 80
@@ -83,20 +87,25 @@ var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
 ## Snap Wall cells. They block walk (and would block Gust) only while a
-## bastion is in the match. Each wall is one tile for wall_turns (card: 2).
-## Gust itself is not implemented (A03).
+## bastion is in the match. Each wall is one tile for wall_turns (Locked: 2
+## owner Bastion turn-starts, same family as Burn). Gust itself is not
+## implemented (A03). Walls exist only while Snap Wall placed them.
 var _snap_wall_cells: Array[Vector2i] = []
 var _snap_wall_state: Array = []
 var _shade_tokens: Array = []
 var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile integer elevation + terrain. #38 crop terrain + seeded noise z on reset.
-## Godot reads snapshot.tiles. skip_deploy uses the same map unless flat_board.
+## Per-tile integer elevation + terrain. Ship map loads Crosshaven tags when
+## the file size is 15×15. Proto 8 is the crop. Proto 12 is Mauro's token grid.
+## Godot reads snapshot.tiles. paint_only is not walk data.
 var _board = _WalkBoard.new()
-var _demo_map: String = _MatchFlow.PHASE_A_DEMO_MAP
+var _board_size: int = BOARD_SIZE
+var _paint_only: Dictionary = {}
+var _map_id: String = ""
+var _demo_map: String = ""
 var _elev_seed: int = 0
-var _elevation_gen: String = "seeded_noise"
+var _elevation_gen: String = "tags"
 var _turn_time_remaining: float = 0.0
 var _turn_time_limit: float = TURN_TIME_LIMIT
 var _turn_time_running: bool = false
@@ -120,20 +129,20 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_intent_log.clear()
 	_replica = false
 	_stop_turn_timer()
-	_board = _WalkBoard.new()
+	_board_size = _BoardSize.resolve(config)
+	_board = _WalkBoard.new(_board_size, _board_size)
+	_paint_only = {}
+	_map_id = ""
 	_demo_map = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = int(config.get("elev_seed", _seed))
 	_rng.seed = _seed
 	_elevation_gen = "flat"
-	if _wants_demo_map(config):
-		var noise_elev := _wants_noise_elev(config)
-		_MatchFlow.seed_phase_a_demo(_board, _elev_seed, noise_elev)
-		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
-		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+	_seed_play_board(config)
 	_apply_tile_overrides(config)
 	var flow_config := config.duplicate(true)
+	flow_config["board_size"] = _board_size
 	flow_config["elev_seed"] = _elev_seed
 	_flow.reset(_seed, flow_config)
 	if config.has("rolls"):
@@ -304,6 +313,23 @@ func legal_intents(seat: int) -> Array:
 				continue
 			out.append({"type": "cast", "spell": spell_id, "to": from + _facing_step(actor), "seat": seat})
 			continue
+		if target_kind == "burst":
+			# AoE versus Invisible is open. Do not offer a cast that would resolve it.
+			if not _burst_enemies(actor, def, true).is_empty():
+				continue
+			var burst_bodies: Array = _burst_enemies(actor, def, false)
+			if burst_bodies.is_empty():
+				continue
+			for burst_body in burst_bodies:
+				var burst_target: Dictionary = burst_body
+				out.append({
+					"type": "cast",
+					"spell": spell_id,
+					"to": burst_target["pos"],
+					"target_seat": burst_target["seat"],
+					"seat": seat,
+				})
+			continue
 		if target_kind == "ally" or target_kind == "any":
 			if _in_spell_range(def, from, from):
 				out.append({"type": "cast", "spell": spell_id, "to": from, "target_seat": seat, "seat": seat})
@@ -329,8 +355,7 @@ func legal_intents(seat: int) -> Array:
 				continue
 			if _cast_gate_reason(actor, enemy, def) != "":
 				continue
-			var range_dist := chebyshev(from, enemy["pos"])
-			if range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"]):
+			if _in_spell_range(def, from, enemy["pos"]):
 				out.append({
 					"type": "cast",
 					"spell": spell_id,
@@ -415,12 +440,14 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 				out.append(intent["to"])
 		return out
 	var from: Vector2i = actor["pos"]
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			if cell == from:
 				continue
 			var dist := _range_distance(def, from, cell)
+			if dist > _HitBands.MAX_DISTANCE:
+				continue
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
 				out.append(cell)
 	return out
@@ -439,7 +466,7 @@ func snapshot() -> Dictionary:
 		seat_classes[1] = str(class_ids[1])
 	return {
 		"rules_version": RULES_VERSION,
-		"board_size": BOARD_SIZE,
+		"board_size": _board_size,
 		"active_seat": _active_seat,
 		"turn_index": _turn_index,
 		"match_over": _match_over,
@@ -450,6 +477,8 @@ func snapshot() -> Dictionary:
 		"match_config": {
 			"seed": _seed,
 			"elev_seed": _elev_seed,
+			"board_size": _board_size,
+			"map_id": _map_id,
 			"classes": class_ids,
 			"seat_classes": seat_classes,
 		},
@@ -487,7 +516,9 @@ func snapshot() -> Dictionary:
 			"lava": 0,
 		},
 		"tiles": _board.snapshot_tiles(),
+		"paint_only": _paint_only_snapshot(),
 		"demo_map": _demo_map,
+		"map_id": _map_id,
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
@@ -543,7 +574,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Terrain is the #38 Mauro 8×8 crop (fixed). Elevation is smooth seeded noise z 0–3 on each New Match / reset_match (MatchConfig.seed / elev_seed). Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands / facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from Crosshaven tags when size is 15×15 (no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
@@ -580,18 +611,27 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	for event in snap.get("last_events", []):
 		if typeof(event) == TYPE_DICTIONARY:
 			_last_events.append((event as Dictionary).duplicate(true))
-	_elevation_gen = str(snap.get("elevation_gen", "seeded_noise"))
-	_demo_map = str(snap.get("demo_map", _MatchFlow.PHASE_A_DEMO_MAP))
+	_elevation_gen = str(snap.get("elevation_gen", "tags"))
+	_board_size = int(snap.get("board_size", BOARD_SIZE))
+	_map_id = str(snap.get("map_id", ""))
+	_demo_map = str(snap.get("demo_map", _map_id))
+	_paint_only = _paint_only_from_snap(snap.get("paint_only", {}))
 	_units.clear()
 	for raw in snap.get("units", []):
 		if typeof(raw) != TYPE_DICTIONARY:
 			continue
 		var unit: Dictionary = (raw as Dictionary).duplicate(true)
-		unit["pos"] = _as_cell(unit.get("pos", UNPLACED))
+		# Opponent wire sets pos to null when this unit is invisible to that seat.
+		# Null is not a tile. Store UNPLACED so the replica does not invent (0,0).
+		var raw_pos: Variant = unit.get("pos", UNPLACED)
+		if raw_pos == null:
+			unit["pos"] = UNPLACED
+		else:
+			unit["pos"] = _as_cell(raw_pos)
 		_units.append(unit)
 	if snap.has("shade_tokens"):
 		_sync_shade_flags()
-	_board = _WalkBoard.new()
+	_board = _WalkBoard.new(_board_size, _board_size)
 	_apply_snapshot_tiles(snap.get("tiles", {}))
 	_flow.apply_host_snapshot(snap)
 
@@ -675,13 +715,7 @@ static func last_hop_facing(from: Vector2i, to: Vector2i, fallback: String = "")
 
 
 static func hit_chance(distance: int) -> int:
-	if distance <= 1:
-		return 90
-	if distance <= 3:
-		return 80
-	if distance <= 5:
-		return 75
-	return 70
+	return _HitBands.chance(distance)
 
 
 ## Presentation helper only. Locked Chebyshev bands; no +5. Advance / walks: show=false.
@@ -721,8 +755,10 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		cell = _as_cell(dest)
 	var dist := chebyshev(actor["pos"], cell)
 	out["range"] = dist
-	out["hit_chance"] = hit_chance(dist)
-	if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+	var chance := hit_chance(dist)
+	out["hit_chance"] = chance
+	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
+	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
 		out["show"] = true
 	return out
 
@@ -784,9 +820,12 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["in_range"] = is_cardinal_step(from_cell, to_cell)
 	else:
 		var range_dist := _range_distance(def, from_cell, to_cell)
-		out["in_range"] = range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
-	if bool(def.get("rolls", false)):
-		out["hit_chance"] = hit_chance(chebyshev(from_cell, to_cell))
+		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
+		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
+		if bool(def.get("rolls", false)):
+			var chance := hit_chance(range_dist)
+			if chance >= 0:
+				out["hit_chance"] = chance
 
 	var target := _preview_target(to_cell, target_seat, spell_id)
 	var notes: Array = []
@@ -886,6 +925,12 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if _cone_enemies(actor, false).is_empty():
 			return "no_target"
 		return ""
+	if target_kind == "burst":
+		if not _burst_enemies(actor, def, true).is_empty():
+			return "open_can_wait"
+		if _burst_enemies(actor, def, false).is_empty():
+			return "no_target"
+		return ""
 	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and int(target.get("seat", -1)) == int(actor.get("seat", -2)))
 	if ally_cast:
 		if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) != int(actor.get("seat", -2)):
@@ -918,6 +963,10 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
+		SpellKits.AEGIS_BREAK:
+			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
+		SpellKits.SNAP_WALL:
+			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis.", "on_miss": "No roll."}
 		_:
 			return {"on_connect": "", "on_miss": ""}
 
@@ -1358,6 +1407,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var dist := chebyshev(actor["pos"], dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
+	if dist > _HitBands.MAX_DISTANCE:
+		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -1387,6 +1438,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
 	if target_kind == "cone":
 		return _resolve_hold_line(intent, actor, def, ap_cost, mp_cost)
+	if target_kind == "burst":
+		return _resolve_aegis_break(intent, actor, def, dest, dist, ap_cost, mp_cost)
 	if spell_id == SpellKits.AMBUSH:
 		var ambush_target := _living_unit_at(dest)
 		if ambush_target.is_empty() or int(ambush_target["seat"]) == int(actor["seat"]):
@@ -1492,10 +1545,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			miss_event["impact"] = impact_before
 		if spell_id == SpellKits.SHOULDER:
 			miss_event["pushed"] = false
-		if spell_id == SpellKits.AEGIS_BREAK:
-			# MISS spends 0 Aegis. The gate already required 3; the stack stays.
-			miss_event["aegis_spent"] = 0
-			miss_event["aegis"] = int(actor.get("aegis", 0))
 		_last_events.append(miss_event)
 		return _accept()
 
@@ -1606,10 +1655,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["impact_spent"] = engine_spent
 		hit_event["stun_applied"] = stun_applied
 		# Locked Stun (A′): blocks move + cast + face; auto end_turn on turn start.
-	if spell_id == SpellKits.AEGIS_BREAK:
-		hit_event["aegis_spent"] = engine_spent
-		hit_event["aegis"] = int(actor.get("aegis", 0))
-		hit_event["stacks_cleared"] = engine_spent > 0
 	if not push_result.is_empty():
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
@@ -1826,13 +1871,68 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 	return gate
 
 
+func _seed_play_board(config: Dictionary) -> void:
+	# flat_board: Ground z0. Proto 8: crop + noise. Proto 12: Mauro tokens.
+	# Ship 15: Crosshaven tags only when the file size matches. No invented cells.
+	# paint_only stays visual. An explicit cell_tags path uses the same hook.
+	if bool(config.get("flat_board", false)):
+		return
+	if _board_size == _BoardSize.PROTO:
+		var noise_elev := _wants_noise_elev(config)
+		_MatchFlow.seed_phase_a_demo(_board, _elev_seed, noise_elev)
+		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
+		_map_id = _demo_map
+		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+		return
+	if _board_size == _BoardSize.PROTO_12:
+		_MatchFlow.seed_mauro_12(_board)
+		_map_id = _MatchFlow.MAURO_PROTO_MAP
+		_demo_map = _map_id
+		_elevation_gen = "mauro"
+		return
+	var tags_path := str(config.get("cell_tags", ""))
+	if tags_path == "" and _board_size == _BoardSize.SHIP:
+		tags_path = _CellTagMap.DEFAULT_TAGS
+	if tags_path == "":
+		return
+	var tags: Dictionary = _CellTagMap.load_file(tags_path)
+	if not _CellTagMap.apply(_board, tags):
+		return
+	_paint_only = (tags.get("paint_only", {}) as Dictionary).duplicate(true)
+	_map_id = str(tags.get("map_id", ""))
+	_demo_map = _map_id
+	_elevation_gen = "tags"
+
+
+func _paint_only_snapshot() -> Dictionary:
+	var out := {}
+	for key in _paint_only.keys():
+		var props: Variant = _paint_only[key]
+		if props is Array:
+			out[key] = (props as Array).duplicate()
+	return out
+
+
+func _paint_only_from_snap(raw: Variant) -> Dictionary:
+	var out := {}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+	var paint: Dictionary = raw
+	for key in paint.keys():
+		var cell: Vector2i = key if key is Vector2i else _as_cell(key)
+		var props: Variant = paint[key]
+		if props is Array:
+			out[cell] = (props as Array).duplicate()
+	return out
+
+
 func _wants_demo_map(config: Dictionary) -> bool:
-	# Same stamped terrain on live + skip_deploy unless a fixture asks for flat Ground 0.
+	# Proto crop helper. The ship Crosshaven map does not use this flag.
 	if config.has("demo_map"):
 		return bool(config["demo_map"])
 	if bool(config.get("flat_board", false)):
 		return false
-	return true
+	return _board_size == _BoardSize.PROTO
 
 
 func _wants_noise_elev(config: Dictionary) -> bool:
@@ -1893,14 +1993,12 @@ func _apply_setup_overrides(config: Dictionary) -> void:
 		for cell in config["blockers"]:
 			_blocked_cells.append(_as_cell(cell))
 	if config.has("snap_walls"):
+		var wall_owner := -1
+		var bastion := _first_unit_of_class(SpellKits.CLASS_BASTION)
+		if not bastion.is_empty():
+			wall_owner = int(bastion["seat"])
 		for cell in config["snap_walls"]:
-			var pos := _as_cell(cell)
-			_snap_wall_cells.append(pos)
-			_snap_wall_state.append({
-				"pos": pos,
-				"turns": 2,
-				"owner_seat": -1,
-			})
+			_add_snap_wall(_as_cell(cell), 2, wall_owner)
 
 
 func _apply_bool_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
@@ -2023,6 +2121,8 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
 		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_decay_board_durations()
+	# Snap Wall is not in the every-seat decay. It ticks on the owner's turn start.
+	_tick_snap_walls(unit)
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
 		unit["intercept_used"] = false
@@ -2378,14 +2478,16 @@ func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
 
 func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
 	var dist := _range_distance(def, from_cell, to_cell)
+	if dist > _HitBands.MAX_DISTANCE:
+		return false
 	return dist >= int(def.get("min_range", 0)) and dist <= int(def.get("max_range", 0))
 
 
 func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:
 	var from_cell: Vector2i = actor["pos"]
 	var seat := int(actor["seat"])
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			if not _in_spell_range(def, from_cell, cell):
 				continue
@@ -2425,6 +2527,43 @@ func _hold_line_miss_rows(bodies: Array) -> Array:
 			"hit": false,
 			"damage": 0,
 			"exit_tax": int(target.get("exit_tax", 0)),
+		})
+	return rows
+
+
+## Enemies standing in the spell's Chebyshev range band. That band is the
+## Locked Aegis Break burst (card range 1–2, "per body"). invisible_only
+## selects invisible enemies; otherwise visible enemies only.
+func _burst_enemies(actor: Dictionary, def: Dictionary, invisible_only: bool) -> Array:
+	var out: Array = []
+	var origin: Vector2i = actor["pos"]
+	var lo := int(def.get("min_range", 1))
+	var hi := int(def.get("max_range", 2))
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			var dist := chebyshev(origin, cell)
+			if dist < lo or dist > hi:
+				continue
+			var unit := _living_unit_at(cell)
+			if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+				continue
+			var invisible := bool(unit.get("invisible", false))
+			if invisible_only == invisible:
+				out.append(unit)
+	return out
+
+
+func _aegis_break_miss_rows(bodies: Array) -> Array:
+	var rows: Array = []
+	for body in bodies:
+		var target: Dictionary = body
+		rows.append({
+			"target_seat": int(target["seat"]),
+			"cell": target["pos"],
+			"hit": false,
+			"damage": 0,
+			"pushed": false,
 		})
 	return rows
 
@@ -2800,6 +2939,213 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	return _accept()
 
 
+## Locked v0.6 Aegis Break. One roll for every enemy body in the range band.
+## HIT deals base damage per body, pushes 1, and clears the caster's whole
+## Aegis stack. MISS spends 0 Aegis and does not clear it.
+func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
+	if not _burst_enemies(actor, def, true).is_empty():
+		return _reject(intent, "open_can_wait", "REJECT — AoE versus Invisible is open (can-wait).")
+	var bodies: Array = _burst_enemies(actor, def, false)
+	if bodies.is_empty():
+		return _reject(intent, "no_target", "REJECT — %s needs an enemy in the burst (refund)." % def["name"])
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var chance := hit_chance(dist)
+	var roll := _roll_d100()
+	var connected := roll <= chance
+	_intent_log.append(intent)
+	if not connected:
+		_last_coach = "MISS — Aegis Break (%d vs %d%%). Spends 0 Aegis." % [roll, chance]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": SpellKits.AEGIS_BREAK,
+			"caster_cell": caster_cell,
+			"to": dest,
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"engine_refunded": true,
+			"damage": 0,
+			"bodies": 0,
+			"targets": _aegis_break_miss_rows(bodies),
+			"aegis_spent": 0,
+			"aegis": int(actor.get("aegis", 0)),
+			"stacks_cleared": false,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var cleared := _clear_resource(actor, "aegis")
+	var total := 0
+	var hit_bodies := 0
+	var targets: Array = []
+	var aim_row: Dictionary = {}
+	for body in bodies:
+		var target: Dictionary = body
+		var cell: Vector2i = target["pos"]
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
+		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult)
+		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+		var damage := int(mitigation["damage"])
+		target["hp"] = maxi(0, int(target["hp"]) - damage)
+		var push_result: Dictionary = {}
+		var burn_info: Dictionary = {}
+		if int(def.get("push_cells", 0)) > 0:
+			push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+		if bool(push_result.get("burn", false)):
+			burn_info = _apply_burn(target)
+		var row := {
+			"target_seat": int(target["seat"]),
+			"cell": cell,
+			"hit": true,
+			"damage": damage,
+			"facing_mult": facing_mult,
+			"back": is_back,
+		}
+		_stamp_push_fields(row, push_result, burn_info)
+		_stamp_mitigation(row, mitigation)
+		targets.append(row)
+		if aim_row.is_empty() or cell == dest:
+			aim_row = row
+		total += damage
+		hit_bodies += 1
+		_emit_push_followups(actor, target, push_result, burn_info)
+		_emit_immunity_spent(target, mitigation)
+		_check_death(target)
+		if _match_over:
+			break
+	_last_coach = "HIT Aegis Break %d across %d. Aegis cleared (%d)." % [total, hit_bodies, cleared]
+	var hit_event := {
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": SpellKits.AEGIS_BREAK,
+		"caster_cell": caster_cell,
+		"to": dest,
+		"range": dist,
+		"hit_chance": chance,
+		"roll": roll,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"base_damage": int(def.get("base_damage", 26)),
+		"damage": total,
+		"bodies": hit_bodies,
+		"targets": targets,
+		"element": def["element"],
+		"engine": "aegis",
+		"engine_spent": cleared,
+		"aegis_spent": cleared,
+		"aegis": int(actor.get("aegis", 0)),
+		"stacks_cleared": cleared > 0,
+		"coach": _last_coach,
+	}
+	if not aim_row.is_empty():
+		hit_event["target_seat"] = int(aim_row.get("target_seat", -1))
+		hit_event["facing_mult"] = float(aim_row.get("facing_mult", FRONT_SIDE_FACING))
+		hit_event["back"] = bool(aim_row.get("back", false))
+		_copy_push_fields(hit_event, aim_row)
+	_last_events.append(hit_event)
+	return _accept()
+
+
+func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dictionary) -> void:
+	if push_result.is_empty():
+		return
+	row["pushed"] = bool(push_result.get("moved", false))
+	row["push_from"] = push_result.get("from")
+	row["push_to"] = push_result.get("to")
+	row["push_attempted"] = push_result.get("attempted")
+	row["push_blocked"] = bool(push_result.get("blocked", false))
+	row["bounced"] = bool(push_result.get("bounced", false))
+	row["staggered"] = bool(push_result.get("staggered", false))
+	row["burn_applied"] = not burn_info.is_empty()
+
+
+func _copy_push_fields(hit_event: Dictionary, row: Dictionary) -> void:
+	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied"]:
+		if row.has(key):
+			hit_event[key] = row[key]
+
+
+func _emit_push_followups(actor: Dictionary, target: Dictionary, push_result: Dictionary, burn_info: Dictionary) -> void:
+	if push_result.is_empty():
+		return
+	if bool(push_result.get("blocked", false)):
+		_last_events.append({
+			"type": "push_blocked",
+			"locked": "Director Locked Shoulder — occupied dest is hard body-block (push_blocked)",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "Push blocked (occupied). Hard body-block — no bounce, no stagger.",
+		})
+	if bool(push_result.get("bounced", false)):
+		var mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			mp_note = " / %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "push_bounce",
+			"locked": "Director Locked Shoulder — OOB / truly blocked bounce + stagger (+2 Impact)",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"to": push_result.get("to"),
+			"reason": str(push_result.get("reason", "")),
+			"staggered": true,
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"coach": "Bounce (%s) + stagger %d HP%s." % [
+				str(push_result.get("reason", "")),
+				int(push_result.get("stagger_hp", 0)),
+				mp_note,
+			],
+		})
+		var stagger_mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			stagger_mp_note = ", %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "stagger",
+			"locked": "Director Locked Shoulder — stagger 4 HP + 1 MP if MP>=1",
+			"target_seat": target["seat"],
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"hp": int(target["hp"]),
+			"mp": int(target["mp"]),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "%s staggers (%d HP%s)." % [
+				target["name"],
+				int(push_result.get("stagger_hp", 0)),
+				stagger_mp_note,
+			],
+		})
+	if not burn_info.is_empty():
+		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
+		if bool(burn_info.get("refreshed", false)):
+			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
+		_last_events.append({
+			"type": "status",
+			"status": "burn",
+			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
+			"duration": BURN_DURATION,
+			"hp_per_tick": BURN_HP,
+			"refreshed": bool(burn_info.get("refreshed", false)),
+			"previous": int(burn_info.get("previous", 0)),
+			"target_seat": target["seat"],
+			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
+			"coach": burn_coach,
+		})
+
+
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	if not _cone_enemies(actor, true).is_empty():
@@ -2892,7 +3238,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
-		return _reject(intent, "no_landing", "REJECT — Ambush has no empty landing (refund).")
+		return _reject(intent, "no_landing", "REJECT — Ambush back tile is occupied or illegal (refund).")
 	var from_shade := not bool(actor.get("invisible", false))
 	var origin: Dictionary = {}
 	if from_shade:
@@ -2971,31 +3317,16 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
+## Locked destination is the target's empty back tile only.
+## Occupied, out of bounds, or otherwise illegal back rejects the cast.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
 	var facing := str(target.get("facing", "E"))
-	var back: Vector2i = target["pos"]
-	if FACING_VEC.has(facing):
-		back = target["pos"] - FACING_VEC[facing]
-	var caster_pos: Vector2i = actor["pos"]
-	if _ambush_cell_ok(back, caster_pos):
-		return {"ok": true, "cell": back, "backstab": true}
-	var best := UNPLACED
-	var best_d := 99
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
-			var cell := Vector2i(x, y)
-			if chebyshev(cell, target["pos"]) != 1:
-				continue
-			if not _ambush_cell_ok(cell, caster_pos):
-				continue
-			var gap := chebyshev(cell, back)
-			var better := best == UNPLACED or gap < best_d or (gap == best_d and (cell.x < best.x or (cell.x == best.x and cell.y < best.y)))
-			if better:
-				best = cell
-				best_d = gap
-	if best == UNPLACED:
+	if not FACING_VEC.has(facing):
 		return {"ok": false}
-	return {"ok": true, "cell": best, "backstab": false}
+	var back: Vector2i = target["pos"] - FACING_VEC[facing]
+	if not _ambush_cell_ok(back, actor["pos"]):
+		return {"ok": false}
+	return {"ok": true, "cell": back, "backstab": true}
 
 
 func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
@@ -3061,8 +3392,8 @@ func _apply_shade_setup(config: Dictionary) -> void:
 func _shade_setup_cell(unit: Dictionary) -> Vector2i:
 	var origin: Vector2i = unit["pos"]
 	var best := UNPLACED
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
+	for y in range(_board_size):
+		for x in range(_board_size):
 			var cell := Vector2i(x, y)
 			var dist := chebyshev(origin, cell)
 			if dist < 1 or dist > 2:
@@ -3144,6 +3475,7 @@ func _blocked_tile_snapshot() -> Array:
 			"y": cell.y,
 			"pos": cell,
 			"turns": int(wall.get("turns", 0)),
+			"owner_seat": int(wall.get("owner_seat", -1)),
 		})
 	return out
 
@@ -3203,17 +3535,6 @@ func _decay_board_durations() -> void:
 		else:
 			_emit_expire("shade", token["pos"], int(token.get("owner_seat", -1)))
 	_shade_tokens = shades
-	var walls: Array = []
-	_snap_wall_cells.clear()
-	for item in _snap_wall_state:
-		var wall: Dictionary = item
-		wall["turns"] = int(wall.get("turns", 0)) - 1
-		if int(wall["turns"]) > 0:
-			walls.append(wall)
-			_snap_wall_cells.append(wall["pos"])
-		else:
-			_emit_expire("wall", wall["pos"], int(wall.get("owner_seat", -1)))
-	_snap_wall_state = walls
 	var plants: Array = []
 	for item in _plant_tiles:
 		var tile: Dictionary = item
@@ -3224,6 +3545,32 @@ func _decay_board_durations() -> void:
 			_emit_expire("plant", tile["pos"], int(tile.get("owner_seat", -1)))
 	_plant_tiles = plants
 	_sync_shade_flags()
+
+
+## Gamedeveloper lock, Phase A. Snap Wall duration is 2 Bastion turn-starts of
+## the owner — the same tick family as Director Locked Burn (the affected
+## unit's turn start). An enemy turn-start does not consume a turn. Do not
+## shorten a fresh wall so it dies after one enemy turn.
+func _tick_snap_walls(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	var seat := int(unit.get("seat", -2))
+	var walls: Array = []
+	_snap_wall_cells.clear()
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		var owner := int(wall.get("owner_seat", -1))
+		if owner != seat:
+			walls.append(wall)
+			_snap_wall_cells.append(wall["pos"])
+			continue
+		wall["turns"] = int(wall.get("turns", 0)) - 1
+		if int(wall["turns"]) > 0:
+			walls.append(wall)
+			_snap_wall_cells.append(wall["pos"])
+		else:
+			_emit_expire("wall", wall["pos"], owner)
+	_snap_wall_state = walls
 
 
 func _tick_shield(unit: Dictionary) -> void:
@@ -3284,7 +3631,7 @@ func _is_empty(cell: Vector2i) -> bool:
 
 
 func _in_bounds(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.y >= 0 and cell.x < BOARD_SIZE and cell.y < BOARD_SIZE
+	return cell.x >= 0 and cell.y >= 0 and cell.x < _board_size and cell.y < _board_size
 
 
 func _as_cell(value: Variant) -> Vector2i:
