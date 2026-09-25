@@ -1,7 +1,8 @@
 extends Control
 class_name ClassSelect
 
-## Main scene. Hot-seat is P1, then P2, then the local duel on a random Koliseo map.
+## Koliseo screen. Hot-seat is P1, then P2, then the local duel on a random Koliseo map.
+## The mobile hub is the branch entry; this scene opens from the Koliseo door.
 ## Online pick calls NetSession.select_class (rpc_select_class once connected).
 ## Online stays on Crosshaven; the dedicated host does not share a map pick.
 ## Queue calls start_queue_client, which sends rpc_enqueue. Queue is the Find Match control.
@@ -11,6 +12,7 @@ class_name ClassSelect
 ## --class, --queue, --join, and --host skip this screen. --dedicated never shows it.
 
 const MAIN_SCENE := "res://main.tscn"
+const HUB_SCENE := "res://scenes/mobile_hub.tscn"
 const SEAT_P1 := Color("#2E5A3C")
 const SEAT_P2 := Color("#8B2E2E")
 const SEAT_P1_TEXT := Color("#B7E0C4")
@@ -197,6 +199,15 @@ func request_queue() -> Dictionary:
 	return result
 
 
+func return_to_hub() -> void:
+	if _phase == "dedicated" or _leaving:
+		return
+	if NetSession.is_online() or (NetSession.is_queue_client() and NetSession.is_client()):
+		NetSession.return_to_hotseat()
+	_leaving = true
+	get_tree().change_scene_to_file(HUB_SCENE)
+
+
 func go_back() -> void:
 	if _phase == "dedicated" or _leaving:
 		return
@@ -320,6 +331,14 @@ func _build() -> void:
 	_mode_buttons["online"] = _mode_button("Online", "online")
 	mode_row.add_child(_mode_buttons["hotseat"])
 	mode_row.add_child(_mode_buttons["online"])
+	var hub_button := Button.new()
+	hub_button.text = "Back to hub"
+	hub_button.custom_minimum_size = Vector2(160, 48)
+	hub_button.add_theme_font_size_override("font_size", 18)
+	hub_button.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
+	hub_button.add_theme_stylebox_override("normal", _hub_return_style())
+	hub_button.pressed.connect(return_to_hub)
+	mode_row.add_child(hub_button)
 
 	_prompt = Label.new()
 	_prompt.add_theme_font_size_override("font_size", 22)
@@ -668,6 +687,15 @@ func _card_style(selected: bool) -> StyleBoxFlat:
 	style.bg_color = Color(0.22, 0.2, 0.16) if selected else Color(0.15, 0.14, 0.13)
 	style.set_border_width_all(3 if selected else 1)
 	style.border_color = Color(0.93, 0.78, 0.42) if selected else Color(0.38, 0.34, 0.3)
+	style.set_corner_radius_all(8)
+	return style
+
+
+func _hub_return_style() -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.18, 0.16, 0.14)
+	style.border_color = Color(0.93, 0.78, 0.42)
+	style.set_border_width_all(1)
 	style.set_corner_radius_all(8)
 	return style
 
