@@ -42,11 +42,11 @@ func _draw() -> void:
 		outline.append(points[0])
 		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
 	else:
-		_draw_centered(tex)
+		_paint_terrain(tex)
 	for prop_name in _paint_props:
 		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
 		if prop_tex != null:
-			_draw_centered(prop_tex)
+			_paint_prop(prop_tex)
 	var label := drawn_label()
 	if label == "":
 		return
@@ -69,6 +69,20 @@ func set_paint_props(props: Array) -> void:
 func _draw_centered(tex: Texture2D) -> void:
 	var size := tex.get_size()
 	draw_texture(tex, Vector2(-size.x * 0.5, -size.y * 0.5))
+
+
+func _paint_terrain(tex: Texture2D) -> void:
+	var placed: Dictionary = _KoliseoArt.terrain_placement(tex)
+	if placed.is_empty():
+		_draw_centered(tex)
+		return
+	draw_texture_rect_region(tex, placed["dest"], placed["source"])
+
+
+## Props stand on the south tip of the diamond. paint_only never affects pathing.
+func _paint_prop(tex: Texture2D) -> void:
+	var size := tex.get_size()
+	draw_texture(tex, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 - size.y))
 
 
 func set_selected(value: bool) -> void:

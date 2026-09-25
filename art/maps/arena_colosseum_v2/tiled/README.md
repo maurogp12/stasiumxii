@@ -2,6 +2,15 @@
 
 Built for Mauro · Sep 24 2026 (ET). Ship size is **15×15**. **12×12 and 8×8 are proto only** (12×12 is the in-code Mauro token grid, not a Crosshaven pack). A tags rebuild in flight uses this same schema with `size: [15,15]`. The loader applies the file only when that size matches the board and does not invent cells.
 
+`tiles/*.png` are the painted dress the board draws (terrain diamonds plus paint-only props). `props_paint` / `paint_only` never block pathing. The other arenas are not this ship map.
+
+## See it in Godot
+
+1. Open `project.godot` in Godot 4.7+. The main scene is `res://scenes/class_select.tscn` (960×720).
+2. Press **F5 / Play**.
+3. Click **Hot-seat**, pick P1’s class, then P2’s class.
+4. The game opens `res://main.tscn`. `BoardView` paints Crosshaven from `crosshaven_15x15_tags.json` on the 64×32 diamonds. Middle-mouse pans.
+
 ## Orientation (locked)
 
 | Item | Value |

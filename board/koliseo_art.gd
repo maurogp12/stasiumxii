@@ -23,6 +23,7 @@ const _PROPS := {
 }
 
 static var _cache: Dictionary = {}
+static var _placement: Dictionary = {}
 
 
 static func terrain_texture(terrain: String, elevation: int) -> Texture2D:
@@ -39,6 +40,54 @@ static func terrain_texture(terrain: String, elevation: int) -> Texture2D:
 	if file == "":
 		return null
 	return _load(file)
+
+
+## Painted dress v1 stores the terrain diamond in the top-left half of the PNG.
+## The returned rects scale that half onto the 64×32 board diamond. Extra source
+## rows are the cliff and stay below the diamond. A full-bleed sheet returns empty
+## so the caller draws the texture centered.
+static func terrain_placement(tex: Texture2D) -> Dictionary:
+	if tex == null:
+		return {}
+	var key := tex.resource_path
+	if key == "":
+		key = str(tex.get_instance_id())
+	if _placement.has(key):
+		return _placement[key]
+	var placed := _measure_half_diamond(tex)
+	_placement[key] = placed
+	return placed
+
+
+static func _measure_half_diamond(tex: Texture2D) -> Dictionary:
+	var image := tex.get_image()
+	if image == null or image.is_empty():
+		return {}
+	var width := image.get_width()
+	var height := image.get_height()
+	if width < 2 or height < 1:
+		return {}
+	var half := width / 2
+	var content_bottom := -1
+	var right_used := false
+	for y in height:
+		for x in half:
+			if image.get_pixel(x, y).a > 0.03:
+				content_bottom = y
+				break
+		if right_used:
+			continue
+		for x in range(half, width):
+			if image.get_pixel(x, y).a > 0.03:
+				right_used = true
+				break
+	if right_used or content_bottom < 0:
+		return {}
+	var src_h := content_bottom + 1
+	return {
+		"source": Rect2(0, 0, half, src_h),
+		"dest": Rect2(-32.0, -16.0, float(half) * 2.0, float(src_h) * 2.0),
+	}
 
 
 static func prop_texture(prop_name: String) -> Texture2D:

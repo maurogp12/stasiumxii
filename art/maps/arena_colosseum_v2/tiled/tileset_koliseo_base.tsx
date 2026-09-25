@@ -71,7 +71,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="ruins"/>
   </properties>
-  <image source="tiles/prop_ruins.png" width="64" height="48"/>
+  <image source="tiles/prop_ruins.png" width="64" height="112"/>
  </tile>
  <tile id="9">
   <properties>
@@ -80,7 +80,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="well"/>
   </properties>
-  <image source="tiles/prop_well.png" width="64" height="48"/>
+  <image source="tiles/prop_well.png" width="64" height="80"/>
  </tile>
  <tile id="10">
   <properties>
@@ -89,7 +89,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="hay"/>
   </properties>
-  <image source="tiles/prop_hay.png" width="64" height="48"/>
+  <image source="tiles/prop_hay.png" width="64" height="72"/>
  </tile>
  <tile id="11">
   <properties>
@@ -98,7 +98,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="fence"/>
   </properties>
-  <image source="tiles/prop_fence.png" width="64" height="48"/>
+  <image source="tiles/prop_fence.png" width="64" height="64"/>
  </tile>
  <tile id="12">
   <properties>
@@ -107,7 +107,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="rubble"/>
   </properties>
-  <image source="tiles/prop_rubble.png" width="64" height="48"/>
+  <image source="tiles/prop_rubble.png" width="64" height="52"/>
  </tile>
  <tile id="13">
   <properties>
@@ -116,7 +116,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="rock_pillar"/>
   </properties>
-  <image source="tiles/prop_rock_pillar.png" width="64" height="48"/>
+  <image source="tiles/prop_rock_pillar.png" width="64" height="100"/>
  </tile>
  <tile id="14">
   <properties>
