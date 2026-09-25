@@ -37,7 +37,6 @@ extends Node2D
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 
-const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
@@ -47,6 +46,12 @@ const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
+## Playable band between the top chrome and the bottom action bar on 960×720.
+const PLAY_TOP := 140.0
+const PLAY_BOTTOM := 488.0
+const VIEW_W := 960.0
+const VIEW_H := 720.0
+const PAN_LIMIT := 220.0
 
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
@@ -67,6 +72,11 @@ var _resolve_hold_refresh: bool = false
 var _queued_net: bool = false
 var _queued_net_events: Array = []
 var _vfx: Node
+var _board_size: int = BoardSize.SHIP
+var _camera: Camera2D
+var _fit_camera_pos := Vector2.ZERO
+var _panning := false
+var _pan_origin := Vector2.ZERO
 
 
 func _ready() -> void:
@@ -82,17 +92,8 @@ func _ready() -> void:
 	_vfx.name = "VfxDirector"
 	add_child(_vfx)
 	_vfx.bind_board(self)
-
-	for y in range(BOARD_SIZE):
-		for x in range(BOARD_SIZE):
-			var tile := TILE_SCENE.instantiate() as BoardTile
-			tile.grid_position = Vector2i(x, y)
-			tile.apply_board_data("ground", 0.0)
-			tile.position = VISUAL_SORT.cell_to_local(tile.grid_position, 0.0)
-			tile.z_index = VISUAL_SORT.tile_z_index(tile.grid_position, 0.0)
-			$Tiles.add_child(tile)
-			tiles[tile.grid_position] = tile
-
+	_ensure_camera()
+	_rebuild_grid(BoardSize.SHIP)
 	call_deferred("_boot")
 
 
@@ -273,6 +274,28 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		# Esc returns to Walk. Right-click stays face and is not a cancel.
 		_return_to_walk()
+		return
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_MIDDLE:
+		var middle := event as InputEventMouseButton
+		_panning = middle.pressed
+		if middle.pressed:
+			_pan_origin = middle.position
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventMouseMotion and not _panning:
+		var hover := local_to_grid($Tiles.get_local_mouse_position())
+		if _in_bounds(hover):
+			_sync_aim_preview(hover)
+		else:
+			_sync_aim_preview()
+		return
+	if event is InputEventMouseMotion and _panning and _camera != null:
+		var motion := event as InputEventMouseMotion
+		var delta := motion.position - _pan_origin
+		_pan_origin = motion.position
+		_camera.position -= delta / _camera.zoom
+		_clamp_camera()
+		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseButton and event.pressed:
 		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
@@ -1073,7 +1096,7 @@ func _unit_from_seat(snap: Dictionary, seat: int) -> Dictionary:
 	return {}
 
 
-func _sync_aim_preview() -> void:
+func _sync_aim_preview(dest: Variant = null) -> void:
 	if _hud == null:
 		return
 	var spell_id := _hud.selected_spell()
@@ -1081,7 +1104,7 @@ func _sync_aim_preview() -> void:
 		_hud.set_aim_preview({})
 		return
 	var snap: Dictionary = _sim().snapshot()
-	_hud.set_aim_preview(_sim().aim_hit_preview(CombatHUD.kit_seat(snap), spell_id))
+	_hud.set_aim_preview(_sim().aim_hit_preview(CombatHUD.kit_seat(snap), spell_id, dest))
 
 
 func _tile_at(cell: Vector2i) -> BoardTile:
@@ -1110,7 +1133,10 @@ func _unit_from_event(snap: Dictionary, event: Dictionary) -> Dictionary:
 
 
 func _apply_board_tiles(snap: Dictionary) -> void:
-	_board_data = SNAPSHOT_TILES.from_snapshot(snap, BOARD_SIZE)
+	var size := int(snap.get("board_size", _board_size))
+	if size != _board_size or tiles.size() != size * size:
+		_rebuild_grid(size)
+	_board_data = SNAPSHOT_TILES.from_snapshot(snap, _board_size)
 	for cell in tiles.keys():
 		var rec: Dictionary = _board_data.get(cell, SNAPSHOT_TILES.default_cell())
 		var tile := _tile_at(cell)
@@ -1130,7 +1156,76 @@ func _cell_to_local(cell: Vector2i) -> Vector2:
 
 
 func _in_bounds(cell: Vector2i) -> bool:
-	return cell.x >= 0 and cell.y >= 0 and cell.x < BOARD_SIZE and cell.y < BOARD_SIZE
+	return cell.x >= 0 and cell.y >= 0 and cell.x < _board_size and cell.y < _board_size
+
+
+func _ensure_camera() -> void:
+	if _camera != null and is_instance_valid(_camera):
+		return
+	_camera = Camera2D.new()
+	_camera.name = "BoardCamera"
+	add_child(_camera)
+	_camera.make_current()
+
+
+func _rebuild_grid(size: int) -> void:
+	var next := size if size > 0 else BoardSize.SHIP
+	if next == _board_size and tiles.size() == next * next and not tiles.is_empty():
+		return
+	_board_size = next
+	for child in $Tiles.get_children():
+		$Tiles.remove_child(child)
+		child.free()
+	tiles.clear()
+	selected_tile = null
+	for y in range(next):
+		for x in range(next):
+			var tile := TILE_SCENE.instantiate() as BoardTile
+			tile.grid_position = Vector2i(x, y)
+			tile.apply_board_data("ground", 0.0)
+			tile.position = VISUAL_SORT.cell_to_local(tile.grid_position, 0.0)
+			tile.z_index = VISUAL_SORT.tile_z_index(tile.grid_position, 0.0)
+			$Tiles.add_child(tile)
+			tiles[tile.grid_position] = tile
+	_fit_board_camera()
+
+
+## Zoom the 15×15 diamond into the 960×720 play band. Cell size stays 64×32.
+func _fit_board_camera() -> void:
+	_ensure_camera()
+	var n := _board_size
+	if n < 1:
+		return
+	var half_w := 32.0
+	var half_h := 16.0
+	var lift := 20.0
+	var min_x := float(0 - (n - 1)) * 32.0 - half_w
+	var max_x := float(n - 1) * 32.0 + half_w
+	var min_y := -half_h - lift
+	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
+	var board_w := maxf(max_x - min_x, 1.0)
+	var board_h := maxf(max_y - min_y, 1.0)
+	var play_w := VIEW_W - 32.0
+	var play_h := PLAY_BOTTOM - PLAY_TOP
+	var zoom := minf(play_w / board_w, play_h / board_h)
+	zoom = clampf(zoom, 0.35, 1.25)
+	_camera.zoom = Vector2(zoom, zoom)
+	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
+	var play_center := Vector2(VIEW_W * 0.5, (PLAY_TOP + PLAY_BOTTOM) * 0.5)
+	var view_center := Vector2(VIEW_W * 0.5, VIEW_H * 0.5)
+	var world_center := global_position + center
+	var camera_world := world_center - (play_center - view_center) / zoom
+	_fit_camera_pos = camera_world - global_position
+	_camera.position = _fit_camera_pos
+
+
+func _clamp_camera() -> void:
+	if _camera == null:
+		return
+	var delta := _camera.position - _fit_camera_pos
+	delta.x = clampf(delta.x, -PAN_LIMIT, PAN_LIMIT)
+	delta.y = clampf(delta.y, -PAN_LIMIT, PAN_LIMIT)
+	_camera.position = _fit_camera_pos + delta
 
 
 func _as_cell(value: Variant) -> Vector2i:

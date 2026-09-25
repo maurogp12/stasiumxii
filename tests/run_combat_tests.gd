@@ -123,16 +123,19 @@ func _test_reset_and_turn_order() -> void:
 	eq(str(snap["open_elevation"]).contains("advance_climb"), false, "Advance stand-on is Locked, not Open")
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
-	eq(snap["demo_map"], "phase_a_fixed", "skip_deploy seeds the Director demo map")
-	eq(snap["elevation_gen"], "seeded_noise", "skip_deploy uses seeded noise elevation")
+	eq(snap["board_size"], 15, "ship board is 15×15")
+	eq(snap["demo_map"], "crosshaven_15", "skip_deploy seeds Crosshaven tags")
+	eq(snap["elevation_gen"], "tags", "skip_deploy uses tag elevation")
 	eq(snap["elev_seed"], 1, "elev_seed is stored on the snapshot")
 	eq(snap["match_config"]["seed"], 1, "MatchConfig.seed is stored for replay")
 	eq(snap["match_config"]["elev_seed"], 1, "MatchConfig.elev_seed is stored for replay")
 	eq(snap["advance_stand_on"], "walk_gates", "Advance reuses walk stand-on gates")
-	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "crop (0,0) is Ground")
-	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], _noise_elev(1, Vector2i(0, 0)), "crop (0,0) elevation is seeded noise")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is Ground")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) elevation is the tag")
+	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
 	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
-	eq(snap["tiles"].size(), 64, "snapshot lists all 8×8 tiles")
+	eq(snap["tiles"].size(), 225, "snapshot lists all 15×15 tiles")
+	eq(snap["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only is stored beside the walk tile")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
 	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
@@ -294,7 +297,8 @@ func _test_deploy_zones_and_rejects() -> void:
 	var oob: Dictionary = _sim.place_unit(0, Vector2i(-1, 2))
 	eq(oob["illegal"], true, "negative x is rejected")
 	eq(oob["reason"], "out_of_bounds", "OOB reason is out_of_bounds")
-	eq(_sim.place_unit(0, Vector2i(8, 2))["reason"], "out_of_bounds", "x=8 is out_of_bounds")
+	eq(_sim.place_unit(0, Vector2i(15, 2))["reason"], "out_of_bounds", "x=15 is out_of_bounds on the ship board")
+	eq(_sim.place_unit(0, Vector2i(8, 2))["reason"] != "out_of_bounds", true, "x=8 is inside the 15×15 board")
 	eq(_sim.place_unit(1, Vector2i(3, -1))["reason"], "out_of_bounds", "negative y is out_of_bounds")
 
 	var outside: Vector2i = _unclaimed_cell()
@@ -418,11 +422,23 @@ func _test_both_ready_starts_combat() -> void:
 
 
 func _test_kits_still_pass_after_deploy() -> void:
-	# Opening blobs are at least Chebyshev 3 apart. Walk into Strike range after Ready.
-	_sim.reset_match({"seed": 1, "rolls": [1, 1]})
-	var pair: Array = _closest_zone_pair()
-	var p1: Vector2i = pair[0]
-	var p2: Vector2i = pair[1]
+	# Explicit zones on Crosshaven ground. Opening is Chebyshev 4; 3 MP walks into Strike.
+	_sim.reset_match({
+		"seed": 1,
+		"rolls": [1, 1],
+		"deploy_zones": {
+			0: [
+				Vector2i(11, 6), Vector2i(12, 6), Vector2i(13, 6),
+				Vector2i(11, 8), Vector2i(12, 8), Vector2i(13, 8),
+			],
+			1: [
+				Vector2i(6, 6), Vector2i(7, 6), Vector2i(8, 6),
+				Vector2i(6, 5), Vector2i(7, 5), Vector2i(8, 5),
+			],
+		},
+	})
+	var p1 := Vector2i(11, 6)
+	var p2 := Vector2i(8, 6)
 	_sim.place_unit(0, p1)
 	_sim.place_unit(1, p2)
 	_sim.ready_seat(0)
@@ -550,29 +566,58 @@ func _test_client_path_ignored() -> void:
 
 
 func _test_phase_a_demo_map() -> void:
-	# Director-stamped Locked 8×8 crop terrain. Elevation is seeded noise on live + skip_deploy.
+	# Ship default is Crosshaven 15×15 tags. Proto board_size 8 keeps the crop + noise.
 	var live: Dictionary = _sim.reset_match({"seed": 1})
-	_assert_phase_a_demo_tiles(live, "live reset", 1)
 	eq(live["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
-	eq(live["demo_map"], "phase_a_fixed", "live snap stamps the demo map id")
-	eq(live["elevation_gen"], "seeded_noise", "live reset generates noise elevation")
+	eq(live["board_size"], 15, "live reset is the 15×15 ship board")
+	eq(live["demo_map"], "crosshaven_15", "live snap stamps Crosshaven")
+	eq(live["elevation_gen"], "tags", "live reset uses tag elevation")
 	eq(live["elev_seed"], 1, "live reset stores elev_seed")
+	eq(live["tiles"].size(), 225, "live reset lists 225 tiles")
+	var saw := {"ground": 0, "mud": 0, "water": 0, "lava": 0}
+	var elev_hi := 0
+	for cell in live["tiles"].keys():
+		var rec: Dictionary = live["tiles"][cell]
+		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
+		if int(rec["elevation"]) >= 1:
+			elev_hi += 1
+	eq(saw["ground"], 177, "Crosshaven ground count")
+	eq(saw["mud"], 30, "Crosshaven mud count")
+	eq(saw["water"], 18, "Crosshaven water count")
+	eq(saw["lava"], 0, "Crosshaven has no lava")
+	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
+	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "Crosshaven (1,1) is mud")
+	eq(live["tiles"][Vector2i(1, 1)]["walkable"], true, "Crosshaven (1,1) mud is walkable")
+	eq(live["tiles"][Vector2i(0, 4)]["terrain_type"], "water", "Crosshaven (0,4) is water")
+	eq(live["tiles"][Vector2i(7, 4)]["elevation"], 2, "Crosshaven (7,4) tag elevation is 2")
+	eq(live["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(live["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only stays off the walk tile")
+	var other: Dictionary = _sim.reset_match({"seed": 2})
+	eq(other["tiles"][Vector2i(7, 4)]["elevation"], 2, "a new seed does not retune tag elevation")
+	eq(other["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "a new seed keeps Crosshaven terrain")
 
-	var skip: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true})
-	_assert_phase_a_demo_tiles(skip, "skip_deploy", 1)
+	var proto: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8})
+	_assert_phase_a_demo_tiles(proto, "proto 8", 1)
+	eq(proto["demo_map"], "phase_a_fixed", "proto 8 stamps the crop map id")
+	eq(proto["elevation_gen"], "seeded_noise", "proto 8 generates noise elevation")
+
+	var skip: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true, "board_size": 8})
+	_assert_phase_a_demo_tiles(skip, "proto skip_deploy", 1)
 	eq(skip["units"][0]["pos"], Vector2i(1, 1), "skip_deploy fixture still uses (1,1)")
-	eq(skip["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "skip_deploy (1,1) stays Ground")
-	eq(skip["tiles"][Vector2i(1, 1)]["walkable"], true, "skip_deploy (1,1) stays walkable")
-	eq(skip["tiles"][Vector2i(6, 6)]["walkable"], true, "skip_deploy (6,6) stays walkable")
+	eq(skip["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "proto skip_deploy (1,1) stays Ground")
+	eq(skip["tiles"][Vector2i(1, 1)]["walkable"], true, "proto skip_deploy (1,1) stays walkable")
+	eq(skip["tiles"][Vector2i(6, 6)]["walkable"], true, "proto skip_deploy (6,6) stays walkable")
 
 	var flat: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
+	eq(flat["board_size"], 15, "flat_board still uses the ship size")
 	eq(flat["demo_map"], "", "flat_board skips the demo seed")
-	eq(flat["tiles"][Vector2i(4, 1)]["terrain_type"], "ground", "flat_board lava cell is Ground")
+	eq(flat["tiles"][Vector2i(4, 1)]["terrain_type"], "ground", "flat_board cell is Ground")
 	eq(flat["tiles"][Vector2i(4, 1)]["elevation"], 0, "flat_board elevation is 0")
 
-	# Deploy rejects a stamped lava cell when it sits in a zone.
+	# Deploy rejects a stamped lava cell when it sits in a proto crop zone.
 	_sim.reset_match({
 		"seed": 1,
+		"board_size": 8,
 		"deploy_zones": {
 			0: [
 				Vector2i(4, 0), Vector2i(3, 0), Vector2i(2, 0),
@@ -590,14 +635,52 @@ func _test_phase_a_demo_map() -> void:
 	eq(_sim.place_unit(0, Vector2i(2, 0))["ok"], true, "mud blob cell is still deployable (no climb tax)")
 	eq(_sim.tile_at(Vector2i(2, 0))["terrain_type"], "mud", "placed mud cell stays mud in snapshot")
 
-	# Random blobs still sample on 8×8 and leave a walkable place cell.
+	# Random blobs sample on the 15×15 ship board and leave a walkable place cell.
 	for seed in [1, 2, 3, 7, 11]:
 		_sim.reset_match({"seed": seed})
-		eq(_sim.snapshot()["board_size"], 8, "seed %d board stays 8×8" % seed)
+		eq(_sim.snapshot()["board_size"], 15, "seed %d board is 15×15" % seed)
 		eq(_sim.deploy_zone_cells(0).size(), 6, "seed %d seat 0 blob is 6 cells" % seed)
 		eq(_sim.deploy_zone_cells(1).size(), 6, "seed %d seat 1 blob is 6 cells" % seed)
 		truthy(_walkable_zone_count(0) > 0, "seed %d seat 0 still has a walkable blob cell" % seed)
 		truthy(_walkable_zone_count(1) > 0, "seed %d seat 1 still has a walkable blob cell" % seed)
+
+	var twelve: Dictionary = _sim.reset_match({"seed": 1, "board_size": 12, "skip_deploy": true})
+	eq(twelve["board_size"], 12, "explicit 12 stays a proto override")
+	eq(twelve["tiles"].size(), 144, "proto 12 is 144 open cells")
+	eq(twelve["demo_map"], "", "proto 12 does not load Crosshaven")
+	eq(twelve["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "proto 12 is open ground")
+	eq(twelve["tiles"][Vector2i(0, 0)]["elevation"], 0, "proto 12 elevation is 0")
+
+	# Tag elevation is walk authority. paint_only does not block.
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(7, 3),
+		"ironjaw_pos": Vector2i(0, 14),
+	})
+	eq(_sim.tile_at(Vector2i(7, 3))["elevation"], 1, "tag z at (7,3) is 1")
+	eq(_sim.tile_at(Vector2i(7, 4))["elevation"], 2, "tag z at (7,4) is 2")
+	var climb: Dictionary = _sim.submit({"type": "move", "to": Vector2i(7, 4)})
+	eq(climb["ok"], true, "tag climb of 1 is legal")
+	eq(climb["events"][0]["mp_spent"], 2, "ground + climb 1 costs 2 MP")
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 4),
+		"ironjaw_pos": Vector2i(14, 14),
+	})
+	var water: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 4)})
+	eq(water["ok"], true, "water hop is legal")
+	eq(water["events"][0]["mp_spent"], 2, "water dest costs 2 MP")
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(0, 1),
+		"ironjaw_pos": Vector2i(14, 14),
+	})
+	var ruins: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 0)})
+	eq(ruins["ok"], true, "paint_only ruins does not block the step")
+	eq(ruins["events"][0]["mp_spent"], 1, "ruins tile still costs ground MP")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
@@ -605,12 +688,16 @@ func _test_phase_a_demo_map() -> void:
 	truthy(flow.contains("PHASE_A_CROP_ORIGIN_COL := 2"), "MatchFlow stamps crop origin col 2")
 	truthy(flow.contains("MAURO_12X12"), "MatchFlow keeps Mauro's 12×12 source")
 	truthy(flow.contains("generate_noise_elevations"), "MatchFlow owns seeded noise elevation")
+	truthy(flow.contains("BOARD_SIZE := BoardSize.SHIP"), "MatchFlow ship size is BoardSize.SHIP")
 	var walk := FileAccess.get_file_as_string("res://backend/walk_board.gd")
 	truthy(walk.contains("func stand_on_gate"), "WalkBoard exposes the shared stand-on helper")
 	var readme := FileAccess.get_file_as_string("res://README.md")
 	truthy(readme.contains("row **2**, col **2**"), "README documents crop origin (2, 2)")
 	truthy(readme.contains("G3 G3 M3 W2 L2 W1 W1 M1"), "README documents the 8×8 ASCII crop")
 	truthy(readme.contains("seeded noise"), "README documents seeded noise elevation")
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	truthy(sim_src.contains("BOARD_SIZE := _BoardSize.SHIP"), "CombatSim BOARD_SIZE is the ship constant")
+	eq(sim_src.contains("BOARD_SIZE := 8"), false, "CombatSim does not hardcode BOARD_SIZE 8")
 
 
 func _assert_phase_a_demo_tiles(snap: Dictionary, label: String, seed: int) -> void:
@@ -972,12 +1059,12 @@ func _test_advance_stand_on_gates() -> void:
 
 
 func _test_noise_elevation_per_match() -> void:
-	# New Match / reset_match: new seed → new elev, same #38 crop terrain. Same seed replays.
-	var a: Dictionary = _sim.reset_match({"seed": 1})
-	var b: Dictionary = _sim.reset_match({"seed": 2})
-	var again: Dictionary = _sim.reset_match({"seed": 1})
-	eq(a["board_size"], 8, "noise elev stays on Locked 8×8")
-	eq(b["board_size"], 8, "second seed stays on Locked 8×8")
+	# Proto board_size 8: new seed → new elev, same crop terrain. Same seed replays.
+	var a: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8})
+	var b: Dictionary = _sim.reset_match({"seed": 2, "board_size": 8})
+	var again: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8})
+	eq(a["board_size"], 8, "noise elev stays on proto 8×8")
+	eq(b["board_size"], 8, "second seed stays on proto 8×8")
 	eq(a["elevation_gen"], "seeded_noise", "seed 1 uses seeded noise")
 	eq(b["elevation_gen"], "seeded_noise", "seed 2 uses seeded noise")
 	eq(a["elev_seed"], 1, "seed 1 stores elev_seed 1")
@@ -1004,25 +1091,30 @@ func _test_noise_elevation_per_match() -> void:
 	eq(elev_diff, true, "different seeds produce different elevation")
 	eq(elev_same_replay, true, "reset with the same seed reproduces elevation")
 
-	var pinned: Dictionary = _sim.reset_match({"seed": 1, "elev_seed": 7})
+	var pinned: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8, "elev_seed": 7})
 	eq(pinned["seed"], 1, "elev_seed override leaves match seed 1")
 	eq(pinned["elev_seed"], 7, "MatchConfig.elev_seed override is stored")
 	eq(int(pinned["tiles"][Vector2i(0, 0)]["elevation"]), _noise_elev(7, Vector2i(0, 0)), "elev_seed override drives noise")
 	eq(pinned["tiles"][Vector2i(4, 0)]["terrain_type"], "lava", "elev_seed override keeps crop lava")
 
-	var crop: Dictionary = _sim.reset_match({"seed": 1, "crop_elev": true})
+	var crop: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8, "crop_elev": true})
 	eq(crop["elevation_gen"], "crop", "crop_elev skips noise")
 	eq(int(crop["tiles"][Vector2i(0, 0)]["elevation"]), 3, "crop_elev keeps #38 z at (0,0)")
 
 	var live_a: Dictionary = _sim.reset_match({})
 	var live_b: Dictionary = _sim.reset_match({})
-	eq(live_a["elevation_gen"], "seeded_noise", "New Match without a seed still uses noise")
+	eq(live_a["board_size"], 15, "New Match without a size is 15×15")
+	eq(live_a["elevation_gen"], "tags", "New Match without a seed uses Crosshaven tags")
+	eq(live_a["demo_map"], "crosshaven_15", "New Match loads Crosshaven")
 	eq(live_a.has("elev_seed"), true, "New Match stores elev_seed")
+	eq(int(live_a["tiles"][Vector2i(7, 4)]["elevation"]), 2, "New Match keeps tag z at (7,4)")
+	eq(int(live_b["tiles"][Vector2i(7, 4)]["elevation"]), int(live_a["tiles"][Vector2i(7, 4)]["elevation"]), "two New Matches share tag elevation")
 	eq(live_a["seed"] == live_b["seed"], false, "New Match generates a new seed")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	eq(flow.contains("12×12") or flow.contains("12x12") or flow.contains("MAURO_MAP_SIZE := 12"), true, "12×12 stays crop source only")
-	eq(flow.contains("BOARD_SIZE := 8"), true, "board stays Locked 8×8")
+	eq(flow.contains("BOARD_SIZE := BoardSize.SHIP"), true, "ship board size is BoardSize.SHIP")
+	eq(flow.contains("BOARD_SIZE := 8"), false, "MatchFlow does not hardcode an 8×8 ship board")
 
 
 func _test_walk_facing_follows_hops() -> void:
@@ -1305,13 +1397,119 @@ func _test_kestrel_cannot_advance() -> void:
 
 
 func _test_hit_bands() -> void:
+	var locked := {
+		1: 90, 2: 80, 3: 80, 4: 75, 5: 75,
+		6: 70, 7: 70, 8: 70,
+		9: 65, 10: 60, 11: 55, 12: 50, 13: 45, 14: 40,
+	}
 	eq(_sim.hit_chance(1), 90, "melee 90%")
 	eq(_sim.hit_chance(2), 80, "short 80%")
 	eq(_sim.hit_chance(3), 80, "short 80% at 3")
 	eq(_sim.hit_chance(4), 75, "mid 75% at 4")
 	eq(_sim.hit_chance(5), 75, "mid 75% at 5")
 	eq(_sim.hit_chance(6), 70, "long 70% at 6")
+	eq(_sim.hit_chance(7), 70, "long 70% at 7")
 	eq(_sim.hit_chance(8), 70, "long 70% at 8")
+	eq(_sim.hit_chance(9), 65, "Chebyshev 9 is Locked 65%")
+	eq(_sim.hit_chance(10), 60, "Chebyshev 10 is Locked 60%")
+	eq(_sim.hit_chance(11), 55, "Chebyshev 11 is Locked 55%")
+	eq(_sim.hit_chance(12), 50, "Chebyshev 12 is Locked 50%")
+	eq(_sim.hit_chance(12) == 70, false, "dist 12 is not the old ≥6 clamp of 70%")
+	eq(_sim.hit_chance(13), 45, "Chebyshev 13 is Locked 45%")
+	eq(_sim.hit_chance(14), 40, "Chebyshev 14 is Locked 40%")
+	eq(_sim.hit_chance(15), -1, "Chebyshev 15 has no invented hit percent")
+	eq(_sim.hit_chance(0), 90, "self dist 0 shares the melee 90% band")
+	var bands = load("res://backend/hit_bands.gd")
+	for dist in [1, 2, 4, 6, 9, 10, 11, 12, 13, 14]:
+		eq(bands.chance(dist), int(locked[dist]), "HitBands breakpoint %d" % dist)
+		eq(_sim.hit_chance(dist), bands.chance(dist), "resolve hit_chance matches HitBands at %d" % dist)
+		eq(CombatHUD.aim_hit_caption(int(locked[dist])), "HIT %d%%" % int(locked[dist]), "aim caption for dist %d" % dist)
+	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	eq(sim_src.contains("range_band_open"), false, "9–14 open-band reject is gone")
+	eq(sim_src.contains("BOARD_SIZE := 8"), false, "CombatSim BOARD_SIZE is not 8")
+	var size_src := FileAccess.get_file_as_string("res://backend/board_size.gd")
+	eq(size_src.contains("SHIP := 15"), true, "ship board constant is 15")
+	eq(size_src.contains("range_band_open"), false, "BoardSize no longer soft-blocks 9–14")
+
+	_assert_aim_matches_resolve(1, SpellKits.STRIKE, 90)
+	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 80)
+	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
+	_assert_aim_matches_resolve(6, SpellKits.DETONATE, 70)
+	for dist in [9, 10, 11, 12, 13, 14]:
+		_assert_far_band_chrome(dist, int(locked[dist]))
+
+
+func _assert_aim_matches_resolve(dist: int, spell_id: String, chance: int) -> void:
+	var ironjaw_acts := spell_id == SpellKits.STRIKE or spell_id == SpellKits.SHOULDER or spell_id == SpellKits.CRUSH
+	var kestrel_pos := Vector2i(dist, 0) if ironjaw_acts else Vector2i(0, 0)
+	var ironjaw_pos := Vector2i(0, 0) if ironjaw_acts else Vector2i(dist, 0)
+	var target := kestrel_pos if ironjaw_acts else ironjaw_pos
+	var seat := 1 if ironjaw_acts else 0
+	var cfg := {
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": kestrel_pos,
+		"ironjaw_pos": ironjaw_pos,
+	}
+	if spell_id == SpellKits.DETONATE:
+		cfg["ironjaw_marks"] = 1
+	_sim.reset_match(cfg)
+	if ironjaw_acts:
+		_sim.submit({"type": "end_turn"})
+	var preview: Dictionary = _sim.aim_hit_preview(seat, spell_id, target)
+	eq(preview["show"], true, "aim chrome shows Locked %% at dist %d" % dist)
+	eq(preview["range"], dist, "aim range is Chebyshev %d" % dist)
+	eq(preview["hit_chance"], chance, "aim chrome Locked %% at dist %d" % dist)
+	eq(preview["hit_chance"], _sim.hit_chance(dist), "aim chrome matches hit_chance at dist %d" % dist)
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_aim_preview(preview)
+	eq(hud._aim_hit_label.text, "HIT %d%%" % chance, "HUD aim label shows Locked %% at dist %d" % dist)
+	eq(hud._aim_hit_label.visible, true, "HUD aim label is visible at dist %d" % dist)
+	hud.free()
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": spell_id, "to": target})
+	eq(result["ok"], true, "in-range cast at dist %d resolves" % dist)
+	eq(result["events"][0]["hit_chance"], chance, "resolve uses Locked %% at dist %d" % dist)
+	eq(result["events"][0]["hit_chance"], preview["hit_chance"], "aim chrome and resolve agree at dist %d" % dist)
+
+
+func _assert_far_band_chrome(dist: int, chance: int) -> void:
+	var target := Vector2i(dist, 0)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": target,
+	})
+	var preview: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT, target)
+	eq(preview["range"], dist, "far aim range is Chebyshev %d" % dist)
+	eq(preview["show"], true, "aim chrome shows Locked %% at dist %d" % dist)
+	eq(preview["hit_chance"], chance, "aim chrome Locked %% at dist %d" % dist)
+	eq(preview["hit_chance"], _sim.hit_chance(dist), "aim chrome matches resolve table at dist %d" % dist)
+	var cast_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), target, 1)
+	eq(cast_preview["hit_chance"], chance, "preview_cast uses the same Locked %% at dist %d" % dist)
+	eq(cast_preview["in_range"], false, "Mark Shot max range still rejects dist %d" % dist)
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_aim_preview(preview)
+	eq(hud._aim_hit_label.text, "HIT %d%%" % chance, "HUD shows Locked %% at dist %d" % dist)
+	hud.free()
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": target})
+	eq(result["illegal"], true, "dist %d Mark Shot is illegal" % dist)
+	eq(result["reason"], "out_of_range", "dist %d reject is ordinary out_of_range" % dist)
+	eq(str(result["events"][0]["coach"]).contains("open"), false, "dist %d coach does not call the band open" % dist)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"board_size": 20,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(15, 0),
+	})
+	eq(_sim.hit_chance(15), -1, "dist 15 still has no invented percent")
+	var past: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT, Vector2i(15, 0))
+	eq(past["show"], false, "aim chrome hides a percent past 14")
+	eq(int(past["hit_chance"]) < 0, true, "aim preview does not invent a percent past 14")
 
 
 func _test_class_kits() -> void:
@@ -1865,8 +2063,9 @@ func _test_mark_shot_range_highlights() -> void:
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
-	for y in range(8):
-		for x in range(8):
+	var board_n := int(_sim.snapshot().get("board_size", 15))
+	for y in range(board_n):
+		for x in range(board_n):
 			var cell := Vector2i(x, y)
 			if cell == origin:
 				continue

@@ -17,13 +17,13 @@ const ORTHO: Array[Vector2i] = [
 	Vector2i(0, -1),
 ]
 
-var width: int = 8
-var height: int = 8
+var width: int = BoardSize.SHIP
+var height: int = BoardSize.SHIP
 var terrains: Dictionary = {}
 var tiles: Dictionary = {}
 
 
-func _init(board_width: int = 8, board_height: int = 8) -> void:
+func _init(board_width: int = BoardSize.SHIP, board_height: int = BoardSize.SHIP) -> void:
 	width = board_width
 	height = board_height
 	terrains = _TerrainDef.catalog()
