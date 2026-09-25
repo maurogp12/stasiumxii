@@ -257,6 +257,10 @@ func _timer_expired(result: Dictionary) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if BoardTile.consume_debug_label_key(event):
+		for tile in tiles.values():
+			(tile as BoardTile).queue_redraw()
+		return
 	if _busy or _view_locked:
 		return
 	if event.is_action_pressed("ui_cancel"):
