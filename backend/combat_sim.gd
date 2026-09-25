@@ -2762,6 +2762,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		origin = _first_shade(actor)
 		if origin.is_empty():
 			return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+	# v0.6: origin is Gloam's own cell while Invisible, otherwise the Shade cell.
+	var origin_cell: Vector2i = caster_cell if not from_shade else origin["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance := hit_chance(dist)
@@ -2782,6 +2784,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			"roll": roll,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
+			"origin": origin_cell,
 			"teleported": false,
 			"shade_retained": bool(actor.get("shade", false)),
 			"invisible_retained": bool(actor.get("invisible", false)),
@@ -2813,6 +2816,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"roll": roll,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
+		"origin": origin_cell,
+		"destination": cell,
 		"teleported": true,
 		"backstab": backstab,
 		"facing_mult": facing_mult,

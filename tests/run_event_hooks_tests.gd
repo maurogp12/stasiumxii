@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_caster_cell_on_hit_and_miss()
 	_test_caster_cell_on_cast_events()
 	_test_caster_cell_survives_host_pack()
+	_test_ambush_origin_and_destination()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -211,6 +212,91 @@ func _test_caster_cell_survives_host_pack() -> void:
 	var guest_events: Array = _guest.snapshot().get("last_events", [])
 	eq(_event_of(guest_events, "hit").get("caster_cell"), Vector2i(4, 3), "guest snapshot last_events keep caster_cell")
 	eq(int(_guest.snapshot()["units"][0]["hp"]), int(_sim.snapshot()["units"][0]["hp"]), "guest HP matches the host")
+
+
+func _test_ambush_origin_and_destination() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(5, 2)
+	var shade_cell := Vector2i(0, 0)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"gloam_shade": true,
+		"rolls": [1],
+	})
+	var shades_before := int(_sim.snapshot()["units"][0]["shades"])
+	var invisible_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var hit := _event_of(invisible_hit.get("events", []), "hit")
+	eq(hit.get("origin"), gloam, "Invisible Ambush origin is Gloam's own cell")
+	eq(hit.get("destination"), Vector2i(6, 2), "Invisible Ambush destination is the empty back tile")
+	eq(bool(hit.get("teleported", false)), true, "Invisible Ambush hit teleported")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back stays 22 × 1.35 = 30")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"rolls": [100],
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var miss := _event_of(missed.get("events", []), "miss")
+	eq(miss.get("origin"), shade_cell, "Shade Ambush miss origin is the Shade cell")
+	eq(miss.has("destination"), false, "Ambush miss emits no destination")
+	eq(bool(miss.get("teleported", true)), false, "Ambush miss teleported is false")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still stays put")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 1, "Ambush miss still keeps the Shade")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Ambush miss still deals 0")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"rolls": [1],
+		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
+	})
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var blocked_hit := _event_of(blocked.get("events", []), "hit")
+	eq(blocked_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
+	eq(blocked_hit.get("destination"), Vector2i(6, 1), "blocked back destination is the adjacent empty cell")
+	eq(bool(blocked_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 58, "blocked back stays 22 at facing ×1.00")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"rolls": [1],
+		"fixture": true,
+	})
+	var packed_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "ambush", "to": prey}, 0)
+	var packed: Dictionary = _host.pack_result(packed_cast, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
+	eq(wire.get("origin"), gloam, "packed Ambush origin survives encode")
+	eq(wire.get("destination"), Vector2i(6, 2), "packed Ambush destination survives encode")
+	_guest.apply_packed_state(packed)
+	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
+	eq(guest.get("origin"), gloam, "guest Ambush origin matches the host")
+	eq(guest.get("destination"), Vector2i(6, 2), "guest Ambush destination matches the host")
 
 
 func _event_of(events: Variant, kind: String) -> Dictionary:
