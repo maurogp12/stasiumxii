@@ -51,6 +51,7 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
+const SHADE_MARKER := preload("res://board/shade_marker.gd")
 const TOUCH := preload("res://ui/touch_adapter.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
@@ -69,6 +70,9 @@ var _booted: bool = false
 var _busy: bool = false
 var _clock_expired_pending: bool = false
 var _walk_tween: Tween
+## Seat whose body is mid hop. Refresh must not snap it to the destination.
+var _hop_seat: int = -1
+var _shade_markers: Dictionary = {}
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
@@ -193,10 +197,10 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if swallowed:
 		_maybe_drain_net()
 		return
-	if CombatHUD.should_play_walk_hops(events):
-		var path_event := _path_event(events)
-		if not path_event.is_empty():
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+		if CombatHUD.should_play_walk_hops(events):
+			var path_event := _path_event(events)
+			if not path_event.is_empty():
+				await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -677,7 +681,7 @@ func _submit(intent: Dictionary) -> void:
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -786,8 +790,9 @@ func _active_is_stunned(snap: Dictionary = {}) -> bool:
 	return CombatHUD.unit_is_stunned(_active_unit(snap))
 
 
-func _play_walk(seat: int, path: Array) -> void:
+func _play_walk(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	_busy = true
+	_hop_seat = seat
 	_hud.set_locked(true)
 	var snap: Dictionary = _sim().snapshot()
 	_hud.render(snap, [])
@@ -797,9 +802,10 @@ func _play_walk(seat: int, path: Array) -> void:
 		var cell: Vector2i = _as_cell(step)
 		if tiles.has(cell):
 			_tile_at(cell).set_highlight("move")
-	await _animate_path(seat, path)
+	await _animate_path(seat, path, origin)
 	if not is_inside_tree():
 		return
+	_hop_seat = -1
 	_hud.set_locked(false)
 	_busy = false
 	_refresh()
@@ -808,13 +814,18 @@ func _play_walk(seat: int, path: Array) -> void:
 		_on_turn_clock_expired()
 
 
-func _animate_path(seat: int, path: Array) -> void:
+func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# The sim has already moved the unit. Put the body back on the departure tile
+	# before the first hop, or a refresh snaps it and the walk reads as a teleport.
 	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
-	# The step arc is sprite-local and lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	# The step arc lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	if _in_bounds(origin):
+		pawn.position = _cell_to_local(origin)
+		_set_pawn_cell(pawn, origin)
 	pawn.hold_idle()
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
@@ -987,6 +998,7 @@ func _refresh() -> void:
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
+	_sync_shade_markers(snap)
 	_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
@@ -1021,9 +1033,47 @@ func _apply_units(snap: Dictionary) -> void:
 			continue
 		var raw_events: Variant = snap.get("last_events", [])
 		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
+		var hopping := _busy and seat == _hop_seat
+		var kept_cell := pawn.grid_position
+		var kept_pos := pawn.position
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
-		pawn.position = _cell_to_local(cell)
-		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+		if hopping:
+			pawn.grid_position = kept_cell
+			pawn.position = kept_pos
+		else:
+			pawn.position = _cell_to_local(cell)
+			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+
+
+## Drop Shade's body lives on the board. The VFX pool was a shader puddle the
+## phone never showed, while the HUD and log still updated.
+func _sync_shade_markers(snap: Dictionary) -> void:
+	var live: Dictionary = {}
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = token
+		var cell := _as_cell(rec.get("pos", Vector2i(int(rec.get("x", -1)), int(rec.get("y", -1)))))
+		if not _in_bounds(cell):
+			continue
+		live[cell] = int(rec.get("turns", 3))
+	var stale: Array = []
+	for cell in _shade_markers.keys():
+		if not live.has(cell):
+			stale.append(cell)
+	for cell in stale:
+		var gone: Node = _shade_markers[cell]
+		if gone != null and is_instance_valid(gone):
+			gone.queue_free()
+		_shade_markers.erase(cell)
+	for cell in live.keys():
+		var marker: Node = _shade_markers.get(cell)
+		if marker == null or not is_instance_valid(marker):
+			marker = SHADE_MARKER.new()
+			$Units.add_child(marker)
+			_shade_markers[cell] = marker
+		var at: Vector2i = cell
+		marker.call("show_token", _cell_to_local(at), VISUAL_SORT.unit_z_index(at, _elev_at(at)) + 1, int(live[cell]))
 
 
 func _paint_highlights() -> void:

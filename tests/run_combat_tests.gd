@@ -2319,6 +2319,7 @@ func _test_mark_shot_range_highlights() -> void:
 	truthy(view.contains('set_highlight("range")'), "enemy-spell ring uses range highlight")
 	truthy(view.contains("empty_tile"), "empty-tile spells such as Drop Shade paint a range ring")
 	truthy(view.contains("_stamp_range_rim"), "Drop Shade keeps a gold rim on the max-range shell")
+	truthy(view.contains("_sync_shade_markers"), "a resolved Drop Shade places a board token")
 	truthy(view.contains("kind == \"move\" and spell_id == \"\""), "walk highlights stay off while a spell is selected")
 	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
 	truthy(tile_src.contains("\"range\""), "tiles have a range highlight color")

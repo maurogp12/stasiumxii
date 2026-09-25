@@ -179,7 +179,7 @@ func play_view_plan(plan: Dictionary) -> float:
 			tw.tween_interval(sec)
 		elif kind == "attack":
 			_begin_body_strip("attack", sec)
-			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
+			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO), float(step.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX))), 0.0, 1.0, sec)
 			tw.tween_callback(_end_body_strip)
 		elif kind == "cast":
 			tw.tween_callback(_end_body_strip)
@@ -448,9 +448,9 @@ func _sample_hop(t: float) -> void:
 		_active_strip.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 
 
-func _sample_attack(t: float, dir: Vector2) -> void:
+func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 	_ride_chrome(Vector2.ZERO)
-	_place_body(VIEW_MOTION.attack_offset(t, dir))
+	_place_body(VIEW_MOTION.attack_offset(t, dir, reach))
 
 
 func _sample_cast(t: float) -> void:

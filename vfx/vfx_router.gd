@@ -432,9 +432,7 @@ static func _cast_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
 	var out: Array = []
 	var cell := cell_of(event.get("to", Vector2i.ZERO))
-	if spell_id == "drop_shade" and event.has("to"):
-		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.0, "figure"))
-	elif spell_id == "plant" and event.has("to"):
+	if spell_id == "plant" and event.has("to"):
 		out.append(_ring(cell, VfxPalette.BASTION, true, 0.0, 0.0, "sigil"))
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
 	return out

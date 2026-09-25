@@ -119,7 +119,7 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	if _suppressed() or snapshot.is_empty():
 		return
 	var wanted: Dictionary = {}
-	_want_tokens(wanted, snapshot.get("shade_tokens", []), "shade", VfxPalette.GLOAM_RIM, 0.35)
+	# Shade bodies are board markers (board_view). A shader ring here was invisible on device.
 	_want_tokens(wanted, snapshot.get("plant_tiles", []), "plant", VfxPalette.BASTION, 0.0)
 	_want_tokens(wanted, snapshot.get("blocked_tiles", []), "wall", VfxPalette.BASTION_BLACK, 0.0)
 	for unit in snapshot.get("units", []):
@@ -538,7 +538,7 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 		var key := "%s:%d,%d" % [kind, cell.x, cell.y]
 		var style := ""
 		if kind == "shade":
-			style = "figure"
+			continue
 		elif kind == "plant":
 			style = "sigil"
 		elif kind == "wall":

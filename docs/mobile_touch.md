@@ -44,7 +44,7 @@ Hub doors stay 72px. Class select still has **Back to hub**.
 
 Mobile track only. This does not change kits, hit bands, AP/MP, marks, or CombatSim.
 
-A legal walk hops one orthogonal tile at a time (`Pawn.WALK_HOP_SEC`, 0.25s). The pawn node eases along the path. The hop (`ViewMotion.hop_offset`, `ViewMotion.HOP_PX`, about one iso tile tall) lifts the sprite and the name together, and the seat ring stays on the tile. The crest stretches and the landing squashes, because Batch 1 walk strips are not in the repo. Advance stays a teleport snap and does not hop.
+A legal walk hops one orthogonal tile at a time (`Pawn.WALK_HOP_SEC`, 0.25s). The pawn node eases along the path. Playback puts the body back on the departure tile first, so a snapshot refresh cannot skip the arc. The hop (`ViewMotion.hop_offset`, `ViewMotion.HOP_PX`, about one iso tile tall) lifts the sprite and the name together, and the seat ring stays on the tile. The crest stretches and the landing squashes, because Batch 1 walk strips are not in the repo. Drop Shade's token is a board marker (`board/shade_marker.gd`), not a shader pool. Advance stays a teleport snap and does not hop.
 
 On spell commit the caster plays the same short body motion for a hit and a miss: about a 6px lunge for melee (`ViewMotion.ATTACK_LUNGE_PX`) or the cast wind-up otherwise. The target recoils or lifts only when the spell connects. Existing impact VFX still fire on their own timing. One action locks input for at most 0.6s.
 

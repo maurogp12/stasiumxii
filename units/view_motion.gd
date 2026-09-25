@@ -34,6 +34,9 @@ const ATTACK_OUT_SEC := 0.14
 const ATTACK_BACK_SEC := 0.12
 ## Melee commit lunge. About 6px so the body reads without sliding off the tile.
 const ATTACK_LUNGE_PX := 6.0
+## Ambush blinks. The shared 6px lunge is a few screen pixels after arena zoom,
+## so the phone only saw the BACKSTAB number. This reach is the commit, view-only.
+const AMBUSH_LUNGE_PX := 36.0
 
 const CAST_RISE_SEC := 0.16
 const CAST_HOLD_SEC := 0.10
@@ -112,6 +115,8 @@ static func caster_motion(spell_id: String) -> String:
 		return ""
 	if str(def.get("move_mode", "")) == "teleport":
 		return ""
+	if spell_id == SpellKits.AMBUSH:
+		return "attack"
 	var max_range := int(def.get("max_range", 99))
 	var damage := int(def.get("base_damage", 0))
 	var target := str(def.get("target", ""))
@@ -178,6 +183,8 @@ static func chrome_plans(events: Array) -> Dictionary:
 				var plan: Dictionary = plans.get(seat, {})
 				if kind == "attack":
 					plan["attack"] = true
+					if spell_id == SpellKits.AMBUSH:
+						plan["reach"] = AMBUSH_LUNGE_PX
 				elif not bool(plan.get("attack", false)):
 					plan["cast"] = true
 				plans[seat] = plan
@@ -221,7 +228,12 @@ static func steps_for(plan: Dictionary) -> Array:
 	if delay:
 		steps.append({"kind": "wait", "sec": REACTION_DELAY})
 	if attack:
-		steps.append({"kind": "attack", "sec": attack_sec(), "dir": plan.get("aim", Vector2.ZERO)})
+		steps.append({
+			"kind": "attack",
+			"sec": attack_sec(),
+			"dir": plan.get("aim", Vector2.ZERO),
+			"reach": float(plan.get("reach", ATTACK_LUNGE_PX)),
+		})
 	elif cast:
 		steps.append({"kind": "cast", "sec": cast_sec()})
 	if hit:
@@ -263,10 +275,11 @@ static func hop_scale(t: float) -> Vector2:
 	)
 
 
-static func attack_offset(t: float, dir: Vector2) -> Vector2:
+static func attack_offset(t: float, dir: Vector2, reach: float = -1.0) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
 	var aim := _unit(dir)
+	var dist := ATTACK_LUNGE_PX if reach < 0.0 else reach
 	var total := attack_sec()
 	var time := clampf(t, 0.0, 1.0) * total
 	var k := 0.0
@@ -274,7 +287,7 @@ static func attack_offset(t: float, dir: Vector2) -> Vector2:
 		k = _ease_out(time / ATTACK_OUT_SEC)
 	else:
 		k = 1.0 - _ease_in((time - ATTACK_OUT_SEC) / ATTACK_BACK_SEC)
-	return aim * ATTACK_LUNGE_PX * k
+	return aim * dist * k
 
 
 static func cast_pose(t: float) -> Dictionary:
