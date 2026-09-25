@@ -281,7 +281,7 @@ const SPELLS := {
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 1,
-		"max_range": 2,
+		"max_range": 6,
 		"rolls": false,
 		"element": "neutral",
 		"target": "empty_tile",

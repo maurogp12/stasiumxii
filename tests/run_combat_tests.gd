@@ -70,6 +70,7 @@ func _run() -> void:
 	_test_turn_clock_auto_end_turn()
 	_test_turn_clock_ticks_during_hops()
 	_test_detonate_gates_and_damage()
+	_test_drop_shade_range()
 	_test_detonate_miss_retains_marks()
 	_test_shoulder_push_and_impact()
 	_test_shoulder_bounce_stagger_locked()
@@ -2523,7 +2524,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["damage_per_mark"]), 6, "Detonate stays 6 per Mark")
 	eq(str(SpellKits.spell(SpellKits.DETONATE).get("range_mode", "")), "chebyshev", "Detonate range is Chebyshev")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["min_range"]), 1, "Drop Shade min range stays 1")
-	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 2, "Drop Shade max range stays 2")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 6, "Drop Shade max range 6 Chebyshev")
 
 	# No Marks on the target: reject + refund. A01 Locked: Marks live on the target.
 	_sim.reset_match({
@@ -2630,6 +2631,73 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["base_damage"], 12, "consumes the Mark just applied")
 	eq(_unit(1)["marks"], 0, "same-turn consume clears the target stack")
 	eq(_unit(0)["ap"], 1, "2+3 AP spent")
+
+
+func _test_drop_shade_range() -> void:
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "Drop Shade costs 1 AP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "Drop Shade costs 0 MP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["min_range"]), 1, "Drop Shade min range stays 1")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 6, "Drop Shade max range 6 Chebyshev")
+	eq(str(SpellKits.spell(SpellKits.DROP_SHADE).get("range_mode", "")), "chebyshev", "Drop Shade range is Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["shade_turns"]), 3, "Drop Shade token lasts 3 turns")
+	eq(bool(SpellKits.spell(SpellKits.DROP_SHADE)["rolls"]), false, "Drop Shade does not roll")
+	eq(SpellKits.SHADE_CAP, 2, "Shade stack cap stays 2")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.DROP_SHADE)), "range 1–6", "Drop Shade range_text is 1–6")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range stays 7")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range stays 4")
+
+	for dist in [3, 4, 5, 6]:
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [Vector2i(0, 0), Vector2i(14, 14)],
+		})
+		var dest := Vector2i(dist, 0)
+		eq(_sim.chebyshev(Vector2i(0, 0), dest), dist, "Drop Shade fixture is Chebyshev %d" % dist)
+		eq(_has_legal_cast_to(0, "drop_shade", dest), true, "Drop Shade at range %d is legal" % dist)
+		var result: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": dest, "seat": 0})
+		eq(result["ok"], true, "Drop Shade at range %d resolves" % dist)
+		eq(int(_unit(0)["shades"]), 1, "Drop Shade places one token at range %d" % dist)
+		eq(int(_unit(0)["ap"]), 5, "Drop Shade spends 1 AP at range %d" % dist)
+		eq(int(_unit(0)["mp"]), 3, "Drop Shade spends 0 MP at range %d" % dist)
+		var tokens: Array = _sim.snapshot()["shade_tokens"]
+		eq(tokens.size(), 1, "one Shade token at range %d" % dist)
+		eq(tokens[0].get("pos"), dest, "Shade token sits on the dest at range %d" % dist)
+		eq(int(tokens[0].get("turns", 0)), 3, "Shade token lasts 3 turns at range %d" % dist)
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(0, 0), Vector2i(14, 14)],
+	})
+	eq(_has_legal_cast_to(0, "drop_shade", Vector2i(7, 0)), false, "Drop Shade range 7 is not offered")
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(7, 0), "seat": 0})
+	eq(far["illegal"], true, "Drop Shade range 7 is illegal")
+	eq(far["reason"], "out_of_range", "range 7 reject is out_of_range")
+	eq(int(_unit(0)["ap"]), 6, "out-of-range Drop Shade refunds AP")
+	eq(int(_unit(0)["mp"]), 3, "out-of-range Drop Shade refunds MP")
+	eq(int(_unit(0)["shades"]), 0, "out-of-range Drop Shade places no token")
+	eq(_sim.snapshot()["shade_tokens"].size(), 0, "range 7 leaves the board empty of Shades")
+
+	var preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(6, 0))
+	eq(preview["min_range"], 1, "Drop Shade preview min 1")
+	eq(preview["max_range"], 6, "Drop Shade preview max 6")
+	eq(preview["range_text"], "range 1–6", "Drop Shade preview_cast range_text is 1–6")
+	eq(preview["in_range"], true, "Chebyshev 6 is in Drop Shade range")
+	eq(preview["ap"], 1, "Drop Shade preview costs 1 AP")
+	eq(preview["mp"], 0, "Drop Shade preview costs 0 MP")
+	var card := SpellTooltip.card_text(preview)
+	truthy(card.contains("range 1–6"), "Drop Shade card names range 1–6")
+	eq(card.contains("range 1–2"), false, "Drop Shade card drops the old 1–2 band")
+	var far_preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(7, 0))
+	eq(far_preview["in_range"], false, "Chebyshev 7 is outside Drop Shade preview range")
+	eq(far_preview["max_range"], 6, "Drop Shade preview max stays 6 at dist 7")
 
 
 func _test_detonate_miss_retains_marks() -> void:
@@ -5276,6 +5344,13 @@ func _walk_seat_toward(seat: int, target: Vector2i, want: int) -> void:
 func _has_legal_cast(seat: int, spell_id: String) -> bool:
 	for intent in _sim.legal_intents(seat):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
+			return true
+	return false
+
+
+func _has_legal_cast_to(seat: int, spell_id: String, dest: Vector2i) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id and intent.get("to") == dest:
 			return true
 	return false
 
