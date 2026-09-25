@@ -59,6 +59,8 @@ var _impact_frozen: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
+const COSMETIC_STRIPS := preload("res://units/cosmetic_strips.gd")
+const SEAT_COSMETICS := preload("res://data/seat_cosmetics.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -116,6 +118,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	burning = burn_remaining > 0
 	_sync_sprite()
 	_sync_idle()
+	# Spawn binds the seat's gender × palette bank (stock Batch-1 when the flag is off).
+	_ensure_motion_strips()
 
 
 func burn_badge_label() -> String:
@@ -863,10 +867,17 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 	_prepare_strip_pose(strip)
 
 
+func _library_frames() -> SpriteFrames:
+	var spec: Dictionary = SEAT_COSMETICS.for_seat(seat, class_id)
+	if spec.is_empty():
+		return STRIP_LIBRARY.frames_for(class_id)
+	return COSMETIC_STRIPS.frames_for(spec)
+
+
 func _ensure_motion_strips() -> void:
 	if class_id == "":
 		return
-	var frames := STRIP_LIBRARY.frames_for(class_id)
+	var frames := _library_frames()
 	var existing := get_node_or_null(BODY_STRIP_PATH) as AnimatedSprite2D
 	if existing != null and existing.sprite_frames != null:
 		if not bool(existing.get_meta("_from_strip_library", false)):

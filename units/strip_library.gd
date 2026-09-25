@@ -83,6 +83,34 @@ static func grok_png_path(class_id: String, kind: String, sheet: String) -> Stri
 	return "%s%s_%s_%s.png" % [GROK_DIR, cls, kind, sheet]
 
 
+## One lettered clip from a horizontal strip. No-op when the file is missing or the anim exists.
+static func add_png_clip(built: SpriteFrames, path: String, kind: String, face: String) -> bool:
+	if built == null:
+		return false
+	var res := try_load(path)
+	if not (res is Texture2D):
+		return false
+	var letter := letter_for_sheet(face)
+	if letter == "":
+		return false
+	return _install_clip(built, "%s_%s" % [kind, letter], _clip_from_texture(res as Texture2D, kind))
+
+
+static func copy_clip(dst: SpriteFrames, src: SpriteFrames, anim: String) -> bool:
+	if dst == null or src == null or anim == "":
+		return false
+	_copy_anim(dst, src, StringName(anim), StringName(anim))
+	return dst.has_animation(anim) and dst.get_frame_count(anim) > 0
+
+
+## Drop the empty default clip and bake compressed atlases. Null when nothing plays.
+static func finish_bank(built: SpriteFrames) -> SpriteFrames:
+	if built == null or not _has_playable(built):
+		return null
+	_drop_default(built)
+	return _bake_compressed_atlases(built)
+
+
 ## Batch-1 export_2x PNGs (Kestrel and Ironjaw walk + attack, four letters).
 static func batch1_png_paths() -> Array[String]:
 	var out: Array[String] = []

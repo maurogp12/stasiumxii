@@ -41,3 +41,5 @@ textures/vram_compression/import_etc2_astc=true
 
 debug/show_tile_labels=false
 view/reduce_shake=false
+; Gender + palette tray and prebaked strips. Set false to yank (Kestrel / Ironjaw).
+cosmetics/gender_palette=true
