@@ -58,8 +58,8 @@ Exit code 0. Godot aligned the APK, signed it, and printed `Verifying APK...` th
 | Vulkan features | declared, `required=false` |
 | Renderer metadata | `org.godotengine.rendering.method=mobile` |
 | Packed main scene | `res://scenes/mobile_hub.tscn` |
-| Size | 38013548 bytes |
-| SHA-256 | `4ca38035e7e5dc41db0ef9bd1aff1c82d796f73883c0dc82caab328dea4fc860` |
+| Size | 38021740 bytes |
+| SHA-256 | `e22995639faa9f62475816bc5620c9ba06134bdd1bb21449519d6c620eec030d` |
 
 `/builds/` is gitignored, so the APK is not in the commit. The sideload file is the cloud-agent artifact `stasiumxii-mobile-debug.apk` (same bytes). Godot also wrote `builds/android/stasiumxii-mobile-debug.apk.idsig` next to the APK. That idsig is not required to sideload.
 
