@@ -296,15 +296,23 @@ func _test_ambush_origin_and_destination() -> void:
 		"fixture": true,
 	})
 	var packed_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "ambush", "to": prey}, 0)
+	var owner_packed: Dictionary = _host.pack_result(packed_cast, 0)
+	var owner_decoded: Variant = _IntentCodec.decode(owner_packed)
+	var owner_wire := _event_of((owner_decoded as Dictionary).get("events", []), "hit")
+	eq(owner_wire.get("origin"), gloam, "owner Ambush origin survives encode")
+	eq(owner_wire.get("destination"), Vector2i(6, 2), "owner Ambush destination survives encode")
 	var packed: Dictionary = _host.pack_result(packed_cast, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
-	eq(wire.get("origin"), gloam, "packed Ambush origin survives encode")
-	eq(wire.get("destination"), Vector2i(6, 2), "packed Ambush destination survives encode")
+	eq(wire.get("origin"), null, "opponent Ambush origin is redacted")
+	eq(wire.get("destination"), null, "opponent Ambush destination is redacted")
+	eq(bool(wire.get("invisible_retained", false)), true, "opponent Ambush hit still keeps Invisible")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 2), "authority Ambush landing stays on the sim")
 	_guest.apply_packed_state(packed)
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
-	eq(guest.get("origin"), gloam, "guest Ambush origin matches the host")
-	eq(guest.get("destination"), Vector2i(6, 2), "guest Ambush destination matches the host")
+	eq(guest.get("origin"), null, "guest Ambush origin stays redacted")
+	eq(guest.get("destination"), null, "guest Ambush destination stays redacted")
+	eq(_unit_in(_guest.snapshot(), 0).get("pos"), null, "guest snapshot redacts the Invisible landing")
 
 
 func _test_hold_line_cone_and_targets() -> void:
@@ -1012,16 +1020,23 @@ func _test_fade_and_heartstop_linger() -> void:
 		"fixture": true,
 	})
 	var host_fade: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "fade", "to": gloam}, 0)
+	var owner_fade: Dictionary = _host.pack_result(host_fade, 0)
+	var owner_fade_wire: Variant = _IntentCodec.decode(owner_fade)
+	var owner_cast := _event_of((owner_fade_wire as Dictionary).get("events", []), "cast")
+	eq(owner_cast.get("caster_cell"), gloam, "owner Fade pack keeps the cell")
+	eq(_unit_in((owner_fade_wire as Dictionary).get("snapshot", {}), 0).get("pos"), gloam, "owner snapshot keeps the Invisible cell")
 	var fade_packed: Dictionary = _host.pack_result(host_fade, 1)
 	var fade_wire: Variant = _IntentCodec.decode(fade_packed)
 	var wire_fade := _event_of((fade_wire as Dictionary).get("events", []), "cast")
 	eq(bool(wire_fade.get("invisible", false)), true, "packed Fade keeps invisible")
-	eq(wire_fade.get("caster_cell"), gloam, "packed Fade keeps the cell")
+	eq(wire_fade.get("caster_cell"), null, "opponent Fade pack redacts the cell")
 	_guest.apply_packed_state(fade_packed)
 	var guest_fade := _unit_in(_guest.snapshot(), 0)
 	eq(bool(guest_fade.get("invisible", false)), true, "guest snapshot keeps Invisible")
-	eq(guest_fade.get("pos"), gloam, "guest Invisible cell matches the host")
+	eq(guest_fade.get("pos"), null, "guest Invisible cell is redacted")
+	eq(bool(guest_fade.get("pos_hidden", false)), true, "guest Invisible pos is marked hidden")
 	eq(int(guest_fade.get("seat", -1)), 0, "guest Invisible seat matches the host")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "authority Fade cell stays on the sim")
 
 	_sim.reset_match({
 		"seed": 1,

@@ -505,6 +505,10 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 	var snap: Dictionary = result.get("snapshot", {})
 	if snap.is_empty() and host_sim != null:
 		snap = host_sim.snapshot()
+	var viewed := _redact_invisible_for_viewer(snap, result.get("events", []), viewer_seat)
+	snap = viewed["snapshot"]
+	var events: Array = viewed["events"]
+	var hidden_cells: Array = viewed["hidden_cells"]
 	var legal0: Array = []
 	var legal1: Array = []
 	var deploy0: Array[Vector2i] = []
@@ -516,16 +520,215 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 		if viewer_seat != 0:
 			legal1 = host_sim.legal_intents(1)
 			deploy1 = host_sim.legal_deploy_cells(1)
+	if viewer_seat == HOST_SEAT:
+		legal0 = _redact_hidden_intent_cells(legal0, hidden_cells)
+	elif viewer_seat == GUEST_SEAT:
+		legal1 = _redact_hidden_intent_cells(legal1, hidden_cells)
 	return IntentCodec.encode({
 		"ok": bool(result.get("ok", false)),
 		"illegal": bool(result.get("illegal", false)),
 		"reason": str(result.get("reason", "")),
-		"events": result.get("events", []),
+		"events": events,
 		"snapshot": decorate_snapshot(snap),
 		"legal_intents": {0: legal0, 1: legal1},
 		"legal_deploy_cells": {0: deploy0, 1: deploy1},
 		"viewer_seat": viewer_seat,
 	}) as Dictionary
+
+
+## Per-viewer wire copy. Does not mutate CombatSim.
+## viewer_seat < 0 (hot-seat, listen-host local cache) stays full-fidelity.
+## For seat 0 or 1, a unit with invisible=true and a different seat loses its tile:
+## pos is null, pos_hidden is true, x/y are omitted. Event fields that name that
+## unit's tile (current or the cell it just left) become null; path and cone are
+## omitted. range and hit_chance become null when the event locates that unit.
+## Coach text replaces those coordinates with (?,?). Shade / wall / plant tokens
+## stay, including their cells. legal_intents omit `to` when it was the hidden tile.
+func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: int) -> Dictionary:
+	var out_snap: Dictionary = snap.duplicate(true) if not snap.is_empty() else {}
+	var out_events: Array = events.duplicate(true)
+	var hidden_cells: Array = []
+	if viewer_seat != HOST_SEAT and viewer_seat != GUEST_SEAT:
+		return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
+	var hidden_seats := {}
+	var secret: Array = []
+	for unit in out_snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = unit
+		if not bool(rec.get("invisible", false)):
+			continue
+		var seat := int(rec.get("seat", -1))
+		if seat == viewer_seat:
+			continue
+		hidden_seats[seat] = true
+		_remember_cells(hidden_cells, rec.get("pos", null))
+		_remember_cells(secret, rec.get("pos", null))
+		rec["pos"] = null
+		rec.erase("x")
+		rec.erase("y")
+		rec["pos_hidden"] = true
+	if hidden_seats.is_empty():
+		return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
+	_redact_events(out_events, hidden_seats, hidden_cells, secret)
+	var last: Variant = out_snap.get("last_events", [])
+	if last is Array:
+		_redact_events(last, hidden_seats, hidden_cells, secret)
+	if out_snap.has("coach"):
+		out_snap["coach"] = _scrub_coach(str(out_snap.get("coach", "")), secret)
+	return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
+
+
+func _redact_events(events: Array, hidden_seats: Dictionary, hidden_cells: Array, secret: Array) -> void:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		_redact_event(event, hidden_seats, hidden_cells, secret)
+
+
+func _redact_event(event: Dictionary, hidden_seats: Dictionary, hidden_cells: Array, secret: Array) -> void:
+	var kind := str(event.get("type", ""))
+	var status := str(event.get("status", ""))
+	# Board tokens stay public even when their owner is invisible.
+	if kind == "expire" and status in ["shade", "wall", "plant"]:
+		return
+	var actor := int(event.get("seat", -999))
+	var target := int(event.get("target_seat", -999))
+	var owner := int(event.get("owner_seat", -999))
+	var actor_hidden := hidden_seats.has(actor)
+	var target_hidden := hidden_seats.has(target)
+	var spell := str(event.get("spell", ""))
+	if actor_hidden:
+		for key in ["caster_cell", "origin", "destination", "path", "cone"]:
+			_null_cell_field(event, key, secret)
+		if kind in ["move", "advance", "place", "reposition"]:
+			_null_cell_field(event, "from", secret)
+			_null_cell_field(event, "to", secret)
+		if spell == SpellKits.AMBUSH and bool(event.get("teleported", false)):
+			_null_cell_field(event, "to", secret)
+	if spell == SpellKits.AMBUSH:
+		if bool(event.get("teleported", false)):
+			if target_hidden:
+				_null_cell_field(event, "from", secret)
+		elif target_hidden:
+			_null_cell_field(event, "to", secret)
+	elif target_hidden:
+		_null_cell_field(event, "to", secret)
+	if target_hidden:
+		for key in ["push_from", "push_to", "push_attempted", "pos", "cell"]:
+			_null_cell_field(event, key, secret)
+		if kind in ["push_blocked", "push_bounce"]:
+			_null_cell_field(event, "from", secret)
+			_null_cell_field(event, "to", secret)
+			_null_cell_field(event, "attempted", secret)
+	if kind == "expire" and (actor_hidden or target_hidden or hidden_seats.has(owner)):
+		_null_cell_field(event, "pos", secret)
+	if hidden_seats.has(int(event.get("for_seat", -999))):
+		_null_cell_field(event, "for_cell", secret)
+	if hidden_seats.has(int(event.get("interceptor_seat", -999))):
+		_null_cell_field(event, "interceptor_cell", secret)
+	if event.has("targets") and event["targets"] is Array:
+		for row in event["targets"]:
+			if typeof(row) != TYPE_DICTIONARY:
+				continue
+			var rec: Dictionary = row
+			if hidden_seats.has(int(rec.get("target_seat", -999))):
+				_null_cell_field(rec, "cell", secret)
+	if typeof(event.get("intent", null)) == TYPE_DICTIONARY:
+		var intent: Dictionary = event["intent"]
+		var intent_seat := int(intent.get("seat", actor))
+		if hidden_seats.has(intent_seat):
+			_null_cell_field(intent, "to", secret)
+			_null_cell_field(intent, "from", secret)
+			_null_cell_field(intent, "path", secret)
+	_scrub_matching_cells(event, hidden_cells, secret)
+	if actor_hidden or target_hidden or hidden_seats.has(owner):
+		if event.has("range"):
+			event["range"] = null
+		if event.has("hit_chance"):
+			event["hit_chance"] = null
+	if event.has("coach"):
+		event["coach"] = _scrub_coach(str(event["coach"]), secret)
+
+
+func _null_cell_field(event: Dictionary, key: String, secret: Array) -> void:
+	if not event.has(key):
+		return
+	var value: Variant = event[key]
+	if value == null or typeof(value) == TYPE_STRING or typeof(value) == TYPE_STRING_NAME:
+		return
+	_remember_cells(secret, value)
+	if typeof(value) == TYPE_ARRAY:
+		event.erase(key)
+	else:
+		event[key] = null
+
+
+func _remember_cells(secret: Array, value: Variant) -> void:
+	if value is Vector2i:
+		var cell: Vector2i = value
+		if not secret.has(cell):
+			secret.append(cell)
+		return
+	if value is Array:
+		for item in value:
+			_remember_cells(secret, item)
+
+
+func _scrub_matching_cells(node: Variant, hidden_cells: Array, secret: Array) -> Variant:
+	if node is Vector2i:
+		var cell: Vector2i = node
+		if hidden_cells.has(cell):
+			_remember_cells(secret, cell)
+			return null
+		return node
+	if node is Dictionary:
+		var rec: Dictionary = node
+		for key in rec.keys():
+			rec[key] = _scrub_matching_cells(rec[key], hidden_cells, secret)
+		return rec
+	if node is Array:
+		var items: Array = node
+		for i in range(items.size()):
+			items[i] = _scrub_matching_cells(items[i], hidden_cells, secret)
+		return items
+	return node
+
+
+func _scrub_coach(text: String, secret: Array) -> String:
+	var out := text
+	for cell in secret:
+		if cell is Vector2i:
+			var tile: Vector2i = cell
+			out = out.replace("(%d,%d)" % [tile.x, tile.y], "(?,?)")
+	return out
+
+
+func _redact_hidden_intent_cells(intents: Array, hidden_cells: Array) -> Array:
+	if hidden_cells.is_empty():
+		return intents
+	var out: Array = []
+	for item in intents:
+		if typeof(item) != TYPE_DICTIONARY:
+			out.append(item)
+			continue
+		var intent: Dictionary = (item as Dictionary).duplicate(true)
+		if intent.has("to") and intent["to"] is Vector2i and hidden_cells.has(intent["to"]):
+			intent.erase("to")
+		if intent.has("path") and _value_has_hidden_cell(intent.get("path"), hidden_cells):
+			intent.erase("path")
+		out.append(intent)
+	return out
+
+
+func _value_has_hidden_cell(value: Variant, hidden_cells: Array) -> bool:
+	if value is Vector2i:
+		return hidden_cells.has(value)
+	if value is Array:
+		for item in value:
+			if _value_has_hidden_cell(item, hidden_cells):
+				return true
+	return false
 
 
 func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
