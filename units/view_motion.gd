@@ -20,7 +20,15 @@ const IDLE_PERIOD := 1.9
 const IDLE_BOB_PX := 1.5
 const IDLE_PHASE_STEP := 0.73
 
-const HOP_PX := 5.0
+## Phone-readable step arc. Arena-fit zoom is about 0.64, so a 5px rise was
+## ~3 screen pixels and a 20px rise still read as a flat slide. One iso tile
+## is 32px tall; this crest clears that diamond. The body leaves the seat ring
+## and the feet land on the tile center.
+const HOP_PX := 36.0
+const HOP_STRETCH_X := 0.82
+const HOP_STRETCH_Y := 1.34
+const HOP_SQUASH_X := 1.18
+const HOP_SQUASH_Y := 0.74
 
 const ATTACK_OUT_SEC := 0.14
 const ATTACK_BACK_SEC := 0.12
@@ -236,6 +244,23 @@ static func hop_offset(t: float) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
 	return Vector2(0.0, -sin(t * PI) * HOP_PX)
+
+
+## Stretch through the crest, squash on the landing, rest at both ends.
+## Horizontal offset stays 0 so the feet still plant on the tile center.
+static func hop_scale(t: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ONE
+	var u := clampf(t, 0.0, 1.0)
+	var rise := sin(u * PI)
+	var land := 0.0
+	if u > 0.72:
+		land = sin((u - 0.72) / 0.28 * PI)
+	var airborne := rise * (1.0 - land)
+	return Vector2(
+		lerpf(lerpf(1.0, HOP_STRETCH_X, airborne), HOP_SQUASH_X, land),
+		lerpf(lerpf(1.0, HOP_STRETCH_Y, airborne), HOP_SQUASH_Y, land),
+	)
 
 
 static func attack_offset(t: float, dir: Vector2) -> Vector2:

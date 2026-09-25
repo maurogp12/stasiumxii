@@ -475,7 +475,9 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var payload := spec.duplicate()
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
-	payload["z"] = _z_air(cell) if pool_name == "status" or str(spec.get("style", "")) == "slab" else _z_ground(cell)
+	var style := str(spec.get("style", ""))
+	var standing := pool_name == "status" or style == "slab" or style == "figure"
+	payload["z"] = _z_air(cell) if standing else _z_ground(cell)
 	payload["linger"] = true
 	if _linger.has(key):
 		var existing: Node = _linger[key]
@@ -536,7 +538,7 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 		var key := "%s:%d,%d" % [kind, cell.x, cell.y]
 		var style := ""
 		if kind == "shade":
-			style = "pool"
+			style = "figure"
 		elif kind == "plant":
 			style = "sigil"
 		elif kind == "wall":

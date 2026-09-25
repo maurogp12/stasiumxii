@@ -433,7 +433,7 @@ static func _cast_recipes(event: Dictionary) -> Array:
 	var out: Array = []
 	var cell := cell_of(event.get("to", Vector2i.ZERO))
 	if spell_id == "drop_shade" and event.has("to"):
-		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.35, "pool"))
+		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.0, "figure"))
 	elif spell_id == "plant" and event.has("to"):
 		out.append(_ring(cell, VfxPalette.BASTION, true, 0.0, 0.0, "sigil"))
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
@@ -769,7 +769,9 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
-				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_VOID, 8.0, 0.15, 3.0))
+				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 22.0, 0.22, 4.5))
+				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 0.95))
+				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.2, "", VfxPalette.GLOAM_RIM))
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))

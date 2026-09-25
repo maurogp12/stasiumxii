@@ -463,6 +463,10 @@ func _test_every_event_type() -> void:
 		eq(recipes is Array, true, "router returns recipes for %s" % str(sample.get("type", "empty")))
 	var mixed: Array = ROUTER.recipes_for([null, "nope", 3, {"type": "hit", "spell": "cut", "damage": 13, "seat": 0, "target_seat": 1, "to": Vector2i(2, 2), "caster_cell": Vector2i(1, 2)}])
 	truthy(_has(mixed, "spark"), "non-dictionary entries are skipped")
+	var shade_cast: Array = ROUTER.recipes_for([samples[3]])
+	eq(str(_first(shade_cast, "ring").get("style", "")), "figure", "Drop Shade linger is a standing token")
+	eq(_first(shade_cast, "number")["text"], "Shade", "Drop Shade floater says Shade")
+	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
 	var wall: Array = ROUTER.recipes_for([samples[6]])
@@ -545,6 +549,8 @@ func _test_live_director() -> void:
 		"to": Vector2i(2, 2),
 	}], shade_snap)
 	eq(director.linger_count() >= 1, true, "a shade token becomes a lingering ring")
+	var shade_node: Node2D = director._linger.values()[0]
+	eq(shade_node.z_index >= BoardVisualSort.unit_z_index(Vector2i(2, 2), 1.0), true, "the shade token paints with the units, not under the next tile")
 	director.play([{
 		"type": "expire",
 		"status": "shade",

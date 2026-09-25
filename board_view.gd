@@ -829,7 +829,8 @@ func _animate_path(seat: int, path: Array) -> void:
 		pawn.play_step_hop()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(true)
-		_walk_tween.set_trans(Tween.TRANS_LINEAR)
+		# Slow off the tile and into the landing so the crest reads as a hop.
+		_walk_tween.set_trans(Tween.TRANS_QUAD)
 		_walk_tween.set_ease(Tween.EASE_IN_OUT)
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
 		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
@@ -1041,13 +1042,23 @@ func _paint_highlights() -> void:
 	var actor := _kit_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
-	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
+	# Paint the range ring as soon as the spell is selected. Enemy casts leave
+	# empty in-range tiles gold. Empty-tile casts (Drop Shade, Snap Wall, Plant)
+	# used to paint only legal dests, so the ring was wiped and a tap past the
+	# edge looked like the spell did nothing. Advance stays legal-dest only.
 	# Walk chrome stays off. Rolling casts also get Locked hit percent aim preview.
+	var range_cells: Array = []
+	var range_def: Dictionary = {}
+	var stamp_rim := false
 	if spell_id != "" and spell_id != SpellKits.ADVANCE:
-		var def: Dictionary = SpellKits.spell(spell_id)
-		if str(def.get("target", "")) == "enemy":
-			for cell in _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id):
-				_tile_at(cell).set_highlight("range")
+		range_def = SpellKits.spell(spell_id)
+		var target_kind := str(range_def.get("target", ""))
+		if target_kind == "enemy" or target_kind == "ally" or target_kind == "any" or target_kind == "empty_tile" or target_kind == "tile":
+			range_cells = _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id)
+			stamp_rim = target_kind == "empty_tile" or target_kind == "tile"
+			for cell in range_cells:
+				if tiles.has(cell):
+					_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
@@ -1058,8 +1069,25 @@ func _paint_highlights() -> void:
 		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(dest).set_highlight(highlight)
+	if stamp_rim and not actor.is_empty():
+		_stamp_range_rim(range_cells, _as_cell(actor.get("pos", Vector2i.ZERO)), int(range_def.get("max_range", 0)))
 	_paint_blocked(snap)
 	_sync_aim_preview()
+
+
+## Keep the max-range shell gold after legal dests repaint the interior.
+## Drop Shade's legal tiles are the empty tiles, so a target pass used to erase
+## the whole ring and the edge was invisible on the phone.
+func _stamp_range_rim(cells: Array, origin: Vector2i, max_range: int) -> void:
+	if max_range <= 0:
+		return
+	for cell in cells:
+		var at := _as_cell(cell)
+		if not tiles.has(at):
+			continue
+		if COMBAT_SIM_SCRIPT.chebyshev(origin, at) != max_range:
+			continue
+		_tile_at(at).set_highlight("range")
 
 
 func _paint_blocked(snap: Dictionary) -> void:
