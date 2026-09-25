@@ -1533,6 +1533,7 @@ func _test_hit_bands() -> void:
 	var locked := {
 		1: 90, 2: 80, 3: 80, 4: 75, 5: 75,
 		6: 70, 7: 70, 8: 70,
+		9: 65, 10: 60, 11: 55, 12: 50, 13: 45, 14: 40,
 	}
 	eq(_sim.hit_chance(1), 90, "melee 90%")
 	eq(_sim.hit_chance(2), 80, "short 80%")
@@ -1542,26 +1543,27 @@ func _test_hit_bands() -> void:
 	eq(_sim.hit_chance(6), 70, "long 70% at 6")
 	eq(_sim.hit_chance(7), 70, "long 70% at 7")
 	eq(_sim.hit_chance(8), 70, "long 70% at 8")
-	for dist in [9, 10, 11, 12, 13, 14, 15]:
-		eq(_sim.hit_chance(dist), -1, "Chebyshev %d has no invented hit percent" % dist)
-		eq(_sim.hit_chance(dist) == 70, false, "Chebyshev %d is not the old ≥6 clamp of 70%%" % dist)
-		eq(_sim.hit_chance(dist) == 65, false, "Chebyshev %d is not an invented 65%%" % dist)
-		eq(_sim.hit_chance(dist) == 50, false, "Chebyshev %d is not an invented 50%%" % dist)
+	eq(_sim.hit_chance(9), 65, "Chebyshev 9 is Locked 65%")
+	eq(_sim.hit_chance(10), 60, "Chebyshev 10 is Locked 60%")
+	eq(_sim.hit_chance(11), 55, "Chebyshev 11 is Locked 55%")
+	eq(_sim.hit_chance(12), 50, "Chebyshev 12 is Locked 50%")
+	eq(_sim.hit_chance(12) == 70, false, "dist 12 is not the old ≥6 clamp of 70%")
+	eq(_sim.hit_chance(13), 45, "Chebyshev 13 is Locked 45%")
+	eq(_sim.hit_chance(14), 40, "Chebyshev 14 is Locked 40%")
+	eq(_sim.hit_chance(15), -1, "Chebyshev 15 has no invented hit percent")
 	eq(_sim.hit_chance(0), 90, "self dist 0 shares the melee 90% band")
 	var bands = load("res://backend/hit_bands.gd")
-	for dist in [1, 2, 4, 6, 8]:
+	for dist in [1, 2, 4, 6, 9, 10, 11, 12, 13, 14]:
 		eq(bands.chance(dist), int(locked[dist]), "HitBands breakpoint %d" % dist)
 		eq(_sim.hit_chance(dist), bands.chance(dist), "resolve hit_chance matches HitBands at %d" % dist)
 		eq(CombatHUD.aim_hit_caption(int(locked[dist])), "HIT %d%%" % int(locked[dist]), "aim caption for dist %d" % dist)
-	for dist in [9, 11, 12]:
-		eq(bands.chance(dist), -1, "HitBands leaves %d open" % dist)
-		eq(bands.is_open(dist), true, "HitBands marks %d open" % dist)
-		eq(CombatHUD.aim_hit_caption(-1), "", "aim caption hides an open band")
+	eq(CombatHUD.aim_hit_caption(-1), "", "aim caption hides a missing band")
 	var band_src := FileAccess.get_file_as_string("res://backend/hit_bands.gd")
-	eq(band_src.contains("9: 65"), false, "HitBands does not invent a dist-9 percent")
-	eq(band_src.contains("12: 50"), false, "HitBands does not invent a dist-12 percent")
+	eq(band_src.contains("9: 65"), true, "HitBands locks dist 9 at 65")
+	eq(band_src.contains("14: 40"), true, "HitBands locks dist 14 at 40")
+	eq(band_src.contains("is_open"), false, "HitBands no longer soft-blocks 9–14")
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
-	eq(sim_src.contains("is_open"), true, "CombatSim rejects open Chebyshev bands")
+	eq(sim_src.contains("is_open"), false, "CombatSim no longer rejects 9–14 as open")
 	eq(sim_src.contains("BOARD_SIZE := 8"), false, "CombatSim BOARD_SIZE is not 8")
 	var size_src := FileAccess.get_file_as_string("res://backend/board_size.gd")
 	eq(size_src.contains("SHIP := 15"), true, "ship board constant is 15")
@@ -1572,7 +1574,8 @@ func _test_hit_bands() -> void:
 	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
 	_assert_aim_matches_resolve(6, SpellKits.DETONATE, 70)
 	for dist in [9, 10, 11, 12, 13, 14]:
-		_assert_open_range_rejected(dist)
+		_assert_far_band_chrome(dist, int(locked[dist]))
+	_assert_past_locked_band()
 
 
 func _assert_aim_matches_resolve(dist: int, spell_id: String, chance: int) -> void:
@@ -1610,12 +1613,11 @@ func _assert_aim_matches_resolve(dist: int, spell_id: String, chance: int) -> vo
 	eq(result["events"][0]["hit_chance"], preview["hit_chance"], "aim chrome and resolve agree at dist %d" % dist)
 
 
-func _assert_open_range_rejected(dist: int, board_size: int = 15) -> void:
+func _assert_far_band_chrome(dist: int, chance: int) -> void:
 	var target := Vector2i(dist, 0)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
-		"board_size": board_size,
 		"rolls": [1],
 		"kestrel_pos": Vector2i(0, 0),
 		"ironjaw_pos": target,
@@ -1623,42 +1625,52 @@ func _assert_open_range_rejected(dist: int, board_size: int = 15) -> void:
 	})
 	eq(_sim.chebyshev(Vector2i(0, 0), target), dist, "fixture Chebyshev is %d" % dist)
 	var preview: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT, target)
-	eq(preview["range"], dist, "open aim range is Chebyshev %d" % dist)
-	eq(preview["show"], false, "aim chrome hides an open band at dist %d" % dist)
-	eq(int(preview["hit_chance"]) < 0, true, "aim preview does not invent a percent at dist %d" % dist)
+	eq(preview["range"], dist, "far aim range is Chebyshev %d" % dist)
+	eq(preview["show"], true, "aim chrome shows Locked %% at dist %d" % dist)
+	eq(preview["hit_chance"], chance, "aim chrome Locked %% at dist %d" % dist)
+	eq(preview["hit_chance"], _sim.hit_chance(dist), "aim chrome matches resolve table at dist %d" % dist)
 	var cast_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), target, 1)
-	eq(cast_preview["hit_chance"], null, "preview_cast invents no percent at dist %d" % dist)
-	eq(cast_preview["in_range"], false, "preview_cast marks dist %d out of range" % dist)
-	var detonate_preview: Dictionary = _sim.preview_cast(SpellKits.DETONATE, Vector2i(0, 0), target, 1)
-	eq(detonate_preview["hit_chance"], null, "Detonate preview invents no percent at dist %d" % dist)
+	eq(cast_preview["hit_chance"], chance, "preview_cast uses the same Locked %% at dist %d" % dist)
+	eq(cast_preview["in_range"], false, "Mark Shot max range still rejects dist %d" % dist)
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_aim_preview(preview)
-	eq(hud._aim_hit_label.visible, false, "HUD hides HIT %% at open dist %d" % dist)
-	eq(hud._aim_hit_label.text, "", "HUD aim text is empty at open dist %d" % dist)
+	eq(hud._aim_hit_label.text, "HIT %d%%" % chance, "HUD shows Locked %% at dist %d" % dist)
+	eq(hud._aim_hit_label.visible, true, "HUD aim label is visible at dist %d" % dist)
 	hud.free()
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": target})
 	eq(result["illegal"], true, "dist %d Mark Shot is illegal" % dist)
-	eq(result["reason"], "out_of_range", "dist %d reject is out_of_range" % dist)
-	eq(str(result["events"][0]["type"]), "reject", "dist %d event is a reject" % dist)
-	eq(result["events"][0].has("hit_chance"), false, "dist %d reject carries no hit chance" % dist)
-	var coach := str(result["events"][0]["coach"])
-	eq(coach.contains("open"), true, "dist %d coach names the open band" % dist)
-	eq(coach.contains("no hit %"), true, "dist %d coach says there is no hit percent" % dist)
-	for invented in ["65%", "60%", "55%", "50%", "45%", "40%", "70%"]:
-		eq(coach.contains(invented), false, "dist %d coach does not invent %s" % [dist, invented])
+	eq(result["reason"], "out_of_range", "dist %d reject is ordinary out_of_range" % dist)
+	eq(result["events"][0].has("hit_chance"), false, "dist %d reject carries no rolled hit chance" % dist)
+	eq(str(result["events"][0]["coach"]).contains("open"), false, "dist %d coach does not call the band open" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Mark Shot refunds AP" % dist)
 	eq(_unit(1)["hp"], 80, "dist %d Mark Shot deals no damage" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Mark Shot does not roll onto Marks" % dist)
 	var detonate: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": target})
-	eq(detonate["illegal"], true, "dist %d Detonate is illegal" % dist)
+	eq(detonate["illegal"], true, "dist %d Detonate stays outside kit range" % dist)
 	eq(detonate["reason"], "out_of_range", "dist %d Detonate reject is out_of_range" % dist)
-	eq(str(detonate["events"][0]["coach"]).contains("open"), true, "dist %d Detonate coach names the open band" % dist)
-	eq(str(detonate["events"][0]["coach"]).contains("no hit %"), true, "dist %d Detonate coach invents no percent" % dist)
-	eq(detonate["events"][0].has("hit_chance"), false, "dist %d Detonate reject carries no hit chance" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Detonate refunds AP" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Detonate does not consume Marks" % dist)
 	eq(_unit(1)["hp"], 80, "dist %d Detonate deals no damage" % dist)
+
+
+func _assert_past_locked_band() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"board_size": 20,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(15, 0),
+	})
+	eq(_sim.hit_chance(15), -1, "dist 15 still has no invented percent")
+	eq(_sim.hit_chance(15) == 70, false, "dist 15 is not clamped to 70%")
+	var past: Dictionary = _sim.aim_hit_preview(0, SpellKits.MARK_SHOT, Vector2i(15, 0))
+	eq(past["show"], false, "aim chrome hides a percent past 14")
+	eq(int(past["hit_chance"]) < 0, true, "aim preview does not invent a percent past 14")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(15, 0)})
+	eq(result["illegal"], true, "dist 15 Mark Shot is illegal")
+	eq(result["events"][0].has("hit_chance"), false, "dist 15 reject carries no hit chance")
+	eq(_unit(0)["ap"], 6, "dist 15 Mark Shot refunds AP")
 
 
 func _test_class_kits() -> void:

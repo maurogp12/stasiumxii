@@ -556,7 +556,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from Crosshaven tags when size is 15×15 (no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 8 (see HitBands). Chebyshev 9–14 is open (reject, no hit %). Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 8.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from Crosshaven tags when size is 15×15 (no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
@@ -739,8 +739,8 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
-	# Locked % only for Chebyshev 1–8. Dist 9+ stays hidden (no invented %).
-	if chance >= 0 and dist >= 1 and not _HitBands.is_open(dist):
+	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
+	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
 		out["show"] = true
 	return out
 
@@ -803,9 +803,8 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	else:
 		var range_dist := _range_distance(def, from_cell, to_cell)
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
-		var open_band := _HitBands.is_open(range_dist)
-		out["in_range"] = in_kit and not open_band
-		if bool(def.get("rolls", false)) and not open_band:
+		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
+		if bool(def.get("rolls", false)):
 			var chance := hit_chance(range_dist)
 			if chance >= 0:
 				out["hit_chance"] = chance
@@ -1378,10 +1377,10 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
 
 	var dist := chebyshev(actor["pos"], dest)
-	if _HitBands.is_open(dist):
-		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d is open (no hit %%) (refund)." % [def["name"], dist])
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
+	if dist > _HitBands.MAX_DISTANCE:
+		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
