@@ -11,14 +11,14 @@ class_name Pawn
 ## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
 ## (SE→e, SW→s, NE→n, NW→w). A drawn master name (`walk_se`, `attack_ne`)
 ## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
-## A walk strip loops at authored fps for the whole path and skips the hop
-## only while that clip is actually playing. If play() does not start, the
-## hop returns. Missing strips keep the hop and this static sprite.
+## A walk strip loops at authored fps for the whole path. The sprite root
+## bounces on the walk-cycle sine the whole time. If play() does not start,
+## the same light bounce stays on this static sprite. There is no tile-tall hop.
 ## Attack strips play one-shot on attack plans. A cast with no cast strip
 ## (Kestrel Mark Shot / Detonate) uses the attack strip and the melee lunge.
 ## Anticipation pulls back, the impact frame holds, then the body recovers.
 ## The clip keeps authored fps when that length still fits the 0.6s lock.
-## A walk strip never hops. The hop (or a static facing) is only the fallback.
+## A walk strip never plays the old hop arc. The fallback is the same bounce.
 ## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
 ## AnimatedSprite2D is kept as BodyStrip and the static sprite is recreated.
 ## Missing nodes, empty frames, or null textures keep the static sprite.
@@ -44,6 +44,8 @@ var _sprite: Sprite2D
 var _chrome: StatusChrome
 var _idle_tween: Tween
 var _action_tween: Tween
+var _bounce_tween: Tween
+var _bounce_gen: int = 0
 var _motion_playing: bool = false
 var _idle_hold: bool = false
 var _motion_gen: int = 0
@@ -69,9 +71,10 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## One tile of travel. The hop arc and the pawn position tween both use this.
-## A walk strip does not. It loops at authored fps for the whole path.
-const WALK_HOP_SEC := 0.25
+## One cell of travel, straight or diagonal. Equal time keeps the slide even.
+## The step bounce does not use this. It loops on ViewMotion.WALK_STEP_SEC.
+const WALK_TILE_SEC := 0.22
+const WALK_HOP_SEC := WALK_TILE_SEC
 ## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 12.0
@@ -137,29 +140,69 @@ func motion_playing() -> bool:
 	return _motion_playing
 
 
-## True when a walk strip is actually playing (flat slide, no hop).
-## False plays the sprite-local hop. The pawn node stays on the path.
-## has_walk_strip() alone must not drop the hop: on device play() can
-## leave is_playing() false and the body would only tween.
+## True when a walk strip is actually playing.
+## The pawn node slides either way. The sprite root takes the step bounce,
+## including when play() does not start. A path bounce is not restarted per tile.
 func play_step_hop() -> bool:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_end_body_strip()
 		return false
 	_ensure_motion_strips()
-	if _play_walk_flat():
-		return true
-	_play_static_hop()
-	return false
+	var playing := _play_walk_flat()
+	if not playing:
+		_hide_body_strips()
+	if _path_walk:
+		if not _bounce_running():
+			_start_path_bounce()
+		return playing
+	_start_step_bounce()
+	return playing
 
 
-func _play_static_hop() -> void:
-	if _walk_looping:
-		_end_body_strip()
-	var gen := _begin_action()
+func _bounce_running() -> bool:
+	return _bounce_tween != null and is_instance_valid(_bounce_tween) and _bounce_tween.is_running()
+
+
+func _kill_bounce() -> void:
+	_bounce_gen += 1
+	if _bounce_tween != null and is_instance_valid(_bounce_tween):
+		_bounce_tween.kill()
+	_bounce_tween = null
+
+
+## Loop the step sine until end_path_walk. Phase is the walk cycle, not the tile.
+func _start_path_bounce() -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_kill_bounce()
+	_stop_idle()
+	_motion_playing = true
 	var tw := create_tween()
-	_action_tween = tw
-	tw.tween_method(_sample_hop, 0.0, 1.0, WALK_HOP_SEC)
-	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
+	tw.set_loops(0)
+	_bounce_tween = tw
+	tw.tween_method(_sample_hop, 0.0, 1.0, VIEW_MOTION.WALK_STEP_SEC)
+
+
+## One plant-to-plant bob for a step that is not part of a path.
+func _start_step_bounce() -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_kill_bounce()
+	_stop_idle()
+	_motion_playing = true
+	var gen := _bounce_gen
+	var tw := create_tween()
+	_bounce_tween = tw
+	tw.tween_method(_sample_hop, 0.0, 1.0, WALK_TILE_SEC)
+	tw.finished.connect(_on_step_bounce_finished.bind(gen), CONNECT_ONE_SHOT)
+
+
+func _on_step_bounce_finished(gen: int) -> void:
+	if gen != _bounce_gen or _path_walk:
+		return
+	_bounce_tween = null
+	_motion_playing = false
+	_plant_sprite()
 
 
 ## True when this class and facing can play a walk clip. Missing files are false.
@@ -178,14 +221,29 @@ func has_cast_strip() -> bool:
 	return not _strip_choice("cast").is_empty()
 
 
-## Hold the walk loop across tiles. The board calls this once per path.
+## Hold the walk loop and the step bounce across every tile. The board calls this once.
 func begin_path_walk() -> void:
 	_path_walk = true
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_ensure_motion_strips()
+	if not _play_walk_flat():
+		_hide_body_strips()
+	_start_path_bounce()
+
+
+## Swap the walk clip when facing snaps. Does not restart the path bounce.
+func retarget_walk_strip() -> void:
+	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_ensure_motion_strips()
+	_play_walk_flat()
 
 
 ## Path end or interrupt. Plant the static facing and let idle resume.
 func end_path_walk() -> void:
 	_path_walk = false
+	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
@@ -317,6 +375,8 @@ func release_idle() -> void:
 
 
 func settle_motion() -> void:
+	_path_walk = false
+	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
@@ -334,13 +394,13 @@ func plant_sprite() -> void:
 	_plant_sprite()
 
 
-## End one path step. A looping walk strip stays up until end_path_walk.
+## End one path step. A looping walk strip and the path bounce stay up.
 func finish_step() -> void:
-	_kill_action()
-	if _path_walk and _walk_looping:
+	if _path_walk and (_walk_looping or _bounce_running()):
 		_motion_playing = true
-		_flatten_body()
 		return
+	_kill_bounce()
+	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
 
@@ -541,13 +601,16 @@ func _on_action_finished(gen: int) -> void:
 func _sample_hop(t: float) -> void:
 	var hop := VIEW_MOTION.hop_offset(t)
 	_place_body(hop)
-	# Name and HP ride the arc. The seat ring stays on the pawn, so the gap reads.
+	# Name and HP ride the bob. The seat ring stays on the pawn.
 	_ride_chrome(hop)
-	var mul: Vector2 = VIEW_MOTION.hop_scale(t)
+	_reset_walk_scale()
+
+
+func _reset_walk_scale() -> void:
 	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+		_sprite.scale = SPRITE_SCALE
 	if _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+		_active_strip.scale = SPRITE_SCALE
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
@@ -931,30 +994,26 @@ func _play_walk_flat() -> bool:
 		strip.modulate = _sprite.modulate
 		_sprite.visible = false
 	_flatten_body()
-	if _path_walk:
-		return true
-	var gen := _motion_gen
-	var tw := create_tween()
-	_action_tween = tw
-	tw.tween_interval(WALK_HOP_SEC)
-	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
 	return true
 
 
 func _flatten_body() -> void:
-	_ride_chrome(Vector2.ZERO)
+	_reset_walk_scale()
 	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.position = Vector2.ZERO
-		_sprite.scale = SPRITE_SCALE
 		_sprite.rotation = 0.0
 		_sprite.flip_h = false
 		if _walk_looping:
 			_sprite.visible = false
 	if _walk_looping and _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.position = Vector2.ZERO
-		_active_strip.scale = SPRITE_SCALE
 		_active_strip.rotation = 0.0
 		_active_strip.flip_h = false
+	if _bounce_running():
+		return
+	_ride_chrome(Vector2.ZERO)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.position = Vector2.ZERO
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = Vector2.ZERO
 
 
 func _hide_body_strips() -> void:
@@ -1013,7 +1072,7 @@ func _paint_status(canvas: CanvasItem) -> void:
 
 
 ## Baseline of the overhead name, in chrome-local space. The chrome node
-## itself rides a walk hop. Lunges and the idle bob leave it on the pawn.
+## itself rides the step bounce. Lunges and the idle bob leave it on the pawn.
 func name_baseline() -> float:
 	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 

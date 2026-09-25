@@ -38,11 +38,11 @@ extends Node2D
 ## The dedicated process does not start the default Kestrel / Ironjaw pair.
 ## It paints when the SELECT_CLASS queue has paired two Locked classes.
 ## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
-## View motions (idle, step arc, lunge, wind-up, recoil, lift, slump) tween the
+## View motions (idle, step bounce, lunge, wind-up, recoil, lift, slump) tween the
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
-## Mobile-track chrome. Kestrel and Ironjaw walk strips skip the hop.
-## Other classes still hop on the static facing.
+## Mobile-track chrome. A walk is one linear slide through cell centers.
+## The sprite root bounces a few pixels. Advance stays a snap.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -57,7 +57,6 @@ const SHADE_MARKER := preload("res://board/shade_marker.gd")
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
 const TOUCH := preload("res://ui/touch_adapter.gd")
-const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
 ## Playable band between the top chrome and the touch-sized bottom bar.
 const PLAY_TOP: float = TOUCH.PLAY_TOP
@@ -827,54 +826,64 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
-	# One awaited step per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# One tween through cell centers. Equal time per cell keeps straight and
+	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
-	# before the first step, or a refresh snaps it and the walk reads as a teleport.
-	# Locked: facing follows each step so the pointer matches CombatSim last-hop facing.
-	# Position tween is Pawn.WALK_HOP_SEC. A walk strip loops for the whole path
-	# and skips the hop only while it is actually playing. A failed play hops.
+	# before the slide, or a refresh snaps it and the walk reads as a teleport.
+	# Facing snaps with set_facing at each cell. hop_facing covers a diagonal step.
+	# Zero turn frames. The step bounce loops on the pawn for the whole path.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
 	pawn.hold_idle()
-	pawn.begin_path_walk()
 	var prev: Vector2i = pawn.grid_position
+	var cells: Array[Vector2i] = []
 	for step in path:
-		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
-			if pawn != null and is_instance_valid(pawn):
-				pawn.end_path_walk()
-				pawn.release_idle()
-			return
-		var cell: Vector2i = _as_cell(step)
+		cells.append(_as_cell(step))
+	if cells.is_empty() or not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
+		if pawn != null and is_instance_valid(pawn):
+			pawn.end_path_walk()
+			pawn.release_idle()
+		return
+	var first_dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cells[0])
+	if first_dir == "":
+		first_dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cells[0])
+	if first_dir != "":
+		pawn.set_facing(first_dir)
+	pawn.begin_path_walk()
+	_stop_walk_tween()
+	_walk_tween = create_tween()
+	_walk_tween.set_trans(Tween.TRANS_LINEAR)
+	for cell in cells:
 		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if dir == "":
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
-		pawn.set_facing(dir)
-		_stop_walk_tween()
-		# Linear slide only when play_step_hop started the strip. Otherwise hop.
-		var flat_walk := pawn.play_step_hop()
-		_walk_tween = create_tween()
-		_walk_tween.set_parallel(true)
-		if flat_walk:
-			_walk_tween.set_trans(Tween.TRANS_LINEAR)
-		else:
-			# Slow off the tile and into the landing so the crest reads as a hop.
-			_walk_tween.set_trans(Tween.TRANS_QUAD)
-			_walk_tween.set_ease(Tween.EASE_IN_OUT)
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
-		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
-		await _walk_tween.finished
-		if pawn == null or not is_instance_valid(pawn):
-			return
-		pawn.position = _cell_to_local(cell)
-		pawn.finish_step()
-		_set_pawn_cell(pawn, cell)
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
+		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
+		_walk_tween.parallel().tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
-		if STEP_PAUSE_SEC > 0.0:
-			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
+	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
+		var last: Vector2i = cells[cells.size() - 1]
+		pawn.position = _cell_to_local(last)
+		_set_pawn_cell(pawn, last)
 		pawn.end_path_walk()
 		pawn.release_idle()
+
+
+func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	if dir != "":
+		pawn.set_facing(dir)
+	pawn.retarget_walk_strip()
+
+
+func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	_set_pawn_cell(pawn, cell)
 
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
