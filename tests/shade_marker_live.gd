@@ -15,12 +15,15 @@ static func run(host: SceneTree) -> void:
 	host.truthy(bool(board.get("_booted")), "board finished boot before the Shade fixture")
 	var origin := Vector2i(4, 4)
 	var dest := Vector2i(5, 4)
+	# Prey is exactly 3 cardinal east of the Shade, so the plate may read Ambush.
+	# An out-of-range Shade stays labeled Shade (see the combat fixture).
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [origin, Vector2i(12, 12)],
+		"positions": [origin, Vector2i(8, 4)],
+		"kestrel_facing": "W",
 	})
 	board._rebuild_pawns()
 	var result: Dictionary = CombatSim.submit({

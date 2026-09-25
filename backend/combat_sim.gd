@@ -393,10 +393,10 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 		return
 	if _cast_gate_reason(actor, enemy, def) != "":
 		return
-	var origin_cell := _ambush_range_origin(actor)
-	if origin_cell == UNPLACED:
-		return
-	if not _in_spell_range(def, origin_cell, enemy["pos"]):
+	# Offer only a legal exactly-3 cardinal target with an empty back tile.
+	# A Shade sitting on the foe, a diagonal, or any other illegal step must
+	# not arm the cast. Drop Shade's Chebyshev ring is a different spell.
+	if not _ambush_can_offer(actor, enemy):
 		return
 	out.append({
 		"type": "cast",
@@ -457,14 +457,18 @@ func match_phase_name() -> String:
 ## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
-## Chrome only. Origin is Gloam's cell while Invisible, otherwise the first live Shade.
-## The exactly-3 cardinal check uses this same cell.
+## Chrome only. Shown when Ambush is a legal arm: exactly 3 cardinal from the
+## origin (Gloam while Invisible, otherwise the first live Shade) and the back
+## tile can be landed on. A Shade next to a foe does not open this chrome.
 func ambush_origin(seat: int) -> Dictionary:
 	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not bool(actor.get("alive", false)):
 		return hidden
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_GLOAM:
+		return hidden
+	var enemy := _enemy_of(seat)
+	if not _ambush_can_offer(actor, enemy):
 		return hidden
 	if bool(actor.get("invisible", false)):
 		return {"show": true, "from_self": true, "origin": actor["pos"]}
@@ -474,13 +478,14 @@ func ambush_origin(seat: int) -> Dictionary:
 	return {"show": true, "from_self": false, "origin": shade["pos"]}
 
 
-## Chrome only. The locked empty back tile, for the aim highlight. Same gate as resolve.
+## Chrome only. The locked empty back tile, for the aim highlight.
+## Same range and landing gate as the offer. Illegal geometry stays dark.
 func ambush_landing_preview(seat: int) -> Dictionary:
 	var actor := _unit_by_seat(seat)
 	var enemy := _enemy_of(seat)
 	if actor.is_empty() or not bool(actor.get("alive", false)):
 		return {"ok": false}
-	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+	if not _ambush_can_offer(actor, enemy):
 		return {"ok": false}
 	return _ambush_landing(actor, enemy)
 
@@ -3465,6 +3470,24 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	if not _is_empty(cell):
 		return false
 	return _board.is_walkable(cell)
+
+
+## Legal Ambush arm: origin is exactly 3 cardinal from the foe, and the back tile
+## is an empty walkable landing. Adjacent, diagonal, Chebyshev-3 off-axis, and
+## any other non-cardinal step are not an arm. Landing uses the same cell as resolve.
+func _ambush_can_offer(actor: Dictionary, enemy: Dictionary) -> bool:
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return false
+	var origin_cell := _ambush_range_origin(actor)
+	if origin_cell == UNPLACED:
+		return false
+	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
+	var dist := int(def.get("max_range", 3))
+	if int(def.get("min_range", dist)) != dist:
+		return false
+	if not is_cardinal_exact(origin_cell, enemy["pos"], dist):
+		return false
+	return bool(_ambush_landing(actor, enemy).get("ok", false))
 
 
 ## Locked range origin. Invisible uses Gloam. Otherwise the first live Shade.

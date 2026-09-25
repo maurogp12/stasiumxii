@@ -1188,8 +1188,9 @@ func _paint_highlights() -> void:
 	_sync_aim_preview()
 
 
-## Locked chrome. Origin highlight only while Ambush is selected or legal.
-## A live Shade is the origin. Invisible aims from Gloam only. Range is that origin.
+## Locked chrome. Origin highlight only while Ambush is a legal arm, or selected
+## when that arm exists. A Shade adjacent to a foe is not an origin. Invisible
+## aims from Gloam only. Range is that origin.
 func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 	var seat := CombatHUD.kit_seat(snap)
 	var legal: Array = _sim().legal_intents(seat)
