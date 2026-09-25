@@ -15,14 +15,14 @@ static func run(host: SceneTree) -> void:
 	host.truthy(bool(board.get("_booted")), "board finished boot before the Shade fixture")
 	var origin := Vector2i(4, 4)
 	var dest := Vector2i(5, 4)
-	# Prey is exactly 3 cardinal east of the Shade, so the plate may read Ambush.
-	# An out-of-range Shade stays labeled Shade (see the combat fixture).
+	# Prey is Manhattan 2 cardinal east of the Shade. The plate stays Shade until
+	# the opponent completes a turn, then reads Ambush.
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [origin, Vector2i(8, 4)],
+		"positions": [origin, Vector2i(7, 4)],
 		"kestrel_facing": "W",
 	})
 	board._rebuild_pawns()
@@ -54,8 +54,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(token.scale, Vector2(0.5, 0.5), "Shade token uses the unit scale")
 	host.truthy(token.texture != null, "Shade token texture is loaded")
 	host.truthy(tile.texture != null, "Shade tile decal texture is loaded")
-	host.eq(marker.plate_text(), "Ambush", "a live Shade token reads as the Ambush origin")
-	host.eq(bool(marker.get("_as_origin")), true, "the marker lifts the origin token")
+	host.eq(marker.plate_text(), "Shade", "a fresh Shade is not an Ambush origin yet")
+	host.eq(bool(marker.get("_as_origin")), false, "an unarmed Shade does not lift the origin token")
 	host.eq(token.texture.get_width(), 144, "Shade token is the 144px TA sheet")
 	host.eq(token.texture.get_height(), 160, "Shade token is the 160px TA sheet")
 	host.eq(tile.texture.get_width(), 64, "Shade decal is 64px wide")
@@ -77,13 +77,20 @@ static func run(host: SceneTree) -> void:
 	host.eq(again.get_parent().name, "ShadeMarkers", "refresh does not reparent the marker under Units")
 	host.eq(int(again.get("turns")), 3, "refresh keeps the turn count")
 	host.eq(again.position, board._cell_to_local(dest), "refresh plants the marker on the shade tile")
+	CombatSim.submit({"type": "end_turn", "seat": 0})
+	CombatSim.submit({"type": "end_turn", "seat": 1})
+	board._refresh()
+	var armed: Node = board._shade_markers.get(dest)
+	host.truthy(armed != null and is_instance_valid(armed), "the armed Shade marker is still on the board")
+	host.eq(armed.plate_text(), "Ambush", "after the opponent completes a turn the Shade plate reads Ambush")
+	host.eq(bool(armed.get("_as_origin")), true, "an armed Shade lifts the origin token")
 	var ambush_from := Vector2i(4, 4)
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [ambush_from, Vector2i(7, 4)],
+		"positions": [ambush_from, Vector2i(6, 4)],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"rolls": [1],
@@ -91,11 +98,11 @@ static func run(host: SceneTree) -> void:
 	var ambush: Dictionary = CombatSim.submit({
 		"type": "cast",
 		"spell": "ambush",
-		"to": Vector2i(7, 4),
+		"to": Vector2i(6, 4),
 		"seat": 0,
 	})
 	host.eq(bool(ambush.get("ok", false)), true, "Ambush still resolves")
-	host.eq(_seat_pos(CombatSim.snapshot(), 0), Vector2i(8, 4), "Ambush is still the blink")
+	host.eq(_seat_pos(CombatSim.snapshot(), 0), Vector2i(7, 4), "Ambush is still the blink")
 	main.queue_free()
 	await host.process_frame
 

@@ -516,7 +516,7 @@ func _test_dedicated_host_core() -> void:
 ## Ambush MISS does not clear Invisible or Shade.
 func _test_invisible_hidden_from_opponent() -> void:
 	var gloam := Vector2i(2, 2)
-	var prey := Vector2i(5, 2)
+	var prey := Vector2i(4, 2)
 	var shade_cell := Vector2i(0, 0)
 	_host.reset_match({
 		"seed": 1,

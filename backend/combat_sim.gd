@@ -376,10 +376,12 @@ func legal_intents(seat: int) -> Array:
 	return out
 
 
-## Locked Ambush: 4 AP / 0 MP, exactly 3 cardinal from the origin, blink to the empty back tile.
-## Origin is Gloam while Invisible, otherwise the Shade. Spends a Shade only when
-## the origin was a Shade (submit). This offer does not call the pathfinder and
-## does not read the walk budget, so MP 0 does not hide the cast.
+## Locked Ambush: 4 AP / 0 MP, Manhattan 1–2 cardinal from the origin, blink to the
+## empty tile one step past the enemy on that axis. Origin is Gloam while Invisible,
+## otherwise the first live Shade. A Shade origin is illegal until the opponent has
+## completed one full turn since that Drop. Fade / Invisible self-origin has no delay.
+## Spends a Shade only when the origin was a Shade. This offer does not call the
+## pathfinder and does not read the walk budget, so MP 0 does not hide the cast.
 func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void:
 	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
 		return
@@ -393,9 +395,10 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 		return
 	if _cast_gate_reason(actor, enemy, def) != "":
 		return
-	# Offer only a legal exactly-3 cardinal target with an empty back tile.
-	# A Shade sitting on the foe, a diagonal, or any other illegal step must
-	# not arm the cast. Drop Shade's Chebyshev ring is a different spell.
+	# Offer only a legal Manhattan 1–2 cardinal target whose back tile can be
+	# landed on, and only once a Shade origin has seen the opponent finish a
+	# turn. A fresh Shade, a diagonal, or Manhattan 3 must not arm the cast.
+	# Drop Shade's Chebyshev ring is a different spell.
 	if not _ambush_can_offer(actor, enemy):
 		return
 	out.append({
@@ -457,9 +460,10 @@ func match_phase_name() -> String:
 ## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
-## Chrome only. Shown when Ambush is a legal arm: exactly 3 cardinal from the
+## Chrome only. Shown when Ambush is a legal arm: Manhattan 1–2 cardinal from the
 ## origin (Gloam while Invisible, otherwise the first live Shade) and the back
-## tile can be landed on. A Shade next to a foe does not open this chrome.
+## tile can be landed on. A Shade the opponent has not yet finished a turn past
+## does not open this chrome.
 func ambush_origin(seat: int) -> Dictionary:
 	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
 	var actor := _unit_by_seat(seat)
@@ -518,7 +522,7 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			return out
 		from = origin_cell
 	# Cardinal kits share _range_distance: one axis is 0 and the other is in
-	# [min, max]. Ambush is exactly 3 N/E/S/W. A Chebyshev ring is not legal.
+	# [min, max]. Ambush is Manhattan 1–2 N/E/S/W. A Chebyshev ring is not legal.
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
@@ -1335,6 +1339,9 @@ func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "") -> Dictionary:
+	# The seat that is leaving has completed this turn, including a stunned skip.
+	# Shades owned by the other seat count that completion toward Ambush arming.
+	_note_opponent_shade_turns(int(actor.get("seat", -1)))
 	var next_seat := 1 if _active_seat == 0 else 0
 	var next_unit := _unit_by_seat(next_seat)
 	if next_unit.is_empty() or not next_unit["alive"]:
@@ -1533,7 +1540,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
 	# Cardinal kits (Ambush) share the axis gate: one of Δx/Δy is 0 and
-	# |Δx|+|Δy| is inside min/max. Chebyshev would accept a diagonal ring.
+	# |Δx|+|Δy| is inside min/max (Ambush 1–2). Chebyshev would accept a diagonal.
 	var dist := _range_distance(def, range_from, dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
@@ -1968,9 +1975,9 @@ func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
 	var mode := str(def.get("range_mode", "chebyshev"))
-	# Cardinal is axis-only (Ambush exactly 3, Advance exactly 2). A knight
-	# such as (2,1) is Manhattan 3 but both axes are nonzero, so it is not
-	# in range. The sentinel stays above every kit max and the hit-band cap.
+	# Cardinal is axis-only (Ambush 1–2, Advance exactly 2). A knight
+	# such as (2,1) has both axes nonzero, so it is not in range. The sentinel
+	# stays above every kit max and the hit-band cap.
 	if mode == "cardinal":
 		var axis := _cardinal_axis_len(from, to)
 		if axis < 0:
@@ -3007,6 +3014,8 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"pos": dest,
 			"turns": int(def.get("shade_turns", 3)),
 			"owner_seat": int(actor["seat"]),
+			# 0 until the opponent finishes a turn. Not a caster-turn comparison.
+			"opponent_turns_completed": 0,
 		})
 		_sync_shade_flags()
 		_intent_log.append(intent)
@@ -3378,7 +3387,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
-		return _reject(intent, "no_landing", "REJECT — Ambush back tile is occupied or illegal (refund).")
+		return _reject(intent, "illegal_back", "REJECT — Ambush back tile is occupied or illegal (refund).")
 	var from_shade := not bool(actor.get("invisible", false))
 	var origin: Dictionary = {}
 	if from_shade:
@@ -3457,16 +3466,38 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
-## Locked destination is the target's empty back tile only.
-## Occupied, out of bounds, or otherwise illegal back rejects the cast.
+## Locked destination is one step past the enemy along the origin→enemy cardinal
+## axis. Occupied, out of bounds, or otherwise illegal back rejects the cast.
+## Backstab (FLEX) is whether that landing tile sits in the target's rear cone.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
-	var facing := str(target.get("facing", "E"))
-	if not FACING_VEC.has(facing):
+	var origin := _ambush_range_origin(actor)
+	if origin == UNPLACED:
 		return {"ok": false}
-	var back: Vector2i = target["pos"] - FACING_VEC[facing]
+	var step := _cardinal_unit_step(origin, target["pos"])
+	if step == Vector2i.ZERO:
+		return {"ok": false}
+	var back: Vector2i = target["pos"] + step
 	if not _ambush_cell_ok(back, actor["pos"]):
 		return {"ok": false}
-	return {"ok": true, "cell": back, "backstab": true}
+	var facing_mult := _facing_multiplier(back, target["pos"], str(target.get("facing", "")))
+	var backstab := facing_mult > FRONT_SIDE_FACING + 0.001
+	return {"ok": true, "cell": back, "backstab": backstab}
+
+
+## Unit step from origin toward target when they share a row or column. Zero otherwise.
+static func _cardinal_unit_step(from: Vector2i, to: Vector2i) -> Vector2i:
+	var delta: Vector2i = to - from
+	if delta.x != 0 and delta.y != 0:
+		return Vector2i.ZERO
+	if delta.x > 0:
+		return Vector2i(1, 0)
+	if delta.x < 0:
+		return Vector2i(-1, 0)
+	if delta.y > 0:
+		return Vector2i(0, 1)
+	if delta.y < 0:
+		return Vector2i(0, -1)
+	return Vector2i.ZERO
 
 
 func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
@@ -3477,41 +3508,49 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	return _board.is_walkable(cell)
 
 
-## Legal Ambush arm: origin is exactly 3 cardinal from the foe, and the back tile
-## is an empty walkable landing. Adjacent, diagonal, Chebyshev-3 off-axis, and
-## any other non-cardinal step are not an arm. Landing uses the same cell as resolve.
+## Legal Ambush arm: origin is Manhattan 1–2 cardinal from the foe, the back tile
+## is an empty walkable landing, and a Shade origin has seen the opponent finish
+## at least one turn. Diagonals and Manhattan 3+ are not an arm. Landing uses the
+## same cell as resolve. Offer, preview, origin chrome, and the HUD share this gate.
 func _ambush_can_offer(actor: Dictionary, enemy: Dictionary) -> bool:
 	return _ambush_block_reason(actor, enemy) == ""
 
 
-## "" when Ambush may arm. Otherwise no_shade, out_of_range, no_landing, or no_target.
-## Origin is Gloam while Invisible, otherwise the first live Shade. The foe must
-## sit on that origin's cardinal cross at Manhattan 3, and the back tile must be empty.
+## "" when Ambush may arm. Otherwise no_shade, shade_unarmed, out_of_range,
+## illegal_back, or no_target. Origin is Gloam while Invisible (no arming delay),
+## otherwise the first live Shade. That Shade stays illegal until the opponent
+## has completed ≥1 full turn since it was Dropped.
 func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 	if enemy.is_empty() or not bool(enemy.get("alive", false)):
 		return "no_target"
 	var origin_cell := _ambush_range_origin(actor)
 	if origin_cell == UNPLACED:
 		return "no_shade"
+	if not bool(actor.get("invisible", false)):
+		var shade := _first_shade(actor)
+		if shade.is_empty():
+			return "no_shade"
+		if int(shade.get("opponent_turns_completed", 0)) < 1:
+			return "shade_unarmed"
 	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
-	var dist := int(def.get("max_range", 3))
-	if int(def.get("min_range", dist)) != dist:
-		return "out_of_range"
-	if not is_cardinal_exact(origin_cell, enemy["pos"], dist):
+	var axis := _cardinal_axis_len(origin_cell, enemy["pos"])
+	if axis < int(def.get("min_range", 1)) or axis > int(def.get("max_range", 2)):
 		return "out_of_range"
 	if not bool(_ambush_landing(actor, enemy).get("ok", false)):
-		return "no_landing"
+		return "illegal_back"
 	return ""
 
 
 func _ambush_reject_text(reason: String) -> String:
-	if reason == "no_landing":
+	if reason == "illegal_back" or reason == "no_landing":
 		return "REJECT — Ambush back tile is occupied or illegal (refund)."
+	if reason == "shade_unarmed":
+		return "REJECT — Shade is not armed for Ambush until the opponent completes a turn (refund)."
 	if reason == "no_shade":
 		return "REJECT — Ambush needs Invisible or a Shade (refund)."
 	if reason == "no_target":
 		return "REJECT — Ambush needs an enemy (refund)."
-	return "REJECT — Ambush is exactly 3 cardinal from the origin (refund)."
+	return "REJECT — Ambush is Manhattan 1–2 cardinal from the origin (refund)."
 
 
 ## Locked range origin. Invisible uses Gloam. Otherwise the first live Shade.
@@ -3573,6 +3612,7 @@ func _apply_shade_setup(config: Dictionary) -> void:
 				"pos": cell,
 				"turns": 3,
 				"owner_seat": int(unit["seat"]),
+				"opponent_turns_completed": 0,
 			})
 	_sync_shade_flags()
 
@@ -3630,6 +3670,8 @@ func _placed_token_snapshot(items: Array, include_resist: bool) -> Array:
 		}
 		if include_resist:
 			rec["push_resist"] = bool(token.get("push_resist", false))
+		if token.has("opponent_turns_completed"):
+			rec["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0))
 		out.append(rec)
 	return out
 
@@ -3648,6 +3690,8 @@ func _restore_placed_tokens(into: Array, raw: Variant) -> void:
 		}
 		if rec.has("push_resist"):
 			token["push_resist"] = bool(rec.get("push_resist", false))
+		if rec.has("opponent_turns_completed"):
+			token["opponent_turns_completed"] = int(rec.get("opponent_turns_completed", 0))
 		into.append(token)
 
 
@@ -3711,6 +3755,20 @@ func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: i
 	if target_seat >= 0:
 		event["target_seat"] = target_seat
 	_last_events.append(event)
+
+
+## Shade Ambush arming clock. Called when `ending_seat` finishes a turn
+## (End Turn or a stunned skip, both via _handoff_seat). Every Shade owned by
+## the other seat gains one completed opponent turn. A Shade may be an Ambush
+## origin only once that count is ≥ 1. This is not "created_turn < caster turn".
+func _note_opponent_shade_turns(ending_seat: int) -> void:
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) == ending_seat:
+			continue
+		if int(token.get("turns", 0)) <= 0:
+			continue
+		token["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0)) + 1
 
 
 func _decay_board_durations() -> void:
