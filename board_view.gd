@@ -36,6 +36,7 @@ extends Node2D
 ## View motions (idle, step arc, lunge, wind-up, recoil, lift, slump) tween the
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
+## Batch 1 walk/attack strips land later; static facings hop until then.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -761,60 +762,28 @@ func _arm_vfx(events: Array) -> void:
 	_pending_motion_sec = maxf(_pending_motion_sec, minf(block, VIEW_MOTION.ACTION_LOCK_MAX))
 
 
+## Spell commit plays the caster attack or cast plan on hit and on miss.
+## The target recoils or lifts only when the spell connects. VFX stays in _arm_vfx.
 func _arm_view_motions(events: Array) -> void:
 	_pending_motion_sec = 0.0
 	if VIEW_MOTION.reduce_motion():
 		return
-	var plans := {}
-	var caster_armed := false
-	var dying := _dying_seats(events)
-	for event in events:
-		if typeof(event) != TYPE_DICTIONARY:
-			continue
-		var typ := str(event.get("type", ""))
-		var spell_id := str(event.get("spell", ""))
-		if not caster_armed and spell_id != "" and typ in ["cast", "miss", "hit", "snap_wall"]:
-			caster_armed = true
-			var seat := int(event.get("seat", -1))
-			var kind := str(VIEW_MOTION.caster_motion(spell_id))
-			if kind != "" and pawns_by_seat.has(seat):
-				var plan: Dictionary = plans.get(seat, {})
-				if kind == "attack":
-					plan["attack"] = true
-					plan["aim"] = _aim_vector(seat, event)
-				elif not bool(plan.get("attack", false)):
-					plan["cast"] = true
-				plans[seat] = plan
-		if typ != "hit":
-			continue
-		var target := int(event.get("target_seat", -1))
-		if not pawns_by_seat.has(target):
-			continue
-		var react := str(VIEW_MOTION.target_motion(Pawn.resolve_flash_kind(event)))
-		if react == "":
-			continue
-		var plan: Dictionary = plans.get(target, {})
-		if react == "hit":
-			plan["hit"] = true
-			plan["away"] = _away_vector(target, event)
-			plan["delay"] = true
-		elif react == "lift":
-			plan["lift"] = true
-			plan["delay"] = true
-		plans[target] = plan
-	for seat in dying.keys():
-		if not pawns_by_seat.has(int(seat)):
-			continue
-		var plan: Dictionary = plans.get(seat, {})
-		plan["death"] = true
-		plan["tilt"] = -1.0 if int(seat) % 2 == 0 else 1.0
-		plans[seat] = plan
+	var plans: Dictionary = VIEW_MOTION.chrome_plans(events)
+	var caster_event: Dictionary = VIEW_MOTION.caster_event(events)
 	var longest := 0.0
 	for seat in plans.keys():
-		var pawn: Pawn = pawns_by_seat[seat]
+		var seat_n := int(seat)
+		if not pawns_by_seat.has(seat_n):
+			continue
+		var pawn: Pawn = pawns_by_seat[seat_n]
 		if pawn == null or not is_instance_valid(pawn):
 			continue
-		longest = maxf(longest, pawn.play_view_plan(plans[seat]))
+		var plan: Dictionary = plans[seat]
+		if bool(plan.get("attack", false)) and int(caster_event.get("seat", -2)) == seat_n:
+			plan["aim"] = _aim_vector(seat_n, caster_event)
+		if bool(plan.get("hit", false)):
+			plan["away"] = _away_vector(seat_n, VIEW_MOTION.hit_event_for(events, seat_n))
+		longest = maxf(longest, pawn.play_view_plan(plan))
 	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
 
 

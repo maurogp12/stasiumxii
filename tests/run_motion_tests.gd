@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 func _finish_live() -> void:
 	await _test_live_tree()
+	await _test_strip_fallback()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -30,6 +31,8 @@ func _run() -> void:
 	_test_idle_phase()
 	_test_caster_and_target_kinds()
 	_test_support_events_do_not_knock()
+	_test_commit_motion_on_hit_and_miss()
+	_test_walk_hops_not_advance()
 	_test_pawn_samples_then_plants()
 	_test_reduce_motion_skips()
 	_test_view_wiring()
@@ -47,7 +50,9 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.HOP_PX >= 4.0 and MOTION.HOP_PX <= 6.0, true, "step arc is 4-6px")
 	eq(Pawn.WALK_HOP_SEC, 0.25, "per-tile hop is 0.25s")
 	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), 1.0), true, "a 6-frame 24fps strip matches the hop at speed_scale 1")
-	eq(MOTION.ATTACK_LUNGE_PX >= 8.0 and MOTION.ATTACK_LUNGE_PX <= 12.0, true, "lunge is 8-12px")
+	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer strip speeds up to the same hop")
+	eq(Pawn.strip_speed_scale(0, 24.0, Pawn.WALK_HOP_SEC), 1.0, "an empty strip does not divide by zero")
+	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "lunge is about 6px")
 	eq(MOTION.HIT_KNOCK_PX >= 4.0 and MOTION.HIT_KNOCK_PX <= 6.0, true, "knockback is 4-6px")
 	var stacked := {
 		"hit": true,
@@ -122,6 +127,137 @@ func _test_caster_and_target_kinds() -> void:
 	eq(MOTION.target_motion("support"), "lift", "heals lift")
 	eq(MOTION.target_motion("ward"), "lift", "Ward lifts")
 	eq(MOTION.target_motion(""), "", "a miss does not react")
+
+
+func _test_commit_motion_on_hit_and_miss() -> void:
+	var caster := Vector2i(3, 3)
+	var target := Vector2i(4, 3)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": caster,
+		"ironjaw_pos": target,
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": caster, "seat": 1})
+	var hit_plans: Dictionary = MOTION.chrome_plans(hit.get("events", []))
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": caster,
+		"ironjaw_pos": target,
+		"rolls": [100],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": caster, "seat": 1})
+	var miss_plans: Dictionary = MOTION.chrome_plans(missed.get("events", []))
+	var hit_caster: Dictionary = hit_plans.get(1, {})
+	var miss_caster: Dictionary = miss_plans.get(1, {})
+	eq(bool(hit.get("ok", false)), true, "Strike hit still resolves")
+	eq(bool(missed.get("ok", false)), true, "Strike miss still resolves")
+	eq(bool(hit_caster.get("attack", false)), true, "Strike hit lunges")
+	eq(bool(miss_caster.get("attack", false)), true, "Strike miss lunges")
+	eq(bool(hit_caster.get("attack", false)), bool(miss_caster.get("attack", false)), "Strike miss uses the same caster lunge as a hit")
+	eq(bool(hit_caster.get("cast", false)), bool(miss_caster.get("cast", false)), "Strike miss does not swap the caster motion")
+	eq(bool((hit_plans.get(0, {}) as Dictionary).get("hit", false)), true, "Strike hit recoils the target")
+	eq(miss_plans.has(0), false, "Strike miss does not recoil the target")
+	var hold_miss: Dictionary = MOTION.chrome_plans([{
+		"type": "miss",
+		"spell": SpellKits.HOLD_LINE,
+		"seat": 0,
+	}])
+	eq(bool((hold_miss.get(0, {}) as Dictionary).get("attack", false)), true, "Hold Line miss still lunges")
+	eq(hold_miss.size(), 1, "Hold Line miss does not invent a target recoil")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(4, 1),
+		"kestrel_facing": "E",
+		"rolls": [100],
+	})
+	var shot_miss: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 1), "seat": 0})
+	var shot_miss_plans: Dictionary = MOTION.chrome_plans(shot_miss.get("events", []))
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(4, 1),
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	var shot_hit: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 1), "seat": 0})
+	var shot_hit_plans: Dictionary = MOTION.chrome_plans(shot_hit.get("events", []))
+	eq(bool(shot_miss.get("ok", false)), true, "Mark Shot miss still resolves")
+	eq(bool(shot_hit.get("ok", false)), true, "Mark Shot hit still resolves")
+	eq(bool((shot_miss_plans.get(0, {}) as Dictionary).get("cast", false)), true, "Mark Shot miss winds up")
+	eq(bool((shot_hit_plans.get(0, {}) as Dictionary).get("cast", false)), true, "Mark Shot hit winds up")
+	eq(bool((shot_miss_plans.get(0, {}) as Dictionary).get("cast", false)), bool((shot_hit_plans.get(0, {}) as Dictionary).get("cast", false)), "Mark Shot miss uses the same caster wind-up")
+	eq(shot_miss_plans.has(1), false, "Mark Shot miss does not recoil")
+	eq(bool((shot_hit_plans.get(1, {}) as Dictionary).get("hit", false)), true, "Mark Shot hit recoils the target")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 40,
+		"rolls": [100],
+	})
+	var mend_miss: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	var mend_miss_plan: Dictionary = MOTION.chrome_plans(mend_miss.get("events", [])).get(0, {})
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 40,
+		"rolls": [1],
+	})
+	var mend_hit: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	var mend_hit_plan: Dictionary = MOTION.chrome_plans(mend_hit.get("events", [])).get(0, {})
+	eq(bool(mend_miss_plan.get("cast", false)), true, "Mend miss winds up")
+	eq(bool(mend_hit_plan.get("cast", false)), true, "Mend hit winds up")
+	eq(bool(mend_miss_plan.get("lift", false)), false, "Mend miss does not lift")
+	eq(bool(mend_hit_plan.get("lift", false)), true, "Mend hit lifts")
+
+
+func _test_walk_hops_not_advance() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(7, 7),
+	})
+	var walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 1), "seat": 0})
+	eq(bool(walk.get("ok", false)), true, "a legal walk resolves")
+	eq(CombatHUD.should_play_walk_hops(walk.get("events", [])), true, "a legal walk plays per-tile hops")
+	var move := _first_type(walk.get("events", []), "move")
+	var path: Array = move.get("path", [])
+	eq(path.size(), 2, "two tiles is two hop steps")
+	var prev: Vector2i = move.get("from", Vector2i.ZERO)
+	for step in path:
+		var cell: Vector2i = step
+		var delta := cell - prev
+		eq(absi(delta.x) + absi(delta.y), 1, "each walk hop is one ortho tile")
+		prev = cell
+	eq(prev, Vector2i(3, 1), "the hops land on the dest")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var adv: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 7), "seat": 1})
+	eq(bool(adv.get("ok", false)), true, "Advance still resolves")
+	eq(str(_first_type(adv.get("events", []), "advance").get("type", "")), "advance", "Advance emits a teleport event")
+	eq(CombatHUD.should_play_walk_hops(adv.get("events", [])), false, "Advance does not hop")
+	var adv_plans: Dictionary = MOTION.chrome_plans(adv.get("events", []))
+	eq(adv_plans.is_empty(), true, "Advance does not lunge or wind up")
+	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(6, 7), "Advance still snaps to the neighbor")
 
 
 func _test_support_events_do_not_knock() -> void:
@@ -315,6 +451,25 @@ func _test_view_wiring() -> void:
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(sim_src.contains("view_motion"), false, "combat sim does not read view motion")
 	eq(sim_src.contains("play_view_plan"), false, "combat sim does not play view motion")
+	var motion_src := FileAccess.get_file_as_string("res://units/view_motion.gd")
+	truthy(motion_src.contains("\"miss\""), "miss commits arm a caster plan")
+	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "the lunge constant is 6px")
+	truthy(view.contains("chrome_plans"), "the board plays the shared hit and miss plans")
+	var present_idx := view.find("func _present_resolve")
+	var path_idx := view.find("func _path_event")
+	var present_src := view.substr(present_idx, path_idx - present_idx)
+	var motion_at := present_src.find("_arm_view_motions")
+	var vfx_at := present_src.find("_arm_vfx")
+	eq(motion_at >= 0 and vfx_at > motion_at, true, "spell VFX still arms with the body motion")
+	var hop_idx := view.find("func _animate_path")
+	var cell_idx := view.find("func _set_pawn_cell")
+	var anim_src := view.substr(hop_idx, cell_idx - hop_idx)
+	truthy(anim_src.contains("for step in path"), "each path cell is its own hop")
+	truthy(anim_src.contains("play_step_hop"), "each path cell plays the sprite hop")
+	truthy(pawn_src.contains("WalkStrip"), "a walk strip node can drive the hop")
+	truthy(pawn_src.contains("walk_se"), "SE walk frames are the Batch 1 clip name")
+	truthy(pawn_src.contains("attack_ne"), "NE attack frames are the Batch 1 clip name")
+	truthy(pawn_src.contains("strip_speed_scale"), "strip timing follows the hop or lunge window")
 
 
 func _unit(class_id: String, facing: String, seat: int) -> Dictionary:
@@ -332,10 +487,117 @@ func _unit(class_id: String, facing: String, seat: int) -> Dictionary:
 
 
 func _first_hit(events: Array) -> Dictionary:
+	return _first_type(events, "hit")
+
+
+func _first_type(events: Array, typ: String) -> Dictionary:
 	for event in events:
-		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "hit":
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == typ:
 			return event
 	return {}
+
+
+func _solid_tex() -> Texture2D:
+	var image := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0.2, 0.75, 0.35, 1))
+	return ImageTexture.create_from_image(image)
+
+
+func _strip_frames(anim: String, count: int, fps: float) -> SpriteFrames:
+	var frames := SpriteFrames.new()
+	frames.add_animation(anim)
+	frames.set_animation_speed(anim, fps)
+	frames.set_animation_loop(anim, true)
+	var tex := _solid_tex()
+	for _i in count:
+		frames.add_frame(anim, tex)
+	return frames
+
+
+func _test_strip_fallback() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	var stand_in := AnimatedSprite2D.new()
+	stand_in.name = "Sprite"
+	stand_in.sprite_frames = null
+	pawn.add_child(stand_in)
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	truthy(sprite != null, "a strip standing in for Sprite does not replace the static body")
+	truthy(sprite.texture != null, "missing strip frames keep the facing texture")
+	eq(sprite.visible, true, "missing strip frames leave the static sprite visible")
+	var rehomed := pawn.get_node_or_null("BodyStrip") as AnimatedSprite2D
+	truthy(rehomed != null, "the stand-in strip is kept beside the static sprite")
+	eq(rehomed.visible, false, "an empty stand-in strip stays hidden")
+	pawn.play_step_hop()
+	await process_frame
+	eq(sprite.visible, true, "a hop with no frames keeps the static sprite")
+	eq(rehomed.visible, false, "a hop does not show an empty strip")
+	pawn.settle_motion()
+	var empty := AnimatedSprite2D.new()
+	empty.name = "WalkStrip"
+	var blank := SpriteFrames.new()
+	blank.add_animation("walk_se")
+	empty.sprite_frames = blank
+	pawn.add_child(empty)
+	pawn.play_step_hop()
+	await process_frame
+	eq(empty.visible, false, "a walk clip with zero frames stays hidden")
+	eq(sprite.visible, true, "zero frames keep the static sprite on screen")
+	eq(sprite.texture != null, true, "zero frames do not clear the facing texture")
+	pawn.settle_motion()
+	empty.queue_free()
+	await process_frame
+	var walk := AnimatedSprite2D.new()
+	walk.name = "KestrelSE"
+	walk.sprite_frames = _strip_frames("walk_se", 6, 24.0)
+	pawn.add_child(walk)
+	pawn.play_step_hop()
+	await process_frame
+	eq(walk.visible, true, "SE walk frames play during the hop")
+	eq(String(walk.animation), "walk_se", "the hop plays the SE clip for an east facing")
+	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the SE hop strip matches the 0.25s hop")
+	eq(sprite.visible, false, "the static sprite steps aside while the strip plays")
+	eq(walk.offset, Vector2(0, -72), "the strip uses the shipped foot pivot")
+	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
+	eq(sprite.visible, true, "the static sprite returns when the hop ends")
+	eq(walk.visible, false, "the walk strip hides after the hop")
+	eq(sprite.texture != null, true, "the facing texture is still on the sprite")
+	eq(sprite.position, Vector2.ZERO, "the hop still plants the feet")
+	pawn.facing = "N"
+	pawn.play_step_hop()
+	await process_frame
+	eq(walk.visible, false, "east-only frames do not play for a north facing")
+	eq(sprite.visible, true, "a facing with no frames keeps the static sprite")
+	pawn.settle_motion()
+	walk.queue_free()
+	await process_frame
+	pawn.facing = "N"
+	var attack := AnimatedSprite2D.new()
+	attack.name = "AttackStrip"
+	attack.sprite_frames = _strip_frames("attack_ne", 6, 24.0)
+	pawn.add_child(attack)
+	var dur := pawn.play_view_plan({"attack": true, "aim": Vector2(20, -10)})
+	await process_frame
+	eq(dur > 0.0 and dur <= 0.6, true, "an attack plan still reports a short lunge")
+	eq(attack.visible, true, "NE attack frames play during the lunge")
+	eq(String(attack.animation), "attack_ne", "the lunge plays the NE attack clip")
+	var expect := Pawn.strip_speed_scale(6, 24.0, MOTION.attack_sec())
+	eq(is_equal_approx(attack.speed_scale, expect), true, "the attack strip fits the lunge window")
+	eq(sprite.visible, false, "the static sprite steps aside during the attack strip")
+	await create_timer(0.12).timeout
+	eq(sprite.position.length() > 2.0, true, "the lunge still moves the body while the strip plays")
+	pawn.settle_motion()
+	eq(sprite.visible, true, "settle restores the static sprite after the lunge")
+	eq(attack.visible, false, "settle hides the attack strip")
+	eq(sprite.position, Vector2.ZERO, "settle plants the feet after a strip lunge")
+	var miss_dur := pawn.play_view_plan({"attack": true, "aim": Vector2(20, -10)})
+	await process_frame
+	eq(is_equal_approx(miss_dur, dur), true, "a miss lunge lasts as long as a hit lunge")
+	eq(attack.visible, true, "a miss plays the same attack strip as a hit")
+	pawn.settle_motion()
+	pawn.free()
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

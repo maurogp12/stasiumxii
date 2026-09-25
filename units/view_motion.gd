@@ -2,6 +2,9 @@ extends RefCounted
 class_name ViewMotion
 
 ## View-only motion tunables. CombatSim never reads this file.
+## Kits, hit bands, AP/MP, and marks stay put.
+## Batch 1 walk/attack strips (Kestrel and Ironjaw, SE/NE) are not shipped yet.
+## Until those frames exist, pawns keep static facing sprites plus these tweens.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Flip REDUCE_MOTION to true to skip idle, hop arc, lunge, wind-up,
@@ -10,6 +13,8 @@ class_name ViewMotion
 
 const REDUCE_MOTION := false
 const ACTION_LOCK_MAX := 0.6
+## Commit events that play the caster's body motion. Misses are included.
+const CASTER_EVENT_TYPES: Array[String] = ["cast", "miss", "hit", "snap_wall"]
 
 const IDLE_PERIOD := 1.9
 const IDLE_BOB_PX := 1.5
@@ -19,7 +24,8 @@ const HOP_PX := 5.0
 
 const ATTACK_OUT_SEC := 0.14
 const ATTACK_BACK_SEC := 0.12
-const ATTACK_LUNGE_PX := 10.0
+## Melee commit lunge. About 6px so the body reads without sliding off the tile.
+const ATTACK_LUNGE_PX := 6.0
 
 const CAST_RISE_SEC := 0.16
 const CAST_HOLD_SEC := 0.10
@@ -113,6 +119,87 @@ static func target_motion(flash_kind: String) -> String:
 	if flash_kind == "support" or flash_kind == "ward":
 		return "lift"
 	return ""
+
+
+## First commit event in the batch. Miss uses the same caster motion as hit.
+static func caster_event(events: Array) -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var spell_id := str(event.get("spell", ""))
+		if spell_id == "":
+			continue
+		if str(event.get("type", "")) in CASTER_EVENT_TYPES:
+			return event
+	return {}
+
+
+static func hit_event_for(events: Array, target_seat: int) -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		if int(event.get("target_seat", -1)) != target_seat:
+			continue
+		return event
+	return {}
+
+
+## Seat plans for one resolve. Caster attack/cast is armed on hit and miss.
+## Target hit/lift only when the spell connects. Advance adds no body motion.
+static func chrome_plans(events: Array) -> Dictionary:
+	var plans := {}
+	var caster_armed := false
+	var dying := {}
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "dead":
+			dying[int(event.get("seat", -1))] = true
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var typ := str(event.get("type", ""))
+		var spell_id := str(event.get("spell", ""))
+		if not caster_armed and spell_id != "" and typ in CASTER_EVENT_TYPES:
+			caster_armed = true
+			var kind := caster_motion(spell_id)
+			if kind != "":
+				var seat := int(event.get("seat", -1))
+				var plan: Dictionary = plans.get(seat, {})
+				if kind == "attack":
+					plan["attack"] = true
+				elif not bool(plan.get("attack", false)):
+					plan["cast"] = true
+				plans[seat] = plan
+		if typ != "hit":
+			continue
+		var target := int(event.get("target_seat", -1))
+		if target < 0:
+			continue
+		var react := target_motion(_flash_kind(event))
+		if react == "":
+			continue
+		var plan: Dictionary = plans.get(target, {})
+		if react == "hit":
+			plan["hit"] = true
+			plan["delay"] = true
+		elif react == "lift":
+			plan["lift"] = true
+			plan["delay"] = true
+		plans[target] = plan
+	for seat in dying.keys():
+		var plan: Dictionary = plans.get(seat, {})
+		plan["death"] = true
+		plan["tilt"] = -1.0 if int(seat) % 2 == 0 else 1.0
+		plans[seat] = plan
+	return plans
+
+
+static func _flash_kind(event: Dictionary) -> String:
+	var pawn_script: Script = load("res://units/pawn.gd")
+	return str(pawn_script.call("resolve_flash_kind", event))
 
 
 static func steps_for(plan: Dictionary) -> Array:
