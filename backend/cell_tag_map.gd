@@ -9,6 +9,7 @@ extends RefCounted
 ##
 ## Catalog ids: crosshaven, brinewake, slagcrown, windmere, stormspire.
 ## An empty map id loads Crosshaven. `demo_map` stays `{id}_15`.
+## Hot-seat calls `random_ship_id()`; this loader does not show a chooser.
 ##
 ## Schema: { "size": [w, h], "cells": [ { "x", "y", "terrain", "elevation", "paint_only" } ] }
 
@@ -30,6 +31,26 @@ const _TerrainDef := preload("res://backend/terrain_def.gd")
 
 static func is_ship_map(map_id: String) -> bool:
 	return SHIP_MAPS.has(normalize_id(map_id))
+
+
+## Catalog slot. Index wraps so every ship id is reachable.
+static func ship_id_at(index: int) -> String:
+	if SHIP_MAPS.is_empty():
+		return DEFAULT_ID
+	return SHIP_MAPS[posmod(index, SHIP_MAPS.size())]
+
+
+## Uniform among SHIP_MAPS. Pass an RNG to keep a test seed off the global generator.
+static func random_ship_id(rng: Variant = null) -> String:
+	var count := SHIP_MAPS.size()
+	if count == 0:
+		return DEFAULT_ID
+	var index := 0
+	if rng is RandomNumberGenerator:
+		index = (rng as RandomNumberGenerator).randi_range(0, count - 1)
+	else:
+		index = randi_range(0, count - 1)
+	return SHIP_MAPS[index]
 
 
 static func normalize_id(raw: String) -> String:

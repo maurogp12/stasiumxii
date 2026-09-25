@@ -513,6 +513,8 @@ func _on_new_match() -> void:
 	_mark_local_net_echo()
 	var config := {}
 	if not _online():
+		# Fresh arena every hot-seat rematch. Online reset stays Crosshaven.
+		ClassSelect.roll_hotseat_map()
 		config = ClassSelect.local_match_config()
 	_sim().reset_match(config)
 	_rebuild_pawns()

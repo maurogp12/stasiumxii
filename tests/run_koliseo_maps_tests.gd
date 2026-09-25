@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Koliseo ship maps: tags load, lava stays on Slagcrown, paint_only does not
-## block, and the hot-seat picker walks into a match on the chosen map.
+## block, and hot-seat rolls one of the five arenas (no map chooser).
 ## Run: godot --headless --path . -s res://tests/run_koliseo_maps_tests.gd
 
 const MAPS := ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
@@ -21,8 +21,9 @@ func _run() -> void:
 	_test_paint_only_and_lava()
 	_test_unknown_map_does_not_invent()
 	_test_cell_tags_override()
-	_test_picker_flow()
-	await _test_picker_navigates()
+	_test_random_ship_id()
+	_test_hotseat_rolls_map()
+	await _test_hotseat_navigates()
 	print("Koliseo map tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -150,39 +151,56 @@ func _test_cell_tags_override() -> void:
 	eq(int(snap["tiles"][Vector2i(1, 1)]["elevation"]) >= 0, true, "override tags still apply")
 
 
-func _test_picker_flow() -> void:
+func _test_random_ship_id() -> void:
+	for i in MAPS.size():
+		eq(CellTagMap.ship_id_at(i), MAPS[i], "catalog index %d is %s" % [i, MAPS[i]])
+	eq(CellTagMap.ship_id_at(MAPS.size()), MAPS[0], "catalog index wraps onto Crosshaven")
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	var seen := {}
+	for _i in 80:
+		var rolled := CellTagMap.random_ship_id(rng)
+		truthy(MAPS.has(rolled), "seeded roll stays in the five ids")
+		seen[rolled] = true
+	eq(seen.size(), MAPS.size(), "seeded rolls cover every ship map")
+	var live := CellTagMap.random_ship_id()
+	truthy(MAPS.has(live), "live random selection returns one of the five ids")
+
+
+func _test_hotseat_rolls_map() -> void:
 	var script := load("res://scenes/class_select.gd")
 	script.hotseat_classes.clear()
 	script.hotseat_map_id = ""
 	var picker := _picker(false)
 	picker.choose_mode("hotseat")
-	eq(picker.phase_name(), "map", "hot-seat opens the map picker")
-	eq(picker.map_cards_visible(), true, "map cards are on screen")
-	eq(picker.class_cards_visible(), false, "class cards wait until a map is picked")
-	for map_id in MAPS:
-		eq(picker.map_card_title(map_id), CellTagMap.label_of(map_id), "%s card label" % map_id)
-		eq(picker.map_card_has_preview(map_id), true, "%s card shows a preview" % map_id)
-	var unknown: Dictionary = picker.pick_map("pulse")
-	eq(bool(unknown.get("ok", true)), false, "unknown map is rejected")
-	eq(str(unknown.get("reason", "")), "unknown_map", "reject reason is unknown_map")
-	eq(picker.phase_name(), "map", "a bad map stays on the picker")
-	var picked: Dictionary = picker.pick_map("slagcrown")
-	eq(bool(picked.get("ok", false)), true, "Slagcrown click is accepted")
-	eq(picker.phase_name(), "hotseat_p1", "map pick continues to P1")
-	eq(picker.selected_map_id(), "slagcrown", "selected map is Slagcrown")
-	truthy(picker.prompt_text().contains("P1"), "P1 prompt follows the map")
+	eq(picker.phase_name(), "hotseat_p1", "hot-seat opens class select")
+	eq(picker.class_cards_visible(), true, "class cards are on screen")
+	var src := FileAccess.get_file_as_string("res://scenes/class_select.gd")
+	eq(src.contains("func pick_map"), false, "class select has no map picker")
+	eq(src.contains("Pick a Koliseo map"), false, "class select has no map prompt")
+	picker.pick_class("kestrel")
 	picker.go_back()
-	eq(picker.phase_name(), "map", "back from P1 returns to the map picker")
-	picker.pick_map("windmere")
+	eq(picker.phase_name(), "hotseat_p1", "back from P2 returns to P1")
+	picker.choose_mode("hotseat")
 	picker.pick_class("kestrel")
 	picker.pick_class("ironjaw")
-	eq(script.hotseat_map_id, "windmere", "sealed map is Windmere")
+	var sealed := str(script.hotseat_map_id)
+	truthy(MAPS.has(sealed), "sealed map is one of the five")
 	var config: Dictionary = script.local_match_config()
-	eq(str(config.get("map_id", "")), "windmere", "match config carries the map id")
+	eq(str(config.get("map_id", "")), sealed, "match config carries the rolled map id")
 	var snap: Dictionary = _sim().reset_match(config)
-	eq(str(snap.get("demo_map", "")), "windmere_15", "picker config loads Windmere")
-	eq(str(snap["units"][0]["class_id"]), "kestrel", "picker config keeps P1")
-	eq(str(snap["units"][1]["class_id"]), "ironjaw", "picker config keeps P2")
+	eq(str(snap.get("demo_map", "")), "%s_15" % sealed, "rolled config loads that arena")
+	eq(str(snap["units"][0]["class_id"]), "kestrel", "rolled config keeps P1")
+	eq(str(snap["units"][1]["class_id"]), "ironjaw", "rolled config keeps P2")
+	script.hotseat_map_id = "crosshaven"
+	var again := str(script.roll_hotseat_map())
+	truthy(MAPS.has(again), "New Match roll is a ship map")
+	eq(str(script.hotseat_map_id), again, "New Match stores the fresh roll")
+	eq(str(script.local_match_config().get("map_id", "")), again, "fresh roll replaces the previous map id")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var rematch := view.split("func _on_new_match")[1].split("func ")[0]
+	truthy(rematch.contains("roll_hotseat_map()"), "New Match rolls before the next duel")
+	truthy(rematch.find("roll_hotseat_map()") < rematch.find("local_match_config()"), "New Match rolls before reading the sealed config")
 	var dress := str(load("res://board/koliseo_art.gd").dress_for("windmere_15"))
 	eq(dress, "wind_", "Windmere paint uses the ice dress")
 	var tex: Texture2D = load("res://board/koliseo_art.gd").terrain_texture("ground", 0, dress)
@@ -197,15 +215,16 @@ func _test_picker_flow() -> void:
 	picker.free()
 
 
-func _test_picker_navigates() -> void:
+func _test_hotseat_navigates() -> void:
 	var script := load("res://scenes/class_select.gd")
 	script.hotseat_classes.clear()
 	script.hotseat_map_id = ""
 	var picker := _picker(true)
 	picker.choose_mode("hotseat")
-	picker.pick_map("brinewake")
 	picker.pick_class("mender")
 	picker.pick_class("bastion")
+	var map_id := str(script.hotseat_map_id)
+	truthy(MAPS.has(map_id), "launch sealed a ship map")
 	var arrived := false
 	for _i in 12:
 		await process_frame
@@ -214,12 +233,12 @@ func _test_picker_navigates() -> void:
 		if current_scene.scene_file_path != "res://main.tscn":
 			continue
 		var snap: Dictionary = _sim().snapshot()
-		if str(snap.get("demo_map", "")) == "brinewake_15" and str(snap.get("phase", "")) == "DEPLOYMENT":
+		if str(snap.get("demo_map", "")) == "%s_15" % map_id and str(snap.get("phase", "")) == "DEPLOYMENT":
 			arrived = true
 			eq(str(snap["units"][0]["class_id"]), "mender", "navigated match seat 0 is mender")
 			eq(str(snap["units"][1]["class_id"]), "bastion", "navigated match seat 1 is bastion")
 			break
-	eq(arrived, true, "map picker navigates into a Brinewake match")
+	eq(arrived, true, "hot-seat navigates into the rolled arena")
 
 
 func _ground_paint_step(tags: Dictionary) -> Dictionary:
