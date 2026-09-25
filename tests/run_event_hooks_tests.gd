@@ -41,6 +41,7 @@ func _run() -> void:
 	_test_hold_line_cone_and_targets()
 	_test_absorbed_damage_and_intercept()
 	_test_shade_and_plant_snapshot()
+	_test_expiry_events()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -572,6 +573,141 @@ func _test_shade_and_plant_snapshot() -> void:
 	eq(guest_plants[0].get("pos"), Vector2i(5, 6), "guest Plant pos matches the host")
 	eq(bool(guest_plants[0].get("push_resist", false)), true, "guest Plant keeps push resist")
 	eq((_guest.snapshot().get("shade_tokens", []) as Array).size(), 1, "guest still has the Shade after Plant")
+
+
+func _test_expiry_events() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1), "seat": 0})
+	var early: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(_expire(early.get("events", []), "shade").is_empty(), true, "Shade does not expire on the first turn start")
+	eq(int(_sim.snapshot()["shade_tokens"][0]["turns"]), 2, "Shade ticks 3 to 2")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var shade_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	var shade_expire := _expire(shade_end.get("events", []), "shade")
+	eq(shade_expire.get("pos"), Vector2i(2, 1), "Shade expiry names the token cell")
+	eq(int(shade_expire.get("owner_seat", -2)), 0, "Shade expiry names the owner")
+	eq((_sim.snapshot().get("shade_tokens", []) as Array).is_empty(), true, "expired Shade leaves the snapshot")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "expired Shade clears the unit count")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Shade expiry does not change HP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var plant_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	var plant_expire := _expire(plant_end.get("events", []), "plant")
+	eq(plant_expire.get("pos"), Vector2i(2, 1), "Plant expiry names the tile")
+	eq(int(plant_expire.get("owner_seat", -2)), 0, "Plant expiry names Bastion")
+	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "expired Plant leaves the snapshot")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"bastion_aegis": 2,
+	})
+	_sim.submit({"type": "cast", "spell": "snap_wall", "to": Vector2i(2, 1), "seat": 0})
+	var wall_tick: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(_expire(wall_tick.get("events", []), "wall").is_empty(), true, "wall does not expire after one turn start")
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "wall still ticks to 1")
+	var wall_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	var wall_expire := _expire(wall_end.get("events", []), "wall")
+	eq(wall_expire.get("pos"), Vector2i(2, 1), "wall expiry names the blocked cell")
+	eq(int(wall_expire.get("owner_seat", -2)), 0, "wall expiry names Bastion")
+	eq((_sim.snapshot().get("blocked_tiles", []) as Array).is_empty(), true, "expired wall leaves blocked_tiles")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_pulse": 2,
+		"rolls": [1],
+	})
+	var ward: Dictionary = _sim.submit({"type": "cast", "spell": "ward", "to": Vector2i(1, 1), "seat": 0})
+	eq(bool(ward.get("ok", false)), true, "Ward connects before the shield clock")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var shield_mid: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_expire(shield_mid.get("events", []), "shield").is_empty(), true, "shield does not expire on its first tick")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 20, "shield amount stays 20 after one tick")
+	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 1, "shield turns tick 2 to 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var shield_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	var shield_expire := _expire(shield_end.get("events", []), "shield")
+	eq(shield_expire.get("pos"), Vector2i(1, 1), "shield expiry names the unit cell")
+	eq(int(shield_expire.get("target_seat", -2)), 0, "shield expiry names the warded seat")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "expired shield amount is 0")
+	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "expired shield turns are 0")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "shield expiry does not change HP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "W",
+		"ironjaw_impact": 4,
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3), "seat": 1})
+	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_expire(skipped.get("events", []), "stun").is_empty(), true, "the skipped stun turn is not the expiry")
+	eq(bool(_sim.snapshot()["units"][0]["stunned"]), true, "Kestrel is still stunned for the skip")
+	var stun_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	var stun_expire := _expire(stun_end.get("events", []), "stun")
+	eq(stun_expire.get("pos"), Vector2i(3, 3), "Stun expiry names the unit cell")
+	eq(int(stun_expire.get("target_seat", -2)), 0, "Stun expiry names Kestrel")
+	eq(bool(_sim.snapshot()["units"][0]["stunned"]), false, "Stun is clear on the following turn")
+	eq(int(_sim.snapshot()["units"][0]["stun_remaining"]), 0, "Stun remaining stays 0")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"fixture": true,
+	})
+	_host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1)}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 1)
+	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
+	var packed: Dictionary = _host.pack_result(host_end, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire := _expire((decoded as Dictionary).get("events", []), "shade")
+	eq(wire.get("pos"), Vector2i(2, 1), "packed Shade expiry survives encode")
+	_guest.apply_packed_state(packed)
+	var guest := _expire(_guest.snapshot().get("last_events", []), "shade")
+	eq(guest.get("pos"), Vector2i(2, 1), "guest Shade expiry matches the host")
+	eq((_guest.snapshot().get("shade_tokens", [1]) as Array).is_empty(), true, "guest snapshot drops the expired Shade")
+
+
+func _expire(events: Variant, status: String) -> Dictionary:
+	if typeof(events) != TYPE_ARRAY:
+		return {}
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == status:
+			return event
+	return {}
 
 
 func _live_unit(seat: int) -> Dictionary:

@@ -2003,9 +2003,13 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	# then checking remaining would expire Stun 1 before the auto end_turn.
 	# Set stunned-this-turn from remaining>0, then decrement remaining.
 	var remaining := int(unit.get("stun_remaining", 0))
+	var was_stunned := bool(unit.get("stunned", false))
 	unit["stunned"] = remaining > 0
 	if remaining > 0:
 		unit["stun_remaining"] = remaining - 1
+	elif was_stunned:
+		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
+		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_decay_board_durations()
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
@@ -3128,6 +3132,18 @@ func _restore_blocked_tiles(snap: Dictionary) -> void:
 			_add_snap_wall(cell, 2, -1)
 
 
+func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: int = -1) -> void:
+	var event := {
+		"type": "expire",
+		"status": status,
+		"pos": pos,
+		"owner_seat": owner_seat,
+	}
+	if target_seat >= 0:
+		event["target_seat"] = target_seat
+	_last_events.append(event)
+
+
 func _decay_board_durations() -> void:
 	var shades: Array = []
 	for item in _shade_tokens:
@@ -3135,6 +3151,8 @@ func _decay_board_durations() -> void:
 		token["turns"] = int(token.get("turns", 0)) - 1
 		if int(token["turns"]) > 0:
 			shades.append(token)
+		else:
+			_emit_expire("shade", token["pos"], int(token.get("owner_seat", -1)))
 	_shade_tokens = shades
 	var walls: Array = []
 	_snap_wall_cells.clear()
@@ -3144,6 +3162,8 @@ func _decay_board_durations() -> void:
 		if int(wall["turns"]) > 0:
 			walls.append(wall)
 			_snap_wall_cells.append(wall["pos"])
+		else:
+			_emit_expire("wall", wall["pos"], int(wall.get("owner_seat", -1)))
 	_snap_wall_state = walls
 	var plants: Array = []
 	for item in _plant_tiles:
@@ -3151,6 +3171,8 @@ func _decay_board_durations() -> void:
 		tile["turns"] = int(tile.get("turns", 0)) - 1
 		if int(tile["turns"]) > 0:
 			plants.append(tile)
+		else:
+			_emit_expire("plant", tile["pos"], int(tile.get("owner_seat", -1)))
 	_plant_tiles = plants
 	_sync_shade_flags()
 
@@ -3163,6 +3185,7 @@ func _tick_shield(unit: Dictionary) -> void:
 	if int(unit["shield_turns"]) <= 0:
 		unit["shield"] = 0
 		unit["shield_turns"] = 0
+		_emit_expire("shield", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 
 
 func _consume_plant_resist(target: Dictionary) -> bool:
