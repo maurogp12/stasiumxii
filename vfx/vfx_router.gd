@@ -767,9 +767,9 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
-				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 22.0, 0.22, 4.5))
-				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 0.95))
-				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.2, "", VfxPalette.GLOAM_RIM))
+				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 30.0, 0.22, 5.5))
+				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 1.15))
+				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.65, "", VfxPalette.GLOAM_RIM))
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))

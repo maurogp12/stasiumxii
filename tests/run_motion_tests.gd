@@ -20,6 +20,7 @@ func _initialize() -> void:
 func _finish_live() -> void:
 	await _test_live_tree()
 	await _test_strip_fallback()
+	await _test_shade_markers_survive_rebuild()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -470,6 +471,10 @@ func _test_view_wiring() -> void:
 	truthy(motion_src.contains("\"miss\""), "miss commits arm a caster plan")
 	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "the lunge constant is 6px")
 	truthy(view.contains("chrome_plans"), "the board plays the shared hit and miss plans")
+	truthy(view.contains("ShadeMarkers"), "Shade markers are not Units children")
+	eq(view.contains("$Units.add_child(marker)"), false, "pawn rebuild cannot free Shade markers")
+	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush stays the lunge-then-blink")
+	eq(MOTION.caster_motion(SpellKits.DROP_SHADE), "cast", "Drop Shade stays a cast, not a blink")
 	var present_idx := view.find("func _present_resolve")
 	var path_idx := view.find("func _path_event")
 	var present_src := view.substr(present_idx, path_idx - present_idx)
@@ -486,6 +491,11 @@ func _test_view_wiring() -> void:
 	truthy(pawn_src.contains("walk_se"), "SE walk frames are the Batch 1 clip name")
 	truthy(pawn_src.contains("attack_ne"), "NE attack frames are the Batch 1 clip name")
 	truthy(pawn_src.contains("strip_speed_scale"), "strip timing follows the hop or lunge window")
+
+
+func _test_shade_markers_survive_rebuild() -> void:
+	var live := load("res://tests/shade_marker_live.gd")
+	await live.run(self)
 
 
 func _unit(class_id: String, facing: String, seat: int) -> Dictionary:

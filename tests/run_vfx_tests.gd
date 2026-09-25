@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 func _finish_live() -> void:
 	await _test_live_director()
+	await _test_shade_markers_survive_rebuild()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -466,6 +467,7 @@ func _test_every_event_type() -> void:
 	var shade_cast: Array = ROUTER.recipes_for([samples[3]])
 	eq(_has(shade_cast, "ring"), false, "Drop Shade does not leave a shader puddle")
 	eq(_first(shade_cast, "number")["text"], "Shade", "Drop Shade floater says Shade")
+	eq(_first(shade_cast, "number").get("scale", 1.0) >= 1.5, true, "Drop Shade floater is larger than a resource pip")
 	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
@@ -552,7 +554,11 @@ func _test_live_director() -> void:
 	var marker_src := FileAccess.get_file_as_string("res://board/shade_marker.gd")
 	var board_src := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(marker_src.contains("Shade"), "the board marker labels the token")
+	truthy(marker_src.contains("CLOAK_PEAK"), "the Shade silhouette is an explicit phone-sized figure")
+	eq(float(load("res://board/shade_marker.gd").CLOAK_PEAK) >= 120.0, true, "Shade cloak is tall enough to read on a phone")
 	truthy(board_src.contains("_sync_shade_markers"), "refresh places the shade on the tile")
+	truthy(board_src.contains("ShadeMarkers"), "the shade token is not parented under Units")
+	eq(board_src.contains("$Units.add_child(marker)"), false, "sync does not attach the marker to Units")
 	director.play([{
 		"type": "expire",
 		"status": "shade",
@@ -590,6 +596,11 @@ func _test_live_director() -> void:
 	DIRECTOR.clear_reduce_shake()
 	ProjectSettings.set_setting("stasium/view/reduce_shake", false)
 	board.queue_free()
+
+
+func _test_shade_markers_survive_rebuild() -> void:
+	var live := load("res://tests/shade_marker_live.gd")
+	await live.run(self)
 
 
 func _test_class_choreography() -> void:
