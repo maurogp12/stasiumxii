@@ -20,6 +20,7 @@ const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
+const TOUCH := preload("res://ui/touch_adapter.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -66,6 +67,8 @@ var _empty_kit_label: Label
 var _tooltip_panel: Panel
 var _tooltip_label: Label
 var _tooltip_spell: String = ""
+## Touch card stays up after the finger lifts. Mouse hover still hides on exit.
+var _tooltip_pinned: bool = false
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
 var _last_snap: Dictionary = {}
@@ -825,41 +828,10 @@ func _build() -> void:
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
-	bottom.offset_top = -232
+	bottom.offset_top = TOUCH.HUD_BOTTOM_OFFSET
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
-
-	var face_bar := HBoxContainer.new()
-	_face_bar = face_bar
-	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	face_bar.add_theme_constant_override("separation", 8)
-	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bottom.add_child(face_bar)
-	var face_caption := Label.new()
-	face_caption.text = "Face"
-	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	face_bar.add_child(face_caption)
-	var face_pad := GridContainer.new()
-	face_pad.columns = 3
-	face_pad.add_theme_constant_override("h_separation", 4)
-	face_pad.add_theme_constant_override("v_separation", 4)
-	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	face_bar.add_child(face_pad)
-	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
-	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
-		if dir == "":
-			var spacer := Control.new()
-			spacer.custom_minimum_size = Vector2(36, 28)
-			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			face_pad.add_child(spacer)
-			continue
-		var button := Button.new()
-		button.text = dir
-		button.custom_minimum_size = Vector2(36, 28)
-		button.pressed.connect(_on_face_pressed.bind(dir))
-		face_pad.add_child(button)
-		_face_buttons[dir] = button
 
 	_aim_hit_label = Label.new()
 	_aim_hit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -874,18 +846,58 @@ func _build() -> void:
 	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	bottom.add_child(_selected_label)
 
+	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
+	var combat_row := HBoxContainer.new()
+	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	combat_row.add_theme_constant_override("separation", 8)
+	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom.add_child(combat_row)
+
+	var face_bar := HBoxContainer.new()
+	_face_bar = face_bar
+	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	face_bar.add_theme_constant_override("separation", 8)
+	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	combat_row.add_child(face_bar)
+	var face_caption := Label.new()
+	face_caption.text = "Face"
+	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	face_bar.add_child(face_caption)
+	var face_pad := GridContainer.new()
+	face_pad.columns = 3
+	face_pad.add_theme_constant_override("h_separation", 4)
+	face_pad.add_theme_constant_override("v_separation", 4)
+	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_bar.add_child(face_pad)
+	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
+	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
+		if dir == "":
+			var spacer := Control.new()
+			spacer.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
+			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			face_pad.add_child(spacer)
+			continue
+		var button := Button.new()
+		button.text = dir
+		button.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
+		button.add_theme_font_size_override("font_size", 18)
+		button.pressed.connect(_on_face_pressed.bind(dir))
+		face_pad.add_child(button)
+		_face_buttons[dir] = button
+
 	_action_bar = FlowContainer.new()
 	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
-	_action_bar.custom_minimum_size = Vector2(0, 72)
+	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
 	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_action_bar.add_theme_constant_override("h_separation", 6)
 	_action_bar.add_theme_constant_override("v_separation", 6)
-	bottom.add_child(_action_bar)
+	combat_row.add_child(_action_bar)
 
 	_walk_button = Button.new()
 	_walk_button.text = "Walk"
-	_walk_button.custom_minimum_size = Vector2(88, 32)
+	_walk_button.custom_minimum_size = TOUCH.WALK_BUTTON_SIZE
 	_walk_button.clip_text = true
+	_walk_button.add_theme_font_size_override("font_size", 18)
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
 
@@ -900,34 +912,38 @@ func _build() -> void:
 	_empty_kit_button.disabled = true
 	_empty_kit_button.visible = false
 	_empty_kit_button.focus_mode = Control.FOCUS_NONE
-	_empty_kit_button.custom_minimum_size = Vector2(88, 32)
+	_empty_kit_button.custom_minimum_size = TOUCH.WALK_BUTTON_SIZE
 	_empty_kit_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_bar.add_child(_empty_kit_button)
 
 	_ready_p1_button = Button.new()
 	_ready_p1_button.text = "Ready P1"
-	_ready_p1_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p1_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
+	_ready_p1_button.add_theme_font_size_override("font_size", 18)
 	_ready_p1_button.clip_text = true
 	_ready_p1_button.pressed.connect(func() -> void: ready_requested.emit(0))
 	_action_bar.add_child(_ready_p1_button)
 
 	_ready_p2_button = Button.new()
 	_ready_p2_button.text = "Ready P2"
-	_ready_p2_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p2_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
+	_ready_p2_button.add_theme_font_size_override("font_size", 18)
 	_ready_p2_button.clip_text = true
 	_ready_p2_button.pressed.connect(func() -> void: ready_requested.emit(1))
 	_action_bar.add_child(_ready_p2_button)
 
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
-	_end_turn_button.custom_minimum_size = Vector2(112, 32)
+	_end_turn_button.custom_minimum_size = TOUCH.END_TURN_BUTTON_SIZE
+	_end_turn_button.add_theme_font_size_override("font_size", 18)
 	_end_turn_button.clip_text = true
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
 	_action_bar.add_child(_end_turn_button)
 
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
-	_new_match_button.custom_minimum_size = Vector2(112, 32)
+	_new_match_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_new_match_button.add_theme_font_size_override("font_size", 18)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
 	_action_bar.add_child(_new_match_button)
@@ -951,7 +967,8 @@ func _build() -> void:
 	root.add_child(_toast_label)
 
 	_tooltip_panel = Panel.new()
-	_tooltip_panel.position = Vector2(240, 348)
+	# Above the touch action row so a pinned card does not cover Face / End Turn.
+	_tooltip_panel.position = Vector2(240, 168)
 	_tooltip_panel.size = Vector2(480, 248)
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.visible = false
@@ -1282,17 +1299,19 @@ func _sync_spell_buttons(offered: Array) -> void:
 			continue
 		if not _spell_buttons.has(spell_id):
 			var host := Control.new()
-			host.custom_minimum_size = Vector2(152, 32)
+			host.custom_minimum_size = TOUCH.SPELL_BUTTON_SIZE
 			host.mouse_filter = Control.MOUSE_FILTER_STOP
 			_bind_spell_hover(host, spell_id)
 			host.gui_input.connect(_on_spell_host_input.bind(spell_id))
 			var button := Button.new()
 			button.text = _spell_button_text(def)
 			button.clip_text = true
+			button.add_theme_font_size_override("font_size", 16)
 			button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 			button.pressed.connect(_on_spell_pressed.bind(spell_id))
 			button.button_down.connect(_begin_long_press.bind(spell_id))
 			button.button_up.connect(_cancel_long_press)
+			button.gui_input.connect(_on_spell_host_input.bind(spell_id))
 			# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
 			_bind_spell_hover(button, spell_id)
 			host.add_child(button)
@@ -1368,7 +1387,7 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Stunned — turn auto-ends"
 		return
 	if _selected_spell == "":
-		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
+		_selected_label.text = "Selected: Walk  ·  tap a destination  ·  Face pad turns"
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
@@ -1379,7 +1398,7 @@ func _update_selected_label() -> void:
 	]
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
-	text += "  ·  Walk / Esc to cancel"
+	text += "  ·  tap a cell  ·  Walk / Esc to cancel"
 	_selected_label.text = text
 
 
@@ -1453,6 +1472,7 @@ func _as_cell(value: Variant) -> Vector2i:
 
 func hide_spell_tooltip() -> void:
 	_tooltip_spell = ""
+	_tooltip_pinned = false
 	_cancel_long_press()
 	if _tooltip_panel != null:
 		_tooltip_panel.visible = false
@@ -1470,6 +1490,16 @@ func tooltip_caption() -> String:
 	return _tooltip_label.text
 
 
+func tooltip_pinned() -> bool:
+	return _tooltip_pinned
+
+
+## Board touch dismisses a card that was opened by a finger, not a mouse hover.
+func dismiss_pinned_tooltip() -> void:
+	if _tooltip_pinned:
+		hide_spell_tooltip()
+
+
 func _bind_spell_hover(control: Control, spell_id: String) -> void:
 	control.mouse_entered.connect(_on_spell_hover.bind(spell_id))
 	control.mouse_exited.connect(_on_spell_unhover)
@@ -1480,13 +1510,22 @@ func _on_spell_hover(spell_id: String) -> void:
 
 
 func _on_spell_unhover() -> void:
+	# A touch card stays until Walk, a cell tap, or another explicit dismiss.
+	if _tooltip_pinned:
+		return
 	hide_spell_tooltip()
 
 
 func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
+	if TOUCH.is_emulated_mouse(event):
+		return
 	if event is InputEventScreenTouch:
-		if event.pressed:
+		var touch := event as InputEventScreenTouch
+		if touch.pressed:
 			_begin_long_press(spell_id)
+			# Tap/press shows the card. Hover is only the desktop path.
+			show_spell_tooltip(spell_id)
+			_tooltip_pinned = tooltip_visible()
 		else:
 			_cancel_long_press()
 		return
