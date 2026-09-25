@@ -1490,8 +1490,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
-	var damage := _phase_a_damage(base, facing_mult)
-	damage = _mitigate_hit(actor, target, damage)
+	var pre_mitigation := _phase_a_damage(base, facing_mult)
+	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
@@ -1615,6 +1616,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
+	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
 		_last_events.append({
@@ -2446,21 +2448,48 @@ func _clear_resource(unit: Dictionary, field: String) -> int:
 ## Immunity consumes the hit (damage 0, shield untouched). Then one adjacent
 ## same-seat Bastion may take 40% once. Shield absorbs the rest. Zero shield
 ## and zero immunity leave the formula damage unchanged.
-func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
+## The returned damage is the HP actually lost. The other keys only describe it.
+func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
+	var report := {
+		"damage": damage,
+		"immunity_absorbed": false,
+		"immunity_amount": 0,
+		"shield_absorbed": 0,
+		"shield_broken": false,
+		"shield_remaining": int(target.get("shield", 0)),
+		"intercepted": 0,
+	}
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
-		return 0
+		report["immunity_absorbed"] = true
+		report["immunity_amount"] = damage
+		report["damage"] = 0
+		return report
 	var transferred := _intercept_transfer(actor, target, damage)
+	report["intercepted"] = transferred
 	var remaining := damage - transferred
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
 		var absorbed := mini(shield, remaining)
 		target["shield"] = shield - absorbed
 		remaining -= absorbed
+		report["shield_absorbed"] = absorbed
 		if int(target["shield"]) <= 0:
 			target["shield"] = 0
 			target["shield_turns"] = 0
-	return remaining
+			report["shield_broken"] = true
+	report["damage"] = remaining
+	report["shield_remaining"] = int(target.get("shield", 0))
+	return report
+
+
+func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
+	event["immunity_absorbed"] = bool(report.get("immunity_absorbed", false))
+	event["immunity_amount"] = int(report.get("immunity_amount", 0))
+	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
+	event["shield_broken"] = bool(report.get("shield_broken", false))
+	event["shield_remaining"] = int(report.get("shield_remaining", 0))
+	event["intercepted"] = int(report.get("intercepted", 0))
 
 
 func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
@@ -2492,8 +2521,18 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 		return 0
 	bastion["intercept_used"] = true
 	bastion["hp"] = maxi(0, int(bastion["hp"]) - moved)
+	var dealt := mini(moved, damage)
+	_last_events.append({
+		"type": "intercept",
+		"interceptor_seat": int(bastion["seat"]),
+		"for_seat": int(target["seat"]),
+		"interceptor_cell": bastion["pos"],
+		"for_cell": target["pos"],
+		"damage": dealt,
+		"hp": int(bastion["hp"]),
+	})
 	_check_death(bastion)
-	return mini(moved, damage)
+	return dealt
 
 
 func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary) -> int:
@@ -2747,11 +2786,12 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
-		var damage := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
-		damage = _mitigate_hit(actor, target, damage)
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
+		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
 		target["exit_tax"] = maxi(int(target.get("exit_tax", 0)), int(def.get("exit_tax_turns", 1)))
-		targets.append({
+		var row := {
 			"target_seat": int(target["seat"]),
 			"cell": cell,
 			"hit": true,
@@ -2759,7 +2799,9 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"exit_tax": int(target["exit_tax"]),
 			"facing_mult": facing_mult,
 			"back": is_back,
-		})
+		}
+		_stamp_mitigation(row, mitigation)
+		targets.append(row)
 		total += damage
 		hit_bodies += 1
 		_check_death(target)
@@ -2836,8 +2878,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin["pos"], int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var damage := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
-	damage = _mitigate_hit(actor, target, damage)
+	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
+	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+	var damage := int(mitigation["damage"])
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
 	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
 	_last_events.append({
@@ -2864,6 +2907,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"shades": int(actor.get("shades", 0)),
 		"coach": _last_coach,
 	})
+	_stamp_mitigation(_last_events[_last_events.size() - 1], mitigation)
 	_check_death(target)
 	return _accept()
 

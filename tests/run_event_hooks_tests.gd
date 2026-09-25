@@ -39,6 +39,7 @@ func _run() -> void:
 	_test_caster_cell_survives_host_pack()
 	_test_ambush_origin_and_destination()
 	_test_hold_line_cone_and_targets()
+	_test_absorbed_damage_and_intercept()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -371,6 +372,135 @@ func _test_hold_line_cone_and_targets() -> void:
 	var guest_rows: Array = guest.get("targets", [])
 	eq(guest_rows.size(), 1, "guest Hold Line has the host target row")
 	eq(int(guest_rows[0].get("damage", -1)), 7, "guest Hold Line target damage matches")
+
+
+func _test_absorbed_damage_and_intercept() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hit_immunity": 1,
+		"rolls": [1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var immune: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var immune_hit := _event_of(immune.get("events", []), "hit")
+	eq(bool(immune_hit.get("immunity_absorbed", false)), true, "immunity consumes the hit")
+	eq(int(immune_hit.get("immunity_amount", -1)), 16, "immunity amount is the pre-mitigation hit")
+	eq(int(immune_hit.get("damage", -1)), 0, "immunity leaves HP damage at 0")
+	eq(int(immune_hit.get("shield_absorbed", -1)), 0, "immunity does not touch shield")
+	eq(bool(immune_hit.get("shield_broken", true)), false, "immunity does not break shield")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "immunity still prevents HP loss")
+	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "immunity charge is still spent")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"rolls": [1, 1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_live_unit(0)["shield"] = 20
+	_live_unit(0)["shield_turns"] = 2
+	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var soaked_hit := _event_of(soaked.get("events", []), "hit")
+	eq(int(soaked_hit.get("shield_absorbed", -1)), 16, "shield absorbs the 16 Strike")
+	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 16")
+	eq(int(soaked_hit.get("shield_remaining", -1)), 4, "shield remaining is 4")
+	eq(int(soaked_hit.get("damage", -1)), 0, "full shield leaves HP damage at 0")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "partial shield still blocks all HP")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 4, "shield pool is 4")
+	_live_unit(0)["shield"] = 10
+	_live_unit(0)["shield_turns"] = 2
+	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var broken_hit := _event_of(broken.get("events", []), "hit")
+	eq(int(broken_hit.get("shield_absorbed", -1)), 10, "broken shield absorbs its remaining pool")
+	eq(bool(broken_hit.get("shield_broken", false)), true, "shield_broken is set when the pool hits 0")
+	eq(int(broken_hit.get("damage", -1)), 6, "overflow past the shield is still 6")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 74, "overflow still reduces HP")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "broken shield pool is 0")
+	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "broken shield clears its turns")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var plain: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var plain_hit := _event_of(plain.get("events", []), "hit")
+	eq(bool(plain_hit.get("immunity_absorbed", true)), false, "an unmitigated hit is not immunity")
+	eq(int(plain_hit.get("shield_absorbed", -1)), 0, "an unmitigated hit absorbs no shield")
+	eq(int(plain_hit.get("intercepted", -1)), 0, "a 1v1 hit does not intercept")
+	eq(_event_of(plain.get("events", []), "intercept").is_empty(), true, "1v1 emits no Intercept event")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 64, "unmitigated Strike stays 16")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	var guard: Dictionary = _sim._make_unit(0, "bastion", "Bastion", "earth", Vector2i(3, 4), "N", true)
+	_sim._units.append(guard)
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var guarded: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var guard_hit := _event_of(guarded.get("events", []), "hit")
+	var intercept := _event_of(guarded.get("events", []), "intercept")
+	eq(int(intercept.get("interceptor_seat", -1)), 0, "Intercept names the Bastion seat")
+	eq(int(intercept.get("for_seat", -1)), 0, "Intercept names the ally seat")
+	eq(intercept.get("interceptor_cell"), Vector2i(3, 4), "Intercept names the Bastion cell")
+	eq(intercept.get("for_cell"), Vector2i(3, 3), "Intercept names the ally cell")
+	eq(int(intercept.get("damage", -1)), 6, "Intercept transfers round 40% of 16")
+	eq(int(intercept.get("hp", -1)), 74, "Bastion HP after the transfer is 74")
+	eq(int(guard_hit.get("intercepted", -1)), 6, "hit records the intercepted amount")
+	eq(int(guard_hit.get("damage", -1)), 10, "the ally still takes the remainder")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 70, "ally HP loss stays 10")
+	eq(int(guard["hp"]), 74, "Bastion HP loss stays 6")
+	eq(bool(guard.get("intercept_used", false)), true, "Intercept is still spent for the turn")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hit_immunity": 1,
+		"rolls": [1],
+		"fixture": true,
+	})
+	eq(_host.submit({"type": "end_turn"})["ok"], true, "host hands Ironjaw the turn")
+	var cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)}, 1)
+	var packed: Dictionary = _host.pack_result(cast, 0)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
+	eq(bool(wire.get("immunity_absorbed", false)), true, "packed hit keeps immunity_absorbed")
+	eq(int(wire.get("immunity_amount", -1)), 16, "packed hit keeps immunity_amount")
+	_guest.apply_packed_state(packed)
+	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
+	eq(bool(guest.get("immunity_absorbed", false)), true, "guest hit keeps immunity_absorbed")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 80, "guest HP matches the immune host")
+
+
+func _live_unit(seat: int) -> Dictionary:
+	for unit in _sim._units:
+		if int(unit["seat"]) == seat:
+			return unit
+	return {}
 
 
 func _event_of(events: Variant, kind: String) -> Dictionary:
