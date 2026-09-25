@@ -24,7 +24,7 @@ const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
 ## Proto-only 8×8 crop of the in-code 12×12 token grid.
-## Ship matches load Crosshaven tags at 15×15, not this crop. Explicit
+## Ship matches load a Koliseo 15×15 tags file (default Crosshaven), not this crop. Explicit
 ## board_size 12 seeds the full token grid (`seed_mauro_12`) as proto only.
 ## PHASE_A_DEMO_TILES is phase_a_demo_tiles().
 ## Proto 8 elevation is noise from MatchConfig.seed (smooth noise, z 0–3).

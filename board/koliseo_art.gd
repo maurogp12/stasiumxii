@@ -6,11 +6,14 @@ extends RefCounted
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
-const _TERRAIN := {
-	"ground": {0: "ground.png", 1: "ground_e1.png", 2: "ground_e2.png"},
-	"mud": {0: "mud.png", 1: "mud_e1.png"},
-	"water": {0: "water.png"},
-	"lava": {0: "lava.png"},
+const _Maps := preload("res://backend/cell_tag_map.gd")
+## File prefix for region-tinted grounds. Crosshaven uses the base names.
+const DRESS := {
+	"crosshaven": "",
+	"brinewake": "brine_",
+	"slagcrown": "slag_",
+	"windmere": "wind_",
+	"stormspire": "storm_",
 }
 const _PROPS := {
 	"ruins": "prop_ruins.png",
@@ -20,26 +23,49 @@ const _PROPS := {
 	"rubble": "prop_rubble.png",
 	"rock_pillar": "prop_rock_pillar.png",
 	"floor_seal": "prop_floor_seal.png",
+	"driftwood": "prop_driftwood.png",
+	"waterfall": "prop_waterfall.png",
+	"rock_cluster": "prop_rock_cluster.png",
+	"basalt_pillar": "prop_basalt_pillar.png",
+	"steam_vent": "prop_steam_vent.png",
+	"ash_rock": "prop_ash_rock.png",
+	"crystal": "prop_crystal.png",
+	"ice_shard": "prop_ice_shard.png",
+	"ice_sheet": "prop_ice_sheet.png",
+	"spark": "prop_spark.png",
+	"conduit": "prop_conduit.png",
+	"crystal_bolt": "prop_crystal_bolt.png",
+	"arc": "prop_arc.png",
 }
 
 static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
 
 
-static func terrain_texture(terrain: String, elevation: int) -> Texture2D:
-	var table: Dictionary = _TERRAIN.get(terrain, {})
-	if table.is_empty():
-		return null
-	var file := ""
-	var best := -1
-	for key in table.keys():
-		var z := int(key)
-		if z <= elevation and z >= best:
-			best = z
-			file = str(table[key])
-	if file == "":
-		return null
-	return _load(file)
+## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
+static func dress_for(map_id: String) -> String:
+	var id := _Maps.normalize_id(map_id)
+	return str(DRESS.get(id, ""))
+
+
+## Region dress is tried first (`brine_ground_e1.png`), then the Crosshaven sheet.
+## A missing higher cliff falls back to the next lower sheet of that dress.
+static func terrain_texture(terrain: String, elevation: int, dress: String = "") -> Texture2D:
+	var prefixes: Array[String] = []
+	if dress != "":
+		prefixes.append(dress)
+	prefixes.append("")
+	for prefix in prefixes:
+		var z := elevation
+		while z >= 0:
+			var file := "%s%s.png" % [prefix, terrain]
+			if z > 0:
+				file = "%s%s_e%d.png" % [prefix, terrain, z]
+			var tex := _load(file)
+			if tex != null:
+				return tex
+			z -= 1
+	return null
 
 
 ## Painted dress v1 stores the terrain diamond in the top-left half of the PNG.

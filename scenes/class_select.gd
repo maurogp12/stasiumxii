@@ -1,8 +1,9 @@
 extends Control
 class_name ClassSelect
 
-## Main scene. Hot-seat is P1 then P2, then the local CombatSim duel.
+## Main scene. Hot-seat picks a Koliseo map, then P1, then P2, then the local duel.
 ## Online pick calls NetSession.select_class (rpc_select_class once connected).
+## Online stays on Crosshaven; the dedicated host does not share a map pick.
 ## Queue calls start_queue_client, which sends rpc_enqueue. Queue is the Find Match control.
 ## Results arrive on connection_changed from rpc_class_result / rpc_queue_result /
 ## rpc_match_assigned: class_selected, class_rejected, waiting, queue_rejected, matched.
@@ -28,8 +29,11 @@ const ROLE_LINES := {
 }
 
 static var hotseat_classes: Array[String] = []
+## Short catalog id (`brinewake`). Empty keeps the Crosshaven default.
+static var hotseat_map_id: String = ""
 
 var _phase: String = "mode"
+var _map_id: String = ""
 var _p1: String = ""
 var _p2: String = ""
 var _picked: String = ""
@@ -44,6 +48,9 @@ var _reject: Label
 var _p1_chip: PanelContainer
 var _p1_chip_label: Label
 var _cards_row: HBoxContainer
+var _map_row: HBoxContainer
+var _map_chip: PanelContainer
+var _map_chip_label: Label
 var _join_row: HBoxContainer
 var _join_ip: LineEdit
 var _join_port: LineEdit
@@ -53,6 +60,9 @@ var _queue_label: Label
 var _back_button: Button
 var _mode_buttons: Dictionary = {}
 var _class_buttons: Dictionary = {}
+var _map_cards: Dictionary = {}
+var _map_name_labels: Dictionary = {}
+var _map_previews: Dictionary = {}
 var _name_labels: Dictionary = {}
 var _role_labels: Dictionary = {}
 var _portraits: Dictionary = {}
@@ -74,7 +84,12 @@ static func local_match_config() -> Dictionary:
 		return {}
 	if not SpellKits.is_roster_class(hotseat_classes[0]) or not SpellKits.is_roster_class(hotseat_classes[1]):
 		return {}
-	return {"classes": [hotseat_classes[0], hotseat_classes[1]]}
+	var config := {
+		"classes": [hotseat_classes[0], hotseat_classes[1]],
+	}
+	if CellTagMap.is_ship_map(hotseat_map_id):
+		config["map_id"] = CellTagMap.normalize_id(hotseat_map_id)
+	return config
 
 
 static func role_line(class_id: String) -> String:
@@ -120,13 +135,14 @@ func choose_mode(which: String) -> void:
 	if _phase == "dedicated":
 		return
 	if which == "hotseat":
-		_phase = "hotseat_p1"
+		_phase = "map"
+		_map_id = ""
 		_p1 = ""
 		_p2 = ""
 		_status.text = ""
 	elif which == "online":
 		_phase = "online"
-		_status.text = "Pick a class, then Queue."
+		_status.text = "Pick a class, then Queue. Online plays Crosshaven."
 	else:
 		return
 	_reject.text = ""
@@ -140,6 +156,9 @@ func pick_class(class_id: String) -> Dictionary:
 	if _phase == "mode":
 		_status.text = "Choose Hot-seat or Online first."
 		return {"ok": false, "reason": "mode_required", "class_id": id}
+	if _phase == "map":
+		_status.text = "Pick a map first."
+		return {"ok": false, "reason": "map_required", "class_id": id}
 	if _phase == "hotseat_done":
 		return {"ok": false, "reason": "already_started", "class_id": id, "classes": hotseat_classes.duplicate()}
 	if not SpellKits.is_roster_class(id):
@@ -188,6 +207,23 @@ func request_queue() -> Dictionary:
 	return result
 
 
+func pick_map(map_id: String) -> Dictionary:
+	var id := CellTagMap.normalize_id(map_id)
+	if _phase == "dedicated":
+		return {"ok": false, "reason": "dedicated", "map_id": id}
+	if _phase != "map":
+		return {"ok": false, "reason": "map_phase", "map_id": id}
+	if not CellTagMap.is_ship_map(id):
+		_show_reject("unknown_map", id)
+		return {"ok": false, "reason": "unknown_map", "map_id": id}
+	_map_id = id
+	_phase = "hotseat_p1"
+	_reject.text = ""
+	_status.text = ""
+	_refresh_all()
+	return {"ok": true, "reason": "", "map_id": id}
+
+
 func go_back() -> void:
 	if _phase == "dedicated" or _leaving:
 		return
@@ -196,9 +232,16 @@ func go_back() -> void:
 		_p2 = ""
 		_refresh_all()
 		return
+	if _phase == "hotseat_p1":
+		_phase = "map"
+		_p1 = ""
+		_p2 = ""
+		_refresh_all()
+		return
 	if NetSession.is_online() or (NetSession.is_queue_client() and NetSession.is_client()):
 		NetSession.return_to_hotseat()
 	_phase = "mode"
+	_map_id = ""
 	_p1 = ""
 	_p2 = ""
 	_queue_panel.visible = false
@@ -229,6 +272,33 @@ func reject_text() -> String:
 	if _reject == null:
 		return ""
 	return _reject.text
+
+
+func selected_map_id() -> String:
+	return _map_id
+
+
+func map_cards_visible() -> bool:
+	return _map_row != null and _map_row.visible and _map_cards.size() == CellTagMap.SHIP_MAPS.size()
+
+
+func map_card_title(map_id: String) -> String:
+	var id := CellTagMap.normalize_id(map_id)
+	if not _map_name_labels.has(id):
+		return ""
+	return str((_map_name_labels[id] as Label).text)
+
+
+func map_card_blurb(map_id: String) -> String:
+	return CellTagMap.blurb_of(map_id)
+
+
+func map_card_has_preview(map_id: String) -> bool:
+	var id := CellTagMap.normalize_id(map_id)
+	if not _map_previews.has(id):
+		return false
+	var tex: TextureRect = _map_previews[id]
+	return tex.texture != null
 
 
 func class_cards_visible() -> bool:
@@ -300,7 +370,7 @@ func _build() -> void:
 
 	var blurb := Label.new()
 	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Hot-seat is local. Online queues on the dedicated host."
+	blurb.text = "Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion. Hot-seat picks a map, then classes. Online queues on the dedicated host (Crosshaven)."
 	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
 	col.add_child(blurb)
 
@@ -316,6 +386,15 @@ func _build() -> void:
 	_prompt.add_theme_font_size_override("font_size", 22)
 	col.add_child(_prompt)
 
+	_map_chip = PanelContainer.new()
+	_map_chip.visible = false
+	_map_chip.add_theme_stylebox_override("panel", _seat_chip_style(Color("#3E3424")))
+	col.add_child(_map_chip)
+	_map_chip_label = Label.new()
+	_map_chip_label.add_theme_font_size_override("font_size", 16)
+	_map_chip_label.add_theme_color_override("font_color", Color(0.98, 0.94, 0.84))
+	_map_chip.add_child(_map_chip_label)
+
 	_p1_chip = PanelContainer.new()
 	_p1_chip.visible = false
 	_p1_chip.add_theme_stylebox_override("panel", _seat_chip_style(SEAT_P1))
@@ -324,6 +403,16 @@ func _build() -> void:
 	_p1_chip_label.add_theme_font_size_override("font_size", 16)
 	_p1_chip_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
 	_p1_chip.add_child(_p1_chip_label)
+
+	_map_row = HBoxContainer.new()
+	_map_row.add_theme_constant_override("separation", 12)
+	_map_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_map_row.visible = false
+	col.add_child(_map_row)
+	for map_id in CellTagMap.SHIP_MAPS:
+		var map_card := _make_map_card(str(map_id))
+		map_card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_map_row.add_child(map_card)
 
 	_cards_row = HBoxContainer.new()
 	_cards_row.add_theme_constant_override("separation", 12)
@@ -481,6 +570,76 @@ func _make_card(class_id: String) -> Panel:
 	return panel
 
 
+func _make_map_card(map_id: String) -> Panel:
+	var panel := Panel.new()
+	panel.custom_minimum_size = Vector2(168, 236)
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	panel.focus_mode = Control.FOCUS_ALL
+	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	panel.gui_input.connect(_on_map_gui.bind(map_id))
+	panel.add_theme_stylebox_override("panel", _card_style(false))
+
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.position = Vector2(8, 8)
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+
+	var preview := _load_preview(map_id)
+	var tex := TextureRect.new()
+	tex.custom_minimum_size = Vector2(144, 96)
+	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tex.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	tex.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if preview != null:
+		tex.texture = preview
+	box.add_child(tex)
+	_map_previews[map_id] = tex
+
+	var name_label := Label.new()
+	name_label.text = CellTagMap.label_of(map_id)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	name_label.add_theme_font_size_override("font_size", 18)
+	name_label.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(name_label)
+	_map_name_labels[map_id] = name_label
+
+	var blurb := Label.new()
+	blurb.text = CellTagMap.blurb_of(map_id)
+	blurb.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	blurb.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	blurb.add_theme_font_size_override("font_size", 13)
+	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
+	blurb.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(blurb)
+
+	_map_cards[map_id] = panel
+	return panel
+
+
+func _load_preview(map_id: String) -> Texture2D:
+	var path := CellTagMap.preview_path(map_id)
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	var res: Resource = ResourceLoader.load(path)
+	if res is Texture2D:
+		return res as Texture2D
+	return null
+
+
+func _on_map_gui(event: InputEvent, map_id: String) -> void:
+	if event is InputEventMouseButton:
+		var mouse := event as InputEventMouseButton
+		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
+			pick_map(map_id)
+			accept_event()
+	elif event.is_action_pressed("ui_accept"):
+		pick_map(map_id)
+		accept_event()
+
+
 func _on_card_gui(event: InputEvent, class_id: String) -> void:
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
@@ -510,6 +669,7 @@ func _begin_hotseat_match() -> void:
 	sealed.append(_p1)
 	sealed.append(_p2)
 	hotseat_classes = sealed
+	hotseat_map_id = _map_id if _map_id != "" else CellTagMap.DEFAULT_ID
 	if not _auto_launch or _leaving:
 		return
 	_leaving = true
@@ -522,6 +682,7 @@ func _refresh_all() -> void:
 		return
 	_apply_prompt()
 	_apply_mode_styles()
+	_apply_maps()
 	_apply_cards()
 	if _queue_button != null:
 		var confirmed := SpellKits.is_roster_class(NetSession.selected_class_id)
@@ -531,12 +692,24 @@ func _refresh_all() -> void:
 
 
 func _apply_prompt() -> void:
+	var show_map := _phase.begins_with("hotseat") and _map_id != ""
+	_map_chip.visible = show_map
+	if show_map:
+		_map_chip_label.text = "Map: %s" % CellTagMap.label_of(_map_id)
 	var show_chip := _phase == "hotseat_p2" or _phase == "hotseat_done"
 	_p1_chip.visible = show_chip
 	if show_chip:
 		_p1_chip_label.text = "P1 locked in: %s" % SpellKits.display_name(_p1)
 	_join_row.visible = _phase == "online"
-	if _phase == "hotseat_p1":
+	if _map_row != null:
+		_map_row.visible = _phase == "map"
+	if _cards_row != null:
+		_cards_row.visible = _phase != "map"
+	if _phase == "map":
+		_prompt.text = "Pick a Koliseo map"
+		_prompt.add_theme_color_override("font_color", Color(0.95, 0.9, 0.82))
+		_prompt_seat = -1
+	elif _phase == "hotseat_p1":
 		_prompt.text = "P1 — pick your class"
 		_prompt.add_theme_color_override("font_color", SEAT_P1_TEXT)
 		_prompt_seat = 0
@@ -559,11 +732,17 @@ func _apply_mode_styles() -> void:
 		var button: Button = _mode_buttons[mode_id]
 		var active := false
 		if str(mode_id) == "hotseat":
-			active = _phase.begins_with("hotseat")
+			active = _phase.begins_with("hotseat") or _phase == "map"
 		elif str(mode_id) == "online":
 			active = _phase == "online"
 		button.add_theme_stylebox_override("normal", _mode_style(str(mode_id), active))
 		button.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
+
+
+func _apply_maps() -> void:
+	for map_id in _map_cards.keys():
+		var panel: Panel = _map_cards[map_id]
+		panel.add_theme_stylebox_override("panel", _card_style(str(map_id) == _map_id and _map_id != ""))
 
 
 func _apply_cards() -> void:
@@ -629,6 +808,8 @@ func _show_reject(reason: String, class_id: String) -> void:
 	if who == "":
 		who = class_id if class_id != "" else "that class"
 	match reason:
+		"unknown_map":
+			_reject.text = "That map is not in the Koliseo."
 		"invalid_class":
 			_reject.text = "Server rejected %s." % who
 		"class_required":
