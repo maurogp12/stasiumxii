@@ -831,8 +831,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# The sim has already moved the unit. Put the body back on the departure tile
 	# before the first step, or a refresh snaps it and the walk reads as a teleport.
 	# Locked: facing follows each step so the pointer matches CombatSim last-hop facing.
-	# Position tween is Pawn.WALK_HOP_SEC. A walk strip loops once for the whole path
-	# and skips the hop arc. Missing strips keep the per-tile hop.
+	# Position tween is Pawn.WALK_HOP_SEC. A walk strip loops for the whole path
+	# and skips the hop only while it is actually playing. A failed play hops.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -851,8 +851,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		pawn.set_facing(dir)
 		_stop_walk_tween()
-		var flat_walk := pawn.has_walk_strip()
-		pawn.play_step_hop()
+		# Linear slide only when play_step_hop started the strip. Otherwise hop.
+		var flat_walk := pawn.play_step_hop()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(true)
 		if flat_walk:

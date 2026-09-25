@@ -110,15 +110,19 @@ static func letter_for_sheet(facing: String) -> String:
 
 static func _load_class(class_id: String) -> SpriteFrames:
 	var built := SpriteFrames.new()
-	var any := _load_export_pngs(built, class_id)
+	var any := false
+	# Tres first. A device CompressedTexture2D often reports a size that does not
+	# divide into cells, and that one-frame AtlasTexture used to win over the tres.
 	if _absorb_export_frames(built, class_id):
+		any = true
+	if _load_export_pngs(built, class_id):
 		any = true
 	if _load_grok_fallback(built, class_id):
 		any = true
 	if not any or not _has_playable(built):
 		return null
 	_drop_default(built)
-	return built
+	return _bake_compressed_atlases(built)
 
 
 static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:
@@ -133,7 +137,8 @@ static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:
 	return any
 
 
-## Fills animation names the per-facing PNGs left empty. PNG wins when both exist.
+## Authored `*_frames.tres` clips stay. A per-facing PNG fills a name the tres left empty.
+## Runtime AtlasTexture slices must not replace a bank Godot already sliced.
 static func _absorb_export_frames(built: SpriteFrames, class_id: String) -> bool:
 	var res := try_load(export_frames_path(class_id))
 	if not (res is SpriteFrames):
@@ -225,6 +230,62 @@ static func _copy_anim(dst: SpriteFrames, src: SpriteFrames, from_name: StringNa
 		if tex == null:
 			continue
 		dst.add_frame(to_name, tex, src.get_frame_duration(from_name, i))
+
+
+## Android draws one region for every AtlasTexture that shares a CompressedTexture2D.
+## Copy each authored cell into its own ImageTexture so the strip can cycle.
+static func _bake_compressed_atlases(src: SpriteFrames) -> SpriteFrames:
+	if src == null or not _needs_atlas_bake(src):
+		return src
+	var baked := SpriteFrames.new()
+	for anim_name in src.get_animation_names():
+		if str(anim_name) == "default":
+			continue
+		var count := src.get_frame_count(anim_name)
+		if count <= 0:
+			continue
+		baked.add_animation(anim_name)
+		baked.set_animation_speed(anim_name, src.get_animation_speed(anim_name))
+		baked.set_animation_loop(anim_name, src.get_animation_loop(anim_name))
+		for i in count:
+			var tex := src.get_frame_texture(anim_name, i)
+			var frame_tex := _bake_frame_texture(tex)
+			if frame_tex == null:
+				continue
+			baked.add_frame(anim_name, frame_tex, src.get_frame_duration(anim_name, i))
+	if not _has_playable(baked):
+		return src
+	_drop_default(baked)
+	return baked
+
+
+static func _needs_atlas_bake(frames: SpriteFrames) -> bool:
+	for anim_name in frames.get_animation_names():
+		if str(anim_name) == "default":
+			continue
+		var count := frames.get_frame_count(anim_name)
+		for i in count:
+			if _is_compressed_atlas(frames.get_frame_texture(anim_name, i)):
+				return true
+	return false
+
+
+static func _is_compressed_atlas(tex: Texture2D) -> bool:
+	if not (tex is AtlasTexture):
+		return false
+	var atlas := (tex as AtlasTexture).atlas
+	return atlas is CompressedTexture2D
+
+
+static func _bake_frame_texture(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	if not _is_compressed_atlas(tex):
+		return tex
+	var image := tex.get_image()
+	if image == null or image.is_empty():
+		return tex
+	return ImageTexture.create_from_image(image)
 
 
 static func _has_playable(frames: SpriteFrames) -> bool:

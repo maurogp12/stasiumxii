@@ -12,13 +12,13 @@ Per-facing PNG (this is the drop Godot stubs now):
 
 `art/export_2x/characters/<class>/anims/<class>_<anim>_<n|e|s|w>.png`
 
-SpriteFrames bank (proposed, fills any letter the PNGs left empty):
+SpriteFrames bank (authored slices; this is what playback uses when the file exists):
 
 `art/export_2x/characters/<class>/<class>_frames.tres`
 
 Animation names inside the `.tres`: `walk_e`, `walk_s`, `walk_n`, `walk_w`, `attack_e`, `attack_s`, `attack_n`, `attack_w`. Walk loops at 12 fps. Attack is one-shot. Impact frame index is **3** (0-based) for both kits.
 
-A per-facing PNG wins over the same name in the `.tres`.
+The `.tres` wins when that clip is present. A per-facing PNG fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
 
 `<class>` is `kestrel` or `ironjaw` for Batch 1. The same folders work later for `gloam`, `mender`, and `bastion`.
 
@@ -68,7 +68,7 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing:** loop at authored fps for the whole path. No hop arc. Position still tweens about 0.25s per tile.
-- **Walk missing:** hop plus the static facing.
+- **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. No hop arc. Position still tweens about 0.25s per tile.
+- **Walk missing, or `play()` does not start:** hop plus the static facing. The hop is not dropped just because the files exist.
 - **Attack strip:** one-shot plus the ~6px lunge, at 12 fps when the 0.6s lock has room. Ambush keeps the longer reach. A cast with no cast strip (Kestrel's bow) plays this attack cycle too.
 - **Attack missing:** lunge plus the static facing. A cast strip, when present, still uses the rise.

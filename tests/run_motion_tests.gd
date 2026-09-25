@@ -20,6 +20,7 @@ func _initialize() -> void:
 func _finish_live() -> void:
 	await _test_live_tree()
 	await _test_strip_fallback()
+	await _test_failed_strip_falls_back_to_hop()
 	await _test_batch1_disk_strips()
 	await _test_shade_markers_survive_rebuild()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
@@ -456,7 +457,7 @@ func _test_view_wiring() -> void:
 	truthy(pawn_src.contains("begin_path_walk"), "a path can hold the walk loop")
 	truthy(view.contains("begin_path_walk"), "the board starts the walk loop once")
 	truthy(view.contains("end_path_walk"), "the board stops the walk loop at the end")
-	truthy(view.contains("has_walk_strip"), "the board skips the hop when a walk strip resolves")
+	truthy(view.contains("flat_walk := pawn.play_step_hop()"), "the board eases flat only when the walk strip is playing")
 	truthy(view.contains("finish_step"), "each step plants the sprite")
 	truthy(view.contains("_track_step_sort"), "hops retarget z while moving")
 	truthy(view.contains("ACTION_LOCK_MAX"), "the action lock uses the shared budget")
@@ -703,10 +704,13 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(paths.has(StripLibrary.grok_png_path("kestrel", "walk", "se")), false, "batch-1 list is export_2x, not grok masters")
 	for path in paths:
 		eq(FileAccess.file_exists(path), true, "batch-1 png is in the repo: %s" % path)
-		var loaded := StripLibrary.try_load(path)
+		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
+		var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
 		truthy(loaded is Texture2D, "batch-1 png loads: %s" % path)
 		eq((loaded as Texture2D).get_width(), 864, "strip width is 6 cells: %s" % path)
 		eq((loaded as Texture2D).get_height(), 160, "strip height is one cell: %s" % path)
+		var import_text := FileAccess.get_file_as_string(path + ".import")
+		truthy(import_text.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
 	for cls in ["kestrel", "ironjaw"]:
 		var bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
 		truthy(bank != null, "%s frames tres loads" % cls)
@@ -728,6 +732,34 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(kestrel_bank, StripLibrary.frames_for("kestrel"), "kestrel bank is cached")
 	eq(kestrel_bank.get_animation_loop("walk_e"), true, "loaded kestrel walk loops")
 	eq(ironjaw_bank.get_animation_loop("attack_w"), false, "loaded ironjaw attack is one-shot")
+	for cls in ["kestrel", "ironjaw"]:
+		var tres_path := StripLibrary.export_frames_path(cls)
+		eq(ResourceLoader.exists(tres_path), true, "APK frames tres exists: %s" % tres_path)
+		var authored := ResourceLoader.load(tres_path, "", ResourceLoader.CACHE_MODE_REUSE) as SpriteFrames
+		var played := StripLibrary.frames_for(cls)
+		truthy(authored != null and played != null, "%s playback bank and tres both load" % cls)
+		for kind in ["walk", "attack"]:
+			for face in ["e", "s", "n", "w"]:
+				var anim_name := "%s_%s" % [kind, face]
+				eq(played.get_frame_count(anim_name) >= 2, true, "%s %s playback has at least two frames" % [cls, anim_name])
+				var authored_tex := authored.get_frame_texture(anim_name, 0)
+				var played_tex := played.get_frame_texture(anim_name, 0)
+				truthy(played_tex != null, "%s %s frame 0 texture is non-null" % [cls, anim_name])
+				truthy(played_tex is ImageTexture, "%s %s is baked off the compressed atlas" % [cls, anim_name])
+				eq(played_tex.get_width(), 144, "%s %s cell is 144 wide, not the whole strip" % [cls, anim_name])
+				eq(played_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, anim_name])
+				var authored_image := authored_tex.get_image()
+				var played_image := played_tex.get_image()
+				truthy(authored_image != null and played_image != null, "%s %s cell images load" % [cls, anim_name])
+				eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
+				var later := played.get_frame_texture(anim_name, 3).get_image()
+				eq(played_image.get_data() == later.get_data(), false, "%s %s frames are not one repeated cell" % [cls, anim_name])
+				var regions: Array = []
+				for i in played.get_frame_count(anim_name):
+					var cell := played.get_frame_texture(anim_name, i)
+					truthy(cell != null, "%s %s frame %d texture is non-null" % [cls, anim_name, i])
+					eq(regions.has(cell), false, "%s %s frame %d is its own texture" % [cls, anim_name, i])
+					regions.append(cell)
 	eq(StripLibrary.frames_for("gloam") == null, true, "batch-2 classes stay empty until their files land")
 	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
 	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
@@ -802,11 +834,19 @@ func _test_batch1_disk_strips() -> void:
 	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	pawn.begin_path_walk()
-	pawn.play_step_hop()
+	var playing := pawn.play_step_hop()
 	await process_frame
 	var strip := _visible_strip(pawn)
 	truthy(strip != null, "kestrel walk shows the export strip")
+	eq(playing, true, "kestrel east walk reports the strip playing")
+	eq(strip.is_playing(), true, "kestrel BodyStrip is_playing after play_step_hop")
 	eq(String(strip.animation), "walk_e", "kestrel east plays walk_e")
+	eq(strip.sprite_frames.get_frame_count("walk_e") >= 2, true, "kestrel walk has at least two frames")
+	_assert_strip_cells(strip, "walk_e")
+	var walked_from := strip.frame
+	await create_timer(0.3).timeout
+	eq(strip.is_playing(), true, "kestrel walk keeps playing across the tile")
+	eq(strip.frame != walked_from, true, "kestrel walk frame advances")
 	eq(strip.sprite_frames.get_animation_loop("walk_e"), true, "disk walk loops")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk walk stays at authored speed")
 	eq(sprite.visible, false, "static sprite steps aside for the disk walk")
@@ -829,7 +869,10 @@ func _test_batch1_disk_strips() -> void:
 	await process_frame
 	strip = _visible_strip(pawn)
 	truthy(strip != null, "kestrel attack shows the export strip")
+	eq(strip.is_playing(), true, "kestrel attack strip is_playing")
 	eq(String(strip.animation), "attack_e", "kestrel east plays attack_e")
+	eq(strip.sprite_frames.get_frame_count("attack_e") >= 2, true, "kestrel attack has at least two frames")
+	_assert_strip_cells(strip, "attack_e")
 	eq(strip.sprite_frames.get_animation_loop("attack_e"), false, "disk attack is one-shot")
 	eq(dur > 0.45 and dur <= 0.6, true, "disk attack plays the 12 fps cycle inside the lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk attack stays at authored 12 fps")
@@ -852,6 +895,7 @@ func _test_batch1_disk_strips() -> void:
 	await process_frame
 	strip = _visible_strip(pawn)
 	truthy(strip != null, "kestrel bow shows the attack strip")
+	eq(strip.is_playing(), true, "Mark Shot attack strip is_playing")
 	eq(String(strip.animation), "attack_e", "Mark Shot plays attack_e")
 	eq(bow > 0.45 and bow <= 0.6, true, "the bow cycle fits the action lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "the bow cycle stays at 12 fps")
@@ -864,11 +908,15 @@ func _test_batch1_disk_strips() -> void:
 	await process_frame
 	jaw.apply_snapshot(_unit("ironjaw", "N", 1), 1)
 	jaw.begin_path_walk()
-	jaw.play_step_hop()
+	var jaw_playing := jaw.play_step_hop()
 	await process_frame
 	var jaw_strip := _visible_strip(jaw)
 	truthy(jaw_strip != null, "ironjaw walk shows the export strip")
+	eq(jaw_playing, true, "ironjaw north walk reports the strip playing")
+	eq(jaw_strip.is_playing(), true, "ironjaw BodyStrip is_playing after play_step_hop")
 	eq(String(jaw_strip.animation), "walk_n", "ironjaw north plays walk_n")
+	eq(jaw_strip.sprite_frames.get_frame_count("walk_n") >= 2, true, "ironjaw walk has at least two frames")
+	_assert_strip_cells(jaw_strip, "walk_n")
 	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "ironjaw walk does not hop")
 	jaw.end_path_walk()
 	var strike_plans: Dictionary = MOTION.chrome_plans([{
@@ -884,7 +932,10 @@ func _test_batch1_disk_strips() -> void:
 	await process_frame
 	jaw_strip = _visible_strip(jaw)
 	truthy(jaw_strip != null, "ironjaw strike shows the attack strip")
+	eq(jaw_strip.is_playing(), true, "ironjaw strike strip is_playing")
 	eq(String(jaw_strip.animation), "attack_n", "ironjaw north plays attack_n")
+	eq(jaw_strip.sprite_frames.get_frame_count("attack_n") >= 2, true, "ironjaw attack has at least two frames")
+	_assert_strip_cells(jaw_strip, "attack_n")
 	eq(slam > 0.45 and slam <= 0.6, true, "ironjaw strike plays the authored cycle")
 	eq(is_equal_approx(jaw_strip.speed_scale, 1.0), true, "ironjaw attack stays at 12 fps")
 	_assert_attack_impact(jaw_strip, "Ironjaw Strike")
@@ -905,10 +956,63 @@ func _test_batch1_disk_strips() -> void:
 func _assert_attack_impact(strip: AnimatedSprite2D, msg: String) -> void:
 	var anim := String(strip.animation)
 	eq(strip.sprite_frames.get_frame_count(anim) > StripLibrary.ATTACK_IMPACT_FRAME, true, "%s reaches the impact frame" % msg)
-	var cell := strip.sprite_frames.get_frame_texture(anim, StripLibrary.ATTACK_IMPACT_FRAME) as AtlasTexture
-	truthy(cell != null, "%s impact frame is a strip cell" % msg)
-	eq(is_equal_approx(cell.region.position.x, 144.0 * float(StripLibrary.ATTACK_IMPACT_FRAME)), true, "%s impact is frame index 3" % msg)
-	eq(cell.region.size, Vector2(144, 160), "%s impact cell is 144x160" % msg)
+	var cell := strip.sprite_frames.get_frame_texture(anim, StripLibrary.ATTACK_IMPACT_FRAME)
+	truthy(cell != null, "%s impact frame has a texture" % msg)
+	eq(cell.get_width(), 144, "%s impact cell is 144 wide" % msg)
+	eq(cell.get_height(), 160, "%s impact cell is 160 tall" % msg)
+	var matched := false
+	for cls in ["kestrel", "ironjaw"]:
+		var authored_bank := ResourceLoader.load(StripLibrary.export_frames_path(cls), "", ResourceLoader.CACHE_MODE_REUSE) as SpriteFrames
+		if authored_bank == null or not authored_bank.has_animation(anim):
+			continue
+		var authored := authored_bank.get_frame_texture(anim, StripLibrary.ATTACK_IMPACT_FRAME) as AtlasTexture
+		if authored == null:
+			continue
+		eq(is_equal_approx(authored.region.position.x, 144.0 * float(StripLibrary.ATTACK_IMPACT_FRAME)), true, "%s tres impact is frame index 3" % msg)
+		eq(authored.region.size, Vector2(144, 160), "%s tres impact cell is 144x160" % msg)
+		var authored_image := authored.get_image()
+		var played_image := cell.get_image()
+		if authored_image != null and played_image != null and authored_image.get_data() == played_image.get_data():
+			matched = true
+	eq(matched, true, "%s impact matches the authored frame-3 cell" % msg)
+
+
+func _test_failed_strip_falls_back_to_hop() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
+	var frames := SpriteFrames.new()
+	_add_anim(frames, "walk_e", 4, 12.0)
+	_add_anim(frames, "walk_s", 4, 12.0)
+	pawn.bind_motion_frames(frames)
+	pawn.set_facing("E")
+	var strip := pawn.get_node("BodyStrip") as AnimatedSprite2D
+	strip.animation = "walk_s"
+	strip.animation_changed.connect(func() -> void:
+		strip.stop()
+	)
+	var started := pawn.play_step_hop()
+	eq(started, false, "a strip that stops during play does not count as playing")
+	await process_frame
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	eq(strip.is_playing(), false, "the failed strip is not playing")
+	eq(strip.visible, false, "the failed strip stays hidden")
+	eq(sprite.visible, true, "failed playback keeps the static sprite")
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
+	eq(sprite.position.y < -1.0, true, "failed strip playback falls back to the hop")
+	pawn.settle_motion()
+	pawn.free()
+
+
+func _assert_strip_cells(strip: AnimatedSprite2D, anim: String) -> void:
+	var frames := strip.sprite_frames
+	var count := frames.get_frame_count(anim)
+	eq(count >= 2, true, "%s frame_count is at least 2" % anim)
+	for i in count:
+		var tex := frames.get_frame_texture(anim, i)
+		truthy(tex != null, "%s frame %d texture is non-null" % [anim, i])
+		eq(tex.get_width() > 0 and tex.get_width() < 800, true, "%s frame %d is one cell, not the whole strip" % [anim, i])
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
