@@ -66,6 +66,14 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 `_se` fills `*_e`, `_sw` fills `*_s`, `_ne` fills `*_n`, `_nw` fills `*_w`.
 
+## Gender + palette (characters_custom)
+
+Prebaked Kestrel / Ironjaw sheets live beside this folder, not in it. Do not overwrite the Batch-1 v3 files here.
+
+`art/export_2x/characters_custom/{class}/{gender}/{palette}/anims/{class}_{walk|attack}_{e|s|n|w}.png`
+
+Flag `stasium/cosmetics/gender_palette` off, or a missing custom PNG, keeps the paths in this folder. See `art/export_2x/characters_custom/PIPELINE.md`.
+
 ## Playback
 
 - **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. No hop arc. Position still tweens about 0.25s per tile.

@@ -9,6 +9,8 @@ class_name ClassSelect
 ## Results arrive on connection_changed from rpc_class_result / rpc_queue_result /
 ## rpc_match_assigned: class_selected, class_rejected, waiting, queue_rejected, matched.
 ## Locked roster: Kestrel, Ironjaw, Mender, Gloam, Bastion.
+## Kestrel and Ironjaw can pick gender + palette on this shared hot-seat path
+## (PC and mobile). Presentation only. Flag: stasium/cosmetics/gender_palette.
 ## --class, --queue, --join, and --host skip this screen. --dedicated never shows it.
 
 const MAIN_SCENE := "res://main.tscn"
@@ -61,6 +63,11 @@ var _class_buttons: Dictionary = {}
 var _name_labels: Dictionary = {}
 var _role_labels: Dictionary = {}
 var _portraits: Dictionary = {}
+var _tray: CosmeticTray
+var _pending_class: String = ""
+var _draft_gender: String = SeatCosmetics.GENDER_DEFAULT
+var _draft_palette: String = SeatCosmetics.PALETTE_LOCKED
+var _seat_drafts: Array = []
 
 
 static func route_for_plan(plan: Dictionary) -> String:
@@ -134,9 +141,14 @@ func choose_mode(which: String) -> void:
 		_phase = "hotseat_p1"
 		_p1 = ""
 		_p2 = ""
+		_pending_class = ""
+		_draft_gender = SeatCosmetics.GENDER_DEFAULT
+		_draft_palette = SeatCosmetics.PALETTE_LOCKED
+		_seat_drafts = []
 		_status.text = ""
 	elif which == "online":
 		_phase = "online"
+		_pending_class = ""
 		_status.text = "Pick a class, then Queue. Online plays Crosshaven."
 	else:
 		return
@@ -163,6 +175,8 @@ func pick_class(class_id: String) -> Dictionary:
 		return {"ok": false, "reason": "invalid_class", "class_id": id}
 	if _phase == "hotseat_p1":
 		_p1 = id
+		_remember_seat(0, id)
+		_pending_class = ""
 		_phase = "hotseat_p2"
 		_reject.text = ""
 		_status.text = ""
@@ -170,6 +184,8 @@ func pick_class(class_id: String) -> Dictionary:
 		return {"ok": true, "reason": "", "class_id": id, "seat": 0}
 	if _phase == "hotseat_p2":
 		_p2 = id
+		_remember_seat(1, id)
+		_pending_class = ""
 		_phase = "hotseat_done"
 		_reject.text = ""
 		_refresh_all()
@@ -214,6 +230,9 @@ func go_back() -> void:
 	if _phase == "hotseat_p2":
 		_phase = "hotseat_p1"
 		_p2 = ""
+		_pending_class = ""
+		if _seat_drafts.size() > 1:
+			_seat_drafts[1] = {}
 		_refresh_all()
 		return
 	if NetSession.is_online() or (NetSession.is_queue_client() and NetSession.is_client()):
@@ -221,6 +240,7 @@ func go_back() -> void:
 	_phase = "mode"
 	_p1 = ""
 	_p2 = ""
+	_pending_class = ""
 	_queue_panel.visible = false
 	_refresh_all()
 
@@ -361,6 +381,12 @@ func _build() -> void:
 		var card := _make_card(str(class_id))
 		card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_cards_row.add_child(card)
+
+	_tray = CosmeticTray.new()
+	_tray.gender_picked.connect(_on_tray_gender)
+	_tray.palette_picked.connect(_on_tray_palette)
+	_tray.lock_pressed.connect(_on_tray_lock)
+	col.add_child(_tray)
 
 	_join_row = HBoxContainer.new()
 	_join_row.add_theme_constant_override("separation", 8)
@@ -513,10 +539,10 @@ func _on_card_gui(event: InputEvent, class_id: String) -> void:
 	if event is InputEventMouseButton:
 		var mouse := event as InputEventMouseButton
 		if mouse.pressed and mouse.button_index == MOUSE_BUTTON_LEFT:
-			pick_class(class_id)
+			choose_card(class_id)
 			accept_event()
 	elif event.is_action_pressed("ui_accept"):
-		pick_class(class_id)
+		choose_card(class_id)
 		accept_event()
 
 
@@ -538,6 +564,10 @@ func _begin_hotseat_match() -> void:
 	sealed.append(_p1)
 	sealed.append(_p2)
 	hotseat_classes = sealed
+	if SeatCosmetics.enabled():
+		SeatCosmetics.seal_hotseat(_seat_drafts)
+	else:
+		SeatCosmetics.clear_hotseat()
 	roll_hotseat_map()
 	if not _auto_launch or _leaving:
 		return
@@ -552,6 +582,7 @@ func _refresh_all() -> void:
 	_apply_prompt()
 	_apply_mode_styles()
 	_apply_cards()
+	_apply_cosmetics()
 	if _queue_button != null:
 		var confirmed := SpellKits.is_roster_class(NetSession.selected_class_id)
 		_queue_button.disabled = _phase != "online" or not confirmed or NetSession.match_assigned()
@@ -563,7 +594,23 @@ func _apply_prompt() -> void:
 	var show_chip := _phase == "hotseat_p2" or _phase == "hotseat_done"
 	_p1_chip.visible = show_chip
 	if show_chip:
-		_p1_chip_label.text = "P1 locked in: %s" % SpellKits.display_name(_p1)
+		_p1_chip_label.text = _seat_lock_line("P1", _p1, 0)
+	if _phase == "hotseat_p1" and _cosmetics_pending():
+		_prompt.text = "P1 — %s gender and palette" % SpellKits.display_name(_pending_class)
+		_prompt.add_theme_color_override("font_color", SEAT_P1_TEXT)
+		_prompt_seat = 0
+		_join_row.visible = false
+		if _cards_row != null:
+			_cards_row.visible = true
+		return
+	if (_phase == "hotseat_p2" or _phase == "hotseat_done") and _cosmetics_pending():
+		_prompt.text = "P2 — %s gender and palette" % SpellKits.display_name(_pending_class)
+		_prompt.add_theme_color_override("font_color", SEAT_P2_TEXT)
+		_prompt_seat = 1
+		_join_row.visible = false
+		if _cards_row != null:
+			_cards_row.visible = true
+		return
 	_join_row.visible = _phase == "online"
 	if _cards_row != null:
 		_cards_row.visible = true
@@ -599,13 +646,157 @@ func _apply_mode_styles() -> void:
 
 func _apply_cards() -> void:
 	var selected := ""
-	if _phase == "hotseat_p1" or _phase == "hotseat_p2" or _phase == "hotseat_done":
+	if _cosmetics_pending():
+		selected = _pending_class
+	elif _phase == "hotseat_p1" or _phase == "hotseat_p2" or _phase == "hotseat_done":
 		selected = _p1 if _phase == "hotseat_p1" else _p2
 	elif _phase == "online":
 		selected = NetSession.selected_class_id
 	for class_id in _class_buttons.keys():
 		var panel: Panel = _class_buttons[class_id]
 		panel.add_theme_stylebox_override("panel", _card_style(str(class_id) == selected and selected != ""))
+
+
+## Card click. Cosmetic classes open the tray; every other class locks immediately.
+func choose_card(class_id: String) -> void:
+	var id := SpellKits.normalize_class_id(class_id)
+	if not _offer_cosmetics(id):
+		pick_class(id)
+		return
+	if _pending_class == id:
+		return
+	_pending_class = id
+	_draft_gender = SeatCosmetics.GENDER_DEFAULT
+	_draft_palette = SeatCosmetics.PALETTE_LOCKED
+	if _reject != null:
+		_reject.text = ""
+	_refresh_all()
+
+
+func lock_in_pending() -> Dictionary:
+	if _pending_class == "":
+		return {"ok": false, "reason": "class_required", "class_id": ""}
+	return pick_class(_pending_class)
+
+
+func select_gender(gender_id: String) -> void:
+	if not _cosmetics_pending():
+		return
+	_draft_gender = SeatCosmetics.normalize_gender(gender_id)
+	_refresh_all()
+
+
+func select_palette(palette_id: String) -> void:
+	if not _cosmetics_pending():
+		return
+	if not SeatCosmetics.palettes_for(_pending_class).has(palette_id):
+		return
+	_draft_palette = palette_id
+	_refresh_all()
+
+
+func cosmetics_controls_visible() -> bool:
+	return _tray != null and _tray.visible
+
+
+func gender_button(gender_id: String) -> Button:
+	if _tray == null:
+		return null
+	return _tray.gender_button(gender_id)
+
+
+func palette_button(palette_id: String) -> Button:
+	if _tray == null:
+		return null
+	return _tray.palette_button(palette_id)
+
+
+func gender_button_text(gender_id: String) -> String:
+	var button := gender_button(gender_id)
+	if button == null:
+		return ""
+	return button.text
+
+
+func palette_chip_text(palette_id: String) -> String:
+	var button := palette_button(palette_id)
+	if button == null:
+		return ""
+	return button.text
+
+
+func palette_swatch(palette_id: String) -> Color:
+	var button := palette_button(palette_id)
+	if button == null:
+		return Color(0, 0, 0, 0)
+	var style := button.get_theme_stylebox("normal") as StyleBoxFlat
+	if style == null:
+		return Color(0, 0, 0, 0)
+	return style.bg_color
+
+
+func draft_gender() -> String:
+	return _draft_gender
+
+
+func draft_palette() -> String:
+	return _draft_palette
+
+
+func _offer_cosmetics(class_id: String) -> bool:
+	if not SeatCosmetics.enabled() or not SeatCosmetics.supports(class_id):
+		return false
+	return _phase == "hotseat_p1" or _phase == "hotseat_p2"
+
+
+func _cosmetics_pending() -> bool:
+	return _offer_cosmetics(_pending_class)
+
+
+func _remember_seat(seat: int, class_id: String) -> void:
+	while _seat_drafts.size() <= seat:
+		_seat_drafts.append({})
+	if not SeatCosmetics.enabled() or not SeatCosmetics.supports(class_id):
+		_seat_drafts[seat] = {}
+		return
+	var gender := SeatCosmetics.GENDER_DEFAULT
+	var palette := SeatCosmetics.PALETTE_LOCKED
+	if _pending_class == class_id:
+		gender = _draft_gender
+		palette = _draft_palette
+	_seat_drafts[seat] = SeatCosmetics.make(class_id, gender, palette)
+
+
+func _seat_lock_line(seat_name: String, class_id: String, seat: int) -> String:
+	var line := "%s locked in: %s" % [seat_name, SpellKits.display_name(class_id)]
+	if seat < 0 or seat >= _seat_drafts.size():
+		return line
+	var spec: Variant = _seat_drafts[seat]
+	if not (spec is Dictionary) or (spec as Dictionary).is_empty():
+		return line
+	var row: Dictionary = spec
+	return "%s · %s · %s" % [line, SeatCosmetics.gender_label(str(row.get("gender", ""))), SeatCosmetics.palette_label(str(row.get("palette", "")))]
+
+
+func _apply_cosmetics() -> void:
+	if _tray == null:
+		return
+	if not _cosmetics_pending():
+		_tray.dismiss()
+		return
+	_tray.present(_pending_class, _draft_gender, _draft_palette)
+
+
+func _on_tray_gender(gender_id: String) -> void:
+	select_gender(gender_id)
+
+
+func _on_tray_palette(palette_id: String) -> void:
+	select_palette(palette_id)
+
+
+func _on_tray_lock() -> void:
+	lock_in_pending()
 
 
 func _on_connection(status: String) -> void:

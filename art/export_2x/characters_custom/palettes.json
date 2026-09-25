@@ -1,0 +1,261 @@
+{
+  "version": "0.1.10-gender-color-slice1",
+  "gender_ids": [
+    "default",
+    "alt"
+  ],
+  "notes": "Gender ids are default/alt (not m/f). Shared PC+mobile tree; prebaked PNGs first; palettes.json for future Godot shader remap.",
+  "classes": {
+    "kestrel": {
+      "palettes": [
+        "locked",
+        "storm",
+        "ember"
+      ],
+      "regions": {
+        "locked": {
+          "primary_cloth": {
+            "hex": "#554d32",
+            "lo": "#35301e",
+            "hi": "#8c7238",
+            "role": "cloak/hood olive"
+          },
+          "secondary_cloth": {
+            "hex": "#3a3315",
+            "lo": "#2a2410",
+            "hi": "#564b22",
+            "role": "tunic/pants darker green"
+          },
+          "accent_wings": {
+            "hex": "#c9ac68",
+            "lo": "#7a5a38",
+            "hi": "#e5ca89",
+            "role": "gold wing language + trim"
+          },
+          "leather": {
+            "hex": "#47321a",
+            "lo": "#392811",
+            "hi": "#533c25",
+            "role": "straps/boots (stable-ish)"
+          },
+          "skin": {
+            "hex": "#e0b488",
+            "stable": true
+          },
+          "weapon_wood": {
+            "hex": "#72592d",
+            "stable": true
+          }
+        },
+        "storm": {
+          "primary_cloth": {
+            "hex": "#333841",
+            "lo": "#232830",
+            "hi": "#444a57",
+            "role": "slate cloak"
+          },
+          "secondary_cloth": {
+            "hex": "#1d232d",
+            "lo": "#14181f",
+            "hi": "#2a3038",
+            "role": "navy under"
+          },
+          "accent_wings": {
+            "hex": "#a8b2bd",
+            "lo": "#6a757f",
+            "hi": "#d0d6dc",
+            "role": "silver wing language"
+          },
+          "leather": {
+            "hex": "#2a2e36",
+            "lo": "#1a1e24",
+            "hi": "#3a4048",
+            "role": "cool dark straps"
+          },
+          "skin": {
+            "hex": "#e0b488",
+            "stable": true
+          },
+          "weapon_wood": {
+            "hex": "#72592d",
+            "stable": true
+          }
+        },
+        "ember": {
+          "primary_cloth": {
+            "hex": "#4f2a22",
+            "lo": "#3c211a",
+            "hi": "#7a3a31",
+            "role": "brick/mahogany cloak"
+          },
+          "secondary_cloth": {
+            "hex": "#3d261e",
+            "lo": "#2a1812",
+            "hi": "#523729",
+            "role": "warm dark under"
+          },
+          "accent_wings": {
+            "hex": "#b87547",
+            "lo": "#825e41",
+            "hi": "#d4a06a",
+            "role": "copper/rose-gold wings"
+          },
+          "leather": {
+            "hex": "#442c1d",
+            "lo": "#362415",
+            "hi": "#523729",
+            "role": "warm straps"
+          },
+          "skin": {
+            "hex": "#e0b488",
+            "stable": true
+          },
+          "weapon_wood": {
+            "hex": "#72592d",
+            "stable": true
+          }
+        }
+      }
+    },
+    "ironjaw": {
+      "palettes": [
+        "locked",
+        "slate",
+        "moss"
+      ],
+      "regions": {
+        "locked": {
+          "primary_armor": {
+            "hex": "#563226",
+            "lo": "#3e241a",
+            "hi": "#804e40",
+            "role": "rusty red plate"
+          },
+          "secondary": {
+            "hex": "#41342b",
+            "lo": "#33271d",
+            "hi": "#574d45",
+            "role": "under/joints dark"
+          },
+          "accent_metal": {
+            "hex": "#817e7a",
+            "lo": "#41413f",
+            "hi": "#d8d3cd",
+            "role": "wear highlights"
+          },
+          "helmet_bone": {
+            "hex": "#c8c2b8",
+            "stable": true,
+            "role": "skull/helmet pale"
+          },
+          "weapon_stone": {
+            "hex": "#7a7a78",
+            "stable": true
+          },
+          "skin": {
+            "hex": "#c4a882",
+            "stable": true
+          }
+        },
+        "slate": {
+          "primary_armor": {
+            "hex": "#4a525a",
+            "lo": "#282d33",
+            "hi": "#6a757f",
+            "role": "cool slate plate"
+          },
+          "secondary": {
+            "hex": "#2a2e32",
+            "lo": "#1a1e22",
+            "hi": "#3a4044",
+            "role": "cool under"
+          },
+          "accent_metal": {
+            "hex": "#8a929a",
+            "lo": "#5a626a",
+            "hi": "#b0b8c0",
+            "role": "steel highlights"
+          },
+          "helmet_bone": {
+            "hex": "#c8c2b8",
+            "stable": true
+          },
+          "weapon_stone": {
+            "hex": "#7a7a78",
+            "stable": true
+          },
+          "skin": {
+            "hex": "#c4a882",
+            "stable": true
+          }
+        },
+        "moss": {
+          "primary_armor": {
+            "hex": "#46523a",
+            "lo": "#283021",
+            "hi": "#637252",
+            "role": "moss/olive plate"
+          },
+          "secondary": {
+            "hex": "#2e3224",
+            "lo": "#1e2218",
+            "hi": "#3e4230",
+            "role": "dark under"
+          },
+          "accent_metal": {
+            "hex": "#7a8a5a",
+            "lo": "#4a5a3a",
+            "hi": "#9aaa7a",
+            "role": "verdigris highlights"
+          },
+          "helmet_bone": {
+            "hex": "#c8c2b8",
+            "stable": true
+          },
+          "weapon_stone": {
+            "hex": "#7a7a78",
+            "stable": true
+          },
+          "skin": {
+            "hex": "#c4a882",
+            "stable": true
+          }
+        }
+      }
+    }
+  },
+  "path_contract": {
+    "pattern": "res://art/export_2x/characters_custom/{class}/{gender}/{palette}/anims/{class}_{anim}_{facing}.png",
+    "gender_ids": [
+      "default",
+      "alt"
+    ],
+    "palette_ids": {
+      "kestrel": [
+        "locked",
+        "storm",
+        "ember"
+      ],
+      "ironjaw": [
+        "locked",
+        "slate",
+        "moss"
+      ]
+    },
+    "strip_size": [
+      864,
+      160
+    ],
+    "cell_size": [
+      144,
+      160
+    ],
+    "frames": 6,
+    "revert_fallback": "res://art/export_2x/characters/{class}/anims/{class}_{anim}_{facing}.png",
+    "platforms": [
+      "pc_main",
+      "mobile"
+    ],
+    "prebaked_first": true
+  }
+}
