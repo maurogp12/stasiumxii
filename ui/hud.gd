@@ -17,6 +17,8 @@ const BASTION_SLATE := Color("#5C5648")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
 const AMBUSH_SHADE_MODULATE := Color(1.45, 1.15, 1.7)
+## Soft-disable when legal_intents has no Ambush cast. Not a teach arm.
+const AMBUSH_DISARMED_MODULATE := Color(0.62, 0.62, 0.66, 0.78)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
 ## Lava forced-push lands and applies Burn. Not a Bounce toast.
@@ -790,6 +792,16 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
+	# Ambush arms only from a legal cast. Drop a stale selection so the
+	# cluster cannot keep teaching the arm after the geometry goes illegal.
+	if _selected_spell == SpellKits.AMBUSH and not legal_spells.has(SpellKits.AMBUSH):
+		_selected_spell = ""
+		_aim_hit_chance = -1
+		_press_gesture_armed = ""
+		_suppress_toggle_spell = ""
+		if _aim_hit_label != null:
+			_aim_hit_label.text = ""
+			_aim_hit_label.visible = false
 	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
 	# Online: stun-grey the local kit only while that seat is acting.
@@ -805,14 +817,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 		var button: Button = _spell_buttons[spell_id]
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
-		if _selected_spell == spell_id:
-			button.modulate = Color(1.15, 1.1, 0.7)
-		elif str(spell_id) == SpellKits.AMBUSH and can_submit:
-			button.modulate = AMBUSH_SHADE_MODULATE
-		elif can_submit:
-			button.modulate = Color(1, 1, 1, 1)
-		else:
-			button.modulate = STUN_GREY if _stunned else Color(1, 1, 1, 0.72)
+		_apply_spell_modulate(str(spell_id), button, can_submit)
 	_refresh_walk_button()
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
@@ -1611,6 +1616,9 @@ func _clear_press_lock(token: int) -> void:
 func _arm_spell_from_press(spell_id: String) -> void:
 	if not _spell_buttons.has(spell_id):
 		return
+	# Locked: Ambush arms only when legal_intents already has the cast.
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return
 	var button: Button = _spell_buttons[spell_id]
 	if button.disabled:
 		return
@@ -1629,6 +1637,8 @@ func _arm_spell_from_press(spell_id: String) -> void:
 
 func _on_spell_pressed(spell_id: String) -> void:
 	if not _spell_buttons.has(spell_id):
+		return
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		return
 	if _suppress_toggle_spell == spell_id:
 		_suppress_toggle_spell = ""
@@ -1650,13 +1660,50 @@ func _on_face_pressed(dir: String) -> void:
 
 
 func _refresh_spell_buttons() -> void:
+	_drop_illegal_ambush_selection()
 	_refresh_walk_button()
+	var legal_spells := legal_cast_ids(_last_legal)
+	var match_over := bool(_last_snap.get("match_over", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		if _selected_spell == spell_id:
-			button.modulate = Color(1.15, 1.1, 0.7)
-		else:
-			button.modulate = Color.WHITE
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
+		_set_spell_button_clickable(button, can_submit)
+		_apply_spell_modulate(str(spell_id), button, can_submit)
+
+
+## Ambush gold / shade highlight only while the cast is in legal_intents.
+## Otherwise the button stays soft-grey, including after another spell is tapped.
+func _apply_spell_modulate(spell_id: String, button: Button, can_submit: bool) -> void:
+	if _stunned:
+		button.modulate = STUN_GREY
+		return
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		button.modulate = AMBUSH_DISARMED_MODULATE
+		return
+	if _selected_spell == spell_id:
+		button.modulate = Color(1.15, 1.1, 0.7)
+		return
+	if spell_id == SpellKits.AMBUSH and can_submit:
+		button.modulate = AMBUSH_SHADE_MODULATE
+		return
+	if can_submit:
+		button.modulate = Color(1, 1, 1, 1)
+		return
+	button.modulate = Color(1, 1, 1, 0.72)
+
+
+func _drop_illegal_ambush_selection() -> void:
+	if _selected_spell != SpellKits.AMBUSH:
+		return
+	if legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return
+	_selected_spell = ""
+	_aim_hit_chance = -1
+	_press_gesture_armed = ""
+	_suppress_toggle_spell = ""
+	if _aim_hit_label != null:
+		_aim_hit_label.text = ""
+		_aim_hit_label.visible = false
 
 
 func _refresh_walk_button() -> void:
@@ -1700,8 +1747,9 @@ func _update_selected_label() -> void:
 
 
 func _with_shade_tip(text: String) -> String:
-	# A live Shade alone is not the cue. Walk at 0 MP must not read as Ambush.
-	if _selected_spell != SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+	# A live Shade, or a forced selection, is not the cue. The tip appears
+	# only when legal_intents already contains an Ambush cast.
+	if not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		return text
 	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
 
