@@ -70,5 +70,5 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 - **Walk strip for this facing:** loop at authored fps for the whole path. No hop arc. Position still tweens about 0.25s per tile.
 - **Walk missing:** hop plus the static facing.
-- **Attack strip:** one-shot plus the ~6px lunge. Ambush keeps the longer reach.
-- **Attack missing:** lunge plus the static facing.
+- **Attack strip:** one-shot plus the ~6px lunge, at 12 fps when the 0.6s lock has room. Ambush keeps the longer reach. A cast with no cast strip (Kestrel's bow) plays this attack cycle too.
+- **Attack missing:** lunge plus the static facing. A cast strip, when present, still uses the rise.
