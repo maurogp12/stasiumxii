@@ -1557,8 +1557,8 @@ func _test_ambush_origin_chrome() -> void:
 
 
 func _test_ambush_range_from_origin() -> void:
-	# Mauro Lock: exactly 3 cardinal from the origin. Drop Shade only reaches Chebyshev 2,
-	# so the Shade sits on that shell and still exactly 3 cardinal from the prey.
+	# Mauro Lock: exactly 3 cardinal from the origin. This Shade sits at Chebyshev 2
+	# from the caster (inside Drop Shade 1–3) and still exactly 3 cardinal from the prey.
 	var ambush: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
 	eq(str(ambush.get("range_mode", "")), "cardinal", "Ambush range_mode is cardinal")
 	eq(int(ambush["min_range"]), 3, "Ambush min range is exactly 3")
@@ -1568,7 +1568,7 @@ func _test_ambush_range_from_origin() -> void:
 	eq(int(ambush["base_damage"]), 22, "origin range does not change Ambush damage")
 	eq(SpellKits.range_text(ambush), "exactly 3 cardinal", "Ambush range_text is exactly 3 cardinal")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance range_text stays exactly 2 cardinal")
-	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 2, "Drop Shade max stays 2")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max is Chebyshev 3")
 	var gloam := Vector2i(3, 4)
 	var prey := Vector2i(6, 2)
 	var shade_at := Vector2i(3, 2)
@@ -2820,7 +2820,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["damage_per_mark"]), 6, "Detonate stays 6 per Mark")
 	eq(str(SpellKits.spell(SpellKits.DETONATE).get("range_mode", "")), "chebyshev", "Detonate range is Chebyshev")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["min_range"]), 1, "Drop Shade min range stays 1")
-	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 2, "Drop Shade max range 2 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max range 3 Chebyshev")
 
 	# No Marks on the target: reject + refund. A01 Locked: Marks live on the target.
 	_sim.reset_match({
@@ -2933,12 +2933,12 @@ func _test_drop_shade_range() -> void:
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "Drop Shade costs 1 AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "Drop Shade costs 0 MP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["min_range"]), 1, "Drop Shade min range stays 1")
-	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 2, "Drop Shade max range 2 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max range 3 Chebyshev")
 	eq(str(SpellKits.spell(SpellKits.DROP_SHADE).get("range_mode", "")), "chebyshev", "Drop Shade range is Chebyshev")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["shade_turns"]), 3, "Drop Shade token lasts 3 turns")
 	eq(bool(SpellKits.spell(SpellKits.DROP_SHADE)["rolls"]), false, "Drop Shade does not roll")
 	eq(SpellKits.SHADE_CAP, 2, "Shade stack cap stays 2")
-	eq(SpellKits.range_text(SpellKits.spell(SpellKits.DROP_SHADE)), "range 1–2", "Drop Shade range_text is 1–2")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.DROP_SHADE)), "range 1–3", "Drop Shade range_text is 1–3")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range stays 7")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
@@ -2954,9 +2954,9 @@ func _test_drop_shade_range() -> void:
 		if str(card.get("id", "")) == "drop_shade":
 			drop_range = card["range"]
 	eq(int(drop_range[0]), 1, "workbook drop_shade min range is 1")
-	eq(int(drop_range[1]), 2, "workbook drop_shade max range is 2")
+	eq(int(drop_range[1]), 3, "workbook drop_shade max range is 3")
 
-	for dist in [1, 2]:
+	for dist in [1, 2, 3]:
 		_sim.reset_match({
 			"seed": 1,
 			"flat_board": true,
@@ -2992,7 +2992,22 @@ func _test_drop_shade_range() -> void:
 	eq(bool(diag_cast.get("ok", false)), true, "Drop Shade Chebyshev 2 diagonal is legal")
 	eq(_sim.snapshot()["shade_tokens"][0]["pos"], diag, "diagonal Shade lands on the Chebyshev 2 tile")
 
-	for dist in [3, 6, 7]:
+	# Diagonal Chebyshev 3 is Manhattan 6, so a Manhattan gate at the old max would reject it.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(0, 0), Vector2i(14, 14)],
+	})
+	var diag3 := Vector2i(3, 3)
+	eq(_sim.chebyshev(Vector2i(0, 0), diag3), 3, "diagonal Drop Shade fixture is Chebyshev 3")
+	eq(_sim.manhattan(Vector2i(0, 0), diag3), 6, "same Drop Shade tiles are Manhattan 6")
+	var diag3_cast: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": diag3, "seat": 0})
+	eq(bool(diag3_cast.get("ok", false)), true, "Drop Shade Chebyshev 3 diagonal is legal")
+	eq(_sim.snapshot()["shade_tokens"][0]["pos"], diag3, "diagonal Shade lands on the Chebyshev 3 tile")
+
+	for dist in [4, 6, 7]:
 		_sim.reset_match({
 			"seed": 1,
 			"flat_board": true,
@@ -3011,19 +3026,20 @@ func _test_drop_shade_range() -> void:
 		eq(int(_unit(0)["shades"]), 0, "out-of-range Drop Shade at %d places no token" % dist)
 		eq(_sim.snapshot()["shade_tokens"].size(), 0, "range %d leaves the board empty of Shades" % dist)
 
-	var preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(2, 0))
+	var preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(3, 0))
 	eq(preview["min_range"], 1, "Drop Shade preview min 1")
-	eq(preview["max_range"], 2, "Drop Shade preview max 2")
-	eq(preview["range_text"], "range 1–2", "Drop Shade preview_cast range_text is 1–2")
-	eq(preview["in_range"], true, "Chebyshev 2 is in Drop Shade range")
+	eq(preview["max_range"], 3, "Drop Shade preview max 3")
+	eq(preview["range_text"], "range 1–3", "Drop Shade preview_cast range_text is 1–3")
+	eq(preview["in_range"], true, "Chebyshev 3 is in Drop Shade range")
 	eq(preview["ap"], 1, "Drop Shade preview costs 1 AP")
 	eq(preview["mp"], 0, "Drop Shade preview costs 0 MP")
 	var card := SpellTooltip.card_text(preview)
-	truthy(card.contains("range 1–2"), "Drop Shade card names range 1–2")
+	truthy(card.contains("range 1–3"), "Drop Shade card names range 1–3")
+	eq(card.contains("range 1–2"), false, "Drop Shade card drops the old 1–2 band")
 	eq(card.contains("range 1–6"), false, "Drop Shade card drops the old 1–6 band")
-	var far_preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(3, 0))
-	eq(far_preview["in_range"], false, "Chebyshev 3 is outside Drop Shade preview range")
-	eq(far_preview["max_range"], 2, "Drop Shade preview max stays 2 at dist 3")
+	var far_preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(4, 0))
+	eq(far_preview["in_range"], false, "Chebyshev 4 is outside Drop Shade preview range")
+	eq(far_preview["max_range"], 3, "Drop Shade preview max stays 3 at dist 4")
 	var old_max: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, Vector2i(0, 0), Vector2i(6, 0))
 	eq(old_max["in_range"], false, "the old Chebyshev 6 max is outside Drop Shade range")
 	var marker_script: Script = load("res://board/shade_marker.gd")
@@ -3072,7 +3088,7 @@ func _test_ambush_shade_affordance() -> void:
 	eq(ambush.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "Ambush highlights when a Shade is live")
 	truthy(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "the status line says Ambush from Shade")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
-	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 2, "Drop Shade range stays 2")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade range is Chebyshev 3")
 	hud.free()
 
 
