@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_ability_cluster_layout()
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
+	_test_hold_card_hides_when_drag_leaves()
 	_test_sources_keep_desktop_and_hub()
 
 
@@ -383,14 +384,69 @@ func _test_hud_targets_and_tooltip_tap() -> void:
 	touch.index = 0
 	touch.position = Vector2(8, 8)
 	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
-	eq(hud.tooltip_visible(), true, "a finger press shows the card without hover")
-	eq(hud.tooltip_pinned(), true, "the touch card stays pinned")
-	eq(hud.tooltip_caption(), SpellTooltip.card_text(hud.preview_for_spell(SpellKits.MARK_SHOT)), "touch card is still preview_cast")
+	eq(hud.tooltip_visible(), false, "a finger tap does not open the skill card")
+	eq(hud.tooltip_pinned(), false, "a finger tap does not pin the card")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "a finger tap still arms the spell")
+	truthy(hud._selected_label.text.contains("tap a cell"), "tap still shows the status line")
+	hud._on_spell_hover(SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), false, "emulated hover during a tap does not open the card")
+	hud._process(0.1)
+	eq(hud.tooltip_visible(), false, "a short hold does not open the card")
+	hud._on_spell_button_down(SpellKits.MARK_SHOT)
+	hud._process(0.4)
+	eq(hud.tooltip_visible(), true, "emulated button_down does not reset the hold")
+	eq(hud.tooltip_pinned(), true, "the hold card stays up while the finger is down")
+	eq(hud.tooltip_caption(), SpellTooltip.card_text(hud.preview_for_spell(SpellKits.MARK_SHOT)), "hold card is still preview_cast")
 	hud._on_spell_unhover()
-	eq(hud.tooltip_visible(), true, "synthetic mouse exit does not dismiss a touch card")
+	eq(hud.tooltip_visible(), true, "synthetic mouse exit does not dismiss a hold card")
 	hud.dismiss_pinned_tooltip()
 	eq(hud.tooltip_visible(), false, "a board tap dismisses the pinned card")
 	eq(hud.tooltip_pinned(), false, "dismiss clears the pin")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "dismissing the card leaves the spell armed")
+	touch.pressed = false
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._clear_press_lock(hud._press_release_token)
+	eq(hud.tooltip_visible(), false, "releasing after a board dismiss keeps the card hidden")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "finger up keeps the armed spell")
+	hud._on_spell_hover(SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), true, "desktop hover still works after the finger lifts")
+	hud._on_spell_unhover()
+	eq(hud.tooltip_visible(), false, "mouse exit still hides the hover card")
+	touch.pressed = true
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._process(SpellTooltip.LONG_PRESS_SEC)
+	eq(hud.tooltip_visible(), true, "a second hold shows the card again")
+	hud.select_walk()
+	eq(hud.tooltip_visible(), false, "Walk dismisses the hold card")
+	eq(hud.selected_spell(), "", "Walk still clears the armed spell")
+	touch.pressed = true
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._process(SpellTooltip.LONG_PRESS_SEC)
+	eq(hud.tooltip_visible(), true, "hold after Walk shows the card")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "that hold still arms the spell")
+	touch.pressed = false
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), false, "releasing the hold dismisses the card")
+	eq(hud.tooltip_pinned(), false, "release clears the pin")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "release keeps the spell armed")
+	hud._clear_press_lock(hud._press_release_token)
+	touch.pressed = true
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._process(SpellTooltip.LONG_PRESS_SEC)
+	eq(hud.tooltip_visible(), true, "holding an armed spell shows the card")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "that hold leaves the spell armed")
+	touch.pressed = false
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._on_spell_pressed(SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), false, "releasing that hold dismisses the card")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "releasing a hold does not cancel the spell")
+	touch.pressed = true
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	touch.pressed = false
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	hud._on_spell_pressed(SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), false, "a second tap does not open the card")
+	eq(hud.selected_spell(), "", "a short second tap still cancels the spell")
 	var mouse := InputEventMouseButton.new()
 	mouse.button_index = MOUSE_BUTTON_LEFT
 	mouse.pressed = true
@@ -400,6 +456,37 @@ func _test_hud_targets_and_tooltip_tap() -> void:
 	mouse.device = TOUCH.EMULATED_DEVICE_ID
 	hud._on_spell_host_input(mouse, SpellKits.MARK_SHOT)
 	eq(hud.tooltip_pinned(), false, "emulated mouse does not pin a second card")
+	hud.free()
+	sim.free()
+
+
+func _test_hold_card_hides_when_drag_leaves() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var sim: Node = sim_script.new()
+	sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_preview_source(sim)
+	hud.render(sim.snapshot(), sim.legal_intents(0))
+	var host: Control = hud._spell_hosts[SpellKits.MARK_SHOT]
+	var inside := host.get_global_rect().get_center()
+	var touch := InputEventScreenTouch.new()
+	touch.pressed = true
+	touch.index = 0
+	touch.position = inside
+	hud._on_spell_host_input(touch, SpellKits.MARK_SHOT)
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "drag test tap still arms Mark Shot")
+	eq(hud.tooltip_visible(), false, "drag test tap does not open the card")
+	var drag := InputEventScreenDrag.new()
+	drag.index = 0
+	drag.position = inside
+	hud._on_spell_host_input(drag, SpellKits.MARK_SHOT)
+	hud._process(SpellTooltip.LONG_PRESS_SEC)
+	eq(hud.tooltip_visible(), true, "a hold that stays on the circle still opens the card")
+	drag.position = host.get_global_rect().position + Vector2(-80, -80)
+	hud._on_spell_host_input(drag, SpellKits.MARK_SHOT)
+	eq(hud.tooltip_visible(), false, "dragging off the circle dismisses the hold card")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "dragging off keeps the spell armed")
 	hud.free()
 	sim.free()
 
