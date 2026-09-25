@@ -184,6 +184,10 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.scale, Vector2(0.5, 0.5), "snapshot leaves the shipped scale")
 	pawn._sample_hop(0.5)
 	eq(sprite.position.y, -MOTION.HOP_PX, "pawn applies the hop on the sprite")
+	var chrome := pawn.get_node("Chrome") as Node2D
+	eq(chrome.get_parent(), pawn, "name chrome stays on the pawn during a hop")
+	eq(chrome.position, Vector2.ZERO, "a hop does not move the name")
+	eq(pawn.name_label_origin().y < Pawn.HEAD_HP_Y, true, "the name stays above the HP bar during a hop")
 	pawn._sample_hop(1.0)
 	eq(sprite.position, Vector2.ZERO, "hop sample ends on the origin")
 	pawn._sample_death(1.0, -1.0)

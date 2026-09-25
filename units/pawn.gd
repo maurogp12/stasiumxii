@@ -52,7 +52,12 @@ const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 24.0
 ## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
 const HEAD_HP_Y := -76.0
-const NAME_Y := 14.0
+const NAME_FONT_SIZE := 12
+## Seat ring under the feet. The name used to share this band.
+const SEAT_RING_CENTER := Vector2(0, 3)
+const SEAT_RING_RX := 18.0
+const SEAT_RING_RY := 7.0
+const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
 
@@ -466,9 +471,9 @@ func _draw() -> void:
 
 
 func _draw_ground_mark() -> void:
-	var foot := Vector2(0, 3)
-	_draw_ellipse(foot, 18.0, 7.0, _seat_color())
-	_draw_ellipse_ring(foot, 18.0, 7.0, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	var foot := SEAT_RING_CENTER
+	_draw_ellipse(foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
+	_draw_ellipse_ring(foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
 	if burning:
 		_draw_ellipse_ring(foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
@@ -480,7 +485,20 @@ func _draw_ground_mark() -> void:
 func _paint_status(canvas: CanvasItem) -> void:
 	if debug_draw_tokens or not _sprite_ready():
 		return
-	_paint_unit_chrome(canvas, HEAD_HP_Y, NAME_Y)
+	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
+
+
+## Baseline of the overhead name. Above the HP bar, so it clears the sprite
+## and the seat ring. Chrome is not parented to the sprite, so hops, lunges,
+## and the idle bob do not move it.
+func name_baseline() -> float:
+	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
+
+
+func name_label_origin() -> Vector2:
+	var font := ThemeDB.fallback_font
+	var size := font.get_string_size(unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
+	return Vector2(-size.x * 0.5, name_baseline())
 
 
 func _draw_legacy_token() -> void:
@@ -515,29 +533,42 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 
 	var font := ThemeDB.fallback_font
 	var label := unit_name
-	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 12)
+	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
 	var label_x := -size.x * 0.5
-	if class_id == SpellKits.CLASS_IRONJAW:
-		label_x += 10.0
-	else:
-		label_x -= 10.0
-	canvas.draw_string(font, Vector2(label_x, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.1, 0.08, 0.1))
+	var name_color := Color(0.1, 0.08, 0.1)
+	if name_y < hp_y:
+		var ascent := font.get_ascent(NAME_FONT_SIZE)
+		var descent := font.get_descent(NAME_FONT_SIZE)
+		var plate := Rect2(Vector2(label_x - 4.0, name_y - ascent - 1.0), Vector2(size.x + 8.0, ascent + descent + 2.0))
+		canvas.draw_rect(plate, Color(0.07, 0.05, 0.06, 0.84))
+		name_color = Color(0.97, 0.95, 0.90)
+	canvas.draw_string(font, Vector2(label_x, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, NAME_FONT_SIZE, name_color)
+	var badge_bottom := _badge_stack_bottom(font, hp_y, name_y)
 	if stunned:
 		var stun_size := font.get_string_size("STUN", HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
-		var stun_y := hp_y - 16.0
+		var stun_y := badge_bottom - 12.0
 		var badge := Rect2(Vector2(-stun_size.x * 0.5 - 3, stun_y), Vector2(stun_size.x + 6, 12))
 		canvas.draw_rect(badge, Color(0.95, 0.78, 0.18, 0.95))
 		canvas.draw_string(font, Vector2(-stun_size.x * 0.5, stun_y + 10), "STUN", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.12, 0.08, 0.1))
+		badge_bottom = stun_y - 2.0
 	if burning:
 		var burn_label := burn_badge_label()
 		if burn_label == "":
 			burn_label = "BURN"
 		var burn_size := font.get_string_size(burn_label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
-		var burn_y := hp_y - 30.0 if stunned else hp_y - 16.0
+		var burn_y := badge_bottom - 12.0
 		var burn_badge := Rect2(Vector2(-burn_size.x * 0.5 - 3, burn_y), Vector2(burn_size.x + 6, 12))
 		canvas.draw_rect(burn_badge, Color(0.92, 0.28, 0.1, 0.95))
 		_paint_flame(canvas, Vector2(burn_badge.position.x - 8.0, burn_y + 6.0))
 		canvas.draw_string(font, Vector2(-burn_size.x * 0.5, burn_y + 10), burn_label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.99, 0.94, 0.88))
+
+
+## Bottom edge of the next overhead badge. Above the name when the name sits
+## with the HP bar; otherwise the legacy gap above the token bar.
+func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
+	if name_y < hp_y:
+		return name_y - font.get_ascent(NAME_FONT_SIZE) - 2.0
+	return hp_y - 4.0
 
 
 func _seat_color() -> Color:

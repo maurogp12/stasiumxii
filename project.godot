@@ -38,4 +38,5 @@ rendering_device/driver.windows="d3d12"
 
 [stasium]
 
+debug/show_tile_labels=false
 view/reduce_shake=false

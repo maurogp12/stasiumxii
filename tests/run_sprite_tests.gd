@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_facing_follows_unit()
 	_test_flash_kinds()
 	_test_view_wires_flash_without_rules()
+	_test_name_sits_above_the_sprite()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -180,6 +181,43 @@ func _test_view_wires_flash_without_rules() -> void:
 	eq(pawn_src.contains("Pulse"), false, "pawn does not invent Pulse")
 	truthy(pawn_src.contains("STUN"), "pawn still draws STUN")
 	truthy(pawn_src.contains("func set_facing"), "facing still updates on the pawn")
+
+
+func _test_name_sits_above_the_sprite() -> void:
+	var font := ThemeDB.fallback_font
+	var ring_top := Pawn.SEAT_RING_CENTER.y - 10.5
+	for class_id in SpellKits.LOCKED_ROSTER:
+		var pawn := Pawn.new()
+		get_root().add_child(pawn)
+		pawn.apply_snapshot(_unit_dict(class_id, "E", 0), 0)
+		var origin: Vector2 = pawn.name_label_origin()
+		var width := font.get_string_size(pawn.unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, Pawn.NAME_FONT_SIZE).x
+		eq(origin.x, -width * 0.5, "%s name is centered over the unit" % class_id)
+		var name_bottom := origin.y + font.get_descent(Pawn.NAME_FONT_SIZE)
+		var name_top := origin.y - font.get_ascent(Pawn.NAME_FONT_SIZE)
+		eq(name_bottom <= Pawn.HEAD_HP_Y - 1.0, true, "%s name sits above the HP bar" % class_id)
+		eq(name_bottom < ring_top, true, "%s name clears the seat ring" % class_id)
+		var sprite := pawn.get_node("Sprite") as Sprite2D
+		var visual_top := (sprite.offset.y - float(sprite.texture.get_height()) * 0.5) * sprite.scale.y
+		eq(name_bottom <= visual_top + 0.01, true, "%s name clears the sprite" % class_id)
+		var chrome := pawn.get_node("Chrome") as Node2D
+		eq(chrome.get_parent(), pawn, "%s name chrome is not parented to the sprite" % class_id)
+		eq(chrome.position, Vector2.ZERO, "%s name rests on the pawn" % class_id)
+		var rested := origin.y
+		pawn._sample_hop(0.5)
+		eq(chrome.position, Vector2.ZERO, "%s hop does not move the name" % class_id)
+		eq(sprite.position.y < -1.0, true, "%s hop moves the sprite" % class_id)
+		eq(pawn.name_label_origin().y, rested, "%s name anchor stays put during a hop" % class_id)
+		pawn._sample_attack(0.4, Vector2(20, 10))
+		eq(chrome.position, Vector2.ZERO, "%s lunge does not move the name" % class_id)
+		eq(sprite.position.length() > 1.0, true, "%s lunge moves the sprite" % class_id)
+		pawn._sample_idle(0.0)
+		eq(chrome.position, Vector2.ZERO, "%s idle bob does not move the name" % class_id)
+		pawn.stunned = true
+		pawn.burning = true
+		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
+		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
+		pawn.free()
 
 
 func _unit_dict(class_id: String, facing: String, seat: int, living: bool = true) -> Dictionary:

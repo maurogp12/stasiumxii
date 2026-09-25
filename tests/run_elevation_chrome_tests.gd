@@ -41,6 +41,7 @@ func _run() -> void:
 	_test_deploy_chrome_untouched()
 	_test_no_height_hit_facing_los()
 	_test_board_view_wires_adapter()
+	_test_highlights_are_overlays_and_labels_are_debug()
 
 
 func _test_adapter_defaults_flat_ground() -> void:
@@ -358,6 +359,94 @@ func _test_board_view_wires_adapter() -> void:
 	truthy(hud_src.contains("TERRAIN_LEGEND"), "HUD declares the terrain legend")
 	eq(hud_src.contains("Detonate"), false, "elevation HUD patch does not hardcode Detonate")
 	eq(hud_src.contains("for dir in [\"N\", \"E\", \"S\", \"W\"]"), false, "Face pad stays a cardinal grid")
+
+
+func _test_highlights_are_overlays_and_labels_are_debug() -> void:
+	var mud := TILE_SCRIPT.new() as BoardTile
+	mud.grid_position = Vector2i(1, 0)
+	mud.apply_board_data("mud", 1)
+	var mud_fill := Color(0.56, 0.38, 0.20)
+	mud.set_highlight("move")
+	eq(mud.fill_color(), mud_fill, "reachable highlight leaves the mud fill")
+	eq(mud.overlay_color(), Color(0.45, 0.78, 0.92, BoardTile.HIGHLIGHT_FILL_ALPHA), "move overlay keeps the flat cyan")
+	eq(mud.overlay_draws_outline(), true, "move overlay draws an outline")
+	mud.set_highlight("target")
+	eq(mud.fill_color(), mud_fill, "target highlight leaves the mud fill")
+	eq(mud.overlay_color(), Color(0.95, 0.55, 0.28, BoardTile.HIGHLIGHT_FILL_ALPHA), "target overlay keeps the flat orange")
+	mud.set_highlight("range")
+	eq(mud.overlay_color(), Color(0.95, 0.78, 0.32, BoardTile.HIGHLIGHT_FILL_ALPHA), "range overlay keeps the flat gold")
+	mud.set_selected(true)
+	eq(mud.fill_color(), mud_fill, "selected highlight leaves the mud fill")
+	eq(mud.overlay_color(), Color(1.0, 0.85, 0.2, BoardTile.HIGHLIGHT_FILL_ALPHA), "selected overlay keeps the flat yellow")
+	mud.set_highlight("blocked")
+	eq(mud.overlay_color(), Color(0.14, 0.14, 0.16, BoardTile.HIGHLIGHT_FILL_ALPHA), "blocked overlay stays put when the tile is also selected")
+	mud.set_selected(false)
+	mud.set_highlight("")
+	eq(mud.overlay_color().a, 0.0, "an idle tile has no highlight overlay")
+	eq(mud.overlay_draws_outline(), false, "an idle tile has no highlight outline")
+	mud.free()
+
+	var tile := TILE_SCRIPT.new() as BoardTile
+	tile.grid_position = Vector2i(2, 3)
+	tile.apply_board_data("ground", 3)
+	tile.position = VISUAL_SORT.cell_to_local(Vector2i(2, 3), 3.0)
+	tile.z_index = VISUAL_SORT.tile_z_index(Vector2i(2, 3), 3.0)
+	get_root().add_child(tile)
+	tile.set_highlight("move")
+	var overlay := tile.get_node("Highlight") as Node2D
+	eq(overlay != null, true, "highlight is a child layer")
+	eq(overlay.z_index, BoardTile.OVERLAY_Z, "overlay sits one step above its tile")
+	eq(overlay.z_as_relative, true, "overlay z stays relative so elevation sort still applies")
+	eq(overlay.position, Vector2.ZERO, "overlay draws in the tile's local diamond")
+	eq(overlay.global_position, tile.global_position, "an elevated tile carries its highlight")
+	eq(BoardTile.OVERLAY_Z < VISUAL_SORT.UNIT_Z_BIAS, true, "overlay sorts under the seat ring and pawn")
+	eq(tile.z_index + overlay.z_index < VISUAL_SORT.unit_z_index(Vector2i(2, 3), 3.0), true, "this elevated highlight stays under its pawn")
+	var north_overlay := VISUAL_SORT.tile_z_index(Vector2i(0, 0), 2.0) + BoardTile.OVERLAY_Z
+	var south_tile := VISUAL_SORT.tile_z_index(Vector2i(2, 2), 0.0)
+	eq(north_overlay < south_tile, true, "an elevated highlight stays behind the tile in front")
+	eq(tile.fill_color(), Color(0.48, 0.64, 0.34), "elevated ground keeps its checker fill under the overlay")
+	tile.free()
+
+	var proj := FileAccess.get_file_as_string("res://project.godot")
+	truthy(proj.contains("debug/show_tile_labels=false"), "project setting stasium/debug/show_tile_labels defaults off")
+	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, false)
+	eq(BoardTile.tile_labels_visible(), false, "tile labels are hidden by default")
+	var labeled := TILE_SCRIPT.new() as BoardTile
+	labeled.apply_board_data("ground", 0)
+	eq(labeled.drawn_label(), "", "a ground tile does not draw G 0")
+	eq(labeled.terrain_letter(), "G", "the letter helper stays available for the debug label")
+	eq(labeled.elevation_text(), "0", "the elevation helper stays available for the debug label")
+	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, true)
+	eq(labeled.drawn_label(), "G 0", "the debug setting shows the terrain label")
+	eq(OS.is_debug_build(), true, "this suite runs in a debug build so F3 is live")
+	var key := InputEventKey.new()
+	key.pressed = true
+	key.keycode = KEY_F3
+	eq(BoardTile.consume_debug_label_key(key), true, "F3 toggles tile labels in a debug build")
+	eq(BoardTile.tile_labels_visible(), false, "F3 hides the labels again")
+	eq(labeled.drawn_label(), "", "F3 clears the drawn label")
+	key.echo = true
+	eq(BoardTile.consume_debug_label_key(key), false, "a held F3 does not toggle twice")
+	eq(BoardTile.tile_labels_visible(), false, "echo leaves the labels hidden")
+	var other := InputEventKey.new()
+	other.pressed = true
+	other.keycode = KEY_F4
+	eq(BoardTile.consume_debug_label_key(other), false, "other keys do not toggle tile labels")
+	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, false)
+	labeled.free()
+
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	var draw_start := tile_src.find("func _draw(")
+	var draw_end := tile_src.find("func apply_board_data")
+	var draw_src := tile_src.substr(draw_start, draw_end - draw_start)
+	truthy(draw_src.contains("fill_color()"), "the base diamond uses the terrain fill")
+	eq(draw_src.contains("\"move\""), false, "reachable highlight is not painted in the base draw")
+	eq(draw_src.contains("\"target\""), false, "target highlight is not painted in the base draw")
+	eq(draw_src.contains("\"selected\""), false, "selected highlight is not painted in the base draw")
+	truthy(tile_src.contains("func paint_highlight_overlay"), "highlights draw on a separate overlay")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("consume_debug_label_key"), "the board toggles tile labels from the debug key")
+	eq(view.contains("hp"), false, "board_view still does not mention hp")
 
 
 func _noise_elev(seed: int, cell: Vector2i) -> int:
