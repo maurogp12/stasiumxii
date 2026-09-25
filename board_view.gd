@@ -44,6 +44,7 @@ const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
+const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
 
@@ -65,6 +66,7 @@ var _pending_motion_sec: float = 0.0
 var _resolve_hold_refresh: bool = false
 var _queued_net: bool = false
 var _queued_net_events: Array = []
+var _vfx: Node
 
 
 func _ready() -> void:
@@ -75,6 +77,11 @@ func _ready() -> void:
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.ready_requested.connect(_on_ready_requested)
+	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
+	_vfx = VFX_DIRECTOR.new()
+	_vfx.name = "VfxDirector"
+	add_child(_vfx)
+	_vfx.bind_board(self)
 
 	for y in range(BOARD_SIZE):
 		for x in range(BOARD_SIZE):
@@ -532,6 +539,7 @@ func _submit(intent: Dictionary) -> void:
 func _present_resolve(events: Array) -> bool:
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
+	_arm_vfx(events)
 	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
@@ -719,6 +727,14 @@ func _dying_seats(events: Array) -> Dictionary:
 	return dying
 
 
+func _arm_vfx(events: Array) -> void:
+	# Shares the motion input lock. Displacement beats only. Clock keeps running.
+	if _vfx == null or not _vfx.has_method("play"):
+		return
+	var block := float(_vfx.play(events, _sim().snapshot()))
+	_pending_motion_sec = maxf(_pending_motion_sec, minf(block, VIEW_MOTION.ACTION_LOCK_MAX))
+
+
 func _arm_view_motions(events: Array) -> void:
 	_pending_motion_sec = 0.0
 	if VIEW_MOTION.reduce_motion():
@@ -824,6 +840,8 @@ func _await_view_motions() -> void:
 
 
 func _motions_active() -> bool:
+	if _vfx != null and _vfx.has_method("is_blocking") and bool(_vfx.is_blocking()):
+		return true
 	for pawn in pawns_by_seat.values():
 		if pawn != null and is_instance_valid(pawn) and (pawn as Pawn).motion_playing():
 			return true
@@ -853,6 +871,8 @@ func _refresh() -> void:
 	_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
+	if _vfx != null and _vfx.has_method("sync_snapshot"):
+		_vfx.sync_snapshot(snap)
 
 
 func _rebuild_pawns() -> void:
