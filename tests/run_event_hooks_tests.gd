@@ -274,15 +274,36 @@ func _test_ambush_origin_and_destination() -> void:
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [1],
+	})
+	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	var shade_hit := _event_of(shade_cast.get("events", []), "hit")
+	eq(shade_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
+	eq(shade_hit.get("destination"), Vector2i(6, 2), "Shade Ambush destination is the empty back tile")
+	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "empty back stays 22 × 1.35 = 30")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"gloam_invisible": true,
+		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
+	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	var blocked_hit := _event_of(blocked.get("events", []), "hit")
-	eq(blocked_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
-	eq(blocked_hit.get("destination"), Vector2i(6, 1), "blocked back destination is the adjacent empty cell")
-	eq(bool(blocked_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
-	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 58, "blocked back stays 22 at facing ×1.00")
+	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
+	eq(_event_of(blocked.get("events", []), "hit").is_empty(), true, "blocked back emits no hit")
+	eq(_event_of(blocked.get("events", []), "reject").get("reason"), "no_landing", "blocked back reject reason is no_landing")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "blocked back does not teleport")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
+	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "blocked back keeps Invisible")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")
 
 	_host.reset_match({
 		"seed": 1,

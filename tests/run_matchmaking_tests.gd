@@ -431,11 +431,15 @@ func _test_ambush_hit() -> void:
 		"rolls": [1],
 		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
+	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
+	var ap_blocked := int(_sim.snapshot()["units"][0]["ap"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
-	eq(bool(blocked.get("ok", false)), true, "blocked-back Ambush still resolves")
-	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 1), "blocked back lands on an adjacent empty cell")
-	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 58, "blocked back forces facing ×1.00 (22)")
+	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
+	eq(str(blocked.get("reason", "")), "no_landing", "blocked back refunds")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(2, 2), "blocked back does not move onto an adjacent cell")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_blocked, "blocked back refunds AP")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")
 	var bare: Dictionary = _sim.reset_match({
 		"seed": 1,
 		"flat_board": true,

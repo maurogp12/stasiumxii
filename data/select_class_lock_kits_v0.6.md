@@ -22,7 +22,7 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
 - spells:
   - Cut: 3AP/0MP | r1 | +1 Umbral | 13D FLEX weapon | Backstab applies
   - Drop Shade: 1AP/0MP | r1–2 | +1 Shade (max 2) | LOCK Neutral | Shade 3 turns | no roll
-  - Ambush: 4AP/0MP | r1–4 | origin=self if Invisible else Shade; dest empty back; spend Shade only if origin Shade | FLEX jump then 22D; blocked back → adjacent no Backstab | MISS: no teleport, Shade kept, Invisible kept, 4AP spent
+  - Ambush: 4AP/0MP | r1–4 | origin=self if Invisible else Shade; dest empty back only; spend Shade only if origin Shade | FLEX jump then 22D | occupied/illegal back → illegal cast + refund (no adjacent landing) | MISS: no teleport, Shade kept, Invisible kept, 4AP spent
   - Fade: 2AP/1MP | self | +1 Umbral | LOCK Neutral | Invisible | no roll
   - Nightfold: 4AP/0MP | r0–6 | Shade + Umbral 2+ | clear Umbral | FLEX blink to Shade | 22D each adjacent | Shade commit-on-cast (can-wait vs global miss refund)
 
