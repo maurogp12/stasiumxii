@@ -249,9 +249,9 @@ static func engine_pips(current: int, maximum: int) -> String:
 
 
 ## A01 Locked: Marks live on the target, not the caster. Kestrel's Marks row is
-## that stack (the foe Detonate reads). Other Marks rows are the stack on the
-## unit itself — Ironjaw, when he is the target. Impact stays on the unit that
-## holds it (Ironjaw), so that card reads `impact` directly.
+## that stack (the foe the consume spell reads). Other Marks rows are the stack
+## on the unit itself — Ironjaw, when he is the target. Impact stays on the unit
+## that holds it (Ironjaw), so that card reads `impact` directly.
 static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
 	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
 		return unit
