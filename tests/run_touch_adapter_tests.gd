@@ -21,6 +21,7 @@ func _run() -> void:
 	_test_board_gestures()
 	_test_pawn_body_cast_pick()
 	_test_ability_cluster_layout()
+	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
 	_test_sources_keep_desktop_and_hub()
 
@@ -206,6 +207,127 @@ func _test_ability_cluster_layout() -> void:
 				eq(center.distance_to(prev) + 0.5 >= TOUCH.ABILITY_BUTTON_SIZE.x, true, "ability circles do not cover each other")
 			prev = center
 	eq(TOUCH.cluster_centers(0)["arc"].size(), 0, "a lone primary has no arc")
+
+
+func _test_ability_icons() -> void:
+	var ids := ["mark_shot", "detonate", "strike", "shoulder", "crush", "advance", "walk", "end_turn"]
+	for spell_id in ids:
+		var enabled_path := CombatHUD._ability_icon_path(spell_id, false)
+		var disabled_path := CombatHUD._ability_icon_path(spell_id, true)
+		eq(enabled_path, "res://art/ui/mobile/abilities/%s_icon.png" % spell_id, "%s enabled path" % spell_id)
+		eq(disabled_path, "res://art/ui/mobile/abilities/%s_icon_disabled.png" % spell_id, "%s disabled path" % spell_id)
+		truthy(FileAccess.file_exists(enabled_path), "%s enabled png is in the repo" % spell_id)
+		truthy(FileAccess.file_exists(disabled_path), "%s disabled png is in the repo" % spell_id)
+		truthy(ResourceLoader.exists(enabled_path), "%s enabled icon is a resource" % spell_id)
+		truthy(ResourceLoader.exists(disabled_path), "%s disabled icon is a resource" % spell_id)
+	eq(CombatHUD._ability_icon_path("mend", false), "res://art/ui/mobile/abilities/mend_icon.png", "future spells share the path contract")
+	eq(ResourceLoader.exists(CombatHUD._ability_icon_path("mend", false)), false, "Mend has no stub yet")
+	eq(FileAccess.file_exists(CombatHUD._ability_icon_path("bash", false)), false, "Bastion has no stub yet")
+
+	var sim_script := load("res://backend/combat_sim.gd")
+	var sim: Node = sim_script.new()
+	sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_preview_source(sim)
+	hud.render(sim.snapshot(), sim.legal_intents(0))
+	_assert_ability_chrome(hud, hud._spell_buttons[SpellKits.MARK_SHOT], SpellKits.MARK_SHOT)
+	_assert_ability_chrome(hud, hud._spell_buttons[SpellKits.DETONATE], SpellKits.DETONATE)
+	var mark: Button = hud._spell_buttons[SpellKits.MARK_SHOT]
+	eq(mark.disabled, false, "opening Mark Shot stays a legal cast")
+	_assert_shown_icon(hud, mark, SpellKits.MARK_SHOT, false)
+	var detonate: Button = hud._spell_buttons[SpellKits.DETONATE]
+	eq(detonate.disabled, true, "Detonate stays illegal at 0 Marks")
+	_assert_shown_icon(hud, detonate, SpellKits.DETONATE, true)
+	_assert_ability_chrome(hud, hud._walk_button, "walk")
+	_assert_ability_chrome(hud, hud._end_turn_button, "end_turn")
+	eq(hud._walk_button.disabled, false, "Walk is enabled on the opening turn")
+	_assert_shown_icon(hud, hud._walk_button, "walk", false)
+	eq(hud._end_turn_button.disabled, false, "End Turn is enabled on the opening turn")
+	_assert_shown_icon(hud, hud._end_turn_button, "end_turn", false)
+	eq(hud._new_match_button.text, "New Match", "New Match stays a text button")
+	eq(hud._new_match_button.get_node_or_null("AbilityIcon"), null, "New Match does not take an ability icon")
+	for dir in ["N", "E", "S", "W"]:
+		var face: Button = hud._face_buttons[dir]
+		eq(face.text, dir, "Face %s stays text" % dir)
+		eq(face.get_node_or_null("AbilityIcon"), null, "Face %s has no ability icon" % dir)
+
+	hud.set_locked(true)
+	eq(hud._walk_button.disabled, true, "locked Walk is disabled")
+	_assert_shown_icon(hud, hud._walk_button, "walk", true)
+	eq(hud._end_turn_button.disabled, true, "locked End Turn is disabled")
+	_assert_shown_icon(hud, hud._end_turn_button, "end_turn", true)
+	hud.set_locked(false)
+	hud.render(sim.snapshot(), sim.legal_intents(0))
+	_assert_shown_icon(hud, hud._walk_button, "walk", false)
+
+	sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+	})
+	sim.submit({"type": "end_turn"})
+	hud.render(sim.snapshot(), sim.legal_intents(1))
+	for spell_id in [SpellKits.STRIKE, SpellKits.SHOULDER, SpellKits.CRUSH, SpellKits.ADVANCE]:
+		_assert_ability_chrome(hud, hud._spell_buttons[spell_id], spell_id)
+	var strike: Button = hud._spell_buttons[SpellKits.STRIKE]
+	eq(strike.disabled, false, "adjacent Strike is enabled")
+	_assert_shown_icon(hud, strike, SpellKits.STRIKE, false)
+	var crush: Button = hud._spell_buttons[SpellKits.CRUSH]
+	eq(crush.disabled, true, "Crush stays disabled at 0 Impact")
+	_assert_shown_icon(hud, crush, SpellKits.CRUSH, true)
+
+	sim.reset_match({"seed": 1, "skip_deploy": true, "classes": ["mender", "bastion"]})
+	hud.render(sim.snapshot(), sim.legal_intents(0))
+	truthy(hud._spell_buttons.has(SpellKits.MEND), "Mender still offers Mend")
+	for spell_id in hud._spell_buttons.keys():
+		_assert_ability_chrome(hud, hud._spell_buttons[spell_id], str(spell_id))
+		var button: Button = hud._spell_buttons[spell_id]
+		var spell_name := str(SpellKits.spell(str(spell_id)).get("name", ""))
+		truthy(spell_name != "" and button.text.contains(spell_name), "%s keeps its text label" % spell_id)
+	eq(hud._new_match_button.text, "New Match", "New Match stays text on a kit without stubs")
+	for dir in ["N", "E", "S", "W"]:
+		eq((hud._face_buttons[dir] as Button).text, dir, "Face %s stays text on Mender" % dir)
+	hud.free()
+	sim.free()
+
+
+func _assert_ability_chrome(hud: CombatHUD, button: Button, spell_id: String) -> void:
+	var icon := button.get_node_or_null("AbilityIcon") as TextureRect
+	var enabled_path := hud._ability_icon_path(spell_id, false)
+	var loaded: Variant = load(enabled_path) if ResourceLoader.exists(enabled_path) else null
+	if loaded is Texture2D:
+		truthy(icon != null, "%s has an AbilityIcon" % spell_id)
+		eq(icon.get_parent(), button, "%s icon is a child of the button" % spell_id)
+		eq(icon.mouse_filter, Control.MOUSE_FILTER_IGNORE, "%s icon does not steal taps" % spell_id)
+		eq(icon.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "%s icon keeps aspect" % spell_id)
+		eq(icon.expand_mode, TextureRect.EXPAND_IGNORE_SIZE, "%s icon fills the control rect" % spell_id)
+		eq(button.text, "", "%s is icon-only when the stub loads" % spell_id)
+		var use_disabled := button.disabled and ResourceLoader.exists(hud._ability_icon_path(spell_id, true))
+		_assert_shown_icon(hud, button, spell_id, use_disabled)
+		return
+	if spell_id == "walk":
+		eq(button.text, "Walk", "Walk stays text until its icon imports")
+	elif spell_id == "end_turn":
+		eq(button.text, "End Turn", "End Turn stays text until its icon imports")
+	else:
+		var spell_name := str(SpellKits.spell(spell_id).get("name", ""))
+		truthy(spell_name != "" and button.text.contains(spell_name), "%s keeps its text label" % spell_id)
+	if icon != null:
+		eq(icon.visible, false, "%s hides a missing icon" % spell_id)
+		eq(icon.texture, null, "%s does not invent art" % spell_id)
+
+
+func _assert_shown_icon(hud: CombatHUD, button: Button, spell_id: String, disabled: bool) -> void:
+	var expected := hud._ability_icon_path(spell_id, disabled)
+	var loaded: Variant = load(expected)
+	if not (loaded is Texture2D):
+		return
+	var icon := button.get_node_or_null("AbilityIcon") as TextureRect
+	truthy(icon != null and icon.visible, "%s shows the %s icon" % [spell_id, "disabled" if disabled else "enabled"])
+	eq(str(icon.texture.resource_path), expected, "%s texture path" % spell_id)
+	eq(button.text, "", "%s label is clear while the icon shows" % spell_id)
 
 
 func mark_host_primary(hud, spell_id: String) -> bool:
