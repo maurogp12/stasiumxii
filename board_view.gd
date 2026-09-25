@@ -1162,7 +1162,10 @@ func _paint_highlights() -> void:
 	var range_cells: Array = []
 	var range_def: Dictionary = {}
 	var stamp_rim := false
-	if spell_id != "" and spell_id != SpellKits.ADVANCE:
+	var ambush_armed := CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH)
+	# Ambush range chrome is the legal arm only. An adjacent Shade must not
+	# paint a teach ring while the cast is absent from legal_intents.
+	if spell_id != "" and spell_id != SpellKits.ADVANCE and (spell_id != SpellKits.AMBUSH or ambush_armed):
 		range_def = SpellKits.spell(spell_id)
 		var target_kind := str(range_def.get("target", ""))
 		if target_kind == "enemy" or target_kind == "ally" or target_kind == "any" or target_kind == "empty_tile" or target_kind == "tile":
@@ -1188,12 +1191,13 @@ func _paint_highlights() -> void:
 	_sync_aim_preview()
 
 
-## Locked chrome. Origin highlight only while Ambush is selected or legal.
-## A live Shade is the origin. Invisible aims from Gloam only. Range is that origin.
+## Locked chrome. Origin and landing highlights only while legal_intents has an
+## Ambush cast. A Shade adjacent to a foe is not an origin. Invisible aims from
+## Gloam only. Range is that origin.
 func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 	var seat := CombatHUD.kit_seat(snap)
 	var legal: Array = _sim().legal_intents(seat)
-	if spell_id != SpellKits.AMBUSH and not CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH):
+	if not CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH):
 		return
 	var origin: Dictionary = _sim().ambush_origin(seat)
 	if not bool(origin.get("show", false)):
