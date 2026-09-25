@@ -456,6 +456,8 @@ func snapshot() -> Dictionary:
 		"snap_walls": _cell_list(_snap_wall_cells),
 		"snap_wall_active": _bastion_in_match(),
 		"blocked_tiles": _blocked_tile_snapshot(),
+		"shade_tokens": _placed_token_snapshot(_shade_tokens, false),
+		"plant_tiles": _placed_token_snapshot(_plant_tiles, true),
 		"umbral_cap": SpellKits.UMBRAL_CAP,
 		"umbral_owner": SpellKits.CLASS_GLOAM,
 		"wind": "calm",
@@ -560,6 +562,10 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 	_snap_wall_state.clear()
 	_shade_tokens.clear()
 	_plant_tiles.clear()
+	if snap.has("shade_tokens"):
+		_restore_placed_tokens(_shade_tokens, snap.get("shade_tokens", []))
+	if snap.has("plant_tiles"):
+		_restore_placed_tokens(_plant_tiles, snap.get("plant_tiles", []))
 	_restore_blocked_tiles(snap)
 	_intent_log.clear()
 	_active_seat = int(snap.get("active_seat", 0))
@@ -583,6 +589,8 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		var unit: Dictionary = (raw as Dictionary).duplicate(true)
 		unit["pos"] = _as_cell(unit.get("pos", UNPLACED))
 		_units.append(unit)
+	if snap.has("shade_tokens"):
+		_sync_shade_flags()
 	_board = _WalkBoard.new()
 	_apply_snapshot_tiles(snap.get("tiles", {}))
 	_flow.apply_host_snapshot(snap)
@@ -1439,6 +1447,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
 	# Spend before the d100. Miss keeps AP/MP; engine cost would refund here (none prepaid in A).
 	# Locked: miss retains Marks (Detonate) and Impact (Crush). AP/MP stay spent.
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance: int = hit_chance(dist)
@@ -1459,6 +1468,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": spell_id,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -1488,8 +1498,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
-	var damage := _phase_a_damage(base, facing_mult)
-	damage = _mitigate_hit(actor, target, damage)
+	var pre_mitigation := _phase_a_damage(base, facing_mult)
+	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
@@ -1564,6 +1575,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": dest,
 		"range": dist,
@@ -1612,6 +1624,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
+	_stamp_mitigation(hit_event, mitigation)
 	_last_events.append(hit_event)
 	if bool(push_result.get("blocked", false)):
 		_last_events.append({
@@ -1990,9 +2003,13 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	# then checking remaining would expire Stun 1 before the auto end_turn.
 	# Set stunned-this-turn from remaining>0, then decrement remaining.
 	var remaining := int(unit.get("stun_remaining", 0))
+	var was_stunned := bool(unit.get("stunned", false))
 	unit["stunned"] = remaining > 0
 	if remaining > 0:
 		unit["stun_remaining"] = remaining - 1
+	elif was_stunned:
+		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
+		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_decay_board_durations()
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
@@ -2379,6 +2396,27 @@ func _cone_cells(actor: Dictionary) -> Array[Vector2i]:
 	return [origin + facing, origin + facing + perp, origin + facing - perp]
 
 
+func _cone_payload(actor: Dictionary) -> Array:
+	var out: Array = []
+	for cell in _cone_cells(actor):
+		out.append(cell)
+	return out
+
+
+func _hold_line_miss_rows(bodies: Array) -> Array:
+	var rows: Array = []
+	for body in bodies:
+		var target: Dictionary = body
+		rows.append({
+			"target_seat": int(target["seat"]),
+			"cell": target["pos"],
+			"hit": false,
+			"damage": 0,
+			"exit_tax": int(target.get("exit_tax", 0)),
+		})
+	return rows
+
+
 ## invisible_only selects invisible enemies. Otherwise visible enemies only.
 func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
 	var out: Array = []
@@ -2422,21 +2460,48 @@ func _clear_resource(unit: Dictionary, field: String) -> int:
 ## Immunity consumes the hit (damage 0, shield untouched). Then one adjacent
 ## same-seat Bastion may take 40% once. Shield absorbs the rest. Zero shield
 ## and zero immunity leave the formula damage unchanged.
-func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
+## The returned damage is the HP actually lost. The other keys only describe it.
+func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
+	var report := {
+		"damage": damage,
+		"immunity_absorbed": false,
+		"immunity_amount": 0,
+		"shield_absorbed": 0,
+		"shield_broken": false,
+		"shield_remaining": int(target.get("shield", 0)),
+		"intercepted": 0,
+	}
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
-		return 0
+		report["immunity_absorbed"] = true
+		report["immunity_amount"] = damage
+		report["damage"] = 0
+		return report
 	var transferred := _intercept_transfer(actor, target, damage)
+	report["intercepted"] = transferred
 	var remaining := damage - transferred
 	var shield := int(target.get("shield", 0))
 	if shield > 0 and remaining > 0:
 		var absorbed := mini(shield, remaining)
 		target["shield"] = shield - absorbed
 		remaining -= absorbed
+		report["shield_absorbed"] = absorbed
 		if int(target["shield"]) <= 0:
 			target["shield"] = 0
 			target["shield_turns"] = 0
-	return remaining
+			report["shield_broken"] = true
+	report["damage"] = remaining
+	report["shield_remaining"] = int(target.get("shield", 0))
+	return report
+
+
+func _stamp_mitigation(event: Dictionary, report: Dictionary) -> void:
+	event["immunity_absorbed"] = bool(report.get("immunity_absorbed", false))
+	event["immunity_amount"] = int(report.get("immunity_amount", 0))
+	event["shield_absorbed"] = int(report.get("shield_absorbed", 0))
+	event["shield_broken"] = bool(report.get("shield_broken", false))
+	event["shield_remaining"] = int(report.get("shield_remaining", 0))
+	event["intercepted"] = int(report.get("intercepted", 0))
 
 
 func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
@@ -2468,8 +2533,18 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 		return 0
 	bastion["intercept_used"] = true
 	bastion["hp"] = maxi(0, int(bastion["hp"]) - moved)
+	var dealt := mini(moved, damage)
+	_last_events.append({
+		"type": "intercept",
+		"interceptor_seat": int(bastion["seat"]),
+		"for_seat": int(target["seat"]),
+		"interceptor_cell": bastion["pos"],
+		"for_cell": target["pos"],
+		"damage": dealt,
+		"hp": int(bastion["hp"]),
+	})
 	_check_death(bastion)
-	return mini(moved, damage)
+	return dealt
 
 
 func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary) -> int:
@@ -2498,6 +2573,7 @@ func _apply_heal(target: Dictionary, amount: int) -> int:
 
 
 func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	var spell_id := str(def.get("id", ""))
 	if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
 		return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
@@ -2519,6 +2595,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": spell_id,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -2554,6 +2631,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": dest,
 		"range": dist,
@@ -2572,6 +2650,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var gained := _gain_resource(actor, "umbral", 1)
@@ -2582,6 +2661,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"type": "cast",
 		"spell": SpellKits.FADE,
 		"seat": actor["seat"],
+		"caster_cell": caster_cell,
 		"rolled": false,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
@@ -2593,6 +2673,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 
 
 func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	if not _is_empty(dest) or not _board.is_walkable(dest):
 		return _reject(intent, "destination_occupied", "REJECT — %s needs an empty tile (refund)." % def["name"])
 	var spell_id := str(def.get("id", ""))
@@ -2613,6 +2694,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"type": "cast",
 			"spell": spell_id,
 			"seat": actor["seat"],
+			"caster_cell": caster_cell,
 			"to": dest,
 			"rolled": false,
 			"ap_spent": ap_cost,
@@ -2646,6 +2728,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 
 
 func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var gained := _gain_resource(actor, "aegis", 1)
@@ -2661,6 +2744,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"type": "cast",
 		"spell": SpellKits.PLANT,
 		"seat": actor["seat"],
+		"caster_cell": caster_cell,
 		"to": dest,
 		"rolled": false,
 		"ap_spent": ap_cost,
@@ -2672,6 +2756,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 
 
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	if not _cone_enemies(actor, true).is_empty():
 		return _reject(intent, "open_can_wait", "REJECT — AoE versus Invisible is open (can-wait).")
 	var bodies: Array = _cone_enemies(actor, false)
@@ -2684,33 +2769,51 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	var roll := _roll_d100()
 	var connected := roll <= chance
 	_intent_log.append(intent)
+	var cone := _cone_payload(actor)
 	if not connected:
 		_last_coach = "MISS — Hold Line (%d vs %d%%)." % [roll, chance]
 		_last_events.append({
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": SpellKits.HOLD_LINE,
+			"caster_cell": caster_cell,
 			"roll": roll,
 			"hit_chance": chance,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
 			"damage": 0,
 			"bodies": 0,
+			"cone": cone,
+			"targets": _hold_line_miss_rows(bodies),
 			"coach": _last_coach,
 		})
 		return _accept()
 	var total := 0
 	var hit_bodies := 0
+	var targets: Array = []
 	for body in bodies:
 		var target: Dictionary = body
+		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
-		var damage := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
-		damage = _mitigate_hit(actor, target, damage)
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
+		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
 		target["exit_tax"] = maxi(int(target.get("exit_tax", 0)), int(def.get("exit_tax_turns", 1)))
+		var row := {
+			"target_seat": int(target["seat"]),
+			"cell": cell,
+			"hit": true,
+			"damage": damage,
+			"exit_tax": int(target["exit_tax"]),
+			"facing_mult": facing_mult,
+			"back": is_back,
+		}
+		_stamp_mitigation(row, mitigation)
+		targets.append(row)
 		total += damage
 		hit_bodies += 1
 		_check_death(target)
@@ -2724,12 +2827,15 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": SpellKits.HOLD_LINE,
+		"caster_cell": caster_cell,
 		"roll": roll,
 		"hit_chance": chance,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"damage": total,
 		"bodies": hit_bodies,
+		"cone": cone,
+		"targets": targets,
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
@@ -2737,6 +2843,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
 		return _reject(intent, "no_landing", "REJECT — Ambush has no empty landing (refund).")
@@ -2746,6 +2853,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		origin = _first_shade(actor)
 		if origin.is_empty():
 			return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+	# v0.6: origin is Gloam's own cell while Invisible, otherwise the Shade cell.
+	var origin_cell: Vector2i = caster_cell if not from_shade else origin["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance := hit_chance(dist)
@@ -2758,6 +2867,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": SpellKits.AMBUSH,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -2765,6 +2875,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			"roll": roll,
 			"ap_spent": ap_cost,
 			"mp_spent": mp_cost,
+			"origin": origin_cell,
 			"teleported": false,
 			"shade_retained": bool(actor.get("shade", false)),
 			"invisible_retained": bool(actor.get("invisible", false)),
@@ -2779,14 +2890,16 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin["pos"], int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var damage := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
-	damage = _mitigate_hit(actor, target, damage)
+	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
+	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+	var damage := int(mitigation["damage"])
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
 	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
 	_last_events.append({
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": SpellKits.AMBUSH,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": cell,
 		"from": dest,
@@ -2795,6 +2908,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"roll": roll,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
+		"origin": origin_cell,
+		"destination": cell,
 		"teleported": true,
 		"backstab": backstab,
 		"facing_mult": facing_mult,
@@ -2804,6 +2919,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"shades": int(actor.get("shades", 0)),
 		"coach": _last_coach,
 	})
+	_stamp_mitigation(_last_events[_last_events.size() - 1], mitigation)
 	_check_death(target)
 	return _accept()
 
@@ -2932,6 +3048,41 @@ func _unit_snapshot(unit: Dictionary) -> Dictionary:
 	return copy
 
 
+func _placed_token_snapshot(items: Array, include_resist: bool) -> Array:
+	var out: Array = []
+	for item in items:
+		var token: Dictionary = item
+		var cell: Vector2i = token["pos"]
+		var rec := {
+			"x": cell.x,
+			"y": cell.y,
+			"pos": cell,
+			"turns": int(token.get("turns", 0)),
+			"owner_seat": int(token.get("owner_seat", -1)),
+		}
+		if include_resist:
+			rec["push_resist"] = bool(token.get("push_resist", false))
+		out.append(rec)
+	return out
+
+
+func _restore_placed_tokens(into: Array, raw: Variant) -> void:
+	if typeof(raw) != TYPE_ARRAY:
+		return
+	for entry in raw:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = entry
+		var token := {
+			"pos": _blocked_entry_cell(rec),
+			"turns": int(rec.get("turns", 0)),
+			"owner_seat": int(rec.get("owner_seat", -1)),
+		}
+		if rec.has("push_resist"):
+			token["push_resist"] = bool(rec.get("push_resist", false))
+		into.append(token)
+
+
 func _blocked_tile_snapshot() -> Array:
 	if not _bastion_in_match():
 		return []
@@ -2981,6 +3132,18 @@ func _restore_blocked_tiles(snap: Dictionary) -> void:
 			_add_snap_wall(cell, 2, -1)
 
 
+func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: int = -1) -> void:
+	var event := {
+		"type": "expire",
+		"status": status,
+		"pos": pos,
+		"owner_seat": owner_seat,
+	}
+	if target_seat >= 0:
+		event["target_seat"] = target_seat
+	_last_events.append(event)
+
+
 func _decay_board_durations() -> void:
 	var shades: Array = []
 	for item in _shade_tokens:
@@ -2988,6 +3151,8 @@ func _decay_board_durations() -> void:
 		token["turns"] = int(token.get("turns", 0)) - 1
 		if int(token["turns"]) > 0:
 			shades.append(token)
+		else:
+			_emit_expire("shade", token["pos"], int(token.get("owner_seat", -1)))
 	_shade_tokens = shades
 	var walls: Array = []
 	_snap_wall_cells.clear()
@@ -2997,6 +3162,8 @@ func _decay_board_durations() -> void:
 		if int(wall["turns"]) > 0:
 			walls.append(wall)
 			_snap_wall_cells.append(wall["pos"])
+		else:
+			_emit_expire("wall", wall["pos"], int(wall.get("owner_seat", -1)))
 	_snap_wall_state = walls
 	var plants: Array = []
 	for item in _plant_tiles:
@@ -3004,6 +3171,8 @@ func _decay_board_durations() -> void:
 		tile["turns"] = int(tile.get("turns", 0)) - 1
 		if int(tile["turns"]) > 0:
 			plants.append(tile)
+		else:
+			_emit_expire("plant", tile["pos"], int(tile.get("owner_seat", -1)))
 	_plant_tiles = plants
 	_sync_shade_flags()
 
@@ -3016,6 +3185,7 @@ func _tick_shield(unit: Dictionary) -> void:
 	if int(unit["shield_turns"]) <= 0:
 		unit["shield"] = 0
 		unit["shield_turns"] = 0
+		_emit_expire("shield", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 
 
 func _consume_plant_resist(target: Dictionary) -> bool:
