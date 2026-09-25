@@ -16,6 +16,8 @@ extends Node2D
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
+## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
+## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner. The 30s seat clock is
@@ -45,13 +47,14 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
+const TOUCH := preload("res://ui/touch_adapter.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
-## Playable band between the top chrome and the bottom action bar on 960×720.
-const PLAY_TOP := 140.0
-const PLAY_BOTTOM := 488.0
-const VIEW_W := 960.0
-const VIEW_H := 720.0
+## Playable band between the top chrome and the touch-sized bottom bar.
+const PLAY_TOP: float = TOUCH.PLAY_TOP
+const PLAY_BOTTOM: float = TOUCH.PLAY_BOTTOM
+const VIEW_W: float = TOUCH.VIEW_W
+const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
 
 var tiles: Dictionary = {}
@@ -78,6 +81,8 @@ var _camera: Camera2D
 var _fit_camera_pos := Vector2.ZERO
 var _panning := false
 var _pan_origin := Vector2.ZERO
+## Finger went down on the board. Release commits only that gesture.
+var _touch_on_board := false
 
 
 func _ready() -> void:
@@ -197,7 +202,7 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 func local_to_grid(point: Vector2) -> Vector2i:
 	# Nearest painted tile so elevated (view-offset) cells stay clickable.
 	var best := Vector2i(-1, -1)
-	var best_d := 22.0
+	var best_d := TOUCH.CELL_PICK_RADIUS
 	for cell in tiles.keys():
 		var tile: BoardTile = tiles[cell]
 		var dist := point.distance_to(tile.position)
@@ -276,21 +281,28 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Esc returns to Walk. Right-click stays face and is not a cancel.
 		_return_to_walk()
 		return
-	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_MIDDLE:
+	# Desktop MOUSE_BUTTON_RIGHT still faces. Touch uses the Face pad.
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT:
+		if TOUCH.board_gesture(event) != TOUCH.FACE:
+			return
+		var faced := _cell_under_pointer(event)
+		if not _in_bounds(faced):
+			return
+		if CombatHUD.is_deployment_phase(_sim().snapshot()):
+			return
+		select_tile(faced)
+		_face_toward(faced)
+		get_viewport().set_input_as_handled()
+		return
+	var gesture := TOUCH.board_gesture(event)
+	if gesture == TOUCH.PAN or gesture == TOUCH.PAN_STOP:
 		var middle := event as InputEventMouseButton
-		_panning = middle.pressed
-		if middle.pressed:
+		_panning = gesture == TOUCH.PAN
+		if _panning:
 			_pan_origin = middle.position
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseMotion and not _panning:
-		var hover := local_to_grid($Tiles.get_local_mouse_position())
-		if _in_bounds(hover):
-			_sync_aim_preview(hover)
-		else:
-			_sync_aim_preview()
-		return
-	if event is InputEventMouseMotion and _panning and _camera != null:
+	if _panning and event is InputEventMouseMotion and not TOUCH.is_emulated_mouse(event) and _camera != null:
 		var motion := event as InputEventMouseMotion
 		var delta := motion.position - _pan_origin
 		_pan_origin = motion.position
@@ -298,21 +310,43 @@ func _unhandled_input(event: InputEvent) -> void:
 		_clamp_camera()
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseButton and event.pressed:
-		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
-		var cell := local_to_grid(mouse_position)
-		if not _in_bounds(cell):
+	if gesture == TOUCH.AIM:
+		var hover := _cell_under_pointer(event)
+		if _in_bounds(hover):
+			_sync_aim_preview(hover)
+			if TOUCH.is_touch_press(event):
+				_touch_on_board = true
+				select_tile(hover)
+				if _hud != null:
+					_hud.dismiss_pinned_tooltip()
+			elif event is InputEventScreenDrag and _touch_on_board:
+				select_tile(hover)
+		else:
+			_sync_aim_preview()
+			if TOUCH.is_touch_press(event):
+				_touch_on_board = false
+		return
+	if gesture != TOUCH.COMMIT:
+		return
+	if TOUCH.is_touch_release(event):
+		if not _touch_on_board:
 			return
-		if event.button_index == MOUSE_BUTTON_LEFT and _snap_wall_cell(cell):
-			return
-		select_tile(cell)
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if CombatHUD.is_deployment_phase(_sim().snapshot()):
-				return
-			_face_toward(cell)
-			return
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			_handle_left_click(cell)
+		_touch_on_board = false
+	var cell := _cell_under_pointer(event)
+	if not _in_bounds(cell):
+		return
+	# Snap walls are not a left-click / tap target. Right-click already returned.
+	if _snap_wall_cell(cell):
+		return
+	select_tile(cell)
+	_handle_left_click(cell)
+
+
+func _cell_under_pointer(event: InputEvent) -> Vector2i:
+	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
+	return local_to_grid(local)
 
 
 func select_tile(cell: Vector2i) -> void:
