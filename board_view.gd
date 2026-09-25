@@ -893,8 +893,10 @@ func _apply_units(snap: Dictionary) -> void:
 		if not pawns_by_seat.has(seat):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
-		var cell: Vector2i = _as_cell(unit.get("pos", Vector2i(-1, -1)))
-		var placed := bool(unit.get("placed", true)) and cell.x >= 0 and cell.y >= 0
+		var raw_pos: Variant = unit.get("pos", Vector2i(-1, -1))
+		var cell: Vector2i = _as_cell(raw_pos)
+		# pos null / pos_hidden: opponent wire for an Invisible unit. Do not draw it.
+		var placed := bool(unit.get("placed", true)) and not bool(unit.get("pos_hidden", false)) and raw_pos != null and cell.x >= 0 and cell.y >= 0
 		pawn.visible = placed
 		if not placed:
 			continue
@@ -1134,6 +1136,8 @@ func _in_bounds(cell: Vector2i) -> bool:
 
 
 func _as_cell(value: Variant) -> Vector2i:
+	if value == null:
+		return Vector2i(-1, -1)
 	if value is Vector2i:
 		return value
 	if value is Vector2:

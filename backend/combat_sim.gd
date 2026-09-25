@@ -587,7 +587,13 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		if typeof(raw) != TYPE_DICTIONARY:
 			continue
 		var unit: Dictionary = (raw as Dictionary).duplicate(true)
-		unit["pos"] = _as_cell(unit.get("pos", UNPLACED))
+		# Opponent wire sets pos to null when this unit is invisible to that seat.
+		# Null is not a tile. Store UNPLACED so the replica does not invent (0,0).
+		var raw_pos: Variant = unit.get("pos", UNPLACED)
+		if raw_pos == null:
+			unit["pos"] = UNPLACED
+		else:
+			unit["pos"] = _as_cell(raw_pos)
 		_units.append(unit)
 	if snap.has("shade_tokens"):
 		_sync_shade_flags()
