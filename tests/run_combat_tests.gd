@@ -52,6 +52,7 @@ func _run() -> void:
 	_test_end_turn_refills()
 	_test_illegal_cast_refunds()
 	_test_ambush_destination_locked()
+	_test_ambush_arms_at_zero_mp()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1401,6 +1402,72 @@ func _test_ambush_destination_locked() -> void:
 	eq(_unit(0)["pos"], back, "Shade-origin Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
 	eq(int(_unit(1)["hp"]), 50, "Shade-origin back hit is 22 × 1.35 = 30")
+
+
+func _test_ambush_arms_at_zero_mp() -> void:
+	# Playtest 0.1.6: Drop Shade, Shades 2/2, MP 0, toast "illegal move (insufficient mp)".
+	# Ambush is 4 AP / 0 MP. The walk budget must not hide it. 1 AP still cannot arm it.
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+		"rolls": [1],
+	})
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Ambush cost stays 0 MP")
+	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
+	var actor := _live_unit(0)
+	actor["mp"] = 0
+	actor["ap"] = 4
+	actor["exit_tax"] = 1
+	eq(_has_legal_move(0), false, "MP 0 with exit tax offers no walk")
+	eq(_has_legal_cast(0, SpellKits.FADE), false, "Fade stays blocked on its own 1 MP")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Ambush is legal at MP 0 with 4 AP and a Shade")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Ambush dest is the enemy, not a walk tile")
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var ambush_button: Button = hud._spell_buttons[SpellKits.AMBUSH]
+	eq(ambush_button.disabled, false, "Ambush arms on the cluster at MP 0")
+	hud.free()
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "Ambush resolves at MP 0")
+	eq(str(hit.get("reason", "")), "", "Ambush at MP 0 is not an insufficient_mp reject")
+	eq(_unit(0)["pos"], Vector2i(6, 2), "Shade-origin Ambush still lands on the empty back tile")
+	eq(int(_unit(0)["ap"]), 0, "Ambush at MP 0 spends 4 AP")
+	eq(int(_unit(0)["mp"]), 0, "Ambush at MP 0 spends 0 MP")
+	eq(int(_unit(0)["shades"]), 0, "Shade origin still spends one Shade on hit")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"gloam_shade": true,
+	})
+	actor = _live_unit(0)
+	actor["mp"] = 0
+	actor["ap"] = 1
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "1 AP does not arm Ambush")
+	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 3), "seat": 0})
+	eq(str(walked.get("reason", "")), "insufficient_mp", "a walk at MP 0 is still an illegal move")
+	eq(bool(walked.get("ok", true)), false, "the walk reject is not a resolved Ambush")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	var click_idx := view.find("func _handle_left_click")
+	var next_idx := view.find("func _advance_click_accepted")
+	var click_src := view.substr(click_idx, next_idx - click_idx)
+	truthy(click_src.contains("walk_dests"), "a board tap reads walk highlights before submitting a move")
+	var empty_at := click_src.find("is_empty()")
+	var submit_at := click_src.find("_submit({\"type\": \"move\"")
+	truthy(empty_at >= 0 and submit_at > empty_at, "empty walk highlights return before the move submit")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:

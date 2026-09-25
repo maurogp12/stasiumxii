@@ -291,6 +291,11 @@ func legal_intents(seat: int) -> Array:
 		var def: Dictionary = SpellKits.spell(str(spell_id))
 		if def.is_empty() or SpellKits.is_gated(str(spell_id)):
 			continue
+		# Ambush is a blink (4 AP / 0 MP), not a walk. Offer it before the
+		# walk budget is consulted. MP 0 is legal when AP covers the card.
+		if str(spell_id) == SpellKits.AMBUSH:
+			_append_ambush_cast(out, actor, def)
+			continue
 		if ap < int(def["ap"]):
 			continue
 		if _resource_gate(actor, def) != "":
@@ -350,8 +355,9 @@ func legal_intents(seat: int) -> Array:
 						"seat": seat,
 					})
 		else:
-			if mp < int(def["mp"]):
-				continue
+			# Card MP was already compared to the unit's MP. Do not reuse the
+			# walk budget here: exit tax shortens walks only. A 0 MP cast
+			# such as Ambush stays legal at MP 0.
 			var enemy := _enemy_of(seat)
 			if enemy.is_empty() or not enemy["alive"]:
 				continue
@@ -368,6 +374,34 @@ func legal_intents(seat: int) -> Array:
 
 	out.append({"type": "end_turn", "seat": seat})
 	return out
+
+
+## Locked Ambush: 4 AP / 0 MP, range 1–4 from Gloam, blink to the empty back tile.
+## Spends a Shade only when the origin was a Shade (submit). Invisible origin
+## keeps the token. This offer does not call the pathfinder and does not read
+## the walk budget, so MP 0 does not hide the cast.
+func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void:
+	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
+		return
+	if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+		return
+	if _resource_gate(actor, def) != "":
+		return
+	var seat := int(actor["seat"])
+	var enemy := _enemy_of(seat)
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return
+	if _cast_gate_reason(actor, enemy, def) != "":
+		return
+	if not _in_spell_range(def, actor["pos"], enemy["pos"]):
+		return
+	out.append({
+		"type": "cast",
+		"spell": SpellKits.AMBUSH,
+		"to": enemy["pos"],
+		"target_seat": enemy["seat"],
+		"seat": seat,
+	})
 
 
 ## Godot bind: place / reposition this seat's one fighter. Simultaneous; no turn gate.

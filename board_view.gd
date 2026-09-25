@@ -466,6 +466,12 @@ func _handle_left_click(cell: Vector2i) -> void:
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		# Dest-click only. Do not send a client path.
+		# MP 0 has no walk highlight. Submitting anyway coaches
+		# "illegal move (insufficient mp)" and was read as Ambush failing
+		# after Drop Shade. Ambush is a 0 MP cast, armed from the kit.
+		var seat := CombatHUD.kit_seat(_sim().snapshot())
+		if SNAPSHOT_TILES.walk_dests(_sim().legal_intents(seat)).is_empty():
+			return
 		_submit({"type": "move", "to": cell})
 		return
 	var actor := _active_unit(_sim().snapshot())
