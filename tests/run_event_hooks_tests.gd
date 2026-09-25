@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_caster_cell_on_cast_events()
 	_test_caster_cell_survives_host_pack()
 	_test_ambush_origin_and_destination()
+	_test_hold_line_cone_and_targets()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -297,6 +298,79 @@ func _test_ambush_origin_and_destination() -> void:
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
 	eq(guest.get("origin"), gloam, "guest Ambush origin matches the host")
 	eq(guest.get("destination"), Vector2i(6, 2), "guest Ambush destination matches the host")
+
+
+func _test_hold_line_cone_and_targets() -> void:
+	var cone := [Vector2i(2, 1), Vector2i(2, 2), Vector2i(2, 0)]
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var extra: Dictionary = _sim._make_unit(1, "kestrel", "Second", "air", Vector2i(2, 2), "W", true)
+	_sim._units.append(extra)
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
+	var event := _event_of(hit.get("events", []), "hit")
+	eq(event.get("cone"), cone, "Hold Line hit lists the front cone cells")
+	var targets: Array = event.get("targets", [])
+	eq(targets.size(), 2, "Hold Line hit lists each body in the cone")
+	eq(targets[0].get("cell"), Vector2i(2, 1), "first Hold Line body is the front cell")
+	eq(int(targets[0].get("damage", -1)), 7, "first body takes 7")
+	eq(int(targets[0].get("exit_tax", 0)), 1, "first body gets the exit tax")
+	eq(bool(targets[0].get("hit", false)), true, "first body connected")
+	eq(targets[1].get("cell"), Vector2i(2, 2), "second Hold Line body is the side cell")
+	eq(int(targets[1].get("damage", -1)), 7, "second body takes 7")
+	eq(int(event.get("damage", -1)), 14, "Hold Line total is the sum of the bodies")
+	eq(int(event.get("bodies", 0)), 2, "Hold Line bodies count stays the hit count")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 73, "primary target still loses 7 HP")
+	eq(int(extra["hp"]), 73, "second body still loses 7 HP")
+	eq(int(_sim.snapshot()["units"][0]["aegis"]), 1, "Hold Line still gains 1 Aegis")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"kestrel_facing": "W",
+		"rolls": [100],
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
+	var miss := _event_of(missed.get("events", []), "miss")
+	eq(miss.get("cone"), cone, "Hold Line miss lists the same cone")
+	var missed_rows: Array = miss.get("targets", [])
+	eq(missed_rows.size(), 1, "Hold Line miss names the body that was in the cone")
+	eq(bool(missed_rows[0].get("hit", true)), false, "Hold Line miss target did not connect")
+	eq(int(missed_rows[0].get("damage", -1)), 0, "Hold Line miss target damage is 0")
+	eq(int(miss.get("bodies", -1)), 0, "Hold Line miss bodies field stays 0")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Hold Line miss still deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["exit_tax"]), 0, "Hold Line miss does not apply exit tax")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+		"fixture": true,
+	})
+	var cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1)}, 0)
+	var packed: Dictionary = _host.pack_result(cast, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
+	eq(wire.get("cone"), cone, "packed Hold Line cone survives encode")
+	_guest.apply_packed_state(packed)
+	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
+	eq(guest.get("cone"), cone, "guest Hold Line cone matches the host")
+	var guest_rows: Array = guest.get("targets", [])
+	eq(guest_rows.size(), 1, "guest Hold Line has the host target row")
+	eq(int(guest_rows[0].get("damage", -1)), 7, "guest Hold Line target damage matches")
 
 
 func _event_of(events: Variant, kind: String) -> Dictionary:

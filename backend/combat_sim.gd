@@ -2382,6 +2382,27 @@ func _cone_cells(actor: Dictionary) -> Array[Vector2i]:
 	return [origin + facing, origin + facing + perp, origin + facing - perp]
 
 
+func _cone_payload(actor: Dictionary) -> Array:
+	var out: Array = []
+	for cell in _cone_cells(actor):
+		out.append(cell)
+	return out
+
+
+func _hold_line_miss_rows(bodies: Array) -> Array:
+	var rows: Array = []
+	for body in bodies:
+		var target: Dictionary = body
+		rows.append({
+			"target_seat": int(target["seat"]),
+			"cell": target["pos"],
+			"hit": false,
+			"damage": 0,
+			"exit_tax": int(target.get("exit_tax", 0)),
+		})
+	return rows
+
+
 ## invisible_only selects invisible enemies. Otherwise visible enemies only.
 func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
 	var out: Array = []
@@ -2697,6 +2718,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	var roll := _roll_d100()
 	var connected := roll <= chance
 	_intent_log.append(intent)
+	var cone := _cone_payload(actor)
 	if not connected:
 		_last_coach = "MISS — Hold Line (%d vs %d%%)." % [roll, chance]
 		_last_events.append({
@@ -2710,13 +2732,17 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"mp_spent": mp_cost,
 			"damage": 0,
 			"bodies": 0,
+			"cone": cone,
+			"targets": _hold_line_miss_rows(bodies),
 			"coach": _last_coach,
 		})
 		return _accept()
 	var total := 0
 	var hit_bodies := 0
+	var targets: Array = []
 	for body in bodies:
 		var target: Dictionary = body
+		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
@@ -2725,6 +2751,15 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		damage = _mitigate_hit(actor, target, damage)
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
 		target["exit_tax"] = maxi(int(target.get("exit_tax", 0)), int(def.get("exit_tax_turns", 1)))
+		targets.append({
+			"target_seat": int(target["seat"]),
+			"cell": cell,
+			"hit": true,
+			"damage": damage,
+			"exit_tax": int(target["exit_tax"]),
+			"facing_mult": facing_mult,
+			"back": is_back,
+		})
 		total += damage
 		hit_bodies += 1
 		_check_death(target)
@@ -2745,6 +2780,8 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"mp_spent": mp_cost,
 		"damage": total,
 		"bodies": hit_bodies,
+		"cone": cone,
+		"targets": targets,
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
