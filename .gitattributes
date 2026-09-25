@@ -1,2 +1,5 @@
 # Normalize EOL for all files that Git considers text files.
 * text=auto eol=lf
+
+# PKCS12 keystore. Keep bytes intact (no EOL conversion).
+build_tools/mobile/*.keystore binary
