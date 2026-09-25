@@ -59,7 +59,18 @@ func _test_tunables_and_budget() -> void:
 	eq(float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS > Pawn.WALK_HOP_SEC, true, "one walk cycle is longer than a single tile")
 	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer one-shot still fits the hop window")
 	eq(Pawn.strip_speed_scale(0, 24.0, Pawn.WALK_HOP_SEC), 1.0, "an empty strip does not divide by zero")
-	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "lunge is about 6px")
+	eq(MOTION.ATTACK_LUNGE_PX >= 10.0 and MOTION.ATTACK_LUNGE_PX <= 14.0, true, "melee lunge is phone-readable")
+	eq(MOTION.AMBUSH_LUNGE_PX > MOTION.ATTACK_LUNGE_PX, true, "Ambush keeps a longer reach")
+	eq(MOTION.ANTICIPATION_SEC >= 0.06 and MOTION.ANTICIPATION_SEC <= 0.10, true, "anticipation is a short wind-up")
+	eq(MOTION.attack_sec() <= MOTION.ACTION_LOCK_MAX, true, "attack wind-up and hold fit the action lock")
+	eq(MOTION.cast_sec() <= MOTION.ACTION_LOCK_MAX, true, "cast wind-up and hold fit the action lock")
+	eq(MOTION.impact_hold_sec() > 0.05, true, "impact hold is long enough to read")
+	eq(MOTION.impact_hold_sec() <= MOTION.ACTION_LOCK_MAX, true, "impact hold does not exceed the action lock")
+	var prelude := MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC + MOTION.ATTACK_BACK_SEC
+	eq(MOTION.impact_hold_sec() <= MOTION.ACTION_LOCK_MAX - prelude + 0.0001, true, "impact hold fits the remaining lock")
+	eq(MOTION.impact_hold_sec(MOTION.ACTION_LOCK_MAX), 0.0, "a spent lock leaves no impact hold")
+	eq(MOTION.plan_sec({"attack": true, "aim": Vector2(20, 10)}) <= MOTION.ACTION_LOCK_MAX, true, "an attack plan stays inside the lock")
+	eq(MOTION.plan_sec({"cast": true}) <= MOTION.ACTION_LOCK_MAX, true, "a cast plan stays inside the lock")
 	eq(MOTION.HIT_KNOCK_PX >= 4.0 and MOTION.HIT_KNOCK_PX <= 6.0, true, "knockback is 4-6px")
 	var stacked := {
 		"hit": true,
@@ -92,9 +103,19 @@ func _test_curves_return_to_origin() -> void:
 	var aim := Vector2(32, 16)
 	eq(MOTION.attack_offset(0.0, aim), Vector2.ZERO, "lunge starts on the tile")
 	eq(MOTION.attack_offset(1.0, aim), Vector2.ZERO, "lunge returns to the tile")
-	var peak_t := MOTION.ATTACK_OUT_SEC / MOTION.attack_sec()
+	var peak_t := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC) / MOTION.attack_sec()
 	var peak: Vector2 = MOTION.attack_offset(peak_t, aim)
 	eq(is_equal_approx(peak.length(), MOTION.ATTACK_LUNGE_PX), true, "lunge reaches the tuned distance")
+	var anti_t := (MOTION.ANTICIPATION_SEC * 0.92) / MOTION.attack_sec()
+	var pulled: Vector2 = MOTION.attack_offset(anti_t, Vector2(32, 0))
+	eq(pulled.x < -1.0, true, "anticipation pulls back before the lunge")
+	var coiled: Dictionary = MOTION.attack_pose(anti_t, Vector2(32, 0))
+	eq((coiled["scale"] as Vector2).y < 1.0, true, "anticipation squashes")
+	eq((coiled["scale"] as Vector2).x > 1.0, true, "anticipation widens")
+	var hold_t := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.attack_sec()
+	eq(MOTION.attack_phase(hold_t), "hold", "the lunge holds on the impact pose")
+	eq(is_equal_approx(MOTION.attack_offset(hold_t, Vector2(32, 0)).x, MOTION.ATTACK_LUNGE_PX), true, "impact hold stays at the lunge")
+	eq(MOTION.attack_phase(anti_t), "anticipation", "the wind-up is its own phase")
 	eq(MOTION.hit_offset(0.0, aim), Vector2.ZERO, "knockback starts on the tile")
 	eq(MOTION.hit_offset(1.0, aim), Vector2.ZERO, "knockback returns to the tile")
 	var knock_t := MOTION.HIT_OUT_SEC / MOTION.hit_sec()
@@ -107,10 +128,15 @@ func _test_curves_return_to_origin() -> void:
 	var cast_rest: Dictionary = MOTION.cast_pose(1.0)
 	eq(cast_rest["pos"], Vector2.ZERO, "cast releases to the tile")
 	eq(cast_rest["scale"], Vector2.ONE, "cast scale releases to rest")
-	var cast_hold_t := (MOTION.CAST_RISE_SEC + MOTION.CAST_HOLD_SEC * 0.5) / MOTION.cast_sec()
+	var cast_hold_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.cast_sec()
 	var held: Dictionary = MOTION.cast_pose(cast_hold_t)
 	eq((held["pos"] as Vector2).y, -MOTION.CAST_RISE_PX, "cast holds the rise")
 	eq(is_equal_approx((held["scale"] as Vector2).y, MOTION.CAST_SCALE), true, "cast holds the scale-up")
+	eq(MOTION.cast_phase(cast_hold_t), "hold", "cast holds the impact pose")
+	var cast_anti_t := (MOTION.ANTICIPATION_SEC * 0.92) / MOTION.cast_sec()
+	var cast_coil: Dictionary = MOTION.cast_pose(cast_anti_t)
+	eq((cast_coil["scale"] as Vector2).y < 1.0, true, "cast anticipation squashes")
+	eq((cast_coil["pos"] as Vector2).y > 0.0, true, "cast anticipation dips before the rise")
 	var slumped: Dictionary = MOTION.death_pose(1.0, 1.0)
 	eq(is_equal_approx((slumped["scale"] as Vector2).y, MOTION.DEATH_SQUASH_Y), true, "death squashes down")
 	eq(is_equal_approx(float(slumped["rot"]), MOTION.DEATH_TILT_DEG), true, "death tilts")
@@ -133,16 +159,26 @@ func _test_caster_and_target_kinds() -> void:
 	eq(MOTION.caster_motion(SpellKits.SHOULDER), "attack", "Shoulder lunges")
 	eq(MOTION.caster_motion(SpellKits.BASH), "attack", "Bash lunges")
 	eq(MOTION.caster_motion(SpellKits.HOLD_LINE), "attack", "Hold Line lunges")
+	eq(MOTION.caster_motion(SpellKits.CRUSH), "attack", "Crush lunges")
 	eq(MOTION.caster_motion(SpellKits.MARK_SHOT), "cast", "Mark Shot winds up")
+	eq(MOTION.caster_motion(SpellKits.DETONATE), "cast", "Detonate winds up")
 	eq(MOTION.caster_motion(SpellKits.MEND), "cast", "Mend winds up")
 	eq(MOTION.caster_motion(SpellKits.WARD), "cast", "Ward winds up")
 	eq(MOTION.caster_motion(SpellKits.CLEANSE), "cast", "Cleanse winds up")
 	eq(MOTION.caster_motion(SpellKits.ADVANCE), "", "Advance stays a teleport snap")
 	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush lunges before the blink")
 	eq(MOTION.caster_motion(SpellKits.DROP_SHADE), "cast", "Drop Shade still winds up")
-	var ambush_reach: Vector2 = MOTION.attack_offset(MOTION.ATTACK_OUT_SEC / MOTION.attack_sec(), Vector2(32, 0), MOTION.AMBUSH_LUNGE_PX)
+	var lunge_peak := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC) / MOTION.attack_sec()
+	var ambush_reach: Vector2 = MOTION.attack_offset(lunge_peak, Vector2(32, 0), MOTION.AMBUSH_LUNGE_PX)
 	eq(is_equal_approx(ambush_reach.x, MOTION.AMBUSH_LUNGE_PX), true, "Ambush reach is phone-readable")
-	eq(is_equal_approx(MOTION.attack_offset(MOTION.ATTACK_OUT_SEC / MOTION.attack_sec(), Vector2(32, 0)).x, MOTION.ATTACK_LUNGE_PX), true, "other lunges stay 6px")
+	eq(is_equal_approx(MOTION.attack_offset(lunge_peak, Vector2(32, 0)).x, MOTION.ATTACK_LUNGE_PX), true, "other lunges stay in the phone band")
+	var ambush_plan: Dictionary = MOTION.chrome_plans([{
+		"type": "miss",
+		"spell": SpellKits.AMBUSH,
+		"seat": 0,
+	}]).get(0, {})
+	eq(bool(ambush_plan.get("attack", false)), true, "Ambush miss still lunges")
+	eq(is_equal_approx(float(ambush_plan.get("reach", 0.0)), MOTION.AMBUSH_LUNGE_PX), true, "Ambush plan keeps the longer reach")
 	eq(MOTION.target_motion("damage"), "hit", "damage recoils")
 	eq(MOTION.target_motion("support"), "lift", "heals lift")
 	eq(MOTION.target_motion("ward"), "lift", "Ward lifts")
@@ -395,10 +431,13 @@ func _test_live_tree() -> void:
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "reduce-motion leaves the in-tree sprite planted")
 	MOTION.clear_reduce_motion()
 	var dur := pawn.play_view_plan({"cast": true})
-	eq(dur > 0.0 and dur <= 0.6, true, "cast wind-up reports a short duration")
+	eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "cast wind-up reports a short duration")
 	eq(pawn.motion_playing(), true, "cast wind-up owns the sprite")
-	await process_frame
-	await process_frame
+	var anti_t := (MOTION.ANTICIPATION_SEC * 0.9) / MOTION.cast_sec()
+	pawn._sample_cast(anti_t)
+	eq((pawn.get_node("Sprite") as Sprite2D).scale.y < 0.5, true, "cast anticipation squashes before the rise")
+	var rise_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC * 0.85) / MOTION.cast_sec()
+	pawn._sample_cast(rise_t)
 	var risen: float = (pawn.get_node("Sprite") as Sprite2D).position.y
 	eq(risen < -0.5, true, "cast wind-up lifts the sprite")
 	pawn.settle_motion()
@@ -406,6 +445,7 @@ func _test_live_tree() -> void:
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "settle plants the feet")
 	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle restores scale")
 	eq((pawn.get_node("Sprite") as Sprite2D).rotation, 0.0, "settle clears rotation")
+	await process_frame
 	pawn.play_step_hop()
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a live hop leaves the tile")
@@ -481,7 +521,7 @@ func _test_view_wiring() -> void:
 	eq(sim_src.contains("play_view_plan"), false, "combat sim does not play view motion")
 	var motion_src := FileAccess.get_file_as_string("res://units/view_motion.gd")
 	truthy(motion_src.contains("\"miss\""), "miss commits arm a caster plan")
-	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "the lunge constant is 6px")
+	eq(MOTION.ATTACK_LUNGE_PX >= 10.0 and MOTION.ATTACK_LUNGE_PX <= 14.0, true, "the lunge constant is phone-readable")
 	truthy(view.contains("chrome_plans"), "the board plays the shared hit and miss plans")
 	truthy(view.contains("ShadeMarkers"), "Shade markers are not Units children")
 	eq(view.contains("$Units.add_child(marker)"), false, "pawn rebuild cannot free Shade markers")
@@ -682,13 +722,18 @@ func _test_strip_fallback() -> void:
 	pawn.add_child(cast_strip)
 	eq(pawn.has_cast_strip(), true, "synthetic NE cast frames resolve")
 	var cast_dur := pawn.play_view_plan({"cast": true})
-	await process_frame
-	await process_frame
-	eq(cast_dur > 0.0 and cast_dur <= 0.6, true, "cast with a strip still reports the wind-up")
+	var rise_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC * 0.85) / MOTION.cast_sec()
+	pawn._sample_cast(rise_t)
+	eq(cast_dur > 0.0 and cast_dur <= MOTION.ACTION_LOCK_MAX, true, "cast with a strip still reports the wind-up")
 	eq(cast_strip.visible, true, "cast strip plays during the rise")
 	eq(String(cast_strip.animation), "cast_ne", "north cast plays the NE clip")
 	var lifted: float = minf(sprite.position.y, cast_strip.position.y)
 	eq(lifted < -0.5, true, "cast rise still lifts the body")
+	var cast_hold_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.cast_sec()
+	pawn._sample_cast(cast_hold_t)
+	eq(cast_strip.frame, cast_strip.sprite_frames.get_frame_count(cast_strip.animation) - 1, "cast holds the last pose")
+	eq(is_equal_approx(cast_strip.speed_scale, 0.0), true, "cast stretches the impact pose")
+	eq(cast_dur <= MOTION.ACTION_LOCK_MAX, true, "cast impact hold stays inside the lock")
 	pawn.settle_motion()
 	eq(cast_strip.visible, false, "settle hides the cast strip")
 	eq(sprite.visible, true, "settle restores the static sprite after cast")
@@ -866,6 +911,8 @@ func _test_batch1_disk_strips() -> void:
 	eq(sprite.visible, true, "path end restores the static kestrel")
 	pawn.set_facing("E")
 	var dur := pawn.play_view_plan({"attack": true, "aim": Vector2(32, 16)})
+	_assert_attack_hold(pawn, Vector2(32, 16), "kestrel attack")
+	eq(dur <= MOTION.ACTION_LOCK_MAX, true, "kestrel attack hold stays inside the lock")
 	await process_frame
 	strip = _visible_strip(pawn)
 	truthy(strip != null, "kestrel attack shows the export strip")
@@ -892,6 +939,8 @@ func _test_batch1_disk_strips() -> void:
 	eq(bool(mark_plan.get("attack", false)), false, "Mark Shot is not reclassified as melee")
 	mark_plan["aim"] = Vector2(40, 8)
 	var bow := pawn.play_view_plan(mark_plan)
+	_assert_attack_hold(pawn, Vector2(40, 8), "Mark Shot")
+	eq(bow <= MOTION.ACTION_LOCK_MAX, true, "Mark Shot impact hold stays inside the lock")
 	await process_frame
 	strip = _visible_strip(pawn)
 	truthy(strip != null, "kestrel bow shows the attack strip")
@@ -900,6 +949,33 @@ func _test_batch1_disk_strips() -> void:
 	eq(bow > 0.45 and bow <= 0.6, true, "the bow cycle fits the action lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "the bow cycle stays at 12 fps")
 	_assert_attack_impact(strip, "Mark Shot")
+	pawn.settle_motion()
+	var det_hit: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.DETONATE,
+		"seat": 0,
+		"target_seat": 1,
+		"damage": 6,
+	}]).get(0, {})
+	var det_miss: Dictionary = MOTION.chrome_plans([{
+		"type": "miss",
+		"spell": SpellKits.DETONATE,
+		"seat": 0,
+		"target_seat": 1,
+	}]).get(0, {})
+	eq(bool(det_hit.get("cast", false)), true, "Detonate hit winds up")
+	eq(bool(det_miss.get("cast", false)), true, "Detonate miss winds up")
+	eq(bool(det_hit.get("cast", false)), bool(det_miss.get("cast", false)), "Detonate miss uses the same wind-up")
+	eq(bool(det_hit.get("attack", false)), false, "Detonate stays a cast in the kit")
+	det_miss["aim"] = Vector2(40, 8)
+	var boom := pawn.play_view_plan(det_miss)
+	_assert_attack_hold(pawn, Vector2(40, 8), "Detonate")
+	eq(boom > 0.45 and boom <= MOTION.ACTION_LOCK_MAX, true, "Detonate plays inside the action lock")
+	await process_frame
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "Detonate shows the attack strip")
+	eq(String(strip.animation), "attack_e", "Detonate plays attack_e")
+	eq(is_equal_approx(strip.speed_scale, 1.0), true, "Detonate stays at authored 12 fps")
 	pawn.settle_motion()
 	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
 	pawn.free()
@@ -929,6 +1005,8 @@ func _test_batch1_disk_strips() -> void:
 	eq(bool(strike_plan.get("attack", false)), true, "Ironjaw Strike is an attack plan")
 	strike_plan["aim"] = Vector2(0, 24)
 	var slam := jaw.play_view_plan(strike_plan)
+	_assert_attack_hold(jaw, Vector2(0, 24), "Ironjaw Strike")
+	eq(slam <= MOTION.ACTION_LOCK_MAX, true, "Strike impact hold stays inside the lock")
 	await process_frame
 	jaw_strip = _visible_strip(jaw)
 	truthy(jaw_strip != null, "ironjaw strike shows the attack strip")
@@ -940,6 +1018,20 @@ func _test_batch1_disk_strips() -> void:
 	eq(is_equal_approx(jaw_strip.speed_scale, 1.0), true, "ironjaw attack stays at 12 fps")
 	_assert_attack_impact(jaw_strip, "Ironjaw Strike")
 	jaw.settle_motion()
+	var adv_plans: Dictionary = MOTION.chrome_plans([{
+		"type": "advance",
+		"spell": SpellKits.ADVANCE,
+		"seat": 1,
+		"from": Vector2i(7, 7),
+		"to": Vector2i(5, 7),
+		"teleport": true,
+	}])
+	eq(adv_plans.is_empty(), true, "Advance snap has no caster chrome")
+	var snap_dur := jaw.play_view_plan({})
+	eq(snap_dur, 0.0, "Advance plays no body motion")
+	eq(jaw.motion_playing(), false, "Advance does not lock the sprite")
+	eq(_visible_strip(jaw), null, "Advance does not play an attack strip")
+	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "Advance stays planted, no hop")
 	jaw.free()
 	var other := Pawn.new()
 	get_root().add_child(other)
@@ -951,6 +1043,21 @@ func _test_batch1_disk_strips() -> void:
 	eq((other.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a class without strips still hops")
 	other.settle_motion()
 	other.free()
+
+
+func _assert_attack_hold(pawn: Pawn, aim: Vector2, msg: String) -> void:
+	var hold_t := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.attack_sec()
+	pawn._sample_attack(hold_t, aim)
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "%s keeps a body strip on the impact hold" % msg)
+	if strip == null:
+		return
+	var count := strip.sprite_frames.get_frame_count(String(strip.animation))
+	var expect_frame := mini(StripLibrary.ATTACK_IMPACT_FRAME, count - 1)
+	eq(strip.frame, expect_frame, "%s holds the impact frame" % msg)
+	eq(is_equal_approx(strip.speed_scale, 0.0), true, "%s stretches the impact pose" % msg)
+	eq((pawn.get_node("Sprite") as Sprite2D).position.length() > 8.0, true, "%s holds the lunge" % msg)
+	eq(MOTION.attack_sec() <= MOTION.ACTION_LOCK_MAX, true, "%s hold fits the action lock" % msg)
 
 
 func _assert_attack_impact(strip: AnimatedSprite2D, msg: String) -> void:
