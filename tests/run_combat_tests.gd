@@ -47,6 +47,7 @@ func _run() -> void:
 	_test_end_turn_refills()
 	_test_illegal_cast_refunds()
 	_test_ambush_destination_locked()
+	_test_drop_shade_range()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1390,6 +1391,138 @@ func _test_ambush_destination_locked() -> void:
 	eq(_unit(0)["pos"], back, "Shade-origin Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
 	eq(int(_unit(1)["hp"]), 50, "Shade-origin back hit is 22 × 1.35 = 30")
+
+
+func _test_drop_shade_range() -> void:
+	var shade: Dictionary = SpellKits.spell(SpellKits.DROP_SHADE)
+	eq(int(shade["min_range"]), 1, "Drop Shade min range 1 Chebyshev")
+	eq(int(shade["max_range"]), 6, "Drop Shade max range 6 Chebyshev")
+	eq(str(shade.get("range_mode", "")), "chebyshev", "Drop Shade range_mode is Chebyshev")
+	eq(int(shade["ap"]), 1, "Drop Shade stays 1 AP")
+	eq(int(shade["mp"]), 0, "Drop Shade stays 0 MP")
+	eq(bool(shade.get("rolls", true)), false, "Drop Shade still does not roll")
+	eq(int(shade["shade_turns"]), 3, "Drop Shade token still lasts 3 turns")
+	eq(str(shade.get("target", "")), "empty_tile", "Drop Shade still targets an empty tile")
+	eq(SpellKits.range_text(shade), "range 1–6", "Drop Shade range_text is range 1–6")
+	eq(SpellKits.SHADE_CAP, 2, "Shade cap stays 2")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min stays 2")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max stays 7")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min stays 1")
+	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max stays 4")
+	eq(int(SpellKits.spell(SpellKits.PLANT)["max_range"]), 2, "Plant max stays 2")
+	eq(int(SpellKits.spell(SpellKits.SNAP_WALL)["max_range"]), 2, "Snap Wall max stays 2")
+	eq(int(SpellKits.spell(SpellKits.AEGIS_BREAK)["max_range"]), 2, "Aegis Break max stays 2")
+	eq(int(SpellKits.spell(SpellKits.CUT)["base_damage"]), 13, "Cut damage stays 13")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["max_range"]), 4, "Ambush max stays 4")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
+
+	var workbook: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/select_class_lock_kits_v0.6.json"))
+	var drop_range: Array = []
+	for card in workbook["kits"]["gloam"]["spells"]:
+		if str(card.get("id", "")) == "drop_shade":
+			drop_range = card["range"]
+	eq(int(drop_range[0]), 1, "workbook drop_shade min range is 1")
+	eq(int(drop_range[1]), 6, "workbook drop_shade max range is 6")
+
+	var origin := Vector2i(0, 0)
+	var far := Vector2i(14, 14)
+	for dist in [1, 2, 3, 4, 5, 6]:
+		var dest := Vector2i(dist, 0)
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [origin, far],
+		})
+		eq(_sim.chebyshev(origin, dest), dist, "Drop Shade fixture Chebyshev is %d" % dist)
+		var preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, origin, dest)
+		eq(preview["min_range"], 1, "Drop Shade preview min stays 1 at dist %d" % dist)
+		eq(preview["max_range"], 6, "Drop Shade preview max is 6 at dist %d" % dist)
+		eq(preview["range_text"], "range 1–6", "Drop Shade preview range_text is 1–6 at dist %d" % dist)
+		eq(preview["in_range"], true, "Drop Shade dist %d is in range" % dist)
+		eq(preview["legal"], true, "Drop Shade dist %d preview is legal" % dist)
+		eq(preview["ap"], 1, "Drop Shade preview stays 1 AP")
+		eq(preview["mp"], 0, "Drop Shade preview stays 0 MP")
+		eq(preview["rolling"], false, "Drop Shade preview still does not roll")
+		eq(preview["hit_chance"], null, "Drop Shade preview has no hit chance")
+		var card := SpellTooltip.card_text(preview)
+		truthy(card.contains("1 AP / 0 MP"), "Drop Shade card keeps 1 AP / 0 MP")
+		truthy(card.contains("range 1–6"), "Drop Shade card names range 1–6 at dist %d" % dist)
+		eq(card.contains("range 1–2"), false, "Drop Shade card does not keep range 1–2")
+		truthy(_has_legal_cast_to(0, SpellKits.DROP_SHADE, dest), "legal_intents offers Drop Shade at dist %d" % dist)
+		var result: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": dest, "seat": 0})
+		eq(result["ok"], true, "Drop Shade at range %d is legal" % dist)
+		eq(int(_unit(0)["ap"]), 5, "Drop Shade at range %d spends 1 AP" % dist)
+		eq(int(_unit(0)["mp"]), 3, "Drop Shade at range %d spends 0 MP" % dist)
+		eq(int(_unit(0)["shades"]), 1, "Drop Shade at range %d places one token" % dist)
+		eq(int(_unit(1)["hp"]), 80, "Drop Shade at range %d deals no damage" % dist)
+		var tokens: Array = _sim.snapshot()["shade_tokens"]
+		eq(tokens.size(), 1, "Drop Shade at range %d writes one shade token" % dist)
+		eq(tokens[0]["pos"], dest, "Drop Shade token lands at dist %d" % dist)
+		eq(int(tokens[0]["turns"]), 3, "Drop Shade token still lasts 3 turns")
+		eq(bool(result["events"][0].get("rolled", true)), false, "Drop Shade at range %d does not roll" % dist)
+
+	# Diagonal Chebyshev 6 is Manhattan 11, so a Manhattan gate would reject it.
+	var diag := Vector2i(6, 5)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [origin, far],
+	})
+	eq(_sim.chebyshev(origin, diag), 6, "diagonal Drop Shade fixture is Chebyshev 6")
+	eq(_sim.manhattan(origin, diag), 11, "same Drop Shade tiles are Manhattan 11")
+	var diag_cast: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": diag, "seat": 0})
+	eq(diag_cast["ok"], true, "Drop Shade Chebyshev 6 diagonal is legal")
+	eq(_sim.snapshot()["shade_tokens"][0]["pos"], diag, "diagonal Shade lands on the Chebyshev 6 tile")
+
+	var past := Vector2i(7, 0)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [origin, far],
+	})
+	eq(_sim.chebyshev(origin, past), 7, "Drop Shade fixture Chebyshev is 7")
+	var past_preview: Dictionary = _sim.preview_cast(SpellKits.DROP_SHADE, origin, past)
+	eq(past_preview["in_range"], false, "Drop Shade dist 7 is out of range")
+	eq(past_preview["legal"], false, "Drop Shade dist 7 preview is illegal")
+	eq(past_preview["reason"], "out_of_range", "Drop Shade dist 7 preview reason is out_of_range")
+	eq(past_preview["max_range"], 6, "out-of-range preview still reports max 6")
+	eq(_has_legal_cast_to(0, SpellKits.DROP_SHADE, past), false, "legal_intents omits Drop Shade at dist 7")
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": past, "seat": 0})
+	eq(rejected["illegal"], true, "Drop Shade range 7 is illegal")
+	eq(rejected["reason"], "out_of_range", "Drop Shade range 7 reject is out_of_range")
+	eq(int(_unit(0)["ap"]), 6, "out-of-range Drop Shade refunds AP")
+	eq(int(_unit(0)["mp"]), 3, "out-of-range Drop Shade does not spend MP")
+	eq(int(_unit(0)["shades"]), 0, "out-of-range Drop Shade places no token")
+	eq(_sim.snapshot()["shade_tokens"].size(), 0, "out-of-range Drop Shade writes no token")
+
+	var self_cast: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": origin, "seat": 0})
+	eq(self_cast["illegal"], true, "Drop Shade on the caster tile is illegal")
+	eq(self_cast["reason"], "out_of_range", "Drop Shade dist 0 reject is out_of_range")
+	eq(int(_unit(0)["ap"]), 6, "dist 0 Drop Shade refunds AP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [origin, far],
+	})
+	eq(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(6, 0), "seat": 0})["ok"], true, "first Shade at range 6 places")
+	eq(_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(3, 0), "seat": 0})["ok"], true, "second Shade at range 3 places")
+	var capped: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 0), "seat": 0})
+	eq(capped["illegal"], true, "third Shade is still illegal")
+	eq(capped["reason"], "shade_cap", "third Shade reject stays shade_cap")
+	eq(int(_unit(0)["shades"]), 2, "Shade count stays at 2")
+	eq(int(_unit(0)["ap"]), 4, "shade cap refunds the third AP")
+	var still_far: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": past, "seat": 0})
+	eq(still_far["reason"], "out_of_range", "dist 7 stays out_of_range even at the Shade cap")
+	eq(int(_unit(0)["ap"]), 4, "dist 7 at cap still refunds AP")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
@@ -5167,6 +5300,13 @@ func _walk_seat_toward(seat: int, target: Vector2i, want: int) -> void:
 func _has_legal_cast(seat: int, spell_id: String) -> bool:
 	for intent in _sim.legal_intents(seat):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
+			return true
+	return false
+
+
+func _has_legal_cast_to(seat: int, spell_id: String, dest: Vector2i) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id and intent.get("to") == dest:
 			return true
 	return false
 

@@ -203,7 +203,7 @@ Headless contracts: `run_host_validate_tests.gd` + `run_net_session_tests.gd`.
 
 Allowlist: `kestrel` | `ironjaw` | `mender` | `gloam` | `bastion`. The dedicated host is not a fighter and does not boot the default pair. Each player confirms a class, then joins the queue. Any two Locked classes pair. Seat 0 is the first queued session unless that session is bound to the other transport seat. Kits follow the chosen `class_id` (two of the same class is legal). Advance stays **3 AP / 0 MP**, four orthogonal neighbors. Hot-seat and the listen-host buttons still start Kestrel vs Ironjaw.
 
-Mender, Gloam, and Bastion use workbook v0.6 (`data/select_class_lock_kits_v0.6.json`). Proto is **80 HP / Mastery 0 / Resist 0** with the Locked combat refill (**6 AP / 3 MP**). Umbral is 0–4. Shades max 2. Ambush miss does not teleport, keeps Shade and Invisible, and spends 4 AP. Aegis Break hit clears all Aegis; a miss spends 0. Snap Wall is one blocked tile for 2 turns (walk, and a future Gust) only while a Bastion is in the match. Nightfold and the other `open_can_wait` edges reject instead of guessing.
+Mender, Gloam, and Bastion use workbook v0.6 (`data/select_class_lock_kits_v0.6.json`). Proto is **80 HP / Mastery 0 / Resist 0** with the Locked combat refill (**6 AP / 3 MP**). Umbral is 0–4. Drop Shade is Chebyshev range 1–6 (1 AP / 0 MP, Shade lasts 3 turns, no roll). Shades max 2. Ambush miss does not teleport, keeps Shade and Invisible, and spends 4 AP. Aegis Break hit clears all Aegis; a miss spends 0. Snap Wall is one blocked tile for 2 turns (walk, and a future Gust) only while a Bastion is in the match. Nightfold and the other `open_can_wait` edges reject instead of guessing.
 
 **Three windows** (lobby scene):
 
