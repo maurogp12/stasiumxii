@@ -44,6 +44,17 @@ static func run(host: SceneTree) -> void:
 	host.eq(marker.get_parent() == board.get_node("Units"), false, "the marker is not parented under Units")
 	host.eq(marker.visible, true, "the Shade marker is visible")
 	host.eq(int(marker.get("turns")), 3, "the marker keeps the 3 turn count")
+	var token := marker.get_node_or_null("Token") as Sprite2D
+	var tile := marker.get_node_or_null("TileMarker") as Sprite2D
+	host.truthy(token != null and tile != null, "Drop Shade spawns the token sprite and the tile decal")
+	host.eq(token.offset, Vector2(0, -72), "Shade token uses the unit foot offset")
+	host.eq(token.scale, Vector2(0.5, 0.5), "Shade token uses the unit scale")
+	host.truthy(token.texture != null, "Shade token texture is loaded")
+	host.truthy(tile.texture != null, "Shade tile decal texture is loaded")
+	host.eq(token.texture.get_width(), 144, "Shade token is the 144px TA sheet")
+	host.eq(token.texture.get_height(), 160, "Shade token is the 160px TA sheet")
+	host.eq(tile.texture.get_width(), 64, "Shade decal is 64px wide")
+	host.eq(tile.texture.get_height(), 48, "Shade decal is 48px tall")
 	var layer := board.get_node("ShadeMarkers") as Node2D
 	host.eq(layer.z_as_relative, false, "Shade layer z is absolute")
 	var buried_z := BoardVisualSort.unit_z_index(Vector2i(14, 14), 2.0)
