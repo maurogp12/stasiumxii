@@ -4,14 +4,15 @@ class_name ViewMotion
 ## View-only motion tunables. CombatSim never reads this file.
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
-## files exist (SE→e, SW→s, NE→n, NW→w). A resolved walk strip replaces the
-## hop arc below; missing strips keep the hop and the static facing.
+## files exist (SE→e, SW→s, NE→n, NW→w). Walk slides through cell centers
+## and the sprite root takes a light step bounce. A missing strip keeps
+## that bounce on the static facing. It does not play a tile-tall hop.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Every non-teleport spell gets caster chrome: a short squash / pull-back,
 ## then the lunge or cast rise, then a brief hold on the impact pose.
 ## The hold is clamped to the time left in ACTION_LOCK_MAX. Advance stays a snap.
-## Flip REDUCE_MOTION to true to skip idle, hop arc, lunge, wind-up,
+## Flip REDUCE_MOTION to true to skip idle, step bounce, lunge, wind-up,
 ## knockback, lift, and slump. Walks still step along the path.
 ## A project setting named stasium/view/reduce_motion does the same when set.
 
@@ -24,15 +25,15 @@ const IDLE_PERIOD := 1.9
 const IDLE_BOB_PX := 1.5
 const IDLE_PHASE_STEP := 0.73
 
-## Phone-readable step arc. Arena-fit zoom is about 0.64, so a 5px rise was
-## ~3 screen pixels and a 20px rise still read as a flat slide. One iso tile
-## is 32px tall; this crest clears that diamond. The body leaves the seat ring
-## and the feet land on the tile center.
-const HOP_PX := 36.0
-const HOP_STRETCH_X := 0.82
-const HOP_STRETCH_Y := 1.34
-const HOP_SQUASH_X := 1.18
-const HOP_SQUASH_Y := 0.74
+## Step bounce on the sprite root. The old phone hop was HOP_PX 36, about one
+## iso tile, with squash and stretch. That read as a cartoon arc. SoT is a
+## 4–6px sine: feet plant on the zeros, crest stays on the body. Scale stays
+## at rest. Arena zoom is about 0.64, so 5px is a light bob, not a slide.
+const WALK_BOUNCE_PX := 5.0
+const HOP_PX := 5.0
+## Two plants in one authored walk cycle (6 frames at 12 fps = 0.5s).
+## The path loops this period. It is not one hop per tile.
+const WALK_STEP_SEC := 0.25
 
 const ATTACK_OUT_SEC := 0.12
 const ATTACK_BACK_SEC := 0.10
@@ -292,21 +293,18 @@ static func hop_offset(t: float) -> Vector2:
 	return Vector2(0.0, -sin(t * PI) * HOP_PX)
 
 
-## Stretch through the crest, squash on the landing, rest at both ends.
-## Horizontal offset stays 0 so the feet still plant on the tile center.
-static func hop_scale(t: float) -> Vector2:
-	if t <= 0.0 or t >= 1.0:
-		return Vector2.ONE
-	var u := clampf(t, 0.0, 1.0)
-	var rise := sin(u * PI)
-	var land := 0.0
-	if u > 0.72:
-		land = sin((u - 0.72) / 0.28 * PI)
-	var airborne := rise * (1.0 - land)
-	return Vector2(
-		lerpf(lerpf(1.0, HOP_STRETCH_X, airborne), HOP_SQUASH_X, land),
-		lerpf(lerpf(1.0, HOP_STRETCH_Y, airborne), HOP_SQUASH_Y, land),
-	)
+## Elapsed-time bounce for a whole path. Zeros are foot plants. The phase
+## does not reset when a tile boundary passes.
+static func walk_bounce_offset(elapsed: float) -> Vector2:
+	if WALK_STEP_SEC <= 0.0:
+		return Vector2.ZERO
+	var u := fposmod(elapsed, WALK_STEP_SEC) / WALK_STEP_SEC
+	return hop_offset(u)
+
+
+## Walk does not squash or stretch. Spell wind-up still uses its own scale.
+static func hop_scale(_t: float) -> Vector2:
+	return Vector2.ONE
 
 
 static func attack_pose(t: float, dir: Vector2, reach: float = -1.0) -> Dictionary:
