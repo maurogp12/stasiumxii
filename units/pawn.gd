@@ -2,10 +2,17 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. Replace this node with an
-## AnimatedSprite2D later; facings stay `<class>_<n|e|s|w>`. Mirrors are baked
-## into the files — never set flip_h. Bastion _n/_w are placeholder back views
-## loaded from those same filenames.
+## centered, offset (0, -72), scale 0.5. Facings stay
+## `art/characters/<class>/<class>_<n|e|s|w>.png`. Mirrors are baked into the
+## files — never set flip_h. Bastion _n/_w are placeholder back views loaded
+## from those same filenames.
+## Mobile-track chrome. Batch 1 strips (Kestrel/Ironjaw SE/NE) are not in the
+## repo yet. An AnimatedSprite2D child plays only when it has frames for this
+## facing: `walk_se` / `walk_ne` (and `attack_se` / `attack_ne`), then
+## `walk_<n|e|s|w>` / `attack_<n|e|s|w>`, then generic `walk` / `attack`.
+## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
+## AnimatedSprite2D is kept as BodyStrip and the static sprite is recreated.
+## Missing nodes, empty frames, or null textures keep the static sprite.
 ## `debug_draw_tokens` keeps the old circle token as a fallback.
 
 var grid_position: Vector2i = Vector2i.ZERO
@@ -33,6 +40,8 @@ var _motion_gen: int = 0
 var _plan_died: bool = false
 var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
+var _active_strip: AnimatedSprite2D
+var _strip_holds_body: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 
@@ -45,11 +54,14 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## One tile hop. The hop tween and a future walk strip both read this.
+## One tile hop. The hop tween and a walk strip both read this.
 ## The strip is 6 frames at 24 fps, which is 0.25s at speed_scale 1.0.
 const WALK_HOP_SEC := 0.25
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 24.0
+const WALK_STRIP_PATH := NodePath("WalkStrip")
+const ATTACK_STRIP_PATH := NodePath("AttackStrip")
+const BODY_STRIP_PATH := NodePath("BodyStrip")
 ## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
 const HEAD_HP_Y := -76.0
 const NAME_FONT_SIZE := 12
@@ -110,12 +122,13 @@ func motion_playing() -> bool:
 
 
 ## Sprite-local hop. The pawn node stays on the path so feet return to the tile center.
-## Duration is WALK_HOP_SEC, the same clock a future walk strip uses.
+## Duration is WALK_HOP_SEC, the same clock a walk strip uses.
 func play_step_hop() -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_end_body_strip()
 		return
-	_apply_walk_strip_timing()
 	var gen := _begin_action()
+	_begin_body_strip("walk", WALK_HOP_SEC)
 	var tw := create_tween()
 	_action_tween = tw
 	tw.tween_method(_sample_hop, 0.0, 1.0, WALK_HOP_SEC)
@@ -124,13 +137,23 @@ func play_step_hop() -> void:
 
 ## 6 frames authored at WALK_STRIP_FPS. speed_scale 1.0 lasts WALK_HOP_SEC.
 static func walk_strip_speed_scale() -> float:
-	return (float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS) / WALK_HOP_SEC
+	return strip_speed_scale(WALK_STRIP_FRAMES, WALK_STRIP_FPS, WALK_HOP_SEC)
 
 
-func _apply_walk_strip_timing() -> void:
-	var strip := get_node_or_null("Sprite")
-	if strip is AnimatedSprite2D:
-		(strip as AnimatedSprite2D).speed_scale = walk_strip_speed_scale()
+## Fit `frame_count` frames at `fps` into `window_sec`. Empty input stays at 1.
+static func strip_speed_scale(frame_count: int, fps: float, window_sec: float) -> float:
+	if frame_count <= 0 or fps <= 0.0 or window_sec <= 0.0:
+		return 1.0
+	return (float(frame_count) / fps) / window_sec
+
+
+func _apply_walk_strip_timing(strip: AnimatedSprite2D, anim: StringName) -> void:
+	if strip == null or not is_instance_valid(strip) or strip.sprite_frames == null:
+		return
+	var frames := strip.sprite_frames
+	if not frames.has_animation(anim):
+		return
+	strip.speed_scale = strip_speed_scale(frames.get_frame_count(anim), frames.get_animation_speed(anim), WALK_HOP_SEC)
 
 
 func play_view_plan(plan: Dictionary) -> float:
@@ -155,14 +178,20 @@ func play_view_plan(plan: Dictionary) -> float:
 		if kind == "wait":
 			tw.tween_interval(sec)
 		elif kind == "attack":
+			_begin_body_strip("attack", sec)
 			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
+			tw.tween_callback(_end_body_strip)
 		elif kind == "cast":
+			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_cast, 0.0, 1.0, sec)
 		elif kind == "hit":
+			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
 		elif kind == "lift":
+			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_lift, 0.0, 1.0, sec)
 		elif kind == "death":
+			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_death.bind(float(step.get("tilt", 1.0))), 0.0, 1.0, sec)
 	if total <= 0.0:
 		_plan_died = false
@@ -235,6 +264,8 @@ func flash_ward() -> void:
 
 func flash_canvas() -> CanvasItem:
 	_ensure_visuals()
+	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
+		return _active_strip
 	if _sprite != null:
 		return _sprite
 	return self
@@ -304,18 +335,46 @@ func _apply_flash(color: Color) -> void:
 
 func _ensure_visuals() -> void:
 	if _sprite != null and is_instance_valid(_sprite):
+		_ensure_chrome()
 		return
+	var existing := get_node_or_null("Sprite")
+	if existing is Sprite2D:
+		_sprite = existing as Sprite2D
+		_adopt_static_sprite(_sprite)
+		_ensure_chrome()
+		return
+	if existing is AnimatedSprite2D:
+		_rehome_sprite_strip(existing as AnimatedSprite2D)
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
-	_sprite.centered = true
-	_sprite.position = Vector2.ZERO
-	_sprite.offset = SPRITE_OFFSET
-	_sprite.scale = SPRITE_SCALE
-	_sprite.flip_h = false
-	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	_sprite.z_index = 0
-	_sprite.z_as_relative = true
+	_adopt_static_sprite(_sprite)
 	add_child(_sprite)
+	_ensure_chrome()
+
+
+func _adopt_static_sprite(sprite: Sprite2D) -> void:
+	sprite.centered = true
+	sprite.offset = SPRITE_OFFSET
+	sprite.scale = SPRITE_SCALE
+	sprite.flip_h = false
+	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	sprite.z_index = 0
+	sprite.z_as_relative = true
+
+
+func _rehome_sprite_strip(strip: AnimatedSprite2D) -> void:
+	strip.visible = false
+	if str(strip.name) != "Sprite":
+		return
+	if get_node_or_null(BODY_STRIP_PATH) == null:
+		strip.name = "BodyStrip"
+	else:
+		strip.name = "BodyStripExtra"
+
+
+func _ensure_chrome() -> void:
+	if _chrome != null and is_instance_valid(_chrome):
+		return
 	_chrome = StatusChrome.new()
 	_chrome.name = "Chrome"
 	_chrome.host = self
@@ -330,6 +389,13 @@ func _sync_sprite() -> void:
 	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
+	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
+		_sprite.visible = false
+		if not _flashing:
+			_active_strip.modulate = _sprite.modulate
+	else:
+		_sprite.visible = true
+		_hide_body_strips()
 	_request_paint()
 
 
@@ -346,6 +412,7 @@ func _sync_idle() -> void:
 
 
 func _begin_action() -> int:
+	_ensure_visuals()
 	_kill_action()
 	_stop_idle()
 	_plant_sprite()
@@ -370,15 +437,11 @@ func _on_action_finished(gen: int) -> void:
 
 
 func _sample_hop(t: float) -> void:
-	if _sprite == null:
-		return
-	_sprite.position = VIEW_MOTION.hop_offset(t)
+	_place_body(VIEW_MOTION.hop_offset(t))
 
 
 func _sample_attack(t: float, dir: Vector2) -> void:
-	if _sprite == null:
-		return
-	_sprite.position = VIEW_MOTION.attack_offset(t, dir)
+	_place_body(VIEW_MOTION.attack_offset(t, dir))
 
 
 func _sample_cast(t: float) -> void:
@@ -445,12 +508,160 @@ func _stop_idle() -> void:
 
 
 func _plant_sprite() -> void:
+	_end_body_strip()
 	if _sprite == null or not is_instance_valid(_sprite):
 		return
 	_sprite.position = Vector2.ZERO
 	_sprite.scale = SPRITE_SCALE
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
+	_sprite.visible = true
+
+
+## Facing diagonals first (Batch 1 SE/NE), then the cardinal name, then the generic clip.
+func body_anim_candidates(kind: String) -> Array:
+	var face := facing.strip_edges().to_lower()
+	var diag := str({"n": "ne", "e": "se", "s": "sw", "w": "nw"}.get(face, ""))
+	var names: Array = []
+	if str(diag) != "":
+		names.append("%s_%s" % [kind, diag])
+	if face != "":
+		names.append("%s_%s" % [kind, face])
+	names.append(kind)
+	return names
+
+
+func _begin_body_strip(kind: String, window_sec: float) -> void:
+	var choice := _strip_choice(kind)
+	_end_body_strip()
+	if choice.is_empty():
+		return
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return
+	_prepare_play_once(strip, anim)
+	if kind == "walk":
+		_apply_walk_strip_timing(strip, anim)
+	else:
+		var frames := strip.sprite_frames
+		var fps := WALK_STRIP_FPS
+		var count := 1
+		if frames != null and frames.has_animation(anim):
+			count = frames.get_frame_count(anim)
+			fps = frames.get_animation_speed(anim)
+		strip.speed_scale = strip_speed_scale(count, fps, window_sec)
+	_prepare_strip_pose(strip)
+	strip.visible = true
+	strip.play(anim)
+	if not strip.is_playing():
+		strip.visible = false
+		return
+	_active_strip = strip
+	_strip_holds_body = true
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.modulate = _sprite.modulate
+		strip.position = _sprite.position
+		_sprite.visible = false
+
+
+func _end_body_strip() -> void:
+	_strip_holds_body = false
+	if _active_strip != null and is_instance_valid(_active_strip):
+		if _active_strip.is_playing():
+			_active_strip.stop()
+		_active_strip.visible = false
+		_active_strip.position = Vector2.ZERO
+	_active_strip = null
+	_hide_body_strips()
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = true
+
+
+func _strip_choice(kind: String) -> Dictionary:
+	var preferred: Array = [ATTACK_STRIP_PATH, BODY_STRIP_PATH, WALK_STRIP_PATH]
+	if kind == "walk":
+		preferred = [WALK_STRIP_PATH, BODY_STRIP_PATH]
+	var nodes: Array = []
+	for path in preferred:
+		var node := get_node_or_null(path)
+		if node is AnimatedSprite2D and not nodes.has(node):
+			nodes.append(node)
+	for child in get_children():
+		if child is AnimatedSprite2D and not nodes.has(child):
+			nodes.append(child)
+	for node in nodes:
+		var anim := _first_playable_anim(node as AnimatedSprite2D, kind)
+		if anim != "":
+			return {"node": node, "anim": anim}
+	return {}
+
+
+func _first_playable_anim(strip: AnimatedSprite2D, kind: String) -> String:
+	if strip == null or not is_instance_valid(strip):
+		return ""
+	for name in body_anim_candidates(kind):
+		if _can_play_anim(strip, StringName(str(name))):
+			return str(name)
+	return ""
+
+
+func _can_play_anim(strip: AnimatedSprite2D, anim: StringName) -> bool:
+	if strip == null or not is_instance_valid(strip):
+		return false
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(anim):
+		return false
+	var count := frames.get_frame_count(anim)
+	if count <= 0:
+		return false
+	for i in count:
+		if frames.get_frame_texture(anim, i) != null:
+			return true
+	return false
+
+
+func _prepare_play_once(strip: AnimatedSprite2D, anim: StringName) -> void:
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(anim):
+		return
+	if not frames.get_animation_loop(anim):
+		return
+	if not bool(strip.get_meta("_chrome_frames_copy", false)):
+		frames = frames.duplicate() as SpriteFrames
+		strip.sprite_frames = frames
+		strip.set_meta("_chrome_frames_copy", true)
+	if frames != null and frames.has_animation(anim):
+		frames.set_animation_loop(anim, false)
+
+
+func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
+	strip.centered = true
+	strip.offset = SPRITE_OFFSET
+	strip.scale = SPRITE_SCALE
+	strip.flip_h = false
+	strip.rotation = 0.0
+	strip.z_index = 0
+	strip.z_as_relative = true
+	strip.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.position = _sprite.position
+		strip.modulate = _sprite.modulate
+
+
+func _hide_body_strips() -> void:
+	for child in get_children():
+		if child is AnimatedSprite2D:
+			(child as AnimatedSprite2D).visible = false
+
+
+func _place_body(pos: Vector2) -> void:
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.position = pos
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = pos
+		if _sprite != null and is_instance_valid(_sprite):
+			_active_strip.modulate = _sprite.modulate
 
 
 func _request_paint() -> void:
