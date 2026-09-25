@@ -97,7 +97,8 @@ func _boot() -> void:
 			if net.is_authority() or net.has_view_state():
 				_finish_boot()
 			return
-	CombatSim.reset_match({})
+	# Picker roster when both seats chose. Empty keeps the default pair.
+	CombatSim.reset_match(ClassSelect.local_match_config())
 	_finish_boot()
 
 
@@ -441,7 +442,10 @@ func _on_new_match() -> void:
 	if _online() and not _sim().can_reset_match():
 		return
 	_mark_local_net_echo()
-	_sim().reset_match({})
+	var config := {}
+	if not _online():
+		config = ClassSelect.local_match_config()
+	_sim().reset_match(config)
 	_rebuild_pawns()
 	_refresh()
 	_hydrate_turn_clock()

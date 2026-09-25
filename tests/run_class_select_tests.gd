@@ -54,6 +54,7 @@ func _test_source_contract() -> void:
 	var chrome := FileAccess.get_file_as_string("res://scenes/class_select.gd")
 	truthy(chrome.contains("select_class"), "class select calls select_class")
 	truthy(chrome.contains("Find Match"), "chrome has a Find Match control")
+	truthy(chrome.contains("text = \"Queue\""), "Queue is the queue button")
 	truthy(chrome.contains("connection_changed"), "class select listens to connection_changed")
 	truthy(chrome.contains("start_queue_client"), "Find Match joins the queue")
 	truthy(chrome.contains("match_assigned"), "class select reads match_assigned")
