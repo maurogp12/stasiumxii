@@ -18,7 +18,7 @@ const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const _BoardSize := preload("res://backend/board_size.gd")
 const _CellTagMap := preload("res://backend/cell_tag_map.gd")
 const _HitBands := preload("res://backend/hit_bands.gd")
-## Ship default is 12×12. MatchConfig.board_size 8 is the proto crop.
+## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
 const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
@@ -95,9 +95,9 @@ var _shade_tokens: Array = []
 var _plant_tiles: Array = []
 ## Locked deploy. Live duel starts here; (1,1)/(6,6) are skip_deploy fixtures only.
 var _flow = _MatchFlow.new()
-## Per-tile integer elevation + terrain. Ship map is Crosshaven 12×12 tags.
-## Proto board_size 8 keeps the 8×8 crop. Godot reads snapshot.tiles.
-## skip_deploy uses the same map unless flat_board. paint_only is not walk data.
+## Per-tile integer elevation + terrain. Ship map loads Crosshaven tags when
+## the file size is 15×15. Proto 8 is the crop. Proto 12 is Mauro's token grid.
+## Godot reads snapshot.tiles. paint_only is not walk data.
 var _board = _WalkBoard.new()
 var _board_size: int = BOARD_SIZE
 var _paint_only: Dictionary = {}
@@ -556,7 +556,7 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation are the Crosshaven 12×12 tags. paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 8 (see HitBands). Chebyshev 9+ is open (reject, no hit %). Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 8.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from Crosshaven tags when size is 15×15 (no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 8 (see HitBands). Chebyshev 9–14 is open (reject, no hit %). Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 8.",
 		},
 		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
 	}
@@ -1845,9 +1845,9 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 
 
 func _seed_play_board(config: Dictionary) -> void:
-	# flat_board: Ground z0. Proto 8: 8×8 crop + noise.
-	# Ship 12: Crosshaven tags (terrain + elevation). paint_only stays visual.
-	# An explicit cell_tags path applies only when the file size matches.
+	# flat_board: Ground z0. Proto 8: crop + noise. Proto 12: Mauro tokens.
+	# Ship 15: Crosshaven tags only when the file size matches. No invented cells.
+	# paint_only stays visual. An explicit cell_tags path uses the same hook.
 	if bool(config.get("flat_board", false)):
 		return
 	if _board_size == _BoardSize.PROTO:
@@ -1856,6 +1856,12 @@ func _seed_play_board(config: Dictionary) -> void:
 		_demo_map = _MatchFlow.PHASE_A_DEMO_MAP
 		_map_id = _demo_map
 		_elevation_gen = "seeded_noise" if noise_elev else "crop"
+		return
+	if _board_size == _BoardSize.PROTO_12:
+		_MatchFlow.seed_mauro_12(_board)
+		_map_id = _MatchFlow.MAURO_PROTO_MAP
+		_demo_map = _map_id
+		_elevation_gen = "mauro"
 		return
 	var tags_path := str(config.get("cell_tags", ""))
 	if tags_path == "" and _board_size == _BoardSize.SHIP:

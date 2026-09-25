@@ -1201,7 +1201,8 @@ func _rebuild_grid(size: int) -> void:
 	_fit_board_camera()
 
 
-## Zoom the ship diamond into the 960×720 play band. Cell size stays 64×32.
+## Zoom the 15×15 diamond into the 960×720 play band. Cell size stays 64×32.
+## Middle-mouse pan is clamped around that fit.
 func _fit_board_camera() -> void:
 	_ensure_camera()
 	var n := _board_size

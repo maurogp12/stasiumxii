@@ -1,6 +1,6 @@
-# Crosshaven 12×12 — Koliseo Tiled map (STASIUM XII)
+# Crosshaven 15×15 — Koliseo Tiled map (STASIUM XV)
 
-Built for Mauro · Sep 24 2026 (ET). Playable grid locked at **12×12** (8×8 is proto only).
+Built for Mauro · Sep 24 2026 (ET). Ship size is **15×15**. **12×12 and 8×8 are proto only** (12×12 is the in-code Mauro token grid, not a Crosshaven pack). A tags rebuild in flight uses this same schema with `size: [15,15]`. The loader applies the file only when that size matches the board and does not invent cells.
 
 ## Orientation (locked)
 
@@ -16,7 +16,7 @@ Built for Mauro · Sep 24 2026 (ET). Playable grid locked at **12×12** (8×8 is
 
 ## Playable region
 
-- Map width × height = **12 × 12**. Every cell is playable.
+- Map width × height = **15 × 15**. Every cell is playable.
 - No decorative outer ring in this deliverable (outer moat / plains stay in look-dev plates only). If a future shell adds OOB cells, mark them `terrain: void` in tags and paint with the `void` tile on `meta`.
 
 ## Files
@@ -25,10 +25,9 @@ Built for Mauro · Sep 24 2026 (ET). Playable grid locked at **12×12** (8×8 is
 |------|------|
 | `tileset_koliseo_base.tsx` | Collection tileset (terrain + elev variants + paint props) |
 | `tiles/*.png` | Generated 64×32 (or taller) isometric PNGs |
-| `crosshaven_12x12.tmx` | Tiled map |
-| `crosshaven_12x12_tags.json` | Authoritative per-cell combat tags for Godot |
-| `crosshaven_12x12_preview.png` | Render preview with faint grid |
-| `build_crosshaven.py` | Reproducible builder |
+| `crosshaven_15x15.tmx` | Tiled map |
+| `crosshaven_15x15_tags.json` | Authoritative per-cell combat tags for Godot |
+| `crosshaven_15x15_preview.png` | Render preview with faint grid |
 
 ## Layers
 
@@ -54,19 +53,19 @@ Paint-only (NO block / LoS / cost): ruins, wells, hay, fences, rubble, rock pill
 
 ### Crosshaven cell counts
 
-- ground: **109**
-- mud: **22**
-- water: **13**
+- ground: **177**
+- mud: **30**
+- water: **18**
 - lava: **0**
-- mud+water share: **24.3%** (target ~15–25%)
-- elevation ≥1: **7** cells
+- mud+water share: **21.3%** (target ~15–25%)
+- elevation ≥1: **18** cells
 
 ## How Godot should load tags
 
-1. Prefer **`crosshaven_12x12_tags.json`** as the combat authority (backend must not invent blockers from art).
+1. Prefer **`crosshaven_15x15_tags.json`** as the combat authority (backend must not invent blockers from art).
 2. Schema:
    ```json
-   { "size": [12,12], "cells": [ { "x":0, "y":0, "terrain":"ground", "elevation":0, "paint_only":[] }, ... ] }
+   { "size": [15,15], "cells": [ { "x":0, "y":0, "terrain":"ground", "elevation":0, "paint_only":[] }, ... ] }
    ```
 3. `terrain` ∈ `ground|mud|water|lava`.
 4. `paint_only` is a string array of prop names — visuals only.
@@ -81,11 +80,5 @@ Props: `prop_ruins`, `prop_well`, `prop_hay`, `prop_fence`, `prop_rubble`, `prop
 ## Open in Tiled
 
 ```bash
-tiled /workspace/art/maps/arena_colosseum_v2/tiled/crosshaven_12x12.tmx
-```
-
-Rebuild:
-
-```bash
-python3 /workspace/art/maps/arena_colosseum_v2/tiled/build_crosshaven.py
+tiled /workspace/art/maps/arena_colosseum_v2/tiled/crosshaven_15x15.tmx
 ```

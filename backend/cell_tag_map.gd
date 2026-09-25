@@ -1,17 +1,17 @@
 class_name CellTagMap
 extends RefCounted
 
-## Crosshaven combat tags. Applied when the file size matches the board.
-## The ship map is `crosshaven_12x12_tags.json`. `paint_only` (and the Tiled
-## `props_paint` layer) is visual only: never pathing, LoS, or MP. The sibling
-## `.tmx` is the isometric art source and is cross-checked for terrain + elevation
-## only — it is not parsed into blockers.
+## Loader hook for Crosshaven tags. Applied only when the file size matches
+## the board. Ship matches ask for size [15,15]. This does not invent cells.
+## `paint_only` / Tiled `props_paint` is visual only: never pathing, LoS, or MP.
+## The sibling `.tmx` is isometric art (diamond 64×32) and is cross-checked for
+## terrain + elevation only.
 ##
 ## Schema: { "size": [w, h], "cells": [ { "x", "y", "terrain", "elevation", "paint_only" } ] }
 
-const DEFAULT_TAGS := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_12x12_tags.json"
-const DEFAULT_TMX := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_12x12.tmx"
-const MAP_ID := "crosshaven_12"
+const DEFAULT_TAGS := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json"
+const DEFAULT_TMX := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15.tmx"
+const MAP_ID := "crosshaven_15"
 const _TerrainDef := preload("res://backend/terrain_def.gd")
 
 
