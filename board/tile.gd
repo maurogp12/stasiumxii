@@ -17,6 +17,7 @@ var is_selected: bool = false
 var highlight: String = ""
 var elevation: int = 0
 var terrain_type: String = "ground"
+var _dress: String = ""
 var _paint_props: Array = []
 var _overlay: HighlightOverlay
 
@@ -35,7 +36,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var points := _diamond_points()
-	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation)
+	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
 	if tex == null:
 		draw_colored_polygon(points, fill_color())
 		var outline := PackedVector2Array(points)
@@ -53,6 +54,13 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
+
+
+func set_dress(dress: String) -> void:
+	if _dress == dress:
+		return
+	_dress = dress
+	_request_paint()
 
 
 func apply_board_data(next_terrain: String, next_elevation: Variant = 0) -> void:

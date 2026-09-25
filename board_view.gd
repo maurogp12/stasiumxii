@@ -38,6 +38,7 @@ extends Node2D
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
+const KOLISEO_ART := preload("res://board/koliseo_art.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -1140,9 +1141,11 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		_rebuild_grid(size)
 	_board_data = SNAPSHOT_TILES.from_snapshot(snap, _board_size)
 	var paint: Dictionary = snap.get("paint_only", {})
+	var dress := str(KOLISEO_ART.dress_for(str(snap.get("map_id", snap.get("demo_map", "")))))
 	for cell in tiles.keys():
 		var rec: Dictionary = _board_data.get(cell, SNAPSHOT_TILES.default_cell())
 		var tile := _tile_at(cell)
+		tile.set_dress(dress)
 		tile.apply_board_data(str(rec.get("terrain_type", "ground")), float(rec.get("elevation", 0.0)))
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
