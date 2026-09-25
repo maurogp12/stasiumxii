@@ -4613,8 +4613,9 @@ func _test_action_bar_wraps() -> void:
 	eq(hud.face_suppressed(), false, "Face stays usable while the bar wraps")
 	for spell_id in hud._spell_hosts.keys():
 		var host: Control = hud._spell_hosts[spell_id]
-		eq(host.custom_minimum_size.x >= 140, true, "spell host %s keeps a readable min width" % spell_id)
-		eq(host.custom_minimum_size.y >= 32, true, "spell host %s keeps a readable height" % spell_id)
+		eq(host.get_parent(), hud._ability_cluster, "spell host %s sits in the thumb cluster" % spell_id)
+		eq(host.custom_minimum_size.x >= 72, true, "spell host %s keeps a fat hit target" % spell_id)
+		eq(host.custom_minimum_size.y >= 72, true, "spell host %s keeps a fat hit height" % spell_id)
 	var offered: Array = CombatHUD.offered_cast_ids(_unit(1), _sim.legal_intents(1))
 	eq(offered.size(), 4, "Ironjaw offers four kit buttons")
 	hud.free()

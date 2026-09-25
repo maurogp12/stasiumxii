@@ -19,6 +19,8 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_hit_floor_and_play_band()
 	_test_board_gestures()
+	_test_pawn_body_cast_pick()
+	_test_ability_cluster_layout()
 	_test_hud_targets_and_tooltip_tap()
 	_test_sources_keep_desktop_and_hub()
 
@@ -30,11 +32,14 @@ func _test_hit_floor_and_play_band() -> void:
 	eq(TOUCH.meets_hit_floor(TOUCH.FACE_BUTTON_SIZE), true, "face buttons meet the floor")
 	eq(TOUCH.FACE_BUTTON_SIZE, Vector2(48, 48), "face cross stays at the 48px floor")
 	eq(TOUCH.meets_preferred_height(TOUCH.WALK_BUTTON_SIZE), true, "Walk is in the preferred band")
-	eq(TOUCH.meets_preferred_height(TOUCH.SPELL_BUTTON_SIZE), true, "spell buttons are in the preferred band")
+	eq(TOUCH.meets_preferred_height(TOUCH.ABILITY_BUTTON_SIZE), true, "ability circles are in the preferred band")
+	eq(TOUCH.meets_preferred_height(TOUCH.PRIMARY_BUTTON_SIZE), true, "primary attack circle is in the preferred band")
 	eq(TOUCH.meets_preferred_height(TOUCH.END_TURN_BUTTON_SIZE), true, "End Turn is in the preferred band")
 	eq(TOUCH.ACTION_BUTTON_HEIGHT, 72, "primary actions use the 72px target")
 	eq(TOUCH.WALK_BUTTON_SIZE.y, 72, "Walk height is 72")
-	eq(TOUCH.SPELL_BUTTON_SIZE, Vector2(148, 72), "spell hosts stay wide enough to read and 72 tall")
+	eq(TOUCH.ABILITY_BUTTON_SIZE, Vector2(72, 72), "arc abilities are 72px circles")
+	eq(TOUCH.PRIMARY_BUTTON_SIZE.x >= 96, true, "primary attack circle is the thumb rest")
+	eq(TOUCH.PRIMARY_BUTTON_SIZE.y, TOUCH.PRIMARY_BUTTON_SIZE.x, "primary attack circle is square")
 	eq(TOUCH.END_TURN_BUTTON_SIZE.x >= 100, true, "End Turn keeps a readable width")
 	eq(TOUCH.CELL_PICK_RADIUS, 22.0, "board diamond pick radius is unchanged")
 	eq(TOUCH.play_band_fits_canvas(), true, "play band sits inside the 960×720 canvas")
@@ -102,6 +107,112 @@ func _test_board_gestures() -> void:
 	eq(TOUCH.board_gesture(key), TOUCH.IGNORE, "keys are not board taps")
 
 
+func _test_pawn_body_cast_pick() -> void:
+	# Opening skip_deploy: Kestrel (1,1), Ironjaw (6,6), Chebyshev 5.
+	# The sprite center is 72px above the feet. The 22px diamond pick lands on
+	# the empty tile behind the fighter. A unit-targeted cast must use the body.
+	var sort := preload("res://board/visual_sort.gd")
+	var tiles := {}
+	for y in 15:
+		for x in 15:
+			var cell := Vector2i(x, y)
+			tiles[cell] = sort.cell_to_local(cell, 0.0)
+	var foe := Vector2i(6, 6)
+	var foe_origin: Vector2 = tiles[foe]
+	var chest := foe_origin + Vector2(0, -72)
+	var pawns := [{"cell": foe, "origin": foe_origin, "sort": foe.x + foe.y}]
+	var behind := TOUCH.pick_board_cell(chest, tiles, pawns, false)
+	eq(behind, Vector2i(4, 4), "diamond pick of the sprite chest is the empty tile behind")
+	eq(TOUCH.hits_pawn_body(chest, foe_origin), true, "sprite chest hits the pawn body")
+	var resolved := TOUCH.pick_board_cell(chest, tiles, pawns, true)
+	eq(resolved, foe, "unit-targeted pick of the sprite chest is the living foe")
+	var neighbor := Vector2i(7, 6)
+	eq(TOUCH.hits_pawn_body(tiles[neighbor], foe_origin), false, "neighbor diamond center is outside the body")
+	eq(TOUCH.pick_board_cell(tiles[neighbor], tiles, pawns, true), neighbor, "empty neighbor diamond stays a tile pick")
+	eq(TOUCH.CELL_PICK_RADIUS, 22.0, "fix does not widen the diamond pick")
+	var self_origin: Vector2 = tiles[Vector2i(1, 1)]
+	var self_chest := self_origin + Vector2(0, -72)
+	var both := pawns.duplicate()
+	both.append({"cell": Vector2i(1, 1), "origin": self_origin, "sort": 2})
+	eq(TOUCH.pick_board_cell(self_chest, tiles, both, true), Vector2i(1, 1), "own sprite resolves to the caster cell")
+	eq(TOUCH.spell_targets_unit(SpellKits.MARK_SHOT), true, "Mark Shot targets a unit")
+	eq(TOUCH.spell_targets_unit(SpellKits.ADVANCE), false, "Advance stays an empty-tile pick")
+	eq(TOUCH.spell_targets_unit(""), false, "walk mode does not prefer a pawn body")
+
+	var sim_script := load("res://backend/combat_sim.gd")
+	var sim: Node = sim_script.new()
+	sim.reset_match({"seed": 1, "skip_deploy": true, "rolls": [1]})
+	var missed: Dictionary = sim.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": behind})
+	eq(missed.get("ok", true), false, "casting the diamond behind the foe is illegal")
+	eq(str(missed.get("reason", "")), "no_target", "that illegal cast is no living unit")
+	truthy(str(sim.snapshot().get("coach", "")).contains("needs a living unit"), "coach names the living-unit refund")
+	eq(int(sim.snapshot()["units"][0]["ap"]), 6, "the refund gives the AP back")
+	var landed: Dictionary = sim.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": resolved})
+	eq(landed.get("ok", false), true, "Mark Shot on the living foe in range resolves")
+	eq(int(sim.snapshot()["units"][0]["ap"]), 4, "Mark Shot spends its 2 AP")
+	sim.free()
+
+	var far: Node = sim_script.new()
+	far.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"positions": [Vector2i(0, 0), Vector2i(8, 8)],
+	})
+	var far_cell := Vector2i(8, 8)
+	var far_pick := TOUCH.pick_board_cell(sort.cell_to_local(far_cell, 0.0) + Vector2(0, -72), _tile_map(sort), [{"cell": far_cell, "origin": sort.cell_to_local(far_cell, 0.0), "sort": 16}], true)
+	eq(far_pick, far_cell, "a far sprite still resolves to that unit")
+	var out_of_range: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": far_pick})
+	eq(out_of_range.get("ok", true), false, "a living unit outside range still rejects")
+	eq(str(out_of_range.get("reason", "")), "out_of_range", "range reject stays the locked range rule")
+	eq(int(far.snapshot()["units"][0]["ap"]), 6, "out-of-range Mark Shot refunds AP")
+	var self_cast: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": Vector2i(0, 0)})
+	eq(self_cast.get("ok", true), false, "casting Mark Shot on yourself still rejects")
+	eq(str(self_cast.get("reason", "")), "out_of_range", "self cell is inside Mark Shot's minimum range")
+	eq(int(far.snapshot()["units"][1]["hp"]), 80, "a rejected self cast does not hit the foe")
+	far.free()
+
+
+func _tile_map(sort) -> Dictionary:
+	var tiles := {}
+	for y in 15:
+		for x in 15:
+			var cell := Vector2i(x, y)
+			tiles[cell] = sort.cell_to_local(cell, 0.0)
+	return tiles
+
+
+func _test_ability_cluster_layout() -> void:
+	eq(TOUCH.primary_spell_id([SpellKits.MARK_SHOT, SpellKits.DETONATE]), SpellKits.MARK_SHOT, "Kestrel primary is Mark Shot")
+	eq(TOUCH.primary_spell_id([SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.SHOULDER, SpellKits.CRUSH]), SpellKits.STRIKE, "Ironjaw primary is Strike")
+	eq(TOUCH.primary_spell_id([SpellKits.MEND, SpellKits.PULSE_TAP]), SpellKits.MEND, "a kit with no enemy cast uses the first spell")
+	var bounds := Rect2(Vector2.ZERO, TOUCH.CLUSTER_SIZE)
+	for count in [1, 2, 3, 4]:
+		var centers: Dictionary = TOUCH.cluster_centers(count)
+		var primary: Vector2 = centers["primary"]
+		var primary_rect := TOUCH.cluster_button_rect(primary, true)
+		truthy(bounds.encloses(primary_rect), "primary circle stays inside the cluster for %d" % count)
+		var arc: Array = centers["arc"]
+		eq(arc.size(), count, "arc has one slot per other spell (%d)" % count)
+		var prev := primary
+		for i in arc.size():
+			var center: Vector2 = arc[i]
+			var rect := TOUCH.cluster_button_rect(center, false)
+			truthy(bounds.encloses(rect), "ability %d stays inside the cluster" % i)
+			eq(center.x < primary.x, true, "ability %d is left of the thumb button" % i)
+			eq(center.y < primary.y, true, "ability %d is above the thumb button" % i)
+			var gap := center.distance_to(primary)
+			eq(gap + 0.5 >= TOUCH.PRIMARY_BUTTON_SIZE.x * 0.5 + TOUCH.ABILITY_BUTTON_SIZE.x * 0.5, true, "ability %d does not cover the thumb button" % i)
+			if i > 0:
+				eq(center.distance_to(prev) + 0.5 >= TOUCH.ABILITY_BUTTON_SIZE.x, true, "ability circles do not cover each other")
+			prev = center
+	eq(TOUCH.cluster_centers(0)["arc"].size(), 0, "a lone primary has no arc")
+
+
+func mark_host_primary(hud, spell_id: String) -> bool:
+	var host: Control = hud._spell_hosts[spell_id]
+	return bool(host.get_meta("cluster_primary", false))
+
+
 func _test_hud_targets_and_tooltip_tap() -> void:
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
@@ -123,11 +234,22 @@ func _test_hud_targets_and_tooltip_tap() -> void:
 	eq(hud._ready_p2_button.custom_minimum_size.y, 72, "Ready P2 is 72px tall")
 	eq(hud._action_bar.custom_minimum_size.y >= 72, true, "action bar still has room to wrap")
 	truthy(hud._spell_buttons.has(SpellKits.MARK_SHOT), "Kestrel still offers Mark Shot")
+	eq(bool(mark_host_primary(hud, SpellKits.MARK_SHOT)), true, "Kestrel thumb button is Mark Shot")
+	var mark_host: Control = hud._spell_hosts[SpellKits.MARK_SHOT]
+	eq(mark_host.get_parent(), hud._ability_cluster, "Mark Shot lives in the thumb cluster")
+	eq(mark_host.custom_minimum_size, TOUCH.PRIMARY_BUTTON_SIZE, "Mark Shot uses the primary circle")
+	var det_host: Control = hud._spell_hosts[SpellKits.DETONATE]
+	eq(det_host.get_parent(), hud._ability_cluster, "Detonate lives in the arc")
+	eq(det_host.custom_minimum_size, TOUCH.ABILITY_BUTTON_SIZE, "Detonate uses the 72px circle")
+	eq(det_host.position.x < mark_host.position.x, true, "arc sits left of the thumb button")
+	eq(det_host.position.y < mark_host.position.y, true, "arc sits above the thumb button")
+	eq(hud._ability_cluster.anchor_left, 1.0, "cluster anchors to the right edge")
+	eq(hud._ability_cluster.anchor_bottom, 1.0, "cluster anchors to the bottom edge")
 	for spell_id in hud._spell_hosts.keys():
 		var host: Control = hud._spell_hosts[spell_id]
 		eq(TOUCH.meets_hit_floor(host.custom_minimum_size), true, "spell %s meets the floor" % spell_id)
-		eq(host.custom_minimum_size.y, 72, "spell %s is 72px tall" % spell_id)
-		eq(host.custom_minimum_size.x >= 140, true, "spell %s keeps a readable width" % spell_id)
+		eq(host.custom_minimum_size.y >= 72, true, "spell %s is at least 72px" % spell_id)
+		eq(host.get_parent(), hud._ability_cluster, "spell %s is not on the Walk row" % spell_id)
 	eq(hud.tooltip_visible(), false, "card starts hidden")
 	eq(hud.tooltip_pinned(), false, "card starts unpinned")
 	hud._on_spell_hover(SpellKits.MARK_SHOT)

@@ -18,6 +18,9 @@ extends Node2D
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
 ## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
+## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
+## The 22px diamond pick stays for walks and empty tiles. A finger that starts
+## on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner. The 30s seat clock is
@@ -83,6 +86,9 @@ var _panning := false
 var _pan_origin := Vector2.ZERO
 ## Finger went down on the board. Release commits only that gesture.
 var _touch_on_board := false
+## Spell was armed on the cluster and the finger dragged onto the board.
+var _chrome_aim := false
+var _touch_commit_open := true
 
 
 func _ready() -> void:
@@ -93,6 +99,7 @@ func _ready() -> void:
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.ready_requested.connect(_on_ready_requested)
+	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
 	_vfx = VFX_DIRECTOR.new()
 	_vfx.name = "VfxDirector"
@@ -201,19 +208,7 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 
 func local_to_grid(point: Vector2) -> Vector2i:
 	# Nearest painted tile so elevated (view-offset) cells stay clickable.
-	var best := Vector2i(-1, -1)
-	var best_d := TOUCH.CELL_PICK_RADIUS
-	for cell in tiles.keys():
-		var tile: BoardTile = tiles[cell]
-		var dist := point.distance_to(tile.position)
-		if dist < best_d:
-			best_d = dist
-			best = cell
-	if best.x >= 0:
-		return best
-	var grid_x := point.x / 64.0 + point.y / 32.0
-	var grid_y := point.y / 32.0 - point.x / 64.0
-	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
+	return TOUCH.pick_board_cell(point, _tile_positions(), [], false)
 
 
 func _process(delta: float) -> void:
@@ -310,16 +305,25 @@ func _unhandled_input(event: InputEvent) -> void:
 		_clamp_camera()
 		get_viewport().set_input_as_handled()
 		return
+	if _hud_claims_pointer(event):
+		if TOUCH.is_touch_press(event):
+			_touch_on_board = false
+			_touch_commit_open = true
+		return
 	if gesture == TOUCH.AIM:
 		var hover := _cell_under_pointer(event)
 		if _in_bounds(hover):
 			_sync_aim_preview(hover)
 			if TOUCH.is_touch_press(event):
 				_touch_on_board = true
+				_chrome_aim = false
+				_touch_commit_open = true
 				select_tile(hover)
 				if _hud != null:
 					_hud.dismiss_pinned_tooltip()
-			elif event is InputEventScreenDrag and _touch_on_board:
+			elif event is InputEventScreenDrag and (_touch_on_board or _spell_armed()):
+				if not _touch_on_board:
+					_chrome_aim = true
 				select_tile(hover)
 		else:
 			_sync_aim_preview()
@@ -329,15 +333,70 @@ func _unhandled_input(event: InputEvent) -> void:
 	if gesture != TOUCH.COMMIT:
 		return
 	if TOUCH.is_touch_release(event):
-		if not _touch_on_board:
-			return
+		var armed := _touch_on_board or _chrome_aim
 		_touch_on_board = false
-	var cell := _cell_under_pointer(event)
+		_chrome_aim = false
+		if not armed:
+			return
+	else:
+		# Mouse left press is its own gesture. It must not inherit a touch lock.
+		_touch_commit_open = true
+	_commit_pointer(event)
+
+
+func _spell_armed() -> bool:
+	return _hud != null and _hud.selected_spell() != ""
+
+
+func _hud_claims_pointer(event: InputEvent) -> bool:
+	if _hud == null:
+		return false
+	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		return false
+	return _hud.claims_screen_point(TOUCH.pointer_position(event))
+
+
+func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
+	if _busy or _view_locked:
+		return
+	if not committing:
+		# A new press or drag opens a commit. The release itself must not.
+		_touch_commit_open = true
+	if _hud != null and _hud.claims_screen_point(screen_pos):
+		if committing:
+			_chrome_aim = false
+		return
+	var local := ($Tiles as Node2D).make_canvas_position_local(screen_pos)
+	var cell := _pick_local(local)
+	if not _in_bounds(cell):
+		if committing:
+			_chrome_aim = false
+		return
+	_chrome_aim = true
+	_sync_aim_preview(cell)
+	select_tile(cell)
+	if _hud != null:
+		_hud.dismiss_pinned_tooltip()
+	if not committing:
+		return
+	_chrome_aim = false
+	_touch_on_board = false
+	_commit_cell(cell)
+
+
+func _commit_pointer(event: InputEvent) -> void:
+	_commit_cell(_cell_under_pointer(event))
+
+
+func _commit_cell(cell: Vector2i) -> void:
+	if not _touch_commit_open:
+		return
 	if not _in_bounds(cell):
 		return
 	# Snap walls are not a left-click / tap target. Right-click already returned.
 	if _snap_wall_cell(cell):
 		return
+	_touch_commit_open = false
 	select_tile(cell)
 	_handle_left_click(cell)
 
@@ -346,7 +405,37 @@ func _cell_under_pointer(event: InputEvent) -> Vector2i:
 	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
-	return local_to_grid(local)
+	return _pick_local(local)
+
+
+func _pick_local(local: Vector2) -> Vector2i:
+	var prefer := _hud != null and TOUCH.spell_targets_unit(_hud.selected_spell())
+	var pawns: Array = _living_pawns_for_pick() if prefer else []
+	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer)
+
+
+func _tile_positions() -> Dictionary:
+	var positions := {}
+	for cell in tiles.keys():
+		positions[cell] = (tiles[cell] as BoardTile).position
+	return positions
+
+
+func _living_pawns_for_pick() -> Array:
+	var out: Array = []
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		if not body.visible:
+			continue
+		var cell: Vector2i = body.grid_position
+		out.append({
+			"cell": cell,
+			"origin": body.position,
+			"sort": cell.x + cell.y,
+		})
+	return out
 
 
 func select_tile(cell: Vector2i) -> void:
