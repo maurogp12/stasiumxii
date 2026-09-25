@@ -19,7 +19,7 @@ const SEAT_P1_TEXT := Color("#B7E0C4")
 const SEAT_P2_TEXT := Color("#F0B4B4")
 
 ## Short roles derived from the Locked cards (kits.gd + workbook v0.6).
-## Kestrel: Mark Shot range 2–5. Ironjaw: Strike / Shoulder / Crush at range 1.
+## Kestrel: Mark Shot range 2–7. Ironjaw: Strike / Shoulder / Crush at range 1.
 ## Mender: Mend and Pulse Tap heals. Gloam: Fade Invisible and Backstab.
 ## Bastion: Intercept and Aegis. No extra stats.
 const ROLE_LINES := {

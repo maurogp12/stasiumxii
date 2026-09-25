@@ -416,7 +416,7 @@ func match_phase_name() -> String:
 
 
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
-## Mark Shot uses this for Chebyshev 2–5 chrome. Does not imply a legal cast dest.
+## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
 ## Advance is the exception: highlights are legal_intents dests only (the ortho
 ## neighbors that pass stand-on). Not a Manhattan 1–2 ring.
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
