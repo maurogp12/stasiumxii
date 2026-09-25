@@ -2,14 +2,17 @@ extends Control
 class_name MobileHub
 
 ## Mobile-branch entry (`project.godot` `run/main_scene`).
-## Koliseo opens the existing class-select / hot-seat path.
-## Each Stasis door opens the stub scene for that ship biome.
+## Koliseo is PvP into the five existing boards (class select, then a random
+## hot-seat arena). Each Stasis door is one stub for one of those ids.
 ## `--dedicated`, `--class`, `--queue`, `--join`, and `--host` skip this
 ## screen and follow the class-select route (no map picker).
 
 const MOBILE_HUB := "res://scenes/mobile_hub.tscn"
 const STASIS_STUB := "res://scenes/stasis_stub.tscn"
 const KOLISEO_SCENE := "res://scenes/class_select.tscn"
+## Exact ship ids. Files live at art/maps/arena_colosseum_v2/tiled/{id}_15x15.*
+const BIOME_IDS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
+const TAGS_ROOT := "res://art/maps/arena_colosseum_v2/tiled/"
 ## Fat hit targets on the 960×720 canvas. The stack fits that window, and
 ## the buttons grow when stretch aspect expand adds height (portrait).
 const DOOR_MIN_HEIGHT := 72
@@ -24,7 +27,27 @@ var _door_ids: Array[String] = []
 
 static func boot_route(args: PackedStringArray) -> String:
 	var net: Script = load("res://backend/net_session.gd")
-	return ClassSelect.route_for_plan(net.plan_from_args(args))
+	var select: Script = load("res://scenes/class_select.gd")
+	return select.route_for_plan(net.plan_from_args(args))
+
+
+static func is_biome_id(map_id: String) -> bool:
+	return BIOME_IDS.has(map_id.strip_edges().to_lower())
+
+
+## Title Case of the id itself (`crosshaven` → `Crosshaven`). Not a second name.
+static func title_of(map_id: String) -> String:
+	var id := map_id.strip_edges().to_lower()
+	if not BIOME_IDS.has(id):
+		return ""
+	return id.substr(0, 1).to_upper() + id.substr(1)
+
+
+static func tags_path(map_id: String) -> String:
+	var id := map_id.strip_edges().to_lower()
+	if not BIOME_IDS.has(id):
+		return ""
+	return TAGS_ROOT + "%s_15x15_tags.json" % id
 
 
 func _ready() -> void:
@@ -59,8 +82,8 @@ func open_koliseo() -> void:
 
 
 func open_stasis(map_id: String) -> void:
-	var id := CellTagMap.normalize_id(map_id)
-	if not CellTagMap.is_ship_map(id):
+	var id := map_id.strip_edges().to_lower()
+	if not BIOME_IDS.has(id):
 		return
 	pending_biome_id = id
 	if not _auto_launch:
@@ -102,8 +125,8 @@ func _build() -> void:
 	col.add_child(blurb)
 
 	_add_door(col, "koliseo", "Koliseo", true)
-	for map_id in CellTagMap.SHIP_MAPS:
-		_add_door(col, str(map_id), "%s Stasis" % CellTagMap.label_of(str(map_id)), false)
+	for map_id in BIOME_IDS:
+		_add_door(col, map_id, "%s Stasis" % title_of(map_id), false)
 
 
 func _add_door(parent: Node, door_id: String, label: String, koliseo: bool) -> void:

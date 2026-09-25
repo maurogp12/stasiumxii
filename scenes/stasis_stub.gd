@@ -12,12 +12,13 @@ var _blurb: Label
 var _status: Label
 var _preview: TagsPreview
 var _tags_ok: bool = false
+var _tags_path: String = ""
 var _board_size: Vector2i = Vector2i.ZERO
 
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_biome_id = CellTagMap.normalize_id(MobileHub.pending_biome_id)
+	_biome_id = MobileHub.pending_biome_id.strip_edges().to_lower()
 	_build()
 	_apply_biome(_biome_id)
 
@@ -42,6 +43,10 @@ func tags_ok() -> bool:
 	return _tags_ok
 
 
+func loaded_tags_path() -> String:
+	return _tags_path
+
+
 func board_size() -> Vector2i:
 	return _board_size
 
@@ -60,18 +65,20 @@ func back_to_hub() -> void:
 
 func _apply_biome(map_id: String) -> void:
 	_tags_ok = false
+	_tags_path = ""
 	_board_size = Vector2i.ZERO
 	if _preview != null:
 		_preview.clear_board()
-	if not CellTagMap.is_ship_map(map_id):
+	if not MobileHub.is_biome_id(map_id):
 		_title.text = "Stasis"
 		_blurb.text = "Stub run. No rooms, loot, or combat."
 		_status.text = "Stasis coming soon. Open a biome door from the hub."
 		return
-	var label := CellTagMap.label_of(map_id)
-	_title.text = "%s Stasis" % label
-	_blurb.text = CellTagMap.blurb_of(map_id)
-	var tags := CellTagMap.load_file(CellTagMap.tags_path_for(map_id))
+	var id := map_id.strip_edges().to_lower()
+	_title.text = "%s Stasis" % MobileHub.title_of(id)
+	_blurb.text = CellTagMap.blurb_of(id)
+	_tags_path = MobileHub.tags_path(id)
+	var tags := CellTagMap.load_file(_tags_path)
 	var width := int(tags.get("width", 0))
 	var height := int(tags.get("height", 0))
 	if bool(tags.get("ok", false)) and width == 15 and height == 15:

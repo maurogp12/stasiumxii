@@ -65,12 +65,28 @@ func _test_hub_doors() -> void:
 		if index > 0:
 			ids.append(hub.door_id(index))
 	eq(ids, ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"], "stasis doors use the five ship ids")
+	eq(load("res://scenes/mobile_hub.gd").BIOME_IDS, ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"], "biome allowlist is the five ids")
+	for map_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
+		var tags_path := "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % map_id
+		var tmx_path := "res://art/maps/arena_colosseum_v2/tiled/%s_15x15.tmx" % map_id
+		eq(MobileHub.tags_path(map_id), tags_path, "%s tags path is the tiled 15x15 file" % map_id)
+		eq(MobileHub.tags_path(map_id), CellTagMap.tags_path_for(map_id), "%s tags path matches the map loader" % map_id)
+		eq(MobileHub.title_of(map_id), CellTagMap.label_of(map_id), "%s label is Title Case of the id" % map_id)
+		truthy(FileAccess.file_exists(tags_path), "%s tags file exists" % map_id)
+		truthy(FileAccess.file_exists(tmx_path), "%s tmx file exists" % map_id)
+	eq(MobileHub.is_biome_id("brinehaven"), false, "brinehaven is not a biome id")
+	eq(MobileHub.is_biome_id("crosswake"), false, "crosswake is not a biome id")
+	eq(MobileHub.tags_path("brinehaven"), "", "a mixed spelling has no tags path")
+	hub.open_stasis("brinehaven")
+	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "", "a mixed spelling does not open Stasis")
 	hub.open_koliseo()
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "", "Koliseo does not keep a stasis biome")
 	hub.open_stasis("windmere")
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "windmere", "Stasis door stores the biome id")
 	hub.open_stasis("not_a_biome")
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "windmere", "unknown ids do not replace the biome")
+	hub.open_stasis("crosswake")
+	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "windmere", "a mixed spelling does not replace the biome")
 	hub.free()
 
 
@@ -80,8 +96,9 @@ func _test_stasis_stubs() -> void:
 		script.pending_biome_id = map_id
 		var stub := _stub()
 		eq(stub.biome_id(), map_id, "%s stub keeps the biome id" % map_id)
-		eq(stub.title_text(), "%s Stasis" % CellTagMap.label_of(map_id), "%s stub titles the biome" % map_id)
+		eq(stub.title_text(), "%s Stasis" % MobileHub.title_of(map_id), "%s stub titles the biome" % map_id)
 		eq(stub.tags_ok(), true, "%s tags board loads" % map_id)
+		eq(stub.loaded_tags_path(), "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % map_id, "%s stub loads that id's tags file" % map_id)
 		eq(stub.board_size(), Vector2i(15, 15), "%s preview is 15×15" % map_id)
 		eq(stub.preview_cells(), 225, "%s preview keeps every tags cell" % map_id)
 		eq(stub._blurb.text, CellTagMap.blurb_of(map_id), "%s stub uses the catalog blurb" % map_id)

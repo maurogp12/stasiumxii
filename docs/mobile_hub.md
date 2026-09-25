@@ -27,11 +27,11 @@ The hub is a vertical stack of fat buttons (minimum height 72px). They fill the 
 | Windmere Stasis | same stub for `windmere` |
 | Stormspire Stasis | same stub for `stormspire` |
 
-Biome ids and labels come from `CellTagMap.SHIP_MAPS`. No new arena art.
+The five ids are exactly `crosshaven`, `brinewake`, `slagcrown`, `windmere`, and `stormspire`. Boards are the existing files `art/maps/arena_colosseum_v2/tiled/{id}_15x15.*`. Door labels are Title Case of those ids (`Crosshaven Stasis`). No other spelling is accepted.
 
 ## Koliseo
 
-The Koliseo door opens the existing class-select screen. Hot-seat is still P1, then P2, then `main.tscn` on a **random** arena among the five ship maps (`ClassSelect.roll_hotseat_map`). There is no map picker. Online queue still stays on Crosshaven. **Back to hub** on that screen returns to the hub.
+Koliseo is PvP into those five boards. The door opens the existing class-select screen. Hot-seat is still P1, then P2, then `main.tscn` on a **random** arena among the same five ids (`ClassSelect.roll_hotseat_map`). There is no map picker. Online queue still stays on Crosshaven. **Back to hub** on that screen returns to the hub.
 
 `--dedicated`, `--class`, `--queue`, `--join`, and `--host` skip the hub. The hub forwards any non-picker route straight into class select, which already sends those flags to the dedicated host view or to `main.tscn`.
 
@@ -39,7 +39,7 @@ The Koliseo door opens the existing class-select screen. Hot-seat is still P1, t
 
 Each door stores `MobileHub.pending_biome_id` and opens one stub scene. The stub shows the biome name, that biome's catalog blurb, the line **Stasis coming soon**, and **Back to hub**.
 
-When that biome's `*_15x15_tags.json` loads as 15×15, the stub draws those cells as flat color squares (`BoardTile.fill_color` only). That grid is a non-combat preview so a later room can reuse the same tags file. It does not start `CombatSim`, place units, or invent a dungeon.
+When `art/maps/arena_colosseum_v2/tiled/{id}_15x15_tags.json` loads as 15×15, the stub draws those cells as flat color squares (`BoardTile.fill_color` only). That grid is a non-combat preview so a later room can reuse the same tags file. It does not start `CombatSim`, place units, or invent a dungeon.
 
 ## Headless check
 
