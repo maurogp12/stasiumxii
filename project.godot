@@ -35,6 +35,8 @@ window/stretch/aspect="expand"
 [rendering]
 
 rendering_device/driver.windows="d3d12"
+; Godot refuses an Android export until this is on. Does not change the viewport.
+textures/vram_compression/import_etc2_astc=true
 
 [stasium]
 

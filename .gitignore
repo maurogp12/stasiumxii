@@ -1,3 +1,6 @@
 # Godot 4+ specific ignores
 .godot/
 /android/
+
+# Local Android (and other) export output. See export_presets.cfg.
+/build/
