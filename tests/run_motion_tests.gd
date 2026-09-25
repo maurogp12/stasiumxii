@@ -20,6 +20,7 @@ func _initialize() -> void:
 func _finish_live() -> void:
 	await _test_live_tree()
 	await _test_strip_fallback()
+	await _test_batch1_disk_strips()
 	await _test_shade_markers_survive_rebuild()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
@@ -564,7 +565,8 @@ func _test_strip_fallback() -> void:
 	stand_in.name = "Sprite"
 	stand_in.sprite_frames = null
 	pawn.add_child(stand_in)
-	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	# Mender has no Batch-1 strips, so this still proves the empty-frame hop.
+	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "a strip standing in for Sprite does not replace the static body")
 	truthy(sprite.texture != null, "missing strip frames keep the facing texture")
@@ -700,15 +702,36 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(StripLibrary.export_frames_path("kestrel"), "res://art/export_2x/characters/kestrel/kestrel_frames.tres", "frames tres sits beside the class folder")
 	eq(paths.has(StripLibrary.grok_png_path("kestrel", "walk", "se")), false, "batch-1 list is export_2x, not grok masters")
 	for path in paths:
-		eq(FileAccess.file_exists(path), false, "batch-1 png is not in the repo: %s" % path)
-		eq(StripLibrary.try_load(path) == null, true, "missing strip load returns null: %s" % path)
-	eq(StripLibrary.try_load(StripLibrary.export_frames_path("kestrel")) == null, true, "missing kestrel_frames.tres returns null")
-	eq(StripLibrary.try_load(StripLibrary.export_frames_path("ironjaw")) == null, true, "missing ironjaw_frames.tres returns null")
-	eq(StripLibrary.try_load(StripLibrary.grok_png_path("kestrel", "walk", "se")) == null, true, "missing grok master returns null")
-	eq(StripLibrary.frames_for("kestrel") == null, true, "kestrel has no strip bank until files land")
-	eq(StripLibrary.frames_for("ironjaw") == null, true, "ironjaw has no strip bank until files land")
+		eq(FileAccess.file_exists(path), true, "batch-1 png is in the repo: %s" % path)
+		var loaded := StripLibrary.try_load(path)
+		truthy(loaded is Texture2D, "batch-1 png loads: %s" % path)
+		eq((loaded as Texture2D).get_width(), 864, "strip width is 6 cells: %s" % path)
+		eq((loaded as Texture2D).get_height(), 160, "strip height is one cell: %s" % path)
+	for cls in ["kestrel", "ironjaw"]:
+		var bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
+		truthy(bank != null, "%s frames tres loads" % cls)
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			var attack_name := "attack_%s" % face
+			eq(bank.get_frame_count(walk_name), 6, "%s %s has 6 frames" % [cls, walk_name])
+			eq(bank.get_animation_loop(walk_name), true, "%s %s loops" % [cls, walk_name])
+			eq(is_equal_approx(bank.get_animation_speed(walk_name), 12.0), true, "%s %s is 12 fps" % [cls, walk_name])
+			eq(bank.get_frame_count(attack_name), 6, "%s %s has 6 frames" % [cls, attack_name])
+			eq(bank.get_animation_loop(attack_name), false, "%s %s is one-shot" % [cls, attack_name])
+			eq(is_equal_approx(bank.get_animation_speed(attack_name), 12.0), true, "%s %s is 12 fps" % [cls, attack_name])
+			var impact := bank.get_frame_texture(attack_name, StripLibrary.ATTACK_IMPACT_FRAME) as AtlasTexture
+			eq(is_equal_approx(impact.region.position.x, 432.0), true, "%s %s impact is cell 3" % [cls, attack_name])
+	var kestrel_bank := StripLibrary.frames_for("kestrel")
+	var ironjaw_bank := StripLibrary.frames_for("ironjaw")
+	truthy(kestrel_bank != null, "kestrel strip bank loads from export_2x")
+	truthy(ironjaw_bank != null, "ironjaw strip bank loads from export_2x")
+	eq(kestrel_bank, StripLibrary.frames_for("kestrel"), "kestrel bank is cached")
+	eq(kestrel_bank.get_animation_loop("walk_e"), true, "loaded kestrel walk loops")
+	eq(ironjaw_bank.get_animation_loop("attack_w"), false, "loaded ironjaw attack is one-shot")
 	eq(StripLibrary.frames_for("gloam") == null, true, "batch-2 classes stay empty until their files land")
-	eq(StripLibrary.frames_for("kestrel") == null, true, "a second lookup still returns null")
+	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
+	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
+	eq(StripLibrary.try_load(StripLibrary.grok_png_path("kestrel", "walk", "se")) == null, true, "missing grok master returns null")
 	eq(StripLibrary.letter_for_sheet("se"), "e", "SE maps to e")
 	eq(StripLibrary.letter_for_sheet("sw"), "s", "SW maps to s")
 	eq(StripLibrary.letter_for_sheet("ne"), "n", "NE maps to n")
@@ -733,12 +756,21 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(attack.has_animation("attack_ne"), false, "NE attack is not stored as attack_ne")
 	eq(attack.get_animation_loop("attack_n"), false, "attack sheets are one-shot")
 	eq(attack.has_animation("attack_w"), false, "NE attack does not fill west")
+	var shipped := Pawn.new()
+	get_root().add_child(shipped)
+	shipped.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	for face in ["E", "S", "N", "W"]:
+		shipped.set_facing(face)
+		eq(shipped.has_walk_strip(), true, "shipped kestrel %s has a walk strip" % face)
+		eq(shipped.has_attack_strip(), true, "shipped kestrel %s has an attack strip" % face)
+	eq(shipped.has_cast_strip(), false, "kestrel has no cast strip")
+	shipped.free()
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
-	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
-	eq(pawn.has_walk_strip(), false, "kestrel without files has no walk strip")
-	eq(pawn.has_attack_strip(), false, "kestrel without files has no attack strip")
-	eq(pawn.has_cast_strip(), false, "kestrel without files has no cast strip")
+	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
+	eq(pawn.has_walk_strip(), false, "mender without files has no walk strip")
+	eq(pawn.has_attack_strip(), false, "mender without files has no attack strip")
+	eq(pawn.has_cast_strip(), false, "mender without files has no cast strip")
 	pawn.bind_motion_frames(frames)
 	eq(pawn.has_walk_strip(), true, "bound SE frames resolve for an east facing")
 	eq(str(pawn._strip_choice("walk").get("anim", "")), "walk_e", "east plays walk_e")
@@ -761,6 +793,80 @@ func _test_strip_library_missing_and_slice() -> void:
 	truthy(readme.contains("kestrel_frames.tres"), "README lists the frames tres")
 	truthy(readme.contains("art/grok_project/anims/"), "README keeps grok masters as fallback only")
 	pawn.free()
+
+
+func _test_batch1_disk_strips() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	pawn.begin_path_walk()
+	pawn.play_step_hop()
+	await process_frame
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "kestrel walk shows the export strip")
+	eq(String(strip.animation), "walk_e", "kestrel east plays walk_e")
+	eq(strip.sprite_frames.get_animation_loop("walk_e"), true, "disk walk loops")
+	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk walk stays at authored speed")
+	eq(sprite.visible, false, "static sprite steps aside for the disk walk")
+	eq(sprite.position, Vector2.ZERO, "disk walk does not hop")
+	eq(strip.offset, Vector2(0, -72), "disk strip uses the foot pivot")
+	eq(strip.scale, Vector2(0.5, 0.5), "disk strip uses the shipped scale")
+	eq(strip.flip_h, false, "disk strip is not mirrored at runtime")
+	strip.frame = 4
+	pawn.finish_step()
+	pawn.play_step_hop()
+	eq(strip.frame, 4, "the path does not restart the disk walk")
+	pawn.set_facing("W")
+	pawn.play_step_hop()
+	eq(String(strip.animation), "walk_w", "west plays the baked mirror as walk_w")
+	eq(sprite.position, Vector2.ZERO, "the facing snap stays flat")
+	pawn.end_path_walk()
+	eq(sprite.visible, true, "path end restores the static kestrel")
+	pawn.set_facing("E")
+	var dur := pawn.play_view_plan({"attack": true, "aim": Vector2(32, 16)})
+	await process_frame
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "kestrel attack shows the export strip")
+	eq(String(strip.animation), "attack_e", "kestrel east plays attack_e")
+	eq(strip.sprite_frames.get_animation_loop("attack_e"), false, "disk attack is one-shot")
+	eq(dur > 0.0 and dur <= 0.6, true, "disk attack still fits the action lock")
+	await create_timer(0.12).timeout
+	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
+	pawn.settle_motion()
+	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
+	pawn.free()
+	var jaw := Pawn.new()
+	get_root().add_child(jaw)
+	await process_frame
+	jaw.apply_snapshot(_unit("ironjaw", "N", 1), 1)
+	jaw.begin_path_walk()
+	jaw.play_step_hop()
+	await process_frame
+	var jaw_strip := _visible_strip(jaw)
+	truthy(jaw_strip != null, "ironjaw walk shows the export strip")
+	eq(String(jaw_strip.animation), "walk_n", "ironjaw north plays walk_n")
+	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "ironjaw walk does not hop")
+	jaw.end_path_walk()
+	jaw.free()
+	var other := Pawn.new()
+	get_root().add_child(other)
+	await process_frame
+	other.apply_snapshot(_unit("gloam", "E", 0), 0)
+	eq(other.has_walk_strip(), false, "gloam still has no walk strip")
+	other.play_step_hop()
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
+	eq((other.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a class without strips still hops")
+	other.settle_motion()
+	other.free()
+
+
+func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
+	for child in pawn.get_children():
+		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
+			return child as AnimatedSprite2D
+	return null
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
