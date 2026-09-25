@@ -1477,7 +1477,7 @@ func _test_mark_shot_range_and_marks() -> void:
 		eq(result["ok"], true, "Mark Shot at range %d is legal" % dist)
 		eq(_unit(1)["hp"], 72, "8 Air on connect at range %d" % dist)
 		eq(_unit(1)["marks"], 1, "Marks stored on the target at range %d" % dist)
-		eq(result["events"][0]["hit_chance"], 70, "range %d uses the 70% long band" % dist)
+		eq(result["events"][0]["hit_chance"], 70, "range %d uses the 70%% long band" % dist)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
