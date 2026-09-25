@@ -1439,6 +1439,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
 	# Spend before the d100. Miss keeps AP/MP; engine cost would refund here (none prepaid in A).
 	# Locked: miss retains Marks (Detonate) and Impact (Crush). AP/MP stay spent.
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance: int = hit_chance(dist)
@@ -1459,6 +1460,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": spell_id,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -1564,6 +1566,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": dest,
 		"range": dist,
@@ -2498,6 +2501,7 @@ func _apply_heal(target: Dictionary, amount: int) -> int:
 
 
 func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	var spell_id := str(def.get("id", ""))
 	if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
 		return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
@@ -2519,6 +2523,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": spell_id,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -2554,6 +2559,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": spell_id,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": dest,
 		"range": dist,
@@ -2572,6 +2578,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var gained := _gain_resource(actor, "umbral", 1)
@@ -2582,6 +2589,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"type": "cast",
 		"spell": SpellKits.FADE,
 		"seat": actor["seat"],
+		"caster_cell": caster_cell,
 		"rolled": false,
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
@@ -2593,6 +2601,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 
 
 func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	if not _is_empty(dest) or not _board.is_walkable(dest):
 		return _reject(intent, "destination_occupied", "REJECT — %s needs an empty tile (refund)." % def["name"])
 	var spell_id := str(def.get("id", ""))
@@ -2613,6 +2622,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"type": "cast",
 			"spell": spell_id,
 			"seat": actor["seat"],
+			"caster_cell": caster_cell,
 			"to": dest,
 			"rolled": false,
 			"ap_spent": ap_cost,
@@ -2646,6 +2656,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 
 
 func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var gained := _gain_resource(actor, "aegis", 1)
@@ -2661,6 +2672,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 		"type": "cast",
 		"spell": SpellKits.PLANT,
 		"seat": actor["seat"],
+		"caster_cell": caster_cell,
 		"to": dest,
 		"rolled": false,
 		"ap_spent": ap_cost,
@@ -2672,6 +2684,7 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 
 
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	if not _cone_enemies(actor, true).is_empty():
 		return _reject(intent, "open_can_wait", "REJECT — AoE versus Invisible is open (can-wait).")
 	var bodies: Array = _cone_enemies(actor, false)
@@ -2690,6 +2703,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": SpellKits.HOLD_LINE,
+			"caster_cell": caster_cell,
 			"roll": roll,
 			"hit_chance": chance,
 			"ap_spent": ap_cost,
@@ -2724,6 +2738,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": SpellKits.HOLD_LINE,
+		"caster_cell": caster_cell,
 		"roll": roll,
 		"hit_chance": chance,
 		"ap_spent": ap_cost,
@@ -2737,6 +2752,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
 		return _reject(intent, "no_landing", "REJECT — Ambush has no empty landing (refund).")
@@ -2758,6 +2774,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 			"type": "miss",
 			"seat": actor["seat"],
 			"spell": SpellKits.AMBUSH,
+			"caster_cell": caster_cell,
 			"target_seat": target["seat"],
 			"to": dest,
 			"range": dist,
@@ -2787,6 +2804,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"type": "hit",
 		"seat": actor["seat"],
 		"spell": SpellKits.AMBUSH,
+		"caster_cell": caster_cell,
 		"target_seat": target["seat"],
 		"to": cell,
 		"from": dest,

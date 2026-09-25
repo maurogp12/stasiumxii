@@ -1,0 +1,230 @@
+extends SceneTree
+
+## View-facing event payloads. Fields describe resolves that already happen.
+## Run: godot --headless --path . -s res://tests/run_event_hooks_tests.gd
+
+const _IntentCodec := preload("res://backend/intent_codec.gd")
+
+var _failed: int = 0
+var _passed: int = 0
+var _sim: Node
+var _view: Node
+var _host: Node
+var _guest: Node
+
+
+func _initialize() -> void:
+	var sim_script := load("res://backend/combat_sim.gd")
+	var net_script := load("res://backend/net_session.gd")
+	_sim = sim_script.new()
+	_view = sim_script.new()
+	_host = net_script.new()
+	_guest = net_script.new()
+	_host.attach_sim(_sim)
+	_guest.attach_sim(_view)
+	_host.enter_host_offline()
+	_guest.enter_client_offline()
+	_run()
+	print("Event-hook tests: %d passed, %d failed" % [_passed, _failed])
+	_host.free()
+	_guest.free()
+	_sim.free()
+	_view.free()
+	quit(1 if _failed > 0 else 0)
+
+
+func _run() -> void:
+	_test_caster_cell_on_hit_and_miss()
+	_test_caster_cell_on_cast_events()
+	_test_caster_cell_survives_host_pack()
+
+
+func _test_caster_cell_on_hit_and_miss() -> void:
+	var caster := Vector2i(3, 3)
+	var target := Vector2i(4, 3)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": caster,
+		"ironjaw_pos": target,
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var before_hp := int(_sim.snapshot()["units"][0]["hp"])
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": caster, "seat": 1})
+	eq(bool(hit.get("ok", false)), true, "Strike hit resolves")
+	var hit_event := _event_of(hit.get("events", []), "hit")
+	eq(hit_event.get("caster_cell"), target, "Strike hit caster_cell is Ironjaw's cell")
+	eq(int(hit_event.get("damage", -1)), 16, "Strike hit damage stays 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), before_hp - 16, "Strike still removes 16 HP")
+	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "Strike still spends 3 AP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": caster,
+		"ironjaw_pos": target,
+		"rolls": [100],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": caster, "seat": 1})
+	var miss_event := _event_of(missed.get("events", []), "miss")
+	eq(miss_event.get("caster_cell"), target, "Strike miss caster_cell is Ironjaw's cell")
+	eq(int(miss_event.get("damage", -1)), 0, "Strike miss damage stays 0")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Strike miss still deals nothing")
+	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "Strike miss still spends 3 AP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"rolls": [1, 100],
+	})
+	var mend: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	eq(_event_of(mend.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "Mend hit caster_cell is Mender")
+	var mend_miss: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	eq(_event_of(mend_miss.get("events", []), "miss").get("caster_cell"), Vector2i(1, 1), "Mend miss caster_cell is Mender")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"kestrel_facing": "W",
+		"rolls": [1, 100],
+	})
+	var hold: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
+	eq(_event_of(hold.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "Hold Line hit caster_cell is Bastion")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 73, "Hold Line damage stays 7")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(2, 1)],
+		"rolls": [100],
+	})
+	var hold_miss: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
+	eq(_event_of(hold_miss.get("events", []), "miss").get("caster_cell"), Vector2i(1, 1), "Hold Line miss caster_cell is Bastion")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Hold Line miss still deals 0")
+
+	var gloam := Vector2i(2, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(5, 2)],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"rolls": [1],
+	})
+	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var ambush_hit := _event_of(ambush.get("events", []), "hit")
+	eq(ambush_hit.get("caster_cell"), gloam, "Ambush hit caster_cell is the cell before the jump")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 2), "Ambush still lands on the empty back cell")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(5, 2)],
+		"gloam_shade": true,
+		"rolls": [100],
+	})
+	var ambush_miss: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	eq(_event_of(ambush_miss.get("events", []), "miss").get("caster_cell"), gloam, "Ambush miss caster_cell is Gloam")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still does not teleport")
+
+
+func _test_caster_cell_on_cast_events() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	var shade: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1), "seat": 0})
+	var shade_event := _event_of(shade.get("events", []), "cast")
+	eq(shade_event.get("caster_cell"), Vector2i(1, 1), "Drop Shade cast carries caster_cell")
+	eq(shade_event.get("to"), Vector2i(2, 1), "Drop Shade still names the token cell")
+	eq(int(_sim.snapshot()["units"][0]["shades"]), 1, "Drop Shade still places one token")
+	var fade: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(1, 1), "seat": 0})
+	eq(_event_of(fade.get("events", []), "cast").get("caster_cell"), Vector2i(1, 1), "Fade cast carries caster_cell")
+	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "Fade still sets Invisible")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	var plant: Dictionary = _sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
+	eq(_event_of(plant.get("events", []), "cast").get("caster_cell"), Vector2i(1, 1), "Plant cast carries caster_cell")
+	eq(int(_sim.snapshot()["units"][0]["aegis"]), 1, "Plant still gains 1 Aegis")
+
+
+func _test_caster_cell_survives_host_pack() -> void:
+	var hot_script := load("res://backend/net_session.gd")
+	var hot: Node = hot_script.new()
+	hot.attach_sim(_sim)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(3, 1),
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	var local: Dictionary = hot.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 1)})
+	eq(_event_of(local.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "hot-seat submit keeps caster_cell")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 72, "hot-seat Mark Shot damage stays 8")
+	hot.free()
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "W",
+		"rolls": [1],
+		"fixture": true,
+	})
+	eq(_host.submit({"type": "end_turn"})["ok"], true, "host ends Kestrel's turn")
+	var cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)}, 1)
+	eq(bool(cast.get("ok", false)), true, "host Strike resolves")
+	var packed: Dictionary = _host.pack_result(cast, 0)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	var wire_events: Array = (decoded as Dictionary).get("events", [])
+	eq(_event_of(wire_events, "hit").get("caster_cell"), Vector2i(4, 3), "packed Strike hit keeps caster_cell")
+	_guest.apply_packed_state(packed)
+	var guest_events: Array = _guest.snapshot().get("last_events", [])
+	eq(_event_of(guest_events, "hit").get("caster_cell"), Vector2i(4, 3), "guest snapshot last_events keep caster_cell")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), int(_sim.snapshot()["units"][0]["hp"]), "guest HP matches the host")
+
+
+func _event_of(events: Variant, kind: String) -> Dictionary:
+	if typeof(events) != TYPE_ARRAY:
+		return {}
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == kind:
+			return event
+	return {}
+
+
+func eq(actual: Variant, expected: Variant, msg: String) -> void:
+	if actual != expected:
+		_failed += 1
+		print("FAIL: %s  (got %s expected %s)" % [msg, actual, expected])
+	else:
+		_passed += 1
