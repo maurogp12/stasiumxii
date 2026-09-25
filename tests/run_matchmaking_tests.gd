@@ -477,6 +477,38 @@ func _test_aegis_break() -> void:
 		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
 		"kestrel_facing": "W",
 		"bastion_aegis": 4,
+		"rolls": [1],
+	})
+	var second: Dictionary = _sim._make_unit(1, "kestrel", "Second", "air", Vector2i(1, 3), "N", true)
+	var outside: Dictionary = _sim._make_unit(1, "kestrel", "Outside", "air", Vector2i(4, 2), "W", true)
+	_sim._units.append(second)
+	_sim._units.append(outside)
+	var burst: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
+	eq(bool(burst.get("ok", false)), true, "Aegis Break burst hit resolves")
+	eq(int(_sim.snapshot()["units"][0]["aegis"]), 0, "burst HIT clears all Aegis once")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 54, "aimed body takes 26")
+	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(4, 1), "aimed body is pushed 1")
+	eq(int(second["hp"]), 54, "second body in range 1–2 takes 26")
+	eq(second["pos"], Vector2i(1, 4), "second body is pushed 1")
+	eq(int(outside["hp"]), 80, "a body outside range 1–2 takes no damage")
+	eq(outside["pos"], Vector2i(4, 2), "a body outside range 1–2 is not pushed")
+	var burst_hit: Dictionary = {}
+	for event in burst.get("events", []):
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "hit":
+			burst_hit = event
+	eq(int(burst_hit.get("bodies", 0)), 2, "Aegis Break hit counts both bodies")
+	var burst_rows: Array = burst_hit.get("targets", [])
+	eq(burst_rows.size(), 2, "Aegis Break hit lists each body")
+	eq(int(burst_rows[0].get("damage", -1)), 26, "first burst row is 26")
+	eq(int(burst_rows[1].get("damage", -1)), 26, "second burst row is 26")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"bastion_aegis": 4,
 		"rolls": [100],
 	})
 	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
@@ -485,6 +517,27 @@ func _test_aegis_break() -> void:
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 2, "MISS still spends 4 AP")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "MISS deals no damage")
 	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(3, 1), "MISS does not push")
+	var miss_event: Dictionary = {}
+	for event in missed.get("events", []):
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "miss":
+			miss_event = event
+	eq(int(miss_event.get("aegis_spent", -1)), 0, "MISS event spends 0 Aegis")
+	eq(bool(miss_event.get("stacks_cleared", true)), false, "MISS does not clear Aegis")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["bastion", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"kestrel_invisible": true,
+		"bastion_aegis": 4,
+		"rolls": [1],
+	})
+	var hidden: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
+	eq(str(hidden.get("reason", "")), "open_can_wait", "Aegis Break versus Invisible stays open")
+	eq(int(_sim.snapshot()["units"][0]["aegis"]), 4, "open AoE does not clear Aegis")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 6, "open AoE does not spend AP")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -564,9 +617,15 @@ func _test_snap_wall_cast() -> void:
 	eq(painted, true, "Snap Wall emits type snap_wall")
 	eq(_move_offered(0, Vector2i(2, 1)), false, "Snap Wall blocks walk")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "wall ticks on the next turn start")
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 2, "enemy turn-start does not tick Snap Wall")
+	eq(_sim.snapshot()["blocked_tiles"].size(), 1, "Snap Wall survives the enemy turn")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_sim.snapshot()["blocked_tiles"].size(), 0, "wall expires after 2 turn starts")
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "first Bastion turn-start ticks 2 to 1")
+	eq(_move_offered(0, Vector2i(2, 1)), false, "wall still blocks after one Bastion turn-start")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["blocked_tiles"][0]["turns"]), 1, "a later enemy turn still does not tick Snap Wall")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_sim.snapshot()["blocked_tiles"].size(), 0, "wall expires on the second Bastion turn-start")
 	eq(_move_offered(0, Vector2i(2, 1)), true, "expired wall is walkable again")
 
 

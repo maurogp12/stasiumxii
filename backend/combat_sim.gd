@@ -83,8 +83,9 @@ var _intent_log: Array = []
 ## Test/setup occupancy only. Occupied dest is hard body-block (push_blocked).
 var _blocked_cells: Array[Vector2i] = []
 ## Snap Wall cells. They block walk (and would block Gust) only while a
-## bastion is in the match. Each wall is one tile for wall_turns (card: 2).
-## Gust itself is not implemented (A03).
+## bastion is in the match. Each wall is one tile for wall_turns (Locked: 2
+## owner Bastion turn-starts, same family as Burn). Gust itself is not
+## implemented (A03). Walls exist only while Snap Wall placed them.
 var _snap_wall_cells: Array[Vector2i] = []
 var _snap_wall_state: Array = []
 var _shade_tokens: Array = []
@@ -303,6 +304,23 @@ func legal_intents(seat: int) -> Array:
 			if not _cone_enemies(actor, true).is_empty():
 				continue
 			out.append({"type": "cast", "spell": spell_id, "to": from + _facing_step(actor), "seat": seat})
+			continue
+		if target_kind == "burst":
+			# AoE versus Invisible is open. Do not offer a cast that would resolve it.
+			if not _burst_enemies(actor, def, true).is_empty():
+				continue
+			var burst_bodies: Array = _burst_enemies(actor, def, false)
+			if burst_bodies.is_empty():
+				continue
+			for burst_body in burst_bodies:
+				var burst_target: Dictionary = burst_body
+				out.append({
+					"type": "cast",
+					"spell": spell_id,
+					"to": burst_target["pos"],
+					"target_seat": burst_target["seat"],
+					"seat": seat,
+				})
 			continue
 		if target_kind == "ally" or target_kind == "any":
 			if _in_spell_range(def, from, from):
@@ -886,6 +904,12 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if _cone_enemies(actor, false).is_empty():
 			return "no_target"
 		return ""
+	if target_kind == "burst":
+		if not _burst_enemies(actor, def, true).is_empty():
+			return "open_can_wait"
+		if _burst_enemies(actor, def, false).is_empty():
+			return "no_target"
+		return ""
 	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and int(target.get("seat", -1)) == int(actor.get("seat", -2)))
 	if ally_cast:
 		if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) != int(actor.get("seat", -2)):
@@ -918,6 +942,10 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "on_miss": "Impact retained. AP/MP stay spent."}
 		SpellKits.ADVANCE:
 			return {"on_connect": "Teleport snap. +1 Impact if adjacent. Facing unchanged.", "on_miss": "No roll."}
+		SpellKits.AEGIS_BREAK:
+			return {"on_connect": "26 Earth per body in range 1–2. Push 1. Clears all Aegis.", "on_miss": "Spends 0 Aegis. Does not clear Aegis."}
+		SpellKits.SNAP_WALL:
+			return {"on_connect": "Blocked tile for 2 Bastion turn-starts. Spends 2 Aegis.", "on_miss": "No roll."}
 		_:
 			return {"on_connect": "", "on_miss": ""}
 
@@ -1387,6 +1415,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_fade(intent, actor, def, ap_cost, mp_cost)
 	if target_kind == "cone":
 		return _resolve_hold_line(intent, actor, def, ap_cost, mp_cost)
+	if target_kind == "burst":
+		return _resolve_aegis_break(intent, actor, def, dest, dist, ap_cost, mp_cost)
 	if spell_id == SpellKits.AMBUSH:
 		var ambush_target := _living_unit_at(dest)
 		if ambush_target.is_empty() or int(ambush_target["seat"]) == int(actor["seat"]):
@@ -1492,10 +1522,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			miss_event["impact"] = impact_before
 		if spell_id == SpellKits.SHOULDER:
 			miss_event["pushed"] = false
-		if spell_id == SpellKits.AEGIS_BREAK:
-			# MISS spends 0 Aegis. The gate already required 3; the stack stays.
-			miss_event["aegis_spent"] = 0
-			miss_event["aegis"] = int(actor.get("aegis", 0))
 		_last_events.append(miss_event)
 		return _accept()
 
@@ -1606,10 +1632,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		hit_event["impact_spent"] = engine_spent
 		hit_event["stun_applied"] = stun_applied
 		# Locked Stun (A′): blocks move + cast + face; auto end_turn on turn start.
-	if spell_id == SpellKits.AEGIS_BREAK:
-		hit_event["aegis_spent"] = engine_spent
-		hit_event["aegis"] = int(actor.get("aegis", 0))
-		hit_event["stacks_cleared"] = engine_spent > 0
 	if not push_result.is_empty():
 		hit_event["pushed"] = bool(push_result.get("moved", false))
 		hit_event["push_from"] = push_result.get("from")
@@ -1893,14 +1915,12 @@ func _apply_setup_overrides(config: Dictionary) -> void:
 		for cell in config["blockers"]:
 			_blocked_cells.append(_as_cell(cell))
 	if config.has("snap_walls"):
+		var wall_owner := -1
+		var bastion := _first_unit_of_class(SpellKits.CLASS_BASTION)
+		if not bastion.is_empty():
+			wall_owner = int(bastion["seat"])
 		for cell in config["snap_walls"]:
-			var pos := _as_cell(cell)
-			_snap_wall_cells.append(pos)
-			_snap_wall_state.append({
-				"pos": pos,
-				"turns": 2,
-				"owner_seat": -1,
-			})
+			_add_snap_wall(_as_cell(cell), 2, wall_owner)
 
 
 func _apply_bool_setup(config: Dictionary, key: String, class_id: String, field: String) -> void:
@@ -2023,6 +2043,8 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
 		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
 	_decay_board_durations()
+	# Snap Wall is not in the every-seat decay. It ticks on the owner's turn start.
+	_tick_snap_walls(unit)
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
 		unit["intercept_used"] = false
@@ -2429,6 +2451,43 @@ func _hold_line_miss_rows(bodies: Array) -> Array:
 	return rows
 
 
+## Enemies standing in the spell's Chebyshev range band. That band is the
+## Locked Aegis Break burst (card range 1–2, "per body"). invisible_only
+## selects invisible enemies; otherwise visible enemies only.
+func _burst_enemies(actor: Dictionary, def: Dictionary, invisible_only: bool) -> Array:
+	var out: Array = []
+	var origin: Vector2i = actor["pos"]
+	var lo := int(def.get("min_range", 1))
+	var hi := int(def.get("max_range", 2))
+	for y in range(BOARD_SIZE):
+		for x in range(BOARD_SIZE):
+			var cell := Vector2i(x, y)
+			var dist := chebyshev(origin, cell)
+			if dist < lo or dist > hi:
+				continue
+			var unit := _living_unit_at(cell)
+			if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+				continue
+			var invisible := bool(unit.get("invisible", false))
+			if invisible_only == invisible:
+				out.append(unit)
+	return out
+
+
+func _aegis_break_miss_rows(bodies: Array) -> Array:
+	var rows: Array = []
+	for body in bodies:
+		var target: Dictionary = body
+		rows.append({
+			"target_seat": int(target["seat"]),
+			"cell": target["pos"],
+			"hit": false,
+			"damage": 0,
+			"pushed": false,
+		})
+	return rows
+
+
 ## invisible_only selects invisible enemies. Otherwise visible enemies only.
 func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
 	var out: Array = []
@@ -2800,6 +2859,213 @@ func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest
 	return _accept()
 
 
+## Locked v0.6 Aegis Break. One roll for every enemy body in the range band.
+## HIT deals base damage per body, pushes 1, and clears the caster's whole
+## Aegis stack. MISS spends 0 Aegis and does not clear it.
+func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var caster_cell: Vector2i = actor["pos"]
+	if not _burst_enemies(actor, def, true).is_empty():
+		return _reject(intent, "open_can_wait", "REJECT — AoE versus Invisible is open (can-wait).")
+	var bodies: Array = _burst_enemies(actor, def, false)
+	if bodies.is_empty():
+		return _reject(intent, "no_target", "REJECT — %s needs an enemy in the burst (refund)." % def["name"])
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["mp"] = int(actor["mp"]) - mp_cost
+	var chance := hit_chance(dist)
+	var roll := _roll_d100()
+	var connected := roll <= chance
+	_intent_log.append(intent)
+	if not connected:
+		_last_coach = "MISS — Aegis Break (%d vs %d%%). Spends 0 Aegis." % [roll, chance]
+		_last_events.append({
+			"type": "miss",
+			"seat": actor["seat"],
+			"spell": SpellKits.AEGIS_BREAK,
+			"caster_cell": caster_cell,
+			"to": dest,
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost,
+			"mp_spent": mp_cost,
+			"engine_refunded": true,
+			"damage": 0,
+			"bodies": 0,
+			"targets": _aegis_break_miss_rows(bodies),
+			"aegis_spent": 0,
+			"aegis": int(actor.get("aegis", 0)),
+			"stacks_cleared": false,
+			"coach": _last_coach,
+		})
+		return _accept()
+	var cleared := _clear_resource(actor, "aegis")
+	var total := 0
+	var hit_bodies := 0
+	var targets: Array = []
+	var aim_row: Dictionary = {}
+	for body in bodies:
+		var target: Dictionary = body
+		var cell: Vector2i = target["pos"]
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
+		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult)
+		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
+		var damage := int(mitigation["damage"])
+		target["hp"] = maxi(0, int(target["hp"]) - damage)
+		var push_result: Dictionary = {}
+		var burn_info: Dictionary = {}
+		if int(def.get("push_cells", 0)) > 0:
+			push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
+		if bool(push_result.get("burn", false)):
+			burn_info = _apply_burn(target)
+		var row := {
+			"target_seat": int(target["seat"]),
+			"cell": cell,
+			"hit": true,
+			"damage": damage,
+			"facing_mult": facing_mult,
+			"back": is_back,
+		}
+		_stamp_push_fields(row, push_result, burn_info)
+		_stamp_mitigation(row, mitigation)
+		targets.append(row)
+		if aim_row.is_empty() or cell == dest:
+			aim_row = row
+		total += damage
+		hit_bodies += 1
+		_emit_push_followups(actor, target, push_result, burn_info)
+		_emit_immunity_spent(target, mitigation)
+		_check_death(target)
+		if _match_over:
+			break
+	_last_coach = "HIT Aegis Break %d across %d. Aegis cleared (%d)." % [total, hit_bodies, cleared]
+	var hit_event := {
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": SpellKits.AEGIS_BREAK,
+		"caster_cell": caster_cell,
+		"to": dest,
+		"range": dist,
+		"hit_chance": chance,
+		"roll": roll,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"base_damage": int(def.get("base_damage", 26)),
+		"damage": total,
+		"bodies": hit_bodies,
+		"targets": targets,
+		"element": def["element"],
+		"engine": "aegis",
+		"engine_spent": cleared,
+		"aegis_spent": cleared,
+		"aegis": int(actor.get("aegis", 0)),
+		"stacks_cleared": cleared > 0,
+		"coach": _last_coach,
+	}
+	if not aim_row.is_empty():
+		hit_event["target_seat"] = int(aim_row.get("target_seat", -1))
+		hit_event["facing_mult"] = float(aim_row.get("facing_mult", FRONT_SIDE_FACING))
+		hit_event["back"] = bool(aim_row.get("back", false))
+		_copy_push_fields(hit_event, aim_row)
+	_last_events.append(hit_event)
+	return _accept()
+
+
+func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dictionary) -> void:
+	if push_result.is_empty():
+		return
+	row["pushed"] = bool(push_result.get("moved", false))
+	row["push_from"] = push_result.get("from")
+	row["push_to"] = push_result.get("to")
+	row["push_attempted"] = push_result.get("attempted")
+	row["push_blocked"] = bool(push_result.get("blocked", false))
+	row["bounced"] = bool(push_result.get("bounced", false))
+	row["staggered"] = bool(push_result.get("staggered", false))
+	row["burn_applied"] = not burn_info.is_empty()
+
+
+func _copy_push_fields(hit_event: Dictionary, row: Dictionary) -> void:
+	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied"]:
+		if row.has(key):
+			hit_event[key] = row[key]
+
+
+func _emit_push_followups(actor: Dictionary, target: Dictionary, push_result: Dictionary, burn_info: Dictionary) -> void:
+	if push_result.is_empty():
+		return
+	if bool(push_result.get("blocked", false)):
+		_last_events.append({
+			"type": "push_blocked",
+			"locked": "Director Locked Shoulder — occupied dest is hard body-block (push_blocked)",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "Push blocked (occupied). Hard body-block — no bounce, no stagger.",
+		})
+	if bool(push_result.get("bounced", false)):
+		var mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			mp_note = " / %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "push_bounce",
+			"locked": "Director Locked Shoulder — OOB / truly blocked bounce + stagger (+2 Impact)",
+			"seat": actor["seat"],
+			"target_seat": target["seat"],
+			"from": push_result.get("from"),
+			"attempted": push_result.get("attempted"),
+			"to": push_result.get("to"),
+			"reason": str(push_result.get("reason", "")),
+			"staggered": true,
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"coach": "Bounce (%s) + stagger %d HP%s." % [
+				str(push_result.get("reason", "")),
+				int(push_result.get("stagger_hp", 0)),
+				mp_note,
+			],
+		})
+		var stagger_mp_note := ""
+		if int(push_result.get("stagger_mp", 0)) > 0:
+			stagger_mp_note = ", %d MP" % int(push_result.get("stagger_mp", 0))
+		_last_events.append({
+			"type": "stagger",
+			"locked": "Director Locked Shoulder — stagger 4 HP + 1 MP if MP>=1",
+			"target_seat": target["seat"],
+			"hp_delta": int(push_result.get("hp_delta", 0)),
+			"mp_delta": int(push_result.get("mp_delta", 0)),
+			"stagger_hp": int(push_result.get("stagger_hp", 0)),
+			"stagger_mp": int(push_result.get("stagger_mp", 0)),
+			"hp": int(target["hp"]),
+			"mp": int(target["mp"]),
+			"reason": str(push_result.get("reason", "")),
+			"coach": "%s staggers (%d HP%s)." % [
+				target["name"],
+				int(push_result.get("stagger_hp", 0)),
+				stagger_mp_note,
+			],
+		})
+	if not burn_info.is_empty():
+		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
+		if bool(burn_info.get("refreshed", false)):
+			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
+		_last_events.append({
+			"type": "status",
+			"status": "burn",
+			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
+			"duration": BURN_DURATION,
+			"hp_per_tick": BURN_HP,
+			"refreshed": bool(burn_info.get("refreshed", false)),
+			"previous": int(burn_info.get("previous", 0)),
+			"target_seat": target["seat"],
+			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
+			"coach": burn_coach,
+		})
+
+
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	if not _cone_enemies(actor, true).is_empty():
@@ -3144,6 +3410,7 @@ func _blocked_tile_snapshot() -> Array:
 			"y": cell.y,
 			"pos": cell,
 			"turns": int(wall.get("turns", 0)),
+			"owner_seat": int(wall.get("owner_seat", -1)),
 		})
 	return out
 
@@ -3203,17 +3470,6 @@ func _decay_board_durations() -> void:
 		else:
 			_emit_expire("shade", token["pos"], int(token.get("owner_seat", -1)))
 	_shade_tokens = shades
-	var walls: Array = []
-	_snap_wall_cells.clear()
-	for item in _snap_wall_state:
-		var wall: Dictionary = item
-		wall["turns"] = int(wall.get("turns", 0)) - 1
-		if int(wall["turns"]) > 0:
-			walls.append(wall)
-			_snap_wall_cells.append(wall["pos"])
-		else:
-			_emit_expire("wall", wall["pos"], int(wall.get("owner_seat", -1)))
-	_snap_wall_state = walls
 	var plants: Array = []
 	for item in _plant_tiles:
 		var tile: Dictionary = item
@@ -3224,6 +3480,32 @@ func _decay_board_durations() -> void:
 			_emit_expire("plant", tile["pos"], int(tile.get("owner_seat", -1)))
 	_plant_tiles = plants
 	_sync_shade_flags()
+
+
+## Gamedeveloper lock, Phase A. Snap Wall duration is 2 Bastion turn-starts of
+## the owner — the same tick family as Director Locked Burn (the affected
+## unit's turn start). An enemy turn-start does not consume a turn. Do not
+## shorten a fresh wall so it dies after one enemy turn.
+func _tick_snap_walls(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	var seat := int(unit.get("seat", -2))
+	var walls: Array = []
+	_snap_wall_cells.clear()
+	for item in _snap_wall_state:
+		var wall: Dictionary = item
+		var owner := int(wall.get("owner_seat", -1))
+		if owner != seat:
+			walls.append(wall)
+			_snap_wall_cells.append(wall["pos"])
+			continue
+		wall["turns"] = int(wall.get("turns", 0)) - 1
+		if int(wall["turns"]) > 0:
+			walls.append(wall)
+			_snap_wall_cells.append(wall["pos"])
+		else:
+			_emit_expire("wall", wall["pos"], owner)
+	_snap_wall_state = walls
 
 
 func _tick_shield(unit: Dictionary) -> void:
