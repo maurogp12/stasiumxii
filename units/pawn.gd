@@ -6,13 +6,17 @@ class_name Pawn
 ## `art/characters/<class>/<class>_<n|e|s|w>.png`. Mirrors are baked into the
 ## files — never set flip_h. Bastion _n/_w are placeholder back views loaded
 ## from those same filenames.
-## Mobile-track chrome. Batch 1 strips (Kestrel/Ironjaw SE/NE) are not in the
-## repo yet. An AnimatedSprite2D child plays only when it has frames for this
-## facing: `walk_se` / `walk_ne` (and `attack_se` / `attack_ne`), then
-## `walk_<n|e|s|w>` / `attack_<n|e|s|w>`, then generic `walk` / `attack`.
+## Mobile-track chrome. Batch 1 strips load from
+## `art/export_2x/characters/<class>/anims/` when the files exist
+## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
+## (SE→e, SW→s, NE→n, NW→w). A drawn master name (`walk_se`, `attack_ne`)
+## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
+## A resolved walk strip loops at authored fps for the whole path and skips
+## the hop arc. Missing strips keep the hop and this static sprite.
 ## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
 ## AnimatedSprite2D is kept as BodyStrip and the static sprite is recreated.
 ## Missing nodes, empty frames, or null textures keep the static sprite.
+## Mirrors are baked. Never set flip_h.
 ## `debug_draw_tokens` keeps the old circle token as a fallback.
 
 var grid_position: Vector2i = Vector2i.ZERO
@@ -42,8 +46,11 @@ var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
 var _active_strip: AnimatedSprite2D
 var _strip_holds_body: bool = false
+var _path_walk: bool = false
+var _walk_looping: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
+const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -54,11 +61,12 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## One tile hop. The hop tween and a walk strip both read this.
-## The strip is 6 frames at 24 fps, which is 0.25s at speed_scale 1.0.
+## One tile of travel. The hop arc and the pawn position tween both use this.
+## A walk strip does not. It loops at authored fps for the whole path.
 const WALK_HOP_SEC := 0.25
+## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
 const WALK_STRIP_FRAMES := 6
-const WALK_STRIP_FPS := 24.0
+const WALK_STRIP_FPS := 12.0
 const WALK_STRIP_PATH := NodePath("WalkStrip")
 const ATTACK_STRIP_PATH := NodePath("AttackStrip")
 const BODY_STRIP_PATH := NodePath("BodyStrip")
@@ -121,12 +129,17 @@ func motion_playing() -> bool:
 	return _motion_playing
 
 
-## Sprite-local hop. The pawn node stays on the path so feet return to the tile center.
-## Duration is WALK_HOP_SEC, the same clock a walk strip uses.
+## Sprite-local hop when this facing has no walk strip. The pawn node stays on
+## the path. A resolved walk strip loops flat instead (no arc, no squash).
 func play_step_hop() -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_end_body_strip()
 		return
+	if has_walk_strip():
+		_play_walk_flat()
+		return
+	if _walk_looping:
+		_end_body_strip()
 	var gen := _begin_action()
 	_begin_body_strip("walk", WALK_HOP_SEC)
 	var tw := create_tween()
@@ -135,9 +148,38 @@ func play_step_hop() -> void:
 	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
 
 
-## 6 frames authored at WALK_STRIP_FPS. speed_scale 1.0 lasts WALK_HOP_SEC.
+## True when this class and facing can play a walk clip. Missing files are false.
+func has_walk_strip() -> bool:
+	_ensure_motion_strips()
+	return not _strip_choice("walk").is_empty()
+
+
+func has_attack_strip() -> bool:
+	_ensure_motion_strips()
+	return not _strip_choice("attack").is_empty()
+
+
+func has_cast_strip() -> bool:
+	_ensure_motion_strips()
+	return not _strip_choice("cast").is_empty()
+
+
+## Hold the walk loop across tiles. The board calls this once per path.
+func begin_path_walk() -> void:
+	_path_walk = true
+
+
+## Path end or interrupt. Plant the static facing and let idle resume.
+func end_path_walk() -> void:
+	_path_walk = false
+	_kill_action()
+	_motion_playing = false
+	_plant_sprite()
+
+
+## Walk strips play at authored fps. speed_scale 1 does not squeeze a cycle into one tile.
 static func walk_strip_speed_scale() -> float:
-	return strip_speed_scale(WALK_STRIP_FRAMES, WALK_STRIP_FPS, WALK_HOP_SEC)
+	return 1.0
 
 
 ## Fit `frame_count` frames at `fps` into `window_sec`. Empty input stays at 1.
@@ -145,15 +187,6 @@ static func strip_speed_scale(frame_count: int, fps: float, window_sec: float) -
 	if frame_count <= 0 or fps <= 0.0 or window_sec <= 0.0:
 		return 1.0
 	return (float(frame_count) / fps) / window_sec
-
-
-func _apply_walk_strip_timing(strip: AnimatedSprite2D, anim: StringName) -> void:
-	if strip == null or not is_instance_valid(strip) or strip.sprite_frames == null:
-		return
-	var frames := strip.sprite_frames
-	if not frames.has_animation(anim):
-		return
-	strip.speed_scale = strip_speed_scale(frames.get_frame_count(anim), frames.get_animation_speed(anim), WALK_HOP_SEC)
 
 
 func play_view_plan(plan: Dictionary) -> float:
@@ -182,8 +215,9 @@ func play_view_plan(plan: Dictionary) -> float:
 			tw.tween_method(_sample_attack.bind(step.get("dir", Vector2.ZERO), float(step.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX))), 0.0, 1.0, sec)
 			tw.tween_callback(_end_body_strip)
 		elif kind == "cast":
-			tw.tween_callback(_end_body_strip)
+			tw.tween_callback(_begin_body_strip.bind("cast", sec))
 			tw.tween_method(_sample_cast, 0.0, 1.0, sec)
+			tw.tween_callback(_end_body_strip)
 		elif kind == "hit":
 			tw.tween_callback(_end_body_strip)
 			tw.tween_method(_sample_hit.bind(step.get("dir", Vector2.ZERO)), 0.0, 1.0, sec)
@@ -236,9 +270,13 @@ func plant_sprite() -> void:
 	_plant_sprite()
 
 
-## End one path step: drop the arc tween and put the sprite origin back on the pawn.
+## End one path step. A looping walk strip stays up until end_path_walk.
 func finish_step() -> void:
 	_kill_action()
+	if _path_walk and _walk_looping:
+		_motion_playing = true
+		_flatten_body()
+		return
 	_motion_playing = false
 	_plant_sprite()
 
@@ -454,12 +492,17 @@ func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 
 
 func _sample_cast(t: float) -> void:
-	if _sprite == null:
-		return
 	var pose: Dictionary = VIEW_MOTION.cast_pose(t)
-	_sprite.position = pose.get("pos", Vector2.ZERO)
+	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	_ride_chrome(Vector2.ZERO)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.position = pos
+		_sprite.scale = scaled
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = pos
+		_active_strip.scale = scaled
 
 
 func _sample_hit(t: float, dir: Vector2) -> void:
@@ -528,15 +571,16 @@ func _plant_sprite() -> void:
 	_sprite.visible = true
 
 
-## Facing diagonals first (Batch 1 SE/NE), then the cardinal name, then the generic clip.
+## Locked letters first (SE→e, SW→s, NE→n, NW→w), then the drawn-master
+## name (`walk_se` / `attack_ne`), then the generic clip.
 func body_anim_candidates(kind: String) -> Array:
 	var face := facing.strip_edges().to_lower()
 	var diag := str({"n": "ne", "e": "se", "s": "sw", "w": "nw"}.get(face, ""))
 	var names: Array = []
-	if str(diag) != "":
-		names.append("%s_%s" % [kind, diag])
 	if face != "":
 		names.append("%s_%s" % [kind, face])
+	if str(diag) != "":
+		names.append("%s_%s" % [kind, diag])
 	names.append(kind)
 	return names
 
@@ -550,10 +594,10 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	var anim := StringName(str(choice["anim"]))
 	if strip == null or not is_instance_valid(strip):
 		return
-	_prepare_play_once(strip, anim)
 	if kind == "walk":
-		_apply_walk_strip_timing(strip, anim)
+		_prepare_walk_loop(strip, anim)
 	else:
+		_prepare_play_once(strip, anim)
 		var frames := strip.sprite_frames
 		var fps := WALK_STRIP_FPS
 		var count := 1
@@ -576,6 +620,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 
 
 func _end_body_strip() -> void:
+	_walk_looping = false
 	_strip_holds_body = false
 	if _active_strip != null and is_instance_valid(_active_strip):
 		if _active_strip.is_playing():
@@ -631,6 +676,20 @@ func _can_play_anim(strip: AnimatedSprite2D, anim: StringName) -> bool:
 	return false
 
 
+func _prepare_walk_loop(strip: AnimatedSprite2D, anim: StringName) -> void:
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(anim):
+		return
+	if not frames.get_animation_loop(anim):
+		if not bool(strip.get_meta("_chrome_frames_copy", false)):
+			frames = frames.duplicate() as SpriteFrames
+			strip.sprite_frames = frames
+			strip.set_meta("_chrome_frames_copy", true)
+		if frames != null and frames.has_animation(anim):
+			frames.set_animation_loop(anim, true)
+	strip.speed_scale = walk_strip_speed_scale()
+
+
 func _prepare_play_once(strip: AnimatedSprite2D, anim: StringName) -> void:
 	var frames := strip.sprite_frames
 	if frames == null or not frames.has_animation(anim):
@@ -657,6 +716,114 @@ func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
+
+
+## Assign frames built in memory (tests, or a caller that already sliced a sheet).
+func bind_motion_frames(frames: SpriteFrames) -> void:
+	_ensure_visuals()
+	var strip := get_node_or_null(BODY_STRIP_PATH) as AnimatedSprite2D
+	if strip == null:
+		strip = AnimatedSprite2D.new()
+		strip.name = "BodyStrip"
+		add_child(strip)
+	strip.sprite_frames = frames
+	strip.set_meta("_from_strip_library", false)
+	if strip.has_meta("_chrome_frames_copy"):
+		strip.remove_meta("_chrome_frames_copy")
+	strip.visible = false
+	strip.flip_h = false
+	_prepare_strip_pose(strip)
+
+
+func _ensure_motion_strips() -> void:
+	if class_id == "":
+		return
+	var frames := STRIP_LIBRARY.frames_for(class_id)
+	var existing := get_node_or_null(BODY_STRIP_PATH) as AnimatedSprite2D
+	if existing != null and existing.sprite_frames != null:
+		if not bool(existing.get_meta("_from_strip_library", false)):
+			return
+		if bool(existing.get_meta("_chrome_frames_copy", false)):
+			return
+		if frames == null or existing.sprite_frames == frames:
+			return
+	if frames == null:
+		return
+	var strip := existing
+	if strip == null:
+		strip = AnimatedSprite2D.new()
+		strip.name = "BodyStrip"
+		add_child(strip)
+	strip.sprite_frames = frames
+	strip.set_meta("_from_strip_library", true)
+	if strip.has_meta("_chrome_frames_copy"):
+		strip.remove_meta("_chrome_frames_copy")
+	if not _strip_holds_body or _active_strip != strip:
+		strip.visible = false
+	strip.flip_h = false
+
+
+func _play_walk_flat() -> void:
+	_ensure_visuals()
+	_stop_idle()
+	var choice := _strip_choice("walk")
+	if choice.is_empty():
+		return
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return
+	var continuing := (
+		_walk_looping
+		and _active_strip == strip
+		and strip.visible
+		and strip.animation == anim
+		and strip.is_playing()
+	)
+	if continuing:
+		_motion_playing = true
+		_flatten_body()
+		return
+	_kill_action()
+	_end_body_strip()
+	_prepare_walk_loop(strip, anim)
+	_prepare_strip_pose(strip)
+	strip.visible = true
+	strip.play(anim)
+	if not strip.is_playing():
+		strip.visible = false
+		return
+	_active_strip = strip
+	_strip_holds_body = true
+	_walk_looping = true
+	_motion_playing = true
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.modulate = _sprite.modulate
+		_sprite.visible = false
+	_flatten_body()
+	if _path_walk:
+		return
+	var gen := _motion_gen
+	var tw := create_tween()
+	_action_tween = tw
+	tw.tween_interval(WALK_HOP_SEC)
+	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
+
+
+func _flatten_body() -> void:
+	_ride_chrome(Vector2.ZERO)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.position = Vector2.ZERO
+		_sprite.scale = SPRITE_SCALE
+		_sprite.rotation = 0.0
+		_sprite.flip_h = false
+		if _walk_looping:
+			_sprite.visible = false
+	if _walk_looping and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = Vector2.ZERO
+		_active_strip.scale = SPRITE_SCALE
+		_active_strip.rotation = 0.0
+		_active_strip.flip_h = false
 
 
 func _hide_body_strips() -> void:

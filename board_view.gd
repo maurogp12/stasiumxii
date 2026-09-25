@@ -825,18 +825,23 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
-	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
+	# One awaited step per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
-	# before the first hop, or a refresh snaps it and the walk reads as a teleport.
-	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
-	# The step arc lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	# before the first step, or a refresh snaps it and the walk reads as a teleport.
+	# Locked: facing follows each step so the pointer matches CombatSim last-hop facing.
+	# Position tween is Pawn.WALK_HOP_SEC. A walk strip loops once for the whole path
+	# and skips the hop arc. Missing strips keep the per-tile hop.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
 	pawn.hold_idle()
+	pawn.begin_path_walk()
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
+			if pawn != null and is_instance_valid(pawn):
+				pawn.end_path_walk()
+				pawn.release_idle()
 			return
 		var cell: Vector2i = _as_cell(step)
 		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
@@ -844,15 +849,21 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		pawn.set_facing(dir)
 		_stop_walk_tween()
+		var flat_walk := pawn.has_walk_strip()
 		pawn.play_step_hop()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(true)
-		# Slow off the tile and into the landing so the crest reads as a hop.
-		_walk_tween.set_trans(Tween.TRANS_QUAD)
-		_walk_tween.set_ease(Tween.EASE_IN_OUT)
+		if flat_walk:
+			_walk_tween.set_trans(Tween.TRANS_LINEAR)
+		else:
+			# Slow off the tile and into the landing so the crest reads as a hop.
+			_walk_tween.set_trans(Tween.TRANS_QUAD)
+			_walk_tween.set_ease(Tween.EASE_IN_OUT)
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
 		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
 		await _walk_tween.finished
+		if pawn == null or not is_instance_valid(pawn):
+			return
 		pawn.position = _cell_to_local(cell)
 		pawn.finish_step()
 		_set_pawn_cell(pawn, cell)
@@ -860,6 +871,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		if STEP_PAUSE_SEC > 0.0:
 			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
 	if pawn != null and is_instance_valid(pawn):
+		pawn.end_path_walk()
 		pawn.release_idle()
 
 

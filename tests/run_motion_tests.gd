@@ -20,6 +20,7 @@ func _initialize() -> void:
 func _finish_live() -> void:
 	await _test_live_tree()
 	await _test_strip_fallback()
+	await _test_batch1_disk_strips()
 	await _test_shade_markers_survive_rebuild()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
@@ -37,6 +38,7 @@ func _run() -> void:
 	_test_pawn_samples_then_plants()
 	_test_reduce_motion_skips()
 	_test_view_wiring()
+	_test_strip_library_missing_and_slice()
 
 
 func _test_tunables_and_budget() -> void:
@@ -49,9 +51,12 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.IDLE_PERIOD >= 1.6 and MOTION.IDLE_PERIOD <= 2.2, true, "idle period is a slow breathe")
 	eq(MOTION.IDLE_BOB_PX >= 1.0 and MOTION.IDLE_BOB_PX <= 2.0, true, "idle bob is 1-2px")
 	eq(MOTION.HOP_PX >= 32.0 and MOTION.HOP_PX <= 40.0, true, "step arc clears one iso tile so a phone can read the hop")
-	eq(Pawn.WALK_HOP_SEC, 0.25, "per-tile hop is 0.25s")
-	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), 1.0), true, "a 6-frame 24fps strip matches the hop at speed_scale 1")
-	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer strip speeds up to the same hop")
+	eq(Pawn.WALK_HOP_SEC, 0.25, "per-tile travel is 0.25s")
+	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), 1.0), true, "walk strips loop at authored fps (speed_scale 1)")
+	eq(is_equal_approx(Pawn.WALK_STRIP_FPS, 12.0), true, "walk strips are authored at 12 fps")
+	eq(Pawn.WALK_STRIP_FRAMES, 6, "walk strips are 6 frames")
+	eq(float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS > Pawn.WALK_HOP_SEC, true, "one walk cycle is longer than a single tile")
+	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer one-shot still fits the hop window")
 	eq(Pawn.strip_speed_scale(0, 24.0, Pawn.WALK_HOP_SEC), 1.0, "an empty strip does not divide by zero")
 	eq(is_equal_approx(MOTION.ATTACK_LUNGE_PX, 6.0), true, "lunge is about 6px")
 	eq(MOTION.HIT_KNOCK_PX >= 4.0 and MOTION.HIT_KNOCK_PX <= 6.0, true, "knockback is 4-6px")
@@ -445,7 +450,13 @@ func _test_view_wiring() -> void:
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	truthy(pawn_src.contains("const WALK_HOP_SEC := 0.25"), "the hop constant is 0.25s on the pawn")
 	truthy(pawn_src.contains("WALK_HOP_SEC)"), "the hop tween reads WALK_HOP_SEC")
-	truthy(pawn_src.contains("walk_strip_speed_scale"), "a future walk strip reads the same hop length")
+	truthy(pawn_src.contains("walk_strip_speed_scale"), "walk playback exposes authored speed_scale")
+	truthy(pawn_src.contains("has_walk_strip"), "pawn knows when the facing has a walk strip")
+	truthy(pawn_src.contains("has_attack_strip"), "pawn knows when the facing has an attack strip")
+	truthy(pawn_src.contains("begin_path_walk"), "a path can hold the walk loop")
+	truthy(view.contains("begin_path_walk"), "the board starts the walk loop once")
+	truthy(view.contains("end_path_walk"), "the board stops the walk loop at the end")
+	truthy(view.contains("has_walk_strip"), "the board skips the hop when a walk strip resolves")
 	truthy(view.contains("finish_step"), "each step plants the sprite")
 	truthy(view.contains("_track_step_sort"), "hops retarget z while moving")
 	truthy(view.contains("ACTION_LOCK_MAX"), "the action lock uses the shared budget")
@@ -488,9 +499,10 @@ func _test_view_wiring() -> void:
 	truthy(anim_src.contains("play_step_hop"), "each path cell plays the sprite hop")
 	truthy(anim_src.contains("origin"), "the hop starts on the departure tile, not the snapped dest")
 	truthy(pawn_src.contains("WalkStrip"), "a walk strip node can drive the hop")
-	truthy(pawn_src.contains("walk_se"), "SE walk frames are the Batch 1 clip name")
-	truthy(pawn_src.contains("attack_ne"), "NE attack frames are the Batch 1 clip name")
-	truthy(pawn_src.contains("strip_speed_scale"), "strip timing follows the hop or lunge window")
+	truthy(pawn_src.contains("walk_e"), "lettered walk_e is the export_2x clip name")
+	truthy(pawn_src.contains("walk_se"), "a drawn-master walk_se still resolves")
+	truthy(pawn_src.contains("attack_ne"), "a drawn-master attack_ne still resolves")
+	truthy(pawn_src.contains("strip_speed_scale"), "attack and cast strips still fit their motion window")
 
 
 func _test_shade_markers_survive_rebuild() -> void:
@@ -531,13 +543,18 @@ func _solid_tex() -> Texture2D:
 
 func _strip_frames(anim: String, count: int, fps: float) -> SpriteFrames:
 	var frames := SpriteFrames.new()
-	frames.add_animation(anim)
+	_add_anim(frames, anim, count, fps)
+	return frames
+
+
+func _add_anim(frames: SpriteFrames, anim: String, count: int, fps: float) -> void:
+	if not frames.has_animation(anim):
+		frames.add_animation(anim)
 	frames.set_animation_speed(anim, fps)
 	frames.set_animation_loop(anim, true)
 	var tex := _solid_tex()
 	for _i in count:
 		frames.add_frame(anim, tex)
-	return frames
 
 
 func _test_strip_fallback() -> void:
@@ -548,7 +565,8 @@ func _test_strip_fallback() -> void:
 	stand_in.name = "Sprite"
 	stand_in.sprite_frames = null
 	pawn.add_child(stand_in)
-	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	# Mender has no Batch-1 strips, so this still proves the empty-frame hop.
+	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "a strip standing in for Sprite does not replace the static body")
 	truthy(sprite.texture != null, "missing strip frames keep the facing texture")
@@ -577,25 +595,57 @@ func _test_strip_fallback() -> void:
 	await process_frame
 	var walk := AnimatedSprite2D.new()
 	walk.name = "KestrelSE"
-	walk.sprite_frames = _strip_frames("walk_se", 6, 24.0)
+	walk.sprite_frames = _strip_frames("walk_se", 6, 12.0)
+	_add_anim(walk.sprite_frames, "walk_ne", 6, 12.0)
 	pawn.add_child(walk)
+	eq(pawn.has_walk_strip(), true, "synthetic SE frames count as a walk strip")
+	eq(pawn.has_attack_strip(), false, "a walk clip is not an attack strip")
+	pawn.begin_path_walk()
 	pawn.play_step_hop()
 	await process_frame
-	eq(walk.visible, true, "SE walk frames play during the hop")
-	eq(String(walk.animation), "walk_se", "the hop plays the SE clip for an east facing")
-	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the SE hop strip matches the 0.25s hop")
+	eq(walk.visible, true, "SE walk frames play for the path")
+	eq(String(walk.animation), "walk_se", "east facing plays the SE walk clip")
+	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the walk loop stays at authored speed_scale 1")
+	var squeezed := Pawn.strip_speed_scale(6, 12.0, Pawn.WALK_HOP_SEC)
+	eq(is_equal_approx(walk.speed_scale, squeezed), false, "the walk loop is not squeezed into one tile")
+	eq(walk.sprite_frames.get_animation_loop("walk_se"), true, "the walk clip loops")
 	eq(sprite.visible, false, "the static sprite steps aside while the strip plays")
+	eq(sprite.position, Vector2.ZERO, "a walk strip does not hop")
+	eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "a walk strip does not bounce the name")
 	eq(walk.offset, Vector2(0, -72), "the strip uses the shipped foot pivot")
-	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
-	eq(sprite.visible, true, "the static sprite returns when the hop ends")
-	eq(walk.visible, false, "the walk strip hides after the hop")
+	eq(walk.flip_h, false, "walk playback does not mirror")
+	walk.frame = 3
+	pawn.finish_step()
+	eq(walk.visible, true, "finish_step keeps the walk loop during a path")
+	eq(walk.frame, 3, "finish_step does not restart the walk cycle")
+	pawn.play_step_hop()
+	eq(walk.frame, 3, "the next tile continues the walk loop")
+	eq(sprite.position, Vector2.ZERO, "the continued walk stays planted")
+	pawn.set_facing("N")
+	pawn.play_step_hop()
+	eq(String(walk.animation), "walk_ne", "a new direction snaps the walk clip")
+	eq(sprite.position, Vector2.ZERO, "the snapped walk stays flat")
+	pawn.end_path_walk()
+	eq(sprite.visible, true, "path end plants the static sprite")
+	eq(walk.visible, false, "path end hides the walk strip")
 	eq(sprite.texture != null, true, "the facing texture is still on the sprite")
-	eq(sprite.position, Vector2.ZERO, "the hop still plants the feet")
-	pawn.facing = "N"
+	eq(sprite.position, Vector2.ZERO, "path end plants the feet")
+	pawn.set_facing("E")
 	pawn.play_step_hop()
 	await process_frame
-	eq(walk.visible, false, "east-only frames do not play for a north facing")
+	eq(walk.visible, true, "a lone step still plays the walk strip")
+	eq(sprite.position, Vector2.ZERO, "a lone walk step does not hop")
+	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
+	eq(sprite.visible, true, "a lone walk step returns to the static sprite")
+	eq(walk.visible, false, "a lone walk step hides the strip when it ends")
+	eq(sprite.position, Vector2.ZERO, "a lone walk step plants the feet")
+	pawn.set_facing("W")
+	pawn.play_step_hop()
+	await process_frame
+	eq(walk.visible, false, "a facing with no frames does not play the strip")
 	eq(sprite.visible, true, "a facing with no frames keeps the static sprite")
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
+	eq(sprite.position.y < -1.0, true, "missing walk strip still hops")
 	pawn.settle_motion()
 	walk.queue_free()
 	await process_frame
@@ -611,6 +661,7 @@ func _test_strip_fallback() -> void:
 	eq(String(attack.animation), "attack_ne", "the lunge plays the NE attack clip")
 	var expect := Pawn.strip_speed_scale(6, 24.0, MOTION.attack_sec())
 	eq(is_equal_approx(attack.speed_scale, expect), true, "the attack strip fits the lunge window")
+	eq(attack.sprite_frames.get_animation_loop("attack_ne"), false, "the attack strip plays one-shot")
 	eq(sprite.visible, false, "the static sprite steps aside during the attack strip")
 	await create_timer(0.12).timeout
 	eq(sprite.position.length() > 2.0, true, "the lunge still moves the body while the strip plays")
@@ -623,7 +674,199 @@ func _test_strip_fallback() -> void:
 	eq(is_equal_approx(miss_dur, dur), true, "a miss lunge lasts as long as a hit lunge")
 	eq(attack.visible, true, "a miss plays the same attack strip as a hit")
 	pawn.settle_motion()
+	pawn.facing = "N"
+	var cast_strip := AnimatedSprite2D.new()
+	cast_strip.name = "CastStrip"
+	cast_strip.sprite_frames = _strip_frames("cast_ne", 4, 12.0)
+	pawn.add_child(cast_strip)
+	eq(pawn.has_cast_strip(), true, "synthetic NE cast frames resolve")
+	var cast_dur := pawn.play_view_plan({"cast": true})
+	await process_frame
+	await process_frame
+	eq(cast_dur > 0.0 and cast_dur <= 0.6, true, "cast with a strip still reports the wind-up")
+	eq(cast_strip.visible, true, "cast strip plays during the rise")
+	eq(String(cast_strip.animation), "cast_ne", "north cast plays the NE clip")
+	var lifted: float = minf(sprite.position.y, cast_strip.position.y)
+	eq(lifted < -0.5, true, "cast rise still lifts the body")
+	pawn.settle_motion()
+	eq(cast_strip.visible, false, "settle hides the cast strip")
+	eq(sprite.visible, true, "settle restores the static sprite after cast")
 	pawn.free()
+
+
+func _test_strip_library_missing_and_slice() -> void:
+	var paths: Array[String] = StripLibrary.batch1_png_paths()
+	eq(paths.size(), 16, "batch 1 is two classes, walk and attack, four letters")
+	eq(StripLibrary.export_png_path("kestrel", "walk", "e"), "res://art/export_2x/characters/kestrel/anims/kestrel_walk_e.png", "kestrel east walk is the export_2x path")
+	eq(StripLibrary.export_png_path("ironjaw", "attack", "w"), "res://art/export_2x/characters/ironjaw/anims/ironjaw_attack_w.png", "ironjaw west attack is the export_2x path")
+	eq(StripLibrary.export_frames_path("kestrel"), "res://art/export_2x/characters/kestrel/kestrel_frames.tres", "frames tres sits beside the class folder")
+	eq(paths.has(StripLibrary.grok_png_path("kestrel", "walk", "se")), false, "batch-1 list is export_2x, not grok masters")
+	for path in paths:
+		eq(FileAccess.file_exists(path), true, "batch-1 png is in the repo: %s" % path)
+		var loaded := StripLibrary.try_load(path)
+		truthy(loaded is Texture2D, "batch-1 png loads: %s" % path)
+		eq((loaded as Texture2D).get_width(), 864, "strip width is 6 cells: %s" % path)
+		eq((loaded as Texture2D).get_height(), 160, "strip height is one cell: %s" % path)
+	for cls in ["kestrel", "ironjaw"]:
+		var bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
+		truthy(bank != null, "%s frames tres loads" % cls)
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			var attack_name := "attack_%s" % face
+			eq(bank.get_frame_count(walk_name), 6, "%s %s has 6 frames" % [cls, walk_name])
+			eq(bank.get_animation_loop(walk_name), true, "%s %s loops" % [cls, walk_name])
+			eq(is_equal_approx(bank.get_animation_speed(walk_name), 12.0), true, "%s %s is 12 fps" % [cls, walk_name])
+			eq(bank.get_frame_count(attack_name), 6, "%s %s has 6 frames" % [cls, attack_name])
+			eq(bank.get_animation_loop(attack_name), false, "%s %s is one-shot" % [cls, attack_name])
+			eq(is_equal_approx(bank.get_animation_speed(attack_name), 12.0), true, "%s %s is 12 fps" % [cls, attack_name])
+			var impact := bank.get_frame_texture(attack_name, StripLibrary.ATTACK_IMPACT_FRAME) as AtlasTexture
+			eq(is_equal_approx(impact.region.position.x, 432.0), true, "%s %s impact is cell 3" % [cls, attack_name])
+	var kestrel_bank := StripLibrary.frames_for("kestrel")
+	var ironjaw_bank := StripLibrary.frames_for("ironjaw")
+	truthy(kestrel_bank != null, "kestrel strip bank loads from export_2x")
+	truthy(ironjaw_bank != null, "ironjaw strip bank loads from export_2x")
+	eq(kestrel_bank, StripLibrary.frames_for("kestrel"), "kestrel bank is cached")
+	eq(kestrel_bank.get_animation_loop("walk_e"), true, "loaded kestrel walk loops")
+	eq(ironjaw_bank.get_animation_loop("attack_w"), false, "loaded ironjaw attack is one-shot")
+	eq(StripLibrary.frames_for("gloam") == null, true, "batch-2 classes stay empty until their files land")
+	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
+	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
+	eq(StripLibrary.try_load(StripLibrary.grok_png_path("kestrel", "walk", "se")) == null, true, "missing grok master returns null")
+	eq(StripLibrary.letter_for_sheet("se"), "e", "SE maps to e")
+	eq(StripLibrary.letter_for_sheet("sw"), "s", "SW maps to s")
+	eq(StripLibrary.letter_for_sheet("ne"), "n", "NE maps to n")
+	eq(StripLibrary.letter_for_sheet("nw"), "w", "NW maps to w")
+	eq(StripLibrary.ATTACK_IMPACT_FRAME, 3, "attack impact is frame 3")
+	var image := Image.create(48, 8, false, Image.FORMAT_RGBA8)
+	for i in 6:
+		image.fill_rect(Rect2i(i * 8, 0, 8, 8), Color(float(i) / 5.0, 0.4, 0.2, 1.0))
+	var tex := ImageTexture.create_from_image(image)
+	var frames := StripLibrary.frames_from_texture(tex, "walk", "se", 6, 12.0, true)
+	eq(frames.get_frame_count("walk_e"), 6, "SE walk stores as walk_e")
+	eq(frames.has_animation("walk_se"), false, "SE walk is not stored as walk_se")
+	eq(frames.has_animation("walk_s"), false, "SE walk does not fill south")
+	eq(is_equal_approx(frames.get_animation_speed("walk_e"), 12.0), true, "SE walk is authored at 12 fps")
+	eq(frames.get_animation_loop("walk_e"), true, "SE walk loops")
+	var cell := frames.get_frame_texture("walk_e", 2) as AtlasTexture
+	eq(is_equal_approx(cell.region.position.x, 16.0), true, "frame 2 is the third cell of the strip")
+	var south := StripLibrary.frames_from_texture(tex, "walk", "sw", 6, 12.0, true)
+	eq(south.has_animation("walk_s"), true, "SW walk stores as walk_s")
+	var attack := StripLibrary.frames_from_texture(tex, "attack", "ne", 6, 12.0, false)
+	eq(attack.has_animation("attack_n"), true, "NE attack stores as attack_n")
+	eq(attack.has_animation("attack_ne"), false, "NE attack is not stored as attack_ne")
+	eq(attack.get_animation_loop("attack_n"), false, "attack sheets are one-shot")
+	eq(attack.has_animation("attack_w"), false, "NE attack does not fill west")
+	var shipped := Pawn.new()
+	get_root().add_child(shipped)
+	shipped.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	for face in ["E", "S", "N", "W"]:
+		shipped.set_facing(face)
+		eq(shipped.has_walk_strip(), true, "shipped kestrel %s has a walk strip" % face)
+		eq(shipped.has_attack_strip(), true, "shipped kestrel %s has an attack strip" % face)
+	eq(shipped.has_cast_strip(), false, "kestrel has no cast strip")
+	shipped.free()
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
+	eq(pawn.has_walk_strip(), false, "mender without files has no walk strip")
+	eq(pawn.has_attack_strip(), false, "mender without files has no attack strip")
+	eq(pawn.has_cast_strip(), false, "mender without files has no cast strip")
+	pawn.bind_motion_frames(frames)
+	eq(pawn.has_walk_strip(), true, "bound SE frames resolve for an east facing")
+	eq(str(pawn._strip_choice("walk").get("anim", "")), "walk_e", "east plays walk_e")
+	pawn.set_facing("S")
+	eq(pawn.has_walk_strip(), false, "south does not use the SE sheet")
+	pawn.set_facing("N")
+	eq(pawn.has_walk_strip(), false, "north does not use the SE sheet")
+	var both := SpriteFrames.new()
+	_add_anim(both, "walk_e", 4, 12.0)
+	_add_anim(both, "walk_se", 4, 12.0)
+	pawn.bind_motion_frames(both)
+	pawn.set_facing("E")
+	eq(str(pawn._strip_choice("walk").get("anim", "")), "walk_e", "east prefers walk_e over walk_se")
+	pawn.bind_motion_frames(south)
+	pawn.set_facing("S")
+	eq(pawn.has_walk_strip(), true, "SW frames resolve for a south facing")
+	var readme := FileAccess.get_file_as_string("res://art/export_2x/characters/README.md")
+	truthy(readme.contains("kestrel_walk_{e,s,n,w}.png"), "README lists the kestrel lettered walks")
+	truthy(readme.contains("ironjaw_attack_{e,s,n,w}.png"), "README lists the ironjaw lettered attacks")
+	truthy(readme.contains("kestrel_frames.tres"), "README lists the frames tres")
+	truthy(readme.contains("art/grok_project/anims/"), "README keeps grok masters as fallback only")
+	pawn.free()
+
+
+func _test_batch1_disk_strips() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	pawn.begin_path_walk()
+	pawn.play_step_hop()
+	await process_frame
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "kestrel walk shows the export strip")
+	eq(String(strip.animation), "walk_e", "kestrel east plays walk_e")
+	eq(strip.sprite_frames.get_animation_loop("walk_e"), true, "disk walk loops")
+	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk walk stays at authored speed")
+	eq(sprite.visible, false, "static sprite steps aside for the disk walk")
+	eq(sprite.position, Vector2.ZERO, "disk walk does not hop")
+	eq(strip.offset, Vector2(0, -72), "disk strip uses the foot pivot")
+	eq(strip.scale, Vector2(0.5, 0.5), "disk strip uses the shipped scale")
+	eq(strip.flip_h, false, "disk strip is not mirrored at runtime")
+	strip.frame = 4
+	pawn.finish_step()
+	pawn.play_step_hop()
+	eq(strip.frame, 4, "the path does not restart the disk walk")
+	pawn.set_facing("W")
+	pawn.play_step_hop()
+	eq(String(strip.animation), "walk_w", "west plays the baked mirror as walk_w")
+	eq(sprite.position, Vector2.ZERO, "the facing snap stays flat")
+	pawn.end_path_walk()
+	eq(sprite.visible, true, "path end restores the static kestrel")
+	pawn.set_facing("E")
+	var dur := pawn.play_view_plan({"attack": true, "aim": Vector2(32, 16)})
+	await process_frame
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "kestrel attack shows the export strip")
+	eq(String(strip.animation), "attack_e", "kestrel east plays attack_e")
+	eq(strip.sprite_frames.get_animation_loop("attack_e"), false, "disk attack is one-shot")
+	eq(dur > 0.0 and dur <= 0.6, true, "disk attack still fits the action lock")
+	await create_timer(0.12).timeout
+	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
+	pawn.settle_motion()
+	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
+	pawn.free()
+	var jaw := Pawn.new()
+	get_root().add_child(jaw)
+	await process_frame
+	jaw.apply_snapshot(_unit("ironjaw", "N", 1), 1)
+	jaw.begin_path_walk()
+	jaw.play_step_hop()
+	await process_frame
+	var jaw_strip := _visible_strip(jaw)
+	truthy(jaw_strip != null, "ironjaw walk shows the export strip")
+	eq(String(jaw_strip.animation), "walk_n", "ironjaw north plays walk_n")
+	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "ironjaw walk does not hop")
+	jaw.end_path_walk()
+	jaw.free()
+	var other := Pawn.new()
+	get_root().add_child(other)
+	await process_frame
+	other.apply_snapshot(_unit("gloam", "E", 0), 0)
+	eq(other.has_walk_strip(), false, "gloam still has no walk strip")
+	other.play_step_hop()
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
+	eq((other.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a class without strips still hops")
+	other.settle_motion()
+	other.free()
+
+
+func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
+	for child in pawn.get_children():
+		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
+			return child as AnimatedSprite2D
+	return null
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

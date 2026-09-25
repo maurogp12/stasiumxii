@@ -3,8 +3,9 @@ class_name ViewMotion
 
 ## View-only motion tunables. CombatSim never reads this file.
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
-## Batch 1 walk/attack strips (Kestrel and Ironjaw, SE/NE) are not shipped yet.
-## Until those frames exist, pawns keep static facing sprites plus these tweens.
+## Batch 1 walk/attack strips load from art/export_2x/characters when the
+## files exist (SE→e, SW→s, NE→n, NW→w). A resolved walk strip replaces the
+## hop arc below; missing strips keep the hop and the static facing.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Flip REDUCE_MOTION to true to skip idle, hop arc, lunge, wind-up,
