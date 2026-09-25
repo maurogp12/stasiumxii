@@ -20,7 +20,7 @@ Combat rules, kits, hit bands, maps, and the PC HUD are untouched.
 | --- | --- |
 | Package id | `com.maurogp12.stasiumxii.mobile` |
 | Launcher name | `STASIUM XII` |
-| Version | name `0.1.5-mobile`, code `6` |
+| Version | name `0.1.6-mobile`, code `7` |
 | Format | APK (`gradle_build/export_format=0`) |
 | ABI | `arm64-v8a` only |
 | Min / target SDK | blank in the preset. The debug APK below resolved to min SDK 24 and target SDK 36 |
@@ -49,7 +49,7 @@ Exit code 0. Godot aligned the APK, signed it, and printed `Verifying APK...` th
 | Check | Result |
 | --- | --- |
 | Package | `com.maurogp12.stasiumxii.mobile` |
-| Version | name `0.1.5-mobile`, code `6` |
+| Version | name `0.1.6-mobile`, code `7` |
 | Debuggable | true |
 | ABI | `arm64-v8a` only (`libgodot_android.so`) |
 | Permission | `android.permission.INTERNET` only |
@@ -58,8 +58,8 @@ Exit code 0. Godot aligned the APK, signed it, and printed `Verifying APK...` th
 | Vulkan features | declared, `required=false` |
 | Renderer metadata | `org.godotengine.rendering.method=mobile` |
 | Packed main scene | `res://scenes/mobile_hub.tscn` |
-| Size | 36312616 bytes |
-| SHA-256 | `af46aefafb3c5fe5c06cabefdcfa082039de3d2bf738f9b680eec3abb1b0d4f6` |
+| Size | 36337823 bytes |
+| SHA-256 | `90903532d860e1aa39aa4afb0e6cd3b7d3598273e20ab4230b5b188fbd405e31` |
 
 `/builds/` is gitignored, so the APK is not in the commit. The sideload file is the cloud-agent artifact `stasiumxii-mobile-debug.apk` (same bytes). Godot also wrote `builds/android/stasiumxii-mobile-debug.apk.idsig` next to the APK. That idsig is not required to sideload.
 
