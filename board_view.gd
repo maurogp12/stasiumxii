@@ -33,6 +33,9 @@ extends Node2D
 ## The dedicated process does not start the default Kestrel / Ironjaw pair.
 ## It paints when the SELECT_CLASS queue has paired two Locked classes.
 ## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
+## View motions (idle, step arc, lunge, wind-up, recoil, lift, slump) tween the
+## sprite only. Tunables live in ViewMotion. They never pause the host clock.
+## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 
 const BOARD_SIZE: int = 8
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -40,7 +43,7 @@ const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
-const STEP_SEC: float = 0.28
+const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
 
@@ -57,6 +60,11 @@ var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
 var _skip_local_net_echo: bool = false
 var _flash_tweens: Array = []
+var _view_locked: bool = false
+var _pending_motion_sec: float = 0.0
+var _resolve_hold_refresh: bool = false
+var _queued_net: bool = false
+var _queued_net_events: Array = []
 
 
 func _ready() -> void:
@@ -148,17 +156,33 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 		return
 	if _busy:
 		return
-	if _present_resolve(events):
+	if _view_locked:
+		_queued_net_events = events.duplicate()
+		_queued_net = true
+		return
+	var swallowed := _present_resolve(events)
+	if _pending_motion_sec > 0.0:
+		await _await_view_motions()
+	if _resolve_hold_refresh:
+		_resolve_hold_refresh = false
+		_refresh()
+		_maybe_drain_net()
+		return
+	if swallowed:
+		_maybe_drain_net()
 		return
 	if CombatHUD.should_play_walk_hops(events):
 		var path_event := _path_event(events)
 		if not path_event.is_empty():
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			_maybe_drain_net()
 			return
 	_refresh()
 	_hydrate_turn_clock()
 	if _has_turn_change(events) and not _busy:
 		_present_turn_handoff({"events": events, "snapshot": _sim().snapshot()})
+		return
+	_maybe_drain_net()
 
 
 func local_to_grid(point: Vector2) -> Vector2i:
@@ -233,7 +257,7 @@ func _timer_expired(result: Dictionary) -> bool:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _busy:
+	if _busy or _view_locked:
 		return
 	if event.is_action_pressed("ui_cancel"):
 		# Esc returns to Walk. Right-click stays face and is not a cancel.
@@ -321,7 +345,7 @@ func _face_toward(cell: Vector2i) -> void:
 
 
 func _on_spell_selected(_spell_id: String) -> void:
-	if _busy:
+	if _busy or _view_locked:
 		return
 	_paint_highlights()
 	_sync_aim_preview()
@@ -335,6 +359,8 @@ func _return_to_walk() -> void:
 
 
 func _on_face_requested(dir: String) -> void:
+	if _busy or _view_locked:
+		return
 	if CombatHUD.is_deployment_phase(_sim().snapshot()):
 		return
 	if not _can_control_seat(int(_sim().snapshot().get("active_seat", 0))):
@@ -349,7 +375,7 @@ func _on_end_turn_button_pressed() -> void:
 		return
 	if not _can_control_seat(int(_sim().snapshot().get("active_seat", 0))):
 		return
-	if _busy:
+	if _busy or _view_locked:
 		return
 	_busy = true
 	_hud.clear_spell()
@@ -386,6 +412,7 @@ func _present_turn_handoff(result: Dictionary) -> void:
 		_busy = false
 		_refresh()
 		_hydrate_turn_clock(snap)
+		_maybe_drain_net()
 		return
 	# Proposed: client-only ~1.0s seat handoff. Host clock already advanced.
 	# Locked A′: if the sim auto-skipped a stunned seat, present that event first.
@@ -413,6 +440,7 @@ func _present_turn_handoff(result: Dictionary) -> void:
 	_busy = false
 	_refresh()
 	_hydrate_turn_clock()
+	_maybe_drain_net()
 
 
 func _has_turn_change(events: Array) -> bool:
@@ -427,6 +455,10 @@ func _has_turn_change(events: Array) -> bool:
 func _on_new_match() -> void:
 	_stop_flash_tweens()
 	_stop_walk_tween()
+	_settle_motions()
+	_view_locked = false
+	_pending_motion_sec = 0.0
+	_queued_net = false
 	_hud.hide_turn_banner()
 	_hud.set_locked(false)
 	_busy = false
@@ -454,7 +486,7 @@ func _on_new_match() -> void:
 
 
 func _submit(intent: Dictionary) -> void:
-	if _busy:
+	if _busy or _view_locked:
 		return
 	_mark_local_net_echo()
 	var result: Dictionary
@@ -471,36 +503,52 @@ func _submit(intent: Dictionary) -> void:
 			return
 	if result.get("ok", false):
 		var events: Array = result.get("events", [])
-		if _present_resolve(events):
+		var swallowed := _present_resolve(events)
+		if _pending_motion_sec > 0.0:
+			await _await_view_motions()
+		if _resolve_hold_refresh:
+			_resolve_hold_refresh = false
+			_refresh()
+			_maybe_drain_net()
+			return
+		if swallowed:
+			_maybe_drain_net()
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
 			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			_maybe_drain_net()
 			return
 	_refresh()
+	_maybe_drain_net()
 
 
 ## Hot-seat and NetSession both call this. Toasts come from sim events; Burn icons come from the snapshot on refresh.
 ## Returns true when the pawn must not hop (occupied block or bounce).
 func _present_resolve(events: Array) -> bool:
 	_play_combat_feedback(events)
+	_arm_view_motions(events)
+	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
 		_hud.show_toast(CombatHUD.PUSH_BLOCKED_TOAST)
-		_refresh()
-		return true
-	if CombatHUD.events_include_push_bounce(events):
+		swallowed = true
+	elif CombatHUD.events_include_push_bounce(events):
 		# Bounce: unit stayed. The toast is Bounce plus the single sim Impact gain.
 		var bounce_toast := CombatHUD.toast_for_events(events)
 		if not bounce_toast.begins_with(CombatHUD.BOUNCE_TOAST):
 			bounce_toast = CombatHUD.BOUNCE_TOAST
 		_hud.show_toast(bounce_toast)
+		swallowed = true
+	else:
+		var toast := CombatHUD.toast_for_events(events)
+		if toast != "":
+			_hud.show_toast(toast)
+	# Motion plays on the sprite first. Refresh (and the grey dead modulate) follows.
+	if swallowed and _pending_motion_sec <= 0.0:
 		_refresh()
-		return true
-	var toast := CombatHUD.toast_for_events(events)
-	if toast != "":
-		_hud.show_toast(toast)
-	return false
+	_resolve_hold_refresh = swallowed and _pending_motion_sec > 0.0
+	return swallowed
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -516,6 +564,8 @@ func _play_combat_feedback(events: Array) -> void:
 	# Hit flash on the target and Impact flash on the caster. Plays even when push is blocked.
 	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage stays orange.
 	# Kind comes from the event spell id, healed amount, negative damage, or shield fields.
+	# A dying pawn keeps the flash color for the slump; the grey state is applied after.
+	var dying := _dying_seats(events)
 	for event in events:
 		if typeof(event) != TYPE_DICTIONARY:
 			continue
@@ -531,7 +581,8 @@ func _play_combat_feedback(events: Array) -> void:
 					target_pawn.flash_support()
 				_:
 					target_pawn.flash_hit()
-			_tween_pawn_modulate(target_pawn)
+			if not dying.has(target_seat):
+				_tween_pawn_modulate(target_pawn)
 		if int(event.get("engine_gained", 0)) > 0 and str(event.get("engine", "")) == "impact":
 			var caster_seat := int(event.get("seat", -1))
 			if pawns_by_seat.has(caster_seat):
@@ -601,6 +652,8 @@ func _animate_path(seat: int, path: Array) -> void:
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
 	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
+	# The step arc is sprite-local and lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	pawn.hold_idle()
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
 		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
@@ -611,16 +664,22 @@ func _animate_path(seat: int, path: Array) -> void:
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		pawn.set_facing(dir)
 		_stop_walk_tween()
+		pawn.play_step_hop()
 		_walk_tween = create_tween()
-		_walk_tween.set_parallel(false)
+		_walk_tween.set_parallel(true)
 		_walk_tween.set_trans(Tween.TRANS_LINEAR)
 		_walk_tween.set_ease(Tween.EASE_IN_OUT)
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
+		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
+		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
 		await _walk_tween.finished
+		pawn.position = _cell_to_local(cell)
+		pawn.finish_step()
 		_set_pawn_cell(pawn, cell)
 		prev = cell
 		if STEP_PAUSE_SEC > 0.0:
 			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
+	if pawn != null and is_instance_valid(pawn):
+		pawn.release_idle()
 
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
@@ -632,6 +691,154 @@ func _stop_walk_tween() -> void:
 	if _walk_tween != null and is_instance_valid(_walk_tween):
 		_walk_tween.kill()
 	_walk_tween = null
+
+
+func _track_step_sort(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	var src_at := _cell_to_local(src)
+	var dst_at := _cell_to_local(dst)
+	var toward_dst := pawn.position.distance_squared_to(dst_at) <= pawn.position.distance_squared_to(src_at)
+	if t <= 0.001:
+		toward_dst = false
+	var cell := dst if toward_dst else src
+	pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+
+
+func _dying_seats(events: Array) -> Dictionary:
+	var dying := {}
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "dead":
+			dying[int(event.get("seat", -1))] = true
+	return dying
+
+
+func _arm_view_motions(events: Array) -> void:
+	_pending_motion_sec = 0.0
+	if VIEW_MOTION.reduce_motion():
+		return
+	var plans := {}
+	var caster_armed := false
+	var dying := _dying_seats(events)
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var typ := str(event.get("type", ""))
+		var spell_id := str(event.get("spell", ""))
+		if not caster_armed and spell_id != "" and typ in ["cast", "miss", "hit", "snap_wall"]:
+			caster_armed = true
+			var seat := int(event.get("seat", -1))
+			var kind := str(VIEW_MOTION.caster_motion(spell_id))
+			if kind != "" and pawns_by_seat.has(seat):
+				var plan: Dictionary = plans.get(seat, {})
+				if kind == "attack":
+					plan["attack"] = true
+					plan["aim"] = _aim_vector(seat, event)
+				elif not bool(plan.get("attack", false)):
+					plan["cast"] = true
+				plans[seat] = plan
+		if typ != "hit":
+			continue
+		var target := int(event.get("target_seat", -1))
+		if not pawns_by_seat.has(target):
+			continue
+		var react := str(VIEW_MOTION.target_motion(Pawn.resolve_flash_kind(event)))
+		if react == "":
+			continue
+		var plan: Dictionary = plans.get(target, {})
+		if react == "hit":
+			plan["hit"] = true
+			plan["away"] = _away_vector(target, event)
+			plan["delay"] = true
+		elif react == "lift":
+			plan["lift"] = true
+			plan["delay"] = true
+		plans[target] = plan
+	for seat in dying.keys():
+		if not pawns_by_seat.has(int(seat)):
+			continue
+		var plan: Dictionary = plans.get(seat, {})
+		plan["death"] = true
+		plan["tilt"] = -1.0 if int(seat) % 2 == 0 else 1.0
+		plans[seat] = plan
+	var longest := 0.0
+	for seat in plans.keys():
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		longest = maxf(longest, pawn.play_view_plan(plans[seat]))
+	_pending_motion_sec = minf(longest, VIEW_MOTION.ACTION_LOCK_MAX)
+
+
+func _aim_vector(seat: int, event: Dictionary) -> Vector2:
+	var pawn: Pawn = pawns_by_seat[seat]
+	if event.has("to"):
+		var delta := _cell_to_local(_as_cell(event.get("to"))) - pawn.position
+		if delta.length() > 2.0:
+			return delta
+	var target := int(event.get("target_seat", -1))
+	if pawns_by_seat.has(target) and target != seat:
+		var other: Pawn = pawns_by_seat[target]
+		var gap: Vector2 = other.position - pawn.position
+		if gap.length() > 2.0:
+			return gap
+	return pawn.facing_screen()
+
+
+func _away_vector(target_seat: int, event: Dictionary) -> Vector2:
+	var caster := int(event.get("seat", -1))
+	if not pawns_by_seat.has(caster) or not pawns_by_seat.has(target_seat) or caster == target_seat:
+		return Vector2.ZERO
+	var actor: Pawn = pawns_by_seat[caster]
+	var victim: Pawn = pawns_by_seat[target_seat]
+	return victim.position - actor.position
+
+
+func _await_view_motions() -> void:
+	_view_locked = true
+	if _hud != null:
+		_hud.set_locked(true)
+	var started := Time.get_ticks_msec()
+	var budget_ms := int(VIEW_MOTION.ACTION_LOCK_MAX * 1000.0)
+	while Time.get_ticks_msec() - started < budget_ms:
+		if not _motions_active():
+			break
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return
+	if Time.get_ticks_msec() == started:
+		await get_tree().process_frame
+		if not is_inside_tree():
+			return
+	_settle_motions()
+	_pending_motion_sec = 0.0
+	_view_locked = false
+	if _hud != null and not _busy:
+		_hud.set_locked(false)
+
+
+func _motions_active() -> bool:
+	for pawn in pawns_by_seat.values():
+		if pawn != null and is_instance_valid(pawn) and (pawn as Pawn).motion_playing():
+			return true
+	return false
+
+
+func _settle_motions() -> void:
+	for pawn in pawns_by_seat.values():
+		if pawn != null and is_instance_valid(pawn):
+			(pawn as Pawn).settle_motion()
+
+
+func _maybe_drain_net() -> void:
+	if not _queued_net or _busy or _view_locked or not is_inside_tree():
+		return
+	var events: Array = _queued_net_events
+	_queued_net = false
+	_queued_net_events = []
+	_on_net_state(events, {})
 
 
 func _refresh() -> void:
