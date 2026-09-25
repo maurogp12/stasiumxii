@@ -270,13 +270,13 @@ func _test_walk_hops_not_advance() -> void:
 		prev = cell
 	eq(prev, Vector2i(3, 1), "the hops land on the dest")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	var adv: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 7), "seat": 1})
+	var adv: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 7), "seat": 1})
 	eq(bool(adv.get("ok", false)), true, "Advance still resolves")
 	eq(str(_first_type(adv.get("events", []), "advance").get("type", "")), "advance", "Advance emits a teleport event")
 	eq(CombatHUD.should_play_walk_hops(adv.get("events", [])), false, "Advance does not hop")
 	var adv_plans: Dictionary = MOTION.chrome_plans(adv.get("events", []))
 	eq(adv_plans.is_empty(), true, "Advance does not lunge or wind up")
-	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(6, 7), "Advance still snaps to the neighbor")
+	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(5, 7), "Advance still snaps two cardinal tiles")
 
 
 func _test_support_events_do_not_knock() -> void:

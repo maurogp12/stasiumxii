@@ -149,7 +149,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
 	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
-	eq(snap["advance_range"], "cardinal", "Advance range gate is the 4 ortho neighbors")
+	eq(snap["advance_range"], "cardinal_2", "Advance range gate is exactly 2 cardinal spaces")
 	eq(snap["advance_path"], "teleport", "Advance is a dest-click teleport")
 	eq(snap["open_decisions"].has("A02"), false, "A02 walk is Locked, not Open")
 	eq(snap["open_decisions"].has("A01"), false, "A01 Marks-on-target is Locked, not Open")
@@ -1000,62 +1000,62 @@ func _test_advance_stand_on_gates() -> void:
 	truthy(sim_src.contains("_advance_stand_reason"), "Advance validate calls the shared helper")
 	eq(sim_src.contains("Open: Advance onto illegal climb"), false, "Advance climb is no longer Open")
 
-	# Lava dest.
+	# Lava dest at Manhattan 2. The tile between is not a path.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
-		"tiles": [{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0}],
+		"tiles": [{"pos": Vector2i(4, 2), "terrain": "lava", "elevation": 0}],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "not_walkable", "Advance lava dest is not_walkable")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "not_walkable", "Advance lava dest is not_walkable")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], false, "Advance onto lava is rejected")
 	eq(result["illegal"], true, "illegal Advance is refunded")
 	eq(result["reason"], "not_walkable", "lava Advance reason is not_walkable")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "lava Advance leaves Ironjaw put")
 	eq(_unit(1)["ap"], 6, "lava Advance refunds AP")
 	eq(_unit(1)["mp"], 3, "lava Advance spends 0 MP")
-	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit lava Advance")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "not_walkable", "preview_cast reflects lava gate")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit lava Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "not_walkable", "preview_cast reflects lava gate")
 
-	# Occupied dest.
+	# Occupied dest at Manhattan 2.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
-		"kestrel_pos": Vector2i(3, 2),
+		"kestrel_pos": Vector2i(4, 2),
 		"ironjaw_pos": Vector2i(2, 2),
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "destination_occupied", "Advance occupied dest is destination_occupied")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "destination_occupied", "Advance occupied dest is destination_occupied")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["illegal"], true, "occupied Advance is rejected")
 	eq(result["reason"], "destination_occupied", "occupied Advance reason is destination_occupied")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "occupied Advance leaves Ironjaw put")
 	eq(_unit(1)["ap"], 6, "occupied Advance refunds AP")
 	eq(_unit(1)["mp"], 3, "occupied Advance spends 0 MP")
-	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit occupied Advance")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "destination_occupied", "preview_cast reflects occupied gate")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit occupied Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "destination_occupied", "preview_cast reflects occupied gate")
 
-	# Climb > 1 (z0 → z2).
+	# Climb > 1 (z0 → z2) measured from origin to the Manhattan-2 dest.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
-		"tiles": [{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 2}],
+		"tiles": [{"pos": Vector2i(4, 2), "terrain": "ground", "elevation": 2}],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "climb_too_steep", "Advance climb 2 is climb_too_steep")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "climb_too_steep", "Advance climb 2 is climb_too_steep")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["illegal"], true, "climb-2 Advance is rejected")
 	eq(result["reason"], "climb_too_steep", "climb Advance reason is climb_too_steep")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "climb Advance leaves Ironjaw put")
 	eq(_unit(1)["ap"], 6, "climb Advance refunds AP")
 	eq(_unit(1)["mp"], 3, "climb Advance spends 0 MP")
-	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit climb-2 Advance")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "climb_too_steep", "preview_cast reflects climb gate")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit climb-2 Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "climb_too_steep", "preview_cast reflects climb gate")
 
 	# Drop > 2 (z3 → z0).
 	_sim.reset_match({
@@ -1065,35 +1065,39 @@ func _test_advance_stand_on_gates() -> void:
 		"ironjaw_pos": Vector2i(2, 2),
 		"tiles": [
 			{"pos": Vector2i(2, 2), "terrain": "ground", "elevation": 3},
-			{"pos": Vector2i(3, 2), "terrain": "ground", "elevation": 0},
+			{"pos": Vector2i(4, 2), "terrain": "ground", "elevation": 0},
 		],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "drop_too_far", "Advance drop 3 is drop_too_far")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "drop_too_far", "Advance drop 3 is drop_too_far")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["illegal"], true, "drop-3 Advance is rejected")
 	eq(result["reason"], "drop_too_far", "drop Advance reason is drop_too_far")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "drop Advance leaves Ironjaw put")
 	eq(_unit(1)["ap"], 6, "drop Advance refunds AP")
 	eq(_unit(1)["mp"], 3, "drop Advance spends 0 MP")
-	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit drop-3 Advance")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["reason"], "drop_too_far", "preview_cast reflects drop gate")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit drop-3 Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "drop_too_far", "preview_cast reflects drop gate")
 
-	# Legal dest: climb 1 onto mud, 0 MP spent.
+	# Legal dest: climb 1 onto mud, 0 MP spent. Lava on the tile between does not block a snap.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": Vector2i(2, 2),
-		"tiles": [{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 1}],
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(4, 2), "terrain": "mud", "elevation": 1},
+		],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "", "legal Advance dest passes shared stand-on gates")
-	eq(_has_legal_advance_to(1, Vector2i(3, 2)), true, "legal_intents include a legal Advance dest")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["legal"], true, "preview_cast marks a legal dest")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "", "legal Advance dest passes shared stand-on gates")
+	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "out_of_range", "Manhattan 1 between is not an Advance dest")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), true, "legal_intents include a legal Advance dest")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["legal"], true, "preview_cast marks a legal dest")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "legal Advance dest is accepted")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped onto the legal dest")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Advance snapped onto the legal dest")
 	eq(_unit(1)["ap"], 3, "legal Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "legal Advance spends 0 MP (gate only, no mud/climb tax)")
 	eq(result["events"][0]["mp_spent"], 0, "advance event spends 0 MP")
@@ -1225,9 +1229,9 @@ func _test_walk_facing_follows_hops() -> void:
 		"ironjaw_facing": "W",
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "Advance east teleport is legal")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped east")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Advance snapped east")
 	eq(_unit(1)["facing"], "W", "Advance teleport leaves facing unchanged")
 	eq(result["events"][0].has("facing_hops"), false, "Advance event has no hop facing trail")
 
@@ -1497,16 +1501,17 @@ func _test_mark_shot_range_and_marks() -> void:
 
 
 func _test_advance_impact_adjacency() -> void:
+	# Land on (3,0), Chebyshev 1 from Kestrel at (4,0). The hop is Manhattan 2.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
-		"kestrel_pos": Vector2i(3, 0),
+		"kestrel_pos": Vector2i(4, 0),
 		"ironjaw_pos": Vector2i(1, 0),
 	})
 	_sim.submit({"type": "end_turn"})
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
-	eq(result["ok"], true, "Ironjaw Advance one ortho tile with no roll")
-	eq(_unit(1)["pos"], Vector2i(2, 0), "dash landed")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 0)})
+	eq(result["ok"], true, "Ironjaw Advance two cardinal tiles with no roll")
+	eq(_unit(1)["pos"], Vector2i(3, 0), "dash landed")
 	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
 	eq(_unit(1)["impact"], 1, "ending Chebyshev 1 to Kestrel grants Impact")
@@ -1521,7 +1526,7 @@ func _test_advance_impact_adjacency() -> void:
 		"ironjaw_pos": Vector2i(0, 0),
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 0)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
 	eq(_unit(1)["impact"], 0, "Advance far from enemy grants no Impact")
 	eq(_unit(0)["impact"], 0, "Kestrel still has 0 Impact")
 
@@ -1852,15 +1857,17 @@ func _test_handoff_timer_is_client_only() -> void:
 
 
 func _test_advance_teleport_costs() -> void:
-	# Orthogonal neighbor: Chebyshev 1 / Manhattan 1 cardinal. Teleport spends 3 AP / 0 MP.
+	# Exactly 2 cardinal spaces. Teleport spends 3 AP / 0 MP.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
-	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 2)), 1, "Advance ortho neighbor is Manhattan 1")
-	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 2)), 1, "Advance ortho neighbor is Chebyshev 1")
-	eq(_sim.is_cardinal_step(Vector2i(2, 2), Vector2i(3, 2)), true, "east neighbor is a cardinal step")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
-	eq(result["ok"], true, "ortho Advance dest-click is legal")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "Ironjaw snapped east")
+	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(4, 2)), 2, "Advance east dest is Manhattan 2")
+	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(4, 2)), 2, "Advance east dest is Chebyshev 2")
+	eq(_sim.is_advance_cardinal(Vector2i(2, 2), Vector2i(4, 2)), true, "two east is an Advance cardinal")
+	eq(_sim.is_cardinal_step(Vector2i(2, 2), Vector2i(3, 2)), true, "the tile between is still one cardinal step")
+	eq(_sim.is_advance_cardinal(Vector2i(2, 2), Vector2i(3, 2)), false, "Manhattan 1 is not an Advance dest")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
+	eq(result["ok"], true, "cardinal-2 Advance dest-click is legal")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Ironjaw snapped two tiles east")
 	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
 	eq(result["events"][0]["mp_spent"], 0, "advance event spends 0 MP")
@@ -1868,17 +1875,17 @@ func _test_advance_teleport_costs() -> void:
 	eq(result["events"][0]["teleport"], true, "Advance is a teleport snap")
 	eq(result["events"][0].has("path"), false, "Advance event has no hop path")
 	eq(result["events"][0]["rolled"], false, "Advance never rolls")
-	eq(_unit(1)["facing"], "W", "ortho Advance leaves default Face W unchanged")
+	eq(_unit(1)["facing"], "W", "cardinal Advance leaves default Face W unchanged")
 	eq(result["events"][0].has("facing"), false, "Advance event does not auto-face")
 	truthy(str(result["events"][0]["coach"]).contains("3 AP"), "coach names the 3 AP spend")
 	eq(str(result["events"][0]["coach"]).contains("MP"), false, "coach does not mention MP spend")
 
-	# Diagonal (1,1) is Chebyshev 1 / Manhattan 2 — rejected.
+	# Diagonal (1,1) is Chebyshev 1 / Manhattan 2 — rejected (not cardinal).
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim.manhattan(Vector2i(2, 2), Vector2i(3, 3)), 2, "Advance diagonal is Manhattan 2")
 	eq(_sim.chebyshev(Vector2i(2, 2), Vector2i(3, 3)), 1, "Advance diagonal is Chebyshev 1")
-	eq(_sim.is_cardinal_step(Vector2i(2, 2), Vector2i(3, 3)), false, "(1,1) is not a cardinal step")
+	eq(_sim.is_advance_cardinal(Vector2i(2, 2), Vector2i(3, 3)), false, "(1,1) is not an Advance cardinal")
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 3)})
 	eq(result["illegal"], true, "diagonal Advance is rejected")
 	eq(result["reason"], "out_of_range", "diagonal reject is out_of_range")
@@ -1889,14 +1896,14 @@ func _test_advance_teleport_costs() -> void:
 	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 3))["reason"], "out_of_range", "preview_cast rejects a diagonal Advance")
 	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 3))["legal"], false, "preview_cast marks diagonal Advance illegal")
 
-	# Orthogonal Manhattan 2 is outside the 4 neighbors.
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
-	eq(result["illegal"], true, "Manhattan 2 Advance is rejected")
-	eq(result["reason"], "out_of_range", "Manhattan 2 reject is out_of_range, not MP")
-	eq(_unit(1)["pos"], Vector2i(2, 2), "Manhattan 2 Advance does not move Ironjaw")
-	eq(_unit(1)["ap"], 6, "Manhattan 2 Advance refunds AP")
-	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit Manhattan 2 Advance")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["in_range"], false, "preview_cast marks Manhattan 2 out of range")
+	# Orthogonal Manhattan 1 is outside the 2-cardinal gate.
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	eq(result["illegal"], true, "Manhattan 1 Advance is rejected")
+	eq(result["reason"], "out_of_range", "Manhattan 1 reject is out_of_range, not MP")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "Manhattan 1 Advance does not move Ironjaw")
+	eq(_unit(1)["ap"], 6, "Manhattan 1 Advance refunds AP")
+	eq(_has_legal_advance_to(1, Vector2i(3, 2)), false, "legal_intents omit Manhattan 1 Advance")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(3, 2))["in_range"], false, "preview_cast marks Manhattan 1 out of range")
 
 	# Far diagonal stays out of range.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(0, 0)})
@@ -1910,37 +1917,45 @@ func _test_advance_teleport_costs() -> void:
 	eq(_unit(1)["ap"], 6, "out-of-range refunds AP")
 	eq(_unit(1)["mp"], 3, "out-of-range refunds MP")
 
-	# Client path is ignored; teleport snaps to an ortho dest.
+	# Client path is ignored; teleport snaps to the cardinal-2 dest.
 	var forged: Array = [Vector2i(0, 1), Vector2i(1, 0)]
 	result = _sim.submit({
 		"type": "cast",
 		"spell": "advance",
-		"to": Vector2i(1, 0),
+		"to": Vector2i(2, 0),
 		"path": forged,
 	})
 	eq(result["ok"], true, "Advance dest-click still accepted when a client path is supplied")
 	eq(result["events"][0].has("path"), false, "CombatSim does not return a hop path for Advance")
 	eq(result["events"][0]["teleport"], true, "forged client path still resolves as teleport")
-	eq(result["events"][0]["mp_spent"], 0, "ortho dest spends 0 MP")
-	eq(_unit(1)["pos"], Vector2i(1, 0), "Ironjaw ends on the dest-click tile")
+	eq(result["events"][0]["mp_spent"], 0, "cardinal dest spends 0 MP")
+	eq(_unit(1)["pos"], Vector2i(2, 0), "Ironjaw ends on the dest-click tile")
 	eq(_unit(1)["mp"], 3, "MP pool unchanged after teleport")
 
-	# A diagonal past an occupant is out of range. An empty ortho neighbor still lands
+	# A diagonal is out of range. An empty cardinal-2 tile still lands
 	# and grants Impact when that tile is Chebyshev-adjacent to the enemy.
-	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(1, 0), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 1), "ironjaw_pos": Vector2i(0, 0)})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 1)})
 	eq(result["illegal"], true, "diagonal Advance beside an occupant is rejected")
 	eq(result["reason"], "out_of_range", "diagonal beside an occupant is out_of_range")
 	eq(_unit(1)["pos"], Vector2i(0, 0), "rejected diagonal does not move Ironjaw")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(0, 1)})
-	eq(result["ok"], true, "empty ortho Advance is legal beside an occupant")
-	eq(_unit(1)["pos"], Vector2i(0, 1), "Ironjaw snapped to the empty ortho neighbor")
-	eq(_unit(1)["ap"], 3, "ortho Advance still spends 3 AP")
-	eq(_unit(1)["mp"], 3, "ortho Advance spends 0 MP")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(0, 2)})
+	eq(result["ok"], true, "empty cardinal-2 Advance is legal beside an occupant")
+	eq(_unit(1)["pos"], Vector2i(0, 2), "Ironjaw snapped two tiles south")
+	eq(_unit(1)["ap"], 3, "cardinal Advance still spends 3 AP")
+	eq(_unit(1)["mp"], 3, "cardinal Advance spends 0 MP")
+	eq(_sim.chebyshev(Vector2i(0, 2), Vector2i(2, 1)), 2, "this landing is not Chebyshev-adjacent")
+	eq(_unit(1)["impact"], 0, "Chebyshev 2 landing grants no Impact")
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 1), "ironjaw_pos": Vector2i(0, 0)})
+	_sim.submit({"type": "end_turn"})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 0)})
+	eq(result["ok"], true, "east cardinal-2 Advance lands beside Kestrel")
+	eq(_unit(1)["pos"], Vector2i(2, 0), "Ironjaw snapped two tiles east")
+	eq(_sim.chebyshev(Vector2i(2, 0), Vector2i(2, 1)), 1, "landing tile is Chebyshev 1 to Kestrel")
 	eq(_unit(1)["impact"], 1, "landing Chebyshev-adjacent still grants Impact")
 
-	# 0 MP remaining: walk the pool away, then Advance still works on an ortho neighbor.
+	# 0 MP remaining: walk the pool away, then Advance still works at Manhattan 2.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(2, 2)})
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
@@ -1948,34 +1963,34 @@ func _test_advance_teleport_costs() -> void:
 	eq(_unit(1)["mp"], 0, "walk spent the MP pool")
 	eq(_unit(1)["ap"], 6, "walk spends no AP")
 	var found_diagonal := false
-	var found_manhattan_2 := false
-	var found_ortho := false
+	var found_manhattan_1 := false
+	var found_cardinal := false
 	for intent in _sim.legal_intents(1):
 		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != "advance":
 			continue
 		if intent.get("to") == Vector2i(6, 3):
 			found_diagonal = true
-		if intent.get("to") == Vector2i(7, 2):
-			found_manhattan_2 = true
 		if intent.get("to") == Vector2i(6, 2):
-			found_ortho = true
-	eq(found_diagonal, false, "0 MP cannot Advance to a diagonal neighbor")
-	eq(found_manhattan_2, false, "0 MP cannot Advance Manhattan 2")
-	truthy(found_ortho, "0 MP can Advance to an orthogonal neighbor")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 2)})
-	eq(result["ok"], true, "ortho Advance with 0 MP is legal")
-	eq(_unit(1)["pos"], Vector2i(6, 2), "Ironjaw teleported on empty MP")
+			found_manhattan_1 = true
+		if intent.get("to") == Vector2i(7, 2):
+			found_cardinal = true
+	eq(found_diagonal, false, "0 MP cannot Advance to a diagonal")
+	eq(found_manhattan_1, false, "0 MP cannot Advance Manhattan 1")
+	truthy(found_cardinal, "0 MP can Advance exactly 2 cardinal spaces")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(7, 2)})
+	eq(result["ok"], true, "cardinal Advance with 0 MP is legal")
+	eq(_unit(1)["pos"], Vector2i(7, 2), "Ironjaw teleported on empty MP")
 	eq(_unit(1)["mp"], 0, "Advance did not spend or refund MP")
 	eq(_unit(1)["ap"], 3, "0-MP Advance still spends 3 AP")
 
 	# Two Advances per turn (6 AP); a third is insufficient_ap.
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 1)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(7, 4)})
 	eq(result["ok"], true, "second Advance spends the remaining 3 AP")
 	eq(_unit(1)["ap"], 0, "two Advances empty the AP pool")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 0)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(7, 6)})
 	eq(result["illegal"], true, "third Advance is rejected")
 	eq(result["reason"], "insufficient_ap", "0 AP Advance is insufficient_ap")
-	eq(_unit(1)["pos"], Vector2i(6, 1), "Ironjaw stays after the rejected third Advance")
+	eq(_unit(1)["pos"], Vector2i(7, 4), "Ironjaw stays after the rejected third Advance")
 
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	var resolve_idx := sim_src.find("func _resolve_advance")
@@ -2010,9 +2025,9 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 	eq(_unit(1)["ap"], 6, "Ironjaw starts the turn at 6 AP")
 	eq(_unit(1)["mp"], 3, "Ironjaw starts the turn at 3 MP")
 	eq(_unit(1)["facing"], "W", "Ironjaw starts facing W")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "Ironjaw Advance teleport is legal")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "Advance snapped one tile east")
+	eq(_unit(1)["pos"], Vector2i(4, 2), "Advance snapped two tiles east")
 	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "submit Advance does not zero leftover MP")
 	eq(result["events"][0]["mp_spent"], 0, "advance event mp_spent is 0")
@@ -2025,15 +2040,15 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 		if str(intent.get("type", "")) != "move":
 			continue
 		move_count += 1
-		if intent.get("to") == Vector2i(4, 2):
+		if intent.get("to") == Vector2i(5, 2):
 			found_ortho = true
 	truthy(move_count > 0, "after Advance with MP>0, legal_intents still includes a move")
 	truthy(found_ortho, "after Advance, orthogonal neighbor is a walk dest")
 
 	# Walk after Advance still spends leftover MP; facing follows the east hop.
-	result = _sim.submit({"type": "move", "to": Vector2i(4, 2)})
+	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
 	eq(result["ok"], true, "walk after Advance is legal")
-	eq(_unit(1)["pos"], Vector2i(4, 2), "Ironjaw walked one tile east")
+	eq(_unit(1)["pos"], Vector2i(5, 2), "Ironjaw walked one tile east")
 	eq(_unit(1)["mp"], 2, "walk spends 1 MP from leftover pool")
 	eq(_unit(1)["ap"], 3, "walk spends no AP")
 	eq(_unit(1)["facing"], "E", "walk after Advance faces last hop E")
@@ -2049,18 +2064,18 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 		"ironjaw_facing": "W",
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "first Advance spends 3 AP")
 	eq(_unit(1)["mp"], 3, "first Advance leaves MP at 3")
 	eq(_unit(1)["facing"], "W", "first Advance still does not auto-face")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 3)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
 	eq(result["ok"], true, "second Advance spends remaining AP")
 	eq(_unit(1)["ap"], 0, "two Advances empty the AP pool")
 	eq(_unit(1)["mp"], 3, "second Advance still does not zero MP")
-	eq(_unit(1)["pos"], Vector2i(3, 3), "Ironjaw snapped after the second Advance")
+	eq(_unit(1)["pos"], Vector2i(4, 4), "Ironjaw snapped after the second Advance")
 	eq(_unit(1)["facing"], "W", "second Advance still leaves facing unchanged")
 	eq(_has_legal_move(1), true, "at 0 AP with MP>0, legal_intents still includes a move")
-	result = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
+	result = _sim.submit({"type": "move", "to": Vector2i(4, 5)})
 	eq(result["ok"], true, "walk at 0 AP is legal when leftover MP remains")
 	eq(_unit(1)["mp"], 2, "0-AP walk spends leftover MP")
 	eq(_unit(1)["ap"], 0, "0-AP walk does not invent AP spend")
@@ -2091,18 +2106,18 @@ func _test_advance_then_remaining_mp_still_walks() -> void:
 
 
 func _test_advance_cardinal_range_gate() -> void:
-	# Exactly the 4 ortho neighbors around the caster:
-	#   . . . . .
+	# Exactly 2 cardinal spaces around the caster:
 	#   . . N . .
-	#   . W x E .
-	#   . . S . .
 	#   . . . . .
+	#   W . x . E
+	#   . . . . .
+	#   . . S . .
 	var origin := Vector2i(3, 3)
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": origin})
 	_sim.submit({"type": "end_turn"})
 	var expected: Dictionary = {}
 	for cell in [
-		Vector2i(3, 2), Vector2i(3, 4), Vector2i(2, 3), Vector2i(4, 3),
+		Vector2i(3, 1), Vector2i(3, 5), Vector2i(1, 3), Vector2i(5, 3),
 	]:
 		expected[cell] = true
 	eq(expected.size(), 4, "cardinal Advance has 4 tiles")
@@ -2111,28 +2126,27 @@ func _test_advance_cardinal_range_gate() -> void:
 		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != "advance":
 			continue
 		offered[intent["to"]] = true
-	eq(offered.size(), 4, "legal_intents Advance dests are the 4 ortho neighbors")
+	eq(offered.size(), 4, "legal_intents Advance dests are the 4 cardinal-2 tiles")
 	for cell in expected.keys():
-		truthy(offered.has(cell), "ortho tile %s is offered" % str(cell))
+		truthy(offered.has(cell), "cardinal tile %s is offered" % str(cell))
 	for cell in offered.keys():
-		truthy(expected.has(cell), "no extra Advance dest %s outside the 4 neighbors" % str(cell))
+		truthy(expected.has(cell), "no extra Advance dest %s outside the 2-cardinal set" % str(cell))
 
-	# Manhattan 2 ortho and (1,1) diagonals used to be inside the diamond.
-	eq(_sim.manhattan(origin, Vector2i(5, 3)), 2, "two tiles east is Manhattan 2")
-	eq(offered.has(Vector2i(5, 3)), false, "Manhattan 2 ortho is not offered")
+	eq(_sim.manhattan(origin, Vector2i(4, 3)), 1, "one tile east is Manhattan 1")
+	eq(offered.has(Vector2i(4, 3)), false, "Manhattan 1 ortho is not offered")
 	eq(_sim.chebyshev(origin, Vector2i(4, 4)), 1, "(1,1) offset is Chebyshev 1")
 	eq(_sim.manhattan(origin, Vector2i(4, 4)), 2, "(1,1) offset is Manhattan 2")
 	eq(offered.has(Vector2i(4, 4)), false, "diagonal tile is not offered")
 	eq(_sim.chebyshev(origin, Vector2i(4, 5)), 2, "(1,2) offset is Chebyshev 2")
 	eq(_sim.manhattan(origin, Vector2i(4, 5)), 3, "(1,2) offset is Manhattan 3")
-	eq(offered.has(Vector2i(4, 5)), false, "Chebyshev-2 knight tile is not offered")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
-	eq(result["illegal"], true, "Manhattan 2 Advance dest is rejected")
-	eq(result["reason"], "out_of_range", "Manhattan 2 reject is out_of_range")
-	eq(_unit(1)["pos"], origin, "Ironjaw stays put on a Manhattan 2 miss")
-	eq(_unit(1)["ap"], 6, "Manhattan 2 miss refunds AP")
-	eq(_unit(1)["mp"], 3, "Manhattan 2 miss refunds MP")
-	eq(_sim.preview_cast(SpellKits.ADVANCE, origin, Vector2i(5, 3))["legal"], false, "preview_cast rejects Manhattan 2")
+	eq(offered.has(Vector2i(4, 5)), false, "knight tile is not offered")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
+	eq(result["illegal"], true, "Manhattan 1 Advance dest is rejected")
+	eq(result["reason"], "out_of_range", "Manhattan 1 reject is out_of_range")
+	eq(_unit(1)["pos"], origin, "Ironjaw stays put on a Manhattan 1 miss")
+	eq(_unit(1)["ap"], 6, "Manhattan 1 miss refunds AP")
+	eq(_unit(1)["mp"], 3, "Manhattan 1 miss refunds MP")
+	eq(_sim.preview_cast(SpellKits.ADVANCE, origin, Vector2i(4, 3))["legal"], false, "preview_cast rejects Manhattan 1")
 
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
 	eq(result["illegal"], true, "diagonal Advance dest is rejected")
@@ -2140,13 +2154,13 @@ func _test_advance_cardinal_range_gate() -> void:
 	eq(_sim.preview_cast(SpellKits.ADVANCE, origin, Vector2i(4, 4))["reason"], "out_of_range", "preview_cast rejects a diagonal")
 
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 5)})
-	eq(result["illegal"], true, "Manhattan 3 Advance dest is rejected")
+	eq(result["illegal"], true, "knight Advance dest is rejected")
 	eq(result["reason"], "out_of_range", "knight tile reject is out_of_range")
 
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
-	eq(result["ok"], true, "orthogonal neighbor Advance is legal")
-	eq(_unit(1)["pos"], Vector2i(4, 3), "Ironjaw snapped one tile east")
-	eq(_unit(1)["mp"], 3, "ortho teleport spends 0 MP")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "two-tile cardinal Advance is legal")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw snapped two tiles east")
+	eq(_unit(1)["mp"], 3, "cardinal teleport spends 0 MP")
 	eq(_unit(1)["ap"], 3, "Advance spends 3 AP")
 	eq(result["events"][0]["teleport"], true, "east dest is a teleport snap")
 	eq(result["events"][0].has("path"), false, "east dest has no hop path")
@@ -2160,7 +2174,7 @@ func _test_advance_cardinal_range_gate() -> void:
 	truthy(hud.contains("SpellKits.range_text"), "selected label uses player-facing range_text")
 	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
 	truthy(kits.contains("Manhattan"), "kit range_text still names Manhattan")
-	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "4 orthogonal neighbors", "Advance selected range is the 4 ortho neighbors")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance selected range is exactly 2 cardinal")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–7", "Mark Shot selected range omits Chebyshev")
 	eq(hud.contains("%d AP + Manhattan MP"), false, "HUD no longer advertises Manhattan MP for Advance")
 	eq(hud.contains("%dAP + MP"), false, "HUD Advance button is not AP + MP")
@@ -2177,14 +2191,15 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 	var legal: Array = _sim.legal_intents(1)
 	var painted: Array[Vector2i] = SnapshotTiles.cast_dests(legal, SpellKits.ADVANCE)
 	var ring: Array = _sim.range_highlight_cells(1, SpellKits.ADVANCE)
-	eq(painted.size(), 4, "Advance chrome lists the 4 ortho neighbors")
+	eq(painted.size(), 4, "Advance chrome lists the 4 cardinal-2 tiles")
 	eq(ring.size(), painted.size(), "range highlighter matches legal Advance dests")
 	for cell in painted:
-		truthy(_sim.is_cardinal_step(origin, cell), "highlighted Advance dest %s is a cardinal step" % str(cell))
+		truthy(_sim.is_advance_cardinal(origin, cell), "highlighted Advance dest %s is exactly 2 cardinal" % str(cell))
 		truthy(ring.has(cell), "range highlighter includes legal dest %s" % str(cell))
-	eq(painted.has(Vector2i(5, 3)), false, "Manhattan 2 is not an Advance highlight")
+	eq(painted.has(Vector2i(4, 3)), false, "Manhattan 1 is not an Advance highlight")
+	eq(painted.has(Vector2i(5, 3)), true, "Manhattan 2 east is an Advance highlight")
 	eq(painted.has(Vector2i(4, 4)), false, "diagonal is not an Advance highlight")
-	eq(ring.has(Vector2i(5, 3)), false, "range highlighter omits Manhattan 2")
+	eq(ring.has(Vector2i(4, 3)), false, "range highlighter omits Manhattan 1")
 	eq(ring.has(Vector2i(4, 4)), false, "range highlighter omits a diagonal")
 
 	_sim.reset_match({
@@ -2193,19 +2208,20 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 		"kestrel_pos": Vector2i(7, 7),
 		"ironjaw_pos": origin,
 		"tiles": [
-			{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(4, 3), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(3, 4), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(3, 1), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
+			{"pos": Vector2i(3, 5), "terrain": "lava", "elevation": 0},
 		],
 	})
 	_sim.submit({"type": "end_turn"})
 	legal = _sim.legal_intents(1)
 	painted = SnapshotTiles.cast_dests(legal, SpellKits.ADVANCE)
 	ring = _sim.range_highlight_cells(1, SpellKits.ADVANCE)
-	eq(painted.size(), 1, "illegal stand-on neighbors drop out of Advance chrome")
-	eq(painted[0], Vector2i(2, 3), "the open west neighbor is the only Advance highlight")
-	eq(ring.has(Vector2i(3, 2)), false, "lava north is not an Advance highlight")
-	eq(ring.has(Vector2i(4, 3)), false, "lava east is not an Advance highlight")
+	eq(painted.size(), 1, "illegal stand-on dests drop out of Advance chrome")
+	eq(painted[0], Vector2i(1, 3), "the open west cardinal is the only Advance highlight")
+	eq(ring.has(Vector2i(3, 1)), false, "lava north is not an Advance highlight")
+	eq(ring.has(Vector2i(5, 3)), false, "lava east is not an Advance highlight")
+	eq(ring.has(Vector2i(4, 3)), false, "Manhattan 1 stays unhighlighted beside lava")
 	eq(ring.has(Vector2i(4, 4)), false, "diagonal stays unhighlighted beside lava")
 
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
@@ -2214,17 +2230,17 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 	eq(_unit(1)["pos"], origin, "diagonal click does not move Ironjaw")
 	eq(_unit(1)["ap"], 6, "diagonal click refunds AP")
 	truthy(str(result["snapshot"].get("coach", "")).contains("refund"), "diagonal click uses the existing refund coach")
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
-	eq(result["illegal"], true, "Manhattan 2 Advance click is rejected")
-	eq(_unit(1)["ap"], 6, "Manhattan 2 click refunds AP")
-	eq(_unit(1)["mp"], 3, "Manhattan 2 click spends 0 MP")
-	truthy(str(_sim.snapshot().get("coach", "")).contains("refund"), "Manhattan 2 click uses the existing refund coach")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
+	eq(result["illegal"], true, "Manhattan 1 Advance click is rejected")
+	eq(_unit(1)["ap"], 6, "Manhattan 1 click refunds AP")
+	eq(_unit(1)["mp"], 3, "Manhattan 1 click spends 0 MP")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("refund"), "Manhattan 1 click uses the existing refund coach")
 
 	var hud_node := CombatHUD.new()
 	hud_node._build()
 	hud_node.set_preview_source(_sim)
 	hud_node.render(_sim.snapshot(), legal)
-	eq(hud_node._advance_hover_dest(origin), Vector2i(2, 3), "Advance hover samples the sim-legal dest")
+	eq(hud_node._advance_hover_dest(origin), Vector2i(1, 3), "Advance hover samples the sim-legal dest")
 	var preview: Dictionary = hud_node.preview_for_spell(SpellKits.ADVANCE)
 	eq(preview["legal"], true, "hover preview_cast uses a legal Advance dest")
 	eq(preview["reason"], "", "hover preview has no reject reason")
@@ -3597,7 +3613,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 		"kestrel_facing": "N",
 	})
 	_sim.submit({"type": "end_turn"})
-	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 4)})
+	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 4)})
 	eq(advanced["ok"], true, "Advance still resolves")
 	eq(CombatHUD.toast_for_events(advanced["events"]), "", "Advance does not toast Shoulder Impact")
 	_sim.reset_match({
@@ -4282,23 +4298,23 @@ func _test_preview_cast() -> void:
 	})
 	_sim.submit({"type": "end_turn"})
 	before = _preview_state()
-	preview = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(4, 3))
+	preview = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
 	eq(preview["name"], "Advance", "Advance name")
 	eq(preview["ap"], 3, "Advance costs 3 AP")
 	eq(preview["mp"], 0, "Advance costs 0 MP")
 	eq(preview["range_mode"], "cardinal", "Advance range_mode is cardinal")
-	eq(preview["min_range"], 1, "Advance min 1")
-	eq(preview["max_range"], 1, "Advance max 1")
-	eq(preview["range_text"], "4 orthogonal neighbors", "Advance HUD range_text is the 4 ortho neighbors")
-	eq(preview["in_range"], true, "ortho neighbor is in Advance range")
+	eq(preview["min_range"], 2, "Advance min 2")
+	eq(preview["max_range"], 2, "Advance max 2")
+	eq(preview["range_text"], "exactly 2 cardinal", "Advance HUD range_text is exactly 2 cardinal")
+	eq(preview["in_range"], true, "two-tile cardinal is in Advance range")
 	eq(preview["rolling"], false, "Advance is not a rolling cast")
 	eq(preview["hit_chance"], null, "Advance has no hit_chance")
 	eq(preview["sample_damage"], null, "Advance sample_damage is null")
-	eq(preview["legal"], true, "empty ortho Advance dest is legal")
-	var far_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
-	eq(far_preview["in_range"], false, "Manhattan 2 is out of Advance range")
-	eq(far_preview["legal"], false, "empty Manhattan 2 Advance dest is illegal")
-	eq(far_preview["reason"], "out_of_range", "preview_cast rejects Manhattan 2")
+	eq(preview["legal"], true, "empty cardinal-2 Advance dest is legal")
+	var near_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(4, 3))
+	eq(near_preview["in_range"], false, "Manhattan 1 is out of Advance range")
+	eq(near_preview["legal"], false, "empty Manhattan 1 Advance dest is illegal")
+	eq(near_preview["reason"], "out_of_range", "preview_cast rejects Manhattan 1")
 	var diag_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(4, 4))
 	eq(diag_preview["in_range"], false, "diagonal is out of Advance range")
 	eq(diag_preview["legal"], false, "diagonal Advance dest is illegal")
@@ -4367,29 +4383,29 @@ func _test_legal_moves_after_advance() -> void:
 	_sim.submit({"type": "end_turn"})
 	eq(_unit(1)["ap"], 6, "Ironjaw starts at 6 AP")
 	eq(_unit(1)["mp"], 3, "Ironjaw starts at 3 MP")
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
 	eq(result["ok"], true, "first Advance spends 3 AP")
 	eq(_unit(1)["ap"], 3, "3 AP remain after Advance")
 	eq(_unit(1)["mp"], 3, "Advance spends 0 MP")
-	eq(_unit(1)["pos"], Vector2i(4, 3), "Ironjaw snapped one tile east")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Ironjaw snapped two tiles east")
 	var moves := _legal_move_dests(1)
 	truthy(moves.size() > 0, "after Advance, legal_intents still includes moves while MP>0")
-	truthy(moves.has(Vector2i(5, 3)), "Manhattan 1 ortho walk is still offered")
-	truthy(moves.has(Vector2i(4, 6)), "Manhattan 3 walk is still offered at 3 MP")
-	eq(moves.has(Vector2i(4, 7)), false, "Manhattan 4 is still over the MP pool")
+	truthy(moves.has(Vector2i(6, 3)), "Manhattan 1 ortho walk is still offered")
+	truthy(moves.has(Vector2i(5, 6)), "Manhattan 3 walk is still offered at 3 MP")
+	eq(moves.has(Vector2i(5, 7)), false, "Manhattan 4 is still over the MP pool")
 
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 4)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 5)})
 	eq(result["ok"], true, "second Advance spends the remaining 3 AP")
 	eq(_unit(1)["ap"], 0, "0 AP remain after two Advances")
 	eq(_unit(1)["mp"], 3, "MP pool still full at 0 AP")
 	eq(_has_legal_cast(1, "advance"), false, "0 AP Advance is not offered")
 	moves = _legal_move_dests(1)
 	truthy(moves.size() > 0, "0 AP / 3 MP still offers walks")
-	truthy(moves.has(Vector2i(5, 4)), "walk dest after 0 AP Advance is legal")
-	result = _sim.submit({"type": "move", "to": Vector2i(5, 4)})
+	truthy(moves.has(Vector2i(6, 5)), "walk dest after 0 AP Advance is legal")
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 5)})
 	eq(result["ok"], true, "walk after Advance is accepted")
 	eq(_unit(1)["mp"], 2, "walk spends MP after Advance")
-	eq(_unit(1)["pos"], Vector2i(5, 4), "pawn walked after Advance")
+	eq(_unit(1)["pos"], Vector2i(6, 5), "pawn walked after Advance")
 
 	# Any dest-click cast, not only Advance: Strike spends AP, MP stays, walks remain.
 	_sim.reset_match({
@@ -4510,9 +4526,9 @@ func _test_advance_facing_unchanged() -> void:
 		"ironjaw_facing": "W",
 	})
 	_sim.submit({"type": "end_turn"})
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
-	eq(result["ok"], true, "ortho Advance dest-click is legal")
-	eq(_unit(1)["pos"], Vector2i(4, 3), "Advance still snaps to dest")
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
+	eq(result["ok"], true, "cardinal Advance dest-click is legal")
+	eq(_unit(1)["pos"], Vector2i(5, 3), "Advance still snaps to dest")
 	eq(_unit(1)["facing"], "W", "east Advance leaves facing W unchanged")
 	eq(result["events"][0].has("facing"), false, "Advance event does not set facing")
 	eq(result["events"][0].has("path"), false, "Advance still emits no hop path")
@@ -4526,9 +4542,9 @@ func _test_advance_facing_unchanged() -> void:
 		"ironjaw_facing": "S",
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 3)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(1, 3)})
 	eq(_unit(1)["facing"], "S", "west Advance leaves facing S unchanged")
-	eq(_unit(1)["pos"], Vector2i(2, 3), "west Advance snaps")
+	eq(_unit(1)["pos"], Vector2i(1, 3), "west Advance snaps")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -4538,7 +4554,7 @@ func _test_advance_facing_unchanged() -> void:
 		"ironjaw_facing": "E",
 	})
 	_sim.submit({"type": "end_turn"})
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 1)})
 	eq(_unit(1)["facing"], "E", "north Advance leaves facing E unchanged")
 
 	_sim.reset_match({
@@ -4556,16 +4572,16 @@ func _test_advance_facing_unchanged() -> void:
 	eq(_unit(1)["pos"], Vector2i(3, 3), "rejected diagonal Advance does not move")
 	eq(_unit(1)["ap"], 6, "rejected diagonal Advance refunds AP")
 
-	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 2)})
-	eq(result["ok"], true, "ortho Advance after a rejected diagonal is legal")
-	eq(_unit(1)["facing"], "E", "accepted ortho Advance still does not auto-face")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "ortho Advance snaps north")
-	eq(_unit(1)["ap"], 3, "ortho Advance spends 3 AP")
+	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(3, 1)})
+	eq(result["ok"], true, "cardinal Advance after a rejected diagonal is legal")
+	eq(_unit(1)["facing"], "E", "accepted cardinal Advance still does not auto-face")
+	eq(_unit(1)["pos"], Vector2i(3, 1), "cardinal Advance snaps north")
+	eq(_unit(1)["ap"], 3, "cardinal Advance spends 3 AP")
 
 	result = _sim.submit({"type": "face", "dir": "N"})
 	eq(result["ok"], true, "in-place face remains legal after Advance")
 	eq(_unit(1)["facing"], "N", "manual face after Advance still works")
-	eq(_unit(1)["pos"], Vector2i(3, 2), "manual face does not move")
+	eq(_unit(1)["pos"], Vector2i(3, 1), "manual face does not move")
 	eq(_unit(1)["ap"], 3, "standing face after Advance costs 0 AP")
 
 	var sim_src := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
@@ -4607,13 +4623,13 @@ func _test_walk_mode_cancel() -> void:
 	# Cast Advance then remaining MP walks (same contract as the sibling test).
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
-	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3)})
+	var result: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3)})
 	eq(result["ok"], true, "Advance dest-click resolves")
 	eq(_unit(1)["ap"], 3, "3 AP remain")
 	eq(_unit(1)["mp"], 3, "MP remains after Advance")
 	var moves := _legal_move_dests(1)
-	truthy(moves.has(Vector2i(5, 3)), "after Advance, legal_intents still include walks")
-	result = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
+	truthy(moves.has(Vector2i(6, 3)), "after Advance, legal_intents still include walks")
+	result = _sim.submit({"type": "move", "to": Vector2i(6, 3)})
 	eq(result["ok"], true, "walk with remaining MP after Advance is accepted")
 
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
@@ -4724,14 +4740,14 @@ func _test_spell_tooltip_cards() -> void:
 
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(7, 7), "ironjaw_pos": Vector2i(3, 3)})
 	_sim.submit({"type": "end_turn"})
-	var advance_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(4, 3))
+	var advance_preview: Dictionary = _sim.preview_cast(SpellKits.ADVANCE, Vector2i(3, 3), Vector2i(5, 3))
 	var advance := SpellTooltip.card_text(advance_preview)
 	eq(advance_preview["hit_chance"], null, "Advance preview has no hit_chance")
 	eq(advance_preview["sample_damage"], null, "Advance preview has no sample_damage")
-	eq(advance_preview["legal"], true, "Advance card preview dest is an ortho neighbor")
+	eq(advance_preview["legal"], true, "Advance card preview dest is exactly 2 cardinal")
 	truthy(advance.contains("Advance"), "Advance card names the spell")
 	truthy(advance.contains("3 AP / 0 MP"), "Advance card names 3 AP / 0 MP from preview")
-	truthy(advance.contains("4 orthogonal neighbors"), "Advance card names the 4 ortho neighbors from preview")
+	truthy(advance.contains("exactly 2 cardinal"), "Advance card names the 2-cardinal range from preview")
 	truthy(advance.contains("Facing unchanged"), "Advance card uses preview facing note")
 	truthy(advance.contains("Teleport"), "Advance card uses preview teleport text")
 	eq(advance.contains("HIT "), false, "Advance card has no HIT %")
@@ -4834,7 +4850,7 @@ func _test_spell_tooltip_cards() -> void:
 	hud._on_spell_hover(SpellKits.ADVANCE)
 	eq(hud.tooltip_caption().contains("HIT "), false, "Advance hover still has no HIT %")
 	eq(hud.preview_for_spell(SpellKits.ADVANCE)["sample_damage"], null, "Advance hover preview has no sample")
-	truthy(hud.tooltip_caption().contains("4 orthogonal neighbors"), "Advance hover names the 4 ortho neighbors from preview")
+	truthy(hud.tooltip_caption().contains("exactly 2 cardinal"), "Advance hover names the 2-cardinal range from preview")
 	truthy(hud.tooltip_caption().contains("Teleport"), "Advance hover uses preview teleport text")
 	hud._on_spell_hover(SpellKits.SHOULDER)
 	truthy(hud.tooltip_caption().contains("Director Locked Shoulder"), "Shoulder hover names Director Locked Shoulder from preview")

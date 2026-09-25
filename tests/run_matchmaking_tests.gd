@@ -78,8 +78,8 @@ func _test_roster_gate() -> void:
 	eq(int(advance.get("ap", -1)), 3, "Advance stays 3 AP")
 	eq(int(advance.get("mp", -1)), 0, "Advance stays 0 MP")
 	eq(str(advance.get("range_mode", "")), "cardinal", "Advance stays cardinal")
-	eq(int(advance.get("min_range", -1)), 1, "Advance min range stays 1")
-	eq(int(advance.get("max_range", -1)), 1, "Advance max range stays 1")
+	eq(int(advance.get("min_range", -1)), 2, "Advance min range is exactly 2")
+	eq(int(advance.get("max_range", -1)), 2, "Advance max range is exactly 2")
 
 
 func _test_invalid_class_does_not_confirm() -> void:
@@ -175,13 +175,15 @@ func _test_advance_stays_locked() -> void:
 	eq(advances.size(), 4, "Advance offers exactly 4 destinations")
 	for dest in advances:
 		var cell: Vector2i = dest
-		var manhattan := absi(cell.x - 3) + absi(cell.y - 3)
-		eq(manhattan, 1, "Advance dest %s is an orthogonal neighbor" % cell)
-	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 3), "seat": 0})
-	eq(bool(cast.get("ok", false)), true, "ortho Advance resolves")
+		var dx := absi(cell.x - 3)
+		var dy := absi(cell.y - 3)
+		eq(dx + dy, 2, "Advance dest %s is Manhattan 2" % cell)
+		eq(dx == 0 or dy == 0, true, "Advance dest %s is cardinal" % cell)
+	var cast: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(5, 3), "seat": 0})
+	eq(bool(cast.get("ok", false)), true, "cardinal Advance resolves")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Advance spends 3 AP")
 	eq(int(_sim.snapshot()["units"][0]["mp"]), 3, "Advance spends 0 MP")
-	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(4, 3), "Advance snaps to the ortho tile")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(5, 3), "Advance snaps two tiles east")
 
 
 func _test_mirror_ironjaw() -> void:
