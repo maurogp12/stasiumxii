@@ -56,6 +56,7 @@ func _run() -> void:
 	_test_ambush_origin_chrome()
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
+	_test_ambush_rules_keeper_lock()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -1310,8 +1311,8 @@ func _test_illegal_cast_refunds() -> void:
 
 func _test_ambush_destination_locked() -> void:
 	var gloam := Vector2i(2, 2)
-	var prey := Vector2i(5, 2)
-	var back := Vector2i(6, 2)
+	var prey := Vector2i(4, 2)
+	var back := Vector2i(5, 2)
 	# Neighbors other than (6,1) are blocked, so a substitute landing would use (6,1).
 	var blocked_setup: Dictionary = _sim.reset_match({
 		"seed": 1,
@@ -1333,7 +1334,7 @@ func _test_ambush_destination_locked() -> void:
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(blocked.get("illegal", false)), true, "blocked back tile is an illegal Ambush")
 	eq(bool(blocked.get("ok", true)), false, "blocked back is not a resolved cast")
-	eq(str(blocked.get("reason", "")), "no_landing", "blocked back refunds as no_landing")
+	eq(str(blocked.get("reason", "")), "illegal_back", "blocked back refunds as illegal_back")
 	eq(_unit(0)["pos"], gloam, "blocked back leaves Gloam on the cast cell")
 	eq(int(_unit(0)["ap"]), ap_before, "blocked back refunds AP")
 	eq(int(_unit(0)["mp"]), mp_before, "blocked back does not spend MP")
@@ -1404,8 +1405,9 @@ func _test_ambush_destination_locked() -> void:
 	})
 	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0})
 	eq(_sim.chebyshev(Vector2i(2, 4), Vector2i(2, 2)), 2, "Shade-origin plant is Chebyshev 2 from Gloam")
-	eq(_sim.is_cardinal_exact(Vector2i(2, 2), prey, 3), true, "Shade-origin plant is exactly 3 cardinal from the prey")
-	eq(bool(planted.get("ok", false)), true, "Shade-origin fixture plants a Shade exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(Vector2i(2, 2), prey, 2), true, "Shade-origin plant is Manhattan 2 cardinal from the prey")
+	eq(bool(planted.get("ok", false)), true, "Shade-origin fixture plants a Shade Manhattan 2 cardinal from the prey")
+	_complete_opponent_turn()
 	var shade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(shade_hit.get("ok", false)), true, "Shade-origin Ambush hit on an empty back tile resolves")
 	eq(_unit(0)["pos"], back, "Shade-origin Ambush lands on the empty back tile")
@@ -1417,7 +1419,7 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	# Playtest 0.1.6: Walk at MP 0 coaches a move reject. Ambush is 4 AP / 0 MP
 	# and stays grey until it is legal. 1 AP still cannot arm it.
 	var gloam := Vector2i(2, 2)
-	var prey := Vector2i(5, 2)
+	var prey := Vector2i(4, 2)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1429,8 +1431,9 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	})
 	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0})
 	eq(_sim.chebyshev(Vector2i(2, 4), Vector2i(2, 2)), 2, "MP 0 plant is Chebyshev 2 from Gloam")
-	eq(_sim.is_cardinal_exact(Vector2i(2, 2), prey, 3), true, "MP 0 plant is exactly 3 cardinal from the prey")
-	eq(bool(planted.get("ok", false)), true, "MP 0 fixture plants a Shade exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(Vector2i(2, 2), prey, 2), true, "MP 0 plant is Manhattan 2 cardinal from the prey")
+	eq(bool(planted.get("ok", false)), true, "MP 0 fixture plants a Shade Manhattan 2 cardinal from the prey")
+	_complete_opponent_turn()
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Ambush cost stays 0 MP")
 	eq(int(SpellKits.spell(SpellKits.FADE)["mp"]), 1, "Fade still costs 1 MP")
@@ -1453,7 +1456,7 @@ func _test_ambush_arms_at_zero_mp() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Ambush resolves at MP 0")
 	eq(str(hit.get("reason", "")), "", "Ambush at MP 0 is not an insufficient_mp reject")
-	eq(_unit(0)["pos"], Vector2i(6, 2), "Shade-origin Ambush still lands on the empty back tile")
+	eq(_unit(0)["pos"], Vector2i(5, 2), "Shade-origin Ambush still lands on the empty back tile")
 	eq(int(_unit(0)["ap"]), 0, "Ambush at MP 0 spends 4 AP")
 	eq(int(_unit(0)["mp"]), 0, "Ambush at MP 0 spends 0 MP")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin still spends one Shade on hit")
@@ -1465,7 +1468,7 @@ func _test_ambush_arms_at_zero_mp() -> void:
 		"classes": ["gloam", "kestrel"],
 		"positions": [gloam, prey],
 		"kestrel_facing": "W",
-		"gloam_shade": true,
+		"gloam_invisible": true,
 	})
 	actor = _live_unit(0)
 	actor["mp"] = 0
@@ -1505,7 +1508,7 @@ func _test_ambush_origin_chrome() -> void:
 	# A live Shade is the aim origin only when that Shade is a legal Ambush.
 	# Invisible aims from Gloam and ignores the Shade.
 	var gloam := Vector2i(2, 4)
-	var prey := Vector2i(5, 2)
+	var prey := Vector2i(4, 2)
 	var shade_at := Vector2i(2, 2)
 	_sim.reset_match({
 		"seed": 1,
@@ -1521,9 +1524,10 @@ func _test_ambush_origin_chrome() -> void:
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "origin chrome does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "origin chrome does not change Drop Shade MP")
 	eq(_sim.chebyshev(gloam, shade_at), 2, "origin chrome plant is inside Drop Shade")
-	eq(_sim.is_cardinal_exact(shade_at, prey, 3), true, "origin chrome plant is exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(shade_at, prey, 2), true, "origin chrome plant is Manhattan 2 cardinal from the prey")
 	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
 	eq(bool(planted.get("ok", false)), true, "origin chrome plants the legal Shade")
+	_complete_opponent_turn()
 	var shade_cell: Vector2i = _sim.snapshot()["shade_tokens"][0]["pos"]
 	var chebyshev_shade := int(_sim.chebyshev(shade_cell, prey))
 	var origin: Dictionary = _sim.ambush_origin(0)
@@ -1532,7 +1536,7 @@ func _test_ambush_origin_chrome() -> void:
 	eq(origin.get("origin"), shade_cell, "Ambush origin chrome uses the Shade tile")
 	var landing: Dictionary = _sim.ambush_landing_preview(0)
 	eq(bool(landing.get("ok", false)), true, "Ambush aim preview names the empty back tile")
-	eq(landing.get("cell"), Vector2i(6, 2), "Ambush aim preview lands on the locked back tile")
+	eq(landing.get("cell"), Vector2i(5, 2), "Ambush aim preview lands on the locked back tile")
 	var aim: Dictionary = _sim.aim_hit_preview(0, SpellKits.AMBUSH, shade_cell)
 	eq(bool(aim.get("show", false)), true, "Ambush aim preview shows the locked hit percent")
 	eq(int(aim.get("hit_chance", 0)), _sim.hit_chance(chebyshev_shade), "Ambush percent is Chebyshev from the Shade origin")
@@ -1571,20 +1575,20 @@ func _test_ambush_origin_chrome() -> void:
 
 
 func _test_ambush_range_from_origin() -> void:
-	# Mauro Lock: exactly 3 cardinal from the origin. This Shade sits at Chebyshev 2
-	# from the caster (inside Drop Shade 1–3) and still exactly 3 cardinal from the prey.
+	# Rules Keeper: Manhattan 1–2 cardinal from the origin. This Shade sits at
+	# Chebyshev 2 from the caster (inside Drop Shade 1–3) and Manhattan 2 from the prey.
 	var ambush: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
 	eq(str(ambush.get("range_mode", "")), "cardinal", "Ambush range_mode is cardinal")
-	eq(int(ambush["min_range"]), 3, "Ambush min range is exactly 3")
-	eq(int(ambush["max_range"]), 3, "Ambush max range is exactly 3")
+	eq(int(ambush["min_range"]), 1, "Ambush min range is 1")
+	eq(int(ambush["max_range"]), 2, "Ambush max range is 2")
 	eq(int(ambush["ap"]), 4, "origin range does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "origin range does not change Ambush MP")
 	eq(int(ambush["base_damage"]), 22, "origin range does not change Ambush damage")
-	eq(SpellKits.range_text(ambush), "exactly 3 cardinal", "Ambush range_text is exactly 3 cardinal")
+	eq(SpellKits.range_text(ambush), "range 1–2 cardinal", "Ambush range_text is 1–2 cardinal")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance range_text stays exactly 2 cardinal")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max is Chebyshev 3")
 	var gloam := Vector2i(3, 4)
-	var prey := Vector2i(6, 2)
+	var prey := Vector2i(5, 2)
 	var shade_at := Vector2i(3, 2)
 	_sim.reset_match({
 		"seed": 1,
@@ -1596,20 +1600,21 @@ func _test_ambush_range_from_origin() -> void:
 		"rolls": [1],
 	})
 	eq(_sim.chebyshev(gloam, shade_at), 2, "Drop Shade plants the origin at Chebyshev 2")
-	eq(_sim.is_cardinal_exact(shade_at, prey, 3), true, "the Shade sits exactly 3 cardinal from the prey")
-	eq(_sim.is_cardinal_exact(gloam, prey, 3), false, "the body is not exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(shade_at, prey, 2), true, "the Shade sits Manhattan 2 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(gloam, prey, 2), false, "the body is not Manhattan 2 cardinal from the prey")
 	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
-	eq(bool(planted.get("ok", false)), true, "Drop Shade plants the origin exactly 3 cardinal from the prey")
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants the origin Manhattan 2 cardinal from the prey")
+	_complete_opponent_turn()
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Ambush is legal from the Shade when the body is out of range")
 	var ring: Array = _sim.range_highlight_cells(0, SpellKits.AMBUSH)
 	eq(ring.has(prey), true, "the Ambush ring includes the enemy measured from the Shade")
-	eq(ring.has(Vector2i(1, 4)), false, "a tile near the body and off the Shade's cardinal-3 cross is outside the ring")
+	eq(ring.has(Vector2i(1, 4)), false, "a tile near the body and off the Shade's cardinal cross is outside the ring")
 	eq(ring.has(shade_at + Vector2i(2, 1)), false, "a knight step off the Shade is not in the Ambush ring")
-	eq(ring.has(shade_at + Vector2i(3, 3)), false, "a Chebyshev-3 diagonal off the Shade is not in the Ambush ring")
+	eq(ring.has(shade_at + Vector2i(3, 0)), false, "cardinal 3 off the Shade is not in the Ambush ring")
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(hit.get("ok", false)), true, "Ambush resolves from a Shade exactly 3 cardinal away")
-	eq(int(hit["events"][0].get("range", -1)), 3, "the roll distance is the cardinal 3 from Shade to enemy")
-	eq(_unit(0)["pos"], Vector2i(7, 2), "Shade-origin Ambush still lands on the empty back tile")
+	eq(bool(hit.get("ok", false)), true, "Ambush resolves from a Shade Manhattan 2 cardinal away")
+	eq(int(hit["events"][0].get("range", -1)), 2, "the roll distance is the cardinal 2 from Shade to enemy")
+	eq(_unit(0)["pos"], Vector2i(6, 2), "Shade-origin Ambush still lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin still spends the Shade")
 
 	var body := Vector2i(3, 2)
@@ -1624,8 +1629,8 @@ func _test_ambush_range_from_origin() -> void:
 		"rolls": [1],
 	})
 	eq(_sim.chebyshev(body, far_shade), 2, "the far Shade is still a legal Drop Shade plant")
-	eq(_sim.is_cardinal_exact(body, prey, 3), true, "this body is exactly 3 cardinal from the prey")
-	eq(_sim.is_cardinal_exact(far_shade, prey, 3), false, "this Shade is not exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(body, prey, 2), true, "this body is Manhattan 2 cardinal from the prey")
+	eq(_sim.manhattan(far_shade, prey) > 2, true, "this Shade is outside Manhattan 2 of the prey")
 	var far_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": far_shade, "seat": 0})
 	eq(bool(far_plant.get("ok", false)), true, "Drop Shade can plant outside Ambush range")
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a far Shade does not arm Ambush just because the body is in range")
@@ -1635,7 +1640,13 @@ func _test_ambush_range_from_origin() -> void:
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible Ambush uses the body, ignoring the far Shade")
 
 	var origin := Vector2i(7, 7)
-	for offset in [Vector2i(3, 0), Vector2i(-3, 0), Vector2i(0, 3), Vector2i(0, -3)]:
+	var offsets: Array[Vector2i] = []
+	for dist in [1, 2]:
+		offsets.append(Vector2i(dist, 0))
+		offsets.append(Vector2i(-dist, 0))
+		offsets.append(Vector2i(0, dist))
+		offsets.append(Vector2i(0, -dist))
+	for offset in offsets:
 		var enemy: Vector2i = origin + offset
 		_sim.reset_match({
 			"seed": 1,
@@ -1646,11 +1657,12 @@ func _test_ambush_range_from_origin() -> void:
 			"kestrel_facing": "W",
 			"gloam_invisible": true,
 		})
-		eq(_sim.is_cardinal_exact(origin, enemy, 3), true, "origin%s is exactly 3 cardinal" % str(offset))
+		eq(_sim.manhattan(origin, enemy) == 1 or _sim.manhattan(origin, enemy) == 2, true, "origin%s is Manhattan 1 or 2" % str(offset))
+		eq(_sim._cardinal_axis_len(origin, enemy) > 0, true, "origin%s is cardinal" % str(offset))
 		eq(_has_legal_cast_to(0, SpellKits.AMBUSH, enemy), true, "Ambush is legal when the enemy sits at origin%s" % str(offset))
 		var aimed: Dictionary = _sim.preview_cast(SpellKits.AMBUSH, origin, enemy, 1)
 		eq(bool(aimed.get("in_range", false)), true, "preview_cast marks origin%s in range" % str(offset))
-		eq(str(aimed.get("range_text", "")), "exactly 3 cardinal", "Ambush preview_cast range_text is exactly 3 cardinal")
+		eq(str(aimed.get("range_text", "")), "range 1–2 cardinal", "Ambush preview_cast range_text is 1–2 cardinal")
 		eq(str(aimed.get("range_mode", "")), "cardinal", "Ambush preview_cast range_mode is cardinal")
 
 	_sim.reset_match({
@@ -1658,26 +1670,26 @@ func _test_ambush_range_from_origin() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [origin, origin + Vector2i(3, 0)],
+		"positions": [origin, origin + Vector2i(2, 0)],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 	})
 	var cross: Array = _sim.range_highlight_cells(0, SpellKits.AMBUSH)
-	eq(cross.size(), 4, "Ambush highlight is the four exactly-3 cardinal cells")
-	for cell in [origin + Vector2i(3, 0), origin + Vector2i(-3, 0), origin + Vector2i(0, 3), origin + Vector2i(0, -3)]:
-		eq(cross.has(cell), true, "highlight includes %s" % str(cell))
+	eq(cross.size(), 8, "Ambush highlight is the eight Manhattan 1–2 cardinal cells")
+	for cell in offsets:
+		eq(cross.has(origin + cell), true, "highlight includes %s" % str(cell))
 	var illegal := {
 		origin + Vector2i(1, 1): "diagonal (1,1)",
-		origin + Vector2i(2, 1): "knight (2,1) Manhattan 3",
+		origin + Vector2i(2, 1): "knight (2,1)",
 		origin + Vector2i(3, 3): "Chebyshev ring (3,3)",
-		origin + Vector2i(1, 0): "cardinal 1",
-		origin + Vector2i(2, 0): "cardinal 2",
+		origin + Vector2i(3, 0): "cardinal 3",
 		origin + Vector2i(4, 0): "cardinal 4",
 		origin + Vector2i(-1, 2): "Chebyshev 2 not on axis",
 	}
 	for cell in illegal.keys():
 		eq(cross.has(cell), false, "%s is not an Ambush highlight" % str(illegal[cell]))
-		eq(_sim.is_cardinal_exact(origin, cell, 3), false, "%s is not exactly 3 cardinal" % str(illegal[cell]))
+		var axis := int(_sim._cardinal_axis_len(origin, cell))
+		eq(axis >= 1 and axis <= 2, false, "%s is not Manhattan 1–2 cardinal" % str(illegal[cell]))
 		var preview: Dictionary = _sim.preview_cast(SpellKits.AMBUSH, origin, cell, 1)
 		eq(bool(preview.get("in_range", true)), false, "preview_cast rejects %s" % str(illegal[cell]))
 		eq(str(preview.get("reason", "")), "out_of_range", "preview_cast reason for %s is out_of_range" % str(illegal[cell]))
@@ -1688,16 +1700,16 @@ func _test_ambush_range_from_origin() -> void:
 
 func _test_ambush_adjacent_shade_rejects() -> void:
 	# Playtest 0.1.11: a Shade on the diagonal next to Kestrel was still an Ambush
-	# arm. Origin is the Shade unless Gloam is Invisible. Adjacent, diagonal,
-	# and every other non-exactly-3 cardinal step reject. Drop Shade stays Chebyshev 1–3.
+	# arm. Origin is the Shade unless Gloam is Invisible. Diagonals, knights, and
+	# Manhattan 3+ reject. Manhattan 1–2 cardinal is the legal band. Drop Shade stays Chebyshev 1–3.
 	var ambush: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
 	var drop: Dictionary = SpellKits.spell(SpellKits.DROP_SHADE)
 	eq(int(ambush["ap"]), 4, "adjacent reject does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "adjacent reject does not change Ambush MP")
 	eq(int(ambush["base_damage"]), 22, "adjacent reject does not change Ambush damage")
 	eq(str(ambush["range_mode"]), "cardinal", "Ambush stays cardinal")
-	eq(int(ambush["min_range"]), 3, "Ambush stays exactly 3")
-	eq(int(ambush["max_range"]), 3, "Ambush max stays exactly 3")
+	eq(int(ambush["min_range"]), 1, "Ambush min is 1")
+	eq(int(ambush["max_range"]), 2, "Ambush max is 2")
 	eq(str(drop["range_mode"]), "chebyshev", "Drop Shade stays Chebyshev")
 	eq(int(drop["min_range"]), 1, "Drop Shade min stays 1")
 	eq(int(drop["max_range"]), 3, "Drop Shade max stays 3")
@@ -1709,10 +1721,9 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		Vector2i(6, 4): "diagonal NE adjacent",
 		Vector2i(6, 6): "diagonal SE adjacent",
 		Vector2i(4, 4): "diagonal NW adjacent",
-		Vector2i(6, 5): "cardinal adjacent",
 		Vector2i(7, 4): "knight off the Shade",
 		Vector2i(8, 8): "Chebyshev 3 diagonal",
-		Vector2i(7, 5): "cardinal 2",
+		Vector2i(8, 5): "cardinal 3",
 		Vector2i(9, 5): "cardinal 4",
 	}
 	for shade_at in cases.keys():
@@ -1727,7 +1738,8 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 			"rolls": [1],
 		})
 		eq(_sim.chebyshev(gloam, shade_at) >= 1 and _sim.chebyshev(gloam, shade_at) <= 3, true, "%s is a Drop Shade plant" % label)
-		eq(_sim.is_cardinal_exact(shade_at, prey, 3), false, "%s is not exactly 3 cardinal" % label)
+		var axis := int(_sim._cardinal_axis_len(shade_at, prey))
+		eq(axis >= 1 and axis <= 2, false, "%s is not Manhattan 1–2 cardinal" % label)
 		var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
 		eq(bool(planted.get("ok", false)), true, "Drop Shade still plants %s" % label)
 		eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "%s does not arm Ambush" % label)
@@ -1758,11 +1770,11 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		eq(_unit(0)["pos"], gloam, "%s does not blink Gloam" % label)
 		eq(int(_unit(1)["hp"]), 80, "%s deals no damage" % label)
 
-	# Exactly 3 cardinal from the Shade, but the back tile is occupied: still illegal.
+	# Manhattan 2 cardinal from an armed Shade, but the back tile is occupied: still illegal.
 	var back_gloam := Vector2i(2, 4)
-	var back_prey := Vector2i(5, 2)
+	var back_prey := Vector2i(4, 2)
 	var back_shade := Vector2i(2, 2)
-	var blocked_back := Vector2i(6, 2)
+	var blocked_back := Vector2i(5, 2)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1774,16 +1786,17 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		"blockers": [blocked_back],
 	})
 	eq(_sim.chebyshev(back_gloam, back_shade), 2, "the blocked-back Shade is inside Drop Shade")
-	eq(_sim.is_cardinal_exact(back_shade, back_prey, 3), true, "the blocked-back Shade is exactly 3 cardinal")
-	eq(_sim.manhattan(back_shade, back_prey), 3, "exactly 3 cardinal is Manhattan 3")
+	eq(_sim.is_cardinal_exact(back_shade, back_prey, 2), true, "the blocked-back Shade is Manhattan 2 cardinal")
+	eq(_sim.manhattan(back_shade, back_prey), 2, "the blocked-back gap is Manhattan 2")
 	var back_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": back_shade, "seat": 0})
 	eq(bool(back_plant.get("ok", false)), true, "Drop Shade still plants when the Ambush back tile is blocked")
+	_complete_opponent_turn()
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "an occupied back tile does not arm Ambush")
 	eq(bool(_sim.ambush_origin(0).get("show", true)), false, "an occupied back tile hides origin chrome")
 	eq(bool(_sim.ambush_landing_preview(0).get("ok", true)), false, "an occupied back tile has no landing preview")
 	var back_preview: Dictionary = _sim.preview_cast(SpellKits.AMBUSH, back_shade, back_prey, 1)
 	eq(bool(back_preview.get("legal", true)), false, "preview does not call a blocked back legal")
-	eq(str(back_preview.get("reason", "")), "no_landing", "preview reason for a blocked back is no_landing")
+	eq(str(back_preview.get("reason", "")), "illegal_back", "preview reason for a blocked back is illegal_back")
 	var back_hud := CombatHUD.new()
 	back_hud._build()
 	back_hud.render(_sim.snapshot(), _sim.legal_intents(0))
@@ -1792,41 +1805,44 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	eq(back_button.modulate, CombatHUD.AMBUSH_DISARMED_MODULATE, "an occupied back uses the disarmed modulate")
 	back_hud.free()
 	var back_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": back_prey, "seat": 0})
-	eq(str(back_cast.get("reason", "")), "no_landing", "an occupied back rejects as no_landing")
-	eq(int(_unit(0)["ap"]), 5, "an occupied back refunds the Ambush AP")
+	eq(str(back_cast.get("reason", "")), "illegal_back", "an occupied back rejects as illegal_back")
+	eq(int(_unit(0)["ap"]), 6, "an occupied back refunds the Ambush AP")
 	eq(_unit(0)["pos"], back_gloam, "an occupied back does not blink Gloam")
 	eq(int(_unit(1)["hp"]), 80, "an occupied back deals no damage")
 
-	# No Invisible and no Shade, even on an exactly-3 cardinal body, does not arm.
+	# No Invisible and no Shade, even on a Manhattan-2 cardinal body, does not arm.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 		"kestrel_facing": "W",
 	})
-	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(5, 2), 3), true, "the bare body is exactly 3 cardinal")
+	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(4, 2), 2), true, "the bare body is Manhattan 2 cardinal")
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "no Shade and no Invisible does not arm Ambush")
-	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(str(bare.get("reason", "")), "no_shade", "no Shade and no Invisible rejects as no_shade")
 	eq(int(_unit(0)["ap"]), 6, "no_shade refunds AP")
 
-	var legal_shade := Vector2i(8, 5)
+	var legal_gloam := Vector2i(4, 7)
+	var legal_shade := Vector2i(3, 5)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, prey],
+		"positions": [legal_gloam, prey],
 		"kestrel_facing": "W",
 		"rolls": [1],
 	})
-	eq(_sim.chebyshev(gloam, legal_shade), 2, "the legal Shade is still inside Drop Shade")
-	eq(_sim.is_cardinal_exact(legal_shade, prey, 3), true, "the legal Shade is exactly 3 cardinal from the prey")
+	eq(_sim.chebyshev(legal_gloam, legal_shade), 2, "the legal Shade is still inside Drop Shade")
+	eq(_sim.is_cardinal_exact(legal_shade, prey, 2), true, "the legal Shade is Manhattan 2 cardinal from the prey")
 	var legal_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": legal_shade, "seat": 0})
-	eq(bool(legal_plant.get("ok", false)), true, "Drop Shade plants the exactly-3 cardinal Shade")
-	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "exactly 3 cardinal from the Shade arms Ambush")
+	eq(bool(legal_plant.get("ok", false)), true, "Drop Shade plants the Manhattan-2 cardinal Shade")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a fresh Shade does not arm Ambush on the Drop turn")
+	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Manhattan 2 cardinal from an armed Shade arms Ambush")
 	var legal_origin: Dictionary = _sim.ambush_origin(0)
 	eq(bool(legal_origin.get("show", false)), true, "a legal Shade opens Ambush origin chrome")
 	eq(bool(legal_origin.get("from_self", true)), false, "the legal origin is the Shade")
@@ -1835,12 +1851,12 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	legal_hud._build()
 	legal_hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	var armed: Button = legal_hud._spell_buttons[SpellKits.AMBUSH]
-	eq(armed.disabled, false, "exactly 3 cardinal enables the Ambush arm")
+	eq(armed.disabled, false, "Manhattan 2 cardinal enables the Ambush arm")
 	eq(armed.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "a legal Ambush keeps the shade highlight")
 	truthy(legal_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "Walk names Ambush when the Shade is in range")
 	legal_hud.free()
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(hit.get("ok", false)), true, "exactly 3 cardinal from the Shade still resolves")
+	eq(bool(hit.get("ok", false)), true, "Manhattan 2 cardinal from the Shade still resolves")
 	eq(_unit(0)["pos"], Vector2i(6, 5), "the legal Shade Ambush lands on the empty back tile")
 	eq(int(_unit(1)["hp"]), 50, "the legal Shade Ambush is still 22 × 1.35")
 
@@ -1860,6 +1876,210 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		var band_cast: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": tile, "seat": 0})
 		eq(bool(band_cast.get("ok", false)), true, "Drop Shade still accepts Chebyshev %d" % band)
 		eq(_sim.snapshot()["shade_tokens"][0]["pos"], tile, "Drop Shade Chebyshev %d stays on that tile" % band)
+
+
+func _test_ambush_rules_keeper_lock() -> void:
+	# Opponent-turn Shade arming. Not "created_turn < caster turn".
+	# Manhattan 2, empty tile between, Shade Dropped on an earlier turn: accept.
+	var gloam := Vector2i(2, 4)
+	var shade_at := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var back := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.manhattan(shade_at, prey), 2, "Mauro playtest gap is Manhattan 2")
+	eq(shade_at.y == prey.y, true, "the gap shares a row")
+	eq(_sim._is_empty(Vector2i(3, 2)), true, "one tile sits between Shade and foe")
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants the Manhattan-2 origin")
+	eq(int(_sim.snapshot()["shade_tokens"][0]["opponent_turns_completed"]), 0, "a fresh Shade has seen no opponent turn")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Ambush is illegal on the turn the Shade was Dropped")
+	var fresh_hud := CombatHUD.new()
+	fresh_hud._build()
+	fresh_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var fresh: Button = fresh_hud._spell_buttons[SpellKits.AMBUSH]
+	eq(fresh.disabled, true, "Ambush is soft-grey before the opponent finishes a turn")
+	eq(fresh.modulate, CombatHUD.AMBUSH_DISARMED_MODULATE, "the unarmed Ambush button uses the disarmed modulate")
+	fresh_hud._arm_spell_from_press(SpellKits.AMBUSH)
+	eq(fresh_hud.selected_spell(), "", "press does not select Ambush when it is absent from legal_intents")
+	fresh_hud.free()
+	var early: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(str(early.get("reason", "")), "shade_unarmed", "a same-turn Shade rejects as shade_unarmed")
+	eq(int(_unit(0)["ap"]), 5, "shade_unarmed refunds the 4 AP")
+	_complete_opponent_turn()
+	eq(int(_sim.snapshot()["shade_tokens"][0]["opponent_turns_completed"]), 1, "the opponent's completed turn arms the Shade")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Manhattan 2 from an armed Shade is a legal Ambush")
+	var armed_hud := CombatHUD.new()
+	armed_hud._build()
+	armed_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var armed: Button = armed_hud._spell_buttons[SpellKits.AMBUSH]
+	eq(armed.disabled, false, "Ambush arms once the Shade has seen an opponent turn")
+	eq(armed.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "the armed button keeps the shade highlight")
+	armed_hud.free()
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "armed Manhattan-2 Ambush resolves")
+	eq(_unit(0)["pos"], back, "Ambush lands one step past the foe on the approach axis")
+	eq(int(_unit(0)["shades"]), 0, "a Shade origin spends the Shade on hit")
+	eq(int(_unit(1)["hp"]), 50, "the backstab hit is 22 × 1.35")
+
+	# Manhattan 1 cardinal, empty back, Shade armed: accept.
+	var near_shade := Vector2i(3, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.is_cardinal_exact(near_shade, prey, 1), true, "the near Shade is Manhattan 1 cardinal")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": near_shade, "seat": 0}).get("ok", false)), true, "Drop Shade plants the Manhattan-1 origin")
+	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Manhattan 1 from an armed Shade is legal")
+	var near_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(near_hit.get("ok", false)), true, "armed Manhattan-1 Ambush resolves")
+	eq(_unit(0)["pos"], back, "Manhattan-1 Ambush still lands on the empty back tile")
+
+	# Manhattan 3 cardinal, even after the Shade arms: reject.
+	var far := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 4), far],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.is_cardinal_exact(shade_at, far, 3), true, "this Shade is Manhattan 3 cardinal from the foe")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "Drop Shade can still plant a Manhattan-3 Shade")
+	_complete_opponent_turn()
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Manhattan 3 does not arm Ambush")
+	var far_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": far, "seat": 0})
+	eq(str(far_cast.get("reason", "")), "out_of_range", "armed Manhattan 3 rejects as out_of_range")
+	eq(int(_unit(0)["ap"]), 6, "Manhattan 3 refunds AP")
+
+	# Diagonal-adjacent Shade (Mauro's old false arm), after it is armed: reject.
+	var diag_prey := Vector2i(5, 5)
+	var diag_shade := Vector2i(6, 4)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(4, 7), diag_prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(diag_shade, diag_prey), 1, "the Shade is adjacent")
+	eq(_sim._cardinal_axis_len(diag_shade, diag_prey) < 0, true, "the adjacent Shade is diagonal")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": diag_shade, "seat": 0}).get("ok", false)), true, "Drop Shade still plants the diagonal")
+	_complete_opponent_turn()
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "an armed diagonal Shade does not arm Ambush")
+	var diag_hud := CombatHUD.new()
+	diag_hud._build()
+	diag_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var diag_button: Button = diag_hud._spell_buttons[SpellKits.AMBUSH]
+	eq(diag_button.disabled, true, "a diagonal Shade leaves Ambush soft-grey")
+	eq(diag_button.modulate, CombatHUD.AMBUSH_DISARMED_MODULATE, "a diagonal Shade uses the disarmed modulate")
+	diag_hud._arm_spell_from_press(SpellKits.AMBUSH)
+	eq(diag_hud.selected_spell(), "", "a diagonal Shade press does not select Ambush")
+	diag_hud.free()
+	var diag_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": diag_prey, "seat": 0})
+	eq(str(diag_cast.get("reason", "")), "out_of_range", "an armed diagonal Shade rejects as out_of_range")
+
+	# Invisible self-origin, Manhattan 1 and 2. No Shade spend. No arming delay.
+	for dist in [1, 2]:
+		var self_at := Vector2i(2, 2)
+		var foe := Vector2i(2 + dist, 2)
+		_sim.reset_match({
+			"seed": 1,
+			"flat_board": true,
+			"skip_deploy": true,
+			"classes": ["gloam", "kestrel"],
+			"positions": [self_at, foe],
+			"kestrel_facing": "W",
+			"gloam_invisible": true,
+			"gloam_shade": true,
+			"rolls": [1],
+		})
+		var shades_before := int(_unit(0)["shades"])
+		eq(shades_before >= 1, true, "Invisible Manhattan %d still has a Shade on the board" % dist)
+		eq(_has_legal_cast_to(0, SpellKits.AMBUSH, foe), true, "Invisible Manhattan %d arms Ambush immediately" % dist)
+		var self_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": foe, "seat": 0})
+		eq(bool(self_hit.get("ok", false)), true, "Invisible Manhattan %d Ambush resolves" % dist)
+		eq(_unit(0)["pos"], foe + Vector2i(1, 0), "Invisible Manhattan %d lands past the foe" % dist)
+		eq(int(_unit(0)["shades"]), shades_before, "Invisible origin does not spend Shade at Manhattan %d" % dist)
+		eq(bool(_unit(0)["invisible"]), true, "Invisible Manhattan %d keeps Invisible" % dist)
+
+	# Fade sets Invisible. That self-origin does not wait for an opponent turn.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves on the same turn as Ambush")
+	eq(bool(_unit(0)["invisible"]), true, "Fade sets Invisible")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Fade self-origin arms Ambush without a Shade delay")
+	var fade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
+	eq(bool(fade_hit.get("ok", false)), true, "Fade Ambush resolves on the Fade turn")
+	eq(_unit(0)["pos"], Vector2i(5, 2), "Fade Ambush lands on the empty back tile")
+	eq(int(_unit(0)["shades"]), 0, "Fade Ambush had no Shade to spend")
+
+	# Occupied back: reject + refund.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+		"blockers": [back],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "Drop Shade plants beside a blocked back tile")
+	_complete_opponent_turn()
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(str(blocked.get("reason", "")), "illegal_back", "an occupied back rejects as illegal_back")
+	eq(bool(blocked.get("illegal", false)), true, "illegal_back is a reject")
+	eq(int(_unit(0)["ap"]), 6, "illegal_back refunds AP")
+	eq(_unit(0)["pos"], gloam, "illegal_back does not teleport")
+	eq(int(_unit(0)["shades"]), 1, "illegal_back keeps the Shade")
+
+	# MISS: no teleport, keep Shade and Invisible, 4 AP spent.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"gloam_shade": true,
+		"rolls": [100],
+	})
+	var shades_miss := int(_unit(0)["shades"])
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Ambush miss resolves")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "Ambush miss does not teleport")
+	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade")
+	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
+	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
+	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
@@ -3133,8 +3353,8 @@ func _test_drop_shade_range() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range stays 7")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range stays 4")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["min_range"]), 3, "Ambush min stays exactly 3")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["max_range"]), 3, "Ambush max stays exactly 3")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["min_range"]), 1, "Ambush min stays 1")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["max_range"]), 2, "Ambush max stays 2")
 	eq(str(SpellKits.spell(SpellKits.AMBUSH).get("range_mode", "")), "cardinal", "Ambush range stays cardinal")
 	eq(int(SpellKits.spell(SpellKits.NIGHTFOLD)["max_range"]), 6, "Nightfold max stays 6")
 
@@ -3247,7 +3467,7 @@ func _test_drop_shade_range() -> void:
 
 func _test_ambush_shade_affordance() -> void:
 	var gloam := Vector2i(2, 4)
-	var prey := Vector2i(5, 2)
+	var prey := Vector2i(4, 2)
 	var shade_at := Vector2i(2, 2)
 	_sim.reset_match({
 		"seed": 1,
@@ -3258,7 +3478,7 @@ func _test_ambush_shade_affordance() -> void:
 		"kestrel_facing": "W",
 	})
 	eq(_sim.chebyshev(gloam, shade_at), 2, "Ambush cue plant is Chebyshev 2 from Gloam")
-	eq(_sim.is_cardinal_exact(shade_at, prey, 3), true, "Ambush cue plant is exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(shade_at, prey, 2), true, "Ambush cue plant is Manhattan 2 cardinal from the prey")
 	eq(CombatHUD.gloam_has_live_shade(_sim.snapshot()), false, "Ambush chrome stays quiet before a Shade")
 	var hud := CombatHUD.new()
 	hud._build()
@@ -3271,11 +3491,18 @@ func _test_ambush_shade_affordance() -> void:
 	eq(_unit(0)["pos"], gloam, "Drop Shade still does not relocate Gloam")
 	var snap: Dictionary = _sim.snapshot()
 	eq(CombatHUD.gloam_has_live_shade(snap), true, "a live Shade flags the Ambush cue")
-	eq(CombatHUD.legal_cast_ids(_sim.legal_intents(0)).has(SpellKits.AMBUSH), true, "Ambush is legal once a Shade and a back tile exist")
+	eq(CombatHUD.legal_cast_ids(_sim.legal_intents(0)).has(SpellKits.AMBUSH), false, "a fresh Shade does not put Ambush in legal_intents")
 	hud.render(snap, _sim.legal_intents(0))
 	var ambush: Button = hud._spell_buttons[SpellKits.AMBUSH]
-	eq(ambush.disabled, false, "Ambush enables on the cluster when a Shade is live")
-	eq(ambush.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "Ambush highlights when a Shade is live")
+	eq(ambush.disabled, true, "Ambush stays soft-grey on the turn the Shade was Dropped")
+	eq(ambush.modulate, CombatHUD.AMBUSH_DISARMED_MODULATE, "an unarmed Shade keeps the disarmed modulate")
+	eq(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "Walk does not name Ambush before the Shade arms")
+	_complete_opponent_turn()
+	snap = _sim.snapshot()
+	eq(CombatHUD.legal_cast_ids(_sim.legal_intents(0)).has(SpellKits.AMBUSH), true, "Ambush is legal once the opponent has completed a turn")
+	hud.render(snap, _sim.legal_intents(0))
+	eq(ambush.disabled, false, "Ambush enables on the cluster once the Shade is armed")
+	eq(ambush.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "Ambush highlights when the Shade is armed")
 	truthy(hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "the status line says Ambush from Shade")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade range is Chebyshev 3")
@@ -5921,6 +6148,17 @@ func _walk_seat_toward(seat: int, target: Vector2i, want: int) -> void:
 		else:
 			_sim.submit({"type": "move", "to": best})
 		guard += 1
+
+
+## End the acting seat, then let the opponent finish that next turn.
+## A Shade Dropped by the actor is an Ambush origin only after this returns.
+func _complete_opponent_turn() -> void:
+	var seat := int(_sim.snapshot()["active_seat"])
+	var ended: Dictionary = _sim.submit({"type": "end_turn", "seat": seat})
+	eq(bool(ended.get("ok", false)), true, "the acting seat ends so the opponent can finish a turn")
+	var opponent := int(_sim.snapshot()["active_seat"])
+	var finished: Dictionary = _sim.submit({"type": "end_turn", "seat": opponent})
+	eq(bool(finished.get("ok", false)), true, "the opponent completes one full turn")
 
 
 func _has_legal_cast(seat: int, spell_id: String) -> bool:

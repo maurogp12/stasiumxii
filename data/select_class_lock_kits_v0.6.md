@@ -22,7 +22,7 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
 - spells:
   - Cut: 3AP/0MP | r1 | +1 Umbral | 13D FLEX weapon | Backstab applies
   - Drop Shade: 1AP/0MP | r1–3 | +1 Shade (max 2) | LOCK Neutral | Shade 3 turns | no roll
-  - Ambush: 4AP/0MP | exactly 3 cardinal | origin=self if Invisible else Shade; dest empty back only; spend Shade only if origin Shade | FLEX jump then 22D | occupied/illegal back → illegal cast + refund (no adjacent landing) | MISS: no teleport, Shade kept, Invisible kept, 4AP spent
+  - Ambush: 4AP/0MP | range 1–2 cardinal | origin=self if Invisible else live Shade; Shade arms only after the opponent completes ≥1 full turn since that Drop (Fade/Invisible self-origin has no delay) | Manhattan {1, 2} N/E/S/W, no diagonals | dest = empty standable tile one step past the enemy on that axis; spend Shade only if origin Shade | FLEX jump then 22D | occupied/illegal back → illegal_back + refund | MISS: no teleport, Shade kept, Invisible kept, 4AP spent | button arms only when Ambush ∈ legal_intents
   - Fade: 2AP/1MP | self | +1 Umbral | LOCK Neutral | Invisible | no roll
   - Nightfold: 4AP/0MP | r0–6 | Shade + Umbral 2+ | clear Umbral | FLEX blink to Shade | 22D each adjacent | Shade commit-on-cast (can-wait vs global miss refund)
 
@@ -39,7 +39,7 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
   - Aegis Break: 4AP/0MP | r1–2 | gate Aegis 3+ | HIT: 26D/body + push1 + clear ALL Aegis | MISS: spend 0
 
 ## Stamps (closed)
-Heartstop enemy 10; Ambush 22 @ exactly 3 cardinal miss rules above; Aegis Break 26 clear-all on HIT spend 0 on MISS; Umbral 0–4; Snap Wall ships; proto 80/0/0.
+Heartstop enemy 10; Ambush 22 @ Manhattan 1–2 cardinal (Shade arms after the opponent completes a turn; Fade self-origin does not wait) miss rules above; Aegis Break 26 clear-all on HIT spend 0 on MISS; Umbral 0–4; Snap Wall ships; proto 80/0/0.
 
 ## Open / can-wait (do not invent)
 Nightfold miss/Shade vs global refund; Intercept reset/multi-guard/pipeline; Neutral Primary scope; AoE vs Invisible; Heartstop immunity clock / CC priority / heal overflow / shield stack; Water Ward rider 24 vs Ward base 20; cone/ward masks.

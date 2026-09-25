@@ -381,7 +381,7 @@ func _test_ambush_miss_keeps_shade() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"gloam_invisible": true,
@@ -390,7 +390,7 @@ func _test_ambush_miss_keeps_shade() -> void:
 	var before: Vector2i = snap["units"][0]["pos"]
 	var shades_before := int(snap["units"][0]["shades"])
 	eq(shades_before >= 1, true, "Shade setup places a token")
-	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(bool(missed.get("ok", false)), true, "Ambush miss resolves")
 	var actor: Dictionary = _sim.snapshot()["units"][0]
 	eq(actor["pos"], before, "Ambush miss does not teleport")
@@ -408,17 +408,17 @@ func _test_ambush_hit() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"gloam_shade": true,
 		"rolls": [1],
 	})
 	var shades_before := int(_sim.snapshot()["units"][0]["shades"])
-	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	var actor: Dictionary = _sim.snapshot()["units"][0]
-	eq(actor["pos"], Vector2i(6, 2), "Ambush lands on the empty back cell")
+	eq(actor["pos"], Vector2i(5, 2), "Ambush lands on the empty back cell")
 	eq(int(actor["shades"]), shades_before, "Invisible origin does not spend Shade")
 	eq(bool(actor["invisible"]), true, "Ambush hit keeps Invisible")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back is 22 × 1.35 = 30")
@@ -427,20 +427,22 @@ func _test_ambush_hit() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 4), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 4), Vector2i(4, 2)],
 		"kestrel_facing": "W",
 		"rolls": [1],
-		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
+		"blockers": [Vector2i(5, 2)],
 	})
 	eq(_sim.chebyshev(Vector2i(2, 4), Vector2i(2, 2)), 2, "blocked-back plant is Chebyshev 2 from Gloam")
-	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(5, 2), 3), true, "blocked-back plant is exactly 3 cardinal from the prey")
+	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(4, 2), 2), true, "blocked-back plant is Manhattan 2 cardinal from the prey")
 	var planted_block: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2), "seat": 0})
-	eq(bool(planted_block.get("ok", false)), true, "blocked-back fixture plants a Shade exactly 3 cardinal from the prey")
+	eq(bool(planted_block.get("ok", false)), true, "blocked-back fixture plants a Shade Manhattan 2 cardinal from the prey")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
 	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var ap_blocked := int(_sim.snapshot()["units"][0]["ap"])
-	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
-	eq(str(blocked.get("reason", "")), "no_landing", "blocked back refunds")
+	eq(str(blocked.get("reason", "")), "illegal_back", "blocked back refunds")
 	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(2, 4), "blocked back does not move onto an adjacent cell")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_blocked, "blocked back refunds AP")
@@ -450,9 +452,9 @@ func _test_ambush_hit() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 2), Vector2i(5, 2)],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 	})
-	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(str(rejected.get("reason", "")), "no_shade", "Ambush without Shade or Invisible is rejected")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), int(bare["units"][0]["ap"]), "no_shade does not spend AP")
 

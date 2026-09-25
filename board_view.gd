@@ -1163,8 +1163,8 @@ func _paint_highlights() -> void:
 	var range_def: Dictionary = {}
 	var stamp_rim := false
 	var ambush_armed := CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH)
-	# Ambush range chrome is the legal arm only. An adjacent Shade must not
-	# paint a teach ring while the cast is absent from legal_intents.
+	# Ambush range chrome is the legal arm only. A fresh Shade, a diagonal, or
+	# Manhattan 3 must not paint a teach ring while the cast is absent from legal_intents.
 	if spell_id != "" and spell_id != SpellKits.ADVANCE and (spell_id != SpellKits.AMBUSH or ambush_armed):
 		range_def = SpellKits.spell(spell_id)
 		var target_kind := str(range_def.get("target", ""))

@@ -293,10 +293,10 @@ const SPELLS := {
 		"class_id": CLASS_GLOAM,
 		"ap": 4,
 		"mp": 0,
-		# Exactly 3 cardinal spaces: N/S/E/W. Not diagonals, not 1–2, not 4+.
+		# Manhattan 1–2 on one cardinal axis (N/S/E/W). Not diagonals, not 3+.
 		"range_mode": "cardinal",
-		"min_range": 3,
-		"max_range": 3,
+		"min_range": 1,
+		"max_range": 2,
 		"rolls": true,
 		"element": "air",
 		"base_damage": 22,
@@ -516,7 +516,7 @@ static func rolls(spell_id: String) -> bool:
 
 
 ## Player-facing band. Internal range_mode stays chebyshev / manhattan / cardinal.
-## Cardinal spells read min/max from the kit: Advance is exactly 2, Ambush is exactly 3.
+## Cardinal spells read min/max from the kit: Advance is exactly 2, Ambush is 1–2.
 static func range_text(def: Dictionary) -> String:
 	var lo := int(def.get("min_range", 0))
 	var hi := int(def.get("max_range", 0))
