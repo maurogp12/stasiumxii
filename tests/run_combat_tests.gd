@@ -84,6 +84,7 @@ func _run() -> void:
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
+	_test_hud_marks_and_impact_pips()
 	_test_preview_cast()
 	_test_legal_moves_after_advance()
 	_test_walk_facing_follows_last_hop()
@@ -3726,6 +3727,140 @@ func _test_kit_class_exclusions() -> void:
 	eq(sim_src.contains("WIND_MOD"), false, "CombatSim still has no WIND_MOD constant")
 	eq(sim_src.contains("wind_mod"), false, "CombatSim still has no wind_mod term")
 	eq(sim_src.contains("* WindMod"), false, "CombatSim still does not multiply by WindMod")
+
+
+func _test_hud_marks_and_impact_pips() -> void:
+	# Phone playtest: Mark Shot logs +1 Mark on Gloam, but Kestrel's Marks row
+	# stayed empty because it read the caster. A01 stores the stack on the target.
+	# Locked rules do not tick Marks off; Detonate consumes the stack.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"rolls": [1, 1, 1],
+	})
+	var hud := _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "○○○○○", "Kestrel Marks row starts empty")
+	eq(str(hud._ironjaw_body.text).contains("Marks"), false, "Gloam card keeps Umbral / Shades, not a second Marks row")
+	hud.free()
+	var marked: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})
+	eq(marked["ok"], true, "Mark Shot on Gloam connects")
+	eq(int(_unit(1)["marks"]), 1, "the stack is on Gloam")
+	eq(int(_unit(0)["marks"]), 0, "Kestrel's own marks field stays 0")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "●○○○○", "Kestrel Marks row shows 1/5 after the hit")
+	hud.free()
+	var stacked: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})
+	eq(stacked["ok"], true, "second Mark Shot connects")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "●●○○○", "Kestrel Marks row shows 2/5")
+	hud.free()
+	# Marks have no duration tick. They stay through the foe's turn, then Detonate clears them.
+	eq(_sim.submit({"type": "end_turn"})["ok"], true, "Kestrel ends the turn with Marks still on Gloam")
+	eq(_sim.submit({"type": "end_turn"})["ok"], true, "Gloam's turn does not expire Marks")
+	eq(int(_unit(1)["marks"]), 2, "the stack is still on Gloam next Kestrel turn")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "●●○○○", "Kestrel Marks row still shows 2/5 after a full round")
+	hud.free()
+	var boom: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0)})
+	eq(boom["ok"], true, "Detonate consumes the stack on Gloam")
+	eq(int(_unit(1)["marks"]), 0, "Detonate clears target Marks")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "○○○○○", "Kestrel Marks row clears when Detonate spends the stack")
+	hud.free()
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+		"rolls": [100],
+	})
+	var miss: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})
+	eq(str(miss["events"][0]["type"]), "miss", "scripted miss does not apply a Mark")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "○○○○○", "a miss leaves the Marks row empty")
+	hud.free()
+
+	# Ironjaw is the target: his own card already holds the stack, and Kestrel's row matches it.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(4, 0),
+		"ironjaw_facing": "W",
+	})
+	eq(_sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 0)})["ok"], true, "Mark Shot on Ironjaw connects")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_marks_row(hud, 0), "●○○○○", "Kestrel row shows the Mark on Ironjaw")
+	eq(_marks_row(hud, 1), "●○○○○", "Ironjaw row shows the Mark stored on him")
+	hud.free()
+
+	# Impact lives on Ironjaw. His card reads that field on gain and on Crush spend.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_facing": "E",
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})["ok"], true, "Strike grants Impact")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_impact_row(hud, 1), "●○○○", "Ironjaw Impact row shows 1/4 after Strike")
+	eq(_impact_row(hud, 0), "○○○○", "Kestrel does not display Ironjaw's Impact")
+	hud.free()
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"ironjaw_impact": 3,
+	})
+	_sim.submit({"type": "end_turn"})
+	eq(_sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})["ok"], true, "Crush spends Impact")
+	eq(int(_unit(1)["impact"]), 1, "3-2 leaves 1 Impact")
+	hud = _hud_from_snap(_sim.snapshot())
+	eq(_impact_row(hud, 1), "●○○○", "Ironjaw Impact row shows the stack left after Crush")
+	hud.free()
+
+
+func _hud_from_snap(snap: Dictionary) -> CombatHUD:
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.render(snap, [])
+	return hud
+
+
+func _marks_row(hud: CombatHUD, seat: int) -> String:
+	return _pip_row(hud, seat, "Marks ")
+
+
+func _impact_row(hud: CombatHUD, seat: int) -> String:
+	return _pip_row(hud, seat, "Impact ")
+
+
+func _pip_row(hud: CombatHUD, seat: int, label: String) -> String:
+	var body := str(hud._kestrel_body.text) if seat == 0 else str(hud._ironjaw_body.text)
+	var at := body.find(label)
+	if at < 0:
+		return ""
+	var rest := body.substr(at + label.length())
+	var pips := ""
+	for i in rest.length():
+		var ch := rest.substr(i, 1)
+		if ch != "●" and ch != "○":
+			break
+		pips += ch
+	return pips
 
 
 func _test_aim_hit_preview() -> void:
