@@ -8,6 +8,8 @@ Mobile track only. This preset lives on the `mobile` branch. It stays off PC `ma
 - stretch mode `canvas_items`
 - stretch aspect `expand`
 
+Godot 4.7 will not export this preset until `rendering/textures/vram_compression/import_etc2_astc` is true. That flag is on. Existing textures stay lossless (`compress/mode=0` in their `.import` files). The flag satisfies the exporter. It does not recompress art.
+
 Combat rules, kits, hit bands, maps, and the PC HUD are untouched.
 
 ## Preset
@@ -21,7 +23,7 @@ Combat rules, kits, hit bands, maps, and the PC HUD are untouched.
 | Version | name `0.1.0-mobile`, code `1` |
 | Format | APK (`gradle_build/export_format=0`) |
 | ABI | `arm64-v8a` only |
-| Min / target SDK | blank (engine defaults: target SDK 36; Vulkan min SDK 29 when the mobile renderer uses Vulkan) |
+| Min / target SDK | blank in the preset. The debug APK below resolved to min SDK 24 and target SDK 36 |
 | Signing | on, keystores left empty (no secrets in git) |
 | Permission | `INTERNET` (online lobby). Every other Android permission is off |
 | Screen | immersive mode on. This hides the system bars. It does not change the 960×720 viewport |
@@ -34,41 +36,65 @@ Release signing uses a keystore that stays outside the repo. Godot 4.7 stores ke
 - `GODOT_ANDROID_KEYSTORE_DEBUG_PATH` / `_USER` / `_PASSWORD`
 - `GODOT_ANDROID_KEYSTORE_RELEASE_PATH` / `_USER` / `_PASSWORD`
 
+## Debug APK (sideload)
+
+Built 2026-09-25 on this branch with Godot `4.7.2.stable.official.ed1daf0bf` and the matching official templates (`android_debug.apk` and `android_release.apk` in `~/.local/share/godot/export_templates/4.7.2.stable/`). OpenJDK 21 was at `/usr/lib/jvm/java-21-openjdk-amd64`. The Android SDK root was `/home/ubuntu/android-sdk` (command-line tools `13114758`, platform-tools `37.0.1`, build-tools `35.0.1`). Editor Settings pointed Java and the SDK at those paths. The preset keystore fields stayed empty. Godot signed with the debug keystore it generated at `~/.local/share/godot/keystores/debug.keystore` (not in git).
+
+```text
+godot --headless --path . --export-debug "Android" builds/android/stasiumxii-mobile-debug.apk
+```
+
+Exit code 0. Godot aligned the APK, signed it, and printed `Verifying APK...` then `DONE`. `apksigner verify` (build-tools 35.0.1) reports APK Signature Scheme v2 and v3, one signer: `CN=Godot, OU=Godot Engine, O=Stichting Godot, C=NL`.
+
+| Check | Result |
+| --- | --- |
+| Package | `com.maurogp12.stasiumxii.mobile` |
+| Version | name `0.1.0-mobile`, code `1` |
+| Debuggable | true |
+| ABI | `arm64-v8a` only (`libgodot_android.so`) |
+| Permission | `android.permission.INTERNET` only |
+| Min / target SDK | 24 / 36 |
+| GLES | 3.0 required |
+| Vulkan features | declared, `required=false` |
+| Renderer metadata | `org.godotengine.rendering.method=mobile` |
+| Packed main scene | `res://scenes/mobile_hub.tscn` |
+| Size | 36222737 bytes |
+| SHA-256 | `3a51bb3f12056d206fa5767c1a75452ca4315eec7aeab2ec36db5237bce2fe5c` |
+
+`/builds/` is gitignored, so the APK is not in the commit. The sideload file is the cloud-agent artifact `stasiumxii-mobile-debug.apk` (same bytes). Godot also wrote `builds/android/stasiumxii-mobile-debug.apk.idsig` next to the APK. That idsig is not required to sideload.
+
+Godot printed `Could not find version of build tools that matches Target SDK, using 35.0.1` and then signed with that build-tools. The export still finished and `apksigner verify` passed. No phone and no emulator were attached, so this environment did not run `adb install` or launch the app. The package is a signed debug build of this branch. On-device play was not observed here.
+
+### Install on a phone
+
+The APK is arm64. A 32-bit-only phone will reject it.
+
+Without a computer:
+
+1. Copy `stasiumxii-mobile-debug.apk` onto the phone.
+2. Android 8 and later: **Settings → Apps → Special app access → Install unknown apps**, and allow the app that will open the file (Files, Chrome, or Drive). Older Android: **Settings → Security → Unknown sources**.
+3. Open the APK and install.
+4. Launch **STASIUM XII**.
+
+USB, with Developer options and USB debugging on, and `adb devices` showing the phone as `device`:
+
+```text
+adb install -r stasiumxii-mobile-debug.apk
+```
+
+If Android reports that the package already exists with a different signature, uninstall first:
+
+```text
+adb uninstall com.maurogp12.stasiumxii.mobile && adb install -r stasiumxii-mobile-debug.apk
+```
+
+This debug key is not a Play release key. A later release-signed build of the same package id will not update over this install until the debug app is removed.
+
 ## Smoke in this environment (2026-09-25)
 
-Godot and the Android SDK were not installed. A temporary official editor binary `Godot v4.7.2.stable.official.ed1daf0bf` was used for the smoke and is not part of the commit. OpenJDK 21 is present at `/usr/lib/jvm/java-21-openjdk-amd64` and is not wired into Editor Settings.
+The first export, before templates, Editor Settings, and the ETC2 flag, exited 1 with missing `android_debug.apk` / `android_release.apk`, an unset Java SDK path, and an SDK path that had no `platform-tools` or `build-tools`. No APK was produced then.
 
-Headless project load:
-
-```text
-godot --headless --path . --import --quit
-```
-
-Exit code 0. The editor imported the project (84 asset steps) and quit. `project.godot` display keys stayed `960` / `720` / `canvas_items` / `expand`.
-
-Export (preset name was found; both modes failed before packaging):
-
-```text
-godot --headless --path . --export-debug "Android" /tmp/out/stasiumxii-mobile-debug.apk
-godot --headless --path . --export-release "Android" /tmp/out/stasiumxii-mobile-release.apk
-```
-
-Both exited 1 with:
-
-```text
-Cannot export project with preset "Android" due to configuration errors:
-No export template found at the expected path:
-/home/ubuntu/.local/share/godot/export_templates/4.7.2.stable/android_debug.apk
-No export template found at the expected path:
-/home/ubuntu/.local/share/godot/export_templates/4.7.2.stable/android_release.apk
-A valid Java SDK path is required in Editor Settings.
-Invalid Android SDK path in Editor Settings. Missing 'platform-tools' directory!
-Unable to find Android SDK platform-tools' adb command.
-Invalid Android SDK path in Editor Settings. Missing 'build-tools' directory!
-Unable to find Android SDK build-tools' apksigner command.
-```
-
-No APK was produced. No device was attached, so install/launch was not run.
+After those were installed and `import_etc2_astc` was enabled, the debug export in the section above exited 0. Display keys stayed `960` / `720` / `canvas_items` / `expand`. Headless `tests/run_*_tests.gd` all exited 0 (combat 3580, mobile hub 119, touch adapter 86, and the rest of the suite). Release export was not run.
 
 ## One-device smoke (Editor)
 
@@ -119,9 +145,7 @@ godot --headless --path . --export-debug "Android" builds/android/stasiumxii-mob
 godot --headless --path . --export-release "Android" builds/android/stasiumxii-mobile-release.apk
 ```
 
-## Blockers still open for a device APK
+## Not done in this environment
 
-- Godot Android export templates for the editor version in use (`android_debug.apk` and `android_release.apk`).
-- Editor Settings **Java SDK Path** (a JDK on disk is not enough until this path is set).
-- Android SDK with `platform-tools` (`adb`) and `build-tools` (`apksigner`), and **Android SDK Path** set in Editor Settings.
-- A physical arm64 device (or an arm64 emulator) with USB debugging. This environment had neither `adb` nor a device.
+- No physical arm64 phone and no emulator, so the APK was not installed or launched here.
+- No release APK. Release signing still needs a keystore kept outside the repo.
