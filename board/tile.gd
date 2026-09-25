@@ -244,12 +244,12 @@ func _fill_color_now() -> Color:
 func _paint_crisp_outline(canvas: CanvasItem, points: PackedVector2Array, color: Color) -> void:
 	var outline := PackedVector2Array(points)
 	outline.append(points[0])
-	var rim := Color(0.06, 0.04, 0.03, 0.88)
-	var line := Color(1.0, 0.97, 0.86, 0.96)
+	var rim := Color(0.05, 0.03, 0.02, 0.95)
+	var line := Color(1.0, 0.98, 0.9, 1.0)
 	if color.a > 0.0:
-		line = Color(color.r, color.g, color.b, 0.98)
+		line = Color(color.r, color.g, color.b, 1.0)
 	canvas.draw_polyline(outline, rim, AMBIENT.CRISP_OUTLINE_PX, true)
-	canvas.draw_polyline(outline, line, AMBIENT.CRISP_INNER_PX, true)
+	canvas.draw_polyline(outline, line, AMBIENT.CRISP_INNER_PX, false)
 
 
 func _apply_overlay_breathe(time_sec: float) -> void:

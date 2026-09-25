@@ -31,18 +31,24 @@ func _run() -> void:
 
 func _test_tunables_stay_in_range() -> void:
 	eq(AMBIENT.OVERLAY_PERIOD >= 1.2 and AMBIENT.OVERLAY_PERIOD <= 1.8, true, "overlay breathe period is 1.2–1.8s")
-	near(AMBIENT.OVERLAY_ALPHA_MIN, 0.42, "overlay breathe floor")
-	near(AMBIENT.OVERLAY_ALPHA_MAX, 0.58, "overlay breathe ceiling")
+	near(AMBIENT.OVERLAY_ALPHA_MIN, 0.46, "overlay breathe floor")
+	near(AMBIENT.OVERLAY_ALPHA_MAX, 0.54, "overlay breathe ceiling")
+	eq(AMBIENT.OVERLAY_ALPHA_MAX - AMBIENT.OVERLAY_ALPHA_MIN <= 0.081, true, "opacity swing stays within about 8%")
+	eq(AMBIENT.OVERLAY_ALPHA_MIN >= 0.45, true, "a legal wash stays clearly filled")
 	eq(AMBIENT.CRISP_OUTLINE_PX >= 1.0 and AMBIENT.CRISP_OUTLINE_PX <= 2.0, true, "selected rim is 1–2 px")
 	eq(AMBIENT.CRISP_INNER_PX >= 1.0 and AMBIENT.CRISP_INNER_PX <= 2.0, true, "selected core is 1–2 px")
 	eq(AMBIENT.SEAM_BLEED_PX > 0.0 and AMBIENT.SEAM_BLEED_PX <= 1.5, true, "seam overlap stays a hairline")
-	eq(AMBIENT.MOTE_AMOUNT <= 12, true, "mote count stays phone-small")
+	eq(AMBIENT.MOTE_AMOUNT <= 8, true, "mote count stays sparse")
 	eq(AMBIENT.MOTE_AMOUNT >= 4, true, "motes are visible")
 	eq(AMBIENT.MOTE_LIFETIME >= 6.0, true, "motes live long enough to read as dust")
-	eq(AMBIENT.MOTE_Z > 300 and AMBIENT.MOTE_Z < 640, true, "motes sit above pawns and under Shade")
-	near(AMBIENT.MOTE_ALPHA, 0.22, "mote alpha stays faint")
+	eq(AMBIENT.MOTE_Z < 0, true, "motes sort under tiles and pawns")
+	near(AMBIENT.MOTE_ALPHA, 0.14, "mote alpha stays faint")
+	eq(AMBIENT.SHIMMER_PERIOD >= 3.5, true, "water pulse is slower than a hit flash")
 	eq(AMBIENT.SHIMMER_AMPLITUDE_MUD < AMBIENT.SHIMMER_AMPLITUDE_WATER, true, "mud shimmer is the quieter of the two")
-	eq(AMBIENT.SHIMMER_AMPLITUDE_WATER <= 0.06, true, "water shimmer is not a disco pulse")
+	eq(AMBIENT.SHIMMER_AMPLITUDE_WATER <= 0.04, true, "water shimmer stays a low mid-value drift")
+	var prop_crest := AMBIENT.prop_gain(AMBIENT.PROP_PERIOD * 0.25, 0.0)
+	near(prop_crest, 1.0, "prop pulse crests at the painted value")
+	eq(AMBIENT.prop_gain(AMBIENT.PROP_PERIOD * 0.75, 0.0) < 1.0, true, "prop pulse only dips")
 	eq(AMBIENT.prop_is_ambient("waterfall"), true, "waterfall can idle-breathe")
 	eq(AMBIENT.prop_is_ambient("steam_vent"), true, "steam vent can idle-breathe")
 	eq(AMBIENT.prop_is_ambient("spark"), true, "spark can idle-breathe")
@@ -61,6 +67,8 @@ func _test_shimmer_is_water_and_mud_only() -> void:
 	var src := FileAccess.get_file_as_string("res://board/board_shimmer.gdshader")
 	truthy(src.contains("shader_type canvas_item"), "shimmer is a canvas_item shader")
 	truthy(src.contains("uv"), "shimmer moves UVs")
+	truthy(src.contains("1.0 - amplitude"), "shimmer never adds light above the texel")
+	eq(src.contains("1.0 + sin"), false, "shimmer has no specular add")
 	var lo := 2.0
 	var hi := 0.0
 	for step in 32:
@@ -69,7 +77,8 @@ func _test_shimmer_is_water_and_mud_only() -> void:
 		lo = minf(lo, gain)
 		hi = maxf(hi, gain)
 	near(lo, 1.0 - AMBIENT.SHIMMER_AMPLITUDE_WATER, "water gain trough")
-	near(hi, 1.0 + AMBIENT.SHIMMER_AMPLITUDE_WATER, "water gain crest")
+	near(hi, 1.0, "water gain crests at the painted mid value")
+	eq(hi <= 1.001, true, "water never brightens past the texture")
 
 
 func _test_overlay_breathe_is_a_slow_sine() -> void:
@@ -87,6 +96,7 @@ func _test_overlay_breathe_is_a_slow_sine() -> void:
 	near(trough, AMBIENT.OVERLAY_ALPHA_MIN, "sine trough is the breathe floor")
 	var mid := AMBIENT.overlay_fill_alpha(0.0, 0.0)
 	near(mid, BoardTile.HIGHLIGHT_FILL_ALPHA, "breathe is centered on the fill alpha")
+	eq(crest - trough <= 0.081, true, "the sine swing stays within about 8% opacity")
 
 
 func _test_tile_filter_seam_and_shimmer() -> void:
@@ -188,26 +198,35 @@ func _test_ambient_props_pulse_from_the_foot() -> void:
 func _test_motes_stay_sparse() -> void:
 	var ambient := AMBIENT.new() as BoardAmbient
 	get_root().add_child(ambient)
-	ambient.fit_to_size(8)
-	var motes := ambient.get_node("Motes") as CPUParticles2D
-	truthy(motes != null, "ambient layer owns one particle node")
-	eq(motes.amount, AMBIENT.MOTE_AMOUNT, "emitter uses the mote budget")
-	eq(motes.one_shot, false, "dust loops")
-	eq(motes.emitting, true, "dust is on while motion is allowed")
-	eq(motes.lifetime, AMBIENT.MOTE_LIFETIME, "dust lifetime matches the tunable")
-	eq(motes.z_index, AMBIENT.MOTE_Z, "dust sorts above the board")
-	eq(motes.z_as_relative, false, "dust z is absolute so it clears tile z")
-	eq(motes.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "dust softens with linear samples")
-	eq(motes.emission_shape, CPUParticles2D.EMISSION_SHAPE_RECTANGLE, "dust covers a rectangle apron")
-	eq(motes.emission_rect_extents.x > 256.0, true, "the emitter includes the apron past the diamond")
-	var ramp := motes.color_ramp as Gradient
+	ambient.fit_to_size(15)
+	var left := ambient.get_node("Motes/Left") as CPUParticles2D
+	var right := ambient.get_node("Motes/Right") as CPUParticles2D
+	truthy(left != null and right != null, "dust is two apron strips")
+	eq(left.amount + right.amount, AMBIENT.MOTE_AMOUNT, "both strips share the mote budget")
+	eq(left.one_shot, false, "dust loops")
+	eq(left.emitting and right.emitting, true, "dust is on while motion is allowed")
+	eq(left.lifetime, AMBIENT.MOTE_LIFETIME, "dust lifetime matches the tunable")
+	eq(left.z_index, AMBIENT.MOTE_Z, "dust sorts under the board")
+	eq(right.z_index < VISUAL_SORT.unit_z_index(Vector2i(0, 0), 0.0), true, "dust cannot cover a pawn")
+	eq(left.z_as_relative, false, "dust z is absolute")
+	eq(left.gravity, Vector2.ZERO, "dust does not fall onto the diamond")
+	eq(left.direction.x < 0.0, true, "the left strip drifts outward")
+	eq(right.direction.x > 0.0, true, "the right strip drifts outward")
+	var bounds := AMBIENT.diamond_bounds(15)
+	eq(AMBIENT.strip_clears_playfield(left.position, left.emission_rect_extents, bounds, left.direction.x), true, "left dust stays outside the diamond")
+	eq(AMBIENT.strip_clears_playfield(right.position, right.emission_rect_extents, bounds, right.direction.x), true, "right dust stays outside the diamond")
+	var inward := AMBIENT.MOTE_SPEED_MAX * AMBIENT.MOTE_LIFETIME * sin(deg_to_rad(AMBIENT.MOTE_SPREAD_DEG))
+	var gap := (AMBIENT.APRON_PX - AMBIENT.APRON_BAND) * 0.5
+	eq(inward < gap, true, "spread cannot carry dust onto the playfield")
+	var ramp := left.color_ramp as Gradient
 	var peak := 0.0
 	for i in ramp.get_point_count():
 		peak = maxf(peak, ramp.get_color(i).a)
 	near(peak, AMBIENT.MOTE_ALPHA, "dust alpha peaks at the faint tunable")
 	MOTION.set_reduce_motion(true)
-	ambient.fit_to_size(8)
-	eq(motes.emitting, false, "reduce motion stops the dust")
+	ambient.fit_to_size(15)
+	eq(left.emitting, false, "reduce motion stops the dust")
+	eq(right.emitting, false, "reduce motion stops both strips")
 	MOTION.set_reduce_motion(false)
 	ambient.free()
 
@@ -227,6 +246,12 @@ func _test_view_wires_chrome_without_rules() -> void:
 	truthy(sort.contains("float(cell.x + cell.y) * 16.0"), "cell_to_local keeps the 16 px iso step")
 	eq(VISUAL_SORT.cell_to_local(Vector2i(1, 0), 0.0), Vector2(32, 16), "flat iso formula is unchanged")
 	eq(VISUAL_SORT.cell_to_local(Vector2i(1, 0), 1.0), Vector2(32, 6), "elevation lift is still 10 px")
+	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud.contains("Color(0.92, 0.22, 0.14)"), "reject toast red is unchanged")
+	truthy(view.contains("flash_hit"), "hit flash still plays on the pawn")
+	truthy(view.contains("flash_impact"), "impact flash still plays on the caster")
+	eq(view.contains("vignette"), false, "the board does not dim the corners")
+	eq(FileAccess.get_file_as_string("res://board/board_shimmer.gdshader").contains("vignette"), false, "the floor shader does not dim corners")
 
 
 func near(actual: float, expected: float, msg: String) -> void:
