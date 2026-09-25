@@ -248,6 +248,23 @@ static func engine_pips(current: int, maximum: int) -> String:
 	return out
 
 
+## A01 Locked: Marks live on the target, not the caster. Kestrel's Marks row is
+## that stack (the foe Detonate reads). Other Marks rows are the stack on the
+## unit itself — Ironjaw, when he is the target. Impact stays on the unit that
+## holds it (Ironjaw), so that card reads `impact` directly.
+static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
+	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+		return unit
+	var seat := int(unit.get("seat", -1))
+	for other in snap.get("units", []):
+		if typeof(other) != TYPE_DICTIONARY:
+			continue
+		if int(other.get("seat", -1)) == seat:
+			continue
+		return other
+	return unit
+
+
 static func legal_cast_ids(legal: Array) -> Dictionary:
 	var out := {}
 	for intent in legal:
@@ -1196,7 +1213,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
-		_resource_meter_line(unit),
+		_resource_meter_line(unit, snap),
 		_kit_footer(unit),
 	]
 
@@ -1207,7 +1224,8 @@ func _unit(units: Array, seat: int) -> Dictionary:
 
 ## Kestrel / Ironjaw keep Marks / Impact. Card classes paint snapshot fields.
 ## `unit.resources` mirrors pulse / umbral / shades / aegis when the field is absent.
-func _resource_meter_line(unit: Dictionary) -> String:
+## Marks pips follow `marks_holder` so a connect on the foe fills Kestrel's row.
+func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 	var class_id := str(unit.get("class_id", ""))
 	var mastery := int(unit.get("mastery", 0))
 	var resist := int(unit.get("resist", 0))
@@ -1238,8 +1256,9 @@ func _resource_meter_line(unit: Dictionary) -> String:
 			mastery,
 			resist,
 		]
+	var marked := marks_holder(unit, snap)
 	return "Marks %s  Impact %s" % [
-		engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
+		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
 		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
 	]
 
