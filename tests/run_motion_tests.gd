@@ -64,7 +64,8 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.ANTICIPATION_SEC >= 0.06 and MOTION.ANTICIPATION_SEC <= 0.10, true, "anticipation is a short wind-up")
 	eq(MOTION.attack_sec() <= MOTION.ACTION_LOCK_MAX, true, "attack wind-up and hold fit the action lock")
 	eq(MOTION.cast_sec() <= MOTION.ACTION_LOCK_MAX, true, "cast wind-up and hold fit the action lock")
-	eq(MOTION.impact_hold_sec() > 0.05, true, "impact hold is long enough to read")
+	eq(MOTION.IMPACT_HOLD_SEC >= 0.10 and MOTION.IMPACT_HOLD_SEC <= 0.15, true, "impact hold is 100-150ms")
+	eq(MOTION.impact_hold_sec() >= 0.10 and MOTION.impact_hold_sec() <= 0.15, true, "impact hold stays inside 100-150ms")
 	eq(MOTION.impact_hold_sec() <= MOTION.ACTION_LOCK_MAX, true, "impact hold does not exceed the action lock")
 	var prelude := MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC + MOTION.ATTACK_BACK_SEC
 	eq(MOTION.impact_hold_sec() <= MOTION.ACTION_LOCK_MAX - prelude + 0.0001, true, "impact hold fits the remaining lock")

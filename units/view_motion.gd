@@ -49,11 +49,12 @@ const ANTICIPATION_PULL_PX := 5.0
 const ANTICIPATION_SQUASH_X := 1.16
 const ANTICIPATION_SQUASH_Y := 0.82
 
-## Impact pose. impact_hold_sec() clamps this to the lock that is still free.
-const IMPACT_HOLD_SEC := 0.20
+## Impact pose pause. 100–150ms, midpoint 125. impact_hold_sec() clamps this
+## to the lock that is still free. Walk timing stays with playback.
+const IMPACT_HOLD_SEC := 0.125
 
 const CAST_RISE_SEC := 0.12
-const CAST_HOLD_SEC := 0.20
+const CAST_HOLD_SEC := 0.125
 const CAST_RELEASE_SEC := 0.10
 const CAST_RISE_PX := 6.0
 const CAST_SCALE := 1.06
