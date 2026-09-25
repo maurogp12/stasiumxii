@@ -8,6 +8,9 @@ class_name ViewMotion
 ## hop arc below; missing strips keep the hop and the static facing.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
+## Every non-teleport spell gets caster chrome: a short squash / pull-back,
+## then the lunge or cast rise, then a brief hold on the impact pose.
+## The hold is clamped to the time left in ACTION_LOCK_MAX. Advance stays a snap.
 ## Flip REDUCE_MOTION to true to skip idle, hop arc, lunge, wind-up,
 ## knockback, lift, and slump. Walks still step along the path.
 ## A project setting named stasium/view/reduce_motion does the same when set.
@@ -31,17 +34,27 @@ const HOP_STRETCH_Y := 1.34
 const HOP_SQUASH_X := 1.18
 const HOP_SQUASH_Y := 0.74
 
-const ATTACK_OUT_SEC := 0.14
-const ATTACK_BACK_SEC := 0.12
-## Melee commit lunge. About 6px so the body reads without sliding off the tile.
-const ATTACK_LUNGE_PX := 6.0
-## Ambush blinks. The shared 6px lunge is a few screen pixels after arena zoom,
-## so the phone only saw the BACKSTAB number. This reach is the commit, view-only.
+const ATTACK_OUT_SEC := 0.12
+const ATTACK_BACK_SEC := 0.10
+## Phone-readable melee lunge. About 12px so arena zoom still shows the commit
+## without sliding the body off the tile. Ambush keeps the longer reach.
+const ATTACK_LUNGE_PX := 12.0
+## Ambush blinks. A shared 12px lunge is still easy to miss next to the
+## BACKSTAB number, so this reach is the commit, view-only.
 const AMBUSH_LUNGE_PX := 36.0
 
-const CAST_RISE_SEC := 0.16
-const CAST_HOLD_SEC := 0.10
-const CAST_RELEASE_SEC := 0.14
+## Coil before the lunge or the cast release. Long enough to read on a phone.
+const ANTICIPATION_SEC := 0.08
+const ANTICIPATION_PULL_PX := 5.0
+const ANTICIPATION_SQUASH_X := 1.16
+const ANTICIPATION_SQUASH_Y := 0.82
+
+## Impact pose. impact_hold_sec() clamps this to the lock that is still free.
+const IMPACT_HOLD_SEC := 0.20
+
+const CAST_RISE_SEC := 0.12
+const CAST_HOLD_SEC := 0.20
+const CAST_RELEASE_SEC := 0.10
 const CAST_RISE_PX := 6.0
 const CAST_SCALE := 1.06
 
@@ -84,11 +97,31 @@ static func clear_reduce_motion() -> void:
 
 
 static func attack_sec() -> float:
-	return ATTACK_OUT_SEC + ATTACK_BACK_SEC
+	var body := _prelude(ATTACK_OUT_SEC, ATTACK_BACK_SEC)
+	return body + impact_hold_sec(body)
 
 
 static func cast_sec() -> float:
-	return CAST_RISE_SEC + CAST_HOLD_SEC + CAST_RELEASE_SEC
+	var body := _prelude(CAST_RISE_SEC, CAST_RELEASE_SEC)
+	return body + impact_hold_sec(body)
+
+
+## Hold on the impact pose. `spent` is the rest of the one-shot (wind-up,
+## strike, recover). The result never pushes that one-shot past the lock.
+static func impact_hold_sec(spent: float = -1.0) -> float:
+	var used := _prelude(ATTACK_OUT_SEC, ATTACK_BACK_SEC) if spent < 0.0 else spent
+	var room := ACTION_LOCK_MAX - used
+	if room <= 0.0:
+		return 0.0
+	return minf(IMPACT_HOLD_SEC, room)
+
+
+static func attack_phase(t: float) -> String:
+	return _phase(t, attack_sec(), ATTACK_OUT_SEC, ATTACK_BACK_SEC)
+
+
+static func cast_phase(t: float) -> String:
+	return _phase(t, cast_sec(), CAST_RISE_SEC, CAST_RELEASE_SEC)
 
 
 static func hit_sec() -> float:
@@ -276,19 +309,45 @@ static func hop_scale(t: float) -> Vector2:
 	)
 
 
-static func attack_offset(t: float, dir: Vector2, reach: float = -1.0) -> Vector2:
+static func attack_pose(t: float, dir: Vector2, reach: float = -1.0) -> Dictionary:
+	var rest := {"pos": Vector2.ZERO, "scale": Vector2.ONE}
 	if t <= 0.0 or t >= 1.0:
-		return Vector2.ZERO
+		return rest
 	var aim := _unit(dir)
 	var dist := ATTACK_LUNGE_PX if reach < 0.0 else reach
 	var total := attack_sec()
 	var time := clampf(t, 0.0, 1.0) * total
-	var k := 0.0
-	if time <= ATTACK_OUT_SEC:
-		k = _ease_out(time / ATTACK_OUT_SEC)
+	var pull := ANTICIPATION_PULL_PX
+	var hold := impact_hold_sec(_prelude(ATTACK_OUT_SEC, ATTACK_BACK_SEC))
+	var strike_end := ANTICIPATION_SEC + ATTACK_OUT_SEC
+	var hold_end := strike_end + hold
+	var pos := Vector2.ZERO
+	var squash := 0.0
+	if time <= ANTICIPATION_SEC:
+		var u := _ease_out(time / maxf(ANTICIPATION_SEC, 0.0001))
+		pos = -aim * pull * u
+		squash = u
+	elif time <= strike_end:
+		var u := _ease_out((time - ANTICIPATION_SEC) / maxf(ATTACK_OUT_SEC, 0.0001))
+		pos = aim * lerpf(-pull, dist, u)
+		squash = 1.0 - u
+	elif time <= hold_end:
+		pos = aim * dist
 	else:
-		k = 1.0 - _ease_in((time - ATTACK_OUT_SEC) / ATTACK_BACK_SEC)
-	return aim * dist * k
+		var u := _ease_in((time - hold_end) / maxf(ATTACK_BACK_SEC, 0.0001))
+		pos = aim * dist * (1.0 - u)
+	return {
+		"pos": pos,
+		"scale": Vector2(
+			lerpf(1.0, ANTICIPATION_SQUASH_X, squash),
+			lerpf(1.0, ANTICIPATION_SQUASH_Y, squash),
+		),
+	}
+
+
+static func attack_offset(t: float, dir: Vector2, reach: float = -1.0) -> Vector2:
+	var pos: Vector2 = attack_pose(t, dir, reach)["pos"]
+	return pos
 
 
 static func cast_pose(t: float) -> Dictionary:
@@ -297,13 +356,25 @@ static func cast_pose(t: float) -> Dictionary:
 		return rest
 	var total := cast_sec()
 	var time := clampf(t, 0.0, 1.0) * total
+	var hold := impact_hold_sec(_prelude(CAST_RISE_SEC, CAST_RELEASE_SEC))
+	var rise_end := ANTICIPATION_SEC + CAST_RISE_SEC
+	var hold_end := rise_end + hold
+	if time <= ANTICIPATION_SEC:
+		var u := _ease_out(time / maxf(ANTICIPATION_SEC, 0.0001))
+		return {
+			"pos": Vector2(0.0, ANTICIPATION_PULL_PX * 0.45 * u),
+			"scale": Vector2(
+				lerpf(1.0, ANTICIPATION_SQUASH_X, u),
+				lerpf(1.0, ANTICIPATION_SQUASH_Y, u),
+			),
+		}
 	var k := 0.0
-	if time <= CAST_RISE_SEC:
-		k = _ease_out(time / CAST_RISE_SEC)
-	elif time <= CAST_RISE_SEC + CAST_HOLD_SEC:
+	if time <= rise_end:
+		k = _ease_out((time - ANTICIPATION_SEC) / maxf(CAST_RISE_SEC, 0.0001))
+	elif time <= hold_end:
 		k = 1.0
 	else:
-		k = 1.0 - _ease_in((time - CAST_RISE_SEC - CAST_HOLD_SEC) / CAST_RELEASE_SEC)
+		k = 1.0 - _ease_in((time - hold_end) / maxf(CAST_RELEASE_SEC, 0.0001))
 	var s := lerpf(1.0, CAST_SCALE, k)
 	return {
 		"pos": Vector2(0.0, -CAST_RISE_PX * k),
@@ -359,6 +430,24 @@ static func _fit_budget(steps: Array) -> Array:
 		copy["sec"] = float(step.get("sec", 0.0)) * scale
 		fitted.append(copy)
 	return fitted
+
+
+static func _prelude(rise: float, release: float) -> float:
+	return ANTICIPATION_SEC + rise + release
+
+
+static func _phase(t: float, total: float, rise: float, release: float) -> String:
+	if t <= 0.0 or t >= 1.0 or total <= 0.0:
+		return "rest"
+	var time := clampf(t, 0.0, 1.0) * total
+	var hold := impact_hold_sec(_prelude(rise, release))
+	if time <= ANTICIPATION_SEC:
+		return "anticipation"
+	if time <= ANTICIPATION_SEC + rise:
+		return "strike"
+	if time <= ANTICIPATION_SEC + rise + hold:
+		return "hold"
+	return "recover"
 
 
 static func _unit(dir: Vector2) -> Vector2:

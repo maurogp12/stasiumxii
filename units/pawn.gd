@@ -15,8 +15,10 @@ class_name Pawn
 ## only while that clip is actually playing. If play() does not start, the
 ## hop returns. Missing strips keep the hop and this static sprite.
 ## Attack strips play one-shot on attack plans. A cast with no cast strip
-## (Kestrel Mark Shot / Detonate) uses the attack strip and the 6px lunge.
+## (Kestrel Mark Shot / Detonate) uses the attack strip and the melee lunge.
+## Anticipation pulls back, the impact frame holds, then the body recovers.
 ## The clip keeps authored fps when that length still fits the 0.6s lock.
+## A walk strip never hops. The hop (or a static facing) is only the fallback.
 ## Named paths: WalkStrip, AttackStrip, BodyStrip. A Sprite node that is an
 ## AnimatedSprite2D is kept as BodyStrip and the static sprite is recreated.
 ## Missing nodes, empty frames, or null textures keep the static sprite.
@@ -52,6 +54,8 @@ var _active_strip: AnimatedSprite2D
 var _strip_holds_body: bool = false
 var _path_walk: bool = false
 var _walk_looping: bool = false
+var _strip_play_scale: float = 1.0
+var _impact_frozen: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
@@ -275,7 +279,7 @@ func play_view_plan(plan: Dictionary) -> float:
 			tw.tween_callback(_end_body_strip)
 			total += play_sec - sec
 		elif kind == "cast":
-			tw.tween_callback(_begin_body_strip.bind("cast", sec))
+			_begin_body_strip("cast", sec)
 			tw.tween_method(_sample_cast, 0.0, 1.0, sec)
 			tw.tween_callback(_end_body_strip)
 		elif kind == "hit":
@@ -547,12 +551,16 @@ func _sample_hop(t: float) -> void:
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
-	_ride_chrome(Vector2.ZERO)
-	_place_body(VIEW_MOTION.attack_offset(t, dir, reach))
+	_apply_body_pose(VIEW_MOTION.attack_pose(t, dir, reach))
+	_sync_impact_freeze(t, false)
 
 
 func _sample_cast(t: float) -> void:
-	var pose: Dictionary = VIEW_MOTION.cast_pose(t)
+	_apply_body_pose(VIEW_MOTION.cast_pose(t))
+	_sync_impact_freeze(t, true)
+
+
+func _apply_body_pose(pose: Dictionary) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
 	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
@@ -563,6 +571,45 @@ func _sample_cast(t: float) -> void:
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = scaled
+		if _sprite != null and is_instance_valid(_sprite):
+			_active_strip.modulate = _sprite.modulate
+
+
+## Pause on the impact cell (attack) or the last cell (cast) while the pose holds.
+## Playback resumes at the authored scale for the recover.
+func _sync_impact_freeze(t: float, last_pose: bool) -> void:
+	if _active_strip == null or not is_instance_valid(_active_strip):
+		return
+	var phase := VIEW_MOTION.cast_phase(t) if last_pose else VIEW_MOTION.attack_phase(t)
+	if phase == "hold":
+		_freeze_strip_pose(last_pose)
+	elif _impact_frozen:
+		_thaw_strip_pose()
+
+
+func _freeze_strip_pose(last_pose: bool) -> void:
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip):
+		return
+	var frames := strip.sprite_frames
+	var anim := strip.animation
+	if frames != null and frames.has_animation(anim):
+		var count := frames.get_frame_count(anim)
+		if count > 0:
+			var frame := count - 1
+			if not last_pose:
+				frame = mini(STRIP_LIBRARY.ATTACK_IMPACT_FRAME, count - 1)
+			strip.frame = frame
+	if not _impact_frozen and strip.speed_scale > 0.01:
+		_strip_play_scale = strip.speed_scale
+	strip.speed_scale = 0.0
+	_impact_frozen = true
+
+
+func _thaw_strip_pose() -> void:
+	_impact_frozen = false
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.speed_scale = _strip_play_scale if _strip_play_scale > 0.0 else 1.0
 
 
 func _sample_hit(t: float, dir: Vector2) -> void:
@@ -606,7 +653,7 @@ func _start_idle() -> void:
 
 
 func _sample_idle(_t: float) -> void:
-	if _sprite == null or _motion_playing or _idle_hold or not alive:
+	if _sprite == null or _motion_playing or _idle_hold or not alive or _strip_holds_body:
 		return
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
@@ -666,6 +713,8 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 			count = frames.get_frame_count(anim)
 			fps = frames.get_animation_speed(anim)
 		strip.speed_scale = strip_speed_scale(count, fps, window_sec)
+	_strip_play_scale = strip.speed_scale
+	_impact_frozen = false
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
@@ -683,6 +732,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 func _end_body_strip() -> void:
 	_walk_looping = false
 	_strip_holds_body = false
+	_impact_frozen = false
 	if _active_strip != null and is_instance_valid(_active_strip):
 		if _active_strip.is_playing():
 			_active_strip.stop()
