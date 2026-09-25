@@ -124,18 +124,18 @@ func _test_reset_and_turn_order() -> void:
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
 	eq(snap["board_size"], 12, "ship board is 12×12")
-	eq(snap["demo_map"], "mauro_12", "skip_deploy seeds the Mauro 12×12 grid")
-	eq(snap["elevation_gen"], "mauro", "skip_deploy uses Mauro token elevation")
+	eq(snap["demo_map"], "crosshaven_12", "skip_deploy seeds Crosshaven tags")
+	eq(snap["elevation_gen"], "tags", "skip_deploy uses Crosshaven tag elevation")
 	eq(snap["elev_seed"], 1, "elev_seed is stored on the snapshot")
 	eq(snap["match_config"]["seed"], 1, "MatchConfig.seed is stored for replay")
 	eq(snap["match_config"]["elev_seed"], 1, "MatchConfig.elev_seed is stored for replay")
 	eq(snap["advance_stand_on"], "walk_gates", "Advance reuses walk stand-on gates")
-	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Mauro (0,0) is Ground")
-	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0, "Mauro (0,0) elevation is the token")
-	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], true, "Mauro (0,0) ground is walkable")
+	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is Ground")
+	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) elevation is the tag")
+	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
 	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
 	eq(snap["tiles"].size(), 144, "snapshot lists all 12×12 tiles")
-	eq(snap["paint_only"].is_empty(), true, "the Mauro grid has no paint_only blockers")
+	eq(snap["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only is stored beside the walk tile")
 	eq(snap["spell_range"], "chebyshev", "spell range stays Chebyshev")
 	eq(snap["advance_mp"], "none", "Advance spends no MP")
 	eq(snap["advance_ap"], 3, "Advance costs 3 AP")
@@ -566,38 +566,45 @@ func _test_client_path_ignored() -> void:
 
 
 func _test_phase_a_demo_map() -> void:
-	# Ship default is the Mauro 12×12 token grid. Proto board_size 8 keeps the crop + noise.
+	# Ship default is Crosshaven 12×12 tags. Proto board_size 8 keeps the crop + noise.
 	var live: Dictionary = _sim.reset_match({"seed": 1})
 	eq(live["phase"], "DEPLOYMENT", "live reset still starts in DEPLOYMENT")
 	eq(live["board_size"], 12, "live reset is the 12×12 ship board")
-	eq(live["demo_map"], "mauro_12", "live snap stamps the Mauro grid")
-	eq(live["elevation_gen"], "mauro", "live reset uses Mauro token elevation")
+	eq(live["demo_map"], "crosshaven_12", "live snap stamps Crosshaven")
+	eq(live["elevation_gen"], "tags", "live reset uses tag elevation")
 	eq(live["elev_seed"], 1, "live reset stores elev_seed")
 	eq(live["tiles"].size(), 144, "live reset lists 144 tiles")
 	var saw := {"ground": 0, "mud": 0, "water": 0, "lava": 0}
+	var elev_hi := 0
 	for cell in live["tiles"].keys():
 		var rec: Dictionary = live["tiles"][cell]
 		saw[str(rec["terrain_type"])] = int(saw.get(str(rec["terrain_type"]), 0)) + 1
-	eq(saw["ground"], 65, "Mauro ground count")
-	eq(saw["mud"], 36, "Mauro mud count")
-	eq(saw["water"], 28, "Mauro water count")
-	eq(saw["lava"], 15, "Mauro lava count")
-	eq(live["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Mauro (0,0) is ground")
-	eq(live["tiles"][Vector2i(0, 0)]["elevation"], 0, "Mauro (0,0) token elevation is 0")
-	eq(live["tiles"][Vector2i(0, 0)]["walkable"], true, "Mauro (0,0) ground is walkable")
-	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "ground", "Mauro (1,1) is ground")
-	eq(live["tiles"][Vector2i(1, 1)]["elevation"], 1, "Mauro (1,1) token elevation is 1")
-	eq(live["tiles"][Vector2i(1, 2)]["terrain_type"], "mud", "Mauro (1,2) is mud")
-	eq(live["tiles"][Vector2i(0, 2)]["terrain_type"], "water", "Mauro (0,2) is water")
-	eq(live["tiles"][Vector2i(0, 3)]["terrain_type"], "lava", "Mauro (0,3) is lava")
-	eq(live["tiles"][Vector2i(0, 3)]["walkable"], false, "Mauro lava stays impassable")
-	eq(live["tiles"][Vector2i(6, 6)]["terrain_type"], "water", "Mauro (6,6) is water")
-	eq(live["tiles"][Vector2i(6, 10)]["elevation"], 0, "Mauro (6,10) token elevation is 0")
-	eq(live["tiles"][Vector2i(7, 10)]["elevation"], 1, "Mauro (7,10) token elevation is 1")
-	eq(live["paint_only"].is_empty(), true, "Mauro tokens do not invent paint_only")
+		if int(rec["elevation"]) >= 1:
+			elev_hi += 1
+	eq(saw["ground"], 109, "Crosshaven ground count")
+	eq(saw["mud"], 22, "Crosshaven mud count")
+	eq(saw["water"], 13, "Crosshaven water count")
+	eq(saw["lava"], 0, "Crosshaven has no lava")
+	eq(elev_hi, 7, "Crosshaven elevation ≥1 count")
+	eq(live["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is ground")
+	eq(live["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) tag elevation is 0")
+	eq(live["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(live["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only stays off the walk tile")
+	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "Crosshaven (1,1) is mud")
+	eq(live["tiles"][Vector2i(1, 1)]["walkable"], true, "Crosshaven (1,1) mud is walkable")
+	eq(live["tiles"][Vector2i(9, 2)]["terrain_type"], "water", "Crosshaven (9,2) is water")
+	eq(live["tiles"][Vector2i(3, 2)]["elevation"], 1, "Crosshaven (3,2) tag elevation is 1")
+	eq(live["tiles"][Vector2i(5, 4)]["elevation"], 2, "Crosshaven (5,4) tag elevation is 2")
+	var tags = load("res://backend/cell_tag_map.gd").load_default()
+	var checked: Dictionary = load("res://backend/cell_tag_map.gd").cross_check_tmx(tags)
+	eq(checked["ok"], true, "tags JSON matches the isometric tmx terrain and elevation")
+	eq(int(checked["mismatches"]), 0, "tmx cross-check has no terrain mismatches")
+	var art: Texture2D = load("res://board/koliseo_art.gd").terrain_texture("ground", 0)
+	eq(art != null, true, "Crosshaven ground art loads")
+	eq(load("res://board/koliseo_art.gd").prop_texture("ruins") != null, true, "paint_only ruins art loads")
 	var other: Dictionary = _sim.reset_match({"seed": 2})
-	eq(other["tiles"][Vector2i(7, 10)]["elevation"], 1, "a new seed does not retune token elevation")
-	eq(other["tiles"][Vector2i(1, 2)]["terrain_type"], "mud", "a new seed keeps Mauro terrain")
+	eq(other["tiles"][Vector2i(5, 4)]["elevation"], 2, "a new seed does not retune tag elevation")
+	eq(other["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "a new seed keeps Crosshaven terrain")
 
 	var proto: Dictionary = _sim.reset_match({"seed": 1, "board_size": 8})
 	_assert_phase_a_demo_tiles(proto, "proto 8", 1)
@@ -649,10 +656,10 @@ func _test_phase_a_demo_map() -> void:
 
 	var twelve: Dictionary = _sim.reset_match({"seed": 1, "board_size": 12, "skip_deploy": true})
 	eq(twelve["board_size"], 12, "explicit 12 is the ship board")
-	eq(twelve["tiles"].size(), 144, "explicit 12 is 144 Mauro cells")
-	eq(twelve["demo_map"], "mauro_12", "explicit 12 loads the Mauro grid")
-	eq(twelve["tiles"][Vector2i(1, 2)]["terrain_type"], "mud", "explicit 12 keeps Mauro mud")
-	eq(twelve["tiles"][Vector2i(7, 10)]["elevation"], 1, "explicit 12 keeps token elevation")
+	eq(twelve["tiles"].size(), 144, "explicit 12 is 144 Crosshaven cells")
+	eq(twelve["demo_map"], "crosshaven_12", "explicit 12 loads Crosshaven tags")
+	eq(twelve["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "explicit 12 keeps Crosshaven mud")
+	eq(twelve["tiles"][Vector2i(5, 4)]["elevation"], 2, "explicit 12 keeps tag elevation")
 	var other_size: Dictionary = _sim.reset_match({"seed": 1, "board_size": 10, "skip_deploy": true})
 	eq(other_size["board_size"], 10, "a non-ship size stays an override")
 	eq(other_size["tiles"].size(), 100, "a non-ship size does not invent a map")
@@ -660,27 +667,36 @@ func _test_phase_a_demo_map() -> void:
 	eq(other_size["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "a non-ship size stays open ground")
 	eq(other_size["tiles"][Vector2i(0, 0)]["elevation"], 0, "a non-ship size elevation is 0")
 
-	# Token elevation is walk authority. Lava stays impassable. No paint_only tax.
+	# Tag elevation is walk authority. paint_only does not block.
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
-		"kestrel_pos": Vector2i(6, 10),
+		"kestrel_pos": Vector2i(3, 1),
 		"ironjaw_pos": Vector2i(11, 11),
 	})
-	eq(_sim.tile_at(Vector2i(6, 10))["elevation"], 0, "token z at (6,10) is 0")
-	eq(_sim.tile_at(Vector2i(7, 10))["elevation"], 1, "token z at (7,10) is 1")
-	var climb: Dictionary = _sim.submit({"type": "move", "to": Vector2i(7, 10)})
-	eq(climb["ok"], true, "token climb of 1 is legal")
+	eq(_sim.tile_at(Vector2i(3, 1))["elevation"], 0, "tag z at (3,1) is 0")
+	eq(_sim.tile_at(Vector2i(3, 2))["elevation"], 1, "tag z at (3,2) is 1")
+	var climb: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(climb["ok"], true, "tag climb of 1 is legal")
 	eq(climb["events"][0]["mp_spent"], 2, "ground + climb 1 costs 2 MP")
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
-		"kestrel_pos": Vector2i(1, 2),
+		"kestrel_pos": Vector2i(8, 2),
 		"ironjaw_pos": Vector2i(11, 11),
 	})
-	var water: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 2)})
+	var water: Dictionary = _sim.submit({"type": "move", "to": Vector2i(9, 2)})
 	eq(water["ok"], true, "water hop is legal")
 	eq(water["events"][0]["mp_spent"], 2, "water dest costs 2 MP")
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(0, 1),
+		"ironjaw_pos": Vector2i(11, 11),
+	})
+	var ruins: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 0)})
+	eq(ruins["ok"], true, "paint_only ruins does not block the step")
+	eq(ruins["events"][0]["mp_spent"], 1, "ruins tile still costs ground MP")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
@@ -1104,12 +1120,12 @@ func _test_noise_elevation_per_match() -> void:
 	var live_a: Dictionary = _sim.reset_match({})
 	var live_b: Dictionary = _sim.reset_match({})
 	eq(live_a["board_size"], 12, "New Match without a size is 12×12")
-	eq(live_a["elevation_gen"], "mauro", "New Match without a seed uses Mauro tokens")
-	eq(live_a["demo_map"], "mauro_12", "New Match loads the Mauro grid")
+	eq(live_a["elevation_gen"], "tags", "New Match without a seed uses Crosshaven tags")
+	eq(live_a["demo_map"], "crosshaven_12", "New Match loads Crosshaven")
 	eq(live_a.has("elev_seed"), true, "New Match stores elev_seed")
-	eq(int(live_a["tiles"][Vector2i(7, 10)]["elevation"]), 1, "New Match keeps token z at (7,10)")
-	eq(int(live_b["tiles"][Vector2i(7, 10)]["elevation"]), int(live_a["tiles"][Vector2i(7, 10)]["elevation"]), "two New Matches share token elevation")
-	eq(live_a["tiles"][Vector2i(1, 2)]["terrain_type"], live_b["tiles"][Vector2i(1, 2)]["terrain_type"], "two New Matches share Mauro terrain")
+	eq(int(live_a["tiles"][Vector2i(5, 4)]["elevation"]), 2, "New Match keeps tag z at (5,4)")
+	eq(int(live_b["tiles"][Vector2i(5, 4)]["elevation"]), int(live_a["tiles"][Vector2i(5, 4)]["elevation"]), "two New Matches share tag elevation")
+	eq(live_a["tiles"][Vector2i(1, 1)]["terrain_type"], live_b["tiles"][Vector2i(1, 1)]["terrain_type"], "two New Matches share Crosshaven terrain")
 	eq(live_a["seed"] == live_b["seed"], false, "New Match generates a new seed")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")

@@ -1,17 +1,17 @@
 class_name CellTagMap
 extends RefCounted
 
-## Optional cell-tag loader. Applied only when the file size matches the board.
-## The ship map is the Mauro 12×12 token grid, not this file.
-## `paint_only` (and the Tiled `props_paint` layer) is visual only: never pathing,
-## LoS, or MP. The sibling `.tmx` is recorded for the Technical Artist pipeline
-## and is not parsed into blockers.
+## Crosshaven combat tags. Applied when the file size matches the board.
+## The ship map is `crosshaven_12x12_tags.json`. `paint_only` (and the Tiled
+## `props_paint` layer) is visual only: never pathing, LoS, or MP. The sibling
+## `.tmx` is the isometric art source and is cross-checked for terrain + elevation
+## only — it is not parsed into blockers.
 ##
 ## Schema: { "size": [w, h], "cells": [ { "x", "y", "terrain", "elevation", "paint_only" } ] }
 
-const DEFAULT_TAGS := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_tags.json"
-const DEFAULT_TMX := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15.tmx"
-const MAP_ID := "crosshaven_15"
+const DEFAULT_TAGS := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_12x12_tags.json"
+const DEFAULT_TMX := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_12x12.tmx"
+const MAP_ID := "crosshaven_12"
 const _TerrainDef := preload("res://backend/terrain_def.gd")
 
 
@@ -57,7 +57,7 @@ static func load_file(path: String) -> Dictionary:
 			paint[cell] = props
 	return {
 		"ok": width > 0 and height > 0 and not combat.is_empty(),
-		"map_id": MAP_ID,
+		"map_id": map_id_for(path),
 		"width": width,
 		"height": height,
 		"cells": combat,
@@ -78,6 +78,15 @@ static func sibling_tmx(tags_path: String) -> String:
 	return ""
 
 
+static func map_id_for(path: String) -> String:
+	var file := path.get_file()
+	if file.contains("12x12"):
+		return "crosshaven_12"
+	if file.contains("15x15"):
+		return "crosshaven_15"
+	return MAP_ID
+
+
 ## Terrain + elevation only. Does not read paint_only or the tmx props layer.
 static func apply(board, tags: Dictionary) -> bool:
 	if not bool(tags.get("ok", false)):
@@ -91,6 +100,71 @@ static func apply(board, tags: Dictionary) -> bool:
 		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
 		board.set_tile(pos, rec.get("terrain", "ground"), int(rec.get("elevation", 0)))
 	return true
+
+
+## Terrain + elevation layers only. props_paint is ignored.
+const _TERRAIN_FROM_GID := {0: "ground", 2: "mud", 3: "water", 4: "lava"}
+const _ELEV_FROM_GID := {0: 0, 6: 1, 7: 2, 8: 1}
+
+
+static func cross_check_tmx(tags: Dictionary) -> Dictionary:
+	var tmx_path := str(tags.get("tmx", ""))
+	if tmx_path == "" or not FileAccess.file_exists(tmx_path):
+		return {"ok": false, "reason": "missing_tmx", "mismatches": 0}
+	var text := FileAccess.get_file_as_string(tmx_path)
+	if not text.contains('orientation="isometric"'):
+		return {"ok": false, "reason": "orientation", "mismatches": 0}
+	if not text.contains('tilewidth="64"') or not text.contains('tileheight="32"'):
+		return {"ok": false, "reason": "tile_size", "mismatches": 0}
+	var terrain := _layer_grid(text, "terrain")
+	var elevation := _layer_grid(text, "elevation")
+	if terrain.is_empty() or elevation.is_empty():
+		return {"ok": false, "reason": "layers", "mismatches": 0}
+	var mismatches := 0
+	for item in tags.get("cells", []):
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = item
+		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
+		var terrain_gid := _gid_at(terrain, pos)
+		var elev_gid := _gid_at(elevation, pos)
+		var expect_terrain := str(_TERRAIN_FROM_GID.get(terrain_gid, ""))
+		var expect_elev := int(_ELEV_FROM_GID.get(elev_gid, -1))
+		if expect_terrain != str(rec.get("terrain", "")) or expect_elev != int(rec.get("elevation", -2)):
+			mismatches += 1
+	return {"ok": mismatches == 0, "reason": "" if mismatches == 0 else "mismatch", "mismatches": mismatches}
+
+
+static func _layer_grid(text: String, layer_name: String) -> Array:
+	var at := text.find('name="%s"' % layer_name)
+	if at < 0:
+		return []
+	var data_at := text.find("<data", at)
+	var start := text.find(">", data_at)
+	var end := text.find("</data>", start)
+	if data_at < 0 or start < 0 or end < 0:
+		return []
+	var body := text.substr(start + 1, end - start - 1)
+	var rows: Array = []
+	for line in body.split("\n", false):
+		var row: Array = []
+		for part in line.split(",", false):
+			var token := part.strip_edges()
+			if token == "":
+				continue
+			row.append(int(token))
+		if not row.is_empty():
+			rows.append(row)
+	return rows
+
+
+static func _gid_at(grid: Array, pos: Vector2i) -> int:
+	if pos.y < 0 or pos.y >= grid.size():
+		return -1
+	var row: Array = grid[pos.y]
+	if pos.x < 0 or pos.x >= row.size():
+		return -1
+	return int(row[pos.x])
 
 
 static func _empty(reason: String) -> Dictionary:

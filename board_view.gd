@@ -1137,12 +1137,23 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 	if size != _board_size or tiles.size() != size * size:
 		_rebuild_grid(size)
 	_board_data = SNAPSHOT_TILES.from_snapshot(snap, _board_size)
+	var paint: Dictionary = snap.get("paint_only", {})
 	for cell in tiles.keys():
 		var rec: Dictionary = _board_data.get(cell, SNAPSHOT_TILES.default_cell())
 		var tile := _tile_at(cell)
 		tile.apply_board_data(str(rec.get("terrain_type", "ground")), float(rec.get("elevation", 0.0)))
+		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+
+
+func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:
+	if paint.has(cell) and paint[cell] is Array:
+		return paint[cell]
+	var key := "%d,%d" % [cell.x, cell.y]
+	if paint.has(key) and paint[key] is Array:
+		return paint[key]
+	return []
 
 
 func _elev_at(cell: Vector2i) -> float:

@@ -12,7 +12,7 @@ enum Phase {
 }
 
 ## Ship playable size is 12×12. Proto fixtures pass board_size 8 (crop).
-## The 12×12 tokens below are the ship map. The 8×8 crop is proto only.
+## The tokens below are the proto crop source. The ship map is Crosshaven tags.
 const BOARD_SIZE := BoardSize.SHIP
 const PROTO_BOARD_SIZE := BoardSize.PROTO
 const SEAT_0 := 0
@@ -24,14 +24,14 @@ const PREFERRED_ZONE_CHEBYSHEV_MAX := 6
 const HUG_EDGE_CELLS := 2
 
 ## Proto-only 8×8 crop of the in-code 12×12 token grid.
-## Ship matches seed this full 12×12 grid (`seed_mauro_12`). The 8×8 crop is
+## Ship matches load Crosshaven 12×12 tags, not this crop. The 8×8 crop is
 ## proto only (`board_size` PROTO). PHASE_A_DEMO_TILES is phase_a_demo_tiles().
 ## Proto elevation is noise from MatchConfig.seed (smooth noise, z 0–3).
-## Ship elevation is the token integer, not this crop and not noise.
+## Ship elevation is the Crosshaven tag integer, not this crop and not noise.
 ##
 ## Crop origin (row 2, col 2) on the 12×12 token grid. Terrain 0/1/2/3 = G/M/W/L.
 ## Crop z ladder (source only): z1→0, z2→1, z3→2, z4→3. Proto live z is noise.
-## Max climb 1 / drop 2 (no z1→z3 hop). Ship matches use the token z.
+## Max climb 1 / drop 2 (no z1→z3 hop).
 ##
 ##     0  1  2  3  4  5  6  7
 ##   0 G  G  M  W  L  W  W  M
@@ -277,7 +277,7 @@ static func apply_noise_elevations(board, seed: int) -> void:
 
 
 ## PHASE_A_DEMO_TILES — 64-cell proto crop at origin (row 2, col 2).
-## The ship board loads the full 12×12 via seed_mauro_12, not this crop.
+## The ship board loads Crosshaven tags, not this crop.
 static func phase_a_demo_tiles() -> Array:
 	var out := []
 	var grid: Array = parse_mauro_12x12()
