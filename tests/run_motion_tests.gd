@@ -925,7 +925,8 @@ func _test_batch1_disk_strips() -> void:
 	eq(dur > 0.45 and dur <= 0.6, true, "disk attack plays the 12 fps cycle inside the lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk attack stays at authored 12 fps")
 	_assert_attack_impact(strip, "kestrel attack")
-	await create_timer(0.12).timeout
+	var lunge_t := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC) / MOTION.attack_sec()
+	pawn._sample_attack(lunge_t, Vector2(32, 16))
 	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
 	pawn.settle_motion()
 	var mark_plans: Dictionary = MOTION.chrome_plans([{
