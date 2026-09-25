@@ -22,7 +22,7 @@ The `.tres` wins when that clip is present. A per-facing PNG fills a letter the 
 
 `<class>` is `kestrel` or `ironjaw` for Batch 1. The same folders work later for `gloam`, `mender`, and `bastion`.
 
-`<anim>` is `walk` or `attack`. A `cast_<n|e|s|w>.png` in the same folder is optional and not part of Batch 1.
+`<anim>` is `walk` or `attack` for the v3 files on disk. Optional Batch-1c names in the same folder, loaded when the file exists: `cast_mark`, `cast`, `hit`, `death`. Gloam uses the same pattern. `*_gen.png` is ignored.
 
 ## Facing (locked)
 
@@ -68,7 +68,10 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. The pawn slides through cell centers (about 0.22s each). The sprite root bounces 4–6px on the walk cycle. No tile-tall hop, no squash.
-- **Walk missing, or `play()` does not start:** the same slide and the same 4–6px bounce on the static facing. The bounce is not dropped just because the files exist, and it is not the old 36px hop.
-- **Attack strip:** one-shot plus a phone-readable lunge (~12px), at 12 fps when the 0.6s lock has room. A short pull-back leads in, and the impact frame holds inside that lock. Ambush keeps the longer reach. A cast with no cast strip (Kestrel's bow) plays this attack cycle too.
-- **Attack missing:** lunge plus the static facing. A cast strip, when present, still uses the rise.
+- **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. The pawn faces the step (two turn frames when facing changes) before it slides through cell centers (about 0.22s each). The snapshot facing snaps after the land. The sprite root bounces 4–6px. No tile-tall hop. Scale stays at rest while the cycle plays.
+- **Walk missing, or `play()` does not start:** the same slide, the same bounce, plus squash on launch/land and stretch at the crest. Gloam stays here until `gloam_walk_*` is on disk.
+- **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use `attack_*`.
+- **Mark Shot:** `cast_mark_<facing>` when that PNG exists (6 frames, 12 fps, impact 3). Until then it plays v3 `attack_*`. The bolt leaves hand height at the release frame.
+- **Detonate:** `cast_<facing>` when that PNG exists (6 frames, 10 fps, impact 3). Until then a point pose. It does not borrow `attack_*`.
+- **Hit / death:** `hit_*` and `death_*` when present. Otherwise a white flash plus flinch, and a dissolve. Do not invent those frames.
+- **`*_gen.png`:** never loaded.

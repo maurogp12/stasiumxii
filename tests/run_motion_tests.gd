@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_reduce_motion_skips()
 	_test_view_wiring()
 	_test_strip_library_missing_and_slice()
+	_test_batch1c_hot_swap()
 
 
 func _test_tunables_and_budget() -> void:
@@ -64,7 +65,7 @@ func _test_tunables_and_budget() -> void:
 	eq(float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS > Pawn.WALK_HOP_SEC, true, "one walk cycle is longer than a single tile")
 	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer one-shot still fits the hop window")
 	eq(Pawn.strip_speed_scale(0, 24.0, Pawn.WALK_HOP_SEC), 1.0, "an empty strip does not divide by zero")
-	eq(MOTION.ATTACK_LUNGE_PX >= 10.0 and MOTION.ATTACK_LUNGE_PX <= 14.0, true, "melee lunge is phone-readable")
+	eq(MOTION.ATTACK_LUNGE_PX >= 16.0 and MOTION.ATTACK_LUNGE_PX <= 20.0, true, "melee lunge reaches the tile edge")
 	eq(MOTION.AMBUSH_LUNGE_PX > MOTION.ATTACK_LUNGE_PX, true, "Ambush keeps a longer reach")
 	eq(MOTION.ANTICIPATION_SEC >= 0.06 and MOTION.ANTICIPATION_SEC <= 0.10, true, "anticipation is a short wind-up")
 	eq(MOTION.attack_sec() <= MOTION.ACTION_LOCK_MAX, true, "attack wind-up and hold fit the action lock")
@@ -142,6 +143,24 @@ func _test_curves_return_to_origin() -> void:
 	eq((held["pos"] as Vector2).y, -MOTION.CAST_RISE_PX, "cast holds the rise")
 	eq(is_equal_approx((held["scale"] as Vector2).y, MOTION.CAST_SCALE), true, "cast holds the scale-up")
 	eq(MOTION.cast_phase(cast_hold_t), "hold", "cast holds the impact pose")
+	var pointed: Dictionary = MOTION.cast_pose(cast_hold_t, Vector2(40, 0))
+	eq((pointed["pos"] as Vector2).x > 8.0, true, "cast points toward the effect")
+	eq(is_equal_approx((pointed["pos"] as Vector2).y, -MOTION.CAST_RISE_PX), true, "the point keeps the rise")
+	var turned: Array = MOTION.facing_turn("E", "S")
+	eq(turned.size(), 2, "a 90 degree turn is two frames")
+	eq(str(turned[1]), "S", "the turn ends on the new facing")
+	eq(MOTION.facing_turn("E", "E").is_empty(), true, "a matching facing does not turn")
+	var about: Array = MOTION.facing_turn("E", "W")
+	eq(about.size(), 2, "a 180 degree turn steps through a side facing")
+	eq(str(about[0]) != "E" and str(about[0]) != "W", true, "the 180 turn shows an intermediate facing")
+	eq(str(about[1]), "W", "the 180 turn lands on the destination facing")
+	var crest_scale: Vector2 = MOTION.fallback_hop_scale(0.45)
+	eq(crest_scale.y > 1.0, true, "a missing walk strip stretches at the crest")
+	eq(crest_scale.x < 1.0, true, "a missing walk strip narrows at the crest")
+	var launch_scale: Vector2 = MOTION.fallback_hop_scale(0.08)
+	eq(launch_scale.y < 1.0, true, "a missing walk strip squashes on launch")
+	eq(MOTION.fallback_hop_scale(0.0), Vector2.ONE, "fallback hop starts at rest scale")
+	eq(MOTION.fallback_hop_scale(1.0), Vector2.ONE, "fallback hop plants at rest scale")
 	var cast_anti_t := (MOTION.ANTICIPATION_SEC * 0.92) / MOTION.cast_sec()
 	var cast_coil: Dictionary = MOTION.cast_pose(cast_anti_t)
 	eq((cast_coil["scale"] as Vector2).y < 1.0, true, "cast anticipation squashes")
@@ -459,7 +478,7 @@ func _test_live_tree() -> void:
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var hopped: float = (pawn.get_node("Sprite") as Sprite2D).position.y
 	eq(hopped < -1.0 and hopped > -MOTION.WALK_BOUNCE_PX - 0.5, true, "a live step bounce stays inside 4-6px")
-	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "a live step bounce does not stretch")
+	eq((pawn.get_node("Sprite") as Sprite2D).scale != Vector2(0.5, 0.5), true, "a class without a walk strip squashes or stretches")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.7).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "a live step bounce returns to the tile center")
 	eq(pawn.motion_playing(), false, "a finished hop releases the sprite")
@@ -483,8 +502,9 @@ func _test_live_tree() -> void:
 	pawn.settle_motion()
 	victim.settle_motion()
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "lunge ends on the pawn origin")
-	eq((victim.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "slump keeps feet on the victim origin")
-	eq((victim.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle after slump restores scale")
+	eq((victim.get_node("Sprite") as Sprite2D).position.y > 4.0, true, "slump drops the corpse off a standing pose")
+	eq((victim.get_node("Sprite") as Sprite2D).scale.y < 0.35, true, "settle keeps the collapse")
+	eq((victim.get_node("Sprite") as Sprite2D).modulate.a < 0.05, true, "settle dissolves the corpse")
 	eq(victim.position, Vector2(80, 40), "the pawn node never leaves its tile")
 	pawn.free()
 	victim.free()
@@ -535,7 +555,7 @@ func _test_view_wiring() -> void:
 	eq(sim_src.contains("play_view_plan"), false, "combat sim does not play view motion")
 	var motion_src := FileAccess.get_file_as_string("res://units/view_motion.gd")
 	truthy(motion_src.contains("\"miss\""), "miss commits arm a caster plan")
-	eq(MOTION.ATTACK_LUNGE_PX >= 10.0 and MOTION.ATTACK_LUNGE_PX <= 14.0, true, "the lunge constant is phone-readable")
+	eq(MOTION.ATTACK_LUNGE_PX >= 16.0 and MOTION.ATTACK_LUNGE_PX <= 20.0, true, "the lunge constant reaches the tile edge")
 	truthy(view.contains("chrome_plans"), "the board plays the shared hit and miss plans")
 	truthy(view.contains("ShadeMarkers"), "Shade markers are not Units children")
 	eq(view.contains("$Units.add_child(marker)"), false, "pawn rebuild cannot free Shade markers")
@@ -612,6 +632,29 @@ func _add_anim(frames: SpriteFrames, anim: String, count: int, fps: float) -> vo
 	var tex := _solid_tex()
 	for _i in count:
 		frames.add_frame(anim, tex)
+
+
+func _test_batch1c_hot_swap() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	var frames := SpriteFrames.new()
+	_add_anim(frames, "attack_e", 6, 12.0)
+	_add_anim(frames, "cast_mark_e", 6, 12.0)
+	_add_anim(frames, "cast_e", 6, 10.0)
+	pawn.bind_motion_frames(frames)
+	pawn.play_view_plan({"cast": true, "strip": "cast_mark", "aim": Vector2(32, 0)})
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "cast_mark hot-swap shows a strip")
+	if strip != null:
+		eq(String(strip.animation), "cast_mark_e", "Mark Shot prefers cast_mark over attack")
+	pawn.settle_motion()
+	pawn.play_view_plan({"cast": true, "strip": "cast", "aim": Vector2(32, 0)})
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "cast hot-swap shows a strip")
+	if strip != null:
+		eq(String(strip.animation), "cast_e", "Detonate prefers cast over attack")
+	pawn.free()
 
 
 func _test_strip_fallback() -> void:
@@ -709,7 +752,7 @@ func _test_strip_fallback() -> void:
 	eq(sprite.visible, true, "a facing with no frames keeps the static sprite")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq(_step_bob_ok(sprite.position.y), true, "missing walk strip still bobs, not a 36px hop")
-	eq(sprite.scale, Vector2(0.5, 0.5), "missing walk strip does not squash or stretch")
+	eq(sprite.scale != Vector2(0.5, 0.5), true, "missing walk strip squashes or stretches for weight")
 	pawn.settle_motion()
 	walk.queue_free()
 	await process_frame
@@ -837,6 +880,17 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(StripLibrary.letter_for_sheet("ne"), "n", "NE maps to n")
 	eq(StripLibrary.letter_for_sheet("nw"), "w", "NW maps to w")
 	eq(StripLibrary.ATTACK_IMPACT_FRAME, 3, "attack impact is frame 3")
+	eq(StripLibrary.impact_frame("kestrel", "cast_mark"), 3, "cast_mark impact is frame 3")
+	eq(StripLibrary.impact_frame("kestrel", "cast"), 3, "kestrel cast impact is frame 3")
+	eq(StripLibrary.impact_frame("kestrel", "hit"), 0, "hit impact is frame 0")
+	eq(StripLibrary.impact_frame("ironjaw", "death"), 4, "death collapse is frame 4")
+	eq(StripLibrary.impact_frame("gloam", "attack"), 2, "gloam attack impact is frame 2")
+	eq(StripLibrary.impact_frame("gloam", "cast"), 2, "gloam cast impact is frame 2")
+	eq(is_equal_approx(StripLibrary.kind_fps("cast"), 10.0), true, "cast strips are 10 fps")
+	eq(is_equal_approx(StripLibrary.kind_fps("walk"), 12.0), true, "walk strips stay 12 fps")
+	eq(StripLibrary.kind_frame_hint("gloam", "attack"), 5, "gloam attack is 5 frames")
+	eq(StripLibrary.kind_frame_hint("kestrel", "hit"), 4, "hit strips are 4 frames")
+	eq(StripLibrary.try_load("res://art/export_2x/characters/kestrel/anims/kestrel_walk_e_gen.png"), null, "gen_raw sheets are not loaded")
 	var image := Image.create(48, 8, false, Image.FORMAT_RGBA8)
 	for i in 6:
 		image.fill_rect(Rect2i(i * 8, 0, 8, 8), Color(float(i) / 5.0, 0.4, 0.2, 1.0))
@@ -961,6 +1015,7 @@ func _test_batch1_disk_strips() -> void:
 	var mark_plan: Dictionary = mark_plans.get(0, {})
 	eq(bool(mark_plan.get("cast", false)), true, "Mark Shot stays a cast in the kit")
 	eq(bool(mark_plan.get("attack", false)), false, "Mark Shot is not reclassified as melee")
+	eq(str(mark_plan.get("strip", "")), "cast_mark", "Mark Shot names cast_mark for the hot-swap")
 	mark_plan["aim"] = Vector2(40, 8)
 	var bow := pawn.play_view_plan(mark_plan)
 	_assert_attack_hold(pawn, Vector2(40, 8), "Mark Shot")
@@ -991,15 +1046,16 @@ func _test_batch1_disk_strips() -> void:
 	eq(bool(det_miss.get("cast", false)), true, "Detonate miss winds up")
 	eq(bool(det_hit.get("cast", false)), bool(det_miss.get("cast", false)), "Detonate miss uses the same wind-up")
 	eq(bool(det_hit.get("attack", false)), false, "Detonate stays a cast in the kit")
+	eq(str(det_hit.get("strip", "")), "cast", "Detonate names cast, not attack")
 	det_miss["aim"] = Vector2(40, 8)
 	var boom := pawn.play_view_plan(det_miss)
-	_assert_attack_hold(pawn, Vector2(40, 8), "Detonate")
-	eq(boom > 0.45 and boom <= MOTION.ACTION_LOCK_MAX, true, "Detonate plays inside the action lock")
+	eq(boom > 0.2 and boom <= MOTION.ACTION_LOCK_MAX, true, "Detonate plays inside the action lock")
 	await process_frame
-	strip = _visible_strip(pawn)
-	truthy(strip != null, "Detonate shows the attack strip")
-	eq(String(strip.animation), "attack_e", "Detonate plays attack_e")
-	eq(is_equal_approx(strip.speed_scale, 1.0), true, "Detonate stays at authored 12 fps")
+	eq(_visible_strip(pawn), null, "Detonate does not borrow the attack strip")
+	eq(sprite.visible, true, "Detonate stays on the static pose until cast_* lands")
+	var point_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.cast_sec()
+	pawn._sample_cast(point_t, Vector2(40, 8))
+	eq(sprite.position.x > 4.0, true, "Detonate points toward the effect")
 	pawn.settle_motion()
 	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
 	pawn.free()
@@ -1067,7 +1123,7 @@ func _test_batch1_disk_strips() -> void:
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var gloam_y: float = (other.get_node("Sprite") as Sprite2D).position.y
 	eq(_step_bob_ok(gloam_y), true, "a class without strips still bobs, not a 36px hop")
-	eq((other.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "a class without strips does not stretch")
+	eq((other.get_node("Sprite") as Sprite2D).scale != Vector2(0.5, 0.5), true, "gloam without a walk strip squashes or stretches")
 	other.settle_motion()
 	other.free()
 

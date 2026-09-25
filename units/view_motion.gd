@@ -5,8 +5,10 @@ class_name ViewMotion
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
 ## files exist (SE→e, SW→s, NE→n, NW→w). Walk slides through cell centers
-## and the sprite root takes a light step bounce. A missing strip keeps
-## that bounce on the static facing. It does not play a tile-tall hop.
+## while `walk_<facing>` loops. A missing strip keeps the bounce and adds
+## squash on launch/land plus stretch at the crest. It does not play a
+## tile-tall hop. Facing turns in place for two walk frames before the
+## translate. The snapshot facing snaps only after the last land.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Every non-teleport spell gets caster chrome: a short squash / pull-back,
@@ -37,9 +39,10 @@ const WALK_STEP_SEC := 0.25
 
 const ATTACK_OUT_SEC := 0.12
 const ATTACK_BACK_SEC := 0.10
-## Phone-readable melee lunge. About 12px so arena zoom still shows the commit
-## without sliding the body off the tile. Ambush keeps the longer reach.
-const ATTACK_LUNGE_PX := 12.0
+## Melee lunge reaches the shared tile edge. A cardinal iso step is
+## hypot(32, 16) ≈ 36px center to center, so the edge is ~18px.
+## Ambush keeps the longer reach.
+const ATTACK_LUNGE_PX := 18.0
 ## Ambush blinks. A shared 12px lunge is still easy to miss next to the
 ## BACKSTAB number, so this reach is the commit, view-only.
 const AMBUSH_LUNGE_PX := 36.0
@@ -71,10 +74,19 @@ const SUPPORT_SEC := 0.34
 const SUPPORT_RISE_PX := 4.0
 
 const DEATH_SEC := 0.36
-const DEATH_SQUASH_X := 1.08
-const DEATH_SQUASH_Y := 0.76
-const DEATH_TILT_DEG := 7.0
-const DEATH_FADE_ALPHA := 0.78
+const DEATH_SQUASH_X := 1.22
+const DEATH_SQUASH_Y := 0.40
+const DEATH_TILT_DEG := 18.0
+const DEATH_FADE_ALPHA := 0.0
+const DEATH_DROP_PX := 14.0
+## Two authored walk frames (12 fps) planted before a facing change translates.
+const TURN_FRAME_SEC := 1.0 / 12.0
+const FACING_RING: Array[String] = ["N", "E", "S", "W"]
+## No-strip hop only. A playing walk cycle stays at rest scale.
+const FALLBACK_SQUASH := Vector2(1.14, 0.82)
+const FALLBACK_STRETCH := Vector2(0.90, 1.12)
+## Detonate point. Connects the caster to the effect when no cast strip exists.
+const CAST_POINT_PX := 16.0
 
 static var _force_reduce: int = -1
 
@@ -222,6 +234,13 @@ static func chrome_plans(events: Array) -> Dictionary:
 						plan["reach"] = AMBUSH_LUNGE_PX
 				elif not bool(plan.get("attack", false)):
 					plan["cast"] = true
+					# Mark Shot plays cast_mark_* when Batch-1c is on disk,
+					# otherwise the v3 attack_* bow. Detonate plays cast_* or a point pose.
+					# TODO(TA): cast_mark / cast / hit / death strips are not in this tree.
+					if spell_id == SpellKits.MARK_SHOT:
+						plan["strip"] = "cast_mark"
+					elif spell_id == SpellKits.DETONATE:
+						plan["strip"] = "cast"
 				plans[seat] = plan
 		if typ != "hit":
 			continue
@@ -270,7 +289,12 @@ static func steps_for(plan: Dictionary) -> Array:
 			"reach": float(plan.get("reach", ATTACK_LUNGE_PX)),
 		})
 	elif cast:
-		steps.append({"kind": "cast", "sec": cast_sec()})
+		steps.append({
+			"kind": "cast",
+			"sec": cast_sec(),
+			"dir": plan.get("aim", Vector2.ZERO),
+			"strip": str(plan.get("strip", "cast")),
+		})
 	if hit:
 		steps.append({"kind": "hit", "sec": hit_sec(), "dir": plan.get("away", Vector2.ZERO)})
 	elif lift:
@@ -302,9 +326,55 @@ static func walk_bounce_offset(elapsed: float) -> Vector2:
 	return hop_offset(u)
 
 
-## Walk does not squash or stretch. Spell wind-up still uses its own scale.
+## Walk strips stay at rest scale. This is the no-strip weight curve:
+## squash on launch and land, stretch through the crest.
 static func hop_scale(_t: float) -> Vector2:
 	return Vector2.ONE
+
+
+static func fallback_hop_scale(t: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ONE
+	if t < 0.16:
+		var launch := t / 0.16
+		return Vector2(
+			lerpf(1.0, FALLBACK_SQUASH.x, launch),
+			lerpf(1.0, FALLBACK_SQUASH.y, launch),
+		)
+	if t < 0.70:
+		var rise := clampf((t - 0.16) / 0.22, 0.0, 1.0)
+		return Vector2(
+			lerpf(FALLBACK_SQUASH.x, FALLBACK_STRETCH.x, rise),
+			lerpf(FALLBACK_SQUASH.y, FALLBACK_STRETCH.y, rise),
+		)
+	if t < 0.84:
+		var settle := (t - 0.70) / 0.14
+		return Vector2(
+			lerpf(FALLBACK_STRETCH.x, 1.0, settle),
+			lerpf(FALLBACK_STRETCH.y, 1.0, settle),
+		)
+	var land := sin((t - 0.84) / 0.16 * PI)
+	return Vector2(
+		lerpf(1.0, FALLBACK_SQUASH.x, land),
+		lerpf(1.0, FALLBACK_SQUASH.y, land),
+	)
+
+
+## Frames to show before translating. Empty when facing does not change.
+## 90° holds the new facing for two frames. 180° steps through one side facing.
+static func facing_turn(from_facing: String, to_facing: String) -> Array:
+	var a := from_facing.strip_edges().to_upper()
+	var b := to_facing.strip_edges().to_upper()
+	if a == "" or b == "" or a == b:
+		return []
+	if not FACING_RING.has(a) or not FACING_RING.has(b):
+		return [b, b]
+	var ia := FACING_RING.find(a)
+	var ib := FACING_RING.find(b)
+	var cw := (ib - ia + 4) % 4
+	if cw == 2:
+		return [FACING_RING[(ia + 1) % 4], b]
+	return [b, b]
 
 
 static func attack_pose(t: float, dir: Vector2, reach: float = -1.0) -> Dictionary:
@@ -348,7 +418,7 @@ static func attack_offset(t: float, dir: Vector2, reach: float = -1.0) -> Vector
 	return pos
 
 
-static func cast_pose(t: float) -> Dictionary:
+static func cast_pose(t: float, dir: Vector2 = Vector2.ZERO) -> Dictionary:
 	var rest := {"pos": Vector2.ZERO, "scale": Vector2.ONE}
 	if t <= 0.0 or t >= 1.0:
 		return rest
@@ -374,8 +444,9 @@ static func cast_pose(t: float) -> Dictionary:
 	else:
 		k = 1.0 - _ease_in((time - hold_end) / maxf(CAST_RELEASE_SEC, 0.0001))
 	var s := lerpf(1.0, CAST_SCALE, k)
+	var aim := _unit(dir)
 	return {
-		"pos": Vector2(0.0, -CAST_RISE_PX * k),
+		"pos": Vector2(aim.x * CAST_POINT_PX * k, -CAST_RISE_PX * k),
 		"scale": Vector2(s, s),
 	}
 
@@ -412,6 +483,7 @@ static func death_pose(t: float, tilt_sign: float) -> Dictionary:
 		"scale": Vector2(lerpf(1.0, DEATH_SQUASH_X, k), lerpf(1.0, DEATH_SQUASH_Y, k)),
 		"rot": DEATH_TILT_DEG * sign * k,
 		"fade": lerpf(1.0, DEATH_FADE_ALPHA, k),
+		"drop": DEATH_DROP_PX * k,
 	}
 
 

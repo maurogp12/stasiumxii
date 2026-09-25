@@ -625,6 +625,8 @@ func _test_class_choreography() -> void:
 	eq(int(_first(marked, "status_on")["seat"]), 1, "Marks sit on the target seat")
 	eq(_first(marked, "status_on")["cell"], foe, "Mark cells stay Vector2i")
 	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
+	eq(bool(_first(marked, "projectile").get("hand", false)), true, "Mark Shot emits from the hand")
+	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.2, true, "Mark Shot waits for the release frame")
 	var stacked: Array = ROUTER.recipes_for([{
 		"type": "hit",
 		"spell": "mark_shot",
@@ -651,7 +653,7 @@ func _test_class_choreography() -> void:
 	}])
 	eq(int(_first(boom, "spark")["amount"]), 16, "Detonate scales the burst with marks consumed")
 	eq(_first(boom, "status_off")["status"], "marks", "Detonate clears Marks when none remain")
-	eq(_has(boom, "shake"), false, "Detonate still does not shake")
+	eq(float(_first(boom, "shake")["amplitude"]), 4.0, "Detonate at 24 is a heavy hit and shakes")
 	eq(_first(boom, "number")["text"], "24", "Detonate still leads with the damage number")
 	var kept: Array = ROUTER.recipes_for([{
 		"type": "miss",

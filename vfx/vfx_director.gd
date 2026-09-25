@@ -274,14 +274,23 @@ func _play_projectile(spec: Dictionary) -> void:
 	var node := _acquire("projectile")
 	var from_cell := _Router.cell_of(spec.get("from", Vector2i.ZERO))
 	var to_cell := _Router.cell_of(spec.get("to", from_cell))
+	var from_pos := _pos_cell(from_cell)
+	var to_pos := _pos_cell(to_cell)
+	if bool(spec.get("hand", false)):
+		var delta := to_pos - from_pos
+		var dir := delta.normalized() if delta.length_squared() > 1.0 else Vector2(1, 0.5).normalized()
+		from_pos += VfxBudget.HAND_OFFSET + dir * 8.0
+		to_pos += VfxBudget.CHEST_OFFSET
 	node.play({
-		"from": _pos_cell(from_cell),
-		"to": _pos_cell(to_cell),
+		"from": from_pos,
+		"to": to_pos,
 		"arc": float(spec.get("arc", 0.0)),
 		"overshoot": float(spec.get("overshoot", 0.0)),
 		"duration": float(spec.get("duration", 0.2)),
+		"delay": float(spec.get("delay", 0.0)),
 		"tint": spec.get("tint", VfxPalette.KESTREL_AIR),
 		"width": float(spec.get("width", 3.0)),
+		"head": bool(spec.get("head", true)),
 		"z": _z_air(to_cell),
 	})
 
