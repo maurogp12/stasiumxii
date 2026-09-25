@@ -24,7 +24,7 @@
       "passive": {"id": "backstab", "mult": 1.35, "replaces_back": 1.2},
       "spells": [
         {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "13D FLEX weapon", "notes": "backstab applies"},
-        {"id": "drop_shade", "ap": 1, "mp": 0, "range": [1, 6], "engine": "+1 shade max 2", "effect": "LOCK Neutral Shade 3 turns", "notes": "no roll"},
+        {"id": "drop_shade", "ap": 1, "mp": 0, "range": [1, 2], "engine": "+1 shade max 2", "effect": "LOCK Neutral Shade 3 turns", "notes": "no roll"},
         {"id": "ambush", "ap": 4, "mp": 0, "range": [1, 4], "engine": "spend shade only if origin shade", "effect": "22D after jump FLEX", "notes": "origin=self if Invisible else Shade; dest empty back only; occupied/illegal back = illegal cast refund; MISS: no teleport, shade kept, invisible kept, 4AP spent"},
         {"id": "fade", "ap": 2, "mp": 1, "range": "self", "engine": "+1 umbral", "effect": "LOCK Neutral Invisible", "notes": "no roll"},
         {"id": "nightfold", "ap": 4, "mp": 0, "range": [0, 6], "engine": "shade + umbral 2+; clear umbral", "effect": "22D each adjacent after blink to Shade", "notes": "can-wait: shade commit-on-cast vs global miss refund"}
