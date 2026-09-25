@@ -42,6 +42,10 @@ func _run() -> void:
 	_test_absorbed_damage_and_intercept()
 	_test_shade_and_plant_snapshot()
 	_test_expiry_events()
+	_test_death_cause()
+	_test_triage_on_heals()
+	_test_cleanse_cc_removed()
+	_test_fade_and_heartstop_linger()
 
 
 func _test_caster_cell_on_hit_and_miss() -> void:
@@ -697,6 +701,505 @@ func _test_expiry_events() -> void:
 	var guest := _expire(_guest.snapshot().get("last_events", []), "shade")
 	eq(guest.get("pos"), Vector2i(2, 1), "guest Shade expiry matches the host")
 	eq((_guest.snapshot().get("shade_tokens", [1]) as Array).is_empty(), true, "guest snapshot drops the expired Shade")
+
+
+func _test_death_cause() -> void:
+	var hot: Dictionary = _hot_submit_after({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hp": 16,
+		"rolls": [1],
+	}, {"type": "end_turn", "seat": 0})
+	var strike: Dictionary = hot["session"].submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	hot["session"].free()
+	var dead := _event_of(strike.get("events", []), "dead")
+	eq(str(dead.get("cause", "")), "damage", "hot-seat lethal Strike cause is damage")
+	eq(int(dead.get("seat", -1)), 0, "lethal Strike dead event names Kestrel")
+	eq(int(_event_of(strike.get("events", []), "hit").get("damage", -1)), 16, "lethal Strike damage stays 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "lethal Strike still removes the last 16 HP")
+	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "lethal Strike still spends 3 AP")
+	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "lethal Strike still marks the unit dead")
+	eq(bool(_sim.snapshot()["match_over"]), true, "lethal Strike still ends the match")
+	eq(int(_sim.snapshot()["winner_seat"]), 1, "Ironjaw still wins the lethal Strike")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var lived: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	eq(_event_of(lived.get("events", []), "dead").is_empty(), true, "a non-lethal Strike emits no dead event")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 64, "non-lethal Strike still deals 16")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(6, 6),
+	})
+	_live_unit(0)["hp"] = 4
+	_live_unit(0)["burn_remaining"] = 1
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var burned: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	var burn_dead := _event_of(burned.get("events", []), "dead")
+	eq(str(burn_dead.get("cause", "")), "burn", "lethal Burn tick cause is burn")
+	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -4, "lethal Burn tick is still 4 HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "Burn tick still reduces HP to 0")
+	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "Burn tick still marks the victim dead")
+	eq(int(_sim.snapshot()["winner_seat"]), 1, "Ironjaw still wins a lethal Burn")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hp": 16,
+		"rolls": [1],
+		"fixture": true,
+	})
+	eq(_host.submit_for_seat({"type": "end_turn"}, 0)["ok"], true, "host hands Ironjaw the lethal Strike turn")
+	var host_strike: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)}, 1)
+	var packed: Dictionary = _host.pack_result(host_strike, 0)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	eq(str(_event_of((decoded as Dictionary).get("events", []), "dead").get("cause", "")), "damage", "packed dead cause survives encode")
+	_guest.apply_packed_state(packed)
+	eq(str(_event_of(_guest.snapshot().get("last_events", []), "dead").get("cause", "")), "damage", "guest dead cause is damage")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 0, "guest HP matches the lethal host")
+	eq(int(_guest.snapshot()["winner_seat"]), 1, "guest winner matches the host")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(1, 1),
+		"ironjaw_pos": Vector2i(6, 6),
+		"fixture": true,
+	})
+	_live_unit(0)["hp"] = 4
+	_live_unit(0)["burn_remaining"] = 1
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var host_burn: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
+	_guest.apply_packed_state(_host.pack_result(host_burn, 0))
+	eq(str(_event_of(_guest.snapshot().get("last_events", []), "dead").get("cause", "")), "burn", "guest Burn death cause is burn")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 0, "guest Burn death HP matches the host")
+
+
+func _test_triage_on_heals() -> void:
+	var hot: Dictionary = _hot_submit_after({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 31,
+		"rolls": [1],
+	}, {"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	hot["session"].free()
+	var mend := _event_of(hot["result"].get("events", []), "hit")
+	eq(bool(mend.get("triage", false)), true, "hot-seat Mend sets triage below 40% HP")
+	eq(int(mend.get("healed", -1)), 20, "Triage Mend still heals 16 × 1.25")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 51, "Triage Mend HP stays 51")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Triage Mend still gains 1 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Triage Mend still spends 3 AP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 32,
+		"rolls": [1],
+	})
+	var at_line: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	var line_hit := _event_of(at_line.get("events", []), "hit")
+	eq(line_hit.has("triage"), false, "Mend at 40% HP omits triage")
+	eq(int(line_hit.get("healed", -1)), 16, "Mend at 40% HP still heals 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 48, "Mend at 40% HP stays 48")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 31,
+		"rolls": [100],
+	})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
+	eq(_event_of(missed.get("events", []), "miss").has("triage"), false, "Mend miss does not stamp triage")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 31, "Mend miss still does not heal")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 31,
+		"mender_pulse": 1,
+		"rolls": [1],
+	})
+	var tap: Dictionary = _sim.submit({"type": "cast", "spell": "pulse_tap", "to": Vector2i(1, 1), "seat": 0})
+	var tap_hit := _event_of(tap.get("events", []), "hit")
+	eq(bool(tap_hit.get("triage", false)), true, "Pulse Tap sets triage below 40% HP")
+	eq(int(tap_hit.get("healed", -1)), 13, "Triage Pulse Tap still heals round(10 × 1.25)")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 44, "Triage Pulse Tap HP stays 44")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Pulse Tap still spends 1 Pulse")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 31,
+		"mender_pulse": 4,
+		"rolls": [1],
+	})
+	var ally: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(1, 1), "seat": 0})
+	var ally_hit := _event_of(ally.get("events", []), "hit")
+	eq(bool(ally_hit.get("triage", false)), true, "ally Heartstop sets triage below 40% HP")
+	eq(int(ally_hit.get("healed", -1)), 40, "Triage Heartstop still heals 32 × 1.25")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 71, "Triage Heartstop HP stays 71")
+	eq(int(ally_hit.get("hit_immunity", -1)), 1, "ally Heartstop still grants 1 immunity hit")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"kestrel_hp": 20,
+		"mender_pulse": 4,
+		"rolls": [1],
+	})
+	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
+	var enemy_hit := _event_of(enemy.get("events", []), "hit")
+	eq(enemy_hit.has("triage"), false, "enemy Heartstop does not stamp triage")
+	eq(int(enemy_hit.get("damage", -1)), 10, "enemy Heartstop damage stays 10")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 10, "enemy Heartstop still leaves 10 HP")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_hp": 31,
+		"rolls": [1],
+		"fixture": true,
+	})
+	var host_mend: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "mend", "to": Vector2i(1, 1)}, 0)
+	var packed: Dictionary = _host.pack_result(host_mend, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	eq(bool(_event_of((decoded as Dictionary).get("events", []), "hit").get("triage", false)), true, "packed Mend keeps triage")
+	_guest.apply_packed_state(packed)
+	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("triage", false)), true, "guest Mend keeps triage")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 51, "guest Triage HP matches the host")
+
+
+func _test_cleanse_cc_removed() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+	var empty: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
+	var empty_hit := _event_of(empty.get("events", []), "hit")
+	eq(empty_hit.has("cc_removed"), true, "Cleanse always carries cc_removed")
+	eq(_string_list(empty_hit.get("cc_removed")), [], "Cleanse with no CC lists nothing")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Cleanse with no CC still gains 1 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "Cleanse still spends 2 AP")
+
+	# A stunned unit cannot cast. Cleanse is observed on a same-seat ally.
+	_reset_mender()
+	_add_same_seat_ally(1, false, 0)
+	var hot_script := load("res://backend/net_session.gd")
+	var hot: Node = hot_script.new()
+	hot.attach_sim(_sim)
+	var hot_cast: Dictionary = hot.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 1), "seat": 0})
+	hot.free()
+	var stunned := _event_of(hot_cast.get("events", []), "hit")
+	eq(_string_list(stunned.get("cc_removed")), ["stun"], "hot-seat Cleanse lists stun")
+	var cleared := _unit_at(_sim.snapshot(), Vector2i(2, 1))
+	eq(int(cleared.get("stun_remaining", -1)), 0, "Cleanse still clears stun_remaining")
+	eq(bool(cleared.get("stunned", true)), false, "Cleanse still clears stunned")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Cleanse of Stun still gains 1 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "Cleanse of Stun still spends 2 AP")
+
+	_reset_mender()
+	_add_same_seat_ally(1, true, 2)
+	var both: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 1), "seat": 0})
+	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")), ["stun"], "Stun flags collapse to one id")
+	var burned := _unit_at(_sim.snapshot(), Vector2i(2, 1))
+	eq(int(burned.get("burn_remaining", -1)), 2, "Cleanse does not clear Burn")
+	eq(int(burned.get("stun_remaining", -1)), 0, "Cleanse still clears Stun beside Burn")
+	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")).has("burn"), false, "Burn is not reported as removed")
+
+	_reset_mender()
+	_live_unit(0)["burn_remaining"] = 2
+	var burn_only: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
+	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), [], "Burn alone leaves cc_removed empty")
+	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 2, "Burn-only Cleanse still leaves Burn")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"fixture": true,
+	})
+	_add_same_seat_ally(1, true, 0)
+	var host_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 1)}, 0)
+	var packed: Dictionary = _host.pack_result(host_cast, 1)
+	var decoded: Variant = _IntentCodec.decode(packed)
+	eq(_string_list(_event_of((decoded as Dictionary).get("events", []), "hit").get("cc_removed")), ["stun"], "packed cc_removed survives encode")
+	_guest.apply_packed_state(packed)
+	eq(_string_list(_event_of(_guest.snapshot().get("last_events", []), "hit").get("cc_removed")), ["stun"], "guest cc_removed is stun")
+	eq(int(_unit_at(_guest.snapshot(), Vector2i(2, 1)).get("stun_remaining", -1)), 0, "guest Stun matches the host")
+
+
+func _test_fade_and_heartstop_linger() -> void:
+	var gloam := Vector2i(1, 1)
+	var hot: Dictionary = _hot_submit_after({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(6, 6)],
+	}, {"type": "cast", "spell": "fade", "to": gloam, "seat": 0})
+	hot["session"].free()
+	var fade := _event_of(hot["result"].get("events", []), "cast")
+	eq(bool(fade.get("invisible", false)), true, "hot-seat Fade cast says Invisible is active")
+	eq(int(fade.get("seat", -1)), 0, "Fade cast names the seat")
+	eq(fade.get("caster_cell"), gloam, "Fade cast cell is the caster cell")
+	eq(fade.has("turns"), false, "Invisible does not track remaining turns")
+	var faded := _unit_in(_sim.snapshot(), 0)
+	eq(bool(faded.get("invisible", false)), true, "snapshot unit is invisible")
+	eq(int(faded.get("seat", -1)), 0, "snapshot Invisible names the seat")
+	eq(faded.get("pos"), gloam, "snapshot Invisible names the cell")
+	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Fade still gains 1 Umbral")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "Fade still spends 2 AP")
+	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade still spends 1 MP")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var later: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit_in(_sim.snapshot(), 0).get("invisible", false)), true, "Invisible stays after a full round")
+	eq(_expire(later.get("events", []), "invisible").is_empty(), true, "Invisible does not expire")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, Vector2i(6, 6)],
+		"fixture": true,
+	})
+	var host_fade: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "fade", "to": gloam}, 0)
+	var fade_packed: Dictionary = _host.pack_result(host_fade, 1)
+	var fade_wire: Variant = _IntentCodec.decode(fade_packed)
+	var wire_fade := _event_of((fade_wire as Dictionary).get("events", []), "cast")
+	eq(bool(wire_fade.get("invisible", false)), true, "packed Fade keeps invisible")
+	eq(wire_fade.get("caster_cell"), gloam, "packed Fade keeps the cell")
+	_guest.apply_packed_state(fade_packed)
+	var guest_fade := _unit_in(_guest.snapshot(), 0)
+	eq(bool(guest_fade.get("invisible", false)), true, "guest snapshot keeps Invisible")
+	eq(guest_fade.get("pos"), gloam, "guest Invisible cell matches the host")
+	eq(int(guest_fade.get("seat", -1)), 0, "guest Invisible seat matches the host")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_pulse": 4,
+		"rolls": [1],
+	})
+	var ally: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(1, 1), "seat": 0})
+	var ally_hit := _event_of(ally.get("events", []), "hit")
+	eq(int(ally_hit.get("hit_immunity", -1)), 1, "ally Heartstop hit exposes the immunity charge")
+	eq(ally_hit.get("to"), Vector2i(1, 1), "ally Heartstop hit names the cell")
+	eq(int(ally_hit.get("target_seat", -1)), 0, "ally Heartstop hit names the seat")
+	var immune := _unit_in(_sim.snapshot(), 0)
+	eq(int(immune.get("hit_immunity", -1)), 1, "snapshot keeps the immunity charge")
+	eq(immune.get("pos"), Vector2i(1, 1), "immunity snapshot keeps the cell")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "full-HP Heartstop still heals 0")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Heartstop still spends 4 Pulse")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+		"mender_pulse": 4,
+		"rolls": [1],
+		"fixture": true,
+	})
+	var host_ally: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "heartstop", "to": Vector2i(1, 1)}, 0)
+	_guest.apply_packed_state(_host.pack_result(host_ally, 1))
+	eq(int(_event_of(_guest.snapshot().get("last_events", []), "hit").get("hit_immunity", -1)), 1, "guest Heartstop hit keeps hit_immunity")
+	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 1, "guest snapshot keeps hit_immunity")
+
+	var enemy_hot: Dictionary = _hot_submit_after({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"mender_pulse": 4,
+		"rolls": [1],
+	}, {"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
+	enemy_hot["session"].free()
+	var enemy_hit := _event_of(enemy_hot["result"].get("events", []), "hit")
+	eq(bool(enemy_hit.get("skip_next_mp", false)), true, "hot-seat enemy Heartstop sets skip_next_mp")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 70, "enemy Heartstop damage stays 10")
+	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", false)), true, "snapshot keeps skip_next_mp")
+	eq(_unit_in(_sim.snapshot(), 1).get("pos"), Vector2i(3, 1), "skip_next_mp snapshot keeps the cell")
+	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	var skip_end := _expire(skipped.get("events", []), "skip_next_mp")
+	eq(skip_end.get("pos"), Vector2i(3, 1), "skip_next_mp expire names the cell")
+	eq(int(skip_end.get("target_seat", -1)), 1, "skip_next_mp expire names the seat")
+	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", true)), false, "skip_next_mp clears when the turn starts")
+	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill still sets MP to 0")
+	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
+		"kestrel_facing": "W",
+		"mender_pulse": 4,
+		"rolls": [1],
+		"fixture": true,
+	})
+	var host_enemy: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1)}, 0)
+	_guest.apply_packed_state(_host.pack_result(host_enemy, 1))
+	eq(bool(_event_of(_guest.snapshot().get("last_events", []), "hit").get("skip_next_mp", false)), true, "guest hit keeps skip_next_mp")
+	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", false)), true, "guest snapshot keeps skip_next_mp")
+	var host_skip: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
+	var skip_packed: Dictionary = _host.pack_result(host_skip, 1)
+	var skip_wire: Variant = _IntentCodec.decode(skip_packed)
+	eq(_expire((skip_wire as Dictionary).get("events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "packed skip_next_mp expire survives encode")
+	_guest.apply_packed_state(skip_packed)
+	eq(_expire(_guest.snapshot().get("last_events", []), "skip_next_mp").get("pos"), Vector2i(3, 1), "guest skip_next_mp expire matches the host")
+	eq(bool(_unit_in(_guest.snapshot(), 1).get("skip_next_mp", true)), false, "guest snapshot clears skip_next_mp")
+	eq(int(_guest.snapshot()["units"][1]["mp"]), 0, "guest skipped MP matches the host")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hit_immunity": 2,
+		"rolls": [1, 1],
+	})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var first: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	eq(_expire(first.get("events", []), "hit_immunity").is_empty(), true, "a leftover immunity charge does not expire")
+	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 1, "one immunity charge remains")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "the first charge still prevents HP loss")
+	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "the first Strike still spends 3 AP")
+	var second: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var spent := _expire(second.get("events", []), "hit_immunity")
+	eq(spent.get("pos"), Vector2i(3, 3), "hit_immunity expire names the cell")
+	eq(int(spent.get("target_seat", -1)), 0, "hit_immunity expire names the seat")
+	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "the last charge is spent")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "the last charge still prevents HP loss")
+
+	_host.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+		"kestrel_hit_immunity": 1,
+		"rolls": [1],
+		"fixture": true,
+	})
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	var host_break: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)}, 1)
+	var break_packed: Dictionary = _host.pack_result(host_break, 0)
+	var break_wire: Variant = _IntentCodec.decode(break_packed)
+	eq(_expire((break_wire as Dictionary).get("events", []), "hit_immunity").get("pos"), Vector2i(3, 3), "packed hit_immunity expire survives encode")
+	_guest.apply_packed_state(break_packed)
+	eq(_expire(_guest.snapshot().get("last_events", []), "hit_immunity").get("pos"), Vector2i(3, 3), "guest hit_immunity expire matches the host")
+	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 0, "guest snapshot spends the immunity charge")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 80, "guest immune HP matches the host")
+
+
+func _reset_mender() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel"],
+		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
+	})
+
+
+func _add_same_seat_ally(stun_remaining: int, stunned: bool, burn_remaining: int) -> void:
+	var ally: Dictionary = _sim._make_unit(0, "kestrel", "Ally", "air", Vector2i(2, 1), "W", true)
+	ally["stun_remaining"] = stun_remaining
+	ally["stunned"] = stunned
+	ally["burn_remaining"] = burn_remaining
+	_sim._units.append(ally)
+
+
+func _unit_at(snap: Dictionary, cell: Vector2i) -> Dictionary:
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if unit.get("pos") == cell:
+			return unit
+	return {}
+
+
+func _hot_submit_after(config: Dictionary, intent: Dictionary) -> Dictionary:
+	_sim.reset_match(config)
+	var hot_script := load("res://backend/net_session.gd")
+	var hot: Node = hot_script.new()
+	hot.attach_sim(_sim)
+	return {"session": hot, "result": hot.submit(intent)}
+
+
+func _string_list(value: Variant) -> Array:
+	var out: Array = []
+	if typeof(value) != TYPE_ARRAY and typeof(value) != TYPE_PACKED_STRING_ARRAY:
+		return out
+	for item in value:
+		out.append(str(item))
+	return out
+
+
+func _unit_in(snap: Dictionary, seat: int) -> Dictionary:
+	for unit in snap.get("units", []):
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == seat:
+			return unit
+	return {}
 
 
 func _expire(events: Variant, status: String) -> Dictionary:
