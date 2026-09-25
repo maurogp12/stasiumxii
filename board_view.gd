@@ -44,7 +44,6 @@ const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
-const STEP_SEC: float = 0.28
 const STEP_PAUSE_SEC: float = 0.08
 const HANDOFF_SEC: float = 1.0
 
@@ -649,7 +648,7 @@ func _animate_path(seat: int, path: Array) -> void:
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
 	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
-	# The step arc is sprite-local and uses the same STEP_SEC (already under the action budget).
+	# The step arc is sprite-local and lasts Pawn.WALK_HOP_SEC, same as the tile slide.
 	pawn.hold_idle()
 	var prev: Vector2i = pawn.grid_position
 	for step in path:
@@ -661,13 +660,13 @@ func _animate_path(seat: int, path: Array) -> void:
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		pawn.set_facing(dir)
 		_stop_walk_tween()
-		pawn.play_step_hop(STEP_SEC)
+		pawn.play_step_hop()
 		_walk_tween = create_tween()
 		_walk_tween.set_parallel(true)
 		_walk_tween.set_trans(Tween.TRANS_LINEAR)
 		_walk_tween.set_ease(Tween.EASE_IN_OUT)
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), STEP_SEC)
-		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, STEP_SEC)
+		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
+		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
 		await _walk_tween.finished
 		pawn.position = _cell_to_local(cell)
 		pawn.finish_step()

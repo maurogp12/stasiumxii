@@ -45,6 +45,11 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
+## One tile hop. The hop tween and a future walk strip both read this.
+## The strip is 6 frames at 24 fps, which is 0.25s at speed_scale 1.0.
+const WALK_HOP_SEC := 0.25
+const WALK_STRIP_FRAMES := 6
+const WALK_STRIP_FPS := 24.0
 ## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
 const HEAD_HP_Y := -76.0
 const NAME_Y := 14.0
@@ -100,14 +105,27 @@ func motion_playing() -> bool:
 
 
 ## Sprite-local hop. The pawn node stays on the path so feet return to the tile center.
-func play_step_hop(duration: float) -> void:
-	if VIEW_MOTION.reduce_motion() or duration <= 0.0 or not is_inside_tree():
+## Duration is WALK_HOP_SEC, the same clock a future walk strip uses.
+func play_step_hop() -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
+	_apply_walk_strip_timing()
 	var gen := _begin_action()
 	var tw := create_tween()
 	_action_tween = tw
-	tw.tween_method(_sample_hop, 0.0, 1.0, duration)
+	tw.tween_method(_sample_hop, 0.0, 1.0, WALK_HOP_SEC)
 	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
+
+
+## 6 frames authored at WALK_STRIP_FPS. speed_scale 1.0 lasts WALK_HOP_SEC.
+static func walk_strip_speed_scale() -> float:
+	return (float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS) / WALK_HOP_SEC
+
+
+func _apply_walk_strip_timing() -> void:
+	var strip := get_node_or_null("Sprite")
+	if strip is AnimatedSprite2D:
+		(strip as AnimatedSprite2D).speed_scale = walk_strip_speed_scale()
 
 
 func play_view_plan(plan: Dictionary) -> float:

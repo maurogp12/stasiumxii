@@ -45,6 +45,8 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.IDLE_PERIOD >= 1.6 and MOTION.IDLE_PERIOD <= 2.2, true, "idle period is a slow breathe")
 	eq(MOTION.IDLE_BOB_PX >= 1.0 and MOTION.IDLE_BOB_PX <= 2.0, true, "idle bob is 1-2px")
 	eq(MOTION.HOP_PX >= 4.0 and MOTION.HOP_PX <= 6.0, true, "step arc is 4-6px")
+	eq(Pawn.WALK_HOP_SEC, 0.25, "per-tile hop is 0.25s")
+	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), 1.0), true, "a 6-frame 24fps strip matches the hop at speed_scale 1")
 	eq(MOTION.ATTACK_LUNGE_PX >= 8.0 and MOTION.ATTACK_LUNGE_PX <= 12.0, true, "lunge is 8-12px")
 	eq(MOTION.HIT_KNOCK_PX >= 4.0 and MOTION.HIT_KNOCK_PX <= 6.0, true, "knockback is 4-6px")
 	var stacked := {
@@ -211,7 +213,7 @@ func _test_reduce_motion_skips() -> void:
 	pawn.apply_snapshot(_unit("bastion", "S", 0), 0)
 	eq(pawn.play_view_plan({"attack": true, "aim": Vector2(20, 10), "death": true}), 0.0, "reduce-motion plays no action")
 	eq(pawn.motion_playing(), false, "reduce-motion does not hold the sprite")
-	pawn.play_step_hop(0.28)
+	pawn.play_step_hop()
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "reduce-motion does not arc the step")
 	var plan := {"hit": true, "death": true, "delay": true, "away": Vector2.RIGHT, "tilt": 1.0}
 	eq(MOTION.plan_sec(plan) <= 0.6, true, "budget helper ignores the reduce flag")
@@ -242,10 +244,10 @@ func _test_live_tree() -> void:
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "settle plants the feet")
 	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle restores scale")
 	eq((pawn.get_node("Sprite") as Sprite2D).rotation, 0.0, "settle clears rotation")
-	pawn.play_step_hop(0.2)
-	await create_timer(0.08).timeout
+	pawn.play_step_hop()
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position.y < -1.0, true, "a live hop leaves the tile")
-	await create_timer(0.2).timeout
+	await create_timer(Pawn.WALK_HOP_SEC * 0.7).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "a live hop returns to the tile center")
 	eq(pawn.motion_playing(), false, "a finished hop releases the sprite")
 	var victim := Pawn.new()
@@ -282,6 +284,12 @@ func _test_view_wiring() -> void:
 	eq(view.split("_present_resolve(").size() >= 3, true, "hot-seat and online share resolve presentation")
 	truthy(view.contains("_arm_view_motions"), "resolve arms view motions")
 	truthy(view.contains("play_step_hop"), "walk steps arc on the sprite")
+	truthy(view.contains("Pawn.WALK_HOP_SEC"), "the tile slide uses the pawn hop constant")
+	eq(view.contains("STEP_SEC"), false, "the board does not keep a second hop duration")
+	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
+	truthy(pawn_src.contains("const WALK_HOP_SEC := 0.25"), "the hop constant is 0.25s on the pawn")
+	truthy(pawn_src.contains("WALK_HOP_SEC)"), "the hop tween reads WALK_HOP_SEC")
+	truthy(pawn_src.contains("walk_strip_speed_scale"), "a future walk strip reads the same hop length")
 	truthy(view.contains("finish_step"), "each step plants the sprite")
 	truthy(view.contains("_track_step_sort"), "hops retarget z while moving")
 	truthy(view.contains("ACTION_LOCK_MAX"), "the action lock uses the shared budget")
@@ -297,7 +305,6 @@ func _test_view_wiring() -> void:
 	var play_src := view.substr(play_idx, anim_idx - play_idx)
 	eq(play_src.contains("_turn_clock.pause"), false, "step playback does not pause the clock")
 	eq(play_src.contains("_turn_clock.stop"), false, "step playback does not stop the clock")
-	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
 	eq(pawn_src.contains("Pulse"), false, "pawn does not invent Pulse")
 	truthy(pawn_src.contains("Vector2(0, -72)"), "foot offset stays on the pawn")
 	truthy(pawn_src.contains("Vector2(0.5, 0.5)"), "shipped scale stays on the pawn")
