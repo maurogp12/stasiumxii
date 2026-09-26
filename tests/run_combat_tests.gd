@@ -2482,8 +2482,8 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
-	eq(CombatSim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
-	eq(CombatSim.ambush_damage_if_planted(back, back, 22), 22, "Ambush damage after the plant stays 22")
+	eq(_sim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
+	eq(_sim.ambush_damage_if_planted(back, back, 22), 22, "Ambush damage after the plant stays 22")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -2599,7 +2599,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 		ambush_fn = ambush_fn.substr(0, ambush_end)
 	var pos_at := ambush_fn.find("actor[\"pos\"] = cell")
 	var struck_at := ambush_fn.find("var struck_from: Vector2i = actor[\"pos\"]")
-	var guard_at := ambush_fn.find("if struck_from != cell:")
+	var guard_at := ambush_fn.find("ambush_damage_if_planted(struck_from, cell, damage)")
 	var hp_at := ambush_fn.find("target[\"hp\"] = maxi(0, int(target[\"hp\"]) - damage)")
 	eq(pos_at >= 0 and struck_at > pos_at and guard_at > struck_at and hp_at > guard_at, true, "Ambush relocates before it can apply damage")
 

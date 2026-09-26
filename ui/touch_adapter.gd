@@ -80,7 +80,7 @@ const MOBILE_BOARD_KEEP := 0.62
 const PLAYER_ZOOM_STEP := 1.18
 const PLAYER_ZOOM_BIAS_MIN := 0.62
 const PLAYER_ZOOM_BIAS_MAX := 1.25
-const PLAYER_ZOOM_MAX := 2.45
+const PLAYER_ZOOM_MAX := 2.5
 static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0

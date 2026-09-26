@@ -125,7 +125,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(gloam_pawn.grid_position, origin, "Shade Ambush collapses on the cast cell")
 	host.eq(gloam_pawn.position, board._cell_to_local(origin), "Shade Ambush does not slash from across the board")
 	host.eq(int(board.pawns_by_seat[1].hp), foe_hp_before, "Shade Ambush does not deal damage before the plant hold")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
+	await _await_collapse(host)
 	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Shade Ambush plants on the back tile before the slash")
 	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
 	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
@@ -162,7 +162,7 @@ static func run(host: SceneTree) -> void:
 	var blinked: Node = board.pawns_by_seat[0]
 	host.eq(blinked.grid_position, ambush_from, "Invisible Ambush collapses on the cast cell")
 	host.eq(blinked.position, board._cell_to_local(ambush_from), "Invisible Ambush does not slash from the cast cell")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
+	await _await_collapse(host)
 	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush plants on the back tile before the slash")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "Invisible Ambush stays on the back tile")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
@@ -195,7 +195,7 @@ static func run(host: SceneTree) -> void:
 	board._present_resolve(near.get("events", []))
 	var near_pawn: Node = board.pawns_by_seat[0]
 	host.eq(near_pawn.grid_position, near_from, "adjacent Invisible Ambush collapses before the snap")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
+	await _await_collapse(host)
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush plants past the foe before the slash")
 	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC * 0.4).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush stays past the foe")
@@ -427,6 +427,15 @@ static func _ambush_strike_live(board: Node) -> bool:
 		if str(node.get("_kind")) == "damage":
 			return true
 	return false
+
+
+## Collapse is 0.18s. A slow headless frame can finish a 0.23s timer before
+## that frame steps the arrival tween, so the body is still on the cast cell.
+## One process frame after the timer lets the plant land. A missing plant
+## still fails the assertion that follows.
+static func _await_collapse(host: SceneTree) -> void:
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
+	await host.process_frame
 
 
 static func _seat_pos(snap: Dictionary, seat: int) -> Vector2i:

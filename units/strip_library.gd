@@ -193,6 +193,9 @@ static func image_from_walk_bytes(class_id: String, face: String) -> Image:
 		return null
 	if image.is_empty():
 		return null
+	# The texture importer runs fix_alpha_edges on the sheet (fix_alpha_border).
+	# Raw PNG bytes skip that pass, so frame 0 would not match the tres cell.
+	image.fix_alpha_edges()
 	return image
 
 
