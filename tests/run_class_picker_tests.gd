@@ -59,22 +59,33 @@ func _test_roles_and_art() -> void:
 		for facing in ["n", "e", "s", "w"]:
 			var path := "res://art/characters/%s/%s_%s.png" % [class_id, class_id, facing]
 			truthy(FileAccess.file_exists(path), "sprite exists %s" % path)
-		var sheet := StripLibrary.export_png_path(class_id, "walk", "e")
-		eq(_script.portrait_path(class_id), sheet, "%s card uses the east walk sheet" % class_id)
-		truthy(FileAccess.file_exists(sheet), "%s east walk sheet is on disk" % class_id)
+		var plate := "res://art/ui/select/%s_select.png" % class_id
+		eq(_script.portrait_path(class_id), plate, "%s card uses the select plate" % class_id)
+		truthy(FileAccess.file_exists(plate), "%s select plate is on disk" % class_id)
 		var tex: Texture2D = _script.load_portrait(class_id)
-		truthy(tex != null, "%s idle portrait loads" % class_id)
+		truthy(tex != null, "%s select plate loads" % class_id)
 		if tex != null:
-			eq(tex.get_width(), 144, "%s portrait width" % class_id)
-			eq(tex.get_height(), 160, "%s portrait height" % class_id)
-			var old := load("res://art/characters/%s/%s_s.png" % [class_id, class_id]) as Texture2D
+			eq(tex.get_width(), 512, "%s plate width" % class_id)
+			eq(tex.get_height(), 768, "%s plate height" % class_id)
 			var fresh := tex.get_image()
-			var prior := old.get_image() if old != null else null
-			truthy(fresh != null and prior != null, "%s idle and old south both decode" % class_id)
-			if fresh != null and prior != null:
-				eq(fresh.get_data() == prior.get_data(), false, "%s card is not the old south turnaround" % class_id)
+			truthy(fresh != null and not fresh.is_empty(), "%s plate decodes" % class_id)
+			if fresh != null:
+				var opaque := 0
+				var samples := 0
+				var y := 0
+				while y < fresh.get_height():
+					var x := 0
+					while x < fresh.get_width():
+						samples += 1
+						if fresh.get_pixel(x, y).a > 0.08:
+							opaque += 1
+						x += 24
+					y += 24
+				truthy(opaque > samples / 10, "%s plate is not blank" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
+		var plate_imp := FileAccess.get_file_as_string(plate + ".import")
+		truthy(plate_imp.contains("mipmaps/generate=false"), "%s plate mipmaps off" % class_id)
 	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud_src.contains("StripLibrary.idle_portrait"), "turn chips use the locked idle")
 
@@ -88,7 +99,7 @@ func _test_launch_cards() -> void:
 	for class_id in SpellKits.LOCKED_ROSTER:
 		eq(picker.card_title(class_id), SpellKits.display_name(class_id), "%s card uses the display name" % class_id)
 		eq(picker.card_role(class_id), _script.role_line(class_id), "%s card uses the role line" % class_id)
-		eq(picker.card_has_portrait(class_id), true, "%s card shows the locked idle" % class_id)
+		eq(picker.card_has_portrait(class_id), true, "%s card shows the select plate" % class_id)
 		eq(picker.portrait_filter(class_id), CanvasItem.TEXTURE_FILTER_LINEAR, "%s portrait filter is linear" % class_id)
 	var early: Dictionary = picker.pick_class("mender")
 	eq(bool(early.get("ok", true)), false, "a card before a mode does not pick")
