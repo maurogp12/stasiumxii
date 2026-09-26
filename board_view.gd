@@ -696,7 +696,31 @@ func _submit(intent: Dictionary) -> void:
 
 ## Hot-seat and NetSession both call this. Toasts come from sim events; Burn icons come from the snapshot on refresh.
 ## Returns true when the pawn must not hop (occupied block or bounce).
+
+func _snap_ambush_teleports(events: Array) -> void:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if not bool(event.get("teleported", false)):
+			continue
+		var seat := int(event.get("seat", -1))
+		if not pawns_by_seat.has(seat):
+			continue
+		var dest := _as_cell(event.get("destination", event.get("to", Vector2i(-1, -1))))
+		if dest.x < 0:
+			continue
+		var pawn: Pawn = pawns_by_seat[seat]
+		pawn.grid_position = dest
+		pawn.position = _cell_to_local(dest)
+		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
+
+
 func _present_resolve(events: Array) -> bool:
+	# Ambush HIT relocates before the lunge so the back tile reads. Without this
+	# snap the pawn lunges from the old cell and only jumps on refresh.
+	_snap_ambush_teleports(events)
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
