@@ -2,6 +2,28 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.18
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.18-mobile`, `version/code` `19`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.17-debug`, so a phone on that cert upgrades in place with `adb install -r`.
+
+### Player-visible since 0.1.17
+
+- Koliseo boards feel alive, Dofus look: warm painted biomes, ink grid, walk and cast juice, spell flashes. Original sheets. #136
+- Hub opens Koliseo from the banner and RAID from the row of five stasis portraits. #138
+- Stasis is exactly two rooms: one trash pack, then the boss. Foe portraits are the package crops. No Ironjaw stand-ins. #137
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Ambush and Shade. No cosmetics.
+- Stasis stays on `mobile`. It was not ported to `main`.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 178, stasis 346, Koliseo maps 283, combat 4510, motion 1846, VFX 439.
+
+Tag `mobile-0.1.18-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.18-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — Mobile hub menu
 
 Look target is Luca's hub mock: dark navy ground, gold serif chrome, a thin gold frame with corner brackets and four-pointed stars, a Koliseo hero banner, and a RAID row of five stasis portraits. Mobile branch only. This hub is not ported to PC `main`.
