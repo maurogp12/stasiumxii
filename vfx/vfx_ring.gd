@@ -125,9 +125,9 @@ func _draw() -> void:
 
 func _draw_ellipse_ring() -> void:
 	var pts := _ellipse(28.0, 14.0)
-	draw_polyline(pts, VfxPalette.OUTLINE, 6.0, true)
-	draw_polyline(pts, Color(1, 1, 1, 1.0), 2.6, true)
-	draw_polyline(pts, _tint, 4.6, true)
+	draw_polyline(pts, VfxPalette.OUTLINE, 8.0, true)
+	draw_polyline(pts, Color(1, 0.98, 0.9, 1.0), 3.4, true)
+	draw_polyline(pts, _tint, 5.6, true)
 
 
 func _draw_sigil() -> void:
@@ -143,9 +143,13 @@ func _draw_sigil() -> void:
 
 func _draw_crack() -> void:
 	_draw_ellipse_ring()
-	draw_line(Vector2(-16, 2), Vector2(-4, -2), _tint, 1.5, true)
-	draw_line(Vector2(-4, -2), Vector2(6, 3), _tint, 1.5, true)
-	draw_line(Vector2(6, 3), Vector2(16, -1), _tint, 1.5, true)
+	var hot := _tint.lerp(Color(1, 0.96, 0.82), 0.45)
+	draw_line(Vector2(-18, 3), Vector2(-5, -3), VfxPalette.OUTLINE, 4.2, true)
+	draw_line(Vector2(-5, -3), Vector2(7, 4), VfxPalette.OUTLINE, 4.2, true)
+	draw_line(Vector2(7, 4), Vector2(18, -2), VfxPalette.OUTLINE, 4.2, true)
+	draw_line(Vector2(-18, 3), Vector2(-5, -3), hot, 2.4, true)
+	draw_line(Vector2(-5, -3), Vector2(7, 4), hot, 2.4, true)
+	draw_line(Vector2(7, 4), Vector2(18, -2), hot, 2.4, true)
 
 
 func _draw_slab() -> void:

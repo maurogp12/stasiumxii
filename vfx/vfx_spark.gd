@@ -19,10 +19,10 @@ func _ready() -> void:
 	_particles.explosiveness = 1.0
 	_particles.spread = 180.0
 	_particles.gravity = Vector2(0, 46)
-	_particles.initial_velocity_min = 72.0
-	_particles.initial_velocity_max = 168.0
-	_particles.scale_amount_min = 2.0
-	_particles.scale_amount_max = 4.4
+	_particles.initial_velocity_min = 52.0
+	_particles.initial_velocity_max = 118.0
+	_particles.scale_amount_min = 2.1
+	_particles.scale_amount_max = 3.6
 	_particles.local_coords = true
 	_particles.texture = VfxPalette.dot_texture()
 	_particles.emitting = false
@@ -96,10 +96,10 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if _flash <= 0.0:
 		return
-	var hot := 24.0 + (1.0 - _flash) * 20.0
-	draw_circle(Vector2.ZERO, hot * 1.85, Color(_tint.r, _tint.g, _tint.b, _flash * 0.78))
-	draw_circle(Vector2.ZERO, hot * 1.15, Color(_tint.r, _tint.g, _tint.b, _flash * 0.9))
-	draw_circle(Vector2.ZERO, hot * 0.62, Color(1, 1, 1, _flash))
+	var hot := 16.0 + (1.0 - _flash) * 10.0
+	draw_circle(Vector2.ZERO, hot * 1.55, Color(_tint.r, _tint.g, _tint.b, _flash * 0.38))
+	draw_circle(Vector2.ZERO, hot * 0.85, Color(_tint.r, _tint.g, _tint.b, _flash * 0.82))
+	draw_circle(Vector2.ZERO, hot * 0.38, Color(1, 0.98, 0.9, _flash))
 
 
 func release() -> void:

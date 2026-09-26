@@ -2,6 +2,35 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Turn timeline
+
+The center plaque leads with a portrait strip in the existing seat order (seat 0, then the rest). The acting fighter is the gold-lit chip. Missing foe art is a short name tile. The turn line and the timer stay on that plaque. No new initiative rule.
+
+## 2026-09-26 — Combat HUD chrome
+
+The top fighter cards and the turn plaque use the hub navy and gold. ACTIVE is the lit frame; waiting stays dim. HP, AP, MP, facing, turn, and class meters stay on the cards. Raw spell-id lines are off the cards because those spells already sit on the bottom bar. Locked numbers are unchanged.
+
+## 2026-09-26 — Graphics lift on the same boards
+
+Same Koliseo and Stasis layouts, tags, and room shapes. The paint, the board read, and the contact flashes got louder. Rosie’s preview stays a palette reference. `*_gen.png` stays unloaded.
+
+### Player-visible
+
+- Tile sheets are richer and sharper. Each diamond keeps its silhouette and picks up a north facet plus a warm lip. Biome grades stay the shipped colors. No glass wash.
+- Heroes, Batch-1 / Batch-1c strips, and the Stasis package crops keep their subjects and the `(0, -72)` foot. A darker rim and a warmer light make them readable at phone scale. Hub and class portraits use those same files.
+- A hit flash, the ground crack, and the shot trail read larger. Shake stays 4px. A miss is still MISS and still breaks before contact.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Map layouts, board geometry, tags, and room shapes.
+- Ambush teleport resolve, Void pathing, and mobile target hit-area sizing.
+- No new class kits. No APK cut.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+`tests/run_koliseo_maps_tests.gd` — 284 passed. `tests/run_motion_tests.gd` — 1853 passed. `tests/run_vfx_tests.gd` — 439 passed. `tests/run_sprite_tests.gd` — 234 passed.
+
 ## 2026-09-26 — Ambush snap feel
 
 Rosie (Rosebud). Presentation only. Hit stays 22 FLEX. Cost, legality, and the existing facing resolution stay. There is no extra backstab multiplier.
@@ -35,6 +64,29 @@ Headless Godot 4.7.2, 0 failed: touch adapter 441, combat 4568.
 - Desktop 22px diamond and 34px body.
 - No new skills. No APK cut.
 
+## 2026-09-26 — Koliseo art and movement feel
+
+Rosie Sunmeadow pass on `mobile`. Presentation only. The preview is a palette and feel reference. Koliseo and Stasis keep their layouts, tags, and room shapes.
+
+### Player-visible
+
+- A walk takes about 0.30s per tile. `grid_position` stays the tactical cell and updates when the foot commits. The pawn origin is the visual foot. Facing still turns per cardinal segment, then the body follows. Batch-1 / Batch-1c walk strips (`art/export_2x/characters/...`) play one authored plant per tile. `*_gen.png` stays unloaded.
+- The step is a press, a push-off, a rise of at most 6px, and a landing settle. The contact shadow is a Foot child and stays on the ground.
+- Heroes and Stasis foes share a dark rim and a north light so the silhouette reads at board scale. Feet stay on the shipped (0, -72) pivot.
+- The existing tile sheets are sharper and more saturated. The same diamonds, the same biome grades, and the same props stay where they are. The glass color wash is off the grade shader. The ink grid stays a separate overlay. No new scenery and no new room shape.
+- A hit holds the knock for a short hit-stop, then a small recoil. The contact flash is compact. A miss drifts sideways, wears a slash through MISS, and the shot breaks before it connects. Camera shake stays 4px and slows down.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Ambush teleport resolve, Void pathing, and mobile target hit-area sizing.
+- No new class kits. No APK cut.
+- Map layouts, board geometry, tags, and room shapes.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+`tests/run_koliseo_maps_tests.gd` — 284 passed. `tests/run_motion_tests.gd` — 1853 passed. `tests/run_vfx_tests.gd` — 439 passed.
+
 ## 2026-09-26 — Void gaps and Ambush blink
 
 Luca's 0.1.18 clips. No APK cut. Locked kit numbers unchanged. Ambush without a Shade stays parked.
@@ -66,6 +118,7 @@ The hit still assigns that cell before damage. The board plants the pawn there b
 | Motion | 1861 |
 | VFX | 454 |
 | Koliseo maps | 283 |
+
 
 ## 2026-09-26 — Mobile debug APK 0.1.18
 

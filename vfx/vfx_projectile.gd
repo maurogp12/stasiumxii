@@ -12,20 +12,21 @@ var _duration: float = 0.2
 var _elapsed: float = 0.0
 var _delay: float = 0.0
 var _show_head: bool = true
+var _whiff: bool = false
 var _points: PackedVector2Array = PackedVector2Array()
 
 
 func _ready() -> void:
 	super._ready()
 	_line = Line2D.new()
-	_line.width = 3.0
+	_line.width = 5.0
 	_line.joint_mode = Line2D.LINE_JOINT_ROUND
 	_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	_line.end_cap_mode = Line2D.LINE_CAP_ROUND
 	_line.z_index = 1
 	add_child(_line)
 	_glow = Line2D.new()
-	_glow.width = 9.0
+	_glow.width = 14.0
 	_glow.joint_mode = Line2D.LINE_JOINT_ROUND
 	_glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	_glow.end_cap_mode = Line2D.LINE_CAP_ROUND
@@ -54,14 +55,21 @@ func play(spec: Dictionary) -> void:
 	_elapsed = -_delay
 	_points = PackedVector2Array()
 	var tint: Color = spec.get("tint", VfxPalette.KESTREL_AIR)
-	var width := float(spec.get("width", 3.0))
-	_line.default_color = tint.lerp(Color.WHITE, 0.42)
+	var width := float(spec.get("width", 5.0))
+	_line.default_color = tint.lerp(Color(1, 0.98, 0.9), 0.55)
 	_line.width = width
 	if _glow != null:
-		_glow.default_color = Color(tint.r, tint.g, tint.b, 0.42)
-		_glow.width = width * 2.8
+		_glow.default_color = Color(tint.r, tint.g, tint.b, 0.62)
+		_glow.width = width * 2.6
 	_head.color = tint.lerp(Color.WHITE, 0.25)
 	_show_head = bool(spec.get("head", true))
+	_whiff = bool(spec.get("whiff", false))
+	if _whiff:
+		_line.default_color = Color(tint.r, tint.g, tint.b, 0.55)
+		_line.width = maxf(1.6, width * 0.7)
+		if _glow != null:
+			_glow.default_color = Color(tint.r, tint.g, tint.b, 0.12)
+		_show_head = false
 	_head.visible = false
 	z_as_relative = false
 	z_index = int(spec.get("z", 80))
@@ -97,6 +105,10 @@ func _sample(t: float) -> void:
 	var at := flat + Vector2(0, -lift)
 	_head.position = at
 	_head.rotation = (_to - _from).angle()
+	# A miss breaks before it would connect, then the stub overshoots.
+	if _whiff and t > 0.55 and t < 0.78:
+		_head.visible = false
+		return
 	_points.append(at)
 	if _points.size() > 8:
 		_points.remove_at(0)

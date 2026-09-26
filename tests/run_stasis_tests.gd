@@ -121,6 +121,10 @@ func _test_boards_and_provisional_hit() -> void:
 		eq(bool(snap.get("combat_enabled", false)), true, "%s combat is enabled" % map_id)
 		var units: Array = snap.get("units", [])
 		eq(units.size(), 4, "%s room A has the player and three trash" % map_id)
+		var order: Array = CombatHUD.turn_order(snap)
+		eq(order.size(), 4, "%s turn strip lists the living seats" % map_id)
+		eq(int(order[0].get("seat", -1)), 0, "%s turn order starts with the player" % map_id)
+		eq(int(order[3].get("seat", -1)) > int(order[0].get("seat", -1)), true, "%s turn order follows seat order" % map_id)
 		var player: Dictionary = units[0]
 		var enemy: Dictionary = units[1]
 		eq(str(player.get("name", "")), "Kestrel", "%s player keeps the class name" % map_id)

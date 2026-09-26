@@ -7,6 +7,7 @@ var _top: Color = VfxPalette.DAMAGE_TOP
 var _bottom: Color = VfxPalette.DAMAGE_BOTTOM
 var _outline: Color = VfxPalette.NUMBER_OUTLINE
 var _font_size: int = VfxBudget.NUMBER_SIZE
+var _kind: String = ""
 var _rise: Tween
 
 
@@ -24,6 +25,7 @@ func play(spec: Dictionary) -> void:
 	if spec.has("outline") and spec["outline"] is Color:
 		_outline = spec["outline"]
 	_font_size = int(colors["size"])
+	_kind = str(spec.get("kind", ""))
 	var pop := float(spec.get("scale", 1.0))
 	rotation = deg_to_rad(randf_range(-VfxBudget.NUMBER_TILT_DEG, VfxBudget.NUMBER_TILT_DEG))
 	scale = Vector2(0.6, 0.6) * pop
@@ -31,7 +33,10 @@ func play(spec: Dictionary) -> void:
 	z_as_relative = false
 	z_index = 900
 	var delay := float(spec.get("delay", 0.0))
-	var risen: Vector2 = position + Vector2(0, -VfxBudget.NUMBER_RISE_PX)
+	var drift := Vector2(0, -VfxBudget.NUMBER_RISE_PX)
+	if _kind == "miss":
+		drift = Vector2(14.0, -12.0)
+	var risen: Vector2 = position + drift
 	_tween = create_tween()
 	if delay > 0.0:
 		_tween.tween_interval(delay)
@@ -82,3 +87,6 @@ func _draw() -> void:
 			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _outline)
 	font.draw_string(get_canvas_item(), baseline + Vector2(0, -3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
 	font.draw_string(get_canvas_item(), baseline, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _bottom)
+	if _kind == "miss":
+		var slash_y := baseline.y - float(_font_size) * 0.28
+		draw_line(Vector2(baseline.x - 4.0, slash_y + 2.0), Vector2(baseline.x + width + 4.0, slash_y - float(_font_size) * 0.55), Color(0.28, 0.16, 0.1, 0.95), 3.0, true)

@@ -14,6 +14,14 @@ const IRONJAW_RED := Color("#8B2E2E")
 const MENDER_BLUE := Color("#2E4A6E")
 const GLOAM_PURPLE := Color("#4A3A62")
 const BASTION_SLATE := Color("#5C5648")
+## Same gold / navy as the hub chrome in scenes/mobile_hub.gd.
+const NAVY := Color(0.035, 0.05, 0.09, 0.94)
+const NAVY_ACTIVE := Color(0.07, 0.09, 0.15, 0.97)
+const GOLD := Color(0.855, 0.69, 0.4)
+const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
+const GOLD_DIM := Color(0.62, 0.49, 0.28)
+const CREAM := Color(0.96, 0.92, 0.84)
+const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
 const AMBUSH_SHADE_MODULATE := Color(1.45, 1.15, 1.7)
@@ -43,6 +51,8 @@ var _banner_titles: Array[Label] = []
 var _seat_panels: Array[Panel] = []
 var _seat_titles: Array[Label] = []
 var _turn_label: Label
+var _turn_strip: HBoxContainer
+var _head_cache: Dictionary = {}
 var _coach_label: Label
 var _selected_label: Label
 var _ap_pips: HBoxContainer
@@ -94,6 +104,7 @@ var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
+var _ui_font: Font
 
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
@@ -152,6 +163,24 @@ static func is_local_turn(snap: Dictionary) -> bool:
 	if local_seat < 0:
 		return true
 	return local_seat == snap_active_seat(snap)
+
+
+## Living fighters in the order CombatSim already hands off turns: ascending seat.
+## Koliseo is seat 0 then seat 1. Stasis walks the same sorted seats. No new formula.
+static func turn_order(snap: Dictionary) -> Array:
+	var rows: Array = []
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -1)) < 0:
+			continue
+		if not bool(unit.get("alive", true)):
+			continue
+		rows.append(unit)
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("seat", 0)) < int(b.get("seat", 0))
+	)
+	return rows
 
 
 static func turn_status_text(snap: Dictionary) -> String:
@@ -671,18 +700,13 @@ func set_locked(locked: bool) -> void:
 
 
 func _banner_color(class_id: String) -> Color:
-	if class_id == SpellKits.CLASS_KESTREL:
-		return KESTREL_GREEN
-	if class_id == SpellKits.CLASS_IRONJAW:
-		return IRONJAW_RED
-	# Chrome only. Not a kit stat. Open kits share one neutral panel.
-	return Color("#3a3a3a")
+	return banner_color(class_id)
 
 
 func show_turn_banner(unit_name: String, class_id: String, caption: String = "") -> void:
 	_handoff_label.text = caption if caption != "" else "%s's turn" % unit_name
 	var fill := _banner_color(class_id)
-	_handoff_panel.add_theme_stylebox_override("panel", _panel(fill))
+	_handoff_panel.add_theme_stylebox_override("panel", _fighter_frame(true, fill))
 	_handoff_overlay.visible = true
 	_handoff_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 
@@ -703,13 +727,13 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 		return
 	_clock_label.text = "%ds" % maxi(seconds_left, 0)
 	_clock_seconds = maxi(seconds_left, 0)
-	var color := Color(0.15, 0.12, 0.12)
+	var color := CREAM
 	if not running:
-		color = Color(0.42, 0.4, 0.42)
+		color = GOLD_DIM
 	elif seconds_left <= 5:
-		color = Color(0.78, 0.12, 0.12)
+		color = Color(0.92, 0.32, 0.28)
 	elif seconds_left <= 10:
-		color = Color(0.72, 0.4, 0.08)
+		color = Color(0.95, 0.72, 0.32)
 	_clock_label.add_theme_color_override("font_color", color)
 	if _clock_bar == null:
 		return
@@ -717,13 +741,13 @@ func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 	_clock_bar.custom_minimum_size = Vector2(width, 8)
 	_clock_bar.size = Vector2(width, 8)
 	if not running:
-		_clock_bar.color = Color(0.7, 0.7, 0.74)
+		_clock_bar.color = GOLD_DIM
 	elif seconds_left <= 5:
 		_clock_bar.color = Color(0.82, 0.28, 0.28)
 	elif seconds_left <= 10:
 		_clock_bar.color = Color(0.92, 0.68, 0.28)
 	else:
-		_clock_bar.color = Color(0.35, 0.7, 0.55)
+		_clock_bar.color = GOLD
 	_apply_turn_label_clock()
 
 
@@ -754,8 +778,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 					break
 		if not shown.is_empty():
 			seat1 = shown
-	_apply_seat_banner(0, seat0)
-	_apply_seat_banner(1, seat1)
+	_apply_seat_banner(0, seat0, active_seat == 0 and not _deploying)
+	_apply_seat_banner(1, seat1, active_seat == 1 and not _deploying)
 	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
 	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
 
@@ -782,9 +806,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 		set_turn_clock(clock_sec if clock_sec >= 0 else _clock_seconds, turn_clock_running(snap), turn_clock_fraction(snap))
 	else:
 		_apply_turn_label_clock()
+	_sync_turn_strip(snap)
 
-	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), Color(0.95, 0.78, 0.28))
-	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.45, 0.75, 0.95))
+	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), GOLD_BRIGHT)
+	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.78, 0.84, 0.9))
 	if _deploy_note != "" and _deploying:
 		_coach_label.text = _deploy_note
 	else:
@@ -870,30 +895,65 @@ func _build() -> void:
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
+	_ui_font = _load_ui_font()
 
 	root.add_child(_make_banner(true))
 	root.add_child(_make_banner(false))
 
+	var resource_panel := Panel.new()
+	resource_panel.position = Vector2(256, 8)
+	resource_panel.size = Vector2(448, 128)
+	resource_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
+	root.add_child(resource_panel)
+
+	_turn_strip = HBoxContainer.new()
+	_turn_strip.name = "TurnStrip"
+	_turn_strip.position = Vector2(8, 4)
+	_turn_strip.size = Vector2(432, 48)
+	_turn_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	_turn_strip.add_theme_constant_override("separation", 8)
+	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_child(_turn_strip)
+
 	_turn_label = Label.new()
-	_turn_label.position = Vector2(280, 12)
-	_turn_label.size = Vector2(400, 28)
+	_turn_label.position = Vector2(8, 52)
+	_turn_label.size = Vector2(432, 16)
 	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_turn_label.add_theme_font_size_override("font_size", 18)
-	_turn_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
-	root.add_child(_turn_label)
+	_turn_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_turn_label.clip_text = true
+	_turn_label.add_theme_font_size_override("font_size", 11)
+	_turn_label.add_theme_color_override("font_color", GOLD)
+	_apply_display_font(_turn_label)
+	resource_panel.add_child(_turn_label)
+
+	var res_box := VBoxContainer.new()
+	res_box.position = Vector2(18, 70)
+	res_box.size = Vector2(412, 52)
+	res_box.add_theme_constant_override("separation", 4)
+	res_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_child(res_box)
+	_ap_pips = _make_pip_row("AP")
+	_mp_pips = _make_pip_row("MP")
+	res_box.add_child(_ap_pips)
+	res_box.add_child(_mp_pips)
+	res_box.add_child(_make_clock_row())
 
 	_terrain_legend = Label.new()
 	_terrain_legend.text = TERRAIN_LEGEND
-	_terrain_legend.position = Vector2(16, 122)
-	_terrain_legend.size = Vector2(928, 20)
+	_terrain_legend.position = Vector2(12, 106)
+	_terrain_legend.size = Vector2(424, 16)
+	_terrain_legend.clip_text = true
 	_terrain_legend.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_terrain_legend.add_theme_font_size_override("font_size", 11)
-	_terrain_legend.add_theme_color_override("font_color", Color(0.22, 0.18, 0.16))
-	root.add_child(_terrain_legend)
+	_terrain_legend.add_theme_font_size_override("font_size", 9)
+	_terrain_legend.add_theme_color_override("font_color", GOLD_DIM)
+	# The string stays for the elevation contract. It is not player combat feedback.
+	_terrain_legend.modulate = Color(1, 1, 1, 0)
+	resource_panel.add_child(_terrain_legend)
 
 	_stun_badge = Label.new()
 	_stun_badge.text = "STUN"
-	_stun_badge.position = Vector2(430, 120)
+	_stun_badge.position = Vector2(430, 140)
 	_stun_badge.size = Vector2(100, 22)
 	_stun_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_stun_badge.add_theme_font_size_override("font_size", 14)
@@ -902,21 +962,6 @@ func _build() -> void:
 	_stun_badge.add_theme_constant_override("outline_size", 6)
 	_stun_badge.visible = false
 	root.add_child(_stun_badge)
-
-	var resource_panel := Panel.new()
-	resource_panel.position = Vector2(300, 44)
-	resource_panel.size = Vector2(360, 74)
-	resource_panel.add_theme_stylebox_override("panel", _panel(Color(1, 1, 1, 0.78)))
-	root.add_child(resource_panel)
-	var res_box := VBoxContainer.new()
-	res_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	res_box.add_theme_constant_override("separation", 4)
-	resource_panel.add_child(res_box)
-	_ap_pips = _make_pip_row("AP")
-	_mp_pips = _make_pip_row("MP")
-	res_box.add_child(_ap_pips)
-	res_box.add_child(_mp_pips)
-	res_box.add_child(_make_clock_row())
 
 	var bottom := VBoxContainer.new()
 	_bottom_box = bottom
@@ -940,8 +985,10 @@ func _build() -> void:
 	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_selected_label.custom_minimum_size = Vector2(0, 40)
-	_selected_label.add_theme_font_size_override("font_size", 18)
-	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	_selected_label.add_theme_font_size_override("font_size", 16)
+	_selected_label.add_theme_color_override("font_color", CREAM)
+	_selected_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
+	_selected_label.add_theme_constant_override("outline_size", 5)
 	bottom.add_child(_selected_label)
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
@@ -960,6 +1007,10 @@ func _build() -> void:
 	var face_caption := Label.new()
 	face_caption.text = "Face"
 	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	face_caption.add_theme_color_override("font_color", GOLD_BRIGHT)
+	face_caption.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
+	face_caption.add_theme_constant_override("outline_size", 4)
+	_apply_display_font(face_caption)
 	face_bar.add_child(face_caption)
 	var face_pad := GridContainer.new()
 	face_pad.columns = 3
@@ -978,7 +1029,9 @@ func _build() -> void:
 		var button := Button.new()
 		button.text = dir
 		button.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
-		button.add_theme_font_size_override("font_size", 18)
+		button.add_theme_font_size_override("font_size", 16)
+		button.add_theme_color_override("font_color", CREAM)
+		_style_chrome_button(button, false)
 		button.pressed.connect(_on_face_pressed.bind(dir))
 		face_pad.add_child(button)
 		_face_buttons[dir] = button
@@ -995,7 +1048,9 @@ func _build() -> void:
 	_walk_button.text = "Walk"
 	_walk_button.custom_minimum_size = TOUCH.WALK_BUTTON_SIZE
 	_walk_button.clip_text = true
-	_walk_button.add_theme_font_size_override("font_size", 18)
+	_walk_button.add_theme_font_size_override("font_size", 16)
+	_walk_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_walk_button, true)
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
 	_bind_ability_icon(_walk_button, "walk", "Walk")
@@ -1018,7 +1073,9 @@ func _build() -> void:
 	_ready_p1_button = Button.new()
 	_ready_p1_button.text = "Ready P1"
 	_ready_p1_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
-	_ready_p1_button.add_theme_font_size_override("font_size", 18)
+	_ready_p1_button.add_theme_font_size_override("font_size", 15)
+	_ready_p1_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_ready_p1_button, false)
 	_ready_p1_button.clip_text = true
 	_ready_p1_button.pressed.connect(func() -> void: ready_requested.emit(0))
 	_action_bar.add_child(_ready_p1_button)
@@ -1026,7 +1083,9 @@ func _build() -> void:
 	_ready_p2_button = Button.new()
 	_ready_p2_button.text = "Ready P2"
 	_ready_p2_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
-	_ready_p2_button.add_theme_font_size_override("font_size", 18)
+	_ready_p2_button.add_theme_font_size_override("font_size", 15)
+	_ready_p2_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_ready_p2_button, false)
 	_ready_p2_button.clip_text = true
 	_ready_p2_button.pressed.connect(func() -> void: ready_requested.emit(1))
 	_action_bar.add_child(_ready_p2_button)
@@ -1034,7 +1093,9 @@ func _build() -> void:
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
 	_end_turn_button.custom_minimum_size = TOUCH.END_TURN_BUTTON_SIZE
-	_end_turn_button.add_theme_font_size_override("font_size", 18)
+	_end_turn_button.add_theme_font_size_override("font_size", 16)
+	_end_turn_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_end_turn_button, true)
 	_end_turn_button.clip_text = true
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
 	_action_bar.add_child(_end_turn_button)
@@ -1043,7 +1104,9 @@ func _build() -> void:
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
 	_new_match_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
-	_new_match_button.add_theme_font_size_override("font_size", 18)
+	_new_match_button.add_theme_font_size_override("font_size", 15)
+	_new_match_button.add_theme_color_override("font_color", CREAM)
+	_style_chrome_button(_new_match_button, false)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
 	_action_bar.add_child(_new_match_button)
@@ -1051,8 +1114,10 @@ func _build() -> void:
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_coach_label.add_theme_font_size_override("font_size", 15)
-	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
+	_coach_label.add_theme_font_size_override("font_size", 14)
+	_coach_label.add_theme_color_override("font_color", CREAM)
+	_coach_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
+	_coach_label.add_theme_constant_override("outline_size", 4)
 	bottom.add_child(_coach_label)
 
 	_ability_cluster = Control.new()
@@ -1105,7 +1170,7 @@ func _build() -> void:
 	_handoff_panel = Panel.new()
 	_handoff_panel.position = Vector2(230, 268)
 	_handoff_panel.size = Vector2(500, 140)
-	_handoff_panel.add_theme_stylebox_override("panel", _panel(KESTREL_GREEN))
+	_handoff_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
 	_handoff_overlay.add_child(_handoff_panel)
 
 	_handoff_label = Label.new()
@@ -1114,7 +1179,7 @@ func _build() -> void:
 	_handoff_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_handoff_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_handoff_label.add_theme_font_size_override("font_size", 36)
-	_handoff_label.add_theme_color_override("font_color", Color(1, 1, 1))
+	_handoff_label.add_theme_color_override("font_color", GOLD_BRIGHT)
 	_handoff_label.text = "Kestrel's turn"
 	_handoff_panel.add_child(_handoff_label)
 
@@ -1131,7 +1196,7 @@ func _show_new_match(snap: Dictionary) -> bool:
 	return bool(net.get("dedicated", false)) and seat == 0
 
 
-func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
+func _apply_seat_banner(seat: int, unit: Dictionary, acting: bool = false) -> void:
 	if seat < 0 or seat >= _seat_titles.size():
 		return
 	var class_id := str(unit.get("class_id", ""))
@@ -1141,38 +1206,70 @@ func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
 	if unit_name == "":
 		unit_name = "Seat %d" % seat
 	_seat_titles[seat].text = unit_name
+	_seat_titles[seat].add_theme_color_override("font_color", GOLD_BRIGHT if acting else GOLD)
 	if seat >= _seat_panels.size():
 		return
 	var color := _banner_color(class_id)
 	if str(unit.get("stasis_sprite", "")) != "":
-		color = Color(0.42, 0.3, 0.22)
-	_seat_panels[seat].add_theme_stylebox_override("panel", _panel(color))
+		color = Color(0.72, 0.48, 0.28)
+	var alive := bool(unit.get("alive", true))
+	var lit := acting and alive
+	_seat_panels[seat].add_theme_stylebox_override("panel", _fighter_frame(lit, color))
+	var accent := _seat_panels[seat].get_node_or_null("Accent")
+	if accent is ColorRect:
+		(accent as ColorRect).color = color
+	_paint_hp_bar(_seat_panels[seat], unit)
 
 
 func _make_banner(is_kestrel: bool) -> Panel:
 	var panel := Panel.new()
-	panel.position = Vector2(16, 12) if is_kestrel else Vector2(704, 12)
-	panel.size = Vector2(240, 132)
+	panel.position = Vector2(8, 8) if is_kestrel else Vector2(712, 8)
+	panel.size = Vector2(240, 128)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var color := KESTREL_GREEN if is_kestrel else IRONJAW_RED
-	panel.add_theme_stylebox_override("panel", _panel(color))
+	panel.add_theme_stylebox_override("panel", _fighter_frame(false, color))
+	var accent := ColorRect.new()
+	accent.name = "Accent"
+	accent.position = Vector2(0, 8)
+	accent.size = Vector2(4, 112)
+	accent.color = color
+	accent.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(accent)
 	var title := Label.new()
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
 	_seat_panels.append(panel)
 	_seat_titles.append(title)
-	title.position = Vector2(12, 6)
-	title.size = Vector2(216, 22)
+	title.position = Vector2(16, 6)
+	title.size = Vector2(210, 24)
 	title.add_theme_font_size_override("font_size", 18)
-	title.add_theme_color_override("font_color", Color(1, 1, 1))
+	title.add_theme_color_override("font_color", GOLD_BRIGHT)
+	_apply_display_font(title)
 	panel.add_child(title)
 	_banner_panels.append(panel)
 	_banner_titles.append(title)
+	var track := ColorRect.new()
+	track.name = "HpTrack"
+	track.position = Vector2(16, 34)
+	track.size = Vector2(208, 8)
+	track.color = Color(0.08, 0.07, 0.09, 0.95)
+	track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(track)
+	var fill := ColorRect.new()
+	fill.name = "HpFill"
+	fill.position = Vector2.ZERO
+	fill.size = Vector2(208, 8)
+	fill.color = Color(0.62, 0.18, 0.16)
+	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	track.add_child(fill)
 	var body := RichTextLabel.new()
-	body.position = Vector2(10, 30)
-	body.size = Vector2(220, 96)
+	body.position = Vector2(14, 46)
+	body.size = Vector2(214, 76)
 	body.bbcode_enabled = true
 	body.scroll_active = false
 	body.fit_content = true
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_theme_color_override("default_color", CREAM)
+	body.add_theme_font_size_override("normal_font_size", 13)
 	panel.add_child(body)
 	if is_kestrel:
 		_kestrel_body = body
@@ -1188,7 +1285,8 @@ func _make_pip_row(label_text: String) -> HBoxContainer:
 	label.text = label_text
 	label.custom_minimum_size = Vector2(28, 18)
 	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	label.add_theme_color_override("font_color", GOLD)
+	_apply_display_font(label)
 	row.add_child(label)
 	return row
 
@@ -1201,18 +1299,19 @@ func _make_clock_row() -> HBoxContainer:
 	caption.text = "TIME"
 	caption.custom_minimum_size = Vector2(36, 18)
 	caption.add_theme_font_size_override("font_size", 12)
-	caption.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	caption.add_theme_color_override("font_color", GOLD)
+	_apply_display_font(caption)
 	row.add_child(caption)
 	_clock_label = Label.new()
 	_clock_label.text = "%ds" % int(TurnClock.DURATION_SEC)
 	_clock_label.custom_minimum_size = Vector2(36, 18)
 	_clock_label.add_theme_font_size_override("font_size", 14)
-	_clock_label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	_clock_label.add_theme_color_override("font_color", CREAM)
 	row.add_child(_clock_label)
 	_clock_bar = ColorRect.new()
 	_clock_bar.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
 	_clock_bar.size = Vector2(_clock_bar_max_width, 8)
-	_clock_bar.color = Color(0.35, 0.7, 0.55)
+	_clock_bar.color = GOLD
 	row.add_child(_clock_bar)
 	return row
 
@@ -1224,23 +1323,125 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 		child.free()
 	for i in range(maximum):
 		var pip := ColorRect.new()
-		pip.custom_minimum_size = Vector2(18, 12)
-		pip.color = fill if i < current else Color(0.75, 0.75, 0.78)
+		pip.custom_minimum_size = Vector2(16, 10)
+		pip.color = fill if i < current else Color(0.1, 0.11, 0.15, 0.95)
 		row.add_child(pip)
+
+
+func _sync_turn_strip(snap: Dictionary) -> void:
+	if _turn_strip == null:
+		return
+	while _turn_strip.get_child_count() > 0:
+		var child := _turn_strip.get_child(0)
+		_turn_strip.remove_child(child)
+		child.free()
+	var active := snap_active_seat(snap)
+	var deploying := is_deployment_phase(snap)
+	var over := bool(snap.get("match_over", false))
+	for unit in turn_order(snap):
+		var seat := int(unit.get("seat", -1))
+		var acting := (not deploying) and (not over) and seat == active
+		_turn_strip.add_child(_turn_chip(unit, acting))
+
+
+func _turn_chip(unit: Dictionary, acting: bool) -> Control:
+	var side := 46 if acting else 36
+	var host := Panel.new()
+	host.custom_minimum_size = Vector2(side, side)
+	host.size = Vector2(side, side)
+	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_theme_stylebox_override("panel", _chip_frame(acting))
+	var tex := _portrait_for(unit)
+	if tex != null:
+		var plate := TextureRect.new()
+		plate.texture = tex
+		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plate.offset_left = 3
+		plate.offset_top = 3
+		plate.offset_right = -3
+		plate.offset_bottom = -3
+		host.add_child(plate)
+	else:
+		var label := Label.new()
+		label.text = _placeholder_mark(unit)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		label.add_theme_font_size_override("font_size", 10)
+		label.add_theme_color_override("font_color", CREAM)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(label)
+	if not acting:
+		host.modulate = Color(0.72, 0.7, 0.64, 1)
+	return host
+
+
+func _chip_frame(acting: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = NAVY_ACTIVE if acting else NAVY
+	box.border_color = GOLD_BRIGHT if acting else GOLD_DIM
+	box.set_border_width_all(3 if acting else 1)
+	box.corner_radius_top_left = 4
+	box.corner_radius_top_right = 4
+	box.corner_radius_bottom_left = 4
+	box.corner_radius_bottom_right = 4
+	if acting:
+		box.shadow_color = Color(0.95, 0.78, 0.38, 0.7)
+		box.shadow_size = 5
+	return box
+
+
+func _portrait_for(unit: Dictionary) -> Texture2D:
+	var foe := str(unit.get("stasis_sprite", ""))
+	if foe != "" and ResourceLoader.exists(foe):
+		return _head_crop(foe)
+	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
+	if not SpellKits.is_roster_class(class_id):
+		return null
+	return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
+
+
+func _head_crop(path: String) -> Texture2D:
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	if _head_cache.has(path) and _head_cache[path] is Texture2D:
+		return _head_cache[path]
+	var tex := load(path) as Texture2D
+	if tex == null:
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	var size := tex.get_size()
+	var side := minf(size.x * 0.62, size.y * 0.46)
+	atlas.region = Rect2((size.x - side) * 0.5, size.y * 0.02, side, side)
+	_head_cache[path] = atlas
+	return atlas
+
+
+func _placeholder_mark(unit: Dictionary) -> String:
+	var unit_name := str(unit.get("name", "")).strip_edges()
+	if unit_name == "":
+		unit_name = SpellKits.display_name(str(unit.get("class_id", "")))
+	if unit_name == "":
+		return "?"
+	return unit_name.substr(0, mini(4, unit_name.length()))
 
 
 func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> String:
 	if unit.is_empty():
 		return "[color=#ffffff]—[/color]"
-	var status := "ACTIVE" if active and unit["alive"] else ("DOWN" if not unit["alive"] else "waiting")
+	var status := "[color=#f2d48a][b]ACTIVE[/b][/color]" if active and unit["alive"] else ("[color=#d07068]DOWN[/color]" if not unit["alive"] else "[color=#b7a88a]waiting[/color]")
 	if is_deployment_phase(snap):
 		var ready: Dictionary = snap.get("ready", {})
 		if bool(ready.get(int(unit.get("seat", -1)), false)) or bool(unit.get("locked", false)):
-			status = "READY"
+			status = "[color=#f2d48a][b]READY[/b][/color]"
 		elif bool(unit.get("placed", false)):
-			status = "placed"
+			status = "[color=#e6d7b0]placed[/color]"
 		else:
-			status = "open"
+			status = "[color=#cbb892]open[/color]"
 	# Locked Stun (A′): STUN badge on the unit card while remaining or stunned-this-turn.
 	var stun_note := ""
 	if unit_is_stunned(unit):
@@ -1249,7 +1450,8 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var burn_note := ""
 	if unit_is_burning(unit):
 		burn_note = "  [b]BURN[/b] %d" % unit_burn_remaining(unit)
-	return "[color=#ffffff]%s  HP %d/%d%s%s\nAP %d  MP %d  Face %s\n%s\n%s[/color]" % [
+	# Spell ids stay on the bottom bar. The card keeps HP, AP, MP, facing, and meters.
+	return "%s   HP %d/%d%s%s\nAP %d    MP %d    Face %s\n%s" % [
 		status,
 		int(unit["hp"]),
 		int(unit["max_hp"]),
@@ -1259,7 +1461,6 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 		int(unit["mp"]),
 		str(unit["facing"]),
 		_resource_meter_line(unit, snap),
-		_kit_footer(unit),
 	]
 
 
@@ -1364,7 +1565,7 @@ func _paint_seat_banner(seat: int, unit: Dictionary) -> void:
 	var label := SpellKits.display_name(class_id)
 	if label != "":
 		title.text = label
-	panel.add_theme_stylebox_override("panel", _panel(banner_color(class_id)))
+	panel.add_theme_stylebox_override("panel", _fighter_frame(false, banner_color(class_id)))
 
 
 func _sync_empty_kit(chrome: Dictionary, offered: Array) -> void:
@@ -1386,26 +1587,90 @@ func _sync_empty_kit(chrome: Dictionary, offered: Array) -> void:
 
 
 func _panel(color: Color) -> StyleBoxFlat:
+	return _fighter_frame(false, color)
+
+
+func _fighter_frame(active: bool, accent: Color) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
-	box.bg_color = color
+	box.bg_color = NAVY_ACTIVE if active else NAVY
+	box.border_color = GOLD_BRIGHT if active else GOLD
+	var edge := 2 if active else 1
+	box.set_border_width_all(edge)
+	box.corner_radius_top_left = 6
+	box.corner_radius_top_right = 6
+	box.corner_radius_bottom_left = 6
+	box.corner_radius_bottom_right = 6
+	box.shadow_color = Color(0, 0, 0, 0.45)
+	box.shadow_size = 5
+	box.shadow_offset = Vector2(0, 2)
+	box.content_margin_left = 10
+	box.content_margin_right = 8
+	box.content_margin_top = 6
+	box.content_margin_bottom = 6
+	if accent.a > 0.0:
+		box.border_color = GOLD_BRIGHT if active else accent.lerp(GOLD, 0.55)
+	return box
+
+
+func _load_ui_font() -> Font:
+	var loaded := load(HUB_FONT) as Font
+	return loaded
+
+
+func _apply_display_font(control: Control) -> void:
+	if _ui_font == null or control == null:
+		return
+	control.add_theme_font_override("font", _ui_font)
+
+
+func _paint_hp_bar(panel: Panel, unit: Dictionary) -> void:
+	var track := panel.get_node_or_null("HpTrack")
+	if track == null:
+		return
+	var fill := track.get_node_or_null("HpFill")
+	if not (fill is ColorRect):
+		return
+	var max_hp := maxi(int(unit.get("max_hp", 1)), 1)
+	var hp := clampi(int(unit.get("hp", 0)), 0, max_hp)
+	var ratio := float(hp) / float(max_hp)
+	var width := float((track as Control).size.x) * ratio
+	(fill as ColorRect).size = Vector2(width, (track as Control).size.y)
+	(fill as ColorRect).color = Color(0.78, 0.28, 0.2) if ratio <= 0.35 else Color(0.55, 0.72, 0.38)
+
+
+func _style_chrome_button(button: Button, primary: bool) -> void:
+	var fill := Color(0.11, 0.1, 0.08, 0.96) if primary else Color(0.06, 0.07, 0.11, 0.94)
+	var border := GOLD_BRIGHT if primary else GOLD
+	button.add_theme_stylebox_override("normal", _rect_style(fill, border, 2))
+	button.add_theme_stylebox_override("hover", _rect_style(fill.lightened(0.08), GOLD_BRIGHT, 2))
+	button.add_theme_stylebox_override("pressed", _rect_style(fill.darkened(0.08), GOLD_BRIGHT, 2))
+	button.add_theme_stylebox_override("focus", _rect_style(fill, GOLD_BRIGHT, 2))
+	button.add_theme_stylebox_override("disabled", _rect_style(Color(0.08, 0.08, 0.1, 0.7), GOLD_DIM, 1))
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", GOLD_BRIGHT)
+	button.add_theme_color_override("font_disabled_color", Color(0.55, 0.5, 0.42))
+
+
+func _rect_style(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
 	box.corner_radius_top_left = 8
 	box.corner_radius_top_right = 8
 	box.corner_radius_bottom_left = 8
 	box.corner_radius_bottom_right = 8
-	box.content_margin_left = 8
-	box.content_margin_right = 8
-	box.content_margin_top = 6
-	box.content_margin_bottom = 6
+	box.border_color = border
+	box.set_border_width_all(border_width)
+	box.content_margin_left = 6
+	box.content_margin_right = 6
+	box.content_margin_top = 4
+	box.content_margin_bottom = 4
 	return box
 
 
 func _card_panel() -> StyleBoxFlat:
-	var box := _panel(Color(0.99, 0.97, 0.9, 0.97))
-	box.border_color = Color(0.18, 0.12, 0.1, 0.85)
-	box.border_width_left = 2
-	box.border_width_top = 2
-	box.border_width_right = 2
-	box.border_width_bottom = 2
+	var box := _fighter_frame(false, GOLD)
+	box.bg_color = Color(0.97, 0.94, 0.86, 0.98)
+	box.border_color = GOLD
 	return box
 
 
@@ -1497,8 +1762,8 @@ func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void
 
 
 func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void:
-	var fill := Color(0.62, 0.16, 0.2, 0.96) if primary else Color(0.15, 0.14, 0.2, 0.94)
-	var border := Color(1, 0.92, 0.72, 0.9) if primary else Color(1, 1, 1, 0.28)
+	var fill := Color(0.42, 0.16, 0.14, 0.96) if primary else Color(0.07, 0.08, 0.12, 0.94)
+	var border := GOLD_BRIGHT if primary else GOLD
 	button.add_theme_stylebox_override("normal", _circle_style(fill, diameter, border, 3 if primary else 2))
 	button.add_theme_stylebox_override("hover", _circle_style(fill.lightened(0.12), diameter, border, 3 if primary else 2))
 	button.add_theme_stylebox_override("pressed", _circle_style(fill.darkened(0.1), diameter, Color(0.98, 0.84, 0.4), 4))

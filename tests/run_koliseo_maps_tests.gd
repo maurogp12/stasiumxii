@@ -294,6 +294,7 @@ func _test_alive_grade() -> void:
 	var life_src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
 	eq(life_src.contains("jewel"), false, "arena life does not stain jewels")
 	eq(life_src.contains("paint_backdrop"), false, "arena life does not paint a glassy backdrop")
+	eq(life_src.contains("_build_rim"), false, "arena life does not add a scenery ring")
 	var src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
 	eq(src.contains("hit_chance"), false, "arena life does not touch hit bands")
 	eq(src.contains("legal_intents"), false, "arena life does not touch legality")
