@@ -266,7 +266,55 @@ def main() -> None:
 
     _sync_tsx()
     _patch_atlas(records)
+    _accents()
     print(f"sliced {len(records)} Crosshaven earth files")
+
+
+def _accents() -> None:
+    """Moss sits in the ruin walls only. The field and the floor seal stay bare."""
+    _moss_on_ruin_walls(TILES / "prop_ruins.png")
+    _clear_seal_moss(TILES / "prop_floor_seal.png")
+
+
+def _moss_on_ruin_walls(path: Path) -> None:
+    arr = np.asarray(Image.open(path).convert("RGBA")).copy()
+    height, width = arr.shape[:2]
+    rgb = arr[:, :, :3].astype(np.float32)
+    opaque = arr[:, :, 3] > 40
+    ys = np.where(opaque)[0]
+    if len(ys) == 0:
+        raise SystemExit(f"{path.name} has no pixels")
+    y0 = int(ys.min())
+    span = max(1, int(ys.max()) - y0)
+    rows = np.arange(height)[:, None]
+    cap = opaque & ((rows - y0) < span * 0.22)
+    wall = opaque & ~cap
+    lum = rgb.mean(2)
+    thr = float(np.percentile(lum[wall], 55))
+    face = wall & (lum <= thr)
+    yy, xx = np.indices((height, width))
+    moss = face & (((xx * 17 + yy * 31) % 13) < 4)
+    rgb[moss, 0] *= 0.72
+    rgb[moss, 1] = np.clip(rgb[moss, 1] * 0.92 + 34.0, 0, 255)
+    rgb[moss, 2] *= 0.64
+    arr[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    Image.fromarray(arr).save(path)
+    covered = float(moss.sum()) / float(max(int(opaque.sum()), 1))
+    print(f"ruin wall moss {covered:.3f}")
+    if not 0.08 <= covered <= 0.20:
+        raise SystemExit(f"ruin moss coverage {covered:.3f} is outside the wall accent")
+
+
+def _clear_seal_moss(path: Path) -> None:
+    if not path.is_file():
+        return
+    arr = np.asarray(Image.open(path).convert("RGBA")).copy()
+    rgb = arr[:, :, :3].astype(np.float32)
+    green = (arr[:, :, 3] > 20) & (rgb[:, :, 1] > rgb[:, :, 0])
+    rgb[:, :, 1] = np.where(green, rgb[:, :, 0] * 0.96, rgb[:, :, 1])
+    arr[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    Image.fromarray(arr).save(path)
+    print(f"floor seal moss pixels cleared {int(green.sum())}")
 
 
 if __name__ == "__main__":

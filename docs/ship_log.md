@@ -4,11 +4,11 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 ## 2026-09-26 — Crosshaven earth punch
 
-Soft lock: tierra + naturaleza. Crosshaven ground and cliffs are the dirt and stone punch, on the unprefixed dress (`ground.png`, `ground_e1.png`, `ground_e2.png`). Moss and roots stay accents. The arena grade is warm earth, so it does not wash that dirt into a lawn. Ruins, the well, hay, the fence, rubble, and the rock pillar on those same paths come from the props punch. Water and the lighter mud stay the original sheet so those tags still read. The floor seal stays the stone mark.
+Soft lock: tierra + naturaleza. Crosshaven ground and cliffs are the dirt and stone punch, on the unprefixed dress (`ground.png`, `ground_e1.png`, `ground_e2.png`). The board paints those files in game. Moss is only on the ruin walls. The field, the cliffs, and the floor seal stay bare, so there is no lawn. The arena grade is warm earth. Ruins, the well, hay, the fence, rubble, and the rock pillar on those same paths come from the props punch. Water and the lighter mud stay the original sheet so those tags still read.
 
 Phone tap diamonds, zoom, and planted walks are unchanged. Tags, geometry, and Locked kit numbers are unchanged. Ambush stays 4 AP / 0 MP / 22 FLEX.
 
-Headless Godot 4.7.2, 0 failed: Koliseo maps 332, combat 5182.
+Headless Godot 4.7.2, 0 failed: Koliseo maps 340, combat 5182.
 
 | Arena | Pack | Atlas |
 | --- | --- | --- |
