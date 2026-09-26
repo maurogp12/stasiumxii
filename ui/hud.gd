@@ -2116,22 +2116,36 @@ func _update_selected_label() -> void:
 func _with_shade_tip(text: String) -> String:
 	# A live Shade, or a forced selection, is not the cue. The tip appears
 	# only when legal_intents already contains an Ambush cast whose origin
-	# is that Shade. Invisible aims from the caster and must not say Shade.
+	# is that Shade. Invisible self-origin must not say Shade. An armed Shade
+	# that is still legal while Invisible does.
 	if not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		return text
-	if _ambush_origin_is_caster():
+	if not _ambush_has_shade_origin():
 		return text
 	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
 
 
-func _ambush_origin_is_caster() -> bool:
+func _ambush_has_shade_origin() -> bool:
+	var caster := Vector2i(-999, -999)
 	var seat := kit_seat(_last_snap)
 	for unit in _last_snap.get("units", []):
 		if typeof(unit) != TYPE_DICTIONARY:
 			continue
 		if int(unit.get("seat", -2)) != seat:
 			continue
-		return bool(unit.get("invisible", false))
+		var raw: Variant = unit.get("pos", null)
+		if raw is Vector2i:
+			caster = raw
+		break
+	for intent in _last_legal:
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if bool(intent.get("from_shade", false)):
+			return true
+		if intent.has("origin") and intent.get("origin") != caster:
+			return true
 	return false
 
 

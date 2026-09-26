@@ -389,9 +389,10 @@ func legal_intents(seat: int) -> Array:
 
 
 ## Locked Ambush: 4 AP / 0 MP, Manhattan 1–2 cardinal from the origin, blink to the
-## empty tile one step past the enemy on that axis. Origin is Gloam while Invisible,
-## otherwise the first live Shade. A Shade origin is illegal until the opponent has
-## completed one full turn since that Drop. Fade / Invisible self-origin has no delay.
+## empty tile one step past the enemy on that axis. Visible uses a Shade origin.
+## Invisible keeps self-origin (no arming delay) and also a Shade origin when that
+## Shade is still legal. Invisible must not strip the Shade. A Shade origin is
+## illegal until the opponent has completed one full turn since that Drop.
 ## Spends a Shade only when the origin was a Shade. This offer does not call the
 ## pathfinder and does not read the walk budget, so MP 0 does not hide the cast.
 func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void:
@@ -402,10 +403,8 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 	if _resource_gate(actor, def) != "":
 		return
 	var seat := int(actor["seat"])
-	# Offer only a legal Manhattan 1–2 cardinal target whose back tile can be
-	# landed on, and only once a Shade origin has seen the opponent finish a
-	# turn. A fresh Shade, a diagonal, or Manhattan 3 must not arm the cast.
-	# Drop Shade's Chebyshev ring is a different spell.
+	# Offer each legal origin. A fresh Shade, a diagonal, or Manhattan 3 must
+	# not arm that origin. Drop Shade's Chebyshev ring is a different spell.
 	# A Stasis pack can arm Ambush on any living hostile. Koliseo still has one.
 	for hostile in _hostile_cast_targets(seat):
 		var enemy: Dictionary = hostile
@@ -413,15 +412,17 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 			continue
 		if _cast_gate_reason(actor, enemy, def) != "":
 			continue
-		if not _ambush_can_offer(actor, enemy):
-			continue
-		out.append({
-			"type": "cast",
-			"spell": SpellKits.AMBUSH,
-			"to": enemy["pos"],
-			"target_seat": enemy["seat"],
-			"seat": seat,
-		})
+		for item in _ambush_legal_picks(actor, enemy):
+			var pick: Dictionary = item
+			out.append({
+				"type": "cast",
+				"spell": SpellKits.AMBUSH,
+				"to": enemy["pos"],
+				"target_seat": enemy["seat"],
+				"seat": seat,
+				"origin": pick["origin"],
+				"from_shade": bool(pick.get("from_shade", false)),
+			})
 
 
 ## Godot bind: place / reposition this seat's one fighter. Simultaneous; no turn gate.
@@ -475,9 +476,9 @@ func match_phase_name() -> String:
 ## Advance is the exception: highlights are legal_intents dests only (exactly 2
 ## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
 ## Chrome only. Shown when Ambush is a legal arm: Manhattan 1–2 cardinal from the
-## origin (Gloam while Invisible, otherwise the first live Shade) and the back
-## tile can be landed on. A Shade the opponent has not yet finished a turn past
-## does not open this chrome.
+## origin and the back tile can be landed on. Visible chrome is the Shade.
+## Invisible chrome is the Shade when that jump is still legal, otherwise Gloam.
+## A Shade the opponent has not yet finished a turn past does not open this chrome.
 func ambush_origin(seat: int) -> Dictionary:
 	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
 	var actor := _unit_by_seat(seat)
@@ -485,15 +486,15 @@ func ambush_origin(seat: int) -> Dictionary:
 		return hidden
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_GLOAM:
 		return hidden
-	var enemy := _enemy_of(seat)
-	if not _ambush_can_offer(actor, enemy):
+	var enemy := _ambush_primary_enemy(actor)
+	var pick := _ambush_selected(actor, enemy, {})
+	if pick.is_empty():
 		return hidden
-	if bool(actor.get("invisible", false)):
-		return {"show": true, "from_self": true, "origin": actor["pos"]}
-	var shade := _first_shade(actor)
-	if shade.is_empty():
-		return hidden
-	return {"show": true, "from_self": false, "origin": shade["pos"]}
+	return {
+		"show": true,
+		"from_self": not bool(pick.get("from_shade", false)),
+		"origin": pick["origin"],
+	}
 
 
 ## Chrome only. The locked empty back tile, for the aim highlight.
@@ -924,7 +925,8 @@ func _legal_has_cast(seat: int, spell_id: String) -> bool:
 
 ## Presentation only. Dashed aim line and the predicted float. Does not roll,
 ## spend, or move a body. Ambush is drawn from the legal origin (the Shade,
-## or Gloam while Invisible) and only while that cast is in legal_intents.
+## including while Invisible when that Shade is still legal, otherwise Gloam)
+## and only while that cast is in legal_intents.
 ## Other spells draw from the caster to the hovered in-range cell.
 func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 	var actor := _unit_by_seat(seat)
@@ -958,8 +960,9 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 	}
 
 
-## Ambush aim is the one legal body. The line leaves the Shade (Gloam only
-## while Invisible). The float is the connect sample from the back tile,
+## Ambush aim is the origin the cast will use. The line leaves the Shade when
+## that Shade is the jump, including while Invisible. It leaves Gloam only for
+## an Invisible self-origin. The float is the connect sample from the back tile,
 ## including Backstab, using the same Phase A product as the hit.
 func _ambush_aim_feel(seat: int, actor: Dictionary, def: Dictionary) -> Dictionary:
 	if not _legal_has_cast(seat, SpellKits.AMBUSH):
@@ -1068,7 +1071,8 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 
 	var range_from := from_cell
 	if spell_id == SpellKits.AMBUSH and not actor.is_empty():
-		var origin_cell := _ambush_range_origin(actor)
+		var preview_enemy := _unit_by_seat(target_seat) if target_seat >= 0 else _living_unit_at(to_cell)
+		var origin_cell := _ambush_measure_cell(actor, preview_enemy)
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
 	if spell_id == SpellKits.ADVANCE:
@@ -1671,21 +1675,27 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 	var range_from: Vector2i = actor["pos"]
 	if spell_id == SpellKits.AMBUSH:
-		var origin_cell := _ambush_range_origin(actor)
+		var ambush_enemy := _ambush_focus_enemy(actor, dest)
+		var origin_cell := _ambush_measure_cell(actor, ambush_enemy)
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
 		# The Shade plate and the Invisible self-cell are the origin, not a foe.
 		# Confirming that cell used to measure distance 0 ("target at 0") while
 		# the enemy was a legal cardinal 1–2 and the reticle sat on that enemy.
-		# Ambush has one body. An illegal body still rejects on the real gate.
-		if origin_cell != UNPLACED and dest == origin_cell:
-			var ambush_enemy := _enemy_of(int(actor["seat"]))
-			if _stasis_pack:
-				ambush_enemy = _first_legal_ambush_target(actor)
+		# Either legal origin confirms the same enemy. An illegal body still rejects.
+		if _ambush_cell_is_origin(actor, dest):
+			var tapped_origin := dest
 			var blocked := _ambush_block_reason(actor, ambush_enemy)
 			if blocked != "":
 				return _reject(intent, blocked, _ambush_reject_text(blocked))
-			dest = ambush_enemy["pos"]
+			if not ambush_enemy.is_empty():
+				dest = ambush_enemy["pos"]
+			# Confirming a plate chooses that origin. The enemy tap does not.
+			if not intent.has("origin"):
+				intent["origin"] = tapped_origin
+		var ambush_pick := _ambush_selected(actor, _ambush_focus_enemy(actor, dest), intent)
+		if not ambush_pick.is_empty():
+			range_from = ambush_pick["origin"]
 	# Cardinal kits (Ambush) share the axis gate: one of Δx/Δy is 0 and
 	# |Δx|+|Δy| is inside min/max (Ambush 1–2). Chebyshev would accept a diagonal.
 	var dist := _range_distance(def, range_from, dest)
@@ -3687,17 +3697,16 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	if blocked != "":
 		return _reject(intent, blocked, _ambush_reject_text(blocked))
 	var caster_cell: Vector2i = actor["pos"]
-	var landing: Dictionary = _ambush_landing(actor, target)
+	var pick := _ambush_selected(actor, target, intent)
+	if pick.is_empty():
+		return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+	var landing: Dictionary = pick.get("landing", {})
 	if not bool(landing.get("ok", false)):
 		return _reject(intent, "illegal_back", "REJECT — Ambush back tile is occupied or illegal (refund).")
-	var from_shade := not bool(actor.get("invisible", false))
-	var origin: Dictionary = {}
-	if from_shade:
-		origin = _first_shade(actor)
-		if origin.is_empty():
-			return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
-	# v0.6: origin is Gloam's own cell while Invisible, otherwise the Shade cell.
-	var origin_cell: Vector2i = caster_cell if not from_shade else origin["pos"]
+	# Shade origin spends a Shade. Invisible self-origin does not. Invisible
+	# does not forbid the Shade: a legal armed Shade is still that origin.
+	var from_shade := bool(pick.get("from_shade", false))
+	var origin_cell: Vector2i = pick["origin"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var chance := hit_chance(dist)
@@ -3746,7 +3755,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	if face_dir != "":
 		actor["facing"] = face_dir
 	if from_shade:
-		_remove_shade_at(origin["pos"], int(actor["seat"]))
+		_remove_shade_at(origin_cell, int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
 	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
@@ -3799,8 +3808,14 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 ## no teleport. Occupied / OOB / unwalkable back tiles reject. Backstab follows
 ## the rear cone from the landing tile, not from the old body.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
-	var origin := _ambush_range_origin(actor)
-	if origin == UNPLACED:
+	var pick := _ambush_selected(actor, target, {})
+	if pick.is_empty():
+		return {"ok": false}
+	return pick.get("landing", {"ok": false})
+
+
+func _ambush_landing_from(origin: Vector2i, actor: Dictionary, target: Dictionary) -> Dictionary:
+	if origin == UNPLACED or target.is_empty():
 		return {"ok": false}
 	var step := _cardinal_unit_step(origin, target["pos"])
 	if step == Vector2i.ZERO:
@@ -3840,37 +3855,47 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	return _board.is_walkable(cell)
 
 
-## Legal Ambush arm: origin is Manhattan 1–2 cardinal from the foe, the back tile
-## is an empty walkable landing, and a Shade origin has seen the opponent finish
-## at least one turn. Diagonals and Manhattan 3+ are not an arm. Landing uses the
-## same cell as resolve. Offer, preview, origin chrome, and the HUD share this gate.
+## Legal Ambush arm: some origin is Manhattan 1–2 cardinal from the foe, the back
+## tile is an empty walkable landing, and a Shade origin has seen the opponent
+## finish at least one turn. Invisible self-origin has no arming delay and does
+## not remove a Shade that is still legal. Diagonals and Manhattan 3+ are not an
+## arm. Landing uses the same cell as resolve. Offer, preview, origin chrome,
+## and the HUD share this gate.
 func _ambush_can_offer(actor: Dictionary, enemy: Dictionary) -> bool:
 	return _ambush_block_reason(actor, enemy) == ""
 
 
 ## "" when Ambush may arm. Otherwise no_shade, shade_unarmed, out_of_range,
-## illegal_back, or no_target. Origin is Gloam while Invisible (no arming delay),
-## otherwise the first live Shade. That Shade stays illegal until the opponent
-## has completed ≥1 full turn since it was Dropped.
+## illegal_back, or no_target. Visible needs an armed Shade. Invisible may use
+## Gloam immediately, and an armed Shade as well. A Shade stays illegal until
+## the opponent has completed ≥1 full turn since it was Dropped.
 func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 	if enemy.is_empty() or not bool(enemy.get("alive", false)):
 		return "no_target"
-	var origin_cell := _ambush_range_origin(actor)
-	if origin_cell == UNPLACED:
+	if not _ambush_legal_picks(actor, enemy).is_empty():
+		return ""
+	var invisible := bool(actor.get("invisible", false))
+	if _live_shades(actor).is_empty() and not invisible:
 		return "no_shade"
-	if not bool(actor.get("invisible", false)):
-		var shade := _first_shade(actor)
-		if shade.is_empty():
-			return "no_shade"
-		if int(shade.get("opponent_turns_completed", 0)) < 1:
-			return "shade_unarmed"
-	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
-	var axis := _cardinal_axis_len(origin_cell, enemy["pos"])
-	if axis < int(def.get("min_range", 1)) or axis > int(def.get("max_range", 2)):
-		return "out_of_range"
-	if not bool(_ambush_landing(actor, enemy).get("ok", false)):
+	var shade_block := ""
+	var self_block := ""
+	for item in _ambush_candidates(actor, enemy):
+		var cand: Dictionary = item
+		var reason := str(cand.get("block", ""))
+		if bool(cand.get("from_shade", false)):
+			if shade_block == "":
+				shade_block = reason
+		else:
+			self_block = reason
+	if not invisible:
+		return shade_block if shade_block != "" else "no_shade"
+	# Invisible self has no arming delay. An unarmed Shade must not replace
+	# that geometry reject. An armed Shade whose back tile is blocked does.
+	if self_block == "out_of_range" and shade_block == "illegal_back":
 		return "illegal_back"
-	return ""
+	if self_block != "":
+		return self_block
+	return shade_block if shade_block != "" else "no_shade"
 
 
 func _ambush_reject_text(reason: String) -> String:
@@ -3885,15 +3910,161 @@ func _ambush_reject_text(reason: String) -> String:
 	return "REJECT — Ambush is Manhattan 1–2 cardinal from the origin (refund)."
 
 
-## Locked range origin. Invisible uses Gloam. Otherwise the first live Shade.
-## UNPLACED when Ambush has neither, so the no_shade gate still runs.
+## Range cell for highlights and the generic distance gate. A legal origin wins.
+## Otherwise the Shade (or Gloam, while Invisible) so a far Shade still reads
+## out_of_range instead of borrowing the body.
 func _ambush_range_origin(actor: Dictionary) -> Vector2i:
+	return _ambush_measure_cell(actor, _ambush_primary_enemy(actor))
+
+
+func _ambush_primary_enemy(actor: Dictionary) -> Dictionary:
+	if _stasis_pack:
+		var legal := _first_legal_ambush_target(actor)
+		if not legal.is_empty():
+			return legal
+	return _enemy_of(int(actor.get("seat", -1)))
+
+
+func _ambush_focus_enemy(actor: Dictionary, dest: Vector2i) -> Dictionary:
+	var at := _living_unit_at(dest)
+	if not at.is_empty() and bool(at.get("alive", false)) and int(at.get("seat", -2)) != int(actor.get("seat", -1)):
+		return at
+	return _ambush_primary_enemy(actor)
+
+
+func _ambush_cell_is_origin(actor: Dictionary, cell: Vector2i) -> bool:
+	if bool(actor.get("invisible", false)) and cell == actor["pos"]:
+		return true
+	for item in _live_shades(actor):
+		var token: Dictionary = item
+		if token.get("pos") == cell:
+			return true
+	return false
+
+
+func _ambush_measure_cell(actor: Dictionary, enemy: Dictionary) -> Vector2i:
+	var selected := _ambush_selected(actor, enemy, {})
+	if not selected.is_empty():
+		return selected["origin"]
+	for item in _ambush_candidates(actor, enemy):
+		var cand: Dictionary = item
+		if bool(cand.get("axis_ok", false)):
+			return cand["origin"]
 	if bool(actor.get("invisible", false)):
 		return actor["pos"]
 	var shade := _first_shade(actor)
 	if shade.is_empty():
 		return UNPLACED
 	return shade["pos"]
+
+
+## Every Shade, then Invisible self. `block` is "" when that origin may resolve.
+func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
+	var out: Array = []
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return out
+	for item in _live_shades(actor):
+		var token: Dictionary = item
+		var armed := int(token.get("opponent_turns_completed", 0)) >= 1
+		out.append(_ambush_candidate(actor, enemy, token["pos"], true, armed))
+	if bool(actor.get("invisible", false)):
+		out.append(_ambush_candidate(actor, enemy, actor["pos"], false, true))
+	return out
+
+
+func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector2i, from_shade: bool, armed: bool) -> Dictionary:
+	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
+	var axis := _cardinal_axis_len(origin_cell, enemy["pos"])
+	var axis_ok := axis >= int(def.get("min_range", 1)) and axis <= int(def.get("max_range", 2))
+	var landing := _ambush_landing_from(origin_cell, actor, enemy) if axis_ok else {"ok": false}
+	var block := ""
+	if not axis_ok:
+		block = "out_of_range"
+	elif from_shade and not armed:
+		block = "shade_unarmed"
+	elif not bool(landing.get("ok", false)):
+		block = "illegal_back"
+	return {
+		"origin": origin_cell,
+		"from_shade": from_shade,
+		"armed": 1 if armed else 0,
+		"block": block,
+		"landing": landing,
+		"axis_ok": axis_ok,
+	}
+
+
+func _ambush_legal_picks(actor: Dictionary, enemy: Dictionary) -> Array:
+	var out: Array = []
+	for item in _ambush_candidates(actor, enemy):
+		var cand: Dictionary = item
+		if str(cand.get("block", "x")) == "":
+			out.append(cand)
+	return out
+
+
+## Shade jump that actually leaves the cast cell, then a self jump, then an
+## identity landing. A Shade whose back tile is the tile Gloam already occupies
+## must not win over a self-origin that plants somewhere else: that reads as a
+## slash from the body.
+func _ambush_prefer(picks: Array, caster_pos: Vector2i) -> Dictionary:
+	var relocating_shade: Dictionary = {}
+	var relocating_self: Dictionary = {}
+	var identity_shade: Dictionary = {}
+	var identity_self: Dictionary = {}
+	for item in picks:
+		var pick: Dictionary = item
+		var landing: Dictionary = pick.get("landing", {})
+		var land_cell: Vector2i = landing.get("cell", caster_pos)
+		var away := land_cell != caster_pos
+		var from_shade := bool(pick.get("from_shade", false))
+		if from_shade and away and relocating_shade.is_empty():
+			relocating_shade = pick
+		elif not from_shade and away and relocating_self.is_empty():
+			relocating_self = pick
+		elif from_shade and identity_shade.is_empty():
+			identity_shade = pick
+		elif identity_self.is_empty():
+			identity_self = pick
+	if not relocating_shade.is_empty():
+		return relocating_shade
+	if not relocating_self.is_empty():
+		return relocating_self
+	if not identity_shade.is_empty():
+		return identity_shade
+	return identity_self
+
+
+func _ambush_selected(actor: Dictionary, enemy: Dictionary, intent: Dictionary) -> Dictionary:
+	var picks := _ambush_legal_picks(actor, enemy)
+	if picks.is_empty():
+		return {}
+	var caster_pos: Vector2i = actor["pos"]
+	var preferred := _ambush_prefer(picks, caster_pos)
+	if intent.has("origin"):
+		var want := _as_cell(intent.get("origin"))
+		for item in picks:
+			var pick: Dictionary = item
+			if pick.get("origin") != want:
+				continue
+			var landing: Dictionary = pick.get("landing", {})
+			# An explicit plate that would slash in place loses to a jump.
+			if landing.get("cell", caster_pos) == caster_pos and preferred.get("landing", {}).get("cell", caster_pos) != caster_pos:
+				return preferred
+			return pick
+	return preferred
+
+
+func _live_shades(actor: Dictionary) -> Array:
+	var out: Array = []
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) != int(actor.get("seat", -2)):
+			continue
+		if int(token.get("turns", 0)) <= 0:
+			continue
+		out.append(token)
+	return out
 
 
 func _first_shade(actor: Dictionary) -> Dictionary:

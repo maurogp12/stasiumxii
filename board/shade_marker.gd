@@ -3,8 +3,9 @@ extends Node2D
 ## Board-owned Shade. Not a shader pool and not a blink: Ambush is the relocate.
 ## TA token uses the unit foot pivot. The tile decal plus the plate stay
 ## readable after the cast floater fades. A live Shade that is the Ambush
-## origin wears the louder "Ambush" plate. Invisible origin is Gloam, so the
-## token stays a Neutral Shade. The node lives on ShadeMarkers so pawn rebuild
+## origin wears the louder "Ambush" plate, including while Gloam is Invisible
+## when that Shade is still the jump. A Shade that is not the origin stays
+## a Neutral Shade. The node lives on ShadeMarkers so pawn rebuild
 ## cannot free it.
 
 const TOKEN_PATH := "res://art/vfx/shade/neutral_shade_token.png"

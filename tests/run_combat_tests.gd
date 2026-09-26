@@ -62,6 +62,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_instant_invisible_ambush_relocates_before_damage()
+	_test_invisible_shade_origin_ambush()
 	_test_invisible_breaks_on_attack()
 	_test_ambush_shade_origin_teleport()
 	_test_miss_keeps_ap_no_engine()
@@ -2435,6 +2436,144 @@ func _test_ambush_rules_keeper_lock() -> void:
 
 ## Soft Lock 2026-09-26. Drop Shade keeps Invisible. An attack resolve ends it.
 ## Visible Ambush still needs a Shade. Fade still grants Invisible.
+func _test_invisible_shade_origin_ambush() -> void:
+	# Soft Lock: Invisible keeps self-origin and an armed Shade origin.
+	# The button stays live when only the Shade can reach. A Shade whose back
+	# tile is the tile Gloam already stands on does not beat a self-origin that
+	# actually plants. Drop Shade still does not clear Invisible.
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Shade-while-Invisible does not change Ambush AP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Shade-while-Invisible does not change Ambush MP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Shade-while-Invisible does not change Ambush damage")
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var shade_at := Vector2i(4, 4)
+	var shade_back := Vector2i(4, 1)
+	var self_back := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "both-origin fixture plants the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "Drop Shade while Visible does not grant Invisible")
+	_complete_opponent_turn()
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade after the Shade arms")
+	eq(bool(_unit(0)["invisible"]), true, "Fade sets Invisible with the Shade still live")
+	var origins: Array = []
+	var shade_intent := false
+	var self_intent := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) != "cast" or str(intent.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		origins.append(intent.get("origin"))
+		if bool(intent.get("from_shade", false)):
+			shade_intent = true
+		if intent.get("origin") == gloam:
+			self_intent = true
+	eq(shade_intent, true, "Invisible legal_intents keep the Shade origin")
+	eq(self_intent, true, "Invisible legal_intents keep the self origin")
+	eq(origins.has(shade_at), true, "the Shade cell is an Ambush origin while Invisible")
+	eq(origins.has(gloam), true, "Gloam's cell is an Ambush origin while Invisible")
+	var both_hud := CombatHUD.new()
+	both_hud._build()
+	both_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var both_button: Button = both_hud._spell_buttons[SpellKits.AMBUSH]
+	eq(both_button.disabled, false, "Ambush is not grey when a Shade origin is legal while Invisible")
+	eq(both_button.modulate, CombatHUD.AMBUSH_SHADE_MODULATE, "a legal Shade origin keeps the shade highlight while Invisible")
+	truthy(both_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), "Walk names Ambush from Shade while Invisible")
+	both_hud.free()
+	var jumped: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(jumped.get("ok", false)), true, "enemy tap while Invisible jumps from the Shade")
+	eq(jumped["events"][0].get("origin"), shade_at, "the default Invisible hit origin is the Shade")
+	eq(_unit(0)["pos"], shade_back, "Shade-origin Invisible Ambush plants past the foe")
+	eq(_unit(0)["pos"] == gloam, false, "Shade-origin Invisible Ambush does not slash from the body")
+	eq(jumped["events"][0].get("struck_from"), shade_back, "damage is struck from the Shade's back tile")
+	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
+	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
+	eq(int(_unit(1)["hp"]), 58, "the Shade jump front hit is 22")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "self-choice fixture plants the Shade")
+	_complete_opponent_turn()
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0}).get("ok", false)), true, "self-choice Fade resolves")
+	var chosen: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "origin": gloam, "seat": 0})
+	eq(bool(chosen.get("ok", false)), true, "an explicit self origin still resolves while a Shade is legal")
+	eq(chosen["events"][0].get("origin"), gloam, "the explicit origin is Gloam")
+	eq(_unit(0)["pos"], self_back, "self-origin Invisible Ambush plants on its own back tile")
+	eq(int(_unit(0)["shades"]), 1, "self-origin does not spend the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "self-origin Ambush ends Invisible")
+
+	# Shade back tile is the cell Gloam already occupies. Default cast must
+	# take the self-origin that relocates, and still list the Shade.
+	var clip_gloam := Vector2i(4, 4)
+	var clip_shade := Vector2i(4, 2)
+	var clip_prey := Vector2i(4, 3)
+	var clip_self_back := Vector2i(4, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [clip_gloam, clip_prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.is_cardinal_exact(clip_shade, clip_prey, 1), true, "clip Shade is Manhattan 1 from the prey")
+	eq(_sim.is_cardinal_exact(clip_gloam, clip_prey, 1), true, "clip body is Manhattan 1 from the prey")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": clip_shade, "seat": 0}).get("ok", false)), true, "clip fixture plants the Shade")
+	_complete_opponent_turn()
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": clip_gloam, "seat": 0}).get("ok", false)), true, "clip Fade resolves")
+	var clip_shade_listed := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == SpellKits.AMBUSH and intent.get("origin") == clip_shade:
+			clip_shade_listed = true
+	eq(clip_shade_listed, true, "clip legal_intents still list the Shade origin while Invisible")
+	var clip_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
+	eq(bool(clip_hit.get("ok", false)), true, "clip Invisible Ambush resolves")
+	eq(clip_hit["events"][0].get("origin"), clip_gloam, "clip default origin relocates instead of slashing in place")
+	eq(_unit(0)["pos"], clip_self_back, "clip Ambush plants on the empty back tile")
+	eq(_unit(0)["pos"] == clip_gloam, false, "clip Ambush does not slash from the body")
+	eq(clip_hit["events"][0].get("struck_from"), clip_self_back, "clip damage is struck after the plant")
+	eq(int(_unit(0)["shades"]), 1, "clip self-origin keeps the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "clip Ambush ends Invisible")
+
+	# Miss from the Shade while Invisible: no teleport, Shade stays, Invisible ends.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [100],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "miss fixture plants the Shade")
+	_complete_opponent_turn()
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0}).get("ok", false)), true, "miss fixture Fade resolves")
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Invisible Shade Ambush miss resolves")
+	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Shade Ambush miss does not teleport")
+	eq(_unit(0)["pos"], gloam, "Invisible Shade Ambush miss stays on the body")
+	eq(missed["events"][0].get("origin"), shade_at, "the miss origin is still the Shade")
+	eq(int(_unit(0)["shades"]), 1, "Invisible Shade Ambush miss keeps the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "Invisible Shade Ambush miss ends Invisible")
+	eq(int(_unit(1)["hp"]), 80, "Invisible Shade Ambush miss deals no damage")
+
+
 func _test_invisible_breaks_on_attack() -> void:
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
@@ -2603,11 +2742,13 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var hp_at := ambush_fn.find("target[\"hp\"] = maxi(0, int(target[\"hp\"]) - damage)")
 	eq(pos_at >= 0 and struck_at > pos_at and guard_at > struck_at and hp_at > guard_at, true, "Ambush relocates before it can apply damage")
 
-	# Across the board. An armed Shade is in range. Fade makes the origin Gloam.
-	# That cast must not deal the Shade's hit while the body stays put.
+	# Across the board. An armed Shade is in range. Fade must not strip that
+	# Shade origin. The body is Manhattan 3, so the jump is the Shade, and the
+	# hit is struck only after Gloam is on the back tile.
 	var far := Vector2i(1, 9)
 	var far_shade := Vector2i(4, 11)
 	var far_prey := Vector2i(4, 9)
+	var far_back := Vector2i(4, 8)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2622,14 +2763,22 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, far_prey), true, "the armed Shade can Ambush before Fade")
 	var far_fade: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": far, "seat": 0})
 	eq(bool(far_fade.get("ok", false)), true, "Fade on the distant tile sets Invisible")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Invisible does not keep the Shade's Ambush arm")
+	eq(bool(_unit(0)["invisible"]), true, "Fade keeps Invisible onto the Shade jump")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, far_prey), true, "Invisible keeps the armed Shade Ambush")
+	var far_origin: Dictionary = _sim.ambush_origin(0)
+	eq(bool(far_origin.get("from_self", true)), false, "Invisible chrome stays on the Shade when the body is out of range")
+	eq(far_origin.get("origin"), far_shade, "Invisible origin chrome is the Shade tile")
 	var far_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": far_prey, "seat": 0})
-	eq(bool(far_hit.get("ok", true)), false, "distant Invisible Ambush does not resolve")
-	eq(str(far_hit.get("reason", "")), "out_of_range", "distant Invisible Ambush is out of range from Gloam")
-	eq(_unit(0)["pos"], far, "distant Invisible Ambush does not teleport")
-	eq(int(_unit(1)["hp"]), 80, "distant Invisible Ambush deals no damage")
-	eq(int(_unit(0)["shades"]), 1, "the rejected Invisible cast keeps the Shade")
-	eq(bool(_unit(0)["invisible"]), true, "the rejected Invisible cast keeps Invisible")
+	eq(bool(far_hit.get("ok", false)), true, "distant Invisible Shade Ambush resolves")
+	eq(_unit(0)["pos"], far_back, "distant Invisible Shade Ambush plants on the back tile")
+	eq(_unit(0)["pos"] == far, false, "distant Invisible Shade Ambush does not slash from the body")
+	eq(far_hit["events"][0].get("origin"), far_shade, "distant Invisible hit origin is the Shade")
+	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
+	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
+	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
+	eq(int(_unit(1)["hp"]), 58, "front Shade Ambush while Invisible is 22")
+	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
 
 func _test_ambush_shade_origin_teleport() -> void:
