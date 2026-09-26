@@ -7,7 +7,9 @@ Cliff tiles keep a 64×32 top face and hang the face below it. Props are
 uniformly scaled to that same ground scale.
 
 Windmere and Stormspire are not sliced here. slice_ice_electric.py writes
-those packs from the scenario sheets.
+those packs from the scenario sheets. Crosshaven ground, cliffs, and the
+farm props are owned by slice_crosshaven_punch.py. Running this file's
+main() paints the old grassland sheet back over those paths.
 """
 from __future__ import annotations
 

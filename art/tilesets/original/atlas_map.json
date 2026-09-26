@@ -6,7 +6,10 @@
     "pending/electric/stasium_tileset_electric.png",
     "pending/electric/storm_ground_punch.png",
     "pending/electric/storm_elevation_punch.png",
-    "pending/electric/storm_props_punch.png"
+    "pending/electric/storm_props_punch.png",
+    "crosshaven_ground_punch.png",
+    "crosshaven_elevation_punch.png",
+    "crosshaven_props_punch.png"
   ],
   "sliced_from": "original-tileset-b.jpg",
   "grid": [
@@ -15,7 +18,7 @@
   ],
   "families": {
     "crosshaven": {
-      "pack": "grassland",
+      "pack": "earth",
       "prefix": "",
       "pending_theme": null
     },
@@ -42,66 +45,6 @@
   },
   "pending": {},
   "files": [
-    {
-      "file": "ground.png",
-      "anchor": [
-        16,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v1.png",
-      "anchor": [
-        16,
-        112
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v2.png",
-      "anchor": [
-        220,
-        112
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v3.png",
-      "anchor": [
-        15,
-        189
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v4.png",
-      "anchor": [
-        218,
-        188
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
     {
       "file": "mud.png",
       "anchor": [
@@ -184,42 +127,6 @@
       "size": [
         64,
         32
-      ]
-    },
-    {
-      "file": "ground_e1.png",
-      "anchor": [
-        16,
-        350
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        49
-      ]
-    },
-    {
-      "file": "ground_e2.png",
-      "anchor": [
-        395,
-        319
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        78
-      ]
-    },
-    {
-      "file": "mud_e1.png",
-      "anchor": [
-        16,
-        350
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        49
       ]
     },
     {
@@ -409,78 +316,6 @@
       "size": [
         64,
         32
-      ]
-    },
-    {
-      "file": "prop_ruins.png",
-      "anchor": [
-        531,
-        438
-      ],
-      "fit": "prop",
-      "size": [
-        50,
-        83
-      ]
-    },
-    {
-      "file": "prop_well.png",
-      "anchor": [
-        1161,
-        750
-      ],
-      "fit": "prop",
-      "size": [
-        63,
-        62
-      ]
-    },
-    {
-      "file": "prop_hay.png",
-      "anchor": [
-        411,
-        796
-      ],
-      "fit": "prop",
-      "size": [
-        60,
-        50
-      ]
-    },
-    {
-      "file": "prop_fence.png",
-      "anchor": [
-        1194,
-        641
-      ],
-      "fit": "prop",
-      "size": [
-        50,
-        62
-      ]
-    },
-    {
-      "file": "prop_rubble.png",
-      "anchor": [
-        712,
-        638
-      ],
-      "fit": "prop",
-      "size": [
-        90,
-        82
-      ]
-    },
-    {
-      "file": "prop_rock_pillar.png",
-      "anchor": [
-        1336,
-        732
-      ],
-      "fit": "prop",
-      "size": [
-        36,
-        77
       ]
     },
     {
@@ -1028,6 +863,342 @@
       "size": [
         50,
         49
+      ]
+    },
+    {
+      "file": "ground.png",
+      "anchor": [
+        "ground",
+        0
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v1.png",
+      "anchor": [
+        "ground",
+        4
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v2.png",
+      "anchor": [
+        "ground",
+        8
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v3.png",
+      "anchor": [
+        "ground",
+        12
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v4.png",
+      "anchor": [
+        "ground",
+        16
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v5.png",
+      "anchor": [
+        "ground",
+        20
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v6.png",
+      "anchor": [
+        "ground",
+        24
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v7.png",
+      "anchor": [
+        "ground",
+        28
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_e1.png",
+      "anchor": [
+        "elev",
+        2
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        56
+      ]
+    },
+    {
+      "file": "ground_e1_v1.png",
+      "anchor": [
+        "elev",
+        10
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        41
+      ]
+    },
+    {
+      "file": "ground_e1_v2.png",
+      "anchor": [
+        "elev",
+        8
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        43
+      ]
+    },
+    {
+      "file": "ground_e1_v3.png",
+      "anchor": [
+        "elev",
+        14
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        48
+      ]
+    },
+    {
+      "file": "ground_e1_v4.png",
+      "anchor": [
+        "elev",
+        0
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        49
+      ]
+    },
+    {
+      "file": "ground_e1_v5.png",
+      "anchor": [
+        "elev",
+        1
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        50
+      ]
+    },
+    {
+      "file": "ground_e1_v6.png",
+      "anchor": [
+        "elev",
+        7
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        56
+      ]
+    },
+    {
+      "file": "ground_e1_v7.png",
+      "anchor": [
+        "elev",
+        15
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        56
+      ]
+    },
+    {
+      "file": "ground_e2.png",
+      "anchor": [
+        "elev",
+        5
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        87
+      ]
+    },
+    {
+      "file": "ground_e2_v1.png",
+      "anchor": [
+        "elev",
+        6
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        68
+      ]
+    },
+    {
+      "file": "ground_e2_v2.png",
+      "anchor": [
+        "elev",
+        9
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        69
+      ]
+    },
+    {
+      "file": "ground_e2_v3.png",
+      "anchor": [
+        "elev",
+        4
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        73
+      ]
+    },
+    {
+      "file": "ground_e2_v4.png",
+      "anchor": [
+        "elev",
+        13
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        79
+      ]
+    },
+    {
+      "file": "mud_e1.png",
+      "anchor": [
+        "elev",
+        10
+      ],
+      "fit": "punch",
+      "size": [
+        64,
+        41
+      ]
+    },
+    {
+      "file": "prop_rock_pillar.png",
+      "anchor": [
+        "prop",
+        0
+      ],
+      "fit": "punch",
+      "size": [
+        63,
+        88
+      ]
+    },
+    {
+      "file": "prop_rubble.png",
+      "anchor": [
+        "prop",
+        2
+      ],
+      "fit": "punch",
+      "size": [
+        86,
+        63
+      ]
+    },
+    {
+      "file": "prop_well.png",
+      "anchor": [
+        "prop",
+        4
+      ],
+      "fit": "punch",
+      "size": [
+        43,
+        64
+      ]
+    },
+    {
+      "file": "prop_ruins.png",
+      "anchor": [
+        "prop",
+        6
+      ],
+      "fit": "punch",
+      "size": [
+        72,
+        84
+      ]
+    },
+    {
+      "file": "prop_hay.png",
+      "anchor": [
+        "prop",
+        5
+      ],
+      "fit": "punch",
+      "size": [
+        60,
+        82
+      ]
+    },
+    {
+      "file": "prop_fence.png",
+      "anchor": [
+        "prop",
+        7
+      ],
+      "fit": "punch",
+      "size": [
+        72,
+        39
       ]
     }
   ],
