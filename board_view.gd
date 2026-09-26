@@ -21,7 +21,8 @@ extends Node2D
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
 ## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
-## sprite capsule. Phone portrait gives extra viewport height to the board.
+## sprite capsule. Phone portrait gives extra viewport height to the board and
+## raises the camera so a diamond is easier to tap. A walk-mode drag pans.
 ## A finger that starts on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
@@ -45,8 +46,9 @@ extends Node2D
 ## View motions (idle, step bounce, lunge, wind-up, recoil, lift, slump) tween the
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
-## Mobile-track chrome. A walk is one linear slide through cell centers.
-## The sprite root bounces a few pixels. Advance stays a snap.
+## Mobile-track chrome. A walk plants the foot, then strides to the next cell
+## in about 0.30s. The sprite root takes the step bounce. Advance stays a snap.
+## Phone framing raises the camera so diamonds are easier to tap. Desktop fit stays.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -100,7 +102,11 @@ var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
 var _koliseo_life: Node2D
 var _fit_camera_pos := Vector2.ZERO
+var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
+var _framed_cell := Vector2i(-999, -999)
 var _panning := false
+var _touch_panning := false
+var _touch_down := Vector2.ZERO
 var _pan_origin := Vector2.ZERO
 ## Finger went down on the board. Release commits only that gesture.
 var _touch_on_board := false
@@ -338,6 +344,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			_touch_commit_open = true
 		return
 	if gesture == TOUCH.AIM:
+		if TOUCH.is_touch_press(event):
+			_touch_down = TOUCH.pointer_position(event)
+			_touch_panning = false
+		elif event is InputEventScreenDrag and _pan_board_drag(event):
+			return
 		var hover := _cell_under_pointer(event)
 		if _in_bounds(hover):
 			_aim_hover = hover
@@ -363,9 +374,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if TOUCH.is_touch_release(event):
 		var armed := _touch_on_board or _chrome_aim
+		var panned := _touch_panning
 		_touch_on_board = false
 		_chrome_aim = false
-		if not armed:
+		_touch_panning = false
+		if panned or not armed:
 			return
 	else:
 		# Mouse left press is its own gesture. It must not inherit a touch lock.
@@ -992,14 +1005,14 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# One tween through cell centers. Equal time per cell keeps straight and
 	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
 	# grid_position is the tactical cell and updates when the foot commits.
-	# pawn.position is the visual foot and slides between those cells.
+	# pawn.position is the visual foot. It stays planted through the press,
+	# strides on the rise, and settles on the next tile. It does not linear-slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
-	# before the slide, or a refresh snaps it and the walk reads as a teleport.
-	# Face the step before the body moves. hop_facing covers a non-cardinal
-	# step, then a diagonal uses the screen vector so the pawn does not slide
-	# sideways or backwards. The walk cycle starts on that facing and plays
-	# through a two-frame plant before the translate. The snapshot facing
-	# snaps only after the last land. The walk strip loops the whole path.
+	# before the step, or a refresh snaps it and the walk reads as a teleport.
+	# Face the step before the body moves. A cardinal uses that letter. Any other
+	# segment faces the screen direction so the pawn does not slide sideways or
+	# backwards. The walk strip seeks to its plant frame as the stride starts.
+	# The snapshot facing snaps only after the last land.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -1024,7 +1037,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		if dir == "":
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 			if prev.x != cell.x and prev.y != cell.y:
-				var along := _facing_along(_cell_to_local(cell) - _cell_to_local(prev))
+				var along := VIEW_MOTION.screen_facing(_cell_to_local(cell) - _cell_to_local(prev))
 				if along != "":
 					dir = along
 		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
@@ -1042,8 +1055,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
 		if dir != "":
 			visual = dir
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
-		_walk_tween.parallel().tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+		_walk_tween.tween_callback(_sync_step_plant.bind(pawn))
+		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
 	if committed != "":
@@ -1060,7 +1073,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 func _arm_path_walk(pawn: Pawn) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
-	pawn.begin_path_walk()
+	pawn.arm_driven_walk()
 
 
 func _seat_facing(seat: int) -> String:
@@ -1072,19 +1085,19 @@ func _seat_facing(seat: int) -> String:
 	return ""
 
 
-func _facing_along(delta: Vector2) -> String:
-	if delta.length_squared() < 1.0:
-		return ""
-	var best := ""
-	var best_dot := -2.0
-	var aim := delta.normalized()
-	for face in ["N", "E", "S", "W"]:
-		var axis: Vector2 = Pawn.FACING_ISO[face]
-		var dotted := aim.dot(axis.normalized())
-		if dotted > best_dot:
-			best_dot = dotted
-			best = face
-	return best
+func _sync_step_plant(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.sync_walk_plant()
+
+
+func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	var u := VIEW_MOTION.step_travel(t)
+	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
+	pawn.sample_driven_gait(t)
+	_track_step_sort(t, pawn, src, dst)
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
@@ -1252,6 +1265,7 @@ func _refresh() -> void:
 	_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
+	_maybe_reframe(snap)
 	if _vfx != null and _vfx.has_method("sync_snapshot"):
 		_vfx.sync_snapshot(snap)
 
@@ -1778,9 +1792,9 @@ func _rebuild_grid(size: int) -> void:
 
 
 ## Zoom the diamond into the play band. Cell size stays 64×32.
-## Desktop stays the 960×720 fit. A phone portrait (mobile pick) gives the
-## extra viewport height to the board and keeps the same bottom chrome reserve.
-## Middle-mouse pan is clamped around that fit.
+## Desktop stays the 960×720 fit. A phone raises the zoom so a diamond is
+## easier to tap, keeps the full board height inside the clear band, and
+## frames the active fighter. Middle-mouse and a walk-mode drag pan from there.
 func _fit_board_camera() -> void:
 	_ensure_camera()
 	var n := _board_size
@@ -1803,20 +1817,72 @@ func _fit_board_camera() -> void:
 	var zoom := TOUCH.board_zoom(board_w, board_h, viewport, mobile)
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
+	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
+	_pan_limit = Vector2(maxf(room.x, PAN_LIMIT), maxf(room.y, PAN_LIMIT))
+	var look := center
+	if mobile:
+		var focus := _frame_focus_local()
+		if focus.x < 1.0e8:
+			look = TOUCH.focus_point(center, focus, room)
 	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
 	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position
-	_camera.position = _fit_camera_pos
+	_camera.position = _fit_camera_pos + (look - center)
+	_clamp_camera()
+
+
+func _frame_focus_local() -> Vector2:
+	if not _booted:
+		return Vector2(1.0e9, 1.0e9)
+	var actor := _active_unit(_sim().snapshot())
+	if actor.is_empty():
+		return Vector2(1.0e9, 1.0e9)
+	var cell := _as_cell(actor.get("pos", Vector2i(-1, -1)))
+	if not _in_bounds(cell):
+		return Vector2(1.0e9, 1.0e9)
+	return _cell_to_local(cell)
+
+
+func _maybe_reframe(snap: Dictionary) -> void:
+	if not TOUCH.use_mobile_pick():
+		return
+	var actor := _active_unit(snap)
+	if actor.is_empty():
+		return
+	var cell := _as_cell(actor.get("pos", Vector2i(-1, -1)))
+	if cell == _framed_cell:
+		return
+	_framed_cell = cell
+	_fit_board_camera()
+
+
+func _pan_board_drag(event: InputEvent) -> bool:
+	if _camera == null or not (event is InputEventScreenDrag):
+		return false
+	var pos := TOUCH.pointer_position(event)
+	if not _touch_panning:
+		if not TOUCH.drag_is_pan(_touch_down, pos, _spell_armed()):
+			return false
+		_touch_panning = true
+		_touch_commit_open = false
+		_pan_origin = pos
+		return true
+	var delta := pos - _pan_origin
+	_pan_origin = pos
+	_camera.position -= delta / _camera.zoom
+	_clamp_camera()
+	get_viewport().set_input_as_handled()
+	return true
 
 
 func _clamp_camera() -> void:
 	if _camera == null:
 		return
 	var delta := _camera.position - _fit_camera_pos
-	delta.x = clampf(delta.x, -PAN_LIMIT, PAN_LIMIT)
-	delta.y = clampf(delta.y, -PAN_LIMIT, PAN_LIMIT)
+	delta.x = clampf(delta.x, -_pan_limit.x, _pan_limit.x)
+	delta.y = clampf(delta.y, -_pan_limit.y, _pan_limit.y)
 	_camera.position = _fit_camera_pos + delta
 
 

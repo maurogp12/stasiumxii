@@ -358,6 +358,38 @@ func begin_path_walk() -> void:
 	_start_path_bounce()
 
 
+## Board-driven steps own the gait. Drop the free-running bounce so the plant
+## matches the tile instead of sliding under a looping hop.
+func arm_driven_walk() -> void:
+	begin_path_walk()
+	_kill_bounce()
+
+
+## Seek the facing's walk clip to the plant frame for this tile.
+func sync_walk_plant() -> void:
+	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_ensure_motion_strips()
+	if not _play_walk_flat():
+		return
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip):
+		return
+	strip.speed_scale = walk_strip_speed_scale()
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
+		strip.frame = 0
+		strip.frame_progress = 0.0
+
+
+## One tile of the path. t is 0 at the press and 1 at the settle.
+func sample_driven_gait(t: float) -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_kill_bounce()
+	_sample_hop(clampf(t, 0.0, 1.0))
+
+
 ## Swap the walk clip when facing snaps. Does not restart the path bounce.
 func retarget_walk_strip() -> void:
 	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
