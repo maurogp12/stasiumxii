@@ -755,6 +755,8 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		return out
 	match spell_id:
 		"mark_shot":
+			if typ == "hit" or typ == "miss":
+				out.append(_mark_cast_stamp(caster, caster_cell, to_cell))
 			if typ == "hit":
 				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, MARK_FLIGHT_SEC, 2.5)
 				bolt["hand"] = true
@@ -950,6 +952,19 @@ static func _removed_stun(event: Dictionary) -> bool:
 
 static func _mark_impact_delay() -> float:
 	return STRIPS.release_sec("kestrel", "cast_mark") + MARK_FLIGHT_SEC
+
+
+## Four bow cells. The release flash is the last one, so it opens when the bolt leaves.
+static func _mark_cast_life() -> float:
+	return STRIPS.release_sec("kestrel", "cast_mark") * 4.0 / 3.0
+
+
+static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictionary:
+	var spec := _stamp("mark_shot_cast", seat, cell, 0.0, VfxBudget.STAMP_MARK_CAST_PX, _mark_cast_life())
+	spec["chest"] = false
+	spec["hand"] = true
+	spec["aim"] = aim
+	return spec
 
 
 static func _hit_flash(seat: int, cell: Vector2i, delay: float) -> Dictionary:

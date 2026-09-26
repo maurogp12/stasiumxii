@@ -5,11 +5,14 @@ extends "res://vfx/vfx_pooled.gd"
 ## variable-width frames on a shared row. Detonate stays one hero plate.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
+## Mark Shot cast is the bow windup: four cells, string spark through the
+## release flash. The shared band is the bow, upper-mid of the plate.
 ## CombatSim never reads this file.
 
 const SHEETS := {
 	"ambush_slash": "res://art/vfx/scenario/ambush_slash.png",
 	"mark_shot_impact": "res://art/vfx/scenario/mark_shot_impact.png",
+	"mark_shot_cast": "res://art/vfx/scenario/mark_shot_cast.png",
 	"detonate_burst": "res://art/vfx/scenario/detonate_burst.png",
 	"hit_flash": "res://art/vfx/scenario/hit_flash.png",
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
@@ -51,6 +54,15 @@ const STRIPS := {
 		Rect2(966, 283, 136, 145),
 		Rect2(1124, 283, 126, 145),
 	],
+	# Bow windup. Shared band keeps the string, reticle, and release flash
+	# on one center (upper-mid of the plate), so a wider cell does not drop
+	# the bow toward the feet.
+	"mark_shot_cast": [
+		Rect2(112, 45, 91, 179),
+		Rect2(405, 45, 125, 179),
+		Rect2(684, 45, 179, 179),
+		Rect2(1090, 45, 190, 179),
+	],
 	# Floor rings opening into the burst, then closing. Not the sigil row.
 	"mark_shot_impact": [
 		Rect2(42, 112, 105, 211),
@@ -66,6 +78,7 @@ const STRIPS := {
 static var _cache: Dictionary = {}
 
 var _sprite: Sprite2D
+var _follow: Callable = Callable()
 var _wait: float = 0.0
 var _life: float = 0.0
 var _span: float = 0.2
@@ -154,6 +167,9 @@ func prewarm() -> void:
 
 func play(spec: Dictionary) -> void:
 	_begin()
+	_follow = Callable()
+	if _sprite != null:
+		_sprite.flip_h = false
 	_sheet = str(spec.get("sheet", ""))
 	var tex := texture_for(_sheet)
 	if tex == null:
@@ -183,6 +199,11 @@ func play(spec: Dictionary) -> void:
 		_sprite.region_rect = Rect2()
 	_sprite.scale = Vector2.ONE * _base_scale * (1.0 if _frames > 1 else 0.72)
 	_sprite.modulate = Color(1, 1, 1, 0)
+	_sprite.flip_h = bool(spec.get("flip_h", false))
+	var follow: Variant = spec.get("follow", Callable())
+	if follow is Callable and (follow as Callable).is_valid():
+		_follow = follow
+		_follow_hand()
 	if _wait > 0.0:
 		_sprite.visible = false
 		return
@@ -202,9 +223,18 @@ func _kick() -> void:
 	_sample(0.0)
 
 
+func _follow_hand() -> void:
+	if not _follow.is_valid():
+		return
+	var at: Variant = _follow.call()
+	if at is Vector2:
+		position = at
+
+
 func _process(delta: float) -> void:
 	if not in_use:
 		return
+	_follow_hand()
 	if _wait > 0.0:
 		_wait -= delta
 		if _wait > 0.0:
@@ -239,8 +269,10 @@ func _sample(t: float) -> void:
 
 
 func release() -> void:
+	_follow = Callable()
 	if _sprite != null:
 		_sprite.visible = false
+		_sprite.flip_h = false
 		_sprite.region_enabled = false
 		_sprite.texture = null
 	_wait = 0.0
