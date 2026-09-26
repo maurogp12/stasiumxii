@@ -2,8 +2,9 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. Ironjaw multiplies that by
-## `IRONJAW_COMBAT_SCALE` (display only). When a walk sheet exists, the standing
+## centered, offset (0, -72), scale 0.5. A class may multiply that by a small
+## interim presentation factor (feet pivot, not the pick capsule). Art-fill of
+## the same 144×160 cell is the primary size fix. When a walk sheet exists, the standing
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
@@ -117,14 +118,19 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Combat display only. Identity stays the locked Berserker A helm sheet:
-## iron-jaw grill, dual double-bit axes, dark cape. This multiplier does not
-## redraw those strips or the select plate. Every class plays the same
-## 144×160 cell at 0.5, so Ironjaw's walk plant reads the same height as
-## Kestrel (~66px). 1.20× is his presentation bump (~79px on the plant).
-## The foot offset stays (0, -72); squash and stretch still multiply this
-## base. Pathing, pick capsules, map tags, and kit numbers do not read it.
-const IRONJAW_COMBAT_SCALE := 1.20
+## Secondary to art-fill. Scenario is regenerating fuller Ironjaw strips in
+## the same 864×160 sheet (144×160 cells) and the same foot-anchor Y as the
+## other classes. Until those sheets land, this map is an optional display
+## nudge on the body sprites only. The pawn node and the pick capsule stay
+## at scale 1, so the pivot is the foot offset, not the collider center.
+## Identity stays Berserker A + helm A2 (iron-jaw grill, dual double-bit axes).
+## 1.0 keeps the shared 0.5. Above PRESENTATION_SCALE_CAP, including 1.20,
+## is ignored. Kit numbers and map geometry do not read this.
+const PRESENTATION_SCALE_CAP := 1.12
+const IRONJAW_COMBAT_SCALE := 1.10
+const CLASS_PRESENTATION_SCALE := {
+	"ironjaw": IRONJAW_COMBAT_SCALE,
+}
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
 const WALK_TILE_SEC := 0.30
@@ -148,12 +154,23 @@ const NAME_GAP_ABOVE_HP := 2.0
 static var _sprite_cache: Dictionary = {}
 
 
-## Resting combat scale. Ironjaw is larger on the board; every other class
-## stays on the shared 0.5.
+## Resting combat scale. Missing classes stay on the shared 0.5. A listed
+## class uses the capped interim nudge.
 static func sprite_scale_for(class_id: String) -> Vector2:
-	if SpellKits.normalize_class_id(class_id) == SpellKits.CLASS_IRONJAW:
-		return SPRITE_SCALE * IRONJAW_COMBAT_SCALE
-	return SPRITE_SCALE
+	return SPRITE_SCALE * presentation_mul(class_id)
+
+
+## 1.0 when the class is unlisted, below 1, or above the cap. A 1.20 entry
+## does not ship; art-fill has to carry that size.
+static func presentation_mul(class_id: String) -> float:
+	var key := SpellKits.normalize_class_id(class_id)
+	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
+
+
+static func capped_presentation_mul(raw: float) -> float:
+	if raw < 1.0 or raw > PRESENTATION_SCALE_CAP:
+		return 1.0
+	return raw
 
 
 func _body_scale() -> Vector2:
