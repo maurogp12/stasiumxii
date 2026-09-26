@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
 	_test_alive_grade()
+	_test_original_sheet()
 	await _test_hotseat_navigates()
 	print("Koliseo map tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -306,6 +307,47 @@ func _test_alive_grade() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("apply_koliseo_grade"), "the board applies the grade with the tiles")
 	truthy(view.contains("KoliseoLife"), "the board owns the weather layer")
+
+
+func _test_original_sheet() -> void:
+	var art := load("res://board/koliseo_art.gd")
+	eq(art.PENDING_THEMES, ["ice", "electric"], "ice and electric packs stay pending")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/original-tileset-a.jpg"), "original sheet A is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/original-tileset-b.jpg"), "original sheet B is in the repo")
+	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
+	truthy(themes.contains("pending/ice"), "ice hook is documented")
+	truthy(themes.contains("pending/electric"), "electric hook is documented")
+	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/ice_ground.png"), false, "no invented ice ground pack")
+	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/electric_ground.png"), false, "no invented electric ground pack")
+	var atlas: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/tilesets/original/atlas_map.json"))
+	var families: Dictionary = atlas["families"]
+	eq(str(families["crosshaven"]["pack"]), "grassland", "Crosshaven uses the grassland pack")
+	eq(str(families["brinewake"]["pack"]), "coast", "Brinewake uses the coast pack")
+	eq(str(families["slagcrown"]["pack"]), "lava", "Slagcrown uses the lava pack")
+	eq(str(families["windmere"]["pack"]), "pale_stone", "Windmere uses pale stone, not an ice pack")
+	eq(str(families["stormspire"]["pack"]), "dark_stone", "Stormspire uses dark stone, not an electric pack")
+	eq(str(families["windmere"]["pending_theme"]), "ice", "Windmere is the ice hook")
+	eq(str(families["stormspire"]["pending_theme"]), "electric", "Stormspire is the electric hook")
+	var ground: Texture2D = art.terrain_texture("ground", 0)
+	var img := ground.get_image()
+	truthy(img.get_pixel(48, 16).a > 0.2, "grass diamond reaches the right half of the sheet")
+	var mid := img.get_pixel(32, 16)
+	truthy(mid.g > mid.b and mid.g > 0.25, "Crosshaven ground is painted grass")
+	var wind_tex: Texture2D = art.terrain_texture("ground", 0, "wind_")
+	var wind_px: Color = wind_tex.get_image().get_pixel(32, 16)
+	truthy(wind_px.b < wind_px.r + 0.18, "Windmere ground is sheet stone, not an ice wash")
+	var slag_tex: Texture2D = art.terrain_texture("lava", 0, "slag_")
+	var slag_px: Color = slag_tex.get_image().get_pixel(32, 16)
+	truthy(slag_px.r > slag_px.b, "Slagcrown lava is the sheet lava")
+	var storm_tex: Texture2D = art.terrain_texture("ground", 0, "storm_")
+	var storm_px: Color = storm_tex.get_image().get_pixel(32, 16)
+	truthy(storm_px.r < 0.55, "Stormspire ground is the dark sheet rock")
+	var seen := {}
+	for x in 5:
+		for y in 4:
+			var tex: Texture2D = art.terrain_texture_at("ground", 0, "", Vector2i(x, y))
+			seen[tex.resource_path] = true
+	truthy(seen.size() > 1, "grassland cells use more than one grass slice")
 
 
 func _ground_paint_step(tags: Dictionary) -> Dictionary:

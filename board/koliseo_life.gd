@@ -14,10 +14,10 @@ const MOTE_AMOUNT := 18
 const ELEV_LIFT := 0.055
 
 const _TERRAIN := {
-	"ground": {"contrast": 1.26, "sat": 1.48, "shimmer": 0.16, "pulse": 0.034, "speed": 0.85},
-	"mud": {"contrast": 1.18, "sat": 1.22, "shimmer": 0.06, "pulse": 0.022, "speed": 0.55},
-	"water": {"contrast": 1.30, "sat": 1.58, "shimmer": 0.52, "pulse": 0.072, "speed": 2.15},
-	"lava": {"contrast": 1.34, "sat": 1.52, "shimmer": 0.58, "pulse": 0.095, "speed": 2.7},
+	"ground": {"contrast": 1.10, "sat": 1.12, "shimmer": 0.10, "pulse": 0.02, "speed": 0.7},
+	"mud": {"contrast": 1.08, "sat": 1.08, "shimmer": 0.04, "pulse": 0.014, "speed": 0.45},
+	"water": {"contrast": 1.12, "sat": 1.14, "shimmer": 0.28, "pulse": 0.04, "speed": 1.4},
+	"lava": {"contrast": 1.14, "sat": 1.16, "shimmer": 0.32, "pulse": 0.055, "speed": 1.7},
 }
 ## Warm ink plus a parchment gleam. Drawn on a child so the grade shader does not wash the grid.
 const GRID_INK := Color(0.1, 0.07, 0.05, 0.88)
@@ -78,10 +78,10 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 1.45, "mud": 0.8, "water": 1.25, "lava": 1.0},
 	},
 	"stormspire": {
-		"grade": Color(1.0, 0.92, 1.08),
-		"shimmer_color": Color(0.88, 0.8, 0.96),
-		"light": Color(0.78, 0.72, 0.9),
-		"mote": Color(0.78, 0.7, 0.9, 0.5),
+		"grade": Color(0.90, 0.92, 0.98),
+		"shimmer_color": Color(0.86, 0.88, 0.92),
+		"light": Color(0.78, 0.80, 0.86),
+		"mote": Color(0.75, 0.78, 0.84, 0.45),
 		"direction": Vector2(0.35, -0.55),
 		"gravity": Vector2(-4.0, -6.0),
 		"spread": 78.0,

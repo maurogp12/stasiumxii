@@ -39,6 +39,20 @@ The body now fades on the cast cell, snaps, and holds on the back tile before th
 
 Headless Godot 4.7.2, 0 failed: combat 4608, motion 1891, VFX 472.
 
+## 2026-09-26 — Original isometric tileset on the Koliseo boards
+
+The five Locked arenas paint slices of `art/tilesets/original/original-tileset-b.jpg`. Phone tap diamonds, zoom, and planted walks are unchanged. Tags, geometry, and combat numbers are unchanged.
+
+| Arena | Pack | Atlas |
+| --- | --- | --- |
+| Crosshaven | grassland | `ground.png`, `mud.png`, `water.png`, grass cliffs |
+| Brinewake | coast | `brine_*` cobble, deep water, stone cliffs |
+| Slagcrown | lava | `slag_*` cracked earth, `slag_lava.png`, dark rock |
+| Windmere | pale stone | `wind_*` until `art/tilesets/original/pending/ice/` |
+| Stormspire | dark stone | `storm_*` until `art/tilesets/original/pending/electric/` |
+
+Ice and electric sheets are not in this pass. See `art/tilesets/original/THEMES.md`.
+
 ## 2026-09-26 — Phone combat framing and planted walks
 
 Luca's 0.1.20 Gloam ambush clip. No APK cut. Locked kit numbers unchanged. Map layouts, tags, and room shapes unchanged.

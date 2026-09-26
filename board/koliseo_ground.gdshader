@@ -1,7 +1,7 @@
 shader_type canvas_item;
 
-// View grade for the Locked Koliseo diamonds. Sharpens the existing paint,
-// lifts a north facet and a warm edge, and keeps the sheet's hue.
+// View grade for the Locked Koliseo diamonds. A light touch on the
+// original sheet: a little contrast, a soft north facet, the sheet's hue.
 // Water and lava breathe in brightness. A glass color wash is not applied.
 // No gameplay data.
 
@@ -25,7 +25,7 @@ void fragment() {
 		+ texture(TEXTURE, UV + vec2(px.x, 0.0)).rgb
 		+ texture(TEXTURE, UV + vec2(-px.x, 0.0)).rgb
 	) * 0.25;
-	vec3 sharp = tex.rgb + (tex.rgb - blur) * 0.9;
+	vec3 sharp = tex.rgb + (tex.rgb - blur) * 0.35;
 	sharp *= COLOR.rgb;
 	float luma = dot(sharp, vec3(0.299, 0.587, 0.114));
 	vec3 sat = mix(vec3(luma), sharp, sat_boost);
@@ -34,7 +34,7 @@ void fragment() {
 	// North facet catches the sun. South facet sits in warm shade.
 	// This is a light, not a recolor.
 	float face = smoothstep(0.82, 0.08, UV.y);
-	sat *= mix(0.74, 1.16, face);
+	sat *= mix(0.90, 1.06, face);
 	float diamond = abs(UV.x - 0.5) * 2.0 + abs(UV.y - 0.5) * 2.0;
 	float lip = smoothstep(0.72, 0.96, diamond) * smoothstep(0.58, 0.22, UV.y);
 	sat += vec3(0.09, 0.07, 0.035) * lip * tex.a;

@@ -57,7 +57,7 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var points := _diamond_points()
-	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
+	var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
 	if tex == null:
 		draw_colored_polygon(points, fill_color())
 		var outline := PackedVector2Array(points)

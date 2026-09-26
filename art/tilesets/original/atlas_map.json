@@ -1,0 +1,881 @@
+{
+  "source_sheets": [
+    "original-tileset-a.jpg",
+    "original-tileset-b.jpg"
+  ],
+  "sliced_from": "original-tileset-b.jpg",
+  "grid": [
+    64,
+    32
+  ],
+  "families": {
+    "crosshaven": {
+      "pack": "grassland",
+      "prefix": "",
+      "pending_theme": null
+    },
+    "brinewake": {
+      "pack": "coast",
+      "prefix": "brine_",
+      "pending_theme": null
+    },
+    "slagcrown": {
+      "pack": "lava",
+      "prefix": "slag_",
+      "pending_theme": null
+    },
+    "windmere": {
+      "pack": "pale_stone",
+      "prefix": "wind_",
+      "pending_theme": "ice"
+    },
+    "stormspire": {
+      "pack": "dark_stone",
+      "prefix": "storm_",
+      "pending_theme": "electric"
+    }
+  },
+  "pending": {
+    "ice": "pending/ice/",
+    "electric": "pending/electric/"
+  },
+  "files": [
+    {
+      "file": "ground.png",
+      "anchor": [
+        16,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v1.png",
+      "anchor": [
+        16,
+        112
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v2.png",
+      "anchor": [
+        220,
+        112
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v3.png",
+      "anchor": [
+        15,
+        189
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_v4.png",
+      "anchor": [
+        218,
+        188
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "mud.png",
+      "anchor": [
+        318,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "mud_v1.png",
+      "anchor": [
+        117,
+        188
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "water.png",
+      "anchor": [
+        1257,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "water_v1.png",
+      "anchor": [
+        1361,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "water_v2.png",
+      "anchor": [
+        1152,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "lava.png",
+      "anchor": [
+        1045,
+        192
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "lava_v1.png",
+      "anchor": [
+        1153,
+        193
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "ground_e1.png",
+      "anchor": [
+        16,
+        350
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        49
+      ]
+    },
+    {
+      "file": "ground_e2.png",
+      "anchor": [
+        395,
+        319
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        78
+      ]
+    },
+    {
+      "file": "mud_e1.png",
+      "anchor": [
+        16,
+        350
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        49
+      ]
+    },
+    {
+      "file": "brine_ground.png",
+      "anchor": [
+        317,
+        112
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_ground_v1.png",
+      "anchor": [
+        315,
+        187
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_mud.png",
+      "anchor": [
+        318,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_mud_v1.png",
+      "anchor": [
+        117,
+        188
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_water.png",
+      "anchor": [
+        1361,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_water_v1.png",
+      "anchor": [
+        1257,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "brine_ground_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "brine_ground_e2.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "brine_mud_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "slag_ground.png",
+      "anchor": [
+        416,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_ground_v1.png",
+      "anchor": [
+        1359,
+        192
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_mud.png",
+      "anchor": [
+        416,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_water.png",
+      "anchor": [
+        1361,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_lava.png",
+      "anchor": [
+        1045,
+        192
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_lava_v1.png",
+      "anchor": [
+        1153,
+        193
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "slag_ground_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "slag_ground_e2.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "slag_mud_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "wind_ground.png",
+      "anchor": [
+        315,
+        187
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_v1.png",
+      "anchor": [
+        317,
+        112
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_mud.png",
+      "anchor": [
+        318,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_water.png",
+      "anchor": [
+        1152,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_water_v1.png",
+      "anchor": [
+        1257,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "wind_ground_e2.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "wind_mud_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "storm_ground.png",
+      "anchor": [
+        1359,
+        192
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v1.png",
+      "anchor": [
+        416,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud.png",
+      "anchor": [
+        416,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water.png",
+      "anchor": [
+        1361,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water_v1.png",
+      "anchor": [
+        1257,
+        48
+      ],
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "storm_ground_e2.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "storm_mud_e1.png",
+      "anchor": [
+        310,
+        345
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        75
+      ]
+    },
+    {
+      "file": "void.png",
+      "anchor": null,
+      "fit": "empty",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "prop_ruins.png",
+      "anchor": [
+        531,
+        438
+      ],
+      "fit": "prop",
+      "size": [
+        50,
+        83
+      ]
+    },
+    {
+      "file": "prop_well.png",
+      "anchor": [
+        1161,
+        750
+      ],
+      "fit": "prop",
+      "size": [
+        63,
+        62
+      ]
+    },
+    {
+      "file": "prop_hay.png",
+      "anchor": [
+        411,
+        796
+      ],
+      "fit": "prop",
+      "size": [
+        60,
+        50
+      ]
+    },
+    {
+      "file": "prop_fence.png",
+      "anchor": [
+        1194,
+        641
+      ],
+      "fit": "prop",
+      "size": [
+        50,
+        62
+      ]
+    },
+    {
+      "file": "prop_rubble.png",
+      "anchor": [
+        712,
+        638
+      ],
+      "fit": "prop",
+      "size": [
+        90,
+        82
+      ]
+    },
+    {
+      "file": "prop_rock_pillar.png",
+      "anchor": [
+        1336,
+        732
+      ],
+      "fit": "prop",
+      "size": [
+        36,
+        77
+      ]
+    },
+    {
+      "file": "prop_floor_seal.png",
+      "anchor": [
+        315,
+        187
+      ],
+      "fit": "flat_prop",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "prop_driftwood.png",
+      "anchor": [
+        291,
+        896
+      ],
+      "fit": "prop",
+      "size": [
+        75,
+        55
+      ]
+    },
+    {
+      "file": "prop_waterfall.png",
+      "anchor": [
+        514,
+        752
+      ],
+      "fit": "prop",
+      "size": [
+        81,
+        122
+      ]
+    },
+    {
+      "file": "prop_rock_cluster.png",
+      "anchor": [
+        605,
+        650
+      ],
+      "fit": "prop",
+      "size": [
+        68,
+        60
+      ]
+    },
+    {
+      "file": "prop_basalt_pillar.png",
+      "anchor": [
+        637,
+        773
+      ],
+      "fit": "prop",
+      "size": [
+        70,
+        113
+      ]
+    },
+    {
+      "file": "prop_steam_vent.png",
+      "anchor": [
+        979,
+        739
+      ],
+      "fit": "prop",
+      "size": [
+        42,
+        48
+      ]
+    },
+    {
+      "file": "prop_ash_rock.png",
+      "anchor": [
+        521,
+        657
+      ],
+      "fit": "prop",
+      "size": [
+        55,
+        50
+      ]
+    },
+    {
+      "file": "prop_crystal.png",
+      "anchor": [
+        865,
+        772
+      ],
+      "fit": "prop",
+      "size": [
+        64,
+        114
+      ]
+    },
+    {
+      "file": "prop_ice_shard.png",
+      "anchor": [
+        1462,
+        147
+      ],
+      "fit": "prop",
+      "size": [
+        43,
+        59
+      ]
+    },
+    {
+      "file": "prop_ice_sheet.png",
+      "anchor": [
+        315,
+        187
+      ],
+      "fit": "flat_prop",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "prop_spark.png",
+      "anchor": [
+        19,
+        905
+      ],
+      "fit": "prop",
+      "size": [
+        46,
+        38
+      ]
+    },
+    {
+      "file": "prop_conduit.png",
+      "anchor": [
+        1336,
+        732
+      ],
+      "fit": "prop",
+      "size": [
+        36,
+        77
+      ]
+    },
+    {
+      "file": "prop_crystal_bolt.png",
+      "anchor": [
+        1029,
+        828
+      ],
+      "fit": "prop",
+      "size": [
+        28,
+        70
+      ]
+    },
+    {
+      "file": "prop_arc.png",
+      "anchor": [
+        937,
+        316
+      ],
+      "fit": "prop",
+      "size": [
+        41,
+        81
+      ]
+    }
+  ]
+}

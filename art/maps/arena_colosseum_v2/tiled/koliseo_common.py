@@ -13,6 +13,16 @@ from PIL import Image, ImageDraw, ImageFont
 ROOT = Path(__file__).resolve().parent
 TILES = ROOT / "tiles"
 TILE_W, TILE_H = 64, 32
+# Original isometric sheet. The dress painter must not overwrite those slices.
+_ORIGINAL_ATLAS = ROOT.parents[2] / "tilesets" / "original" / "atlas_map.json"
+
+
+def _save_tile(img: Image.Image, path: Path) -> Image.Image:
+    if _ORIGINAL_ATLAS.is_file() and path.exists():
+        return Image.open(path).convert("RGBA")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path)
+    return img
 
 # Crosshaven / base warm palette (GIDs 0.. must stay stable)
 BASE_C = {
@@ -611,7 +621,7 @@ def _append_terrain(catalog, prefix: str, C, include_lava=True):
         img = make_terrain_tile(base, fill, hi, lo, edge, elev=elev, C=C)
         img = _paint_and_downscale(img, ow, oh + elev * 8)
         path = TILES / f"{tile_name}.png"
-        img.save(path)
+        img = _save_tile(img, path)
         catalog.append(
             {
                 "file": f"tiles/{tile_name}.png",
@@ -642,7 +652,7 @@ def generate_full_catalog():
         img = make_terrain_tile(base, fill, hi, lo, edge, elev=elev, C=BASE_C)
         img = _paint_and_downscale(img, ow, oh + elev * 8)
         path = TILES / f"{name}.png"
-        img.save(path)
+        img = _save_tile(img, path)
         catalog.append(
             {
                 "file": f"tiles/{name}.png",
@@ -658,7 +668,7 @@ def generate_full_catalog():
         img = make_prop_tile(p, BASE_C)
         img = _paint_and_downscale(img, ow, max(48, img.height // 2))
         path = TILES / f"prop_{p}.png"
-        img.save(path)
+        img = _save_tile(img, path)
         catalog.append(
             {
                 "file": f"tiles/prop_{p}.png",
@@ -678,7 +688,7 @@ def generate_full_catalog():
             img = make_prop_tile(p, RC)
             img = _paint_and_downscale(img, ow, max(48, img.height // 2))
             path = TILES / f"prop_{p}.png"
-            img.save(path)
+            img = _save_tile(img, path)
             catalog.append(
                 {
                     "file": f"tiles/prop_{p}.png",
@@ -705,7 +715,7 @@ def generate_full_catalog():
         img = make_prop_tile(p, STORM_C)
         img = _paint_and_downscale(img, ow, max(48, img.height // 2))
         path = TILES / f"prop_{p}.png"
-        img.save(path)
+        img = _save_tile(img, path)
         catalog.append(
             {
                 "file": f"tiles/prop_{p}.png",

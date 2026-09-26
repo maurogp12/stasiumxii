@@ -13,7 +13,7 @@ Combat authority is the tags JSON. The sibling `.tmx` is isometric art.
 
 Built for Mauro · Sep 24 2026 (ET). Ship size **15×15** for all five arenas.
 
-**Tiles:** painted dress **v1** (Dofus/Wakfu isometric vibes — warm Crosshaven golds/greens, mud brown, water teal; region tints for Brinewake / Slagcrown / Windmere / Stormspire). Replaces flat placeholder diamonds; terrain/elev tags unchanged. Crosshaven shell composite: `crosshaven_15x15_painted_preview.png`.
+**Tiles:** slices of the original isometric sheets in `art/tilesets/original/` (64×32 diamonds). Crosshaven is grassland. Brinewake is coast stone. Slagcrown is lava. Windmere is pale stone until the ice sheet lands. Stormspire is dark stone until the electric sheet lands. See `art/tilesets/original/THEMES.md`. Terrain/elev tags unchanged.
 
 ## Orientation (locked)
 
