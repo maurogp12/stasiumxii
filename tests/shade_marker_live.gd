@@ -270,7 +270,8 @@ static func run(host: SceneTree) -> void:
 	var early_toast := false
 	var early_strike := false
 	var early_attack := false
-	var solid_while_hidden := false
+	var solid_on_cast := false
+	var saw_plant := false
 	for _i in 90:
 		await host.process_frame
 		var on_back: bool = (
@@ -306,10 +307,15 @@ static func run(host: SceneTree) -> void:
 			early_strike = true
 		if not on_back_facing and _attack_strip_visible(submit_pawn):
 			early_attack = true
-		if sprite != null and sprite.modulate.a > 0.15:
-			solid_while_hidden = true
-		if body != null and body.visible and body.modulate.a > 0.15:
-			solid_while_hidden = true
+		var shown_alpha := 0.0
+		if sprite != null:
+			shown_alpha = maxf(shown_alpha, sprite.modulate.a)
+		if body != null and body.visible:
+			shown_alpha = maxf(shown_alpha, body.modulate.a)
+		if submit_pawn.grid_position == submit_from and shown_alpha > 0.15:
+			solid_on_cast = true
+		if on_back_facing and shown_alpha > 0.15 and offset < 8.0:
+			saw_plant = true
 		if saw_hold and offset > 10.0:
 			break
 		if not bool(board.get("_view_locked")) and saw_hold:
@@ -325,7 +331,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(early_toast, false, "Invisible Ambush does not toast before the back-tile face")
 	host.eq(early_strike, false, "Invisible Ambush does not stamp the slash or float damage before the back-tile face")
 	host.eq(early_attack, false, "Invisible Ambush does not play the strike strip before the back-tile face")
-	host.eq(solid_while_hidden, false, "Invisible Ambush does not flash a solid body")
+	host.eq(solid_on_cast, false, "Invisible Ambush does not flash a solid body on the cast cell")
+	host.eq(saw_plant, true, "Invisible Ambush is visible on the back tile before the slash")
 	host.eq(submit_pawn.position.distance_to(board._cell_to_local(submit_back)) <= 1.0, true, "damage lands only after the sprite is on the back tile")
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
 	host.eq(submit_pawn.facing, "E", "submit-path contact faces Kestrel")

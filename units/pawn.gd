@@ -69,6 +69,8 @@ var _idle_hold: bool = false
 var _motion_gen: int = 0
 ## Bumped when the collapse must stop. A late sample cannot hide the arrival.
 var _ambush_collapse_gen: int = 0
+## Invisible Ambush shows the body only after the back-tile plant.
+var _ambush_strike_visible: bool = false
 ## True only while the collapse tween is the action holding the motion lock.
 var _collapse_holds_motion: bool = false
 ## Pre-strike vitals. A snapshot during the collapse must not paint the hit early.
@@ -397,10 +399,9 @@ func sync_walk_plant() -> void:
 	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
-	if not _play_walk_flat():
-		return
+	_play_walk_flat()
 	var strip := _active_strip
-	if strip == null or not is_instance_valid(strip):
+	if strip == null or not is_instance_valid(strip) or not strip.visible:
 		return
 	if _driven_open:
 		_driven_step += 1
@@ -737,6 +738,7 @@ func release_idle() -> void:
 
 
 func settle_motion() -> void:
+	_ambush_strike_visible = false
 	_collapse_holds_motion = false
 	var died := _plan_died
 	_plan_died = false
@@ -802,9 +804,26 @@ func rest_modulate() -> Color:
 	if not alive:
 		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
 	# Locked Fade: do not draw a solid body while Invisible, including the walk.
-	if invisible:
+	# The Ambush plant is the exception, and only after the back-tile snap.
+	if invisible and not _ambush_strike_visible:
 		return Color(1, 1, 1, 0)
 	return Color.WHITE
+
+
+## Reveal Gloam on the back tile. The cast cell stays hidden.
+func show_ambush_plant() -> void:
+	if not invisible:
+		return
+	_ambush_strike_visible = true
+	_apply_rest_color()
+
+
+func _apply_rest_color() -> void:
+	var color := rest_modulate()
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.modulate = color
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.modulate = color
 
 
 func note_flash_settled() -> void:
@@ -993,6 +1012,14 @@ func _sync_sprite() -> void:
 	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
+	# A driven step owns the frame. Replanting idle here freezes the cycle on
+	# frame 0 and the pawn skates the static plant across the diamond.
+	if _driven_walk and _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
+		_sprite.visible = false
+		if not _flashing:
+			_active_strip.modulate = _sprite.modulate
+		_request_paint()
+		return
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
 		_sprite.visible = false
 		if not _flashing:
@@ -1043,10 +1070,12 @@ func _on_action_finished(gen: int) -> void:
 		return
 	_motion_playing = false
 	_action_tween = null
+	_ambush_strike_visible = false
 	if _plan_died or not alive:
 		_apply_downed_pose()
 		return
 	_plant_sprite()
+	_apply_rest_color()
 
 
 func _sample_hop(t: float) -> void:
@@ -1649,18 +1678,26 @@ func _play_walk_flat() -> bool:
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
-	if not strip.is_playing():
-		strip.visible = false
-		_show_rest_or_static()
-		return false
 	_active_strip = strip
 	_strip_holds_body = true
-	_walk_idle_plant = false
 	_walk_looping = true
-	_motion_playing = true
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.modulate = _sprite.modulate
 		_sprite.visible = false
+	# A clock that does not start is still the walk sheet. Hiding it uncovered
+	# the static portrait and the step read as a slide. Callers that require a
+	# running clock still see false; the driven step samples this strip anyway.
+	if not strip.is_playing():
+		strip.pause()
+		strip.speed_scale = 0.0
+		if strip.sprite_frames != null and strip.sprite_frames.has_animation(anim) and strip.sprite_frames.get_frame_count(anim) > 0:
+			strip.frame = 0
+			strip.frame_progress = 0.0
+		_walk_idle_plant = true
+		_flatten_body()
+		return false
+	_walk_idle_plant = false
+	_motion_playing = true
 	_flatten_body()
 	return true
 

@@ -174,6 +174,11 @@ static func run(host: SceneTree) -> void:
 	host.eq(miss_pawn.grid_position, cast_cell, "Ambush miss does not leave the cast cell")
 	host.eq(int(board.get("_ambush_open_seat")), -1, "Ambush miss does not open the arrival hold")
 	host.eq(int(board.pawns_by_seat[1].hp), hp_before, "Ambush miss deals no damage")
+	for _miss_frame in 8:
+		await host.process_frame
+	host.eq(miss_pawn.grid_position, cast_cell, "Ambush miss still has not relocated")
+	host.eq(int(board.pawns_by_seat[1].hp), hp_before, "Ambush miss still deals no damage")
+	host.eq(_ambush_strike_live(board), false, "Ambush miss does not slash or float damage from the cast cell")
 	main.queue_free()
 	await host.process_frame
 

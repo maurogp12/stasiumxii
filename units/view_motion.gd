@@ -411,8 +411,8 @@ const FACING_SCREEN := {
 }
 ## Share the hop's press and settle so the foot is down while travel is held.
 ## The open window is the stride. Contact frames belong on either side of it.
-const STEP_PRESS_END := 0.16
-const STEP_SETTLE_START := 0.70
+const STEP_PRESS_END := 0.12
+const STEP_SETTLE_START := 0.78
 ## How far the body reaches along the facing while the foot is between cells.
 ## Short of one iso step (about 36px) so the lead is a stride, not a hop.
 const STRIDE_LEAD_PX := 10.0

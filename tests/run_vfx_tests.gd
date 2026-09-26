@@ -340,6 +340,23 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	eq(_first(ambush_miss, "projectile")["to"], Vector2i(4, 3), "an Ambush miss whiff points at the enemy")
 	eq(float(_first(ambush_miss, "projectile").get("overshoot", 1.0)), 0.0, "an Ambush miss does not overshoot into a dash")
 	eq(float(_first(ambush_miss, "projectile").get("arc", 1.0)), 0.0, "an Ambush miss whiff is not an arcing body path")
+	var invisible_miss: Array = ROUTER.recipes_for([{
+		"type": "miss",
+		"spell": "ambush",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": Vector2i(12, 5),
+		"to": Vector2i(14, 2),
+		"origin": Vector2i(12, 5),
+		"teleported": false,
+		"damage": 0,
+	}])
+	eq(_has(invisible_miss, "projectile"), false, "Invisible Ambush miss does not slash from the caster toward the enemy")
+	eq(_has(invisible_miss, "stamp"), false, "Invisible Ambush miss does not stamp a slash")
+	eq(_has(invisible_miss, "slide"), false, "Invisible Ambush miss does not move")
+	eq(_first(invisible_miss, "number")["text"], "MISS", "Invisible Ambush miss still reads MISS")
+	eq(_first(invisible_miss, "number")["cell"], Vector2i(12, 5), "Invisible Ambush miss stays on the caster tile")
+	eq(_first(invisible_miss, "puff")["cell"], Vector2i(12, 5), "Invisible Ambush miss chrome is the caster tile")
 	var intercept: Array = ROUTER.recipes_for([{
 		"type": "intercept",
 		"interceptor_seat": 0,

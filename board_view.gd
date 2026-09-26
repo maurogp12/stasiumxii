@@ -939,7 +939,13 @@ func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> voi
 		return
 	# Plant, then face, before any slash or damage float. A miss never arrives.
 	# The collapse tween is the caller. Leave it; it has already finished.
+	# Invisible stays hidden on the cast cell. The body is shown only once it
+	# is standing on the back tile, so the slash cannot read as a remote hit.
 	_plant_ambush_body(event)
+	if _ambush_body_landed(event) and pawns_by_seat.has(int(event.get("seat", -1))):
+		var arrived: Pawn = pawns_by_seat[int(event.get("seat", -1))]
+		if arrived != null and is_instance_valid(arrived):
+			arrived.show_ambush_plant()
 	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
 	if hold <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_ambush_arrival_tween = null
