@@ -47,7 +47,8 @@ extends Node2D
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 ## Mobile-track chrome. A walk plants the foot, then strides to the next cell
-## in about 0.30s. The sprite root takes the step bounce. Advance stays a snap.
+## in about 0.30s. The sprite root takes the hop and the plant squash. A 180
+## turns while planted. Straight tiles do not settle. Advance stays a snap.
 ## Phone framing shows most of the diamond. Desktop fit stays.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
@@ -1314,19 +1315,31 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		if dir == "":
 			dir = grid_dir
 		var facing_changed := dir != "" and dir != visual
-		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
+		# 180 is plant, then the new facing, then the settle, then the tile.
+		# The turn happens while the foot is still on the cell. No side facing.
+		var about := VIEW_MOTION.is_about_face(visual, dir)
+		var turn := facing_changed or cell_i == 0 or about
+		if turn:
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
 		if not walk_armed:
 			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
 			walk_armed = true
-		if VIEW_MOTION.anticipate_segment(cell_i, facing_changed):
+		if VIEW_MOTION.anticipate_segment(cell_i, facing_changed) or about:
 			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, VIEW_MOTION.STEP_SETTLE_SEC)
 		if dir != "":
 			visual = dir
-		_walk_tween.tween_callback(_sync_step_plant.bind(pawn))
+		if turn:
+			_walk_tween.tween_callback(_sync_step_plant.bind(pawn))
+		else:
+			# Straight seam. Cubic continues. The strip stays on the contact.
+			_walk_tween.tween_callback(_bridge_straight_tile.bind(pawn))
 		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell, dust))
 		prev = cell
+	# Landed contact, then one readable idle before the face pad unlocks.
+	_walk_tween.tween_callback(_hold_stop_plant.bind(pawn))
+	_walk_tween.tween_interval(VIEW_MOTION.STOP_IDLE_SEC)
 	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
 		var last: Vector2i = cells[cells.size() - 1]
@@ -1349,6 +1362,18 @@ func _seat_facing(seat: int) -> String:
 		if int(unit.get("seat", -2)) == seat:
 			return str(unit.get("facing", ""))
 	return ""
+
+
+func _bridge_straight_tile(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.bridge_straight_tile()
+
+
+func _hold_stop_plant(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.hold_stop_plant()
 
 
 func _sync_step_plant(pawn: Pawn) -> void:

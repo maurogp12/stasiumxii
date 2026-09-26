@@ -22,6 +22,7 @@ func _finish_live() -> void:
 	await _test_strip_fallback()
 	await _test_failed_strip_falls_back_to_hop()
 	await _test_driven_walk_cycle()
+	await _test_class_plant_anchor()
 	await _test_walk_idle_matches_strip()
 	await _test_live_walk_keeps_sheet()
 	await _test_batch1_disk_strips()
@@ -144,6 +145,26 @@ func _test_curves_return_to_origin() -> void:
 	eq(is_equal_approx(MOTION.step_travel(0.5), 0.5), false, "mid-tile travel is eased, not a raw lerp")
 	eq(is_equal_approx(MOTION.step_travel(0.2), 0.2), false, "early travel is not a linear skate")
 	eq(MOTION.HOP_PX <= 4.0, true, "the body rise stays a short hop, not a long arc")
+	eq(MOTION.hop_crest_px("bastion") >= 2.0 and MOTION.hop_crest_px("bastion") <= 3.0, true, "bastion crest stays in the heavy band")
+	eq(MOTION.hop_crest_px("ironjaw") >= 2.0 and MOTION.hop_crest_px("ironjaw") <= 3.0, true, "ironjaw crest stays in the heavy band")
+	eq(MOTION.hop_crest_px("kestrel") >= 3.0 and MOTION.hop_crest_px("kestrel") <= 4.0, true, "kestrel crest stays in the light band")
+	eq(MOTION.hop_crest_px("gloam") >= 3.0 and MOTION.hop_crest_px("gloam") <= 4.0, true, "gloam crest stays in the light band")
+	eq(is_equal_approx(MOTION.hop_crest_px("mender"), MOTION.HOP_PX), true, "mender keeps the shared crest")
+	eq(is_equal_approx(MOTION.hop_offset(0.5, MOTION.hop_crest_px("ironjaw")).y, -MOTION.hop_crest_px("ironjaw")), true, "ironjaw crest is the heavy hop")
+	eq(MOTION.hop_offset(0.5, 9.0).y >= -4.0, true, "a crest above 4px clamps")
+	eq(MOTION.hop_offset(0.5, 9.0).y <= -4.0 + 0.001, true, "the clamp still reaches the cap")
+	eq(MOTION.plant_scale(0.5), Vector2.ONE, "mid-hop does not squash")
+	eq(MOTION.plant_scale(0.0), Vector2.ONE, "departure is already released")
+	eq(MOTION.plant_scale(1.0), Vector2.ONE, "the plant releases to rest scale")
+	var landed_scale: Vector2 = MOTION.plant_scale(MOTION.HOP_PLANT_AT)
+	eq(is_equal_approx(landed_scale.y, MOTION.PLANT_SQUASH_Y), true, "the plant squashes Y to about 0.96")
+	eq(is_equal_approx(landed_scale.x, 1.0), true, "the plant does not widen")
+	var mid_plant: Vector2 = MOTION.plant_scale((MOTION.HOP_PLANT_AT + 1.0) * 0.5)
+	eq(mid_plant.y > MOTION.PLANT_SQUASH_Y and mid_plant.y < 1.0, true, "the squash releases across the plant")
+	var plant_sec := Pawn.WALK_TILE_SEC * (1.0 - MOTION.HOP_PLANT_AT)
+	eq(plant_sec >= 0.04 and plant_sec <= 0.06, true, "plant squash releases in 40-60ms without stretching the tile")
+	eq(MOTION.STOP_IDLE_SEC >= 0.05, true, "path end holds at least one readable idle frame")
+	eq(MOTION.STOP_IDLE_SEC <= 0.16, true, "the stop idle stays a short read")
 	eq(MOTION.walk_cycle_frame(0.0, 6, 0), 0, "a step starts on the contact frame")
 	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != 0, true, "the stride leaves the idle frame")
 	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != MOTION.walk_cycle_frame(1.0, 6, 0), true, "arrival is not the passing frame")
@@ -158,6 +179,21 @@ func _test_curves_return_to_origin() -> void:
 		var open_frame := MOTION.walk_cycle_frame(step_t, 6, 0)
 		eq(MOTION.step_travel(step_t) > 0.0 and MOTION.step_travel(step_t) < 1.0, true, "the stride is between the plants")
 		eq(open_frame != 0 and open_frame != MOTION.walk_cycle_frame(1.0, 6, 0), true, "a moving foot does not show a contact frame")
+	for hop_i in 21:
+		var hop_t := float(hop_i) / 20.0
+		var moving := MOTION.hop_offset(hop_t).y < -0.001
+		var shown := MOTION.walk_cycle_frame(hop_t, 6, 0)
+		if moving:
+			eq(shown != 0, true, "a moving hop does not idle on the contact frame")
+		else:
+			eq(shown, 0, "hop Y=0 shows the contact frame")
+	eq(StripLibrary.contact_index_from_metrics([140, 150, 148], [120, 100, 110]), 1, "a lifted frame 0 retargets to the planted row")
+	eq(StripLibrary.contact_index_from_metrics([150, 145, 150], [90, 110, 90]), 0, "frame 0 stays when it shares the planted row")
+	eq(MOTION.walk_cycle_frame(0.0, 6, 0, 2), 2, "a retargeted contact shows at the departure")
+	eq(MOTION.walk_cycle_frame(1.0, 6, 0, 2), 2, "arrival holds the retargeted contact")
+	eq(MOTION.walk_cycle_frame(0.5, 6, 0, 2) != 2, true, "the stride leaves the retargeted contact")
+	eq(_cycle_visits_contact(6, 0), true, "a six-frame cycle shows contact only on the plant")
+	eq(_cycle_visits_contact(6, 2), true, "a retargeted cycle still visits every cell once")
 	eq(MOTION.stride_lead(0.0, Vector2(20, 10)), Vector2.ZERO, "the hop does not lean off the cell")
 	eq(MOTION.stride_lead(0.5, Vector2(20, 10)), Vector2.ZERO, "horizontal travel stays on the foot")
 	eq(MOTION.stride_lead(1.0, Vector2(20, 10)), Vector2.ZERO, "arrival does not leave a lead")
@@ -233,12 +269,17 @@ func _test_curves_return_to_origin() -> void:
 	eq(is_equal_approx((pointed["pos"] as Vector2).y, -MOTION.CAST_RISE_PX), true, "the point keeps the rise")
 	var turned: Array = MOTION.facing_turn("E", "S")
 	eq(turned.size(), 2, "a 90 degree turn is two frames")
+	eq(str(turned[0]), "S", "a quarter turn snaps to the new facing")
 	eq(str(turned[1]), "S", "the turn ends on the new facing")
 	eq(MOTION.facing_turn("E", "E").is_empty(), true, "a matching facing does not turn")
 	var about: Array = MOTION.facing_turn("E", "W")
-	eq(about.size(), 2, "a 180 degree turn steps through a side facing")
-	eq(str(about[0]) != "E" and str(about[0]) != "W", true, "the 180 turn shows an intermediate facing")
+	eq(about.size(), 2, "a 180 holds the new facing")
+	eq(str(about[0]), "W", "a 180 does not show a side facing")
 	eq(str(about[1]), "W", "the 180 turn lands on the destination facing")
+	eq(MOTION.is_about_face("E", "W"), true, "east to west is an about-face")
+	eq(MOTION.is_about_face("N", "S"), true, "north to south is an about-face")
+	eq(MOTION.is_about_face("E", "S"), false, "a quarter turn is not an about-face")
+	eq(MOTION.is_about_face("E", "E"), false, "a matching facing is not an about-face")
 	var crest_scale: Vector2 = MOTION.fallback_hop_scale(0.45)
 	eq(crest_scale.y > 1.0, true, "a missing walk strip stretches at the crest")
 	eq(crest_scale.x < 1.0, true, "a missing walk strip narrows at the crest")
@@ -524,7 +565,7 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.position, Vector2.ZERO, "snapshot leaves the sprite on the origin")
 	eq(sprite.scale, Vector2(0.5, 0.5), "snapshot leaves the shipped scale")
 	pawn._sample_hop(0.5)
-	eq(sprite.position.y, -MOTION.HOP_PX, "pawn applies the bounce on the sprite")
+	eq(sprite.position.y, -MOTION.hop_crest_px("kestrel"), "pawn applies the class hop on the sprite")
 	eq(sprite.scale, Vector2(0.5, 0.5), "step bounce does not squash or stretch")
 	var chrome := pawn.get_node("Chrome") as Node2D
 	eq(chrome.get_parent(), pawn, "name chrome stays on the pawn during a bounce")
@@ -737,6 +778,10 @@ func _test_view_wiring() -> void:
 	eq(anti_call >= 0 and sample_at > anti_call, true, "the weight shift runs before the tile tween")
 	truthy(anim_src.contains("dust_on_plant"), "dust is chosen per plant, not on every tile")
 	truthy(anim_src.contains("anticipate_segment"), "only the first tile and direction changes settle")
+	truthy(anim_src.contains("is_about_face"), "a 180 is planted before the next tile")
+	truthy(anim_src.contains("_bridge_straight_tile"), "straight tiles bridge without an extra settle")
+	truthy(anim_src.contains("STOP_IDLE_SEC"), "path end holds a readable idle before the face pad")
+	eq(anim_src.contains("facing_turn("), false, "the walk does not spin through a side facing")
 	truthy(anim_src.contains("origin"), "the hop starts on the departure tile, not the snapped dest")
 	truthy(pawn_src.contains("WalkStrip"), "a walk strip node can drive the hop")
 	truthy(pawn_src.contains("walk_e"), "lettered walk_e is the export_2x clip name")
@@ -1275,16 +1320,23 @@ func _test_driven_walk_cycle() -> void:
 	# No process tick. A clock that never moves must still fail this.
 	pawn.sample_driven_gait(0.5)
 	eq(strip.frame == plant, false, "a driven stride leaves the idle frame")
-	eq(strip.frame, MOTION.walk_cycle_frame(0.5, count, 0), "the stride shows that walk-cycle frame")
-	var stride_body := MOTION.hop_offset(0.5)
+	eq(strip.frame, MOTION.walk_cycle_frame(0.5, count, 0, pawn.walk_contact_frame()), "the stride shows that walk-cycle frame")
+	var passing := strip.frame
+	var stride_body := MOTION.hop_offset(0.5, MOTION.hop_crest_px("kestrel"))
 	eq(strip.position, stride_body, "the hop is a sprite offset, not a foot lead")
-	eq(stride_body.y < -1.0 and stride_body.x == 0.0, true, "the stride rises a few pixels and does not slide sideways")
+	eq(stride_body.y <= -3.0 and stride_body.y >= -4.0 and stride_body.x == 0.0, true, "kestrel rises in the light crest band")
+	eq(is_equal_approx(strip.scale.y, Pawn.sprite_scale_for("kestrel").y), true, "mid-hop does not squash the sprite")
+	pawn.sample_driven_gait(0.9)
+	eq(strip.position, Vector2.ZERO, "the plant hold puts the sprite back on the foot")
+	eq(strip.scale.y < Pawn.sprite_scale_for("kestrel").y, true, "the plant squashes the sprite child")
+	eq(is_equal_approx(strip.scale.x, Pawn.sprite_scale_for("kestrel").x), true, "the plant squash does not widen")
+	eq(pawn.scale, Vector2.ONE, "the plant squash does not scale the pawn")
+	eq(foot.position, Vector2.ZERO, "the plant squash leaves the foot on the diamond")
 	eq(foot.position, Vector2.ZERO, "the ground mark stays on the floor while the body walks")
 	eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "the hop does not lift name or aim chrome")
 	eq(pawn.position, Vector2(48, 16), "the gait does not lift the foot off the cell")
 	eq(strip.offset, Vector2(0, -72), "the strip pivot stays on the diamond")
 	eq(is_equal_approx(strip.speed_scale, 0.0), true, "the step owns the cycle")
-	var passing := strip.frame
 	var held := strip.frame
 	await process_frame
 	eq(strip.frame, held, "a paused clock cannot advance off the sampled frame")
@@ -1824,8 +1876,77 @@ func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 
 
 func _walk_bounce_ok(y: float) -> bool:
-	# Rise stays inside 2–4px. The hop does not press into the floor.
-	return y <= 0.05 and y >= -MOTION.WALK_BOUNCE_PX - 0.05
+	# Rise stays inside 4px. Class crests sit under that cap. No floor press.
+	return y <= 0.05 and y >= -4.05
+
+
+func _cycle_visits_contact(frame_count: int, contact: int) -> bool:
+	var seen := {}
+	var planted := MOTION.walk_cycle_frame(0.0, frame_count, 0, contact)
+	if planted != contact:
+		return false
+	seen[planted] = true
+	for i in 24:
+		var step_t := float(i) / 24.0
+		if step_t <= 0.0 or step_t >= MOTION.HOP_PLANT_AT:
+			continue
+		var frame := MOTION.walk_cycle_frame(step_t, frame_count, 0, contact)
+		if frame == contact:
+			return false
+		seen[frame] = true
+	if MOTION.walk_cycle_frame(1.0, frame_count, 0, contact) != contact:
+		return false
+	return seen.size() == frame_count
+
+
+func _test_class_plant_anchor() -> void:
+	for class_id in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		StripLibrary.frames_for(class_id)
+		for face in ["n", "e", "s", "w"]:
+			eq(StripLibrary.walk_contact_index(class_id, face), 0, "%s %s v4 contact stays frame 0" % [class_id, face])
+		var pawn := Pawn.new()
+		get_root().add_child(pawn)
+		await process_frame
+		pawn.apply_snapshot(_unit(class_id, "E", 0), 0)
+		await process_frame
+		var origin := pawn.position
+		pawn.arm_driven_walk()
+		pawn.sync_walk_plant()
+		pawn.sample_driven_gait(0.5)
+		var strip := _visible_strip(pawn)
+		var crest := MOTION.hop_crest_px(class_id)
+		truthy(strip != null, "%s walk strip stays up through the hop" % class_id)
+		if strip != null:
+			eq(is_equal_approx(strip.position.y, -crest), true, "%s hop crest matches its mass" % class_id)
+			eq(strip.position.x, 0.0, "%s hop has no sideways slide" % class_id)
+			eq(is_equal_approx(strip.scale.x, Pawn.sprite_scale_for(class_id).x), true, "%s mid-hop does not squash X" % class_id)
+			eq(is_equal_approx(strip.scale.y, Pawn.sprite_scale_for(class_id).y), true, "%s mid-hop does not squash Y" % class_id)
+			eq(strip.frame != 0, true, "%s mid-hop is not the contact frame" % class_id)
+		eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "%s hop does not lift the name" % class_id)
+		eq((pawn.get_node("Foot") as Node2D).position, Vector2.ZERO, "%s hop does not lift the foot or aim mark" % class_id)
+		eq(pawn.scale, Vector2.ONE, "%s hop does not scale the pawn" % class_id)
+		eq(pawn.position, origin, "%s hop does not move the foot off the cell" % class_id)
+		pawn.sample_driven_gait(0.91)
+		if strip != null:
+			eq(strip.position, Vector2.ZERO, "%s plant hold is back on the foot" % class_id)
+			eq(strip.frame, 0, "%s plant hold shows the contact frame" % class_id)
+			eq(strip.scale.y < Pawn.sprite_scale_for(class_id).y, true, "%s plant squashes the sprite only" % class_id)
+			eq(is_equal_approx(strip.scale.x, Pawn.sprite_scale_for(class_id).x), true, "%s plant squash does not widen" % class_id)
+		eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "%s plant squash does not move the name" % class_id)
+		eq((pawn.get_node("Foot") as Node2D).position, Vector2.ZERO, "%s plant squash does not move the shade anchor" % class_id)
+		eq(pawn.scale, Vector2.ONE, "%s plant squash leaves the collider scale alone" % class_id)
+		if class_id == "ironjaw":
+			eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw art-fill stays at scale 1.0")
+			eq(is_equal_approx(Pawn.sprite_scale_for("ironjaw").y, 0.5), true, "ironjaw body scale stays the shared 0.5")
+		pawn.hold_stop_plant()
+		var stopped := _visible_strip(pawn)
+		truthy(stopped != null, "%s stop keeps the walk sheet" % class_id)
+		if stopped != null:
+			eq(stopped.frame, 0, "%s stop holds the contact, not a passing frame" % class_id)
+			eq(is_equal_approx(stopped.scale.y, Pawn.sprite_scale_for(class_id).y), true, "%s stop releases the squash" % class_id)
+		var sprite := pawn.get_node("Sprite") as Sprite2D
+		eq(sprite.visible, false, "%s stop does not flash the static idle" % class_id)
+		pawn.free()
 
 
 func _stride_wraps(frame_count: int) -> int:
