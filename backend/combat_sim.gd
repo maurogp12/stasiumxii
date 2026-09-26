@@ -611,6 +611,7 @@ func snapshot() -> Dictionary:
 			"mud": 2,
 			"water": 2,
 			"lava": 0,
+			"void": 0,
 		},
 		"tiles": _board.snapshot_tiles(),
 		"paint_only": _paint_only_snapshot(),
@@ -3698,6 +3699,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		return _accept()
 	var cell: Vector2i = landing["cell"]
 	var backstab: bool = bool(landing.get("backstab", false))
+	# Hit always plants on the back tile before damage. Adjacent, Invisible,
+	# and Shade origins all take this branch. Identity (already standing there)
+	# still counts as the teleport. A miss returned above and did not move.
 	actor["pos"] = cell
 	# Face the prey from the back tile. Miss keeps the old facing.
 	var face_dir := facing_from_step(cell, target["pos"])

@@ -200,9 +200,10 @@ static func _hit_recipes(event: Dictionary) -> Array:
 	if bool(event.get("burn_applied", false)):
 		# TODO G7: lava displace splash is parked. No ember burst. Push slide and burn attach still run.
 		out.append({"id": "lava_todo", "block": 0.0})
-	if bool(event.get("teleported", false)) and event.has("destination"):
+	if bool(event.get("teleported", false)) and event.has("destination") and str(event.get("spell", "")) != "ambush":
 		# Streak only. The body snaps in BoardView. A slide from caster_cell
 		# was a dash from Gloam instead of an instant teleport.
+		# Ambush does not streak. It collapses, snaps, then slashes.
 		var origin: Vector2i = cell_of(event.get("origin", event.get("caster_cell", Vector2i.ZERO)))
 		var dest: Vector2i = cell_of(event.get("destination"))
 		out.append({
@@ -242,6 +243,9 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			spark["delay"] = STRIPS.release_sec("ironjaw", "attack")
 		elif spell_id == "cut":
 			spark["delay"] = STRIPS.release_sec("gloam", "attack")
+		elif spell_id == "ambush":
+			# Armed after the snap. The number is the existing facing resolution.
+			spark["delay"] = ViewMotion.ambush_contact_sec()
 		elif spell_id == "detonate":
 			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
 		if spell_id == "detonate":
@@ -818,8 +822,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))
-				if origin_cell != caster_cell:
-					out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
+				out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
 				out.append(_flash("slash", target, _target_cell(event), 0.26))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):

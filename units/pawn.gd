@@ -42,6 +42,10 @@ var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
 var is_active: bool = false
+## Aim chrome while a unit spell is armed and this cell is selected.
+## The ring is view-only. It does not change range or AP.
+var target_marked: bool = false
+var _target_pulse: float = 0.0
 var stunned: bool = false
 var burning: bool = false
 var burn_remaining: int = 0
@@ -460,6 +464,9 @@ func play_view_plan(plan: Dictionary) -> float:
 		total += sec
 		if kind == "wait":
 			tw.tween_interval(sec)
+		elif kind == "whiff":
+			tw.tween_method(_sample_ambush_whiff, 0.0, 1.0, sec)
+			tw.tween_callback(restore_ambush_body)
 		elif kind == "attack" or (kind == "cast" and _mark_falls_back_to_attack(plan)):
 			var play_sec := _fit_strip_window("attack", sec, steps)
 			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
@@ -518,6 +525,52 @@ func play_view_plan(plan: Dictionary) -> float:
 		return 0.0
 	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
 	return minf(total, VIEW_MOTION.ACTION_LOCK_MAX)
+
+
+## Fade and shrink on the current tile. The board snaps after this returns.
+## A miss uses the whiff step instead, and that one restores itself.
+func play_ambush_collapse(sec: float) -> float:
+	if sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return 0.0
+	_begin_action()
+	var tw := create_tween()
+	_action_tween = tw
+	tw.tween_method(_sample_ambush_collapse, 0.0, 1.0, sec)
+	return sec
+
+
+func restore_ambush_body() -> void:
+	_plant_sprite()
+	var color := rest_modulate()
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.modulate = color
+		_sprite.visible = true
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.modulate = color
+
+
+func _sample_ambush_collapse(t: float) -> void:
+	if _sprite == null:
+		return
+	var k := clampf(t, 0.0, 1.0)
+	var shrunk := lerpf(1.0, 0.12, k)
+	_sprite.scale = SPRITE_SCALE * shrunk
+	var color := rest_modulate()
+	color.a = lerpf(1.0, 0.0, k)
+	_sprite.modulate = color
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.scale = _sprite.scale
+		_active_strip.modulate = color
+
+
+func _sample_ambush_whiff(t: float) -> void:
+	if _sprite == null:
+		return
+	var k := sin(clampf(t, 0.0, 1.0) * PI)
+	_sprite.scale = Vector2(SPRITE_SCALE.x * lerpf(1.0, 1.12, k), SPRITE_SCALE.y * lerpf(1.0, 0.8, k))
+	var color := rest_modulate()
+	color.a = lerpf(1.0, 0.4, k)
+	_sprite.modulate = color
 
 
 func hold_idle() -> void:
@@ -1373,6 +1426,8 @@ func _request_paint() -> void:
 	queue_redraw()
 	if _chrome != null and is_instance_valid(_chrome):
 		_chrome.queue_redraw()
+	if _foot != null and is_instance_valid(_foot):
+		_foot.queue_redraw()
 
 
 func _sprite_ready() -> bool:
@@ -1384,7 +1439,24 @@ func _draw() -> void:
 		_draw_legacy_token()
 
 
+func set_target_marked(marked: bool) -> void:
+	if target_marked == marked:
+		return
+	target_marked = marked
+	if not marked:
+		_target_pulse = 0.0
+	_request_paint()
+
+
+func advance_target_pulse(delta: float) -> void:
+	if not target_marked:
+		return
+	_target_pulse = fposmod(_target_pulse + delta, 1.0)
+	_request_paint()
+
+
 ## Contact shadow and seat ring. Drawn on Foot so a body rise does not lift them.
+## The aim pulse stays on that same ground mark.
 func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	if not _sprite_ready():
 		return
@@ -1397,6 +1469,9 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
 	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
 	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	if target_marked:
+		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
+		_draw_ellipse_ring_on(canvas, foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
 	if burning:
 		_draw_ellipse_ring_on(canvas, foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
@@ -1408,6 +1483,9 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 func _paint_status(canvas: CanvasItem) -> void:
 	if debug_draw_tokens or not _sprite_ready():
 		return
+	if target_marked:
+		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
+		_paint_ellipse_ring(canvas, SPRITE_OFFSET, 36.0 + 6.0 * pulse, 46.0 + 4.0 * pulse, Color(1.0, 0.78, 0.28, 0.4 + 0.5 * pulse), 3.6)
 	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
 
 
@@ -1536,6 +1614,10 @@ func _draw_ellipse_ring(center: Vector2, rx: float, ry: float, color: Color, wid
 
 
 func _draw_ellipse_ring_on(canvas: CanvasItem, center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
+	_paint_ellipse_ring(canvas, center, rx, ry, color, width)
+
+
+func _paint_ellipse_ring(canvas: CanvasItem, center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
 	var pts := _ellipse_points(center, rx, ry)
 	if pts.is_empty():
 		return

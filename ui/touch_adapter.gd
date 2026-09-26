@@ -5,9 +5,11 @@ class_name TouchAdapter
 ## Desktop hover and right-click remain. A finger can finish a hot-seat
 ## turn without them: tap a cell, tap a spell, tap Walk / Advance, tap the
 ## Face pad, tap End Turn.
-## Board diamonds stay 64×32. The pick radius stays the existing nearest-tile
-## test so a fatter radius cannot steal a neighbor. Fat targets are the HUD
-## controls (canvas pixels on the 960×720 canvas_items / expand window).
+## Board diamonds stay 64×32. Desktop pick stays the nearest tile inside 22px
+## so a mouse cannot steal a neighbor. A finger uses the painted diamond (the
+## side tips the 22px circle used to give away) and a fatter sprite capsule.
+## That padding is off unless the event is a touch or the OS is mobile.
+## Fat HUD targets are canvas pixels on the 960×720 canvas_items / expand window.
 
 const EMULATED_DEVICE_ID := -1
 const HIT_FLOOR := 48
@@ -33,13 +35,20 @@ const CLUSTER_EDGE := 8.0
 const CLUSTER_ARC_RADIUS := 160.0
 const CLUSTER_ARC_START_DEG := -96.0
 const CLUSTER_ARC_END_DEG := -176.0
-## Unchanged diamond pick. See local_to_grid in board_view.gd.
+## Unchanged desktop diamond pick. See local_to_grid in board_view.gd.
 const CELL_PICK_RADIUS := 22.0
+## Off-board finger slop. Interior taps use the painted diamond, not this circle.
+## Neighbor centers are ~36px apart, so a nearer tile still wins.
+const MOBILE_CELL_PICK_RADIUS := 36.0
 ## Sprite footprint in pawn-local pixels. Figures are 144×160 at scale 0.5
 ## with offset (0, -72), so the opaque body sits above the feet diamond.
-## Radius stays inside the gap to a neighbor tile center (~34px away) so the
-## body does not steal that diamond. It is not a wider CELL_PICK_RADIUS.
+## Desktop radius stays inside the gap to an east neighbor tile center (~54px
+## from the spine) so that diamond is not a body hit. It is not a wider
+## CELL_PICK_RADIUS.
 const PAWN_BODY_RADIUS := 34.0
+## Finger capsule. A tap beside the chest (~48px) still selects the fighter.
+## The east neighbor diamond (~54px) stays a tile.
+const MOBILE_PAWN_BODY_RADIUS := 52.0
 const PAWN_BODY_HEAD_Y := -108.0
 const PAWN_BODY_FEET_Y := -28.0
 
@@ -49,6 +58,11 @@ const PLAY_TOP := 140.0
 ## Top of the bottom chrome on the 720 canvas. The diamond fits above it.
 const PLAY_BOTTOM := 460.0
 const HUD_BOTTOM_OFFSET := -252.0
+## Same clamp the board camera used on the 960×720 fit.
+const BOARD_ZOOM_MIN := 0.35
+const BOARD_ZOOM_MAX := 1.25
+## Portrait may grow past the desktop cap. The diamond still has to fit the width.
+const MOBILE_BOARD_ZOOM_MAX := 1.35
 
 const AIM := "aim"
 const COMMIT := "commit"
@@ -132,11 +146,54 @@ static func board_gesture(event: InputEvent) -> String:
 	return IGNORE
 
 
+## Phone / tablet export. Headless and desktop stay false, so tests keep the 22px pick.
+static func use_mobile_pick() -> bool:
+	return OS.has_feature("android") or OS.has_feature("ios") or OS.has_feature("mobile")
+
+
+## (top, bottom) of the board band in canvas pixels.
+## Desktop, and a viewport that is not taller than 720, keep 140..460.
+## A phone portrait grows the viewport height. The extra rows go to the board.
+## The bottom reserve (720 - 460) stays, so the thumb cluster is not covered.
+static func play_band_for(viewport_size: Vector2, mobile: bool = false) -> Vector2:
+	if not mobile or viewport_size.y <= VIEW_H:
+		return Vector2(PLAY_TOP, PLAY_BOTTOM)
+	var reserve := VIEW_H - PLAY_BOTTOM
+	return Vector2(PLAY_TOP, viewport_size.y - reserve)
+
+
+## Fit zoom for a board of board_w × board_h. Desktop ignores viewport_size and
+## stays on the 960×720 band (15×15 is 0.64). Mobile portrait uses the taller band.
+static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
+	var view := viewport_size if mobile else Vector2(VIEW_W, VIEW_H)
+	var band := play_band_for(view, mobile)
+	var play_w := view.x - 32.0
+	var play_h := maxf(band.y - band.x, 1.0)
+	var zoom := minf(play_w / maxf(board_w, 1.0), play_h / maxf(board_h, 1.0))
+	var cap := MOBILE_BOARD_ZOOM_MAX if mobile else BOARD_ZOOM_MAX
+	return clampf(zoom, BOARD_ZOOM_MIN, cap)
+
+
+## Flat iso cell. Matches the fallback in pick_board_cell.
+static func iso_cell(point: Vector2) -> Vector2i:
+	var grid_x := point.x / 64.0 + point.y / 32.0
+	var grid_y := point.y / 32.0 - point.x / 64.0
+	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
+
+
+## 1.0 is the painted 64×32 diamond around center.
+static func diamond_metric(point: Vector2, center: Vector2) -> float:
+	var local := point - center
+	return absf(local.x) / 32.0 + absf(local.y) / 16.0
+
+
 ## True when the point lies on the fighter sprite, not the diamond at their feet.
-static func hits_pawn_body(point: Vector2, pawn_origin: Vector2) -> bool:
+## mobile widens the capsule. The default radius is the desktop test.
+static func hits_pawn_body(point: Vector2, pawn_origin: Vector2, mobile: bool = false) -> bool:
 	var local := point - pawn_origin
 	var y := clampf(local.y, PAWN_BODY_HEAD_Y, PAWN_BODY_FEET_Y)
-	return local.distance_to(Vector2(0.0, y)) <= PAWN_BODY_RADIUS
+	var radius := MOBILE_PAWN_BODY_RADIUS if mobile else PAWN_BODY_RADIUS
+	return local.distance_to(Vector2(0.0, y)) <= radius
 
 
 ## Enemy / ally / any casts need a living unit. Empty-tile and self spells do not.
@@ -192,10 +249,12 @@ static func cluster_button_rect(center: Vector2, primary: bool) -> Rect2:
 	return Rect2(center - size * 0.5, size)
 
 
-## Diamond nearest-tile stays at CELL_PICK_RADIUS. When prefer_unit is set, a
-## hit on a living pawn's sprite wins over the empty diamond the sprite covers.
-## living_pawns entries: {cell: Vector2i, origin: Vector2, sort: int}.
-static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_pawns: Array, prefer_unit: bool) -> Vector2i:
+## Desktop: nearest tile inside CELL_PICK_RADIUS, else the flat iso cell.
+## mobile: a living body uses the fatter capsule; otherwise the painted diamond
+## (side tips included). A tap just off the board uses MOBILE_CELL_PICK_RADIUS.
+## prefer_unit does not change walk picks. living_pawns entries:
+## {cell: Vector2i, origin: Vector2, sort: int}.
+static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_pawns: Array, prefer_unit: bool, mobile: bool = false) -> Vector2i:
 	if prefer_unit:
 		var found := false
 		var best_cell := Vector2i(-1, -1)
@@ -206,7 +265,7 @@ static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_p
 				continue
 			var pawn: Dictionary = entry
 			var origin: Vector2 = pawn.get("origin", Vector2.ZERO)
-			if not hits_pawn_body(point, origin):
+			if not hits_pawn_body(point, origin, mobile):
 				continue
 			var sort := int(pawn.get("sort", 0))
 			var dist := point.distance_to(origin)
@@ -217,6 +276,19 @@ static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_p
 				best_cell = pawn.get("cell", Vector2i(-1, -1))
 		if found:
 			return best_cell
+	if mobile:
+		var painted := iso_cell(point)
+		if tile_positions.has(painted) and diamond_metric(point, tile_positions[painted]) <= 1.0:
+			return painted
+		var edge := Vector2i(-1, -1)
+		var edge_d := MOBILE_CELL_PICK_RADIUS
+		for cell in tile_positions.keys():
+			var dist := point.distance_to(tile_positions[cell])
+			if dist < edge_d:
+				edge_d = dist
+				edge = cell
+		if edge.x >= 0:
+			return edge
 	var best := Vector2i(-1, -1)
 	var best_tile_d := CELL_PICK_RADIUS
 	for cell in tile_positions.keys():
@@ -226,6 +298,4 @@ static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_p
 			best = cell
 	if best.x >= 0:
 		return best
-	var grid_x := point.x / 64.0 + point.y / 32.0
-	var grid_y := point.y / 32.0 - point.x / 64.0
-	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
+	return iso_cell(point)

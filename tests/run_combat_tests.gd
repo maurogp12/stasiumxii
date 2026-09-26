@@ -39,6 +39,7 @@ func _run() -> void:
 	_test_phase_a_demo_map()
 	_test_mud_walk_cost()
 	_test_lava_impassable()
+	_test_void_gap_not_standable()
 	_test_climb_reject()
 	_test_downhill_free()
 	_test_weighted_prefers_flat()
@@ -140,6 +141,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["terrain_mp"]["mud"], 2, "Mud MP is 2")
 	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
 	eq(snap["terrain_mp"]["lava"], 0, "Lava MP stamp is 0 / impassable")
+	eq(snap["terrain_mp"]["void"], 0, "Void is impassable and has no MP cost")
 	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"], "height hit/facing/LoS, stairs/ramps/flying stay Open")
 	eq(str(snap["open_elevation"]).contains("advance_climb"), false, "Advance stand-on is Locked, not Open")
 	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
@@ -629,6 +631,18 @@ func _test_phase_a_demo_map() -> void:
 	eq(placed.is_empty(), false, "painted ground uses the half-diamond placement")
 	eq((placed["dest"] as Rect2).position, Vector2(-32, -16), "painted ground sits on the board diamond")
 	eq((placed["dest"] as Rect2).size, Vector2(64, 32), "painted ground scales to the 64×32 diamond")
+	var sized: Dictionary = load("res://board/koliseo_art.gd").dress_placement_for_size(art.get_size())
+	eq(placed["source"], sized["source"], "ground placement matches the dress-size fallback")
+	eq(placed["dest"], sized["dest"], "ground dest matches the dress-size fallback")
+	var cliff: Texture2D = load("res://board/koliseo_art.gd").terrain_texture("ground", 1)
+	var cliff_placed: Dictionary = load("res://board/koliseo_art.gd").terrain_placement(cliff)
+	var cliff_sized: Dictionary = load("res://board/koliseo_art.gd").dress_placement_for_size(cliff.get_size())
+	eq(cliff_placed["dest"], cliff_sized["dest"], "elevation 1 sheet uses the dress-size fallback")
+	eq((cliff_sized["source"] as Rect2).size, Vector2(32, 23), "64×40 dress source is the left half through row 23")
+	var high: Texture2D = load("res://board/koliseo_art.gd").terrain_texture("ground", 2)
+	var high_sized: Dictionary = load("res://board/koliseo_art.gd").dress_placement_for_size(high.get_size())
+	eq((high_sized["source"] as Rect2).size, Vector2(32, 29), "64×48 dress source is the left half through row 29")
+	eq(load("res://board/koliseo_art.gd").dress_placement_for_size(Vector2(128, 32)).is_empty(), true, "a non-dress size does not invent a half-diamond")
 	var ruins_tex: Texture2D = load("res://board/koliseo_art.gd").prop_texture("ruins")
 	eq(ruins_tex != null, true, "paint_only ruins art loads")
 	eq(ruins_tex.get_height(), 112, "painted ruins sheet is the dress v1 height")
@@ -852,6 +866,82 @@ func _test_lava_impassable() -> void:
 	var around: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 1)})
 	eq(around["ok"], true, "Ground next to lava is still walkable")
 	eq(around["events"][0]["mp_spent"], 2, "two Ground hops around lava cost 2")
+
+
+func _test_void_gap_not_standable() -> void:
+	# A void tag must not become walkable Ground. The gap is not a shortcut.
+	var parsed := int(load("res://backend/terrain_def.gd").parse("void"))
+	eq(parsed, load("res://backend/terrain_def.gd").Id.VOID, "void parses as void, not ground")
+	eq(bool(load("res://backend/terrain_def.gd").by_id(parsed)["walkable"]), false, "void is not standable")
+	eq(load("res://board/snapshot_tiles.gd").normalize_terrain("void"), "void", "snapshot keeps void instead of ground")
+	var board = load("res://backend/walk_board.gd").new(8, 8)
+	for cell in [Vector2i(3, 1), Vector2i(3, 2), Vector2i(3, 3)]:
+		board.set_tile(cell, "void", 0)
+	var open := func(_cell: Vector2i, _ignore: Vector2i) -> bool:
+		return false
+	var blocked: Dictionary = board.validate_move(Vector2i(2, 2), Vector2i(3, 2), 8, open)
+	eq(bool(blocked["ok"]), false, "a void dest is not a legal move")
+	eq(str(blocked["reason"]), "not_walkable", "void dest reason is not_walkable")
+	var around: Dictionary = board.validate_move(Vector2i(2, 2), Vector2i(4, 2), 8, open)
+	eq(bool(around["ok"]), true, "a dest past a void wall is reachable by going around")
+	var path: Array = around["path"]
+	eq(path.is_empty(), false, "the around path has steps")
+	eq(path[path.size() - 1], Vector2i(4, 2), "the around path ends on the dest")
+	for cell in path:
+		eq(bool(board.is_walkable(cell)), true, "path step %s is standable" % str(cell))
+		eq(cell.x == 3 and cell.y >= 1 and cell.y <= 3, false, "path step %s does not cross the void wall" % str(cell))
+	eq(path.has(Vector2i(3, 0)) or path.has(Vector2i(3, 4)), true, "the path uses a standable gap beside the wall")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(2, 2),
+		"ironjaw_pos": Vector2i(7, 7),
+		"tiles": [
+			{"pos": Vector2i(3, 2), "terrain": "void", "elevation": 0},
+			{"pos": Vector2i(4, 2), "terrain": "void", "elevation": 0},
+		],
+	})
+	eq(_sim.tile_at(Vector2i(3, 2))["terrain_type"], "void", "painted void stays void in the snapshot")
+	eq(_sim.tile_at(Vector2i(3, 2))["walkable"], false, "painted void snapshot walkable is false")
+	eq(_sim.tile_at(Vector2i(2, 2))["terrain_type"], "ground", "an unpainted neighbor stays ground")
+	var step: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
+	eq(bool(step.get("ok", true)), false, "CombatSim rejects a step onto void")
+	eq(str(step.get("reason", "")), "not_walkable", "CombatSim void reason is not_walkable")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "a rejected void step leaves the pawn put")
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "legal_intents omit a void tile")
+	eq(_has_legal_move_to(0, Vector2i(2, 3)), true, "ground beside the void gap is still a walk")
+	var hopped: Dictionary = _sim.submit({"type": "move", "to": Vector2i(2, 1)})
+	eq(bool(hopped.get("ok", false)), true, "walking beside void is legal")
+	eq(hopped["events"][0]["path"].has(Vector2i(3, 2)), false, "the walk path does not include the void cell")
+	# Advance shares stand_on_gate. A void landing is not a teleport shortcut.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["ironjaw", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(8, 8)],
+		"tiles": [{"pos": Vector2i(2, 4), "terrain": "void", "elevation": 0}],
+	})
+	var advance: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 4), "seat": 0})
+	eq(bool(advance.get("ok", true)), false, "Advance does not land on void")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "a void Advance leaves Ironjaw put")
+	# Ambush back tile on void is illegal_back, not a blink onto the hole.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"rolls": [1],
+		"tiles": [{"pos": Vector2i(5, 2), "terrain": "void", "elevation": 0}],
+	})
+	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
+	eq(str(ambush.get("reason", "")), "illegal_back", "a void back tile rejects Ambush")
+	eq(_unit(0)["pos"], Vector2i(2, 2), "a void back tile does not teleport Gloam")
+	eq(int(_unit(0)["ap"]), 6, "a void back tile refunds Ambush AP")
 
 
 func _test_climb_reject() -> void:
