@@ -340,7 +340,10 @@ func _highlight_flat_color() -> Color:
 			color = Color(0.42, 0.40, 0.48, 1.0)
 		"blocked":
 			color = Color(0.14, 0.14, 0.16, 1.0)
-	if is_selected and highlight != "blocked":
+		"grey":
+			# Illegal Drop Shade cells. Dim, and a selection does not arm them gold.
+			color = Color(0.34, 0.33, 0.36, 1.0)
+	if is_selected and highlight != "blocked" and highlight != "grey":
 		color = Color(1.0, 0.85, 0.2, 1.0)
 	return color
 

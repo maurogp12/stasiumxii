@@ -115,6 +115,7 @@ var _chrome_aim := false
 var _touch_commit_open := true
 ## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
 var _ambush_arrival_token := 0
+var _ambush_arrival_tween: Tween
 
 
 func _ready() -> void:
@@ -357,13 +358,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				_touch_on_board = true
 				_chrome_aim = false
 				_touch_commit_open = true
-				select_tile(hover)
+				if _cast_cell_armable(hover):
+					select_tile(hover)
 				if _hud != null:
 					_hud.dismiss_pinned_tooltip()
 			elif event is InputEventScreenDrag and (_touch_on_board or _spell_armed()):
 				if not _touch_on_board:
 					_chrome_aim = true
-				select_tile(hover)
+				if _cast_cell_armable(hover):
+					select_tile(hover)
 		else:
 			_aim_hover = null
 			_sync_aim_preview()
@@ -417,7 +420,8 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 	_chrome_aim = true
 	_aim_hover = cell
 	_sync_aim_preview(cell)
-	select_tile(cell)
+	if _cast_cell_armable(cell):
+		select_tile(cell)
 	if _hud != null:
 		_hud.dismiss_pinned_tooltip()
 	if not committing:
@@ -438,6 +442,8 @@ func _commit_cell(cell: Vector2i) -> void:
 		return
 	# Snap walls are not a left-click / tap target. Right-click already returned.
 	if _snap_wall_cell(cell):
+		return
+	if not _cast_cell_armable(cell):
 		return
 	_touch_commit_open = false
 	select_tile(cell)
@@ -537,6 +543,10 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_hud.clear_spell()
 		_paint_highlights()
 		return
+	if spell_id == SpellKits.DROP_SHADE and not _advance_click_accepted(cell, spell_id):
+		# Out of range and other illegal Drop Shade cells are not a cast.
+		# Do not arm them and do not flash the refund coach.
+		return
 	if spell_id == SpellKits.ADVANCE and not _advance_click_accepted(cell, spell_id):
 		# Not a highlighted dest. Still submit so CombatSim / NetSession reject
 		# it with the existing refund coach (pawn stays, AP unchanged).
@@ -554,6 +564,14 @@ func _handle_left_click(cell: Vector2i) -> void:
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(_sim().snapshot()))
 	return SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell)
+
+
+## Drop Shade only arms a sim-legal empty tile. Other spells still select freely.
+## Advance keeps its refund submit. An illegal Drop Shade cell stays unselected.
+func _cast_cell_armable(cell: Vector2i) -> bool:
+	if _hud == null or _hud.selected_spell() != SpellKits.DROP_SHADE:
+		return true
+	return _advance_click_accepted(cell, SpellKits.DROP_SHADE)
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -782,8 +800,8 @@ func _snap_ambush_teleports(events: Array) -> void:
 		if not _in_bounds(dest):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
-		# Instant plant. The attack pose is a local slash on the sprite, not a
-		# dash from the old tile. Adjacent and Invisible hits still land here.
+		# Position first, then face the prey. The slash is armed only after
+		# both, so Invisible cannot swing from the cast cell.
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
 		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
@@ -844,9 +862,12 @@ func _present_resolve(events: Array) -> bool:
 		_hud.show_toast(bounce_toast)
 		swallowed = true
 	else:
-		var toast := CombatHUD.toast_for_events(events)
-		if toast != "":
-			_hud.show_toast(toast)
+		# An Ambush hit toast waits until the body is on the back tile.
+		# Showing it during the collapse reads as damage from the cast cell.
+		if ambush_hit.is_empty():
+			var toast := CombatHUD.toast_for_events(events)
+			if toast != "":
+				_hud.show_toast(toast)
 	# Motion plays on the sprite first. Refresh (and the grey dead modulate) follows.
 	if swallowed and _pending_motion_sec <= 0.0:
 		_refresh()
@@ -867,10 +888,12 @@ func _ambush_success_event(events: Array) -> Dictionary:
 	return {}
 
 
-## Collapse on the current tile, then snap, slash, and the existing facing damage.
+## Shade and Invisible share this arrival. Collapse on the cast cell, snap
+## onto the back tile, face the prey, then slash. The 22 floats on that slash.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
+	_stop_ambush_arrival_tween()
 	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
 	var seat := int(event.get("seat", -1))
 	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
@@ -881,24 +904,80 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	if played <= 0.0:
 		_finish_ambush_arrival(event, events, token)
 		return
-	_pending_motion_sec = maxf(_pending_motion_sec, played)
-	var tw := create_tween()
-	tw.tween_interval(sec)
-	tw.tween_callback(_finish_ambush_arrival.bind(event, events, token))
+	_pending_motion_sec = maxf(_pending_motion_sec, played + VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC)
+	_ambush_arrival_tween = create_tween()
+	_ambush_arrival_tween.tween_interval(sec)
+	_ambush_arrival_tween.tween_callback(_finish_ambush_arrival.bind(event, events, token))
 
 
 func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
 	if token != _ambush_arrival_token or not is_inside_tree():
 		return
+	# Plant, then face, before any slash or damage float. A miss never arrives.
+	# The collapse tween is the caller. Leave it; it has already finished.
+	_plant_ambush_body(event)
+	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
+	if hold <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_ambush_arrival_tween = null
+		_arm_ambush_contact(event, events, token)
+		return
+	_ambush_arrival_tween = create_tween()
+	_ambush_arrival_tween.tween_interval(hold)
+	_ambush_arrival_tween.tween_callback(_arm_ambush_contact.bind(event, events, token))
+
+
+## Slash and the facing number only after the body is standing on the back tile.
+func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
+	if token != _ambush_arrival_token or not is_inside_tree():
+		return
+	_ambush_arrival_tween = null
+	_plant_ambush_body(event)
+	if not _ambush_body_landed(event):
+		# No slash, no hit toast, no damage float from the cast cell.
+		# The submit tail plants from the snapshot, then the coach refresh runs.
+		return
+	if _hud != null:
+		var toast := CombatHUD.toast_for_events(events)
+		if toast != "":
+			_hud.show_toast(toast)
+	_play_combat_feedback(events)
+	_arm_view_motions(events)
+	_arm_vfx(events)
+
+
+func _plant_ambush_body(event: Dictionary) -> void:
 	var seat := int(event.get("seat", -1))
 	if pawns_by_seat.has(seat):
 		var pawn: Pawn = pawns_by_seat[seat]
 		if pawn != null and is_instance_valid(pawn):
 			pawn.restore_ambush_body()
 	_snap_ambush_teleports([event])
-	_play_combat_feedback(events)
-	_arm_view_motions(events)
-	_arm_vfx(events)
+
+
+func _ambush_body_landed(event: Dictionary) -> bool:
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return false
+	var pawn: Pawn = pawns_by_seat[seat]
+	if pawn == null or not is_instance_valid(pawn):
+		return false
+	var dest := _ambush_event_dest(event)
+	return _in_bounds(dest) and pawn.grid_position == dest
+
+
+func _ambush_event_dest(event: Dictionary) -> Vector2i:
+	var dest := _event_cell(event, "destination")
+	if not _in_bounds(dest):
+		dest = _event_cell(event, "to")
+	if not _in_bounds(dest):
+		dest = _seat_cell(int(event.get("seat", -1)))
+	return dest
+
+
+func _stop_ambush_arrival_tween() -> void:
+	if _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween):
+		_ambush_arrival_tween.kill()
+	_ambush_arrival_tween = null
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -1242,6 +1321,8 @@ func _await_view_motions() -> void:
 
 
 func _motions_active() -> bool:
+	if _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween) and _ambush_arrival_tween.is_running():
+		return true
 	if _vfx != null and _vfx.has_method("is_blocking") and bool(_vfx.is_blocking()):
 		return true
 	for pawn in pawns_by_seat.values():
@@ -1466,6 +1547,17 @@ func _paint_highlights() -> void:
 				_tile_at(cell).set_highlight("legal")
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
+	if spell_id == SpellKits.DROP_SHADE:
+		# Every cell that is not a legal empty dest is grey before confirm.
+		# Out of range, occupied, and unwalkable stay unarmed. No REJECT flash.
+		var shade_dests: Array = SNAPSHOT_TILES.cast_dests(legal, spell_id)
+		for cell in tiles.keys():
+			if shade_dests.has(cell):
+				continue
+			_tile_at(cell).set_highlight("grey")
+		for dest in shade_dests:
+			if tiles.has(dest):
+				_tile_at(dest).set_highlight("target")
 	_sync_aim_preview()
 	_sync_target_marks()
 

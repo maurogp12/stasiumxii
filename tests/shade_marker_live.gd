@@ -120,7 +120,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(spent == null or not is_instance_valid(spent), true, "Ambush consumes the Shade marker in the teleport beat")
 	var gloam_pawn: Node = board.pawns_by_seat[0]
 	host.eq(gloam_pawn.grid_position, origin, "Ambush fades on the origin tile before the snap")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
 	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Ambush snaps onto the back tile")
 	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
 	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
@@ -153,7 +153,7 @@ static func run(host: SceneTree) -> void:
 	board._present_resolve(ambush.get("events", []))
 	var blinked: Node = board.pawns_by_seat[0]
 	host.eq(blinked.grid_position, ambush_from, "Invisible Ambush fades on the cast cell before the snap")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
 	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush snaps onto the back tile")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
 	host.eq(blinked.grid_position == ambush_from, false, "Invisible Ambush does not slash from the cast cell")
@@ -185,7 +185,7 @@ static func run(host: SceneTree) -> void:
 	board._present_resolve(near.get("events", []))
 	var near_pawn: Node = board.pawns_by_seat[0]
 	host.eq(near_pawn.grid_position, near_from, "adjacent Invisible Ambush fades before the snap")
-	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush snaps past the foe")
 	host.eq(near_pawn.position, board._cell_to_local(ambush_back), "adjacent Invisible snap is not the cast cell")
 	# MISS keeps the cast cell. No snap.
@@ -213,6 +213,112 @@ static func run(host: SceneTree) -> void:
 	var stayed: Node = board.pawns_by_seat[0]
 	host.eq(stayed.grid_position, ambush_from, "Invisible Ambush miss leaves the pawn on the cast cell")
 	host.eq(stayed.position, board._cell_to_local(ambush_from), "Invisible Ambush miss does not snap")
+	# Player path. Fade, then _submit, not only _present_resolve. The body fades
+	# on the cast cell, stands on the back tile before the slash, and a miss
+	# keeps Invisible.
+	var submit_from := Vector2i(6, 0)
+	var submit_prey := Vector2i(4, 0)
+	var submit_back := Vector2i(3, 0)
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [submit_from, submit_prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var submit_fade: Dictionary = CombatSim.submit({"type": "cast", "spell": "fade", "to": submit_from, "seat": 0})
+	host.eq(bool(submit_fade.get("ok", false)), true, "submit-path Fade resolves")
+	board._present_resolve(submit_fade.get("events", []))
+	board._settle_motions()
+	board._refresh()
+	var submit_pawn: Node2D = board.pawns_by_seat[0]
+	host.eq(submit_pawn.grid_position, submit_from, "submit-path Gloam starts on the cast cell")
+	var turned: Dictionary = CombatSim.submit({"type": "face", "dir": "N", "seat": 0})
+	host.eq(bool(turned.get("ok", false)), true, "submit-path Gloam faces away before Ambush")
+	board._present_resolve(turned.get("events", []))
+	board._refresh()
+	host.eq(submit_pawn.facing, "N", "submit-path facing is not the strike facing yet")
+	for _warm in 4:
+		await host.process_frame
+	board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
+	# The collapse tween has not stepped yet. The body is still on the cast cell.
+	host.eq(submit_pawn.grid_position, submit_from, "submit-path collapse starts on the cast cell")
+	host.eq(submit_pawn.facing, "N", "submit-path collapse does not face the prey early")
+	var foe_pawn: Node = board.pawns_by_seat[1]
+	var hp_before := int(foe_pawn.hp)
+	var saw_collapse := true
+	var saw_hold := false
+	var faced_on_back := false
+	var faced_on_cast := false
+	var slashed_before_hold := false
+	var damaged_on_cast := false
+	for _i in 90:
+		await host.process_frame
+		var sprite := submit_pawn.get_node_or_null("Sprite") as Node2D
+		var offset := 0.0
+		if sprite != null:
+			offset = sprite.position.length()
+		if submit_pawn.grid_position == submit_from and offset < 4.0:
+			saw_collapse = true
+		if submit_pawn.grid_position == submit_from and submit_pawn.facing == "E":
+			faced_on_cast = true
+		if saw_collapse and submit_pawn.grid_position == submit_back and submit_pawn.facing == "E" and offset < 4.0:
+			saw_hold = true
+			faced_on_back = true
+		if not saw_hold and submit_pawn.grid_position == submit_from and offset > 10.0:
+			slashed_before_hold = true
+		if int(foe_pawn.hp) < hp_before and submit_pawn.grid_position != submit_back:
+			damaged_on_cast = true
+		if saw_hold and offset > 10.0:
+			break
+		if not bool(board.get("_view_locked")) and saw_hold:
+			break
+	host.eq(saw_collapse, true, "submit-path Invisible Ambush fades on the cast cell")
+	host.eq(faced_on_cast, false, "Invisible Ambush does not face the prey from the cast cell")
+	host.eq(faced_on_back, true, "Invisible Ambush faces the prey on the back tile before the slash")
+	host.eq(saw_hold, true, "submit-path Invisible Ambush stands on the back tile before the slash")
+	host.eq(slashed_before_hold, false, "submit-path Invisible Ambush does not slash from the cast cell")
+	host.eq(damaged_on_cast, false, "Instant Invisible Ambush does not deal damage before the back-tile snap")
+	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
+	host.eq(submit_pawn.facing, "E", "submit-path contact faces Kestrel")
+	var locked_for := 0
+	while bool(board.get("_view_locked")) and locked_for < 90:
+		await host.process_frame
+		locked_for += 1
+	board._settle_motions()
+	host.eq(submit_pawn.grid_position, submit_back, "submit-path settle leaves Gloam on the back tile")
+	host.eq(submit_pawn.position, board._cell_to_local(submit_back), "submit-path settle does not walk Gloam back")
+	var submit_sprite := submit_pawn.get_node_or_null("Sprite") as CanvasItem
+	host.eq(submit_sprite != null and submit_sprite.modulate.a > 0.9, true, "submit-path arrival restores the body")
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [submit_from, submit_prey],
+		"kestrel_facing": "W",
+		"rolls": [100],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var miss_fade: Dictionary = CombatSim.submit({"type": "cast", "spell": "fade", "to": submit_from, "seat": 0})
+	board._present_resolve(miss_fade.get("events", []))
+	board._settle_motions()
+	board._refresh()
+	await board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
+	var miss_pawn: Node2D = board.pawns_by_seat[0]
+	host.eq(miss_pawn.grid_position, submit_from, "submit-path Invisible miss does not teleport")
+	host.eq(miss_pawn.position, board._cell_to_local(submit_from), "submit-path Invisible miss stays on the cast cell")
+	var miss_snap: Dictionary = CombatSim.snapshot()
+	var miss_unit: Dictionary = {}
+	for unit in miss_snap.get("units", []):
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == 0:
+			miss_unit = unit
+	host.eq(bool(miss_unit.get("invisible", false)), true, "submit-path Ambush miss keeps Invisible")
 	main.queue_free()
 	await host.process_frame
 

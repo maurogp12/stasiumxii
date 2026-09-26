@@ -2,6 +2,43 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Invisible Ambush strikes from the back tile
+
+Luca's 0.1.20 clip. Shade-origin Ambush already blinks to the back tile and hits. Fade self-origin was the miss: the body could still be on the cast cell while the hit was presented, and a distant Invisible Gloam must not borrow an armed Shade to deal that hit. No APK cut. Locked kit numbers unchanged. Ambush without a Shade and without Invisible stays parked.
+
+### Root cause
+
+`_resolve_ambush` already wrote the axis back tile before HP for both origins. The view could still toast and float the damage when the plant had not stuck, so Invisible Ambush read as a slash from the cast cell with the back-tile facing. Shade-origin looked right because the long blink was obvious. A Fade on a distant tile with an armed Shade in range is not that hit: origin is Gloam, and the cast is out of range.
+
+Instant Invisible Ambush now deals damage only after the body is on the back tile. The shared arrival is collapse, snap, face the prey, slash, then the 22. A miss still does not move and keeps Invisible. Illegal Drop Shade cells are grey before confirm and do not flash REJECT. Range stays Chebyshev 1–3.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Ambush without a Shade (and without Invisible) stays parked.
+- Stasis stays on `mobile`.
+- Advance still submits an illegal click so the refund coach can fire.
+
+Headless Godot 4.7.2, 0 failed: combat 4644, motion 1898, VFX 479.
+
+## 2026-09-26 — Invisible Ambush stands on the back tile
+
+Luca's 0.1.20 clip. Gloam Fade, then Ambush. No APK cut. Locked kit numbers unchanged. Ambush without a Shade and without Invisible stays parked.
+
+### Root cause
+
+Resolve already moved Invisible Gloam onto the axis back tile before the 22. The view then faded the body out on the cast cell and started the contact slash in the same beat as the snap. The painted fighter never rested behind the target, so the hit read as a slash from the current tile. A collapse sample could also keep the arrival at alpha 0, which hides that plant.
+
+The body now fades on the cast cell, snaps, and holds on the back tile before the slash and before the damage number. A late collapse sample cannot hide that hold. A miss still does not plant, and it keeps Invisible. Shade is still spent only for a Shade-origin hit.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Ambush without a Shade (and without Invisible) stays parked.
+- Stasis stays on `mobile`.
+
+Headless Godot 4.7.2, 0 failed: combat 4608, motion 1891, VFX 472.
+
 ## 2026-09-26 — Phone combat framing and planted walks
 
 Luca's 0.1.20 Gloam ambush clip. No APK cut. Locked kit numbers unchanged. Map layouts, tags, and room shapes unchanged.
