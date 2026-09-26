@@ -2045,6 +2045,31 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_unit(0)["pos"] == axis_past_front, false, "behind-Shade Ambush must not land on the axis-past front tile")
 	eq(bool(behind_hit["events"][0].get("backstab", false)), true, "facing-rear Ambush is a backstab")
 
+	# Mauro clip ~0:49: Gloam south of Kestrel Face N. Axis-past = north = FRONT.
+	# Facing-rear for Face N is south of Kestrel.
+	var clip_gloam := Vector2i(4, 5)
+	var clip_prey := Vector2i(4, 3)
+	var clip_shade := Vector2i(4, 5)
+	var clip_back := Vector2i(4, 4)
+	var clip_front := Vector2i(4, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [clip_gloam, clip_prey],
+		"kestrel_facing": "N",
+		"rolls": [1],
+	})
+	eq(_sim.is_cardinal_exact(clip_shade, clip_prey, 2), true, "Mauro-clip Shade is Manhattan 2 cardinal south")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": clip_shade, "seat": 0}).get("ok", false)), true, "Mauro-clip Drop Shade plants south of Face-N prey")
+	_complete_opponent_turn()
+	var clip_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
+	eq(bool(clip_hit.get("ok", false)), true, "Mauro-clip Ambush resolves")
+	eq(_unit(0)["pos"], clip_back, "Mauro-clip Ambush lands south of Face-N prey (facing-rear)")
+	eq(_unit(0)["pos"] == clip_front, false, "Mauro-clip Ambush must not land north (axis-past front)")
+	eq(bool(clip_hit["events"][0].get("backstab", false)), true, "Mauro-clip facing-rear Ambush is a backstab")
+
 	# Fade sets Invisible. That self-origin does not wait for an opponent turn.
 	_sim.reset_match({
 		"seed": 1,
