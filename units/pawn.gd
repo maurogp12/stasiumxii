@@ -39,6 +39,10 @@ var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
 var is_active: bool = false
+## Aim chrome while a unit spell is armed and this cell is selected.
+## The ring is view-only. It does not change range or AP.
+var target_marked: bool = false
+var _target_pulse: float = 0.0
 var stunned: bool = false
 var burning: bool = false
 var burn_remaining: int = 0
@@ -1330,11 +1334,30 @@ func _draw() -> void:
 		_draw_legacy_token()
 
 
+func set_target_marked(marked: bool) -> void:
+	if target_marked == marked:
+		return
+	target_marked = marked
+	if not marked:
+		_target_pulse = 0.0
+	_request_paint()
+
+
+func advance_target_pulse(delta: float) -> void:
+	if not target_marked:
+		return
+	_target_pulse = fposmod(_target_pulse + delta, 1.0)
+	_request_paint()
+
+
 func _draw_ground_mark() -> void:
 	var foot := SEAT_RING_CENTER
 	_draw_ellipse(foot + Vector2(0.0, 2.0), 16.0, 6.0, Color(0.08, 0.05, 0.04, 0.35))
 	_draw_ellipse(foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
 	_draw_ellipse_ring(foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	if target_marked:
+		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
+		_draw_ellipse_ring(foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
 	if burning:
 		_draw_ellipse_ring(foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
@@ -1346,6 +1369,9 @@ func _draw_ground_mark() -> void:
 func _paint_status(canvas: CanvasItem) -> void:
 	if debug_draw_tokens or not _sprite_ready():
 		return
+	if target_marked:
+		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
+		_paint_ellipse_ring(canvas, SPRITE_OFFSET, 36.0 + 6.0 * pulse, 46.0 + 4.0 * pulse, Color(1.0, 0.78, 0.28, 0.4 + 0.5 * pulse), 3.6)
 	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
 
 
@@ -1466,11 +1492,15 @@ func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
 
 
 func _draw_ellipse_ring(center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
+	_paint_ellipse_ring(self, center, rx, ry, color, width)
+
+
+func _paint_ellipse_ring(canvas: CanvasItem, center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
 	var pts := _ellipse_points(center, rx, ry)
 	if pts.is_empty():
 		return
 	pts.append(pts[0])
-	draw_polyline(pts, color, width, true)
+	canvas.draw_polyline(pts, color, width, true)
 
 
 func _paint_flame(canvas: CanvasItem, origin: Vector2) -> void:

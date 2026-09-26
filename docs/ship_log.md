@@ -2,6 +2,29 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Easier mobile target taps
+
+Luca could not reliably tap an enemy on the phone. Locked ranges, AP, and kit numbers are unchanged. Desktop mouse pick is unchanged.
+
+### What was hard
+
+The fighter is drawn about 72px above the feet. A unit cast already treated the sprite as that cell, but the capsule was 34px, and after the 0.64 board zoom a finger beside the chest missed it and hit an empty diamond. The 22px nearest-tile circle also does not cover the side of the painted diamond, so those taps selected the neighbor. On a portrait phone the viewport grows taller than 720, and the camera still fitted the board into the 320px design band, so tiles stayed small.
+
+### What a finger does now
+
+- A touch, or an Android / iOS export, uses a 52px sprite capsule. A tap beside the chest selects that living unit when the armed spell targets a unit. The east-neighbor diamond stays a tile. Walks still use the tile, not the body.
+- The same finger uses the painted 64×32 diamond, so the side of a highlighted cell selects that cell. A tap just off the board uses a 36px pad. A mouse stays at 22px.
+- Portrait framing gives the extra viewport height to the board and keeps the 260px bottom reserve. The 960×720 fit stays zoom 0.64.
+- The selected fighter pulses a ring while a unit spell is armed. The selected tile outline is thicker. Neither changes a legal cell.
+
+CombatSim still rejects an out-of-range cell after the fatter pick, and refunds the AP.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Desktop 22px diamond and 34px body.
+- No new skills. No APK cut.
+
 ## 2026-09-26 — Void gaps and Ambush blink
 
 Luca's 0.1.18 clips. No APK cut. Locked kit numbers unchanged. Ambush without a Shade stays parked.

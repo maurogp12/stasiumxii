@@ -20,8 +20,9 @@ extends Node2D
 ## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
-## The 22px diamond pick stays for walks and empty tiles. A finger that starts
-## on the ability cluster can drag onto the board and release to commit.
+## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
+## sprite capsule. Phone portrait gives extra viewport height to the board.
+## A finger that starts on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## A dashed aim line and a predicted float follow the hover. Ambush draws that
@@ -126,6 +127,8 @@ func _ready() -> void:
 	_ensure_aim_line()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
+	if not get_viewport().size_changed.is_connected(_fit_board_camera):
+		get_viewport().size_changed.connect(_fit_board_camera)
 	call_deferred("_boot")
 
 
@@ -235,6 +238,7 @@ func local_to_grid(point: Vector2) -> Vector2i:
 func _process(delta: float) -> void:
 	if not _booted:
 		return
+	_pulse_target_marks(delta)
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
@@ -390,7 +394,7 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 			_chrome_aim = false
 		return
 	var local := ($Tiles as Node2D).make_canvas_position_local(screen_pos)
-	var cell := _pick_local(local)
+	var cell := _pick_local(local, true)
 	if not _in_bounds(cell):
 		if committing:
 			_chrome_aim = false
@@ -427,15 +431,17 @@ func _commit_cell(cell: Vector2i) -> void:
 
 func _cell_under_pointer(event: InputEvent) -> Vector2i:
 	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
+	var finger := false
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
-	return _pick_local(local)
+		finger = true
+	return _pick_local(local, finger)
 
 
-func _pick_local(local: Vector2) -> Vector2i:
+func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	var prefer := _hud != null and TOUCH.spell_targets_unit(_hud.selected_spell())
 	var pawns: Array = _living_pawns_for_pick() if prefer else []
-	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer)
+	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
 
 
 func _tile_positions() -> Dictionary:
@@ -467,6 +473,34 @@ func select_tile(cell: Vector2i) -> void:
 		selected_tile.set_selected(false)
 	selected_tile = tiles[cell] as BoardTile
 	selected_tile.set_selected(true)
+	_sync_target_marks()
+
+
+## Pulse the living fighter on the selected cell while a unit spell is armed.
+## Walks and empty-tile spells leave the ring off. Rules are unchanged.
+func _sync_target_marks() -> void:
+	var cell := Vector2i(-999, -999)
+	if selected_tile != null and is_instance_valid(selected_tile):
+		cell = selected_tile.grid_position
+	var spell := ""
+	if _hud != null:
+		spell = _hud.selected_spell()
+	var show := spell != "" and TOUCH.spell_targets_unit(spell)
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		var marked := show and body.alive and body.visible and body.grid_position == cell
+		body.set_target_marked(marked)
+
+
+func _pulse_target_marks(delta: float) -> void:
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		if body.target_marked:
+			body.advance_target_pulse(delta)
 
 
 func _handle_left_click(cell: Vector2i) -> void:
@@ -1301,10 +1335,12 @@ func _paint_highlights() -> void:
 	if snap.get("match_over", false) or _busy:
 		_paint_blocked(snap)
 		_sync_aim_line()
+		_sync_target_marks()
 		return
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
 		_paint_blocked(snap)
+		_sync_target_marks()
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
@@ -1352,6 +1388,7 @@ func _paint_highlights() -> void:
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
 	_sync_aim_preview()
+	_sync_target_marks()
 
 
 ## Locked chrome. Origin and landing highlights only while legal_intents has an
@@ -1684,7 +1721,9 @@ func _rebuild_grid(size: int) -> void:
 	_fit_board_camera()
 
 
-## Zoom the 15×15 diamond into the 960×720 play band. Cell size stays 64×32.
+## Zoom the diamond into the play band. Cell size stays 64×32.
+## Desktop stays the 960×720 fit. A phone portrait (mobile pick) gives the
+## extra viewport height to the board and keeps the same bottom chrome reserve.
 ## Middle-mouse pan is clamped around that fit.
 func _fit_board_camera() -> void:
 	_ensure_camera()
@@ -1700,14 +1739,16 @@ func _fit_board_camera() -> void:
 	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
 	var board_w := maxf(max_x - min_x, 1.0)
 	var board_h := maxf(max_y - min_y, 1.0)
-	var play_w := VIEW_W - 32.0
-	var play_h := PLAY_BOTTOM - PLAY_TOP
-	var zoom := minf(play_w / board_w, play_h / board_h)
-	zoom = clampf(zoom, 0.35, 1.25)
+	var mobile := TOUCH.use_mobile_pick()
+	var viewport := Vector2(VIEW_W, VIEW_H)
+	if mobile:
+		viewport = get_viewport_rect().size
+	var band := TOUCH.play_band_for(viewport, mobile)
+	var zoom := TOUCH.board_zoom(board_w, board_h, viewport, mobile)
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
-	var play_center := Vector2(VIEW_W * 0.5, (PLAY_TOP + PLAY_BOTTOM) * 0.5)
-	var view_center := Vector2(VIEW_W * 0.5, VIEW_H * 0.5)
+	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
+	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position
