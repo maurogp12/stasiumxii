@@ -4,7 +4,8 @@
 Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
 dress-prefixed props. Stormspire (`storm_*`) is sliced by
 slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
-Crosshaven, Brinewake, and Slagcrown stay on original-tileset-b.jpg.
+Slagcrown (`slag_*`) is sliced by slice_lava_punch.py. Crosshaven and
+Brinewake stay on original-tileset-b.jpg.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.
@@ -171,15 +172,18 @@ def _patch_atlas(records: list) -> None:
         "pending/electric/storm_ground_punch.png",
         "pending/electric/storm_elevation_punch.png",
         "pending/electric/storm_props_punch.png",
+        "pending/lava/ground_punch.png",
+        "pending/lava/elevation_punch.png",
+        "pending/lava/props_punch.png",
     ]
     families = atlas["families"]
     families["windmere"] = {"pack": "ice", "prefix": "wind_", "pending_theme": None}
     families["stormspire"] = {"pack": "electric", "prefix": "storm_", "pending_theme": None}
     atlas["pending"] = {}
-    atlas["promoted"] = {
-        "ice": "pending/ice/stasium_tileset_ice.png",
-        "electric": "pending/electric/stasium_tileset_electric.png",
-    }
+    promoted = atlas.get("promoted") or {}
+    promoted["ice"] = "pending/ice/stasium_tileset_ice.png"
+    promoted["electric"] = "pending/electric/stasium_tileset_electric.png"
+    atlas["promoted"] = promoted
     written = {item["file"] for item in records}
     kept = [item for item in atlas.get("files", []) if item.get("file") not in written]
     atlas["files"] = kept + records
