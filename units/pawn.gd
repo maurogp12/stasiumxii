@@ -37,6 +37,8 @@ var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
 var class_id: String = ""
 var facing: String = "E"
+## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
+var invisible: bool = false
 var seat: int = 0
 ## Package crop for a Stasis foe. Empty on Koliseo bodies.
 var stasis_sprite: String = ""
@@ -169,6 +171,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	class_id = str(unit["class_id"])
 	stasis_sprite = str(unit.get("stasis_sprite", ""))
 	facing = str(unit["facing"])
+	invisible = bool(unit.get("invisible", false))
 	seat = int(unit.get("seat", seat))
 	hp = int(unit["hp"])
 	max_hp = int(unit["max_hp"])
@@ -561,6 +564,7 @@ func play_view_plan(plan: Dictionary) -> float:
 			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
 			if aim.length_squared() < 0.01:
 				aim = facing_screen()
+			_face_strike(aim)
 			var reach := float(step.get("reach", plan.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX)))
 			_begin_body_strip("attack", play_sec)
 			tw.tween_method(_sample_attack.bind(aim, reach), 0.0, 1.0, play_sec)
@@ -569,6 +573,7 @@ func play_view_plan(plan: Dictionary) -> float:
 		elif kind == "cast":
 			var strip_kind := str(step.get("strip", plan.get("strip", "cast")))
 			var aim_cast: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
+			_face_strike(aim_cast if aim_cast.length_squared() > 0.01 else facing_screen())
 			if strip_kind == "cast_mark" and not _strip_choice("cast_mark").is_empty():
 				var bow_sec := _fit_strip_window("cast_mark", sec, steps)
 				_begin_body_strip("cast_mark", bow_sec)
@@ -643,7 +648,9 @@ func _sample_ambush_collapse(t: float, gen: int) -> void:
 	var shrunk := lerpf(1.0, 0.12, k)
 	_sprite.scale = SPRITE_SCALE * shrunk
 	var color := rest_modulate()
-	color.a = lerpf(1.0, 0.0, k)
+	# Start from the resting alpha. Forcing 1 here flashes a solid body
+	# on a hidden Invisible pawn before the snap.
+	color.a = lerpf(color.a, 0.0, k)
 	_sprite.modulate = color
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.scale = _sprite.scale
@@ -656,8 +663,39 @@ func _sample_ambush_whiff(t: float) -> void:
 	var k := sin(clampf(t, 0.0, 1.0) * PI)
 	_sprite.scale = Vector2(SPRITE_SCALE.x * lerpf(1.0, 1.12, k), SPRITE_SCALE.y * lerpf(1.0, 0.8, k))
 	var color := rest_modulate()
-	color.a = lerpf(1.0, 0.4, k)
+	color.a = lerpf(color.a, color.a * 0.4, k)
 	_sprite.modulate = color
+
+
+## Strike and cast strips face the prey. A tie between two letters keeps the stand,
+## so a straight screen-right aim does not spin a pawn that is already facing east.
+func _face_strike(aim: Vector2) -> void:
+	if aim.length_squared() < 1.0:
+		return
+	var face := _unique_aim_facing(aim)
+	if face == "" or face == facing:
+		return
+	facing = face
+	_sync_sprite()
+
+
+func _unique_aim_facing(aim: Vector2) -> String:
+	var unit := aim.normalized()
+	var best := ""
+	var best_dot := -2.0
+	var second := -2.0
+	for face in ["N", "E", "S", "W"]:
+		var axis: Vector2 = VIEW_MOTION.FACING_SCREEN[face]
+		var dotted := unit.dot(axis.normalized())
+		if dotted > best_dot:
+			second = best_dot
+			best_dot = dotted
+			best = face
+		elif dotted > second:
+			second = dotted
+	if best == "" or best_dot - second < 0.08:
+		return ""
+	return best
 
 
 func hold_idle() -> void:
@@ -739,6 +777,9 @@ func flash_canvas() -> CanvasItem:
 func rest_modulate() -> Color:
 	if not alive:
 		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
+	# Locked Fade: do not draw a solid body while Invisible, including the walk.
+	if invisible:
+		return Color(1, 1, 1, 0)
 	return Color.WHITE
 
 

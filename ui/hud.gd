@@ -2088,10 +2088,24 @@ func _update_selected_label() -> void:
 
 func _with_shade_tip(text: String) -> String:
 	# A live Shade, or a forced selection, is not the cue. The tip appears
-	# only when legal_intents already contains an Ambush cast.
+	# only when legal_intents already contains an Ambush cast whose origin
+	# is that Shade. Invisible aims from the caster and must not say Shade.
 	if not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
 		return text
+	if _ambush_origin_is_caster():
+		return text
 	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
+
+
+func _ambush_origin_is_caster() -> bool:
+	var seat := kit_seat(_last_snap)
+	for unit in _last_snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) != seat:
+			continue
+		return bool(unit.get("invisible", false))
+	return false
 
 
 func show_spell_tooltip(spell_id: String) -> void:

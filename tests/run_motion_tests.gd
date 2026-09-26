@@ -1042,6 +1042,10 @@ func _test_strip_library_missing_and_slice() -> void:
 			eq(atlas.atlas.resource_path, drop, "%s %s plays the drop PNG" % [cls, walk_name])
 			eq(atlas.region.size, Vector2(144, 160), "%s %s cell is 144×160" % [cls, walk_name])
 			eq(walk_bank.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
+	_assert_locked_walk_png(gloam_bank, "gloam")
+	var ironjaw_walk := StripLibrary.frames_for("ironjaw")
+	eq(gloam_bank.get_frame_texture("walk_e", 0).get_image().get_data() == ironjaw_walk.get_frame_texture("walk_e", 0).get_image().get_data(), false, "gloam walk_e is not the ironjaw sheet")
+	eq(gloam_bank.get_frame_texture("walk_n", 0).get_image().get_data() == gloam_bank.get_frame_texture("walk_e", 0).get_image().get_data(), false, "gloam north walk is not the east sheet")
 	eq(gloam_bank.get_frame_count("walk_e"), 6, "gloam walk_e has 6 frames")
 	eq(gloam_bank.get_animation_loop("walk_e"), true, "gloam walk loops")
 	eq(is_equal_approx(gloam_bank.get_animation_speed("walk_e"), 12.0), true, "gloam walk is 12 fps")
@@ -1404,6 +1408,23 @@ func _test_walk_idle_matches_strip() -> void:
 			eq(rested.frame, 0, "%s stop plants frame 0" % class_id)
 			eq(rested.sprite_frames.get_frame_texture(rested.animation, rested.frame) != foreign, true, "%s stop plant is not the static portrait" % class_id)
 		pawn.free()
+	var hidden := Pawn.new()
+	get_root().add_child(hidden)
+	await process_frame
+	var concealed := _unit("gloam", "E", 0)
+	concealed["invisible"] = true
+	hidden.apply_snapshot(concealed, 0)
+	await process_frame
+	hidden.arm_driven_walk()
+	await process_frame
+	var hidden_sprite := hidden.get_node("Sprite") as CanvasItem
+	var hidden_strip := _visible_strip(hidden)
+	eq(hidden_sprite.modulate.a, 0.0, "Invisible walk does not show a solid body")
+	truthy(hidden_strip != null, "Invisible walk still binds the Gloam sheet")
+	if hidden_strip != null:
+		eq(hidden_strip.modulate.a, 0.0, "Invisible walk strip stays hidden")
+		eq(String(hidden_strip.animation), "walk_e", "Invisible walk stays on gloam walk_e")
+	hidden.free()
 
 
 func _test_batch1_disk_strips() -> void:
@@ -1488,6 +1509,14 @@ func _test_batch1_disk_strips() -> void:
 	eq(bow > 0.45 and bow <= 0.6, true, "the bow cycle fits the action lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "the bow cycle stays at 12 fps")
 	_assert_attack_impact(strip, "Mark Shot")
+	pawn.settle_motion()
+	pawn.set_facing("E")
+	mark_plan["aim"] = Vector2(-48, -16)
+	pawn.play_view_plan(mark_plan)
+	await process_frame
+	strip = _visible_strip(pawn)
+	eq(pawn.facing, "W", "Mark Shot faces the prey")
+	eq(String(strip.animation), "cast_mark_w", "Mark Shot plays the strip toward the prey")
 	pawn.settle_motion()
 	var det_hit: Dictionary = MOTION.chrome_plans([{
 		"type": "hit",
@@ -1693,6 +1722,16 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	eq(strip.scale, Vector2(0.5, 0.5), "failed strip playback does not stretch")
 	pawn.settle_motion()
 	pawn.free()
+
+
+func _assert_locked_walk_png(bank: SpriteFrames, class_id: String) -> void:
+	for face in ["n", "e", "s", "w"]:
+		var anim := "walk_%s" % face
+		var played := bank.get_frame_texture(anim, 0).get_image()
+		var sheet := (ResourceLoader.load(StripLibrary.export_png_path(class_id, "walk", face)) as Texture2D).get_image()
+		var cell := sheet.get_region(Rect2i(0, 0, StripLibrary.CELL_W, sheet.get_height()))
+		eq(played.get_width(), StripLibrary.CELL_W, "%s %s playback is one cell" % [class_id, anim])
+		eq(played.get_data(), cell.get_data(), "%s %s frame 0 is the export_2x walk cell" % [class_id, anim])
 
 
 func _assert_strip_cells(strip: AnimatedSprite2D, anim: String) -> void:

@@ -1000,7 +1000,11 @@ func _ambush_body_landed(event: Dictionary) -> bool:
 	if pawn == null or not is_instance_valid(pawn):
 		return false
 	var dest := _ambush_event_dest(event)
-	return _in_bounds(dest) and pawn.grid_position == dest
+	if not _in_bounds(dest) or pawn.grid_position != dest:
+		return false
+	# The logical cell can update before the sprite. A slash from the cast
+	# tile is still a remote hit. The body has to be standing on the landing.
+	return pawn.position.distance_to(_cell_to_local(dest)) <= 1.0
 
 
 func _ambush_event_dest(event: Dictionary) -> Vector2i:

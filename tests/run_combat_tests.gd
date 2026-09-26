@@ -55,6 +55,7 @@ func _run() -> void:
 	_test_ambush_destination_locked()
 	_test_ambush_arms_at_zero_mp()
 	_test_ambush_origin_chrome()
+	_test_ambush_shade_label_matches_origin()
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
@@ -1676,6 +1677,54 @@ func _test_ambush_origin_chrome() -> void:
 	var marker := FileAccess.get_file_as_string("res://board/shade_marker.gd")
 	truthy(marker.contains("Ambush"), "the Shade token plate can read as the Ambush origin")
 	truthy(marker.contains("Shade"), "a Shade that is not the origin still labels itself Shade")
+
+
+func _test_ambush_shade_label_matches_origin() -> void:
+	# Luca 01:06: Shade (12,4) is not 1–2 cardinal from Kestrel (14,2).
+	# The body at (14,4) is. That range is legal only while Invisible, and
+	# the status line must not say Shade while the origin is the caster.
+	var body := Vector2i(14, 4)
+	var shade_at := Vector2i(12, 4)
+	var prey := Vector2i(14, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [body, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "the far Shade plants")
+	_complete_opponent_turn()
+	eq(_sim.snapshot()["shade_tokens"][0]["pos"], shade_at, "the far Shade stays on the board")
+	eq(bool(_sim.ambush_origin(0).get("show", true)), false, "an out-of-range Shade does not open Ambush chrome")
+	eq(bool(_sim.ambush_origin(0).get("from_self", true)), false, "that hidden origin is not the body")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a Shade outside 1–2 cardinal does not arm Ambush")
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(rejected.get("ok", true)), false, "body range does not fire Ambush while the origin is the Shade")
+	eq(str(rejected.get("reason", "")), "out_of_range", "the far Shade rejects as out of range")
+	eq(_unit(0)["pos"], body, "the rejected Ambush leaves Gloam on the body")
+	eq(int(_unit(1)["hp"]), int(_unit(1)["max_hp"]), "the rejected Ambush does not damage from the body")
+	var shade_hud := CombatHUD.new()
+	shade_hud._build()
+	shade_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(shade_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "an out-of-range Shade does not advertise Ambush from Shade")
+	shade_hud.free()
+	_live_unit(0)["invisible"] = true
+	eq(bool(_sim.ambush_origin(0).get("from_self", false)), true, "Invisible switches the origin to the caster")
+	eq(_sim.ambush_origin(0).get("origin"), body, "Invisible origin is the body, not the far Shade")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible arms Ambush from the body at cardinal 2")
+	var self_hud := CombatHUD.new()
+	self_hud._build()
+	self_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(self_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "Invisible does not say Ambush from Shade")
+	self_hud.free()
+	var struck: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(struck.get("ok", false)), true, "Invisible Ambush from the body resolves")
+	eq(struck.get("events", [{}])[0].get("origin"), body, "the hit origin is the caster, not the Shade")
+	eq(_unit(0)["pos"], Vector2i(14, 1), "Invisible Ambush still plants on the back tile")
 
 
 func _test_ambush_range_from_origin() -> void:

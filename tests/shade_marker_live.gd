@@ -270,9 +270,14 @@ static func run(host: SceneTree) -> void:
 	var early_toast := false
 	var early_strike := false
 	var early_attack := false
+	var solid_while_hidden := false
 	for _i in 90:
 		await host.process_frame
-		var on_back_facing: bool = submit_pawn.grid_position == submit_back and str(submit_pawn.facing) == "E"
+		var on_back: bool = (
+			submit_pawn.grid_position == submit_back
+			and submit_pawn.position.distance_to(board._cell_to_local(submit_back)) <= 1.0
+		)
+		var on_back_facing: bool = on_back and str(submit_pawn.facing) == "E"
 		var sprite := submit_pawn.get_node_or_null("Sprite") as Node2D
 		var offset := 0.0
 		if sprite != null:
@@ -301,6 +306,10 @@ static func run(host: SceneTree) -> void:
 			early_strike = true
 		if not on_back_facing and _attack_strip_visible(submit_pawn):
 			early_attack = true
+		if sprite != null and sprite.modulate.a > 0.15:
+			solid_while_hidden = true
+		if body != null and body.visible and body.modulate.a > 0.15:
+			solid_while_hidden = true
 		if saw_hold and offset > 10.0:
 			break
 		if not bool(board.get("_view_locked")) and saw_hold:
@@ -316,6 +325,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(early_toast, false, "Invisible Ambush does not toast before the back-tile face")
 	host.eq(early_strike, false, "Invisible Ambush does not stamp the slash or float damage before the back-tile face")
 	host.eq(early_attack, false, "Invisible Ambush does not play the strike strip before the back-tile face")
+	host.eq(solid_while_hidden, false, "Invisible Ambush does not flash a solid body")
+	host.eq(submit_pawn.position.distance_to(board._cell_to_local(submit_back)) <= 1.0, true, "damage lands only after the sprite is on the back tile")
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
 	host.eq(submit_pawn.facing, "E", "submit-path contact faces Kestrel")
 	host.eq(int(foe_pawn.hp) < hp_before, true, "Invisible Ambush deals damage only after the back-tile face")
@@ -328,7 +339,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path settle leaves Gloam on the back tile")
 	host.eq(submit_pawn.position, board._cell_to_local(submit_back), "submit-path settle does not walk Gloam back")
 	var submit_sprite := submit_pawn.get_node_or_null("Sprite") as CanvasItem
-	host.eq(submit_sprite != null and submit_sprite.modulate.a > 0.9, true, "submit-path arrival restores the body")
+	host.eq(submit_sprite != null and submit_sprite.modulate.a < 0.05, true, "Invisible arrival keeps the solid body hidden")
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
