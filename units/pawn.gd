@@ -144,6 +144,8 @@ const SEAT_RING_RX := 18.0
 const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
+static var _sprite_cache: Dictionary = {}
+
 
 ## Resting combat scale. Ironjaw is larger on the board; every other class
 ## stays on the shared 0.5.
@@ -166,9 +168,6 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 ## scale so the name still clears the taller cell.
 func head_hp_y() -> float:
 	return HEAD_HP_Y * (_body_scale().y / SPRITE_SCALE.y)
-
-
-static var _sprite_cache: Dictionary = {}
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.
