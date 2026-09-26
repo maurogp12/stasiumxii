@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Walk sheet drop slot
+
+Luca approved Wakfu walk sheets. The files are not in the tree yet. The drop is a replace of the existing walk PNGs, 864×160 RGBA, six 144×160 cells. `*_frames.tres` already slices those paths. No `*_gen.png`. No second folder. Attack, cast, hit, and death stay.
+
+Looks locked for that drop: Kestrel (approved Wakfu), Ironjaw A2 (fierce helm, dual axes, crimson plate), Gloam B (amber eyes, wide grin, gold-hilt daggers, purple and gold cloak), Mender D2 (open cream/gold hood, green lantern staff), Bastion 2C (charcoal and gold, spiked mace, tower shield). Paths are listed at the top of `art/export_2x/characters/README.md`.
+
+The stride code stays: face the segment, sample the cycle from the foot, about 0.30s per tile, plant on arrival, ground marks on the Foot child.
+
 ## 2026-09-26 — Walk stride on the existing strips
 
 Luca, after the landscape pass. No APK cut. No new walk sheets. Locked kit numbers unchanged. The Batch-1 / Batch-1c files under `art/export_2x/characters/{class}/anims/*_walk_{e,s,n,w}.png` are the clips that play. `*_gen.png` stays unloaded.

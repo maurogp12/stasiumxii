@@ -1,5 +1,17 @@
 # Walk / attack strips (export_2x)
 
+## Wakfu walk drop
+
+Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160. No `*_gen.png`. No second folder. The `*_frames.tres` walk clips are AtlasTexture slices of these PNGs (cells at x = 0, 144, 288, 432, 576, 720). A new sheet of that size shows up on the next import. Attack, cast, hit, and death sheets stay put.
+
+- `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — approved Wakfu Kestrel
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2: fierce helm (iron-jaw grill, spikes, crest), dual double-bit axes, crimson battle-worn plate
+- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam B: amber/yellow eyes, wide grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
+- `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender D2, when the files arrive: cream/gold robe, open hood, green lantern staff
+- `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion 2C, when the files arrive: charcoal-grey/gold armor, spiked mace, oversized tower shield
+
+Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet.
+
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
 Kestrel and Ironjaw Batch-1 strips in this folder are **interim** PIL deformations of the locked turnarounds (silhouette and colours; limbs are approximate). Mauro can drop redrawn strips on the same paths. Animation names stay `walk_<e|s|n|w>` and `attack_<e|s|n|w>`.
@@ -18,7 +30,7 @@ SpriteFrames bank (authored slices; this is what playback uses when the file exi
 
 Animation names inside the `.tres`: `walk_e`, `walk_s`, `walk_n`, `walk_w`, `attack_e`, `attack_s`, `attack_n`, `attack_w`. Walk loops at 12 fps. Attack is one-shot. Impact frame index is **3** (0-based) for both kits.
 
-The `.tres` wins when that clip is present. A per-facing PNG fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
+Walk clips in the `.tres` are slices of the walk PNGs above, so replacing that PNG is the walk update. A per-facing PNG still fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
 
 `<class>` is `kestrel`, `ironjaw`, or `gloam` for the strips on disk. The same folders work later for `mender` and `bastion`.
 

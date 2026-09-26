@@ -10,6 +10,10 @@ class_name StripLibrary
 ## the tres left empty. See art/export_2x/characters/README.md.
 
 const EXPORT_ROOT := "res://art/export_2x/characters/"
+## Walk-sheet drop. Replace the PNG at export_png_path(class, "walk", letter).
+## 864×160 RGBA, six 144×160 cells. The class *_frames.tres slices that file.
+## Classes: kestrel, ironjaw, gloam, and the same names for mender and bastion
+## when those sheets arrive. Do not add a second folder. Never load *_gen.png.
 const GROK_DIR := "res://art/grok_project/anims/"
 
 const KINDS: Array[String] = ["walk", "attack", "cast", "cast_mark", "hit", "death"]

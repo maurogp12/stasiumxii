@@ -1011,6 +1011,16 @@ func _test_strip_library_missing_and_slice() -> void:
 					regions.append(cell)
 	var gloam_bank := StripLibrary.frames_for("gloam")
 	truthy(gloam_bank != null, "gloam strip bank loads from export_2x")
+	for cls in ["kestrel", "ironjaw", "gloam"]:
+		var walk_bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			var drop := StripLibrary.export_png_path(cls, "walk", face)
+			var atlas := walk_bank.get_frame_texture(walk_name, 0) as AtlasTexture
+			truthy(atlas != null and atlas.atlas != null, "%s %s frame 0 is an atlas slice" % [cls, walk_name])
+			eq(atlas.atlas.resource_path, drop, "%s %s plays the drop PNG" % [cls, walk_name])
+			eq(atlas.region.size, Vector2(144, 160), "%s %s cell is 144×160" % [cls, walk_name])
+			eq(walk_bank.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
 	eq(gloam_bank.get_frame_count("walk_e"), 6, "gloam walk_e has 6 frames")
 	eq(gloam_bank.get_animation_loop("walk_e"), true, "gloam walk loops")
 	eq(is_equal_approx(gloam_bank.get_animation_speed("walk_e"), 12.0), true, "gloam walk is 12 fps")
