@@ -47,4 +47,4 @@ Already on the tip, and left as they were: Drop Shade's marker lands on the clic
 
 ### Pull request
 
-PR: placeholder until the GitHub link is filled in after open. Base branch `mobile`.
+https://github.com/maurogp12/stasiumxii/pull/135 into `mobile`. Not merged.
