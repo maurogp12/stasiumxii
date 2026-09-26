@@ -1,22 +1,40 @@
 shader_type canvas_item;
 
-// Board-scale read for heroes and Stasis foes. A dark rim keeps the
-// silhouette, and a soft north light matches the arena. The texture hue stays.
-// No gameplay data.
+// Board-scale read for heroes and Stasis foes. A dark rim holds the
+// silhouette at phone size, and a warm north light matches the arena.
+// The texture hue stays. No gameplay data.
 
 void fragment() {
-	vec4 tex = texture(TEXTURE, UV);
 	vec2 px = TEXTURE_PIXEL_SIZE;
-	float n = texture(TEXTURE, UV + vec2(0.0, -px.y)).a;
-	float s = texture(TEXTURE, UV + vec2(0.0, px.y)).a;
-	float e = texture(TEXTURE, UV + vec2(px.x, 0.0)).a;
-	float w = texture(TEXTURE, UV + vec2(-px.x, 0.0)).a;
-	float neighbor = max(max(n, s), max(e, w));
-	float rim = clamp(neighbor - tex.a, 0.0, 1.0) * 0.9;
-	vec3 ink = vec3(0.10, 0.06, 0.05);
-	float north = smoothstep(0.72, 0.18, UV.y);
-	vec3 lit = tex.rgb * mix(vec3(0.92, 0.90, 0.86), vec3(1.06, 1.03, 0.96), north);
-	vec3 col = mix(ink, lit, tex.a);
-	float alpha = max(tex.a, rim);
-	COLOR = vec4(col, alpha) * COLOR;
+	vec4 tex = texture(TEXTURE, UV);
+	vec3 blur = (
+		texture(TEXTURE, UV + vec2(0.0, -px.y)).rgb
+		+ texture(TEXTURE, UV + vec2(0.0, px.y)).rgb
+		+ texture(TEXTURE, UV + vec2(px.x, 0.0)).rgb
+		+ texture(TEXTURE, UV + vec2(-px.x, 0.0)).rgb
+	) * 0.25;
+	vec3 sharp = tex.rgb + (tex.rgb - blur) * 0.7;
+	float luma = dot(sharp, vec3(0.299, 0.587, 0.114));
+	vec3 col = mix(vec3(luma), sharp, 1.38);
+	col = (col - vec3(0.5)) * 1.14 + vec3(0.5);
+	float key = smoothstep(0.92, 0.12, UV.y) * smoothstep(0.95, 0.15, UV.x);
+	col *= mix(vec3(0.80, 0.76, 0.70), vec3(1.14, 1.08, 0.98), key);
+	float ring = 0.0;
+	ring = max(ring, texture(TEXTURE, UV + vec2(px.x * 2.0, 0.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(-px.x * 2.0, 0.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(0.0, px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(0.0, -px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(px.x * 2.0, px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(-px.x * 2.0, px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(px.x * 2.0, -px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(-px.x * 2.0, -px.y * 2.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(px.x * 3.0, 0.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(-px.x * 3.0, 0.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(0.0, px.y * 3.0)).a);
+	ring = max(ring, texture(TEXTURE, UV + vec2(0.0, -px.y * 3.0)).a);
+	float rim = smoothstep(0.2, 0.75, ring) * (1.0 - tex.a);
+	vec3 ink = vec3(0.07, 0.04, 0.035);
+	vec3 rgb = mix(ink, clamp(col, vec3(0.0), vec3(1.12)), tex.a);
+	float alpha = max(tex.a, rim * 0.94);
+	COLOR = vec4(rgb, alpha) * COLOR;
 }

@@ -2,6 +2,27 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Graphics lift on the same boards
+
+Same Koliseo and Stasis layouts, tags, and room shapes. The paint, the board read, and the contact flashes got louder. Rosie’s preview stays a palette reference. `*_gen.png` stays unloaded.
+
+### Player-visible
+
+- Tile sheets are richer and sharper. Each diamond keeps its silhouette and picks up a north facet plus a warm lip. Biome grades stay the shipped colors. No glass wash.
+- Heroes, Batch-1 / Batch-1c strips, and the Stasis package crops keep their subjects and the `(0, -72)` foot. A darker rim and a warmer light make them readable at phone scale. Hub and class portraits use those same files.
+- A hit flash, the ground crack, and the shot trail read larger. Shake stays 4px. A miss is still MISS and still breaks before contact.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Map layouts, board geometry, tags, and room shapes.
+- Ambush teleport resolve, Void pathing, and mobile target hit-area sizing.
+- No new class kits. No APK cut.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+`tests/run_koliseo_maps_tests.gd` — 284 passed. `tests/run_motion_tests.gd` — 1853 passed. `tests/run_vfx_tests.gd` — 439 passed. `tests/run_sprite_tests.gd` — 234 passed.
+
 ## 2026-09-26 — Koliseo art and movement feel
 
 Rosie Sunmeadow pass on `mobile`. Presentation only. The preview is a palette and feel reference. Koliseo and Stasis keep their layouts, tags, and room shapes.
