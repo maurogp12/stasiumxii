@@ -130,6 +130,17 @@ func _test_landscape_poster() -> void:
 		eq(tile.position.x > prev_x, true, "%s sits to the right of the previous tile" % hub.door_id(index))
 		eq(tile.size.y >= 72.0, true, "%s tile stays a fat target" % hub.door_id(index))
 		prev_x = tile.position.x
+	var first: Button = hub._doors[1]
+	var second: Button = hub._doors[2]
+	var gap := second.position.x - (first.position.x + first.size.x)
+	eq(gap >= 10.0, true, "RAID tiles keep a visible gap")
+	eq(first.position.y + first.size.y < hub._footer.position.y - 8.0, true, "RAID row clears the footer rule")
+	near(first.position.x, banner.position.x, "RAID row lines up with the Koliseo banner")
+	var plate := first.get_node("Art") as TextureRect
+	eq(plate.stretch_mode, TextureRect.STRETCH_KEEP_ASPECT_CENTERED, "RAID plates keep the nameplate in frame")
+	var nameplate := first.get_node("Nameplate") as Label
+	eq(nameplate.text, "CROSSHAVEN STASIS", "Crosshaven shows the full stasis name")
+	eq(nameplate.get_theme_font_size("font_size") >= 8, true, "the nameplate has a readable size")
 	var update_button := hub.find_child("Actualizar", true, false) as Button
 	truthy(update_button != null, "landscape hub keeps Actualizar")
 	hub.free()

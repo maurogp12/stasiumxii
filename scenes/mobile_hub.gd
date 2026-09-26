@@ -201,34 +201,35 @@ func _layout() -> void:
 	var raid_h := 28.0
 	var footer_h := 18.0
 	var gap := 8.0
-	var tile_gap := 8.0
-	var tile_w := (width - tile_gap * 4.0) / 5.0
-	var tile_h := tile_w / _tile_ratio
-	var banner_h := width / _banner_ratio
-	var cluster := title_h + gap + banner_h + gap + raid_h + gap + tile_h
-	var room := bottom_limit - footer_h - gap - top
-	if cluster > room and cluster > 0.0:
-		var scale := room / cluster
-		banner_h *= scale
-		tile_h *= scale
-		title_h *= clampf(scale + 0.15, 0.7, 1.0)
-		var fitted := tile_h * _tile_ratio
-		if fitted < tile_w:
-			tile_w = fitted
-		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
-	var extra := maxf(room - cluster, 0.0)
-	# Keep the poster under the top frame. Extra space sits around the
-	# plates instead of stretching them. The Koliseo plate keeps the
-	# art's aspect so the lineup and the KOLISEO label stay in frame.
-	var y := top + minf(extra * 0.08, 28.0)
+	var tile_gap := 14.0
+	# The footer gold rule stays clear of the nameplates. The RAID row
+	# shares the Koliseo banner's width so the five cuadros sit under it.
+	var footer_clear := 22.0
+	var room := bottom_limit - footer_h - footer_clear - top
+	var fit := _fit_raid_row(width, room, title_h, raid_h, gap, tile_gap)
+	if fit.x <= 0.0:
+		title_h = 40.0
+		tile_gap = 10.0
+		fit = _fit_raid_row(width, room, title_h, raid_h, gap, tile_gap)
+	if fit.x <= 0.0:
+		footer_clear = 8.0
+		room = bottom_limit - footer_h - footer_clear - top
+		fit = _fit_raid_row(width, room, title_h, raid_h, gap, tile_gap)
+	var banner_w := fit.x
+	var banner_h := fit.y
+	var tile_w := fit.z
+	var tile_h := fit.w
+	if banner_w <= 0.0:
+		banner_w = width
+		banner_h = float(DOOR_MIN_HEIGHT)
+		tile_w = (width - tile_gap * 4.0) / 5.0
+		tile_h = float(DOOR_MIN_HEIGHT)
+	# Keep the poster under the top frame. Extra space stays above the
+	# footer rule instead of stretching the plates onto it.
+	var y := top
 	_title_row.position = Vector2(left, y)
 	_title_row.size = Vector2(width, title_h)
 	y += title_h + gap
-	var banner_w := width
-	if _banner_ratio > 0.0:
-		var fitted_w := banner_h * _banner_ratio
-		if fitted_w < width:
-			banner_w = fitted_w
 	_banner.position = Vector2(left + (width - banner_w) * 0.5, y)
 	_banner.size = Vector2(banner_w, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
 	y += _banner.size.y + gap
@@ -236,7 +237,7 @@ func _layout() -> void:
 	_raid_row.size = Vector2(width, raid_h)
 	y += raid_h + gap
 	var row_w := tile_w * 5.0 + tile_gap * 4.0
-	var row_x := left + (width - row_w) * 0.5
+	var row_x := _banner.position.x + (banner_w - row_w) * 0.5
 	var tile_index := 0
 	for index in _doors.size():
 		if _door_ids[index] == "koliseo":
@@ -244,9 +245,55 @@ func _layout() -> void:
 		var tile := _doors[index]
 		tile.position = Vector2(row_x + float(tile_index) * (tile_w + tile_gap), y)
 		tile.size = Vector2(tile_w, maxf(tile_h, float(DOOR_MIN_HEIGHT)))
+		_fit_nameplate(tile)
 		tile_index += 1
 	_footer.position = Vector2(left, bottom_limit - footer_h)
 	_footer.size = Vector2(width, footer_h)
+
+
+## Widest Koliseo banner whose five RAID plates still fit in `room` at
+## `tile_gap`, each plate keeping the art aspect and a 72px hit target.
+## Returns (banner_w, banner_h, tile_w, tile_h), or zero when it cannot.
+func _fit_raid_row(content_w: float, room: float, title_h: float, raid_h: float, gap: float, tile_gap: float) -> Vector4:
+	if _banner_ratio <= 0.0 or _tile_ratio <= 0.0 or content_w <= tile_gap * 4.0:
+		return Vector4.ZERO
+	var lo := 64.0
+	var hi := content_w
+	var best := Vector4.ZERO
+	for _i in 24:
+		var banner_w := (lo + hi) * 0.5
+		var banner_h := banner_w / _banner_ratio
+		var tile_w := (banner_w - tile_gap * 4.0) / 5.0
+		var tile_h := tile_w / _tile_ratio
+		var cluster := title_h + gap + banner_h + gap + raid_h + gap + tile_h
+		if tile_w > 8.0 and tile_h >= float(DOOR_MIN_HEIGHT) and cluster <= room:
+			best = Vector4(banner_w, banner_h, tile_w, tile_h)
+			lo = banner_w
+		else:
+			hi = banner_w
+	return best
+
+
+func _fit_nameplate(tile: Button) -> void:
+	var nameplate := tile.get_node_or_null("Nameplate") as Label
+	if nameplate == null or _font == null:
+		return
+	var pad := 8.0
+	var max_w := maxf(tile.size.x - pad * 2.0, 8.0)
+	var size := 22
+	while size > 8:
+		var measured := _font.get_string_size(nameplate.text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+		if measured <= max_w:
+			break
+		size -= 1
+	nameplate.add_theme_font_size_override("font_size", size)
+	# Sit in the dark name bar under the portrait (about the bottom 16%).
+	var bar_h := maxf(tile.size.y * 0.16, float(size) + 4.0)
+	var inset := tile.size.y * 0.035
+	nameplate.offset_left = pad
+	nameplate.offset_right = -pad
+	nameplate.offset_bottom = -inset
+	nameplate.offset_top = -(inset + bar_h)
 
 
 func _make_title_row() -> HBoxContainer:
@@ -337,12 +384,17 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 	var hidden := Color(0, 0, 0, 0)
 	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
 		button.add_theme_color_override(color_name, hidden)
+	# The painted plate is the label. A full-size font still reserves
+	# width and was pushing the five tiles into each other.
+	button.add_theme_font_size_override("font_size", 1)
 	var plate := TextureRect.new()
 	plate.name = "Art"
 	plate.texture = tex
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if framed else TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	# Centered keeps the baked nameplate inside the tile. Covered zoom
+	# was clipping the last letters of STASIS when the button aspect drifted.
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if framed:
 		plate.offset_left = 1
@@ -350,6 +402,18 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 		plate.offset_right = -1
 		plate.offset_bottom = -1
 	button.add_child(plate)
+	if not framed:
+		var nameplate := Label.new()
+		nameplate.name = "Nameplate"
+		nameplate.text = label.to_upper()
+		nameplate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		nameplate.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		nameplate.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		nameplate.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+		if _font != null:
+			nameplate.add_theme_font_override("font", _font)
+		nameplate.add_theme_color_override("font_color", GOLD_BRIGHT)
+		button.add_child(nameplate)
 	button.mouse_entered.connect(_tint_art.bind(plate, Color(1.07, 1.045, 0.98)))
 	button.mouse_exited.connect(_tint_art.bind(plate, Color.WHITE))
 	button.button_down.connect(_tint_art.bind(plate, Color(0.8, 0.76, 0.68)))
