@@ -2,10 +2,11 @@ extends Control
 class_name MobileHub
 
 ## Mobile-branch entry (`project.godot` `run/main_scene`).
-## Koliseo is PvP into the five existing boards (class select, then a random
-## hot-seat arena). Each Stasis door opens that biome's mobile dungeon
-## (scenes/stasis_run.tscn). Luca overnight 2026-09-25 unparked this for the
-## phone APK only. Do not wire these scenes into PC main.
+## The hub is Luca's menu: a Koliseo banner over a RAID row of five
+## Stasis portraits. Koliseo is PvP into the five existing boards (class
+## select, then a random hot-seat arena). Each Stasis tile opens that
+## biome's mobile dungeon (scenes/stasis_run.tscn). Do not wire these
+## scenes into PC main.
 ## `--dedicated`, `--class`, `--queue`, `--join`, and `--host` skip this
 ## screen and follow the class-select route (no map picker).
 
@@ -15,9 +16,16 @@ const KOLISEO_SCENE := "res://scenes/class_select.tscn"
 ## Exact ship ids. Files live at art/maps/arena_colosseum_v2/tiled/{id}_15x15.*
 const BIOME_IDS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
 const TAGS_ROOT := "res://art/maps/arena_colosseum_v2/tiled/"
-## Fat hit targets on the 960×720 canvas. The stack fits that window, and
-## the buttons grow when stretch aspect expand adds height (portrait).
+const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
+const BANNER_ART := "res://art/ui/hub/koliseo_banner.png"
+## Fat hit targets on the 960×720 canvas. Portrait expand keeps this floor
+## and does not crop the plates; spare height sits around the same layout.
 const DOOR_MIN_HEIGHT := 72
+
+const NAVY := Color(0.008, 0.028, 0.07)
+const GOLD := Color(0.855, 0.69, 0.4)
+const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
+const GOLD_DIM := Color(0.62, 0.49, 0.28)
 
 ## Biome id for the stub scene. Empty until a Stasis door is pressed.
 static var pending_biome_id: String = ""
@@ -25,6 +33,13 @@ static var pending_biome_id: String = ""
 var _auto_launch: bool = true
 var _doors: Array[Button] = []
 var _door_ids: Array[String] = []
+var _font: Font
+var _title_row: Control
+var _banner: Button
+var _raid_row: Control
+var _footer: Control
+var _banner_ratio: float = 1536.0 / 510.0
+var _tile_ratio: float = 292.0 / 410.0
 
 
 static func boot_route(args: PackedStringArray) -> String:
@@ -52,12 +67,36 @@ static func tags_path(map_id: String) -> String:
 	return TAGS_ROOT + "%s_15x15_tags.json" % id
 
 
+static func raid_art_path(map_id: String) -> String:
+	var id := map_id.strip_edges().to_lower()
+	if not BIOME_IDS.has(id):
+		return ""
+	return "res://art/ui/hub/raid_%s.png" % id
+
+
+static func paint_star(canvas: CanvasItem, center: Vector2, radius: float, tint: Color) -> void:
+	var points := PackedVector2Array()
+	var inner := radius * 0.36
+	for i in 8:
+		var angle := -PI * 0.5 + float(i) * PI * 0.25
+		var reach := radius if i % 2 == 0 else inner
+		points.append(center + Vector2(cos(angle), sin(angle)) * reach)
+	canvas.draw_colored_polygon(points, tint)
+	canvas.draw_circle(center, maxf(radius * 0.14, 0.8), tint.lightened(0.45))
+
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	resized.connect(_on_resized)
 	if _auto_launch and boot_route(OS.get_cmdline_user_args()) != "picker":
 		call_deferred("open_koliseo")
 		return
 	_build()
+
+
+func _on_resized() -> void:
+	_layout()
+	queue_redraw()
 
 
 func door_count() -> int:
@@ -93,81 +132,300 @@ func open_stasis(map_id: String) -> void:
 	get_tree().change_scene_to_file(STASIS_RUN)
 
 
+func _draw() -> void:
+	var extents := size
+	if extents.x < 2.0 or extents.y < 2.0:
+		return
+	draw_rect(Rect2(Vector2.ZERO, extents), NAVY)
+	var inset := 11.0
+	var frame := Rect2(inset, inset, extents.x - inset * 2.0, extents.y - inset * 2.0)
+	draw_rect(frame, GOLD_DIM, false, 1.15)
+	_draw_corners(frame)
+
+
 func _build() -> void:
-	var bg := ColorRect.new()
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	bg.color = Color(0.09, 0.08, 0.08)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-
-	var margin := MarginContainer.new()
-	margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 20)
-	margin.add_theme_constant_override("margin_right", 20)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	add_child(margin)
-
-	var col := VBoxContainer.new()
-	col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_theme_constant_override("separation", 8)
-	margin.add_child(col)
-
-	var title := Label.new()
-	title.text = "STASIUM XII"
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Color(0.95, 0.9, 0.82))
-	col.add_child(title)
-
-	var blurb := Label.new()
-	blurb.text = "Hub"
-	blurb.add_theme_font_size_override("font_size", 18)
-	blurb.add_theme_color_override("font_color", Color(0.78, 0.74, 0.7))
-	col.add_child(blurb)
-
-	_add_door(col, "koliseo", "Koliseo", true)
+	_font = _load_font()
+	_title_row = _make_title_row()
+	add_child(_title_row)
+	var banner_tex := load(BANNER_ART) as Texture2D
+	if banner_tex != null and banner_tex.get_height() > 0:
+		_banner_ratio = float(banner_tex.get_width()) / float(banner_tex.get_height())
+	_banner = _make_art_button("Koliseo", banner_tex, true)
+	_banner.pressed.connect(open_koliseo)
+	add_child(_banner)
+	_remember_door(_banner, "koliseo")
+	_raid_row = _make_raid_header()
+	add_child(_raid_row)
+	var sample := load(raid_art_path(BIOME_IDS[0])) as Texture2D
+	if sample != null and sample.get_height() > 0:
+		_tile_ratio = float(sample.get_width()) / float(sample.get_height())
 	for map_id in BIOME_IDS:
-		_add_door(col, map_id, "%s Stasis" % title_of(map_id), false)
+		var tex := load(raid_art_path(map_id)) as Texture2D
+		var button := _make_art_button("%s Stasis" % title_of(map_id), tex, false)
+		button.pressed.connect(open_stasis.bind(map_id))
+		add_child(button)
+		_remember_door(button, map_id)
+	_footer = FooterRule.new()
+	add_child(_footer)
+	_layout()
 
 
-func _add_door(parent: Node, door_id: String, label: String, koliseo: bool) -> void:
-	var button := Button.new()
-	button.text = label
-	button.custom_minimum_size = Vector2(0, DOOR_MIN_HEIGHT)
-	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button.focus_mode = Control.FOCUS_ALL
-	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	button.add_theme_font_size_override("font_size", 22)
-	button.add_theme_color_override("font_color", Color(0.98, 0.96, 0.92))
-	button.add_theme_color_override("font_hover_color", Color(1, 0.98, 0.94))
-	button.add_theme_color_override("font_pressed_color", Color(0.98, 0.96, 0.92))
-	button.add_theme_stylebox_override("normal", _door_style(koliseo, false))
-	button.add_theme_stylebox_override("hover", _door_style(koliseo, true))
-	button.add_theme_stylebox_override("pressed", _door_style(koliseo, true))
-	button.add_theme_stylebox_override("focus", _door_style(koliseo, true))
-	if koliseo:
-		button.pressed.connect(open_koliseo)
-	else:
-		button.pressed.connect(open_stasis.bind(door_id))
-	parent.add_child(button)
+func _remember_door(button: Button, door_id: String) -> void:
 	_doors.append(button)
 	_door_ids.append(door_id)
 
 
-func _door_style(koliseo: bool, lit: bool) -> StyleBoxFlat:
+func _layout() -> void:
+	if _title_row == null:
+		return
+	var extents := size
+	if extents.x < 64.0 or extents.y < 64.0:
+		return
+	var margin := 18.0
+	var left := margin
+	var width := extents.x - margin * 2.0
+	var top := margin
+	var bottom_limit := extents.y - margin
+	var title_h := 42.0
+	var raid_h := 28.0
+	var footer_h := 18.0
+	var gap := 8.0
+	var tile_gap := 8.0
+	var tile_w := (width - tile_gap * 4.0) / 5.0
+	var tile_h := tile_w / _tile_ratio
+	var banner_h := width / _banner_ratio
+	var cluster := title_h + gap + banner_h + gap + raid_h + gap + tile_h
+	var room := bottom_limit - footer_h - gap - top
+	if cluster > room and cluster > 0.0:
+		var scale := room / cluster
+		banner_h *= scale
+		tile_h *= scale
+		title_h *= clampf(scale + 0.15, 0.7, 1.0)
+		var fitted := tile_h * _tile_ratio
+		if fitted < tile_w:
+			tile_w = fitted
+		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
+	var extra := maxf(room - cluster, 0.0)
+	# Keep the poster under the top frame. Portrait height stays below the
+	# footer star instead of stretching the plates.
+	var y := top + minf(extra * 0.08, 28.0)
+	_title_row.position = Vector2(left, y)
+	_title_row.size = Vector2(width, title_h)
+	y += title_h + gap
+	_banner.position = Vector2(left, y)
+	_banner.size = Vector2(width, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
+	y += _banner.size.y + gap
+	_raid_row.position = Vector2(left, y)
+	_raid_row.size = Vector2(width, raid_h)
+	y += raid_h + gap
+	var row_w := tile_w * 5.0 + tile_gap * 4.0
+	var row_x := left + (width - row_w) * 0.5
+	var tile_index := 0
+	for index in _doors.size():
+		if _door_ids[index] == "koliseo":
+			continue
+		var tile := _doors[index]
+		tile.position = Vector2(row_x + float(tile_index) * (tile_w + tile_gap), y)
+		tile.size = Vector2(tile_w, maxf(tile_h, float(DOOR_MIN_HEIGHT)))
+		tile_index += 1
+	_footer.position = Vector2(left, bottom_limit - footer_h)
+	_footer.size = Vector2(width, footer_h)
+
+
+func _make_title_row() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var star := StarMark.new()
+	star.radius = 9.0
+	star.custom_minimum_size = Vector2(22, 22)
+	row.add_child(star)
+	var title := Label.new()
+	title.text = "STASIUM XII"
+	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if _font != null:
+		title.add_theme_font_override("font", _font)
+	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_color_override("font_color", GOLD_BRIGHT)
+	row.add_child(title)
+	var rule := GoldRule.new()
+	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(rule)
+	return row
+
+
+func _make_raid_header() -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var swords := SwordMark.new()
+	swords.custom_minimum_size = Vector2(22, 22)
+	row.add_child(swords)
+	var label := Label.new()
+	label.text = "RAID"
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if _font != null:
+		label.add_theme_font_override("font", _font)
+	label.add_theme_font_size_override("font_size", 16)
+	label.add_theme_color_override("font_color", GOLD)
+	row.add_child(label)
+	var spacer := Control.new()
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(spacer)
+	return row
+
+
+func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
+	var button := Button.new()
+	button.text = label
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(0, DOOR_MIN_HEIGHT)
+	button.clip_contents = true
+	if _font != null:
+		button.add_theme_font_override("font", _font)
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_color_override("font_color", GOLD_BRIGHT)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", GOLD)
+	var empty := StyleBoxEmpty.new()
+	for style_name in ["normal", "hover", "pressed", "focus", "disabled"]:
+		button.add_theme_stylebox_override(style_name, empty)
+	if framed:
+		button.add_theme_stylebox_override("normal", _banner_style(false))
+		button.add_theme_stylebox_override("hover", _banner_style(true))
+		button.add_theme_stylebox_override("pressed", _banner_style(false))
+		button.add_theme_stylebox_override("focus", _banner_style(true))
+	if tex == null:
+		return button
+	var hidden := Color(0, 0, 0, 0)
+	for color_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color", "font_disabled_color"]:
+		button.add_theme_color_override(color_name, hidden)
+	var plate := TextureRect.new()
+	plate.name = "Art"
+	plate.texture = tex
+	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	if framed:
+		plate.offset_left = 1
+		plate.offset_top = 1
+		plate.offset_right = -1
+		plate.offset_bottom = -1
+	button.add_child(plate)
+	button.mouse_entered.connect(_tint_art.bind(plate, Color(1.07, 1.045, 0.98)))
+	button.mouse_exited.connect(_tint_art.bind(plate, Color.WHITE))
+	button.button_down.connect(_tint_art.bind(plate, Color(0.8, 0.76, 0.68)))
+	button.button_up.connect(_tint_art.bind(plate, Color.WHITE))
+	button.focus_entered.connect(_tint_art.bind(plate, Color(1.08, 1.05, 0.96)))
+	button.focus_exited.connect(_tint_art.bind(plate, Color.WHITE))
+	return button
+
+
+func _banner_style(lit: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	if koliseo:
-		style.bg_color = Color(0.50, 0.34, 0.14) if lit else Color(0.40, 0.26, 0.10)
-		style.border_color = Color(0.93, 0.78, 0.42)
-	else:
-		style.bg_color = Color(0.20, 0.26, 0.32) if lit else Color(0.14, 0.18, 0.22)
-		style.border_color = Color(0.55, 0.66, 0.74)
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(12)
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = GOLD_BRIGHT if lit else GOLD
+	style.set_border_width_all(1)
 	return style
+
+
+func _tint_art(plate: TextureRect, tint: Color) -> void:
+	plate.self_modulate = tint
+
+
+func _load_font() -> Font:
+	var loaded := load(HUB_FONT) as Font
+	if loaded == null:
+		return null
+	var font := loaded.duplicate() as Font
+	if font == null:
+		font = loaded
+	if font.has_method("set_extra_spacing"):
+		font.set_extra_spacing(0, TextServer.SPACING_GLYPH, 2)
+	return font
+
+
+func _draw_corners(frame: Rect2) -> void:
+	var corners: Array[Vector2] = [
+		frame.position,
+		Vector2(frame.end.x, frame.position.y),
+		frame.end,
+		Vector2(frame.position.x, frame.end.y),
+	]
+	var signs: Array[Vector2] = [
+		Vector2(1, 1),
+		Vector2(-1, 1),
+		Vector2(-1, -1),
+		Vector2(1, -1),
+	]
+	for i in 4:
+		_draw_bracket(corners[i], signs[i], 20.0, GOLD, 1.6)
+		_draw_bracket(corners[i] + signs[i] * 4.0, signs[i], 11.0, GOLD_DIM, 1.05)
+
+
+func _draw_bracket(origin: Vector2, direction: Vector2, length: float, tint: Color, width: float) -> void:
+	draw_line(origin, origin + Vector2(direction.x, 0.0) * length, tint, width, true)
+	draw_line(origin, origin + Vector2(0.0, direction.y) * length, tint, width, true)
+
+
+class StarMark extends Control:
+	var radius: float = 7.0
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		MobileHub.paint_star(self, size * 0.5, radius, Color(0.93, 0.8, 0.48))
+
+
+class GoldRule extends Control:
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		custom_minimum_size = Vector2(24, 8)
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var y := size.y * 0.55
+		draw_line(Vector2(0, y), Vector2(size.x, y), Color(0.72, 0.58, 0.34, 0.9), 1.05, true)
+
+
+class SwordMark extends Control:
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var tint := Color(0.86, 0.7, 0.4)
+		var center := size * 0.5
+		_sword(center + Vector2(-7.0, -8.0), center + Vector2(6.5, 7.5), tint)
+		_sword(center + Vector2(7.0, -8.0), center + Vector2(-6.5, 7.5), tint)
+
+	func _sword(hilt: Vector2, tip: Vector2, tint: Color) -> void:
+		var direction := (tip - hilt).normalized()
+		var normal := Vector2(-direction.y, direction.x)
+		var guard := hilt.lerp(tip, 0.58)
+		draw_line(hilt, tip, tint, 1.7, true)
+		draw_line(guard - normal * 3.4, guard + normal * 3.4, tint, 1.45, true)
+		draw_circle(hilt, 1.35, tint)
+
+
+class FooterRule extends Control:
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		resized.connect(queue_redraw)
+
+	func _draw() -> void:
+		var y := size.y * 0.5
+		var mid := size.x * 0.5
+		var tint := Color(0.75, 0.6, 0.35, 0.95)
+		draw_line(Vector2(0, y), Vector2(mid - 16.0, y), tint, 1.05, true)
+		draw_line(Vector2(mid + 16.0, y), Vector2(size.x, y), tint, 1.05, true)
+		MobileHub.paint_star(self, Vector2(mid, y), 6.5, Color(0.93, 0.8, 0.48))
