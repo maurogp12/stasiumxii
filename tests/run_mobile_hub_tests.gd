@@ -1,7 +1,7 @@
 extends SceneTree
 
-## Mobile hub shell. Koliseo opens class select. Each Stasis door is a stub
-## that can read that biome's 15×15 tags. No combat changes.
+## Mobile hub shell. Koliseo opens class select. Each Stasis door opens the
+## mobile dungeon run for that biome (not the coming-soon stub).
 ## Run: godot --headless --path . -s res://tests/run_mobile_hub_tests.gd
 
 var _failed: int = 0
@@ -17,7 +17,7 @@ func _run() -> void:
 	_test_boot_scene()
 	_test_cli_still_skips_to_koliseo_route()
 	_test_hub_doors()
-	_test_stasis_stubs()
+	_test_stasis_runs()
 	_test_sources_leave_combat_alone()
 	print("Mobile hub tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -35,7 +35,8 @@ func _test_boot_scene() -> void:
 	truthy(preset.contains("com.maurogp12.stasiumxii.mobile"), "Android package id is unchanged")
 	truthy(FileAccess.file_exists("res://scenes/class_select.tscn"), "class select scene remains")
 	truthy(FileAccess.file_exists("res://scenes/mobile_hub.tscn"), "hub scene exists")
-	truthy(FileAccess.file_exists("res://scenes/stasis_stub.tscn"), "stasis stub scene exists")
+	truthy(FileAccess.file_exists("res://scenes/stasis_run.tscn"), "stasis run scene exists")
+	truthy(FileAccess.file_exists("res://scenes/stasis_fight.tscn"), "stasis fight scene exists")
 
 
 func _test_cli_still_skips_to_koliseo_route() -> void:
@@ -90,38 +91,55 @@ func _test_hub_doors() -> void:
 	hub.free()
 
 
-func _test_stasis_stubs() -> void:
+func _test_stasis_runs() -> void:
 	var script: Script = load("res://scenes/mobile_hub.gd")
+	var bosses := {
+		"crosshaven": "Warden of the Sheaves",
+		"brinewake": "Captain Brineclaw",
+		"slagcrown": "Slagheart the Emberbrute",
+		"windmere": "Serra the Gale Sentinel",
+		"stormspire": "Tyrant Coilspire",
+	}
 	for map_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
 		script.pending_biome_id = map_id
-		var stub := _stub()
-		eq(stub.biome_id(), map_id, "%s stub keeps the biome id" % map_id)
-		eq(stub.title_text(), "%s Stasis" % MobileHub.title_of(map_id), "%s stub titles the biome" % map_id)
-		eq(stub.tags_ok(), true, "%s tags board loads" % map_id)
-		eq(stub.loaded_tags_path(), "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % map_id, "%s stub loads that id's tags file" % map_id)
-		eq(stub.board_size(), Vector2i(15, 15), "%s preview is 15×15" % map_id)
-		eq(stub.preview_cells(), 225, "%s preview keeps every tags cell" % map_id)
-		eq(stub._blurb.text, CellTagMap.blurb_of(map_id), "%s stub uses the catalog blurb" % map_id)
-		truthy(stub.status_text().contains("Stasis coming soon"), "%s stub says Stasis is not ready" % map_id)
-		truthy(stub.status_text().contains("not a fight"), "%s preview is non-combat" % map_id)
-		stub.back_to_hub()
-		stub.free()
+		var run := _run_scene()
+		eq(run.title_text(), StasisCatalog.door_name(map_id), "%s run titles the door" % map_id)
+		eq(run.body_text().contains(bosses[map_id]), true, "%s run names the boss" % map_id)
+		eq(run.body_text().contains(CellTagMap.blurb_of(map_id)), true, "%s run uses the catalog blurb" % map_id)
+		for trash_name in StasisCatalog.trash_names(map_id):
+			eq(run.body_text().contains(trash_name), true, "%s run names %s" % [map_id, trash_name])
+		eq(run.note_text().contains("provisional"), true, "%s run labels foe numbers provisional" % map_id)
+		eq(run.note_text().contains("coming soon"), false, "%s run is not the coming-soon stub" % map_id)
+		eq(run.class_button_count(), 5, "%s run offers the five classes" % map_id)
+		for index in run.class_button_count():
+			var button: Button = run._class_buttons[index]
+			eq(button.custom_minimum_size.y >= 48, true, "%s class button clears the 48px floor" % map_id)
+		eq(run.pick_class("not_a_class"), false, "%s run rejects an unknown class" % map_id)
+		eq(run.pick_class("kestrel"), true, "%s run can pick Kestrel" % map_id)
+		eq(StasisCatalog.class_id, "kestrel", "%s pick stores the class" % map_id)
+		run.back_to_hub()
+		eq(StasisCatalog.biome_id, "", "%s back clears the run" % map_id)
+		run.free()
 	script.pending_biome_id = ""
-	var empty := _stub()
-	eq(empty.tags_ok(), false, "an empty door does not invent a board")
-	truthy(empty.status_text().contains("Stasis coming soon"), "empty stub still says coming soon")
+	var empty := _run_scene()
+	eq(empty.title_text(), "Stasis", "an empty door does not invent a gate")
+	eq(empty.body_text().contains("coming soon"), false, "empty run is not the coming-soon stub")
 	empty.free()
 	script.pending_biome_id = ""
 
 
 func _test_sources_leave_combat_alone() -> void:
 	var hub_src := FileAccess.get_file_as_string("res://scenes/mobile_hub.gd")
-	var stub_src := FileAccess.get_file_as_string("res://scenes/stasis_stub.gd")
+	var run_src := FileAccess.get_file_as_string("res://scenes/stasis_run.gd")
 	var select_src := FileAccess.get_file_as_string("res://scenes/class_select.gd")
+	var main_src := FileAccess.get_file_as_string("res://main.tscn")
 	eq(hub_src.contains("func pick_map"), false, "hub has no map picker")
 	eq(hub_src.contains("CombatSim"), false, "hub does not touch CombatSim")
-	eq(stub_src.contains("CombatSim"), false, "stasis stub does not touch CombatSim")
-	eq(stub_src.contains("reset_match"), false, "stasis stub does not start a match")
+	truthy(hub_src.contains("res://scenes/stasis_run.tscn"), "hub opens the stasis run")
+	eq(hub_src.contains("stasis_stub"), false, "hub does not open the coming-soon stub")
+	eq(run_src.contains("coming soon"), false, "stasis run has no coming-soon copy")
+	eq(main_src.contains("stasis_"), false, "PC duel scene does not reference Stasis")
+	eq(select_src.contains("stasis_"), false, "class select does not reference Stasis")
 	truthy(select_src.contains("res://scenes/mobile_hub.tscn"), "class select can return to the hub")
 	truthy(select_src.contains("roll_hotseat_map"), "Koliseo still rolls a hot-seat arena")
 	eq(select_src.contains("func pick_map"), false, "class select still has no map picker")
@@ -134,11 +152,11 @@ func _hub() -> Node:
 	return hub
 
 
-func _stub() -> Node:
-	var stub: Node = (load("res://scenes/stasis_stub.tscn") as PackedScene).instantiate()
-	stub._auto_launch = false
-	root.add_child(stub)
-	return stub
+func _run_scene() -> Node:
+	var run: Node = (load("res://scenes/stasis_run.tscn") as PackedScene).instantiate()
+	run._auto_launch = false
+	root.add_child(run)
+	return run
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

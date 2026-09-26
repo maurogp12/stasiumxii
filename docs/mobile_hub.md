@@ -10,7 +10,7 @@ Mobile track only. This hub lives on the `mobile` branch. It stays off PC `main`
 
 `export_presets.cfg` is unchanged (Android preset from ticket 1). This shell is not an APK and is not ready to install.
 
-Combat rules, kits, hit bands, and the five Koliseo arenas are unchanged. Stasis does not add dungeon rooms, loot, keys, trash, or bosses.
+Combat rules, kits, hit bands, and the five Koliseo arenas are unchanged. Stasis on this branch is a mobile-only dungeon (Luca Garza, overnight 2026-09-25). It does not add loot or keys. It is not for PC `main`. See [`docs/mobile_stasis.md`](mobile_stasis.md).
 
 ## Related
 
@@ -25,11 +25,11 @@ The hub is a vertical stack of fat buttons (minimum height 72px). They fill the 
 | Button | Opens |
 | --- | --- |
 | Koliseo | `scenes/class_select.tscn` |
-| Crosshaven Stasis | `scenes/stasis_stub.tscn` for `crosshaven` |
-| Brinewake Stasis | same stub for `brinewake` |
-| Slagcrown Stasis | same stub for `slagcrown` |
-| Windmere Stasis | same stub for `windmere` |
-| Stormspire Stasis | same stub for `stormspire` |
+| Crosshaven Stasis | `scenes/stasis_run.tscn` for `crosshaven` (Threshgate) |
+| Brinewake Stasis | same run for `brinewake` (Tidehold) |
+| Slagcrown Stasis | same run for `slagcrown` (Ashmarch) |
+| Windmere Stasis | same run for `windmere` (Galevault) |
+| Stormspire Stasis | same run for `stormspire` (Coilgate) |
 
 The five ids are exactly `crosshaven`, `brinewake`, `slagcrown`, `windmere`, and `stormspire`. Boards are the existing files `art/maps/arena_colosseum_v2/tiled/{id}_15x15.*`. Door labels are Title Case of those ids (`Crosshaven Stasis`). No other spelling is accepted.
 
@@ -39,15 +39,18 @@ Koliseo is PvP into those five boards. The door opens the existing class-select 
 
 `--dedicated`, `--class`, `--queue`, `--join`, and `--host` skip the hub. The hub forwards any non-picker route straight into class select, which already sends those flags to the dedicated host view or to `main.tscn`.
 
-## Stasis stubs
+## Stasis
 
-Each door stores `MobileHub.pending_biome_id` and opens one stub scene. The stub shows the biome name, that biome's catalog blurb, the line **Stasis coming soon**, and **Back to hub**.
+Luca Garza (overnight, 2026-09-25) unparked these doors for the phone APK. Each door stores `MobileHub.pending_biome_id` and opens `scenes/stasis_run.tscn`. The run shows the Proposed door name, that biome's trash and boss, a class pick, and **Back to hub**. It does not say “Stasis coming soon”.
 
-When `art/maps/arena_colosseum_v2/tiled/{id}_15x15_tags.json` loads as 15×15, the stub draws those cells as flat color squares (`BoardTile.fill_color` only). That grid is a non-combat preview so a later room can reuse the same tags file. It does not start `CombatSim`, place units, or invent a dungeon.
+Picking a class opens `scenes/stasis_fight.tscn` on `art/maps/arena_colosseum_v2/tiled/{id}_15x15`. Room A is three trash duels, then Room B is the boss. Foe HP and attack base are provisional Open playtest numbers, not Locked kit law. Details and the APK playtest steps are in [`docs/mobile_stasis.md`](mobile_stasis.md).
+
+`scenes/stasis_stub.tscn` is only an old path. If something still loads it, it forwards to the run. Do not add these scenes to PC `main`.
 
 ## Headless check
 
 ```text
 godot --headless --path . -s res://tests/run_mobile_hub_tests.gd
+godot --headless --path . -s res://tests/run_stasis_tests.gd
 godot --headless --path . --quit-after 2
 ```

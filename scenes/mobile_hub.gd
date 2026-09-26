@@ -3,12 +3,14 @@ class_name MobileHub
 
 ## Mobile-branch entry (`project.godot` `run/main_scene`).
 ## Koliseo is PvP into the five existing boards (class select, then a random
-## hot-seat arena). Each Stasis door is one stub for one of those ids.
+## hot-seat arena). Each Stasis door opens that biome's mobile dungeon
+## (scenes/stasis_run.tscn). Luca overnight 2026-09-25 unparked this for the
+## phone APK only. Do not wire these scenes into PC main.
 ## `--dedicated`, `--class`, `--queue`, `--join`, and `--host` skip this
 ## screen and follow the class-select route (no map picker).
 
 const MOBILE_HUB := "res://scenes/mobile_hub.tscn"
-const STASIS_STUB := "res://scenes/stasis_stub.tscn"
+const STASIS_RUN := "res://scenes/stasis_run.tscn"
 const KOLISEO_SCENE := "res://scenes/class_select.tscn"
 ## Exact ship ids. Files live at art/maps/arena_colosseum_v2/tiled/{id}_15x15.*
 const BIOME_IDS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
@@ -88,7 +90,7 @@ func open_stasis(map_id: String) -> void:
 	pending_biome_id = id
 	if not _auto_launch:
 		return
-	get_tree().change_scene_to_file(STASIS_STUB)
+	get_tree().change_scene_to_file(STASIS_RUN)
 
 
 func _build() -> void:
