@@ -38,6 +38,7 @@ func _run() -> void:
 	_test_every_event_type()
 	_test_view_wiring_does_not_touch_rules()
 	_test_class_choreography()
+	_test_scenario_overlays()
 
 
 func _test_budgets() -> void:
@@ -501,6 +502,7 @@ func _test_view_wiring_does_not_touch_rules() -> void:
 	eq(sim.contains("res://vfx/"), false, "combat sim does not reference VFX")
 	eq(sim.contains("VfxDirector"), false, "combat sim does not call the director")
 	eq(pawn.contains("VfxDirector"), false, "pawn scripts are untouched by the VFX director")
+	truthy(view.contains("play_footstep"), "a walk plant plays footstep dust")
 	var names: Array = []
 	for beat in ROUTER.debug_beats():
 		names.append(str(beat["name"]))
@@ -535,6 +537,7 @@ func _test_live_director() -> void:
 	board.add_child(director)
 	director.bind_board(board)
 	eq(director.pool_size("spark"), BUDGET.POOL_SPARK, "spark pool is created up front")
+	eq(director.pool_size("stamp"), BUDGET.POOL_STAMP, "overlay stamps are pooled")
 	eq(director.pool_size("number"), BUDGET.POOL_NUMBER, "number pool is created up front")
 	eq(director.pool_size("projectile"), BUDGET.POOL_PROJECTILE, "projectile pool is created up front")
 	var lifted: Vector2 = director._pos_cell(Vector2i(1, 0))
@@ -552,6 +555,7 @@ func _test_live_director() -> void:
 	eq(director.pool_size("spark"), BUDGET.POOL_SPARK, "combat playback does not grow the spark pool")
 	eq(director.pool_size("number"), BUDGET.POOL_NUMBER, "combat playback does not grow the number pool")
 	eq(director.pool_size("ring"), BUDGET.POOL_RING, "combat playback does not grow the ring pool")
+	eq(director.pool_size("stamp"), BUDGET.POOL_STAMP, "combat playback does not grow the stamp pool")
 	director.dismiss_all()
 	var caster_script := GDScript.new()
 	caster_script.source_code = "extends Node2D\nvar grid_position: Vector2i = Vector2i.ZERO\n"
@@ -960,6 +964,90 @@ func _catalogue() -> Array:
 		{"type": "reject", "reason": "no"},
 		{"type": "turn_start", "seat": 0},
 	]
+
+
+func _test_scenario_overlays() -> void:
+	var stamp_script := preload("res://vfx/vfx_stamp.gd")
+	for sheet in ["ambush_slash", "mark_shot_impact", "detonate_burst", "hit_flash", "footstep_dust"]:
+		truthy(FileAccess.file_exists("res://art/vfx/scenario/%s.png" % sheet), "scenario plate %s is on disk" % sheet)
+		var tex: Texture2D = stamp_script.texture_for(sheet)
+		truthy(tex != null, "%s imports as a texture" % sheet)
+		var img := tex.get_image()
+		truthy(img != null and img.get_width() > 0, "%s has pixels" % sheet)
+		eq(img.get_pixel(0, 0).a < 0.08, true, "%s corner stays transparent" % sheet)
+		var opaque := false
+		var step := 8
+		for y in range(0, img.get_height(), step):
+			for x in range(0, img.get_width(), step):
+				if img.get_pixel(x, y).a > 0.8:
+					opaque = true
+					break
+			if opaque:
+				break
+		truthy(opaque, "%s has a readable core" % sheet)
+	var strike: Array = ROUTER.recipes_for([_damage("strike", 16)])
+	eq(_sheet(strike, "hit_flash")["cell"], Vector2i(2, 1), "damage apply flashes the target")
+	eq(float(_sheet(strike, "hit_flash")["px"]), BUDGET.STAMP_HIT_PX, "the hit flash stays body-sized")
+	eq(float(_sheet(strike, "hit_flash")["block"]), 0.0, "a hit flash does not lock input")
+	var heal: Array = ROUTER.recipes_for([{
+		"type": "hit", "spell": "mend", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(1, 1), "to": Vector2i(2, 1), "healed": 16, "damage": 0,
+	}])
+	eq(_sheet(heal, "hit_flash").is_empty(), true, "a heal does not play the damage flash")
+	var ambush: Array = ROUTER.recipes_for([{
+		"type": "hit", "spell": "ambush", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(1, 1), "from": Vector2i(4, 4), "to": Vector2i(5, 4),
+		"origin": Vector2i(2, 4), "destination": Vector2i(5, 4),
+		"teleported": true, "backstab": true, "facing_mult": 1.35, "damage": 30,
+	}])
+	eq(_sheet(ambush, "ambush_slash")["cell"], Vector2i(4, 4), "Shade and Invisible Ambush slash the struck body")
+	eq(_sheet(ambush, "ambush_slash")["cell"] == Vector2i(5, 4), false, "the slash is not the back tile")
+	eq(_sheet(ambush, "ambush_slash")["cell"] == Vector2i(2, 4), false, "the slash is not the origin")
+	eq(is_equal_approx(float(_sheet(ambush, "ambush_slash")["delay"]), preload("res://units/view_motion.gd").ambush_contact_sec()), true, "the slash waits for contact")
+	eq(_sheet(ambush, "hit_flash")["cell"], Vector2i(4, 4), "Ambush damage still flashes the body")
+	var ambush_miss: Array = ROUTER.recipes_for([{
+		"type": "miss", "spell": "ambush", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(1, 1), "to": Vector2i(4, 3), "origin": Vector2i(2, 4), "damage": 0,
+	}])
+	eq(_sheet(ambush_miss, "ambush_slash").is_empty(), true, "an Ambush miss does not slash")
+	var marked: Array = ROUTER.recipes_for([{
+		"type": "hit", "spell": "mark_shot", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 8,
+	}])
+	var impact_delay := preload("res://units/strip_library.gd").release_sec("kestrel", "cast_mark") + ROUTER.MARK_FLIGHT_SEC
+	eq(_sheet(marked, "mark_shot_impact")["cell"], Vector2i(4, 3), "Mark Shot impact sits on the target")
+	eq(is_equal_approx(float(_sheet(marked, "mark_shot_impact")["delay"]), impact_delay), true, "Mark Shot impact waits for the bolt")
+	eq(is_equal_approx(float(_sheet(marked, "hit_flash")["delay"]), impact_delay), true, "the hit flash lands with the bolt")
+	var mark_miss: Array = ROUTER.recipes_for([{
+		"type": "miss", "spell": "mark_shot", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0,
+	}])
+	eq(_sheet(mark_miss, "mark_shot_impact").is_empty(), true, "a Mark Shot miss has no impact")
+	var boom: Array = ROUTER.recipes_for([{
+		"type": "hit", "spell": "detonate", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 24,
+		"marks_consumed": 3, "marks_remaining": 0,
+	}])
+	eq(_sheet(boom, "detonate_burst")["cell"], Vector2i(4, 3), "Detonate bursts on the target")
+	eq(is_equal_approx(float(_sheet(boom, "detonate_burst")["delay"]), preload("res://units/strip_library.gd").release_sec("kestrel", "cast")), true, "Detonate bursts on the cast resolve")
+	eq(float(_sheet(boom, "detonate_burst")["px"]) > BUDGET.STAMP_HIT_PX, true, "Detonate reads larger than a generic hit")
+	var kept: Array = ROUTER.recipes_for([{
+		"type": "miss", "spell": "detonate", "seat": 0, "target_seat": 1,
+		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0, "marks_retained": true,
+	}])
+	eq(_sheet(kept, "detonate_burst").is_empty(), true, "a Detonate miss does not burst")
+	eq(BUDGET.STAMP_DETONATE_PX < 160.0, true, "Detonate stays on the tile, not the screen")
+	eq(BUDGET.STAMP_SPELL_LIFE <= 0.3, true, "spell overlays stay short")
+	eq(BUDGET.POOL_STAMP, 6, "stamps are a fixed pool")
+
+
+func _sheet(recipes: Array, sheet: String) -> Dictionary:
+	for item in recipes:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		if str(item.get("id", "")) == "stamp" and str(item.get("sheet", "")) == sheet:
+			return item
+	return {}
 
 
 func _damage(spell_id: String, amount: int) -> Dictionary:

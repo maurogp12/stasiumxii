@@ -1099,6 +1099,15 @@ func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	_set_pawn_cell(pawn, cell)
+	_puff_footstep(pawn, cell)
+
+
+## One soft dust when the foot commits a tile. A path calls this once per cell.
+func _puff_footstep(pawn: Pawn, cell: Vector2i) -> void:
+	if _vfx == null or pawn == null or not _vfx.has_method("play_footstep"):
+		return
+	var intensity := 0.28 if VIEW_MOTION.reduce_motion() else 0.52
+	_vfx.call("play_footstep", pawn.position, cell, intensity)
 
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
