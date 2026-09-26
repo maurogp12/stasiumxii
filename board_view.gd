@@ -116,6 +116,16 @@ var _touch_commit_open := true
 ## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
 var _ambush_arrival_token := 0
 var _ambush_arrival_tween: Tween
+## Cast-cell pose held until the back-tile plant. A refresh during the collapse
+## must not paint the strike facing or the post-hit vitals on that cell.
+var _ambush_hold_seat := -1
+var _ambush_hold_cell := Vector2i(-1, -1)
+var _ambush_hold_facing := ""
+var _ambush_hold_pos := Vector2.ZERO
+var _ambush_hold_event: Dictionary = {}
+## Seat whose arrival is open. A second presenter must not restart it or slash.
+var _ambush_open_seat := -1
+var _ambush_contact_armed := false
 
 
 func _ready() -> void:
@@ -787,18 +797,14 @@ func _snap_ambush_teleports(events: Array) -> void:
 			continue
 		if str(event.get("spell", "")) != SpellKits.AMBUSH:
 			continue
-		if not bool(event.get("teleported", false)):
+		# Hits plant on the back tile even when the wire drops `teleported`.
+		# Misses are not hits. Their `to` is the enemy cell, so the body stays.
+		if str(event.get("type", "")) != "hit":
 			continue
 		var seat := int(event.get("seat", -1))
 		if not pawns_by_seat.has(seat):
 			continue
-		# Destination is the back tile. `to` is the same cell on a hit.
-		# A miss sets teleported false and is skipped above, so the body stays.
-		var dest := _event_cell(event, "destination")
-		if not _in_bounds(dest):
-			dest = _event_cell(event, "to")
-		if not _in_bounds(dest):
-			dest = _seat_cell(seat)
+		var dest := _ambush_event_dest(event)
 		if not _in_bounds(dest):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
@@ -840,7 +846,11 @@ func _seat_cell(seat: int) -> Vector2i:
 func _present_resolve(events: Array) -> bool:
 	# A successful Ambush fades on the origin tile, then snaps, then slashes.
 	# The snap is deferred so the collapse is visible. A miss never snaps.
+	# Any hit waits, even when `teleported` was stripped. A second presenter
+	# for that same open arrival must not restart the tween or slash early.
 	var ambush_hit := _ambush_success_event(events)
+	if _ambush_present_is_duplicate(ambush_hit):
+		return false
 	if ambush_hit.is_empty():
 		_snap_ambush_teleports(events)
 	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
@@ -885,9 +895,18 @@ func _ambush_success_event(events: Array) -> Dictionary:
 			continue
 		if str(event.get("type", "")) != "hit":
 			continue
-		if bool(event.get("teleported", false)):
-			return event
+		# A hit is the arrival. Missing `teleported` used to take the immediate
+		# slash while the body was still on the cast cell.
+		return event
 	return {}
+
+
+func _ambush_present_is_duplicate(event: Dictionary) -> bool:
+	# Only while the body is still held on the cast cell. After the plant the
+	# face-hold can still be open, and the next Ambush must be allowed to start.
+	if event.is_empty() or _ambush_contact_armed or _ambush_hold_seat < 0:
+		return false
+	return _ambush_hold_seat == int(event.get("seat", -2))
 
 
 ## Shade and Invisible share this arrival. Collapse on the cast cell, snap
@@ -896,6 +915,9 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
+	_ambush_contact_armed = false
+	_ambush_open_seat = int(event.get("seat", -1))
+	_capture_ambush_hold(event)
 	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
 	var seat := int(event.get("seat", -1))
 	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
@@ -935,17 +957,38 @@ func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
 	_ambush_arrival_tween = null
 	_plant_ambush_body(event)
 	if not _ambush_strike_ready(event):
-		# No slash, no hit toast, no HP drop, no damage float from the cast cell.
+		# No slash, no hit toast, no vitals drop, no damage float from the cast cell.
 		# The submit tail plants from the snapshot, then the coach refresh runs.
 		return
-	_publish_ambush_contact(events)
+	_ambush_contact_armed = true
+	_ambush_open_seat = -1
+	_release_ambush_vitals()
+	var shown := _events_for_ambush_contact(events)
+	_publish_ambush_contact(shown)
 	if _hud != null:
-		var toast := CombatHUD.toast_for_events(events)
+		var toast := CombatHUD.toast_for_events(shown)
 		if toast != "":
 			_hud.show_toast(toast)
-	_play_combat_feedback(events)
-	_arm_view_motions(events)
-	_arm_vfx(events)
+	_play_combat_feedback(shown)
+	_arm_view_motions(shown)
+	_arm_vfx(shown)
+
+
+## Contact plans treat a hit with no `teleported` flag as a whiff. Copy the
+## batch and set the flag so the slash still plays on the back tile.
+## The sim event itself is left unchanged.
+func _events_for_ambush_contact(events: Array) -> Array:
+	var shown: Array = []
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			shown.append(event)
+			continue
+		var row: Dictionary = event
+		if str(row.get("spell", "")) == SpellKits.AMBUSH and str(row.get("type", "")) == "hit" and not bool(row.get("teleported", false)):
+			row = row.duplicate(true)
+			row["teleported"] = true
+		shown.append(row)
+	return shown
 
 
 ## Position and the strike facing both have to be true before any hit chrome.
@@ -990,6 +1033,46 @@ func _plant_ambush_body(event: Dictionary) -> void:
 		if pawn != null and is_instance_valid(pawn):
 			pawn.restore_ambush_body()
 	_snap_ambush_teleports([event])
+	if seat == _ambush_hold_seat:
+		_ambush_hold_seat = -1
+
+
+func _capture_ambush_hold(event: Dictionary) -> void:
+	_ambush_hold_event = event
+	_ambush_hold_seat = -1
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return
+	var pawn: Pawn = pawns_by_seat[seat]
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	_ambush_hold_seat = seat
+	_ambush_hold_cell = pawn.grid_position
+	_ambush_hold_facing = str(pawn.facing)
+	_ambush_hold_pos = pawn.position
+	var prey_seat := int(event.get("target_seat", -1))
+	if not pawns_by_seat.has(prey_seat):
+		return
+	var prey: Pawn = pawns_by_seat[prey_seat]
+	if prey != null and is_instance_valid(prey):
+		prey.freeze_shown_vitals()
+
+
+func _release_ambush_vitals() -> void:
+	for pawn in pawns_by_seat.values():
+		if pawn != null and is_instance_valid(pawn):
+			(pawn as Pawn).release_frozen_vitals()
+
+
+func _abandon_ambush_arrival() -> void:
+	var running := _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween) and _ambush_arrival_tween.is_running()
+	if running or _ambush_contact_armed:
+		return
+	if _ambush_open_seat < 0 and _ambush_hold_seat < 0:
+		return
+	_ambush_open_seat = -1
+	_ambush_hold_seat = -1
+	_release_ambush_vitals()
 
 
 func _ambush_body_landed(event: Dictionary) -> bool:
@@ -1354,7 +1437,13 @@ func _await_view_motions() -> void:
 		await get_tree().process_frame
 		if not is_inside_tree():
 			return
+	# Settle plants the sprite where it stands. If the arrival callback never
+	# ran, that would be the cast cell. Snap first. Do not arm the slash here:
+	# settle would kill it. The arrival tween still owns contact.
+	if _ambush_hold_seat >= 0 and not _ambush_hold_event.is_empty():
+		_plant_ambush_body(_ambush_hold_event)
 	_settle_motions()
+	_abandon_ambush_arrival()
 	_pending_motion_sec = 0.0
 	_view_locked = false
 	if _hud != null and not _busy:
@@ -1393,7 +1482,11 @@ func _refresh() -> void:
 	_apply_board_tiles(snap)
 	_apply_units(snap)
 	_sync_shade_markers(snap)
-	_hud.render(snap, legal)
+	# Coach and the side cards stay on the pre-hit read until contact.
+	# Painting them during the collapse shows the strike while the body is still fading.
+	var ambush_waiting := _ambush_open_seat >= 0 and not _ambush_contact_armed
+	if _hud != null and not ambush_waiting:
+		_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
 	_maybe_reframe(snap)
@@ -1435,15 +1528,25 @@ func _apply_units(snap: Dictionary) -> void:
 		var raw_events: Variant = snap.get("last_events", [])
 		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
 		var hopping := _busy and seat == _hop_seat
+		var holding := _ambush_hold_seat == seat
 		var kept_cell := pawn.grid_position
 		var kept_pos := pawn.position
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
-		if hopping:
+		if holding:
+			# Snapshot is already the back tile and the strike facing. Keep the
+			# cast cell and the pre-strike facing until the plant.
+			pawn.grid_position = _ambush_hold_cell
+			pawn.position = _ambush_hold_pos
+			if _ambush_hold_facing != "":
+				pawn.set_facing(_ambush_hold_facing)
+			pawn.z_index = VISUAL_SORT.unit_z_index(_ambush_hold_cell, _elev_at(_ambush_hold_cell))
+		elif hopping:
 			pawn.grid_position = kept_cell
 			pawn.position = kept_pos
 		else:
 			pawn.position = _cell_to_local(cell)
 			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+		pawn.rewrite_frozen_vitals()
 
 
 ## Drop Shade's body lives on ShadeMarkers, not under Units. Rebuild frees every
@@ -2053,4 +2156,5 @@ func _as_cell(value: Variant) -> Vector2i:
 		return Vector2i(int(value.get("x", 0)), int(value.get("y", 0)))
 	if value is Array and value.size() >= 2:
 		return Vector2i(int(value[0]), int(value[1]))
-	return Vector2i.ZERO
+	# A failed read must not become the origin. (0, 0) is a real tile.
+	return Vector2i(-1, -1)

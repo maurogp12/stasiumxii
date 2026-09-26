@@ -69,6 +69,12 @@ var _idle_hold: bool = false
 var _motion_gen: int = 0
 ## Bumped when the collapse must stop. A late sample cannot hide the arrival.
 var _ambush_collapse_gen: int = 0
+## True only while the collapse tween is the action holding the motion lock.
+var _collapse_holds_motion: bool = false
+## Pre-strike vitals. A snapshot during the collapse must not paint the hit early.
+var _vitals_frozen: bool = false
+var _frozen_vitals: int = 0
+var _frozen_vital_cap: int = 0
 var _plan_died: bool = false
 var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
@@ -187,6 +193,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	rewrite_frozen_vitals()
 
 
 func burn_badge_label() -> String:
@@ -628,16 +635,32 @@ func play_ambush_collapse(sec: float) -> float:
 		return 0.0
 	_begin_action()
 	_ambush_collapse_gen += 1
+	_collapse_holds_motion = true
 	var gen := _ambush_collapse_gen
 	var tw := create_tween()
 	_action_tween = tw
 	tw.tween_method(_sample_ambush_collapse.bind(gen), 0.0, 1.0, sec)
+	tw.finished.connect(_on_ambush_collapse_finished.bind(gen), CONNECT_ONE_SHOT)
 	return sec
+
+
+func _on_ambush_collapse_finished(gen: int) -> void:
+	# A plant bumps the gen, and a later strike clears the flag in _begin_action.
+	# Either one means this collapse no longer owns the lock.
+	if gen != _ambush_collapse_gen or not _collapse_holds_motion:
+		return
+	_collapse_holds_motion = false
+	_motion_playing = false
+	_action_tween = null
 
 
 func restore_ambush_body() -> void:
 	# Drop any collapse sample that is still queued for this frame.
 	_ambush_collapse_gen += 1
+	if _collapse_holds_motion:
+		_collapse_holds_motion = false
+		_kill_action()
+		_motion_playing = false
 	_show_rest_body()
 
 
@@ -714,6 +737,7 @@ func release_idle() -> void:
 
 
 func settle_motion() -> void:
+	_collapse_holds_motion = false
 	var died := _plan_died
 	_plan_died = false
 	_path_walk = false
@@ -795,6 +819,26 @@ func note_prey_vitals(unit: Dictionary) -> void:
 	hp = int(unit.get("hp", hp))
 	max_hp = int(unit.get("max_hp", max_hp))
 	_request_paint()
+
+
+## Remember the numbers on screen. Later snapshots during the collapse rewrite
+## back to these until the back-tile contact releases them.
+func freeze_shown_vitals() -> void:
+	_vitals_frozen = true
+	_frozen_vitals = hp
+	_frozen_vital_cap = max_hp
+
+
+func rewrite_frozen_vitals() -> void:
+	if not _vitals_frozen:
+		return
+	hp = _frozen_vitals
+	max_hp = _frozen_vital_cap
+	_request_paint()
+
+
+func release_frozen_vitals() -> void:
+	_vitals_frozen = false
 
 
 ## Hit events only. "ward" is pale blue, "support" is heal / Cleanse, "damage" stays orange.
@@ -976,6 +1020,7 @@ func _sync_idle() -> void:
 
 
 func _begin_action() -> int:
+	_collapse_holds_motion = false
 	_ensure_visuals()
 	_kill_landing()
 	_kill_action()

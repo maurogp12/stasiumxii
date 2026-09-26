@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _finish_shade_board() -> void:
 	await _test_shade_markers_survive_rebuild()
+	await _test_ambush_present_race()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -6848,6 +6849,14 @@ func fail(msg: String) -> void:
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
 	truthy(live.has_method("run"), "shade live script parses")
+	if not live.has_method("run"):
+		return
+	await live.run(self)
+
+
+func _test_ambush_present_race() -> void:
+	var live := load("res://tests/ambush_present_race.gd")
+	truthy(live.has_method("run"), "ambush present race script parses")
 	if not live.has_method("run"):
 		return
 	await live.run(self)
