@@ -93,14 +93,22 @@ static func role_line(class_id: String) -> String:
 	return str(ROLE_LINES.get(key, ""))
 
 
+## Locked select plates. Hot-seat and Online share these cards.
+## 512×768 RGBA, no chrome. Not the old `art/characters` turnarounds
+## and not a walk-strip cell.
+const SELECT_PORTRAIT_DIR := "res://art/ui/select/"
+
+
 static func portrait_path(class_id: String) -> String:
 	var key := SpellKits.normalize_class_id(class_id)
-	return "res://art/characters/%s/%s_s.png" % [key, key]
+	if not SpellKits.is_roster_class(key):
+		return ""
+	return "%s%s_select.png" % [SELECT_PORTRAIT_DIR, key]
 
 
 static func load_portrait(class_id: String) -> Texture2D:
 	var path := portrait_path(class_id)
-	if not ResourceLoader.exists(path):
+	if path == "" or not ResourceLoader.exists(path):
 		return null
 	var res: Resource = ResourceLoader.load(path)
 	if res is Texture2D:
@@ -462,7 +470,7 @@ func _mode_button(text: String, mode_id: String) -> Button:
 
 func _make_card(class_id: String) -> Panel:
 	var panel := Panel.new()
-	panel.custom_minimum_size = Vector2(168, 248)
+	panel.custom_minimum_size = Vector2(168, 280)
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.focus_mode = Control.FOCUS_ALL
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -479,7 +487,8 @@ func _make_card(class_id: String) -> Panel:
 	if portrait != null:
 		var tex := TextureRect.new()
 		tex.texture = portrait
-		tex.custom_minimum_size = Vector2(144, 160)
+		# 512×768 plates. The slot stays near that 2:3 so the figure is not cropped.
+		tex.custom_minimum_size = Vector2(144, 200)
 		tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		tex.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR

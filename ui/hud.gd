@@ -1437,7 +1437,16 @@ func _portrait_for(unit: Dictionary) -> Texture2D:
 	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
 	if not SpellKits.is_roster_class(class_id):
 		return null
-	return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
+	var key := "idle:%s" % class_id
+	if _head_cache.has(key) and _head_cache[key] is Texture2D:
+		return _head_cache[key]
+	var body := StripLibrary.idle_portrait(class_id)
+	if body == null:
+		return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
+	var head := _head_region(body)
+	if head != null:
+		_head_cache[key] = head
+	return head
 
 
 func _head_crop(path: String) -> Texture2D:
@@ -1448,12 +1457,24 @@ func _head_crop(path: String) -> Texture2D:
 	var tex := load(path) as Texture2D
 	if tex == null:
 		return null
+	var head := _head_region(tex)
+	if head != null:
+		_head_cache[path] = head
+	return head
+
+
+## Top of the body. Same crop the turn chip used on the old south turnaround.
+func _head_region(tex: Texture2D) -> Texture2D:
+	if tex == null:
+		return null
+	var size := tex.get_size()
+	if size.x <= 0.0 or size.y <= 0.0:
+		return null
+	var side := minf(size.x * 0.62, size.y * 0.46)
+	var region := Rect2((size.x - side) * 0.5, size.y * 0.02, side, side)
 	var atlas := AtlasTexture.new()
 	atlas.atlas = tex
-	var size := tex.get_size()
-	var side := minf(size.x * 0.62, size.y * 0.46)
-	atlas.region = Rect2((size.x - side) * 0.5, size.y * 0.02, side, side)
-	_head_cache[path] = atlas
+	atlas.region = region
 	return atlas
 
 

@@ -5,8 +5,9 @@ class_name Pawn
 ## centered, offset (0, -72), scale 0.5. When a walk sheet exists, the standing
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
-## sheet is missing, and it stays the hub portrait. It is not the combat idle
-## under a walk sheet. Mirrors are baked into the files — never set flip_h.
+## sheet is missing. It is not the combat idle under a walk sheet, and it is
+## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
+## the files — never set flip_h.
 ## Bastion _n/_w turnarounds are placeholder back views on those filenames.
 ## Mobile-track chrome. Batch 1 strips load from
 ## `art/export_2x/characters/<class>/anims/` when the files exist
