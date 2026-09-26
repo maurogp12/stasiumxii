@@ -758,7 +758,11 @@ func _test_expiry_events() -> void:
 	_host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1)}, 0)
 	_host.submit_for_seat({"type": "end_turn"}, 0)
 	_host.submit_for_seat({"type": "end_turn"}, 1)
-	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 1)
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	# Third owner turn-start (seat 1 ends, Gloam's turn begins) is the expiry.
+	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
 	var packed: Dictionary = _host.pack_result(host_end, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _expire((decoded as Dictionary).get("events", []), "shade")

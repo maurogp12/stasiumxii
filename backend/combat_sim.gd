@@ -3507,9 +3507,11 @@ static func _cardinal_unit_step(from: Vector2i, to: Vector2i) -> Vector2i:
 
 
 func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
-	if cell == caster_pos or not _in_bounds(cell):
+	if not _in_bounds(cell):
 		return false
-	if not _is_empty(cell):
+	# Facing-rear can be the tile Gloam already stands on (enemy one step in
+	# front, facing away). That landing is legal. Any other occupant rejects.
+	if cell != caster_pos and not _is_empty(cell):
 		return false
 	return _board.is_walkable(cell)
 
