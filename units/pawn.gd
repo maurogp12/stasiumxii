@@ -117,12 +117,13 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Combat display only. Every class plays the same 144×160 cell at 0.5, so
-## Ironjaw's v4 walk plant reads the same height as Kestrel (~66px). 1.20×
-## is his presentation bump (~79px on the plant, ~89px when an attack
-## reaches the top of the cell). The foot offset stays (0, -72); squash and
-## stretch still multiply this base. Pathing, pick capsules, map tags, and
-## kit numbers do not read it. Select plates are a separate texture.
+## Combat display only. Identity stays the locked Berserker A helm sheet:
+## iron-jaw grill, dual double-bit axes, dark cape. This multiplier does not
+## redraw those strips or the select plate. Every class plays the same
+## 144×160 cell at 0.5, so Ironjaw's walk plant reads the same height as
+## Kestrel (~66px). 1.20× is his presentation bump (~79px on the plant).
+## The foot offset stays (0, -72); squash and stretch still multiply this
+## base. Pathing, pick capsules, map tags, and kit numbers do not read it.
 const IRONJAW_COMBAT_SCALE := 1.20
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
