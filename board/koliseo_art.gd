@@ -6,8 +6,8 @@ extends RefCounted
 ## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
-## Windmere paints the ice sheet. Stormspire paints the electric sheet.
-## See res://art/tilesets/original/THEMES.md.
+## Windmere paints the ice sheet. Stormspire paints the algo-así punch
+## sheets (dark stone, cyan/violet seams, gold edge). See THEMES.md.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
 const _Maps := preload("res://backend/cell_tag_map.gd")

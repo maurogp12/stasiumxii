@@ -426,7 +426,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_ground_e1.png" width="64" height="70"/>
+  <image source="tiles/storm_ground_e1.png" width="64" height="74"/>
  </tile>
  <tile id="51">
   <properties>
@@ -442,6 +442,6 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_mud_e1.png" width="64" height="70"/>
+  <image source="tiles/storm_mud_e1.png" width="64" height="76"/>
  </tile>
 </tileset>

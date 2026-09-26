@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Slice the scenario ice and electric sheets onto the Koliseo 64×32 grid.
+"""Slice the scenario ice sheet onto the Koliseo 64×32 grid.
 
-Reads pending/ice and pending/electric contact sheets and overwrites only
-Windmere (`wind_*`) and Stormspire (`storm_*`) terrain, plus dress-prefixed
-props those two arenas paint. Crosshaven, Brinewake, and Slagcrown stay on
-original-tileset-b.jpg.
+Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
+dress-prefixed props. Stormspire (`storm_*`) is sliced by
+slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
+Crosshaven, Brinewake, and Slagcrown stay on original-tileset-b.jpg.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.
@@ -35,7 +35,6 @@ HERE = Path(__file__).resolve().parent
 ICE_SHEET = HERE / "pending" / "ice" / "stasium_tileset_ice.png"
 ELEC_SHEET = HERE / "pending" / "electric" / "stasium_tileset_electric.png"
 ICE_BG = np.array([254.0, 255.0, 255.0], np.float32)
-ELEC_BG = np.array([252.0, 250.0, 253.0], np.float32)
 
 
 def _defringe(crop: np.ndarray, bg: np.ndarray, lum_cut: float = 246.0) -> np.ndarray:
@@ -99,21 +98,6 @@ def _fit_cliff_sheet(rgba: np.ndarray, cap_frac: float = 0.48) -> Image.Image:
     return Image.fromarray(arr)
 
 
-def _fit_block(crop: np.ndarray, cap_frac: float) -> Image.Image:
-    """A diorama crop with no white margin. The top fraction is the diamond."""
-    height, width = crop.shape[:2]
-    lum = crop.mean(2)
-    alpha = np.where(lum > 245, 0, 255).astype(np.uint8)
-    rgba = np.dstack([crop, alpha])
-    face_h = max(12, int(round(height * cap_frac)))
-    scale_y = 32.0 / face_h
-    out_h = max(33, int(round(height * scale_y)))
-    im = Image.fromarray(rgba).resize((64, out_h), Image.Resampling.LANCZOS)
-    arr = np.asarray(im).copy()
-    arr[arr[:, :, 3] < 8] = 0
-    return Image.fromarray(arr)
-
-
 def _ice_wall(arr: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
     """Snow-capped ice wall inside a rect, cut off the connected snow floor."""
     x, y, w, h = box
@@ -146,42 +130,6 @@ def _ice_wall(arr: np.ndarray, box: tuple[int, int, int, int]) -> np.ndarray:
     return rgba[yy.min() : yy.max() + 1, xx.min() : xx.max() + 1]
 
 
-def _purple_sprite(arr: np.ndarray, seed_x: int, seed_y: int) -> np.ndarray:
-    lum = arr.mean(2)
-    purple = (
-        (arr[:, :, 2] > arr[:, :, 0] + 28)
-        & (arr[:, :, 2] > arr[:, :, 1] + 8)
-        & (lum < 210)
-        & ((arr.max(2) - arr.min(2)) > 35)
-    )
-    purple = ndimage.binary_opening(purple, iterations=1)
-    lab, _ = ndimage.label(purple)
-    label = int(lab[seed_y, seed_x]) if 0 <= seed_y < lab.shape[0] and 0 <= seed_x < lab.shape[1] else 0
-    if label == 0:
-        ys, xs = np.where(lab > 0)
-        if len(xs) == 0:
-            raise SystemExit(f"no purple sprite near {seed_x},{seed_y}")
-        dist = (xs - seed_x) ** 2 + (ys - seed_y) ** 2
-        pick = int(np.argmin(dist))
-        label = int(lab[ys[pick], xs[pick]])
-    sl = ndimage.find_objects(lab)[label - 1]
-    ys, xs = sl
-    y0 = max(0, ys.start - 14)
-    x0 = max(0, xs.start - 14)
-    y1 = min(arr.shape[0], ys.stop + 14)
-    x1 = min(arr.shape[1], xs.stop + 14)
-    sub = arr[y0:y1, x0:x1]
-    mask = ndimage.binary_dilation(lab[y0:y1, x0:x1] == label, iterations=4)
-    sub_lum = sub.mean(2)
-    mask = mask & (sub_lum < 242)
-    mask = ndimage.binary_closing(mask, iterations=1)
-    rgba = np.zeros((sub.shape[0], sub.shape[1], 4), np.uint8)
-    rgba[:, :, :3] = sub
-    rgba[:, :, 3] = (mask * 255).astype(np.uint8)
-    yy, xx = np.where(mask)
-    return rgba[yy.min() : yy.max() + 1, xx.min() : xx.max() + 1]
-
-
 def _flat_keep(arr: np.ndarray, anchor: tuple[int, int], lum_cut: float = 249.0) -> Image.Image:
     """Crop one diamond and keep near-white snow. Only the sheet white is keyed."""
     x, y = anchor
@@ -206,11 +154,6 @@ def _fill_interior(rgba: np.ndarray) -> np.ndarray:
     return out
 
 
-def _cell(col: int, row: int) -> tuple[int, int, int, int]:
-    # Measured on stasium_tileset_electric.png. Rows 0–3 are whole diamonds.
-    return (12 + col * 169, 104 + row * 132, 160, 124)
-
-
 def _save(name: str, img: Image.Image, records: list) -> None:
     path = TILES / name
     img.save(path)
@@ -225,6 +168,9 @@ def _patch_atlas(records: list) -> None:
         "original-tileset-b.jpg",
         "pending/ice/stasium_tileset_ice.png",
         "pending/electric/stasium_tileset_electric.png",
+        "pending/electric/storm_ground_punch.png",
+        "pending/electric/storm_elevation_punch.png",
+        "pending/electric/storm_props_punch.png",
     ]
     families = atlas["families"]
     families["windmere"] = {"pack": "ice", "prefix": "wind_", "pending_theme": None}
@@ -244,9 +190,7 @@ def main() -> None:
     if not ICE_SHEET.is_file() or not ELEC_SHEET.is_file():
         raise SystemExit("missing ice or electric sheet under pending/")
     ice = np.asarray(Image.open(ICE_SHEET).convert("RGB"))
-    electric = np.asarray(Image.open(ELEC_SHEET).convert("RGB"))
     ice_comps = _components(ice)
-    elec_comps = _components(electric)
     records: list = []
 
     ice_flats = {
@@ -293,47 +237,13 @@ def main() -> None:
             img = _fit_prop(cut)
         _save(name, img, records)
 
-    # _cell(col, row). Cols 0–1 are dark stone. Cols 3–4 are the purple energy diamonds.
-    elec_flats = {
-        "ground": [_cell(0, 0), _cell(1, 0), _cell(0, 1), _cell(0, 2)],
-        "mud": [_cell(1, 1), _cell(1, 2), _cell(1, 3)],
-        "water": [_cell(3, 1), _cell(3, 0)],
-    }
-    for key, boxes in elec_flats.items():
-        for name, box in zip(_names("storm_", key, len(boxes)), boxes):
-            x, y, w, h = box
-            _save(name, _fit_flat(_defringe(electric[y : y + h, x : x + w], ELEC_BG, 222.0)), records)
-
-    elec_cliffs = {
-        "ground_e1": ((500, 860, 180, 240), 0.46),
-        "ground_e1_v1": ((20, 790, 180, 220), 0.46),
-        "mud_e1": ((20, 790, 180, 220), 0.46),
-        "ground_e2": ((480, 820, 200, 380), 0.33),
-    }
-    for key, (box, cap) in elec_cliffs.items():
-        x, y, w, h = box
-        _save(f"storm_{key}.png", _fit_block(electric[y : y + h, x : x + w], cap), records)
-
-    # Seeds sit on the purple body of each sprite (not the white margin).
-    # Seeds are purple-mask pixels, so neighboring sprites stay distinct.
-    elec_props = {
-        "storm_prop_crystal_bolt.png": (531, 1898),
-        "storm_prop_spark.png": (475, 1877),
-        "storm_prop_conduit.png": (933, 1227),
-        "storm_prop_rock_pillar.png": (1312, 1280),
-        "storm_prop_arc.png": (1000, 1234),
-    }
-    for name, seed in elec_props.items():
-        _save(name, _fit_prop(_purple_sprite(electric, seed[0], seed[1])), records)
-    rubble = _cut(electric, elec_comps, 991, 1460)
-    _save("storm_prop_rubble.png", _fit_prop(rubble), records)
-    x, y, w, h = _cell(3, 1)
-    seal = _fit_flat(_defringe(electric[y : y + h, x : x + w], ELEC_BG, 222.0))
-    _save("storm_prop_floor_seal.png", seal, records)
+    # Stormspire paint is the algo-así punch sheets. slice_storm_punch.py
+    # owns storm_*.png. Re-running this ice slicer must not restore the
+    # older electric contact-sheet slices.
 
     _sync_tsx()
     _patch_atlas(records)
-    print(f"promoted {len(records)} ice/electric slices")
+    print(f"promoted {len(records)} ice slices")
 
 
 if __name__ == "__main__":

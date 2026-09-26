@@ -2,6 +2,20 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Stormspire algo-así punch
+
+Soft lock: electric and wind. Presentation only. Locked Stormspire geometry, tags, and cell layout are unchanged. Other families stay on their sheets.
+
+`slice_storm_punch.py` reads the punch contact sheets and overwrites only the Stormspire slices.
+
+| Punch sheet | Live slices |
+| --- | --- |
+| `art/tilesets/original/pending/electric/storm_ground_punch.png` | `storm_ground.png`, `storm_ground_v1.png`, `storm_ground_v2.png`, `storm_ground_v3.png`, `storm_mud.png`, `storm_mud_v1.png`, `storm_mud_v2.png`, `storm_water.png`, `storm_water_v1.png` |
+| `art/tilesets/original/pending/electric/storm_elevation_punch.png` | `storm_ground_e1.png`, `storm_ground_e1_v1.png`, `storm_mud_e1.png`, `storm_ground_e2.png` |
+| `art/tilesets/original/pending/electric/storm_props_punch.png` | `storm_prop_rock_pillar.png`, `storm_prop_conduit.png`, `storm_prop_crystal_bolt.png`, `storm_prop_arc.png`, `storm_prop_rubble.png`, `storm_prop_spark.png` |
+
+`storm_prop_floor_seal.png` is a flat violet diamond from the ground punch. Slice output lives in `art/maps/arena_colosseum_v2/tiled/tiles/`. The earlier electric contact sheet `stasium_tileset_electric.png` stays in `pending/electric/` and is no longer the live paint. `slice_ice_electric.py` still refreshes Windmere and does not write `storm_*`.
+
 ## 2026-09-26 — Koliseo overview zoom
 
 Luca's 0.1.25 playtest. No APK stamp. Map geometry and tags are unchanged. Desktop zoom stays 0.64.

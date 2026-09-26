@@ -3,7 +3,10 @@
     "original-tileset-a.jpg",
     "original-tileset-b.jpg",
     "pending/ice/stasium_tileset_ice.png",
-    "pending/electric/stasium_tileset_electric.png"
+    "pending/electric/stasium_tileset_electric.png",
+    "pending/electric/storm_ground_punch.png",
+    "pending/electric/storm_elevation_punch.png",
+    "pending/electric/storm_props_punch.png"
   ],
   "sliced_from": "original-tileset-b.jpg",
   "grid": [
@@ -800,140 +803,160 @@
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_ground_v1.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_ground_v2.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_ground_v3.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_mud.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_mud_v1.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_mud_v2.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_water.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_water_v1.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "storm_ground_e1.png",
       "size": [
         64,
-        70
-      ]
+        74
+      ],
+      "fit": "cliff"
     },
     {
       "file": "storm_ground_e1_v1.png",
       "size": [
         64,
-        70
-      ]
+        77
+      ],
+      "fit": "cliff"
     },
     {
       "file": "storm_mud_e1.png",
       "size": [
         64,
-        70
-      ]
+        76
+      ],
+      "fit": "cliff"
     },
     {
       "file": "storm_ground_e2.png",
       "size": [
         64,
         97
-      ]
+      ],
+      "fit": "cliff"
     },
     {
       "file": "storm_prop_crystal_bolt.png",
       "size": [
-        71,
-        89
-      ]
+        73,
+        107
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_spark.png",
       "size": [
-        37,
-        70
-      ]
+        55,
+        72
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_conduit.png",
       "size": [
-        74,
-        120
-      ]
+        88,
+        119
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_rock_pillar.png",
       "size": [
-        128,
-        127
-      ]
+        83,
+        118
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_arc.png",
       "size": [
-        108,
-        92
-      ]
+        120,
+        99
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_rubble.png",
       "size": [
-        112,
-        116
-      ]
+        70,
+        89
+      ],
+      "fit": "prop"
     },
     {
       "file": "storm_prop_floor_seal.png",
       "size": [
         64,
         32
-      ]
+      ],
+      "fit": "flat"
     },
     {
       "file": "slag_ground_e1.png",
@@ -1011,5 +1034,11 @@
   "promoted": {
     "ice": "pending/ice/stasium_tileset_ice.png",
     "electric": "pending/electric/stasium_tileset_electric.png"
+  },
+  "stormspire_punch": {
+    "ground": "pending/electric/storm_ground_punch.png",
+    "elevation": "pending/electric/storm_elevation_punch.png",
+    "props": "pending/electric/storm_props_punch.png",
+    "note": "Live Stormspire paint. Geometry and tags stay on the Locked maps."
   }
 }
