@@ -13,10 +13,12 @@ class_name Pawn
 ## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
 ## (SE→e, SW→s, NE→n, NW→w). A drawn master name (`walk_se`, `attack_ne`)
 ## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
-## A walk strip loops for the whole path. Playback stretches the authored
-## plant so one step matches one tile of travel. The sprite root takes a
-## short gait (anticipation, push-off, modest rise, settle). If play() does
-## not start, the same gait stays on this static sprite. There is no tile-tall hop.
+## A walk strip plays one full cycle per tile. Authored 6 frames at 12 fps
+## are sped so playback is about 20 fps and the cycle lasts WALK_TILE_SEC.
+## The board samples that frame from the tile tween, so zoom and the frame
+## clock cannot drift the stride. The sprite hops a few pixels. The foot,
+## ground marks, and name chrome stay on this node. If play() does not
+## start, the same hop stays on the static sprite. There is no tile-tall hop.
 ## `grid_position` is the tactical cell. This node's origin is the visual foot.
 ## The contact shadow is the Foot child and does not rise with the body.
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
@@ -114,11 +116,11 @@ const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
-## About 0.30s so a plant can finish without a hop. The gait loops on this
-## same interval, so the feet meet the tile.
+## Phase A tile time. Do not stretch this to hide a short or long cycle.
 const WALK_TILE_SEC := 0.30
 const WALK_HOP_SEC := WALK_TILE_SEC
-## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
+## Authored walk sheet: 6 frames at 12 fps (864×160). Playback is
+## walk_playback_fps(), about 20 fps, so one cycle matches one tile.
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 12.0
 const WALK_STRIP_PATH := NodePath("WalkStrip")
@@ -459,20 +461,29 @@ func sync_walk_plant() -> void:
 		strip.frame_progress = 0.0
 
 
-## One tile of the path. t is 0 at the press and 1 at the settle.
-## The walk frame comes from t. A free clock that stays on frame 0 is an idle slide.
-## The foot stays on the pawn origin. The body rises and leads only while
-## that foot is between cells, then plants.
+## One tile of the path. t is 0 at the departure contact and 1 on the plant.
+## The walk frame comes from t, one full cycle, so a free clock cannot idle-slide
+## and arrival cannot freeze a passing frame. The hop is sprite-local.
 func sample_driven_gait(t: float) -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_kill_bounce()
 	var u := clampf(t, 0.0, 1.0)
-	_sample_hop(u)
-	var body := VIEW_MOTION.stride_rise(u) + VIEW_MOTION.stride_lead(u, facing_screen())
-	_place_body(body)
-	_ride_chrome(body)
+	_apply_hop_visual(u)
 	_apply_driven_cycle(u)
+
+
+## Facing is already the segment letter. A short lean, then the tween.
+## The pawn node does not move. Frame 0 stays up so the settle is not a slide.
+func sample_step_anticipation(t: float) -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_kill_bounce()
+	var lean := VIEW_MOTION.step_anticipation_offset(t, facing_screen())
+	_place_body(lean)
+	_ride_chrome(Vector2.ZERO)
+	_hold_walk_contact()
+	_reset_walk_scale()
 
 
 func _apply_driven_cycle(t: float) -> void:
@@ -539,10 +550,19 @@ func end_path_walk() -> void:
 	_play_landing()
 
 
-## One authored plant (half of the 6-frame cycle) stretched onto one tile.
-## A full cycle is two tiles. speed_scale stays under a one-tile squeeze.
+## Playback rate that puts one full cycle on one tile.
+## 6 frames → 20 fps. 8 frames → about 27 fps. Not the authored 12 fps.
+static func walk_playback_fps(frame_count: int = -1) -> float:
+	var count := WALK_STRIP_FRAMES if frame_count < 1 else frame_count
+	if WALK_TILE_SEC <= 0.0:
+		return WALK_STRIP_FPS
+	return float(count) / WALK_TILE_SEC
+
+
+## Authored cycle length divided by the tile, so a running clock matches the
+## driven sampler. One integer cycle per tile. Not a half-cycle skate.
 static func walk_strip_speed_scale() -> float:
-	var authored := float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS * 0.5
+	var authored := float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS
 	if WALK_TILE_SEC <= 0.0:
 		return 1.0
 	return authored / WALK_TILE_SEC
@@ -1161,10 +1181,14 @@ func _on_action_finished(gen: int) -> void:
 
 
 func _sample_hop(t: float) -> void:
+	_apply_hop_visual(t)
+
+
+## Hop offset on the body sprites only. Name, HP, aim rings, and the foot stay.
+func _apply_hop_visual(t: float) -> void:
 	var hop := VIEW_MOTION.hop_offset(t)
 	_place_body(hop)
-	# Name and HP ride the bob. The seat ring stays on the pawn.
-	_ride_chrome(hop)
+	_ride_chrome(Vector2.ZERO)
 	if _walk_looping or has_walk_strip():
 		_reset_walk_scale()
 	else:
@@ -1174,6 +1198,19 @@ func _sample_hop(t: float) -> void:
 			_sprite.scale = scaled
 		if _active_strip != null and is_instance_valid(_active_strip):
 			_active_strip.scale = scaled
+
+
+func _hold_walk_contact() -> void:
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip) or not strip.visible:
+		return
+	if strip.is_playing():
+		strip.pause()
+	strip.speed_scale = 0.0
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
+		strip.frame = 0
+		strip.frame_progress = 0.0
 
 
 func _reset_walk_scale() -> void:
@@ -1934,7 +1971,7 @@ func _paint_status(canvas: CanvasItem) -> void:
 
 
 ## Baseline of the overhead name, in chrome-local space. The chrome node
-## itself rides the step bounce. Lunges and the idle bob leave it on the pawn.
+## stays on the pawn through a hop. Lunges and the idle bob leave it there too.
 func name_baseline() -> float:
 	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 

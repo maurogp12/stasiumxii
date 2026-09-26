@@ -1278,14 +1278,15 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# One tween through cell centers. Equal time per cell keeps straight and
 	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
 	# grid_position is the tactical cell and updates when the foot commits.
-	# pawn.position is the visual foot. It stays planted through the press,
-	# strides on the rise, and settles on the next tile. It does not linear-slide.
+	# pawn.position is the visual foot. It eases in-out across the tile and
+	# holds the arrival cell through the plant. It does not linear-slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
 	# before the step, or a refresh snaps it and the walk reads as a teleport.
 	# Face the step before the body moves. A cardinal uses that letter. Any other
 	# segment faces the screen direction so the pawn does not slide sideways or
-	# backwards. The walk strip holds its contact frame through that turn, then
-	# the foot eases that one tile. Arrival keeps the last segment's facing.
+	# backwards. The first tile, and a direction change, take a short weight
+	# shift after that facing is set. Middle tiles do not. Arrival keeps the
+	# last segment's facing. Dust lands on a facing change and on the final plant.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -1304,31 +1305,27 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	_walk_tween = create_tween()
 	_walk_tween.set_trans(Tween.TRANS_LINEAR)
 	var walk_armed := false
-	for cell in cells:
+	for cell_i in cells.size():
+		var cell: Vector2i = cells[cell_i]
 		var grid_dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if grid_dir == "":
 			grid_dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
 		var dir := VIEW_MOTION.walk_segment_facing(prev, cell, _cell_to_local(cell) - _cell_to_local(prev))
 		if dir == "":
 			dir = grid_dir
-		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
-		if turn.is_empty():
-			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
-		else:
-			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[0])))
+		var facing_changed := dir != "" and dir != visual
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
 		if not walk_armed:
 			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
 			walk_armed = true
-		if not turn.is_empty():
-			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
-			for i in range(1, turn.size()):
-				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
-				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+		if VIEW_MOTION.anticipate_segment(cell_i, facing_changed):
+			_walk_tween.tween_method(_sample_step_anticipation.bind(pawn), 0.0, 1.0, VIEW_MOTION.STEP_SETTLE_SEC)
 		if dir != "":
 			visual = dir
 		_walk_tween.tween_callback(_sync_step_plant.bind(pawn))
 		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
-		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
+		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
+		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell, dust))
 		prev = cell
 	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
@@ -1360,6 +1357,12 @@ func _sync_step_plant(pawn: Pawn) -> void:
 	pawn.sync_walk_plant()
 
 
+func _sample_step_anticipation(t: float, pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.sample_step_anticipation(t)
+
+
 func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
@@ -1383,14 +1386,17 @@ func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
 	pawn.retarget_walk_strip()
 
 
-func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:
+func _commit_walk_cell(pawn: Pawn, cell: Vector2i, dust: bool = false) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	_set_pawn_cell(pawn, cell)
-	_puff_footstep(pawn, cell)
+	if dust:
+		_puff_footstep(pawn, cell)
 
 
-## One soft dust when the foot commits a tile. A path calls this once per cell.
+## Dust at the destination feet, after the hop is back on Y=0.
+## Facing changes and the final plant only. Not the move start, and not
+## every straight tile.
 func _puff_footstep(pawn: Pawn, cell: Vector2i) -> void:
 	if _vfx == null or pawn == null or not _vfx.has_method("play_footstep"):
 		return

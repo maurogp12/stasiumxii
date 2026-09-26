@@ -4,14 +4,15 @@ class_name ViewMotion
 ## View-only motion tunables. CombatSim never reads this file.
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
-## files exist (SE→e, SW→s, NE→n, NW→w). The foot eases from cell to cell.
-## `walk_<facing>` is sampled from that step: contact frames only while the
-## foot is planted, passing frames only while it is between cells. The body
-## leads along the facing and returns to the foot on arrival. The contact
-## shadow stays on the foot. A missing strip keeps the bounce and adds
-## squash on launch/land plus stretch at the crest. It does not play a
-## tile-tall hop. Facing turns in place for two walk frames before the
-## translate. The snapshot facing snaps only after the last land.
+## files exist (SE→e, SW→s, NE→n, NW→w). The foot eases from cell to cell
+## in one tile time (ease-in-out, not a linear skate). `walk_<facing>` plays
+## exactly one cycle on that tween: frame 0 at the start, frame 0 on the
+## plant. The sprite hops a few pixels. The foot, ground marks, aim rings,
+## and name chrome stay put. A missing strip keeps that hop and adds squash
+## on launch/land plus stretch at the crest. It does not play a tile-tall hop.
+## The first tile, and a direction change, settle for a short weight shift
+## after the facing is already set. Middle tiles do not. The snapshot facing
+## snaps only after the last land.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Every non-teleport spell gets caster chrome: a short squash / pull-back,
@@ -30,15 +31,23 @@ const IDLE_PERIOD := 1.9
 const IDLE_BOB_PX := 1.5
 const IDLE_PHASE_STEP := 0.73
 
-## Step bounce on the sprite root. The old phone hop was HOP_PX 36, about one
-## iso tile, with squash and stretch. That read as a cartoon arc. SoT is a
-## 4–6px sine: feet plant on the zeros, crest stays on the body. Scale stays
-## at rest. Arena zoom is about 0.64, so 6px is a planted step, not a hop.
-const WALK_BOUNCE_PX := 6.0
-const HOP_PX := 6.0
-## Two plants in one authored walk cycle (6 frames at 12 fps = 0.5s).
-## The path loops this period. It is not one hop per tile.
-const WALK_STEP_SEC := 0.25
+## Sprite-local hop. The old phone hop was HOP_PX 36, about one iso tile.
+## This crest is 2–4px: feet plant on Y=0 at both tile edges, and the last
+## slice of the tween stays planted. No press into the floor. Scale stays
+## at rest when a walk strip is playing. The rise is in sprite pixels, so
+## camera zoom does not change the stride.
+const WALK_BOUNCE_PX := 3.0
+const HOP_PX := 3.0
+## Last 18% of the tile tween. Travel has arrived, hop Y is 0, and the walk
+## strip is contact frame 0. Not a Mario bounce.
+const HOP_PLANT_AT := 0.82
+## One hop per tile. Matches Pawn.WALK_TILE_SEC. Driven steps sample the
+## strip from the tween, so this period is not a free clock.
+const WALK_STEP_SEC := 0.30
+## Weight shift before the first tile and before a direction change only.
+## About one frame at the 20 fps playback rate. Facing is already set.
+const STEP_SETTLE_SEC := 0.05
+const STEP_SETTLE_PX := 2.0
 
 const ATTACK_OUT_SEC := 0.12
 const ATTACK_BACK_SEC := 0.10
@@ -102,8 +111,6 @@ const DEATH_FADE_ALPHA := 0.0
 const DEATH_DROP_PX := 18.0
 ## Collapse finishes here, then the pose holds through the rest of the beat.
 const DEATH_COLLAPSE_AT := 0.42
-## Two authored walk frames (12 fps) planted before a facing change translates.
-const TURN_FRAME_SEC := 1.0 / 12.0
 const FACING_RING: Array[String] = ["N", "E", "S", "W"]
 ## No-strip hop only. A playing walk cycle stays at rest scale.
 const FALLBACK_SQUASH := Vector2(1.2, 0.76)
@@ -415,72 +422,70 @@ const FACING_SCREEN := {
 	"S": Vector2(-20, 10),
 	"W": Vector2(-20, -10),
 }
-## Share the hop's press and settle so the foot is down while travel is held.
-## The open window is the stride. Contact frames belong on either side of it.
-const STEP_PRESS_END := 0.12
-const STEP_SETTLE_START := 0.78
-## How far the body reaches along the facing while the foot is between cells.
-## Short of one iso step (about 36px) so the lead is a stride, not a hop.
-const STRIDE_LEAD_PX := 10.0
-
-
-## 0 on the departure tile through the press, 1 on the arrival tile through
-## the settle. The stride eases between those plants. No sideways term: the
-## caller moves along the segment. It is not a raw lerp of t.
+## 0 on the departure tile, 1 once the plant window starts. Cubic ease-in-out
+## across the moving part of the tile. The tween itself still lasts one tile
+## time. It is not a raw lerp, and it is not an expo-out hop.
 static func step_travel(t: float) -> float:
-	if t <= STEP_PRESS_END:
+	if t <= 0.0:
 		return 0.0
-	if t >= STEP_SETTLE_START:
+	if t >= HOP_PLANT_AT:
 		return 1.0
-	var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
+	var u := clampf(t / HOP_PLANT_AT, 0.0, 1.0)
 	return u * u * (3.0 - 2.0 * u)
 
 
-## Frame of the facing walk strip for this tile.
-## One tile plays half the cycle, contact to contact. The departure contact
-## shows only while the foot is still on that cell. The arrival contact shows
-## only after the foot has landed. The open stride uses the passing frames,
-## so a planted pose cannot slide across the diamond. step_index continues
-## that cycle onto the next segment.
-static func walk_cycle_frame(t: float, frame_count: int, step_index: int = 0) -> int:
+## One full stride per tile. Frame 0 is the contact at the segment start and
+## again on the plant. The open window visits every frame once, so arrival
+## cannot freeze a passing cell. step_index does not continue a half-cycle;
+## the next tile starts its own cycle on frame 0.
+static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0) -> int:
 	var count := maxi(frame_count, 1)
 	if count <= 1:
 		return 0
-	var half := maxi(count / 2, 1)
-	var start := (maxi(step_index, 0) * half) % count
-	var travel := step_travel(t)
-	if travel <= 0.001:
-		return start
-	var end := (start + half) % count
-	if travel >= 0.999:
-		return end
-	var passing := half - 1
-	if passing <= 0:
-		return (start + 1) % count
-	var slot := int(floor(travel * float(passing)))
-	slot = clampi(slot, 0, passing - 1)
-	return (start + 1 + slot) % count
+	if t <= 0.0 or t >= 1.0 or t >= HOP_PLANT_AT:
+		return 0
+	var u := clampf(t / HOP_PLANT_AT, 0.0, 0.999999)
+	return clampi(int(floor(u * float(count))), 0, count - 1)
 
 
-## Vertical gait for a driven step. Down on both plants, up only while the
-## foot is between cells. The free-running bounce still uses hop_offset.
+## Exactly one integer cycle per tile. Playback fps falls out of the frame
+## count and the tile time: 6 frames → 20, 8 frames → about 27.
+static func stride_cycles_per_tile() -> int:
+	return 1
+
+
+## Vertical gait for a driven step. Same curve as hop_offset: sprite-local,
+## zero on both edges, planted before the tween ends.
 static func stride_rise(t: float) -> Vector2:
-	var travel := step_travel(t)
-	if travel <= 0.0 or travel >= 1.0:
-		return Vector2.ZERO
-	return Vector2(0.0, -HOP_PX * sin(travel * PI))
+	return hop_offset(t)
 
 
-## Body offset along the facing while the foot travels. Zero on both plants
-## so arrival is the idle foot, not a lean left over the next cell.
-## The vector is the facing axis. It has no sideways term.
-static func stride_lead(t: float, facing_dir: Vector2) -> Vector2:
-	var travel := step_travel(t)
-	if travel <= 0.0 or travel >= 1.0:
+## Horizontal travel is the eased foot. The body does not lead off the cell.
+static func stride_lead(_t: float, _facing_dir: Vector2) -> Vector2:
+	return Vector2.ZERO
+
+
+## First tile of a path, and a direction change. Not a straight middle tile.
+static func anticipate_segment(segment_index: int, facing_changed: bool) -> bool:
+	return segment_index <= 0 or facing_changed
+
+
+## Dust when the facing changes, and on the last plant. Straight middle
+## tiles stay quiet. The caller fires this when the hop is back at Y=0.
+static func dust_on_plant(facing_changed: bool, is_final: bool) -> bool:
+	return facing_changed or is_final
+
+
+## Slight lean back along the facing, plus a small crouch. Zero at both ends
+## so the tile tween starts from the foot.
+static func step_anticipation_offset(t: float, facing_dir: Vector2) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
-	if facing_dir.length_squared() < 1.0:
-		return Vector2.ZERO
-	return facing_dir.normalized() * STRIDE_LEAD_PX * sin(travel * PI)
+	var lean := sin(clampf(t, 0.0, 1.0) * PI)
+	var back := Vector2.ZERO
+	if facing_dir.length_squared() >= 1.0:
+		back = -facing_dir.normalized() * STEP_SETTLE_PX * lean
+	return back + Vector2(0.0, lean)
 
 
 ## Cardinal steps use the grid letter. Any other segment faces the screen
@@ -520,22 +525,21 @@ static func screen_facing(delta: Vector2) -> String:
 	return best
 
 
-## One plant. Anticipation presses into the tile, push-off reaches the crest
-## at t=0.5, then the body settles. The rise stays inside HOP_PX.
+## One plant. Rise to the crest at mid-tile, back to the foot before the
+## plant window, then stay there. Y is never positive: no Mario bounce.
+## The offset is sprite-local. Callers must not apply it to the foot,
+## the collider, or ground chrome.
 static func hop_offset(t: float) -> Vector2:
-	if t <= 0.0 or t >= 1.0:
+	if t <= 0.0 or t >= 1.0 or t >= HOP_PLANT_AT:
 		return Vector2.ZERO
-	if t < 0.16:
-		var wind := sin((t / 0.16) * PI)
-		return Vector2(0.0, wind * 1.4)
-	if t <= 0.50:
-		var push := _ease_out((t - 0.16) / 0.34)
-		return Vector2(0.0, lerpf(0.0, -HOP_PX, push))
-	if t < 0.82:
-		var fall := _ease_in((t - 0.50) / 0.32)
-		return Vector2(0.0, lerpf(-HOP_PX, 0.0, fall))
-	var settle := sin(((t - 0.82) / 0.18) * PI)
-	return Vector2(0.0, settle * 1.1)
+	var rise := 0.0
+	if t <= 0.5:
+		var u := t / 0.5
+		rise = sin(u * PI * 0.5)
+	else:
+		var u := (t - 0.5) / (HOP_PLANT_AT - 0.5)
+		rise = cos(clampf(u, 0.0, 1.0) * PI * 0.5)
+	return Vector2(0.0, -HOP_PX * rise)
 
 
 ## 1 on the plant, smaller while the body is off the tile. The shadow
@@ -547,8 +551,8 @@ static func contact_shadow(t: float) -> float:
 	return lerpf(1.0, 0.62, clampf(lift / HOP_PX, 0.0, 1.0))
 
 
-## Elapsed-time bounce for a whole path. Zeros are foot plants. The phase
-## does not reset when a tile boundary passes.
+## Elapsed-time bounce for a whole path. A tile boundary is a plant (Y=0).
+## One hop, not a phase that carries across the cell.
 static func walk_bounce_offset(elapsed: float) -> Vector2:
 	if WALK_STEP_SEC <= 0.0:
 		return Vector2.ZERO
@@ -565,33 +569,35 @@ static func hop_scale(_t: float) -> Vector2:
 static func fallback_hop_scale(t: float) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ONE
-	if t < 0.16:
-		var launch := t / 0.16
+	if t < 0.18:
+		var launch := t / 0.18
 		return Vector2(
 			lerpf(1.0, FALLBACK_SQUASH.x, launch),
 			lerpf(1.0, FALLBACK_SQUASH.y, launch),
 		)
-	if t < 0.70:
-		var rise := clampf((t - 0.16) / 0.22, 0.0, 1.0)
+	if t < 0.62:
+		var rise := clampf((t - 0.18) / 0.22, 0.0, 1.0)
 		return Vector2(
 			lerpf(FALLBACK_SQUASH.x, FALLBACK_STRETCH.x, rise),
 			lerpf(FALLBACK_SQUASH.y, FALLBACK_STRETCH.y, rise),
 		)
-	if t < 0.84:
-		var settle := (t - 0.70) / 0.14
+	if t < HOP_PLANT_AT:
+		var settle := (t - 0.62) / (HOP_PLANT_AT - 0.62)
 		return Vector2(
 			lerpf(FALLBACK_STRETCH.x, 1.0, settle),
 			lerpf(FALLBACK_STRETCH.y, 1.0, settle),
 		)
-	var land := sin((t - 0.84) / 0.16 * PI)
+	var land := sin((t - HOP_PLANT_AT) / (1.0 - HOP_PLANT_AT) * PI)
 	return Vector2(
-		lerpf(1.0, FALLBACK_SQUASH.x, land),
-		lerpf(1.0, FALLBACK_SQUASH.y, land),
+		lerpf(1.0, FALLBACK_SQUASH.x, land * 0.65),
+		lerpf(1.0, FALLBACK_SQUASH.y, land * 0.65),
 	)
 
 
-## Frames to show before translating. Empty when facing does not change.
-## 90° holds the new facing for two frames. 180° steps through one side facing.
+## Legacy turn table. The walk path does not play this. It snaps the segment
+## facing, then a single STEP_SETTLE_SEC weight shift on the first tile and
+## on direction changes. 90° used to hold the new facing for two frames.
+## 180° used to step through one side facing.
 static func facing_turn(from_facing: String, to_facing: String) -> Array:
 	var a := from_facing.strip_edges().to_upper()
 	var b := to_facing.strip_edges().to_upper()
