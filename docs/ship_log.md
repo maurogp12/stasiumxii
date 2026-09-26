@@ -18,7 +18,7 @@ The transparent punch-v3 pack lives under `art/vfx/scenario/`:
 | Footstep dust | `footstep_dust.png` |
 | Mark Shot bow | `mark_shot_cast.png` (same bytes as the attached bow; #175 timing stays 70+80+80+70) |
 
-Mark Shot impact stays the punch-v2 floor strip. Ambush still plants on the back tile, then slashes. Standing melee plays the windup on the caster and it ends as the contact starts. Dust still puffs only on a facing change and the final plant. On contact the flash, the compact spark, the float, and the flinch share the resolve, and each one finishes inside 0.2–0.4s. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
+Mark Shot impact stays the punch-v2 floor strip. The bow windup stays 70+80+80+70 (bolt on frame 4); the draw is not stretched to the contact. Ambush still plants on the back tile, then slashes, then the same contact stack. Standing melee plays the windup on the caster and it ends as the contact starts. Dust puffs only on a facing change and the final plant, at the instant hop Y returns to 0 — not on every tile, not at takeoff, and not mid-air. On contact the flash, the compact spark, the float, and the flinch share the resolve on the target tile, and each one finishes inside 0.2–0.4s. A miss does not flinch. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
 
 ## 2026-09-26 — Mobile debug APK 0.1.26
 

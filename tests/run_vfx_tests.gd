@@ -1267,6 +1267,8 @@ func _test_scenario_overlays() -> void:
 	eq(windup >= 0.28 and windup <= 0.32, true, "the bow windup is a 280-320ms snap")
 	eq(windup <= 0.30, true, "the bow windup stays at or under 0.30s including the release")
 	eq(is_equal_approx(float(cast_sheet.get("life", 0.0)), windup), true, "the bow strip lasts the locked holds")
+	eq(is_equal_approx(float(cast_sheet.get("life", 0.0)), impact_delay), false, "the bow draw is not stretched out to the contact")
+	eq(stamp_script.frame_at("mark_shot_cast", windup - 0.001), 3, "frame 4 is still the release when the bolt leaves")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.0), 0, "the spark is the first cell")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.07), 1, "the draw starts when the spark ends")
 	eq(stamp_script.frame_at("mark_shot_cast", 0.15), 2, "the reticle starts after the draw")
@@ -1309,6 +1311,7 @@ func _test_scenario_overlays() -> void:
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0,
 	}])
 	eq(_sheet(mark_miss, "mark_shot_impact").is_empty(), true, "a Mark Shot miss has no impact")
+	eq(_sheet(mark_miss, "hit_flash").is_empty(), true, "a Mark Shot miss has no hit flash")
 	eq(_sheet(mark_miss, "damage_float").is_empty(), true, "a Mark Shot miss has no damage float")
 	eq(_sheet(marked, "melee_windup").is_empty(), true, "Mark Shot keeps the bow windup, not the melee strip")
 	eq(_sheet(mark_miss, "melee_windup").is_empty(), true, "a Mark Shot miss does not play the melee strip")
