@@ -43,7 +43,9 @@ func play(spec: Dictionary) -> void:
 	z_as_relative = false
 	z_index = int(spec.get("z", 1))
 	_apply_shader(float(spec.get("swirl", 0.0)))
-	_sprite.visible = _style != "figure"
+	# Custom draws (slab, crack, sigil, figure) sit on this node. The ellipse
+	# child paints after them and used to hide the Snap Wall slab.
+	_sprite.visible = _style == "" or _style == "pool"
 	_sprite.modulate = Color(_tint.r, _tint.g, _tint.b, 0.85)
 	if _linger:
 		_tween = create_tween()
@@ -69,7 +71,7 @@ func retarget(spec: Dictionary) -> void:
 	modulate.a = 0.4 if bool(spec.get("dim", false)) else 1.0
 	_apply_shader(float(spec.get("swirl", 0.0)))
 	if _sprite != null:
-		_sprite.visible = _style != "figure"
+		_sprite.visible = _style == "" or _style == "pool"
 	queue_redraw()
 
 

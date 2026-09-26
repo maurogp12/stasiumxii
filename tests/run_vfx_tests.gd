@@ -655,6 +655,9 @@ func _test_class_choreography() -> void:
 	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
 	eq(bool(_first(marked, "projectile").get("hand", false)), true, "Mark Shot emits from the hand")
 	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.2, true, "Mark Shot waits for the release frame")
+	eq(_has(marked, "puff"), false, "Mark Shot does not puff from the feet")
+	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("cut", 13)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("gloam", "attack")), true, "Cut spark waits for the slash frame")
+	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("detonate", 12)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("kestrel", "cast")), true, "Detonate spark waits for the cast frame")
 	var stacked: Array = ROUTER.recipes_for([{
 		"type": "hit",
 		"spell": "mark_shot",

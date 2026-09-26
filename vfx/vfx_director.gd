@@ -279,6 +279,16 @@ func _play_projectile(spec: Dictionary) -> void:
 	if bool(spec.get("hand", false)):
 		var delta := to_pos - from_pos
 		var dir := delta.normalized() if delta.length_squared() > 1.0 else Vector2(1, 0.5).normalized()
+		var caster := int(spec.get("seat", -1))
+		var pawn := _pawn(caster)
+		if pawn != null and _pawn_stands_on(pawn, from_cell):
+			from_pos = pawn.position
+			var body := pawn.get_node_or_null("BodyStrip") as Node2D
+			var sprite := pawn.get_node_or_null("Sprite") as Node2D
+			if body != null and body.visible:
+				from_pos += body.position
+			elif sprite != null:
+				from_pos += sprite.position
 		from_pos += VfxBudget.HAND_OFFSET + dir * 8.0
 		to_pos += VfxBudget.CHEST_OFFSET
 	node.play({

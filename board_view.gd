@@ -859,8 +859,9 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# before the slide, or a refresh snaps it and the walk reads as a teleport.
 	# Face the step before the body moves. hop_facing covers a non-cardinal
 	# step, then a diagonal uses the screen vector so the pawn does not slide
-	# sideways. Two turn frames soften the swap. The snapshot facing snaps
-	# only after the last land. The walk strip loops the whole path.
+	# sideways or backwards. The walk cycle starts on that facing and plays
+	# through a two-frame plant before the translate. The snapshot facing
+	# snaps only after the last land. The walk strip loops the whole path.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -892,12 +893,15 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		if turn.is_empty():
 			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
 		else:
-			for face in turn:
-				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(face)))
-				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[0])))
 		if not walk_armed:
 			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
 			walk_armed = true
+		if not turn.is_empty():
+			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+			for i in range(1, turn.size()):
+				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
+				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
 		if dir != "":
 			visual = dir
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)

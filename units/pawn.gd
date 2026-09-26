@@ -15,12 +15,10 @@ class_name Pawn
 ## bounces on the walk-cycle sine the whole time. If play() does not start,
 ## the same light bounce stays on this static sprite. There is no tile-tall hop.
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
-## when that PNG is on disk; until Batch-1c lands it uses v3 `attack_*`.
+## and falls back to v3 `attack_*` only when that sheet is missing.
 ## Detonate plays `cast_*` when present, otherwise a point pose — not attack_*.
-## Hit and death strips hot-swap the same way. Missing ones use a white flash
-## plus flinch, and a dissolve. Do not invent those frames.
-## TODO(TA): Batch-1c cast_mark / cast / hit / death and Gloam anims are not
-## in this tree. Playback already prefers those names when the files exist.
+## Hit plays `hit_*` with a white flash. Death plays `death_*` and holds the
+## last cell. Missing sheets keep the flash plus flinch, and a dissolve.
 ## Anticipation pulls back, the impact frame holds, then the body recovers.
 ## The clip keeps authored fps when that length still fits the 0.6s lock.
 ## A walk strip never plays the old hop arc. The fallback is the same bounce.
@@ -125,6 +123,10 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 	burn_remaining = CombatHUD.unit_burn_remaining(unit, events)
 	burning = burn_remaining > 0
+	if alive and (_held_death_strip or _body_kind == "death"):
+		_held_death_strip = false
+		_plan_died = false
+		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
 
@@ -738,14 +740,15 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 		return
 	var pos := VIEW_MOTION.hit_offset(t, dir)
 	_sprite.position = pos
+	var drawn := _body_kind == "hit" and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible
 	var k := 0.0
-	if t > 0.0 and t < 1.0:
+	if not drawn and t > 0.0 and t < 1.0:
 		k = sin(clampf(t, 0.0, 1.0) * PI)
 	var mul := Vector2(lerpf(1.0, 1.10, k), lerpf(1.0, 0.84, k))
 	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
-		_active_strip.scale = _sprite.scale
+		_active_strip.scale = SPRITE_SCALE if drawn else _sprite.scale
 
 
 func _sample_lift(t: float) -> void:
@@ -786,11 +789,7 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 
 func _apply_downed_pose() -> void:
 	_stop_idle()
-	if _held_death_strip and _active_strip != null and is_instance_valid(_active_strip):
-		_freeze_on_frame(_active_strip, _last_frame(_active_strip))
-		_active_strip.visible = true
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.visible = false
+	if _hold_death_strip():
 		return
 	_end_body_strip()
 	_ensure_visuals()
@@ -803,6 +802,38 @@ func _apply_downed_pose() -> void:
 	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.modulate = Color(0.45, 0.45, 0.45, float(pose.get("fade", 0.0)))
+
+
+## Last cell of `death_<facing>`. A rebuild with no tween still shows DOWN.
+func _hold_death_strip() -> bool:
+	_ensure_motion_strips()
+	var choice := _strip_choice("death")
+	if choice.is_empty():
+		return false
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return false
+	if _active_strip != strip:
+		_prepare_strip_pose(strip)
+	if strip.animation != anim:
+		strip.animation = anim
+	_active_strip = strip
+	_strip_holds_body = true
+	_held_death_strip = true
+	_body_kind = "death"
+	strip.position = Vector2.ZERO
+	strip.scale = SPRITE_SCALE
+	strip.rotation = 0.0
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.position = Vector2.ZERO
+		_sprite.scale = SPRITE_SCALE
+		_sprite.rotation = 0.0
+	_freeze_on_frame(strip, _last_frame(strip))
+	strip.visible = true
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = false
+	return true
 
 
 func _last_frame(strip: AnimatedSprite2D) -> int:
