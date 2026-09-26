@@ -244,10 +244,19 @@ static func run(host: SceneTree) -> void:
 	host.eq(submit_pawn.facing, "N", "submit-path facing is not the strike facing yet")
 	for _warm in 4:
 		await host.process_frame
+	var hud: Node = main.get_node("HUD")
+	var foe_card_before := str(hud.get("_ironjaw_body").text)
+	var coach_before := str(hud.get("_coach_label").text)
 	board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
 	# The collapse tween has not stepped yet. The body is still on the cast cell.
+	# Hit chrome that lands in this beat is the Invisible Ambush regression:
+	# slash, toast, coach, and HP while Gloam has not snapped.
 	host.eq(submit_pawn.grid_position, submit_from, "submit-path collapse starts on the cast cell")
 	host.eq(submit_pawn.facing, "N", "submit-path collapse does not face the prey early")
+	host.eq(str(hud.get("_ironjaw_body").text), foe_card_before, "Invisible Ambush does not drop prey HP before the snap")
+	host.eq(_hit_line(str(hud.get("_coach_label").text)), false, "Invisible Ambush does not announce the hit before the snap")
+	host.eq(str(hud.toast_caption()).contains("Ambush"), false, "Invisible Ambush does not toast before the snap")
+	host.eq(_ambush_strike_live(board), false, "Invisible Ambush does not slash or float damage before the snap")
 	var foe_pawn: Node = board.pawns_by_seat[1]
 	var hp_before := int(foe_pawn.hp)
 	var saw_collapse := true
@@ -256,23 +265,42 @@ static func run(host: SceneTree) -> void:
 	var faced_on_cast := false
 	var slashed_before_hold := false
 	var damaged_on_cast := false
+	var early_card := false
+	var early_coach := false
+	var early_toast := false
+	var early_strike := false
+	var early_attack := false
 	for _i in 90:
 		await host.process_frame
+		var on_back_facing: bool = submit_pawn.grid_position == submit_back and str(submit_pawn.facing) == "E"
 		var sprite := submit_pawn.get_node_or_null("Sprite") as Node2D
 		var offset := 0.0
 		if sprite != null:
 			offset = sprite.position.length()
+		var body := submit_pawn.get_node_or_null("BodyStrip") as Node2D
+		if body != null:
+			offset = maxf(offset, body.position.length())
 		if submit_pawn.grid_position == submit_from and offset < 4.0:
 			saw_collapse = true
 		if submit_pawn.grid_position == submit_from and submit_pawn.facing == "E":
 			faced_on_cast = true
-		if saw_collapse and submit_pawn.grid_position == submit_back and submit_pawn.facing == "E" and offset < 4.0:
+		if saw_collapse and on_back_facing and offset < 4.0:
 			saw_hold = true
 			faced_on_back = true
 		if not saw_hold and submit_pawn.grid_position == submit_from and offset > 10.0:
 			slashed_before_hold = true
-		if int(foe_pawn.hp) < hp_before and submit_pawn.grid_position != submit_back:
+		if int(foe_pawn.hp) < hp_before and not on_back_facing:
 			damaged_on_cast = true
+		if not on_back_facing and str(hud.get("_ironjaw_body").text) != foe_card_before:
+			early_card = true
+		if not on_back_facing and _hit_line(str(hud.get("_coach_label").text)) and str(hud.get("_coach_label").text) != coach_before:
+			early_coach = true
+		if not on_back_facing and str(hud.toast_caption()).contains("Ambush"):
+			early_toast = true
+		if not on_back_facing and _ambush_strike_live(board):
+			early_strike = true
+		if not on_back_facing and _attack_strip_visible(submit_pawn):
+			early_attack = true
 		if saw_hold and offset > 10.0:
 			break
 		if not bool(board.get("_view_locked")) and saw_hold:
@@ -283,8 +311,15 @@ static func run(host: SceneTree) -> void:
 	host.eq(saw_hold, true, "submit-path Invisible Ambush stands on the back tile before the slash")
 	host.eq(slashed_before_hold, false, "submit-path Invisible Ambush does not slash from the cast cell")
 	host.eq(damaged_on_cast, false, "Instant Invisible Ambush does not deal damage before the back-tile snap")
+	host.eq(early_card, false, "Invisible Ambush does not drop the HUD HP before the back-tile face")
+	host.eq(early_coach, false, "Invisible Ambush does not print the hit line before the back-tile face")
+	host.eq(early_toast, false, "Invisible Ambush does not toast before the back-tile face")
+	host.eq(early_strike, false, "Invisible Ambush does not stamp the slash or float damage before the back-tile face")
+	host.eq(early_attack, false, "Invisible Ambush does not play the strike strip before the back-tile face")
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
 	host.eq(submit_pawn.facing, "E", "submit-path contact faces Kestrel")
+	host.eq(int(foe_pawn.hp) < hp_before, true, "Invisible Ambush deals damage only after the back-tile face")
+	host.eq(str(hud.get("_ironjaw_body").text) != foe_card_before, true, "prey HP drops once Gloam is facing from the back tile")
 	var locked_for := 0
 	while bool(board.get("_view_locked")) and locked_for < 90:
 		await host.process_frame
@@ -321,6 +356,42 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(miss_unit.get("invisible", false)), true, "submit-path Ambush miss keeps Invisible")
 	main.queue_free()
 	await host.process_frame
+
+
+static func _hit_line(text: String) -> bool:
+	return text.contains("HIT") and text.contains("Ambush")
+
+
+static func _attack_strip_visible(pawn: Node) -> bool:
+	for child in pawn.get_children():
+		if not (child is AnimatedSprite2D):
+			continue
+		var strip := child as AnimatedSprite2D
+		if strip.visible and String(strip.animation).begins_with("attack"):
+			return true
+	return false
+
+
+static func _ambush_strike_live(board: Node) -> bool:
+	var vfx: Node = board.get("_vfx")
+	if vfx == null:
+		return false
+	var pools: Variant = vfx.get("_pools")
+	if typeof(pools) != TYPE_DICTIONARY:
+		return false
+	var slash_tex: Texture2D = load("res://vfx/vfx_stamp.gd").texture_for("ambush_slash")
+	for node in pools.get("stamp", []):
+		if node == null or not bool(node.get("in_use")):
+			continue
+		var sprite: Sprite2D = node.get("_sprite") as Sprite2D
+		if sprite != null and slash_tex != null and sprite.texture == slash_tex:
+			return true
+	for node in pools.get("number", []):
+		if node == null or not bool(node.get("in_use")):
+			continue
+		if str(node.get("_kind")) == "damage":
+			return true
+	return false
 
 
 static func _seat_pos(snap: Dictionary, seat: int) -> Vector2i:

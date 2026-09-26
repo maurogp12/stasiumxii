@@ -22,6 +22,7 @@ func _finish_live() -> void:
 	await _test_strip_fallback()
 	await _test_failed_strip_falls_back_to_hop()
 	await _test_driven_walk_cycle()
+	await _test_walk_idle_matches_strip()
 	await _test_batch1_disk_strips()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
@@ -706,6 +707,9 @@ func _test_view_wiring() -> void:
 
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
+	truthy(live.has_method("run"), "shade live script parses")
+	if not live.has_method("run"):
+		return
 	await live.run(self)
 
 
@@ -868,8 +872,9 @@ func _test_strip_fallback() -> void:
 	eq(String(walk.animation), "walk_ne", "a new direction snaps the walk clip")
 	eq(_walk_bounce_ok(sprite.position.y), true, "the snapped walk does not hop")
 	pawn.end_path_walk()
-	eq(sprite.visible, true, "path end plants the static sprite")
-	eq(walk.visible, false, "path end hides the walk strip")
+	eq(sprite.visible, false, "path end keeps the walk identity")
+	eq(walk.visible, true, "path end plants walk frame 0")
+	eq(walk.frame, 0, "path end is the plant frame, not a passing frame")
 	eq(sprite.texture != null, true, "the facing texture is still on the sprite")
 	eq(sprite.position, Vector2.ZERO, "path end plants the feet")
 	pawn.set_facing("E")
@@ -879,8 +884,9 @@ func _test_strip_fallback() -> void:
 	eq(_walk_bounce_ok(sprite.position.y), true, "a lone walk step bounces inside 4-6px")
 	eq(sprite.scale, Vector2(0.5, 0.5), "a lone walk step does not stretch")
 	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
-	eq(sprite.visible, true, "a lone walk step returns to the static sprite")
-	eq(walk.visible, false, "a lone walk step hides the strip when it ends")
+	eq(sprite.visible, false, "a lone walk step returns to the walk plant")
+	eq(walk.visible, true, "a lone walk step keeps the walk sheet")
+	eq(walk.frame, 0, "a lone walk step plants frame 0")
 	eq(sprite.position, Vector2.ZERO, "a lone walk step plants the feet")
 	pawn.set_facing("W")
 	pawn.play_step_hop()
@@ -910,8 +916,14 @@ func _test_strip_fallback() -> void:
 	await create_timer(0.12).timeout
 	eq(sprite.position.length() > 2.0, true, "the lunge still moves the body while the strip plays")
 	pawn.settle_motion()
-	eq(sprite.visible, true, "settle restores the static sprite after the lunge")
 	eq(attack.visible, false, "settle hides the attack strip")
+	if pawn.has_walk_strip():
+		var rested := _visible_strip(pawn)
+		truthy(rested != null and String(rested.animation).begins_with("walk"), "settle plants the walk identity after the lunge")
+		eq(sprite.visible, false, "settle does not flash the static turnaround after the lunge")
+		eq(rested.frame, 0, "settle plants walk frame 0 after the lunge")
+	else:
+		eq(sprite.visible, true, "settle restores the static sprite after the lunge")
 	eq(sprite.position, Vector2.ZERO, "settle plants the feet after a strip lunge")
 	var miss_dur := pawn.play_view_plan({"attack": true, "aim": Vector2(20, -10)})
 	await process_frame
@@ -939,7 +951,12 @@ func _test_strip_fallback() -> void:
 	eq(cast_dur <= MOTION.ACTION_LOCK_MAX, true, "cast impact hold stays inside the lock")
 	pawn.settle_motion()
 	eq(cast_strip.visible, false, "settle hides the cast strip")
-	eq(sprite.visible, true, "settle restores the static sprite after cast")
+	if pawn.has_walk_strip():
+		var cast_rest := _visible_strip(pawn)
+		truthy(cast_rest != null and String(cast_rest.animation).begins_with("walk"), "settle plants the walk identity after cast")
+		eq(sprite.visible, false, "settle does not flash the static turnaround after cast")
+	else:
+		eq(sprite.visible, true, "settle restores the static sprite after cast")
 	pawn.free()
 
 
@@ -1226,10 +1243,46 @@ func _test_driven_walk_cycle() -> void:
 	if strip != null:
 		eq(String(strip.animation), "walk_w", "west plays walk_w")
 	pawn.end_path_walk()
-	eq(sprite.visible, true, "path end shows the idle facing")
-	eq(_visible_strip(pawn), null, "path end does not leave a mid-stride strip on screen")
+	var planted := _visible_strip(pawn)
+	truthy(planted != null, "path end shows the walk plant")
+	eq(sprite.visible, false, "path end does not flash the static turnaround")
+	eq(String(planted.animation), "walk_w", "path end stays on the west walk sheet")
+	eq(planted.frame, 0, "path end plants walk frame 0, not a passing frame")
 	eq(foot.position, Vector2.ZERO, "the ground mark is still on the diamond after the walk")
 	pawn.free()
+
+
+func _test_walk_idle_matches_strip() -> void:
+	for class_id in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		var pawn := Pawn.new()
+		get_root().add_child(pawn)
+		await process_frame
+		pawn.apply_snapshot(_unit(class_id, "E", 0), 0)
+		await process_frame
+		var sprite := pawn.get_node("Sprite") as Sprite2D
+		var foreign := Pawn.sprite_texture(class_id, "E")
+		var idle := _visible_strip(pawn)
+		truthy(idle != null, "%s idle shows the walk sheet" % class_id)
+		if idle == null:
+			pawn.free()
+			continue
+		eq(sprite.visible, false, "%s idle hides the static turnaround" % class_id)
+		eq(String(idle.animation), "walk_e", "%s idle is walk_e" % class_id)
+		eq(idle.frame, 0, "%s idle is walk frame 0" % class_id)
+		var plant := idle.sprite_frames.get_frame_texture("walk_e", 0)
+		eq(plant != foreign, true, "%s plant is not the static turnaround texture" % class_id)
+		eq(idle.sprite_frames.get_frame_texture(idle.animation, idle.frame), plant, "%s shows walk frame 0" % class_id)
+		pawn.arm_driven_walk()
+		await process_frame
+		eq(sprite.visible, false, "%s walk does not flash the static turnaround" % class_id)
+		var walking := _visible_strip(pawn)
+		truthy(walking != null, "%s walk keeps a strip on screen" % class_id)
+		if walking != null:
+			eq(walking.sprite_frames.get_frame_texture("walk_e", 0), plant, "%s walk keeps the idle plant cell" % class_id)
+			var shown := walking.sprite_frames.get_frame_texture(walking.animation, walking.frame)
+			eq(shown != foreign, true, "%s stride is not the foreign idle texture" % class_id)
+			eq(String(walking.animation), "walk_e", "%s stride stays on walk_e" % class_id)
+		pawn.free()
 
 
 func _test_batch1_disk_strips() -> void:
@@ -1269,7 +1322,10 @@ func _test_batch1_disk_strips() -> void:
 	eq(String(strip.animation), "walk_w", "west plays the baked mirror as walk_w")
 	eq(_walk_bounce_ok(sprite.position.y), true, "the facing snap does not hop")
 	pawn.end_path_walk()
-	eq(sprite.visible, true, "path end restores the static kestrel")
+	var kestrel_rest := _visible_strip(pawn)
+	truthy(kestrel_rest != null and String(kestrel_rest.animation) == "walk_w", "path end stays on the west walk sheet")
+	eq(kestrel_rest.frame, 0, "path end plants the west walk frame 0")
+	eq(sprite.visible, false, "path end does not restore the foreign kestrel idle")
 	pawn.set_facing("E")
 	var dur := pawn.play_view_plan({"attack": true, "aim": Vector2(32, 16)})
 	_assert_attack_hold(pawn, Vector2(32, 16), "kestrel attack")
@@ -1345,7 +1401,10 @@ func _test_batch1_disk_strips() -> void:
 	pawn._sample_cast(point_t, Vector2(40, 8))
 	eq(sprite.position.x > 4.0, true, "Detonate points toward the effect")
 	pawn.settle_motion()
-	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
+	var attack_rest := _visible_strip(pawn)
+	truthy(attack_rest != null and String(attack_rest.animation).begins_with("walk"), "settle returns to the walk plant after a disk attack")
+	eq(attack_rest.frame, 0, "settle plants walk frame 0 after a disk attack")
+	eq(sprite.visible, false, "settle does not flash the static turnaround after a disk attack")
 	pawn.free()
 	var jaw := Pawn.new()
 	get_root().add_child(jaw)
@@ -1399,7 +1458,8 @@ func _test_batch1_disk_strips() -> void:
 	var snap_dur := jaw.play_view_plan({})
 	eq(snap_dur, 0.0, "Advance plays no body motion")
 	eq(jaw.motion_playing(), false, "Advance does not lock the sprite")
-	eq(_visible_strip(jaw), null, "Advance does not play an attack strip")
+	var advance_body := _visible_strip(jaw)
+	eq(advance_body == null or not String(advance_body.animation).begins_with("attack"), true, "Advance does not play an attack strip")
 	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "Advance stays planted, no hop")
 	jaw.free()
 	var other := Pawn.new()

@@ -934,10 +934,11 @@ func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
 		return
 	_ambush_arrival_tween = null
 	_plant_ambush_body(event)
-	if not _ambush_body_landed(event):
-		# No slash, no hit toast, no damage float from the cast cell.
+	if not _ambush_strike_ready(event):
+		# No slash, no hit toast, no HP drop, no damage float from the cast cell.
 		# The submit tail plants from the snapshot, then the coach refresh runs.
 		return
+	_publish_ambush_contact(events)
 	if _hud != null:
 		var toast := CombatHUD.toast_for_events(events)
 		if toast != "":
@@ -945,6 +946,41 @@ func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
+
+
+## Position and the strike facing both have to be true before any hit chrome.
+func _ambush_strike_ready(event: Dictionary) -> bool:
+	if not _ambush_body_landed(event):
+		return false
+	var face := str(event.get("facing", ""))
+	if face == "":
+		return true
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return false
+	var pawn: Pawn = pawns_by_seat[seat]
+	return pawn != null and is_instance_valid(pawn) and str(pawn.facing) == face
+
+
+## Coach, side HP, and the overhead bar. Only after the body is on the back tile.
+func _publish_ambush_contact(events: Array) -> void:
+	var snap: Dictionary = _sim().snapshot()
+	if _hud != null:
+		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
+	var event := _ambush_success_event(events)
+	var target_seat := int(event.get("target_seat", -1))
+	if not pawns_by_seat.has(target_seat):
+		return
+	var pawn: Pawn = pawns_by_seat[target_seat]
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) != target_seat:
+			continue
+		pawn.note_prey_vitals(unit)
+		return
 
 
 func _plant_ambush_body(event: Dictionary) -> void:
@@ -1485,7 +1521,10 @@ func _sync_shade_chrome(events: Array) -> void:
 		return
 	var snap: Dictionary = _sim().snapshot()
 	_sync_shade_markers(snap)
-	if _hud != null:
+	# A hit has already subtracted HP in the sim. Painting the coach and the
+	# HP cards here drops the prey while Gloam is still on the cast tile.
+	# The contact beat publishes that after the snap and the facing.
+	if _hud != null and _ambush_success_event(events).is_empty():
 		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
 
 

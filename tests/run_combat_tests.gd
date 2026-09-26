@@ -6798,4 +6798,7 @@ func fail(msg: String) -> void:
 
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
+	truthy(live.has_method("run"), "shade live script parses")
+	if not live.has_method("run"):
+		return
 	await live.run(self)
