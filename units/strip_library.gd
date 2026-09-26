@@ -134,6 +134,16 @@ static func batch1_png_paths() -> Array[String]:
 	return out
 
 
+## Scenario hit-flinch sheets. 576×160, four 144×160 cells, one per facing.
+## Same path the pawn already plays as `hit_<n|e|s|w>`.
+static func hit_png_paths() -> Array[String]:
+	var out: Array[String] = []
+	for cls in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		for face in LETTERS:
+			out.append(export_png_path(cls, "hit", face))
+	return out
+
+
 ## Batch-1c sheets that were not already in the v3 walk/attack set.
 ## Ironjaw attack is louder in place and stays on batch1_png_paths().
 static func batch1c_png_paths() -> Array[String]:
@@ -196,6 +206,7 @@ static func _load_class(class_id: String) -> SpriteFrames:
 	# Feet still pin to frame 0. A second pass is a no-op once they match.
 	# The contact index is scored before that shift.
 	_stabilize_walk_feet(baked, class_id)
+	_stabilize_hit_feet(baked)
 	return baked
 
 
@@ -632,6 +643,51 @@ static func _figure_metrics(image: Image) -> Vector2i:
 	if foot_y < 0:
 		return Vector2i(-1, 0)
 	return Vector2i(foot_y, foot_y - head_y + 1)
+
+
+## Pin every hit cell's foot row to the walk plant. The recoil stays in the
+## pose. The contact row does not pop between the four frames or against idle.
+static func _stabilize_hit_feet(frames: SpriteFrames) -> void:
+	if frames == null:
+		return
+	for face in LETTERS:
+		var anim := "hit_%s" % face
+		if not frames.has_animation(anim):
+			continue
+		var count := frames.get_frame_count(anim)
+		if count <= 0:
+			continue
+		var anchor_y := _walk_foot_y(frames, face)
+		if anchor_y < 0:
+			continue
+		for i in count:
+			var tex := frames.get_frame_texture(anim, i)
+			if tex == null:
+				continue
+			var img := tex.get_image()
+			if img == null or img.is_empty():
+				continue
+			var foot := _foot_point(img)
+			if foot.y < 0 or foot.y == anchor_y:
+				continue
+			var shifted := _shift_image(img, 0, anchor_y - foot.y)
+			var duration := frames.get_frame_duration(anim, i)
+			if duration <= 0.0:
+				duration = 1.0
+			frames.set_frame(anim, i, ImageTexture.create_from_image(shifted), duration)
+
+
+static func _walk_foot_y(frames: SpriteFrames, face: String) -> int:
+	var walk := "walk_%s" % face
+	if frames == null or not frames.has_animation(walk) or frames.get_frame_count(walk) <= 0:
+		return -1
+	var tex := frames.get_frame_texture(walk, 0)
+	if tex == null:
+		return -1
+	var img := tex.get_image()
+	if img == null or img.is_empty():
+		return -1
+	return _foot_point(img).y
 
 
 static func _foot_point(image: Image) -> Vector2i:

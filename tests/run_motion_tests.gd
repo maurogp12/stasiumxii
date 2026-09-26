@@ -26,6 +26,8 @@ func _finish_live() -> void:
 	await _test_walk_idle_matches_strip()
 	await _test_live_walk_keeps_sheet()
 	await _test_batch1_disk_strips()
+	await _test_hit_flinch_playback()
+	await _test_flinch_interrupts_walk()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
 	await _test_ambush_present_race()
@@ -473,6 +475,32 @@ func _test_commit_motion_on_hit_and_miss() -> void:
 	eq(bool(mend_hit_plan.get("cast", false)), true, "Mend hit winds up")
 	eq(bool(mend_miss_plan.get("lift", false)), false, "Mend miss does not lift")
 	eq(bool(mend_hit_plan.get("lift", false)), true, "Mend hit lifts")
+	eq(bool(mend_hit_plan.get("hit", false)), false, "Mend self-cast does not flinch")
+	eq(bool(mend_miss_plan.get("hit", false)), false, "Mend miss does not flinch")
+	var self_damage: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.STRIKE,
+		"seat": 0,
+		"target_seat": 0,
+		"damage": 16,
+	}]).get(0, {})
+	eq(bool(self_damage.get("attack", false)), true, "a self hit still winds the caster up")
+	eq(bool(self_damage.get("hit", false)), false, "a self hit does not play the flinch")
+	var zero_damage: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.BASH,
+		"seat": 0,
+		"target_seat": 1,
+		"damage": 0,
+	}])
+	eq(bool((zero_damage.get(1, {}) as Dictionary).get("hit", false)), false, "a hit with no damage does not flinch")
+	var strike_steps: Array = MOTION.steps_for(hit_plans.get(0, {}))
+	eq(str(strike_steps[0].get("kind", "")), "wait", "the flinch waits for contact")
+	eq(is_equal_approx(float(strike_steps[0].get("sec", 0.0)), MOTION.damage_resolve_sec(SpellKits.STRIKE)), true, "Strike flinch starts when damage resolves")
+	eq(str(strike_steps[1].get("kind", "")), "hit", "the flinch plays after that contact")
+	eq(is_equal_approx(MOTION.MARK_BOLT_SEC, VfxRouter.MARK_FLIGHT_SEC), true, "Mark Shot flinch uses the bolt travel")
+	eq(is_equal_approx(MOTION.damage_resolve_sec(SpellKits.MARK_SHOT), StripLibrary.release_sec("kestrel", "cast_mark") + VfxRouter.MARK_FLIGHT_SEC), true, "Mark Shot flinch starts when the bolt lands")
+	eq(is_equal_approx(MOTION.damage_resolve_sec(SpellKits.AMBUSH), MOTION.ambush_contact_sec()), true, "Ambush flinch starts at the slash contact")
 
 
 func _test_walk_hops_not_advance() -> void:
@@ -860,6 +888,114 @@ func _add_anim(frames: SpriteFrames, anim: String, count: int, fps: float) -> vo
 		frames.add_frame(anim, tex)
 
 
+func _test_hit_flinch_playback() -> void:
+	StripLibrary.clear_cache()
+	for cls in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		var bank := StripLibrary.frames_for(cls)
+		truthy(bank != null, "%s flinch bank loads" % cls)
+		if bank == null:
+			continue
+		for face in ["e", "s", "n", "w"]:
+			var hit_anim := "hit_%s" % face
+			var walk_anim := "walk_%s" % face
+			eq(bank.get_frame_count(hit_anim), 4, "%s %s flinch bank is 4 frames" % [cls, face])
+			var flash := bank.get_frame_texture(hit_anim, 0).get_image()
+			var settle := bank.get_frame_texture(hit_anim, 3).get_image()
+			var plant := bank.get_frame_texture(walk_anim, 0).get_image()
+			truthy(flash != null and settle != null and plant != null, "%s %s flinch cells load" % [cls, face])
+			if flash == null or settle == null or plant == null:
+				continue
+			eq(flash.get_width(), 144, "%s %s flash cell is 144 wide" % [cls, face])
+			eq(flash.get_height(), 160, "%s %s flash cell is 160 tall" % [cls, face])
+			eq(_opaque_luma(flash) > _opaque_luma(settle) + 0.15, true, "%s %s flashes on frame 1 and has settled by frame 4" % [cls, face])
+			eq(absi(_foot_row(flash) - _foot_row(plant)) <= 2, true, "%s %s flinch foot matches the walk plant" % [cls, face])
+			var pawn := Pawn.new()
+			get_root().add_child(pawn)
+			pawn.apply_snapshot(_unit(cls, face.to_upper(), 0), 0)
+			await process_frame
+			var dur := pawn.play_view_plan({"hit": true, "away": Vector2(20, 8)})
+			await process_frame
+			var strip := _visible_strip(pawn)
+			truthy(strip != null, "%s %s hit shows the flinch strip" % [cls, face])
+			if strip != null:
+				eq(String(strip.animation), hit_anim, "%s %s plays the facing flinch" % [cls, face])
+				eq(strip.sprite_frames.get_frame_count(hit_anim), 4, "%s %s flinch plays 4 frames" % [cls, face])
+				eq(strip.sprite_frames.get_animation_loop(hit_anim), false, "%s %s flinch is one-shot" % [cls, face])
+				var knock_t := MOTION.HIT_OUT_SEC / MOTION.hit_sec()
+				pawn._sample_hit(knock_t, Vector2(20, 8))
+				eq(strip.scale, pawn._body_scale(), "%s %s flinch does not add a squash" % [cls, face])
+				eq(strip.position, Vector2.ZERO, "%s %s flinch keeps the feet on the baseline" % [cls, face])
+				eq(strip.offset, Vector2(0, -72), "%s %s flinch keeps the walk foot pivot" % [cls, face])
+				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
+			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
+			pawn.settle_motion()
+			var rested := _visible_strip(pawn)
+			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
+			pawn.free()
+			await process_frame
+
+
+func _test_flinch_interrupts_walk() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	pawn.arm_driven_walk()
+	pawn.sample_driven_gait(0.45)
+	var walking := _visible_strip(pawn)
+	truthy(walking != null, "the stride is on screen before the hit")
+	var mid := -1
+	if walking != null:
+		mid = walking.frame
+		eq(String(walking.animation), "walk_e", "the interrupted body is the east walk")
+		eq(mid != 0, true, "the stride has left the idle plant")
+	var dur := pawn.play_view_plan({"hit": true, "away": Vector2(24, 8)})
+	await process_frame
+	var flinch := _visible_strip(pawn)
+	truthy(flinch != null, "the hit replaces the stride with the flinch")
+	if flinch != null:
+		eq(String(flinch.animation), "hit_e", "the flinch uses the facing the walk was on")
+		eq(flinch.frame != mid or String(flinch.animation) != "walk_e", true, "the flinch is not the passing walk frame")
+	eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "an interrupting flinch stays inside the lock")
+	await create_timer(MOTION.hit_sec() + 0.08).timeout
+	pawn.settle_motion()
+	var planted := _visible_strip(pawn)
+	truthy(planted != null, "the flinch returns to the idle plant")
+	if planted != null:
+		eq(String(planted.animation), "walk_e", "the plant is the facing walk sheet")
+		eq(planted.frame, 0, "the plant is frame 0, not the stride the flinch cut")
+	pawn.sample_driven_gait(0.45)
+	var after := _visible_strip(pawn)
+	truthy(after != null, "a late stride sample does not hide the plant")
+	if after != null:
+		eq(String(after.animation), "walk_e", "a late stride sample does not start another clip")
+		eq(after.frame, 0, "a late stride sample does not resume the passing frame")
+	pawn.free()
+
+
+func _opaque_luma(image: Image) -> float:
+	var sum := 0.0
+	var count := 0
+	for y in image.get_height():
+		for x in image.get_width():
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.08:
+				continue
+			sum += (pixel.r + pixel.g + pixel.b) / 3.0
+			count += 1
+	if count <= 0:
+		return 0.0
+	return sum / float(count)
+
+
+func _foot_row(image: Image) -> int:
+	for y in range(image.get_height() - 1, -1, -1):
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.08:
+				return y
+	return -1
+
+
 func _test_batch1c_hot_swap() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
@@ -1124,7 +1260,14 @@ func _test_strip_library_missing_and_slice() -> void:
 				var authored_image := authored_tex.get_image()
 				var played_image := played_tex.get_image()
 				truthy(authored_image != null and played_image != null, "%s %s cell images load" % [cls, anim_name])
-				eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
+				if kind == "hit":
+					var walk_foot := _foot_row(played.get_frame_texture("walk_%s" % face, 0).get_image())
+					for hit_i in played.get_frame_count(anim_name):
+						var hit_row := _foot_row(played.get_frame_texture(anim_name, hit_i).get_image())
+						eq(hit_row >= 149 and hit_row <= 150, true, "%s %s frame %d foot is on y 149-150" % [cls, anim_name, hit_i])
+						eq(absi(hit_row - walk_foot) <= 1, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
+				else:
+					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
 				var later := played.get_frame_texture(anim_name, 3).get_image()
 				eq(played_image.get_data() == later.get_data(), false, "%s %s frames are not one repeated cell" % [cls, anim_name])
 				var regions: Array = []
@@ -1174,8 +1317,12 @@ func _test_strip_library_missing_and_slice() -> void:
 			eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])
 		eq(walk_only.has_animation("attack_e"), false, "%s has no attack strip" % cls)
 		eq(walk_only.has_animation("cast_e"), false, "%s has no cast strip" % cls)
-		eq(walk_only.has_animation("hit_e"), false, "%s has no hit strip" % cls)
 		eq(walk_only.has_animation("death_e"), false, "%s has no death strip" % cls)
+		var hit_name := "hit_e"
+		eq(walk_only.has_animation(hit_name), true, "%s hit flinch is on the bank" % cls)
+		eq(walk_only.get_frame_count(hit_name), 4, "%s hit flinch is 4 frames" % cls)
+		eq(walk_only.get_animation_loop(hit_name), false, "%s hit flinch is one-shot" % cls)
+		eq(is_equal_approx(walk_only.get_animation_speed(hit_name), 12.0), true, "%s hit flinch is 12 fps" % cls)
 	var batch1c: Array[String] = StripLibrary.batch1c_png_paths()
 	eq(batch1c.size(), 44, "batch-1c adds cast/hit/death and the gloam set")
 	for path in batch1c:
@@ -1207,6 +1354,18 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(is_equal_approx(StripLibrary.kind_fps("walk"), 12.0), true, "walk strips stay 12 fps")
 	eq(StripLibrary.kind_frame_hint("gloam", "attack"), 5, "gloam attack is 5 frames")
 	eq(StripLibrary.kind_frame_hint("kestrel", "hit"), 4, "hit strips are 4 frames")
+	var flinch_paths: Array[String] = StripLibrary.hit_png_paths()
+	eq(flinch_paths.size(), 20, "hit flinch is five classes by four facings")
+	for path in flinch_paths:
+		eq(FileAccess.file_exists(path), true, "hit flinch png is in the repo: %s" % path)
+		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
+		var flinch_tex := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
+		truthy(flinch_tex is Texture2D, "hit flinch png loads: %s" % path)
+		eq((flinch_tex as Texture2D).get_width(), 576, "hit flinch is 4 cells wide: %s" % path)
+		eq((flinch_tex as Texture2D).get_height(), 160, "hit flinch is one cell tall: %s" % path)
+		var flinch_import := FileAccess.get_file_as_string(path + ".import")
+		truthy(flinch_import.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
+		truthy(flinch_import.contains("compress/mode=0"), "hit flinch import is lossless: %s" % path)
 	eq(StripLibrary.try_load("res://art/export_2x/characters/kestrel/anims/kestrel_walk_e_gen.png"), null, "gen_raw sheets are not loaded")
 	var image := Image.create(48, 8, false, Image.FORMAT_RGBA8)
 	for i in 6:

@@ -10,7 +10,7 @@ Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160.
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Those walk PNGs are the wakfu-ship-v4 strips (864×160, six 144×160 cells, foot-anchored). v4 amplifies stride and bounce on the locked punch sheets. It does not regenerate identity. Locked SoTs stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punch sheet. West is the mirror of east. North and south are the front and rear three-quarter strips, not E-compress placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, hit, or death sheet.
+Those walk PNGs are the wakfu-ship-v4 strips (864×160, six 144×160 cells, foot-anchored). v4 amplifies stride and bounce on the locked punch sheets. It does not regenerate identity. Locked SoTs stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punch sheet. West is the mirror of east. North and south are the front and rear three-quarter strips, not E-compress placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, or death sheet. Their hit flinch is the scenario strip below.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
@@ -32,7 +32,7 @@ Animation names inside the `.tres`: `walk_e`, `walk_s`, `walk_n`, `walk_w`, `att
 
 Walk clips in the `.tres` are slices of the walk PNGs above, so replacing that PNG is the walk update. A per-facing PNG still fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
 
-`<class>` is `kestrel`, `ironjaw`, `gloam`, `mender`, or `bastion` for the walk strips on disk. Mender and Bastion ship walk only.
+`<class>` is `kestrel`, `ironjaw`, `gloam`, `mender`, or `bastion`. Every class ships a walk and a hit flinch. Mender and Bastion have no attack, cast, or death sheet.
 
 `<anim>` is `walk` or `attack` for the v3 files, plus Batch-1c `cast_mark`, `cast`, `hit`, and `death`. Gloam ships the full set. `*_gen.png` is ignored.
 
@@ -60,15 +60,17 @@ Batch-1c (same cell, pivot, and letter rule):
 
 - `art/export_2x/characters/kestrel/anims/kestrel_cast_mark_{e,s,n,w}.png` — 6 frames, 12 fps, impact 3
 - `art/export_2x/characters/kestrel/anims/kestrel_cast_{e,s,n,w}.png` — 6 frames, 10 fps, impact 3
-- `art/export_2x/characters/kestrel/anims/kestrel_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/kestrel/anims/kestrel_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 - `art/export_2x/characters/kestrel/anims/kestrel_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
-- `art/export_2x/characters/ironjaw/anims/ironjaw_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/ironjaw/anims/ironjaw_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 - `art/export_2x/characters/ironjaw/anims/ironjaw_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
 - `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — 6 frames, 12 fps, loop
 - `art/export_2x/characters/gloam/anims/gloam_attack_{e,s,n,w}.png` — 5 frames, 12 fps, impact 2
 - `art/export_2x/characters/gloam/anims/gloam_cast_{e,s,n,w}.png` — 4 frames, 10 fps, impact 2
-- `art/export_2x/characters/gloam/anims/gloam_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/gloam/anims/gloam_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 - `art/export_2x/characters/gloam/anims/gloam_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
+- `art/export_2x/characters/mender/anims/mender_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
+- `art/export_2x/characters/bastion/anims/bastion_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 
 Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk is the v4 punch strip. Kestrel attack stays the prior sheet.
 
@@ -102,5 +104,5 @@ Not required at runtime. Used only when the lettered export file for that facing
 - **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use the louder `attack_*`. Gloam Cut uses `attack_*` and holds frame 2.
 - **Mark Shot:** `cast_mark_<facing>` (6 frames, 12 fps, impact 3). If that sheet is missing it plays v3 `attack_*`. The bolt leaves hand height at the release frame, following the body if the bow has lunged.
 - **Detonate:** `cast_<facing>` (6 frames, 10 fps, impact 3). It does not borrow `attack_*`. A missing sheet is a point pose. The signal waits for the cast impact cell.
-- **Hit / death:** `hit_*` flinches without an extra squash. `death_*` plays and then holds the last cell, including after a snapshot rebuild. Otherwise a white flash plus flinch, and a dissolve.
+- **Hit / death:** `hit_*` is the scenario flinch (576×160, four 144×160 cells, foot row about y=149–150, same pivot as the walk). It plays only when damage resolves, after contact, for the current facing. A miss or a self-cast does not play it. Frame 1 flashes. Frame 4 has settled. Feet stay on that baseline for all four frames. Playback is one-shot at 12 fps and does not add the no-strip knock or squash. A flinch that cuts a walk returns to the idle plant, not the passing stride frame. `death_*` plays and then holds the last cell, including after a snapshot rebuild. A missing hit sheet keeps the white flash plus the procedural flinch, and a missing death sheet dissolves.
 - **`*_gen.png`:** never loaded.
