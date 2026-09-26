@@ -2,6 +2,44 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile hub menu
+
+Look target is Luca's hub mock: dark navy ground, gold serif chrome, a thin gold frame with corner brackets and four-pointed stars, a Koliseo hero banner, and a RAID row of five stasis portraits. Mobile branch only. This hub is not ported to PC `main`.
+
+### Player-visible
+
+- F5 no longer opens a vertical stack of plain buttons.
+- **STASIUM XII** sits top-left in Cinzel, with a star and a gold rule.
+- The Koliseo banner (Kestrel, Ironjaw, Mender, Gloam, Bastion, and the gold **KOLISEO** label) opens `scenes/class_select.tscn`.
+- **RAID** heads one row of five tiles. The plates read CROSSHAVEN STASIS, BRINEWAKE STASIS, SLAGCROWN STASIS, WINDMERE STASIS, and STORMSPIRE STASIS. Each tile still sets `MobileHub.pending_biome_id` and opens `scenes/stasis_run.tscn`.
+- Button text stays `Koliseo` and `Crosshaven Stasis` (Title Case). That is what `door_text` and the hub tests read. The uppercase words are painted on the art.
+- At 960×720 each tile is about 178×250, above the 72px floor. A taller viewport keeps that poster and moves the footer star to the bottom edge.
+
+### Files
+
+- `scenes/mobile_hub.gd` — layout, frame, and the same Koliseo / Stasis handlers
+- `art/ui/hub/` — banner, five raid crops from the mock, Cinzel Semibold, OFL
+- `tests/run_mobile_hub_tests.gd` — art files exist, and the tile signals still set the biome
+- `docs/mobile_hub.md`
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Ambush and Shade. No Ambush that does not come from a Shade (or from Gloam while Invisible).
+- No cosmetics.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- No APK version bump and no APK cut.
+- Biome ids stay `crosshaven`, `brinewake`, `slagcrown`, `windmere`, `stormspire`. Door names Threshgate, Tidehold, Ashmarch, Galevault, and Coilgate stay on the run screen.
+- `--dedicated`, `--class`, `--queue`, `--join`, and `--host` still skip the hub.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+| Suite | Passed |
+| --- | ---: |
+| Mobile hub | 178 |
+
+`godot --headless --path . --quit-after 2` loads the hub and exits 0. Combat, VFX, and motion suites were not re-run. This pass does not touch them.
+
 ## 2026-09-26 — Rosebud feel / chrome pass
 
 Compared the current `mobile` tip (Batch-1c feel, Stasis unpark, Ambush teleport, Shade tile, APK 0.1.17) with the Rosebud Gloam combat reference. The hypothesis held: tile spawn and the Ambush teleport destination were already in place. This pass is chrome readability and aim feedback.

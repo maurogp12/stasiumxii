@@ -59,6 +59,8 @@ func _test_hub_doors() -> void:
 	eq(hub.door_text(3), "Slagcrown Stasis", "Slagcrown door")
 	eq(hub.door_text(4), "Windmere Stasis", "Windmere door")
 	eq(hub.door_text(5), "Stormspire Stasis", "Stormspire door")
+	truthy(FileAccess.file_exists("res://art/ui/hub/koliseo_banner.png"), "Koliseo banner art is in the hub folder")
+	truthy(FileAccess.file_exists("res://art/ui/hub/Cinzel-Semibold.ttf"), "hub serif is bundled")
 	var ids: Array[String] = []
 	for index in range(hub.door_count()):
 		var button: Button = hub._doors[index]
@@ -68,6 +70,7 @@ func _test_hub_doors() -> void:
 	eq(ids, ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"], "stasis doors use the five ship ids")
 	eq(load("res://scenes/mobile_hub.gd").BIOME_IDS, ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"], "biome allowlist is the five ids")
 	for map_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
+		truthy(FileAccess.file_exists(MobileHub.raid_art_path(map_id)), "%s raid tile art exists" % map_id)
 		var tags_path := "res://art/maps/arena_colosseum_v2/tiled/%s_15x15_tags.json" % map_id
 		var tmx_path := "res://art/maps/arena_colosseum_v2/tiled/%s_15x15.tmx" % map_id
 		eq(MobileHub.tags_path(map_id), tags_path, "%s tags path is the tiled 15x15 file" % map_id)
@@ -88,6 +91,12 @@ func _test_hub_doors() -> void:
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "windmere", "unknown ids do not replace the biome")
 	hub.open_stasis("crosswake")
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "windmere", "a mixed spelling does not replace the biome")
+	hub._doors[1].pressed.emit()
+	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "crosshaven", "Crosshaven tile signal opens that stasis")
+	hub._doors[5].pressed.emit()
+	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "stormspire", "Stormspire tile signal opens that stasis")
+	hub._doors[0].pressed.emit()
+	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "", "Koliseo banner signal clears the stasis biome")
 	hub.free()
 
 
