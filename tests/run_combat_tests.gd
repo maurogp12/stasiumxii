@@ -116,6 +116,10 @@ func _run() -> void:
 func _test_reset_and_turn_order() -> void:
 	var snap: Dictionary = _sim.reset_match({"seed": 1, "skip_deploy": true})
 	eq(snap["active_seat"], 0, "Kestrel (seat 0) acts first")
+	var order: Array = CombatHUD.turn_order(snap)
+	eq(order.size(), 2, "the turn strip follows the two living seats")
+	eq(int(order[0].get("seat", -1)), 0, "turn order starts at seat 0")
+	eq(int(order[1].get("seat", -1)), 1, "turn order continues at seat 1")
 	eq(snap["units"][0]["name"], "Kestrel", "seat 0 is Kestrel")
 	eq(snap["units"][1]["name"], "Ironjaw", "seat 1 is Ironjaw")
 	eq(snap["units"][0]["hp"], 80, "Kestrel starts at 80 HP")

@@ -51,6 +51,8 @@ var _banner_titles: Array[Label] = []
 var _seat_panels: Array[Panel] = []
 var _seat_titles: Array[Label] = []
 var _turn_label: Label
+var _turn_strip: HBoxContainer
+var _head_cache: Dictionary = {}
 var _coach_label: Label
 var _selected_label: Label
 var _ap_pips: HBoxContainer
@@ -161,6 +163,24 @@ static func is_local_turn(snap: Dictionary) -> bool:
 	if local_seat < 0:
 		return true
 	return local_seat == snap_active_seat(snap)
+
+
+## Living fighters in the order CombatSim already hands off turns: ascending seat.
+## Koliseo is seat 0 then seat 1. Stasis walks the same sorted seats. No new formula.
+static func turn_order(snap: Dictionary) -> Array:
+	var rows: Array = []
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -1)) < 0:
+			continue
+		if not bool(unit.get("alive", true)):
+			continue
+		rows.append(unit)
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("seat", 0)) < int(b.get("seat", 0))
+	)
+	return rows
 
 
 static func turn_status_text(snap: Dictionary) -> String:
@@ -786,6 +806,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 		set_turn_clock(clock_sec if clock_sec >= 0 else _clock_seconds, turn_clock_running(snap), turn_clock_fraction(snap))
 	else:
 		_apply_turn_label_clock()
+	_sync_turn_strip(snap)
 
 	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), GOLD_BRIGHT)
 	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.78, 0.84, 0.9))
@@ -886,19 +907,29 @@ func _build() -> void:
 	resource_panel.add_theme_stylebox_override("panel", _fighter_frame(true, GOLD))
 	root.add_child(resource_panel)
 
+	_turn_strip = HBoxContainer.new()
+	_turn_strip.name = "TurnStrip"
+	_turn_strip.position = Vector2(8, 4)
+	_turn_strip.size = Vector2(432, 48)
+	_turn_strip.alignment = BoxContainer.ALIGNMENT_CENTER
+	_turn_strip.add_theme_constant_override("separation", 8)
+	_turn_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_child(_turn_strip)
+
 	_turn_label = Label.new()
-	_turn_label.position = Vector2(12, 6)
-	_turn_label.size = Vector2(424, 26)
+	_turn_label.position = Vector2(8, 52)
+	_turn_label.size = Vector2(432, 16)
 	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_turn_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_turn_label.add_theme_font_size_override("font_size", 16)
-	_turn_label.add_theme_color_override("font_color", GOLD_BRIGHT)
+	_turn_label.clip_text = true
+	_turn_label.add_theme_font_size_override("font_size", 11)
+	_turn_label.add_theme_color_override("font_color", GOLD)
 	_apply_display_font(_turn_label)
 	resource_panel.add_child(_turn_label)
 
 	var res_box := VBoxContainer.new()
-	res_box.position = Vector2(18, 36)
-	res_box.size = Vector2(412, 66)
+	res_box.position = Vector2(18, 70)
+	res_box.size = Vector2(412, 52)
 	res_box.add_theme_constant_override("separation", 4)
 	res_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	resource_panel.add_child(res_box)
@@ -1295,6 +1326,108 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 		pip.custom_minimum_size = Vector2(16, 10)
 		pip.color = fill if i < current else Color(0.1, 0.11, 0.15, 0.95)
 		row.add_child(pip)
+
+
+func _sync_turn_strip(snap: Dictionary) -> void:
+	if _turn_strip == null:
+		return
+	while _turn_strip.get_child_count() > 0:
+		var child := _turn_strip.get_child(0)
+		_turn_strip.remove_child(child)
+		child.free()
+	var active := snap_active_seat(snap)
+	var deploying := is_deployment_phase(snap)
+	var over := bool(snap.get("match_over", false))
+	for unit in turn_order(snap):
+		var seat := int(unit.get("seat", -1))
+		var acting := (not deploying) and (not over) and seat == active
+		_turn_strip.add_child(_turn_chip(unit, acting))
+
+
+func _turn_chip(unit: Dictionary, acting: bool) -> Control:
+	var side := 46 if acting else 36
+	var host := Panel.new()
+	host.custom_minimum_size = Vector2(side, side)
+	host.size = Vector2(side, side)
+	host.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	host.add_theme_stylebox_override("panel", _chip_frame(acting))
+	var tex := _portrait_for(unit)
+	if tex != null:
+		var plate := TextureRect.new()
+		plate.texture = tex
+		plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		plate.offset_left = 3
+		plate.offset_top = 3
+		plate.offset_right = -3
+		plate.offset_bottom = -3
+		host.add_child(plate)
+	else:
+		var label := Label.new()
+		label.text = _placeholder_mark(unit)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		label.add_theme_font_size_override("font_size", 10)
+		label.add_theme_color_override("font_color", CREAM)
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		host.add_child(label)
+	if not acting:
+		host.modulate = Color(0.72, 0.7, 0.64, 1)
+	return host
+
+
+func _chip_frame(acting: bool) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = NAVY_ACTIVE if acting else NAVY
+	box.border_color = GOLD_BRIGHT if acting else GOLD_DIM
+	box.set_border_width_all(3 if acting else 1)
+	box.corner_radius_top_left = 4
+	box.corner_radius_top_right = 4
+	box.corner_radius_bottom_left = 4
+	box.corner_radius_bottom_right = 4
+	if acting:
+		box.shadow_color = Color(0.95, 0.78, 0.38, 0.7)
+		box.shadow_size = 5
+	return box
+
+
+func _portrait_for(unit: Dictionary) -> Texture2D:
+	var foe := str(unit.get("stasis_sprite", ""))
+	if foe != "" and ResourceLoader.exists(foe):
+		return _head_crop(foe)
+	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
+	if not SpellKits.is_roster_class(class_id):
+		return null
+	return _head_crop("res://art/characters/%s/%s_s.png" % [class_id, class_id])
+
+
+func _head_crop(path: String) -> Texture2D:
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	if _head_cache.has(path) and _head_cache[path] is Texture2D:
+		return _head_cache[path]
+	var tex := load(path) as Texture2D
+	if tex == null:
+		return null
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	var size := tex.get_size()
+	var side := minf(size.x * 0.62, size.y * 0.46)
+	atlas.region = Rect2((size.x - side) * 0.5, size.y * 0.02, side, side)
+	_head_cache[path] = atlas
+	return atlas
+
+
+func _placeholder_mark(unit: Dictionary) -> String:
+	var unit_name := str(unit.get("name", "")).strip_edges()
+	if unit_name == "":
+		unit_name = SpellKits.display_name(str(unit.get("class_id", "")))
+	if unit_name == "":
+		return "?"
+	return unit_name.substr(0, mini(4, unit_name.length()))
 
 
 func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> String:

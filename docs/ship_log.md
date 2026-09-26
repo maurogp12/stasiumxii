@@ -2,6 +2,10 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Turn timeline
+
+The center plaque leads with a portrait strip in the existing seat order (seat 0, then the rest). The acting fighter is the gold-lit chip. Missing foe art is a short name tile. The turn line and the timer stay on that plaque. No new initiative rule.
+
 ## 2026-09-26 — Combat HUD chrome
 
 The top fighter cards and the turn plaque use the hub navy and gold. ACTIVE is the lit frame; waiting stays dim. HP, AP, MP, facing, turn, and class meters stay on the cards. Raw spell-id lines are off the cards because those spells already sit on the bottom bar. Locked numbers are unchanged.
