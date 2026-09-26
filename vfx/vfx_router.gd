@@ -837,6 +837,8 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				var struck := _target_cell(event)
 				out.append(_flash("slash", target, struck, 0.26))
 				# Shade origin and Invisible self-origin share this hit beat.
+				# BoardView arms this only after the body is planted on the back tile.
+				# The delay is the slash contact, measured from that plant.
 				out.append(_stamp("ambush_slash", target, struck, ViewMotion.ambush_contact_sec(), VfxBudget.STAMP_AMBUSH_PX, VfxBudget.STAMP_SPELL_LIFE))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):

@@ -18,6 +18,7 @@ func _initialize() -> void:
 
 
 func _finish_live() -> void:
+	await _test_stamp_playback()
 	await _test_live_director()
 	await _test_shade_markers_survive_rebuild()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
@@ -639,6 +640,33 @@ func _test_live_director() -> void:
 	board.queue_free()
 
 
+func _test_stamp_playback() -> void:
+	var stamp_script := preload("res://vfx/vfx_stamp.gd")
+	var stamp: Node2D = stamp_script.new()
+	root.add_child(stamp)
+	await process_frame
+	stamp.play({"sheet": "hit_flash", "px": 60.0, "life": 0.30, "pos": Vector2.ZERO})
+	var flash: Sprite2D = stamp.get("_sprite")
+	truthy(flash != null, "stamp builds its sprite")
+	if flash == null:
+		stamp.free()
+		return
+	eq(flash.region_enabled, true, "hit flash crops to one cell")
+	eq(flash.region_rect.position, Vector2.ZERO, "hit flash starts on frame 0")
+	var cell_px := float(flash.texture.get_width()) / 3.0
+	eq(is_equal_approx(flash.scale.x * cell_px, 60.0), true, "hit flash scales the cell, not the whole sheet")
+	stamp._sample(0.5)
+	eq(is_equal_approx(flash.region_rect.position.x, cell_px), true, "hit flash reaches the center frame")
+	eq(is_equal_approx(flash.region_rect.position.y, cell_px), true, "hit flash center frame is the middle row")
+	stamp.play({"sheet": "footstep_dust", "px": 44.0, "life": 0.30, "pos": Vector2.ZERO})
+	eq(flash.region_enabled, true, "footstep dust steps through the sheet")
+	eq(flash.region_rect.position, Vector2.ZERO, "footstep dust starts on frame 0")
+	stamp.play({"sheet": "ambush_slash", "px": 100.0, "life": 0.24, "pos": Vector2.ZERO})
+	eq(flash.region_enabled, false, "ambush slash plays the whole hero plate")
+	eq(flash.texture, stamp_script.texture_for("ambush_slash"), "ambush slash keeps the full plate")
+	stamp.free()
+
+
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
 	truthy(live.has_method("run"), "shade live script parses")
@@ -988,6 +1016,19 @@ func _test_scenario_overlays() -> void:
 			if opaque:
 				break
 		truthy(opaque, "%s has a readable core" % sheet)
+	eq(stamp_script.frame_count("hit_flash"), 9, "hit flash is a 3×3 sheet")
+	eq(stamp_script.frame_count("footstep_dust"), 9, "footstep dust is a 3×3 sheet")
+	eq(stamp_script.frame_count("ambush_slash"), 1, "ambush slash is one hero frame")
+	eq(stamp_script.frame_count("mark_shot_impact"), 1, "Mark Shot impact is one hero frame")
+	eq(stamp_script.frame_count("detonate_burst"), 1, "Detonate burst is one hero frame")
+	for sheet_name in ["hit_flash", "footstep_dust"]:
+		var sheet_tex: Texture2D = stamp_script.texture_for(sheet_name)
+		eq(sheet_tex.get_width() % 3, 0, "%s width divides into 3 cells" % sheet_name)
+		eq(sheet_tex.get_height() % 3, 0, "%s height divides into 3 cells" % sheet_name)
+		var sheet_img := sheet_tex.get_image()
+		truthy(_region_differs(sheet_img, stamp_script.region_for(sheet_name, 0, sheet_tex), stamp_script.region_for(sheet_name, 4, sheet_tex)), "%s frames are not one repeated cell" % sheet_name)
+	eq(is_equal_approx(BUDGET.STAMP_DUST_LIFE, 0.30), true, "footstep dust plays across one walk tile")
+	eq(BUDGET.STAMP_HIT_LIFE >= 0.24 and BUDGET.STAMP_HIT_LIFE <= 0.36, true, "the hit sheet has time to step its frames")
 	var strike: Array = ROUTER.recipes_for([_damage("strike", 16)])
 	eq(_sheet(strike, "hit_flash")["cell"], Vector2i(2, 1), "damage apply flashes the target")
 	eq(float(_sheet(strike, "hit_flash")["px"]), BUDGET.STAMP_HIT_PX, "the hit flash stays body-sized")
@@ -1042,6 +1083,22 @@ func _test_scenario_overlays() -> void:
 	eq(BUDGET.STAMP_DETONATE_PX < 160.0, true, "Detonate stays on the tile, not the screen")
 	eq(BUDGET.STAMP_SPELL_LIFE <= 0.3, true, "spell overlays stay short")
 	eq(BUDGET.POOL_STAMP, 6, "stamps are a fixed pool")
+
+
+func _region_differs(img: Image, a: Rect2, b: Rect2) -> bool:
+	var changed := 0
+	var step := 8
+	var limit := mini(int(a.size.x), int(b.size.x))
+	var rows := mini(int(a.size.y), int(b.size.y))
+	for y in range(0, rows, step):
+		for x in range(0, limit, step):
+			var left := img.get_pixel(int(a.position.x) + x, int(a.position.y) + y)
+			var right := img.get_pixel(int(b.position.x) + x, int(b.position.y) + y)
+			if left != right:
+				changed += 1
+				if changed > 8:
+					return true
+	return false
 
 
 func _sheet(recipes: Array, sheet: String) -> Dictionary:
