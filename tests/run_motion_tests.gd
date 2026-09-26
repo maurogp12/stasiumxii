@@ -23,6 +23,7 @@ func _finish_live() -> void:
 	await _test_failed_strip_falls_back_to_hop()
 	await _test_driven_walk_cycle()
 	await _test_walk_idle_matches_strip()
+	await _test_live_walk_keeps_sheet()
 	await _test_batch1_disk_strips()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
@@ -1250,6 +1251,112 @@ func _test_driven_walk_cycle() -> void:
 	eq(planted.frame, 0, "path end plants walk frame 0, not a passing frame")
 	eq(foot.position, Vector2.ZERO, "the ground mark is still on the diamond after the walk")
 	pawn.free()
+
+
+## The phone clip popped both fighters onto a foreign portrait for the
+## stride, then popped back on arrival. The live submit path has to keep
+## the facing walk sheet up the whole way and plant frame 0 at the end.
+func _test_live_walk_keeps_sheet() -> void:
+	var packed: PackedScene = load("res://main.tscn")
+	var main := packed.instantiate()
+	get_root().add_child(main)
+	await process_frame
+	await process_frame
+	var board: Node = main.get_node("BoardView")
+	truthy(bool(board.get("_booted")), "board booted before the walk identity check")
+	var sim: Node = get_root().get_node("CombatSim")
+	sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["kestrel", "gloam"],
+		"positions": [Vector2i(2, 2), Vector2i(8, 8)],
+		"kestrel_facing": "N",
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var gloam := board.pawns_by_seat[1] as Pawn
+	var gloam_sprite := gloam.get_node("Sprite") as Sprite2D
+	var gloam_idle := _visible_strip(gloam)
+	truthy(gloam_idle != null, "Gloam combat idle is the walk sheet")
+	if gloam_idle != null:
+		eq(gloam_sprite.visible, false, "Gloam idle hides the static portrait")
+		eq(String(gloam_idle.animation), "walk_%s" % gloam.facing.to_lower(), "Gloam idle uses the facing walk strip")
+		eq(gloam_idle.frame, 0, "Gloam idle is walk frame 0")
+		eq(gloam_idle.sprite_frames.get_frame_texture(gloam_idle.animation, 0) != Pawn.sprite_texture("gloam", gloam.facing), true, "Gloam plant is not the static portrait")
+	var pawn := board.pawns_by_seat[0] as Pawn
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	var idle := _visible_strip(pawn)
+	truthy(idle != null, "combat idle is the walk sheet before the first step")
+	if idle == null:
+		main.free()
+		return
+	eq(sprite.visible, false, "combat idle hides the static turnaround")
+	eq(String(idle.animation), "walk_n", "north idle plays walk_n")
+	eq(idle.frame, 0, "north idle is the walk plant")
+	var foreign := Pawn.sprite_texture("kestrel", "N")
+	eq(idle.sprite_frames.get_frame_texture("walk_n", 0) != foreign, true, "north plant is not the static portrait")
+	var origin := pawn.position
+	board._submit({"type": "move", "to": Vector2i(4, 3), "seat": 0})
+	var left_origin_face := ""
+	var left_origin_anim := ""
+	var saw_east_stride := false
+	var corner := Vector2(-1.0, -1.0)
+	var faced_south_on_corner := false
+	var saw_south_stride := false
+	var static_during := false
+	var foreign_during := false
+	var max_jump := 0.0
+	var prev := pawn.position
+	var frames := 0
+	while frames < 220:
+		await process_frame
+		frames += 1
+		var shown := _visible_strip(pawn)
+		if sprite.visible:
+			static_during = true
+		if shown == null:
+			foreign_during = true
+		else:
+			var tex := shown.sprite_frames.get_frame_texture(shown.animation, shown.frame)
+			var portrait := Pawn.sprite_texture("kestrel", pawn.facing)
+			if tex == portrait:
+				foreign_during = true
+			if pawn.facing == "E" and shown.frame != 0 and pawn.position.distance_to(origin) > 4.0:
+				saw_east_stride = true
+			if pawn.facing == "S" and String(shown.animation) == "walk_s":
+				if corner.x < 0.0:
+					corner = pawn.position
+				elif pawn.position.distance_to(corner) < 2.0:
+					faced_south_on_corner = true
+				elif shown.frame != 0:
+					saw_south_stride = true
+		if left_origin_face == "" and pawn.position.distance_to(origin) > 2.0:
+			left_origin_face = pawn.facing
+			var moving := _visible_strip(pawn)
+			left_origin_anim = String(moving.animation) if moving != null else ""
+		max_jump = maxf(max_jump, pawn.position.distance_to(prev))
+		prev = pawn.position
+		if not bool(board.get("_busy")) and frames > 8:
+			break
+	eq(static_during, false, "the static portrait stays hidden for the whole walk")
+	eq(foreign_during, false, "the stride never shows the static portrait")
+	eq(left_origin_face, "E", "the pawn faces east before the foot leaves the tile")
+	eq(left_origin_anim, "walk_e", "the east step plays walk_e, not a sliding idle")
+	eq(saw_east_stride, true, "the east step plays the walk cycle")
+	eq(faced_south_on_corner, true, "the corner faces south before the foot slides")
+	eq(saw_south_stride, true, "the south step plays the walk cycle")
+	eq(max_jump < 24.0, true, "a frame does not teleport across a tile")
+	eq(pawn.grid_position, Vector2i(4, 3), "the walk lands on the clicked tile")
+	eq(pawn.facing, "S", "arrival keeps the last hop facing")
+	var planted := _visible_strip(pawn)
+	truthy(planted != null, "arrival shows the walk sheet")
+	if planted != null:
+		eq(String(planted.animation), "walk_s", "arrival stays on walk_s")
+		eq(planted.frame, 0, "arrival plants walk frame 0")
+		eq(sprite.visible, false, "arrival does not pop back to the static portrait")
+	main.free()
+	await process_frame
 
 
 func _test_walk_idle_matches_strip() -> void:
