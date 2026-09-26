@@ -93,19 +93,18 @@ static func role_line(class_id: String) -> String:
 	return str(ROLE_LINES.get(key, ""))
 
 
+## Locked visual SoT for the roster cards. Hot-seat and Online share this path.
+## East frame 0 of the Wakfu walk (`<class>_walk_e.png`), not the old
+## `art/characters/<class>/<class>_s.png` turnaround.
 static func portrait_path(class_id: String) -> String:
 	var key := SpellKits.normalize_class_id(class_id)
-	return "res://art/characters/%s/%s_s.png" % [key, key]
+	if not SpellKits.is_roster_class(key):
+		return ""
+	return StripLibrary.export_png_path(key, "walk", "e")
 
 
 static func load_portrait(class_id: String) -> Texture2D:
-	var path := portrait_path(class_id)
-	if not ResourceLoader.exists(path):
-		return null
-	var res: Resource = ResourceLoader.load(path)
-	if res is Texture2D:
-		return res as Texture2D
-	return null
+	return StripLibrary.idle_portrait(class_id)
 
 
 func _ready() -> void:

@@ -54,17 +54,29 @@ func _test_roles_and_art() -> void:
 	eq(SpellKits.display_name("gloam"), "Gloam", "gloam display name")
 	eq(SpellKits.display_name("bastion"), "Bastion", "bastion display name")
 	eq(_script.load_portrait("not_a_class"), null, "missing portrait falls back")
+	eq(_script.portrait_path("not_a_class"), "", "unknown class has no portrait path")
 	for class_id in SpellKits.LOCKED_ROSTER:
 		for facing in ["n", "e", "s", "w"]:
 			var path := "res://art/characters/%s/%s_%s.png" % [class_id, class_id, facing]
 			truthy(FileAccess.file_exists(path), "sprite exists %s" % path)
+		var sheet := StripLibrary.export_png_path(class_id, "walk", "e")
+		eq(_script.portrait_path(class_id), sheet, "%s card uses the east walk sheet" % class_id)
+		truthy(FileAccess.file_exists(sheet), "%s east walk sheet is on disk" % class_id)
 		var tex: Texture2D = _script.load_portrait(class_id)
-		truthy(tex != null, "%s south portrait loads" % class_id)
+		truthy(tex != null, "%s idle portrait loads" % class_id)
 		if tex != null:
 			eq(tex.get_width(), 144, "%s portrait width" % class_id)
 			eq(tex.get_height(), 160, "%s portrait height" % class_id)
+			var old := load("res://art/characters/%s/%s_s.png" % [class_id, class_id]) as Texture2D
+			var fresh := tex.get_image()
+			var prior := old.get_image() if old != null else null
+			truthy(fresh != null and prior != null, "%s idle and old south both decode" % class_id)
+			if fresh != null and prior != null:
+				eq(fresh.get_data() == prior.get_data(), false, "%s card is not the old south turnaround" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
+	var hud_src := FileAccess.get_file_as_string("res://ui/hud.gd")
+	truthy(hud_src.contains("StripLibrary.idle_portrait"), "turn chips use the locked idle")
 
 
 func _test_launch_cards() -> void:
@@ -76,7 +88,7 @@ func _test_launch_cards() -> void:
 	for class_id in SpellKits.LOCKED_ROSTER:
 		eq(picker.card_title(class_id), SpellKits.display_name(class_id), "%s card uses the display name" % class_id)
 		eq(picker.card_role(class_id), _script.role_line(class_id), "%s card uses the role line" % class_id)
-		eq(picker.card_has_portrait(class_id), true, "%s card shows the south portrait" % class_id)
+		eq(picker.card_has_portrait(class_id), true, "%s card shows the locked idle" % class_id)
 		eq(picker.portrait_filter(class_id), CanvasItem.TEXTURE_FILTER_LINEAR, "%s portrait filter is linear" % class_id)
 	var early: Dictionary = picker.pick_class("mender")
 	eq(bool(early.get("ok", true)), false, "a card before a mode does not pick")

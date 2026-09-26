@@ -32,10 +32,37 @@ const CELL_W := 144
 const ATTACK_IMPACT_FRAME := 3
 
 static var _cache: Dictionary = {}
+## East walk frame 0, one ImageTexture per class. Select cards and turn chips.
+static var _idle_cache: Dictionary = {}
 
 
 static func clear_cache() -> void:
 	_cache.clear()
+	_idle_cache.clear()
+
+
+## Standing plant of the locked Wakfu walk. East frame 0, 144×160.
+## Bytes come from `art/export_2x/walk_src/` (same sheet as
+## `art/export_2x/characters/<class>/anims/<class>_walk_e.png`).
+## Null when the class is outside the roster or the sheet is missing.
+static func idle_portrait(class_id: String) -> Texture2D:
+	var cls := SpellKits.normalize_class_id(class_id)
+	if not SpellKits.is_roster_class(cls):
+		return null
+	if _idle_cache.has(cls):
+		var hit: Variant = _idle_cache[cls]
+		return hit if hit is Texture2D else null
+	var tex := _idle_cell(cls, "e")
+	_idle_cache[cls] = tex if tex != null else false
+	return tex
+
+
+## Frame 0 only. A full strip is not a portrait.
+static func _idle_cell(class_id: String, face: String) -> Texture2D:
+	var cells := _walk_cell_textures(class_id, face)
+	if cells.is_empty():
+		return null
+	return cells[0]
 
 
 ## Combined frames for one class, or null when nothing is on disk.
