@@ -42,5 +42,10 @@ const BLOCK_BLINK := 0.20
 
 const CHEST_OFFSET := Vector2(0, -30)
 const HEAD_OFFSET := Vector2(0, -52)
+## Bow / hand. Feet are the pawn origin. This lifts the emitter off the ground.
+const HAND_OFFSET := Vector2(0, -46)
+## Attack frame 3 at 12 fps. Mark Shot and melee sparks wait for that cell.
+const MARK_RELEASE_DELAY := 0.25
+const MELEE_IMPACT_DELAY := 0.25
 const STAGGER_DELAY := 0.12
 const NUMBER_LIFE := 0.75

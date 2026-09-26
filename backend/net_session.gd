@@ -406,6 +406,20 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	return local_sim.range_highlight_cells(seat, spell_id)
 
 
+func ambush_origin(seat: int) -> Dictionary:
+	var local_sim := sim()
+	if local_sim == null:
+		return {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
+	return local_sim.ambush_origin(seat)
+
+
+func ambush_landing_preview(seat: int) -> Dictionary:
+	var local_sim := sim()
+	if local_sim == null:
+		return {"ok": false}
+	return local_sim.ambush_landing_preview(seat)
+
+
 func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dictionary:
 	var local_sim := sim()
 	if local_sim == null:

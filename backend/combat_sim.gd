@@ -52,9 +52,9 @@ const FACING_VEC := {
 ## is Locked. A02 walk is Locked (dest-click weighted pathfinder; cost = dest
 ## terrain MP + uphill elevation). Facing follows each hop of that path. Phase A
 ## flat Manhattan / H-first expansion is superseded. Advance range is Locked
-## to the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal
-## only. Manhattan 2 and any diagonal / (1,1) are rejected. Advance dest
-## uses the same stand-on gates as walk.
+## to exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1,
+## diagonals, and any non-cardinal are rejected. Advance dest uses the same
+## stand-on gates as walk.
 ## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
@@ -291,6 +291,11 @@ func legal_intents(seat: int) -> Array:
 		var def: Dictionary = SpellKits.spell(str(spell_id))
 		if def.is_empty() or SpellKits.is_gated(str(spell_id)):
 			continue
+		# Ambush is a blink (4 AP / 0 MP), not a walk. Offer it before the
+		# walk budget is consulted. MP 0 is legal when AP covers the card.
+		if str(spell_id) == SpellKits.AMBUSH:
+			_append_ambush_cast(out, actor, def)
+			continue
 		if ap < int(def["ap"]):
 			continue
 		if _resource_gate(actor, def) != "":
@@ -337,10 +342,11 @@ func legal_intents(seat: int) -> Array:
 			if target_kind == "ally":
 				continue
 		if def["target"] == "empty_tile":
-			# Advance: exactly the 4 ortho neighbors that pass stand-on gates.
+			# Advance: exactly 2 cardinal spaces (N/S/E/W) that pass stand-on gates.
+			var reach := int(def.get("max_range", 2))
 			for dir in FACING_VEC.keys():
 				var step: Vector2i = FACING_VEC[dir]
-				var dest := from + step
+				var dest := from + step * reach
 				if _validate_advance(actor, dest) == "":
 					out.append({
 						"type": "cast",
@@ -349,8 +355,9 @@ func legal_intents(seat: int) -> Array:
 						"seat": seat,
 					})
 		else:
-			if mp < int(def["mp"]):
-				continue
+			# Card MP was already compared to the unit's MP. Do not reuse the
+			# walk budget here: exit tax shortens walks only. A 0 MP cast
+			# such as Ambush stays legal at MP 0.
 			var enemy := _enemy_of(seat)
 			if enemy.is_empty() or not enemy["alive"]:
 				continue
@@ -367,6 +374,40 @@ func legal_intents(seat: int) -> Array:
 
 	out.append({"type": "end_turn", "seat": seat})
 	return out
+
+
+## Locked Ambush: 4 AP / 0 MP, Manhattan 1–2 cardinal from the origin, blink to the
+## empty tile one step past the enemy on that axis. Origin is Gloam while Invisible,
+## otherwise the first live Shade. A Shade origin is illegal until the opponent has
+## completed one full turn since that Drop. Fade / Invisible self-origin has no delay.
+## Spends a Shade only when the origin was a Shade. This offer does not call the
+## pathfinder and does not read the walk budget, so MP 0 does not hide the cast.
+func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void:
+	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
+		return
+	if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+		return
+	if _resource_gate(actor, def) != "":
+		return
+	var seat := int(actor["seat"])
+	var enemy := _enemy_of(seat)
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return
+	if _cast_gate_reason(actor, enemy, def) != "":
+		return
+	# Offer only a legal Manhattan 1–2 cardinal target whose back tile can be
+	# landed on, and only once a Shade origin has seen the opponent finish a
+	# turn. A fresh Shade, a diagonal, or Manhattan 3 must not arm the cast.
+	# Drop Shade's Chebyshev ring is a different spell.
+	if not _ambush_can_offer(actor, enemy):
+		return
+	out.append({
+		"type": "cast",
+		"spell": SpellKits.AMBUSH,
+		"to": enemy["pos"],
+		"target_seat": enemy["seat"],
+		"seat": seat,
+	})
 
 
 ## Godot bind: place / reposition this seat's one fighter. Simultaneous; no turn gate.
@@ -417,8 +458,42 @@ func match_phase_name() -> String:
 
 ## Presentation helper: in-bounds tiles in the spell's range ring (caster tile excluded).
 ## Mark Shot uses this for Chebyshev 2–7 chrome. Does not imply a legal cast dest.
-## Advance is the exception: highlights are legal_intents dests only (the ortho
-## neighbors that pass stand-on). Not a Manhattan 1–2 ring.
+## Advance is the exception: highlights are legal_intents dests only (exactly 2
+## cardinal spaces that pass stand-on). Not a Manhattan 1 ring and not a diamond.
+## Chrome only. Shown when Ambush is a legal arm: Manhattan 1–2 cardinal from the
+## origin (Gloam while Invisible, otherwise the first live Shade) and the back
+## tile can be landed on. A Shade the opponent has not yet finished a turn past
+## does not open this chrome.
+func ambush_origin(seat: int) -> Dictionary:
+	var hidden := {"show": false, "from_self": false, "origin": Vector2i(-1, -1)}
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return hidden
+	if str(actor.get("class_id", "")) != SpellKits.CLASS_GLOAM:
+		return hidden
+	var enemy := _enemy_of(seat)
+	if not _ambush_can_offer(actor, enemy):
+		return hidden
+	if bool(actor.get("invisible", false)):
+		return {"show": true, "from_self": true, "origin": actor["pos"]}
+	var shade := _first_shade(actor)
+	if shade.is_empty():
+		return hidden
+	return {"show": true, "from_self": false, "origin": shade["pos"]}
+
+
+## Chrome only. The locked empty back tile, for the aim highlight.
+## Same range and landing gate as the offer. Illegal geometry stays dark.
+func ambush_landing_preview(seat: int) -> Dictionary:
+	var actor := _unit_by_seat(seat)
+	var enemy := _enemy_of(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return {"ok": false}
+	if not _ambush_can_offer(actor, enemy):
+		return {"ok": false}
+	return _ambush_landing(actor, enemy)
+
+
 func range_highlight_cells(seat: int, spell_id: String) -> Array:
 	var out: Array = []
 	var actor := _unit_by_seat(seat)
@@ -441,6 +516,13 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 				out.append(intent["to"])
 		return out
 	var from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell == UNPLACED:
+			return out
+		from = origin_cell
+	# Cardinal kits share _range_distance: one axis is 0 and the other is in
+	# [min, max]. Ambush is Manhattan 1–2 N/E/S/W. A Chebyshev ring is not legal.
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
@@ -523,7 +605,7 @@ func snapshot() -> Dictionary:
 		"spell_range": "chebyshev",
 		"advance_mp": "none",
 		"advance_ap": 3,
-		"advance_range": "cardinal",
+		"advance_range": "cardinal_2",
 		"advance_path": "teleport",
 		"advance_stand_on": "walk_gates",
 		"marks_owner": "target",
@@ -572,7 +654,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly the 4 ortho neighbors (N/S/E/W): Chebyshev 1 and Manhattan 1, cardinal only. Manhattan 2 and any diagonal / (1,1) are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
@@ -664,11 +746,35 @@ static func manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
 
 
-## Advance Locked range: N/S/E/W only. Chebyshev 1 and Manhattan 1, one axis zero.
-## False for Manhattan 2, diagonals / (1,1), and the caster tile.
+## One orthogonal hop (walk). Not the Advance range gate.
 static func is_cardinal_step(from: Vector2i, to: Vector2i) -> bool:
 	var delta: Vector2i = to - from
 	return absi(delta.x) + absi(delta.y) == 1
+
+
+## Advance Locked range: exactly N tiles on one cardinal axis, N from the kit (2).
+## False for any other distance, diagonals / (1,1), knights, and the caster tile.
+static func is_advance_cardinal(from: Vector2i, to: Vector2i) -> bool:
+	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
+	var dist := int(def.get("max_range", 2))
+	if int(def.get("min_range", dist)) != dist:
+		return false
+	return is_cardinal_exact(from, to, dist)
+
+
+## Pure N/E/S/W of exactly dist tiles. Both axes nonzero is never cardinal.
+static func is_cardinal_exact(from: Vector2i, to: Vector2i, dist: int) -> bool:
+	return _cardinal_axis_len(from, to) == dist
+
+
+## Axis length when one of Δx/Δy is 0. -1 when both axes are nonzero.
+static func _cardinal_axis_len(from: Vector2i, to: Vector2i) -> int:
+	var delta: Vector2i = to - from
+	var ax := absi(delta.x)
+	var ay := absi(delta.y)
+	if ax != 0 and ay != 0:
+		return -1
+	return ax + ay
 
 
 ## Canonical walk path: dest-click only. Horizontal (E/W) first, then vertical (N/S).
@@ -730,8 +836,8 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	}
 	var def: Dictionary = SpellKits.spell(spell_id)
 	# Client chrome allowlist only. Kit resolve stays in CombatSim / #7.
-	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush.
-	# No +5. No Advance. No invented stun/push.
+	# Locked rolling aim: Mark Shot / Strike / Detonate / Shoulder / Crush / Ambush.
+	# No +5. No Advance. No invented stun/push. Ambush % is origin-to-target.
 	if def.is_empty() or not bool(def.get("rolls", false)):
 		return out
 	if not [
@@ -740,8 +846,12 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		SpellKits.DETONATE,
 		SpellKits.SHOULDER,
 		SpellKits.CRUSH,
+		SpellKits.AMBUSH,
 	].has(spell_id):
 		return out
+	# Ambush has one legal body. A hover tile must not invent a second percent.
+	if spell_id == SpellKits.AMBUSH:
+		dest = null
 	out["rolls"] = true
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty() or not actor["alive"]:
@@ -754,7 +864,12 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 		cell = enemy["pos"]
 	else:
 		cell = _as_cell(dest)
-	var dist := chebyshev(actor["pos"], cell)
+	var aim_from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			aim_from = origin_cell
+	var dist := chebyshev(aim_from, cell)
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
@@ -816,11 +931,16 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["reason"] = "unknown_spell"
 		return out
 
+	var range_from := from_cell
+	if spell_id == SpellKits.AMBUSH and not actor.is_empty():
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			range_from = origin_cell
 	if spell_id == SpellKits.ADVANCE:
-		# Exactly the 4 ortho neighbors. Manhattan 2 and (1,1) are out of range.
-		out["in_range"] = is_cardinal_step(from_cell, to_cell)
+		# Exactly 2 cardinal spaces, dist read from the Advance kit. Manhattan 1 and (1,1) are out of range.
+		out["in_range"] = is_advance_cardinal(from_cell, to_cell)
 	else:
-		var range_dist := _range_distance(def, from_cell, to_cell)
+		var range_dist := _range_distance(def, range_from, to_cell)
 		var in_kit := range_dist >= int(def["min_range"]) and range_dist <= int(def["max_range"])
 		out["in_range"] = in_kit and range_dist <= _HitBands.MAX_DISTANCE
 		if bool(def.get("rolls", false)):
@@ -831,7 +951,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 	var target := _preview_target(to_cell, target_seat, spell_id)
 	var notes: Array = []
 	if spell_id == SpellKits.ADVANCE:
-		notes.append("Dest-click teleport. Exactly the 4 orthogonal neighbors (N/S/E/W). 3 AP / 0 MP. Facing unchanged.")
+		notes.append("Dest-click teleport. Exactly 2 cardinal spaces (N/S/E/W). 3 AP / 0 MP. Facing unchanged.")
 		out["sample_damage"] = null
 		out["hit_chance"] = null
 	else:
@@ -943,6 +1063,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		return ""
 	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
 		return "no_target"
+	if spell_id == SpellKits.AMBUSH:
+		return _ambush_block_reason(actor, target)
 	if spell_id == SpellKits.DETONATE and int(target.get("marks", 0)) < int(def.get("requires_marks_on_target", 1)):
 		return "needs_marks"
 	if spell_id == SpellKits.CRUSH and int(actor.get("impact", 0)) < int(def.get("requires_impact", 2)):
@@ -1217,6 +1339,9 @@ func _submit_end_turn(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "") -> Dictionary:
+	# The seat that is leaving has completed this turn, including a stunned skip.
+	# Shades owned by the other seat count that completion toward Ambush arming.
+	_note_opponent_shade_turns(int(actor.get("seat", -1)))
 	var next_seat := 1 if _active_seat == 0 else 0
 	var next_unit := _unit_by_seat(next_seat)
 	if next_unit.is_empty() or not next_unit["alive"]:
@@ -1331,7 +1456,11 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var planned: Dictionary = _board.validate_move(actor["pos"], dest, budget, Callable(self, "_walk_occupied"))
 	if not bool(planned.get("ok", false)):
 		var reason := str(planned.get("reason", "unreachable"))
-		return _reject(intent, reason, "REJECT — illegal move (%s)." % reason)
+		var coach := "REJECT — illegal move (%s)." % reason
+		# MP 0 is a walk. Name it so the toast is not read as a failed Ambush.
+		if reason == "insufficient_mp" and int(actor.get("mp", 0)) <= 0:
+			coach = "REJECT — no MP to walk."
+		return _reject(intent, reason, coach)
 	var from: Vector2i = actor["pos"]
 	var path: Array = planned.get("path", [])
 	var dist := int(planned.get("cost", 0))
@@ -1396,7 +1525,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var reason := _validate_advance(actor, dest)
 		if reason == "out_of_range":
 			var range_dist := manhattan(actor["pos"], dest)
-			return _reject(intent, "out_of_range", "REJECT — Advance is an orthogonal neighbor only, target at Manhattan %d (refund)." % range_dist)
+			return _reject(intent, "out_of_range", "REJECT — Advance is exactly 2 cardinal spaces, target at Manhattan %d (refund)." % range_dist)
 		if reason == "insufficient_ap":
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
 		if reason == "destination_occupied":
@@ -1405,7 +1534,24 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
 
-	var dist := chebyshev(actor["pos"], dest)
+	var range_from: Vector2i = actor["pos"]
+	if spell_id == SpellKits.AMBUSH:
+		var origin_cell := _ambush_range_origin(actor)
+		if origin_cell != UNPLACED:
+			range_from = origin_cell
+		# The Shade plate and the Invisible self-cell are the origin, not a foe.
+		# Confirming that cell used to measure distance 0 ("target at 0") while
+		# the enemy was a legal cardinal 1–2 and the reticle sat on that enemy.
+		# Ambush has one body. An illegal body still rejects on the real gate.
+		if origin_cell != UNPLACED and dest == origin_cell:
+			var ambush_enemy := _enemy_of(int(actor["seat"]))
+			var blocked := _ambush_block_reason(actor, ambush_enemy)
+			if blocked != "":
+				return _reject(intent, blocked, _ambush_reject_text(blocked))
+			dest = ambush_enemy["pos"]
+	# Cardinal kits (Ambush) share the axis gate: one of Δx/Δy is 0 and
+	# |Δx|+|Δy| is inside min/max (Ambush 1–2). Chebyshev would accept a diagonal.
+	var dist := _range_distance(def, range_from, dest)
 	if dist < int(def["min_range"]) or dist > int(def["max_range"]):
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
@@ -1812,11 +1958,11 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_bounds"
 	if dest == actor["pos"]:
 		return "same_tile"
-	# Range gate is the 4 ortho neighbors only (Chebyshev 1 and Manhattan 1).
-	# Manhattan 2 and any diagonal / (1,1) are out of range.
+	# Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2).
+	# Manhattan 1, diagonals, and any non-cardinal are out of range.
 	# Teleport: shared walk stand-on gates at dest. 0 MP is legal.
-	# No terrain+elev MP spend — gate only.
-	if not is_cardinal_step(actor["pos"], dest):
+	# No terrain+elev MP spend — gate only. The tile between is not a path.
+	if not is_advance_cardinal(actor["pos"], dest):
 		return "out_of_range"
 	var def: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
 	var range_dist := _range_distance(def, actor["pos"], dest)
@@ -1839,8 +1985,15 @@ func _advance_stand_reason(from: Vector2i, dest: Vector2i) -> String:
 
 func _range_distance(def: Dictionary, from: Vector2i, to: Vector2i) -> int:
 	var mode := str(def.get("range_mode", "chebyshev"))
-	# Cardinal Advance uses Manhattan so a (1,1) step is distance 2, not Chebyshev 1.
-	if mode == "manhattan" or mode == "cardinal":
+	# Cardinal is axis-only (Ambush 1–2, Advance exactly 2). A knight
+	# such as (2,1) has both axes nonzero, so it is not in range. The sentinel
+	# stays above every kit max and the hit-band cap.
+	if mode == "cardinal":
+		var axis := _cardinal_axis_len(from, to)
+		if axis < 0:
+			return _HitBands.MAX_DISTANCE + 1
+		return axis
+	if mode == "manhattan":
 		return manhattan(from, to)
 	return chebyshev(from, to)
 
@@ -2121,8 +2274,9 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	elif was_stunned:
 		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
 		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
-	_decay_board_durations()
-	# Snap Wall is not in the every-seat decay. It ticks on the owner's turn start.
+	# Shade / Plant / Snap Wall share the owner turn-start clock. An enemy
+	# turn-start must not burn a duration turn (Mauro: Shade must read as 3).
+	_decay_board_durations(unit)
 	_tick_snap_walls(unit)
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
@@ -2871,6 +3025,8 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 			"pos": dest,
 			"turns": int(def.get("shade_turns", 3)),
 			"owner_seat": int(actor["seat"]),
+			# 0 until the opponent finishes a turn. Not a caster-turn comparison.
+			"opponent_turns_completed": 0,
 		})
 		_sync_shade_flags()
 		_intent_log.append(intent)
@@ -3236,10 +3392,13 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var blocked := _ambush_block_reason(actor, target)
+	if blocked != "":
+		return _reject(intent, blocked, _ambush_reject_text(blocked))
 	var caster_cell: Vector2i = actor["pos"]
 	var landing: Dictionary = _ambush_landing(actor, target)
 	if not bool(landing.get("ok", false)):
-		return _reject(intent, "no_landing", "REJECT — Ambush back tile is occupied or illegal (refund).")
+		return _reject(intent, "illegal_back", "REJECT — Ambush back tile is occupied or illegal (refund).")
 	var from_shade := not bool(actor.get("invisible", false))
 	var origin: Dictionary = {}
 	if from_shade:
@@ -3279,6 +3438,10 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var cell: Vector2i = landing["cell"]
 	var backstab: bool = bool(landing.get("backstab", false))
 	actor["pos"] = cell
+	# Face the prey from the back tile. Miss keeps the old facing.
+	var face_dir := facing_from_step(cell, target["pos"])
+	if face_dir != "":
+		actor["facing"] = face_dir
 	if from_shade:
 		_remove_shade_at(origin["pos"], int(actor["seat"]))
 		_sync_shade_flags()
@@ -3305,6 +3468,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"destination": cell,
 		"teleported": true,
 		"backstab": backstab,
+		"facing": str(actor.get("facing", "")),
 		"facing_mult": facing_mult,
 		"damage": damage,
 		"shade_retained": not from_shade and bool(actor.get("shade", false)),
@@ -3318,24 +3482,107 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
-## Locked destination is the target's empty back tile only.
-## Occupied, out of bounds, or otherwise illegal back rejects the cast.
+## Locked destination is one step past the enemy on the origin axis (the back
+## tile). Facing-rear is not the landing: when the foe faces away, that tile is
+## often the cell Gloam already occupies, so the hit reads as a body slash with
+## no teleport. Occupied / OOB / unwalkable back tiles reject. Backstab follows
+## the rear cone from the landing tile, not from the old body.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
-	var facing := str(target.get("facing", "E"))
-	if not FACING_VEC.has(facing):
+	var origin := _ambush_range_origin(actor)
+	if origin == UNPLACED:
 		return {"ok": false}
-	var back: Vector2i = target["pos"] - FACING_VEC[facing]
+	var step := _cardinal_unit_step(origin, target["pos"])
+	if step == Vector2i.ZERO:
+		return {"ok": false}
+	var back: Vector2i = target["pos"] + step
 	if not _ambush_cell_ok(back, actor["pos"]):
 		return {"ok": false}
-	return {"ok": true, "cell": back, "backstab": true}
+	var facing := str(target.get("facing", ""))
+	var facing_mult := _facing_multiplier(back, target["pos"], facing)
+	var backstab := facing_mult > FRONT_SIDE_FACING + 0.001
+	return {"ok": true, "cell": back, "backstab": backstab}
+
+
+## Unit step from origin toward target when they share a row or column. Zero otherwise.
+static func _cardinal_unit_step(from: Vector2i, to: Vector2i) -> Vector2i:
+	var delta: Vector2i = to - from
+	if delta.x != 0 and delta.y != 0:
+		return Vector2i.ZERO
+	if delta.x > 0:
+		return Vector2i(1, 0)
+	if delta.x < 0:
+		return Vector2i(-1, 0)
+	if delta.y > 0:
+		return Vector2i(0, 1)
+	if delta.y < 0:
+		return Vector2i(0, -1)
+	return Vector2i.ZERO
 
 
 func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
-	if cell == caster_pos or not _in_bounds(cell):
+	if not _in_bounds(cell):
 		return false
-	if not _is_empty(cell):
+	# Facing-rear can be the tile Gloam already stands on (enemy one step in
+	# front, facing away). That landing is legal. Any other occupant rejects.
+	if cell != caster_pos and not _is_empty(cell):
 		return false
 	return _board.is_walkable(cell)
+
+
+## Legal Ambush arm: origin is Manhattan 1–2 cardinal from the foe, the back tile
+## is an empty walkable landing, and a Shade origin has seen the opponent finish
+## at least one turn. Diagonals and Manhattan 3+ are not an arm. Landing uses the
+## same cell as resolve. Offer, preview, origin chrome, and the HUD share this gate.
+func _ambush_can_offer(actor: Dictionary, enemy: Dictionary) -> bool:
+	return _ambush_block_reason(actor, enemy) == ""
+
+
+## "" when Ambush may arm. Otherwise no_shade, shade_unarmed, out_of_range,
+## illegal_back, or no_target. Origin is Gloam while Invisible (no arming delay),
+## otherwise the first live Shade. That Shade stays illegal until the opponent
+## has completed ≥1 full turn since it was Dropped.
+func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return "no_target"
+	var origin_cell := _ambush_range_origin(actor)
+	if origin_cell == UNPLACED:
+		return "no_shade"
+	if not bool(actor.get("invisible", false)):
+		var shade := _first_shade(actor)
+		if shade.is_empty():
+			return "no_shade"
+		if int(shade.get("opponent_turns_completed", 0)) < 1:
+			return "shade_unarmed"
+	var def: Dictionary = SpellKits.spell(SpellKits.AMBUSH)
+	var axis := _cardinal_axis_len(origin_cell, enemy["pos"])
+	if axis < int(def.get("min_range", 1)) or axis > int(def.get("max_range", 2)):
+		return "out_of_range"
+	if not bool(_ambush_landing(actor, enemy).get("ok", false)):
+		return "illegal_back"
+	return ""
+
+
+func _ambush_reject_text(reason: String) -> String:
+	if reason == "illegal_back" or reason == "no_landing":
+		return "REJECT — Ambush back tile is occupied or illegal (refund)."
+	if reason == "shade_unarmed":
+		return "REJECT — Shade is not armed for Ambush until the opponent completes a turn (refund)."
+	if reason == "no_shade":
+		return "REJECT — Ambush needs Invisible or a Shade (refund)."
+	if reason == "no_target":
+		return "REJECT — Ambush needs an enemy (refund)."
+	return "REJECT — Ambush is Manhattan 1–2 cardinal from the origin (refund)."
+
+
+## Locked range origin. Invisible uses Gloam. Otherwise the first live Shade.
+## UNPLACED when Ambush has neither, so the no_shade gate still runs.
+func _ambush_range_origin(actor: Dictionary) -> Vector2i:
+	if bool(actor.get("invisible", false)):
+		return actor["pos"]
+	var shade := _first_shade(actor)
+	if shade.is_empty():
+		return UNPLACED
+	return shade["pos"]
 
 
 func _first_shade(actor: Dictionary) -> Dictionary:
@@ -3386,6 +3633,7 @@ func _apply_shade_setup(config: Dictionary) -> void:
 				"pos": cell,
 				"turns": 3,
 				"owner_seat": int(unit["seat"]),
+				"opponent_turns_completed": 0,
 			})
 	_sync_shade_flags()
 
@@ -3443,6 +3691,8 @@ func _placed_token_snapshot(items: Array, include_resist: bool) -> Array:
 		}
 		if include_resist:
 			rec["push_resist"] = bool(token.get("push_resist", false))
+		if token.has("opponent_turns_completed"):
+			rec["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0))
 		out.append(rec)
 	return out
 
@@ -3461,6 +3711,8 @@ func _restore_placed_tokens(into: Array, raw: Variant) -> void:
 		}
 		if rec.has("push_resist"):
 			token["push_resist"] = bool(rec.get("push_resist", false))
+		if rec.has("opponent_turns_completed"):
+			token["opponent_turns_completed"] = int(rec.get("opponent_turns_completed", 0))
 		into.append(token)
 
 
@@ -3526,10 +3778,33 @@ func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: i
 	_last_events.append(event)
 
 
-func _decay_board_durations() -> void:
+## Shade Ambush arming clock. Called when `ending_seat` finishes a turn
+## (End Turn or a stunned skip, both via _handoff_seat). Every Shade owned by
+## the other seat gains one completed opponent turn. A Shade may be an Ambush
+## origin only once that count is ≥ 1. This is not "created_turn < caster turn".
+func _note_opponent_shade_turns(ending_seat: int) -> void:
+	for item in _shade_tokens:
+		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) == ending_seat:
+			continue
+		if int(token.get("turns", 0)) <= 0:
+			continue
+		token["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0)) + 1
+
+
+## Shade and Plant durations tick on the owner's turn-start only — same family
+## as Snap Wall. Kit "3 turns" means three owner turn-starts after Drop/Plant,
+## not three seat-begins across both fighters (that read as ~2 turns).
+func _decay_board_durations(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	var seat := int(unit.get("seat", -2))
 	var shades: Array = []
 	for item in _shade_tokens:
 		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) != seat:
+			shades.append(token)
+			continue
 		token["turns"] = int(token.get("turns", 0)) - 1
 		if int(token["turns"]) > 0:
 			shades.append(token)
@@ -3539,6 +3814,9 @@ func _decay_board_durations() -> void:
 	var plants: Array = []
 	for item in _plant_tiles:
 		var tile: Dictionary = item
+		if int(tile.get("owner_seat", -1)) != seat:
+			plants.append(tile)
+			continue
 		tile["turns"] = int(tile.get("turns", 0)) - 1
 		if int(tile["turns"]) > 0:
 			plants.append(tile)

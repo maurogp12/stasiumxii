@@ -5,6 +5,9 @@ class_name VfxRouter
 ## Values come only from the event and the snapshot. This file does not roll or mitigate.
 
 const SHAKE_SPELLS := ["crush", "aegis_break"]
+const STRIPS := preload("res://units/strip_library.gd")
+## Camera shake on heavy connects. Crush and Aegis Break always shake.
+const HEAVY_HIT_DAMAGE := 20
 
 
 static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
@@ -198,6 +201,8 @@ static func _hit_recipes(event: Dictionary) -> Array:
 		# TODO G7: lava displace splash is parked. No ember burst. Push slide and burn attach still run.
 		out.append({"id": "lava_todo", "block": 0.0})
 	if bool(event.get("teleported", false)) and event.has("destination"):
+		# Streak only. The body snaps in BoardView. A slide from caster_cell
+		# was a dash from Gloam instead of an instant teleport.
 		var origin: Vector2i = cell_of(event.get("origin", event.get("caster_cell", Vector2i.ZERO)))
 		var dest: Vector2i = cell_of(event.get("destination"))
 		out.append({
@@ -211,9 +216,6 @@ static func _hit_recipes(event: Dictionary) -> Array:
 			"tint": VfxPalette.GLOAM_RIM,
 			"width": 4.0,
 		})
-		var blink := _slide(event, cell_of(event.get("caster_cell", origin)), dest, VfxBudget.BLOCK_BLINK)
-		blink["seat"] = int(event.get("seat", -1))
-		out.append(blink)
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
 	if _wants_shake(event):
 		out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
@@ -236,11 +238,18 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			"tint": tint,
 			"chest": true,
 		}
+		if spell_id == "strike" or spell_id == "shoulder" or spell_id == "crush":
+			spark["delay"] = STRIPS.release_sec("ironjaw", "attack")
+		elif spell_id == "cut":
+			spark["delay"] = STRIPS.release_sec("gloam", "attack")
+		elif spell_id == "detonate":
+			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
 		if spell_id == "detonate":
 			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
 		out.append(spark)
-		out.append(_number(target_seat, cell, str(damage), "damage", 0.0, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
+		var number_delay := float(spark.get("delay", 0.0))
+		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
 			out.append(_chevron(target_seat, cell, event))
@@ -331,7 +340,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("to") or event.has("caster_cell"):
-		out.append({
+		var whiff := {
 			"id": "projectile",
 			"block": 0.0,
 			"from": caster_cell,
@@ -341,7 +350,15 @@ static func _miss_recipes(event: Dictionary) -> Array:
 			"duration": 0.22,
 			"tint": tint,
 			"width": 3.0,
-		})
+		}
+		if spell_id == "mark_shot" or spell_id == "detonate":
+			whiff["hand"] = true
+			whiff["seat"] = caster_seat
+		if spell_id == "mark_shot":
+			whiff["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
+		elif spell_id == "detonate":
+			whiff["delay"] = STRIPS.release_sec("kestrel", "cast")
+		out.append(whiff)
 	if event.has("origin"):
 		out.append(_puff(caster_seat, cell_of(event.get("origin")), VfxPalette.GLOAM, 0.45))
 	return out
@@ -432,9 +449,7 @@ static func _cast_recipes(event: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
 	var out: Array = []
 	var cell := cell_of(event.get("to", Vector2i.ZERO))
-	if spell_id == "drop_shade" and event.has("to"):
-		out.append(_ring(cell, VfxPalette.GLOAM_RIM, true, 0.0, 0.35, "pool"))
-	elif spell_id == "plant" and event.has("to"):
+	if spell_id == "plant" and event.has("to"):
 		out.append(_ring(cell, VfxPalette.BASTION, true, 0.0, 0.0, "sigil"))
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
 	return out
@@ -531,7 +546,11 @@ static func _engine_name(event: Dictionary) -> String:
 
 
 static func _wants_shake(event: Dictionary) -> bool:
-	return str(event.get("type", "")) == "hit" and str(event.get("spell", "")) in SHAKE_SPELLS
+	if str(event.get("type", "")) != "hit":
+		return false
+	if str(event.get("spell", "")) in SHAKE_SPELLS:
+		return true
+	return int(event.get("damage", 0)) >= HEAVY_HIT_DAMAGE
 
 
 static func _is_shield_grant(event: Dictionary) -> bool:
@@ -545,6 +564,9 @@ static func _is_shield_grant(event: Dictionary) -> bool:
 
 
 static func _target_cell(event: Dictionary) -> Vector2i:
+	# Ambush `to` / `destination` are the back tile. The struck body is `from`.
+	if str(event.get("spell", "")) == "ambush" and event.has("from"):
+		return cell_of(event.get("from"))
 	if event.has("to"):
 		return cell_of(event.get("to"))
 	if event.has("destination"):
@@ -683,12 +705,19 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	match spell_id:
 		"mark_shot":
 			if typ == "hit":
-				out.append(_puff(caster, caster_cell, VfxPalette.KESTREL_AIR, 0.75))
-				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5))
+				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5)
+				bolt["hand"] = true
+				bolt["seat"] = caster
+				bolt["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
+				out.append(bolt)
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":
-				out.append(_shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false))
+				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false)
+				line["hand"] = true
+				line["seat"] = caster
+				line["delay"] = STRIPS.release_sec("kestrel", "cast")
+				out.append(line)
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))
 				elif int(event.get("marks_remaining", 0)) > 0:
@@ -769,13 +798,15 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
-				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_VOID, 8.0, 0.15, 3.0))
+				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 30.0, 0.22, 5.5))
+				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 1.15))
+				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.65, "", VfxPalette.GLOAM_RIM))
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))
 				if origin_cell != caster_cell:
 					out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
-				out.append(_flash("slash", target, cell_of(event.get("destination", to_cell)), 0.26))
+				out.append(_flash("slash", target, _target_cell(event), 0.26))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):
 				out.append(_status_on("invisible", caster, caster_cell, 1))

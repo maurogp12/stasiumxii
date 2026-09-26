@@ -70,7 +70,11 @@ func _test_sprite_node_setup() -> void:
 	eq(bastion_sprite.texture, Pawn.sprite_texture("bastion", "N"), "bastion N placeholder still loads")
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.sprite_texture("bastion", "W"), "bastion W placeholder still loads")
-	eq((bastion.get_node("Sprite") as Sprite2D).modulate, Color(0.45, 0.45, 0.45, 1), "dead sprite stays grey")
+	var dead := bastion.get_node("Sprite") as Sprite2D
+	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
+	eq(dead.modulate.a < 0.05, true, "a dead snapshot dissolves instead of standing")
+	eq(dead.position.y > 4.0, true, "a dead snapshot stays collapsed")
+	eq(dead.scale.y < 0.35, true, "a dead snapshot stays squashed")
 	pawn.free()
 	bastion.free()
 
@@ -205,7 +209,7 @@ func _test_name_sits_above_the_sprite() -> void:
 		eq(chrome.position, Vector2.ZERO, "%s name rests on the pawn" % class_id)
 		var rested := origin.y
 		pawn._sample_hop(0.5)
-		eq(chrome.position, Vector2.ZERO, "%s hop does not move the name" % class_id)
+		eq(chrome.position.y, -ViewMotion.HOP_PX, "%s name rides the walk hop" % class_id)
 		eq(sprite.position.y < -1.0, true, "%s hop moves the sprite" % class_id)
 		eq(pawn.name_label_origin().y, rested, "%s name anchor stays put during a hop" % class_id)
 		pawn._sample_attack(0.4, Vector2(20, 10))

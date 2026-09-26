@@ -130,7 +130,7 @@ static func walk_dests(legal: Array) -> Array[Vector2i]:
 
 
 ## Sim-legal cast dests for one spell. Advance chrome reads this and must not
-## invent a Manhattan 1–2 or diagonal ring on the client.
+## invent a client ring (Manhattan 1, diagonals, or a filled diamond).
 static func cast_dests(legal: Array, spell_id: String) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	if spell_id == "":

@@ -3,7 +3,8 @@ extends Node2D
 ## Thin client: input + presentation only. CombatSim owns rolls and combat state.
 ## Walk: dest-click only. CombatSim expands the cheapest weighted ortho path; this
 ## view never sends intent.path. Pawns tween one ortho tile at a time along the
-## returned walk path and face each hop (final facing = last hop, matching the snapshot).
+## returned walk path and face each hop before the translate (final facing snaps
+## after the land, matching the snapshot's last hop).
 ## Live elevation chrome: tiles paint snapshot.tiles elevation + terrain_type.
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
@@ -16,6 +17,11 @@ extends Node2D
 ## Advance: dest-click teleport snap. No hop playback; CombatSim ignores client path.
 ## After Advance, spell selection clears so walk chrome comes back from legal_intents.
 ## Walk is a dedicated action-bar mode (Walk button / Esc). Right-click still faces.
+## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
+## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
+## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
+## The 22px diamond pick stays for walks and empty tiles. A finger that starts
+## on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## Proposed timers: ~1.0s client-only seat handoff banner. The 30s seat clock is
@@ -33,10 +39,11 @@ extends Node2D
 ## The dedicated process does not start the default Kestrel / Ironjaw pair.
 ## It paints when the SELECT_CLASS queue has paired two Locked classes.
 ## Snap Wall chrome paints snapshot.blocked_tiles and snap_wall events as blocked.
-## View motions (idle, step arc, lunge, wind-up, recoil, lift, slump) tween the
+## View motions (idle, step bounce, lunge, wind-up, recoil, lift, slump) tween the
 ## sprite only. Tunables live in ViewMotion. They never pause the host clock.
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
-## Batch 1 walk/attack strips land later; static facings hop until then.
+## Walk chrome. A walk is one linear slide through cell centers.
+## The sprite root bounces a few pixels. Advance stays a snap.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -46,13 +53,17 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
-const STEP_PAUSE_SEC: float = 0.08
+const SHADE_MARKER := preload("res://board/shade_marker.gd")
+## Marker z is this plus the cell, above every tile and pawn, under combat
+## numbers (z 900) so the "Shade" floater still reads.
+const SHADE_LAYER_Z := 640
+const TOUCH := preload("res://ui/touch_adapter.gd")
 const HANDOFF_SEC: float = 1.0
-## Playable band between the top chrome and the bottom action bar on 960×720.
-const PLAY_TOP := 140.0
-const PLAY_BOTTOM := 488.0
-const VIEW_W := 960.0
-const VIEW_H := 720.0
+## Playable band between the top chrome and the touch-sized bottom bar.
+const PLAY_TOP: float = TOUCH.PLAY_TOP
+const PLAY_BOTTOM: float = TOUCH.PLAY_BOTTOM
+const VIEW_W: float = TOUCH.VIEW_W
+const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
 
 var tiles: Dictionary = {}
@@ -63,6 +74,9 @@ var _booted: bool = false
 var _busy: bool = false
 var _clock_expired_pending: bool = false
 var _walk_tween: Tween
+## Seat whose body is mid hop. Refresh must not snap it to the destination.
+var _hop_seat: int = -1
+var _shade_markers: Dictionary = {}
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
@@ -79,6 +93,11 @@ var _camera: Camera2D
 var _fit_camera_pos := Vector2.ZERO
 var _panning := false
 var _pan_origin := Vector2.ZERO
+## Finger went down on the board. Release commits only that gesture.
+var _touch_on_board := false
+## Spell was armed on the cluster and the finger dragged onto the board.
+var _chrome_aim := false
+var _touch_commit_open := true
 
 
 func _ready() -> void:
@@ -89,11 +108,13 @@ func _ready() -> void:
 	_hud.end_turn_requested.connect(_on_end_turn_button_pressed)
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.ready_requested.connect(_on_ready_requested)
+	_hud.aim_dragged.connect(_on_hud_aim_dragged)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
 	_vfx = VFX_DIRECTOR.new()
 	_vfx.name = "VfxDirector"
 	add_child(_vfx)
 	_vfx.bind_board(self)
+	_shade_layer()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
 	call_deferred("_boot")
@@ -181,10 +202,10 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if swallowed:
 		_maybe_drain_net()
 		return
-	if CombatHUD.should_play_walk_hops(events):
-		var path_event := _path_event(events)
-		if not path_event.is_empty():
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+		if CombatHUD.should_play_walk_hops(events):
+			var path_event := _path_event(events)
+			if not path_event.is_empty():
+				await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -197,19 +218,7 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 
 func local_to_grid(point: Vector2) -> Vector2i:
 	# Nearest painted tile so elevated (view-offset) cells stay clickable.
-	var best := Vector2i(-1, -1)
-	var best_d := 22.0
-	for cell in tiles.keys():
-		var tile: BoardTile = tiles[cell]
-		var dist := point.distance_to(tile.position)
-		if dist < best_d:
-			best_d = dist
-			best = cell
-	if best.x >= 0:
-		return best
-	var grid_x := point.x / 64.0 + point.y / 32.0
-	var grid_y := point.y / 32.0 - point.x / 64.0
-	return Vector2i(floori(grid_x + 0.5), floori(grid_y + 0.5))
+	return TOUCH.pick_board_cell(point, _tile_positions(), [], false)
 
 
 func _process(delta: float) -> void:
@@ -277,21 +286,28 @@ func _unhandled_input(event: InputEvent) -> void:
 		# Esc returns to Walk. Right-click stays face and is not a cancel.
 		_return_to_walk()
 		return
-	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_MIDDLE:
+	# Desktop MOUSE_BUTTON_RIGHT still faces. Touch uses the Face pad.
+	if event is InputEventMouseButton and (event as InputEventMouseButton).button_index == MOUSE_BUTTON_RIGHT:
+		if TOUCH.board_gesture(event) != TOUCH.FACE:
+			return
+		var faced := _cell_under_pointer(event)
+		if not _in_bounds(faced):
+			return
+		if CombatHUD.is_deployment_phase(_sim().snapshot()):
+			return
+		select_tile(faced)
+		_face_toward(faced)
+		get_viewport().set_input_as_handled()
+		return
+	var gesture := TOUCH.board_gesture(event)
+	if gesture == TOUCH.PAN or gesture == TOUCH.PAN_STOP:
 		var middle := event as InputEventMouseButton
-		_panning = middle.pressed
-		if middle.pressed:
+		_panning = gesture == TOUCH.PAN
+		if _panning:
 			_pan_origin = middle.position
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseMotion and not _panning:
-		var hover := local_to_grid($Tiles.get_local_mouse_position())
-		if _in_bounds(hover):
-			_sync_aim_preview(hover)
-		else:
-			_sync_aim_preview()
-		return
-	if event is InputEventMouseMotion and _panning and _camera != null:
+	if _panning and event is InputEventMouseMotion and not TOUCH.is_emulated_mouse(event) and _camera != null:
 		var motion := event as InputEventMouseMotion
 		var delta := motion.position - _pan_origin
 		_pan_origin = motion.position
@@ -299,21 +315,137 @@ func _unhandled_input(event: InputEvent) -> void:
 		_clamp_camera()
 		get_viewport().set_input_as_handled()
 		return
-	if event is InputEventMouseButton and event.pressed:
-		var mouse_position: Vector2 = $Tiles.get_local_mouse_position()
-		var cell := local_to_grid(mouse_position)
-		if not _in_bounds(cell):
+	if _hud_claims_pointer(event):
+		if TOUCH.is_touch_press(event):
+			_touch_on_board = false
+			_touch_commit_open = true
+		return
+	if gesture == TOUCH.AIM:
+		var hover := _cell_under_pointer(event)
+		if _in_bounds(hover):
+			_sync_aim_preview(hover)
+			if TOUCH.is_touch_press(event):
+				_touch_on_board = true
+				_chrome_aim = false
+				_touch_commit_open = true
+				select_tile(hover)
+				if _hud != null:
+					_hud.dismiss_pinned_tooltip()
+			elif event is InputEventScreenDrag and (_touch_on_board or _spell_armed()):
+				if not _touch_on_board:
+					_chrome_aim = true
+				select_tile(hover)
+		else:
+			_sync_aim_preview()
+			if TOUCH.is_touch_press(event):
+				_touch_on_board = false
+		return
+	if gesture != TOUCH.COMMIT:
+		return
+	if TOUCH.is_touch_release(event):
+		var armed := _touch_on_board or _chrome_aim
+		_touch_on_board = false
+		_chrome_aim = false
+		if not armed:
 			return
-		if event.button_index == MOUSE_BUTTON_LEFT and _snap_wall_cell(cell):
-			return
-		select_tile(cell)
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if CombatHUD.is_deployment_phase(_sim().snapshot()):
-				return
-			_face_toward(cell)
-			return
-		if event.button_index == MOUSE_BUTTON_LEFT:
-			_handle_left_click(cell)
+	else:
+		# Mouse left press is its own gesture. It must not inherit a touch lock.
+		_touch_commit_open = true
+	_commit_pointer(event)
+
+
+func _spell_armed() -> bool:
+	return _hud != null and _hud.selected_spell() != ""
+
+
+func _hud_claims_pointer(event: InputEvent) -> bool:
+	if _hud == null:
+		return false
+	if not (event is InputEventScreenTouch or event is InputEventScreenDrag):
+		return false
+	return _hud.claims_screen_point(TOUCH.pointer_position(event))
+
+
+func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
+	if _busy or _view_locked:
+		return
+	if not committing:
+		# A new press or drag opens a commit. The release itself must not.
+		_touch_commit_open = true
+	if _hud != null and _hud.claims_screen_point(screen_pos):
+		if committing:
+			_chrome_aim = false
+		return
+	var local := ($Tiles as Node2D).make_canvas_position_local(screen_pos)
+	var cell := _pick_local(local)
+	if not _in_bounds(cell):
+		if committing:
+			_chrome_aim = false
+		return
+	_chrome_aim = true
+	_sync_aim_preview(cell)
+	select_tile(cell)
+	if _hud != null:
+		_hud.dismiss_pinned_tooltip()
+	if not committing:
+		return
+	_chrome_aim = false
+	_touch_on_board = false
+	_commit_cell(cell)
+
+
+func _commit_pointer(event: InputEvent) -> void:
+	_commit_cell(_cell_under_pointer(event))
+
+
+func _commit_cell(cell: Vector2i) -> void:
+	if not _touch_commit_open:
+		return
+	if not _in_bounds(cell):
+		return
+	# Snap walls are not a left-click / tap target. Right-click already returned.
+	if _snap_wall_cell(cell):
+		return
+	_touch_commit_open = false
+	select_tile(cell)
+	_handle_left_click(cell)
+
+
+func _cell_under_pointer(event: InputEvent) -> Vector2i:
+	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
+	return _pick_local(local)
+
+
+func _pick_local(local: Vector2) -> Vector2i:
+	var prefer := _hud != null and TOUCH.spell_targets_unit(_hud.selected_spell())
+	var pawns: Array = _living_pawns_for_pick() if prefer else []
+	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer)
+
+
+func _tile_positions() -> Dictionary:
+	var positions := {}
+	for cell in tiles.keys():
+		positions[cell] = (tiles[cell] as BoardTile).position
+	return positions
+
+
+func _living_pawns_for_pick() -> Array:
+	var out: Array = []
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		if not body.visible:
+			continue
+		var cell: Vector2i = body.grid_position
+		out.append({
+			"cell": cell,
+			"origin": body.position,
+			"sort": cell.x + cell.y,
+		})
+	return out
 
 
 func select_tile(cell: Vector2i) -> void:
@@ -334,6 +466,7 @@ func _handle_left_click(cell: Vector2i) -> void:
 	var spell_id := _hud.selected_spell()
 	if spell_id == "":
 		# Dest-click only. Do not send a client path.
+		# MP 0 still submits a walk. The coach says there is no MP to walk.
 		_submit({"type": "move", "to": cell})
 		return
 	var actor := _active_unit(_sim().snapshot())
@@ -554,7 +687,7 @@ func _submit(intent: Dictionary) -> void:
 			return
 		if CombatHUD.should_play_walk_hops(events):
 			var path_event := _path_event(events)
-			await _play_walk(int(path_event.get("seat", 0)), path_event["path"])
+			await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
 			_maybe_drain_net()
 			return
 	_refresh()
@@ -563,7 +696,36 @@ func _submit(intent: Dictionary) -> void:
 
 ## Hot-seat and NetSession both call this. Toasts come from sim events; Burn icons come from the snapshot on refresh.
 ## Returns true when the pawn must not hop (occupied block or bounce).
+
+func _snap_ambush_teleports(events: Array) -> void:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if not bool(event.get("teleported", false)):
+			continue
+		var seat := int(event.get("seat", -1))
+		if not pawns_by_seat.has(seat):
+			continue
+		var dest := _as_cell(event.get("destination", event.get("to", Vector2i(-1, -1))))
+		if dest.x < 0:
+			continue
+		var pawn: Pawn = pawns_by_seat[seat]
+		pawn.grid_position = dest
+		pawn.position = _cell_to_local(dest)
+		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
+		var face := str(event.get("facing", ""))
+		if face != "":
+			pawn.set_facing(face)
+
+
 func _present_resolve(events: Array) -> bool:
+	# Ambush HIT relocates before the lunge so the back tile reads. Without this
+	# snap the pawn lunges from the old cell and only jumps on refresh.
+	_snap_ambush_teleports(events)
+	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
+	_sync_shade_chrome(events)
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
@@ -601,7 +763,7 @@ func _path_event(events: Array) -> Dictionary:
 
 func _play_combat_feedback(events: Array) -> void:
 	# Hit flash on the target and Impact flash on the caster. Plays even when push is blocked.
-	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage stays orange.
+	# Heal / Cleanse use a green-teal flash. Ward uses pale blue. Real damage flashes white.
 	# Kind comes from the event spell id, healed amount, negative damage, or shield fields.
 	# A dying pawn keeps the flash color for the slump; the grey state is applied after.
 	var dying := _dying_seats(events)
@@ -663,8 +825,9 @@ func _active_is_stunned(snap: Dictionary = {}) -> bool:
 	return CombatHUD.unit_is_stunned(_active_unit(snap))
 
 
-func _play_walk(seat: int, path: Array) -> void:
+func _play_walk(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	_busy = true
+	_hop_seat = seat
 	_hud.set_locked(true)
 	var snap: Dictionary = _sim().snapshot()
 	_hud.render(snap, [])
@@ -674,9 +837,10 @@ func _play_walk(seat: int, path: Array) -> void:
 		var cell: Vector2i = _as_cell(step)
 		if tiles.has(cell):
 			_tile_at(cell).set_highlight("move")
-	await _animate_path(seat, path)
+	await _animate_path(seat, path, origin)
 	if not is_inside_tree():
 		return
+	_hop_seat = -1
 	_hud.set_locked(false)
 	_busy = false
 	_refresh()
@@ -685,40 +849,118 @@ func _play_walk(seat: int, path: Array) -> void:
 		_on_turn_clock_expired()
 
 
-func _animate_path(seat: int, path: Array) -> void:
+func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) -> void:
 	if not pawns_by_seat.has(seat):
 		return
 	var pawn: Pawn = pawns_by_seat[seat]
-	# One awaited hop per ortho tile so E/W-then-N/S cannot collapse into a diagonal slide.
-	# Locked: facing follows each hop so the pointer matches CombatSim last-hop facing.
-	# The step arc is sprite-local and lasts Pawn.WALK_HOP_SEC, same as the tile slide.
+	# One tween through cell centers. Equal time per cell keeps straight and
+	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
+	# The sim has already moved the unit. Put the body back on the departure tile
+	# before the slide, or a refresh snaps it and the walk reads as a teleport.
+	# Face the step before the body moves. hop_facing covers a non-cardinal
+	# step, then a diagonal uses the screen vector so the pawn does not slide
+	# sideways or backwards. The walk cycle starts on that facing and plays
+	# through a two-frame plant before the translate. The snapshot facing
+	# snaps only after the last land. The walk strip loops the whole path.
+	if _in_bounds(origin):
+		pawn.position = _cell_to_local(origin)
+		_set_pawn_cell(pawn, origin)
 	pawn.hold_idle()
 	var prev: Vector2i = pawn.grid_position
+	var cells: Array[Vector2i] = []
 	for step in path:
-		if not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
-			return
-		var cell: Vector2i = _as_cell(step)
+		cells.append(_as_cell(step))
+	if cells.is_empty() or not is_inside_tree() or pawn == null or not is_instance_valid(pawn):
+		if pawn != null and is_instance_valid(pawn):
+			pawn.end_path_walk()
+			pawn.release_idle()
+		return
+	var committed := _seat_facing(seat)
+	var visual := pawn.facing
+	_stop_walk_tween()
+	_walk_tween = create_tween()
+	_walk_tween.set_trans(Tween.TRANS_LINEAR)
+	var walk_armed := false
+	for cell in cells:
 		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if dir == "":
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
-		pawn.set_facing(dir)
-		_stop_walk_tween()
-		pawn.play_step_hop()
-		_walk_tween = create_tween()
-		_walk_tween.set_parallel(true)
-		_walk_tween.set_trans(Tween.TRANS_LINEAR)
-		_walk_tween.set_ease(Tween.EASE_IN_OUT)
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_HOP_SEC)
-		_walk_tween.tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_HOP_SEC)
-		await _walk_tween.finished
-		pawn.position = _cell_to_local(cell)
-		pawn.finish_step()
-		_set_pawn_cell(pawn, cell)
+			if prev.x != cell.x and prev.y != cell.y:
+				var along := _facing_along(_cell_to_local(cell) - _cell_to_local(prev))
+				if along != "":
+					dir = along
+		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
+		if turn.is_empty():
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
+		else:
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[0])))
+		if not walk_armed:
+			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
+			walk_armed = true
+		if not turn.is_empty():
+			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+			for i in range(1, turn.size()):
+				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
+				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+		if dir != "":
+			visual = dir
+		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
+		_walk_tween.parallel().tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
-		if STEP_PAUSE_SEC > 0.0:
-			await get_tree().create_timer(STEP_PAUSE_SEC).timeout
+	if committed != "":
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
+	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
+		var last: Vector2i = cells[cells.size() - 1]
+		pawn.position = _cell_to_local(last)
+		_set_pawn_cell(pawn, last)
+		pawn.end_path_walk()
 		pawn.release_idle()
+
+
+func _arm_path_walk(pawn: Pawn) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	pawn.begin_path_walk()
+
+
+func _seat_facing(seat: int) -> String:
+	for unit in _sim().snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) == seat:
+			return str(unit.get("facing", ""))
+	return ""
+
+
+func _facing_along(delta: Vector2) -> String:
+	if delta.length_squared() < 1.0:
+		return ""
+	var best := ""
+	var best_dot := -2.0
+	var aim := delta.normalized()
+	for face in ["N", "E", "S", "W"]:
+		var axis: Vector2 = Pawn.FACING_ISO[face]
+		var dotted := aim.dot(axis.normalized())
+		if dotted > best_dot:
+			best_dot = dotted
+			best = face
+	return best
+
+
+func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	if dir != "":
+		pawn.set_facing(dir)
+	pawn.retarget_walk_strip()
+
+
+func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	_set_pawn_cell(pawn, cell)
 
 
 func _set_pawn_cell(pawn: Pawn, cell: Vector2i) -> void:
@@ -779,7 +1021,7 @@ func _arm_view_motions(events: Array) -> void:
 		if pawn == null or not is_instance_valid(pawn):
 			continue
 		var plan: Dictionary = plans[seat]
-		if bool(plan.get("attack", false)) and int(caster_event.get("seat", -2)) == seat_n:
+		if int(caster_event.get("seat", -2)) == seat_n and (bool(plan.get("attack", false)) or bool(plan.get("cast", false))):
 			plan["aim"] = _aim_vector(seat_n, caster_event)
 		if bool(plan.get("hit", false)):
 			plan["away"] = _away_vector(seat_n, VIEW_MOTION.hit_event_for(events, seat_n))
@@ -789,8 +1031,13 @@ func _arm_view_motions(events: Array) -> void:
 
 func _aim_vector(seat: int, event: Dictionary) -> Vector2:
 	var pawn: Pawn = pawns_by_seat[seat]
-	if event.has("to"):
-		var delta := _cell_to_local(_as_cell(event.get("to"))) - pawn.position
+	# Ambush `to` is the back tile (where the body just snapped). The slash
+	# aims at the struck enemy (`from`), not back along the blink.
+	var aim_at: Variant = event.get("to", null)
+	if str(event.get("spell", "")) == SpellKits.AMBUSH and event.has("from"):
+		aim_at = event.get("from")
+	if aim_at != null:
+		var delta := _cell_to_local(_as_cell(aim_at)) - pawn.position
 		if delta.length() > 2.0:
 			return delta
 	var target := int(event.get("target_seat", -1))
@@ -863,6 +1110,7 @@ func _refresh() -> void:
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	_apply_board_tiles(snap)
 	_apply_units(snap)
+	_sync_shade_markers(snap)
 	_hud.render(snap, legal)
 	_paint_highlights()
 	_hydrate_turn_clock(snap)
@@ -872,7 +1120,13 @@ func _refresh() -> void:
 
 func _rebuild_pawns() -> void:
 	_stop_flash_tweens()
+	# Pawns only. Shade markers live on ShadeMarkers. A marker that raced onto
+	# Units is moved, not freed — this pass used to free the token.
+	var layer := _shade_layer()
 	for child in $Units.get_children():
+		if child.get_script() == SHADE_MARKER:
+			child.reparent(layer)
+			continue
 		$Units.remove_child(child)
 		child.free()
 	pawns_by_seat.clear()
@@ -897,9 +1151,99 @@ func _apply_units(snap: Dictionary) -> void:
 			continue
 		var raw_events: Variant = snap.get("last_events", [])
 		var burn_events: Array = raw_events if typeof(raw_events) == TYPE_ARRAY else []
+		var hopping := _busy and seat == _hop_seat
+		var kept_cell := pawn.grid_position
+		var kept_pos := pawn.position
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
-		pawn.position = _cell_to_local(cell)
-		pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+		if hopping:
+			pawn.grid_position = kept_cell
+			pawn.position = kept_pos
+		else:
+			pawn.position = _cell_to_local(cell)
+			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+
+
+## Drop Shade's body lives on ShadeMarkers, not under Units. Rebuild frees every
+## Units child, which used to delete the token before the next refresh. Shade is
+## a standing token. Ambush is the blink.
+func _sync_shade_markers(snap: Dictionary) -> void:
+	var live: Dictionary = {}
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = token
+		var cell := _as_cell(rec.get("pos", Vector2i(int(rec.get("x", -1)), int(rec.get("y", -1)))))
+		if not _in_bounds(cell):
+			continue
+		live[cell] = int(rec.get("turns", 3))
+	var stale: Array = []
+	for cell in _shade_markers.keys():
+		if not live.has(cell):
+			stale.append(cell)
+	for cell in stale:
+		var gone: Node = _shade_markers[cell]
+		if gone != null and is_instance_valid(gone):
+			gone.queue_free()
+		_shade_markers.erase(cell)
+	var layer := _shade_layer()
+	var origin_cell := _ambush_shade_origin(_sim().ambush_origin(CombatHUD.kit_seat(snap)))
+	for cell in live.keys():
+		var marker: Node = _shade_markers.get(cell)
+		var spawned := marker == null or not is_instance_valid(marker)
+		if spawned:
+			marker = SHADE_MARKER.new()
+			layer.add_child(marker)
+			_shade_markers[cell] = marker
+		elif marker.get_parent() != layer:
+			marker.reparent(layer)
+		var at: Vector2i = cell
+		marker.call("show_token", _cell_to_local(at), SHADE_LAYER_Z + at.x + at.y, int(live[cell]), spawned, at == origin_cell)
+
+
+func _shade_layer() -> Node2D:
+	var layer := get_node_or_null("ShadeMarkers") as Node2D
+	if layer == null:
+		layer = Node2D.new()
+		layer.name = "ShadeMarkers"
+		add_child(layer)
+	layer.z_as_relative = false
+	layer.z_index = SHADE_LAYER_Z
+	return layer
+
+
+func _includes_drop_shade(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("type", "")) == "cast" and str(event.get("spell", "")) == SpellKits.DROP_SHADE:
+			return true
+	return false
+
+
+## Drop Shade, a Shade-origin Ambush hit, or a Shade expire. Miss keeps the token.
+func _shade_board_changed(events: Array) -> bool:
+	if _includes_drop_shade(events):
+		return true
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = event
+		if str(rec.get("type", "")) == "expire" and str(rec.get("status", "")) == "shade":
+			return true
+		if str(rec.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if str(rec.get("type", "")) == "hit" and bool(rec.get("teleported", false)) and not bool(rec.get("shade_retained", true)):
+			return true
+	return false
+
+
+func _sync_shade_chrome(events: Array) -> void:
+	if not _shade_board_changed(events):
+		return
+	var snap: Dictionary = _sim().snapshot()
+	_sync_shade_markers(snap)
+	if _hud != null:
+		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
 
 
 func _paint_highlights() -> void:
@@ -918,13 +1262,26 @@ func _paint_highlights() -> void:
 	var actor := _kit_unit(snap)
 	if spell_id != "" and not CombatHUD.offered_cast_ids(actor, legal).has(spell_id):
 		spell_id = ""
-	# Enemy-targeted spells: paint the range ring as soon as the spell is selected.
+	# Paint the range ring as soon as the spell is selected. Enemy casts leave
+	# empty in-range tiles gold. Empty-tile casts (Drop Shade, Snap Wall, Plant)
+	# used to paint only legal dests, so the ring was wiped and a tap past the
+	# edge looked like the spell did nothing. Advance stays legal-dest only.
 	# Walk chrome stays off. Rolling casts also get Locked hit percent aim preview.
-	if spell_id != "" and spell_id != SpellKits.ADVANCE:
-		var def: Dictionary = SpellKits.spell(spell_id)
-		if str(def.get("target", "")) == "enemy":
-			for cell in _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id):
-				_tile_at(cell).set_highlight("range")
+	var range_cells: Array = []
+	var range_def: Dictionary = {}
+	var stamp_rim := false
+	var ambush_armed := CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH)
+	# Ambush range chrome is the legal arm only. A fresh Shade, a diagonal, or
+	# Manhattan 3 must not paint a teach ring while the cast is absent from legal_intents.
+	if spell_id != "" and spell_id != SpellKits.ADVANCE and (spell_id != SpellKits.AMBUSH or ambush_armed):
+		range_def = SpellKits.spell(spell_id)
+		var target_kind := str(range_def.get("target", ""))
+		if target_kind == "enemy" or target_kind == "ally" or target_kind == "any" or target_kind == "empty_tile" or target_kind == "tile":
+			range_cells = _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id)
+			stamp_rim = target_kind == "empty_tile" or target_kind == "tile"
+			for cell in range_cells:
+				if tiles.has(cell):
+					_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
@@ -935,8 +1292,54 @@ func _paint_highlights() -> void:
 		if tiles.has(dest):
 			var highlight := "advance" if spell_id == SpellKits.ADVANCE else "target"
 			_tile_at(dest).set_highlight(highlight)
+	if stamp_rim and not actor.is_empty():
+		_stamp_range_rim(range_cells, _as_cell(actor.get("pos", Vector2i.ZERO)), int(range_def.get("max_range", 0)))
 	_paint_blocked(snap)
+	_paint_ambush_chrome(snap, spell_id)
 	_sync_aim_preview()
+
+
+## Locked chrome. Origin and landing highlights only while legal_intents has an
+## Ambush cast. A Shade adjacent to a foe is not an origin. Invisible aims from
+## Gloam only. Range is that origin.
+func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
+	var seat := CombatHUD.kit_seat(snap)
+	var legal: Array = _sim().legal_intents(seat)
+	if not CombatHUD.legal_cast_ids(legal).has(SpellKits.AMBUSH):
+		return
+	var origin: Dictionary = _sim().ambush_origin(seat)
+	if not bool(origin.get("show", false)):
+		return
+	var cell: Vector2i = origin["origin"]
+	var walking := spell_id == "" and SNAPSHOT_TILES.walk_dests(_sim().legal_intents(seat)).has(cell)
+	if tiles.has(cell) and not walking:
+		_tile_at(cell).set_highlight("origin")
+	if spell_id != SpellKits.AMBUSH:
+		return
+	var landing: Dictionary = _sim().ambush_landing_preview(seat)
+	if bool(landing.get("ok", false)) and tiles.has(landing.get("cell", Vector2i(-1, -1))):
+		_tile_at(landing["cell"]).set_highlight("landing")
+
+
+func _ambush_shade_origin(origin: Dictionary) -> Vector2i:
+	if bool(origin.get("show", false)) and not bool(origin.get("from_self", false)):
+		return origin["origin"]
+	return Vector2i(-999, -999)
+
+
+## Keep the max-range shell gold after legal dests repaint the interior.
+## Drop Shade's legal tiles are the empty tiles, so a target pass used to erase
+## the whole ring and the edge was invisible on the phone.
+func _stamp_range_rim(cells: Array, origin: Vector2i, max_range: int) -> void:
+	if max_range <= 0:
+		return
+	for cell in cells:
+		var at := _as_cell(cell)
+		if not tiles.has(at):
+			continue
+		if COMBAT_SIM_SCRIPT.chebyshev(origin, at) != max_range:
+			continue
+		_tile_at(at).set_highlight("range")
 
 
 func _paint_blocked(snap: Dictionary) -> void:

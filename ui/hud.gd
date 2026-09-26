@@ -6,6 +6,8 @@ signal face_requested(dir: String)
 signal end_turn_requested
 signal new_match_requested
 signal ready_requested(seat: int)
+## Finger moved on an ability button. committing is the release.
+signal aim_dragged(screen_pos: Vector2, committing: bool)
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
@@ -13,6 +15,10 @@ const MENDER_BLUE := Color("#2E4A6E")
 const GLOAM_PURPLE := Color("#4A3A62")
 const BASTION_SLATE := Color("#5C5648")
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
+const AMBUSH_SHADE_TIP := "Ambush from Shade"
+const AMBUSH_SHADE_MODULATE := Color(1.45, 1.15, 1.7)
+## Soft-disable when legal_intents has no Ambush cast. Not a teach arm.
+const AMBUSH_DISARMED_MODULATE := Color(0.62, 0.62, 0.66, 0.78)
 const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
 ## Lava forced-push lands and applies Burn. Not a Bounce toast.
@@ -20,12 +26,15 @@ const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
+const TOUCH := preload("res://ui/touch_adapter.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
 var _face_buttons: Dictionary = {}
 var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
+var _ability_cluster: Control
+var _bottom_box: VBoxContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
 ## Left card is seat 0, right card is seat 1. Titles follow units[].class_id.
@@ -61,13 +70,25 @@ var _stun_badge: Label
 var _toast_label: Label
 var _toast_token: int = 0
 var _spell_hosts: Dictionary = {}
+## spell path -> Texture2D or null when the stub is missing.
+var _ability_textures: Dictionary = {}
 var _empty_kit_button: Button
 var _empty_kit_label: Label
 var _tooltip_panel: Panel
 var _tooltip_label: Label
 var _tooltip_spell: String = ""
+## Hold card ignores synthetic mouse-exit until the finger lifts, a board tap, or Walk.
+var _tooltip_pinned: bool = false
+## Spell armed on button-down. The matching release must not toggle it off.
+var _suppress_toggle_spell: String = ""
+var _press_gesture_armed: String = ""
+var _press_release_token: int = 0
 var _long_press_spell: String = ""
 var _long_press_elapsed: float = 0.0
+## True while the open long-press started from a finger, not a mouse click.
+var _long_press_touch: bool = false
+## Finger contact. Desktop hover must not open the card during a tap.
+var _hover_suppressed: bool = false
 var _last_snap: Dictionary = {}
 var _last_legal: Array = []
 var _preview_source: Node = null
@@ -229,6 +250,40 @@ static func engine_pips(current: int, maximum: int) -> String:
 	for i in range(maximum):
 		out += "●" if i < filled else "○"
 	return out
+
+
+## A01 Locked: Marks live on the target, not the caster. Kestrel's Marks row is
+## that stack (the foe the consume spell reads). Other Marks rows are the stack
+## on the unit itself — Ironjaw, when he is the target. Impact stays on the unit
+## that holds it (Ironjaw), so that card reads `impact` directly.
+static func marks_holder(unit: Dictionary, snap: Dictionary) -> Dictionary:
+	if str(unit.get("class_id", "")) != SpellKits.CLASS_KESTREL:
+		return unit
+	var seat := int(unit.get("seat", -1))
+	for other in snap.get("units", []):
+		if typeof(other) != TYPE_DICTIONARY:
+			continue
+		if int(other.get("seat", -1)) == seat:
+			continue
+		return other
+	return unit
+
+
+## Chrome only. A live Shade on the acting Gloam is the cue that Ambush relocates.
+## CombatSim still owns legality, spends, and the blink.
+static func gloam_has_live_shade(snap: Dictionary) -> bool:
+	if not is_local_turn(snap):
+		return false
+	var seat := kit_seat(snap)
+	var unit := unit_for_seat(snap.get("units", []), seat)
+	if str(unit.get("class_id", "")) != SpellKits.CLASS_GLOAM:
+		return false
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		if int(token.get("owner_seat", -1)) == seat and int(token.get("turns", 0)) > 0:
+			return true
+	return int(unit.get("shades", 0)) > 0
 
 
 static func legal_cast_ids(legal: Array) -> Dictionary:
@@ -540,8 +595,29 @@ func _process(delta: float) -> void:
 		return
 	_long_press_elapsed += delta
 	if _long_press_elapsed >= SpellTooltip.LONG_PRESS_SEC:
-		show_spell_tooltip(_long_press_spell)
+		var spell_id := _long_press_spell
+		var from_touch := _long_press_touch
+		show_spell_tooltip(spell_id)
+		if from_touch and tooltip_visible():
+			_tooltip_pinned = true
+			# Release dismisses the card and must not toggle the armed spell off.
+			_suppress_toggle_spell = spell_id
 		_cancel_long_press()
+
+
+func _input(event: InputEvent) -> void:
+	if TOUCH.is_emulated_mouse(event):
+		return
+	if not event is InputEventScreenTouch:
+		return
+	var touch := event as InputEventScreenTouch
+	if touch.index != 0:
+		return
+	if touch.pressed:
+		# Before emulated mouse_entered, so a tap does not flash the card.
+		_hover_suppressed = true
+		return
+	_finish_touch_tooltip()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -716,6 +792,16 @@ func render(snap: Dictionary, legal: Array) -> void:
 
 	var legal_spells := legal_cast_ids(legal)
 	var match_over := bool(snap.get("match_over", false))
+	# Ambush arms only from a legal cast. Drop a stale selection so the
+	# cluster cannot keep teaching the arm after the geometry goes illegal.
+	if _selected_spell == SpellKits.AMBUSH and not legal_spells.has(SpellKits.AMBUSH):
+		_selected_spell = ""
+		_aim_hit_chance = -1
+		_press_gesture_armed = ""
+		_suppress_toggle_spell = ""
+		if _aim_hit_label != null:
+			_aim_hit_label.text = ""
+			_aim_hit_label.visible = false
 	# Locked Stun (A′): face/cast chrome follows CombatSim stun reject (move + cast + face blocked).
 	# Grey Walk / Face / spells. CombatSim auto-ends the turn; End Turn is a fallback.
 	# Online: stun-grey the local kit only while that seat is acting.
@@ -731,12 +817,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 		var button: Button = _spell_buttons[spell_id]
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(snap)
 		_set_spell_button_clickable(button, can_submit)
-		if _selected_spell == spell_id:
-			button.modulate = Color(1.15, 1.1, 0.7)
-		elif can_submit:
-			button.modulate = Color(1, 1, 1, 1)
-		else:
-			button.modulate = STUN_GREY if _stunned else Color(1, 1, 1, 0.72)
+		_apply_spell_modulate(str(spell_id), button, can_submit)
 	_refresh_walk_button()
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
@@ -756,12 +837,14 @@ func _apply_controls(match_over: bool) -> void:
 		_walk_button.disabled = block or _stunned or not_your_turn
 		if (_stunned or _deploying or not_your_turn) and not match_over and not _locked:
 			_walk_button.modulate = STUN_GREY
+		_sync_ability_icon(_walk_button)
 	if _end_turn_button != null:
 		# Locked Stun (A′): End Turn stays as a fallback; CombatSim auto-skips.
 		# Deploy: End Turn stays off until both Ready leave DEPLOYMENT.
 		# Online: only the owner of active_seat can End Turn.
 		_end_turn_button.disabled = block or not_your_turn
 		_end_turn_button.modulate = Color.WHITE
+		_sync_ability_icon(_end_turn_button)
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
@@ -821,45 +904,15 @@ func _build() -> void:
 	res_box.add_child(_make_clock_row())
 
 	var bottom := VBoxContainer.new()
+	_bottom_box = bottom
 	bottom.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	bottom.offset_left = 16
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
-	bottom.offset_top = -232
+	bottom.offset_top = TOUCH.HUD_BOTTOM_OFFSET
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
-
-	var face_bar := HBoxContainer.new()
-	_face_bar = face_bar
-	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
-	face_bar.add_theme_constant_override("separation", 8)
-	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bottom.add_child(face_bar)
-	var face_caption := Label.new()
-	face_caption.text = "Face"
-	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	face_bar.add_child(face_caption)
-	var face_pad := GridContainer.new()
-	face_pad.columns = 3
-	face_pad.add_theme_constant_override("h_separation", 4)
-	face_pad.add_theme_constant_override("v_separation", 4)
-	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	face_bar.add_child(face_pad)
-	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
-	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
-		if dir == "":
-			var spacer := Control.new()
-			spacer.custom_minimum_size = Vector2(36, 28)
-			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			face_pad.add_child(spacer)
-			continue
-		var button := Button.new()
-		button.text = dir
-		button.custom_minimum_size = Vector2(36, 28)
-		button.pressed.connect(_on_face_pressed.bind(dir))
-		face_pad.add_child(button)
-		_face_buttons[dir] = button
 
 	_aim_hit_label = Label.new()
 	_aim_hit_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -874,20 +927,61 @@ func _build() -> void:
 	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	bottom.add_child(_selected_label)
 
+	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
+	var combat_row := HBoxContainer.new()
+	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	combat_row.add_theme_constant_override("separation", 8)
+	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bottom.add_child(combat_row)
+
+	var face_bar := HBoxContainer.new()
+	_face_bar = face_bar
+	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	face_bar.add_theme_constant_override("separation", 8)
+	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	combat_row.add_child(face_bar)
+	var face_caption := Label.new()
+	face_caption.text = "Face"
+	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	face_bar.add_child(face_caption)
+	var face_pad := GridContainer.new()
+	face_pad.columns = 3
+	face_pad.add_theme_constant_override("h_separation", 4)
+	face_pad.add_theme_constant_override("v_separation", 4)
+	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	face_bar.add_child(face_pad)
+	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
+	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
+		if dir == "":
+			var spacer := Control.new()
+			spacer.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
+			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			face_pad.add_child(spacer)
+			continue
+		var button := Button.new()
+		button.text = dir
+		button.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
+		button.add_theme_font_size_override("font_size", 18)
+		button.pressed.connect(_on_face_pressed.bind(dir))
+		face_pad.add_child(button)
+		_face_buttons[dir] = button
+
 	_action_bar = FlowContainer.new()
 	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
-	_action_bar.custom_minimum_size = Vector2(0, 72)
+	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
 	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_action_bar.add_theme_constant_override("h_separation", 6)
 	_action_bar.add_theme_constant_override("v_separation", 6)
-	bottom.add_child(_action_bar)
+	combat_row.add_child(_action_bar)
 
 	_walk_button = Button.new()
 	_walk_button.text = "Walk"
-	_walk_button.custom_minimum_size = Vector2(88, 32)
+	_walk_button.custom_minimum_size = TOUCH.WALK_BUTTON_SIZE
 	_walk_button.clip_text = true
+	_walk_button.add_theme_font_size_override("font_size", 18)
 	_walk_button.pressed.connect(_on_walk_pressed)
 	_action_bar.add_child(_walk_button)
+	_bind_ability_icon(_walk_button, "walk", "Walk")
 
 	_empty_kit_label = Label.new()
 	_empty_kit_label.visible = false
@@ -900,34 +994,39 @@ func _build() -> void:
 	_empty_kit_button.disabled = true
 	_empty_kit_button.visible = false
 	_empty_kit_button.focus_mode = Control.FOCUS_NONE
-	_empty_kit_button.custom_minimum_size = Vector2(88, 32)
+	_empty_kit_button.custom_minimum_size = TOUCH.WALK_BUTTON_SIZE
 	_empty_kit_button.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_bar.add_child(_empty_kit_button)
 
 	_ready_p1_button = Button.new()
 	_ready_p1_button.text = "Ready P1"
-	_ready_p1_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p1_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
+	_ready_p1_button.add_theme_font_size_override("font_size", 18)
 	_ready_p1_button.clip_text = true
 	_ready_p1_button.pressed.connect(func() -> void: ready_requested.emit(0))
 	_action_bar.add_child(_ready_p1_button)
 
 	_ready_p2_button = Button.new()
 	_ready_p2_button.text = "Ready P2"
-	_ready_p2_button.custom_minimum_size = Vector2(100, 32)
+	_ready_p2_button.custom_minimum_size = TOUCH.READY_BUTTON_SIZE
+	_ready_p2_button.add_theme_font_size_override("font_size", 18)
 	_ready_p2_button.clip_text = true
 	_ready_p2_button.pressed.connect(func() -> void: ready_requested.emit(1))
 	_action_bar.add_child(_ready_p2_button)
 
 	_end_turn_button = Button.new()
 	_end_turn_button.text = "End Turn"
-	_end_turn_button.custom_minimum_size = Vector2(112, 32)
+	_end_turn_button.custom_minimum_size = TOUCH.END_TURN_BUTTON_SIZE
+	_end_turn_button.add_theme_font_size_override("font_size", 18)
 	_end_turn_button.clip_text = true
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
 	_action_bar.add_child(_end_turn_button)
+	_bind_ability_icon(_end_turn_button, "end_turn", "End Turn")
 
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
-	_new_match_button.custom_minimum_size = Vector2(112, 32)
+	_new_match_button.custom_minimum_size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	_new_match_button.add_theme_font_size_override("font_size", 18)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
 	_action_bar.add_child(_new_match_button)
@@ -938,6 +1037,18 @@ func _build() -> void:
 	_coach_label.add_theme_font_size_override("font_size", 15)
 	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
 	bottom.add_child(_coach_label)
+
+	_ability_cluster = Control.new()
+	_ability_cluster.name = "AbilityCluster"
+	_ability_cluster.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_ability_cluster.offset_left = -(TOUCH.CLUSTER_SIZE.x + TOUCH.CLUSTER_EDGE)
+	_ability_cluster.offset_top = -(TOUCH.CLUSTER_SIZE.y + TOUCH.CLUSTER_EDGE)
+	_ability_cluster.offset_right = -TOUCH.CLUSTER_EDGE
+	_ability_cluster.offset_bottom = -TOUCH.CLUSTER_EDGE
+	_ability_cluster.custom_minimum_size = TOUCH.CLUSTER_SIZE
+	_ability_cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ability_cluster.visible = false
+	root.add_child(_ability_cluster)
 
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(220, 540)
@@ -951,7 +1062,8 @@ func _build() -> void:
 	root.add_child(_toast_label)
 
 	_tooltip_panel = Panel.new()
-	_tooltip_panel.position = Vector2(240, 348)
+	# Above the touch action row so a pinned card does not cover Face / End Turn.
+	_tooltip_panel.position = Vector2(240, 168)
 	_tooltip_panel.size = Vector2(480, 248)
 	_tooltip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.visible = false
@@ -1127,7 +1239,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 		int(unit["ap"]),
 		int(unit["mp"]),
 		str(unit["facing"]),
-		_resource_meter_line(unit),
+		_resource_meter_line(unit, snap),
 		_kit_footer(unit),
 	]
 
@@ -1138,7 +1250,8 @@ func _unit(units: Array, seat: int) -> Dictionary:
 
 ## Kestrel / Ironjaw keep Marks / Impact. Card classes paint snapshot fields.
 ## `unit.resources` mirrors pulse / umbral / shades / aegis when the field is absent.
-func _resource_meter_line(unit: Dictionary) -> String:
+## Marks pips follow `marks_holder` so a connect on the foe fills Kestrel's row.
+func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 	var class_id := str(unit.get("class_id", ""))
 	var mastery := int(unit.get("mastery", 0))
 	var resist := int(unit.get("resist", 0))
@@ -1156,7 +1269,7 @@ func _resource_meter_line(unit: Dictionary) -> String:
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
 			SpellKits.resource_label("shades"),
-			_resource_current(unit, "shades"),
+			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
 			mastery,
 			resist,
@@ -1169,8 +1282,9 @@ func _resource_meter_line(unit: Dictionary) -> String:
 			mastery,
 			resist,
 		]
+	var marked := marks_holder(unit, snap)
 	return "Marks %s  Impact %s" % [
-		engine_pips(int(unit.get("marks", 0)), int(unit.get("marks_cap", SpellKits.MARKS_CAP))),
+		engine_pips(int(marked.get("marks", 0)), int(marked.get("marks_cap", SpellKits.MARKS_CAP))),
 		engine_pips(int(unit.get("impact", 0)), int(unit.get("impact_cap", SpellKits.IMPACT_CAP))),
 	]
 
@@ -1182,6 +1296,26 @@ func _resource_current(unit: Dictionary, id: String) -> int:
 	if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has(id):
 		return int((bag as Dictionary)[id])
 	return 0
+
+
+## Live Shade tokens win over a stale unit.shades field so the card matches the tile.
+static func shade_count(unit: Dictionary, snap: Dictionary) -> int:
+	if not snap.has("shade_tokens"):
+		if unit.has("shades"):
+			return int(unit.get("shades", 0))
+		var bag: Variant = unit.get("resources", null)
+		if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has("shades"):
+			return int((bag as Dictionary).get("shades", 0))
+		return 0
+	var seat := int(unit.get("seat", -1))
+	var count := 0
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = token
+		if int(rec.get("owner_seat", -1)) == seat and int(rec.get("turns", 0)) > 0:
+			count += 1
+	return count
 
 
 func _kit_footer(unit: Dictionary) -> String:
@@ -1271,55 +1405,267 @@ func _sync_spell_buttons(offered: Array) -> void:
 		_spell_buttons.erase(spell_id)
 		_spell_hosts.erase(spell_id)
 		if is_instance_valid(host):
-			_action_bar.remove_child(host)
+			var parent := host.get_parent()
+			if parent != null:
+				parent.remove_child(host)
 			host.free()
-	var insert_idx := 0
-	if _walk_button != null and _walk_button.get_parent() == _action_bar:
-		insert_idx = _walk_button.get_index() + 1
+	var primary := TOUCH.primary_spell_id(offered_ids)
+	var arc: Array = []
+	for spell_id in offered_ids:
+		if spell_id != primary:
+			arc.append(spell_id)
 	for spell_id in offered_ids:
 		var def: Dictionary = SpellKits.spell(spell_id)
 		if def.is_empty():
 			continue
 		if not _spell_buttons.has(spell_id):
-			var host := Control.new()
-			host.custom_minimum_size = Vector2(152, 32)
-			host.mouse_filter = Control.MOUSE_FILTER_STOP
-			_bind_spell_hover(host, spell_id)
-			host.gui_input.connect(_on_spell_host_input.bind(spell_id))
-			var button := Button.new()
-			button.text = _spell_button_text(def)
-			button.clip_text = true
-			button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			button.pressed.connect(_on_spell_pressed.bind(spell_id))
-			button.button_down.connect(_begin_long_press.bind(spell_id))
-			button.button_up.connect(_cancel_long_press)
-			# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
-			_bind_spell_hover(button, spell_id)
-			host.add_child(button)
-			_action_bar.add_child(host)
-			_spell_buttons[spell_id] = button
-			_spell_hosts[spell_id] = host
-		_action_bar.move_child(_spell_hosts[spell_id], insert_idx)
-		insert_idx += 1
+			_create_spell_button(spell_id, def)
+	_layout_ability_cluster(primary, arc)
+	_sync_bottom_inset()
+
+
+func _create_spell_button(spell_id: String, def: Dictionary) -> void:
+	var host := Control.new()
+	host.mouse_filter = Control.MOUSE_FILTER_STOP
+	_bind_spell_hover(host, spell_id)
+	host.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	var button := Button.new()
+	button.text = _spell_button_text(def)
+	button.clip_text = true
+	button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	button.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	button.pressed.connect(_on_spell_pressed.bind(spell_id))
+	button.button_down.connect(_on_spell_button_down.bind(spell_id))
+	button.button_up.connect(_on_spell_button_up)
+	button.gui_input.connect(_on_spell_host_input.bind(spell_id))
+	# Enabled buttons are the hover target; greyed buttons IGNORE so the host still previews.
+	_bind_spell_hover(button, spell_id)
+	host.add_child(button)
+	_bind_ability_icon(button, spell_id, _spell_button_text(def))
+	if _ability_cluster != null:
+		_ability_cluster.add_child(host)
+	_spell_buttons[spell_id] = button
+	_spell_hosts[spell_id] = host
+
+
+func _layout_ability_cluster(primary: String, arc: Array) -> void:
+	if _ability_cluster == null:
+		return
+	var centers: Dictionary = TOUCH.cluster_centers(arc.size())
+	var primary_center: Vector2 = centers.get("primary", Vector2.ZERO)
+	var arc_centers: Array = centers.get("arc", [])
+	if primary != "" and _spell_hosts.has(primary):
+		_place_spell_host(primary, primary_center, true)
+	for i in arc.size():
+		var spell_id := str(arc[i])
+		if i < arc_centers.size() and _spell_hosts.has(spell_id):
+			_place_spell_host(spell_id, arc_centers[i], false)
+	_ability_cluster.visible = primary != "" or not arc.is_empty()
+
+
+func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void:
+	var host: Control = _spell_hosts[spell_id]
+	var size := TOUCH.cluster_button_size(primary)
+	host.custom_minimum_size = size
+	host.size = size
+	host.position = center - size * 0.5
+	host.set_meta("cluster_primary", primary)
+	var button: Button = _spell_buttons[spell_id]
+	button.add_theme_font_size_override("font_size", 15 if primary else 12)
+	button.set_meta("ability_fallback_text", _spell_button_text(SpellKits.spell(spell_id)))
+	_apply_circle_style(button, size.x, primary)
+
+
+func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void:
+	var fill := Color(0.62, 0.16, 0.2, 0.96) if primary else Color(0.15, 0.14, 0.2, 0.94)
+	var border := Color(1, 0.92, 0.72, 0.9) if primary else Color(1, 1, 1, 0.28)
+	button.add_theme_stylebox_override("normal", _circle_style(fill, diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("hover", _circle_style(fill.lightened(0.12), diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("pressed", _circle_style(fill.darkened(0.1), diameter, Color(0.98, 0.84, 0.4), 4))
+	button.add_theme_stylebox_override("focus", _circle_style(fill, diameter, border, 3 if primary else 2))
+	button.add_theme_stylebox_override("disabled", _circle_style(Color(0.28, 0.28, 0.32, 0.78), diameter, Color(1, 1, 1, 0.12), 2))
+	_sync_ability_icon(button)
+
+
+func _circle_style(fill: Color, diameter: float, border: Color, border_width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	var radius := int(round(diameter * 0.5))
+	box.corner_radius_top_left = radius
+	box.corner_radius_top_right = radius
+	box.corner_radius_bottom_left = radius
+	box.corner_radius_bottom_right = radius
+	box.border_color = border
+	box.border_width_left = border_width
+	box.border_width_top = border_width
+	box.border_width_right = border_width
+	box.border_width_bottom = border_width
+	box.content_margin_left = 6
+	box.content_margin_right = 6
+	box.content_margin_top = 6
+	box.content_margin_bottom = 6
+	return box
+
+
+func _sync_bottom_inset() -> void:
+	if _bottom_box == null:
+		return
+	var cluster_open := _ability_cluster != null and _ability_cluster.visible
+	_bottom_box.offset_right = -(TOUCH.CLUSTER_SIZE.x + 12.0) if cluster_open else -16.0
 
 
 func _spell_button_text(def: Dictionary) -> String:
-	return "%s  %dAP/%dMP" % [def["name"], int(def.get("ap", 0)), int(def.get("mp", 0))]
+	if def.is_empty():
+		return ""
+	var ap := int(def.get("ap", 0))
+	var mp := int(def.get("mp", 0))
+	if mp > 0:
+		return "%s\n%d AP\n%d MP" % [str(def.get("name", "")), ap, mp]
+	return "%s\n%d AP" % [str(def.get("name", "")), ap]
 
 
 ## Disabled buttons still hover via the host: ignore their mouse so the wrapper receives it.
 func _set_spell_button_clickable(button: Button, clickable: bool) -> void:
 	button.disabled = not clickable
 	button.mouse_filter = Control.MOUSE_FILTER_STOP if clickable else Control.MOUSE_FILTER_IGNORE
+	_sync_ability_icon(button)
+
+
+## res://art/ui/mobile/abilities/<spell_id>_icon.png and _icon_disabled.png.
+static func _ability_icon_path(spell_id: String, disabled: bool) -> String:
+	return "res://art/ui/mobile/abilities/%s_icon%s.png" % [spell_id, "_disabled" if disabled else ""]
+
+
+func _bind_ability_icon(button: Button, spell_id: String, fallback_text: String) -> void:
+	button.set_meta("ability_spell_id", spell_id)
+	button.set_meta("ability_fallback_text", fallback_text)
+	_ensure_ability_icon(button)
+	_sync_ability_icon(button)
+
+
+func _ensure_ability_icon(button: Button) -> TextureRect:
+	var existing := button.get_node_or_null("AbilityIcon")
+	if existing is TextureRect:
+		return existing as TextureRect
+	var icon := TextureRect.new()
+	icon.name = "AbilityIcon"
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	icon.offset_left = 8
+	icon.offset_top = 8
+	icon.offset_right = -8
+	icon.offset_bottom = -8
+	# No EXPAND_FIT in Godot 4.7. Ignore Size fills the circle; Keep Aspect Centered fits the stub.
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.visible = false
+	button.add_child(icon)
+	return icon
+
+
+func _load_ability_texture(spell_id: String, disabled: bool) -> Texture2D:
+	var path := _ability_icon_path(spell_id, disabled)
+	if path == "":
+		return null
+	if _ability_textures.has(path):
+		var cached: Variant = _ability_textures[path]
+		return cached as Texture2D if cached is Texture2D else null
+	var tex: Texture2D = null
+	if ResourceLoader.exists(path):
+		var res: Resource = ResourceLoader.load(path)
+		if res is Texture2D:
+			tex = res as Texture2D
+	_ability_textures[path] = tex
+	return tex
+
+
+## Disabled / illegal uses the _disabled stub. If that file is missing, keep the
+## enabled texture and let the button modulate grey it.
+func _ability_texture_for_state(spell_id: String, disabled: bool) -> Texture2D:
+	if disabled:
+		var off := _load_ability_texture(spell_id, true)
+		if off != null:
+			return off
+	return _load_ability_texture(spell_id, false)
+
+
+func _sync_ability_icon(button: Button) -> void:
+	if button == null or not is_instance_valid(button) or not button.has_meta("ability_spell_id"):
+		return
+	var spell_id := str(button.get_meta("ability_spell_id"))
+	var fallback := str(button.get_meta("ability_fallback_text", ""))
+	var icon := _ensure_ability_icon(button)
+	var tex := _ability_texture_for_state(spell_id, button.disabled)
+	if tex == null:
+		icon.texture = null
+		icon.visible = false
+		button.text = fallback
+		return
+	icon.texture = tex
+	icon.visible = true
+	button.text = ""
 
 
 func _on_walk_pressed() -> void:
 	select_walk()
 
 
+func _on_spell_button_down(spell_id: String) -> void:
+	_begin_long_press(spell_id)
+	_arm_spell_from_press(spell_id)
+
+
+func _on_spell_button_up() -> void:
+	_finish_touch_tooltip()
+	# pressed() runs in this same release when the finger is still on the button.
+	# A drag-off never emits pressed, so drop the toggle lock after that.
+	_press_release_token += 1
+	var token := _press_release_token
+	if is_inside_tree():
+		_clear_press_lock.call_deferred(token)
+
+
+func _clear_press_lock(token: int) -> void:
+	if token != _press_release_token:
+		return
+	_suppress_toggle_spell = ""
+	_press_gesture_armed = ""
+
+
+func _arm_spell_from_press(spell_id: String) -> void:
+	if not _spell_buttons.has(spell_id):
+		return
+	# Locked: Ambush arms only when legal_intents already has the cast.
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return
+	var button: Button = _spell_buttons[spell_id]
+	if button.disabled:
+		return
+	if _press_gesture_armed == spell_id:
+		return
+	if _selected_spell == spell_id:
+		_press_gesture_armed = ""
+		return
+	_press_gesture_armed = spell_id
+	_suppress_toggle_spell = spell_id
+	_selected_spell = spell_id
+	_refresh_spell_buttons()
+	_update_selected_label()
+	spell_selected.emit(_selected_spell)
+
+
 func _on_spell_pressed(spell_id: String) -> void:
 	if not _spell_buttons.has(spell_id):
 		return
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return
+	if _suppress_toggle_spell == spell_id:
+		_suppress_toggle_spell = ""
+		_press_gesture_armed = ""
+		_press_release_token += 1
+		return
+	_press_gesture_armed = ""
 	if _selected_spell == spell_id:
 		select_walk()
 		return
@@ -1334,13 +1680,50 @@ func _on_face_pressed(dir: String) -> void:
 
 
 func _refresh_spell_buttons() -> void:
+	_drop_illegal_ambush_selection()
 	_refresh_walk_button()
+	var legal_spells := legal_cast_ids(_last_legal)
+	var match_over := bool(_last_snap.get("match_over", false))
 	for spell_id in _spell_buttons.keys():
 		var button: Button = _spell_buttons[spell_id]
-		if _selected_spell == spell_id:
-			button.modulate = Color(1.15, 1.1, 0.7)
-		else:
-			button.modulate = Color.WHITE
+		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
+		_set_spell_button_clickable(button, can_submit)
+		_apply_spell_modulate(str(spell_id), button, can_submit)
+
+
+## Ambush gold / shade highlight only while the cast is in legal_intents.
+## Otherwise the button stays soft-grey, including after another spell is tapped.
+func _apply_spell_modulate(spell_id: String, button: Button, can_submit: bool) -> void:
+	if _stunned:
+		button.modulate = STUN_GREY
+		return
+	if spell_id == SpellKits.AMBUSH and not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		button.modulate = AMBUSH_DISARMED_MODULATE
+		return
+	if _selected_spell == spell_id:
+		button.modulate = Color(1.15, 1.1, 0.7)
+		return
+	if spell_id == SpellKits.AMBUSH and can_submit:
+		button.modulate = AMBUSH_SHADE_MODULATE
+		return
+	if can_submit:
+		button.modulate = Color(1, 1, 1, 1)
+		return
+	button.modulate = Color(1, 1, 1, 0.72)
+
+
+func _drop_illegal_ambush_selection() -> void:
+	if _selected_spell != SpellKits.AMBUSH:
+		return
+	if legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return
+	_selected_spell = ""
+	_aim_hit_chance = -1
+	_press_gesture_armed = ""
+	_suppress_toggle_spell = ""
+	if _aim_hit_label != null:
+		_aim_hit_label.text = ""
+		_aim_hit_label.visible = false
 
 
 func _refresh_walk_button() -> void:
@@ -1368,7 +1751,7 @@ func _update_selected_label() -> void:
 		_selected_label.text = "Stunned — turn auto-ends"
 		return
 	if _selected_spell == "":
-		_selected_label.text = "Selected: Walk  ·  click a destination  ·  right-click to face"
+		_selected_label.text = _with_shade_tip("Selected: Walk  ·  tap a destination  ·  Face pad turns")
 		return
 	var def: Dictionary = SpellKits.spell(_selected_spell)
 	var text := "Selected: %s  ·  %d AP / %d MP  ·  %s" % [
@@ -1379,8 +1762,16 @@ func _update_selected_label() -> void:
 	]
 	if bool(def.get("rolls", false)) and _aim_hit_chance >= 0:
 		text += "  ·  %s" % aim_hit_caption(_aim_hit_chance)
-	text += "  ·  Walk / Esc to cancel"
-	_selected_label.text = text
+	text += "  ·  tap a cell  ·  Walk / Esc to cancel"
+	_selected_label.text = _with_shade_tip(text)
+
+
+func _with_shade_tip(text: String) -> String:
+	# A live Shade, or a forced selection, is not the cue. The tip appears
+	# only when legal_intents already contains an Ambush cast.
+	if not legal_cast_ids(_last_legal).has(SpellKits.AMBUSH):
+		return text
+	return "%s  ·  %s" % [text, AMBUSH_SHADE_TIP]
 
 
 func show_spell_tooltip(spell_id: String) -> void:
@@ -1453,6 +1844,7 @@ func _as_cell(value: Variant) -> Vector2i:
 
 func hide_spell_tooltip() -> void:
 	_tooltip_spell = ""
+	_tooltip_pinned = false
 	_cancel_long_press()
 	if _tooltip_panel != null:
 		_tooltip_panel.visible = false
@@ -1470,25 +1862,88 @@ func tooltip_caption() -> String:
 	return _tooltip_label.text
 
 
+func tooltip_pinned() -> bool:
+	return _tooltip_pinned
+
+
+## Board touch dismisses a card that was opened by a finger, not a mouse hover.
+func dismiss_pinned_tooltip() -> void:
+	if _tooltip_pinned:
+		hide_spell_tooltip()
+
+
 func _bind_spell_hover(control: Control, spell_id: String) -> void:
 	control.mouse_entered.connect(_on_spell_hover.bind(spell_id))
 	control.mouse_exited.connect(_on_spell_unhover)
 
 
 func _on_spell_hover(spell_id: String) -> void:
+	if _hover_suppressed:
+		return
 	show_spell_tooltip(spell_id)
 
 
 func _on_spell_unhover() -> void:
+	# A touch card stays until Walk, a cell tap, or another explicit dismiss.
+	if _tooltip_pinned:
+		return
 	hide_spell_tooltip()
 
 
+func claims_screen_point(point: Vector2) -> bool:
+	if not is_inside_tree():
+		return false
+	for spell_id in _spell_hosts.keys():
+		if _control_claims(_spell_hosts[spell_id], point):
+			return true
+	if _control_claims(_walk_button, point):
+		return true
+	if _control_claims(_end_turn_button, point):
+		return true
+	if _control_claims(_new_match_button, point):
+		return true
+	if _control_claims(_ready_p1_button, point):
+		return true
+	if _control_claims(_ready_p2_button, point):
+		return true
+	for button in _face_buttons.values():
+		if _control_claims(button, point):
+			return true
+	return false
+
+
+func _control_claims(control: Control, point: Vector2) -> bool:
+	if control == null or not is_instance_valid(control) or not control.visible:
+		return false
+	if not control.is_inside_tree():
+		return false
+	return control.get_global_rect().has_point(point)
+
+
 func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
-	if event is InputEventScreenTouch:
-		if event.pressed:
-			_begin_long_press(spell_id)
+	if TOUCH.is_emulated_mouse(event):
+		return
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		var screen_pos := TOUCH.pointer_position(event)
+		var committing := TOUCH.is_touch_release(event)
+		if event is InputEventScreenTouch:
+			var touch := event as InputEventScreenTouch
+			if touch.index != 0:
+				return
+			if touch.pressed:
+				# Tap arms only. The card waits for the long-press timer.
+				hide_spell_tooltip()
+				_hover_suppressed = true
+				_arm_spell_from_press(spell_id)
+				_begin_long_press(spell_id, true)
+			else:
+				_on_spell_button_up()
+		elif (event as InputEventScreenDrag).index != 0:
+			return
 		else:
-			_cancel_long_press()
+			_drop_hold_if_finger_left(spell_id, screen_pos)
+		if _selected_spell != "":
+			aim_dragged.emit(screen_pos, committing)
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
@@ -1497,16 +1952,42 @@ func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
 			_cancel_long_press()
 
 
-func _begin_long_press(spell_id: String) -> void:
+func _begin_long_press(spell_id: String, from_touch: bool = false) -> void:
+	# Emulated mouse button_down follows the finger and must not reset the hold.
+	if _long_press_spell == spell_id and _long_press_touch and not from_touch:
+		return
 	_long_press_spell = spell_id
+	_long_press_touch = from_touch
 	_long_press_elapsed = 0.0
 	set_process(true)
 
 
 func _cancel_long_press() -> void:
 	_long_press_spell = ""
+	_long_press_touch = false
 	_long_press_elapsed = 0.0
 	set_process(false)
+
+
+## Finger up. Drops a hold card. Mouse hover cards stay unpinned.
+func _finish_touch_tooltip() -> void:
+	var dismiss_hold_card := _tooltip_pinned
+	_cancel_long_press()
+	_hover_suppressed = false
+	if dismiss_hold_card:
+		hide_spell_tooltip()
+
+
+## A drag off the circle is aim, not a hold. Keep the card off the board.
+func _drop_hold_if_finger_left(spell_id: String, screen_pos: Vector2) -> void:
+	var host: Control = _spell_hosts.get(spell_id)
+	if host == null or not is_instance_valid(host) or not host.visible:
+		return
+	if host.get_global_rect().has_point(screen_pos):
+		return
+	_cancel_long_press()
+	if _tooltip_pinned:
+		hide_spell_tooltip()
 
 
 func show_toast(text: String) -> void:
@@ -1571,6 +2052,9 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_face_bar.visible = not deploying
 	for button in _face_buttons.values():
 		(button as Button).visible = not deploying
+	if _ability_cluster != null and deploying:
+		_ability_cluster.visible = false
+	_sync_bottom_inset()
 
 
 func deploy_chrome_visible() -> bool:

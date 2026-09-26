@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 func _finish_live() -> void:
 	await _test_live_director()
+	await _test_shade_markers_survive_rebuild()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -303,17 +304,21 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 		"seat": 0,
 		"target_seat": 1,
 		"caster_cell": Vector2i(1, 1),
-		"to": Vector2i(4, 4),
+		"from": Vector2i(4, 4),
+		"to": Vector2i(5, 4),
 		"origin": Vector2i(2, 4),
-		"destination": Vector2i(4, 4),
+		"destination": Vector2i(5, 4),
 		"teleported": true,
 		"backstab": true,
 		"facing_mult": 1.35,
 		"damage": 30,
+		"shade_retained": false,
 	}])
-	eq(_first(ambush, "projectile")["from"], Vector2i(2, 4), "Ambush streak starts at origin")
-	eq(_first(ambush, "projectile")["to"], Vector2i(4, 4), "Ambush streak ends at destination")
-	eq(int(_first(ambush, "slide")["seat"]), 0, "Ambush moves the caster, not the target")
+	eq(_first(ambush, "projectile")["from"], Vector2i(2, 4), "Ambush streak starts at the Shade origin")
+	eq(_first(ambush, "projectile")["to"], Vector2i(5, 4), "Ambush streak ends at the back tile")
+	eq(_has(ambush, "slide"), false, "Ambush teleports; the body does not path from Gloam")
+	eq(_first(ambush, "number")["cell"], Vector2i(4, 4), "BACKSTAB number sits on the enemy")
+	eq(_first(ambush, "status_flash")["cell"], Vector2i(4, 4), "the slash sits on the enemy")
 	var ambush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",
 		"spell": "ambush",
@@ -463,6 +468,13 @@ func _test_every_event_type() -> void:
 		eq(recipes is Array, true, "router returns recipes for %s" % str(sample.get("type", "empty")))
 	var mixed: Array = ROUTER.recipes_for([null, "nope", 3, {"type": "hit", "spell": "cut", "damage": 13, "seat": 0, "target_seat": 1, "to": Vector2i(2, 2), "caster_cell": Vector2i(1, 2)}])
 	truthy(_has(mixed, "spark"), "non-dictionary entries are skipped")
+	var shade_cast: Array = ROUTER.recipes_for([samples[3]])
+	eq(_has(shade_cast, "ring"), false, "Drop Shade does not leave a shader puddle")
+	eq(_first(shade_cast, "number")["text"], "Shade", "Drop Shade floater says Shade")
+	eq(_first(shade_cast, "number")["cell"], Vector2i(2, 2), "Shade floater cell is the clicked tile")
+	eq(_first(shade_cast, "puff")["cell"], Vector2i(2, 2), "Shade puff cell is the clicked tile")
+	eq(_first(shade_cast, "number").get("scale", 1.0) >= 1.5, true, "Drop Shade floater is larger than a resource pip")
+	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
 	var wall: Array = ROUTER.recipes_for([samples[6]])
@@ -533,10 +545,23 @@ func _test_live_director() -> void:
 	eq(director.pool_size("number"), BUDGET.POOL_NUMBER, "combat playback does not grow the number pool")
 	eq(director.pool_size("ring"), BUDGET.POOL_RING, "combat playback does not grow the ring pool")
 	director.dismiss_all()
+	var caster_script := GDScript.new()
+	caster_script.source_code = "extends Node2D\nvar grid_position: Vector2i = Vector2i.ZERO\n"
+	eq(caster_script.reload() == OK, true, "caster stub compiles")
+	var caster := Node2D.new()
+	caster.set_script(caster_script)
+	caster.grid_position = Vector2i(1, 1)
+	caster.position = board.call("_cell_to_local", Vector2i(1, 1))
+	board.add_child(caster)
+	board.pawns_by_seat[0] = caster
 	var shade_snap := {
 		"units": [],
 		"shade_tokens": [{"pos": Vector2i(2, 2), "turns": 3, "owner_seat": 0}],
 	}
+	director.dismiss_all()
+	for child in director.get_children():
+		if str(child.name).begins_with("puff") and child.has_method("release"):
+			child.release()
 	director.play([{
 		"type": "cast",
 		"spell": "drop_shade",
@@ -544,7 +569,25 @@ func _test_live_director() -> void:
 		"caster_cell": Vector2i(1, 1),
 		"to": Vector2i(2, 2),
 	}], shade_snap)
-	eq(director.linger_count() >= 1, true, "a shade token becomes a lingering ring")
+	var shade_at: Vector2 = director._pos_cell(Vector2i(2, 2))
+	var floater := _effect_pos(director, "number", "Shade")
+	eq(floater, shade_at + BUDGET.HEAD_OFFSET, "Shade floater draws on the clicked tile")
+	eq(floater == caster.position + BUDGET.HEAD_OFFSET, false, "Shade floater does not draw on the caster")
+	eq(_effect_pos(director, "puff", ""), shade_at, "Shade puff draws on the clicked tile")
+	eq(director.linger_count(), 0, "a shade token is not a shader linger")
+	var marker_src := FileAccess.get_file_as_string("res://board/shade_marker.gd")
+	var board_src := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(marker_src.contains("Shade"), "the board marker labels the token")
+	truthy(marker_src.contains("neutral_shade_token.png"), "the marker draws the TA Shade token")
+	truthy(marker_src.contains("neutral_shade_tile_marker.png"), "the marker draws the TA tile decal")
+	var marker_script: Script = load("res://board/shade_marker.gd")
+	var cloak_top := float(marker_script.world_y(marker_script.CLOAK_TOP_SRC_Y))
+	var plate_y := float(marker_script.plate_baseline_y())
+	eq(plate_y < cloak_top, true, "Shade label sits above the cloak")
+	eq(cloak_top - plate_y < 32.0, true, "Shade label stays on the clicked tile")
+	truthy(board_src.contains("_sync_shade_markers"), "refresh places the shade on the tile")
+	truthy(board_src.contains("ShadeMarkers"), "the shade token is not parented under Units")
+	eq(board_src.contains("$Units.add_child(marker)"), false, "sync does not attach the marker to Units")
 	director.play([{
 		"type": "expire",
 		"status": "shade",
@@ -584,6 +627,11 @@ func _test_live_director() -> void:
 	board.queue_free()
 
 
+func _test_shade_markers_survive_rebuild() -> void:
+	var live := load("res://tests/shade_marker_live.gd")
+	await live.run(self)
+
+
 func _test_class_choreography() -> void:
 	var caster := Vector2i(2, 3)
 	var foe := Vector2i(4, 3)
@@ -605,6 +653,11 @@ func _test_class_choreography() -> void:
 	eq(int(_first(marked, "status_on")["seat"]), 1, "Marks sit on the target seat")
 	eq(_first(marked, "status_on")["cell"], foe, "Mark cells stay Vector2i")
 	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
+	eq(bool(_first(marked, "projectile").get("hand", false)), true, "Mark Shot emits from the hand")
+	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.2, true, "Mark Shot waits for the release frame")
+	eq(_has(marked, "puff"), false, "Mark Shot does not puff from the feet")
+	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("cut", 13)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("gloam", "attack")), true, "Cut spark waits for the slash frame")
+	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("detonate", 12)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("kestrel", "cast")), true, "Detonate spark waits for the cast frame")
 	var stacked: Array = ROUTER.recipes_for([{
 		"type": "hit",
 		"spell": "mark_shot",
@@ -631,7 +684,7 @@ func _test_class_choreography() -> void:
 	}])
 	eq(int(_first(boom, "spark")["amount"]), 16, "Detonate scales the burst with marks consumed")
 	eq(_first(boom, "status_off")["status"], "marks", "Detonate clears Marks when none remain")
-	eq(_has(boom, "shake"), false, "Detonate still does not shake")
+	eq(float(_first(boom, "shake")["amplitude"]), 4.0, "Detonate at 24 is a heavy hit and shakes")
 	eq(_first(boom, "number")["text"], "24", "Detonate still leads with the damage number")
 	var kept: Array = ROUTER.recipes_for([{
 		"type": "miss",
@@ -938,6 +991,18 @@ func _all(recipes: Array, id: String) -> Array:
 		if str(item.get("id", "")) == id:
 			out.append(item)
 	return out
+
+
+func _effect_pos(director: Node, kind: String, text: String) -> Vector2:
+	for child in director.get_children():
+		if child == null or not str(child.name).begins_with(kind):
+			continue
+		if not bool(child.get("in_use")):
+			continue
+		if text != "" and str(child.get("_text")) != text:
+			continue
+		return child.position
+	return Vector2(-9999, -9999)
 
 
 func _first(recipes: Array, id: String) -> Dictionary:

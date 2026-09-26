@@ -38,7 +38,8 @@ func _test_routes() -> void:
 	eq(_script.route_for_plan(net.plan_from_args(PackedStringArray(["--host", "7777"]))), "board", "--host skips the picker")
 	eq(_script.route_for_plan(net.plan_from_args(PackedStringArray([]))), "picker", "no flags show the picker")
 	var project := FileAccess.get_file_as_string("res://project.godot")
-	truthy(project.contains("res://scenes/class_select.tscn"), "main scene is the class select screen")
+	truthy(project.contains('run/main_scene="res://scenes/mobile_hub.tscn"'), "F5 boots the Koliseo-only hub")
+	truthy(FileAccess.file_exists("res://scenes/class_select.tscn"), "Koliseo still uses the class select scene")
 
 
 func _test_roles_and_art() -> void:
