@@ -120,7 +120,7 @@ func _test_back_and_backstab() -> void:
 		"facing_mult": 1.35,
 	}])
 	eq(_first(stab, "number")["text"], "BACKSTAB 18", "backstab hits prefix BACKSTAB")
-	eq(is_equal_approx(float(_first(stab, "number")["scale"]), 1.3), true, "backstab numbers scale to 1.3")
+	eq(is_equal_approx(float(_first(stab, "number")["scale"]), 1.55), true, "backstab numbers are the large float")
 
 
 func _test_push_block_bounce() -> void:
@@ -332,6 +332,11 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	}])
 	eq(_has(ambush_miss, "slide"), false, "an Ambush miss does not teleport")
 	eq(_first(ambush_miss, "number")["text"], "MISS", "an Ambush miss still shows MISS")
+	eq(_first(ambush_miss, "projectile")["from"], Vector2i(2, 4), "an Ambush miss whiff starts at the Shade")
+	eq(_first(ambush_miss, "projectile")["from"] == Vector2i(1, 1), false, "an Ambush miss does not streak from Gloam's body")
+	eq(_first(ambush_miss, "projectile")["to"], Vector2i(4, 3), "an Ambush miss whiff points at the enemy")
+	eq(float(_first(ambush_miss, "projectile").get("overshoot", 1.0)), 0.0, "an Ambush miss does not overshoot into a dash")
+	eq(float(_first(ambush_miss, "projectile").get("arc", 1.0)), 0.0, "an Ambush miss whiff is not an arcing body path")
 	var intercept: Array = ROUTER.recipes_for([{
 		"type": "intercept",
 		"interceptor_seat": 0,
@@ -474,7 +479,8 @@ func _test_every_event_type() -> void:
 	eq(_first(shade_cast, "number")["cell"], Vector2i(2, 2), "Shade floater cell is the clicked tile")
 	eq(_first(shade_cast, "puff")["cell"], Vector2i(2, 2), "Shade puff cell is the clicked tile")
 	eq(_first(shade_cast, "number").get("scale", 1.0) >= 1.5, true, "Drop Shade floater is larger than a resource pip")
-	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
+	eq(_first(shade_cast, "number").get("outline"), VfxPalette.GLOAM, "the Shade label uses a purple outline")
+	eq(_has(shade_cast, "projectile"), false, "Drop Shade pops on the tile and does not travel")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
 	var wall: Array = ROUTER.recipes_for([samples[6]])

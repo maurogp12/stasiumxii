@@ -883,6 +883,119 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	return out
 
 
+func _aim_hidden() -> Dictionary:
+	return {
+		"show": false,
+		"from": UNPLACED,
+		"to": UNPLACED,
+		"from_shade": false,
+		"float_text": "",
+		"float_cell": UNPLACED,
+		"kind": "",
+	}
+
+
+func _legal_has_cast(seat: int, spell_id: String) -> bool:
+	for intent in legal_intents(seat):
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
+			return true
+	return false
+
+
+## Presentation only. Dashed aim line and the predicted float. Does not roll,
+## spend, or move a body. Ambush is drawn from the legal origin (the Shade,
+## or Gloam while Invisible) and only while that cast is in legal_intents.
+## Other spells draw from the caster to the hovered in-range cell.
+func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return _aim_hidden()
+	if spell_id == "" or not SpellKits.has_spell(str(actor.get("class_id", "")), spell_id):
+		return _aim_hidden()
+	var def: Dictionary = SpellKits.spell(spell_id)
+	if def.is_empty():
+		return _aim_hidden()
+	if spell_id == SpellKits.AMBUSH:
+		return _ambush_aim_feel(seat, actor, def)
+	if spell_id == SpellKits.ADVANCE or hover == null:
+		return _aim_hidden()
+	var from_cell: Vector2i = actor["pos"]
+	var cell := _as_cell(hover)
+	if not _in_spell_range(def, from_cell, cell):
+		return _aim_hidden()
+	var floated: Dictionary = _aim_float(actor, _living_unit_at(cell), def, from_cell)
+	var text := str(floated.get("text", ""))
+	if from_cell == cell and text == "":
+		return _aim_hidden()
+	return {
+		"show": true,
+		"from": from_cell,
+		"to": cell,
+		"from_shade": false,
+		"float_text": text,
+		"float_cell": cell,
+		"kind": str(floated.get("kind", "")),
+	}
+
+
+## Ambush aim is the one legal body. The line leaves the Shade (Gloam only
+## while Invisible). The float is the connect sample from the back tile,
+## including Backstab, using the same Phase A product as the hit.
+func _ambush_aim_feel(seat: int, actor: Dictionary, def: Dictionary) -> Dictionary:
+	if not _legal_has_cast(seat, SpellKits.AMBUSH):
+		return _aim_hidden()
+	var origin: Dictionary = ambush_origin(seat)
+	if not bool(origin.get("show", false)):
+		return _aim_hidden()
+	var enemy := _enemy_of(seat)
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return _aim_hidden()
+	var landing: Dictionary = _ambush_landing(actor, enemy)
+	if not bool(landing.get("ok", false)):
+		return _aim_hidden()
+	var mult := SpellKits.BACKSTAB_MULT if bool(landing.get("backstab", false)) else FRONT_SIDE_FACING
+	var amount := _phase_a_damage(int(def.get("base_damage", 22)), mult)
+	if amount <= 0:
+		return _aim_hidden()
+	return {
+		"show": true,
+		"from": origin["origin"],
+		"to": enemy["pos"],
+		"from_shade": not bool(origin.get("from_self", false)),
+		"float_text": "-%d" % amount,
+		"float_cell": enemy["pos"],
+		"kind": "damage",
+	}
+
+
+## Predicted connect text for the hovered body. Heals use the support formula.
+## Damage uses preview_cast's Phase A sample. Neither call spends or rolls.
+func _aim_float(actor: Dictionary, target: Dictionary, def: Dictionary, from_cell: Vector2i) -> Dictionary:
+	var empty := {"text": "", "kind": ""}
+	if target.is_empty() or not bool(target.get("alive", false)):
+		return empty
+	var same := int(target.get("seat", -2)) == int(actor.get("seat", -1))
+	if same and int(def.get("base_heal", 0)) > 0:
+		var healed := _support_heal_amount(actor, target, def)
+		if healed <= 0:
+			return empty
+		return {"text": "+%d" % healed, "kind": "heal"}
+	if same and int(def.get("shield", 0)) > 0 and int(def.get("base_damage", 0)) <= 0:
+		return {"text": "+%d" % int(def.get("shield", 0)), "kind": "shield"}
+	if same:
+		return empty
+	var spell_id := str(def.get("id", ""))
+	var preview: Dictionary = preview_cast(spell_id, from_cell, target["pos"], int(target.get("seat", -1)))
+	if preview.get("sample_damage", null) == null:
+		return empty
+	var amount := int(preview["sample_damage"])
+	if amount <= 0:
+		return empty
+	return {"text": "-%d" % amount, "kind": "damage"}
+
+
 ## Read-only cast preview. Does not mutate match state, RNG, or the intent log.
 ## Call as preview_cast(spell_id, from, to, target_seat=-1) or with an intent Dictionary
 ## (keys: spell / spell_id, from, to, target_seat, seat). Crit roll stays OFF.

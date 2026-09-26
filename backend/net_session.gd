@@ -427,6 +427,13 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	return local_sim.aim_hit_preview(seat, spell_id, dest)
 
 
+func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
+	var local_sim := sim()
+	if local_sim == null or not local_sim.has_method("aim_feel"):
+		return {}
+	return local_sim.aim_feel(seat, spell_id, hover)
+
+
 func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = null, target_seat: int = -1) -> Dictionary:
 	var local_sim := sim()
 	if local_sim == null:

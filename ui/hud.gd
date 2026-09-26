@@ -923,7 +923,9 @@ func _build() -> void:
 
 	_selected_label = Label.new()
 	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_label.add_theme_font_size_override("font_size", 16)
+	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_selected_label.custom_minimum_size = Vector2(0, 40)
+	_selected_label.add_theme_font_size_override("font_size", 18)
 	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	bottom.add_child(_selected_label)
 

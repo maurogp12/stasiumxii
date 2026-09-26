@@ -5,6 +5,7 @@ extends "res://vfx/vfx_pooled.gd"
 var _text: String = ""
 var _top: Color = VfxPalette.DAMAGE_TOP
 var _bottom: Color = VfxPalette.DAMAGE_BOTTOM
+var _outline: Color = VfxPalette.NUMBER_OUTLINE
 var _font_size: int = VfxBudget.NUMBER_SIZE
 var _rise: Tween
 
@@ -19,6 +20,9 @@ func play(spec: Dictionary) -> void:
 	if spec.has("tint") and spec["tint"] is Color:
 		_top = spec["tint"]
 		_bottom = _top.darkened(0.28)
+	_outline = VfxPalette.NUMBER_OUTLINE
+	if spec.has("outline") and spec["outline"] is Color:
+		_outline = spec["outline"]
 	_font_size = int(colors["size"])
 	var pop := float(spec.get("scale", 1.0))
 	rotation = deg_to_rad(randf_range(-VfxBudget.NUMBER_TILT_DEG, VfxBudget.NUMBER_TILT_DEG))
@@ -33,6 +37,8 @@ func play(spec: Dictionary) -> void:
 		_tween.tween_interval(delay)
 	_tween.tween_callback(_show_pop)
 	_tween.tween_property(self, "scale", Vector2(1.45, 1.45) * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	if pop >= 1.25:
+		_tween.tween_property(self, "scale", Vector2(0.86, 0.86) * pop, 0.08).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_tween.tween_property(self, "scale", Vector2.ONE * pop, VfxBudget.NUMBER_POP_SEC * 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	_rise = create_tween()
 	if delay > 0.0:
@@ -73,6 +79,6 @@ func _draw() -> void:
 		for oy in range(-4, 5, 2):
 			if ox == 0 and oy == 0:
 				continue
-			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_OUTLINE)
+			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _outline)
 	font.draw_string(get_canvas_item(), baseline + Vector2(0, -3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
 	font.draw_string(get_canvas_item(), baseline, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _bottom)

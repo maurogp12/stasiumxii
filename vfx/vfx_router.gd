@@ -340,14 +340,25 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("to") or event.has("caster_cell"):
+		var whiff_from := caster_cell
+		var whiff_arc := 10.0
+		var whiff_overshoot := 12.0
+		var whiff_duration := 0.22
+		# Ambush miss keeps the body put. The whiff leaves the Shade (or
+		# Gloam, while Invisible), not a dash along the old path.
+		if spell_id == "ambush" and event.has("origin"):
+			whiff_from = cell_of(event.get("origin"))
+			whiff_arc = 0.0
+			whiff_overshoot = 0.0
+			whiff_duration = VfxBudget.BLOCK_BLINK
 		var whiff := {
 			"id": "projectile",
 			"block": 0.0,
-			"from": caster_cell,
+			"from": whiff_from,
 			"to": at,
-			"arc": 10.0,
-			"overshoot": 12.0,
-			"duration": 0.22,
+			"arc": whiff_arc,
+			"overshoot": whiff_overshoot,
+			"duration": whiff_duration,
 			"tint": tint,
 			"width": 3.0,
 		}
@@ -581,7 +592,7 @@ static func _back_tag(row: Dictionary) -> Dictionary:
 	if not back:
 		return {}
 	if backstab or mult >= 1.3:
-		return {"tag": "BACKSTAB", "scale": 1.3}
+		return {"tag": "BACKSTAB", "scale": 1.55}
 	return {"tag": "BACK", "scale": 1.15}
 
 
@@ -798,9 +809,11 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
-				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 30.0, 0.22, 5.5))
+				# Snappy board piece. No travel from Gloam to the tile.
 				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 1.15))
-				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.65, "", VfxPalette.GLOAM_RIM))
+				var shade_label := _number(caster, to_cell, "Shade", "resource", 0.0, 1.65, "", VfxPalette.GLOAM_RIM)
+				shade_label["outline"] = VfxPalette.GLOAM
+				out.append(shade_label)
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))

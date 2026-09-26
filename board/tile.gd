@@ -11,6 +11,8 @@ const _KoliseoArt := preload("res://board/koliseo_art.gd")
 const OVERLAY_Z: int = 1
 const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
+## Ambush back-tile chrome. Blue so the legal landing is not another gold range cell.
+const LEGAL_BLUE := Color(0.32, 0.66, 0.98, 1.0)
 
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
@@ -214,12 +216,17 @@ func _highlight_flat_color() -> Color:
 			color = Color(0.72, 0.58, 0.95, 1.0)
 		"range":
 			color = Color(0.95, 0.78, 0.32, 1.0)
+		"legal":
+			# Ambush's Manhattan 1–2 cardinal cross, measured from the Shade.
+			color = LEGAL_BLUE
 		"target":
 			color = Color(0.95, 0.55, 0.28, 1.0)
 		"origin":
 			color = Color(0.72, 0.32, 1.0, 1.0)
 		"landing":
-			color = Color(0.86, 0.62, 1.0, 1.0)
+			# Rosebud legal cell. The back tile reads blue, measured from the
+			# Shade (or from Gloam while Invisible). Not a kit number.
+			color = LEGAL_BLUE
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":
