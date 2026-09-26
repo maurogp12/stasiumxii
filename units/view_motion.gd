@@ -254,9 +254,12 @@ static func target_motion(flash_kind: String) -> String:
 	return ""
 
 
-## Mark Shot bolt travel after the release frame. Same length as
+## Mark Shot bolt travel after the bow windup. Same length as
 ## VfxRouter.MARK_FLIGHT_SEC. Kept here so the flinch does not import VFX.
 const MARK_BOLT_SEC := 0.18
+## Bow windup before the bolt, including the release flash. Same length as
+## the cast stamp holds (70 + 80 + 80 + 70 ms). Not tile time.
+const MARK_WINDUP_SEC := 0.30
 
 
 ## Seconds from the caster motion (or the Ambush slash, which is armed on the
@@ -271,7 +274,7 @@ static func damage_resolve_sec(spell_id: String) -> float:
 		SpellKits.AMBUSH:
 			return ambush_contact_sec()
 		SpellKits.MARK_SHOT:
-			return StripLibrary.release_sec("kestrel", "cast_mark") + MARK_BOLT_SEC
+			return MARK_WINDUP_SEC + MARK_BOLT_SEC
 		SpellKits.DETONATE:
 			return StripLibrary.release_sec("kestrel", "cast")
 		_:

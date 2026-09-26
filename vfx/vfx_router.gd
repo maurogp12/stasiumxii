@@ -8,8 +8,9 @@ const SHAKE_SPELLS := ["crush", "aegis_break"]
 const STRIPS := preload("res://units/strip_library.gd")
 ## Camera shake on heavy connects. Crush and Aegis Break always shake.
 const HEAVY_HIT_DAMAGE := 20
-## Mark Shot bolt travel after the release frame. The impact stamp lands then.
+## Mark Shot bolt travel after the bow windup. The impact stamp lands then.
 const MARK_FLIGHT_SEC := 0.18
+const STAMP := preload("res://vfx/vfx_stamp.gd")
 
 
 ## Departure dust for a successful Ambush. The board plays this when the
@@ -403,7 +404,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 			whiff["hand"] = true
 			whiff["seat"] = caster_seat
 		if spell_id == "mark_shot":
-			whiff["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
+			whiff["delay"] = _mark_windup_sec()
 		elif spell_id == "detonate":
 			whiff["delay"] = STRIPS.release_sec("kestrel", "cast")
 		out.append(whiff)
@@ -761,7 +762,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, MARK_FLIGHT_SEC, 2.5)
 				bolt["hand"] = true
 				bolt["seat"] = caster
-				bolt["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
+				bolt["delay"] = _mark_windup_sec()
 				out.append(bolt)
 				# Rings and the burst sit on the tile. The bolt still leaves the weapon.
 				var impact := _stamp("mark_shot_impact", target, to_cell, _mark_impact_delay(), VfxBudget.STAMP_MARK_PX, VfxBudget.STAMP_SPELL_LIFE)
@@ -950,13 +951,17 @@ static func _removed_stun(event: Dictionary) -> bool:
 	return removed is Array and removed.has("stun")
 
 
+static func _mark_windup_sec() -> float:
+	return STAMP.windup_sec("mark_shot_cast")
+
+
 static func _mark_impact_delay() -> float:
-	return STRIPS.release_sec("kestrel", "cast_mark") + MARK_FLIGHT_SEC
+	return _mark_windup_sec() + MARK_FLIGHT_SEC
 
 
-## Four bow cells. The release flash is the last one, so it opens when the bolt leaves.
+## The four holds, including the release flash. The bolt is the next tick.
 static func _mark_cast_life() -> float:
-	return STRIPS.release_sec("kestrel", "cast_mark") * 4.0 / 3.0
+	return _mark_windup_sec()
 
 
 static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictionary:

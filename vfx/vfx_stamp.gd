@@ -5,8 +5,9 @@ extends "res://vfx/vfx_pooled.gd"
 ## variable-width frames on a shared row. Detonate stays one hero plate.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
-## Mark Shot cast is the bow windup: four cells, string spark through the
-## release flash. The shared band is the bow, upper-mid of the plate.
+## Mark Shot cast is four equal cells: spark, draw, peak reticle, release
+## flash. Holds are absolute seconds. A longer life does not stretch them.
+## The bow ink sits above the cell center, so the offset drops it onto the hands.
 ## CombatSim never reads this file.
 
 const SHEETS := {
@@ -19,8 +20,23 @@ const SHEETS := {
 }
 
 ## Equal grids. Punch-v2 strips are not equal cells, so they live in STRIPS.
+## Mark Shot cast is four equal cells across the plate.
 ## A sheet missing from both maps is one hero plate.
-const GRIDS := {}
+const GRIDS := {
+	"mark_shot_cast": Vector2i(4, 1),
+}
+
+## Locked bow windup, in milliseconds. 70 + 80 + 80 + 70 = 300.
+## Integers so the snap does not drift past 0.30s. Not tile time, not the body clip.
+const FRAME_MS := {
+	"mark_shot_cast": [70, 80, 80, 70],
+}
+
+## Texture pixels that move the bow ink (above the cell center) onto the
+## hand anchor. Positive Y drops the ink. The feet stay empty.
+const INK_OFFSET := {
+	"mark_shot_cast": Vector2(0, 26),
+}
 
 ## Measured opaque frames, left to right, with a shared vertical band so a
 ## shrinking frame stays planted instead of drifting. Padding keeps the
@@ -54,15 +70,6 @@ const STRIPS := {
 		Rect2(966, 283, 136, 145),
 		Rect2(1124, 283, 126, 145),
 	],
-	# Bow windup. Shared band keeps the string, reticle, and release flash
-	# on one center (upper-mid of the plate), so a wider cell does not drop
-	# the bow toward the feet.
-	"mark_shot_cast": [
-		Rect2(112, 45, 91, 179),
-		Rect2(405, 45, 125, 179),
-		Rect2(684, 45, 179, 179),
-		Rect2(1090, 45, 190, 179),
-	],
 	# Floor rings opening into the burst, then closing. Not the sigil row.
 	"mark_shot_impact": [
 		Rect2(42, 112, 105, 211),
@@ -85,6 +92,7 @@ var _span: float = 0.2
 var _peak: float = 1.0
 var _base_scale: float = 1.0
 var _sheet: String = ""
+var _holds: Array = []
 var _frames: int = 1
 var _cols: int = 1
 var _rows: int = 1
@@ -109,10 +117,46 @@ static func grid_for(sheet: String) -> Vector2i:
 
 
 static func frame_count(sheet: String) -> int:
+	if FRAME_MS.has(sheet):
+		return (FRAME_MS[sheet] as Array).size()
 	if STRIPS.has(sheet):
 		return (STRIPS[sheet] as Array).size()
 	var grid := grid_for(sheet)
 	return grid.x * grid.y
+
+
+static func holds_for(sheet: String) -> Array:
+	var out: Array = []
+	if not FRAME_MS.has(sheet):
+		return out
+	for raw in FRAME_MS[sheet]:
+		out.append(float(int(raw)) / 1000.0)
+	return out
+
+
+## Sum of the locked holds. Zero when the sheet is not a timed windup.
+static func windup_sec(sheet: String) -> float:
+	if not FRAME_MS.has(sheet):
+		return 0.0
+	var ms := 0
+	for raw in FRAME_MS[sheet]:
+		ms += int(raw)
+	return float(ms) / 1000.0
+
+
+## Frame index at `elapsed` seconds. The next cell starts on the millisecond
+## boundary, so the bolt can leave on the tick after the release flash.
+static func frame_at(sheet: String, elapsed: float) -> int:
+	if not FRAME_MS.has(sheet):
+		return 0
+	var frames: Array = FRAME_MS[sheet]
+	var ms := int(round(elapsed * 1000.0))
+	var acc := 0
+	for i in frames.size():
+		acc += int(frames[i])
+		if ms < acc:
+			return i
+	return frames.size() - 1
 
 
 ## Longest side of the biggest played frame. `px` maps to that side, so a
@@ -189,7 +233,10 @@ func play(spec: Dictionary) -> void:
 	z_as_relative = false
 	z_index = int(spec.get("z", 40))
 	_peak = clampf(float(spec.get("alpha", 1.0)), 0.0, 1.0)
-	_span = maxf(float(spec.get("life", VfxBudget.STAMP_HIT_LIFE)), 0.05)
+	_holds = holds_for(_sheet)
+	var locked := windup_sec(_sheet)
+	# Authored holds win. A cast window or a tile time must not stretch the snap.
+	_span = locked if locked > 0.0 else maxf(float(spec.get("life", VfxBudget.STAMP_HIT_LIFE)), 0.05)
 	_wait = maxf(float(spec.get("delay", 0.0)), 0.0)
 	_life = _span
 	_sprite.region_enabled = _frames > 1
@@ -199,6 +246,7 @@ func play(spec: Dictionary) -> void:
 		_sprite.region_rect = Rect2()
 	_sprite.scale = Vector2.ONE * _base_scale * (1.0 if _frames > 1 else 0.72)
 	_sprite.modulate = Color(1, 1, 1, 0)
+	_sprite.offset = INK_OFFSET.get(_sheet, Vector2.ZERO)
 	_sprite.flip_h = bool(spec.get("flip_h", false))
 	var follow: Variant = spec.get("follow", Callable())
 	if follow is Callable and (follow as Callable).is_valid():
@@ -251,9 +299,13 @@ func _process(delta: float) -> void:
 
 func _sample(t: float) -> void:
 	if _frames > 1:
-		var idx := mini(int(t * float(_frames)), _frames - 1)
+		var elapsed := clampf(t, 0.0, 1.0) * _span
+		var idx := frame_at(_sheet, elapsed) if not _holds.is_empty() else mini(int(t * float(_frames)), _frames - 1)
 		_apply_frame(idx)
 		var fade_start := float(_frames - 1) / float(_frames)
+		if not _holds.is_empty() and _span > 0.0:
+			var lead := _span - float(_holds[_holds.size() - 1])
+			fade_start = lead / _span
 		var fade := 1.0
 		if t > fade_start:
 			fade = clampf((1.0 - t) / maxf(1.0 - fade_start, 0.0001), 0.0, 1.0)
@@ -273,10 +325,12 @@ func release() -> void:
 	if _sprite != null:
 		_sprite.visible = false
 		_sprite.flip_h = false
+		_sprite.offset = Vector2.ZERO
 		_sprite.region_enabled = false
 		_sprite.texture = null
 	_wait = 0.0
 	_life = 0.0
+	_holds = []
 	_frames = 1
 	_frame = -1
 	_sheet = ""

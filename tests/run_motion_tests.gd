@@ -499,7 +499,9 @@ func _test_commit_motion_on_hit_and_miss() -> void:
 	eq(is_equal_approx(float(strike_steps[0].get("sec", 0.0)), MOTION.damage_resolve_sec(SpellKits.STRIKE)), true, "Strike flinch starts when damage resolves")
 	eq(str(strike_steps[1].get("kind", "")), "hit", "the flinch plays after that contact")
 	eq(is_equal_approx(MOTION.MARK_BOLT_SEC, VfxRouter.MARK_FLIGHT_SEC), true, "Mark Shot flinch uses the bolt travel")
-	eq(is_equal_approx(MOTION.damage_resolve_sec(SpellKits.MARK_SHOT), StripLibrary.release_sec("kestrel", "cast_mark") + VfxRouter.MARK_FLIGHT_SEC), true, "Mark Shot flinch starts when the bolt lands")
+	eq(is_equal_approx(MOTION.MARK_WINDUP_SEC, preload("res://vfx/vfx_stamp.gd").windup_sec("mark_shot_cast")), true, "Mark Shot flinch uses the bow windup")
+	eq(MOTION.MARK_WINDUP_SEC <= 0.30, true, "Mark Shot windup is not stretched toward tile time")
+	eq(is_equal_approx(MOTION.damage_resolve_sec(SpellKits.MARK_SHOT), MOTION.MARK_WINDUP_SEC + VfxRouter.MARK_FLIGHT_SEC), true, "Mark Shot flinch starts when the bolt lands")
 	eq(is_equal_approx(MOTION.damage_resolve_sec(SpellKits.AMBUSH), MOTION.ambush_contact_sec()), true, "Ambush flinch starts at the slash contact")
 
 
