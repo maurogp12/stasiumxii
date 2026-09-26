@@ -1,7 +1,9 @@
 {
   "source_sheets": [
     "original-tileset-a.jpg",
-    "original-tileset-b.jpg"
+    "original-tileset-b.jpg",
+    "pending/ice/stasium_tileset_ice.png",
+    "pending/electric/stasium_tileset_electric.png"
   ],
   "sliced_from": "original-tileset-b.jpg",
   "grid": [
@@ -25,20 +27,17 @@
       "pending_theme": null
     },
     "windmere": {
-      "pack": "pale_stone",
+      "pack": "ice",
       "prefix": "wind_",
-      "pending_theme": "ice"
+      "pending_theme": null
     },
     "stormspire": {
-      "pack": "dark_stone",
+      "pack": "electric",
       "prefix": "storm_",
-      "pending_theme": "electric"
+      "pending_theme": null
     }
   },
-  "pending": {
-    "ice": "pending/ice/",
-    "electric": "pending/electric/"
-  },
+  "pending": {},
   "files": [
     {
       "file": "ground.png",
@@ -437,198 +436,6 @@
       ]
     },
     {
-      "file": "wind_ground.png",
-      "anchor": [
-        315,
-        187
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "wind_ground_v1.png",
-      "anchor": [
-        317,
-        112
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "wind_mud.png",
-      "anchor": [
-        318,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "wind_water.png",
-      "anchor": [
-        1152,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "wind_water_v1.png",
-      "anchor": [
-        1257,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "wind_ground_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "wind_ground_e2.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "wind_mud_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "storm_ground.png",
-      "anchor": [
-        1359,
-        192
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "storm_ground_v1.png",
-      "anchor": [
-        416,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "storm_mud.png",
-      "anchor": [
-        416,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "storm_water.png",
-      "anchor": [
-        1361,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "storm_water_v1.png",
-      "anchor": [
-        1257,
-        48
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "storm_ground_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "storm_ground_e2.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "storm_mud_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
       "file": "void.png",
       "anchor": null,
       "fit": "empty",
@@ -876,6 +683,297 @@
         41,
         81
       ]
+    },
+    {
+      "file": "wind_ground.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_v2.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_v3.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_mud.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_mud_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_mud_v2.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_water.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_water_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_water_v2.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_ground_e1.png",
+      "size": [
+        64,
+        67
+      ]
+    },
+    {
+      "file": "wind_ground_e1_v1.png",
+      "size": [
+        64,
+        67
+      ]
+    },
+    {
+      "file": "wind_mud_e1.png",
+      "size": [
+        64,
+        67
+      ]
+    },
+    {
+      "file": "wind_ground_e2.png",
+      "size": [
+        64,
+        95
+      ]
+    },
+    {
+      "file": "wind_prop_crystal.png",
+      "size": [
+        45,
+        128
+      ]
+    },
+    {
+      "file": "wind_prop_ice_shard.png",
+      "size": [
+        63,
+        109
+      ]
+    },
+    {
+      "file": "wind_prop_spark.png",
+      "size": [
+        65,
+        97
+      ]
+    },
+    {
+      "file": "wind_prop_rock_pillar.png",
+      "size": [
+        61,
+        128
+      ]
+    },
+    {
+      "file": "wind_prop_rubble.png",
+      "size": [
+        55,
+        80
+      ]
+    },
+    {
+      "file": "wind_prop_ice_sheet.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "wind_prop_floor_seal.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v2.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v3.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud_v2.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water_v1.png",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_e1.png",
+      "size": [
+        64,
+        70
+      ]
+    },
+    {
+      "file": "storm_ground_e1_v1.png",
+      "size": [
+        64,
+        70
+      ]
+    },
+    {
+      "file": "storm_mud_e1.png",
+      "size": [
+        64,
+        70
+      ]
+    },
+    {
+      "file": "storm_ground_e2.png",
+      "size": [
+        64,
+        97
+      ]
+    },
+    {
+      "file": "storm_prop_crystal_bolt.png",
+      "size": [
+        71,
+        89
+      ]
+    },
+    {
+      "file": "storm_prop_spark.png",
+      "size": [
+        37,
+        70
+      ]
+    },
+    {
+      "file": "storm_prop_conduit.png",
+      "size": [
+        74,
+        120
+      ]
+    },
+    {
+      "file": "storm_prop_rock_pillar.png",
+      "size": [
+        128,
+        127
+      ]
+    },
+    {
+      "file": "storm_prop_arc.png",
+      "size": [
+        108,
+        92
+      ]
+    },
+    {
+      "file": "storm_prop_rubble.png",
+      "size": [
+        112,
+        116
+      ]
+    },
+    {
+      "file": "storm_prop_floor_seal.png",
+      "size": [
+        64,
+        32
+      ]
     }
-  ]
+  ],
+  "promoted": {
+    "ice": "pending/ice/stasium_tileset_ice.png",
+    "electric": "pending/electric/stasium_tileset_electric.png"
+  }
 }

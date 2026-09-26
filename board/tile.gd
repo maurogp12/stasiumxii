@@ -67,7 +67,7 @@ func _draw() -> void:
 		_paint_terrain(tex)
 		_paint_depth_rim()
 	for prop_name in _paint_props:
-		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
+		var prop_tex := _KoliseoArt.prop_texture(str(prop_name), _dress)
 		if prop_tex != null:
 			_paint_prop(prop_tex)
 	var label := drawn_label()

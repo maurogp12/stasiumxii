@@ -6,7 +6,8 @@ extends RefCounted
 ## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
-## Ice and electric packs are not in this build. See THEMES.md.
+## Windmere paints the ice sheet. Stormspire paints the electric sheet.
+## See res://art/tilesets/original/THEMES.md.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
 const _Maps := preload("res://backend/cell_tag_map.gd")
@@ -43,8 +44,8 @@ const _PROPS := {
 
 static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
-## Themes the original sheet does not cover. Folders are hooks only.
-const PENDING_THEMES: Array[String] = ["ice", "electric"]
+## Scenario sheets are sliced. Nothing in this list is still a hook.
+const PENDING_THEMES: Array[String] = []
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -183,7 +184,12 @@ static func _variant_files(file_name: String) -> Array[String]:
 	return names
 
 
-static func prop_texture(prop_name: String) -> Texture2D:
+## Dress-prefixed props win (`wind_prop_spark.png`), then the shared sheet.
+static func prop_texture(prop_name: String, dress: String = "") -> Texture2D:
+	if dress != "":
+		var themed := _load("%sprop_%s.png" % [dress, prop_name])
+		if themed != null:
+			return themed
 	var file := str(_PROPS.get(prop_name, ""))
 	if file == "":
 		return null

@@ -6,8 +6,8 @@ in art/maps/arena_colosseum_v2/tiled/tiles/. Flat tiles fill the diamond.
 Cliff tiles keep a 64×32 top face and hang the face below it. Props are
 uniformly scaled to that same ground scale.
 
-Ice and electric packs are not created. pending/ice and pending/electric
-are hooks for the scenario sheets.
+Windmere and Stormspire are not sliced here. slice_ice_electric.py writes
+those packs from the scenario sheets.
 """
 from __future__ import annotations
 
@@ -71,24 +71,6 @@ PACKS = {
         "mud": (FLAT, CRACKED),
         "water": (FLAT, [(1361, 48)]),
         "lava": (FLAT, LAVA),
-        "ground_e1": (CLIFF, STONE_BLOCK),
-        "ground_e2": (CLIFF, STONE_BLOCK),
-        "mud_e1": (CLIFF, STONE_BLOCK),
-    },
-    # Pale stone from the sheet. Not an ice pack.
-    "wind_": {
-        "ground": (FLAT, STONE + COBBLE),
-        "mud": (FLAT, SAND[:1]),
-        "water": (FLAT, [(1152, 48), (1257, 48)]),
-        "ground_e1": (CLIFF, STONE_BLOCK),
-        "ground_e2": (CLIFF, STONE_BLOCK),
-        "mud_e1": (CLIFF, STONE_BLOCK),
-    },
-    # Dark rock from the sheet. Not an electric pack.
-    "storm_": {
-        "ground": (FLAT, DARK + CRACKED),
-        "mud": (FLAT, CRACKED),
-        "water": (FLAT, [(1361, 48), (1257, 48)]),
         "ground_e1": (CLIFF, STONE_BLOCK),
         "ground_e2": (CLIFF, STONE_BLOCK),
         "mud_e1": (CLIFF, STONE_BLOCK),
@@ -350,20 +332,17 @@ def main() -> None:
                 "pending_theme": None,
             },
             "windmere": {
-                "pack": "pale_stone",
+                "pack": "ice",
                 "prefix": "wind_",
-                "pending_theme": "ice",
+                "pending_theme": None,
             },
             "stormspire": {
-                "pack": "dark_stone",
+                "pack": "electric",
                 "prefix": "storm_",
-                "pending_theme": "electric",
+                "pending_theme": None,
             },
         },
-        "pending": {
-            "ice": "pending/ice/",
-            "electric": "pending/electric/",
-        },
+        "pending": {},
         "files": written,
     }
     ATLAS.write_text(json.dumps(atlas, indent=2) + "\n")
