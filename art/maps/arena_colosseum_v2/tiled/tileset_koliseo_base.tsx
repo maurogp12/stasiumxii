@@ -351,7 +351,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/wind_ground_e1.png" width="64" height="67"/>
+  <image source="tiles/wind_ground_e1.png" width="64" height="72"/>
  </tile>
  <tile id="42">
   <properties>
@@ -359,7 +359,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/wind_ground_e2.png" width="64" height="95"/>
+  <image source="tiles/wind_ground_e2.png" width="64" height="86"/>
  </tile>
  <tile id="43">
   <properties>
@@ -367,7 +367,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/wind_mud_e1.png" width="64" height="67"/>
+  <image source="tiles/wind_mud_e1.png" width="64" height="76"/>
  </tile>
  <tile id="44">
   <properties>

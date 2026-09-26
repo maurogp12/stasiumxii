@@ -7,8 +7,9 @@ extends RefCounted
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
 ## Crosshaven paints the earth punch (dirt and stone). Moss is only on the ruin walls.
-## Windmere paints the ice sheet. Stormspire paints the algo-así punch
-## sheets (dark stone, cyan/violet seams, gold edge). See THEMES.md.
+## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
+## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
+## See THEMES.md. The board loads these slices by dress prefix.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
 const _Maps := preload("res://backend/cell_tag_map.gd")
