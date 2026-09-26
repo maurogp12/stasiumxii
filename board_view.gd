@@ -49,6 +49,7 @@ extends Node2D
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
+const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -96,6 +97,7 @@ var _queued_net_events: Array = []
 var _vfx: Node
 var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
+var _koliseo_life: Node2D
 var _fit_camera_pos := Vector2.ZERO
 var _panning := false
 var _pan_origin := Vector2.ZERO
@@ -1565,15 +1567,20 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		_rebuild_grid(size)
 	_board_data = SNAPSHOT_TILES.from_snapshot(snap, _board_size)
 	var paint: Dictionary = snap.get("paint_only", {})
-	var dress := str(KOLISEO_ART.dress_for(str(snap.get("map_id", snap.get("demo_map", "")))))
+	var map_key := str(snap.get("map_id", snap.get("demo_map", "")))
+	var dress := str(KOLISEO_ART.dress_for(map_key))
 	for cell in tiles.keys():
 		var rec: Dictionary = _board_data.get(cell, SNAPSHOT_TILES.default_cell())
 		var tile := _tile_at(cell)
 		tile.set_dress(dress)
 		tile.apply_board_data(str(rec.get("terrain_type", "ground")), float(rec.get("elevation", 0.0)))
+		tile.apply_koliseo_grade(map_key)
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+	_ensure_koliseo_life()
+	if _koliseo_life != null:
+		_koliseo_life.bind(map_key, _board_size)
 
 
 func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:
@@ -1597,6 +1604,17 @@ func _cell_to_local(cell: Vector2i) -> Vector2:
 
 func _in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.y >= 0 and cell.x < _board_size and cell.y < _board_size
+
+
+func _ensure_koliseo_life() -> void:
+	if _koliseo_life != null and is_instance_valid(_koliseo_life):
+		return
+	_koliseo_life = KOLISEO_LIFE.new()
+	_koliseo_life.name = "KoliseoLife"
+	var units := get_node_or_null("Units")
+	add_child(_koliseo_life)
+	if units != null:
+		move_child(_koliseo_life, units.get_index())
 
 
 func _ensure_camera() -> void:
