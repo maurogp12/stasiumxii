@@ -5,12 +5,12 @@
 Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160. No `*_gen.png`. No second folder. The `*_frames.tres` walk clips are AtlasTexture slices of these PNGs (cells at x = 0, 144, 288, 432, 576, 720). A new sheet of that size shows up on the next import. Attack, cast, hit, and death sheets stay put.
 
 - `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — approved Wakfu Kestrel
-- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2: fierce helm (iron-jaw grill, spikes, crest), dual double-bit axes, crimson battle-worn plate
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2, replacing any earlier Ironjaw Wakfu walk: Berserker A body, fierce helm (iron-jaw grill with spikes and crest), dual double-bit axes, crimson battle-worn plate
 - `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B, not the white-eyes sheet: amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet. Kestrel and Ironjaw stay on their approved walk concepts. The Gloam file that lands must be proposal B. The Mender file that lands must be proposal D2. The Bastion file that lands must be proposal 2C.
+Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet. Kestrel stays on the prior Wakfu walk. Ironjaw's walk drop is A2 and replaces any earlier Ironjaw Wakfu strip. The Gloam file that lands must be proposal B. The Mender file that lands must be proposal D2. The Bastion file that lands must be proposal 2C.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
