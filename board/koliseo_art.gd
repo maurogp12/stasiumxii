@@ -184,7 +184,8 @@ static func _variant_files(file_name: String) -> Array[String]:
 	return names
 
 
-## Dress-prefixed props win (`wind_prop_spark.png`), then the shared sheet.
+## Dress-prefixed props win (`wind_prop_spark.png`, `slag_prop_ash_rock.png`),
+## then the shared sheet. Slagcrown rock props are the volcanic slices.
 static func prop_texture(prop_name: String, dress: String = "") -> Texture2D:
 	if dress != "":
 		var themed := _load("%sprop_%s.png" % [dress, prop_name])

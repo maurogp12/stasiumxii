@@ -400,42 +400,6 @@
       ]
     },
     {
-      "file": "slag_ground_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "slag_ground_e2.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
-      "file": "slag_mud_e1.png",
-      "anchor": [
-        310,
-        345
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        75
-      ]
-    },
-    {
       "file": "void.png",
       "anchor": null,
       "fit": "empty",
@@ -969,6 +933,78 @@
       "size": [
         64,
         32
+      ]
+    },
+    {
+      "file": "slag_ground_e1.png",
+      "anchor": [
+        623,
+        331
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        50
+      ]
+    },
+    {
+      "file": "slag_ground_e2.png",
+      "anchor": [
+        623,
+        331
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        50
+      ]
+    },
+    {
+      "file": "slag_mud_e1.png",
+      "anchor": [
+        623,
+        331
+      ],
+      "fit": "cliff",
+      "size": [
+        64,
+        50
+      ]
+    },
+    {
+      "file": "slag_prop_basalt_pillar.png",
+      "anchor": [
+        1394,
+        805
+      ],
+      "fit": "prop",
+      "size": [
+        45,
+        77
+      ]
+    },
+    {
+      "file": "slag_prop_ash_rock.png",
+      "anchor": [
+        976,
+        645
+      ],
+      "fit": "prop",
+      "size": [
+        46,
+        58
+      ]
+    },
+    {
+      "file": "slag_prop_rubble.png",
+      "anchor": [
+        1095,
+        741
+      ],
+      "fit": "prop",
+      "size": [
+        50,
+        49
       ]
     }
   ],
