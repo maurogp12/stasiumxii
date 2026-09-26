@@ -11,6 +11,7 @@ class_name MobileHub
 ## screen and follow the class-select route (no map picker).
 
 const MOBILE_HUB := "res://scenes/mobile_hub.tscn"
+const _TOUCH := preload("res://ui/touch_adapter.gd")
 const STASIS_RUN := "res://scenes/stasis_run.tscn"
 const KOLISEO_SCENE := "res://scenes/class_select.tscn"
 ## Exact ship ids. Files live at art/maps/arena_colosseum_v2/tiled/{id}_15x15.*
@@ -91,6 +92,7 @@ static func paint_star(canvas: CanvasItem, center: Vector2, radius: float, tint:
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_TOUCH.lock_landscape_frame(get_window())
 	resized.connect(_on_resized)
 	if _auto_launch and boot_route(OS.get_cmdline_user_args()) != "picker":
 		call_deferred("open_koliseo")

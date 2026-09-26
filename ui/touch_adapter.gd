@@ -166,6 +166,21 @@ static func use_mobile_pick() -> bool:
 	return OS.get_cmdline_user_args().has("--mobile-frame")
 
 
+## Full-bleed landscape. 0.1.21 left the activity portrait while the UI is the
+## 960×720 poster, so the whole game sat in a short strip with black bars.
+## Sensor landscape turns the phone. canvas_items + expand then fills that
+## window instead of letterboxing the base size. Desktop and headless no-op.
+static func lock_landscape_frame(window: Window = null) -> void:
+	if not use_mobile_pick() or OS.get_cmdline_user_args().has("--mobile-frame"):
+		return
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
+	if window == null:
+		return
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	window.content_scale_size = Vector2i(int(VIEW_W), int(VIEW_H))
+
+
 ## (top, bottom) of the board band in canvas pixels.
 ## Desktop keeps 140..460. A phone frames the diamond across the screen.
 ## The turn plaque and the thumb cluster overlay the edges. They no longer

@@ -119,6 +119,7 @@ var _ambush_arrival_tween: Tween
 
 
 func _ready() -> void:
+	TOUCH.lock_landscape_frame(get_window())
 	_hud = $"../HUD" as CombatHUD
 	_hud.set_preview_source(_sim())
 	_hud.spell_selected.connect(_on_spell_selected)
