@@ -242,9 +242,12 @@ static func run(host: SceneTree) -> void:
 	board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
 	# The collapse tween has not stepped yet. The body is still on the cast cell.
 	host.eq(submit_pawn.grid_position, submit_from, "submit-path collapse starts on the cast cell")
+	var foe_pawn: Node = board.pawns_by_seat[1]
+	var hp_before := int(foe_pawn.hp)
 	var saw_collapse := true
 	var saw_hold := false
 	var slashed_before_hold := false
+	var damaged_on_cast := false
 	for _i in 90:
 		await host.process_frame
 		var sprite := submit_pawn.get_node_or_null("Sprite") as Node2D
@@ -257,6 +260,8 @@ static func run(host: SceneTree) -> void:
 			saw_hold = true
 		if not saw_hold and submit_pawn.grid_position == submit_from and offset > 10.0:
 			slashed_before_hold = true
+		if int(foe_pawn.hp) < hp_before and submit_pawn.grid_position != submit_back:
+			damaged_on_cast = true
 		if saw_hold and offset > 10.0:
 			break
 		if not bool(board.get("_view_locked")) and saw_hold:
@@ -264,6 +269,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(saw_collapse, true, "submit-path Invisible Ambush fades on the cast cell")
 	host.eq(saw_hold, true, "submit-path Invisible Ambush stands on the back tile before the slash")
 	host.eq(slashed_before_hold, false, "submit-path Invisible Ambush does not slash from the cast cell")
+	host.eq(damaged_on_cast, false, "Instant Invisible Ambush does not deal damage before the back-tile snap")
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
 	var locked_for := 0
 	while bool(board.get("_view_locked")) and locked_for < 90:

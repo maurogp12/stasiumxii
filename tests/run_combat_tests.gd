@@ -58,6 +58,7 @@ func _run() -> void:
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
+	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_ambush_shade_origin_teleport()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
@@ -2292,6 +2293,83 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
 	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+
+
+func _test_instant_invisible_ambush_relocates_before_damage() -> void:
+	# Same-turn Fade then Ambush. No Shade, no arming wait. The strike is the
+	# back tile. Damage while Gloam is still on the cast cell fails this test.
+	var cast := Vector2i(6, 0)
+	var prey := Vector2i(4, 0)
+	var back := Vector2i(3, 0)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [cast, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var hp_before := int(_unit(1)["hp"])
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": cast, "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Instant Invisible starts with Fade")
+	eq(bool(_unit(0)["invisible"]), true, "Instant Invisible is set before Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Instant Invisible arms Ambush from Gloam")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "Instant Invisible Ambush resolves")
+	var event: Dictionary = hit.get("events", [{}])[0]
+	var dealt := hp_before - int(_unit(1)["hp"])
+	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
+	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
+	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
+	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")
+	eq(event.get("struck_from"), back, "Instant Invisible damage is struck from the back tile")
+	eq(event.get("struck_from") == cast, false, "Instant Invisible Ambush does not deal damage from the cast cell")
+	eq(event.get("destination"), back, "Instant Invisible destination is the back tile")
+	eq(bool(event.get("teleported", false)), true, "Instant Invisible Ambush teleports")
+	eq(str(_unit(0).get("facing", "")), "E", "Instant Invisible faces the prey from the back tile")
+	eq(bool(_unit(0)["invisible"]), true, "Instant Invisible hit keeps Invisible")
+	eq(int(_unit(0)["shades"]), 0, "Instant Invisible had no Shade to spend")
+	# Source order: the landing write, the strike-cell read, then HP.
+	var ambush_fn := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var ambush_at := ambush_fn.find("func _resolve_ambush")
+	ambush_fn = ambush_fn.substr(ambush_at)
+	var ambush_end := ambush_fn.find("\nfunc ")
+	if ambush_end > 0:
+		ambush_fn = ambush_fn.substr(0, ambush_end)
+	var pos_at := ambush_fn.find("actor[\"pos\"] = cell")
+	var struck_at := ambush_fn.find("var struck_from: Vector2i = actor[\"pos\"]")
+	var guard_at := ambush_fn.find("if struck_from != cell:")
+	var hp_at := ambush_fn.find("target[\"hp\"] = maxi(0, int(target[\"hp\"]) - damage)")
+	eq(pos_at >= 0 and struck_at > pos_at and guard_at > struck_at and hp_at > guard_at, true, "Ambush relocates before it can apply damage")
+
+	# Across the board. An armed Shade is in range. Fade makes the origin Gloam.
+	# That cast must not deal the Shade's hit while the body stays put.
+	var far := Vector2i(1, 9)
+	var far_shade := Vector2i(4, 11)
+	var far_prey := Vector2i(4, 9)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [far, far_prey],
+		"kestrel_facing": "N",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": far_shade, "seat": 0}).get("ok", false)), true, "the far fixture plants a Shade")
+	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, far_prey), true, "the armed Shade can Ambush before Fade")
+	var far_fade: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": far, "seat": 0})
+	eq(bool(far_fade.get("ok", false)), true, "Fade on the distant tile sets Invisible")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Invisible does not keep the Shade's Ambush arm")
+	var far_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": far_prey, "seat": 0})
+	eq(bool(far_hit.get("ok", true)), false, "distant Invisible Ambush does not resolve")
+	eq(str(far_hit.get("reason", "")), "out_of_range", "distant Invisible Ambush is out of range from Gloam")
+	eq(_unit(0)["pos"], far, "distant Invisible Ambush does not teleport")
+	eq(int(_unit(1)["hp"]), 80, "distant Invisible Ambush deals no damage")
+	eq(int(_unit(0)["shades"]), 1, "the rejected Invisible cast keeps the Shade")
+	eq(bool(_unit(0)["invisible"]), true, "the rejected Invisible cast keeps Invisible")
 
 
 func _test_ambush_shade_origin_teleport() -> void:

@@ -347,13 +347,15 @@ func _unhandled_input(event: InputEvent) -> void:
 				_touch_on_board = true
 				_chrome_aim = false
 				_touch_commit_open = true
-				select_tile(hover)
+				if _cast_cell_armable(hover):
+					select_tile(hover)
 				if _hud != null:
 					_hud.dismiss_pinned_tooltip()
 			elif event is InputEventScreenDrag and (_touch_on_board or _spell_armed()):
 				if not _touch_on_board:
 					_chrome_aim = true
-				select_tile(hover)
+				if _cast_cell_armable(hover):
+					select_tile(hover)
 		else:
 			_aim_hover = null
 			_sync_aim_preview()
@@ -405,7 +407,8 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 	_chrome_aim = true
 	_aim_hover = cell
 	_sync_aim_preview(cell)
-	select_tile(cell)
+	if _cast_cell_armable(cell):
+		select_tile(cell)
 	if _hud != null:
 		_hud.dismiss_pinned_tooltip()
 	if not committing:
@@ -426,6 +429,8 @@ func _commit_cell(cell: Vector2i) -> void:
 		return
 	# Snap walls are not a left-click / tap target. Right-click already returned.
 	if _snap_wall_cell(cell):
+		return
+	if not _cast_cell_armable(cell):
 		return
 	_touch_commit_open = false
 	select_tile(cell)
@@ -525,6 +530,10 @@ func _handle_left_click(cell: Vector2i) -> void:
 		_hud.clear_spell()
 		_paint_highlights()
 		return
+	if spell_id == SpellKits.DROP_SHADE and not _advance_click_accepted(cell, spell_id):
+		# Out of range and other illegal Drop Shade cells are not a cast.
+		# Do not arm them and do not flash the refund coach.
+		return
 	if spell_id == SpellKits.ADVANCE and not _advance_click_accepted(cell, spell_id):
 		# Not a highlighted dest. Still submit so CombatSim / NetSession reject
 		# it with the existing refund coach (pawn stays, AP unchanged).
@@ -542,6 +551,14 @@ func _handle_left_click(cell: Vector2i) -> void:
 func _advance_click_accepted(cell: Vector2i, spell_id: String) -> bool:
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(_sim().snapshot()))
 	return SNAPSHOT_TILES.cast_dests(legal, spell_id).has(cell)
+
+
+## Drop Shade only arms a sim-legal empty tile. Other spells still select freely.
+## Advance keeps its refund submit. An illegal Drop Shade cell stays unselected.
+func _cast_cell_armable(cell: Vector2i) -> bool:
+	if _hud == null or _hud.selected_spell() != SpellKits.DROP_SHADE:
+		return true
+	return _advance_click_accepted(cell, SpellKits.DROP_SHADE)
 
 
 func _face_toward(cell: Vector2i) -> void:
@@ -832,9 +849,12 @@ func _present_resolve(events: Array) -> bool:
 		_hud.show_toast(bounce_toast)
 		swallowed = true
 	else:
-		var toast := CombatHUD.toast_for_events(events)
-		if toast != "":
-			_hud.show_toast(toast)
+		# An Ambush hit toast waits until the body is on the back tile.
+		# Showing it during the collapse reads as damage from the cast cell.
+		if ambush_hit.is_empty():
+			var toast := CombatHUD.toast_for_events(events)
+			if toast != "":
+				_hud.show_toast(toast)
 	# Motion plays on the sprite first. Refresh (and the grey dead modulate) follows.
 	if swallowed and _pending_motion_sec <= 0.0:
 		_refresh()
@@ -899,11 +919,13 @@ func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
 	_ambush_arrival_tween = null
 	_plant_ambush_body(event)
 	if not _ambush_body_landed(event):
-		# Do not play the contact slash from the cast cell. The number still
-		# belongs on the foe. The submit tail plants the body from the snapshot.
-		_play_combat_feedback(events)
-		_arm_vfx(events)
+		# No slash, no hit toast, no damage float from the cast cell.
+		# The submit tail plants from the snapshot, then the coach refresh runs.
 		return
+	if _hud != null:
+		var toast := CombatHUD.toast_for_events(events)
+		if toast != "":
+			_hud.show_toast(toast)
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
@@ -1501,6 +1523,11 @@ func _paint_highlights() -> void:
 				_tile_at(cell).set_highlight("legal")
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
+	if spell_id == SpellKits.DROP_SHADE:
+		var shade_dests: Array = SNAPSHOT_TILES.cast_dests(legal, spell_id)
+		for cell in range_cells:
+			if tiles.has(cell) and not shade_dests.has(cell):
+				_tile_at(cell).set_highlight("blocked")
 	_sync_aim_preview()
 	_sync_target_marks()
 
