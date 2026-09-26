@@ -7,7 +7,7 @@ Crosshaven ground and cliffs are slices of the earth punch (`crosshaven_ground_p
 | Arena | Pack | Files | What you see |
 | --- | --- | --- | --- |
 | Crosshaven | earth | `ground.png`, `mud.png`, `water.png`, `ground_e1.png`, `ground_e2.png` | Dirt and stone, lighter mud, water, bare earth cliffs. Moss is only on the ruin walls. No lawn. |
-| Brinewake | coast | `brine_*` | Wet sand, pier wood, tide scorch, deep water. Foam sits on the diamond seams. Source `pending/brinewake/brine_ground_punch.png` |
+| Brinewake | coast | `brine_*` | Wet sand, pier wood, tide scorch, deep water. Foam sits on the diamond seams. Tide crust is a few dark marks, not a grass carpet. Source `pending/brinewake/brine_ground_punch.png` |
 | Slagcrown | lava | `slag_*` | Lava and scorched dirt floors, dark ash pools, volcanic cliffs, volcanic props. Source `pending/lava/` punch sheets. No grass, moss, or bushes |
 | Windmere | ice | `wind_*` | Snow and bare ice, meltwater, ice cliffs, sparse crystals. Live source `pending/ice/punch/wind_ground_punch.png`, `wind_elevation_punch.png`, `wind_props_punch.png`. The scenario sheet `pending/ice/stasium_tileset_ice.png` stays in the folder. |
 | Stormspire | electric | `storm_*` | Dark charcoal stone, cyan and violet seams, gold edge, ozone on the cracks. Cliffs and stairs from the elevation punch. Sparse pylons, vanes, banners, and rune rocks. Live source `pending/electric/storm_ground_punch.png`, `storm_elevation_punch.png`, `storm_props_punch.png`. The earlier contact sheet `stasium_tileset_electric.png` stays in that folder. |

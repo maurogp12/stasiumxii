@@ -479,6 +479,12 @@ func _test_brine_punch() -> void:
 	truthy(scorch.r > scorch.b and scorch.r < sand.r, "Brinewake mud is darker tide scorch")
 	var agua := water.get_image().get_pixel(32, 16)
 	truthy(agua.g > agua.r and agua.b > agua.r, "Brinewake water stays teal")
+	var grass: Texture2D = art.terrain_texture("ground", 0, "")
+	truthy(_green_fraction(ground) < 0.04, "Brinewake sand is not a grass carpet")
+	truthy(_green_fraction(ground) < _green_fraction(grass) * 0.25, "Brinewake does not wear the Crosshaven grass")
+	truthy(_crust_marks(ground) >= 4, "Brinewake sand keeps tide crust accents")
+	var pillar: Texture2D = art.prop_texture("rock_pillar", "brine_")
+	truthy(_green_fraction(pillar) < 0.08, "Brinewake rock pillar is stone, not moss")
 	truthy(_interior_veil(ground) < 0.02, "foam does not haze the sand diamond")
 	truthy(_interior_veil(water) < 0.02, "foam does not haze the water diamond")
 	truthy(_seam_foam(ground) > 0, "wet sand keeps foam on the seam")
@@ -496,6 +502,32 @@ func _test_brine_punch() -> void:
 	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/brinewake_15x15_tags.json"))
 	eq((tags["cells"] as Array).size(), 225, "Brinewake tags keep 225 cells")
 	eq(int((tags["size"] as Array)[0]), 15, "Brinewake tag width stays 15")
+
+
+## Dark warm marks on the north half of the diamond. A south shade is not crust.
+func _crust_marks(tex: Texture2D) -> int:
+	var img := tex.get_image()
+	var lums: Array[float] = []
+	for y in img.get_height():
+		for x in img.get_width():
+			var px := img.get_pixel(x, y)
+			if px.a > 0.15:
+				lums.append((px.r + px.g + px.b) / 3.0)
+	if lums.is_empty():
+		return 0
+	lums.sort()
+	var med: float = lums[lums.size() / 2]
+	var marks := 0
+	var limit_y := img.get_height() / 2
+	for y in limit_y:
+		for x in img.get_width():
+			var px := img.get_pixel(x, y)
+			if px.a < 0.15:
+				continue
+			var lum := (px.r + px.g + px.b) / 3.0
+			if lum < med - 0.12 and px.r + 0.02 >= px.g:
+				marks += 1
+	return marks
 
 
 func _interior_veil(tex: Texture2D) -> float:

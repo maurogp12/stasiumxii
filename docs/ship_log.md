@@ -6,7 +6,7 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 Soft Lock agua + costa. Presentation only. Locked geometry and tags are unchanged.
 
-Brinewake now paints the coast punch: wet sand, pier wood, and tide scorch, with deep water for agua. Foam sits on the diamond seams. It is not a haze over the face. Coast props the arena already paints (`driftwood`, `rock_cluster`, `rock_pillar`, `rubble`, `ruins`, `fence`, `waterfall`, `floor_seal`) read from `brine_prop_*`. Other arenas keep their sheets.
+Brinewake now paints the coast punch: wet sand, pier wood, and tide scorch, with deep water for agua. Foam sits on the diamond seams. Tide crust is a few dark marks on the sand. The green carpet on the punch sheet is not painted onto the diamonds, and the rock pillar stays stone. Coast props the arena already paints (`driftwood`, `rock_cluster`, `rock_pillar`, `rubble`, `ruins`, `fence`, `waterfall`, `floor_seal`) read from `brine_prop_*`. Other arenas keep their sheets. The board draws these sheets in the match.
 
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
