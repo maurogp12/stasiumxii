@@ -289,7 +289,9 @@ static func _tileset_gid_map(tmx_text: String, tmx_path: String) -> Dictionary:
 		var block := tsx.substr(tile_at, block_end - tile_at)
 		var paint := _attr(block, "paint_only")
 		var terrain := _attr(block, "terrain")
-		if paint != "true" and terrain != "" and terrain != "paint_only" and terrain != "void":
+		# Void is a real terrain (impassable). Skipping it here made a void GID
+		# fail the cross-check instead of matching a void tag.
+		if paint != "true" and terrain != "" and terrain != "paint_only":
 			out[tid + firstgid] = {
 				"terrain": terrain,
 				"elevation": int(_attr(block, "elevation")),

@@ -184,6 +184,8 @@ func terrain_letter() -> String:
 			return "W"
 		"lava":
 			return "L"
+		"void":
+			return "V"
 		_:
 			return "G"
 
@@ -349,6 +351,8 @@ func _terrain_color() -> Color:
 			return Color(0.28, 0.54, 0.80)
 		"lava":
 			return Color(0.86, 0.30, 0.12)
+		"void":
+			return Color(0.07, 0.07, 0.09)
 		_:
 			if (grid_position.x + grid_position.y) % 2 == 0:
 				return Color(0.58, 0.74, 0.40)

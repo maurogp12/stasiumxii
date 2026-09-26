@@ -2,6 +2,38 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Void gaps and Ambush blink
+
+Luca's 0.1.18 clips. No APK cut. Locked kit numbers unchanged. Ambush without a Shade stays parked.
+
+### Root cause — illegal void pathing
+
+Threshgate and the Koliseo boards do not tag void cells. The dark gaps in the clips are unpainted quarters of the dress sheets. Each terrain PNG keeps the diamond in the left half (64×32 source height 16, 64×40 height 23, 64×48 height 29). `terrain_placement` measured that half with `Texture.get_image()`. On the APK that image is null, so the tile centered the whole sheet. Only the top-left quarter is opaque, and a walk from cell center to cell center reads as a path across voids.
+
+`TerrainDef.parse` also stored the string `void` as Ground, so a real void tag would have been standable. Void is now its own impassable terrain (not a Locked MP cost). Walk, Advance, and Ambush already refuse a tile that is not standable. Maps were not retagged. Mud and water stay walkable.
+
+### Root cause — Ambush missing teleport
+
+Resolve already planted a hit on the axis back tile and set `teleported` for both origins (caster if Invisible, otherwise the live Shade), then dealt 22 FLEX. A miss returned first and did not move. The slash is a local pose on the sprite, not a board dash. The pawn snap ran only when the event cell parsed, and it did not plant again after that pose. An Invisible or Shade hit whose destination did not parse, or a body already standing on the back tile, played the slash in place. Adjacent is not an exception: the back tile is one step past the foe on the origin axis, including when that is not the tile Gloam already occupies.
+
+The hit still assigns that cell before damage. The board plants the pawn there before the slash and again when the pose ends. A miss does not plant. Shade is still spent only for a Shade-origin hit, in that same beat.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Ambush without a Shade (and without Invisible) stays parked.
+- No map redraw, no icy jewel boards, no walk-cycle pass.
+- Stasis stays on `mobile`.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+| Suite | Passed |
+| --- | ---: |
+| Combat | 4568 |
+| Motion | 1861 |
+| VFX | 454 |
+| Koliseo maps | 283 |
+
 ## 2026-09-26 — Mobile debug APK 0.1.18
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.18-mobile`, `version/code` `19`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

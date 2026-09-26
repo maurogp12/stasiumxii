@@ -203,6 +203,8 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	var swallowed := _present_resolve(events)
 	if _pending_motion_sec > 0.0:
 		await _await_view_motions()
+		# The local slash can finish after the blink. Plant the back tile again.
+		_snap_ambush_teleports(events)
 	if _resolve_hold_refresh:
 		_resolve_hold_refresh = false
 		_refresh()
@@ -689,6 +691,7 @@ func _submit(intent: Dictionary) -> void:
 		var swallowed := _present_resolve(events)
 		if _pending_motion_sec > 0.0:
 			await _await_view_motions()
+			_snap_ambush_teleports(events)
 		if _resolve_hold_refresh:
 			_resolve_hold_refresh = false
 			_refresh()
@@ -720,16 +723,49 @@ func _snap_ambush_teleports(events: Array) -> void:
 		var seat := int(event.get("seat", -1))
 		if not pawns_by_seat.has(seat):
 			continue
-		var dest := _as_cell(event.get("destination", event.get("to", Vector2i(-1, -1))))
-		if dest.x < 0:
+		# Destination is the back tile. `to` is the same cell on a hit.
+		# A miss sets teleported false and is skipped above, so the body stays.
+		var dest := _event_cell(event, "destination")
+		if not _in_bounds(dest):
+			dest = _event_cell(event, "to")
+		if not _in_bounds(dest):
+			dest = _seat_cell(seat)
+		if not _in_bounds(dest):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
+		# Instant plant. The attack pose is a local slash on the sprite, not a
+		# dash from the old tile. Adjacent and Invisible hits still land here.
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
 		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
 		var face := str(event.get("facing", ""))
 		if face != "":
 			pawn.set_facing(face)
+
+
+func _event_cell(event: Dictionary, key: String) -> Vector2i:
+	if not event.has(key):
+		return Vector2i(-1, -1)
+	var raw: Variant = event.get(key)
+	if raw == null:
+		return Vector2i(-1, -1)
+	var cell := _as_cell(raw)
+	if cell.x < 0 or cell.y < 0:
+		return Vector2i(-1, -1)
+	return cell
+
+
+func _seat_cell(seat: int) -> Vector2i:
+	for unit in _sim().snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) != seat:
+			continue
+		var raw: Variant = unit.get("pos", null)
+		if raw == null:
+			return Vector2i(-1, -1)
+		return _as_cell(raw)
+	return Vector2i(-1, -1)
 
 
 func _present_resolve(events: Array) -> bool:

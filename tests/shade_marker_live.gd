@@ -123,24 +123,90 @@ static func run(host: SceneTree) -> void:
 	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
 	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
 	var ambush_from := Vector2i(4, 4)
+	var ambush_prey := Vector2i(6, 4)
+	var ambush_back := Vector2i(7, 4)
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [ambush_from, Vector2i(6, 4)],
+		"positions": [ambush_from, ambush_prey],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"rolls": [1],
 	})
+	board._rebuild_pawns()
+	board._refresh()
+	var before: Node = board.pawns_by_seat[0]
+	host.eq(before.grid_position, ambush_from, "Invisible Gloam starts on the cast cell")
 	var ambush: Dictionary = CombatSim.submit({
 		"type": "cast",
 		"spell": "ambush",
-		"to": Vector2i(6, 4),
+		"to": ambush_prey,
 		"seat": 0,
 	})
-	host.eq(bool(ambush.get("ok", false)), true, "Ambush still resolves")
-	host.eq(_seat_pos(CombatSim.snapshot(), 0), Vector2i(7, 4), "Ambush is still the blink")
+	host.eq(bool(ambush.get("ok", false)), true, "Invisible Ambush still resolves")
+	host.eq(_seat_pos(CombatSim.snapshot(), 0), ambush_back, "Invisible Ambush is still the blink")
+	host.eq(bool(ambush.get("events", [{}])[0].get("teleported", false)), true, "Invisible Ambush hit teleports")
+	board._present_resolve(ambush.get("events", []))
+	var blinked: Node = board.pawns_by_seat[0]
+	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush snaps onto the back tile")
+	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
+	host.eq(blinked.grid_position == ambush_from, false, "Invisible Ambush does not slash from the cast cell")
+	board._settle_motions()
+	host.eq(blinked.grid_position, ambush_back, "the local slash leaves Invisible Gloam on the back tile")
+	host.eq(blinked.position, board._cell_to_local(ambush_back), "settling the slash does not walk Gloam back")
+	# Adjacent in front, not already on the back tile. The blink is still past the foe.
+	var near_from := Vector2i(5, 4)
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [near_from, ambush_prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"rolls": [1],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var near: Dictionary = CombatSim.submit({
+		"type": "cast",
+		"spell": "ambush",
+		"to": ambush_prey,
+		"seat": 0,
+	})
+	host.eq(bool(near.get("ok", false)), true, "adjacent Invisible Ambush resolves")
+	host.eq(_seat_pos(CombatSim.snapshot(), 0), ambush_back, "adjacent Invisible Ambush lands past the foe")
+	board._present_resolve(near.get("events", []))
+	var near_pawn: Node = board.pawns_by_seat[0]
+	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush snaps past the foe")
+	host.eq(near_pawn.position, board._cell_to_local(ambush_back), "adjacent Invisible snap is not the cast cell")
+	# MISS keeps the cast cell. No snap.
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [ambush_from, ambush_prey],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"rolls": [100],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	var missed: Dictionary = CombatSim.submit({
+		"type": "cast",
+		"spell": "ambush",
+		"to": ambush_prey,
+		"seat": 0,
+	})
+	host.eq(bool(missed.get("ok", false)), true, "Invisible Ambush miss resolves")
+	host.eq(bool(missed.get("events", [{}])[0].get("teleported", true)), false, "Invisible Ambush miss does not teleport")
+	board._present_resolve(missed.get("events", []))
+	var stayed: Node = board.pawns_by_seat[0]
+	host.eq(stayed.grid_position, ambush_from, "Invisible Ambush miss leaves the pawn on the cast cell")
+	host.eq(stayed.position, board._cell_to_local(ambush_from), "Invisible Ambush miss does not snap")
 	main.queue_free()
 	await host.process_frame
 

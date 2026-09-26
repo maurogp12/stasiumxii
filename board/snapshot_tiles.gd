@@ -6,7 +6,7 @@ extends RefCounted
 ## Walk highlights must come from CombatSim.legal_intents only.
 
 const DEFAULT_TERRAIN := "ground"
-const TERRAIN_IDS := ["ground", "mud", "water", "lava"]
+const TERRAIN_IDS := ["ground", "mud", "water", "lava", "void"]
 
 
 static func default_cell() -> Dictionary:
@@ -164,6 +164,8 @@ static func normalize_terrain(value: Variant) -> String:
 				return "water"
 			"lava", "l", "3":
 				return "lava"
+			"void", "v", "4":
+				return "void"
 		if raw.begins_with("terraindef.id."):
 			return normalize_terrain(raw.substr(raw.rfind(".") + 1))
 		return DEFAULT_TERRAIN
