@@ -1,9 +1,8 @@
 shader_type canvas_item;
 
-// View grade for the Locked Koliseo diamonds. Lifts contrast on the painted
-// sheet and lays a north light on it. The high-frequency sheen is gone so
-// water and dusk stone stay painted, not glass. The texture keeps its hue.
-// No gameplay data.
+// View grade for the Locked Koliseo diamonds. Sharpens the existing paint,
+// lifts contrast, and keeps a north light. The hue stays the sheet's hue.
+// A glass color wash is not applied. No gameplay data.
 
 uniform float contrast = 1.12;
 uniform float sat_boost = 1.15;
@@ -17,19 +16,27 @@ uniform float pulse_amp = 0.02;
 uniform float pulse_speed = 1.1;
 
 void fragment() {
-	vec4 tex = texture(TEXTURE, UV) * COLOR;
-	float luma = dot(tex.rgb, vec3(0.299, 0.587, 0.114));
-	vec3 sat = mix(vec3(luma), tex.rgb, sat_boost);
+	vec2 px = TEXTURE_PIXEL_SIZE;
+	vec4 tex = texture(TEXTURE, UV);
+	vec3 blur = (
+		texture(TEXTURE, UV + vec2(0.0, -px.y)).rgb
+		+ texture(TEXTURE, UV + vec2(0.0, px.y)).rgb
+		+ texture(TEXTURE, UV + vec2(px.x, 0.0)).rgb
+		+ texture(TEXTURE, UV + vec2(-px.x, 0.0)).rgb
+	) * 0.25;
+	vec3 sharp = tex.rgb + (tex.rgb - blur) * 0.55;
+	sharp *= COLOR.rgb;
+	float luma = dot(sharp, vec3(0.299, 0.587, 0.114));
+	vec3 sat = mix(vec3(luma), sharp, sat_boost);
 	sat = (sat - vec3(0.5)) * contrast + vec3(0.5);
 	sat *= grade * lift;
-	float south = smoothstep(0.28, 1.0, UV.y);
-	sat *= mix(1.05, 0.88, south);
-	// Slow painted variation. shimmer_color is kept so a caller can still
-	// tint, but it only kisses the darkest grain instead of a glass spike.
-	float grain = sin((UV.x * 2.4 + UV.y * 1.6) + TIME * shimmer_speed * 0.28 + phase);
-	float kiss = smoothstep(0.55, 1.0, grain) * shimmer * tex.a * 0.06;
-	sat = mix(sat, shimmer_color, kiss);
+	float south = smoothstep(0.32, 1.0, UV.y);
+	sat *= mix(1.06, 0.9, south);
+	// Life on water and lava stays a brightness breath, not a recolor.
+	float wave = sin((UV.x * 2.1 + UV.y) * 7.0 + TIME * shimmer_speed + phase);
+	float sheen = smoothstep(0.84, 1.0, wave) * shimmer * tex.a;
+	sat *= 1.0 + sheen * 0.06;
 	float breathe = 0.5 + 0.5 * sin(TIME * pulse_speed + phase);
 	sat *= mix(1.0 - pulse_amp, 1.0 + pulse_amp, breathe);
-	COLOR = vec4(clamp(sat, vec3(0.0), vec3(1.05)), tex.a);
+	COLOR = vec4(clamp(sat, vec3(0.0), vec3(1.12)), tex.a * COLOR.a);
 }

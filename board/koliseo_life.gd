@@ -9,17 +9,15 @@ extends Node2D
 const _Maps := preload("res://backend/cell_tag_map.gd")
 const _Palette := preload("res://vfx/vfx_palette.gd")
 const _Sort := preload("res://board/visual_sort.gd")
-const _Art := preload("res://board/koliseo_art.gd")
 const GROUND_SHADER := preload("res://board/koliseo_ground.gdshader")
 const MOTE_AMOUNT := 18
 const ELEV_LIFT := 0.055
 
-## Painted grades. Shimmer stays a slow grain, not a glass highlight.
 const _TERRAIN := {
-	"ground": {"contrast": 1.18, "sat": 1.22, "shimmer": 0.08, "pulse": 0.016, "speed": 0.5},
-	"mud": {"contrast": 1.12, "sat": 1.12, "shimmer": 0.04, "pulse": 0.012, "speed": 0.35},
-	"water": {"contrast": 1.16, "sat": 1.18, "shimmer": 0.16, "pulse": 0.024, "speed": 0.75},
-	"lava": {"contrast": 1.22, "sat": 1.26, "shimmer": 0.2, "pulse": 0.042, "speed": 0.95},
+	"ground": {"contrast": 1.26, "sat": 1.48, "shimmer": 0.16, "pulse": 0.034, "speed": 0.85},
+	"mud": {"contrast": 1.18, "sat": 1.22, "shimmer": 0.06, "pulse": 0.022, "speed": 0.55},
+	"water": {"contrast": 1.30, "sat": 1.58, "shimmer": 0.52, "pulse": 0.072, "speed": 2.15},
+	"lava": {"contrast": 1.34, "sat": 1.52, "shimmer": 0.58, "pulse": 0.095, "speed": 2.7},
 }
 ## Warm ink plus a parchment gleam. Drawn on a child so the grade shader does not wash the grid.
 const GRID_INK := Color(0.1, 0.07, 0.05, 0.88)
@@ -32,69 +30,64 @@ const EDGE_INK := Color(0.08, 0.06, 0.05, 0.92)
 ## grade / shimmer_color tint the existing sheets. shimmer_mul is per terrain.
 const _BIOMES := {
 	"crosshaven": {
-		"grade": Color(1.04, 1.14, 0.9),
-		"shimmer_color": Color(0.98, 1.0, 0.82),
+		"grade": Color(1.02, 1.12, 0.9),
+		"shimmer_color": Color(0.96, 1.0, 0.78),
 		"light": Color(1.0, 0.92, 0.7),
-		"mote": Color(0.72, 0.82, 0.38, 0.42),
+		"mote": Color(0.78, 0.9, 0.45, 0.55),
 		"direction": Vector2(0.2, -1.0),
-		"gravity": Vector2(6.0, -8.0),
-		"spread": 28.0,
-		"speed_mul": 0.85,
-		"pulse_mul": 0.8,
-		"shimmer_mul": {"ground": 0.7, "mud": 0.5, "water": 1.05, "lava": 1.0},
-		"rim": ["ruins", "hay", "fence", "well", "rubble"],
+		"gravity": Vector2(6.0, -12.0),
+		"spread": 36.0,
+		"speed_mul": 1.0,
+		"pulse_mul": 1.0,
+		"shimmer_mul": {"ground": 1.2, "mud": 0.65, "water": 1.15, "lava": 1.0},
 	},
 	"brinewake": {
-		"grade": Color(0.94, 1.04, 0.96),
-		"shimmer_color": Color(0.86, 0.94, 0.86),
-		"light": Color(0.78, 0.88, 0.8),
-		"mote": Color(0.62, 0.78, 0.7, 0.4),
+		"grade": Color(0.9, 1.02, 1.08),
+		"shimmer_color": Color(0.82, 0.94, 0.96),
+		"light": Color(0.75, 0.88, 0.95),
+		"mote": Color(0.7, 0.86, 0.92, 0.5),
 		"direction": Vector2(1.0, -0.12),
-		"gravity": Vector2(8.0, 3.0),
-		"spread": 22.0,
-		"speed_mul": 0.9,
-		"pulse_mul": 0.85,
-		"shimmer_mul": {"ground": 0.45, "mud": 0.4, "water": 1.35, "lava": 1.0},
-		"rim": ["driftwood", "rock_cluster", "fence", "ruins", "waterfall"],
+		"gravity": Vector2(10.0, 4.0),
+		"spread": 28.0,
+		"speed_mul": 1.15,
+		"pulse_mul": 1.2,
+		"shimmer_mul": {"ground": 0.45, "mud": 0.4, "water": 1.4, "lava": 1.0},
 	},
 	"slagcrown": {
-		"grade": Color(1.12, 0.94, 0.78),
-		"shimmer_color": Color(1.0, 0.74, 0.42),
+		"grade": Color(1.14, 0.96, 0.82),
+		"shimmer_color": Color(1.0, 0.72, 0.4),
 		"light": Color(1.0, 0.62, 0.32),
-		"mote": Color(0.92, 0.48, 0.18, 0.48),
+		"mote": Color(1.0, 0.55, 0.22, 0.55),
 		"direction": Vector2(0.08, -1.0),
-		"gravity": Vector2(2.0, -16.0),
-		"spread": 18.0,
-		"speed_mul": 0.95,
-		"pulse_mul": 1.05,
-		"shimmer_mul": {"ground": 0.32, "mud": 0.45, "water": 0.4, "lava": 1.15},
-		"rim": ["basalt_pillar", "ash_rock", "rock_pillar", "rubble", "steam_vent"],
+		"gravity": Vector2(2.0, -22.0),
+		"spread": 24.0,
+		"speed_mul": 1.25,
+		"pulse_mul": 1.35,
+		"shimmer_mul": {"ground": 0.32, "mud": 0.5, "water": 0.4, "lava": 1.3},
 	},
 	"windmere": {
-		"grade": Color(0.98, 1.02, 1.05),
-		"shimmer_color": Color(0.96, 0.97, 0.94),
-		"light": Color(0.94, 0.95, 0.96),
-		"mote": Color(0.9, 0.92, 0.9, 0.32),
+		"grade": Color(0.96, 1.02, 1.06),
+		"shimmer_color": Color(0.96, 0.98, 1.0),
+		"light": Color(0.92, 0.95, 1.0),
+		"mote": Color(0.9, 0.94, 0.98, 0.45),
 		"direction": Vector2(0.85, 0.45),
-		"gravity": Vector2(10.0, 12.0),
-		"spread": 16.0,
-		"speed_mul": 0.7,
-		"pulse_mul": 0.55,
-		"shimmer_mul": {"ground": 0.35, "mud": 0.4, "water": 0.85, "lava": 1.0},
-		"rim": ["rock_cluster", "ruins", "fence", "hay", "rock_pillar"],
+		"gravity": Vector2(14.0, 18.0),
+		"spread": 22.0,
+		"speed_mul": 1.05,
+		"pulse_mul": 0.85,
+		"shimmer_mul": {"ground": 1.45, "mud": 0.8, "water": 1.25, "lava": 1.0},
 	},
 	"stormspire": {
-		"grade": Color(1.06, 0.98, 0.9),
-		"shimmer_color": Color(0.92, 0.86, 0.74),
-		"light": Color(0.86, 0.78, 0.62),
-		"mote": Color(0.72, 0.64, 0.5, 0.38),
-		"direction": Vector2(0.25, -0.4),
-		"gravity": Vector2(-2.0, -4.0),
-		"spread": 20.0,
-		"speed_mul": 0.65,
-		"pulse_mul": 0.6,
-		"shimmer_mul": {"ground": 0.4, "mud": 0.45, "water": 0.7, "lava": 1.0},
-		"rim": ["rock_pillar", "ruins", "rubble", "basalt_pillar", "rock_cluster"],
+		"grade": Color(1.0, 0.92, 1.08),
+		"shimmer_color": Color(0.88, 0.8, 0.96),
+		"light": Color(0.78, 0.72, 0.9),
+		"mote": Color(0.78, 0.7, 0.9, 0.5),
+		"direction": Vector2(0.35, -0.55),
+		"gravity": Vector2(-4.0, -6.0),
+		"spread": 78.0,
+		"speed_mul": 1.85,
+		"pulse_mul": 1.45,
+		"shimmer_mul": {"ground": 1.55, "mud": 0.7, "water": 1.2, "lava": 1.1},
 	},
 }
 
@@ -225,7 +218,6 @@ func _apply_ambient() -> void:
 	if biome.is_empty():
 		_motes.emitting = false
 		_glow.visible = false
-		_clear_rim()
 		return
 	var dir: Vector2 = biome["direction"]
 	_motes.direction = dir
@@ -236,62 +228,9 @@ func _apply_ambient() -> void:
 	_motes.color = biome["mote"]
 	_motes.emitting = true
 	var light: Color = biome["light"]
-	_glow.modulate = Color(light.r, light.g, light.b, 0.03)
+	_glow.modulate = Color(light.r, light.g, light.b, 0.05)
 	_glow.visible = true
-	_glow.scale = Vector2(4.2, 2.8)
-	_build_rim(biome)
-
-
-func _clear_rim() -> void:
-	var old := get_node_or_null("Rim")
-	if old != null:
-		old.free()
-
-
-## Props standing just outside the playable diamond. Paint only.
-## Tags, walk, and LoS do not read this.
-func _build_rim(biome: Dictionary) -> void:
-	_clear_rim()
-	var names: Array = biome.get("rim", [])
-	if names.is_empty() or _board_size < 2:
-		return
-	var rim := Node2D.new()
-	rim.name = "Rim"
-	add_child(rim)
-	var n := _board_size
-	var slots: Array[Vector2i] = []
-	var step := 3
-	var i := 1
-	while i < n - 1:
-		slots.append(Vector2i(i, -1))
-		slots.append(Vector2i(i, n))
-		slots.append(Vector2i(-1, i))
-		slots.append(Vector2i(n, i))
-		i += step
-	var center := _Sort.cell_to_local(Vector2i(n / 2, n / 2), 0.0)
-	var idx := 0
-	for cell in slots:
-		var prop_name := str(names[idx % names.size()])
-		idx += 1
-		var tex := _Art.prop_texture(prop_name)
-		if tex == null:
-			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = tex
-		sprite.centered = true
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var at := _Sort.cell_to_local(cell, 0.0)
-		var outward := at - center
-		if outward.length_squared() > 1.0:
-			at += outward.normalized() * 20.0
-		sprite.position = at + Vector2(0.0, 8.0)
-		sprite.offset = Vector2(0.0, -float(tex.get_height()) * 0.32)
-		sprite.z_as_relative = false
-		var sort_cell := Vector2i(clampi(cell.x, 0, n - 1), clampi(cell.y, 0, n - 1))
-		sprite.z_index = _Sort.tile_z_index(sort_cell, 0.0)
-		if cell.y >= n:
-			sprite.z_index += 8
-		rim.add_child(sprite)
+	_glow.scale = Vector2(5.4, 3.8)
 
 
 func _process(delta: float) -> void:
@@ -305,10 +244,10 @@ func _process(delta: float) -> void:
 	var drift := Vector2(sin(_time * 0.33) * 42.0, cos(_time * 0.27) * 22.0)
 	_glow.position = center + drift
 	var light: Color = biome["light"]
-	var amp := 0.02 + 0.012 * (0.5 + 0.5 * sin(_time * 0.8))
+	var amp := 0.035 + 0.02 * (0.5 + 0.5 * sin(_time * 0.8))
 	_glow.modulate = Color(light.r, light.g, light.b, amp)
-	var breathe := 1.0 + 0.03 * sin(_time * 0.8)
-	_glow.scale = Vector2(4.2, 2.8) * breathe
+	var breathe := 1.0 + 0.04 * sin(_time * 0.8)
+	_glow.scale = Vector2(5.4, 3.8) * breathe
 	queue_redraw()
 
 

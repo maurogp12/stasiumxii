@@ -4,14 +4,14 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 ## 2026-09-26 — Koliseo art and movement feel
 
-Rosie Sunmeadow pass on `mobile`. Presentation only. The look target is a painted isometric arena (warm ground, ink grid, punchy but small impacts). Icy cyan and violet glass grades are pulled back to painted biome color.
+Rosie Sunmeadow pass on `mobile`. Presentation only. The preview is a palette and feel reference. Koliseo and Stasis keep their layouts, tags, and room shapes.
 
 ### Player-visible
 
 - A walk takes about 0.30s per tile. `grid_position` stays the tactical cell and updates when the foot commits. The pawn origin is the visual foot. Facing still turns per cardinal segment, then the body follows. Batch-1 / Batch-1c walk strips (`art/export_2x/characters/...`) play one authored plant per tile. `*_gen.png` stays unloaded.
 - The step is a press, a push-off, a rise of at most 6px, and a landing settle. The contact shadow is a Foot child and stays on the ground.
 - Heroes and Stasis foes share a dark rim and a north light so the silhouette reads at board scale. Feet stay on the shipped (0, -72) pivot.
-- Koliseo and Stasis boards keep their Locked tags. The grade is painted (Crosshaven grass, Brinewake sea-green, Slagcrown warm stone, Windmere snow, Stormspire dusk stone). The grid stays a separate ink overlay. A ring of existing props stands outside the diamond.
+- The existing tile sheets are sharper and more saturated. The same diamonds, the same biome grades, and the same props stay where they are. The glass color wash is off the grade shader. The ink grid stays a separate overlay. No new scenery and no new room shape.
 - A hit holds the knock for a short hit-stop, then a small recoil. The contact flash is compact. A miss drifts sideways, wears a slash through MISS, and the shot breaks before it connects. Camera shake stays 4px and slows down.
 
 ### Intentionally not changed
@@ -19,6 +19,11 @@ Rosie Sunmeadow pass on `mobile`. Presentation only. The look target is a painte
 - Locked kit numbers, AP/MP, ranges, and damage.
 - Ambush teleport resolve, Void pathing, and mobile target hit-area sizing.
 - No new class kits. No APK cut.
+- Map layouts, board geometry, tags, and room shapes.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+`tests/run_koliseo_maps_tests.gd` — 284 passed. `tests/run_motion_tests.gd` — 1853 passed. `tests/run_vfx_tests.gd` — 439 passed.
 
 ## 2026-09-26 — Mobile debug APK 0.1.18
 
