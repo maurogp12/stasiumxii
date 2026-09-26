@@ -5,7 +5,7 @@
 Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160. No `*_gen.png`. No second folder. The `*_frames.tres` walk clips are AtlasTexture slices of these PNGs (cells at x = 0, 144, 288, 432, 576, 720). A new sheet of that size shows up on the next import. Attack, cast, hit, and death sheets stay put.
 
 - `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — approved Wakfu Kestrel
-- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2, replacing any earlier Ironjaw Wakfu walk: Berserker A body, fierce helm (iron-jaw grill with spikes and crest), dual double-bit axes, crimson battle-worn plate
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2 art-fill. Same 864×160, six 144×160 cells, foot row about y=149. The plant fills about 0.91–0.92 of the cell (taller than Bastion's ~0.81). Identity stays Berserker A + helm A2: iron-jaw grill, dual double-bit axes, dark cape. The same bytes are in `art/export_2x/walk_src/ironjaw_walk_*.pngbin`.
 - `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B, not the white-eyes sheet: amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.

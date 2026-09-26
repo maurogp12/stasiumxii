@@ -2,7 +2,9 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. When a walk sheet exists, the standing
+## centered, offset (0, -72), scale 0.5. A class may multiply that by a small
+## interim presentation factor (feet pivot, not the pick capsule). Art-fill of
+## the same 144×160 cell is the primary size fix. When a walk sheet exists, the standing
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
@@ -116,6 +118,18 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
+## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
+## (~147px) against Bastion ~130px, so the shipped mul is 1.0. A later nudge
+## may only sit in 1.08–1.10, on the body sprites, growing from the foot
+## offset (0, -72). The pawn node and the pick capsule stay at scale 1.
+## Identity is Berserker A + helm A2 (iron-jaw grill, dual double-bit axes).
+## 1.20 is rejected. Kit numbers and map geometry do not read this.
+const PRESENTATION_SCALE_MIN := 1.08
+const PRESENTATION_SCALE_CAP := 1.10
+const IRONJAW_COMBAT_SCALE := 1.0
+const CLASS_PRESENTATION_SCALE := {
+	"ironjaw": IRONJAW_COMBAT_SCALE,
+}
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
 const WALK_TILE_SEC := 0.30
@@ -127,7 +141,7 @@ const WALK_STRIP_FPS := 12.0
 const WALK_STRIP_PATH := NodePath("WalkStrip")
 const ATTACK_STRIP_PATH := NodePath("AttackStrip")
 const BODY_STRIP_PATH := NodePath("BodyStrip")
-## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
+## Shared HP line for a 0.5 figure (Bastion ~68px). Ironjaw uses head_hp_y().
 const HEAD_HP_Y := -76.0
 const NAME_FONT_SIZE := 12
 ## Seat ring under the feet. The name used to share this band.
@@ -137,6 +151,42 @@ const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
+
+
+## Resting combat scale. Missing classes stay on the shared 0.5. A listed
+## class uses the capped interim nudge.
+static func sprite_scale_for(class_id: String) -> Vector2:
+	return SPRITE_SCALE * presentation_mul(class_id)
+
+
+## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
+## Anything else, including 1.20, is ignored.
+static func presentation_mul(class_id: String) -> float:
+	var key := SpellKits.normalize_class_id(class_id)
+	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
+
+
+static func capped_presentation_mul(raw: float) -> float:
+	if is_equal_approx(raw, 1.0):
+		return 1.0
+	if raw >= PRESENTATION_SCALE_MIN and raw <= PRESENTATION_SCALE_CAP:
+		return raw
+	return 1.0
+
+
+func _body_scale() -> Vector2:
+	return sprite_scale_for(class_id)
+
+
+func _body_scale_mul(mul: Vector2) -> Vector2:
+	var base := _body_scale()
+	return Vector2(base.x * mul.x, base.y * mul.y)
+
+
+## Shared bar clears a 0.5 figure. Ironjaw's bar rises with his presentation
+## scale so the name still clears the taller cell.
+func head_hp_y() -> float:
+	return HEAD_HP_Y * (_body_scale().y / SPRITE_SCALE.y)
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.
@@ -295,7 +345,7 @@ func _sample_landing(t: float) -> void:
 	if _motion_playing or _path_walk:
 		return
 	var mul := VIEW_MOTION.landing_scale(t)
-	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var scaled := _body_scale_mul(mul)
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.scale = scaled
 		_sprite.position = Vector2.ZERO
@@ -754,7 +804,7 @@ func _sample_ambush_collapse(t: float, gen: int) -> void:
 		return
 	var k := clampf(t, 0.0, 1.0)
 	var shrunk := lerpf(1.0, 0.12, k)
-	_sprite.scale = SPRITE_SCALE * shrunk
+	_sprite.scale = _body_scale() * shrunk
 	var color := rest_modulate()
 	# Start from the resting alpha. Forcing 1 here flashes a solid body
 	# on a hidden Invisible pawn before the snap.
@@ -769,7 +819,7 @@ func _sample_ambush_whiff(t: float) -> void:
 	if _sprite == null:
 		return
 	var k := sin(clampf(t, 0.0, 1.0) * PI)
-	_sprite.scale = Vector2(SPRITE_SCALE.x * lerpf(1.0, 1.12, k), SPRITE_SCALE.y * lerpf(1.0, 0.8, k))
+	_sprite.scale = _body_scale_mul(Vector2(lerpf(1.0, 1.12, k), lerpf(1.0, 0.8, k)))
 	var color := rest_modulate()
 	color.a = lerpf(color.a, color.a * 0.4, k)
 	_sprite.modulate = color
@@ -1070,7 +1120,7 @@ func _figure_material() -> ShaderMaterial:
 func _adopt_static_sprite(sprite: Sprite2D) -> void:
 	sprite.centered = true
 	sprite.offset = SPRITE_OFFSET
-	sprite.scale = SPRITE_SCALE
+	sprite.scale = _body_scale()
 	sprite.flip_h = false
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	sprite.z_index = 0
@@ -1194,7 +1244,7 @@ func _apply_hop_visual(t: float) -> void:
 		_reset_walk_scale()
 	else:
 		var mul := VIEW_MOTION.fallback_hop_scale(t)
-		var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+		var scaled := _body_scale_mul(mul)
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.scale = scaled
 		if _active_strip != null and is_instance_valid(_active_strip):
@@ -1215,10 +1265,11 @@ func _hold_walk_contact() -> void:
 
 
 func _reset_walk_scale() -> void:
+	var resting := _body_scale()
 	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.scale = SPRITE_SCALE
+		_sprite.scale = resting
 	if _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.scale = SPRITE_SCALE
+		_active_strip.scale = resting
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
@@ -1239,7 +1290,7 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 func _apply_body_pose(pose: Dictionary) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
-	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var scaled := _body_scale_mul(mul)
 	_ride_chrome(Vector2.ZERO)
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.position = pos
@@ -1296,7 +1347,7 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 		return
 	var pos := VIEW_MOTION.hit_offset(t, dir)
 	var mul := VIEW_MOTION.hit_squash(t)
-	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
 	_sprite.scale = scaled
 	if _active_strip != null and is_instance_valid(_active_strip):
@@ -1318,7 +1369,7 @@ func _sample_death(t: float, tilt_sign: float) -> void:
 		_death_sampled = true
 	var pose: Dictionary = VIEW_MOTION.death_pose(t, tilt_sign)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	_sprite.scale = _body_scale_mul(mul)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.position = Vector2(0.0, float(pose.get("drop", 0.0)))
 	var faded: float = float(pose.get("fade", 1.0))
@@ -1353,7 +1404,7 @@ func _apply_downed_pose() -> void:
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
 	_sprite.visible = true
 	_sprite.position = Vector2(0.0, float(pose.get("drop", 0.0)))
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	_sprite.scale = _body_scale_mul(mul)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.modulate = Color(0.45, 0.45, 0.45, float(pose.get("fade", 0.0)))
 
@@ -1377,11 +1428,11 @@ func _hold_death_strip() -> bool:
 	_held_death_strip = true
 	_body_kind = "death"
 	strip.position = Vector2.ZERO
-	strip.scale = SPRITE_SCALE
+	strip.scale = _body_scale()
 	strip.rotation = 0.0
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.position = Vector2.ZERO
-		_sprite.scale = SPRITE_SCALE
+		_sprite.scale = _body_scale()
 		_sprite.rotation = 0.0
 	_freeze_on_frame(strip, _last_frame(strip))
 	strip.visible = true
@@ -1447,7 +1498,7 @@ func _show_rest_body() -> void:
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.modulate = color
 		_active_strip.visible = true
-		_active_strip.scale = SPRITE_SCALE
+		_active_strip.scale = _body_scale()
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.modulate = color
 			_sprite.visible = false
@@ -1464,12 +1515,12 @@ func _plant_sprite() -> void:
 	if _sprite == null or not is_instance_valid(_sprite):
 		return
 	_sprite.position = Vector2.ZERO
-	_sprite.scale = SPRITE_SCALE
+	_sprite.scale = _body_scale()
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = Vector2.ZERO
-		_active_strip.scale = SPRITE_SCALE
+		_active_strip.scale = _body_scale()
 		_active_strip.rotation = 0.0
 		_active_strip.visible = true
 		_sprite.visible = false
@@ -1701,7 +1752,7 @@ func _duplicate_kept_clips(src: SpriteFrames, copy: SpriteFrames) -> bool:
 func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	strip.centered = true
 	strip.offset = SPRITE_OFFSET
-	strip.scale = SPRITE_SCALE
+	strip.scale = _body_scale()
 	strip.flip_h = false
 	strip.rotation = 0.0
 	strip.z_index = 0
@@ -1968,13 +2019,13 @@ func _paint_status(canvas: CanvasItem) -> void:
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
 		_paint_ellipse_ring(canvas, SPRITE_OFFSET, 36.0 + 6.0 * pulse, 46.0 + 4.0 * pulse, Color(1.0, 0.78, 0.28, 0.4 + 0.5 * pulse), 3.6)
-	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
+	_paint_unit_chrome(canvas, head_hp_y(), name_baseline())
 
 
 ## Baseline of the overhead name, in chrome-local space. The chrome node
 ## stays on the pawn through a hop. Lunges and the idle bob leave it there too.
 func name_baseline() -> float:
-	return HEAD_HP_Y - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
+	return head_hp_y() - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 
 
 func name_label_origin() -> Vector2:

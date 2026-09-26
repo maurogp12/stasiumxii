@@ -55,7 +55,30 @@ func _test_sprite_node_setup() -> void:
 	truthy(sprite != null, "pawn has one Sprite2D")
 	eq(sprite.centered, true, "sprite is centered")
 	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "ironjaw uses the shared scale (brute size stays in the art)")
+	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
+	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
+	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the shared 0.5")
+	eq(ironjaw_scale, Pawn.SPRITE_SCALE, "art-fill carries Ironjaw's size; no extra mul")
+	eq(Pawn.IRONJAW_COMBAT_SCALE, 1.0, "the optional ironjaw nudge is off")
+	eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw ships at the shared scale")
+	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the art-fill scale")
+	eq(Pawn.capped_presentation_mul(1.08), 1.08, "1.08 is the low end of the optional band")
+	eq(Pawn.capped_presentation_mul(1.10), 1.10, "1.10 is the top of the optional band")
+	eq(Pawn.capped_presentation_mul(1.07), 1.0, "below 1.08 is not a shipped nudge")
+	eq(Pawn.capped_presentation_mul(1.11), 1.0, "above 1.10 is ignored")
+	eq(Pawn.capped_presentation_mul(1.12), 1.0, "1.12 is outside the band")
+	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a 1.20 bump is rejected")
+	eq(Pawn.capped_presentation_mul(1.25), 1.0, "a larger bump is rejected")
+	pawn._sample_hop(0.0)
+	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
+	pawn._sample_hop(1.0)
+	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile edge")
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "ironjaw combat shows the walk strip")
+	if strip != null:
+		eq(strip.scale, ironjaw_scale, "ironjaw walk strip uses the presentation scale")
+		eq(strip.offset, Vector2(0, -72), "ironjaw walk strip keeps the foot pivot")
+	_assert_ironjaw_feet(ironjaw_scale.y)
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")
@@ -66,7 +89,9 @@ func _test_sprite_node_setup() -> void:
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
 	var bastion_sprite := bastion.get_node("Sprite") as Sprite2D
-	eq(bastion_sprite.scale, Vector2(0.5, 0.5), "bastion is not normalized")
+	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion stays on the shared scale")
+	for class_id in ["kestrel", "gloam", "mender", "bastion"]:
+		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s stays on the shared scale" % class_id)
 	eq(bastion_sprite.texture, Pawn.sprite_texture("bastion", "N"), "bastion N placeholder still loads")
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.sprite_texture("bastion", "W"), "bastion W placeholder still loads")
@@ -199,7 +224,7 @@ func _test_name_sits_above_the_sprite() -> void:
 		eq(origin.x, -width * 0.5, "%s name is centered over the unit" % class_id)
 		var name_bottom := origin.y + font.get_descent(Pawn.NAME_FONT_SIZE)
 		var name_top := origin.y - font.get_ascent(Pawn.NAME_FONT_SIZE)
-		eq(name_bottom <= Pawn.HEAD_HP_Y - 1.0, true, "%s name sits above the HP bar" % class_id)
+		eq(name_bottom <= pawn.head_hp_y() - 1.0, true, "%s name sits above the HP bar" % class_id)
 		eq(name_bottom < ring_top, true, "%s name clears the seat ring" % class_id)
 		var sprite := pawn.get_node("Sprite") as Sprite2D
 		var visual_top := (sprite.offset.y - float(sprite.texture.get_height()) * 0.5) * sprite.scale.y
@@ -222,6 +247,47 @@ func _test_name_sits_above_the_sprite() -> void:
 		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
 		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
 		pawn.free()
+
+
+func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
+	for child in pawn.get_children():
+		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
+			return child as AnimatedSprite2D
+	return null
+
+
+## Walk frame 0 contact, same foot row StripLibrary pins. Scale grows from the
+## pawn origin, so a foot near local y=0 stays on the diamond.
+func _assert_ironjaw_feet(scale_y: float) -> void:
+	var portrait := StripLibrary.idle_portrait("ironjaw")
+	truthy(portrait != null, "ironjaw east walk frame 0 loads")
+	if portrait == null:
+		return
+	var image := portrait.get_image()
+	truthy(image != null and not image.is_empty(), "ironjaw walk cell has pixels")
+	if image == null or image.is_empty():
+		return
+	var height := image.get_height()
+	var foot_y := -1
+	var head_y := height
+	for y in range(height - 1, -1, -1):
+		var hit := false
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.08:
+				hit = true
+				head_y = y
+				break
+		if hit and foot_y < 0:
+			foot_y = y
+	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw foot row stays on the shared anchor")
+	eq(float(foot_y - head_y + 1) / float(height) >= 0.90, true, "ironjaw art-fill covers at least 90% of the cell")
+	if foot_y < 0:
+		return
+	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.SPRITE_OFFSET.y
+	var world_foot := local_foot * scale_y
+	var shared_foot := local_foot * Pawn.SPRITE_SCALE.y
+	eq(absf(world_foot) <= 2.0, true, "ironjaw feet stay on the diamond")
+	eq(absf(world_foot - shared_foot) <= 1.0, true, "the presentation bump does not lift the plant")
 
 
 func _unit_dict(class_id: String, facing: String, seat: int, living: bool = true) -> Dictionary:
