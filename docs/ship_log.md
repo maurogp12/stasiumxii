@@ -2,33 +2,36 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
-## 2026-09-26 — Brinewake coast punch
-
-Soft Lock agua + costa. Presentation only. Locked geometry and tags are unchanged.
-
-Brinewake now paints the coast punch: wet sand, pier wood, and tide scorch, with deep water for agua. Foam sits on the diamond seams. Tide crust is a few dark marks on the sand. The green carpet on the punch sheet is not painted onto the diamonds, and the rock pillar stays stone. Coast props the arena already paints (`driftwood`, `rock_cluster`, `rock_pillar`, `rubble`, `ruins`, `fence`, `waterfall`, `floor_seal`) read from `brine_prop_*`. Other arenas keep their sheets. The board draws these sheets in the match.
-
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
-Sideload cut recorded before this rebase. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. This follow-up did not recut or republish the APK. The bytes below predate the Slagcrown lava punch (#167). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK. Min SDK 24, target SDK 36. Debuggable. Permissions `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+Sideload cut of the `mobile` tip for Luca. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. Those numbers were already on the tip from the Windmere stamp. The note that used to sit here recorded an unpublished APK whose bytes predated the Slagcrown lava punch (#167). This entry replaces that note. The APK below is a fresh export of tip `00f6a9a` (#170). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
 
-Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.25-debug`, so a phone on that cert upgrades in place with `adb install -r`. Same package and the same cert. Size 66796446 bytes. SHA-256 `b2f220bc404efa892dcce8d0b4394c95d523b542ddd3628555726ded1d94a3a6`. The packed APK contains the Windmere `wind_ground`, `wind_water`, cliff, and sparse-crystal slices.
-
-Hub **Actualizar** reads public releases. This cut was not uploaded, so the phone still resolves `mobile-0.1.25-debug` until tag `mobile-0.1.26-debug` exists with asset `stasiumxii-mobile-debug.apk`.
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.25-debug`, so a phone on that cert upgrades in place with `adb install -r`. Hub **Actualizar** still works. Same package and the same cert, so this cut is an in-place upgrade. Size 71536358 bytes. SHA-256 `b271edaac3aa1a56617e9e6403d7f1f5a8b91c655120ec4a5495145170315cc0`.
 
 ### Player-visible since 0.1.25
 
-- Windmere paints the ice punch in Koliseo and in Galevault. The board dress is `wind_` when the match map id is Windmere. Geometry and tags are unchanged.
-- Stormspire paints the algo-así punch (#166). Ironjaw art-fill is scale 1.0 (#165). The rebased tree also keeps the Slagcrown lava punch (#167); that dress is not in the recorded APK bytes.
-- A 20:9 phone opens combat at zoom 1.55. One stride per tile uses the v4 walk strips (#163). Hot-seat class cards use the Locked Wakfu select plates.
+- Phone combat zoom further out (#161). A 20:9 phone opens at 1.55. Zoom out rests at 1.40. Zoom in stops at 2.25. Desktop stays 0.64.
+- Hot-seat and Online class cards use the Locked Wakfu select plates (#162).
+- Walks stay on the wakfu-ship strips. One stride per tile, short hop, v4 sheets (#163). Plant contact, squash, and a readable stop (#173).
+- Combat VFX punch v2 (#171). Ambush slash, hit flash, footstep dust, and Mark Shot impact are the transparent punch-v2 strips. Ambush still slashes after the back-tile plant.
+- Hit-flinch strips play on damage resolve (#172). The facing clip starts when the hit lands. A miss does not flinch.
+- Map punch dress. Slagcrown lava is zero-green (#164/#167). Ironjaw reads bigger from the art-fill at scale 1.0 (#165). Stormspire paints the algo-así punch (#166). Crosshaven is dirt and stone (#168). Windmere is the ice punch (#169). Brinewake is the coast punch (#170). Geometry and tags are unchanged.
 
 ### Intentionally not changed
 
 - Locked kit numbers, AP/MP, ranges, and damage.
 - Map geometry, tags, and room shapes.
-- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged. Permissions stay `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
 
-Headless on this stamp (Godot 4.7.2, 0 failed): APK update 101, Koliseo maps 340.
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 212, APK update 101, stasis 361, Koliseo maps 385, combat 5182, motion 3131, VFX 670, touch adapter 492, sprite 261, elevation chrome 187.
+
+Tag `mobile-0.1.26-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.26-debug/stasiumxii-mobile-debug.apk
+
+## 2026-09-26 — Brinewake coast punch
+
+Soft Lock agua + costa. Presentation only. Locked geometry and tags are unchanged.
+
+Brinewake now paints the coast punch: wet sand, pier wood, and tide scorch, with deep water for agua. Foam sits on the diamond seams. Tide crust is a few dark marks on the sand. The green carpet on the punch sheet is not painted onto the diamonds, and the rock pillar stays stone. Coast props the arena already paints (`driftwood`, `rock_cluster`, `rock_pillar`, `rubble`, `ruins`, `fence`, `waterfall`, `floor_seal`) read from `brine_prop_*`. Other arenas keep their sheets. The board draws these sheets in the match.
 
 ## 2026-09-26 — Windmere ice punch
 
