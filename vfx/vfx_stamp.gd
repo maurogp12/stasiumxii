@@ -1,8 +1,10 @@
 extends "res://vfx/vfx_pooled.gd"
 
-## One-shot sprite overlay. Hero plates punch in with a scale and fade.
-## Ambush slash, hit flash, and footstep dust are single punch plates.
-## Mark Shot and Detonate stay single plates too. The director pools these.
+## One-shot sprite overlay. Punch-v2 strips play left to right.
+## Ambush slash, hit flash, footstep dust, and Mark Shot impact are
+## variable-width frames on a shared row. Detonate stays one hero plate.
+## Mark Shot's lower band is three stack sigils. The one-shot does not play
+## them: Marks still count on the existing pips (cap 5).
 ## CombatSim never reads this file.
 
 const SHEETS := {
@@ -13,9 +15,53 @@ const SHEETS := {
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
 }
 
-## Row-major sheets. The punch plates are one hero frame, so they stay out
-## of this map and the stamp scales the whole drawing.
+## Equal grids. Punch-v2 strips are not equal cells, so they live in STRIPS.
+## A sheet missing from both maps is one hero plate.
 const GRIDS := {}
+
+## Measured opaque frames, left to right, with a shared vertical band so a
+## shrinking frame stays planted instead of drifting. Padding keeps the
+## linear filter off the neighboring cell.
+const STRIPS := {
+	"ambush_slash": [
+		Rect2(33, 227, 117, 228),
+		Rect2(179, 227, 137, 228),
+		Rect2(326, 227, 162, 228),
+		Rect2(512, 227, 203, 228),
+		Rect2(739, 227, 182, 228),
+		Rect2(948, 227, 146, 228),
+		Rect2(1127, 227, 129, 228),
+	],
+	"hit_flash": [
+		Rect2(38, 175, 78, 341),
+		Rect2(159, 175, 135, 341),
+		Rect2(323, 175, 191, 341),
+		Rect2(522, 175, 252, 341),
+		Rect2(794, 175, 140, 341),
+		Rect2(975, 175, 121, 341),
+		Rect2(1146, 175, 99, 341),
+	],
+	"footstep_dust": [
+		Rect2(37, 283, 101, 145),
+		Rect2(179, 283, 118, 145),
+		Rect2(323, 283, 145, 145),
+		Rect2(486, 283, 142, 145),
+		Rect2(652, 283, 132, 145),
+		Rect2(807, 283, 136, 145),
+		Rect2(966, 283, 136, 145),
+		Rect2(1124, 283, 126, 145),
+	],
+	# Floor rings opening into the burst, then closing. Not the sigil row.
+	"mark_shot_impact": [
+		Rect2(42, 112, 105, 211),
+		Rect2(183, 112, 129, 211),
+		Rect2(348, 112, 145, 211),
+		Rect2(524, 112, 159, 211),
+		Rect2(708, 112, 151, 211),
+		Rect2(889, 112, 120, 211),
+		Rect2(1044, 112, 97, 211),
+	],
+}
 
 static var _cache: Dictionary = {}
 
@@ -50,11 +96,35 @@ static func grid_for(sheet: String) -> Vector2i:
 
 
 static func frame_count(sheet: String) -> int:
+	if STRIPS.has(sheet):
+		return (STRIPS[sheet] as Array).size()
 	var grid := grid_for(sheet)
 	return grid.x * grid.y
 
 
+## Longest side of the biggest played frame. `px` maps to that side, so a
+## smaller cel in the strip stays smaller and transparent padding does not
+## shrink the punch.
+static func span_for(sheet: String, tex: Texture2D = null) -> float:
+	if STRIPS.has(sheet):
+		var span := 1.0
+		for raw in STRIPS[sheet]:
+			var rect: Rect2 = raw
+			span = maxf(span, maxf(rect.size.x, rect.size.y))
+		return span
+	var image_tex := tex if tex != null else texture_for(sheet)
+	if image_tex == null:
+		return 1.0
+	var grid := grid_for(sheet)
+	return maxf(float(image_tex.get_width()) / float(grid.x), float(image_tex.get_height()) / float(grid.y))
+
+
 static func region_for(sheet: String, index: int, tex: Texture2D = null) -> Rect2:
+	if STRIPS.has(sheet):
+		var frames: Array = STRIPS[sheet]
+		if frames.is_empty():
+			return Rect2()
+		return frames[clampi(index, 0, frames.size() - 1)]
 	var image_tex := tex if tex != null else texture_for(sheet)
 	if image_tex == null:
 		return Rect2()
@@ -90,15 +160,13 @@ func play(spec: Dictionary) -> void:
 		release()
 		return
 	_sprite.texture = tex
+	_frames = frame_count(_sheet)
 	var grid := grid_for(_sheet)
-	_cols = grid.x
-	_rows = grid.y
-	_frames = _cols * _rows
+	_cols = _frames if STRIPS.has(_sheet) else grid.x
+	_rows = 1 if STRIPS.has(_sheet) else grid.y
 	_frame = -1
-	# A sheet stamp fills `px` with one cell. A hero frame fills `px` with the plate.
-	var cell_w := float(tex.get_width()) / float(_cols)
-	var cell_h := float(tex.get_height()) / float(_rows)
-	var side := maxf(cell_w, cell_h)
+	# A strip fills `px` with its largest frame. A hero plate fills `px` whole.
+	var side := span_for(_sheet, tex)
 	var px := maxf(float(spec.get("px", VfxBudget.STAMP_HIT_PX)), 1.0)
 	_base_scale = px / maxf(side, 1.0)
 	position = spec.get("pos", Vector2.ZERO)
