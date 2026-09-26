@@ -20,18 +20,24 @@ Combat rules, kits, hit bands, and the five Koliseo arenas are unchanged. Stasis
 
 Press **F5 / Play**. `run/main_scene` is `scenes/mobile_hub.tscn` (`MobileHub.MOBILE_HUB`).
 
-The hub is a vertical stack of fat buttons (minimum height 72px). They fill the 960×720 window and grow when the expanded viewport is taller than 720, which is the portrait case. Each target is above a 48px floor.
+The hub matches Luca's menu mock. The ground is dark navy. A thin gold frame with corner brackets sits inside the window. **STASIUM XII** is a gold serif title at the top left, with a four-pointed star. Cinzel Semibold is bundled at `art/ui/hub/Cinzel-Semibold.ttf` (SIL Open Font License, `art/ui/hub/OFL-Cinzel.txt`).
 
-| Button | Opens |
-| --- | --- |
-| Koliseo | `scenes/class_select.tscn` |
-| Crosshaven Stasis | `scenes/stasis_run.tscn` for `crosshaven` (Threshgate) |
-| Brinewake Stasis | same run for `brinewake` (Tidehold) |
-| Slagcrown Stasis | same run for `slagcrown` (Ashmarch) |
-| Windmere Stasis | same run for `windmere` (Galevault) |
-| Stormspire Stasis | same run for `stormspire` (Coilgate) |
+Under the title is a wide Koliseo banner: the five roster heroes in the colosseum, left to right Kestrel, Ironjaw, Mender, Gloam, Bastion, with **KOLISEO** across the bottom. The whole banner is the hit target. It opens `scenes/class_select.tscn`, the same route as the old Koliseo button.
 
-The five ids are exactly `crosshaven`, `brinewake`, `slagcrown`, `windmere`, and `stormspire`. Boards are the existing files `art/maps/arena_colosseum_v2/tiled/{id}_15x15.*`. Door labels are Title Case of those ids (`Crosshaven Stasis`). No other spelling is accepted.
+Under a **RAID** header (crossed swords) is one row of five portrait tiles. The painted plates read:
+
+| Plate | Button text | Opens |
+| --- | --- | --- |
+| KOLISEO (on the banner) | Koliseo | `scenes/class_select.tscn` |
+| CROSSHAVEN STASIS | Crosshaven Stasis | `scenes/stasis_run.tscn` for `crosshaven` (Threshgate) |
+| BRINEWAKE STASIS | Brinewake Stasis | same run for `brinewake` (Tidehold) |
+| SLAGCROWN STASIS | Slagcrown Stasis | same run for `slagcrown` (Ashmarch) |
+| WINDMERE STASIS | Windmere Stasis | same run for `windmere` (Galevault) |
+| STORMSPIRE STASIS | Stormspire Stasis | same run for `stormspire` (Coilgate) |
+
+Banner and tile art are crops of that mock, stored in `art/ui/hub/` (`koliseo_banner.png`, `raid_crosshaven.png`, and the other four `raid_*.png`). Each control's `custom_minimum_size.y` is 72. At 960×720 the tiles lay out about 178×250, so the phone target stays fat. A taller expanded viewport (portrait) keeps those plate proportions and pins the footer star to the bottom of the frame. It does not crop the nameplates.
+
+The five ids are exactly `crosshaven`, `brinewake`, `slagcrown`, `windmere`, and `stormspire`. Boards are the existing files `art/maps/arena_colosseum_v2/tiled/{id}_15x15.*`. `door_text` stays Title Case of those ids (`Crosshaven Stasis`). The painted plate is the mock's uppercase. No other id spelling is accepted. Door names Threshgate, Tidehold, Ashmarch, Galevault, and Coilgate stay on the Stasis run screen.
 
 ## Koliseo
 
