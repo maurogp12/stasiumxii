@@ -63,6 +63,8 @@ var _bounce_gen: int = 0
 var _motion_playing: bool = false
 var _idle_hold: bool = false
 var _motion_gen: int = 0
+## Bumped when the collapse must stop. A late sample cannot hide the arrival.
+var _ambush_collapse_gen: int = 0
 var _plan_died: bool = false
 var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
@@ -533,13 +535,17 @@ func play_ambush_collapse(sec: float) -> float:
 	if sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return 0.0
 	_begin_action()
+	_ambush_collapse_gen += 1
+	var gen := _ambush_collapse_gen
 	var tw := create_tween()
 	_action_tween = tw
-	tw.tween_method(_sample_ambush_collapse, 0.0, 1.0, sec)
+	tw.tween_method(_sample_ambush_collapse.bind(gen), 0.0, 1.0, sec)
 	return sec
 
 
 func restore_ambush_body() -> void:
+	# Drop any collapse sample that is still queued for this frame.
+	_ambush_collapse_gen += 1
 	_plant_sprite()
 	var color := rest_modulate()
 	if _sprite != null and is_instance_valid(_sprite):
@@ -549,8 +555,8 @@ func restore_ambush_body() -> void:
 		_active_strip.modulate = color
 
 
-func _sample_ambush_collapse(t: float) -> void:
-	if _sprite == null:
+func _sample_ambush_collapse(t: float, gen: int) -> void:
+	if gen != _ambush_collapse_gen or _sprite == null:
 		return
 	var k := clampf(t, 0.0, 1.0)
 	var shrunk := lerpf(1.0, 0.12, k)
@@ -602,6 +608,11 @@ func settle_motion() -> void:
 		_apply_downed_pose()
 		return
 	_plant_sprite()
+	if not _flashing:
+		var color := rest_modulate()
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.modulate = color
+			_sprite.visible = true
 	_start_idle()
 
 

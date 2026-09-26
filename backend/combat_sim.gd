@@ -3714,6 +3714,9 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
+	# Pos was assigned above. Read it here so a reorder that damages first
+	# cannot still claim the landing cell.
+	var struck_from: Vector2i = actor["pos"]
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
 	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
 	_last_events.append({
@@ -3731,6 +3734,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"mp_spent": mp_cost,
 		"origin": origin_cell,
 		"destination": cell,
+		"struck_from": struck_from,
 		"teleported": true,
 		"backstab": backstab,
 		"facing": str(actor.get("facing", "")),

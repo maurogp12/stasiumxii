@@ -109,6 +109,7 @@ var _chrome_aim := false
 var _touch_commit_open := true
 ## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
 var _ambush_arrival_token := 0
+var _ambush_arrival_tween: Tween
 
 
 func _ready() -> void:
@@ -854,10 +855,11 @@ func _ambush_success_event(events: Array) -> Dictionary:
 	return {}
 
 
-## Collapse on the current tile, then snap, slash, and the existing facing damage.
+## Collapse on the current tile, then snap, hold, slash, and the facing damage.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
+	_stop_ambush_arrival_tween()
 	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
 	var seat := int(event.get("seat", -1))
 	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
@@ -868,24 +870,78 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	if played <= 0.0:
 		_finish_ambush_arrival(event, events, token)
 		return
-	_pending_motion_sec = maxf(_pending_motion_sec, played)
-	var tw := create_tween()
-	tw.tween_interval(sec)
-	tw.tween_callback(_finish_ambush_arrival.bind(event, events, token))
+	_pending_motion_sec = maxf(_pending_motion_sec, played + VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC)
+	_ambush_arrival_tween = create_tween()
+	_ambush_arrival_tween.tween_interval(sec)
+	_ambush_arrival_tween.tween_callback(_finish_ambush_arrival.bind(event, events, token))
 
 
 func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
 	if token != _ambush_arrival_token or not is_inside_tree():
 		return
+	# Plant before any slash or damage float. A miss never reaches this function.
+	# The collapse tween is the caller. Leave it; it has already finished.
+	_plant_ambush_body(event)
+	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
+	if hold <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_ambush_arrival_tween = null
+		_arm_ambush_contact(event, events, token)
+		return
+	_ambush_arrival_tween = create_tween()
+	_ambush_arrival_tween.tween_interval(hold)
+	_ambush_arrival_tween.tween_callback(_arm_ambush_contact.bind(event, events, token))
+
+
+## Slash and the facing number only after the body is standing on the back tile.
+func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
+	if token != _ambush_arrival_token or not is_inside_tree():
+		return
+	_ambush_arrival_tween = null
+	_plant_ambush_body(event)
+	if not _ambush_body_landed(event):
+		# Do not play the contact slash from the cast cell. The number still
+		# belongs on the foe. The submit tail plants the body from the snapshot.
+		_play_combat_feedback(events)
+		_arm_vfx(events)
+		return
+	_play_combat_feedback(events)
+	_arm_view_motions(events)
+	_arm_vfx(events)
+
+
+func _plant_ambush_body(event: Dictionary) -> void:
 	var seat := int(event.get("seat", -1))
 	if pawns_by_seat.has(seat):
 		var pawn: Pawn = pawns_by_seat[seat]
 		if pawn != null and is_instance_valid(pawn):
 			pawn.restore_ambush_body()
 	_snap_ambush_teleports([event])
-	_play_combat_feedback(events)
-	_arm_view_motions(events)
-	_arm_vfx(events)
+
+
+func _ambush_body_landed(event: Dictionary) -> bool:
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return false
+	var pawn: Pawn = pawns_by_seat[seat]
+	if pawn == null or not is_instance_valid(pawn):
+		return false
+	var dest := _ambush_event_dest(event)
+	return _in_bounds(dest) and pawn.grid_position == dest
+
+
+func _ambush_event_dest(event: Dictionary) -> Vector2i:
+	var dest := _event_cell(event, "destination")
+	if not _in_bounds(dest):
+		dest = _event_cell(event, "to")
+	if not _in_bounds(dest):
+		dest = _seat_cell(int(event.get("seat", -1)))
+	return dest
+
+
+func _stop_ambush_arrival_tween() -> void:
+	if _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween):
+		_ambush_arrival_tween.kill()
+	_ambush_arrival_tween = null
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -1220,6 +1276,8 @@ func _await_view_motions() -> void:
 
 
 func _motions_active() -> bool:
+	if _ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween) and _ambush_arrival_tween.is_running():
+		return true
 	if _vfx != null and _vfx.has_method("is_blocking") and bool(_vfx.is_blocking()):
 		return true
 	for pawn in pawns_by_seat.values():

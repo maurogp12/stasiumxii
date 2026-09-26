@@ -51,6 +51,9 @@ const AMBUSH_LUNGE_PX := 36.0
 ## Body collapses on the origin tile, then the snap. Kept inside the 0.6s lock
 ## together with the contact slash.
 const AMBUSH_COLLAPSE_SEC := 0.08
+## Rest on the back tile after the snap, before the slash. Long enough that the
+## blink reads as a relocation. The slash stays a local pose on that tile.
+const AMBUSH_ARRIVE_HOLD_SEC := 0.12
 ## Miss whiff. The body stays on the cast cell.
 const AMBUSH_WHIFF_SEC := 0.16
 
@@ -154,8 +157,8 @@ static func ambush_contact_sec() -> float:
 	return ANTICIPATION_SEC + ATTACK_OUT_SEC
 
 
-## Success: collapse at the origin, snap, slash, then the sim's facing damage.
-## Miss: whiff only. No snap and no damage beat.
+## Success: collapse at the origin, snap, hold on the back tile, slash, then
+## the sim's facing damage. Miss: whiff only. No snap and no damage beat.
 static func ambush_beats(event: Dictionary) -> Array:
 	if str(event.get("spell", "")) != SpellKits.AMBUSH and str(event.get("spell", "")) != "ambush":
 		return []
@@ -164,6 +167,7 @@ static func ambush_beats(event: Dictionary) -> Array:
 		return [
 			{"beat": "collapse", "sec": AMBUSH_COLLAPSE_SEC},
 			{"beat": "snap"},
+			{"beat": "hold", "sec": AMBUSH_ARRIVE_HOLD_SEC},
 			{"beat": "slash"},
 			{"beat": "damage"},
 		]

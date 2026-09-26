@@ -2196,7 +2196,60 @@ func _test_ambush_rules_keeper_lock() -> void:
 	var fade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	eq(bool(fade_hit.get("ok", false)), true, "Fade Ambush resolves on the Fade turn")
 	eq(_unit(0)["pos"], Vector2i(5, 2), "Fade Ambush lands on the empty back tile")
+	eq(fade_hit["events"][0].get("struck_from"), Vector2i(5, 2), "Fade Ambush damage is struck from the back tile")
+	eq(fade_hit["events"][0].get("caster_cell"), Vector2i(2, 2), "Fade Ambush cast cell is not the strike cell")
+	eq(fade_hit["events"][0].get("struck_from") == fade_hit["events"][0].get("caster_cell"), false, "Fade Ambush does not damage from the cast cell")
 	eq(int(_unit(0)["shades"]), 0, "Fade Ambush had no Shade to spend")
+	var ambush_fn := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
+	var ambush_at := ambush_fn.find("func _resolve_ambush")
+	ambush_fn = ambush_fn.substr(ambush_at)
+	var ambush_end := ambush_fn.find("\nfunc ")
+	if ambush_end > 0:
+		ambush_fn = ambush_fn.substr(0, ambush_end)
+	var pos_at := ambush_fn.find("actor[\"pos\"] = cell")
+	var struck_at := ambush_fn.find("var struck_from: Vector2i = actor[\"pos\"]")
+	var hp_at := ambush_fn.find("target[\"hp\"] = maxi(0, int(target[\"hp\"]) - damage)")
+	eq(pos_at >= 0 and struck_at > pos_at and hp_at > struck_at, true, "Ambush writes the back tile before it applies damage")
+
+	# Clip geometry: Invisible Gloam east of a west-facing foe. Axis back is
+	# past the body (front of the facing cone), still a teleport, still 22.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(6, 0), Vector2i(4, 0)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(6, 0), "seat": 0}).get("ok", false)), true, "east Fade resolves")
+	var east_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 0), "seat": 0})
+	eq(bool(east_hit.get("ok", false)), true, "east Invisible Ambush resolves")
+	eq(_unit(0)["pos"], Vector2i(3, 0), "east Invisible Ambush teleports to the back tile")
+	eq(east_hit["events"][0].get("struck_from"), Vector2i(3, 0), "east damage is struck after the teleport")
+	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
+	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
+	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
+	eq(int(_unit(1)["hp"]), 58, "east front Ambush is 22 FLEX")
+	eq(bool(_unit(0)["invisible"]), true, "east hit keeps Invisible")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(6, 0), Vector2i(4, 0)],
+		"kestrel_facing": "W",
+		"rolls": [100],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(6, 0), "seat": 0}).get("ok", false)), true, "east miss Fade resolves")
+	var east_miss: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 0), "seat": 0})
+	eq(bool(east_miss.get("ok", false)), true, "east Invisible Ambush miss resolves")
+	eq(bool(east_miss["events"][0].get("teleported", true)), false, "east miss does not teleport")
+	eq(east_miss["events"][0].has("struck_from"), false, "east miss has no strike cell")
+	eq(_unit(0)["pos"], Vector2i(6, 0), "east miss leaves Gloam on the cast cell")
+	eq(bool(_unit(0)["invisible"]), true, "east miss keeps Invisible")
+	eq(int(_unit(1)["hp"]), 80, "east miss deals no damage")
+	eq(int(_unit(0)["ap"]), 0, "east miss spends Fade 2 plus Ambush 4")
 
 	# Occupied back: reject + refund.
 	_sim.reset_match({
