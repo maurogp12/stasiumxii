@@ -21,6 +21,7 @@ const BANNER_ART := "res://art/ui/hub/koliseo_banner.png"
 ## Fat hit targets on the 960×720 canvas. Portrait expand keeps this floor
 ## and does not crop the plates; spare height sits around the same layout.
 const DOOR_MIN_HEIGHT := 72
+const _ApkClient := preload("res://backend/apk_update_client.gd")
 
 const NAVY := Color(0.008, 0.028, 0.07)
 const GOLD := Color(0.855, 0.69, 0.4)
@@ -38,6 +39,9 @@ var _title_row: Control
 var _banner: Button
 var _raid_row: Control
 var _footer: Control
+var _update_button: Button
+var _update_status: Label
+var _update_client: ApkUpdateClient
 var _banner_ratio: float = 1536.0 / 510.0
 var _tile_ratio: float = 292.0 / 410.0
 
@@ -167,6 +171,11 @@ func _build() -> void:
 		_remember_door(button, map_id)
 	_footer = FooterRule.new()
 	add_child(_footer)
+	_update_client = _ApkClient.new()
+	_update_client.name = "ApkUpdate"
+	_update_client.status_changed.connect(_set_update_status)
+	_update_client.busy_changed.connect(_set_update_busy)
+	add_child(_update_client)
 	_layout()
 
 
@@ -186,7 +195,7 @@ func _layout() -> void:
 	var width := extents.x - margin * 2.0
 	var top := margin
 	var bottom_limit := extents.y - margin
-	var title_h := 42.0
+	var title_h := 52.0
 	var raid_h := 28.0
 	var footer_h := 18.0
 	var gap := 8.0
@@ -253,6 +262,8 @@ func _make_title_row() -> HBoxContainer:
 	var rule := GoldRule.new()
 	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(rule)
+	_update_button = _make_update_button()
+	row.add_child(_update_button)
 	return row
 
 
@@ -277,6 +288,18 @@ func _make_raid_header() -> HBoxContainer:
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
+	var status := Label.new()
+	status.name = "UpdateStatus"
+	status.text = ""
+	status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	if _font != null:
+		status.add_theme_font_override("font", _font)
+	status.add_theme_font_size_override("font_size", 14)
+	status.add_theme_color_override("font_color", GOLD)
+	row.add_child(status)
+	_update_status = status
 	return row
 
 
@@ -326,6 +349,58 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 	button.focus_entered.connect(_tint_art.bind(plate, Color(1.08, 1.05, 0.96)))
 	button.focus_exited.connect(_tint_art.bind(plate, Color.WHITE))
 	return button
+
+
+func _on_update_pressed() -> void:
+	if _update_client != null and _update_client.has_method("start"):
+		_update_client.start()
+
+
+func _set_update_status(text: String) -> void:
+	if _update_status != null:
+		_update_status.text = text
+
+
+func _set_update_busy(busy: bool) -> void:
+	if _update_button != null:
+		_update_button.disabled = busy
+
+
+func _make_update_button() -> Button:
+	var button := Button.new()
+	button.name = "Actualizar"
+	button.text = "Actualizar"
+	button.focus_mode = Control.FOCUS_ALL
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.custom_minimum_size = Vector2(168, 48)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if _font != null:
+		button.add_theme_font_override("font", _font)
+	button.add_theme_font_size_override("font_size", 15)
+	button.add_theme_color_override("font_color", GOLD_BRIGHT)
+	button.add_theme_color_override("font_hover_color", Color.WHITE)
+	button.add_theme_color_override("font_pressed_color", GOLD)
+	button.add_theme_color_override("font_focus_color", Color.WHITE)
+	button.add_theme_color_override("font_disabled_color", GOLD_DIM)
+	button.add_theme_stylebox_override("normal", _update_style(false))
+	button.add_theme_stylebox_override("hover", _update_style(true))
+	button.add_theme_stylebox_override("pressed", _update_style(false))
+	button.add_theme_stylebox_override("focus", _update_style(true))
+	button.add_theme_stylebox_override("disabled", _update_style(false))
+	button.pressed.connect(_on_update_pressed)
+	return button
+
+
+func _update_style(lit: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.045, 0.09, 0.94)
+	style.border_color = GOLD_BRIGHT if lit else GOLD
+	style.set_border_width_all(1)
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 4
+	style.content_margin_bottom = 4
+	return style
 
 
 func _banner_style(lit: bool) -> StyleBoxFlat:

@@ -53,10 +53,15 @@ Picking a class opens `scenes/stasis_fight.tscn` on that door’s Stasis schemat
 
 `scenes/stasis_stub.tscn` is only an old path. If something still loads it, it forwards to the run. Do not add these scenes to PC `main`.
 
+## Actualizar
+
+The title row has a gold **Actualizar** button. It checks GitHub for a newer mobile debug APK and, on Android, hands that APK to the system installer. The Koliseo banner and the five RAID tiles are unchanged. Status text sits on the right of the RAID header. The first-time unknown-apps step is in [`docs/mobile_android_export.md`](mobile_android_export.md).
+
 ## Headless check
 
 ```text
 godot --headless --path . -s res://tests/run_mobile_hub_tests.gd
+godot --headless --path . -s res://tests/run_apk_update_tests.gd
 godot --headless --path . -s res://tests/run_stasis_tests.gd
 godot --headless --path . --quit-after 2
 ```

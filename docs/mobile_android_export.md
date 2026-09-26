@@ -25,7 +25,7 @@ Combat rules, kits, hit bands, maps, and the PC HUD are untouched.
 | ABI | `arm64-v8a` only |
 | Min / target SDK | blank in the preset. The debug APK below resolved to min SDK 24 and target SDK 36 |
 | Signing | on. Debug uses the shared keystore in `build_tools/mobile/` (see that README). Release keystore stays empty and outside git |
-| Permission | `INTERNET` (online lobby). Every other Android permission is off |
+| Permission | `INTERNET` (online lobby) and custom `android.permission.REQUEST_INSTALL_PACKAGES` (in-app update). The `INSTALL_PACKAGES` checkbox stays off |
 | Screen | immersive mode on. This hides the system bars. It does not change the 960×720 viewport |
 | Output path | `builds/android/stasiumxii-mobile.apk` (`/builds/` is gitignored) |
 
@@ -145,6 +145,31 @@ CLI equivalents once templates, JDK, and SDK are configured (the output director
 godot --headless --path . --export-debug "Android" builds/android/stasiumxii-mobile-debug.apk
 godot --headless --path . --export-release "Android" builds/android/stasiumxii-mobile-release.apk
 ```
+
+## In-app update (Actualizar)
+
+The hub control **Actualizar** checks public GitHub releases and, when a newer debug APK exists, hands it to the Android package installer. It does not use a GitHub token. It does not change the package id or the pinned debug keystore.
+
+The check lists `https://api.github.com/repos/maurogp12/stasiumxii/releases` and keeps the newest tag shaped `mobile-0.1.N-debug` that has an asset named `stasiumxii-mobile-debug.apk`. That tag is the same stamp as Android `versionName` `0.1.N-mobile`. The release notes' `(code N)` is Android `versionCode`. On the phone those two values are read from the running package (`PackageManager`), not from a second version file. A higher `versionCode` downloads:
+
+`https://github.com/maurogp12/stasiumxii/releases/download/<tag>/stasiumxii-mobile-debug.apk`
+
+The file is saved under the app's own files directory and shared with the system installer through Godot's FileProvider (`com.maurogp12.stasiumxii.mobile.fileprovider`). Android installs it over the same package. The installer accepts the upgrade when the APK is signed with the same pinned debug cert. A pre-pin build (0.1.11 or earlier, different cert) still needs one uninstall first. This flow does not uninstall.
+
+Offline, a GitHub rate limit, a missing release, or a bad download shows a short line on the hub. The Koliseo banner and the RAID tiles stay where they are.
+
+### First permission, then one tap
+
+Android 8 and later will not let an app open the package installer until that app is allowed to install unknown apps. `REQUEST_INSTALL_PACKAGES` is declared so STASIUM XII shows up in that list. It is not a runtime permission dialog. `INSTALL_PACKAGES` is a signature permission and stays off.
+
+The APK that contains **Actualizar** still has to be installed once the old way (copy the file, or `adb install -r`). After that:
+
+1. On the hub, press **Actualizar**.
+2. The first time, Android opens **Settings → Apps → Special app access → Install unknown apps** for STASIUM XII. Allow it, then return to the game. The download continues. If you back out without allowing it, the hub says so. Press **Actualizar** again after allowing it.
+3. Android's installer asks you to confirm the update. Accept it. The package `com.maurogp12.stasiumxii.mobile` is replaced in place.
+4. Later cuts are one tap: **Actualizar** checks, downloads, and opens the installer. The unknown-apps switch stays on.
+
+If the installed build is already the newest published debug APK, the hub says it is up to date. A desktop play of the hub can check GitHub, but the install handoff only runs in the Android APK.
 
 ## Not done in this environment
 
