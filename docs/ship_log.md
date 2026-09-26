@@ -136,3 +136,14 @@ The Windmere capture after the Rosebud pass is a glacier field: cyan, teal, ice,
 
 Headless recount, 0 failed: Koliseo maps 285, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
 
+### 2026-09-26 follow-up — Dofus readability, Rosebud board discarded
+
+The icy jewel board (cyan, lavender, gold stains, glowing rim, active-unit bloom) is not the look. The target is a readable Koliseo: warm painted biomes, a clear ink grid, unit sprites with walk and cast juice, and spell flashes that read on a busy board. Original STASIUM sheets only.
+
+- Tile grades only lift contrast on the existing grass, sea, ash, snow, and storm sheets. They do not replace a cell with a flat stain.
+- The grid is a warm ink stroke with a parchment gleam. The outer edge is the same ink. There is no colored rim.
+- Weather motes and a dim sun stay subtle. The active fighter is marked with a small warm ring at the feet.
+- Walk landing, the shared cast hand, and the brighter spell-tinted sparks and rings stay. Kit numbers, Ambush, and the APK do not.
+
+Headless recount, 0 failed: Koliseo maps 283, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+
