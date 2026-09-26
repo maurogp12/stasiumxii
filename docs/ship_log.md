@@ -2,6 +2,30 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.24
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.24-mobile`, `version/code` `25`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.23-debug`, so a phone on that cert upgrades in place with `adb install -r`. Hub **Actualizar** still works. Same package and the same cert, so this cut is an in-place upgrade.
+
+### Player-visible since 0.1.23
+
+- Ambush plants before the slash for a visible Shade and for Invisible (#156). The snap and the facing happen first. The slash waits until the body is on the back tile.
+- Drop Shade and Fade keep Invisible (#156). Ambush, Cut, and the other attack resolves clear Invisible on a hit or a miss. An Ambush miss still does not teleport. Visible Ambush still requires a Shade.
+- Walk steps keep the facing strip (#156). The cycle stays on the facing walk strip across a refresh, with feet pinned to the idle contact.
+- Scenario redo VFX (#157). Hit flash and footstep dust play as 3x3 sheets. Ambush slash, Mark Shot, and Detonate stay single hero flashes. The Ambush slash still waits until the body is planted.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Map geometry, tags, and room shapes.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged. Permissions stay `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 212, APK update 101, stasis 361, Koliseo maps 314, combat 5176, motion 2322, VFX 579, touch adapter 485, sprite 234, elevation chrome 187.
+
+Tag `mobile-0.1.24-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.24-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — Mobile debug APK 0.1.23
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.23-mobile`, `version/code` `24`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
