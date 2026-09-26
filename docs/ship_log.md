@@ -2,6 +2,31 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.21
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.21-mobile`, `version/code` `22`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.20-debug`, so a phone on that cert upgrades in place with `adb install -r`. Hub **Actualizar** still works. Same package and the same cert, so this cut is an in-place upgrade.
+
+### Player-visible since 0.1.20
+
+- Invisible Ambush snaps to the back tile, then slashes (#147). The body collapses, snaps, faces the prey, and only then deals the 22. A miss does not move and keeps Invisible.
+- Phone board zoom-in and a Dofus planted walk, about 0.30s per tile (#145). Portrait framing covers the diamond. The body faces the segment and plays the walk strip while the foot eases to the next tile.
+- Scenario combat VFX wired (#146). Keyed ambush, mark-shot, detonate, hit, and footstep plates play on the existing presentation beats.
+- Original isometric tileset boards (#148). Crosshaven, Brinewake, and Slagcrown use the original sheet. Windmere paints ice. Stormspire paints electric.
+- Hub **Actualizar** still checks public GitHub releases for the newest `mobile-*-debug` APK and hands it to the system installer. Same package `com.maurogp12.stasiumxii.mobile` and the pinned debug cert.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Map geometry, tags, and room shapes.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged. Permissions stay `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 186, APK update 84, stasis 361, Koliseo maps 314, combat 4647, motion 1957, VFX 528, touch adapter 460, sprite 234, elevation chrome 189.
+
+Tag `mobile-0.1.21-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.21-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — Windmere ice and Stormspire electric sheets
 
 The scenario sheets are sliced onto the same 64×32 grid as the other packs. Windmere paints snow, bare ice, ice water, and ice cliffs from `art/tilesets/original/pending/ice/stasium_tileset_ice.png`. Stormspire paints dark stone, purple energy tiles, and electric cliffs from `pending/electric/stasium_tileset_electric.png`. Shared prop names use `wind_prop_*` and `storm_prop_*` so Crosshaven, Brinewake, and Slagcrown stay on the original sheet.
