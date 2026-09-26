@@ -10,7 +10,7 @@ Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160.
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Those walk PNGs are the wakfu-ship-v2 punch strips (864×160, six 144×160 cells). Locked identities stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punchier regen and west is its mirror. North and south are still weak perspective placeholders; Scenario Art is regenerating them. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, hit, or death sheet.
+Those walk PNGs are the wakfu-ship-v3 strips (864×160, six 144×160 cells). Locked identities stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East and west are the punch regen (west is the mirror). North and south are the front and rear three-quarter strips, not the earlier compressed placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, hit, or death sheet.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
