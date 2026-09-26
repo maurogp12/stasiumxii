@@ -6,11 +6,11 @@ Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160.
 
 - `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — approved Wakfu Kestrel
 - `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2: fierce helm (iron-jaw grill, spikes, crest), dual double-bit axes, crimson battle-worn plate
-- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam B: amber/yellow eyes, wide grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
+- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B, not the white-eyes sheet: amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender D2, when the files arrive: cream/gold robe, open hood, green lantern staff
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion 2C, when the files arrive: charcoal-grey/gold armor, spiked mace, oversized tower shield
 
-Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet.
+Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet. Kestrel and Ironjaw stay on their approved walk concepts. The Gloam file that lands must be proposal B.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 

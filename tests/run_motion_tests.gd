@@ -1125,6 +1125,8 @@ func _test_strip_library_missing_and_slice() -> void:
 	truthy(readme.contains("kestrel_frames.tres"), "README lists the frames tres")
 	truthy(readme.contains("kestrel_cast_mark_{e,s,n,w}.png"), "README lists Mark Shot strips")
 	truthy(readme.contains("gloam_walk_{e,s,n,w}.png"), "README lists the gloam walks")
+	truthy(readme.contains("proposal B"), "Gloam walk drop is proposal B")
+	truthy(readme.contains("white-eyes"), "the white-eyes Gloam sheet is not the drop")
 	truthy(readme.contains("gloam_frames.tres"), "README lists the gloam frames tres")
 	truthy(readme.contains("art/grok_project/anims/"), "README keeps grok masters as fallback only")
 	pawn.free()
