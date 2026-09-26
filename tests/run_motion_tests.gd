@@ -55,11 +55,12 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.HOP_PX >= 4.0 and MOTION.HOP_PX <= 6.0, true, "step bounce is 4-6px")
 	eq(MOTION.WALK_BOUNCE_PX, MOTION.HOP_PX, "walk bounce uses the hop offset amplitude")
 	eq(MOTION.HOP_PX < 8.0, true, "the old 36px hop is gone")
-	eq(is_equal_approx(Pawn.WALK_TILE_SEC, 0.22), true, "per-tile travel is about 220ms")
-	eq(Pawn.WALK_TILE_SEC >= 0.20 and Pawn.WALK_TILE_SEC <= 0.25, true, "per-tile travel is 200-250ms")
+	eq(is_equal_approx(Pawn.WALK_TILE_SEC, 0.30), true, "per-tile travel is about 300ms")
+	eq(Pawn.WALK_TILE_SEC >= 0.28 and Pawn.WALK_TILE_SEC <= 0.32, true, "per-tile travel is 280-320ms")
 	eq(Pawn.WALK_HOP_SEC, Pawn.WALK_TILE_SEC, "the old hop duration alias matches the tile")
 	eq(is_equal_approx(MOTION.WALK_STEP_SEC, float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS * 0.5), true, "two foot plants per walk cycle")
-	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), 1.0), true, "walk strips loop at authored fps (speed_scale 1)")
+	var authored_plant := float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS * 0.5
+	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), authored_plant / Pawn.WALK_TILE_SEC), true, "walk strips plant once per tile of travel")
 	eq(is_equal_approx(Pawn.WALK_STRIP_FPS, 12.0), true, "walk strips are authored at 12 fps")
 	eq(Pawn.WALK_STRIP_FRAMES, 6, "walk strips are 6 frames")
 	eq(float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS > Pawn.WALK_HOP_SEC, true, "one walk cycle is longer than a single tile")
@@ -98,6 +99,10 @@ func _test_curves_return_to_origin() -> void:
 	var crest: Vector2 = MOTION.hop_offset(0.5)
 	eq(crest.x, 0.0, "hop arc has no sideways slide")
 	eq(crest.y, -MOTION.HOP_PX, "bounce crest is the tuned rise")
+	eq(MOTION.hop_offset(0.08).y > 0.4, true, "anticipation presses into the tile before the push-off")
+	eq(MOTION.hop_offset(0.9).y > 0.2, true, "the landing settles into the tile")
+	eq(is_equal_approx(MOTION.contact_shadow(0.5), 0.62), true, "the contact shadow shrinks at the crest")
+	eq(is_equal_approx(MOTION.contact_shadow(0.0), 1.0), true, "the contact shadow is full on the plant")
 	eq(MOTION.hop_scale(0.0), Vector2.ONE, "walk bounce does not scale")
 	eq(MOTION.hop_scale(0.5), Vector2.ONE, "walk bounce does not stretch at the crest")
 	eq(MOTION.hop_scale(1.0), Vector2.ONE, "walk bounce does not scale at the plant")
@@ -131,6 +136,8 @@ func _test_curves_return_to_origin() -> void:
 	var knock_t := MOTION.HIT_OUT_SEC / MOTION.hit_sec()
 	var knock: Vector2 = MOTION.hit_offset(knock_t, aim)
 	eq(is_equal_approx(knock.length(), MOTION.HIT_KNOCK_PX), true, "knockback reaches the tuned distance")
+	var stop_t := (MOTION.HIT_OUT_SEC + MOTION.HIT_STOP_SEC * 0.5) / MOTION.hit_sec()
+	eq(is_equal_approx(MOTION.hit_offset(stop_t, aim).length(), MOTION.HIT_KNOCK_PX), true, "hit-stop holds the knock")
 	var flinch: Vector2 = MOTION.hit_squash(knock_t)
 	eq(flinch.x > 1.05, true, "flinch widens on the knock")
 	eq(flinch.y < 0.9, true, "flinch compresses on the knock")
@@ -556,7 +563,9 @@ func _test_view_wiring() -> void:
 	eq(view.contains("STEP_PAUSE"), false, "the path has no pause between cells")
 	eq(view.contains("STEP_SEC"), false, "the board does not keep a second hop duration")
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
-	truthy(pawn_src.contains("const WALK_TILE_SEC := 0.22"), "tile travel is 0.22s on the pawn")
+	truthy(pawn_src.contains("const WALK_TILE_SEC := 0.30"), "tile travel is 0.30s on the pawn")
+	truthy(pawn_src.contains("tactical_cell"), "the tactical cell stays separate from the visual foot")
+	truthy(pawn_src.contains("class FootMark"), "the contact shadow is its own foot node")
 	truthy(pawn_src.contains("WALK_TILE_SEC)"), "the step bounce reads WALK_TILE_SEC")
 	truthy(pawn_src.contains("walk_strip_speed_scale"), "walk playback exposes authored speed_scale")
 	truthy(pawn_src.contains("has_walk_strip"), "pawn knows when the facing has a walk strip")
@@ -744,7 +753,7 @@ func _test_strip_fallback() -> void:
 	await process_frame
 	eq(walk.visible, true, "SE walk frames play for the path")
 	eq(String(walk.animation), "walk_se", "east facing plays the SE walk clip")
-	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the walk loop stays at authored speed_scale 1")
+	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the walk loop matches one plant per tile")
 	var squeezed := Pawn.strip_speed_scale(6, 12.0, Pawn.WALK_HOP_SEC)
 	eq(is_equal_approx(walk.speed_scale, squeezed), false, "the walk loop is not squeezed into one tile")
 	eq(walk.sprite_frames.get_animation_loop("walk_se"), true, "the walk clip loops")
@@ -1046,7 +1055,7 @@ func _test_batch1_disk_strips() -> void:
 	eq(strip.is_playing(), true, "kestrel walk keeps playing across the tile")
 	eq(strip.frame != walked_from, true, "kestrel walk frame advances")
 	eq(strip.sprite_frames.get_animation_loop("walk_e"), true, "disk walk loops")
-	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk walk stays at authored speed")
+	eq(is_equal_approx(strip.speed_scale, Pawn.walk_strip_speed_scale()), true, "disk walk plants once per tile")
 	eq(sprite.visible, false, "static sprite steps aside for the disk walk")
 	eq(_walk_bounce_ok(sprite.position.y), true, "disk walk bounces inside 4-6px")
 	eq(_walk_bounce_ok(strip.position.y), true, "the disk strip root takes the step bounce")
@@ -1323,7 +1332,8 @@ func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 
 
 func _walk_bounce_ok(y: float) -> bool:
-	return y <= 0.05 and y >= -MOTION.WALK_BOUNCE_PX - 0.05
+	# Rise stays inside 4–6px. The anticipation press may sink about 1.4px.
+	return y <= 1.6 and y >= -MOTION.WALK_BOUNCE_PX - 0.05
 
 
 func _step_bob_ok(y: float) -> bool:

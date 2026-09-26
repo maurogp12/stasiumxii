@@ -361,6 +361,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 			"duration": whiff_duration,
 			"tint": tint,
 			"width": 3.0,
+			"whiff": whiff_overshoot > 0.0,
 		}
 		if spell_id == "mark_shot" or spell_id == "detonate":
 			whiff["hand"] = true

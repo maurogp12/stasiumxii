@@ -11,9 +11,12 @@ class_name Pawn
 ## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
 ## (SE→e, SW→s, NE→n, NW→w). A drawn master name (`walk_se`, `attack_ne`)
 ## still resolves when the lettered clip is absent, then generic `walk` / `attack`.
-## A walk strip loops at authored fps for the whole path. The sprite root
-## bounces on the walk-cycle sine the whole time. If play() does not start,
-## the same light bounce stays on this static sprite. There is no tile-tall hop.
+## A walk strip loops for the whole path. Playback stretches the authored
+## plant so one step matches one tile of travel. The sprite root takes a
+## short gait (anticipation, push-off, modest rise, settle). If play() does
+## not start, the same gait stays on this static sprite. There is no tile-tall hop.
+## `grid_position` is the tactical cell. This node's origin is the visual foot.
+## The contact shadow is the Foot child and does not rise with the body.
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
 ## and falls back to v3 `attack_*` only when that sheet is missing.
 ## Detonate plays `cast_*` when present, otherwise a point pose — not attack_*.
@@ -68,9 +71,11 @@ var _impact_frozen: bool = false
 var _body_kind: String = ""
 var _death_tilt: float = 1.0
 var _held_death_strip: bool = false
+var _foot: FootMark
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
+const FIGURE_SHADER := preload("res://units/figure_read.gdshader")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -82,8 +87,9 @@ const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
-## The step bounce does not use this. It loops on ViewMotion.WALK_STEP_SEC.
-const WALK_TILE_SEC := 0.22
+## About 0.30s so a plant can finish without a hop. The gait loops on this
+## same interval, so the feet meet the tile.
+const WALK_TILE_SEC := 0.30
 const WALK_HOP_SEC := WALK_TILE_SEC
 ## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
 const WALK_STRIP_FRAMES := 6
@@ -101,6 +107,15 @@ const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
+
+
+## Ground contact. Stays on the visual foot. The body sprite rises above it.
+class FootMark extends Node2D:
+	var host: Pawn
+
+	func _draw() -> void:
+		if host != null:
+			host._draw_ground_mark_on(self)
 
 
 ## A small reach drawn in front of the body during a cast or a lunge.
@@ -169,6 +184,11 @@ func set_facing(dir: String) -> void:
 
 func facing_screen() -> Vector2:
 	return FACING_ISO.get(facing, Vector2(20, 10))
+
+
+## The cell combat and sorting commit. The node position can sit between cells.
+func tactical_cell() -> Vector2i:
+	return grid_position
 
 
 func motion_playing() -> bool:
@@ -281,7 +301,7 @@ func _start_path_bounce() -> void:
 	var tw := create_tween()
 	tw.set_loops(0)
 	_bounce_tween = tw
-	tw.tween_method(_sample_hop, 0.0, 1.0, VIEW_MOTION.WALK_STEP_SEC)
+	tw.tween_method(_sample_hop, 0.0, 1.0, WALK_TILE_SEC)
 
 
 ## One plant-to-plant bob for a step that is not part of a path.
@@ -352,9 +372,13 @@ func end_path_walk() -> void:
 	_play_landing()
 
 
-## Walk strips play at authored fps. speed_scale 1 does not squeeze a cycle into one tile.
+## One authored plant (half of the 6-frame cycle) stretched onto one tile.
+## A full cycle is two tiles. speed_scale stays under a one-tile squeeze.
 static func walk_strip_speed_scale() -> float:
-	return 1.0
+	var authored := float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS * 0.5
+	if WALK_TILE_SEC <= 0.0:
+		return 1.0
+	return authored / WALK_TILE_SEC
 
 
 ## Mark Shot uses cast_mark_* when Batch-1c is on disk. Until then the v3
@@ -645,6 +669,7 @@ func _apply_flash(color: Color) -> void:
 
 
 func _ensure_visuals() -> void:
+	_ensure_foot()
 	if _sprite != null and is_instance_valid(_sprite):
 		_ensure_chrome()
 		return
@@ -663,6 +688,29 @@ func _ensure_visuals() -> void:
 	_ensure_chrome()
 
 
+func _ensure_foot() -> void:
+	if _foot != null and is_instance_valid(_foot):
+		return
+	var existing := get_node_or_null("Foot")
+	if existing is FootMark:
+		_foot = existing as FootMark
+		_foot.host = self
+		return
+	_foot = FootMark.new()
+	_foot.name = "Foot"
+	_foot.host = self
+	_foot.z_index = -1
+	_foot.z_as_relative = true
+	add_child(_foot)
+	move_child(_foot, 0)
+
+
+func _figure_material() -> ShaderMaterial:
+	var mat := ShaderMaterial.new()
+	mat.shader = FIGURE_SHADER
+	return mat
+
+
 func _adopt_static_sprite(sprite: Sprite2D) -> void:
 	sprite.centered = true
 	sprite.offset = SPRITE_OFFSET
@@ -671,6 +719,8 @@ func _adopt_static_sprite(sprite: Sprite2D) -> void:
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	sprite.z_index = 0
 	sprite.z_as_relative = true
+	if not (sprite.material is ShaderMaterial):
+		sprite.material = _figure_material()
 
 
 func _rehome_sprite_strip(strip: AnimatedSprite2D) -> void:
@@ -982,6 +1032,8 @@ func _sample_idle(_t: float) -> void:
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
 	_sprite.position = Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	if _foot != null and is_instance_valid(_foot):
+		_foot.queue_redraw()
 
 
 func _stop_idle() -> void:
@@ -1178,6 +1230,8 @@ func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	strip.z_index = 0
 	strip.z_as_relative = true
 	strip.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	if not (strip.material is ShaderMaterial):
+		strip.material = _figure_material()
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
@@ -1311,6 +1365,8 @@ func _place_body(pos: Vector2) -> void:
 		_active_strip.position = pos
 		if _sprite != null and is_instance_valid(_sprite):
 			_active_strip.modulate = _sprite.modulate
+	if _foot != null and is_instance_valid(_foot):
+		_foot.queue_redraw()
 
 
 func _request_paint() -> void:
@@ -1324,23 +1380,29 @@ func _sprite_ready() -> bool:
 
 
 func _draw() -> void:
-	if _sprite_ready():
-		_draw_ground_mark()
 	if debug_draw_tokens or not _sprite_ready():
 		_draw_legacy_token()
 
 
-func _draw_ground_mark() -> void:
+## Contact shadow and seat ring. Drawn on Foot so a body rise does not lift them.
+func _draw_ground_mark_on(canvas: CanvasItem) -> void:
+	if not _sprite_ready():
+		return
 	var foot := SEAT_RING_CENTER
-	_draw_ellipse(foot + Vector2(0.0, 2.0), 16.0, 6.0, Color(0.08, 0.05, 0.04, 0.35))
-	_draw_ellipse(foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
-	_draw_ellipse_ring(foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	var lift := 0.0
+	if _sprite != null and is_instance_valid(_sprite):
+		lift = clampf(-_sprite.position.y / maxf(VIEW_MOTION.HOP_PX, 0.001), 0.0, 1.0)
+	var shadow := lerpf(1.0, 0.62, lift)
+	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
+	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
 	if burning:
-		_draw_ellipse_ring(foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
+		_draw_ellipse_ring_on(canvas, foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
-		_draw_ellipse_ring(foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
+		_draw_ellipse_ring_on(canvas, foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
-		_draw_ellipse_ring(foot, 21.0, 8.2, Color(0.95, 0.78, 0.28, 0.95), 2.2)
+		_draw_ellipse_ring_on(canvas, foot, 21.0, 8.2, Color(0.95, 0.78, 0.28, 0.95), 2.2)
 
 
 func _paint_status(canvas: CanvasItem) -> void:
@@ -1462,15 +1524,23 @@ func _ellipse_points(center: Vector2, rx: float, ry: float, steps: int = 28) -> 
 
 
 func _draw_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
-	draw_colored_polygon(_ellipse_points(center, rx, ry), color)
+	_draw_ellipse_on(self, center, rx, ry, color)
+
+
+func _draw_ellipse_on(canvas: CanvasItem, center: Vector2, rx: float, ry: float, color: Color) -> void:
+	canvas.draw_colored_polygon(_ellipse_points(center, rx, ry), color)
 
 
 func _draw_ellipse_ring(center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
+	_draw_ellipse_ring_on(self, center, rx, ry, color, width)
+
+
+func _draw_ellipse_ring_on(canvas: CanvasItem, center: Vector2, rx: float, ry: float, color: Color, width: float) -> void:
 	var pts := _ellipse_points(center, rx, ry)
 	if pts.is_empty():
 		return
 	pts.append(pts[0])
-	draw_polyline(pts, color, width, true)
+	canvas.draw_polyline(pts, color, width, true)
 
 
 func _paint_flame(canvas: CanvasItem, origin: Vector2) -> void:

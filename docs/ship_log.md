@@ -2,6 +2,24 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Koliseo art and movement feel
+
+Rosie Sunmeadow pass on `mobile`. Presentation only. The look target is a painted isometric arena (warm ground, ink grid, punchy but small impacts). Icy cyan and violet glass grades are pulled back to painted biome color.
+
+### Player-visible
+
+- A walk takes about 0.30s per tile. `grid_position` stays the tactical cell and updates when the foot commits. The pawn origin is the visual foot. Facing still turns per cardinal segment, then the body follows. Batch-1 / Batch-1c walk strips (`art/export_2x/characters/...`) play one authored plant per tile. `*_gen.png` stays unloaded.
+- The step is a press, a push-off, a rise of at most 6px, and a landing settle. The contact shadow is a Foot child and stays on the ground.
+- Heroes and Stasis foes share a dark rim and a north light so the silhouette reads at board scale. Feet stay on the shipped (0, -72) pivot.
+- Koliseo and Stasis boards keep their Locked tags. The grade is painted (Crosshaven grass, Brinewake sea-green, Slagcrown warm stone, Windmere snow, Stormspire dusk stone). The grid stays a separate ink overlay. A ring of existing props stands outside the diamond.
+- A hit holds the knock for a short hit-stop, then a small recoil. The contact flash is compact. A miss drifts sideways, wears a slash through MISS, and the shot breaks before it connects. Camera shake stays 4px and slows down.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Ambush teleport resolve, Void pathing, and mobile target hit-area sizing.
+- No new class kits. No APK cut.
+
 ## 2026-09-26 — Mobile debug APK 0.1.18
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.18-mobile`, `version/code` `19`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

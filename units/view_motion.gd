@@ -5,7 +5,9 @@ class_name ViewMotion
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
 ## files exist (SE→e, SW→s, NE→n, NW→w). Walk slides through cell centers
-## while `walk_<facing>` loops. A missing strip keeps the bounce and adds
+## while `walk_<facing>` loops. The tactical cell stays on the pawn.
+## The visual foot is the pawn origin; the body rises off that foot and
+## the contact shadow stays on it. A missing strip keeps the bounce and adds
 ## squash on launch/land plus stretch at the crest. It does not play a
 ## tile-tall hop. Facing turns in place for two walk frames before the
 ## translate. The snapshot facing snaps only after the last land.
@@ -71,10 +73,12 @@ const CAST_SCALE := 1.14
 const REACTION_DELAY := 0.06
 
 const HIT_OUT_SEC := 0.08
-const HIT_SHAKE_SEC := 0.10
+## Hold the knock so the contact reads. The clock is not paused.
+const HIT_STOP_SEC := 0.045
+const HIT_SHAKE_SEC := 0.08
 const HIT_RETURN_SEC := 0.08
 const HIT_KNOCK_PX := 6.0
-const HIT_SHAKE_PX := 2.8
+const HIT_SHAKE_PX := 1.6
 const HIT_SQUASH_X := 1.18
 const HIT_SQUASH_Y := 0.74
 
@@ -148,7 +152,7 @@ static func cast_phase(t: float) -> String:
 
 
 static func hit_sec() -> float:
-	return HIT_OUT_SEC + HIT_SHAKE_SEC + HIT_RETURN_SEC
+	return HIT_OUT_SEC + HIT_STOP_SEC + HIT_SHAKE_SEC + HIT_RETURN_SEC
 
 
 static func support_sec() -> float:
@@ -352,10 +356,31 @@ static func gesture_reach(phase: String) -> float:
 			return 0.0
 
 
+## One plant. Anticipation presses into the tile, push-off reaches the crest
+## at t=0.5, then the body settles. The rise stays inside HOP_PX.
 static func hop_offset(t: float) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
-	return Vector2(0.0, -sin(t * PI) * HOP_PX)
+	if t < 0.16:
+		var wind := sin((t / 0.16) * PI)
+		return Vector2(0.0, wind * 1.4)
+	if t <= 0.50:
+		var push := _ease_out((t - 0.16) / 0.34)
+		return Vector2(0.0, lerpf(0.0, -HOP_PX, push))
+	if t < 0.82:
+		var fall := _ease_in((t - 0.50) / 0.32)
+		return Vector2(0.0, lerpf(-HOP_PX, 0.0, fall))
+	var settle := sin(((t - 0.82) / 0.18) * PI)
+	return Vector2(0.0, settle * 1.1)
+
+
+## 1 on the plant, smaller while the body is off the tile. The shadow
+## stays on the foot; it does not rise with the sprite.
+static func contact_shadow(t: float) -> float:
+	var lift := maxf(0.0, -hop_offset(t).y)
+	if HOP_PX <= 0.0:
+		return 1.0
+	return lerpf(1.0, 0.62, clampf(lift / HOP_PX, 0.0, 1.0))
 
 
 ## Elapsed-time bounce for a whole path. Zeros are foot plants. The phase
@@ -498,13 +523,15 @@ static func hit_squash(t: float) -> Vector2:
 		return Vector2.ONE
 	var total := hit_sec()
 	var time := clampf(t, 0.0, 1.0) * total
+	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var shake_end := stop_end + HIT_SHAKE_SEC
 	var k := 0.0
 	if time <= HIT_OUT_SEC:
 		k = _ease_out(time / maxf(HIT_OUT_SEC, 0.0001))
-	elif time <= HIT_OUT_SEC + HIT_SHAKE_SEC:
+	elif time <= shake_end:
 		k = 1.0
 	else:
-		var bt := (time - HIT_OUT_SEC - HIT_SHAKE_SEC) / maxf(HIT_RETURN_SEC, 0.0001)
+		var bt := (time - shake_end) / maxf(HIT_RETURN_SEC, 0.0001)
 		k = 1.0 - _ease_in(bt)
 	return Vector2(lerpf(1.0, HIT_SQUASH_X, k), lerpf(1.0, HIT_SQUASH_Y, k))
 
@@ -516,13 +543,18 @@ static func hit_offset(t: float, away: Vector2) -> Vector2:
 	var time := clampf(t, 0.0, 1.0) * total
 	var dir := _unit(away)
 	var perp := Vector2(-dir.y, dir.x) if dir != Vector2.ZERO else Vector2.RIGHT
+	var stop_end := HIT_OUT_SEC + HIT_STOP_SEC
+	var shake_end := stop_end + HIT_SHAKE_SEC
 	if time <= HIT_OUT_SEC:
 		return dir * HIT_KNOCK_PX * _ease_out(time / HIT_OUT_SEC)
-	if time <= HIT_OUT_SEC + HIT_SHAKE_SEC:
-		var st := (time - HIT_OUT_SEC) / HIT_SHAKE_SEC
-		var wobble := sin(st * TAU * 2.0) * (1.0 - st)
+	# Contact hold. The body does not shake through the hit-stop.
+	if time <= stop_end:
+		return dir * HIT_KNOCK_PX
+	if time <= shake_end:
+		var st := (time - stop_end) / HIT_SHAKE_SEC
+		var wobble := sin(st * TAU * 1.5) * (1.0 - st)
 		return dir * HIT_KNOCK_PX + perp * HIT_SHAKE_PX * wobble
-	var bt := (time - HIT_OUT_SEC - HIT_SHAKE_SEC) / HIT_RETURN_SEC
+	var bt := (time - shake_end) / HIT_RETURN_SEC
 	return dir * HIT_KNOCK_PX * (1.0 - _ease_in(bt))
 
 

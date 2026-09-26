@@ -301,6 +301,7 @@ func _play_projectile(spec: Dictionary) -> void:
 		"tint": spec.get("tint", VfxPalette.KESTREL_AIR),
 		"width": float(spec.get("width", 3.0)),
 		"head": bool(spec.get("head", true)),
+		"whiff": bool(spec.get("whiff", false)),
 		"z": _z_air(to_cell),
 	})
 
@@ -455,7 +456,7 @@ func _process(delta: float) -> void:
 		_stop_shake(true)
 		return
 	var fade := 1.0 - (_shake_t / _shake_dur)
-	var spin := Vector2(sin(_shake_t * 60.0), cos(_shake_t * 60.0))
+	var spin := Vector2(sin(_shake_t * 28.0), cos(_shake_t * 22.0) * 0.65)
 	_board.position = _shake_base + spin * _shake_amp * fade
 
 

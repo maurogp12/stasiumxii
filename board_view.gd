@@ -867,6 +867,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	var pawn: Pawn = pawns_by_seat[seat]
 	# One tween through cell centers. Equal time per cell keeps straight and
 	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
+	# grid_position is the tactical cell and updates when the foot commits.
+	# pawn.position is the visual foot and slides between those cells.
 	# The sim has already moved the unit. Put the body back on the departure tile
 	# before the slide, or a refresh snaps it and the walk reads as a teleport.
 	# Face the step before the body moves. hop_facing covers a non-cardinal

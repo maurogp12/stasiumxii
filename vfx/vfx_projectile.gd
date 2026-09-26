@@ -12,6 +12,7 @@ var _duration: float = 0.2
 var _elapsed: float = 0.0
 var _delay: float = 0.0
 var _show_head: bool = true
+var _whiff: bool = false
 var _points: PackedVector2Array = PackedVector2Array()
 
 
@@ -62,6 +63,13 @@ func play(spec: Dictionary) -> void:
 		_glow.width = width * 2.8
 	_head.color = tint.lerp(Color.WHITE, 0.25)
 	_show_head = bool(spec.get("head", true))
+	_whiff = bool(spec.get("whiff", false))
+	if _whiff:
+		_line.default_color = Color(tint.r, tint.g, tint.b, 0.55)
+		_line.width = maxf(1.6, width * 0.7)
+		if _glow != null:
+			_glow.default_color = Color(tint.r, tint.g, tint.b, 0.12)
+		_show_head = false
 	_head.visible = false
 	z_as_relative = false
 	z_index = int(spec.get("z", 80))
@@ -97,6 +105,10 @@ func _sample(t: float) -> void:
 	var at := flat + Vector2(0, -lift)
 	_head.position = at
 	_head.rotation = (_to - _from).angle()
+	# A miss breaks before it would connect, then the stub overshoots.
+	if _whiff and t > 0.55 and t < 0.78:
+		_head.visible = false
+		return
 	_points.append(at)
 	if _points.size() > 8:
 		_points.remove_at(0)

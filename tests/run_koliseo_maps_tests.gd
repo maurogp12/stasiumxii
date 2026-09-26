@@ -280,6 +280,12 @@ func _test_alive_grade() -> void:
 	truthy(slag_grade.r > slag_grade.b and slag_grade.r < 1.25, "Slagcrown stays warm stone")
 	var haven_grade: Color = life.grade_for("crosshaven", "ground", 0, Vector2i(1, 1))["grade"]
 	truthy(haven_grade.g > haven_grade.r and haven_grade.g > haven_grade.b, "Crosshaven stays grass")
+	var storm_grade: Color = life.grade_for("stormspire", "ground", 0, Vector2i(1, 1))["grade"]
+	truthy(storm_grade.r + 0.02 >= storm_grade.b, "Stormspire stays painted stone")
+	var storm_ground: Dictionary = life.grade_for("stormspire", "ground", 0, Vector2i(2, 2))
+	truthy(float(storm_ground["shimmer"]) < 0.2, "Stormspire ground does not glass over")
+	var wind_ground: Dictionary = life.grade_for("windmere", "ground", 0, Vector2i(2, 2))
+	truthy(float(wind_ground["shimmer"]) < 0.12, "Windmere snow does not glass over")
 	eq(life.GRID_INK.a >= 0.7, true, "the tactical grid ink is dark enough to read")
 	eq(life.GRID_GLEAM.a >= 0.4, true, "the tactical grid has a light edge")
 	truthy(life.GRID_GLEAM.r >= life.GRID_GLEAM.b, "the grid gleam stays warm")
@@ -294,6 +300,7 @@ func _test_alive_grade() -> void:
 	var life_src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
 	eq(life_src.contains("jewel"), false, "arena life does not stain jewels")
 	eq(life_src.contains("paint_backdrop"), false, "arena life does not paint a glassy backdrop")
+	truthy(life_src.contains("func _build_rim"), "ship arenas grow a scenery rim")
 	var src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
 	eq(src.contains("hit_chance"), false, "arena life does not touch hit bands")
 	eq(src.contains("legal_intents"), false, "arena life does not touch legality")
