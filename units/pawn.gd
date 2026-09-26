@@ -33,6 +33,8 @@ var unit_name: String = ""
 var class_id: String = ""
 var facing: String = "E"
 var seat: int = 0
+## Package crop for a Stasis foe. Empty on Koliseo bodies.
+var stasis_sprite: String = ""
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -113,6 +115,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	grid_position = unit["pos"]
 	unit_name = str(unit["name"])
 	class_id = str(unit["class_id"])
+	stasis_sprite = str(unit.get("stasis_sprite", ""))
 	facing = str(unit["facing"])
 	seat = int(unit.get("seat", seat))
 	hp = int(unit["hp"])
@@ -522,7 +525,16 @@ static func sprite_path(class_id: String, facing: String) -> String:
 
 
 static func sprite_texture(class_id: String, facing: String) -> Texture2D:
-	var path := sprite_path(class_id, facing)
+	return _texture_at(sprite_path(class_id, facing))
+
+
+static func _stasis_texture(path: String) -> Texture2D:
+	return _texture_at(path)
+
+
+static func _texture_at(path: String) -> Texture2D:
+	if path == "":
+		return null
 	if _sprite_cache.has(path) and _sprite_cache[path] is Texture2D:
 		return _sprite_cache[path]
 	var loaded: Variant = load(path)
@@ -594,7 +606,10 @@ func _ensure_chrome() -> void:
 func _sync_sprite() -> void:
 	_ensure_visuals()
 	_sprite.flip_h = false
-	_sprite.texture = sprite_texture(class_id, facing)
+	if stasis_sprite != "":
+		_sprite.texture = _stasis_texture(stasis_sprite)
+	else:
+		_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
@@ -1084,6 +1099,9 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 
 
 func _ensure_motion_strips() -> void:
+	# Stasis foes keep the package still. Ironjaw walk/attack strips must not play.
+	if stasis_sprite != "":
+		return
 	if class_id == "":
 		return
 	var frames := STRIP_LIBRARY.frames_for(class_id)
@@ -1312,7 +1330,8 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 
 func _seat_color() -> Color:
 	# Same greens / reds as the P1 / P2 deploy zone highlights.
-	if seat == 1:
+	# Stasis trash seats 2 and 3 are hostiles, same as seat 1.
+	if seat > 0:
 		return Color(0.78, 0.42, 0.42, 0.92)
 	return Color(0.36, 0.72, 0.52, 0.92)
 

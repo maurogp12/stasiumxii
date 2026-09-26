@@ -59,3 +59,42 @@ A second pass against the reference beats. Locked destination stays the enemy ba
 - A backstab float is the large bouncing number (`BACKSTAB` at 1.55). The coach line stays the smaller clinical log. The button stays soft-grey until AP and Shade geometry are legal. Consume, snap, face, and slash stay on the same beat.
 
 Headless recount after this follow-up, 0 failed: combat 4510, VFX 439, motion 1828, touch adapter 403.
+
+## 2026-09-26 — Stasis-1 two-room boards and package foes
+
+Luca’s phone repro showed Ironjaw-looking foes and a four-step trash chain (1/3, 2/3, 3/3, boss). The Stasis-1 package sheet locks the grammar at two rooms. This pass is mobile-only. It does not port Stasis to `main`, and it does not bump or cut an APK.
+
+### Player-visible
+
+- Each door is **Room A, then Room B**. Room A is one combat. Scarecrow Drudge, Grain Hound, and Threshling (and the other doors’ three trash) stand on the board together. Each living trash takes a turn after the player. Clearing that fight offers **Enter Room B**. Room B is the boss alone. The 1/3 counter is gone.
+- Foe portraits are crops of the package concept sheets in `art/stasis/foes/`. Warden of the Sheaves is the scarecrow at Ironjaw height in the 144×160 canvas. Trash are shorter. The pawn does not play the Ironjaw strips. Strike still resolves on Ironjaw’s Locked card, because Strike is not on the other four kits. That class id is the card owner, not the drawing.
+- Boards are `art/maps/stasis_v1/{biome}_room_{a|b}_15x15_tags.json`, approximated from the schematic JPEGs in the package (mud furrows and a water trough, a mud ring, tidal channels, a lava spoke and lava ring, meltwater, a water/mud cross, hay / reef / dais / throne elevation, paint-only sparks and the other props). Koliseo still loads `arena_colosseum_v2`.
+
+### Choice
+
+CombatSim grew a Stasis-only pack: extra hostile seats, casts against each of them, and the match ends when the player falls or the last hostile falls. Koliseo never passes `stasis_roster` with more than one hostile, so its 1v1 path is unchanged. Trash HP stays **22** and attack base **6** (boss **56 / 10**). Those stay provisional Open. Three full turns are hotter than the old sequential duels; Balance has not retuned them.
+
+Coilspire’s sprite is the Coilgate door-sheet crop (spider body, tesla coils), used with the evolution sheet as a silhouette check. The 4★/5★ forms are not a separate fight.
+
+### Files
+
+- `backend/stasis_catalog.gd`, `backend/stasis_ai.gd`, `scenes/stasis_run.gd`, `scenes/stasis_fight.gd`
+- `backend/combat_sim.gd` — pack seats, gated on the Stasis roster
+- `backend/cell_tag_map.gd` — optional `map_id` on a tags file so a room keeps its biome dress
+- `units/pawn.gd`, `ui/hud.gd` — package portrait, hostile seat tint
+- `art/stasis/foes/`, `art/maps/stasis_v1/`
+- `docs/mobile_stasis.md`, `tests/run_stasis_tests.gd`
+
+### Intentionally not changed
+
+- No Ambush or Shade Locked edits. No cosmetics. No `data/kits.gd` writes.
+- No APK version bump and no APK cut.
+- Stasis stays off PC `main`.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+| Suite | Passed |
+| --- | ---: |
+| Stasis | 346 |
+| Mobile hub | 168 |
+| Combat | 4510 |

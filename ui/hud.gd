@@ -739,6 +739,21 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var seat0 := _unit(units, 0)
 	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
+	# Stasis Room A has more than the Koliseo pair. The right card follows the
+	# living hostile whose turn it is, then the first one still standing.
+	if units.size() > 2:
+		var shown: Dictionary = {}
+		if active_seat > 0:
+			shown = _unit(units, active_seat)
+		if shown.is_empty() or not bool(shown.get("alive", false)):
+			for unit in units:
+				if typeof(unit) != TYPE_DICTIONARY:
+					continue
+				if int(unit.get("seat", -1)) > 0 and bool(unit.get("alive", false)):
+					shown = unit
+					break
+		if not shown.is_empty():
+			seat1 = shown
 	_apply_seat_banner(0, seat0)
 	_apply_seat_banner(1, seat1)
 	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
@@ -1129,6 +1144,8 @@ func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
 	if seat >= _seat_panels.size():
 		return
 	var color := _banner_color(class_id)
+	if str(unit.get("stasis_sprite", "")) != "":
+		color = Color(0.42, 0.3, 0.22)
 	_seat_panels[seat].add_theme_stylebox_override("panel", _panel(color))
 
 

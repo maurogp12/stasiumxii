@@ -1,9 +1,9 @@
 extends RefCounted
 class_name StasisAi
 
-## One legal intent for the Stasis foe. Walk closer, then the stand-in Strike.
+## One legal intent for a Stasis foe. Walk closer, then Strike.
 ## Advance, Shoulder, Crush, and class kits are ignored even if a test feeds them.
-## No new combat rules. CombatSim still resolves the card.
+## Room A calls this once per living trash seat. CombatSim still resolves the card.
 
 
 static func choose(legal: Array, actor_pos: Vector2i, foe_pos: Vector2i) -> Dictionary:
@@ -16,7 +16,7 @@ static func choose(legal: Array, actor_pos: Vector2i, foe_pos: Vector2i) -> Dict
 			continue
 		var intent: Dictionary = item
 		var kind := str(intent.get("type", ""))
-		if kind == "cast" and str(intent.get("spell", "")) == StasisCatalog.STAND_IN_SPELL:
+		if kind == "cast" and str(intent.get("spell", "")) == StasisCatalog.STRIKE_CARD:
 			strike = intent
 		elif kind == "move":
 			var dest: Vector2i = _cell(intent.get("to", actor_pos))

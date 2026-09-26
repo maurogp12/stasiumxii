@@ -136,7 +136,7 @@ Five **15×15** arenas (random hot-seat pick; no map picker):
 
 ### Mobile hub (`mobile` branch)
 
-F5 → `scenes/mobile_hub.tscn`: fat buttons for Koliseo + five **Stasis** doors. Luca Garza (overnight, 2026-09-25) unparked the phone doors: each opens a solo Room A trash chain, then a Room B boss, on that biome’s 15×15 board. Foe HP/damage are **provisional Open** (see [`docs/mobile_stasis.md`](mobile_stasis.md)). **Not for PC `main`.**
+F5 → `scenes/mobile_hub.tscn`: fat buttons for Koliseo + five **Stasis** doors. Luca Garza (overnight, 2026-09-25) unparked the phone doors. Each door is two rooms on a Stasis schematic: Room A is the trash pack together, Room B is the boss. Foe HP/damage are **provisional Open** (see [`docs/mobile_stasis.md`](mobile_stasis.md)). **Not for PC `main`.**
 
 ### Art direction (Locked preferences)
 

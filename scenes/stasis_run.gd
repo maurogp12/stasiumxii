@@ -81,7 +81,7 @@ func _build() -> void:
 	var id := StasisCatalog.biome_id
 	_title = _label(col, StasisCatalog.door_name(id), 28, Color(0.95, 0.9, 0.82))
 	var trash := ", ".join(StasisCatalog.trash_names(id))
-	var copy := "%s · %s\nRoom A trash, then Room B boss. Solo on the 15×15 board.\nTrash: %s\nBoss: %s" % [
+	var copy := "%s · %s\nTwo rooms. Room A is one fight with the trash pack, then Room B is the boss.\nTrash: %s\nBoss: %s" % [
 		MobileHub.title_of(id),
 		CellTagMap.blurb_of(id),
 		trash,
