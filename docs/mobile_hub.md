@@ -12,6 +12,10 @@ Mobile track only. This hub lives on the `mobile` branch. It stays off PC `main`
 
 Combat rules, kits, hit bands, and the five Koliseo arenas are unchanged. Stasis does not add dungeon rooms, loot, keys, trash, or bosses.
 
+## Related
+
+- [`docs/things_to_review.md`](things_to_review.md) — pending design questions for Mauro and Luca. Items there are not Locked. Current Locked Ambush still requires a live Shade unless the caster is Invisible.
+
 ## F5
 
 Press **F5 / Play**. `run/main_scene` is `scenes/mobile_hub.tscn` (`MobileHub.MOBILE_HUB`).
