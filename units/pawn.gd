@@ -118,16 +118,15 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Secondary to art-fill. Scenario is regenerating fuller Ironjaw strips in
-## the same 864×160 sheet (144×160 cells) and the same foot-anchor Y as the
-## other classes. Until those sheets land, this map is an optional display
-## nudge on the body sprites only. The pawn node and the pick capsule stay
-## at scale 1, so the pivot is the foot offset, not the collider center.
-## Identity stays Berserker A + helm A2 (iron-jaw grill, dual double-bit axes).
-## 1.0 keeps the shared 0.5. Above PRESENTATION_SCALE_CAP, including 1.20,
-## is ignored. Kit numbers and map geometry do not read this.
+## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
+## (~147px) against Bastion ~130px, so the optional mul stays 1.0. The map
+## can later hold 1.08–1.12 on the body sprites only. The pawn node and the
+## pick capsule stay at scale 1: the pivot is the foot offset (0, -72), not
+## the collider center. Identity is Berserker A + helm A2 (iron-jaw grill,
+## dual double-bit axes). Above PRESENTATION_SCALE_CAP, including 1.20, is
+## ignored. Kit numbers and map geometry do not read this.
 const PRESENTATION_SCALE_CAP := 1.12
-const IRONJAW_COMBAT_SCALE := 1.10
+const IRONJAW_COMBAT_SCALE := 1.0
 const CLASS_PRESENTATION_SCALE := {
 	"ironjaw": IRONJAW_COMBAT_SCALE,
 }

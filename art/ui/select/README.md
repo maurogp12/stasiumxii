@@ -12,4 +12,4 @@ Static plates for the Koliseo class cards. Hot-seat and Online share them. Not c
 | `gloam_select.png` | Gloam | B. Amber eyes, chilling grin, dual curved silver knives, purple cloak and gold trim |
 | `bastion_select.png` | Bastion | 2C. Charcoal-grey and gold plate, spiked mace, oversized tower shield |
 
-`ironjaw_select.png` is a smaller file than the others. It is the same canvas and a full figure, with a shorter palette from the ship walk cell.
+`ironjaw_select.png` is the same 512×768 canvas. The figure fills about 91% of the height (Berserker A, helm A2: iron-jaw grill, dual double-bit axes).

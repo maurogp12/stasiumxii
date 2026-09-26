@@ -57,13 +57,15 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
 	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
 	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
-	eq(sprite.scale, ironjaw_scale, "ironjaw uses the interim presentation scale")
-	eq(is_equal_approx(ironjaw_scale.x, Pawn.SPRITE_SCALE.x * Pawn.IRONJAW_COMBAT_SCALE), true, "ironjaw multiplies the shared 0.5")
-	eq(is_equal_approx(ironjaw_scale.y, ironjaw_scale.x), true, "ironjaw presentation scale is uniform")
-	eq(Pawn.IRONJAW_COMBAT_SCALE >= 1.08 and Pawn.IRONJAW_COMBAT_SCALE <= Pawn.PRESENTATION_SCALE_CAP, true, "interim ironjaw nudge stays in the 1.08-1.12 cap")
-	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a 1.20 bump is rejected until art-fill")
-	eq(Pawn.capped_presentation_mul(1.25), 1.0, "a larger bump is rejected until art-fill")
-	eq(Pawn.presentation_mul("ironjaw") <= Pawn.PRESENTATION_SCALE_CAP, true, "the applied ironjaw mul stays inside the cap")
+	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the shared 0.5")
+	eq(ironjaw_scale, Pawn.SPRITE_SCALE, "art-fill carries Ironjaw's size; no extra mul")
+	eq(Pawn.IRONJAW_COMBAT_SCALE, 1.0, "the optional ironjaw nudge is off")
+	eq(Pawn.capped_presentation_mul(1.10), 1.10, "a later 1.10 nudge still fits the cap")
+	eq(Pawn.capped_presentation_mul(1.12), 1.12, "the cap itself is allowed")
+	eq(Pawn.capped_presentation_mul(1.13), 1.0, "above 1.12 is ignored")
+	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a 1.20 bump is rejected")
+	eq(Pawn.capped_presentation_mul(1.25), 1.0, "a larger bump is rejected")
+	eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw ships at the shared scale")
 	pawn._sample_hop(0.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
 	pawn._sample_hop(1.0)
@@ -264,16 +266,18 @@ func _assert_ironjaw_feet(scale_y: float) -> void:
 		return
 	var height := image.get_height()
 	var foot_y := -1
+	var head_y := height
 	for y in range(height - 1, -1, -1):
 		var hit := false
 		for x in image.get_width():
 			if image.get_pixel(x, y).a > 0.08:
 				hit = true
+				head_y = y
 				break
-		if hit:
+		if hit and foot_y < 0:
 			foot_y = y
-			break
-	eq(foot_y >= 0, true, "ironjaw walk frame 0 has a foot row")
+	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw foot row stays on the shared anchor")
+	eq(float(foot_y - head_y + 1) / float(height) >= 0.90, true, "ironjaw art-fill covers at least 90% of the cell")
 	if foot_y < 0:
 		return
 	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.SPRITE_OFFSET.y
