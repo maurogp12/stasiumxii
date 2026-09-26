@@ -62,6 +62,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_instant_invisible_ambush_relocates_before_damage()
+	_test_invisible_breaks_on_attack()
 	_test_ambush_shade_origin_teleport()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
@@ -1551,7 +1552,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade token")
 	eq(str(_unit(0).get("facing", "")), str(miss_setup["units"][0].get("facing", "")), "Ambush miss does not turn Gloam")
 	eq(bool(_unit(0)["shade"]), true, "Ambush miss keeps Shade")
-	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
 	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
 	var miss_event: Dictionary = missed["events"][0]
 	eq(str(miss_event.get("type", "")), "miss", "Ambush miss emits miss")
@@ -1574,7 +1575,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(bool(hit.get("ok", false)), true, "Ambush hit on an empty back tile resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), shades_hit, "Invisible origin does not spend Shade")
-	eq(bool(_unit(0)["invisible"]), true, "Ambush hit keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "Ambush hit ends Invisible")
 	eq(int(_unit(1)["hp"]), 50, "empty back hit is 22 × 1.35 = 30")
 	var hit_event: Dictionary = hit["events"][0]
 	eq(hit_event.get("destination"), back, "Ambush hit destination is the back tile")
@@ -2260,7 +2261,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 		eq(bool(self_hit.get("ok", false)), true, "Invisible Manhattan %d Ambush resolves" % dist)
 		eq(_unit(0)["pos"], foe + Vector2i(1, 0), "Invisible Manhattan %d lands on the facing-rear tile" % dist)
 		eq(int(_unit(0)["shades"]), shades_before, "Invisible origin does not spend Shade at Manhattan %d" % dist)
-		eq(bool(_unit(0)["invisible"]), true, "Invisible Manhattan %d keeps Invisible" % dist)
+		eq(bool(_unit(0)["invisible"]), false, "Invisible Manhattan %d ends Invisible" % dist)
 
 	# Shade BEHIND a W-facing foe. The back tile is one step past the foe on the
 	# approach axis (3,2), not the facing-rear tile between Shade and foe (5,2).
@@ -2369,7 +2370,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
 	eq(int(_unit(1)["hp"]), 58, "east front Ambush is 22 FLEX")
-	eq(bool(_unit(0)["invisible"]), true, "east hit keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2385,7 +2386,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(east_miss["events"][0].get("teleported", true)), false, "east miss does not teleport")
 	eq(east_miss["events"][0].has("struck_from"), false, "east miss has no strike cell")
 	eq(_unit(0)["pos"], Vector2i(6, 0), "east miss leaves Gloam on the cast cell")
-	eq(bool(_unit(0)["invisible"]), true, "east miss keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "east miss ends Invisible")
 	eq(int(_unit(1)["hp"]), 80, "east miss deals no damage")
 	eq(int(_unit(0)["ap"]), 0, "east miss spends Fade 2 plus Ambush 4")
 
@@ -2409,7 +2410,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_unit(0)["pos"], gloam, "illegal_back does not teleport")
 	eq(int(_unit(0)["shades"]), 1, "illegal_back keeps the Shade")
 
-	# MISS: no teleport, keep Shade and Invisible, 4 AP spent.
+	# MISS: no teleport, keep Shade, end Invisible, 4 AP spent.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2426,10 +2427,129 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(missed.get("ok", false)), true, "Ambush miss resolves")
 	eq(_unit(0)["pos"], Vector2i(2, 2), "Ambush miss does not teleport")
 	eq(int(_unit(0)["shades"]), shades_miss, "Ambush miss keeps the Shade")
-	eq(bool(_unit(0)["invisible"]), true, "Ambush miss keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
 	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+
+
+## Soft Lock 2026-09-26. Drop Shade keeps Invisible. An attack resolve ends it.
+## Visible Ambush still needs a Shade. Fade still grants Invisible.
+func _test_invisible_breaks_on_attack() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var back := Vector2i(5, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+	})
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Visible Gloam without a Shade cannot Ambush")
+	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(bare.get("illegal", false)), true, "Ambush without Shade or Invisible is rejected")
+	eq(str(bare.get("reason", "")), "no_shade", "the parked body-origin stays no_shade")
+	eq(int(_unit(0)["ap"]), 6, "the parked reject refunds AP")
+
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade still grants Invisible")
+	eq(bool(_unit(0)["invisible"]), true, "Fade sets Invisible")
+	var dropped: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 3), "seat": 0})
+	eq(bool(dropped.get("ok", false)), true, "Drop Shade under Invisible resolves")
+	eq(int(_unit(0)["shades"]), 1, "Drop Shade under Invisible places a Shade")
+	eq(bool(_unit(0)["invisible"]), true, "Drop Shade under Invisible stays Invisible")
+	eq(_unit(0)["pos"], gloam, "Drop Shade under Invisible does not move Gloam")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [100],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0}).get("ok", false)), true, "miss fixture Fade resolves")
+	var hp_before := int(_unit(1)["hp"])
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(missed.get("ok", false)), true, "Invisible Ambush miss resolves")
+	eq(_unit(0)["pos"], gloam, "Invisible Ambush miss does not relocate")
+	eq(int(_unit(1)["hp"]), hp_before, "Invisible Ambush miss deals no damage")
+	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush miss ends Invisible")
+	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Ambush miss is not a teleport")
+	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0}).get("ok", false)), true, "hit fixture Fade resolves")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
+	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
+	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
+	eq(int(_unit(1)["hp"]), 50, "Invisible Ambush hit is 22 × 1.35")
+	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
+	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 4), prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": gloam, "seat": 0}).get("ok", false)), true, "Visible fixture plants the Shade")
+	_complete_opponent_turn()
+	eq(bool(_unit(0)["invisible"]), false, "Visible Shade Ambush starts Visible")
+	var shade_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(shade_hit.get("ok", false)), true, "Visible Shade Ambush resolves")
+	eq(_unit(0)["pos"], back, "Visible Shade Ambush plants on the back tile")
+	eq(shade_hit["events"][0].get("struck_from"), back, "Visible Shade Ambush hits from the back tile")
+	eq(int(_unit(1)["hp"]), 50, "Visible Shade Ambush deals the backstab 30")
+	eq(int(_unit(0)["shades"]), 0, "Visible Shade Ambush spends the Shade")
+	eq(bool(_unit(0)["invisible"]), false, "Visible Shade Ambush stays Visible")
+
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(0, 0), Vector2i(1, 0)],
+		"kestrel_facing": "E",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut fixture Fade resolves")
+	var cut_hit: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
+	eq(bool(cut_hit.get("ok", false)), true, "Cut under Invisible resolves")
+	eq(int(_unit(1)["hp"]) < 80, true, "Cut under Invisible deals damage")
+	eq(bool(_unit(0)["invisible"]), false, "Cut hit ends Invisible")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(0, 0), Vector2i(1, 0)],
+		"kestrel_facing": "E",
+		"rolls": [100],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut miss fixture Fade resolves")
+	var cut_miss: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
+	eq(bool(cut_miss.get("ok", false)), true, "Cut miss under Invisible resolves")
+	eq(int(_unit(1)["hp"]), 80, "Cut miss deals no damage")
+	eq(_unit(0)["pos"], Vector2i(0, 0), "Cut miss does not move Gloam")
+	eq(bool(_unit(0)["invisible"]), false, "Cut miss ends Invisible")
 
 
 func _test_instant_invisible_ambush_relocates_before_damage() -> void:
@@ -2466,7 +2586,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(event.get("destination"), back, "Instant Invisible destination is the back tile")
 	eq(bool(event.get("teleported", false)), true, "Instant Invisible Ambush teleports")
 	eq(str(_unit(0).get("facing", "")), "E", "Instant Invisible faces the prey from the back tile")
-	eq(bool(_unit(0)["invisible"]), true, "Instant Invisible hit keeps Invisible")
+	eq(bool(_unit(0)["invisible"]), false, "Instant Invisible hit ends Invisible")
 	eq(int(_unit(0)["shades"]), 0, "Instant Invisible had no Shade to spend")
 	# Source order: the landing write, the strike-cell read, then HP.
 	var ambush_fn := FileAccess.get_file_as_string("res://backend/combat_sim.gd")

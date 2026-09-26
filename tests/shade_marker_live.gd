@@ -219,9 +219,9 @@ static func run(host: SceneTree) -> void:
 	var stayed: Node = board.pawns_by_seat[0]
 	host.eq(stayed.grid_position, ambush_from, "Invisible Ambush miss leaves the pawn on the cast cell")
 	host.eq(stayed.position, board._cell_to_local(ambush_from), "Invisible Ambush miss does not snap")
-	# Player path. Fade, then _submit, not only _present_resolve. The body fades
-	# on the cast cell, stands on the back tile before the slash, and a miss
-	# keeps Invisible.
+	# Player path. Fade, then _submit, not only _present_resolve. The body stays
+	# hidden on the cast cell, stands on the back tile before the slash, and a
+	# miss does not teleport. Both the hit and the miss end Invisible.
 	var submit_from := Vector2i(6, 0)
 	var submit_prey := Vector2i(4, 0)
 	var submit_back := Vector2i(3, 0)
@@ -352,7 +352,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path settle leaves Gloam on the back tile")
 	host.eq(submit_pawn.position, board._cell_to_local(submit_back), "submit-path settle does not walk Gloam back")
 	var submit_sprite := submit_pawn.get_node_or_null("Sprite") as CanvasItem
-	host.eq(submit_sprite != null and submit_sprite.modulate.a < 0.05, true, "Invisible arrival keeps the solid body hidden")
+	host.eq(submit_sprite != null and submit_sprite.modulate.a > 0.9, true, "Ambush ends Invisible so the body stays drawn")
+	host.eq(bool(submit_pawn.invisible), false, "submit-path Ambush hit is Visible")
 	CombatSim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -377,7 +378,8 @@ static func run(host: SceneTree) -> void:
 	for unit in miss_snap.get("units", []):
 		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == 0:
 			miss_unit = unit
-	host.eq(bool(miss_unit.get("invisible", false)), true, "submit-path Ambush miss keeps Invisible")
+	host.eq(bool(miss_unit.get("invisible", false)), false, "submit-path Ambush miss ends Invisible")
+	host.eq(bool(miss_pawn.invisible), false, "submit-path Ambush miss draws Gloam")
 	main.queue_free()
 	await host.process_frame
 
