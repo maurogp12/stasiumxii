@@ -56,18 +56,23 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.death_sec() <= 0.6, true, "death slump is at most 0.6s")
 	eq(MOTION.IDLE_PERIOD >= 1.6 and MOTION.IDLE_PERIOD <= 2.2, true, "idle period is a slow breathe")
 	eq(MOTION.IDLE_BOB_PX >= 1.0 and MOTION.IDLE_BOB_PX <= 2.0, true, "idle bob is 1-2px")
-	eq(MOTION.HOP_PX >= 4.0 and MOTION.HOP_PX <= 6.0, true, "step bounce is 4-6px")
+	eq(MOTION.HOP_PX >= 2.0 and MOTION.HOP_PX <= 4.0, true, "hop peak is 2-4px")
 	eq(MOTION.WALK_BOUNCE_PX, MOTION.HOP_PX, "walk bounce uses the hop offset amplitude")
 	eq(MOTION.HOP_PX < 8.0, true, "the old 36px hop is gone")
 	eq(is_equal_approx(Pawn.WALK_TILE_SEC, 0.30), true, "per-tile travel is about 300ms")
-	eq(Pawn.WALK_TILE_SEC >= 0.28 and Pawn.WALK_TILE_SEC <= 0.32, true, "per-tile travel is 280-320ms")
+	eq(Pawn.WALK_TILE_SEC >= 0.25 and Pawn.WALK_TILE_SEC <= 0.35, true, "per-tile travel stays in the phase A window")
 	eq(Pawn.WALK_HOP_SEC, Pawn.WALK_TILE_SEC, "the old hop duration alias matches the tile")
-	eq(is_equal_approx(MOTION.WALK_STEP_SEC, float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS * 0.5), true, "two foot plants per walk cycle")
-	var authored_plant := float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS * 0.5
-	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), authored_plant / Pawn.WALK_TILE_SEC), true, "walk strips plant once per tile of travel")
+	eq(is_equal_approx(MOTION.WALK_STEP_SEC, Pawn.WALK_TILE_SEC), true, "one hop period is one tile")
+	var authored_cycle := float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS
+	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), authored_cycle / Pawn.WALK_TILE_SEC), true, "walk strips play one full cycle per tile")
 	eq(is_equal_approx(Pawn.WALK_STRIP_FPS, 12.0), true, "walk strips are authored at 12 fps")
 	eq(Pawn.WALK_STRIP_FRAMES, 6, "walk strips are 6 frames")
-	eq(float(Pawn.WALK_STRIP_FRAMES) / Pawn.WALK_STRIP_FPS > Pawn.WALK_HOP_SEC, true, "one walk cycle is longer than a single tile")
+	eq(is_equal_approx(Pawn.walk_playback_fps(6), 20.0), true, "six frames play at about 20 fps")
+	eq(absf(Pawn.walk_playback_fps(8) - 27.0) < 0.5, true, "eight frames play at about 27 fps")
+	eq(MOTION.stride_cycles_per_tile(), 1, "exactly one stride cycle per tile")
+	var plant_share := 1.0 - MOTION.HOP_PLANT_AT
+	eq(plant_share >= 0.15 and plant_share <= 0.20, true, "the plant is the last 15-20% of the tween")
+	eq(MOTION.STEP_SETTLE_SEC >= 0.04 and MOTION.STEP_SETTLE_SEC <= 0.06, true, "step anticipation is a 40-60ms weight shift")
 	eq(is_equal_approx(Pawn.strip_speed_scale(8, 24.0, Pawn.WALK_HOP_SEC), (8.0 / 24.0) / Pawn.WALK_HOP_SEC), true, "a longer one-shot still fits the hop window")
 	eq(Pawn.strip_speed_scale(0, 24.0, Pawn.WALK_HOP_SEC), 1.0, "an empty strip does not divide by zero")
 	eq(MOTION.ATTACK_LUNGE_PX >= 16.0 and MOTION.ATTACK_LUNGE_PX <= 20.0, true, "melee lunge reaches the tile edge")
@@ -100,54 +105,78 @@ func _test_tunables_and_budget() -> void:
 func _test_curves_return_to_origin() -> void:
 	eq(MOTION.hop_offset(0.0), Vector2.ZERO, "hop starts on the tile")
 	eq(MOTION.hop_offset(1.0), Vector2.ZERO, "hop ends on the tile")
+	eq(MOTION.hop_offset(MOTION.HOP_PLANT_AT), Vector2.ZERO, "the plant window is back on the tile")
+	eq(MOTION.hop_offset(0.9), Vector2.ZERO, "the last slice stays planted")
 	var crest: Vector2 = MOTION.hop_offset(0.5)
 	eq(crest.x, 0.0, "hop arc has no sideways slide")
 	eq(crest.y, -MOTION.HOP_PX, "bounce crest is the tuned rise")
-	eq(MOTION.hop_offset(0.08).y > 0.4, true, "anticipation presses into the tile before the push-off")
-	eq(MOTION.hop_offset(0.9).y > 0.2, true, "the landing settles into the tile")
+	eq(MOTION.hop_offset(0.08).y < -0.2, true, "the hop rises off the tile instead of pressing in")
+	eq(MOTION.hop_offset(0.08).y > -MOTION.HOP_PX, true, "the early rise is below the crest")
+	var sunk := false
+	for hop_i in 21:
+		if MOTION.hop_offset(float(hop_i) / 20.0).y > 0.001:
+			sunk = true
+	eq(sunk, false, "the hop never presses into the floor")
 	eq(is_equal_approx(MOTION.contact_shadow(0.5), 0.62), true, "the contact shadow shrinks at the crest")
 	eq(is_equal_approx(MOTION.contact_shadow(0.0), 1.0), true, "the contact shadow is full on the plant")
+	eq(is_equal_approx(MOTION.contact_shadow(0.9), 1.0), true, "the plant shadow is full while the sprite is down")
 	eq(MOTION.hop_scale(0.0), Vector2.ONE, "walk bounce does not scale")
 	eq(MOTION.hop_scale(0.5), Vector2.ONE, "walk bounce does not stretch at the crest")
 	eq(MOTION.hop_scale(1.0), Vector2.ONE, "walk bounce does not scale at the plant")
 	eq(MOTION.hop_scale(0.86), Vector2.ONE, "walk bounce does not squash on the landing")
 	eq(MOTION.walk_bounce_offset(0.0), Vector2.ZERO, "bounce plants at the start of a step")
 	var mid_step := MOTION.walk_bounce_offset(MOTION.WALK_STEP_SEC * 0.5)
-	eq(mid_step.y, -MOTION.WALK_BOUNCE_PX, "cycle crest is the 4-6px bounce")
+	eq(mid_step.y, -MOTION.WALK_BOUNCE_PX, "cycle crest is the 2-4px hop")
 	eq(mid_step.x, 0.0, "bounce has no sideways slide")
 	var across_tile := MOTION.walk_bounce_offset(Pawn.WALK_TILE_SEC)
-	eq(across_tile == Vector2.ZERO, false, "a tile boundary does not reset the step bounce")
-	eq(absf(across_tile.y) <= MOTION.WALK_BOUNCE_PX + 0.001, true, "bounce stays inside 4-6px across a tile")
+	eq(across_tile, Vector2.ZERO, "a tile boundary plants the hop")
+	eq(absf(across_tile.y) <= MOTION.WALK_BOUNCE_PX + 0.001, true, "bounce stays inside 2-4px across a tile")
 	eq(MOTION.walk_bounce_offset(MOTION.WALK_STEP_SEC), Vector2.ZERO, "the next plant lands on the walk cycle")
-	eq(MOTION.step_travel(0.0), 0.0, "a step starts planted on the departure tile")
-	eq(MOTION.step_travel(0.08), 0.0, "the press does not slide the foot")
-	eq(MOTION.step_travel(1.0), 1.0, "a step ends planted on the arrival tile")
-	eq(MOTION.step_travel(0.9), 1.0, "the settle holds the arrival tile")
+	eq(MOTION.step_travel(0.0), 0.0, "a step starts on the departure tile")
+	eq(MOTION.step_travel(0.08) > 0.0, true, "the tween eases immediately")
+	eq(MOTION.step_travel(0.08) < 0.08, true, "ease-in is slower than a linear skate at the start")
+	eq(MOTION.step_travel(1.0), 1.0, "a step ends on the arrival tile")
+	eq(MOTION.step_travel(0.9), 1.0, "the plant holds the arrival tile")
+	eq(MOTION.step_travel(MOTION.HOP_PLANT_AT), 1.0, "travel has arrived when the plant starts")
 	var stride := MOTION.step_travel(0.5)
-	eq(stride > 0.35 and stride < 0.7, true, "the stride is underway at mid tile")
+	eq(stride > 0.35 and stride < 0.85, true, "the stride is underway at mid tile")
 	eq(MOTION.step_travel(0.3) < MOTION.step_travel(0.55), true, "travel only moves forward")
 	eq(is_equal_approx(MOTION.step_travel(0.5), 0.5), false, "mid-tile travel is eased, not a raw lerp")
-	eq(MOTION.HOP_PX <= 6.0, true, "the body rise stays a short plant, not a long hop")
-	eq(MOTION.walk_cycle_frame(0.0, 6, 0), 0, "a step presses on the contact frame")
+	eq(is_equal_approx(MOTION.step_travel(0.2), 0.2), false, "early travel is not a linear skate")
+	eq(MOTION.HOP_PX <= 4.0, true, "the body rise stays a short hop, not a long arc")
+	eq(MOTION.walk_cycle_frame(0.0, 6, 0), 0, "a step starts on the contact frame")
 	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != 0, true, "the stride leaves the idle frame")
 	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != MOTION.walk_cycle_frame(1.0, 6, 0), true, "arrival is not the passing frame")
+	eq(MOTION.walk_cycle_frame(1.0, 6, 0), 0, "arrival plants frame 0")
 	eq(MOTION.walk_cycle_frame(1.0, 6, 0), MOTION.walk_cycle_frame(0.0, 6, 1), "the next segment starts on the landed contact")
+	eq(MOTION.walk_cycle_frame(0.99, 6, 0), 0, "the plant does not freeze a passing frame")
 	eq(MOTION.walk_cycle_frame(0.35, 6, 0) != MOTION.walk_cycle_frame(0.55, 6, 0), true, "the cycle advances through the stride")
 	eq(MOTION.walk_cycle_frame(1.0, 1, 0), 0, "a one-frame strip has nothing to advance")
+	eq(_stride_wraps(6), 1, "a six-frame strip wraps once per tile")
+	eq(_stride_wraps(8), 1, "an eight-frame strip wraps once per tile")
 	for step_t in [0.25, 0.4, 0.55]:
 		var open_frame := MOTION.walk_cycle_frame(step_t, 6, 0)
 		eq(MOTION.step_travel(step_t) > 0.0 and MOTION.step_travel(step_t) < 1.0, true, "the stride is between the plants")
 		eq(open_frame != 0 and open_frame != MOTION.walk_cycle_frame(1.0, 6, 0), true, "a moving foot does not show a contact frame")
-	eq(MOTION.stride_lead(0.0, Vector2(20, 10)), Vector2.ZERO, "the press does not lean off the cell")
-	eq(MOTION.stride_lead(1.0, Vector2(20, 10)), Vector2.ZERO, "arrival plants the lead")
-	eq(MOTION.stride_rise(0.0), Vector2.ZERO, "the press keeps the body on the foot")
+	eq(MOTION.stride_lead(0.0, Vector2(20, 10)), Vector2.ZERO, "the hop does not lean off the cell")
+	eq(MOTION.stride_lead(0.5, Vector2(20, 10)), Vector2.ZERO, "horizontal travel stays on the foot")
+	eq(MOTION.stride_lead(1.0, Vector2(20, 10)), Vector2.ZERO, "arrival does not leave a lead")
+	eq(MOTION.stride_rise(0.0), Vector2.ZERO, "the start keeps the body on the foot")
 	eq(MOTION.stride_rise(1.0), Vector2.ZERO, "arrival puts the body back on the foot")
-	var lead := MOTION.stride_lead(0.5, Vector2(20, 10))
-	var axis := Vector2(20, 10).normalized()
-	eq(lead.length() > 6.0 and lead.length() <= MOTION.STRIDE_LEAD_PX + 0.01, true, "the stride lead stays inside one step")
-	eq((lead - axis * lead.dot(axis)).length() < 0.01, true, "the lead has no sideways slide")
 	var rise := MOTION.stride_rise(0.5)
-	eq(rise.x == 0.0 and rise.y < -3.0 and rise.y > -8.0, true, "the body rises only while the foot is moving")
+	eq(rise.x == 0.0 and rise.y <= -2.0 and rise.y >= -4.0, true, "the body rises a few pixels at mid tile")
+	eq(MOTION.anticipate_segment(0, false), true, "the first tile settles even when facing already matches")
+	eq(MOTION.anticipate_segment(1, false), false, "a straight middle tile does not settle")
+	eq(MOTION.anticipate_segment(2, true), true, "a direction change settles")
+	eq(MOTION.dust_on_plant(false, false), false, "a straight middle tile does not puff")
+	eq(MOTION.dust_on_plant(true, false), true, "a facing change puffs on the plant")
+	eq(MOTION.dust_on_plant(false, true), true, "the final plant puffs")
+	var anti := MOTION.step_anticipation_offset(0.5, Vector2(20, 10))
+	eq(anti.length() > 0.5 and anti.length() < 4.0, true, "the weight shift is a small lean")
+	eq(MOTION.step_anticipation_offset(0.0, Vector2(20, 10)), Vector2.ZERO, "anticipation starts on the foot")
+	eq(MOTION.step_anticipation_offset(1.0, Vector2(20, 10)), Vector2.ZERO, "anticipation ends on the foot")
+	var dust_life := preload("res://vfx/vfx_budget.gd").STAMP_DUST_LIFE
+	eq(dust_life >= 0.20 and dust_life <= 0.35, true, "footstep dust is a short puff")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(3, 2), Vector2(32, 16)), "E", "an east step faces east")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(2, 1), Vector2(32, -16)), "N", "a north step faces north")
 	eq(MOTION.walk_segment_facing(Vector2i(4, 4), Vector2i(3, 4), Vector2(-32, -16)), "W", "a west step faces west")
@@ -499,8 +528,10 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.scale, Vector2(0.5, 0.5), "step bounce does not squash or stretch")
 	var chrome := pawn.get_node("Chrome") as Node2D
 	eq(chrome.get_parent(), pawn, "name chrome stays on the pawn during a bounce")
-	eq(chrome.position.y, -MOTION.HOP_PX, "the name rides the step bounce")
-	eq(chrome.position.x, 0.0, "the name does not slide sideways on a hop")
+	eq(chrome.position, Vector2.ZERO, "the hop does not lift name or aim chrome")
+	var foot := pawn.get_node_or_null("Foot") as Node2D
+	if foot != null:
+		eq(foot.position, Vector2.ZERO, "the hop does not lift the ground mark")
 	eq(pawn.name_label_origin().y < Pawn.HEAD_HP_Y, true, "the name stays above the HP bar during a hop")
 	pawn._sample_hop(1.0)
 	eq(sprite.position, Vector2.ZERO, "hop sample ends on the origin")
@@ -581,7 +612,7 @@ func _test_live_tree() -> void:
 	pawn.play_step_hop()
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var hopped: float = (pawn.get_node("Sprite") as Sprite2D).position.y
-	eq(hopped < -1.0 and hopped > -MOTION.WALK_BOUNCE_PX - 0.5, true, "a live step bounce stays inside 4-6px")
+	eq(hopped < -1.0 and hopped > -MOTION.WALK_BOUNCE_PX - 0.5, true, "a live step bounce stays inside 2-4px")
 	eq((pawn.get_node("Sprite") as Sprite2D).scale != Vector2(0.5, 0.5), true, "a class without a walk strip squashes or stretches")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.7).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "a live step bounce returns to the tile center")
@@ -699,8 +730,13 @@ func _test_view_wiring() -> void:
 	truthy(pawn_src.contains("walk_cycle_frame"), "a driven step samples the walk cycle")
 	truthy(motion_src.contains("func walk_cycle_frame"), "the walk cycle frame is a pure function")
 	var arm_at := anim_src.find("_arm_path_walk")
-	var turn_at := anim_src.find("TURN_FRAME_SEC")
-	eq(arm_at >= 0 and turn_at > arm_at, true, "the walk cycle starts before the in-place turn hold")
+	var settle_at := anim_src.find("STEP_SETTLE_SEC")
+	var anti_call := anim_src.find("_sample_step_anticipation")
+	eq(arm_at >= 0 and anti_call > arm_at, true, "the walk strip is up before the weight shift")
+	eq(anti_call >= 0 and settle_at > anti_call, true, "the weight shift uses the settle duration")
+	eq(anti_call >= 0 and sample_at > anti_call, true, "the weight shift runs before the tile tween")
+	truthy(anim_src.contains("dust_on_plant"), "dust is chosen per plant, not on every tile")
+	truthy(anim_src.contains("anticipate_segment"), "only the first tile and direction changes settle")
 	truthy(anim_src.contains("origin"), "the hop starts on the departure tile, not the snapped dest")
 	truthy(pawn_src.contains("WalkStrip"), "a walk strip node can drive the hop")
 	truthy(pawn_src.contains("walk_e"), "lettered walk_e is the export_2x clip name")
@@ -854,17 +890,17 @@ func _test_strip_fallback() -> void:
 	await process_frame
 	eq(walk.visible, true, "SE walk frames play for the path")
 	eq(String(walk.animation), "walk_se", "east facing plays the SE walk clip")
-	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the walk loop matches one plant per tile")
+	eq(is_equal_approx(walk.speed_scale, Pawn.walk_strip_speed_scale()), true, "the walk loop matches one cycle per tile")
 	var squeezed := Pawn.strip_speed_scale(6, 12.0, Pawn.WALK_HOP_SEC)
-	eq(is_equal_approx(walk.speed_scale, squeezed), false, "the walk loop is not squeezed into one tile")
+	eq(is_equal_approx(walk.speed_scale, squeezed), true, "one authored cycle is fit to the tile")
 	eq(walk.sprite_frames.get_animation_loop("walk_se"), true, "the walk clip loops")
 	eq(sprite.visible, false, "the static sprite steps aside while the strip plays")
-	eq(_walk_bounce_ok(sprite.position.y), true, "a walk strip bounces inside 4-6px")
+	eq(_walk_bounce_ok(sprite.position.y), true, "a walk strip hops inside 2-4px")
 	eq(sprite.scale, Vector2(0.5, 0.5), "a walk strip does not squash or stretch")
-	eq(is_equal_approx((pawn.get_node("Chrome") as Node2D).position.y, sprite.position.y), true, "the name rides the step bounce")
+	eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "the hop does not lift name chrome")
 	await create_timer(MOTION.WALK_STEP_SEC * 0.5).timeout
-	eq(sprite.position.y < -3.0, true, "the path bounce crests a few pixels")
-	eq(_walk_bounce_ok(sprite.position.y), true, "the path crest stays inside 4-6px")
+	eq(sprite.position.y < -1.5, true, "the path bounce crests a few pixels")
+	eq(_walk_bounce_ok(sprite.position.y), true, "the path crest stays inside 2-4px")
 	eq(is_equal_approx(walk.position.y, sprite.position.y), true, "the strip root takes the same bounce")
 	eq(walk.offset, Vector2(0, -72), "the strip uses the shipped foot pivot")
 	eq(walk.flip_h, false, "walk playback does not mirror")
@@ -878,11 +914,11 @@ func _test_strip_fallback() -> void:
 	eq(walk.frame, 3, "finish_step does not restart the walk cycle")
 	pawn.play_step_hop()
 	eq(walk.frame, 3, "the next tile continues the walk loop")
-	eq(_walk_bounce_ok(sprite.position.y), true, "the continued walk does not hop")
+	eq(_walk_bounce_ok(sprite.position.y), true, "the continued walk stays a short hop")
 	pawn.set_facing("N")
 	pawn.play_step_hop()
 	eq(String(walk.animation), "walk_ne", "a new direction snaps the walk clip")
-	eq(_walk_bounce_ok(sprite.position.y), true, "the snapped walk does not hop")
+	eq(_walk_bounce_ok(sprite.position.y), true, "the snapped walk stays a short hop")
 	pawn.end_path_walk()
 	eq(sprite.visible, false, "path end keeps the walk identity")
 	eq(walk.visible, true, "path end plants walk frame 0")
@@ -893,7 +929,7 @@ func _test_strip_fallback() -> void:
 	pawn.play_step_hop()
 	await process_frame
 	eq(walk.visible, true, "a lone step still plays the walk strip")
-	eq(_walk_bounce_ok(sprite.position.y), true, "a lone walk step bounces inside 4-6px")
+	eq(_walk_bounce_ok(sprite.position.y), true, "a lone walk step hops inside 2-4px")
 	eq(sprite.scale, Vector2(0.5, 0.5), "a lone walk step does not stretch")
 	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
 	eq(sprite.visible, false, "a lone walk step returns to the walk plant")
@@ -1240,10 +1276,11 @@ func _test_driven_walk_cycle() -> void:
 	pawn.sample_driven_gait(0.5)
 	eq(strip.frame == plant, false, "a driven stride leaves the idle frame")
 	eq(strip.frame, MOTION.walk_cycle_frame(0.5, count, 0), "the stride shows that walk-cycle frame")
-	var stride_body := MOTION.stride_rise(0.5) + MOTION.stride_lead(0.5, pawn.facing_screen())
-	eq(strip.position, stride_body, "the body leads along the facing and rises off the foot")
-	eq(stride_body.y < -1.0, true, "the stride is not flat on the collider")
+	var stride_body := MOTION.hop_offset(0.5)
+	eq(strip.position, stride_body, "the hop is a sprite offset, not a foot lead")
+	eq(stride_body.y < -1.0 and stride_body.x == 0.0, true, "the stride rises a few pixels and does not slide sideways")
 	eq(foot.position, Vector2.ZERO, "the ground mark stays on the floor while the body walks")
+	eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "the hop does not lift name or aim chrome")
 	eq(pawn.position, Vector2(48, 16), "the gait does not lift the foot off the cell")
 	eq(strip.offset, Vector2(0, -72), "the strip pivot stays on the diamond")
 	eq(is_equal_approx(strip.speed_scale, 0.0), true, "the step owns the cycle")
@@ -1477,14 +1514,14 @@ func _test_batch1_disk_strips() -> void:
 	eq(strip.sprite_frames.get_frame_count("walk_e") >= 2, true, "kestrel walk has at least two frames")
 	_assert_strip_cells(strip, "walk_e")
 	var walked_from := strip.frame
-	await create_timer(0.3).timeout
+	await create_timer(0.12).timeout
 	eq(strip.is_playing(), true, "kestrel walk keeps playing across the tile")
 	eq(strip.frame != walked_from, true, "kestrel walk frame advances")
 	eq(strip.sprite_frames.get_animation_loop("walk_e"), true, "disk walk loops")
-	eq(is_equal_approx(strip.speed_scale, Pawn.walk_strip_speed_scale()), true, "disk walk plants once per tile")
+	eq(is_equal_approx(strip.speed_scale, Pawn.walk_strip_speed_scale()), true, "disk walk plays one cycle per tile")
 	eq(sprite.visible, false, "static sprite steps aside for the disk walk")
-	eq(_walk_bounce_ok(sprite.position.y), true, "disk walk bounces inside 4-6px")
-	eq(_walk_bounce_ok(strip.position.y), true, "the disk strip root takes the step bounce")
+	eq(_walk_bounce_ok(sprite.position.y), true, "disk walk hops inside 2-4px")
+	eq(_walk_bounce_ok(strip.position.y), true, "the disk strip root takes the step hop")
 	eq(strip.offset, Vector2(0, -72), "disk strip uses the foot pivot")
 	eq(strip.scale, Vector2(0.5, 0.5), "disk strip uses the shipped scale")
 	eq(strip.flip_h, false, "disk strip is not mirrored at runtime")
@@ -1495,7 +1532,7 @@ func _test_batch1_disk_strips() -> void:
 	pawn.set_facing("W")
 	pawn.play_step_hop()
 	eq(String(strip.animation), "walk_w", "west plays the baked mirror as walk_w")
-	eq(_walk_bounce_ok(sprite.position.y), true, "the facing snap does not hop")
+	eq(_walk_bounce_ok(sprite.position.y), true, "the facing snap stays a short hop")
 	pawn.end_path_walk()
 	var kestrel_rest := _visible_strip(pawn)
 	truthy(kestrel_rest != null and String(kestrel_rest.animation) == "walk_w", "path end stays on the west walk sheet")
@@ -1785,8 +1822,19 @@ func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 
 
 func _walk_bounce_ok(y: float) -> bool:
-	# Rise stays inside 4–6px. The anticipation press may sink about 1.4px.
-	return y <= 1.6 and y >= -MOTION.WALK_BOUNCE_PX - 0.05
+	# Rise stays inside 2–4px. The hop does not press into the floor.
+	return y <= 0.05 and y >= -MOTION.WALK_BOUNCE_PX - 0.05
+
+
+func _stride_wraps(frame_count: int) -> int:
+	var prev := -1
+	var wraps := 0
+	for i in 25:
+		var frame := MOTION.walk_cycle_frame(float(i) / 24.0, frame_count, 0)
+		if prev >= 0 and frame < prev:
+			wraps += 1
+		prev = frame
+	return wraps
 
 
 func _step_bob_ok(y: float) -> bool:

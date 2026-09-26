@@ -10,11 +10,11 @@ Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160.
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Those walk PNGs are the wakfu-ship-v3 strips (864×160, six 144×160 cells). Locked identities stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East and west are the punch regen (west is the mirror). North and south are the front and rear three-quarter strips, not the earlier compressed placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, hit, or death sheet.
+Those walk PNGs are the wakfu-ship-v4 strips (864×160, six 144×160 cells, foot-anchored). v4 amplifies stride and bounce on the locked punch sheets. It does not regenerate identity. Locked SoTs stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punch sheet. West is the mirror of east. North and south are the front and rear three-quarter strips, not E-compress placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, hit, or death sheet.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
-Kestrel and Ironjaw Batch-1 strips in this folder are **interim** PIL deformations of the locked turnarounds (silhouette and colours; limbs are approximate). Mauro can drop redrawn strips on the same paths. Animation names stay `walk_<e|s|n|w>` and `attack_<e|s|n|w>`.
+Walk sheets in this folder are the wakfu-ship-v4 punch strips. Attack and the other action sheets stay the prior drops. Animation names stay `walk_<e|s|n|w>` and `attack_<e|s|n|w>`.
 
 Loader: `units/strip_library.gd`. Missing paths use `ResourceLoader.exists` and return null. They do not error.
 
@@ -70,7 +70,7 @@ Batch-1c (same cell, pivot, and letter rule):
 - `art/export_2x/characters/gloam/anims/gloam_hit_{e,s,n,w}.png` — 4 frames, 12 fps
 - `art/export_2x/characters/gloam/anims/gloam_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
 
-Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk and attack stay v3.
+Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk is the v4 punch strip. Kestrel attack stays the prior sheet.
 
 Optional bank next to those folders:
 
@@ -97,8 +97,8 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing, and the clip is playing:** the pawn faces the step (`walk_n/e/s/w`) before the foot moves, and that half-cycle is sampled from the 0.30s tile. Contact frames show only on the plant. Passing frames show only while the foot is between cells. A clock stuck on frame 0 is not a walk. The foot stays on the diamond. During the stride the body leads along the facing and takes a 4–6px rise, then both return. No tile-tall hop. Gloam uses `gloam_walk_*`.
-- **Walk missing, or `play()` does not start:** the same slide, the same bounce, plus squash on launch/land and stretch at the crest. Mender and Bastion stay here.
+- **Walk strip for this facing, and the clip is playing:** the pawn faces the step (`walk_n/e/s/w`) before the foot moves. One full cycle plays on the 0.30s tile (6 frames at about 20 fps). Frame 0 starts the segment and frame 0 is the plant. The sprite hops about 3px. The foot, ground marks, and name stay on the pawn. The first tile and a direction change take a short weight shift after the facing is set. A clock stuck on frame 0 while the foot slides is not a walk. No tile-tall hop. Gloam uses `gloam_walk_*`.
+- **Walk missing, or `play()` does not start:** the same hop, plus squash on launch/land and stretch at the crest. Mender and Bastion ship walk only.
 - **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use the louder `attack_*`. Gloam Cut uses `attack_*` and holds frame 2.
 - **Mark Shot:** `cast_mark_<facing>` (6 frames, 12 fps, impact 3). If that sheet is missing it plays v3 `attack_*`. The bolt leaves hand height at the release frame, following the body if the bow has lunged.
 - **Detonate:** `cast_<facing>` (6 frames, 10 fps, impact 3). It does not borrow `attack_*`. A missing sheet is a point pose. The signal waits for the cast impact cell.

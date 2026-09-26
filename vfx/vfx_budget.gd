@@ -46,7 +46,7 @@ const STAMP_DUST_PX := 44.0
 ## Hero-frame pop. Does not add input lock.
 const STAMP_HIT_LIFE := 0.30
 const STAMP_SPELL_LIFE := 0.24
-## One dust sheet per walk tile (Pawn.WALK_TILE_SEC).
+## Short footstep puff. 0.2–0.35s, not a full-path effect.
 const STAMP_DUST_LIFE := 0.30
 
 const BLOCK_SLIDE := 0.18
