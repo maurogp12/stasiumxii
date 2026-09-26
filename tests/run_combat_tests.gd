@@ -2320,6 +2320,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var event: Dictionary = hit.get("events", [{}])[0]
 	var dealt := hp_before - int(_unit(1)["hp"])
 	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
+	eq(dealt, 22, "Instant Invisible front hit is the locked 22")
 	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
 	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
 	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")

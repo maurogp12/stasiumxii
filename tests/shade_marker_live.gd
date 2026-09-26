@@ -237,15 +237,23 @@ static func run(host: SceneTree) -> void:
 	board._refresh()
 	var submit_pawn: Node2D = board.pawns_by_seat[0]
 	host.eq(submit_pawn.grid_position, submit_from, "submit-path Gloam starts on the cast cell")
+	var turned: Dictionary = CombatSim.submit({"type": "face", "dir": "N", "seat": 0})
+	host.eq(bool(turned.get("ok", false)), true, "submit-path Gloam faces away before Ambush")
+	board._present_resolve(turned.get("events", []))
+	board._refresh()
+	host.eq(submit_pawn.facing, "N", "submit-path facing is not the strike facing yet")
 	for _warm in 4:
 		await host.process_frame
 	board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
 	# The collapse tween has not stepped yet. The body is still on the cast cell.
 	host.eq(submit_pawn.grid_position, submit_from, "submit-path collapse starts on the cast cell")
+	host.eq(submit_pawn.facing, "N", "submit-path collapse does not face the prey early")
 	var foe_pawn: Node = board.pawns_by_seat[1]
 	var hp_before := int(foe_pawn.hp)
 	var saw_collapse := true
 	var saw_hold := false
+	var faced_on_back := false
+	var faced_on_cast := false
 	var slashed_before_hold := false
 	var damaged_on_cast := false
 	for _i in 90:
@@ -256,8 +264,11 @@ static func run(host: SceneTree) -> void:
 			offset = sprite.position.length()
 		if submit_pawn.grid_position == submit_from and offset < 4.0:
 			saw_collapse = true
-		if saw_collapse and submit_pawn.grid_position == submit_back and offset < 4.0:
+		if submit_pawn.grid_position == submit_from and submit_pawn.facing == "E":
+			faced_on_cast = true
+		if saw_collapse and submit_pawn.grid_position == submit_back and submit_pawn.facing == "E" and offset < 4.0:
 			saw_hold = true
+			faced_on_back = true
 		if not saw_hold and submit_pawn.grid_position == submit_from and offset > 10.0:
 			slashed_before_hold = true
 		if int(foe_pawn.hp) < hp_before and submit_pawn.grid_position != submit_back:
@@ -267,10 +278,13 @@ static func run(host: SceneTree) -> void:
 		if not bool(board.get("_view_locked")) and saw_hold:
 			break
 	host.eq(saw_collapse, true, "submit-path Invisible Ambush fades on the cast cell")
+	host.eq(faced_on_cast, false, "Invisible Ambush does not face the prey from the cast cell")
+	host.eq(faced_on_back, true, "Invisible Ambush faces the prey on the back tile before the slash")
 	host.eq(saw_hold, true, "submit-path Invisible Ambush stands on the back tile before the slash")
 	host.eq(slashed_before_hold, false, "submit-path Invisible Ambush does not slash from the cast cell")
 	host.eq(damaged_on_cast, false, "Instant Invisible Ambush does not deal damage before the back-tile snap")
 	host.eq(submit_pawn.grid_position, submit_back, "submit-path contact is on the back tile")
+	host.eq(submit_pawn.facing, "E", "submit-path contact faces Kestrel")
 	var locked_for := 0
 	while bool(board.get("_view_locked")) and locked_for < 90:
 		await host.process_frame

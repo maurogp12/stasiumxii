@@ -787,8 +787,8 @@ func _snap_ambush_teleports(events: Array) -> void:
 		if not _in_bounds(dest):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
-		# Instant plant. The attack pose is a local slash on the sprite, not a
-		# dash from the old tile. Adjacent and Invisible hits still land here.
+		# Position first, then face the prey. The slash is armed only after
+		# both, so Invisible cannot swing from the cast cell.
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
 		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
@@ -875,7 +875,8 @@ func _ambush_success_event(events: Array) -> Dictionary:
 	return {}
 
 
-## Collapse on the current tile, then snap, hold, slash, and the facing damage.
+## Shade and Invisible share this arrival. Collapse on the cast cell, snap
+## onto the back tile, face the prey, then slash. The 22 floats on that slash.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
@@ -899,7 +900,7 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
 	if token != _ambush_arrival_token or not is_inside_tree():
 		return
-	# Plant before any slash or damage float. A miss never reaches this function.
+	# Plant, then face, before any slash or damage float. A miss never arrives.
 	# The collapse tween is the caller. Leave it; it has already finished.
 	_plant_ambush_body(event)
 	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
@@ -1524,10 +1525,16 @@ func _paint_highlights() -> void:
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
 	if spell_id == SpellKits.DROP_SHADE:
+		# Every cell that is not a legal empty dest is grey before confirm.
+		# Out of range, occupied, and unwalkable stay unarmed. No REJECT flash.
 		var shade_dests: Array = SNAPSHOT_TILES.cast_dests(legal, spell_id)
-		for cell in range_cells:
-			if tiles.has(cell) and not shade_dests.has(cell):
-				_tile_at(cell).set_highlight("blocked")
+		for cell in tiles.keys():
+			if shade_dests.has(cell):
+				continue
+			_tile_at(cell).set_highlight("grey")
+		for dest in shade_dests:
+			if tiles.has(dest):
+				_tile_at(dest).set_highlight("target")
 	_sync_aim_preview()
 	_sync_target_marks()
 

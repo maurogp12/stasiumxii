@@ -157,8 +157,9 @@ static func ambush_contact_sec() -> float:
 	return ANTICIPATION_SEC + ATTACK_OUT_SEC
 
 
-## Success: collapse at the origin, snap, hold on the back tile, slash, then
-## the sim's facing damage. Miss: whiff only. No snap and no damage beat.
+## Success, Shade and Invisible alike: collapse at the origin, snap to the
+## back tile, face the prey, slash, then the 22. Miss: whiff only. No snap
+## and no damage beat. A slash from the cast cell is not this sequence.
 static func ambush_beats(event: Dictionary) -> Array:
 	if str(event.get("spell", "")) != SpellKits.AMBUSH and str(event.get("spell", "")) != "ambush":
 		return []
@@ -167,7 +168,7 @@ static func ambush_beats(event: Dictionary) -> Array:
 		return [
 			{"beat": "collapse", "sec": AMBUSH_COLLAPSE_SEC},
 			{"beat": "snap"},
-			{"beat": "hold", "sec": AMBUSH_ARRIVE_HOLD_SEC},
+			{"beat": "face", "sec": AMBUSH_ARRIVE_HOLD_SEC},
 			{"beat": "slash"},
 			{"beat": "damage"},
 		]

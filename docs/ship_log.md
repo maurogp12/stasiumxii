@@ -10,7 +10,7 @@ Luca's 0.1.20 clip. Shade-origin Ambush already blinks to the back tile and hits
 
 `_resolve_ambush` already wrote the axis back tile before HP for both origins. The view could still toast and float the damage when the plant had not stuck, so Invisible Ambush read as a slash from the cast cell with the back-tile facing. Shade-origin looked right because the long blink was obvious. A Fade on a distant tile with an armed Shade in range is not that hit: origin is Gloam, and the cast is out of range.
 
-Instant Invisible Ambush now deals damage only after the body is on the back tile. The hit toast and the damage float wait for that plant. A miss still does not move and keeps Invisible. An out-of-range Drop Shade cell is not selectable and does not flash REJECT. Range stays Chebyshev 1–3.
+Instant Invisible Ambush now deals damage only after the body is on the back tile. The shared arrival is collapse, snap, face the prey, slash, then the 22. A miss still does not move and keeps Invisible. Illegal Drop Shade cells are grey before confirm and do not flash REJECT. Range stays Chebyshev 1–3.
 
 ### Intentionally not changed
 
@@ -19,7 +19,7 @@ Instant Invisible Ambush now deals damage only after the body is on the back til
 - Stasis stays on `mobile`.
 - Advance still submits an illegal click so the refund coach can fire.
 
-Headless Godot 4.7.2, 0 failed: combat 4637, motion 1892, VFX 473.
+Headless Godot 4.7.2, 0 failed: combat 4644, motion 1898, VFX 479.
 
 ## 2026-09-26 — Invisible Ambush stands on the back tile
 
