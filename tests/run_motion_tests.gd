@@ -1641,7 +1641,9 @@ func _test_batch1_disk_strips() -> void:
 	eq(jaw_strip.sprite_frames.get_frame_count("walk_n") >= 2, true, "ironjaw walk has at least two frames")
 	_assert_strip_cells(jaw_strip, "walk_n")
 	eq(_walk_bounce_ok((jaw.get_node("Sprite") as Sprite2D).position.y), true, "ironjaw walk bounces inside 4-6px")
-	eq((jaw.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "ironjaw walk does not stretch")
+	eq((jaw.get_node("Sprite") as Sprite2D).scale, Pawn.sprite_scale_for("ironjaw"), "ironjaw walk keeps the presentation scale")
+	eq(jaw_strip.scale, Pawn.sprite_scale_for("ironjaw"), "ironjaw walk strip keeps the presentation scale")
+	eq(jaw_strip.offset, Vector2(0, -72), "ironjaw walk keeps the foot pivot")
 	jaw.end_path_walk()
 	var strike_plans: Dictionary = MOTION.chrome_plans([{
 		"type": "hit",
