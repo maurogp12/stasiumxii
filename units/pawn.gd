@@ -220,7 +220,9 @@ func play_step_hop() -> bool:
 		return false
 	_ensure_motion_strips()
 	var playing := _play_walk_flat()
-	if not playing:
+	# A failed play replants the walk sheet. Hiding strips here would uncover
+	# the static still for the hop.
+	if not playing and not _walk_idle_plant:
 		_hide_body_strips()
 	if _path_walk:
 		if not _bounce_running():
@@ -364,7 +366,7 @@ func begin_path_walk() -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
-	if not _play_walk_flat():
+	if not _play_walk_flat() and not _walk_idle_plant:
 		_hide_body_strips()
 	_start_path_bounce()
 
@@ -1269,8 +1271,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	var choice := _strip_choice(kind)
 	_end_body_strip(false)
 	if choice.is_empty():
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.visible = true
+		_show_rest_or_static()
 		return
 	var strip: AnimatedSprite2D = choice["node"]
 	var anim := StringName(str(choice["anim"]))
@@ -1295,6 +1296,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	strip.play(anim)
 	if not strip.is_playing():
 		strip.visible = false
+		_show_rest_or_static()
 		return
 	_active_strip = strip
 	_strip_holds_body = true
@@ -1319,7 +1321,15 @@ func _end_body_strip(replant: bool = true) -> void:
 	_hide_body_strips()
 	if replant and _plant_walk_idle():
 		return
-	if replant and _sprite != null and is_instance_valid(_sprite):
+	if replant:
+		_show_rest_or_static()
+
+
+## Walk sheet on screen when this class has one. The foreign still only when it does not.
+func _show_rest_or_static() -> void:
+	if _plant_walk_idle():
+		return
+	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
 
 
@@ -1544,7 +1554,10 @@ func _play_walk_flat() -> bool:
 		_flatten_body()
 		return true
 	_kill_action()
-	# Do not reveal the static turnaround for the frame between clips.
+	# Hide the foreign still before the clip swaps. Stopping used to plant
+	# that PNG again; a start must not flash it for a frame either.
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = false
 	_end_body_strip(false)
 	_prepare_walk_loop(strip, anim)
 	_prepare_strip_pose(strip)
@@ -1552,8 +1565,7 @@ func _play_walk_flat() -> bool:
 	strip.play(anim)
 	if not strip.is_playing():
 		strip.visible = false
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.visible = true
+		_show_rest_or_static()
 		return false
 	_active_strip = strip
 	_strip_holds_body = true

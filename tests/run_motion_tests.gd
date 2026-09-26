@@ -1380,6 +1380,12 @@ func _test_walk_idle_matches_strip() -> void:
 		eq(plant != foreign, true, "%s plant is not the static turnaround texture" % class_id)
 		eq(idle.sprite_frames.get_frame_texture(idle.animation, idle.frame), plant, "%s shows walk frame 0" % class_id)
 		pawn.arm_driven_walk()
+		eq(sprite.visible, false, "%s walk start does not flash the static turnaround" % class_id)
+		var started := _visible_strip(pawn)
+		truthy(started != null, "%s walk start keeps the sheet up" % class_id)
+		if started != null:
+			eq(String(started.animation), "walk_e", "%s walk start stays on walk_e" % class_id)
+			eq(started.sprite_frames.get_frame_texture("walk_e", 0) != foreign, true, "%s walk start is not the static portrait" % class_id)
 		await process_frame
 		eq(sprite.visible, false, "%s walk does not flash the static turnaround" % class_id)
 		var walking := _visible_strip(pawn)
@@ -1389,6 +1395,14 @@ func _test_walk_idle_matches_strip() -> void:
 			var shown := walking.sprite_frames.get_frame_texture(walking.animation, walking.frame)
 			eq(shown != foreign, true, "%s stride is not the foreign idle texture" % class_id)
 			eq(String(walking.animation), "walk_e", "%s stride stays on walk_e" % class_id)
+		pawn.end_path_walk()
+		eq(sprite.visible, false, "%s stop does not restore the static turnaround" % class_id)
+		var rested := _visible_strip(pawn)
+		truthy(rested != null, "%s stop stays on the walk sheet" % class_id)
+		if rested != null:
+			eq(String(rested.animation), "walk_e", "%s stop plants walk_e" % class_id)
+			eq(rested.frame, 0, "%s stop plants frame 0" % class_id)
+			eq(rested.sprite_frames.get_frame_texture(rested.animation, rested.frame) != foreign, true, "%s stop plant is not the static portrait" % class_id)
 		pawn.free()
 
 
@@ -1670,11 +1684,13 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	await process_frame
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	eq(strip.is_playing(), false, "the failed strip is not playing")
-	eq(strip.visible, false, "the failed strip stays hidden")
-	eq(sprite.visible, true, "failed playback keeps the static sprite")
+	eq(strip.visible, true, "failed playback plants the walk sheet")
+	eq(String(strip.animation), "walk_e", "failed playback stays on the facing walk strip")
+	eq(strip.frame, 0, "failed playback plants frame 0")
+	eq(sprite.visible, false, "failed playback does not reveal the static still")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
-	eq(_step_bob_ok(sprite.position.y), true, "failed strip playback bobs, not a 36px hop")
-	eq(sprite.scale, Vector2(0.5, 0.5), "failed strip playback does not stretch")
+	eq(_step_bob_ok(strip.position.y), true, "failed strip playback bobs, not a 36px hop")
+	eq(strip.scale, Vector2(0.5, 0.5), "failed strip playback does not stretch")
 	pawn.settle_motion()
 	pawn.free()
 
