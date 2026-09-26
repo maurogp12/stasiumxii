@@ -129,6 +129,7 @@ func _test_landscape_poster() -> void:
 		near(tile.position.y, row_y, "%s stays on the horizontal RAID row" % hub.door_id(index))
 		eq(tile.position.x > prev_x, true, "%s sits to the right of the previous tile" % hub.door_id(index))
 		eq(tile.size.y >= 72.0, true, "%s tile stays a fat target" % hub.door_id(index))
+		eq(tile.position.y + tile.size.y <= hub._footer.position.y + 0.5, true, "%s nameplate stays above the footer" % hub.door_id(index))
 		prev_x = tile.position.x
 	var update_button := hub.find_child("Actualizar", true, false) as Button
 	truthy(update_button != null, "landscape hub keeps Actualizar")
