@@ -132,6 +132,7 @@ static func load_file(path: String) -> Dictionary:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return _empty("bad_json")
 	var doc: Dictionary = parsed
+	var labeled := str(doc.get("map_id", "")).strip_edges()
 	var size: Variant = doc.get("size", [])
 	var width := 0
 	var height := 0
@@ -162,7 +163,7 @@ static func load_file(path: String) -> Dictionary:
 			paint[cell] = props
 	return {
 		"ok": width > 0 and height > 0 and not combat.is_empty(),
-		"map_id": map_id_for(path),
+		"map_id": labeled if labeled != "" else map_id_for(path),
 		"width": width,
 		"height": height,
 		"cells": combat,

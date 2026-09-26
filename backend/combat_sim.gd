@@ -104,6 +104,9 @@ var _board = _WalkBoard.new()
 var _board_size: int = BOARD_SIZE
 var _paint_only: Dictionary = {}
 var _map_id: String = ""
+## Mobile Stasis Room A only. True when the roster has more than one hostile.
+## Koliseo never sets this. Death, turn order, and cast offers stay 1v1 without it.
+var _stasis_pack: bool = false
 var _demo_map: String = ""
 var _elev_seed: int = 0
 var _elevation_gen: String = "tags"
@@ -135,6 +138,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_paint_only = {}
 	_map_id = ""
 	_demo_map = ""
+	_stasis_pack = false
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = int(config.get("elev_seed", _seed))
@@ -169,8 +173,11 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	if skip_deploy:
 		# Test/setup only. Live duel no longer defaults to (1,1)/(6,6).
 		# kestrel_pos / ironjaw_pos still name that class, not a fixed seat.
+		# Stasis Room A appends hostile seats after the Locked pair. Koliseo
+		# stays two seats because it never sets _stasis_pack.
 		var class_pos_used: Dictionary = {}
-		for seat in 2:
+		var spawn_seats := _units.size() if _stasis_pack else 2
+		for seat in spawn_seats:
 			var class_id: String = str(_units[seat]["class_id"])
 			_force_spawn(seat, _spawn_cell_for(config, seat, class_id, class_pos_used))
 		_flow.skip_to_combat()
@@ -362,19 +369,20 @@ func legal_intents(seat: int) -> Array:
 			# Card MP was already compared to the unit's MP. Do not reuse the
 			# walk budget here: exit tax shortens walks only. A 0 MP cast
 			# such as Ambush stays legal at MP 0.
-			var enemy := _enemy_of(seat)
-			if enemy.is_empty() or not enemy["alive"]:
-				continue
-			if _cast_gate_reason(actor, enemy, def) != "":
-				continue
-			if _in_spell_range(def, from, enemy["pos"]):
-				out.append({
-					"type": "cast",
-					"spell": spell_id,
-					"to": enemy["pos"],
-					"target_seat": enemy["seat"],
-					"seat": seat,
-				})
+			# Koliseo still offers the one other seat. A Stasis trash pack
+			# offers every living hostile to the player.
+			for hostile in _hostile_cast_targets(seat):
+				var enemy: Dictionary = hostile
+				if _cast_gate_reason(actor, enemy, def) != "":
+					continue
+				if _in_spell_range(def, from, enemy["pos"]):
+					out.append({
+						"type": "cast",
+						"spell": spell_id,
+						"to": enemy["pos"],
+						"target_seat": enemy["seat"],
+						"seat": seat,
+					})
 
 	out.append({"type": "end_turn", "seat": seat})
 	return out
@@ -394,24 +402,26 @@ func _append_ambush_cast(out: Array, actor: Dictionary, def: Dictionary) -> void
 	if _resource_gate(actor, def) != "":
 		return
 	var seat := int(actor["seat"])
-	var enemy := _enemy_of(seat)
-	if enemy.is_empty() or not bool(enemy.get("alive", false)):
-		return
-	if _cast_gate_reason(actor, enemy, def) != "":
-		return
 	# Offer only a legal Manhattan 1–2 cardinal target whose back tile can be
 	# landed on, and only once a Shade origin has seen the opponent finish a
 	# turn. A fresh Shade, a diagonal, or Manhattan 3 must not arm the cast.
 	# Drop Shade's Chebyshev ring is a different spell.
-	if not _ambush_can_offer(actor, enemy):
-		return
-	out.append({
-		"type": "cast",
-		"spell": SpellKits.AMBUSH,
-		"to": enemy["pos"],
-		"target_seat": enemy["seat"],
-		"seat": seat,
-	})
+	# A Stasis pack can arm Ambush on any living hostile. Koliseo still has one.
+	for hostile in _hostile_cast_targets(seat):
+		var enemy: Dictionary = hostile
+		if enemy.is_empty() or not bool(enemy.get("alive", false)):
+			continue
+		if _cast_gate_reason(actor, enemy, def) != "":
+			continue
+		if not _ambush_can_offer(actor, enemy):
+			continue
+		out.append({
+			"type": "cast",
+			"spell": SpellKits.AMBUSH,
+			"to": enemy["pos"],
+			"target_seat": enemy["seat"],
+			"seat": seat,
+		})
 
 
 ## Godot bind: place / reposition this seat's one fighter. Simultaneous; no turn gate.
@@ -1459,9 +1469,9 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# The seat that is leaving has completed this turn, including a stunned skip.
 	# Shades owned by the other seat count that completion toward Ambush arming.
 	_note_opponent_shade_turns(int(actor.get("seat", -1)))
-	var next_seat := 1 if _active_seat == 0 else 0
+	var next_seat := _next_turn_seat(int(actor.get("seat", _active_seat)))
 	var next_unit := _unit_by_seat(next_seat)
-	if next_unit.is_empty() or not next_unit["alive"]:
+	if next_seat < 0 or next_unit.is_empty() or not next_unit["alive"]:
 		_finish_match(_active_seat)
 		return {}
 
@@ -1662,6 +1672,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		# Ambush has one body. An illegal body still rejects on the real gate.
 		if origin_cell != UNPLACED and dest == origin_cell:
 			var ambush_enemy := _enemy_of(int(actor["seat"]))
+			if _stasis_pack:
+				ambush_enemy = _first_legal_ambush_target(actor)
 			var blocked := _ambush_block_reason(actor, ambush_enemy)
 			if blocked != "":
 				return _reject(intent, blocked, _ambush_reject_text(blocked))
@@ -2055,6 +2067,14 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		"cause": cause,
 		"coach": "%s falls." % target["name"],
 	})
+	# Stasis Room A keeps fighting until the player or every hostile is down.
+	# Koliseo is still one death ends the match.
+	if _stasis_pack:
+		if int(target.get("seat", -1)) == 0:
+			_finish_match(_stasis_winner_hostile())
+		elif _living_stasis_hostiles().is_empty():
+			_finish_match(0)
+		return
 	_finish_match(_enemy_of(int(target["seat"]))["seat"])
 
 
@@ -2264,11 +2284,22 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 	var roster: Variant = config["stasis_roster"]
 	if typeof(roster) != TYPE_ARRAY:
 		return
+	var hostile_count := 0
+	for entry in roster:
+		if typeof(entry) == TYPE_DICTIONARY and int((entry as Dictionary).get("seat", -1)) > 0:
+			hostile_count += 1
+	# Room A puts the trash pack on the board together. Room B stays one boss.
+	_stasis_pack = hostile_count >= 2
 	for entry in roster:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = entry
-		var unit := _unit_by_seat(int(rec.get("seat", -1)))
+		var seat := int(rec.get("seat", -1))
+		var unit := _unit_by_seat(seat)
+		if unit.is_empty() and seat > 1 and _stasis_pack:
+			var foe_name := str(rec.get("name", "Trash"))
+			unit = _make_unit(seat, SpellKits.CLASS_IRONJAW, foe_name, SpellKits.element_of(SpellKits.CLASS_IRONJAW), UNPLACED, "S", false)
+			_units.append(unit)
 		if unit.is_empty():
 			continue
 		if str(rec.get("name", "")) != "":
@@ -2289,6 +2320,10 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 			unit["stasis_attack_base"] = maxi(int(rec["attack_base"]), 0)
 		if str(rec.get("attack_name", "")) != "":
 			unit["stasis_attack_name"] = str(rec["attack_name"])
+		# Package crop. The class id stays Ironjaw only so Strike is in the kit.
+		# The pawn draws this path and does not play the Ironjaw sheet.
+		if str(rec.get("sprite", "")) != "":
+			unit["stasis_sprite"] = str(rec["sprite"])
 		var raw_spells: Variant = rec.get("spells", null)
 		if raw_spells is Array:
 			var spells: Array = []
@@ -2769,6 +2804,61 @@ func _unit_by_seat(seat: int) -> Dictionary:
 
 func _enemy_of(seat: int) -> Dictionary:
 	return _unit_by_seat(1 if seat == 0 else 0)
+
+
+## Koliseo: the other of seats 0 and 1. Stasis player: every living hostile.
+func _hostile_cast_targets(seat: int) -> Array:
+	if _stasis_pack and seat == 0:
+		return _living_stasis_hostiles()
+	var enemy := _enemy_of(seat)
+	if enemy.is_empty() or not bool(enemy.get("alive", false)):
+		return []
+	return [enemy]
+
+
+func _living_stasis_hostiles() -> Array:
+	var out: Array = []
+	for unit in _units:
+		if int(unit.get("seat", -1)) <= 0:
+			continue
+		if bool(unit.get("alive", false)):
+			out.append(unit)
+	return out
+
+
+func _stasis_winner_hostile() -> int:
+	for unit in _living_stasis_hostiles():
+		return int(unit.get("seat", 1))
+	return 1
+
+
+func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
+	for hostile in _living_stasis_hostiles():
+		var enemy: Dictionary = hostile
+		if _ambush_can_offer(actor, enemy):
+			return enemy
+	return {}
+
+
+## 1v1 swaps seats. A Stasis pack walks the living seats in order, then wraps.
+func _next_turn_seat(from_seat: int) -> int:
+	if not _stasis_pack:
+		var other := 1 if from_seat == 0 else 0
+		var unit := _unit_by_seat(other)
+		if unit.is_empty() or not bool(unit.get("alive", false)):
+			return -1
+		return other
+	var seats: Array[int] = []
+	for unit in _units:
+		if bool(unit.get("alive", false)):
+			seats.append(int(unit.get("seat", -1)))
+	if seats.is_empty():
+		return -1
+	seats.sort()
+	for seat in seats:
+		if seat > from_seat:
+			return seat
+	return int(seats[0])
 
 
 func _living_unit_at(cell: Vector2i) -> Dictionary:

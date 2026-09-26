@@ -49,7 +49,7 @@ Koliseo is PvP into those five boards. The door opens the existing class-select 
 
 Luca Garza (overnight, 2026-09-25) unparked these doors for the phone APK. Each door stores `MobileHub.pending_biome_id` and opens `scenes/stasis_run.tscn`. The run shows the Proposed door name, that biome's trash and boss, a class pick, and **Back to hub**. It does not say “Stasis coming soon”.
 
-Picking a class opens `scenes/stasis_fight.tscn` on `art/maps/arena_colosseum_v2/tiled/{id}_15x15`. Room A is three trash duels, then Room B is the boss. Foe HP and attack base are provisional Open playtest numbers, not Locked kit law. Details and the APK playtest steps are in [`docs/mobile_stasis.md`](mobile_stasis.md).
+Picking a class opens `scenes/stasis_fight.tscn` on that door’s Stasis schematic (`art/maps/stasis_v1/{id}_room_a_15x15_tags.json`, then room B). Room A is one fight with the trash pack, then Room B is the boss. Koliseo still uses `art/maps/arena_colosseum_v2/tiled/{id}_15x15`. Foe HP and attack base are provisional Open playtest numbers, not Locked kit law. Details and the playtest steps are in [`docs/mobile_stasis.md`](mobile_stasis.md).
 
 `scenes/stasis_stub.tscn` is only an old path. If something still loads it, it forwards to the run. Do not add these scenes to PC `main`.
 

@@ -1,8 +1,8 @@
 extends "res://board_view.gd"
 
-## Mobile Stasis duel. Room A is three trash fights, then Room B is the boss,
-## each on that biome's 15×15 tags board. CombatSim stays the authority.
-## This scene is not wired into main.tscn or class select. Not for PC main.
+## Mobile Stasis duel. Room A is one combat with the trash pack, then Room B
+## is the boss. Boards are the Stasis-1 room schematics, not the Koliseo arenas.
+## CombatSim stays the authority. Not for PC main.
 
 var _ai_running: bool = false
 var _cleared: bool = false
@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 		return
 	if bool(snap.get("match_over", false)) or _cleared:
 		return
-	if int(snap.get("active_seat", 0)) != StasisCatalog.ENEMY_SEAT:
+	if int(snap.get("active_seat", 0)) == StasisCatalog.PLAYER_SEAT:
 		return
 	_ai_running = true
 	_run_enemy_step()
@@ -69,18 +69,19 @@ func _run_enemy_step() -> void:
 	if not is_instance_valid(self) or not is_inside_tree():
 		return
 	var snap: Dictionary = _sim().snapshot()
-	if _busy or _view_locked or bool(snap.get("match_over", false)) or int(snap.get("active_seat", 0)) != StasisCatalog.ENEMY_SEAT:
+	if _busy or _view_locked or bool(snap.get("match_over", false)) or int(snap.get("active_seat", 0)) == StasisCatalog.PLAYER_SEAT:
 		_ai_running = false
 		return
-	var actor := _unit_from_seat(snap, StasisCatalog.ENEMY_SEAT)
+	var seat := int(snap.get("active_seat", StasisCatalog.ENEMY_SEAT))
+	var actor := _unit_from_seat(snap, seat)
 	var foe := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
 	var actor_pos: Vector2i = actor.get("pos", Vector2i.ZERO)
 	var foe_pos: Vector2i = foe.get("pos", Vector2i.ZERO)
-	var intent: Dictionary = StasisAi.choose(_sim().legal_intents(StasisCatalog.ENEMY_SEAT), actor_pos, foe_pos)
+	var intent: Dictionary = StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
 	if str(intent.get("type", "")) == "end_turn":
 		_busy = true
 		_hud.clear_spell()
-		var result: Dictionary = CombatSim.submit({"type": "end_turn", "seat": StasisCatalog.ENEMY_SEAT})
+		var result: Dictionary = CombatSim.submit({"type": "end_turn", "seat": seat})
 		if bool(result.get("ok", false)):
 			await _present_turn_handoff(result)
 		elif is_instance_valid(self):
