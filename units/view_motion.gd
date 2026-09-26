@@ -396,6 +396,93 @@ static func gesture_reach(phase: String) -> float:
 			return 0.0
 
 
+## Screen axes for a facing letter. Matches Pawn.FACING_ISO.
+const FACING_SCREEN := {
+	"N": Vector2(20, -10),
+	"E": Vector2(20, 10),
+	"S": Vector2(-20, 10),
+	"W": Vector2(-20, -10),
+}
+## Share the hop's press and settle so the foot is down while travel is held.
+const STEP_PRESS_END := 0.16
+const STEP_SETTLE_START := 0.82
+
+
+## 0 on the departure tile through the press, 1 on the arrival tile through
+## the settle. The stride eases between those plants. No sideways term: the
+## caller moves along the segment. It is not a raw lerp of t.
+static func step_travel(t: float) -> float:
+	if t <= STEP_PRESS_END:
+		return 0.0
+	if t >= STEP_SETTLE_START:
+		return 1.0
+	var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
+	return u * u * (3.0 - 2.0 * u)
+
+
+## Frame of the facing walk strip for this tile.
+## One tile plays half the cycle, contact to contact. The press holds the
+## departure plant. The settle holds the next plant, so arrival cannot freeze
+## on a passing frame. step_index continues that cycle onto the next segment.
+## An open stride never stays on the departure plant: that is an idle slide.
+static func walk_cycle_frame(t: float, frame_count: int, step_index: int = 0) -> int:
+	var count := maxi(frame_count, 1)
+	if count <= 1:
+		return 0
+	var half := maxi(count / 2, 1)
+	var start := (maxi(step_index, 0) * half) % count
+	var along := 0.0
+	if t <= STEP_PRESS_END:
+		along = 0.0
+	elif t >= STEP_SETTLE_START:
+		along = float(half)
+	else:
+		var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
+		var eased := u * u * (3.0 - 2.0 * u)
+		along = eased * float(half)
+	var idx := (start + int(round(along))) % count
+	if t > STEP_PRESS_END and t < STEP_SETTLE_START and idx == start:
+		idx = (start + 1) % count
+	return idx
+
+
+## Cardinal steps use the grid letter. Any other segment faces the screen
+## direction of travel so the body does not slide sideways or backwards.
+static func walk_segment_facing(from_cell: Vector2i, to_cell: Vector2i, screen_delta: Vector2) -> String:
+	var delta := to_cell - from_cell
+	if delta == Vector2i.ZERO:
+		return ""
+	if delta == Vector2i(0, -1):
+		return "N"
+	if delta == Vector2i(1, 0):
+		return "E"
+	if delta == Vector2i(0, 1):
+		return "S"
+	if delta == Vector2i(-1, 0):
+		return "W"
+	var along := screen_facing(screen_delta)
+	if along != "":
+		return along
+	if delta.x != 0:
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
+
+
+static func screen_facing(delta: Vector2) -> String:
+	if delta.length_squared() < 1.0:
+		return ""
+	var best := ""
+	var best_dot := -2.0
+	var aim := delta.normalized()
+	for face in ["N", "E", "S", "W"]:
+		var axis: Vector2 = FACING_SCREEN[face]
+		var dotted := aim.dot(axis.normalized())
+		if dotted > best_dot:
+			best_dot = dotted
+			best = face
+	return best
+
+
 ## One plant. Anticipation presses into the tile, push-off reaches the crest
 ## at t=0.5, then the body settles. The rise stays inside HOP_PX.
 static func hop_offset(t: float) -> Vector2:

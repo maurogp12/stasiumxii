@@ -2,6 +2,30 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Phone combat framing and planted walks
+
+Luca's 0.1.20 Gloam ambush clip. No APK cut. Locked kit numbers unchanged. Map layouts, tags, and room shapes unchanged.
+
+### What was hard
+
+On a phone the 15×15 diamond sat in the middle of the clear band with a dark gutter around it. Portrait fit was about zoom 0.97, and a short window was 0.64, so a diamond was roughly 20–31px tall and a finger covered several cells. Walks still translated the foot in a straight line for 0.30s. The Batch-1 strip could be mid-cycle when the tile started, so the pose read as a slide, including sideways when the body had not turned into the segment.
+
+### What a phone does now
+
+- Handheld orientation is portrait, so the tall viewport is the one the camera fits.
+- Phone zoom covers the clear play rectangle with the iso diamond (zoom in). On a 960×1400 window a 15×15 board is zoom 3.0, so a diamond is about 96px tall and the dark margin around the board is gone. The navy/gold cards and the turn strip stay their design size above and below that band. Desktop 960×720 fit stays zoom 0.64.
+- The camera frames the active fighter. A walk-mode finger drag past 48px pans inside the board, and stops at the edge so the gutter does not come back. A short tap still selects the cell. A spell drag still aims. Mouse pick stays 22px.
+- A walk holds the foot on the diamond through the press, eases along the segment for about 0.30s, and settles on the next contact. The body faces that segment first (cardinal letter, otherwise the screen direction) and the matching Batch-1 / Batch-1c strip (`walk_n/e/s/w`) plays that half-cycle. The pose is taken from the step, so a clock that stays on frame 0 cannot idle-slide. Arrival holds the contact frame, then the idle facing. The contact shadow stays on the foot.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Map layouts, board geometry, tags, and room shapes.
+- Desktop mouse pick and the 960×720 camera fit.
+- No new cosmetics. No APK cut.
+
+Headless Godot 4.7.2, 0 failed: touch adapter 460, motion 1936, combat 4574, sprite 234.
+
 ## 2026-09-26 — Mobile debug APK 0.1.20
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.20-mobile`, `version/code` `21`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
