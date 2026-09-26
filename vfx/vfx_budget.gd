@@ -34,6 +34,18 @@ const POOL_RING := 8
 const POOL_PUFF := 4
 const POOL_MOTE := 2
 const POOL_STATUS := 12
+const POOL_STAMP := 6
+
+## Authored overlays, in pixels on the board (before camera zoom).
+## A phone tile is 64px wide. These stay on the body, not the screen.
+const STAMP_HIT_PX := 58.0
+const STAMP_AMBUSH_PX := 100.0
+const STAMP_MARK_PX := 76.0
+const STAMP_DETONATE_PX := 118.0
+const STAMP_DUST_PX := 44.0
+const STAMP_HIT_LIFE := 0.16
+const STAMP_SPELL_LIFE := 0.24
+const STAMP_DUST_LIFE := 0.18
 
 const BLOCK_SLIDE := 0.18
 const BLOCK_JOLT := 0.12
