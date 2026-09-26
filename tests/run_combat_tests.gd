@@ -2045,9 +2045,9 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_unit(0)["pos"] == axis_past_front, false, "behind-Shade Ambush must not land on the axis-past front tile")
 	eq(bool(behind_hit["events"][0].get("backstab", false)), true, "facing-rear Ambush is a backstab")
 
-	# Mauro clip ~0:49: Gloam south of Kestrel Face N. Axis-past = north = FRONT.
-	# Facing-rear for Face N is south of Kestrel.
-	var clip_gloam := Vector2i(4, 5)
+	# Mauro clip ~0:49: Shade south of Kestrel Face N. Axis-past = north = FRONT.
+	# Facing-rear for Face N is south of Kestrel (clip coords scale of 9,9→9,7 Face N).
+	var clip_gloam := Vector2i(2, 6)
 	var clip_prey := Vector2i(4, 3)
 	var clip_shade := Vector2i(4, 5)
 	var clip_back := Vector2i(4, 4)
@@ -2064,6 +2064,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_sim.is_cardinal_exact(clip_shade, clip_prey, 2), true, "Mauro-clip Shade is Manhattan 2 cardinal south")
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": clip_shade, "seat": 0}).get("ok", false)), true, "Mauro-clip Drop Shade plants south of Face-N prey")
 	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, clip_prey), true, "Mauro-clip armed Shade arms Ambush")
 	var clip_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
 	eq(bool(clip_hit.get("ok", false)), true, "Mauro-clip Ambush resolves")
 	eq(_unit(0)["pos"], clip_back, "Mauro-clip Ambush lands south of Face-N prey (facing-rear)")
