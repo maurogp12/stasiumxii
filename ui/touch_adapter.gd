@@ -61,7 +61,7 @@ const HUD_BOTTOM_OFFSET := -252.0
 ## Same clamp the board camera used on the 960×720 fit.
 const BOARD_ZOOM_MIN := 0.35
 const BOARD_ZOOM_MAX := 1.25
-## Backstop. A 20:9 phone lands near 1.5. The 0.1.21 cover zoom was ~3.0.
+## Backstop for extreme windows. A 20:9 phone overview is 2.0. The 0.1.21 cover zoom was ~3.0.
 const MOBILE_BOARD_ZOOM_MAX := 2.0
 ## Iso diamond height in board pixels.
 const DIAMOND_H := 32.0
@@ -69,16 +69,19 @@ const DIAMOND_H := 32.0
 ## The old path reserved 260px of empty gutter, then cover-zoomed into it.
 const MOBILE_FRAME_TOP := 36.0
 const MOBILE_FRAME_BOTTOM := 64.0
-## Share of the limiting board axis kept on screen. 1.0 is a pure contain
-## (the old tiny board). The 0.1.21 cover zoom ignored this and cropped
-## to a few giant cells.
-const MOBILE_BOARD_KEEP := 0.84
+## Share of the limiting board axis kept on screen at the default zoom.
+## 1.0 is a pure contain (the postage-stamp board). 0.62 keeps a Koliseo
+## chunk: most of the fight, fat diamonds, modest gutters. The 0.1.21 cover
+## zoom ignored this and cropped to a few giant cells.
+const MOBILE_BOARD_KEEP := 0.62
 ## Session camera. 1.0 is the overview default. Each press multiplies this.
-## The floor is the whole diamond. The ceiling stays under the 3.0 cover.
-const PLAYER_ZOOM_STEP := 1.16
-const PLAYER_ZOOM_BIAS_MIN := 0.84
-const PLAYER_ZOOM_BIAS_MAX := 1.70
-const PLAYER_ZOOM_MAX := 2.25
+## Zoom out stops above the contain fit so the rest is not the postage-stamp
+## board. Zoom in stops under the 3.0 cover.
+const PLAYER_ZOOM_STEP := 1.18
+const PLAYER_ZOOM_BIAS_MIN := 0.62
+const PLAYER_ZOOM_BIAS_MAX := 1.25
+const PLAYER_ZOOM_MIN := 1.7
+const PLAYER_ZOOM_MAX := 2.5
 static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0
@@ -201,10 +204,9 @@ static func play_band_for(viewport_size: Vector2, mobile: bool = false) -> Vecto
 
 
 ## Fit zoom for a board of board_w × board_h. Desktop ignores viewport_size and
-## stays on the 960×720 band (15×15 is 0.64). A phone shows most of the iso
-## diamond (MOBILE_BOARD_KEEP of the limiting axis) with a modest gutter.
-## That sits between the old contain-fit (~0.64–0.97, tiny cells, wide
-## margins) and the 0.1.21 cover zoom (~3.0, a few giant cells).
+## stays on the 960×720 band (15×15 is 0.64). A phone default keeps
+## MOBILE_BOARD_KEEP of the limiting axis: a Koliseo chunk, not the whole
+## diamond floating in black and not the 0.1.21 cover zoom (~3.0).
 static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
 	var view := viewport_size if mobile else Vector2(VIEW_W, VIEW_H)
 	var span := _play_span(view, mobile)
@@ -217,8 +219,9 @@ static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, m
 	return clampf(overview, BOARD_ZOOM_MIN, MOBILE_BOARD_ZOOM_MAX)
 
 
-## (min, max) the player may reach. Min is the whole diamond on a phone,
-## and the desktop fit on a desk. Max is a closer view, not the 3.0 cover.
+## (min, max) the player may reach. Phone zoom-out rests at PLAYER_ZOOM_MIN
+## when that is still under the Koliseo overview, so the rest is not the
+## contain fit. Desktop min is the desk fit. Max is a closer view, not the 3.0 cover.
 static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> Vector2:
 	var base := board_zoom(board_w, board_h, viewport_size, mobile)
 	if not mobile:
@@ -226,7 +229,8 @@ static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Ve
 	var view := viewport_size
 	var span := _play_span(view, true)
 	var fit := minf(span.x / maxf(board_w, 1.0), span.y / maxf(board_h, 1.0))
-	return Vector2(minf(fit, base), PLAYER_ZOOM_MAX)
+	var floor_zoom := minf(base, maxf(fit, PLAYER_ZOOM_MIN))
+	return Vector2(floor_zoom, PLAYER_ZOOM_MAX)
 
 
 ## Overview times the session bias, clamped to player_zoom_limits.

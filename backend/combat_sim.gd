@@ -3667,6 +3667,14 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	return _accept()
 
 
+## A hit that has not relocated deals nothing. Presentation must not be the
+## only thing keeping the 22 off the cast cell.
+static func ambush_damage_if_planted(struck_from: Vector2i, landing: Vector2i, damage: int) -> int:
+	if struck_from != landing:
+		return 0
+	return maxi(damage, 0)
+
+
 ## Soft Lock 2026-09-26: a resolved attack ends Invisible, hit or miss.
 ## Drop Shade, Fade, walks, and a rejected cast do not. Fade still grants it.
 func _break_invisible_on_attack(actor: Dictionary) -> void:
@@ -3748,8 +3756,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	# that subtracts HP while the body is still on the cast cell deals nothing:
 	# Invisible self-origin and Shade origin both have to land first.
 	var struck_from: Vector2i = actor["pos"]
-	if struck_from != cell:
-		damage = 0
+	damage = ambush_damage_if_planted(struck_from, cell, damage)
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
 	# Teleport and the hit are done. The attack ends Invisible after that.
 	_break_invisible_on_attack(actor)

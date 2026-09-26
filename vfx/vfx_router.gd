@@ -12,6 +12,23 @@ const HEAVY_HIT_DAMAGE := 20
 const MARK_FLIGHT_SEC := 0.18
 
 
+## Departure dust for a successful Ambush. The board plays this when the
+## collapse starts, not when the slash is armed. A miss has no departure.
+static func ambush_collapse_specs(event: Dictionary) -> Array:
+	if str(event.get("spell", "")) != "ambush" and str(event.get("spell", "")) != SpellKits.AMBUSH:
+		return []
+	if str(event.get("type", "")) != "hit":
+		return []
+	var row := event.duplicate(true)
+	row["present_phase"] = "collapse"
+	row["teleported"] = true
+	var specs: Array = []
+	for item in recipes_for([row]):
+		if typeof(item) == TYPE_DICTIONARY and str(item.get("id", "")) == "puff":
+			specs.append(item)
+	return specs
+
+
 static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
 	var out: Array = []
 	for event in events:
@@ -349,8 +366,8 @@ static func _miss_recipes(event: Dictionary) -> Array:
 	if not event.has("to"):
 		at = caster_cell
 	# Invisible Ambush aims from Gloam. A miss does not throw a slash at the
-	# enemy: the whiff and the MISS stay on the caster tile. A Shade origin
-	# still whiffs from that Shade, not from the body.
+	# enemy: the whiff and the MISS stay on the caster tile. A Shade miss
+	# also does not streak onto the prey. That streak was the remote slash.
 	var ambush_origin := caster_cell
 	var ambush_self := false
 	if spell_id == "ambush":
@@ -360,7 +377,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		if ambush_self:
 			at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-	if not ambush_self and (event.has("to") or event.has("caster_cell")):
+	if spell_id != "ambush" and (event.has("to") or event.has("caster_cell")):
 		var whiff_from := caster_cell
 		var whiff_arc := 10.0
 		var whiff_overshoot := 12.0
@@ -842,13 +859,18 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))
-				out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
-				var struck := _target_cell(event)
-				out.append(_flash("slash", target, struck, 0.26))
-				# Shade origin and Invisible self-origin share this hit beat.
-				# BoardView arms this only after the body is planted on the back tile.
-				# The delay is the slash contact, measured from that plant.
-				out.append(_stamp("ambush_slash", target, struck, ViewMotion.ambush_contact_sec(), VfxBudget.STAMP_AMBUSH_PX, VfxBudget.STAMP_SPELL_LIFE))
+				var phase := str(event.get("present_phase", ""))
+				# Empty phase is the full recipe (tests, debug). Live presentation
+				# splits it: the puff is the collapse, the slash is the contact.
+				if phase != "contact":
+					out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
+				if phase != "collapse":
+					var struck := _target_cell(event)
+					out.append(_flash("slash", target, struck, 0.26))
+					# Shade origin and Invisible self-origin share this hit beat.
+					# BoardView arms this only after the body is planted on the back tile.
+					# The delay is the slash contact, measured from that plant.
+					out.append(_stamp("ambush_slash", target, struck, ViewMotion.ambush_contact_sec(), VfxBudget.STAMP_AMBUSH_PX, VfxBudget.STAMP_SPELL_LIFE))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):
 				out.append(_status_on("invisible", caster, caster_cell, 1))

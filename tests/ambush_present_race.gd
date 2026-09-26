@@ -1,8 +1,8 @@
 extends RefCounted
 
-## Second presenter, a refresh during the collapse, and a hit whose
+## Second presenter, a refresh during the plant hold, and a hit whose
 ## `teleported` flag was stripped. shade_marker_live only covers one _submit.
-## The slash, the damage float, and the strike facing stay off the cast cell.
+## The snap is instant. The slash and the damage float stay off until that plant.
 
 
 static func run(host: SceneTree) -> void:
@@ -63,31 +63,31 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(stripped_hit.get("teleported", false)), false, "the presented copy omits teleported")
 	board._present_resolve(stripped)
 	var token := int(board.get("_ambush_arrival_token"))
-	host.eq(gloam.grid_position, back_cell, "stripped Ambush plants inside present")
-	host.eq(gloam.position.distance_to(board._cell_to_local(back_cell)) <= 1.0, true, "stripped Ambush is visually on the back tile")
-	host.eq(str(gloam.facing), "E", "stripped Ambush faces the prey when it plants")
+	host.eq(gloam.grid_position, back_cell, "stripped Ambush snaps to the back tile before the slash")
+	host.eq(gloam.position.distance_to(board._cell_to_local(back_cell)) <= 1.0, true, "stripped Ambush is standing on the back tile")
+	host.eq(str(gloam.facing), "E", "stripped Ambush faces the prey on the snap")
 	host.eq(int(kestrel.hp), hp_before, "stripped Ambush does not drop vitals during present")
 	host.eq(_attack_strip_visible(gloam), false, "stripped Ambush does not start the strike strip during present")
 	host.eq(_ambush_strike_live(board), false, "stripped Ambush does not slash or float during present")
 	host.eq(str(hud.toast_caption()).contains("Ambush"), false, "stripped Ambush does not toast during present")
-	host.eq(int(board.get("_ambush_open_seat")), 0, "the arrival stays open until the back-tile plant")
-	# Same hit again, and the original sim batch, while the body is still collapsing.
+	host.eq(int(board.get("_ambush_open_seat")), 0, "the arrival stays open until the slash")
+	# Same hit again, and the original sim batch, while the plant hold is open.
 	board._present_resolve(stripped)
 	board._present_resolve(resolved.get("events", []))
 	host.eq(int(board.get("_ambush_arrival_token")), token, "a second presenter does not restart the arrival")
-	host.eq(gloam.grid_position, back_cell, "a second presenter does not walk the plant back")
-	host.eq(str(gloam.facing), "E", "a second presenter keeps the back-tile facing")
+	host.eq(gloam.grid_position, back_cell, "a second presenter leaves the planted tile")
+	host.eq(str(gloam.facing), "E", "a second presenter does not spin off the prey")
 	host.eq(_attack_strip_visible(gloam), false, "a second presenter does not arm the strike strip")
 	host.eq(_ambush_strike_live(board), false, "a second presenter does not arm the slash or the float")
 	host.eq(int(kestrel.hp), hp_before, "a second presenter does not drop vitals")
-	# Snapshot is already post-hit. Refresh must not jump the pose or the numbers.
+	# Snapshot is already post-hit. Refresh keeps the planted tile and facing.
 	board._refresh()
-	host.eq(gloam.grid_position, back_cell, "refresh during the hold keeps the back tile")
-	host.eq(gloam.position.distance_to(board._cell_to_local(back_cell)) <= 1.0, true, "refresh during the hold does not move the sprite back")
-	host.eq(str(gloam.facing), "E", "refresh during the hold keeps the strike facing")
-	host.eq(int(kestrel.hp), hp_before, "refresh during the collapse keeps the pre-hit vitals")
-	host.eq(str(hud.get("_ironjaw_body").text), card_before, "refresh during the collapse does not reprint the side card")
-	host.eq(_ambush_strike_live(board), false, "refresh during the collapse does not stamp the slash")
+	host.eq(gloam.grid_position, back_cell, "refresh during the plant hold keeps the back tile")
+	host.eq(gloam.position.distance_to(board._cell_to_local(back_cell)) <= 1.0, true, "refresh during the plant hold keeps the sprite planted")
+	host.eq(str(gloam.facing), "E", "refresh during the plant hold keeps the strike facing")
+	host.eq(int(kestrel.hp), hp_before, "refresh during the plant hold keeps the pre-hit vitals")
+	host.eq(str(hud.get("_ironjaw_body").text), card_before, "refresh during the plant hold does not reprint the side card")
+	host.eq(_ambush_strike_live(board), false, "refresh during the plant hold does not stamp the slash")
 	var faced_on_cast := false
 	var slashed_on_cast := false
 	var damaged_early := false
@@ -96,7 +96,7 @@ static func run(host: SceneTree) -> void:
 	var card_early := false
 	var saw_back := false
 	var slashed_on_back := false
-	for _i in 90:
+	for _i in 180:
 		await host.process_frame
 		var on_back: bool = (
 			gloam.grid_position == back_cell

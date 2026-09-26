@@ -71,6 +71,8 @@ var _motion_gen: int = 0
 var _ambush_collapse_gen: int = 0
 ## Invisible Ambush shows the body only after the back-tile plant.
 var _ambush_strike_visible: bool = false
+## Collapse keeps the body hidden even after the snapshot has cleared Invisible.
+var _ambush_conceal: bool = false
 ## True only while the collapse tween is the action holding the motion lock.
 var _collapse_holds_motion: bool = false
 ## Pre-strike vitals. A snapshot during the collapse must not paint the hit early.
@@ -394,6 +396,39 @@ func begin_path_walk() -> void:
 	_start_path_bounce()
 
 
+## One path segment. Facing is the segment delta, then the walk strip for that
+## letter is the body. False means the idle still is still showing: the caller
+## must not translate.
+func begin_segment_walk(dir: String) -> bool:
+	var face := dir.strip_edges().to_upper()
+	if face != "" and facing != face:
+		facing = face
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return false
+	_driven_walk = true
+	_path_walk = true
+	if not _present_driven_walk():
+		return false
+	return body_is_segment_walk(face if face != "" else facing)
+
+
+## True when the drawn body is walk_<facing> with a real cycle. The idle sprite
+## being visible is the slide.
+func body_is_segment_walk(dir: String) -> bool:
+	if _sprite != null and is_instance_valid(_sprite) and _sprite.visible:
+		return false
+	if _active_strip == null or not is_instance_valid(_active_strip) or not _active_strip.visible:
+		return false
+	var face := dir.strip_edges().to_lower()
+	var anim := str(_active_strip.animation)
+	if face == "" or anim != "walk_%s" % face:
+		return false
+	var frames := _active_strip.sprite_frames
+	if frames == null or not frames.has_animation(_active_strip.animation):
+		return false
+	return frames.get_frame_count(_active_strip.animation) >= 2
+
+
 ## Board-driven steps own the gait. Drop the free-running bounce so the plant
 ## matches the tile instead of sliding under a looping hop.
 func arm_driven_walk() -> void:
@@ -468,6 +503,8 @@ func _apply_driven_cycle(t: float) -> void:
 	if count <= 1:
 		return
 	# The step owns the pose. A running clock would leave the idle cell on screen.
+	if strip.is_playing():
+		strip.pause()
 	strip.speed_scale = 0.0
 	strip.frame = VIEW_MOTION.walk_cycle_frame(t, count, _driven_step)
 	strip.frame_progress = 0.0
@@ -765,6 +802,7 @@ func release_idle() -> void:
 
 func settle_motion() -> void:
 	_ambush_strike_visible = false
+	_ambush_conceal = false
 	_collapse_holds_motion = false
 	var died := _plan_died
 	_plan_died = false
@@ -831,16 +869,34 @@ func rest_modulate() -> Color:
 		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
 	# Locked Fade: do not draw a solid body while Invisible, including the walk.
 	# The Ambush plant is the exception, and only after the back-tile snap.
+	if _ambush_conceal:
+		return Color(1, 1, 1, 0)
 	if invisible and not _ambush_strike_visible:
 		return Color(1, 1, 1, 0)
 	return Color.WHITE
 
 
+## Stay hidden through the collapse. A snapshot that already cleared Invisible
+## must not draw the body on the cast cell.
+func conceal_for_ambush() -> void:
+	_ambush_conceal = true
+	_ambush_strike_visible = false
+	_apply_rest_color()
+
+
 ## Reveal Gloam on the back tile. The cast cell stays hidden.
 func show_ambush_plant() -> void:
-	if not invisible:
-		return
+	_ambush_conceal = false
+	invisible = false
 	_ambush_strike_visible = true
+	_apply_rest_color()
+
+
+## Miss, or any Ambush that does not plant. Invisible is over. No slash pose.
+func reveal_after_ambush() -> void:
+	_ambush_conceal = false
+	invisible = false
+	_ambush_strike_visible = false
 	_apply_rest_color()
 
 
@@ -866,8 +922,8 @@ func note_prey_vitals(unit: Dictionary) -> void:
 	_request_paint()
 
 
-## Remember the numbers on screen. Later snapshots during the collapse rewrite
-## back to these until the back-tile contact releases them.
+## Remember the numbers on screen. Later snapshots during the plant hold rewrite
+## back to these until the slash releases them.
 func freeze_shown_vitals() -> void:
 	_vitals_frozen = true
 	_frozen_vitals = hp
@@ -1676,6 +1732,10 @@ func _ensure_motion_strips() -> void:
 func _play_walk_flat() -> bool:
 	_ensure_visuals()
 	_stop_idle()
+	# The board samples the frame. play() on device can stay on frame 0 while
+	# the pawn node eases, which is the idle slide.
+	if _driven_walk:
+		return _present_driven_walk()
 	var choice := _strip_choice("walk")
 	if choice.is_empty():
 		return false
@@ -1724,6 +1784,43 @@ func _play_walk_flat() -> bool:
 		return false
 	_walk_idle_plant = false
 	_motion_playing = true
+	_flatten_body()
+	return true
+
+
+## Driven steps show the facing strip paused on the sampled cell.
+## A one-frame clip is refused: that cell is the idle slide.
+func _present_driven_walk() -> bool:
+	var choice := _strip_choice("walk")
+	if choice.is_empty():
+		return false
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return false
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(anim) or frames.get_frame_count(anim) < 2:
+		return false
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = false
+	_prepare_strip_pose(strip)
+	var same := strip.visible and strip.animation == anim and _active_strip == strip
+	strip.visible = true
+	strip.animation = anim
+	if strip.is_playing():
+		strip.pause()
+	strip.speed_scale = 0.0
+	if not same and frames.get_frame_count(anim) > 0:
+		strip.frame = 0
+		strip.frame_progress = 0.0
+	_active_strip = strip
+	_strip_holds_body = true
+	_walk_looping = true
+	_walk_idle_plant = false
+	_motion_playing = true
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.modulate = _sprite.modulate
+		_sprite.visible = false
 	_flatten_body()
 	return true
 

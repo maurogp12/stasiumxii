@@ -49,11 +49,12 @@ const ATTACK_LUNGE_PX := 18.0
 ## Contact slash after the snap. It is a local reach, not a board dash.
 ## Facing damage stays the sim's existing resolution. This reach is view-only.
 const AMBUSH_LUNGE_PX := 36.0
-## Kept for the miss whiff budget. A hit does not collapse on the cast tile.
-const AMBUSH_COLLAPSE_SEC := 0.08
+## Kept so a later note can name the old cast-cell squash. The snap is instant.
+## Origin dust is chrome in that same beat, not a delay before the plant.
+const AMBUSH_COLLAPSE_SEC := 0.18
 ## Rest on the back tile after the snap, before the slash. Long enough that the
 ## blink reads as a relocation. The slash stays a local pose on that tile.
-const AMBUSH_ARRIVE_HOLD_SEC := 0.12
+const AMBUSH_ARRIVE_HOLD_SEC := 0.28
 ## Miss whiff. The body stays on the cast cell.
 const AMBUSH_WHIFF_SEC := 0.16
 
@@ -157,9 +158,16 @@ static func ambush_contact_sec() -> float:
 	return ANTICIPATION_SEC + ATTACK_OUT_SEC
 
 
-## Success, Shade and Invisible alike: snap to the back tile, face the prey,
-## then slash, then the 22. Miss: whiff only. No snap and no damage beat.
-## A slash from the cast cell is not this sequence.
+## Wall-clock for the plant hold and the slash. The snap itself is instant.
+## The 0.6s action lock is shorter than that chain, so the board waits this long.
+static func ambush_sequence_sec() -> float:
+	return AMBUSH_ARRIVE_HOLD_SEC + attack_sec() + 0.35
+
+
+## Success, Shade and Invisible alike: instant snap to the back tile, face the
+## prey, hold, then slash, then the 22. Origin dust is chrome, not a delay.
+## Miss: whiff only. No snap and no damage beat. A slash from the cast cell
+## is not this sequence.
 static func ambush_beats(event: Dictionary) -> Array:
 	if str(event.get("spell", "")) != SpellKits.AMBUSH and str(event.get("spell", "")) != "ambush":
 		return []
