@@ -5,8 +5,9 @@ extends RefCounted
 ## Remote stamps are the existing GitHub tags `mobile-0.1.N-debug`
 ## (version name `0.1.N-mobile`) and the Android versionCode already
 ## printed in those release notes as `(code N)`. The running build is
-## compared with PackageManager versionCode / versionName. No second
-## numbering scheme, and no GitHub token.
+## compared with PackageManager versionCode / versionName, or with the
+## baked export stamp in apk_version_stamp.gd when that read fails.
+## No second numbering scheme, and no GitHub token.
 
 const REPO := "maurogp12/stasiumxii"
 const ASSET_NAME := "stasiumxii-mobile-debug.apk"
@@ -215,11 +216,13 @@ static func looks_like_apk(path: String) -> bool:
 
 ## What the hub should do after a parsed release.
 ## `action` is "message" or "download".
+## An unreadable local version on Android still downloads the newest
+## public debug APK (same package, same cert). It does not stop on "version".
 static func plan_after_release(on_android: bool, local_ok: bool, local_code: int, local_name: String, remote: Dictionary) -> Dictionary:
 	var remote_name := str(remote.get("version_name", ""))
 	var remote_code := int(remote.get("version_code", 0))
 	if on_android and not local_ok:
-		return {"action": "message", "kind": "version", "detail": ""}
+		return _download_plan(remote, remote_name, "version_fetch")
 	var cmp := compare_to_installed(local_code, local_name, remote_code, remote_name)
 	if cmp == "current":
 		var shown := local_name if not local_name.is_empty() else remote_name
@@ -227,13 +230,18 @@ static func plan_after_release(on_android: bool, local_ok: bool, local_code: int
 	if not on_android or cmp == "unknown":
 		var kind := "not_android" if not on_android else "error"
 		return {"action": "message", "kind": kind, "detail": remote_name}
+	return _download_plan(remote, remote_name, "downloading")
+
+
+static func _download_plan(remote: Dictionary, remote_name: String, kind: String) -> Dictionary:
 	var url := str(remote.get("download_url", ""))
 	var tag := str(remote.get("tag", ""))
 	if not is_public_apk_url(url, tag):
-		return {"action": "message", "kind": "error", "detail": ""}
+		var failed := "version" if kind == "version_fetch" else "error"
+		return {"action": "message", "kind": failed, "detail": ""}
 	return {
 		"action": "download",
-		"kind": "downloading",
+		"kind": kind,
 		"detail": remote_name,
 		"url": url,
 		"tag": tag,
@@ -272,6 +280,10 @@ static func message_for(kind: String, detail: String = "") -> String:
 			return "Android no abrió el instalador."
 		"version":
 			return "No se pudo leer la versión instalada."
+		"version_fetch":
+			if detail.is_empty():
+				return "No se pudo leer la versión instalada. Descargando la última..."
+			return "No se pudo leer la versión instalada. Descargando %s..." % detail
 		_:
 			return "No se pudo comprobar la actualización."
 

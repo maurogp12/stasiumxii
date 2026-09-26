@@ -13,6 +13,7 @@ const Install := preload("res://backend/apk_install.gd")
 var _http: HTTPRequest
 var _phase: String = ""
 var _release: Dictionary = {}
+var _status_kind: String = "downloading"
 var _awaiting_permission: bool = false
 var _pending_path: String = ""
 
@@ -83,6 +84,7 @@ func _handle_check(result: int, response_code: int, body: PackedByteArray) -> vo
 		_finish(str(plan.get("kind", "error")), str(plan.get("detail", "")))
 		return
 	_release = parsed
+	_status_kind = str(plan.get("kind", "downloading"))
 	var gate := Install.can_request_package_installs()
 	if not gate.get("allowed", false):
 		_ask_permission()
@@ -118,7 +120,8 @@ func _begin_download() -> void:
 	_phase = "download"
 	_pending_path = path
 	busy_changed.emit(true)
-	status_changed.emit(Update.message_for("downloading", str(_release.get("version_name", ""))))
+	var kind := "version_fetch" if _status_kind == "version_fetch" else "downloading"
+	status_changed.emit(Update.message_for(kind, str(_release.get("version_name", ""))))
 	_http.timeout = 180.0
 	_http.download_file = path
 	var err := _http.request(url, Update.download_headers())
