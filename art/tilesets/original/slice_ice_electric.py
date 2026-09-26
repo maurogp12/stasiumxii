@@ -5,7 +5,7 @@ Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
 dress-prefixed props. Stormspire (`storm_*`) is sliced by
 slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
 Slagcrown (`slag_*`) is sliced by slice_lava_punch.py. Crosshaven is
-sliced by slice_crosshaven_punch.py. Brinewake stays on original-tileset-b.jpg.
+sliced by slice_crosshaven_punch.py. Brinewake stays on the coast punch.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.

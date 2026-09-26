@@ -1,12 +1,13 @@
 class_name KoliseoArt
 extends RefCounted
 
-## Isometric diamonds sliced from the original tileset sheets
-## (res://art/tilesets/original/). Flat terrain is a full 64×32 diamond.
+## Isometric diamonds. Flat terrain is a full 64×32 diamond.
 ## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
 ## Crosshaven paints the earth punch (dirt and stone). Moss is only on the ruin walls.
+## Brinewake paints the coast punch (wet sand, pier wood, tide scorch).
+## Slagcrown paints the lava punch.
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
 ## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
 ## See THEMES.md. The board loads these slices by dress prefix.

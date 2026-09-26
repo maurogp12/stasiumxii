@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_hotseat_rolls_map()
 	_test_alive_grade()
 	_test_original_sheet()
+	_test_brine_punch()
 	await _test_hotseat_navigates()
 	print("Koliseo map tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -458,6 +459,121 @@ func _diamond_seam(tex: Texture2D) -> bool:
 		if img.get_pixel(corner.x, corner.y).a > 0.08:
 			return false
 	return true
+
+
+## Soft Lock agua + costa. Presentation only: wet sand, pier wood, tide scorch.
+## Foam stays on the diamond seam. Tags and geometry are not part of this check.
+func _test_brine_punch() -> void:
+	var art := load("res://board/koliseo_art.gd")
+	var ground: Texture2D = art.terrain_texture("ground", 0, "brine_")
+	var mud: Texture2D = art.terrain_texture("mud", 0, "brine_")
+	var water: Texture2D = art.terrain_texture("water", 0, "brine_")
+	var low: Texture2D = art.terrain_texture("ground", 1, "brine_")
+	var high: Texture2D = art.terrain_texture("ground", 2, "brine_")
+	truthy(ground.resource_path.ends_with("brine_ground.png"), "Brinewake ground is the coast sheet")
+	eq(ground.get_width(), 64, "Brinewake ground is 64 px wide")
+	eq(ground.get_height(), 32, "Brinewake ground diamond is 32 px tall")
+	var sand := ground.get_image().get_pixel(32, 16)
+	truthy(sand.r > sand.g and sand.g > sand.b and sand.r > 0.55, "Brinewake ground is wet sand")
+	var scorch := mud.get_image().get_pixel(32, 16)
+	truthy(scorch.r > scorch.b and scorch.r < sand.r, "Brinewake mud is darker tide scorch")
+	var agua := water.get_image().get_pixel(32, 16)
+	truthy(agua.g > agua.r and agua.b > agua.r, "Brinewake water stays teal")
+	truthy(_green_fraction(ground) < 0.04, "Brinewake sand is not a grass carpet")
+	truthy(_crust_marks(ground) >= 4, "Brinewake sand keeps tide crust accents")
+	var pillar: Texture2D = art.prop_texture("rock_pillar", "brine_")
+	truthy(_green_fraction(pillar) < 0.08, "Brinewake rock pillar is stone, not moss")
+	truthy(_interior_veil(ground) < 0.02, "foam does not haze the sand diamond")
+	truthy(_interior_veil(water) < 0.02, "foam does not haze the water diamond")
+	truthy(_seam_foam(ground) > 0, "wet sand keeps foam on the seam")
+	truthy(low.get_height() > 32, "Brinewake low cliffs hang below the diamond")
+	truthy(high.get_height() > low.get_height(), "Brinewake high cliffs are taller")
+	truthy(low.get_image().get_pixel(32, 16).a > 0.8, "Brinewake cliff cap is opaque")
+	var drift: Texture2D = art.prop_texture("driftwood", "brine_")
+	truthy(drift.resource_path.ends_with("brine_prop_driftwood.png"), "Brinewake driftwood is the coast prop")
+	var shared: Texture2D = art.prop_texture("driftwood", "")
+	truthy(shared.resource_path.ends_with("prop_driftwood.png"), "other arenas keep the shared driftwood")
+	var pier: Texture2D = art.prop_texture("fence", "brine_")
+	truthy(pier.resource_path.ends_with("brine_prop_fence.png"), "Brinewake fence is pier wood")
+	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
+	truthy(themes.contains("brine_ground_punch.png"), "Brinewake punch sheet is the coast source")
+	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/brinewake_15x15_tags.json"))
+	eq((tags["cells"] as Array).size(), 225, "Brinewake tags keep 225 cells")
+	eq(int((tags["size"] as Array)[0]), 15, "Brinewake tag width stays 15")
+
+
+## Dark warm marks on the north half of the diamond. A south shade is not crust.
+func _crust_marks(tex: Texture2D) -> int:
+	var img := tex.get_image()
+	var lums: Array[float] = []
+	for y in img.get_height():
+		for x in img.get_width():
+			var px := img.get_pixel(x, y)
+			if px.a > 0.15:
+				lums.append((px.r + px.g + px.b) / 3.0)
+	if lums.is_empty():
+		return 0
+	lums.sort()
+	var med: float = lums[lums.size() / 2]
+	var marks := 0
+	var limit_y := img.get_height() / 2
+	for y in limit_y:
+		for x in img.get_width():
+			var px := img.get_pixel(x, y)
+			if px.a < 0.15:
+				continue
+			var lum := (px.r + px.g + px.b) / 3.0
+			if lum < med - 0.12 and px.r + 0.02 >= px.g:
+				marks += 1
+	return marks
+
+
+func _interior_veil(tex: Texture2D) -> float:
+	var img := tex.get_image()
+	var width := img.get_width()
+	var face_h := mini(32, img.get_height())
+	var veil := 0
+	var opaque := 0
+	for y in face_h:
+		for x in width:
+			var px := img.get_pixel(x, y)
+			if px.a < 0.15:
+				continue
+			opaque += 1
+			var metric: float = absf(float(x) - float(width - 1) * 0.5) / (float(width) * 0.5)
+			metric += absf(float(y) - float(face_h - 1) * 0.5) / (float(face_h) * 0.5)
+			if metric >= 0.78:
+				continue
+			var lum := (px.r + px.g + px.b) / 3.0
+			var sat := maxf(px.r, maxf(px.g, px.b)) - minf(px.r, minf(px.g, px.b))
+			var warm := px.r > px.g + 0.06 and px.r > px.b + 0.11
+			var teal := px.g > px.r + 0.05 or px.b > px.r + 0.05
+			var foam := lum > 0.65 and sat < 0.16
+			var gray := sat < 0.14 and lum > 0.25 and not warm and not teal
+			if foam or gray:
+				veil += 1
+	return float(veil) / float(maxi(opaque, 1))
+
+
+func _seam_foam(tex: Texture2D) -> int:
+	var img := tex.get_image()
+	var width := img.get_width()
+	var face_h := mini(32, img.get_height())
+	var foam := 0
+	for y in face_h:
+		for x in width:
+			var px := img.get_pixel(x, y)
+			if px.a < 0.15:
+				continue
+			var metric: float = absf(float(x) - float(width - 1) * 0.5) / (float(width) * 0.5)
+			metric += absf(float(y) - float(face_h - 1) * 0.5) / (float(face_h) * 0.5)
+			if metric < 0.78:
+				continue
+			var lum := (px.r + px.g + px.b) / 3.0
+			var sat := maxf(px.r, maxf(px.g, px.b)) - minf(px.r, minf(px.g, px.b))
+			if lum > 0.65 and sat < 0.2:
+				foam += 1
+	return foam
 
 
 func _green_fraction(tex: Texture2D) -> float:

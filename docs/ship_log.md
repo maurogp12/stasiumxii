@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Brinewake coast punch
+
+Soft Lock agua + costa. Presentation only. Locked geometry and tags are unchanged.
+
+Brinewake now paints the coast punch: wet sand, pier wood, and tide scorch, with deep water for agua. Foam sits on the diamond seams. Tide crust is a few dark marks on the sand. The green carpet on the punch sheet is not painted onto the diamonds, and the rock pillar stays stone. Coast props the arena already paints (`driftwood`, `rock_cluster`, `rock_pillar`, `rubble`, `ruins`, `fence`, `waterfall`, `floor_seal`) read from `brine_prop_*`. Other arenas keep their sheets. The board draws these sheets in the match.
+
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
 Sideload cut recorded before this rebase. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. This follow-up did not recut or republish the APK. The bytes below predate the Slagcrown lava punch (#167). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK. Min SDK 24, target SDK 36. Debuggable. Permissions `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
