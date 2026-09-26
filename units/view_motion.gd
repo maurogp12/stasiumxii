@@ -7,7 +7,7 @@ class_name ViewMotion
 ## files exist (SE→e, SW→s, NE→n, NW→w). The foot eases from cell to cell
 ## in one tile time (ease-in-out, not a linear skate). `walk_<facing>` plays
 ## exactly one cycle on that tween. The foot-down cell shows when the hop is
-## on Y=0 and through the plant hold. That cell is frame 0 on the v4 sheets;
+## on Y=0 and through the plant hold. That cell is frame 0 on the v5 sheets;
 ## the sampler retargets when it is not. The sprite hops a few pixels, and
 ## squashes on the plant only. The foot, ground marks, aim rings, shade, and
 ## name chrome stay put. A missing strip keeps that hop and adds squash
@@ -503,7 +503,7 @@ static func step_travel(t: float) -> float:
 ## visits every other cell once, so a moving foot never idles on the plant
 ## and arrival cannot freeze a passing cell. step_index does not continue a
 ## half-cycle. Tile time is not stretched to chase the index. Pass 0 when
-## frame 0 is the contact, which is the v4 sheet.
+## frame 0 is the contact, which is the v5 sheet.
 static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0, contact: int = 0) -> int:
 	var count := maxi(frame_count, 1)
 	if count <= 1:

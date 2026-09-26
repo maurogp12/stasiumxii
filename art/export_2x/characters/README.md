@@ -5,16 +5,16 @@
 Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160. No `*_gen.png`. No second folder. The `*_frames.tres` walk clips are AtlasTexture slices of these PNGs (cells at x = 0, 144, 288, 432, 576, 720). A new sheet of that size shows up on the next import. Attack, cast, hit, and death sheets stay put.
 
 - `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — approved Wakfu Kestrel
-- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2 art-fill. Same 864×160, six 144×160 cells, foot row about y=149. The plant fills about 0.91–0.92 of the cell (taller than Bastion's ~0.81). Identity stays Berserker A + helm A2: iron-jaw grill, dual double-bit axes, dark cape. The same bytes are in `art/export_2x/walk_src/ironjaw_walk_*.pngbin`.
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A2 art-fill. Same 864×160, six 144×160 cells, foot row about y=148–150. The plant still fills most of the cell (east frame 0 is about 0.93, taller than Bastion). Identity stays Berserker A + helm A2: iron-jaw grill, dual double-bit axes, dark cape. The same bytes are in `art/export_2x/walk_src/ironjaw_walk_*.pngbin`.
 - `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B, not the white-eyes sheet: amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Those walk PNGs are the wakfu-ship-v4 strips (864×160, six 144×160 cells, foot-anchored). v4 amplifies stride and bounce on the locked punch sheets. It does not regenerate identity. Locked SoTs stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punch sheet. West is the mirror of east. North and south are the front and rear three-quarter strips, not E-compress placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, or death sheet. Their hit flinch is the scenario strip below.
+Those walk PNGs are the wakfu-ship-v5 strips (864×160, six 144×160 cells, foot-anchored around y=148–150). v5 replaces the v4 punch strips in place. It does not regenerate identity. Locked SoTs stay Gloam B, Mender D2, Bastion 2C, Ironjaw A+A2, and Kestrel F+A. East is the punch sheet. West is the mirror of east. North and south are the front and rear three-quarter strips, not E-compress placeholders. Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`. Mender and Bastion still have no attack, cast, or death sheet. Their hit flinch is the scenario strip below.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
-Walk sheets in this folder are the wakfu-ship-v4 punch strips. Attack and the other action sheets stay the prior drops. Animation names stay `walk_<e|s|n|w>` and `attack_<e|s|n|w>`.
+Walk sheets in this folder are the wakfu-ship-v5 strips. Attack and the other action sheets stay the prior drops. Animation names stay `walk_<e|s|n|w>` and `attack_<e|s|n|w>`.
 
 Loader: `units/strip_library.gd`. Missing paths use `ResourceLoader.exists` and return null. They do not error.
 
@@ -72,7 +72,7 @@ Batch-1c (same cell, pivot, and letter rule):
 - `art/export_2x/characters/mender/anims/mender_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 - `art/export_2x/characters/bastion/anims/bastion_hit_{e,s,n,w}.png` — 4 frames, 12 fps, scenario flinch
 
-Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk is the v4 punch strip. Kestrel attack stays the prior sheet.
+Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk is the v5 strip. Kestrel attack stays the prior sheet.
 
 Optional bank next to those folders:
 
@@ -99,7 +99,7 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing, and the clip is playing:** the pawn faces the step (`walk_n/e/s/w`) before the foot moves. One full cycle plays on the 0.30s tile (6 frames at about 20 fps). The foot-down cell shows when the hop is on the ground and through the last 18% plant hold. On these v4 sheets that cell is frame 0; the sampler retargets if a sheet's plant is another index, without stretching the tile. The sprite hops on the body only (Bastion and Ironjaw about 2.5px, Kestrel and Gloam about 3.5px, Mender the shared 3px) and squashes Y from about 0.96 back to 1 on the plant only. The foot, ground marks, aim, shade, and name stay on the pawn. The first tile and a direction change, including a 180, take a 50ms weight shift after the facing is set. A 180 does not spin through a side facing. Straight tiles do not settle. The path holds the planted idle briefly before the next cast. A clock stuck on the contact frame while the foot slides is not a walk. No tile-tall hop. Gloam uses `gloam_walk_*`.
+- **Walk strip for this facing, and the clip is playing:** the pawn faces the step (`walk_n/e/s/w`) before the foot moves. One full cycle plays on the 0.30s tile (6 frames at about 20 fps). The foot-down cell shows when the hop is on the ground and through the last 18% plant hold. On these v5 sheets that cell is frame 0; a 1–2px sole tip still counts as that row. The sampler retargets if a sheet's plant is another index, without stretching the tile. The sprite hops on the body only (Bastion and Ironjaw about 2.5px, Kestrel and Gloam about 3.5px, Mender the shared 3px) and squashes Y from about 0.96 back to 1 on the plant only. The foot, ground marks, aim, shade, and name stay on the pawn. The first tile and a direction change, including a 180, take a 50ms weight shift after the facing is set. A 180 does not spin through a side facing. Straight tiles do not settle. The path holds the planted idle briefly before the next cast. A clock stuck on the contact frame while the foot slides is not a walk. No tile-tall hop. Gloam uses `gloam_walk_*`.
 - **Walk missing, or `play()` does not start:** the same hop, plus squash on launch/land and stretch at the crest. Mender and Bastion ship walk only.
 - **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use the louder `attack_*`. Gloam Cut uses `attack_*` and holds frame 2.
 - **Mark Shot:** `cast_mark_<facing>` (6 frames, 12 fps, impact 3). If that sheet is missing it plays v3 `attack_*`. The bolt leaves hand height at the release frame, following the body if the bow has lunged.

@@ -191,6 +191,7 @@ func _test_curves_return_to_origin() -> void:
 			eq(shown, 0, "hop Y=0 shows the contact frame")
 	eq(StripLibrary.contact_index_from_metrics([140, 150, 148], [120, 100, 110]), 1, "a lifted frame 0 retargets to the planted row")
 	eq(StripLibrary.contact_index_from_metrics([150, 145, 150], [90, 110, 90]), 0, "frame 0 stays when it shares the planted row")
+	eq(StripLibrary.contact_index_from_metrics([148, 148, 150, 149, 149, 150], [149, 149, 151, 150, 150, 151]), 0, "a 2px sole tip stays on frame 0")
 	eq(MOTION.walk_cycle_frame(0.0, 6, 0, 2), 2, "a retargeted contact shows at the departure")
 	eq(MOTION.walk_cycle_frame(1.0, 6, 0, 2), 2, "arrival holds the retargeted contact")
 	eq(MOTION.walk_cycle_frame(0.5, 6, 0, 2) != 2, true, "the stride leaves the retargeted contact")
@@ -1266,7 +1267,7 @@ func _test_strip_library_missing_and_slice() -> void:
 					var walk_foot := _foot_row(played.get_frame_texture("walk_%s" % face, 0).get_image())
 					for hit_i in played.get_frame_count(anim_name):
 						var hit_row := _foot_row(played.get_frame_texture(anim_name, hit_i).get_image())
-						eq(hit_row >= 149 and hit_row <= 150, true, "%s %s frame %d foot is on y 149-150" % [cls, anim_name, hit_i])
+						eq(hit_row >= 148 and hit_row <= 151, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
 						eq(absi(hit_row - walk_foot) <= 1, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
 				else:
 					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
@@ -2064,7 +2065,7 @@ func _test_class_plant_anchor() -> void:
 	for class_id in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
 		StripLibrary.frames_for(class_id)
 		for face in ["n", "e", "s", "w"]:
-			eq(StripLibrary.walk_contact_index(class_id, face), 0, "%s %s v4 contact stays frame 0" % [class_id, face])
+			eq(StripLibrary.walk_contact_index(class_id, face), 0, "%s %s v5 contact stays frame 0" % [class_id, face])
 		var pawn := Pawn.new()
 		get_root().add_child(pawn)
 		await process_frame
