@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Koliseo overview zoom
+
+Luca's 0.1.25 playtest. No APK stamp. Map geometry and tags are unchanged. Desktop zoom stays 0.64.
+
+The 0.1.25 rest was zoom 2.0 (64px diamonds). On a 20:9 phone that crop showed about 62% of the diamond height and 83% of the width, so the fighters filled the glass. Zoom − stopped at 1.7, still a close crop. Zoom + stopped at 2.5. The postage-stamp contain on that window is zoom 1.24 (~40px diamonds, ~205px black wings).
+
+A 20:9 phone now opens at 1.55 (~50px diamonds). The full width fits with about a 56px side gutter, and about 80% of the height stays on screen. Zoom − rests at 1.40 (diamond tips, ~128px wings, still above the contain). Zoom + stops at 2.25.
+
 ## 2026-09-26 — Mobile debug APK 0.1.25
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.25-mobile`, `version/code` `26`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
