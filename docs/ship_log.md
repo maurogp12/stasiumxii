@@ -2,6 +2,10 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Combat HUD chrome
+
+The top fighter cards and the turn plaque use the hub navy and gold. ACTIVE is the lit frame; waiting stays dim. HP, AP, MP, facing, turn, and class meters stay on the cards. Raw spell-id lines are off the cards because those spells already sit on the bottom bar. Locked numbers are unchanged.
+
 ## 2026-09-26 — Graphics lift on the same boards
 
 Same Koliseo and Stasis layouts, tags, and room shapes. The paint, the board read, and the contact flashes got louder. Rosie’s preview stays a palette reference. `*_gen.png` stays unloaded.
