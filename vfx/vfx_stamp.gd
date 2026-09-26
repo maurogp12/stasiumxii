@@ -1,8 +1,9 @@
 extends "res://vfx/vfx_pooled.gd"
 
 ## One-shot sprite overlay. Hero plates punch in with a scale and fade.
-## Hit flash and footstep dust are 3×3 sheets and step one cell at a time.
-## The director pools these. CombatSim never reads this file.
+## Ambush slash, hit flash, and footstep dust are single punch plates.
+## Mark Shot and Detonate stay single plates too. The director pools these.
+## CombatSim never reads this file.
 
 const SHEETS := {
 	"ambush_slash": "res://art/vfx/scenario/ambush_slash.png",
@@ -12,11 +13,9 @@ const SHEETS := {
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
 }
 
-## Row-major. Anything else is a single hero frame.
-const GRIDS := {
-	"hit_flash": Vector2i(3, 3),
-	"footstep_dust": Vector2i(3, 3),
-}
+## Row-major sheets. The punch plates are one hero frame, so they stay out
+## of this map and the stamp scales the whole drawing.
+const GRIDS := {}
 
 static var _cache: Dictionary = {}
 
