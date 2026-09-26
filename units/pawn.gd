@@ -2,10 +2,12 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. Facings stay
-## `art/characters/<class>/<class>_<n|e|s|w>.png`. Mirrors are baked into the
-## files — never set flip_h. Bastion _n/_w are placeholder back views loaded
-## from those same filenames.
+## centered, offset (0, -72), scale 0.5. When a walk sheet exists, the standing
+## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
+## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
+## sheet is missing, and it stays the hub portrait. It is not the combat idle
+## under a walk sheet. Mirrors are baked into the files — never set flip_h.
+## Bastion _n/_w turnarounds are placeholder back views on those filenames.
 ## Mobile-track chrome. Batch 1 strips load from
 ## `art/export_2x/characters/<class>/anims/` when the files exist
 ## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
@@ -70,6 +72,8 @@ var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
 var _active_strip: AnimatedSprite2D
 var _strip_holds_body: bool = false
+## Standing combat pose. Frame 0 of the facing walk sheet, not the static turnaround.
+var _walk_idle_plant: bool = false
 var _path_walk: bool = false
 var _walk_looping: bool = false
 ## Which half-cycle the driven step is on. The board does not pass this.
@@ -627,13 +631,7 @@ func play_ambush_collapse(sec: float) -> float:
 func restore_ambush_body() -> void:
 	# Drop any collapse sample that is still queued for this frame.
 	_ambush_collapse_gen += 1
-	_plant_sprite()
-	var color := rest_modulate()
-	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.modulate = color
-		_sprite.visible = true
-	if _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.modulate = color
+	_show_rest_body()
 
 
 func _sample_ambush_collapse(t: float, gen: int) -> void:
@@ -689,12 +687,7 @@ func settle_motion() -> void:
 		_flashing = false
 		_apply_downed_pose()
 		return
-	_plant_sprite()
-	if not _flashing:
-		var color := rest_modulate()
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.modulate = color
-			_sprite.visible = true
+	_show_rest_body()
 	_start_idle()
 
 
@@ -751,6 +744,14 @@ func note_flash_settled() -> void:
 	_flashing = false
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.modulate = rest_modulate()
+
+
+## Overhead bar for a prey whose hit was already resolved. The board calls this
+## only after the caster is standing on the back tile, facing them.
+func note_prey_vitals(unit: Dictionary) -> void:
+	hp = int(unit.get("hp", hp))
+	max_hp = int(unit.get("max_hp", max_hp))
+	_request_paint()
 
 
 ## Hit events only. "ward" is pale blue, "support" is heal / Cleanse, "damage" stays orange.
@@ -894,16 +895,26 @@ func _sync_sprite() -> void:
 	_ensure_visuals()
 	_sprite.flip_h = false
 	if stasis_sprite != "":
+		_walk_idle_plant = false
 		_sprite.texture = _stasis_texture(stasis_sprite)
-	else:
-		_sprite.texture = sprite_texture(class_id, facing)
+		if not _flashing:
+			_sprite.modulate = rest_modulate()
+		_sprite.visible = true
+		_hide_body_strips()
+		_request_paint()
+		return
+	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
+	elif _plant_walk_idle():
+		pass
 	else:
+		_walk_idle_plant = false
+		_active_strip = null
 		_sprite.visible = true
 		_hide_body_strips()
 	_request_paint()
@@ -1177,7 +1188,10 @@ func _sample_idle(_t: float) -> void:
 		return
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
-	_sprite.position = Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	_sprite.position = bob
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = bob
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
 
@@ -1186,6 +1200,24 @@ func _stop_idle() -> void:
 	if _idle_tween != null and is_instance_valid(_idle_tween):
 		_idle_tween.kill()
 	_idle_tween = null
+
+
+func _show_rest_body() -> void:
+	_plant_sprite()
+	if _flashing:
+		return
+	var color := rest_modulate()
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.modulate = color
+		_active_strip.visible = true
+		_active_strip.scale = SPRITE_SCALE
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.modulate = color
+			_sprite.visible = false
+		return
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.modulate = color
+		_sprite.visible = true
 
 
 func _plant_sprite() -> void:
@@ -1198,7 +1230,14 @@ func _plant_sprite() -> void:
 	_sprite.scale = SPRITE_SCALE
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
-	_sprite.visible = true
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = Vector2.ZERO
+		_active_strip.scale = SPRITE_SCALE
+		_active_strip.rotation = 0.0
+		_active_strip.visible = true
+		_sprite.visible = false
+	else:
+		_sprite.visible = true
 
 
 ## Locked letters first (SE→e, SW→s, NE→n, NW→w), then the drawn-master
@@ -1228,8 +1267,10 @@ func _start_kind_strip(kind: String, window_sec: float) -> void:
 func _begin_body_strip(kind: String, window_sec: float) -> void:
 	_ensure_motion_strips()
 	var choice := _strip_choice(kind)
-	_end_body_strip()
+	_end_body_strip(false)
 	if choice.is_empty():
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.visible = true
 		return
 	var strip: AnimatedSprite2D = choice["node"]
 	var anim := StringName(str(choice["anim"]))
@@ -1263,10 +1304,11 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 		_sprite.visible = false
 
 
-func _end_body_strip() -> void:
+func _end_body_strip(replant: bool = true) -> void:
 	_walk_looping = false
 	_strip_holds_body = false
 	_impact_frozen = false
+	_walk_idle_plant = false
 	_body_kind = ""
 	if _active_strip != null and is_instance_valid(_active_strip):
 		if _active_strip.is_playing():
@@ -1275,8 +1317,52 @@ func _end_body_strip() -> void:
 		_active_strip.position = Vector2.ZERO
 	_active_strip = null
 	_hide_body_strips()
-	if _sprite != null and is_instance_valid(_sprite):
+	if replant and _plant_walk_idle():
+		return
+	if replant and _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
+
+
+## Idle and the stride share frame 0 of this facing's walk sheet.
+## The static turnaround stays hidden so a step cannot flash a second costume.
+func _should_plant_walk_idle() -> bool:
+	if not alive or stasis_sprite != "" or _held_death_strip:
+		return false
+	return has_walk_strip()
+
+
+func _plant_walk_idle() -> bool:
+	if not _should_plant_walk_idle():
+		return false
+	_ensure_motion_strips()
+	var choice := _strip_choice("walk")
+	if choice.is_empty():
+		return false
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return false
+	_hide_body_strips()
+	_prepare_strip_pose(strip)
+	if strip.animation != anim:
+		strip.animation = anim
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(anim) and frames.get_frame_count(anim) > 0:
+		strip.frame = 0
+		strip.frame_progress = 0.0
+	strip.speed_scale = 0.0
+	if strip.is_playing():
+		strip.pause()
+	strip.visible = true
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.position = _sprite.position
+		if not _flashing:
+			strip.modulate = _sprite.modulate
+		_sprite.visible = false
+	_active_strip = strip
+	_walk_idle_plant = true
+	_strip_holds_body = false
+	return true
 
 
 func _strip_choice(kind: String) -> Dictionary:
@@ -1398,6 +1484,11 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 	strip.visible = false
 	strip.flip_h = false
 	_prepare_strip_pose(strip)
+	_walk_idle_plant = false
+	_strip_holds_body = false
+	if _active_strip == strip:
+		_active_strip = null
+	_sync_sprite()
 
 
 func _ensure_motion_strips() -> void:
@@ -1453,7 +1544,8 @@ func _play_walk_flat() -> bool:
 		_flatten_body()
 		return true
 	_kill_action()
-	_end_body_strip()
+	# Do not reveal the static turnaround for the frame between clips.
+	_end_body_strip(false)
 	_prepare_walk_loop(strip, anim)
 	_prepare_strip_pose(strip)
 	strip.visible = true
@@ -1465,6 +1557,7 @@ func _play_walk_flat() -> bool:
 		return false
 	_active_strip = strip
 	_strip_holds_body = true
+	_walk_idle_plant = false
 	_walk_looping = true
 	_motion_playing = true
 	if _sprite != null and is_instance_valid(_sprite):
