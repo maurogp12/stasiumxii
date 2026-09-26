@@ -106,3 +106,7 @@ Look target is Dofus Koliseo: an isometric tactical arena that reads as a place,
 | Touch adapter | 403 |
 | Stasis | 187 |
 | Sprite | 234 |
+
+### Pull request
+
+https://github.com/maurogp12/stasiumxii/pull/136 into `mobile`. Not merged.
