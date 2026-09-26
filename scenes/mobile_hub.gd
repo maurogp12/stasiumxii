@@ -212,27 +212,10 @@ func _layout() -> void:
 		banner_h *= scale
 		tile_h *= scale
 		title_h *= clampf(scale + 0.15, 0.7, 1.0)
+		var fitted := tile_h * _tile_ratio
+		if fitted < tile_w:
+			tile_w = fitted
 		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
-		# Title shrinks less than the plates, so the first pass can still
-		# hang the RAID nameplates off the bottom of a landscape window.
-		var plates := banner_h + tile_h
-		var fixed := cluster - plates
-		var plates_room := room - fixed
-		if plates > plates_room and plates > 0.0 and plates_room > 0.0:
-			var fit := plates_room / plates
-			banner_h *= fit
-			tile_h *= fit
-	if tile_h < float(DOOR_MIN_HEIGHT):
-		var need := float(DOOR_MIN_HEIGHT) - tile_h
-		if banner_h - need >= float(DOOR_MIN_HEIGHT):
-			banner_h -= need
-			tile_h = float(DOOR_MIN_HEIGHT)
-		else:
-			tile_h = maxf(tile_h, float(DOOR_MIN_HEIGHT))
-	var fitted := tile_h * _tile_ratio
-	if fitted < tile_w:
-		tile_w = fitted
-	cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
 	var extra := maxf(room - cluster, 0.0)
 	# Keep the poster under the top frame. Extra space sits around the
 	# plates instead of stretching them. The Koliseo plate keeps the
@@ -359,9 +342,7 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 	plate.texture = tex
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	# Raid plates paint "… STASIS" edge to edge. Covered stretch crops that
-	# line whenever the button is a hair taller than the art.
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if framed else TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if framed:
 		plate.offset_left = 1
