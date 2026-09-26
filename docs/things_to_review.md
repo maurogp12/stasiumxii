@@ -8,6 +8,7 @@
 | # | Topic | Status | Notes | Opened |
 | --- | --- | --- | --- | --- |
 | 1 | Ambush without a Shade | Pending review | Luca playtest (mobile-0.1.16, 2026-09-25): Ambush stays grey unless a live Shade exists; marked for later review. **Current Locked:** origin = caster if Invisible (Fade), else live Shade (+ arming). Without Fade, Shade is required. Revisit options: keep Locked / stamp body-origin Ambush without Shade / verify Fade Invisible self-origin. | 2026-09-25 |
+| 2 | Stasis foe HP / damage | Provisional Open | Luca overnight 2026-09-25 unparked mobile Stasis. Trash 22 HP / attack base 6, boss 56 HP / attack base 10, before Locked facing. Not a Locked or Soft Lock stamp. See [`docs/mobile_stasis.md`](mobile_stasis.md). Mobile only — not for PC `main`. | 2026-09-26 |
 
 ## How to use
 

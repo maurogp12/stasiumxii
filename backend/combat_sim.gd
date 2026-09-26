@@ -160,6 +160,10 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		var facing := _facing_for(config, class_id, facing_used)
 		_units.append(_make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false))
 	_apply_setup_overrides(config)
+	# Mobile Stasis only. Koliseo never passes stasis_roster, so a normal duel
+	# is unchanged. Foe HP and attack_base in that payload are provisional Open
+	# playtest numbers, not Locked kit law.
+	_apply_stasis_roster(config)
 
 	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos") or config.has("positions")
 	if skip_deploy:
@@ -1696,6 +1700,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
+	# Mobile Stasis foes only. Koliseo units never set stasis_attack_base.
+	# This replaces the stand-in card's Locked base for that foe. The facing
+	# multiplier below stays the Locked Phase A formula. Player casts do not
+	# carry the key, so kit damage is unchanged.
+	if int(actor.get("stasis_attack_base", -1)) >= 0:
+		base = int(actor["stasis_attack_base"])
 	var pre_mitigation := _phase_a_damage(base, facing_mult)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
@@ -1770,7 +1780,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	if is_back:
 		facing_note = "BACK ×1.35" if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM else "BACK ×1.20"
 	var extra_note := _connect_extra_note(engine_gained, engine_name, marks_consumed, engine_spent, stun_applied, push_result)
-	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), def["name"], target["name"], roll, chance, facing_note, extra_note]
+	# Coach label only. Spell id stays the stand-in card so VFX and legal
+	# intents keep working. Set only when the provisional base is also set.
+	var strike_name := str(def["name"])
+	if int(actor.get("stasis_attack_base", -1)) >= 0 and str(actor.get("stasis_attack_name", "")) != "":
+		strike_name = str(actor["stasis_attack_name"])
+	_last_coach = "HIT %d %s — %s vs %s (%d vs %d%%) %s.%s" % [damage, str(def["element"]).capitalize(), strike_name, target["name"], roll, chance, facing_note, extra_note]
 	var hit_event := {
 		"type": "hit",
 		"seat": actor["seat"],
@@ -2127,6 +2142,49 @@ func _walk_occupied(cell: Vector2i, ignore: Vector2i) -> bool:
 	if cell == ignore:
 		return false
 	return not _is_empty(cell)
+
+
+func _apply_stasis_roster(config: Dictionary) -> void:
+	# Absent key: Koliseo / tests. Do not invent dungeon HP on those matches.
+	if not config.has("stasis_roster"):
+		return
+	var roster: Variant = config["stasis_roster"]
+	if typeof(roster) != TYPE_ARRAY:
+		return
+	for entry in roster:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = entry
+		var unit := _unit_by_seat(int(rec.get("seat", -1)))
+		if unit.is_empty():
+			continue
+		if str(rec.get("name", "")) != "":
+			unit["name"] = str(rec["name"])
+		if rec.has("max_hp"):
+			var max_hp := maxi(int(rec["max_hp"]), 1)
+			unit["max_hp"] = max_hp
+			unit["hp"] = mini(int(unit.get("hp", max_hp)), max_hp)
+		if rec.has("hp"):
+			var cap := maxi(int(unit.get("max_hp", START_HP)), 1)
+			unit["hp"] = mini(maxi(int(rec["hp"]), 0), cap)
+		if rec.has("facing"):
+			var face := str(rec["facing"]).to_upper()
+			if FACING_VEC.has(face):
+				unit["facing"] = face
+		# Provisional Open playtest base. Not Strike's Locked 16.
+		if rec.has("attack_base"):
+			unit["stasis_attack_base"] = maxi(int(rec["attack_base"]), 0)
+		if str(rec.get("attack_name", "")) != "":
+			unit["stasis_attack_name"] = str(rec["attack_name"])
+		var raw_spells: Variant = rec.get("spells", null)
+		if raw_spells is Array:
+			var spells: Array = []
+			for spell_id in raw_spells:
+				var id := str(spell_id)
+				if SpellKits.has_spell(str(unit.get("class_id", "")), id):
+					spells.append(id)
+			if not spells.is_empty():
+				unit["spells"] = spells
 
 
 func _apply_setup_overrides(config: Dictionary) -> void:

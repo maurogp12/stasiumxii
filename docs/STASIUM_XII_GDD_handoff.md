@@ -28,7 +28,7 @@
 
 ### Merge lock (Locked 2026-09-25)
 
-Everything that ships on the **mobile** track **merges up to PC `main`**, **except dungeons** (dungeons stay **mobile-only** until Mauro unparks).
+Everything that ships on the **mobile** track **merges up to PC `main`**, **except dungeons** (dungeons stay **mobile-only**. Luca unparked them for the phone APK overnight 2026-09-25. That does not put them on PC `main`).
 
 ### Android debug APKs
 
@@ -136,14 +136,14 @@ Five **15×15** arenas (random hot-seat pick; no map picker):
 
 ### Mobile hub (`mobile` branch)
 
-F5 → `scenes/mobile_hub.tscn`: fat buttons for Koliseo + five **Stasis** stubs (dungeon placeholders). Stasis shows “coming soon” + tile preview; **no combat dungeon yet**.
+F5 → `scenes/mobile_hub.tscn`: fat buttons for Koliseo + five **Stasis** doors. Luca Garza (overnight, 2026-09-25) unparked the phone doors: each opens a solo Room A trash chain, then a Room B boss, on that biome’s 15×15 board. Foe HP/damage are **provisional Open** (see [`docs/mobile_stasis.md`](mobile_stasis.md)). **Not for PC `main`.**
 
 ### Art direction (Locked preferences)
 
 - Distinct board look per map family (grassland court / slate dungeon / timber arena planned).
 - Character art: **Batch-1 REDRAW v3** Locked identity (limb redesign on Locked costume). Paths like `art/export_2x/characters/{kestrel,ironjaw}/anims/*_{walk,attack}_{e,s,n,w}.png`.
 - **Do not ship** `art/grok_project/anims/gen_raw/*_gen.png` (identity drift).
-- **Gender + color cosmetics:** **Parked** (Studio backlog; reversible slice approved for later 0.1.10+ thinking but Phase A / current focus is mobility + spells + dungeons when unparked).
+- **Gender + color cosmetics:** **Parked** (Studio backlog). Mobile Stasis is unparked for the phone APK only (Luca, overnight 2026-09-25) and still does not merge to PC `main`.
 - Batch-1c (in flight for feel APK): louder walk/attack, `cast_mark` / `cast` / `hit` / `death` for Kestrel/Ironjaw; full Gloam strips.
 
 ## 7. What has shipped (status as of this handoff)
@@ -173,12 +173,13 @@ Canonical living table: [`docs/things_to_review.md`](things_to_review.md).
 | # | Topic | Status | Notes | Opened |
 | --- | --- | --- | --- | --- |
 | 1 | **Ambush without a Shade** | Pending review | Luca (2026-09-25): playtest on mobile-0.1.16 — Ambush button stays grey unless a live Shade is on the board; he flagged that as something to revisit. **Current Locked:** Ambush origin = caster if Invisible (Fade), else a live Shade (+ Shade arming). Without Fade, Shade is required by Locked rules — this is design revisit, not a silent code fix. Options when reopened: keep Locked / Mauro stamp Ambush from body without Shade / verify Fade→Invisible self-origin path. | 2026-09-25 |
+| 2 | **Stasis foe HP / damage** | Provisional Open | Luca overnight 2026-09-25 unparked mobile Stasis. Trash 22 HP / attack base 6, boss 56 HP / attack base 10, before Locked facing. Not Locked and not Soft Lock. Mobile only. | 2026-09-26 |
 
 When an item is stamped Locked or rejected, move it out of this table into the matching Locked / Parked / Open section and leave a one-line disposition here.
 
 ## 8. Parked (do not start unless Mauro unparks)
 
-- **Dungeons / Stasis rooms** (keys, loot, trash, bosses) — parked until Drop Shade + walk feel ship on phone; then Mauro unparks.
+- **Dungeons / Stasis rooms** — **unparked for the mobile APK only** by Luca Garza overnight 2026-09-25 (override of the Shade + walk gate for this phone ship). Still **not for PC `main`**. No loot or keys in this slice. Foe HP/damage stay provisional Open. Gender/color stays parked.
 - **Gender select + color customization.**
 - **Shade trap rider** (Proposed).
 - **Ambush 3 AP retune** (Proposed).
@@ -218,12 +219,12 @@ From kit SoT — do not invent answers:
 4. Mobile → PC merge except dungeons.
 5. Notify Mauro only for **playable** sideload APKs (install URL + uninstall note if cert changed).
 6. Ambush / Drop Shade / Advance numbers above are Locked — change only with explicit Mauro + Rules stamp.
-7. Current priority stack: (1) walk + action feel + Batch-1c, (2) spell chrome readability, (3) dungeons when unparked, (4) cosmetics later.
+7. Current priority stack: (1) walk + action feel + Batch-1c, (2) spell chrome readability, (3) mobile Stasis playtest (provisional foe numbers; still not on PC `main`), (4) cosmetics later.
 8. Items under **Things to review** are pending. They are not a stamp to change Locked Ambush/Shade law.
 
 ## 12. Quick Spanish summary for Mauro’s next AI
 
-STASIUM XII es un táctico isométrico en Godot. Hay 5 clases Locked. Combate 80 HP, 6 AP / 3 MP. En móvil ya salió APK 0.1.13 con Ambush a ≤2 casillas en línea cardinal y solo después de que el rival jugó un turno desde el Drop Shade. Drop Shade es rango 1–3. Advance de Ironjaw es exactamente 2 cardinales. Cosméticos de género/color y dungeons están aparcados. Lo urgente ahora es que el movimiento y las acciones dejen de verse “placeholder” (caminar mirando al frente, animaciones de ataque, flinch, muerte). Todo lo de móvil sube a PC excepto dungeons.
+STASIUM XII es un táctico isométrico en Godot. Hay 5 clases Locked. Combate 80 HP, 6 AP / 3 MP. En móvil ya salió APK 0.1.13 con Ambush a ≤2 casillas en línea cardinal y solo después de que el rival jugó un turno desde el Drop Shade. Drop Shade es rango 1–3. Advance de Ironjaw es exactamente 2 cardinales. Cosméticos de género/color siguen aparcados. Luca (noche del 2026-09-25) desaparcó Stasis solo en el APK móvil: cada puerta entra a una mazmorra (sala A de trash, luego jefe en sala B). La vida y el daño de esos enemigos son provisionales (Open), no Locked. Todo lo de móvil sube a PC excepto dungeons.
 
 ---
 

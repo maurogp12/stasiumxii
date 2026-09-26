@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3 uid="uid://cstasisfight1"]
+
+[ext_resource type="Script" path="res://scenes/stasis_fight.gd" id="1_fight"]
+[ext_resource type="Script" path="res://ui/hud.gd" id="2_hud"]
+
+[node name="StasisFight" type="Node2D"]
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("2_hud")
+
+[node name="BoardView" type="Node2D" parent="."]
+position = Vector2(480, 160)
+script = ExtResource("1_fight")
+
+[node name="Tiles" type="Node2D" parent="BoardView"]
+
+[node name="Units" type="Node2D" parent="BoardView"]
+
+[node name="ShadeMarkers" type="Node2D" parent="BoardView"]
