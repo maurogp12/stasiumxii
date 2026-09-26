@@ -107,6 +107,8 @@ var _touch_on_board := false
 ## Spell was armed on the cluster and the finger dragged onto the board.
 var _chrome_aim := false
 var _touch_commit_open := true
+## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
+var _ambush_arrival_token := 0
 
 
 func _ready() -> void:
@@ -803,14 +805,19 @@ func _seat_cell(seat: int) -> Vector2i:
 
 
 func _present_resolve(events: Array) -> bool:
-	# Ambush HIT relocates before the lunge so the back tile reads. Without this
-	# snap the pawn lunges from the old cell and only jumps on refresh.
-	_snap_ambush_teleports(events)
+	# A successful Ambush fades on the origin tile, then snaps, then slashes.
+	# The snap is deferred so the collapse is visible. A miss never snaps.
+	var ambush_hit := _ambush_success_event(events)
+	if ambush_hit.is_empty():
+		_snap_ambush_teleports(events)
 	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
-	_play_combat_feedback(events)
-	_arm_view_motions(events)
-	_arm_vfx(events)
+	if ambush_hit.is_empty():
+		_play_combat_feedback(events)
+		_arm_view_motions(events)
+		_arm_vfx(events)
+	else:
+		_begin_ambush_arrival(ambush_hit, events)
 	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
@@ -832,6 +839,53 @@ func _present_resolve(events: Array) -> bool:
 		_refresh()
 	_resolve_hold_refresh = swallowed and _pending_motion_sec > 0.0
 	return swallowed
+
+
+func _ambush_success_event(events: Array) -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		if bool(event.get("teleported", false)):
+			return event
+	return {}
+
+
+## Collapse on the current tile, then snap, slash, and the existing facing damage.
+func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
+	_ambush_arrival_token += 1
+	var token := _ambush_arrival_token
+	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
+	var seat := int(event.get("seat", -1))
+	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
+	if pawn == null or sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_finish_ambush_arrival(event, events, token)
+		return
+	var played := pawn.play_ambush_collapse(sec)
+	if played <= 0.0:
+		_finish_ambush_arrival(event, events, token)
+		return
+	_pending_motion_sec = maxf(_pending_motion_sec, played)
+	var tw := create_tween()
+	tw.tween_interval(sec)
+	tw.tween_callback(_finish_ambush_arrival.bind(event, events, token))
+
+
+func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
+	if token != _ambush_arrival_token or not is_inside_tree():
+		return
+	var seat := int(event.get("seat", -1))
+	if pawns_by_seat.has(seat):
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn != null and is_instance_valid(pawn):
+			pawn.restore_ambush_body()
+	_snap_ambush_teleports([event])
+	_play_combat_feedback(events)
+	_arm_view_motions(events)
+	_arm_vfx(events)
 
 
 func _path_event(events: Array) -> Dictionary:

@@ -212,7 +212,7 @@ func _test_caster_and_target_kinds() -> void:
 	eq(MOTION.caster_motion(SpellKits.WARD), "cast", "Ward winds up")
 	eq(MOTION.caster_motion(SpellKits.CLEANSE), "cast", "Cleanse winds up")
 	eq(MOTION.caster_motion(SpellKits.ADVANCE), "", "Advance stays a teleport snap")
-	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush lunges before the blink")
+	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush contact is still a slash")
 	eq(MOTION.caster_motion(SpellKits.DROP_SHADE), "cast", "Drop Shade still winds up")
 	var lunge_peak := (MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC) / MOTION.attack_sec()
 	var ambush_reach: Vector2 = MOTION.attack_offset(lunge_peak, Vector2(32, 0), MOTION.AMBUSH_LUNGE_PX)
@@ -222,9 +222,32 @@ func _test_caster_and_target_kinds() -> void:
 		"type": "miss",
 		"spell": SpellKits.AMBUSH,
 		"seat": 0,
+		"teleported": false,
 	}]).get(0, {})
-	eq(bool(ambush_plan.get("attack", false)), true, "Ambush miss still lunges")
-	eq(is_equal_approx(float(ambush_plan.get("reach", 0.0)), MOTION.AMBUSH_LUNGE_PX), true, "Ambush plan keeps the longer reach")
+	eq(bool(ambush_plan.get("attack", false)), false, "Ambush miss does not slash")
+	eq(bool(ambush_plan.get("whiff", false)), true, "Ambush miss is a whiff on the cast cell")
+	var ambush_hit_plan: Dictionary = MOTION.chrome_plans([{
+		"type": "hit",
+		"spell": SpellKits.AMBUSH,
+		"seat": 0,
+		"teleported": true,
+	}]).get(0, {})
+	eq(bool(ambush_hit_plan.get("attack", false)), true, "Ambush hit still slashes after the snap")
+	eq(is_equal_approx(float(ambush_hit_plan.get("reach", 0.0)), MOTION.AMBUSH_LUNGE_PX), true, "Ambush contact keeps the local reach")
+	var beats: Array = MOTION.ambush_beats({
+		"type": "hit",
+		"spell": "ambush",
+		"teleported": true,
+	})
+	eq(_beat_names(beats), ["collapse", "snap", "slash", "damage"], "Ambush hit collapses, snaps, slashes, then resolves damage")
+	eq(float(beats[0].get("sec", 0.0)), MOTION.AMBUSH_COLLAPSE_SEC, "the collapse is the short origin fade")
+	var miss_beats: Array = MOTION.ambush_beats({
+		"type": "miss",
+		"spell": "ambush",
+		"teleported": false,
+	})
+	eq(_beat_names(miss_beats), ["whiff"], "Ambush miss is only a whiff")
+	eq(is_equal_approx(MOTION.ambush_contact_sec(), MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC), true, "facing damage waits until the slash connects")
 	eq(MOTION.target_motion("damage"), "hit", "damage recoils")
 	eq(MOTION.target_motion("support"), "lift", "heals lift")
 	eq(MOTION.target_motion("ward"), "lift", "Ward lifts")
@@ -592,7 +615,7 @@ func _test_view_wiring() -> void:
 	truthy(view.contains("chrome_plans"), "the board plays the shared hit and miss plans")
 	truthy(view.contains("ShadeMarkers"), "Shade markers are not Units children")
 	eq(view.contains("$Units.add_child(marker)"), false, "pawn rebuild cannot free Shade markers")
-	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush stays the lunge-then-blink")
+	eq(MOTION.caster_motion(SpellKits.AMBUSH), "attack", "Ambush contact stays a slash after the snap")
 	eq(MOTION.caster_motion(SpellKits.DROP_SHADE), "cast", "Drop Shade stays a cast, not a blink")
 	var present_idx := view.find("func _present_resolve")
 	var path_idx := view.find("func _path_event")
@@ -621,6 +644,13 @@ func _test_view_wiring() -> void:
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
 	await live.run(self)
+
+
+func _beat_names(beats: Array) -> Array:
+	var names: Array = []
+	for row in beats:
+		names.append(str((row as Dictionary).get("beat", "")))
+	return names
 
 
 func _unit(class_id: String, facing: String, seat: int) -> Dictionary:

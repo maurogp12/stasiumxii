@@ -119,6 +119,8 @@ static func run(host: SceneTree) -> void:
 	var spent: Node = board._shade_markers.get(dest)
 	host.eq(spent == null or not is_instance_valid(spent), true, "Ambush consumes the Shade marker in the teleport beat")
 	var gloam_pawn: Node = board.pawns_by_seat[0]
+	host.eq(gloam_pawn.grid_position, origin, "Ambush fades on the origin tile before the snap")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
 	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Ambush snaps onto the back tile")
 	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
 	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
@@ -150,6 +152,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(ambush.get("events", [{}])[0].get("teleported", false)), true, "Invisible Ambush hit teleports")
 	board._present_resolve(ambush.get("events", []))
 	var blinked: Node = board.pawns_by_seat[0]
+	host.eq(blinked.grid_position, ambush_from, "Invisible Ambush fades on the cast cell before the snap")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
 	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush snaps onto the back tile")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
 	host.eq(blinked.grid_position == ambush_from, false, "Invisible Ambush does not slash from the cast cell")
@@ -180,6 +184,8 @@ static func run(host: SceneTree) -> void:
 	host.eq(_seat_pos(CombatSim.snapshot(), 0), ambush_back, "adjacent Invisible Ambush lands past the foe")
 	board._present_resolve(near.get("events", []))
 	var near_pawn: Node = board.pawns_by_seat[0]
+	host.eq(near_pawn.grid_position, near_from, "adjacent Invisible Ambush fades before the snap")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.12).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush snaps past the foe")
 	host.eq(near_pawn.position, board._cell_to_local(ambush_back), "adjacent Invisible snap is not the cast cell")
 	# MISS keeps the cast cell. No snap.

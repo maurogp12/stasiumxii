@@ -440,6 +440,9 @@ func play_view_plan(plan: Dictionary) -> float:
 		total += sec
 		if kind == "wait":
 			tw.tween_interval(sec)
+		elif kind == "whiff":
+			tw.tween_method(_sample_ambush_whiff, 0.0, 1.0, sec)
+			tw.tween_callback(restore_ambush_body)
 		elif kind == "attack" or (kind == "cast" and _mark_falls_back_to_attack(plan)):
 			var play_sec := _fit_strip_window("attack", sec, steps)
 			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
@@ -498,6 +501,52 @@ func play_view_plan(plan: Dictionary) -> float:
 		return 0.0
 	tw.finished.connect(_on_action_finished.bind(gen), CONNECT_ONE_SHOT)
 	return minf(total, VIEW_MOTION.ACTION_LOCK_MAX)
+
+
+## Fade and shrink on the current tile. The board snaps after this returns.
+## A miss uses the whiff step instead, and that one restores itself.
+func play_ambush_collapse(sec: float) -> float:
+	if sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return 0.0
+	_begin_action()
+	var tw := create_tween()
+	_action_tween = tw
+	tw.tween_method(_sample_ambush_collapse, 0.0, 1.0, sec)
+	return sec
+
+
+func restore_ambush_body() -> void:
+	_plant_sprite()
+	var color := rest_modulate()
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.modulate = color
+		_sprite.visible = true
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.modulate = color
+
+
+func _sample_ambush_collapse(t: float) -> void:
+	if _sprite == null:
+		return
+	var k := clampf(t, 0.0, 1.0)
+	var shrunk := lerpf(1.0, 0.12, k)
+	_sprite.scale = SPRITE_SCALE * shrunk
+	var color := rest_modulate()
+	color.a = lerpf(1.0, 0.0, k)
+	_sprite.modulate = color
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.scale = _sprite.scale
+		_active_strip.modulate = color
+
+
+func _sample_ambush_whiff(t: float) -> void:
+	if _sprite == null:
+		return
+	var k := sin(clampf(t, 0.0, 1.0) * PI)
+	_sprite.scale = Vector2(SPRITE_SCALE.x * lerpf(1.0, 1.12, k), SPRITE_SCALE.y * lerpf(1.0, 0.8, k))
+	var color := rest_modulate()
+	color.a = lerpf(1.0, 0.4, k)
+	_sprite.modulate = color
 
 
 func hold_idle() -> void:
