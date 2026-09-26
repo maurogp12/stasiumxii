@@ -4,7 +4,7 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
-Sideload cut of this branch for Luca, on the current `mobile` tip plus the Windmere punch. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK. Min SDK 24, target SDK 36. Debuggable. Permissions `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+Sideload cut recorded before this rebase. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. This follow-up did not recut or republish the APK. The bytes below predate the Slagcrown lava punch (#167). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK. Min SDK 24, target SDK 36. Debuggable. Permissions `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
 
 Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.25-debug`, so a phone on that cert upgrades in place with `adb install -r`. Same package and the same cert. Size 66796446 bytes. SHA-256 `b2f220bc404efa892dcce8d0b4394c95d523b542ddd3628555726ded1d94a3a6`. The packed APK contains the Windmere `wind_ground`, `wind_water`, cliff, and sparse-crystal slices.
 
@@ -13,7 +13,7 @@ Hub **Actualizar** reads public releases. This cut was not uploaded, so the phon
 ### Player-visible since 0.1.25
 
 - Windmere paints the ice punch in Koliseo and in Galevault. The board dress is `wind_` when the match map id is Windmere. Geometry and tags are unchanged.
-- Stormspire paints the algo-así punch (#166). Slagcrown is volcanic rock (#164). Ironjaw art-fill is scale 1.0 (#165).
+- Stormspire paints the algo-así punch (#166). Ironjaw art-fill is scale 1.0 (#165). The rebased tree also keeps the Slagcrown lava punch (#167); that dress is not in the recorded APK bytes.
 - A 20:9 phone opens combat at zoom 1.55. One stride per tile uses the v4 walk strips (#163). Hot-seat class cards use the Locked Wakfu select plates.
 
 ### Intentionally not changed
