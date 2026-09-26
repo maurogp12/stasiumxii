@@ -209,6 +209,17 @@ func set_facing(dir: String) -> void:
 	_sync_sprite()
 
 
+## A snapshot refresh during a step must not lock the end-of-path facing.
+func hold_walk_facing(dir: String) -> void:
+	if dir == "":
+		return
+	facing = dir
+	if _path_walk or _driven_walk:
+		retarget_walk_strip()
+	else:
+		_sync_sprite()
+
+
 func facing_screen() -> Vector2:
 	return FACING_ISO.get(facing, Vector2(20, 10))
 
@@ -432,6 +443,21 @@ func sample_driven_gait(t: float) -> void:
 func _apply_driven_cycle(t: float) -> void:
 	if not _path_walk:
 		return
+	_ensure_motion_strips()
+	var choice := _strip_choice("walk")
+	if not choice.is_empty():
+		var next: AnimatedSprite2D = choice["node"]
+		var anim := StringName(str(choice["anim"]))
+		if next != null and is_instance_valid(next):
+			if next.animation != anim or not next.visible:
+				if _sprite != null and is_instance_valid(_sprite):
+					_sprite.visible = false
+				next.visible = true
+				next.animation = anim
+				_active_strip = next
+				_strip_holds_body = true
+				_walk_looping = true
+				next.speed_scale = 0.0
 	var strip := _active_strip
 	if strip == null or not is_instance_valid(strip) or not strip.visible:
 		return

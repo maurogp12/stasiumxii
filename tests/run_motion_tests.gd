@@ -290,9 +290,8 @@ func _test_caster_and_target_kinds() -> void:
 		"spell": "ambush",
 		"teleported": true,
 	})
-	eq(_beat_names(beats), ["collapse", "snap", "face", "slash", "damage"], "Ambush hit collapses, snaps, faces, slashes, then resolves damage")
-	eq(float(beats[2].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
-	eq(float(beats[0].get("sec", 0.0)), MOTION.AMBUSH_COLLAPSE_SEC, "the collapse is the short origin fade")
+	eq(_beat_names(beats), ["snap", "face", "slash", "damage"], "Ambush hit snaps, faces, slashes, then resolves damage")
+	eq(float(beats[1].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
 	var miss_beats: Array = MOTION.ambush_beats({
 		"type": "miss",
 		"spell": "ambush",

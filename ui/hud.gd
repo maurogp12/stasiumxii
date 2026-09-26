@@ -1554,24 +1554,30 @@ func _resource_current(unit: Dictionary, id: String) -> int:
 	return 0
 
 
-## Live Shade tokens win over a stale unit.shades field so the card matches the tile.
+## Live Shade tokens and the unit field both count. A marker on the board
+## with a stale 0 on the card, or a card that ignores a live token, is wrong.
 static func shade_count(unit: Dictionary, snap: Dictionary) -> int:
-	if not snap.has("shade_tokens"):
-		if unit.has("shades"):
-			return int(unit.get("shades", 0))
+	var field := 0
+	if unit.has("shades"):
+		field = int(unit.get("shades", 0))
+	else:
 		var bag: Variant = unit.get("resources", null)
 		if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has("shades"):
-			return int((bag as Dictionary).get("shades", 0))
-		return 0
+			field = int((bag as Dictionary).get("shades", 0))
+	if not snap.has("shade_tokens"):
+		return field
 	var seat := int(unit.get("seat", -1))
 	var count := 0
 	for token in snap.get("shade_tokens", []):
 		if typeof(token) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = token
-		if int(rec.get("owner_seat", -1)) == seat and int(rec.get("turns", 0)) > 0:
+		if int(rec.get("turns", 0)) <= 0:
+			continue
+		var owner := int(rec.get("owner_seat", -1))
+		if owner == seat or (owner < 0 and str(unit.get("class_id", "")) == SpellKits.CLASS_GLOAM):
 			count += 1
-	return count
+	return maxi(count, field)
 
 
 func _kit_footer(unit: Dictionary) -> String:

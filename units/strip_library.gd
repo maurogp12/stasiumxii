@@ -166,6 +166,8 @@ static func _load_class(class_id: String) -> SpriteFrames:
 
 ## Replace every walk_<n|e|s|w> clip with slices of that class's export_2x PNG.
 ## Authored attack/cast banks stay. A missing walk PNG leaves the clip already loaded.
+## The imported sheet is sliced into AtlasTextures, then baked into one
+## ImageTexture per cell. Image.load of the source PNG does not survive export.
 static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bool:
 	var any := false
 	for face in LETTERS:
