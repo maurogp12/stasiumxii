@@ -1,7 +1,7 @@
 extends SceneTree
 
-## Koliseo ship maps: tags load, lava stays on Slagcrown, paint_only does not
-## block, and hot-seat rolls one of the five arenas (no map chooser).
+## Koliseo ship maps: tags load, lava stays on Slagcrown, solid props block
+## movement, dress paint stays walkable, and hot-seat rolls one of the five arenas.
 ## Run: godot --headless --path . -s res://tests/run_koliseo_maps_tests.gd
 
 const MAPS := ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
@@ -89,13 +89,18 @@ func _test_paint_only_and_lava() -> void:
 			"ironjaw_pos": step["other"],
 		})
 		var tile: Dictionary = sim.tile_at(dest)
-		eq(bool(tile.get("walkable", false)), true, "%s paint_only %s does not block" % [map_id, prop])
-		eq(str(tile.get("terrain_type", "")), "ground", "%s painted step is ground" % map_id)
+		eq(str(tile.get("terrain_type", "")), "ground", "%s painted step keeps its terrain tag" % map_id)
 		var paint: Dictionary = sim.snapshot().get("paint_only", {})
-		truthy(paint.has(dest), "%s stores paint_only beside the walk tile" % map_id)
+		truthy(paint.has(dest), "%s stores paint_only beside the tile" % map_id)
+		var blocks := CellTagMap.props_block_move(paint.get(dest, []))
+		eq(bool(tile.get("walkable", false)), not blocks, "%s %s walkable matches the prop" % [map_id, prop])
 		var moved: Dictionary = sim.submit({"type": "move", "to": dest})
-		eq(bool(moved.get("ok", false)), true, "%s walk onto %s is legal" % [map_id, prop])
-		eq(int(moved["events"][0]["mp_spent"]), 1, "%s paint_only does not add MP" % map_id)
+		if blocks:
+			eq(bool(moved.get("ok", true)), false, "%s walk onto %s is rejected" % [map_id, prop])
+			eq(str(moved.get("reason", "")), "not_walkable", "%s %s reject is not_walkable" % [map_id, prop])
+		else:
+			eq(bool(moved.get("ok", false)), true, "%s dress paint %s stays walkable" % [map_id, prop])
+			eq(int(moved["events"][0]["mp_spent"]), 1, "%s dress paint does not add MP" % map_id)
 	var slag: Dictionary = sim.reset_match({"seed": 1, "map_id": "slagcrown", "skip_deploy": true})
 	var lava_cell := Vector2i(-1, -1)
 	var stand := Vector2i(-1, -1)

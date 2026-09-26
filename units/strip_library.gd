@@ -154,10 +154,30 @@ static func _load_class(class_id: String) -> SpriteFrames:
 		any = true
 	if _load_grok_fallback(built, class_id):
 		any = true
+	# Walk playback is the locked export_2x sheet for this class. A tres cell,
+	# a grok fallback, or a shared atlas must not keep another costume.
+	if _force_locked_walk_pngs(built, class_id):
+		any = true
 	if not any or not _has_playable(built):
 		return null
 	_drop_default(built)
 	return _bake_compressed_atlases(built)
+
+
+## Replace every walk_<n|e|s|w> clip with slices of that class's export_2x PNG.
+## Authored attack/cast banks stay. A missing walk PNG leaves the clip already loaded.
+static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bool:
+	var any := false
+	for face in LETTERS:
+		var res := try_load(export_png_path(class_id, "walk", face))
+		if not (res is Texture2D):
+			continue
+		var anim := "walk_%s" % face
+		if built.has_animation(anim):
+			built.remove_animation(anim)
+		if _install_clip(built, anim, _clip_from_texture(res as Texture2D, "walk", class_id)):
+			any = true
+	return any
 
 
 static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:

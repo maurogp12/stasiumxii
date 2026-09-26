@@ -3,7 +3,9 @@ extends RefCounted
 
 ## Loader hook for Koliseo ship tags. Applied only when the file size matches
 ## the board. Ship matches ask for size [15,15]. This does not invent cells.
-## `paint_only` / Tiled `props_paint` is visual only: never pathing, LoS, or MP.
+## `paint_only` dress (ruins, hay, sparks) stays visual: never LoS or extra MP.
+## Solid props already named on those cells block movement. Rocks, fences,
+## arches, wells, and pillars are not a tile you can stand on or route through.
 ## The sibling `.tmx` is isometric art (diamond 64×32) and is cross-checked for
 ## terrain + elevation only.
 ##
@@ -19,6 +21,16 @@ const DEFAULT_TAGS := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15_
 const DEFAULT_TMX := "res://art/maps/arena_colosseum_v2/tiled/crosshaven_15x15.tmx"
 const MAP_ID := "crosshaven_15"
 const SHIP_MAPS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
+## Prop ids already on the Koliseo tags. Not a new layout.
+const BLOCKING_PROPS := {
+	"arc": true,
+	"ash_rock": true,
+	"basalt_pillar": true,
+	"fence": true,
+	"rock_cluster": true,
+	"rock_pillar": true,
+	"well": true,
+}
 const _INFO := {
 	"crosshaven": {"label": "Crosshaven", "blurb": "Warm gold plains"},
 	"brinewake": {"label": "Brinewake", "blurb": "Teal stone and ocean"},
@@ -200,7 +212,16 @@ static func map_id_for(path: String) -> String:
 	return MAP_ID
 
 
-## Terrain + elevation only. Does not read paint_only or the tmx props layer.
+static func props_block_move(props: Variant) -> bool:
+	if typeof(props) != TYPE_ARRAY:
+		return false
+	for prop_name in props:
+		if BLOCKING_PROPS.has(str(prop_name)):
+			return true
+	return false
+
+
+## Terrain + elevation, then solid props. Dress paint stays walkable.
 static func apply(board, tags: Dictionary) -> bool:
 	if not bool(tags.get("ok", false)):
 		return false
@@ -212,7 +233,24 @@ static func apply(board, tags: Dictionary) -> bool:
 		var rec: Dictionary = item
 		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
 		board.set_tile(pos, rec.get("terrain", "ground"), int(rec.get("elevation", 0)))
+	seal_blocking_props(board, tags.get("paint_only", {}))
 	return true
+
+
+## A rock, fence, arch, well, or pillar keeps its terrain tag and loses standability.
+## The pathfinder already refuses a tile that is not walkable, so the route
+## goes around instead of through.
+static func seal_blocking_props(board, paint: Variant) -> void:
+	if typeof(paint) != TYPE_DICTIONARY or board == null:
+		return
+	var props_by_cell: Dictionary = paint
+	for cell in props_by_cell.keys():
+		if not props_block_move(props_by_cell[cell]):
+			continue
+		var tile = board.tile_at(cell)
+		if tile == null:
+			continue
+		board.set_tile(cell, tile.terrain_type, tile.elevation, false)
 
 
 ## Terrain + elevation layers only. props_paint is ignored.
