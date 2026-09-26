@@ -592,7 +592,7 @@ static func _back_tag(row: Dictionary) -> Dictionary:
 	if not back:
 		return {}
 	if backstab or mult >= 1.3:
-		return {"tag": "BACKSTAB", "scale": 1.3}
+		return {"tag": "BACKSTAB", "scale": 1.55}
 	return {"tag": "BACK", "scale": 1.15}
 
 
@@ -809,9 +809,11 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_status_on("umbral", caster, caster_cell, _stack_count(snapshot, caster, "umbral", int(event.get("engine_gained", 1)))))
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
-				out.append(_shot(caster_cell, to_cell, VfxPalette.GLOAM_RIM, 30.0, 0.22, 5.5))
+				# Snappy board piece. No travel from Gloam to the tile.
 				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 1.15))
-				out.append(_number(caster, to_cell, "Shade", "resource", 0.05, 1.65, "", VfxPalette.GLOAM_RIM))
+				var shade_label := _number(caster, to_cell, "Shade", "resource", 0.0, 1.65, "", VfxPalette.GLOAM_RIM)
+				shade_label["outline"] = VfxPalette.GLOAM
+				out.append(shade_label)
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))

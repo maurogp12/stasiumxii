@@ -1291,7 +1291,7 @@ func _paint_highlights() -> void:
 			range_cells = _sim().range_highlight_cells(CombatHUD.kit_seat(snap), spell_id)
 			stamp_rim = target_kind == "empty_tile" or target_kind == "tile"
 			for cell in range_cells:
-				if tiles.has(cell):
+				if tiles.has(cell) and spell_id != SpellKits.AMBUSH:
 					_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
@@ -1305,6 +1305,12 @@ func _paint_highlights() -> void:
 			_tile_at(dest).set_highlight(highlight)
 	if stamp_rim and not actor.is_empty():
 		_stamp_range_rim(range_cells, _as_cell(actor.get("pos", Vector2i.ZERO)), int(range_def.get("max_range", 0)))
+	# Ambush's legal cross is blue and shade-centric. Paint it after cast dests
+	# so the enemy cell stays in that cross instead of the orange target wash.
+	if spell_id == SpellKits.AMBUSH and ambush_armed:
+		for cell in range_cells:
+			if tiles.has(cell):
+				_tile_at(cell).set_highlight("legal")
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
 	_sync_aim_preview()

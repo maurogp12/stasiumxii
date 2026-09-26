@@ -216,6 +216,9 @@ func _highlight_flat_color() -> Color:
 			color = Color(0.72, 0.58, 0.95, 1.0)
 		"range":
 			color = Color(0.95, 0.78, 0.32, 1.0)
+		"legal":
+			# Ambush's Manhattan 1–2 cardinal cross, measured from the Shade.
+			color = LEGAL_BLUE
 		"target":
 			color = Color(0.95, 0.55, 0.28, 1.0)
 		"origin":

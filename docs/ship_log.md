@@ -48,3 +48,14 @@ Already on the tip, and left as they were: Drop Shade's marker lands on the clic
 ### Pull request
 
 https://github.com/maurogp12/stasiumxii/pull/135 into `mobile`. Not merged.
+
+### 2026-09-26 follow-up — Rosebud beat check
+
+A second pass against the reference beats. Locked destination stays the enemy back tile. Batch-1c walk cycles stay.
+
+- Drop Shade no longer travels. The token pops on the tapped tile with a floating "Shade" label and a purple outline.
+- While Ambush is legal and selected, the Manhattan 1–2 cardinal cells paint blue from the Shade (from Gloam only while Invisible). The back tile stays the landing.
+- The action line under the board is larger (`Selected: Ambush · 4 AP / 0 MP · range …`) and still adds "Ambush from Shade" only when the cast is in `legal_intents`.
+- A backstab float is the large bouncing number (`BACKSTAB` at 1.55). The coach line stays the smaller clinical log. The button stays soft-grey until AP and Shade geometry are legal. Consume, snap, face, and slash stay on the same beat.
+
+Headless recount after this follow-up, 0 failed: combat 4510, VFX 439, motion 1828, touch adapter 403.

@@ -5141,6 +5141,7 @@ func _test_aim_feel_chrome() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("aim_feel"), "the board asks the sim for the aim line")
 	truthy(view.contains("AimLine"), "the board owns an aim line node")
+	truthy(view.contains('set_highlight("legal")'), "Ambush paints the shade-centric cardinal cross blue")
 
 
 func _test_preview_cast() -> void:

@@ -120,7 +120,7 @@ func _test_back_and_backstab() -> void:
 		"facing_mult": 1.35,
 	}])
 	eq(_first(stab, "number")["text"], "BACKSTAB 18", "backstab hits prefix BACKSTAB")
-	eq(is_equal_approx(float(_first(stab, "number")["scale"]), 1.3), true, "backstab numbers scale to 1.3")
+	eq(is_equal_approx(float(_first(stab, "number")["scale"]), 1.55), true, "backstab numbers are the large float")
 
 
 func _test_push_block_bounce() -> void:
@@ -479,7 +479,8 @@ func _test_every_event_type() -> void:
 	eq(_first(shade_cast, "number")["cell"], Vector2i(2, 2), "Shade floater cell is the clicked tile")
 	eq(_first(shade_cast, "puff")["cell"], Vector2i(2, 2), "Shade puff cell is the clicked tile")
 	eq(_first(shade_cast, "number").get("scale", 1.0) >= 1.5, true, "Drop Shade floater is larger than a resource pip")
-	eq(_first(shade_cast, "projectile").get("tint"), VfxPalette.GLOAM_RIM, "Drop Shade travel is the purple rim, not a void speck")
+	eq(_first(shade_cast, "number").get("outline"), VfxPalette.GLOAM, "the Shade label uses a purple outline")
+	eq(_has(shade_cast, "projectile"), false, "Drop Shade pops on the tile and does not travel")
 	var fade: Array = ROUTER.recipes_for([samples[5]])
 	eq(_first(fade, "number")["text"], "+1 Umbral", "Fade gain uses the spell resource when the event omits engine")
 	var wall: Array = ROUTER.recipes_for([samples[6]])
