@@ -543,6 +543,12 @@ static func walk_contact_index(class_id: String, face: String) -> int:
 	return int(_walk_contact.get("%s:%s" % [cls, letter], 0))
 
 
+## A sole tip 1–2px under the plant is the same row. v5 Ironjaw east/west
+## puts two alpha pixels at y=148 while a passing cell kisses y=150.
+## That is not a different contact. A real lift (the old 4–6px hop) still retargets.
+const FOOT_ROW_SLACK := 2
+
+
 ## Lowest feet win. Frame 0 stays the contact when it shares that row, so a
 ## sheet that already plants on 0 is not retargeted. `feet` is the bottom
 ## opaque row (larger is lower). `heights` is the figure span.
@@ -555,12 +561,12 @@ static func contact_index_from_metrics(feet: Array, heights: Array) -> int:
 		lowest = maxi(lowest, int(feet[i]))
 	if lowest < 0:
 		return 0
-	if int(feet[0]) >= lowest - 1:
+	if int(feet[0]) >= lowest - FOOT_ROW_SLACK:
 		return 0
 	var best := 0
 	var best_height := 999999
 	for i in n:
-		if int(feet[i]) < lowest - 1:
+		if int(feet[i]) < lowest - FOOT_ROW_SLACK:
 			continue
 		var span := int(heights[i])
 		if span > 0 and span < best_height:

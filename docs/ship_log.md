@@ -2,6 +2,20 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Wakfu walk strips v5
+
+Presentation only. The next APK after 0.1.26 plays wakfu-ship-v5 walks. This note does not cut an APK and does not bump `version/code`.
+
+The twenty strips replace the v4 sheets in place. Same names, same 864×160 layout, six 144×160 cells, same `.import` files, same `*_frames.tres` atlas slices (`x = 0, 144, 288, 432, 576, 720`). Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`.
+
+- One stride per tile, about 0.30s. The pawn faces into each segment. Arrival plants frame 0.
+- Feet sit on about y=148–150. Ironjaw east and west put a 2px sole tip at y=148. That tip stays frame 0. A real lift still retargets.
+- Godot hop stays about 3px: Bastion and Ironjaw 2.5, Mender 3, Kestrel and Gloam 3.5, none over 4. The strip's stride is the pose. The hop is the only crest, so it does not stack a second bounce on a lifted foot.
+- Dust still puffs only on a facing change and the final plant. Straight tiles stay quiet.
+- Locked identities stay Gloam B, Mender D2, Bastion 2C, Ironjaw Berserker A + helm A2, and Kestrel F+A.
+
+Locked kit numbers, map geometry, Soft Lock Invisible/Ambush, and the combat camera are unchanged.
+
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
 Sideload cut of the `mobile` tip for Luca. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. Those numbers were already on the tip from the Windmere stamp. The note that used to sit here recorded an unpublished APK whose bytes predated the Slagcrown lava punch (#167). This entry replaces that note. The APK below is a fresh export of tip `00f6a9a` (#170). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
