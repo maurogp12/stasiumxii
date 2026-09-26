@@ -14,8 +14,9 @@ Luca's 0.1.21 playtest. No APK cut. Locked kit numbers unchanged. Map geometry, 
 
 - Orientation is sensor landscape, applied from the project setting and again when the hub or the board opens. Stretch stays `canvas_items` / `expand`, so the landscape window is full-bleed instead of a letterboxed 960×720 strip. The poster is still title, Koliseo banner, RAID, and the five Stasis tiles in one row. Actualizar stays on the title row.
 - Combat zoom shows most of the 15×15 diamond. A 20:9 canvas (about 1600×720) is zoom 1.48, so a diamond is about 47px tall and the board width still fits. The turn plaque and the thumb cluster overlay the edges. The corner outside the diamond uses the hub navy. Desktop 960×720 fit stays zoom 0.64.
+- **Zoom +** and **Zoom −** on the combat HUD step that camera. Zoom out reaches the whole diamond. Zoom in stops at 2.25. The choice lasts for the session, including the next fight.
 
-Headless Godot 4.7.2, 0 failed: hub 206, touch adapter 465.
+Headless Godot 4.7.2, 0 failed: hub 206, touch adapter 485.
 
 ### Intentionally not changed
 

@@ -73,6 +73,13 @@ const MOBILE_FRAME_BOTTOM := 64.0
 ## (the old tiny board). The 0.1.21 cover zoom ignored this and cropped
 ## to a few giant cells.
 const MOBILE_BOARD_KEEP := 0.84
+## Session camera. 1.0 is the overview default. Each press multiplies this.
+## The floor is the whole diamond. The ceiling stays under the 3.0 cover.
+const PLAYER_ZOOM_STEP := 1.16
+const PLAYER_ZOOM_BIAS_MIN := 0.84
+const PLAYER_ZOOM_BIAS_MAX := 1.70
+const PLAYER_ZOOM_MAX := 2.25
+static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0
 
@@ -208,6 +215,38 @@ static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, m
 		return clampf(fit, BOARD_ZOOM_MIN, BOARD_ZOOM_MAX)
 	var overview := fit / maxf(MOBILE_BOARD_KEEP, 0.05)
 	return clampf(overview, BOARD_ZOOM_MIN, MOBILE_BOARD_ZOOM_MAX)
+
+
+## (min, max) the player may reach. Min is the whole diamond on a phone,
+## and the desktop fit on a desk. Max is a closer view, not the 3.0 cover.
+static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> Vector2:
+	var base := board_zoom(board_w, board_h, viewport_size, mobile)
+	if not mobile:
+		return Vector2(base, BOARD_ZOOM_MAX)
+	var view := viewport_size
+	var span := _play_span(view, true)
+	var fit := minf(span.x / maxf(board_w, 1.0), span.y / maxf(board_h, 1.0))
+	return Vector2(minf(fit, base), PLAYER_ZOOM_MAX)
+
+
+## Overview times the session bias, clamped to player_zoom_limits.
+## The bias survives a new fight. It is not a combat rule.
+static func player_board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
+	var base := board_zoom(board_w, board_h, viewport_size, mobile)
+	var limits := player_zoom_limits(board_w, board_h, viewport_size, mobile)
+	return clampf(base * player_zoom_bias, limits.x, limits.y)
+
+
+## +1 zooms in, -1 zooms out. No-op at the bias ends.
+static func nudge_player_zoom(direction: int) -> void:
+	if direction > 0:
+		player_zoom_bias = minf(player_zoom_bias * PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MAX)
+	elif direction < 0:
+		player_zoom_bias = maxf(player_zoom_bias / PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MIN)
+
+
+static func reset_player_zoom() -> void:
+	player_zoom_bias = 1.0
 
 
 ## (play width, play height) used to fit the diamond between the chrome.

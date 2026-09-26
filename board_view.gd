@@ -128,6 +128,7 @@ func _ready() -> void:
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
+	_hud.zoom_step_requested.connect(_on_zoom_step)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
 	_vfx = VFX_DIRECTOR.new()
 	_vfx.name = "VfxDirector"
@@ -1916,7 +1917,7 @@ func _fit_board_camera() -> void:
 	if mobile:
 		viewport = get_viewport_rect().size
 	var band := TOUCH.play_band_for(viewport, mobile)
-	var zoom := TOUCH.board_zoom(board_w, board_h, viewport, mobile)
+	var zoom := TOUCH.player_board_zoom(board_w, board_h, viewport, mobile)
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
@@ -1936,6 +1937,14 @@ func _fit_board_camera() -> void:
 	_fit_camera_pos = camera_world - global_position
 	_camera.position = _fit_camera_pos + (look - center)
 	_clamp_camera()
+	var limits := TOUCH.player_zoom_limits(board_w, board_h, viewport, mobile)
+	if _hud != null and _hud.has_method("set_zoom_buttons"):
+		_hud.set_zoom_buttons(zoom < limits.y - 0.02, zoom > limits.x + 0.02)
+
+
+func _on_zoom_step(direction: int) -> void:
+	TOUCH.nudge_player_zoom(direction)
+	_fit_board_camera()
 
 
 func _frame_focus_local() -> Vector2:

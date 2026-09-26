@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
 	_test_hold_card_hides_when_drag_leaves()
+	_test_player_zoom()
 	_test_sources_keep_desktop_and_hub()
 
 
@@ -592,6 +593,56 @@ func _test_hold_card_hides_when_drag_leaves() -> void:
 	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "dragging off keeps the spell armed")
 	hud.free()
 	sim.free()
+
+
+func _test_player_zoom() -> void:
+	TOUCH.reset_player_zoom()
+	var phone := Vector2(1600, 720)
+	var overview := TOUCH.board_zoom(960.0, 500.0, phone, true)
+	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), overview, "the session opens on the overview")
+	var limits := TOUCH.player_zoom_limits(960.0, 500.0, phone, true)
+	eq(limits.x < overview, true, "zoom out can show more of the diamond")
+	eq(limits.y > overview, true, "zoom in can move closer")
+	eq(limits.y <= TOUCH.PLAYER_ZOOM_MAX, true, "the closer view stays under the player cap")
+	eq(limits.y < 2.6, true, "the closer view is not the 0.1.21 cover zoom")
+	TOUCH.nudge_player_zoom(-1)
+	TOUCH.nudge_player_zoom(-1)
+	TOUCH.nudge_player_zoom(-1)
+	var pulled := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
+	eq(pulled < overview, true, "zoom out is wider than the default")
+	eq(pulled + 0.001 >= limits.x, true, "zoom out stops at the whole diamond")
+	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), pulled, "the chosen zoom sticks for the session")
+	TOUCH.reset_player_zoom()
+	for _i in 8:
+		TOUCH.nudge_player_zoom(1)
+	var pushed := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
+	eq(pushed > overview, true, "zoom in is closer than the overview")
+	eq(pushed <= limits.y + 0.001, true, "zoom in stops at the closer cap")
+	var desk := TOUCH.board_zoom(960.0, 500.0, Vector2(960, 720), false)
+	TOUCH.reset_player_zoom()
+	near(TOUCH.player_board_zoom(960.0, 500.0, Vector2(960, 720), false), desk, "desktop still opens at 0.64")
+	TOUCH.nudge_player_zoom(1)
+	var desk_in := TOUCH.player_board_zoom(960.0, 500.0, Vector2(960, 720), false)
+	eq(desk_in > desk and desk_in <= TOUCH.BOARD_ZOOM_MAX + 0.001, true, "desktop zoom in stays inside the desk cap")
+	TOUCH.reset_player_zoom()
+	var hud := CombatHUD.new()
+	hud._build()
+	var zoom_in := hud.find_child("ZoomIn", true, false) as Button
+	var zoom_out := hud.find_child("ZoomOut", true, false) as Button
+	truthy(zoom_in != null and zoom_out != null, "combat HUD has zoom in and zoom out")
+	eq(zoom_in.text, "Zoom +", "zoom in reads Zoom +")
+	eq(zoom_out.text, "Zoom −", "zoom out reads Zoom −")
+	eq(zoom_in.custom_minimum_size.y >= 64.0, true, "zoom in is a fat target")
+	eq(zoom_out.custom_minimum_size.y >= 64.0, true, "zoom out is a fat target")
+	var steps: Array = []
+	hud.zoom_step_requested.connect(func(direction: int) -> void: steps.append(direction))
+	zoom_in.pressed.emit()
+	zoom_out.pressed.emit()
+	eq(steps, [1, -1], "the buttons request zoom in then zoom out")
+	hud.set_zoom_buttons(false, true)
+	eq(zoom_in.disabled, true, "zoom in disables at the close cap")
+	eq(zoom_out.disabled, false, "zoom out stays available at the close cap")
+	hud.free()
 
 
 func _test_sources_keep_desktop_and_hub() -> void:
