@@ -739,16 +739,13 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	if _sprite == null:
 		return
 	var pos := VIEW_MOTION.hit_offset(t, dir)
+	var mul := VIEW_MOTION.hit_squash(t)
+	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 	_sprite.position = pos
-	var drawn := _body_kind == "hit" and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible
-	var k := 0.0
-	if not drawn and t > 0.0 and t < 1.0:
-		k = sin(clampf(t, 0.0, 1.0) * PI)
-	var mul := Vector2(lerpf(1.0, 1.10, k), lerpf(1.0, 0.84, k))
-	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	_sprite.scale = scaled
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
-		_active_strip.scale = SPRITE_SCALE if drawn else _sprite.scale
+		_active_strip.scale = scaled
 
 
 func _sample_lift(t: float) -> void:
@@ -780,8 +777,9 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 	if strip == null or not is_instance_valid(strip):
 		_sample_death(t, _tilt_sign)
 		return
-	if t >= 0.72:
-		_freeze_on_frame(strip, _last_frame(strip))
+	var last := _last_frame(strip)
+	if strip.frame >= last or t >= 0.58:
+		_freeze_on_frame(strip, last)
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
 		strip.position = _sprite.position
@@ -908,6 +906,12 @@ func body_anim_candidates(kind: String) -> Array:
 
 func _start_kind_strip(kind: String, window_sec: float) -> void:
 	_begin_body_strip(kind, window_sec)
+	if kind != "death" or _active_strip == null or not is_instance_valid(_active_strip):
+		return
+	# Finish the authored collapse early so the last cell can sit.
+	var quicker := maxf(_active_strip.speed_scale * 1.45, 1.15)
+	_active_strip.speed_scale = quicker
+	_strip_play_scale = quicker
 
 
 func _begin_body_strip(kind: String, window_sec: float) -> void:

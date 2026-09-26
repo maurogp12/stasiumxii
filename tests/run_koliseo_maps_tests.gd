@@ -23,6 +23,7 @@ func _run() -> void:
 	_test_cell_tags_override()
 	_test_random_ship_id()
 	_test_hotseat_rolls_map()
+	_test_alive_grade()
 	await _test_hotseat_navigates()
 	print("Koliseo map tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -239,6 +240,50 @@ func _test_hotseat_navigates() -> void:
 			eq(str(snap["units"][1]["class_id"]), "bastion", "navigated match seat 1 is bastion")
 			break
 	eq(arrived, true, "hot-seat navigates into the rolled arena")
+
+
+func _test_alive_grade() -> void:
+	var life := load("res://board/koliseo_life.gd")
+	eq(life.MOTE_AMOUNT <= 24, true, "arena motes stay a small weather field")
+	eq(life.MOTE_AMOUNT >= 8, true, "arena motes are enough to read")
+	var seen := {}
+	for map_id in MAPS:
+		var grade: Dictionary = life.grade_for(map_id, "ground", 0, Vector2i(2, 3))
+		eq(bool(grade.get("ship", false)), true, "%s ground is a ship grade" % map_id)
+		truthy(float(grade["contrast"]) > 1.05, "%s ground contrast is richer than flat" % map_id)
+		truthy(float(grade["sat"]) > 1.05, "%s ground is more saturated" % map_id)
+		truthy(float(grade["shimmer"]) > 0.0, "%s ground has a sheen" % map_id)
+		var tint: Color = grade["grade"]
+		seen["%0.2f,%0.2f,%0.2f" % [tint.r, tint.g, tint.b]] = true
+		var ambient: Dictionary = life.ambient_for(map_id)
+		truthy(not ambient.is_empty(), "%s has weather" % map_id)
+		var mote: Color = ambient["mote"]
+		truthy(mote.a > 0.2 and mote.a < 0.95, "%s motes stay subtle" % map_id)
+	eq(seen.size(), MAPS.size(), "each arena tints the sheets differently")
+	var brine_water: Dictionary = life.grade_for("brinewake", "water", 0, Vector2i(1, 1))
+	var brine_ground: Dictionary = life.grade_for("brinewake", "ground", 0, Vector2i(1, 1))
+	truthy(float(brine_water["shimmer"]) > float(brine_ground["shimmer"]), "Brinewake water shimmers more than stone")
+	var slag_lava: Dictionary = life.grade_for("slagcrown", "lava", 1, Vector2i(4, 4))
+	var slag_ground: Dictionary = life.grade_for("slagcrown", "ground", 1, Vector2i(4, 4))
+	truthy(float(slag_lava["pulse"]) > float(slag_ground["pulse"]), "Slagcrown lava pulses harder than ash")
+	var high: Dictionary = life.grade_for("windmere", "ground", 3, Vector2i(0, 1))
+	var low: Dictionary = life.grade_for("windmere", "ground", 0, Vector2i(0, 1))
+	truthy(float(high["lift"]) > float(low["lift"]), "a higher tile reads brighter")
+	var quiet: Dictionary = life.grade_for("not_a_region", "ground", 2, Vector2i(0, 0))
+	eq(bool(quiet.get("ship", true)), false, "an unknown map is not dressed as a biome")
+	eq(float(quiet["shimmer"]), 0.0, "an unknown map does not invent shimmer")
+	eq(float(quiet["pulse"]), 0.0, "an unknown map does not invent a light pulse")
+	var src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
+	eq(src.contains("hit_chance"), false, "arena life does not touch hit bands")
+	eq(src.contains("legal_intents"), false, "arena life does not touch legality")
+	eq(src.contains("line_of_sight"), false, "arena life does not invent LoS")
+	eq(src.contains("fog"), false, "arena life does not invent fog")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	truthy(tile_src.contains("_paint_depth_rim"), "ship sheets draw an iso depth rim")
+	truthy(tile_src.contains("apply_koliseo_grade"), "tiles take the arena grade")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("apply_koliseo_grade"), "the board applies the grade with the tiles")
+	truthy(view.contains("KoliseoLife"), "the board owns the weather layer")
 
 
 func _ground_paint_step(tags: Dictionary) -> Dictionary:

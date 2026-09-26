@@ -16,10 +16,10 @@ func _ready() -> void:
 	_particles.spread = 70.0
 	_particles.direction = Vector2(0, -1)
 	_particles.gravity = Vector2(0, -8)
-	_particles.initial_velocity_min = 10.0
-	_particles.initial_velocity_max = 28.0
-	_particles.scale_amount_min = 1.4
-	_particles.scale_amount_max = 2.6
+	_particles.initial_velocity_min = 18.0
+	_particles.initial_velocity_max = 42.0
+	_particles.scale_amount_min = 1.8
+	_particles.scale_amount_max = 3.2
 	_particles.local_coords = true
 	_particles.texture = VfxPalette.dot_texture()
 	_particles.emitting = false

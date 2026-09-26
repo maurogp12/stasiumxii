@@ -5,6 +5,7 @@ const TILE_WIDTH: int = 64
 const TILE_HEIGHT: int = 32
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const _KoliseoArt := preload("res://board/koliseo_art.gd")
+const _KoliseoLife := preload("res://board/koliseo_life.gd")
 ## Relative to this tile. Stays under BoardVisualSort.UNIT_Z_BIAS so the
 ## seat ring and pawn sprite still paint after the overlay, including on
 ## elevated tiles (the overlay is a child, so it lifts with the diamond).
@@ -21,6 +22,8 @@ var elevation: int = 0
 var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
+var _grade_key: String = ""
+var _life_mat: ShaderMaterial
 var _overlay: HighlightOverlay
 
 
@@ -46,6 +49,7 @@ func _draw() -> void:
 		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
 	else:
 		_paint_terrain(tex)
+		_paint_depth_rim()
 	for prop_name in _paint_props:
 		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
 		if prop_tex != null:
@@ -62,7 +66,38 @@ func set_dress(dress: String) -> void:
 	if _dress == dress:
 		return
 	_dress = dress
+	_grade_key = ""
 	_request_paint()
+
+
+## Ship arenas get a contrast / sheen grade. Other boards keep the raw sheet.
+func apply_koliseo_grade(map_id: String) -> void:
+	var key := "%s|%s|%d" % [map_id, terrain_type, elevation]
+	if key == _grade_key:
+		return
+	_grade_key = key
+	var spec: Dictionary = _KoliseoLife.grade_for(map_id, terrain_type, elevation, grid_position)
+	if not bool(spec.get("ship", false)):
+		if material != null:
+			material = null
+			_life_mat = null
+		return
+	if _life_mat == null or not (material is ShaderMaterial):
+		_life_mat = ShaderMaterial.new()
+		_life_mat.shader = _KoliseoLife.GROUND_SHADER
+		material = _life_mat
+	var grade: Color = spec["grade"]
+	var sheen: Color = spec["shimmer_color"]
+	_life_mat.set_shader_parameter("contrast", float(spec["contrast"]))
+	_life_mat.set_shader_parameter("sat_boost", float(spec["sat"]))
+	_life_mat.set_shader_parameter("lift", float(spec["lift"]))
+	_life_mat.set_shader_parameter("grade", Vector3(grade.r, grade.g, grade.b))
+	_life_mat.set_shader_parameter("shimmer", float(spec["shimmer"]))
+	_life_mat.set_shader_parameter("shimmer_color", Vector3(sheen.r, sheen.g, sheen.b))
+	_life_mat.set_shader_parameter("shimmer_speed", float(spec["speed"]))
+	_life_mat.set_shader_parameter("phase", float(spec["phase"]))
+	_life_mat.set_shader_parameter("pulse_amp", float(spec["pulse"]))
+	_life_mat.set_shader_parameter("pulse_speed", 0.9 + float(spec["pulse"]) * 4.0)
 
 
 func apply_board_data(next_terrain: String, next_elevation: Variant = 0) -> void:
@@ -87,6 +122,24 @@ func _paint_terrain(tex: Texture2D) -> void:
 		_draw_centered(tex)
 		return
 	draw_texture_rect_region(tex, placed["dest"], placed["source"])
+
+
+## North rim catches light, south rim separates the diamond from the tile behind it.
+## Drawn only on a real sheet so the flat proto fill stays the terrain color.
+func _paint_depth_rim() -> void:
+	var pts := _diamond_points()
+	var south := Color(0.05, 0.03, 0.06, 0.55)
+	var north := Color(1.0, 0.97, 0.86, 0.42)
+	draw_line(pts[1], pts[2], south, 2.4, true)
+	draw_line(pts[2], pts[3], south, 2.4, true)
+	draw_line(pts[3], pts[0], north, 1.6, true)
+	draw_line(pts[0], pts[1], north, 1.6, true)
+	if elevation <= 0:
+		return
+	var foot: Vector2 = pts[2]
+	var drop := 1.5 + float(elevation) * 1.7
+	draw_line(foot + Vector2(-7, 1), foot + Vector2(7, 1), Color(0, 0, 0, 0.28), 2.2, true)
+	draw_line(foot, foot + Vector2(0, drop), Color(0, 0, 0, 0.18), 2.6, true)
 
 
 ## Props stand on the south tip of the diamond. paint_only never affects pathing.
