@@ -75,6 +75,8 @@ var _walk_looping: bool = false
 ## Which half-cycle the driven step is on. The board does not pass this.
 var _driven_step: int = 0
 var _driven_open: bool = false
+## The board owns the pose. A free clock would slide the contact frame.
+var _driven_walk: bool = false
 var _strip_play_scale: float = 1.0
 var _impact_frozen: bool = false
 var _body_kind: String = ""
@@ -368,8 +370,10 @@ func begin_path_walk() -> void:
 func arm_driven_walk() -> void:
 	_driven_step = 0
 	_driven_open = false
+	_driven_walk = true
 	begin_path_walk()
 	_kill_bounce()
+	_hold_driven_pose()
 
 
 ## Seek the facing's walk clip to the contact frame for this tile.
@@ -385,7 +389,7 @@ func sync_walk_plant() -> void:
 	if _driven_open:
 		_driven_step += 1
 	_driven_open = true
-	strip.speed_scale = walk_strip_speed_scale()
+	strip.speed_scale = 0.0 if _driven_walk else walk_strip_speed_scale()
 	var frames := strip.sprite_frames
 	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
 		strip.frame = VIEW_MOTION.walk_cycle_frame(0.0, frames.get_frame_count(strip.animation), _driven_step)
@@ -394,12 +398,17 @@ func sync_walk_plant() -> void:
 
 ## One tile of the path. t is 0 at the press and 1 at the settle.
 ## The walk frame comes from t. A free clock that stays on frame 0 is an idle slide.
+## The foot stays on the pawn origin. The body rises and leads only while
+## that foot is between cells, then plants.
 func sample_driven_gait(t: float) -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_kill_bounce()
 	var u := clampf(t, 0.0, 1.0)
 	_sample_hop(u)
+	var body := VIEW_MOTION.stride_rise(u) + VIEW_MOTION.stride_lead(u, facing_screen())
+	_place_body(body)
+	_ride_chrome(body)
 	_apply_driven_cycle(u)
 
 
@@ -427,6 +436,14 @@ func retarget_walk_strip() -> void:
 		return
 	_ensure_motion_strips()
 	_play_walk_flat()
+	_hold_driven_pose()
+
+
+func _hold_driven_pose() -> void:
+	if not _driven_walk:
+		return
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.speed_scale = 0.0
 
 
 ## Path end or interrupt. Plant the static facing and let idle resume.
@@ -434,6 +451,7 @@ func end_path_walk() -> void:
 	_path_walk = false
 	_driven_step = 0
 	_driven_open = false
+	_driven_walk = false
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
@@ -661,6 +679,7 @@ func settle_motion() -> void:
 	var died := _plan_died
 	_plan_died = false
 	_path_walk = false
+	_driven_walk = false
 	_kill_bounce()
 	_kill_landing()
 	_kill_action()

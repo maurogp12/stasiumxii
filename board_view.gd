@@ -1092,8 +1092,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# before the step, or a refresh snaps it and the walk reads as a teleport.
 	# Face the step before the body moves. A cardinal uses that letter. Any other
 	# segment faces the screen direction so the pawn does not slide sideways or
-	# backwards. The walk strip seeks to its plant frame as the stride starts.
-	# The snapshot facing snaps only after the last land.
+	# backwards. The walk strip holds its contact frame through that turn, then
+	# the foot eases. The snapshot facing snaps only after the last land.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -1114,13 +1114,12 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	_walk_tween.set_trans(Tween.TRANS_LINEAR)
 	var walk_armed := false
 	for cell in cells:
-		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
+		var grid_dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
+		if grid_dir == "":
+			grid_dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
+		var dir := VIEW_MOTION.walk_segment_facing(prev, cell, _cell_to_local(cell) - _cell_to_local(prev))
 		if dir == "":
-			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
-			if prev.x != cell.x and prev.y != cell.y:
-				var along := VIEW_MOTION.screen_facing(_cell_to_local(cell) - _cell_to_local(prev))
-				if along != "":
-					dir = along
+			dir = grid_dir
 		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
 		if turn.is_empty():
 			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))

@@ -2,6 +2,19 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Walk stride on the existing strips
+
+Luca, after the landscape pass. No APK cut. No new walk sheets. Locked kit numbers unchanged. The Batch-1 / Batch-1c files under `art/export_2x/characters/{class}/anims/*_walk_{e,s,n,w}.png` are the clips that play. `*_gen.png` stays unloaded.
+
+### What a step does now
+
+- The foot eases from cell to cell in about 0.30s. The press and the landing hold the foot on the diamond. The open part is a smooth step, not a raw lerp and not a tile-long hop.
+- Facing snaps to that segment before the foot leaves, including a corner. A cardinal uses the letter. Any other step uses the screen direction, so the body does not travel sideways or backwards and then spin at the end.
+- The facing walk cycle is sampled from the foot. Contact frames show only on the plant. Passing frames show only while the foot is between cells, so the idle pose is not what slides.
+- While the foot is moving, the body leads about 10px along the facing and rises a few pixels, then both return. Arrival is the idle facing on the cell, not a mid-stride freeze. The ground mark and the aim ring stay on the Foot child.
+
+Headless Godot 4.7.2, 0 failed: motion 1972. Map geometry, tags, and Locked kit numbers are unchanged.
+
 ## 2026-09-26 — Phone combat overview and landscape hub
 
 Luca's 0.1.21 playtest. No APK cut. Locked kit numbers unchanged. Map geometry, tags, Ambush snap, tilesets, Scenario VFX, and the planted walk stay.
@@ -22,7 +35,7 @@ Headless Godot 4.7.2, 0 failed: hub 206, touch adapter 485.
 
 - Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
 - Map layouts, board geometry, tags, and room shapes.
-- Ambush snap, original tilesets, Scenario VFX, and the planted walk.
+- Ambush snap, original tilesets, and Scenario VFX. The walk presentation is the stride entry above. The strips themselves are unchanged.
 
 ## 2026-09-26 — Mobile debug APK 0.1.21
 
