@@ -119,13 +119,13 @@ const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
-## (~147px) against Bastion ~130px, so the optional mul stays 1.0. The map
-## can later hold 1.08–1.12 on the body sprites only. The pawn node and the
-## pick capsule stay at scale 1: the pivot is the foot offset (0, -72), not
-## the collider center. Identity is Berserker A + helm A2 (iron-jaw grill,
-## dual double-bit axes). Above PRESENTATION_SCALE_CAP, including 1.20, is
-## ignored. Kit numbers and map geometry do not read this.
-const PRESENTATION_SCALE_CAP := 1.12
+## (~147px) against Bastion ~130px, so the shipped mul is 1.0. A later nudge
+## may only sit in 1.08–1.10, on the body sprites, growing from the foot
+## offset (0, -72). The pawn node and the pick capsule stay at scale 1.
+## Identity is Berserker A + helm A2 (iron-jaw grill, dual double-bit axes).
+## 1.20 is rejected. Kit numbers and map geometry do not read this.
+const PRESENTATION_SCALE_MIN := 1.08
+const PRESENTATION_SCALE_CAP := 1.10
 const IRONJAW_COMBAT_SCALE := 1.0
 const CLASS_PRESENTATION_SCALE := {
 	"ironjaw": IRONJAW_COMBAT_SCALE,
@@ -159,17 +159,19 @@ static func sprite_scale_for(class_id: String) -> Vector2:
 	return SPRITE_SCALE * presentation_mul(class_id)
 
 
-## 1.0 when the class is unlisted, below 1, or above the cap. A 1.20 entry
-## does not ship; art-fill has to carry that size.
+## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
+## Anything else, including 1.20, is ignored.
 static func presentation_mul(class_id: String) -> float:
 	var key := SpellKits.normalize_class_id(class_id)
 	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
 
 
 static func capped_presentation_mul(raw: float) -> float:
-	if raw < 1.0 or raw > PRESENTATION_SCALE_CAP:
+	if is_equal_approx(raw, 1.0):
 		return 1.0
-	return raw
+	if raw >= PRESENTATION_SCALE_MIN and raw <= PRESENTATION_SCALE_CAP:
+		return raw
+	return 1.0
 
 
 func _body_scale() -> Vector2:
