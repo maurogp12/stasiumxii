@@ -8,23 +8,27 @@ extends Node2D
 
 const _Maps := preload("res://backend/cell_tag_map.gd")
 const _Palette := preload("res://vfx/vfx_palette.gd")
+const _Sort := preload("res://board/visual_sort.gd")
 const GROUND_SHADER := preload("res://board/koliseo_ground.gdshader")
 const MOTE_AMOUNT := 18
 const ELEV_LIFT := 0.055
 
 const _TERRAIN := {
-	"ground": {"contrast": 1.18, "sat": 1.26, "shimmer": 0.14, "pulse": 0.034, "speed": 0.85},
-	"mud": {"contrast": 1.14, "sat": 1.12, "shimmer": 0.06, "pulse": 0.022, "speed": 0.55},
-	"water": {"contrast": 1.22, "sat": 1.40, "shimmer": 0.48, "pulse": 0.072, "speed": 2.15},
-	"lava": {"contrast": 1.28, "sat": 1.34, "shimmer": 0.55, "pulse": 0.095, "speed": 2.7},
+	"ground": {"contrast": 1.26, "sat": 1.48, "shimmer": 0.16, "pulse": 0.034, "speed": 0.85},
+	"mud": {"contrast": 1.18, "sat": 1.22, "shimmer": 0.06, "pulse": 0.022, "speed": 0.55},
+	"water": {"contrast": 1.30, "sat": 1.58, "shimmer": 0.52, "pulse": 0.072, "speed": 2.15},
+	"lava": {"contrast": 1.34, "sat": 1.52, "shimmer": 0.58, "pulse": 0.095, "speed": 2.7},
 }
+## Dark ink plus a pale gleam. Drawn on a child so the grade shader does not wash the grid.
+const GRID_INK := Color(0.04, 0.03, 0.07, 0.82)
+const GRID_GLEAM := Color(1.0, 0.97, 0.9, 0.62)
 
 ## grade / shimmer_color tint the existing sheets. shimmer_mul is per terrain.
 const _BIOMES := {
 	"crosshaven": {
-		"grade": Color(1.08, 1.12, 0.94),
-		"shimmer_color": Color(0.78, 1.0, 0.48),
-		"light": Color(1.0, 0.9, 0.48),
+		"grade": Color(0.92, 1.22, 0.62),
+		"shimmer_color": Color(0.78, 1.0, 0.42),
+		"light": Color(0.72, 1.0, 0.38),
 		"mote": Color(0.72, 0.95, 0.38, 0.72),
 		"direction": Vector2(0.2, -1.0),
 		"gravity": Vector2(6.0, -12.0),
@@ -34,9 +38,9 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 1.2, "mud": 0.65, "water": 1.15, "lava": 1.0},
 	},
 	"brinewake": {
-		"grade": Color(0.9, 1.06, 1.16),
-		"shimmer_color": Color(0.62, 0.95, 1.0),
-		"light": Color(0.45, 0.82, 1.0),
+		"grade": Color(0.62, 1.02, 1.32),
+		"shimmer_color": Color(0.45, 0.92, 1.0),
+		"light": Color(0.28, 0.72, 1.0),
 		"mote": Color(0.55, 0.9, 1.0, 0.7),
 		"direction": Vector2(1.0, -0.12),
 		"gravity": Vector2(10.0, 4.0),
@@ -46,9 +50,9 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 0.45, "mud": 0.4, "water": 1.4, "lava": 1.0},
 	},
 	"slagcrown": {
-		"grade": Color(1.14, 0.96, 0.84),
-		"shimmer_color": Color(1.0, 0.55, 0.18),
-		"light": Color(1.0, 0.42, 0.12),
+		"grade": Color(1.28, 0.78, 0.48),
+		"shimmer_color": Color(1.0, 0.46, 0.12),
+		"light": Color(1.0, 0.34, 0.08),
 		"mote": Color(1.0, 0.48, 0.16, 0.78),
 		"direction": Vector2(0.08, -1.0),
 		"gravity": Vector2(2.0, -22.0),
@@ -58,9 +62,9 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 0.32, "mud": 0.5, "water": 0.4, "lava": 1.3},
 	},
 	"windmere": {
-		"grade": Color(0.9, 1.05, 1.18),
-		"shimmer_color": Color(0.82, 0.95, 1.0),
-		"light": Color(0.7, 0.88, 1.0),
+		"grade": Color(0.7, 1.05, 1.34),
+		"shimmer_color": Color(0.75, 0.94, 1.0),
+		"light": Color(0.55, 0.82, 1.0),
 		"mote": Color(0.86, 0.94, 1.0, 0.7),
 		"direction": Vector2(0.85, 0.45),
 		"gravity": Vector2(14.0, 18.0),
@@ -70,9 +74,9 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 1.45, "mud": 0.8, "water": 1.25, "lava": 1.0},
 	},
 	"stormspire": {
-		"grade": Color(0.94, 0.9, 1.14),
-		"shimmer_color": Color(0.78, 0.7, 1.0),
-		"light": Color(0.62, 0.48, 1.0),
+		"grade": Color(0.78, 0.7, 1.32),
+		"shimmer_color": Color(0.72, 0.58, 1.0),
+		"light": Color(0.52, 0.34, 1.0),
 		"mote": Color(0.82, 0.72, 1.0, 0.8),
 		"direction": Vector2(0.35, -0.55),
 		"gravity": Vector2(-4.0, -6.0),
@@ -135,6 +139,25 @@ static func ambient_for(map_id: String) -> Dictionary:
 	if not _BIOMES.has(id):
 		return {}
 	return _BIOMES[id]
+
+
+## Outer diamond of a ship board. North, east, south, west tips.
+static func board_rim(board_size: int) -> PackedVector2Array:
+	var n := maxi(board_size, 1)
+	var last := n - 1
+	return PackedVector2Array([
+		_Sort.cell_to_local(Vector2i(0, 0), 0.0) + Vector2(0, -16),
+		_Sort.cell_to_local(Vector2i(last, 0), 0.0) + Vector2(32, 0),
+		_Sort.cell_to_local(Vector2i(last, last), 0.0) + Vector2(0, 16),
+		_Sort.cell_to_local(Vector2i(0, last), 0.0) + Vector2(-32, 0),
+	])
+
+
+static func edge_tint(map_id: String) -> Color:
+	var biome := ambient_for(map_id)
+	if biome.is_empty():
+		return Color(0, 0, 0, 0)
+	return biome["light"]
 
 
 func _ready() -> void:
@@ -222,3 +245,18 @@ func _process(delta: float) -> void:
 	_glow.modulate = Color(light.r, light.g, light.b, amp)
 	var breathe := 1.0 + 0.08 * sin(_time * 1.25)
 	_glow.scale = Vector2(7.2, 5.4) * breathe
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not _BIOMES.has(_map_id) or _board_size < 2:
+		return
+	var rim := board_rim(_board_size)
+	var loop := rim.duplicate()
+	loop.append(rim[0])
+	var tint: Color = edge_tint(_map_id)
+	var pulse := 0.55 + 0.45 * (0.5 + 0.5 * sin(_time * 1.7))
+	draw_polyline(loop, Color(tint.r, tint.g, tint.b, 0.22 * pulse), 16.0, true)
+	draw_polyline(loop, Color(tint.r, tint.g, tint.b, 0.45 * pulse), 8.0, true)
+	draw_polyline(loop, Color(tint.r, tint.g, tint.b, 0.85), 3.2, true)
+	draw_polyline(loop, Color(1.0, 0.98, 0.94, 0.8 * pulse), 1.4, true)

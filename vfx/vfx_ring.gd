@@ -125,9 +125,9 @@ func _draw() -> void:
 
 func _draw_ellipse_ring() -> void:
 	var pts := _ellipse(28.0, 14.0)
-	draw_polyline(pts, VfxPalette.OUTLINE, 4.2, true)
-	draw_polyline(pts, Color(1, 1, 1, 0.9), 1.2, true)
-	draw_polyline(pts, _tint, 2.6, true)
+	draw_polyline(pts, VfxPalette.OUTLINE, 5.0, true)
+	draw_polyline(pts, Color(1, 1, 1, 0.95), 2.0, true)
+	draw_polyline(pts, _tint, 3.2, true)
 
 
 func _draw_sigil() -> void:

@@ -273,6 +273,21 @@ func _test_alive_grade() -> void:
 	eq(bool(quiet.get("ship", true)), false, "an unknown map is not dressed as a biome")
 	eq(float(quiet["shimmer"]), 0.0, "an unknown map does not invent shimmer")
 	eq(float(quiet["pulse"]), 0.0, "an unknown map does not invent a light pulse")
+	var wind_grade: Color = life.grade_for("windmere", "ground", 0, Vector2i(1, 1))["grade"]
+	truthy(wind_grade.b > wind_grade.r, "Windmere stays a cool jewel")
+	var slag_grade: Color = life.grade_for("slagcrown", "ground", 0, Vector2i(1, 1))["grade"]
+	truthy(slag_grade.r > slag_grade.b, "Slagcrown stays a warm jewel")
+	var haven_grade: Color = life.grade_for("crosshaven", "ground", 0, Vector2i(1, 1))["grade"]
+	truthy(haven_grade.g > haven_grade.r and haven_grade.g > haven_grade.b, "Crosshaven stays a green jewel")
+	eq(life.GRID_INK.a >= 0.7, true, "the tactical grid ink is dark enough to read")
+	eq(life.GRID_GLEAM.a >= 0.4, true, "the tactical grid has a light edge")
+	var rim: PackedVector2Array = life.board_rim(15)
+	eq(rim.size(), 4, "the board edge is the outer diamond")
+	truthy(rim[2].y > rim[0].y, "the south tip sits below the north tip")
+	truthy(rim[1].x > 0.0 and rim[3].x < 0.0, "east and west tips open the diamond")
+	var wind_edge: Color = life.edge_tint("windmere")
+	truthy(wind_edge.a > 0.5 and wind_edge.b > wind_edge.r, "Windmere's board edge glows ice-blue")
+	eq(life.edge_tint("not_a_region").a, 0.0, "an unknown map has no glowing edge")
 	var src := FileAccess.get_file_as_string("res://board/koliseo_life.gd")
 	eq(src.contains("hit_chance"), false, "arena life does not touch hit bands")
 	eq(src.contains("legal_intents"), false, "arena life does not touch legality")

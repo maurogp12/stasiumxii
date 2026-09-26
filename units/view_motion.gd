@@ -55,6 +55,9 @@ const ANTICIPATION_PULL_PX := 6.0
 const ANTICIPATION_SQUASH_X := 1.28
 const ANTICIPATION_SQUASH_Y := 0.72
 const CAST_DIP_PX := 6.5
+## Plant after a walk. Feet stay on the tile. The squash is the landing weight.
+const LAND_SEC := 0.16
+const LAND_SQUASH := Vector2(1.16, 0.8)
 
 ## Impact pose. impact_hold_sec() clamps this to the lock that is still free.
 const IMPACT_HOLD_SEC := 0.20
@@ -315,6 +318,38 @@ static func plan_sec(plan: Dictionary) -> float:
 	for step in steps_for(plan):
 		total += float(step.get("sec", 0.0))
 	return minf(total, ACTION_LOCK_MAX)
+
+
+## Wide plant, then back to rest. t=0 and t=1 stay at rest scale.
+static func landing_scale(t: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ONE
+	if t < 0.42:
+		var down := t / 0.42
+		return Vector2(
+			lerpf(1.0, LAND_SQUASH.x, down),
+			lerpf(1.0, LAND_SQUASH.y, down),
+		)
+	var up := (t - 0.42) / 0.58
+	return Vector2(
+		lerpf(LAND_SQUASH.x, 1.0, up),
+		lerpf(LAND_SQUASH.y, 1.0, up),
+	)
+
+
+## How far the action hand reaches, in pixels, along the aim. Rest hides it.
+static func gesture_reach(phase: String) -> float:
+	match phase:
+		"anticipation":
+			return 12.0
+		"strike":
+			return 22.0
+		"hold":
+			return 18.0
+		"recover":
+			return 8.0
+		_:
+			return 0.0
 
 
 static func hop_offset(t: float) -> Vector2:

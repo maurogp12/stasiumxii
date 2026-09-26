@@ -48,6 +48,8 @@ var _chrome: StatusChrome
 var _idle_tween: Tween
 var _action_tween: Tween
 var _bounce_tween: Tween
+var _landing_tween: Tween
+var _gesture: GestureHand
 var _bounce_gen: int = 0
 var _motion_playing: bool = false
 var _idle_hold: bool = false
@@ -97,6 +99,26 @@ const SEAT_RING_RY := 7.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
+
+
+## A small reach drawn in front of the body during a cast or a lunge.
+## Same mark on every fighter. It is a gesture, not a cosmetic.
+class GestureHand extends Node2D:
+	func _draw() -> void:
+		var palm := PackedVector2Array([
+			Vector2(9, 0),
+			Vector2(2, 5),
+			Vector2(-7, 3),
+			Vector2(-7, -3),
+			Vector2(2, -5),
+		])
+		draw_colored_polygon(palm, Color(1.0, 0.94, 0.84, 0.96))
+		var loop := palm.duplicate()
+		loop.append(palm[0])
+		draw_polyline(loop, Color(0.16, 0.08, 0.06, 0.95), 1.6, true)
+		draw_line(Vector2(2, -3.5), Vector2(8, -7), Color(1.0, 0.94, 0.84, 0.96), 2.2, true)
+		draw_line(Vector2(2, 3.5), Vector2(8, 7), Color(1.0, 0.94, 0.84, 0.96), 2.2, true)
+		draw_line(Vector2(3, -1), Vector2(10, -1), Color(1.0, 0.94, 0.84, 0.96), 2.2, true)
 
 
 class StatusChrome extends Node2D:
@@ -154,6 +176,7 @@ func motion_playing() -> bool:
 ## The pawn node slides either way. The sprite root takes the step bounce,
 ## including when play() does not start. A path bounce is not restarted per tile.
 func play_step_hop() -> bool:
+	_kill_landing()
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_end_body_strip()
 		return false
@@ -178,6 +201,71 @@ func _kill_bounce() -> void:
 	if _bounce_tween != null and is_instance_valid(_bounce_tween):
 		_bounce_tween.kill()
 	_bounce_tween = null
+
+
+func _kill_landing() -> void:
+	if _landing_tween != null and is_instance_valid(_landing_tween):
+		_landing_tween.kill()
+	_landing_tween = null
+
+
+## Feet stay planted. The body squashes and releases so the step has a landing.
+func _play_landing() -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree() or _motion_playing:
+		return
+	_kill_landing()
+	var tw := create_tween()
+	_landing_tween = tw
+	tw.tween_method(_sample_landing, 0.0, 1.0, VIEW_MOTION.LAND_SEC)
+	tw.finished.connect(func() -> void:
+		if _landing_tween == tw:
+			_landing_tween = null
+	)
+
+
+func _sample_landing(t: float) -> void:
+	if _motion_playing or _path_walk:
+		return
+	var mul := VIEW_MOTION.landing_scale(t)
+	var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.scale = scaled
+		_sprite.position = Vector2.ZERO
+
+
+func _ensure_gesture() -> void:
+	if _gesture != null and is_instance_valid(_gesture):
+		return
+	_gesture = GestureHand.new()
+	_gesture.name = "Gesture"
+	_gesture.z_index = 3
+	_gesture.z_as_relative = true
+	_gesture.visible = false
+	add_child(_gesture)
+
+
+func _hide_gesture() -> void:
+	if _gesture != null and is_instance_valid(_gesture):
+		_gesture.visible = false
+
+
+func _place_gesture(phase: String, aim: Vector2, body_pos: Vector2) -> void:
+	var reach := VIEW_MOTION.gesture_reach(phase)
+	if reach <= 0.0 or VIEW_MOTION.reduce_motion():
+		_hide_gesture()
+		return
+	_ensure_gesture()
+	var dir := aim
+	if dir.length_squared() < 0.01:
+		dir = facing_screen()
+	if dir.length_squared() < 0.01:
+		_hide_gesture()
+		return
+	dir = dir.normalized()
+	_gesture.position = body_pos + Vector2(0, -46) + dir * reach
+	_gesture.rotation = dir.angle()
+	_gesture.visible = true
+	_gesture.queue_redraw()
 
 
 ## Loop the step sine until end_path_walk. Phase is the walk cycle, not the tile.
@@ -213,6 +301,7 @@ func _on_step_bounce_finished(gen: int) -> void:
 	_bounce_tween = null
 	_motion_playing = false
 	_plant_sprite()
+	_play_landing()
 
 
 ## True when this class and facing can play a walk clip. Missing files are false.
@@ -257,6 +346,7 @@ func end_path_walk() -> void:
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
+	_play_landing()
 
 
 ## Walk strips play at authored fps. speed_scale 1 does not squeeze a cycle into one tile.
@@ -423,6 +513,7 @@ func settle_motion() -> void:
 	_plan_died = false
 	_path_walk = false
 	_kill_bounce()
+	_kill_landing()
 	_kill_action()
 	_motion_playing = false
 	if died or not alive:
@@ -621,6 +712,7 @@ func _sync_idle() -> void:
 
 func _begin_action() -> int:
 	_ensure_visuals()
+	_kill_landing()
 	_kill_action()
 	_stop_idle()
 	_plant_sprite()
@@ -671,13 +763,18 @@ func _reset_walk_scale() -> void:
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
-	_apply_body_pose(VIEW_MOTION.attack_pose(t, dir, reach))
+	var pose: Dictionary = VIEW_MOTION.attack_pose(t, dir, reach)
+	_apply_body_pose(pose)
 	_sync_impact_freeze(t, false)
+	_place_gesture(VIEW_MOTION.attack_phase(t), dir, pose.get("pos", Vector2.ZERO))
 
 
 func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
-	_apply_body_pose(VIEW_MOTION.cast_pose(t, dir))
+	var pose: Dictionary = VIEW_MOTION.cast_pose(t, dir)
+	_apply_body_pose(pose)
 	_sync_impact_freeze(t, true)
+	var aim := dir if dir.length_squared() > 0.01 else facing_screen()
+	_place_gesture(VIEW_MOTION.cast_phase(t), aim, pose.get("pos", Vector2.ZERO))
 
 
 func _apply_body_pose(pose: Dictionary) -> void:
@@ -879,6 +976,7 @@ func _stop_idle() -> void:
 
 
 func _plant_sprite() -> void:
+	_hide_gesture()
 	_end_body_strip()
 	_ride_chrome(Vector2.ZERO)
 	if _sprite == null or not is_instance_valid(_sprite):

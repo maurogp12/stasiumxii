@@ -66,7 +66,7 @@ Look target is Dofus Koliseo: an isometric tactical arena that reads as a place,
 
 ### Player-visible
 
-- Crosshaven, Brinewake, Slagcrown, Windmere, and Stormspire keep their existing diamonds and get a biome grade: more contrast and saturation, a north-lit falloff, and a slow sheen. Water and lava shimmer harder than stone. A higher tile is a little brighter than the one under it. A light rim on the north edge and a dark rim on the south edge separate the diamonds.
+- Crosshaven, Brinewake, Slagcrown, Windmere, and Stormspire keep their existing diamonds and get a jewel grade: emerald, sapphire, amber, ice, and amethyst, with a north-lit falloff and a slow sheen. Water and lava shimmer harder than stone. A higher tile is a little brighter than the one under it. A dark grid line and a pale gleam outline every diamond, and the outer edge of the board glows.
 - Each arena drifts its own weather over the board, under the Shade plate and the aim line. Crosshaven lifts grass motes. Brinewake blows a sea breeze. Slagcrown sends ash up off the lava. Windmere drops ice dust. Stormspire flickers violet sparks. A soft additive light wanders the middle of the diamond.
 - Walk still turns into the step before the body moves, and the walk cycle stays at rest scale. The step bounce is 6px, the top of the 4–6px band, so the plant has more weight. A missing walk strip squashes and stretches a little harder.
 - Casts dip further, rise higher, and point farther toward the effect. The wind-up squash is wider and shorter. Hits knock 6px, shake harder, and squash the body (including the hit strip). Death collapses by the middle of the beat and holds the last cell; the authored collapse plays faster so that hold has time inside the 0.6s lock.
@@ -98,8 +98,8 @@ Look target is Dofus Koliseo: an isometric tactical arena that reads as a place,
 | --- | ---: |
 | Combat | 4510 |
 | VFX | 439 |
-| Motion | 1837 |
-| Koliseo maps | 268 |
+| Motion | 1846 |
+| Koliseo maps | 278 |
 | Event hooks | 329 |
 | Net session | 280 |
 | Elevation chrome | 189 |
@@ -110,3 +110,17 @@ Look target is Dofus Koliseo: an isometric tactical arena that reads as a place,
 ### Pull request
 
 https://github.com/maurogp12/stasiumxii/pull/136 into `mobile`. Not merged.
+
+### 2026-09-26 follow-up — Rosie jewel grid
+
+The Rosebud arena pass asked for jewel tiles, a readable grid, a glowing board edge, a landing on the walk, a hand on the action, and brighter skill flashes. Same five arenas, same original sheets, same Locked numbers.
+
+- Tile grades push further into emerald, sapphire, amber, ice, and amethyst. Windmere stays cool and still reads as a 15×15 grid with Kestrel and Ironjaw on it.
+- Each diamond draws a dark ink line and a pale gleam on a child, so the grade shader does not wash the grid out.
+- The outer diamond of the board glows in that arena's light and breathes.
+- A walk still faces the step and bounces 6px at rest scale. When the path ends, the body squashes into the tile and releases. Feet stay planted.
+- Casts and lunges reach a small hand along the aim. It hides at rest. It is the same mark on every fighter.
+- Sparks and impact rings are brighter. Recipes, ranges, costs, and damage stay the numbers they were.
+
+Headless recount, 0 failed: Koliseo maps 278, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+

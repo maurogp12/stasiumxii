@@ -27,5 +27,5 @@ void fragment() {
 	sat = mix(sat, shimmer_color, sheen * 0.62);
 	float breathe = 0.5 + 0.5 * sin(TIME * pulse_speed + phase);
 	sat *= mix(1.0 - pulse_amp, 1.0 + pulse_amp, breathe);
-	COLOR = vec4(clamp(sat, vec3(0.0), vec3(1.25)), tex.a);
+	COLOR = vec4(clamp(sat, vec3(0.0), vec3(1.45)), tex.a);
 }

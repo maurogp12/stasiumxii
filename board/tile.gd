@@ -23,8 +23,23 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _grade_key: String = ""
+var _grid_on: bool = false
 var _life_mat: ShaderMaterial
+var _grid: GridInk
 var _overlay: HighlightOverlay
+
+
+class GridInk extends Node2D:
+	var host: BoardTile
+
+	func _draw() -> void:
+		if host == null or not host.grid_ink_on():
+			return
+		var pts := host.diamond_points()
+		var loop := PackedVector2Array(pts)
+		loop.append(pts[0])
+		draw_polyline(loop, KoliseoLife.GRID_INK, 2.05, true)
+		draw_polyline(loop, KoliseoLife.GRID_GLEAM, 1.05, true)
 
 
 class HighlightOverlay extends Node2D:
@@ -36,6 +51,7 @@ class HighlightOverlay extends Node2D:
 
 
 func _ready() -> void:
+	_ensure_grid()
 	_ensure_overlay()
 
 
@@ -78,10 +94,12 @@ func apply_koliseo_grade(map_id: String) -> void:
 	_grade_key = key
 	var spec: Dictionary = _KoliseoLife.grade_for(map_id, terrain_type, elevation, grid_position)
 	if not bool(spec.get("ship", false)):
+		_set_grid_on(false)
 		if material != null:
 			material = null
 			_life_mat = null
 		return
+	_set_grid_on(true)
 	if _life_mat == null or not (material is ShaderMaterial):
 		_life_mat = ShaderMaterial.new()
 		_life_mat.shader = _KoliseoLife.GROUND_SHADER
@@ -249,6 +267,32 @@ func _request_paint() -> void:
 	queue_redraw()
 	if _overlay != null and is_instance_valid(_overlay):
 		_overlay.queue_redraw()
+
+
+func grid_ink_on() -> bool:
+	return _grid_on
+
+
+func diamond_points() -> PackedVector2Array:
+	return _diamond_points()
+
+
+func _set_grid_on(enabled: bool) -> void:
+	_grid_on = enabled
+	_ensure_grid()
+	if _grid != null and is_instance_valid(_grid):
+		_grid.queue_redraw()
+
+
+func _ensure_grid() -> void:
+	if _grid != null and is_instance_valid(_grid):
+		return
+	_grid = GridInk.new()
+	_grid.name = "GridInk"
+	_grid.z_index = 0
+	_grid.z_as_relative = true
+	_grid.host = self
+	add_child(_grid)
 
 
 func _diamond_points() -> PackedVector2Array:
