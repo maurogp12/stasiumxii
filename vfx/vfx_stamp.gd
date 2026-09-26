@@ -1,8 +1,9 @@
 extends "res://vfx/vfx_pooled.gd"
 
-## One-shot sprite overlay. Punch-v2 strips play left to right.
-## Ambush slash, hit flash, footstep dust, and Mark Shot impact are
-## variable-width frames on a shared row. Detonate stays one hero plate.
+## One-shot sprite overlay. Strips play left to right.
+## Punch v3: Ambush slash, hit flash, and the damage float. The hit flash
+## keeps the authored cyan/gold. Footstep dust and Mark Shot impact stay
+## punch v2. Detonate stays one hero plate.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
 ## Mark Shot cast is four equal cells: spark, draw, peak reticle, release
@@ -16,6 +17,7 @@ const SHEETS := {
 	"mark_shot_cast": "res://art/vfx/scenario/mark_shot_cast.png",
 	"detonate_burst": "res://art/vfx/scenario/detonate_burst.png",
 	"hit_flash": "res://art/vfx/scenario/hit_flash.png",
+	"damage_float": "res://art/vfx/scenario/damage_float.png",
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
 }
 
@@ -43,22 +45,29 @@ const INK_OFFSET := {
 ## linear filter off the neighboring cell.
 const STRIPS := {
 	"ambush_slash": [
-		Rect2(33, 227, 117, 228),
-		Rect2(179, 227, 137, 228),
-		Rect2(326, 227, 162, 228),
-		Rect2(512, 227, 203, 228),
-		Rect2(739, 227, 182, 228),
-		Rect2(948, 227, 146, 228),
-		Rect2(1127, 227, 129, 228),
+		Rect2(31, 225, 166, 250),
+		Rect2(216, 225, 179, 250),
+		Rect2(395, 225, 213, 250),
+		Rect2(608, 225, 151, 250),
+		Rect2(777, 225, 171, 250),
+		Rect2(948, 225, 161, 250),
+		Rect2(1109, 225, 146, 250),
 	],
 	"hit_flash": [
-		Rect2(38, 175, 78, 341),
-		Rect2(159, 175, 135, 341),
-		Rect2(323, 175, 191, 341),
-		Rect2(522, 175, 252, 341),
-		Rect2(794, 175, 140, 341),
-		Rect2(975, 175, 121, 341),
-		Rect2(1146, 175, 99, 341),
+		Rect2(76, 232, 64, 222),
+		Rect2(215, 232, 193, 222),
+		Rect2(428, 232, 209, 222),
+		Rect2(661, 232, 204, 222),
+		Rect2(891, 232, 186, 222),
+		Rect2(1135, 232, 84, 222),
+	],
+	"damage_float": [
+		Rect2(22, 177, 160, 312),
+		Rect2(203, 177, 166, 312),
+		Rect2(392, 177, 188, 312),
+		Rect2(583, 177, 268, 312),
+		Rect2(858, 177, 237, 312),
+		Rect2(1104, 177, 144, 312),
 	],
 	"footstep_dust": [
 		Rect2(37, 283, 101, 145),

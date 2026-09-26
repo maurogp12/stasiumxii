@@ -276,6 +276,7 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		out.append(spark)
 		var number_delay := float(spark.get("delay", 0.0))
 		out.append(_hit_flash(target_seat, cell, number_delay))
+		out.append(_damage_float(target_seat, cell, number_delay))
 		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
@@ -342,6 +343,7 @@ static func _hold_line_recipes(event: Dictionary, connected: bool) -> Array:
 			continue
 		out.append({"id": "spark", "block": 0.0, "seat": seat, "cell": cell, "tint": VfxPalette.BASTION, "chest": true})
 		out.append(_hit_flash(seat, cell, 0.0))
+		out.append(_damage_float(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(damage), "damage", 0.0, _back_scale(row), _back_text(row, str(damage)), _back_tint(row)))
 		if not _back_tag(row).is_empty():
 			out.append(_chevron(seat, cell, event))
@@ -455,6 +457,7 @@ static func _stagger_recipes(event: Dictionary) -> Array:
 		hp = absi(int(event.get("hp_delta", 0)))
 	if hp > 0:
 		out.append(_hit_flash(seat, cell, VfxBudget.STAGGER_DELAY))
+		out.append(_damage_float(seat, cell, VfxBudget.STAGGER_DELAY))
 		out.append(_number(seat, cell, "-%d" % hp, "stagger", VfxBudget.STAGGER_DELAY, 1.0, "", Color(0, 0, 0, 0)))
 	var mp := int(event.get("stagger_mp", 0))
 	if mp <= 0:
@@ -491,7 +494,9 @@ static func _burn_tick_recipes(event: Dictionary) -> Array:
 		"flare": true,
 	}]
 	if amount > 0:
-		out.append(_hit_flash(seat, cell_of(event.get("pos", Vector2i.ZERO)), 0.0))
+		var burn_cell := cell_of(event.get("pos", Vector2i.ZERO))
+		out.append(_hit_flash(seat, burn_cell, 0.0))
+		out.append(_damage_float(seat, burn_cell, 0.0))
 		out.append(_number(seat, Vector2i.ZERO, "-%d" % amount, "burn", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	return out
 
@@ -534,6 +539,7 @@ static func _intercept_recipes(event: Dictionary) -> Array:
 	var out: Array = []
 	if amount > 0:
 		out.append(_hit_flash(seat, cell, 0.0))
+		out.append(_damage_float(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(amount), "damage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("for_cell"):
 		out.append({
@@ -974,6 +980,15 @@ static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictio
 
 static func _hit_flash(seat: int, cell: Vector2i, delay: float) -> Dictionary:
 	return _stamp("hit_flash", seat, cell, delay, VfxBudget.STAMP_HIT_PX, VfxBudget.STAMP_HIT_LIFE, 0.92)
+
+
+## Accent on the rising number. Same contact instant as the flash and the spark.
+## Head anchor, so it does not stack a second chest plate on the flash.
+static func _damage_float(seat: int, cell: Vector2i, delay: float) -> Dictionary:
+	var spec := _stamp("damage_float", seat, cell, delay, VfxBudget.STAMP_FLOAT_PX, VfxBudget.STAMP_FLOAT_LIFE, 0.92)
+	spec["chest"] = false
+	spec["head"] = true
+	return spec
 
 
 static func _stamp(sheet: String, seat: int, cell: Vector2i, delay: float, px: float, life: float, alpha: float = 1.0) -> Dictionary:

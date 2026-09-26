@@ -290,12 +290,21 @@ func play_footstep(at: Vector2, cell: Vector2i, intensity: float = 0.52) -> void
 	})
 
 
+## Hand, head (the damage float), or chest. A preset pos wins.
+func _stamp_anchor(spec: Dictionary, seat: int, cell: Vector2i, hand: bool) -> Vector2:
+	if hand:
+		return _hand_pos(seat, cell)
+	if bool(spec.get("head", false)):
+		return _body_pos(seat, cell, false) + VfxBudget.HEAD_OFFSET
+	return _body_pos(seat, cell, bool(spec.get("chest", true)))
+
+
 func _play_stamp(spec: Dictionary) -> void:
 	var node := _acquire("stamp")
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var seat := int(spec.get("seat", -1))
 	var hand := bool(spec.get("hand", false))
-	var at: Vector2 = spec["pos"] if spec.has("pos") else (_hand_pos(seat, cell) if hand else _body_pos(seat, cell, bool(spec.get("chest", true))))
+	var at: Vector2 = spec["pos"] if spec.has("pos") else _stamp_anchor(spec, seat, cell, hand)
 	var payload := {
 		"sheet": str(spec.get("sheet", "hit_flash")),
 		"pos": at,

@@ -332,6 +332,7 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	eq(departure.size(), 1, "the live collapse plays one departure puff")
 	eq(departure[0]["cell"], Vector2i(2, 4), "the live collapse puff is the Shade or cast origin")
 	eq(_sheet(departure, "ambush_slash").is_empty(), true, "the slash waits until the back-tile plant")
+	eq(_sheet(departure, "damage_float").is_empty(), true, "the damage float waits until the back-tile plant")
 	eq(ROUTER.ambush_collapse_specs({"type": "miss", "spell": "ambush", "seat": 0}).is_empty(), true, "an Ambush miss does not puff a departure")
 	var contact: Array = ROUTER.recipes_for([{
 		"type": "hit",
@@ -351,6 +352,8 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	}])
 	eq(_has(contact, "puff"), false, "the slash batch does not replay the collapse puff")
 	eq(_sheet(contact, "ambush_slash").is_empty(), false, "the slash batch still stamps the strike")
+	eq(_sheet(contact, "damage_float")["cell"], Vector2i(4, 4), "the contact float sits on the struck body")
+	eq(is_equal_approx(float(_sheet(contact, "damage_float")["delay"]), preload("res://units/view_motion.gd").ambush_contact_sec()), true, "the damage float waits for the slash contact")
 	eq(_first(ambush, "number")["cell"], Vector2i(4, 4), "facing damage sits on the enemy")
 	eq(_first(ambush, "number")["text"], "BACKSTAB 30", "facing damage keeps the existing backstab resolution")
 	eq(float(_first(ambush, "number").get("delay", 0.0)) > 0.0, true, "facing damage follows the slash")
@@ -603,6 +606,12 @@ func _test_mark_cast_hands() -> void:
 	if stamp != null:
 		var hands: Vector2 = caster.position + body.position + BUDGET.HAND_OFFSET
 		eq(stamp.position, hands, "Mark Shot windup starts on the bow, not the feet")
+		var floater := _active_sheet(director, "damage_float")
+		truthy(floater != null, "contact resolve plays the damage float")
+		if floater != null:
+			var head: Vector2 = board.call("_cell_to_local", east) + BUDGET.HEAD_OFFSET
+			eq(floater.position, head, "the damage float sits on the target head")
+			eq(floater.position == hands, false, "the damage float is not the bow windup")
 		eq(stamp.position.y < caster.position.y + BUDGET.CHEST_OFFSET.y, true, "the bow sits above the chest anchor")
 		eq(stamp.z_index, BoardVisualSort.unit_z_index(from_cell, 1.0) + 2, "the bow windup draws in the air")
 		var sprite := stamp.get("_sprite") as Sprite2D
@@ -784,6 +793,14 @@ func _test_stamp_playback() -> void:
 	var dust_first := flash.region_rect
 	stamp._sample(0.6)
 	eq(flash.region_rect.position.x > dust_first.position.x, true, "footstep dust advances left to right")
+	stamp.play({"sheet": "damage_float", "px": 52.0, "life": 0.28, "pos": Vector2.ZERO})
+	eq(flash.region_enabled, true, "damage float plays the strip")
+	var float_span := stamp_script.span_for("damage_float")
+	stamp._sample(0.0)
+	eq(is_equal_approx(flash.scale.x * float_span, 52.0), true, "damage float scales the largest frame")
+	var float_first := flash.region_rect
+	stamp._sample(0.6)
+	eq(flash.region_rect.position.x > float_first.position.x, true, "damage float advances left to right")
 	stamp.play({"sheet": "ambush_slash", "px": 100.0, "life": 0.24, "pos": Vector2.ZERO})
 	eq(flash.region_enabled, true, "ambush slash plays the strip")
 	eq(flash.texture, stamp_script.texture_for("ambush_slash"), "ambush slash keeps the full plate")
@@ -1143,7 +1160,7 @@ func _catalogue() -> Array:
 
 func _test_scenario_overlays() -> void:
 	var stamp_script := preload("res://vfx/vfx_stamp.gd")
-	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "footstep_dust"]:
+	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "damage_float", "footstep_dust"]:
 		truthy(FileAccess.file_exists("res://art/vfx/scenario/%s.png" % sheet), "scenario plate %s is on disk" % sheet)
 		var tex: Texture2D = stamp_script.texture_for(sheet)
 		truthy(tex != null, "%s imports as a texture" % sheet)
@@ -1160,13 +1177,14 @@ func _test_scenario_overlays() -> void:
 			if opaque:
 				break
 		truthy(opaque, "%s has a readable core" % sheet)
-	eq(stamp_script.frame_count("hit_flash"), 7, "hit flash is a 7-frame strip")
+	eq(stamp_script.frame_count("hit_flash"), 6, "hit flash is a 6-frame punch-v3 strip")
+	eq(stamp_script.frame_count("damage_float"), 6, "damage float is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("footstep_dust"), 8, "footstep dust is an 8-frame plant strip")
-	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame strip")
+	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame punch-v3 strip")
 	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
 	eq(stamp_script.frame_count("mark_shot_cast"), 4, "Mark Shot cast is a 4-frame bow strip")
 	eq(stamp_script.frame_count("detonate_burst"), 1, "Detonate burst is one hero frame")
-	for sheet in ["ambush_slash", "hit_flash", "footstep_dust", "mark_shot_impact", "mark_shot_cast"]:
+	for sheet in ["ambush_slash", "hit_flash", "damage_float", "footstep_dust", "mark_shot_impact", "mark_shot_cast"]:
 		var laid: Texture2D = stamp_script.texture_for(sheet)
 		var prev_x := -1.0
 		for i in stamp_script.frame_count(sheet):
@@ -1182,11 +1200,28 @@ func _test_scenario_overlays() -> void:
 	eq(_sheet(strike, "hit_flash")["cell"], Vector2i(2, 1), "damage apply flashes the target")
 	eq(float(_sheet(strike, "hit_flash")["px"]), BUDGET.STAMP_HIT_PX, "the hit flash stays body-sized")
 	eq(float(_sheet(strike, "hit_flash")["block"]), 0.0, "a hit flash does not lock input")
+	var contact_delay := float(_sheet(strike, "hit_flash")["delay"])
+	eq(is_equal_approx(contact_delay, float(_first(strike, "spark").get("delay", -1.0))), true, "the compact burst lands with the flash")
+	eq(is_equal_approx(contact_delay, float(_first_kind(strike, "damage").get("delay", -1.0))), true, "the damage number lands with the flash")
+	eq(is_equal_approx(contact_delay, float(_sheet(strike, "damage_float")["delay"])), true, "the damage float lands with the flash")
+	eq(_sheet(strike, "damage_float")["cell"], Vector2i(2, 1), "the damage float sits on the target tile")
+	eq(bool(_sheet(strike, "damage_float").get("head", false)), true, "the damage float uses the head anchor")
+	eq(bool(_sheet(strike, "damage_float").get("chest", true)), false, "the damage float is not a second chest flash")
+	eq(float(_sheet(strike, "damage_float")["px"]), BUDGET.STAMP_FLOAT_PX, "the damage float stays compact")
+	eq(float(_sheet(strike, "damage_float")["block"]), 0.0, "the damage float does not lock input")
+	eq(is_equal_approx(contact_delay, preload("res://units/view_motion.gd").damage_resolve_sec(SpellKits.STRIKE)), true, "the flinch starts on that same contact")
+	var flinch_sec := preload("res://units/view_motion.gd").hit_sec()
+	eq(flinch_sec >= 0.20 and flinch_sec <= 0.40, true, "the flinch finishes inside 0.2-0.4s")
+	eq(BUDGET.STAMP_HIT_LIFE >= 0.20 and BUDGET.STAMP_HIT_LIFE <= 0.40, true, "the hit flash finishes inside 0.2-0.4s")
+	eq(BUDGET.STAMP_FLOAT_LIFE >= 0.20 and BUDGET.STAMP_FLOAT_LIFE <= 0.40, true, "the damage float finishes inside 0.2-0.4s")
+	eq(BUDGET.SPARK_LIFE >= 0.20 and BUDGET.SPARK_LIFE <= 0.40, true, "the compact burst finishes inside 0.2-0.4s")
+	eq(BUDGET.STAMP_FLOAT_PX < BUDGET.STAMP_HIT_PX, true, "the float stays smaller than the chest flash")
 	var heal: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "mend", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(1, 1), "to": Vector2i(2, 1), "healed": 16, "damage": 0,
 	}])
 	eq(_sheet(heal, "hit_flash").is_empty(), true, "a heal does not play the damage flash")
+	eq(_sheet(heal, "damage_float").is_empty(), true, "a heal does not play the damage float")
 	var ambush: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "ambush", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(1, 1), "from": Vector2i(4, 4), "to": Vector2i(5, 4),
@@ -1257,11 +1292,13 @@ func _test_scenario_overlays() -> void:
 	eq(bool(_sheet(marked, "mark_shot_impact").get("chest", true)), false, "Mark Shot impact is not a chest overlay")
 	eq(is_equal_approx(float(_sheet(marked, "mark_shot_impact")["delay"]), impact_delay), true, "Mark Shot impact waits for the bolt")
 	eq(is_equal_approx(float(_sheet(marked, "hit_flash")["delay"]), impact_delay), true, "the hit flash lands with the bolt")
+	eq(is_equal_approx(float(_sheet(marked, "damage_float")["delay"]), impact_delay), true, "the damage float lands with the bolt")
 	var mark_miss: Array = ROUTER.recipes_for([{
 		"type": "miss", "spell": "mark_shot", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0,
 	}])
 	eq(_sheet(mark_miss, "mark_shot_impact").is_empty(), true, "a Mark Shot miss has no impact")
+	eq(_sheet(mark_miss, "damage_float").is_empty(), true, "a Mark Shot miss has no damage float")
 	eq(_sheet(mark_miss, "mark_shot_cast")["cell"], Vector2i(2, 3), "a Mark Shot miss still winds the bow")
 	eq(bool(_sheet(mark_miss, "mark_shot_cast").get("hand", false)), true, "a Mark Shot miss still lifts the windup to the bow")
 	eq(is_equal_approx(float(_first(mark_miss, "projectile").get("delay", 0.0)), windup), true, "a Mark Shot miss still waits for the release flash")

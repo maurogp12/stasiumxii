@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Combat contact punch v3
+
+Presentation only. No APK.
+
+Hit flash, the damage float, and Ambush slash are the transparent punch-v3 strips under `art/vfx/scenario/`. Footstep dust, Mark Shot impact, Detonate, and the Mark Shot bow windup stay on their current plates. Ambush still plants on the back tile, then slashes. On contact the flash, the compact spark, the float, and the flinch share the resolve, and each one finishes inside 0.2–0.4s. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
+
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
 Sideload cut of the `mobile` tip for Luca. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. Those numbers were already on the tip from the Windmere stamp. The note that used to sit here recorded an unpublished APK whose bytes predated the Slagcrown lava punch (#167). This entry replaces that note. The APK below is a fresh export of tip `00f6a9a` (#170). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
