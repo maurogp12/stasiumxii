@@ -1,9 +1,13 @@
 class_name KoliseoArt
 extends RefCounted
 
-## Isometric diamond art from the Crosshaven tileset (64×32, taller elev/props).
-## Drawn on the existing board diamonds so cell_to_local stays ((x-y)*32, (x+y)*16).
+## Isometric diamonds sliced from the original tileset sheets
+## (res://art/tilesets/original/). Flat terrain is a full 64×32 diamond.
+## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
+## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
+## Windmere paints the ice sheet. Stormspire paints the electric sheet.
+## See res://art/tilesets/original/THEMES.md.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
 const _Maps := preload("res://backend/cell_tag_map.gd")
@@ -40,14 +44,8 @@ const _PROPS := {
 
 static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
-## Dress v1 paints the diamond in the top-left half. content_bottom + 1.
-## 64×32 → 16, 64×40 → 23, 64×48 → 29. Mobile export textures often have no
-## CPU image, so a pixel measure cannot see this and must not be required.
-const _DRESS_SRC_H := {
-	32: 16,
-	40: 23,
-	48: 29,
-}
+## Scenario sheets are sliced. Nothing in this list is still a hook.
+const PENDING_THEMES: Array[String] = []
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -76,12 +74,10 @@ static func terrain_texture(terrain: String, elevation: int, dress: String = "")
 	return null
 
 
-## Painted dress v1 stores the terrain diamond in the top-left half of the PNG.
-## The returned rects scale that half onto the 64×32 board diamond. Extra source
-## rows are the cliff and stay below the diamond. A full-bleed sheet (opaque
-## pixels on the right half) returns empty so the caller draws it centered.
-## When the CPU image is missing, known dress sizes still return the half-diamond.
-## Centering those sheets paints only the top-left quarter and reads as a void.
+## Full isometric sheet: the texture's top is the north tip of the board diamond.
+## Extra rows are cliff face and hang below. A left-half-only sheet (legacy
+## dress) still scales that half onto the diamond. Mobile exports often have
+## no CPU image, so a 64-wide sheet uses the same top anchor from its size.
 static func terrain_placement(tex: Texture2D) -> Dictionary:
 	if tex == null:
 		return {}
@@ -97,17 +93,16 @@ static func terrain_placement(tex: Texture2D) -> Dictionary:
 	return placed
 
 
-## Half-diamond rects for a dress sheet of this pixel size. Empty when the size
-## is not a shipped dress sheet. Used when Texture.get_image() is null.
+## Top-anchored rect for a 64-wide isometric sheet. Empty for any other width.
+## Used when Texture.get_image() is null, and for a measured full-bleed sheet.
 static func dress_placement_for_size(size: Vector2) -> Dictionary:
 	var width := int(round(size.x))
 	var height := int(round(size.y))
-	var src_h := int(_DRESS_SRC_H.get(height, 0))
-	if width != 64 or src_h <= 0:
+	if width != 64 or height < 32:
 		return {}
 	return {
-		"source": Rect2(0, 0, 32, src_h),
-		"dest": Rect2(-32.0, -16.0, 64.0, float(src_h) * 2.0),
+		"source": Rect2(0, 0, width, height),
+		"dest": Rect2(-32.0, -16.0, float(width), float(height)),
 	}
 
 
@@ -138,8 +133,10 @@ static func _measure_half_diamond(tex: Texture2D) -> Dictionary:
 			if image.get_pixel(x, y).a > 0.03:
 				right_used = true
 				break
-	if right_used or content_bottom < 0:
+	if content_bottom < 0:
 		return {}
+	if right_used:
+		return dress_placement_for_size(Vector2(width, height))
 	var src_h := content_bottom + 1
 	return {
 		"source": Rect2(0, 0, half, src_h),
@@ -147,7 +144,52 @@ static func _measure_half_diamond(tex: Texture2D) -> Dictionary:
 	}
 
 
-static func prop_texture(prop_name: String) -> Texture2D:
+## Primary terrain sheet, or a `name_vN.png` sibling chosen from the cell.
+## The primary file is what `terrain_texture` returns. Neighbors differ when
+## the sheet shipped more than one slice of that terrain.
+static func terrain_texture_at(terrain: String, elevation: int, dress: String, cell: Vector2i) -> Texture2D:
+	var primary := terrain_texture(terrain, elevation, dress)
+	if primary == null:
+		return null
+	var file := primary.resource_path.get_file()
+	if file == "":
+		return primary
+	var siblings := _variant_files(file)
+	if siblings.size() <= 1:
+		return primary
+	var pick := posmod(int(cell.x) * 13 + int(cell.y) * 29 + elevation * 7, siblings.size())
+	var chosen := _load(siblings[pick])
+	return chosen if chosen != null else primary
+
+
+static func _variant_files(file_name: String) -> Array[String]:
+	var stem := file_name.trim_suffix(".png")
+	var base := stem
+	var mark := stem.rfind("_v")
+	if mark != -1 and stem.substr(mark + 2).is_valid_int():
+		base = stem.substr(0, mark)
+	var names: Array[String] = []
+	var primary := base + ".png"
+	if ResourceLoader.exists(ROOT + primary):
+		names.append(primary)
+	var i := 1
+	while i < 8:
+		var extra := "%s_v%d.png" % [base, i]
+		if not ResourceLoader.exists(ROOT + extra):
+			break
+		names.append(extra)
+		i += 1
+	if names.is_empty():
+		names.append(file_name)
+	return names
+
+
+## Dress-prefixed props win (`wind_prop_spark.png`), then the shared sheet.
+static func prop_texture(prop_name: String, dress: String = "") -> Texture2D:
+	if dress != "":
+		var themed := _load("%sprop_%s.png" % [dress, prop_name])
+		if themed != null:
+			return themed
 	var file := str(_PROPS.get(prop_name, ""))
 	if file == "":
 		return null

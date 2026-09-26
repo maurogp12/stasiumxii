@@ -2,6 +2,22 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Windmere ice and Stormspire electric sheets
+
+The scenario sheets are sliced onto the same 64×32 grid as the other packs. Windmere paints snow, bare ice, ice water, and ice cliffs from `art/tilesets/original/pending/ice/stasium_tileset_ice.png`. Stormspire paints dark stone, purple energy tiles, and electric cliffs from `pending/electric/stasium_tileset_electric.png`. Shared prop names use `wind_prop_*` and `storm_prop_*` so Crosshaven, Brinewake, and Slagcrown stay on the original sheet.
+
+Phone tap diamonds, zoom, planted walks, and Scenario VFX are unchanged. Tags, geometry, and Locked kit numbers are unchanged. Ambush stays 4 AP / 0 MP / 22 FLEX.
+
+Headless Godot 4.7.2, 0 failed: Koliseo maps 314, combat 4647, elevation chrome 189.
+
+| Arena | Pack | Atlas |
+| --- | --- | --- |
+| Crosshaven | grassland | `ground.png` and the original-sheet cliffs |
+| Brinewake | coast | `brine_*` |
+| Slagcrown | lava | `slag_*` |
+| Windmere | ice | `wind_*` |
+| Stormspire | electric | `storm_*` |
+
 ## 2026-09-26 — Invisible Ambush strikes from the back tile
 
 Luca's 0.1.20 clip. Shade-origin Ambush already blinks to the back tile and hits. Fade self-origin was the miss: the body could still be on the cast cell while the hit was presented, and a distant Invisible Gloam must not borrow an armed Shade to deal that hit. No APK cut. Locked kit numbers unchanged. Ambush without a Shade and without Invisible stays parked.
@@ -38,6 +54,20 @@ The body now fades on the cast cell, snaps, and holds on the back tile before th
 - Stasis stays on `mobile`.
 
 Headless Godot 4.7.2, 0 failed: combat 4608, motion 1891, VFX 472.
+
+## 2026-09-26 — Original isometric tileset on the Koliseo boards
+
+The five Locked arenas paint slices of `art/tilesets/original/original-tileset-b.jpg`. Phone tap diamonds, zoom, and planted walks are unchanged. Tags, geometry, and combat numbers are unchanged.
+
+| Arena | Pack | Atlas |
+| --- | --- | --- |
+| Crosshaven | grassland | `ground.png`, `mud.png`, `water.png`, grass cliffs |
+| Brinewake | coast | `brine_*` cobble, deep water, stone cliffs |
+| Slagcrown | lava | `slag_*` cracked earth, `slag_lava.png`, dark rock |
+| Windmere | ice | `wind_*` from `pending/ice/stasium_tileset_ice.png` |
+| Stormspire | electric | `storm_*` from `pending/electric/stasium_tileset_electric.png` |
+
+The first slice of this pass left Windmere and Stormspire on pale stone and dark rock. The follow-up above promotes the scenario sheets. See `art/tilesets/original/THEMES.md`.
 
 ## 2026-09-26 — Phone combat framing and planted walks
 
