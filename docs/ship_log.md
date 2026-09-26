@@ -6,11 +6,11 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 Luca approved Wakfu walk sheets. The files are not in the tree yet. The drop is a replace of the existing walk PNGs, 864×160 RGBA, six 144×160 cells. `*_frames.tres` already slices those paths. No `*_gen.png`. No second folder. Attack, cast, hit, and death stay.
 
-Looks locked for that drop: Kestrel (approved Wakfu), Ironjaw A2 (fierce helm, dual axes, crimson plate), Gloam proposal B (amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim — not the white-eyes sheet), Mender proposal D2 (cream/gold hooded robe, green lantern staff, face clearly visible in a more open hood), Bastion 2C (charcoal and gold, spiked mace, tower shield). Paths are listed at the top of `art/export_2x/characters/README.md`.
+Looks locked for that drop: Kestrel (approved Wakfu), Ironjaw A2 (fierce helm, dual axes, crimson plate), Gloam proposal B (amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim — not the white-eyes sheet), Mender proposal D2 (cream/gold hooded robe, green lantern staff, face clearly visible in a more open hood), Bastion proposal 2C (charcoal-grey/gold armor, spiked mace, oversized tower shield). Paths are listed at the top of `art/export_2x/characters/README.md`.
 
 The stride code stays: face the segment, sample the cycle from the foot, about 0.30s per tile, plant on arrival, ground marks on the Foot child.
 
-Headless Godot 4.7.2, 0 failed: motion 2025.
+Headless Godot 4.7.2, 0 failed: motion 2028.
 
 ## 2026-09-26 — Walk stride on the existing strips
 
