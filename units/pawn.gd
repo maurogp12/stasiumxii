@@ -500,7 +500,7 @@ func arm_driven_walk() -> void:
 	_hold_driven_pose()
 
 
-## Foot-down cell for the facing walk. Frame 0 on the v4 sheets. Another
+## Foot-down cell for the facing walk. Frame 0 on the v5 sheets. Another
 ## index only when that cell is not the planted row. Tile time stays put.
 func walk_contact_frame() -> int:
 	if class_id == "":

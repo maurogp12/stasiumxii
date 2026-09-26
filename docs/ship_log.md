@@ -4,7 +4,7 @@ Durable record of feel passes on the mobile track. Kit numbers in here are remin
 
 ## 2026-09-26 — Combat VFX punch v3
 
-Presentation only. No APK. Post-0.1.26.
+Presentation only. No APK. Post-0.1.26. Walk sheets on this tip are wakfu-ship-v5 (#177). This pack does not replace them.
 
 The transparent punch-v3 pack lives under `art/vfx/scenario/`:
 
@@ -18,7 +18,21 @@ The transparent punch-v3 pack lives under `art/vfx/scenario/`:
 | Footstep dust | `footstep_dust.png` |
 | Mark Shot bow | `mark_shot_cast.png` (same bytes as the attached bow; #175 timing stays 70+80+80+70) |
 
-Mark Shot impact stays the punch-v2 floor strip. The bow windup stays 70+80+80+70 (bolt on frame 4); the draw is not stretched to the contact. Ambush still plants on the back tile, then slashes, then the same contact stack. Standing melee plays the windup on the caster and it ends as the contact starts. Dust puffs only on a facing change and the final plant, at the instant hop Y returns to 0 — not on every tile, not at takeoff, and not mid-air. On contact the flash, the compact spark, the float, and the flinch share the resolve on the target tile, and each one finishes inside 0.2–0.4s. A miss does not flinch. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
+Mark Shot impact stays the punch-v2 floor strip. The bow windup stays 70+80+80+70 (bolt on frame 4); the draw is not stretched to the contact. Ambush still plants on the back tile, then slashes, then the same contact stack. Standing melee plays the windup on the caster and it ends as the contact starts. Dust puffs only on a facing change and the final plant, at the instant hop Y returns to 0 — not on every tile, not at takeoff, and not mid-air. On contact the flash, the compact spark, the float, and the flinch share the resolve on the target tile, and each one finishes inside 0.2–0.4s. A miss does not flinch. The hit flash keeps its cyan and gold. Locked kit numbers and map geometry are unchanged.
+
+## 2026-09-26 — Wakfu walk strips v5
+
+Presentation only. The next APK after 0.1.26 plays wakfu-ship-v5 walks. This note does not cut an APK and does not bump `version/code`.
+
+The twenty strips replace the v4 sheets in place. Same names, same 864×160 layout, six 144×160 cells, same `.import` files, same `*_frames.tres` atlas slices (`x = 0, 144, 288, 432, 576, 720`). Device playback reads the same bytes from `art/export_2x/walk_src/*.pngbin`.
+
+- One stride per tile, about 0.30s. The pawn faces into each segment. Arrival plants frame 0.
+- Feet sit on about y=148–150. Ironjaw east and west put a 2px sole tip at y=148. That tip stays frame 0. A real lift still retargets.
+- Godot hop stays about 3px: Bastion and Ironjaw 2.5, Mender 3, Kestrel and Gloam 3.5, none over 4. The strip's stride is the pose. The hop is the only crest, so it does not stack a second bounce on a lifted foot.
+- Dust still puffs only on a facing change and the final plant. Straight tiles stay quiet.
+- Locked identities stay Gloam B, Mender D2, Bastion 2C, Ironjaw Berserker A + helm A2, and Kestrel F+A.
+
+Locked kit numbers, map geometry, Soft Lock Invisible/Ambush, and the combat camera are unchanged.
 
 ## 2026-09-26 — Mobile debug APK 0.1.26
 
