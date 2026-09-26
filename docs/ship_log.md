@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — In-app APK update
+
+The mobile hub has an **Actualizar** control. It checks public GitHub releases for the newest `mobile-*-debug` APK (`stasiumxii-mobile-debug.apk`), compares Android `versionCode` / `versionName` with the running build, and hands a newer file to the system installer. Same package `com.maurogp12.stasiumxii.mobile` and the pinned debug cert. No token.
+
+The first install of the APK that contains this control is still manual. On Android 8+, the first **Actualizar** opens **Install unknown apps** for STASIUM XII. After that switch is on, the download continues and the installer does an in-place update. Later cuts are one tap. Offline, rate limit, and a missing release show a short hub line.
+
+Headless: `tests/run_mobile_hub_tests.gd` (186 passed) and `tests/run_apk_update_tests.gd` (84 passed). The install Intent is not run headless.
+
 ## 2026-09-26 — Mobile debug APK 0.1.19
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.19-mobile`, `version/code` `20`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

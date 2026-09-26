@@ -97,6 +97,17 @@ func _test_hub_doors() -> void:
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "stormspire", "Stormspire tile signal opens that stasis")
 	hub._doors[0].pressed.emit()
 	eq(str(load("res://scenes/mobile_hub.gd").pending_biome_id), "", "Koliseo banner signal clears the stasis biome")
+	var update_button := hub.find_child("Actualizar", true, false) as Button
+	truthy(update_button != null, "hub has an Actualizar control")
+	eq(update_button.text, "Actualizar", "update control reads Actualizar")
+	eq(update_button.custom_minimum_size.y >= 48, true, "Actualizar hit target is at least 48px")
+	eq(hub.door_count(), 6, "Actualizar is not an extra Koliseo or Stasis door")
+	var status := hub.find_child("UpdateStatus", true, false) as Label
+	truthy(status != null, "hub has an update status line")
+	hub._set_update_status("Al día · 0.1.19-mobile")
+	eq(status.text, "Al día · 0.1.19-mobile", "status line shows the hub message")
+	truthy(hub.get_node_or_null("ApkUpdate") != null, "hub owns the update client")
+	eq(update_button.disabled, false, "Actualizar starts enabled")
 	hub.free()
 
 
