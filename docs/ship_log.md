@@ -2,6 +2,29 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.20
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.20-mobile`, `version/code` `21`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.19-debug`, so a phone on that cert upgrades in place with `adb install -r`.
+
+### Player-visible since 0.1.19
+
+- Hub **Actualizar** (#143). It checks public GitHub releases for the newest `mobile-*-debug` APK (`stasiumxii-mobile-debug.apk`), compares Android `versionCode` / `versionName` with the running build, and hands a newer file to the system installer. Same package and the pinned debug cert. No token.
+- The first **Actualizar** on Android 8+ opens **Install unknown apps** for STASIUM XII. After that switch is on, the download continues and the installer does an in-place update. Later cuts are one tap.
+- Still includes the 0.1.19 combat and graphics stack: void pathing, Ambush snap, easier target taps and the aim ring, walks about 0.30s per tile, richer paint on the same Koliseo and Stasis layouts, navy and gold combat HUD, and the turn portrait strip.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- No new cosmetics.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 186, APK update 84, stasis 361, Koliseo maps 284, combat 4574, motion 1877, VFX 459, touch adapter 441, sprite 234.
+
+Tag `mobile-0.1.20-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.20-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — In-app APK update
 
 The mobile hub has an **Actualizar** control. It checks public GitHub releases for the newest `mobile-*-debug` APK (`stasiumxii-mobile-debug.apk`), compares Android `versionCode` / `versionName` with the running build, and hands a newer file to the system installer. Same package `com.maurogp12.stasiumxii.mobile` and the pinned debug cert. No token.
