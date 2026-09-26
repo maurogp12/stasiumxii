@@ -332,6 +332,11 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	}])
 	eq(_has(ambush_miss, "slide"), false, "an Ambush miss does not teleport")
 	eq(_first(ambush_miss, "number")["text"], "MISS", "an Ambush miss still shows MISS")
+	eq(_first(ambush_miss, "projectile")["from"], Vector2i(2, 4), "an Ambush miss whiff starts at the Shade")
+	eq(_first(ambush_miss, "projectile")["from"] == Vector2i(1, 1), false, "an Ambush miss does not streak from Gloam's body")
+	eq(_first(ambush_miss, "projectile")["to"], Vector2i(4, 3), "an Ambush miss whiff points at the enemy")
+	eq(float(_first(ambush_miss, "projectile").get("overshoot", 1.0)), 0.0, "an Ambush miss does not overshoot into a dash")
+	eq(float(_first(ambush_miss, "projectile").get("arc", 1.0)), 0.0, "an Ambush miss whiff is not an arcing body path")
 	var intercept: Array = ROUTER.recipes_for([{
 		"type": "intercept",
 		"interceptor_seat": 0,

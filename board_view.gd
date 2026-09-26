@@ -24,6 +24,8 @@ extends Node2D
 ## on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
+## A dashed aim line and a predicted float follow the hover. Ambush draws that
+## line from the Shade (Gloam only while Invisible) and only while the cast is legal.
 ## Proposed timers: ~1.0s client-only seat handoff banner. The 30s seat clock is
 ## host-owned (snapshot.turn_time_remaining). Guest hydrates; it does not tick.
 ## Walk hops lock input but do not pause the host clock.
@@ -54,6 +56,7 @@ const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const SHADE_MARKER := preload("res://board/shade_marker.gd")
+const AIM_LINE := preload("res://board/aim_line.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
@@ -77,6 +80,9 @@ var _walk_tween: Tween
 ## Seat whose body is mid hop. Refresh must not snap it to the destination.
 var _hop_seat: int = -1
 var _shade_markers: Dictionary = {}
+var _aim_line: Node2D
+## Last hovered cell while a spell is armed. Ambush ignores it and aims from the Shade.
+var _aim_hover: Variant = null
 var _turn_clock := TurnClock.new()
 var _deploy_selected_seat: int = -1
 var _board_data: Dictionary = {}
@@ -115,6 +121,7 @@ func _ready() -> void:
 	add_child(_vfx)
 	_vfx.bind_board(self)
 	_shade_layer()
+	_ensure_aim_line()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
 	call_deferred("_boot")
@@ -323,6 +330,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if gesture == TOUCH.AIM:
 		var hover := _cell_under_pointer(event)
 		if _in_bounds(hover):
+			_aim_hover = hover
 			_sync_aim_preview(hover)
 			if TOUCH.is_touch_press(event):
 				_touch_on_board = true
@@ -336,6 +344,7 @@ func _unhandled_input(event: InputEvent) -> void:
 					_chrome_aim = true
 				select_tile(hover)
 		else:
+			_aim_hover = null
 			_sync_aim_preview()
 			if TOUCH.is_touch_press(event):
 				_touch_on_board = false
@@ -383,6 +392,7 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 			_chrome_aim = false
 		return
 	_chrome_aim = true
+	_aim_hover = cell
 	_sync_aim_preview(cell)
 	select_tile(cell)
 	if _hud != null:
@@ -1252,6 +1262,7 @@ func _paint_highlights() -> void:
 	var snap: Dictionary = _sim().snapshot()
 	if snap.get("match_over", false) or _busy:
 		_paint_blocked(snap)
+		_sync_aim_line()
 		return
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
@@ -1475,13 +1486,46 @@ func _unit_from_seat(snap: Dictionary, seat: int) -> Dictionary:
 
 func _sync_aim_preview(dest: Variant = null) -> void:
 	if _hud == null:
+		_sync_aim_line()
 		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "" or not SpellKits.rolls(spell_id):
 		_hud.set_aim_preview({})
+		_sync_aim_line()
 		return
 	var snap: Dictionary = _sim().snapshot()
 	_hud.set_aim_preview(_sim().aim_hit_preview(CombatHUD.kit_seat(snap), spell_id, dest))
+	_sync_aim_line()
+
+
+func _ensure_aim_line() -> Node2D:
+	if _aim_line != null and is_instance_valid(_aim_line):
+		return _aim_line
+	_aim_line = AIM_LINE.new()
+	_aim_line.name = "AimLine"
+	add_child(_aim_line)
+	return _aim_line
+
+
+## Shade-origin for Ambush. Caster-origin for every other armed spell.
+## The float is the predicted connect text. It is not a resolved hit.
+func _sync_aim_line() -> void:
+	var line := _ensure_aim_line()
+	if _hud == null or not _sim().has_method("aim_feel"):
+		line.clear_aim()
+		return
+	var snap: Dictionary = _sim().snapshot()
+	var spell_id := _hud.selected_spell()
+	if _busy or _view_locked or spell_id == "" or bool(snap.get("match_over", false)) or CombatHUD.is_deployment_phase(snap):
+		line.clear_aim()
+		return
+	var spec: Dictionary = _sim().aim_feel(CombatHUD.kit_seat(snap), spell_id, _aim_hover)
+	if not bool(spec.get("show", false)):
+		line.clear_aim()
+		return
+	var from_cell: Vector2i = _as_cell(spec.get("from", Vector2i(-1, -1)))
+	var to_cell: Vector2i = _as_cell(spec.get("to", Vector2i(-1, -1)))
+	line.show_world(_cell_to_local(from_cell), _cell_to_local(to_cell), str(spec.get("float_text", "")), str(spec.get("kind", "")))
 
 
 func _tile_at(cell: Vector2i) -> BoardTile:

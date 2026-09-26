@@ -340,14 +340,25 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("to") or event.has("caster_cell"):
+		var whiff_from := caster_cell
+		var whiff_arc := 10.0
+		var whiff_overshoot := 12.0
+		var whiff_duration := 0.22
+		# Ambush miss keeps the body put. The whiff leaves the Shade (or
+		# Gloam, while Invisible), not a dash along the old path.
+		if spell_id == "ambush" and event.has("origin"):
+			whiff_from = cell_of(event.get("origin"))
+			whiff_arc = 0.0
+			whiff_overshoot = 0.0
+			whiff_duration = VfxBudget.BLOCK_BLINK
 		var whiff := {
 			"id": "projectile",
 			"block": 0.0,
-			"from": caster_cell,
+			"from": whiff_from,
 			"to": at,
-			"arc": 10.0,
-			"overshoot": 12.0,
-			"duration": 0.22,
+			"arc": whiff_arc,
+			"overshoot": whiff_overshoot,
+			"duration": whiff_duration,
 			"tint": tint,
 			"width": 3.0,
 		}

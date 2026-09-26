@@ -96,6 +96,7 @@ func _run() -> void:
 	_test_legal_intents_new_spell_gates()
 	_test_kit_class_exclusions()
 	_test_aim_hit_preview()
+	_test_aim_feel_chrome()
 	_test_hud_marks_and_impact_pips()
 	_test_preview_cast()
 	_test_legal_moves_after_advance()
@@ -5040,6 +5041,106 @@ func _test_aim_hit_preview() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("_sync_aim_preview"), "board_view syncs Locked hit-percent aim preview")
 	eq(view.contains("Detonate"), false, "aim chrome does not hardcode Detonate in the view")
+
+
+func _test_aim_feel_chrome() -> void:
+	# Chrome only. Ambush stays 4 AP / 0 MP / 22. The line is the Shade when
+	# that Shade is a legal origin. A fresh Shade, a missing Shade, and Advance
+	# do not draw it. The float is the Phase A connect sample, not a new roll.
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "aim line does not change Ambush AP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "aim line does not change Ambush MP")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "aim line does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "aim line does not change Drop Shade AP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "aim line does not change Drop Shade MP")
+	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "aim line does not change Drop Shade range")
+	var gloam := Vector2i(1, 4)
+	var shade_at := Vector2i(3, 4)
+	var prey := Vector2i(5, 4)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "W",
+	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "aim line fixture plants the Shade")
+	var fresh: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH, prey)
+	eq(bool(fresh.get("show", true)), false, "a fresh Shade does not draw an Ambush line")
+	eq(bool(fresh.get("from_shade", true)), false, "an unarmed Shade is not an aim origin")
+	var shade_hover: Dictionary = _sim.aim_feel(0, SpellKits.DROP_SHADE, shade_at + Vector2i(0, 1))
+	eq(bool(shade_hover.get("show", false)), true, "Drop Shade aims a line at the hovered empty tile")
+	eq(shade_hover.get("from"), gloam, "Drop Shade's line starts on Gloam")
+	eq(str(shade_hover.get("float_text", "x")), "", "Drop Shade has no damage float")
+	_complete_opponent_turn()
+	var armed: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH, gloam)
+	eq(bool(armed.get("show", false)), true, "a legal Shade opens the Ambush aim line")
+	eq(bool(armed.get("from_shade", false)), true, "the Ambush line is shade-centric")
+	eq(armed.get("from"), shade_at, "the Ambush line starts on the Shade, not Gloam")
+	eq(armed.get("to"), prey, "the Ambush line ends on the enemy")
+	eq(armed.get("from") == gloam, false, "hovering Gloam does not retarget the line onto the body")
+	eq(str(armed.get("float_text", "")), "-30", "Backstab aim float is the 22 × 1.35 sample")
+	eq(str(armed.get("kind", "")), "damage", "the Ambush float is damage")
+	var ap_before := int(_sim.snapshot()["units"][0]["ap"])
+	_sim.aim_feel(0, SpellKits.AMBUSH, gloam)
+	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_before, "reading the aim line does not spend AP")
+	eq(_sim.snapshot()["units"][0]["pos"], gloam, "reading the aim line does not move Gloam")
+	eq(_sim.snapshot()["shade_tokens"].size(), 1, "reading the aim line does not consume the Shade")
+	var bare := Vector2i(2, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [bare, prey],
+		"kestrel_facing": "W",
+	})
+	var missing: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH)
+	eq(bool(missing.get("show", true)), false, "Ambush without a Shade draws no line")
+	var invisible_at := Vector2i(4, 4)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [invisible_at, Vector2i(6, 4)],
+		"kestrel_facing": "W",
+		"gloam_invisible": true,
+		"gloam_shade": true,
+	})
+	var self_origin: Dictionary = _sim.aim_feel(0, SpellKits.AMBUSH)
+	eq(bool(self_origin.get("show", false)), true, "Invisible Ambush still draws an aim line")
+	eq(bool(self_origin.get("from_shade", true)), false, "Invisible aim does not leave the Shade")
+	eq(self_origin.get("from"), invisible_at, "Invisible aim starts on Gloam")
+	eq(str(self_origin.get("float_text", "")), "-30", "Invisible backstab aim still samples 30")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(0, 0),
+		"ironjaw_pos": Vector2i(4, 0),
+		"ironjaw_facing": "W",
+	})
+	var shot: Dictionary = _sim.aim_feel(0, SpellKits.MARK_SHOT, Vector2i(4, 0))
+	eq(bool(shot.get("show", false)), true, "Mark Shot draws a line to the hovered enemy")
+	eq(bool(shot.get("from_shade", true)), false, "Mark Shot does not pretend to start on a Shade")
+	eq(shot.get("from"), Vector2i(0, 0), "Mark Shot starts on the caster")
+	eq(shot.get("to"), Vector2i(4, 0), "Mark Shot ends on the hovered enemy")
+	eq(str(shot.get("float_text", "")), "-8", "front Mark Shot float is the Locked sample 8")
+	var wide: Dictionary = _sim.aim_feel(0, SpellKits.MARK_SHOT, Vector2i(12, 12))
+	eq(bool(wide.get("show", true)), false, "a hover outside the range ring draws no line")
+	var advance: Dictionary = _sim.aim_feel(0, SpellKits.ADVANCE, Vector2i(2, 0))
+	eq(bool(advance.get("show", true)), false, "Advance has no targeting line")
+	var aim_script = load("res://board/aim_line.gd")
+	eq(float(aim_script.arc_offset(Vector2.ZERO, Vector2(160, 0))) > 8.0, true, "the aim line arcs above a straight dash")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	var landing_at := tile_src.find("\"landing\":")
+	var next_case := tile_src.find("\"selected\":", landing_at)
+	truthy(landing_at >= 0 and next_case > landing_at and tile_src.substr(landing_at, next_case - landing_at).contains("LEGAL_BLUE"), "the Ambush back tile is legal blue")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("aim_feel"), "the board asks the sim for the aim line")
+	truthy(view.contains("AimLine"), "the board owns an aim line node")
 
 
 func _test_preview_cast() -> void:
