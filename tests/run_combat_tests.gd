@@ -2016,9 +2016,34 @@ func _test_ambush_rules_keeper_lock() -> void:
 		eq(_has_legal_cast_to(0, SpellKits.AMBUSH, foe), true, "Invisible Manhattan %d arms Ambush immediately" % dist)
 		var self_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": foe, "seat": 0})
 		eq(bool(self_hit.get("ok", false)), true, "Invisible Manhattan %d Ambush resolves" % dist)
-		eq(_unit(0)["pos"], foe + Vector2i(1, 0), "Invisible Manhattan %d lands past the foe" % dist)
+		eq(_unit(0)["pos"], foe + Vector2i(1, 0), "Invisible Manhattan %d lands on the facing-rear tile" % dist)
 		eq(int(_unit(0)["shades"]), shades_before, "Invisible origin does not spend Shade at Manhattan %d" % dist)
 		eq(bool(_unit(0)["invisible"]), true, "Invisible Manhattan %d keeps Invisible" % dist)
+
+	# Mauro clip: Shade BEHIND a W-facing foe. Axis-past would land on the front
+	# (3,2). Facing-rear must land on (5,2) — the true back tile.
+	var behind_shade := Vector2i(6, 2)
+	var behind_prey := Vector2i(4, 2)
+	var facing_rear := Vector2i(5, 2)
+	var axis_past_front := Vector2i(3, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 4), behind_prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	eq(_sim.is_cardinal_exact(behind_shade, behind_prey, 2), true, "behind Shade is Manhattan 2 cardinal")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": behind_shade, "seat": 0}).get("ok", false)), true, "Drop Shade plants behind the foe")
+	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, behind_prey), true, "armed behind Shade arms Ambush")
+	var behind_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": behind_prey, "seat": 0})
+	eq(bool(behind_hit.get("ok", false)), true, "behind-Shade Ambush resolves")
+	eq(_unit(0)["pos"], facing_rear, "behind-Shade Ambush lands on the facing-rear tile")
+	eq(_unit(0)["pos"] == axis_past_front, false, "behind-Shade Ambush must not land on the axis-past front tile")
+	eq(bool(behind_hit["events"][0].get("backstab", false)), true, "facing-rear Ambush is a backstab")
 
 	# Fade sets Invisible. That self-origin does not wait for an opponent turn.
 	_sim.reset_match({

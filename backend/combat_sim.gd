@@ -2264,8 +2264,9 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	elif was_stunned:
 		# Stun 1 covers the skipped turn. The effect ends on the next turn start.
 		_emit_expire("stun", unit["pos"], int(unit["seat"]), int(unit["seat"]))
-	_decay_board_durations()
-	# Snap Wall is not in the every-seat decay. It ticks on the owner's turn start.
+	# Shade / Plant / Snap Wall share the owner turn-start clock. An enemy
+	# turn-start must not burn a duration turn (Mauro: Shade must read as 3).
+	_decay_board_durations(unit)
 	_tick_snap_walls(unit)
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
@@ -3466,20 +3467,25 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
-## Locked destination is one step past the enemy along the origin→enemy cardinal
-## axis. Occupied, out of bounds, or otherwise illegal back rejects the cast.
-## Backstab (FLEX) is whether that landing tile sits in the target's rear cone.
+## Locked destination is the enemy's facing-rear tile (one step opposite their
+## facing). Range stays Manhattan 1–2 cardinal from the Ambush origin; approach
+## axis-past was wrong when the Shade sat behind the foe (that landed on the
+## front). Occupied / OOB / illegal rear rejects. Landing on the rear tile is
+## always a backstab when the rear cone math agrees (it should).
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
 	var origin := _ambush_range_origin(actor)
 	if origin == UNPLACED:
 		return {"ok": false}
-	var step := _cardinal_unit_step(origin, target["pos"])
-	if step == Vector2i.ZERO:
+	# Range gate still needs a cardinal origin↔enemy axis (checked in block_reason).
+	if _cardinal_unit_step(origin, target["pos"]) == Vector2i.ZERO:
 		return {"ok": false}
-	var back: Vector2i = target["pos"] + step
+	var facing := str(target.get("facing", ""))
+	if not FACING_VEC.has(facing):
+		return {"ok": false}
+	var back: Vector2i = target["pos"] - FACING_VEC[facing]
 	if not _ambush_cell_ok(back, actor["pos"]):
 		return {"ok": false}
-	var facing_mult := _facing_multiplier(back, target["pos"], str(target.get("facing", "")))
+	var facing_mult := _facing_multiplier(back, target["pos"], facing)
 	var backstab := facing_mult > FRONT_SIDE_FACING + 0.001
 	return {"ok": true, "cell": back, "backstab": backstab}
 
@@ -3771,10 +3777,19 @@ func _note_opponent_shade_turns(ending_seat: int) -> void:
 		token["opponent_turns_completed"] = int(token.get("opponent_turns_completed", 0)) + 1
 
 
-func _decay_board_durations() -> void:
+## Shade and Plant durations tick on the owner's turn-start only — same family
+## as Snap Wall. Kit "3 turns" means three owner turn-starts after Drop/Plant,
+## not three seat-begins across both fighters (that read as ~2 turns).
+func _decay_board_durations(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	var seat := int(unit.get("seat", -2))
 	var shades: Array = []
 	for item in _shade_tokens:
 		var token: Dictionary = item
+		if int(token.get("owner_seat", -1)) != seat:
+			shades.append(token)
+			continue
 		token["turns"] = int(token.get("turns", 0)) - 1
 		if int(token["turns"]) > 0:
 			shades.append(token)
@@ -3784,6 +3799,9 @@ func _decay_board_durations() -> void:
 	var plants: Array = []
 	for item in _plant_tiles:
 		var tile: Dictionary = item
+		if int(tile.get("owner_seat", -1)) != seat:
+			plants.append(tile)
+			continue
 		tile["turns"] = int(tile.get("turns", 0)) - 1
 		if int(tile["turns"]) > 0:
 			plants.append(tile)
