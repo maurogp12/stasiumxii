@@ -23,6 +23,8 @@ Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf
 - Stasis stays on `mobile`. It was not ported to `main`.
 - Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged. Permissions stay `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
 
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 212, APK update 101, stasis 361, Koliseo maps 314, combat 5182, motion 2361, VFX 576, touch adapter 487, sprite 234, elevation chrome 187.
+
 Tag `mobile-0.1.25-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.25-debug/stasiumxii-mobile-debug.apk
 
 ## 2026-09-26 — Mobile debug APK 0.1.24
