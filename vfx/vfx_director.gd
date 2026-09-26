@@ -293,8 +293,10 @@ func play_footstep(at: Vector2, cell: Vector2i, intensity: float = 0.52) -> void
 func _play_stamp(spec: Dictionary) -> void:
 	var node := _acquire("stamp")
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
-	var at: Vector2 = spec["pos"] if spec.has("pos") else _body_pos(int(spec.get("seat", -1)), cell, bool(spec.get("chest", true)))
-	node.play({
+	var seat := int(spec.get("seat", -1))
+	var hand := bool(spec.get("hand", false))
+	var at: Vector2 = spec["pos"] if spec.has("pos") else (_hand_pos(seat, cell) if hand else _body_pos(seat, cell, bool(spec.get("chest", true))))
+	var payload := {
 		"sheet": str(spec.get("sheet", "hit_flash")),
 		"pos": at,
 		"delay": float(spec.get("delay", 0.0)),
@@ -302,7 +304,14 @@ func _play_stamp(spec: Dictionary) -> void:
 		"life": float(spec.get("life", VfxBudget.STAMP_HIT_LIFE)),
 		"alpha": float(spec.get("alpha", 1.0)),
 		"z": _z_ground(cell) if bool(spec.get("ground", false)) else _z_air(cell),
-	})
+	}
+	if hand and not spec.has("pos"):
+		payload["follow"] = _hand_pos.bind(seat, cell)
+	if spec.has("aim"):
+		var aim := _Router.cell_of(spec.get("aim"))
+		var delta := _pos_cell(aim) - _pos_cell(cell)
+		payload["flip_h"] = delta.x < -0.5
+	node.play(payload)
 
 
 func _play_number(spec: Dictionary) -> void:
@@ -639,6 +648,22 @@ func _follow_seat(seat: int) -> Vector2:
 	if pawn != null:
 		return pawn.position
 	return Vector2.ZERO
+
+
+## Bow / hands. Same lift the bolt uses, plus the live body offset so a lunge
+## does not leave the windup on the feet.
+func _hand_pos(seat: int, cell: Vector2i) -> Vector2:
+	var at := _body_pos(seat, cell, false)
+	var pawn := _pawn(seat)
+	if pawn != null and _pawn_stands_on(pawn, cell):
+		var body := pawn.get_node_or_null("BodyStrip") as Node2D
+		var sprite := pawn.get_node_or_null("Sprite") as Node2D
+		if body != null and body.visible:
+			at += body.position
+		elif sprite != null and sprite.visible:
+			at += sprite.position
+	at += VfxBudget.HAND_OFFSET
+	return at
 
 
 ## Pawn position only when that fighter is standing on the effect cell.

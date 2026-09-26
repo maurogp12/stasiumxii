@@ -41,6 +41,8 @@ const POOL_STAMP := 6
 const STAMP_HIT_PX := 58.0
 const STAMP_AMBUSH_PX := 100.0
 const STAMP_MARK_PX := 76.0
+## Bow windup. Smaller than the floor impact so the reticle stays on the hands.
+const STAMP_MARK_CAST_PX := 60.0
 const STAMP_DETONATE_PX := 118.0
 const STAMP_DUST_PX := 44.0
 ## Hero-frame pop. Does not add input lock.

@@ -19,6 +19,7 @@ func _initialize() -> void:
 
 func _finish_live() -> void:
 	await _test_stamp_playback()
+	await _test_mark_cast_hands()
 	await _test_live_director()
 	await _test_shade_markers_survive_rebuild()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
@@ -566,6 +567,78 @@ func _test_view_wiring_does_not_touch_rules() -> void:
 		truthy(found_class, "F9 includes %s" % needed)
 
 
+func _test_mark_cast_hands() -> void:
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 1.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 1.0\n"
+	eq(board_script.reload() == OK, true, "mark cast board script compiles")
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var caster_script := GDScript.new()
+	caster_script.source_code = "extends Node2D\nvar grid_position: Vector2i = Vector2i.ZERO\n"
+	eq(caster_script.reload() == OK, true, "mark cast caster stub compiles")
+	var caster := Node2D.new()
+	caster.set_script(caster_script)
+	var from_cell := Vector2i(2, 3)
+	caster.grid_position = from_cell
+	caster.position = board.call("_cell_to_local", from_cell)
+	var body := Node2D.new()
+	body.name = "BodyStrip"
+	body.position = Vector2(10, -6)
+	body.visible = true
+	caster.add_child(body)
+	board.add_child(caster)
+	board.pawns_by_seat[0] = caster
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	var east := Vector2i(4, 3)
+	director.play([{
+		"type": "hit", "spell": "mark_shot", "seat": 0, "target_seat": 1,
+		"caster_cell": from_cell, "to": east, "damage": 8,
+	}])
+	var stamp := _active_sheet(director, "mark_shot_cast")
+	truthy(stamp != null, "Mark Shot windup spawns a stamp")
+	if stamp != null:
+		var hands: Vector2 = caster.position + body.position + BUDGET.HAND_OFFSET
+		eq(stamp.position, hands, "Mark Shot windup starts on the bow, not the feet")
+		eq(stamp.position.y < caster.position.y + BUDGET.CHEST_OFFSET.y, true, "the bow sits above the chest anchor")
+		eq(stamp.z_index, BoardVisualSort.unit_z_index(from_cell, 1.0) + 2, "the bow windup draws in the air")
+		var sprite := stamp.get("_sprite") as Sprite2D
+		truthy(sprite != null, "the bow stamp has a sprite")
+		if sprite != null:
+			eq(sprite.flip_h, false, "a shot to screen-right keeps the release streaks forward")
+		body.position = Vector2(-14, 3)
+		await process_frame
+		eq(stamp.position, caster.position + body.position + BUDGET.HAND_OFFSET, "the bow windup follows the lunge")
+	for node in director.get("_pools").get("stamp", []):
+		if node != null and node.has_method("release"):
+			node.release()
+	var west := Vector2i(0, 3)
+	director.play([{
+		"type": "miss", "spell": "mark_shot", "seat": 0, "target_seat": 1,
+		"caster_cell": from_cell, "to": west, "damage": 0,
+	}])
+	var flipped := _active_sheet(director, "mark_shot_cast")
+	truthy(flipped != null, "a Mark Shot miss still plays the bow windup")
+	if flipped != null:
+		var sprite_w := flipped.get("_sprite") as Sprite2D
+		truthy(sprite_w != null and sprite_w.flip_h, "a shot to screen-left flips the release streaks")
+	director.free()
+	board.free()
+
+
+func _active_sheet(director: Node, sheet: String) -> Node2D:
+	var pools: Variant = director.get("_pools")
+	if typeof(pools) != TYPE_DICTIONARY:
+		return null
+	for node in pools.get("stamp", []):
+		if node is Node2D and bool(node.get("in_use")) and str(node.get("_sheet")) == sheet:
+			return node
+	return null
+
+
 func _test_live_director() -> void:
 	var board_script := GDScript.new()
 	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 1.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 1.0\n"
@@ -717,6 +790,13 @@ func _test_stamp_playback() -> void:
 	var slash_first := flash.region_rect
 	stamp._sample(0.7)
 	eq(flash.region_rect.position.x > slash_first.position.x, true, "ambush slash advances left to right")
+	stamp.play({"sheet": "mark_shot_cast", "px": 60.0, "life": 0.60, "pos": Vector2.ZERO})
+	eq(is_equal_approx(float(stamp.get("_span")), stamp_script.windup_sec("mark_shot_cast")), true, "a longer cast window does not stretch the bow windup")
+	eq(flash.offset, Vector2(0, 26), "the bow ink drops onto the hand anchor")
+	stamp._sample(0.0)
+	eq(flash.region_rect.position.x, 0.0, "the spark is the left cell")
+	stamp._sample(0.23 / stamp_script.windup_sec("mark_shot_cast"))
+	eq(flash.region_rect.position.x, float(flash.texture.get_width()) * 0.75, "the release flash is the last cell")
 	stamp.free()
 
 
@@ -750,8 +830,19 @@ func _test_class_choreography() -> void:
 	eq(_first(marked, "status_on")["cell"], foe, "Mark cells stay Vector2i")
 	eq(_has(marked, "shake"), false, "Mark Shot does not shake")
 	eq(bool(_first(marked, "projectile").get("hand", false)), true, "Mark Shot emits from the hand")
-	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.2, true, "Mark Shot waits for the release frame")
+	var windup := preload("res://vfx/vfx_stamp.gd").windup_sec("mark_shot_cast")
+	eq(is_equal_approx(float(_first(marked, "projectile").get("delay", 0.0)), windup), true, "Mark Shot bolt leaves when the windup ends")
+	eq(float(_first(marked, "projectile").get("delay", 0.0)) > 0.07, true, "Mark Shot bolt does not leave on the spark frame")
 	eq(_has(marked, "puff"), false, "Mark Shot does not puff from the feet")
+	var cast_wind := _sheet(marked, "mark_shot_cast")
+	eq(cast_wind["cell"], caster, "Mark Shot windup sits on the caster")
+	eq(int(cast_wind.get("seat", -1)), 0, "Mark Shot windup follows the caster seat")
+	eq(bool(cast_wind.get("hand", false)), true, "Mark Shot windup is at bow height")
+	eq(bool(cast_wind.get("chest", true)), false, "Mark Shot windup is not a chest overlay")
+	eq(bool(cast_wind.get("ground", false)), false, "Mark Shot windup is not a floor stamp")
+	eq(cast_wind.get("aim", Vector2i.ZERO), foe, "Mark Shot windup aims the release at the target")
+	eq(is_equal_approx(float(cast_wind.get("delay", 1.0)), 0.0), true, "Mark Shot windup starts with the cast")
+	eq(float(cast_wind.get("block", 1.0)), 0.0, "Mark Shot windup does not lock input")
 	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("cut", 13)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("gloam", "attack")), true, "Cut spark waits for the slash frame")
 	eq(is_equal_approx(float(_first(ROUTER.recipes_for([_damage("detonate", 12)]), "spark").get("delay", 0.0)), StripLibrary.release_sec("kestrel", "cast")), true, "Detonate spark waits for the cast frame")
 	var stacked: Array = ROUTER.recipes_for([{
@@ -1052,7 +1143,7 @@ func _catalogue() -> Array:
 
 func _test_scenario_overlays() -> void:
 	var stamp_script := preload("res://vfx/vfx_stamp.gd")
-	for sheet in ["ambush_slash", "mark_shot_impact", "detonate_burst", "hit_flash", "footstep_dust"]:
+	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "footstep_dust"]:
 		truthy(FileAccess.file_exists("res://art/vfx/scenario/%s.png" % sheet), "scenario plate %s is on disk" % sheet)
 		var tex: Texture2D = stamp_script.texture_for(sheet)
 		truthy(tex != null, "%s imports as a texture" % sheet)
@@ -1073,8 +1164,9 @@ func _test_scenario_overlays() -> void:
 	eq(stamp_script.frame_count("footstep_dust"), 8, "footstep dust is an 8-frame plant strip")
 	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame strip")
 	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
+	eq(stamp_script.frame_count("mark_shot_cast"), 4, "Mark Shot cast is a 4-frame bow strip")
 	eq(stamp_script.frame_count("detonate_burst"), 1, "Detonate burst is one hero frame")
-	for sheet in ["ambush_slash", "hit_flash", "footstep_dust", "mark_shot_impact"]:
+	for sheet in ["ambush_slash", "hit_flash", "footstep_dust", "mark_shot_impact", "mark_shot_cast"]:
 		var laid: Texture2D = stamp_script.texture_for(sheet)
 		var prev_x := -1.0
 		for i in stamp_script.frame_count(sheet):
@@ -1115,7 +1207,51 @@ func _test_scenario_overlays() -> void:
 		"type": "hit", "spell": "mark_shot", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 8,
 	}])
-	var impact_delay := preload("res://units/strip_library.gd").release_sec("kestrel", "cast_mark") + ROUTER.MARK_FLIGHT_SEC
+	var windup := stamp_script.windup_sec("mark_shot_cast")
+	var impact_delay := windup + ROUTER.MARK_FLIGHT_SEC
+	var cast_sheet := _sheet(marked, "mark_shot_cast")
+	eq(cast_sheet["cell"], Vector2i(2, 3), "Mark Shot windup stays on the caster cell")
+	eq(cast_sheet["cell"] == Vector2i(4, 3), false, "Mark Shot windup is not the target")
+	eq(bool(cast_sheet.get("hand", false)), true, "Mark Shot windup uses the bow anchor")
+	eq(bool(cast_sheet.get("chest", true)), false, "Mark Shot windup is not planted on the chest")
+	eq(bool(cast_sheet.get("ground", false)), false, "Mark Shot windup is not a floor ring")
+	eq(is_equal_approx(float(cast_sheet.get("delay", 1.0)), 0.0), true, "Mark Shot windup plays from the first cast frame")
+	var holds: Array = stamp_script.holds_for("mark_shot_cast")
+	eq(holds, [0.07, 0.08, 0.08, 0.07], "bow frames are spark, draw, reticle, release")
+	eq(windup >= 0.28 and windup <= 0.32, true, "the bow windup is a 280-320ms snap")
+	eq(windup <= 0.30, true, "the bow windup stays at or under 0.30s including the release")
+	eq(is_equal_approx(float(cast_sheet.get("life", 0.0)), windup), true, "the bow strip lasts the locked holds")
+	eq(stamp_script.frame_at("mark_shot_cast", 0.0), 0, "the spark is the first cell")
+	eq(stamp_script.frame_at("mark_shot_cast", 0.07), 1, "the draw starts when the spark ends")
+	eq(stamp_script.frame_at("mark_shot_cast", 0.15), 2, "the reticle starts after the draw")
+	eq(stamp_script.frame_at("mark_shot_cast", 0.23), 3, "the release flash is the last cell")
+	var bolt_delay := float(_first(marked, "projectile").get("delay", 0.0))
+	eq(is_equal_approx(bolt_delay, windup), true, "the bolt leaves on the tick after the release flash")
+	eq(bolt_delay > float(holds[0]), true, "the bolt does not spawn on the spark frame")
+	eq(bolt_delay > 0.23 - 0.001, true, "the bolt waits until the release flash")
+	var float_delay := float(_first_kind(marked, "damage").get("delay", 0.0))
+	eq(is_equal_approx(float_delay, impact_delay), true, "the damage float waits for bolt contact")
+	eq(float_delay > 0.23, true, "the damage float is not during the draw")
+	eq(cast_sheet.get("life", 1.0) < impact_delay, true, "the bow windup finishes before the floor impact")
+	eq(float(cast_sheet.get("px", 0.0)), BUDGET.STAMP_MARK_CAST_PX, "the bow windup stays smaller than the floor impact")
+	eq(BUDGET.STAMP_MARK_CAST_PX < BUDGET.STAMP_MARK_PX, true, "the bow windup is smaller than the floor impact")
+	var cast_tex: Texture2D = stamp_script.texture_for("mark_shot_cast")
+	var cell_w := float(cast_tex.get_width()) / 4.0
+	var cell_h := float(cast_tex.get_height())
+	eq(is_equal_approx(cell_w, cell_h), true, "Mark Shot cast cells are equal squares")
+	for i in 4:
+		var cel: Rect2 = stamp_script.region_for("mark_shot_cast", i, cast_tex)
+		eq(cel.position, Vector2(cell_w * float(i), 0.0), "Mark Shot cast cell %d is an equal slice" % i)
+		eq(cel.size, Vector2(cell_w, cell_h), "Mark Shot cast cell %d fills its slice" % i)
+	var ink_y := 0.0
+	var ink_n := 0
+	var plate := cast_tex.get_image()
+	for y in plate.get_height():
+		for x in int(cell_w):
+			if plate.get_pixel(x, y).a > 16.0 / 255.0:
+				ink_y += float(y)
+				ink_n += 1
+	eq(ink_n > 0 and ink_y / float(ink_n) < cell_h * 0.5, true, "the bow ink sits in the upper half of the cell")
 	eq(_sheet(marked, "mark_shot_impact")["cell"], Vector2i(4, 3), "Mark Shot impact sits on the target")
 	eq(bool(_sheet(marked, "mark_shot_impact").get("ground", false)), true, "Mark Shot aim rings stay on the floor")
 	eq(bool(_sheet(marked, "mark_shot_impact").get("chest", true)), false, "Mark Shot impact is not a chest overlay")
@@ -1126,6 +1262,9 @@ func _test_scenario_overlays() -> void:
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0,
 	}])
 	eq(_sheet(mark_miss, "mark_shot_impact").is_empty(), true, "a Mark Shot miss has no impact")
+	eq(_sheet(mark_miss, "mark_shot_cast")["cell"], Vector2i(2, 3), "a Mark Shot miss still winds the bow")
+	eq(bool(_sheet(mark_miss, "mark_shot_cast").get("hand", false)), true, "a Mark Shot miss still lifts the windup to the bow")
+	eq(is_equal_approx(float(_first(mark_miss, "projectile").get("delay", 0.0)), windup), true, "a Mark Shot miss still waits for the release flash")
 	var boom: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "detonate", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 24,
