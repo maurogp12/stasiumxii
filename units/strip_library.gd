@@ -34,11 +34,14 @@ const ATTACK_IMPACT_FRAME := 3
 static var _cache: Dictionary = {}
 ## East walk frame 0, one ImageTexture per class. Select cards and turn chips.
 static var _idle_cache: Dictionary = {}
+## Foot-down cell per class facing. 0 when that cell is already frame 0.
+static var _walk_contact: Dictionary = {}
 
 
 static func clear_cache() -> void:
 	_cache.clear()
 	_idle_cache.clear()
+	_walk_contact.clear()
 
 
 ## Standing plant of the locked Wakfu walk. East frame 0, 144×160.
@@ -191,7 +194,8 @@ static func _load_class(class_id: String) -> SpriteFrames:
 	var baked := _bake_compressed_atlases(built)
 	# Walk bytes are already ImageTextures, so the atlas bake no-ops them.
 	# Feet still pin to frame 0. A second pass is a no-op once they match.
-	_stabilize_walk_feet(baked)
+	# The contact index is scored before that shift.
+	_stabilize_walk_feet(baked, class_id)
 	return baked
 
 
@@ -517,12 +521,50 @@ static func _bake_frame_texture(tex: Texture2D) -> Texture2D:
 	return ImageTexture.create_from_image(sheet.get_region(cut))
 
 
+## Foot-down cell for this facing. Frame 0 when that cell already shares the
+## planted row. Another index only when frame 0's feet are off that row.
+## Scoring happens on the authored cells, before the foot shift.
+static func walk_contact_index(class_id: String, face: String) -> int:
+	var cls := SpellKits.normalize_class_id(class_id)
+	var letter := letter_for_sheet(face)
+	if letter == "":
+		letter = face.strip_edges().to_lower()
+	return int(_walk_contact.get("%s:%s" % [cls, letter], 0))
+
+
+## Lowest feet win. Frame 0 stays the contact when it shares that row, so a
+## sheet that already plants on 0 is not retargeted. `feet` is the bottom
+## opaque row (larger is lower). `heights` is the figure span.
+static func contact_index_from_metrics(feet: Array, heights: Array) -> int:
+	var n := mini(feet.size(), heights.size())
+	if n <= 0:
+		return 0
+	var lowest := -1
+	for i in n:
+		lowest = maxi(lowest, int(feet[i]))
+	if lowest < 0:
+		return 0
+	if int(feet[0]) >= lowest - 1:
+		return 0
+	var best := 0
+	var best_height := 999999
+	for i in n:
+		if int(feet[i]) < lowest - 1:
+			continue
+		var span := int(heights[i])
+		if span > 0 and span < best_height:
+			best_height = span
+			best = i
+	return best
+
+
 ## Shift passing walk cells so each foot sits on frame 0's contact.
 ## Frame 0 stays the authored cell. A lifted frame reads as a pop, and a
 ## foot that drifts inside the cell reads as a skate.
-static func _stabilize_walk_feet(frames: SpriteFrames) -> void:
+static func _stabilize_walk_feet(frames: SpriteFrames, class_id: String = "") -> void:
 	if frames == null:
 		return
+	var cls := SpellKits.normalize_class_id(class_id)
 	for face in LETTERS:
 		var anim := "walk_%s" % face
 		if not frames.has_animation(anim):
@@ -530,6 +572,16 @@ static func _stabilize_walk_feet(frames: SpriteFrames) -> void:
 		var count := frames.get_frame_count(anim)
 		if count < 2:
 			continue
+		var feet: Array = []
+		var heights: Array = []
+		for i in count:
+			var cell := frames.get_frame_texture(anim, i)
+			var cell_img := cell.get_image() if cell != null else null
+			var metrics := _figure_metrics(cell_img)
+			feet.append(metrics.x)
+			heights.append(metrics.y)
+		if cls != "":
+			_walk_contact["%s:%s" % [cls, face]] = contact_index_from_metrics(feet, heights)
 		var base_tex := frames.get_frame_texture(anim, 0)
 		if base_tex == null:
 			continue
@@ -558,6 +610,28 @@ static func _stabilize_walk_feet(frames: SpriteFrames) -> void:
 			if duration <= 0.0:
 				duration = 1.0
 			frames.set_frame(anim, i, ImageTexture.create_from_image(shifted), duration)
+
+
+static func _figure_metrics(image: Image) -> Vector2i:
+	if image == null or image.is_empty():
+		return Vector2i(-1, 0)
+	var width := image.get_width()
+	var height := image.get_height()
+	var foot_y := -1
+	var head_y := height
+	for y in range(height - 1, -1, -1):
+		var hit := false
+		for x in width:
+			if image.get_pixel(x, y).a > 0.08:
+				hit = true
+				break
+		if hit:
+			if foot_y < 0:
+				foot_y = y
+			head_y = y
+	if foot_y < 0:
+		return Vector2i(-1, 0)
+	return Vector2i(foot_y, foot_y - head_y + 1)
 
 
 static func _foot_point(image: Image) -> Vector2i:

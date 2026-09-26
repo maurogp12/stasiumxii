@@ -2,6 +2,19 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Walk plant, squash, and stop (after #163)
+
+Presentation only. #163 stays: 0.30s tile, one 6-frame stride at about 20 fps, cubic ease, 3px shared hop, 50ms settle on the first tile and on a turn, plant hold on the last 18%, dust on a facing change and the final plant, v4 walks. Ambush still plants, then slashes. Kit numbers and map geometry are unchanged.
+
+### What changed since #163
+
+- The foot-down cell is the plant. It shows when the hop is on Y=0 and through the 18% hold. The open part of the tile no longer keeps that cell on screen while the foot is moving. If frame 0 is not the planted row, the sampler uses the planted index. Tile time is not stretched. On the shipped v4 sheets frame 0 is still that cell.
+- The sprite squashes on the plant only: scale Y about 0.96 back to 1 across that same hold (about 54ms). Nothing squashes mid-hop. The pawn, the foot, the name, the aim mark, and the shade do not take the hop or the squash.
+- A 180 finishes the plant, sets the opposite facing, settles 50ms, then steps. It does not travel through a side facing.
+- Straight tiles do not settle and do not hide the walk strip between cells. The cubic continues. Dust still does not puff on those tiles.
+- The path holds the landed contact for a short readable idle (100ms) before the face pad unlocks. The stop is not a passing frame.
+- Bastion and Ironjaw hop about 2.5px. Kestrel and Gloam hop about 3.5px. Mender stays at the shared 3px. Every crest stays at or under 4px. Tile time stays 0.30s. Ironjaw art-fill stays scale 1.0.
+
 ## 2026-09-26 — Slagcrown lava punch sheets
 
 Slagcrown paints the Scenario lava punches in `art/tilesets/original/pending/lava/`. Floors are lava and scorched dirt. Pools are dark ash. Cliffs are volcanic ledges. Center-tile props are lava rock and shards. The board has no grass, moss, or bushes. Crosshaven stays on the earth punch. Brinewake stays on the original coast sheet. Tags, geometry, and combat numbers are unchanged. `board_mood_punch.png` is a preview and is not a tile.

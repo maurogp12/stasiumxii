@@ -19,9 +19,11 @@ class_name Pawn
 ## A walk strip plays one full cycle per tile. Authored 6 frames at 12 fps
 ## are sped so playback is about 20 fps and the cycle lasts WALK_TILE_SEC.
 ## The board samples that frame from the tile tween, so zoom and the frame
-## clock cannot drift the stride. The sprite hops a few pixels. The foot,
-## ground marks, and name chrome stay on this node. If play() does not
-## start, the same hop stays on the static sprite. There is no tile-tall hop.
+## clock cannot drift the stride. The foot-down cell shows when the hop is
+## on the ground. The sprite hops a few pixels and squashes on the plant
+## only. The foot, ground marks, shade, and name chrome stay on this node.
+## If play() does not start, the same hop stays on the static sprite.
+## There is no tile-tall hop.
 ## `grid_position` is the tactical cell. This node's origin is the visual foot.
 ## The contact shadow is the Foot child and does not rise with the body.
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
@@ -493,6 +495,19 @@ func arm_driven_walk() -> void:
 	_hold_driven_pose()
 
 
+## Foot-down cell for the facing walk. Frame 0 on the v4 sheets. Another
+## index only when that cell is not the planted row. Tile time stays put.
+func walk_contact_frame() -> int:
+	if class_id == "":
+		return 0
+	STRIP_LIBRARY.frames_for(class_id)
+	return STRIP_LIBRARY.walk_contact_index(class_id, facing)
+
+
+func _sampled_walk_frame(t: float, count: int) -> int:
+	return VIEW_MOTION.walk_cycle_frame(t, count, _driven_step, walk_contact_frame())
+
+
 ## Seek the facing's walk clip to the contact frame for this tile.
 func sync_walk_plant() -> void:
 	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
@@ -508,7 +523,7 @@ func sync_walk_plant() -> void:
 	strip.speed_scale = 0.0 if _driven_walk else walk_strip_speed_scale()
 	var frames := strip.sprite_frames
 	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
-		strip.frame = VIEW_MOTION.walk_cycle_frame(0.0, frames.get_frame_count(strip.animation), _driven_step)
+		strip.frame = _sampled_walk_frame(0.0, frames.get_frame_count(strip.animation))
 		strip.frame_progress = 0.0
 
 
@@ -568,7 +583,7 @@ func _apply_driven_cycle(t: float) -> void:
 	if strip.is_playing():
 		strip.pause()
 	strip.speed_scale = 0.0
-	strip.frame = VIEW_MOTION.walk_cycle_frame(t, count, _driven_step)
+	strip.frame = _sampled_walk_frame(t, count)
 	strip.frame_progress = 0.0
 
 
@@ -588,7 +603,49 @@ func _hold_driven_pose() -> void:
 		_active_strip.speed_scale = 0.0
 
 
-## Path end or interrupt. Plant the static facing and let idle resume.
+## Straight seam. Keep the contact pose on the walk strip. Do not hide it
+## for an idle flash, and do not settle.
+func bridge_straight_tile() -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_path_walk = true
+	_driven_walk = true
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip) or not strip.visible:
+		sync_walk_plant()
+		return
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = false
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(strip.animation):
+		var count := frames.get_frame_count(strip.animation)
+		if count > 0:
+			strip.frame = _sampled_walk_frame(1.0, count)
+			strip.frame_progress = 0.0
+	strip.speed_scale = 0.0
+	_place_body(Vector2.ZERO)
+	_ride_chrome(Vector2.ZERO)
+	_apply_sprite_mul(Vector2.ONE)
+
+
+## Landed plant, held before a cast or the face pad. Contact frame, hop
+## down, squash already released. Not a passing cell.
+func hold_stop_plant() -> void:
+	if not is_inside_tree():
+		return
+	sample_driven_gait(1.0)
+	_place_body(Vector2.ZERO)
+	_ride_chrome(Vector2.ZERO)
+	_apply_sprite_mul(Vector2.ONE)
+	var strip := _active_strip
+	if strip != null and is_instance_valid(strip) and strip.visible:
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.visible = false
+		strip.speed_scale = 0.0
+
+
+## Path end or interrupt. Plant the facing walk and let idle resume.
+## A walk strip already took its plant squash. A missing strip still lands.
 func end_path_walk() -> void:
 	_path_walk = false
 	_driven_step = 0
@@ -598,7 +655,8 @@ func end_path_walk() -> void:
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
-	_play_landing()
+	if not _walk_idle_plant:
+		_play_landing()
 
 
 ## Playback rate that puts one full cycle on one tile.
@@ -1235,20 +1293,25 @@ func _sample_hop(t: float) -> void:
 	_apply_hop_visual(t)
 
 
-## Hop offset on the body sprites only. Name, HP, aim rings, and the foot stay.
+## Hop offset on the body sprites only. Name, HP, aim rings, shade, and the
+## foot stay. Walk strips squash on the plant only. A missing strip keeps
+## the fallback weight curve.
 func _apply_hop_visual(t: float) -> void:
-	var hop := VIEW_MOTION.hop_offset(t)
+	var hop := VIEW_MOTION.hop_offset(t, VIEW_MOTION.hop_crest_px(class_id))
 	_place_body(hop)
 	_ride_chrome(Vector2.ZERO)
 	if _walk_looping or has_walk_strip():
-		_reset_walk_scale()
+		_apply_sprite_mul(VIEW_MOTION.plant_scale(t))
 	else:
-		var mul := VIEW_MOTION.fallback_hop_scale(t)
-		var scaled := _body_scale_mul(mul)
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.scale = scaled
-		if _active_strip != null and is_instance_valid(_active_strip):
-			_active_strip.scale = scaled
+		_apply_sprite_mul(VIEW_MOTION.fallback_hop_scale(t))
+
+
+func _apply_sprite_mul(mul: Vector2) -> void:
+	var scaled := _body_scale_mul(mul)
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.scale = scaled
+	if _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.scale = scaled
 
 
 func _hold_walk_contact() -> void:
@@ -1260,7 +1323,7 @@ func _hold_walk_contact() -> void:
 	strip.speed_scale = 0.0
 	var frames := strip.sprite_frames
 	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
-		strip.frame = 0
+		strip.frame = _sampled_walk_frame(0.0, frames.get_frame_count(strip.animation))
 		strip.frame_progress = 0.0
 
 
@@ -1644,7 +1707,7 @@ func _plant_walk_idle() -> bool:
 		strip.animation = anim
 	var frames := strip.sprite_frames
 	if frames != null and frames.has_animation(anim) and frames.get_frame_count(anim) > 0:
-		strip.frame = 0
+		strip.frame = mini(walk_contact_frame(), frames.get_frame_count(anim) - 1)
 		strip.frame_progress = 0.0
 	strip.speed_scale = 0.0
 	if strip.is_playing():
@@ -1866,7 +1929,7 @@ func _play_walk_flat() -> bool:
 		strip.pause()
 		strip.speed_scale = 0.0
 		if strip.sprite_frames != null and strip.sprite_frames.has_animation(anim) and strip.sprite_frames.get_frame_count(anim) > 0:
-			strip.frame = 0
+			strip.frame = mini(walk_contact_frame(), strip.sprite_frames.get_frame_count(anim) - 1)
 			strip.frame_progress = 0.0
 		_walk_idle_plant = true
 		_flatten_body()
@@ -1900,7 +1963,7 @@ func _present_driven_walk() -> bool:
 		strip.pause()
 	strip.speed_scale = 0.0
 	if not same and frames.get_frame_count(anim) > 0:
-		strip.frame = 0
+		strip.frame = mini(walk_contact_frame(), frames.get_frame_count(anim) - 1)
 		strip.frame_progress = 0.0
 	_active_strip = strip
 	_strip_holds_body = true
@@ -1996,7 +2059,8 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	var foot := SEAT_RING_CENTER
 	var lift := 0.0
 	if _sprite != null and is_instance_valid(_sprite):
-		lift = clampf(-_sprite.position.y / maxf(VIEW_MOTION.HOP_PX, 0.001), 0.0, 1.0)
+		var crest := VIEW_MOTION.hop_crest_px(class_id)
+		lift = clampf(-_sprite.position.y / maxf(crest, 0.001), 0.0, 1.0)
 	var shadow := lerpf(1.0, 0.62, lift)
 	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
 	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
