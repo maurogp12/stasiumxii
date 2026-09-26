@@ -2,6 +2,65 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Wakfu walks and Koliseo banner landed
+
+The locked sheets are in the tree. Twenty walk PNGs, 864×160 RGBA, six 144×160 cells, replaced or added in place:
+
+- `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — Kestrel F+A
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A+A2
+- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B (amber grin). The dual-knives redesign is not the file.
+- `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender D2
+- `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion 2C
+
+`*_frames.tres` still slices kestrel, ironjaw, and gloam at those paths. Mender and Bastion load from the PNGs and have no attack, cast, hit, or death sheet. No `*_gen.png`. The hub Koliseo hero is `art/ui/hub/koliseo_banner.png` (the approved lineup). The plate keeps that art's aspect, so the five heroes and the KOLISEO label stay in frame. RAID tiles are unchanged. Zoom, landscape hub, and the stride code stay.
+
+Headless Godot 4.7.2, 0 failed: motion 2095, combat 4647, touch adapter 485, hub 206.
+
+## 2026-09-26 — Walk sheet drop slot
+
+Luca approved Wakfu walk sheets. The drop is a replace of the existing walk PNGs, 864×160 RGBA, six 144×160 cells. `*_frames.tres` already slices those paths. No `*_gen.png`. No second folder. Attack, cast, hit, and death stay.
+
+Looks locked for that drop: Kestrel (prior Wakfu), Ironjaw A2 (Berserker A body, fierce helm with iron-jaw grill, spikes, and crest, dual double-bit axes, crimson battle-worn plate — this replaces any earlier Ironjaw Wakfu walk), Gloam proposal B (amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim — not the white-eyes sheet), Mender proposal D2 (cream/gold hooded robe, green lantern staff, face clearly visible in a more open hood), Bastion proposal 2C (charcoal-grey/gold armor, spiked mace, oversized tower shield). Paths are listed at the top of `art/export_2x/characters/README.md`.
+
+The stride code stays: face the segment, sample the cycle from the foot, about 0.30s per tile, plant on arrival, ground marks on the Foot child.
+
+Headless Godot 4.7.2, 0 failed: motion 2031.
+
+## 2026-09-26 — Walk stride on the existing strips
+
+Luca, after the landscape pass. No APK cut. No new walk sheets. Locked kit numbers unchanged. The Batch-1 / Batch-1c files under `art/export_2x/characters/{class}/anims/*_walk_{e,s,n,w}.png` are the clips that play. `*_gen.png` stays unloaded.
+
+### What a step does now
+
+- The foot eases from cell to cell in about 0.30s. The press and the landing hold the foot on the diamond. The open part is a smooth step, not a raw lerp and not a tile-long hop.
+- Facing snaps to that segment before the foot leaves, including a corner. A cardinal uses the letter. Any other step uses the screen direction, so the body does not travel sideways or backwards and then spin at the end.
+- The facing walk cycle is sampled from the foot. Contact frames show only on the plant. Passing frames show only while the foot is between cells, so the idle pose is not what slides.
+- While the foot is moving, the body leads about 10px along the facing and rises a few pixels, then both return. Arrival is the idle facing on the cell, not a mid-stride freeze. The ground mark and the aim ring stay on the Foot child.
+
+Headless Godot 4.7.2, 0 failed: motion 1972. Map geometry, tags, and Locked kit numbers are unchanged.
+
+## 2026-09-26 — Phone combat overview and landscape hub
+
+Luca's 0.1.21 playtest. No APK cut. Locked kit numbers unchanged. Map geometry, tags, Ambush snap, tilesets, Scenario VFX, and the planted walk stay.
+
+### What was hard
+
+0.1.21 locked the activity to portrait while the UI stayed the landscape 960×720 poster. On the phone that poster sat in a short strip with black bars above and below, which read as “nothing is visible.” The cover zoom made it worse: on a 960×1400 window it was 3.0, so a few giant cells filled whatever glass was left.
+
+### What a phone does now
+
+- Orientation is sensor landscape, applied from the project setting and again when the hub or the board opens. Stretch stays `canvas_items` / `expand`, so the landscape window is full-bleed instead of a letterboxed 960×720 strip. The poster is still title, Koliseo banner, RAID, and the five Stasis tiles in one row. Actualizar stays on the title row.
+- Combat zoom shows most of the 15×15 diamond. A 20:9 canvas (about 1600×720) is zoom 1.48, so a diamond is about 47px tall and the board width still fits. The turn plaque and the thumb cluster overlay the edges. The corner outside the diamond uses the hub navy. Desktop 960×720 fit stays zoom 0.64.
+- **Zoom +** and **Zoom −** on the combat HUD step that camera. Zoom out reaches the whole diamond. Zoom in stops at 2.25. The choice lasts for the session, including the next fight.
+
+Headless Godot 4.7.2, 0 failed: hub 206, touch adapter 485.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Map layouts, board geometry, tags, and room shapes.
+- Ambush snap, original tilesets, and Scenario VFX. The walk presentation is the stride entry above. The strips themselves are unchanged.
+
 ## 2026-09-26 — Mobile debug APK 0.1.21
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.21-mobile`, `version/code` `22`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

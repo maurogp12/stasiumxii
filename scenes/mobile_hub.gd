@@ -11,6 +11,7 @@ class_name MobileHub
 ## screen and follow the class-select route (no map picker).
 
 const MOBILE_HUB := "res://scenes/mobile_hub.tscn"
+const _TOUCH := preload("res://ui/touch_adapter.gd")
 const STASIS_RUN := "res://scenes/stasis_run.tscn"
 const KOLISEO_SCENE := "res://scenes/class_select.tscn"
 ## Exact ship ids. Files live at art/maps/arena_colosseum_v2/tiled/{id}_15x15.*
@@ -18,8 +19,8 @@ const BIOME_IDS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windm
 const TAGS_ROOT := "res://art/maps/arena_colosseum_v2/tiled/"
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const BANNER_ART := "res://art/ui/hub/koliseo_banner.png"
-## Fat hit targets on the 960×720 canvas. Portrait expand keeps this floor
-## and does not crop the plates; spare height sits around the same layout.
+## Fat hit targets on the 960×720 canvas. The phone stays landscape, so
+## this poster is a wide banner over one horizontal RAID row.
 const DOOR_MIN_HEIGHT := 72
 const _ApkClient := preload("res://backend/apk_update_client.gd")
 
@@ -91,6 +92,7 @@ static func paint_star(canvas: CanvasItem, center: Vector2, radius: float, tint:
 
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_TOUCH.lock_landscape_frame(get_window())
 	resized.connect(_on_resized)
 	if _auto_launch and boot_route(OS.get_cmdline_user_args()) != "picker":
 		call_deferred("open_koliseo")
@@ -215,14 +217,20 @@ func _layout() -> void:
 			tile_w = fitted
 		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
 	var extra := maxf(room - cluster, 0.0)
-	# Keep the poster under the top frame. Portrait height stays below the
-	# footer star instead of stretching the plates.
+	# Keep the poster under the top frame. Extra space sits around the
+	# plates instead of stretching them. The Koliseo plate keeps the
+	# art's aspect so the lineup and the KOLISEO label stay in frame.
 	var y := top + minf(extra * 0.08, 28.0)
 	_title_row.position = Vector2(left, y)
 	_title_row.size = Vector2(width, title_h)
 	y += title_h + gap
-	_banner.position = Vector2(left, y)
-	_banner.size = Vector2(width, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
+	var banner_w := width
+	if _banner_ratio > 0.0:
+		var fitted_w := banner_h * _banner_ratio
+		if fitted_w < width:
+			banner_w = fitted_w
+	_banner.position = Vector2(left + (width - banner_w) * 0.5, y)
+	_banner.size = Vector2(banner_w, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
 	y += _banner.size.y + gap
 	_raid_row.position = Vector2(left, y)
 	_raid_row.size = Vector2(width, raid_h)
@@ -334,7 +342,7 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 	plate.texture = tex
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if framed else TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if framed:
 		plate.offset_left = 1

@@ -8,6 +8,8 @@ signal new_match_requested
 signal ready_requested(seat: int)
 ## Finger moved on an ability button. committing is the release.
 signal aim_dragged(screen_pos: Vector2, committing: bool)
+## +1 zooms in, -1 zooms out. The board keeps the step for the session.
+signal zoom_step_requested(direction: int)
 
 const KESTREL_GREEN := Color("#2E5A3C")
 const IRONJAW_RED := Color("#8B2E2E")
@@ -74,6 +76,8 @@ var _clock_bar_max_width: float = 220.0
 var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 var _aim_hit_label: Label
+var _zoom_in_button: Button
+var _zoom_out_button: Button
 var _aim_hit_chance: int = -1
 var _stunned: bool = false
 var _stun_badge: Label
@@ -1160,6 +1164,17 @@ func _build() -> void:
 	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.add_child(_tooltip_label)
 
+	var zoom_box := VBoxContainer.new()
+	zoom_box.name = "ZoomControls"
+	zoom_box.position = Vector2(16, 152)
+	zoom_box.add_theme_constant_override("separation", 8)
+	zoom_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(zoom_box)
+	_zoom_in_button = _make_zoom_button("ZoomIn", "Zoom +", 1)
+	_zoom_out_button = _make_zoom_button("ZoomOut", "Zoom −", -1)
+	zoom_box.add_child(_zoom_in_button)
+	zoom_box.add_child(_zoom_out_button)
+
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_handoff_overlay.color = Color(0.06, 0.05, 0.07, 0.42)
@@ -1184,6 +1199,27 @@ func _build() -> void:
 	_handoff_panel.add_child(_handoff_label)
 
 	_update_selected_label()
+
+
+func set_zoom_buttons(can_in: bool, can_out: bool) -> void:
+	if _zoom_in_button != null:
+		_zoom_in_button.disabled = not can_in
+	if _zoom_out_button != null:
+		_zoom_out_button.disabled = not can_out
+
+
+func _make_zoom_button(node_name: String, label: String, direction: int) -> Button:
+	var button := Button.new()
+	button.name = node_name
+	button.text = label
+	button.focus_mode = Control.FOCUS_ALL
+	button.custom_minimum_size = Vector2(128, 72)
+	button.add_theme_font_size_override("font_size", 18)
+	button.add_theme_color_override("font_color", CREAM)
+	_apply_display_font(button)
+	_style_chrome_button(button, true)
+	button.pressed.connect(func() -> void: zoom_step_requested.emit(direction))
+	return button
 
 
 func _show_new_match(snap: Dictionary) -> bool:

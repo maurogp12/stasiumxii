@@ -27,7 +27,7 @@ window/size/viewport_width=960
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
-window/handheld/orientation=1
+window/handheld/orientation=4
 
 [physics]
 
@@ -35,6 +35,7 @@ window/handheld/orientation=1
 
 [rendering]
 
+environment/defaults/default_clear_color=Color(0.008, 0.028, 0.07, 1)
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
 

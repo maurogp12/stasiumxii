@@ -131,6 +131,20 @@ func _test_curves_return_to_origin() -> void:
 	eq(MOTION.walk_cycle_frame(1.0, 6, 0), MOTION.walk_cycle_frame(0.0, 6, 1), "the next segment starts on the landed contact")
 	eq(MOTION.walk_cycle_frame(0.35, 6, 0) != MOTION.walk_cycle_frame(0.55, 6, 0), true, "the cycle advances through the stride")
 	eq(MOTION.walk_cycle_frame(1.0, 1, 0), 0, "a one-frame strip has nothing to advance")
+	for step_t in [0.25, 0.4, 0.55]:
+		var open_frame := MOTION.walk_cycle_frame(step_t, 6, 0)
+		eq(MOTION.step_travel(step_t) > 0.0 and MOTION.step_travel(step_t) < 1.0, true, "the stride is between the plants")
+		eq(open_frame != 0 and open_frame != MOTION.walk_cycle_frame(1.0, 6, 0), true, "a moving foot does not show a contact frame")
+	eq(MOTION.stride_lead(0.0, Vector2(20, 10)), Vector2.ZERO, "the press does not lean off the cell")
+	eq(MOTION.stride_lead(1.0, Vector2(20, 10)), Vector2.ZERO, "arrival plants the lead")
+	eq(MOTION.stride_rise(0.0), Vector2.ZERO, "the press keeps the body on the foot")
+	eq(MOTION.stride_rise(1.0), Vector2.ZERO, "arrival puts the body back on the foot")
+	var lead := MOTION.stride_lead(0.5, Vector2(20, 10))
+	var axis := Vector2(20, 10).normalized()
+	eq(lead.length() > 6.0 and lead.length() <= MOTION.STRIDE_LEAD_PX + 0.01, true, "the stride lead stays inside one step")
+	eq((lead - axis * lead.dot(axis)).length() < 0.01, true, "the lead has no sideways slide")
+	var rise := MOTION.stride_rise(0.5)
+	eq(rise.x == 0.0 and rise.y < -3.0 and rise.y > -8.0, true, "the body rises only while the foot is moving")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(3, 2), Vector2(32, 16)), "E", "an east step faces east")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(2, 1), Vector2(32, -16)), "N", "a north step faces north")
 	eq(MOTION.walk_segment_facing(Vector2i(4, 4), Vector2i(3, 4), Vector2(-32, -16)), "W", "a west step faces west")
@@ -560,6 +574,8 @@ func _test_live_tree() -> void:
 	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle restores scale")
 	eq((pawn.get_node("Sprite") as Sprite2D).rotation, 0.0, "settle clears rotation")
 	await process_frame
+	# Mender now has a walk sheet. This hop is the no-strip fallback.
+	pawn.bind_motion_frames(SpriteFrames.new())
 	pawn.play_step_hop()
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var hopped: float = (pawn.get_node("Sprite") as Sprite2D).position.y
@@ -671,6 +687,10 @@ func _test_view_wiring() -> void:
 	eq(anim_src.contains("play_step_hop"), false, "a cell does not play its own hop")
 	truthy(anim_src.contains("arm_driven_walk"), "the walk loop starts once for the path")
 	truthy(anim_src.contains("sync_walk_plant"), "the stride seeks the plant frame")
+	truthy(anim_src.contains("walk_segment_facing"), "each segment faces the way the foot will travel")
+	var snap_at := anim_src.find("_snap_walk_facing")
+	var sample_at := anim_src.find("_sample_walk_step")
+	eq(snap_at >= 0 and sample_at > snap_at, true, "each segment faces before the foot moves")
 	truthy(pawn_src.contains("walk_cycle_frame"), "a driven step samples the walk cycle")
 	truthy(motion_src.contains("func walk_cycle_frame"), "the walk cycle frame is a pure function")
 	var arm_at := anim_src.find("_arm_path_walk")
@@ -777,8 +797,9 @@ func _test_strip_fallback() -> void:
 	stand_in.name = "Sprite"
 	stand_in.sprite_frames = null
 	pawn.add_child(stand_in)
-	# Mender has no Batch-1 strips, so this still proves the empty-frame hop.
+	# Unbind the shipped Mender walk so this still proves the empty-frame hop.
 	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
+	pawn.bind_motion_frames(SpriteFrames.new())
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "a strip standing in for Sprite does not replace the static body")
 	truthy(sprite.texture != null, "missing strip frames keep the facing texture")
@@ -993,6 +1014,16 @@ func _test_strip_library_missing_and_slice() -> void:
 					regions.append(cell)
 	var gloam_bank := StripLibrary.frames_for("gloam")
 	truthy(gloam_bank != null, "gloam strip bank loads from export_2x")
+	for cls in ["kestrel", "ironjaw", "gloam"]:
+		var walk_bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			var drop := StripLibrary.export_png_path(cls, "walk", face)
+			var atlas := walk_bank.get_frame_texture(walk_name, 0) as AtlasTexture
+			truthy(atlas != null and atlas.atlas != null, "%s %s frame 0 is an atlas slice" % [cls, walk_name])
+			eq(atlas.atlas.resource_path, drop, "%s %s plays the drop PNG" % [cls, walk_name])
+			eq(atlas.region.size, Vector2(144, 160), "%s %s cell is 144×160" % [cls, walk_name])
+			eq(walk_bank.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
 	eq(gloam_bank.get_frame_count("walk_e"), 6, "gloam walk_e has 6 frames")
 	eq(gloam_bank.get_animation_loop("walk_e"), true, "gloam walk loops")
 	eq(is_equal_approx(gloam_bank.get_animation_speed("walk_e"), 12.0), true, "gloam walk is 12 fps")
@@ -1003,8 +1034,23 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(gloam_bank.get_frame_count("hit_s"), 4, "gloam hit_s has 4 frames")
 	eq(gloam_bank.get_frame_count("death_w"), 6, "gloam death_w has 6 frames")
 	eq(gloam_bank.get_animation_loop("death_w"), false, "gloam death does not loop")
-	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
-	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
+	for cls in ["mender", "bastion"]:
+		var walk_only := StripLibrary.frames_for(cls)
+		truthy(walk_only != null, "%s walk bank loads from the drop PNGs" % cls)
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			eq(walk_only.has_animation(walk_name), true, "%s %s is on the walk bank" % [cls, walk_name])
+			eq(walk_only.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
+			eq(walk_only.get_animation_loop(walk_name), true, "%s %s loops" % [cls, walk_name])
+			eq(is_equal_approx(walk_only.get_animation_speed(walk_name), 12.0), true, "%s %s is 12 fps" % [cls, walk_name])
+			var cell_tex := walk_only.get_frame_texture(walk_name, 0)
+			truthy(cell_tex != null, "%s %s frame 0 texture is non-null" % [cls, walk_name])
+			eq(cell_tex.get_width(), 144, "%s %s cell is 144 wide" % [cls, walk_name])
+			eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])
+		eq(walk_only.has_animation("attack_e"), false, "%s has no attack strip" % cls)
+		eq(walk_only.has_animation("cast_e"), false, "%s has no cast strip" % cls)
+		eq(walk_only.has_animation("hit_e"), false, "%s has no hit strip" % cls)
+		eq(walk_only.has_animation("death_e"), false, "%s has no death strip" % cls)
 	var batch1c: Array[String] = StripLibrary.batch1c_png_paths()
 	eq(batch1c.size(), 44, "batch-1c adds cast/hit/death and the gloam set")
 	for path in batch1c:
@@ -1072,9 +1118,9 @@ func _test_strip_library_missing_and_slice() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
 	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
-	eq(pawn.has_walk_strip(), false, "mender without files has no walk strip")
-	eq(pawn.has_attack_strip(), false, "mender without files has no attack strip")
-	eq(pawn.has_cast_strip(), false, "mender without files has no cast strip")
+	eq(pawn.has_walk_strip(), true, "mender east plays the dropped walk strip")
+	eq(pawn.has_attack_strip(), false, "mender walk drop has no attack strip")
+	eq(pawn.has_cast_strip(), false, "mender walk drop has no cast strip")
 	pawn.bind_motion_frames(frames)
 	eq(pawn.has_walk_strip(), true, "bound SE frames resolve for an east facing")
 	eq(str(pawn._strip_choice("walk").get("anim", "")), "walk_e", "east plays walk_e")
@@ -1097,6 +1143,17 @@ func _test_strip_library_missing_and_slice() -> void:
 	truthy(readme.contains("kestrel_frames.tres"), "README lists the frames tres")
 	truthy(readme.contains("kestrel_cast_mark_{e,s,n,w}.png"), "README lists Mark Shot strips")
 	truthy(readme.contains("gloam_walk_{e,s,n,w}.png"), "README lists the gloam walks")
+	truthy(readme.contains("proposal B"), "Gloam walk drop is proposal B")
+	eq(StripLibrary.export_png_path("mender", "walk", "e"), "res://art/export_2x/characters/mender/anims/mender_walk_e.png", "mender east walk drops in the mender anims folder")
+	truthy(readme.contains("proposal D2"), "Mender walk drop is proposal D2")
+	truthy(readme.contains("more open hood"), "Mender D2 keeps the face visible")
+	eq(StripLibrary.export_png_path("ironjaw", "walk", "e"), "res://art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png", "ironjaw east walk stays on the ironjaw anims path")
+	truthy(readme.contains("Ironjaw A2"), "Ironjaw walk drop is A2")
+	truthy(readme.contains("double-bit axes"), "Ironjaw A2 keeps the dual axes")
+	eq(StripLibrary.export_png_path("bastion", "walk", "e"), "res://art/export_2x/characters/bastion/anims/bastion_walk_e.png", "bastion east walk drops in the bastion anims folder")
+	truthy(readme.contains("proposal 2C"), "Bastion walk drop is proposal 2C")
+	truthy(readme.contains("oversized tower shield"), "Bastion 2C keeps the tower shield")
+	truthy(readme.contains("white-eyes"), "the white-eyes Gloam sheet is not the drop")
 	truthy(readme.contains("gloam_frames.tres"), "README lists the gloam frames tres")
 	truthy(readme.contains("art/grok_project/anims/"), "README keeps grok masters as fallback only")
 	pawn.free()
@@ -1128,8 +1185,9 @@ func _test_driven_walk_cycle() -> void:
 	pawn.sample_driven_gait(0.5)
 	eq(strip.frame == plant, false, "a driven stride leaves the idle frame")
 	eq(strip.frame, MOTION.walk_cycle_frame(0.5, count, 0), "the stride shows that walk-cycle frame")
-	eq(strip.position.y < -3.0, true, "the body rises off the foot")
-	eq(strip.position.y > -8.0, true, "the rise is not a long hop")
+	var stride_body := MOTION.stride_rise(0.5) + MOTION.stride_lead(0.5, pawn.facing_screen())
+	eq(strip.position, stride_body, "the body leads along the facing and rises off the foot")
+	eq(stride_body.y < -1.0, true, "the stride is not flat on the collider")
 	eq(foot.position, Vector2.ZERO, "the ground mark stays on the floor while the body walks")
 	eq(pawn.position, Vector2(48, 16), "the gait does not lift the foot off the cell")
 	eq(strip.offset, Vector2(0, -72), "the strip pivot stays on the diamond")

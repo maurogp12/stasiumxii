@@ -61,12 +61,25 @@ const HUD_BOTTOM_OFFSET := -252.0
 ## Same clamp the board camera used on the 960×720 fit.
 const BOARD_ZOOM_MIN := 0.35
 const BOARD_ZOOM_MAX := 1.25
-## Phone cover zoom on a tall window is about 4.5. Past this the cap holds.
-const MOBILE_BOARD_ZOOM_MAX := 5.0
+## Backstop. A 20:9 phone lands near 1.5. The 0.1.21 cover zoom was ~3.0.
+const MOBILE_BOARD_ZOOM_MAX := 2.0
 ## Iso diamond height in board pixels.
 const DIAMOND_H := 32.0
-## Smallest on-screen diamond. Cover zoom is larger on a normal phone.
-const MOBILE_CELL_TARGET_PX := 44.0
+## Insets for the phone frame. The navy/gold HUD overlays this band.
+## The old path reserved 260px of empty gutter, then cover-zoomed into it.
+const MOBILE_FRAME_TOP := 36.0
+const MOBILE_FRAME_BOTTOM := 64.0
+## Share of the limiting board axis kept on screen. 1.0 is a pure contain
+## (the old tiny board). The 0.1.21 cover zoom ignored this and cropped
+## to a few giant cells.
+const MOBILE_BOARD_KEEP := 0.84
+## Session camera. 1.0 is the overview default. Each press multiplies this.
+## The floor is the whole diamond. The ceiling stays under the 3.0 cover.
+const PLAYER_ZOOM_STEP := 1.16
+const PLAYER_ZOOM_BIAS_MIN := 0.84
+const PLAYER_ZOOM_BIAS_MAX := 1.70
+const PLAYER_ZOOM_MAX := 2.25
+static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0
 
@@ -153,25 +166,45 @@ static func board_gesture(event: InputEvent) -> String:
 
 
 ## Phone / tablet export. Headless and desktop stay false, so tests keep the 22px pick.
+## `--mobile-frame` previews that camera on a desktop window. It is not a combat rule.
 static func use_mobile_pick() -> bool:
-	return OS.has_feature("android") or OS.has_feature("ios") or OS.has_feature("mobile")
+	if OS.has_feature("android") or OS.has_feature("ios") or OS.has_feature("mobile"):
+		return true
+	return OS.get_cmdline_user_args().has("--mobile-frame")
+
+
+## Full-bleed landscape. 0.1.21 left the activity portrait while the UI is the
+## 960×720 poster, so the whole game sat in a short strip with black bars.
+## Sensor landscape turns the phone. canvas_items + expand then fills that
+## window instead of letterboxing the base size. Desktop and headless no-op.
+static func lock_landscape_frame(window: Window = null) -> void:
+	if not use_mobile_pick() or OS.get_cmdline_user_args().has("--mobile-frame"):
+		return
+	DisplayServer.screen_set_orientation(DisplayServer.SCREEN_SENSOR_LANDSCAPE)
+	if window == null:
+		return
+	window.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	window.content_scale_size = Vector2i(int(VIEW_W), int(VIEW_H))
 
 
 ## (top, bottom) of the board band in canvas pixels.
-## Desktop, and a viewport that is not taller than 720, keep 140..460.
-## A phone portrait grows the viewport height. The extra rows go to the board.
-## The bottom reserve (720 - 460) stays, so the thumb cluster is not covered.
+## Desktop keeps 140..460. A phone frames the diamond across the screen.
+## The turn plaque and the thumb cluster overlay the edges. They no longer
+## reserve a 260px empty band that the 0.1.21 cover zoom then filled.
 static func play_band_for(viewport_size: Vector2, mobile: bool = false) -> Vector2:
-	if not mobile or viewport_size.y <= VIEW_H:
+	if not mobile:
 		return Vector2(PLAY_TOP, PLAY_BOTTOM)
-	var reserve := VIEW_H - PLAY_BOTTOM
-	return Vector2(PLAY_TOP, viewport_size.y - reserve)
+	var top := MOBILE_FRAME_TOP
+	var bottom := maxf(viewport_size.y - MOBILE_FRAME_BOTTOM, top + 1.0)
+	return Vector2(top, bottom)
 
 
 ## Fit zoom for a board of board_w × board_h. Desktop ignores viewport_size and
-## stays on the 960×720 band (15×15 is 0.64). A phone covers the clear play
-## rectangle with the iso diamond, so cells are large and the dark gutter
-## around the board is gone. Pan still reaches the cropped edges.
+## stays on the 960×720 band (15×15 is 0.64). A phone shows most of the iso
+## diamond (MOBILE_BOARD_KEEP of the limiting axis) with a modest gutter.
+## That sits between the old contain-fit (~0.64–0.97, tiny cells, wide
+## margins) and the 0.1.21 cover zoom (~3.0, a few giant cells).
 static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
 	var view := viewport_size if mobile else Vector2(VIEW_W, VIEW_H)
 	var span := _play_span(view, mobile)
@@ -180,11 +213,40 @@ static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, m
 	var fit := minf(span.x / bw, span.y / bh)
 	if not mobile:
 		return clampf(fit, BOARD_ZOOM_MIN, BOARD_ZOOM_MAX)
-	# |x|/(W/2) + |y|/(H/2) = 1 on the diamond. A centered rectangle sits
-	# inside it once zoom reaches view.x/W + play_h/H.
-	var cover := view.x / bw + span.y / bh
-	var floor_zoom := MOBILE_CELL_TARGET_PX / DIAMOND_H
-	return clampf(maxf(cover, floor_zoom), BOARD_ZOOM_MIN, MOBILE_BOARD_ZOOM_MAX)
+	var overview := fit / maxf(MOBILE_BOARD_KEEP, 0.05)
+	return clampf(overview, BOARD_ZOOM_MIN, MOBILE_BOARD_ZOOM_MAX)
+
+
+## (min, max) the player may reach. Min is the whole diamond on a phone,
+## and the desktop fit on a desk. Max is a closer view, not the 3.0 cover.
+static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> Vector2:
+	var base := board_zoom(board_w, board_h, viewport_size, mobile)
+	if not mobile:
+		return Vector2(base, BOARD_ZOOM_MAX)
+	var view := viewport_size
+	var span := _play_span(view, true)
+	var fit := minf(span.x / maxf(board_w, 1.0), span.y / maxf(board_h, 1.0))
+	return Vector2(minf(fit, base), PLAYER_ZOOM_MAX)
+
+
+## Overview times the session bias, clamped to player_zoom_limits.
+## The bias survives a new fight. It is not a combat rule.
+static func player_board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
+	var base := board_zoom(board_w, board_h, viewport_size, mobile)
+	var limits := player_zoom_limits(board_w, board_h, viewport_size, mobile)
+	return clampf(base * player_zoom_bias, limits.x, limits.y)
+
+
+## +1 zooms in, -1 zooms out. No-op at the bias ends.
+static func nudge_player_zoom(direction: int) -> void:
+	if direction > 0:
+		player_zoom_bias = minf(player_zoom_bias * PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MAX)
+	elif direction < 0:
+		player_zoom_bias = maxf(player_zoom_bias / PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MIN)
+
+
+static func reset_player_zoom() -> void:
+	player_zoom_bias = 1.0
 
 
 ## (play width, play height) used to fit the diamond between the chrome.

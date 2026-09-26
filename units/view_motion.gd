@@ -4,10 +4,11 @@ class_name ViewMotion
 ## View-only motion tunables. CombatSim never reads this file.
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
-## files exist (SE→e, SW→s, NE→n, NW→w). Walk slides through cell centers
-## while `walk_<facing>` loops. The tactical cell stays on the pawn.
-## The visual foot is the pawn origin; the body rises off that foot and
-## the contact shadow stays on it. A missing strip keeps the bounce and adds
+## files exist (SE→e, SW→s, NE→n, NW→w). The foot eases from cell to cell.
+## `walk_<facing>` is sampled from that step: contact frames only while the
+## foot is planted, passing frames only while it is between cells. The body
+## leads along the facing and returns to the foot on arrival. The contact
+## shadow stays on the foot. A missing strip keeps the bounce and adds
 ## squash on launch/land plus stretch at the crest. It does not play a
 ## tile-tall hop. Facing turns in place for two walk frames before the
 ## translate. The snapshot facing snaps only after the last land.
@@ -409,8 +410,12 @@ const FACING_SCREEN := {
 	"W": Vector2(-20, -10),
 }
 ## Share the hop's press and settle so the foot is down while travel is held.
+## The open window is the stride. Contact frames belong on either side of it.
 const STEP_PRESS_END := 0.16
-const STEP_SETTLE_START := 0.82
+const STEP_SETTLE_START := 0.70
+## How far the body reaches along the facing while the foot is between cells.
+## Short of one iso step (about 36px) so the lead is a stride, not a hop.
+const STRIDE_LEAD_PX := 10.0
 
 
 ## 0 on the departure tile through the press, 1 on the arrival tile through
@@ -426,29 +431,50 @@ static func step_travel(t: float) -> float:
 
 
 ## Frame of the facing walk strip for this tile.
-## One tile plays half the cycle, contact to contact. The press holds the
-## departure plant. The settle holds the next plant, so arrival cannot freeze
-## on a passing frame. step_index continues that cycle onto the next segment.
-## An open stride never stays on the departure plant: that is an idle slide.
+## One tile plays half the cycle, contact to contact. The departure contact
+## shows only while the foot is still on that cell. The arrival contact shows
+## only after the foot has landed. The open stride uses the passing frames,
+## so a planted pose cannot slide across the diamond. step_index continues
+## that cycle onto the next segment.
 static func walk_cycle_frame(t: float, frame_count: int, step_index: int = 0) -> int:
 	var count := maxi(frame_count, 1)
 	if count <= 1:
 		return 0
 	var half := maxi(count / 2, 1)
 	var start := (maxi(step_index, 0) * half) % count
-	var along := 0.0
-	if t <= STEP_PRESS_END:
-		along = 0.0
-	elif t >= STEP_SETTLE_START:
-		along = float(half)
-	else:
-		var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
-		var eased := u * u * (3.0 - 2.0 * u)
-		along = eased * float(half)
-	var idx := (start + int(round(along))) % count
-	if t > STEP_PRESS_END and t < STEP_SETTLE_START and idx == start:
-		idx = (start + 1) % count
-	return idx
+	var travel := step_travel(t)
+	if travel <= 0.001:
+		return start
+	var end := (start + half) % count
+	if travel >= 0.999:
+		return end
+	var passing := half - 1
+	if passing <= 0:
+		return (start + 1) % count
+	var slot := int(floor(travel * float(passing)))
+	slot = clampi(slot, 0, passing - 1)
+	return (start + 1 + slot) % count
+
+
+## Vertical gait for a driven step. Down on both plants, up only while the
+## foot is between cells. The free-running bounce still uses hop_offset.
+static func stride_rise(t: float) -> Vector2:
+	var travel := step_travel(t)
+	if travel <= 0.0 or travel >= 1.0:
+		return Vector2.ZERO
+	return Vector2(0.0, -HOP_PX * sin(travel * PI))
+
+
+## Body offset along the facing while the foot travels. Zero on both plants
+## so arrival is the idle foot, not a lean left over the next cell.
+## The vector is the facing axis. It has no sideways term.
+static func stride_lead(t: float, facing_dir: Vector2) -> Vector2:
+	var travel := step_travel(t)
+	if travel <= 0.0 or travel >= 1.0:
+		return Vector2.ZERO
+	if facing_dir.length_squared() < 1.0:
+		return Vector2.ZERO
+	return facing_dir.normalized() * STRIDE_LEAD_PX * sin(travel * PI)
 
 
 ## Cardinal steps use the grid letter. Any other segment faces the screen

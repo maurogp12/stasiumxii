@@ -21,8 +21,8 @@ extends Node2D
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
 ## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
-## sprite capsule. Phone portrait gives extra viewport height to the board and
-## raises the camera so a diamond is easier to tap. A walk-mode drag pans.
+## sprite capsule. A phone shows most of the Koliseo diamond at a modest
+## zoom, with the HUD over the edges. A walk-mode drag pans.
 ## A finger that starts on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
@@ -48,7 +48,7 @@ extends Node2D
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 ## Mobile-track chrome. A walk plants the foot, then strides to the next cell
 ## in about 0.30s. The sprite root takes the step bounce. Advance stays a snap.
-## Phone framing raises the camera so diamonds are easier to tap. Desktop fit stays.
+## Phone framing shows most of the diamond. Desktop fit stays.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -119,6 +119,7 @@ var _ambush_arrival_tween: Tween
 
 
 func _ready() -> void:
+	TOUCH.lock_landscape_frame(get_window())
 	_hud = $"../HUD" as CombatHUD
 	_hud.set_preview_source(_sim())
 	_hud.spell_selected.connect(_on_spell_selected)
@@ -127,6 +128,7 @@ func _ready() -> void:
 	_hud.new_match_requested.connect(_on_new_match)
 	_hud.ready_requested.connect(_on_ready_requested)
 	_hud.aim_dragged.connect(_on_hud_aim_dragged)
+	_hud.zoom_step_requested.connect(_on_zoom_step)
 	# VFX pass 1. Motion pass owns pawn tweens. This node only plays pooled effects.
 	_vfx = VFX_DIRECTOR.new()
 	_vfx.name = "VfxDirector"
@@ -1090,8 +1092,8 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# before the step, or a refresh snaps it and the walk reads as a teleport.
 	# Face the step before the body moves. A cardinal uses that letter. Any other
 	# segment faces the screen direction so the pawn does not slide sideways or
-	# backwards. The walk strip seeks to its plant frame as the stride starts.
-	# The snapshot facing snaps only after the last land.
+	# backwards. The walk strip holds its contact frame through that turn, then
+	# the foot eases. The snapshot facing snaps only after the last land.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -1112,13 +1114,12 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	_walk_tween.set_trans(Tween.TRANS_LINEAR)
 	var walk_armed := false
 	for cell in cells:
-		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
+		var grid_dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
+		if grid_dir == "":
+			grid_dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
+		var dir := VIEW_MOTION.walk_segment_facing(prev, cell, _cell_to_local(cell) - _cell_to_local(prev))
 		if dir == "":
-			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
-			if prev.x != cell.x and prev.y != cell.y:
-				var along := VIEW_MOTION.screen_facing(_cell_to_local(cell) - _cell_to_local(prev))
-				if along != "":
-					dir = along
+			dir = grid_dir
 		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
 		if turn.is_empty():
 			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
@@ -1893,10 +1894,9 @@ func _rebuild_grid(size: int) -> void:
 
 
 ## Zoom the diamond into the play band. Cell size stays 64×32.
-## Desktop stays the 960×720 fit. A phone covers the clear play rectangle
-## with the iso diamond so cells are large enough to tap, and frames the
-## active fighter. Middle-mouse can pan past the fit. A phone drag stays
-## inside the board so the dark gutter does not come back.
+## Desktop stays the 960×720 fit. A phone keeps most of the iso diamond
+## on screen and frames the active fighter. Middle-mouse can pan past the
+## fit. A phone drag stays inside the board.
 func _fit_board_camera() -> void:
 	_ensure_camera()
 	var n := _board_size
@@ -1916,7 +1916,7 @@ func _fit_board_camera() -> void:
 	if mobile:
 		viewport = get_viewport_rect().size
 	var band := TOUCH.play_band_for(viewport, mobile)
-	var zoom := TOUCH.board_zoom(board_w, board_h, viewport, mobile)
+	var zoom := TOUCH.player_board_zoom(board_w, board_h, viewport, mobile)
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
@@ -1936,6 +1936,14 @@ func _fit_board_camera() -> void:
 	_fit_camera_pos = camera_world - global_position
 	_camera.position = _fit_camera_pos + (look - center)
 	_clamp_camera()
+	var limits := TOUCH.player_zoom_limits(board_w, board_h, viewport, mobile)
+	if _hud != null and _hud.has_method("set_zoom_buttons"):
+		_hud.set_zoom_buttons(zoom < limits.y - 0.02, zoom > limits.x + 0.02)
+
+
+func _on_zoom_step(direction: int) -> void:
+	TOUCH.nudge_player_zoom(direction)
+	_fit_board_camera()
 
 
 func _frame_focus_local() -> Vector2:
