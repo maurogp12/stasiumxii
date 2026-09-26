@@ -134,6 +134,16 @@ static func batch1_png_paths() -> Array[String]:
 	return out
 
 
+## Scenario hit-flinch sheets. 576×160, four 144×160 cells, one per facing.
+## Same path the pawn already plays as `hit_<n|e|s|w>`.
+static func hit_png_paths() -> Array[String]:
+	var out: Array[String] = []
+	for cls in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		for face in LETTERS:
+			out.append(export_png_path(cls, "hit", face))
+	return out
+
+
 ## Batch-1c sheets that were not already in the v3 walk/attack set.
 ## Ironjaw attack is louder in place and stays on batch1_png_paths().
 static func batch1c_png_paths() -> Array[String]:

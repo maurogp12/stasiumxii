@@ -26,6 +26,7 @@ func _finish_live() -> void:
 	await _test_walk_idle_matches_strip()
 	await _test_live_walk_keeps_sheet()
 	await _test_batch1_disk_strips()
+	await _test_hit_flinch_playback()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
 	await _test_ambush_present_race()
@@ -860,6 +861,75 @@ func _add_anim(frames: SpriteFrames, anim: String, count: int, fps: float) -> vo
 		frames.add_frame(anim, tex)
 
 
+func _test_hit_flinch_playback() -> void:
+	StripLibrary.clear_cache()
+	for cls in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		var bank := StripLibrary.frames_for(cls)
+		truthy(bank != null, "%s flinch bank loads" % cls)
+		if bank == null:
+			continue
+		for face in ["e", "s", "n", "w"]:
+			var hit_anim := "hit_%s" % face
+			var walk_anim := "walk_%s" % face
+			eq(bank.get_frame_count(hit_anim), 4, "%s %s flinch bank is 4 frames" % [cls, face])
+			var flash := bank.get_frame_texture(hit_anim, 0).get_image()
+			var settle := bank.get_frame_texture(hit_anim, 3).get_image()
+			var plant := bank.get_frame_texture(walk_anim, 0).get_image()
+			truthy(flash != null and settle != null and plant != null, "%s %s flinch cells load" % [cls, face])
+			if flash == null or settle == null or plant == null:
+				continue
+			eq(flash.get_width(), 144, "%s %s flash cell is 144 wide" % [cls, face])
+			eq(flash.get_height(), 160, "%s %s flash cell is 160 tall" % [cls, face])
+			eq(_opaque_luma(flash) > _opaque_luma(settle) + 0.15, true, "%s %s flashes on frame 1 and has settled by frame 4" % [cls, face])
+			eq(absi(_foot_row(flash) - _foot_row(plant)) <= 2, true, "%s %s flinch foot matches the walk plant" % [cls, face])
+			var pawn := Pawn.new()
+			get_root().add_child(pawn)
+			pawn.apply_snapshot(_unit(cls, face.to_upper(), 0), 0)
+			await process_frame
+			var dur := pawn.play_view_plan({"hit": true, "away": Vector2(20, 8)})
+			await process_frame
+			var strip := _visible_strip(pawn)
+			truthy(strip != null, "%s %s hit shows the flinch strip" % [cls, face])
+			if strip != null:
+				eq(String(strip.animation), hit_anim, "%s %s plays the facing flinch" % [cls, face])
+				eq(strip.sprite_frames.get_frame_count(hit_anim), 4, "%s %s flinch plays 4 frames" % [cls, face])
+				eq(strip.sprite_frames.get_animation_loop(hit_anim), false, "%s %s flinch is one-shot" % [cls, face])
+				var knock_t := MOTION.HIT_OUT_SEC / MOTION.hit_sec()
+				pawn._sample_hit(knock_t, Vector2(20, 8))
+				eq(strip.scale, pawn._body_scale(), "%s %s flinch does not add a squash" % [cls, face])
+				eq(strip.offset, Vector2(0, -72), "%s %s flinch keeps the walk foot pivot" % [cls, face])
+				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
+			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
+			pawn.settle_motion()
+			var rested := _visible_strip(pawn)
+			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
+			pawn.free()
+			await process_frame
+
+
+func _opaque_luma(image: Image) -> float:
+	var sum := 0.0
+	var count := 0
+	for y in image.get_height():
+		for x in image.get_width():
+			var pixel := image.get_pixel(x, y)
+			if pixel.a <= 0.08:
+				continue
+			sum += (pixel.r + pixel.g + pixel.b) / 3.0
+			count += 1
+	if count <= 0:
+		return 0.0
+	return sum / float(count)
+
+
+func _foot_row(image: Image) -> int:
+	for y in range(image.get_height() - 1, -1, -1):
+		for x in image.get_width():
+			if image.get_pixel(x, y).a > 0.08:
+				return y
+	return -1
+
+
 func _test_batch1c_hot_swap() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
@@ -1174,8 +1244,12 @@ func _test_strip_library_missing_and_slice() -> void:
 			eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])
 		eq(walk_only.has_animation("attack_e"), false, "%s has no attack strip" % cls)
 		eq(walk_only.has_animation("cast_e"), false, "%s has no cast strip" % cls)
-		eq(walk_only.has_animation("hit_e"), false, "%s has no hit strip" % cls)
 		eq(walk_only.has_animation("death_e"), false, "%s has no death strip" % cls)
+		var hit_name := "hit_e"
+		eq(walk_only.has_animation(hit_name), true, "%s hit flinch is on the bank" % cls)
+		eq(walk_only.get_frame_count(hit_name), 4, "%s hit flinch is 4 frames" % cls)
+		eq(walk_only.get_animation_loop(hit_name), false, "%s hit flinch is one-shot" % cls)
+		eq(is_equal_approx(walk_only.get_animation_speed(hit_name), 12.0), true, "%s hit flinch is 12 fps" % cls)
 	var batch1c: Array[String] = StripLibrary.batch1c_png_paths()
 	eq(batch1c.size(), 44, "batch-1c adds cast/hit/death and the gloam set")
 	for path in batch1c:
@@ -1207,6 +1281,18 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(is_equal_approx(StripLibrary.kind_fps("walk"), 12.0), true, "walk strips stay 12 fps")
 	eq(StripLibrary.kind_frame_hint("gloam", "attack"), 5, "gloam attack is 5 frames")
 	eq(StripLibrary.kind_frame_hint("kestrel", "hit"), 4, "hit strips are 4 frames")
+	var flinch_paths: Array[String] = StripLibrary.hit_png_paths()
+	eq(flinch_paths.size(), 20, "hit flinch is five classes by four facings")
+	for path in flinch_paths:
+		eq(FileAccess.file_exists(path), true, "hit flinch png is in the repo: %s" % path)
+		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
+		var flinch_tex := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
+		truthy(flinch_tex is Texture2D, "hit flinch png loads: %s" % path)
+		eq((flinch_tex as Texture2D).get_width(), 576, "hit flinch is 4 cells wide: %s" % path)
+		eq((flinch_tex as Texture2D).get_height(), 160, "hit flinch is one cell tall: %s" % path)
+		var flinch_import := FileAccess.get_file_as_string(path + ".import")
+		truthy(flinch_import.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
+		truthy(flinch_import.contains("compress/mode=0"), "hit flinch import is lossless: %s" % path)
 	eq(StripLibrary.try_load("res://art/export_2x/characters/kestrel/anims/kestrel_walk_e_gen.png"), null, "gen_raw sheets are not loaded")
 	var image := Image.create(48, 8, false, Image.FORMAT_RGBA8)
 	for i in 6:

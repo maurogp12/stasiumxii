@@ -29,8 +29,11 @@ class_name Pawn
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
 ## and falls back to v3 `attack_*` only when that sheet is missing.
 ## Detonate plays `cast_*` when present, otherwise a point pose — not attack_*.
-## Hit plays `hit_*` with a white flash. Death plays `death_*` and holds the
-## last cell. Missing sheets keep the flash plus flinch, and a dissolve.
+## Hit plays the facing `hit_*` strip: four 144×160 cells, flash on the
+## first, settled on the last. That strip is the recoil, so it does not
+## also take the no-strip squash. The white flash still rides on top.
+## Death plays `death_*` and holds the last cell. Missing sheets keep the
+## flash plus flinch, and a dissolve.
 ## Anticipation pulls back, the impact frame holds, then the body recovers.
 ## The clip keeps authored fps when that length still fits the 0.6s lock.
 ## A walk strip never plays the old hop arc. The fallback is the same bounce.
@@ -1409,13 +1412,25 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	if _sprite == null:
 		return
 	var pos := VIEW_MOTION.hit_offset(t, dir)
-	var mul := VIEW_MOTION.hit_squash(t)
+	# The 4-frame sheet already flashes and recoils. Squash is the fallback
+	# for a class that has no hit_<facing> clip.
+	var mul := Vector2.ONE if _hit_strip_is_body() else VIEW_MOTION.hit_squash(t)
 	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
 	_sprite.scale = scaled
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = scaled
+
+
+func _hit_strip_is_body() -> bool:
+	return (
+		_body_kind == "hit"
+		and _strip_holds_body
+		and _active_strip != null
+		and is_instance_valid(_active_strip)
+		and _active_strip.visible
+	)
 
 
 func _sample_lift(t: float) -> void:
