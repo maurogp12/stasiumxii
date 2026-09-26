@@ -103,6 +103,10 @@ Coilspire’s sprite is the Coilgate door-sheet crop (spider body, tesla coils),
 
 https://github.com/maurogp12/stasiumxii/pull/137 into `mobile`. Not merged. No APK.
 
+### 2026-09-26 follow-up — foe portraits, character only
+
+The first crops still carried concept-sheet chrome (titles, biome banners, flavor boxes) and a few filenames showed the neighbor: Warden’s file was the Drudge card, Captain’s file was Tide Skitter. Each `art/stasis/foes/*.png` is cut again from the same door sheets. The picture is that creature only, on a transparent field, in the same 144×160 canvas. Bosses stand near Ironjaw height when the drawing is tall (Warden, Captain Brineclaw, Tyrant Coilspire). A wide brute such as Slagheart stays full-body and therefore shorter. Trash stay shorter. Filenames and catalog wiring are unchanged. No APK.
+
 ## 2026-09-26 — Koliseo boards feel alive
 
 Look target is Dofus Koliseo: an isometric tactical arena that reads as a place, with a wind-up before the cast and a hit you can see. This pass is paint, weather, and motion chrome on the five Locked arenas. Original STASIUM sheets only. No Dofus art.
