@@ -852,9 +852,8 @@ func _present_resolve(events: Array) -> bool:
 		return false
 	if ambush_hit.is_empty():
 		_snap_ambush_teleports(events)
-	else:
-		_plant_ambush_body(ambush_hit)
-		_reveal_ambush_plant(ambush_hit)
+		_reveal_ambush_miss(events)
+	# A hit stays on the cast cell for the collapse. The snap is the next beat.
 	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
 	if ambush_hit.is_empty():
@@ -911,25 +910,90 @@ func _ambush_present_is_duplicate(event: Dictionary) -> bool:
 	return _ambush_hold_seat == int(event.get("seat", -2))
 
 
-## Shade and Invisible share this arrival. The body is already on the back
-## tile. Hold there, facing the prey, then slash. The 22 floats on that slash.
+## Shade and Invisible share this arrival. Collapse on the cast cell, snap
+## to the back tile, face the prey, hold, then slash. The 22 floats on that slash.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
 	_ambush_contact_armed = false
 	_ambush_open_seat = int(event.get("seat", -1))
-	# Capture the planted cell. A refresh during the hold must not walk the
-	# body back to the cast tile.
+	# Hold the cast cell. The snapshot has already moved. A refresh during the
+	# collapse must not teleport the sprite before the snap.
 	_capture_ambush_hold(event)
-	var sec := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
-	if sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+	_conceal_ambush_caster(event)
+	var collapse := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
+	var seat := int(event.get("seat", -1))
+	if pawns_by_seat.has(seat):
+		var caster: Pawn = pawns_by_seat[seat]
+		if caster != null and is_instance_valid(caster):
+			collapse = caster.play_ambush_collapse(collapse)
+	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
+	if (collapse <= 0.0 and hold <= 0.0) or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_commit_ambush_plant(event, token)
 		_arm_ambush_contact(event, events, token)
 		return
-	_pending_motion_sec = maxf(_pending_motion_sec, sec)
+	_pending_motion_sec = maxf(_pending_motion_sec, collapse + hold)
 	_ambush_arrival_tween = create_tween()
-	_ambush_arrival_tween.tween_interval(sec)
+	if collapse > 0.0:
+		_ambush_arrival_tween.tween_interval(collapse)
+	_ambush_arrival_tween.tween_callback(_commit_ambush_plant.bind(event, token))
+	if hold > 0.0:
+		_ambush_arrival_tween.tween_interval(hold)
 	_ambush_arrival_tween.tween_callback(_arm_ambush_contact.bind(event, events, token))
+
+
+## Snap, face, and reveal. The slash is a later beat. Calling this while the
+## body is still on the cast cell is the plant, not the hit.
+func _commit_ambush_plant(event: Dictionary, token: int) -> void:
+	if token != _ambush_arrival_token or not is_inside_tree():
+		return
+	var seat := int(event.get("seat", -1))
+	if pawns_by_seat.has(seat):
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn != null and is_instance_valid(pawn):
+			pawn.restore_ambush_body()
+	_snap_ambush_teleports([event])
+	_reveal_ambush_plant(event)
+	if not pawns_by_seat.has(seat):
+		return
+	var planted: Pawn = pawns_by_seat[seat]
+	if planted == null or not is_instance_valid(planted):
+		return
+	_ambush_hold_seat = seat
+	_ambush_hold_cell = planted.grid_position
+	_ambush_hold_facing = str(planted.facing)
+	_ambush_hold_pos = planted.position
+	_ambush_hold_event = event
+
+
+func _conceal_ambush_caster(event: Dictionary) -> void:
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return
+	var pawn: Pawn = pawns_by_seat[seat]
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	if pawn.invisible:
+		pawn.conceal_for_ambush()
+
+
+## A miss does not relocate. It still ends Invisible, and the body has to
+## be drawn again. A slash stamp is not part of this beat.
+func _reveal_ambush_miss(events: Array) -> void:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if str(event.get("type", "")) != "miss":
+			continue
+		var seat := int(event.get("seat", -1))
+		if not pawns_by_seat.has(seat):
+			continue
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn != null and is_instance_valid(pawn):
+			pawn.reveal_after_ambush()
 
 
 func _reveal_ambush_plant(event: Dictionary) -> void:
@@ -1435,7 +1499,12 @@ func _await_view_motions() -> void:
 	if _hud != null:
 		_hud.set_locked(true)
 	var started := Time.get_ticks_msec()
-	var budget_ms := int(VIEW_MOTION.ACTION_LOCK_MAX * 1000.0)
+	var budget_sec := VIEW_MOTION.ACTION_LOCK_MAX
+	if _ambush_open_seat >= 0 or (_ambush_arrival_tween != null and is_instance_valid(_ambush_arrival_tween)):
+		# Collapse + plant hold + slash is longer than the 0.6s one-shot lock.
+		# Cutting here used to settle the strike in the same beat as the snap.
+		budget_sec = maxf(budget_sec, VIEW_MOTION.ambush_sequence_sec())
+	var budget_ms := int(budget_sec * 1000.0)
 	while Time.get_ticks_msec() - started < budget_ms:
 		if not _motions_active():
 			break

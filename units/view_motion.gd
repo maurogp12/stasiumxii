@@ -49,11 +49,12 @@ const ATTACK_LUNGE_PX := 18.0
 ## Contact slash after the snap. It is a local reach, not a board dash.
 ## Facing damage stays the sim's existing resolution. This reach is view-only.
 const AMBUSH_LUNGE_PX := 36.0
-## Kept for the miss whiff budget. A hit does not collapse on the cast tile.
-const AMBUSH_COLLAPSE_SEC := 0.08
+## Shrink on the cast cell before the snap. A hit that skips this reads as a
+## slash from the body that is still standing there.
+const AMBUSH_COLLAPSE_SEC := 0.18
 ## Rest on the back tile after the snap, before the slash. Long enough that the
 ## blink reads as a relocation. The slash stays a local pose on that tile.
-const AMBUSH_ARRIVE_HOLD_SEC := 0.12
+const AMBUSH_ARRIVE_HOLD_SEC := 0.28
 ## Miss whiff. The body stays on the cast cell.
 const AMBUSH_WHIFF_SEC := 0.16
 
@@ -157,15 +158,22 @@ static func ambush_contact_sec() -> float:
 	return ANTICIPATION_SEC + ATTACK_OUT_SEC
 
 
-## Success, Shade and Invisible alike: snap to the back tile, face the prey,
-## then slash, then the 22. Miss: whiff only. No snap and no damage beat.
-## A slash from the cast cell is not this sequence.
+## Wall-clock for collapse, the plant hold, and the slash. The 0.6s action
+## lock is shorter than that chain, so the board waits this long instead.
+static func ambush_sequence_sec() -> float:
+	return AMBUSH_COLLAPSE_SEC + AMBUSH_ARRIVE_HOLD_SEC + attack_sec() + 0.35
+
+
+## Success, Shade and Invisible alike: collapse on the cast cell, snap to the
+## back tile, face the prey, then slash, then the 22. Miss: whiff only.
+## No snap and no damage beat. A slash from the cast cell is not this sequence.
 static func ambush_beats(event: Dictionary) -> Array:
 	if str(event.get("spell", "")) != SpellKits.AMBUSH and str(event.get("spell", "")) != "ambush":
 		return []
 	var typ := str(event.get("type", ""))
 	if typ == "hit":
 		return [
+			{"beat": "collapse", "sec": AMBUSH_COLLAPSE_SEC},
 			{"beat": "snap"},
 			{"beat": "face", "sec": AMBUSH_ARRIVE_HOLD_SEC},
 			{"beat": "slash"},

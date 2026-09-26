@@ -349,8 +349,8 @@ static func _miss_recipes(event: Dictionary) -> Array:
 	if not event.has("to"):
 		at = caster_cell
 	# Invisible Ambush aims from Gloam. A miss does not throw a slash at the
-	# enemy: the whiff and the MISS stay on the caster tile. A Shade origin
-	# still whiffs from that Shade, not from the body.
+	# enemy: the whiff and the MISS stay on the caster tile. A Shade miss
+	# also does not streak onto the prey. That streak was the remote slash.
 	var ambush_origin := caster_cell
 	var ambush_self := false
 	if spell_id == "ambush":
@@ -360,7 +360,7 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		if ambush_self:
 			at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-	if not ambush_self and (event.has("to") or event.has("caster_cell")):
+	if spell_id != "ambush" and (event.has("to") or event.has("caster_cell")):
 		var whiff_from := caster_cell
 		var whiff_arc := 10.0
 		var whiff_overshoot := 12.0

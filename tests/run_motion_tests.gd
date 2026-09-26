@@ -290,8 +290,9 @@ func _test_caster_and_target_kinds() -> void:
 		"spell": "ambush",
 		"teleported": true,
 	})
-	eq(_beat_names(beats), ["snap", "face", "slash", "damage"], "Ambush hit snaps, faces, slashes, then resolves damage")
-	eq(float(beats[1].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
+	eq(_beat_names(beats), ["collapse", "snap", "face", "slash", "damage"], "Ambush hit collapses, snaps, faces, slashes, then resolves damage")
+	eq(float(beats[0].get("sec", 0.0)), MOTION.AMBUSH_COLLAPSE_SEC, "the collapse beat is on the cast cell before the snap")
+	eq(float(beats[2].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
 	var miss_beats: Array = MOTION.ambush_beats({
 		"type": "miss",
 		"spell": "ambush",
@@ -1005,6 +1006,17 @@ func _test_strip_library_missing_and_slice() -> void:
 	truthy(ironjaw_bank != null, "ironjaw strip bank loads from export_2x")
 	eq(kestrel_bank, StripLibrary.frames_for("kestrel"), "kestrel bank is cached")
 	eq(kestrel_bank.get_animation_loop("walk_e"), true, "loaded kestrel walk loops")
+	var packed := StripLibrary.image_from_walk_bytes("kestrel", "e")
+	truthy(packed != null, "kestrel east walk bytes are packed for the device")
+	var packed_cells := StripLibrary.textures_from_image(packed, 6)
+	eq(packed_cells.size(), 6, "device walk bytes slice to 6 cells")
+	eq(packed_cells[0] is ImageTexture, true, "a device walk cell is its own image")
+	eq(packed_cells[0] is AtlasTexture, false, "a device walk cell is not a shared atlas region")
+	eq(packed_cells[0].get_image().get_data() == packed_cells[2].get_image().get_data(), false, "device walk cells are not one repeated idle")
+	eq(kestrel_bank.get_frame_texture("walk_e", 0).get_image().get_data(), packed_cells[0].get_image().get_data(), "playback frame 0 is the packed cell")
+	for cls in ["kestrel", "ironjaw", "gloam", "mender", "bastion"]:
+		for face in ["e", "s", "n", "w"]:
+			eq(FileAccess.file_exists(StripLibrary.walk_bytes_path(cls, face)), true, "%s %s walk bytes are in the export pack" % [cls, face])
 	eq(ironjaw_bank.get_animation_loop("attack_w"), false, "loaded ironjaw attack is one-shot")
 	for cls in ["kestrel", "ironjaw"]:
 		var tres_path := StripLibrary.export_frames_path(cls)

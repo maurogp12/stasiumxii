@@ -122,13 +122,16 @@ static func run(host: SceneTree) -> void:
 	var spent: Node = board._shade_markers.get(dest)
 	host.eq(spent == null or not is_instance_valid(spent), true, "Ambush consumes the Shade marker in the teleport beat")
 	var gloam_pawn: Node = board.pawns_by_seat[0]
-	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Shade Ambush plants on the back tile before the slash")
-	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "Shade Ambush does not slash from the cast tile")
+	host.eq(gloam_pawn.grid_position, origin, "Shade Ambush collapses on the cast cell")
+	host.eq(gloam_pawn.position, board._cell_to_local(origin), "Shade Ambush does not slash from across the board")
 	host.eq(int(board.pawns_by_seat[1].hp), foe_hp_before, "Shade Ambush does not deal damage before the plant hold")
-	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
-	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Ambush stays on the back tile")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
+	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Shade Ambush plants on the back tile before the slash")
 	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
 	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
+	host.eq(int(board.pawns_by_seat[1].hp), foe_hp_before, "Shade Ambush still has not dealt damage on the plant")
+	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC * 0.5).timeout
+	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Ambush stays on the back tile through the face hold")
 	var ambush_from := Vector2i(4, 4)
 	var ambush_prey := Vector2i(6, 4)
 	var ambush_back := Vector2i(7, 4)
@@ -157,10 +160,11 @@ static func run(host: SceneTree) -> void:
 	host.eq(bool(ambush.get("events", [{}])[0].get("teleported", false)), true, "Invisible Ambush hit teleports")
 	board._present_resolve(ambush.get("events", []))
 	var blinked: Node = board.pawns_by_seat[0]
+	host.eq(blinked.grid_position, ambush_from, "Invisible Ambush collapses on the cast cell")
+	host.eq(blinked.position, board._cell_to_local(ambush_from), "Invisible Ambush does not slash from the cast cell")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
 	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush plants on the back tile before the slash")
-	host.eq(blinked.position, board._cell_to_local(ambush_back), "Invisible Ambush does not slash from the cast cell")
-	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
-	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush stays on the back tile")
+	host.eq(blinked.position, board._cell_to_local(ambush_back), "Invisible Ambush stays on the back tile")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
 	host.eq(blinked.grid_position == ambush_from, false, "Invisible Ambush does not slash from the cast cell")
 	board._settle_motions()
@@ -190,8 +194,10 @@ static func run(host: SceneTree) -> void:
 	host.eq(_seat_pos(CombatSim.snapshot(), 0), ambush_back, "adjacent Invisible Ambush lands past the foe")
 	board._present_resolve(near.get("events", []))
 	var near_pawn: Node = board.pawns_by_seat[0]
+	host.eq(near_pawn.grid_position, near_from, "adjacent Invisible Ambush collapses before the snap")
+	await host.create_timer(ViewMotion.AMBUSH_COLLAPSE_SEC + 0.05).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush plants past the foe before the slash")
-	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC + 0.05).timeout
+	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC * 0.4).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush stays past the foe")
 	host.eq(near_pawn.position, board._cell_to_local(ambush_back), "adjacent Invisible snap is not the cast cell")
 	# MISS keeps the cast cell. No snap.
@@ -254,11 +260,11 @@ static func run(host: SceneTree) -> void:
 	var foe_card_before := str(hud.get("_ironjaw_body").text)
 	var coach_before := str(hud.get("_coach_label").text)
 	board._submit({"type": "cast", "spell": "ambush", "to": submit_prey, "seat": 0})
-	# Present plants before it yields. Damage, toast, and the slash wait.
+	# Collapse first. Damage, toast, and the slash wait for the back-tile plant.
 	# A body still on the cast cell while prey HP drops is the device reject.
-	host.eq(submit_pawn.grid_position, submit_back, "submit-path plants on the back tile before the slash")
-	host.eq(submit_pawn.position.distance_to(board._cell_to_local(submit_back)) <= 1.0, true, "submit-path sprite is on the back tile before the slash")
-	host.eq(submit_pawn.facing, "E", "submit-path faces the prey from the back tile")
+	host.eq(submit_pawn.grid_position, submit_from, "submit-path collapses on the cast cell")
+	host.eq(submit_pawn.position.distance_to(board._cell_to_local(submit_from)) <= 1.0, true, "submit-path sprite stays on the cast cell during the collapse")
+	host.eq(submit_pawn.facing, "N", "submit-path does not face the prey before the snap")
 	host.eq(str(hud.get("_ironjaw_body").text), foe_card_before, "Invisible Ambush does not drop prey HP before the snap")
 	host.eq(_hit_line(str(hud.get("_coach_label").text)), false, "Invisible Ambush does not announce the hit before the snap")
 	host.eq(str(hud.toast_caption()).contains("Ambush"), false, "Invisible Ambush does not toast before the snap")
@@ -266,6 +272,7 @@ static func run(host: SceneTree) -> void:
 	var foe_pawn: Node = board.pawns_by_seat[1]
 	var hp_before := int(foe_pawn.hp)
 	var returned_to_cast := false
+	var saw_back_once := false
 	var saw_hold := false
 	var faced_on_back := false
 	var faced_on_cast := false
@@ -278,7 +285,7 @@ static func run(host: SceneTree) -> void:
 	var early_attack := false
 	var solid_on_cast := false
 	var saw_plant := false
-	for _i in 90:
+	for _i in 180:
 		await host.process_frame
 		var on_back: bool = (
 			submit_pawn.grid_position == submit_back
@@ -292,7 +299,9 @@ static func run(host: SceneTree) -> void:
 		var body := submit_pawn.get_node_or_null("BodyStrip") as Node2D
 		if body != null:
 			offset = maxf(offset, body.position.length())
-		if submit_pawn.grid_position == submit_from:
+		if on_back:
+			saw_back_once = true
+		if saw_back_once and submit_pawn.grid_position == submit_from:
 			returned_to_cast = true
 		if submit_pawn.grid_position == submit_from and submit_pawn.facing == "E":
 			faced_on_cast = true

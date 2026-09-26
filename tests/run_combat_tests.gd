@@ -2482,6 +2482,8 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
+	eq(CombatSim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
+	eq(CombatSim.ambush_damage_if_planted(back, back, 22), 22, "Ambush damage after the plant stays 22")
 
 	_sim.reset_match({
 		"seed": 1,

@@ -161,25 +161,106 @@ static func _load_class(class_id: String) -> SpriteFrames:
 	if not any or not _has_playable(built):
 		return null
 	_drop_default(built)
-	return _bake_compressed_atlases(built)
+	var baked := _bake_compressed_atlases(built)
+	# Walk bytes are already ImageTextures, so the atlas bake no-ops them.
+	# Feet still pin to frame 0. A second pass is a no-op once they match.
+	_stabilize_walk_feet(baked)
+	return baked
 
 
-## Replace every walk_<n|e|s|w> clip with slices of that class's export_2x PNG.
-## Authored attack/cast banks stay. A missing walk PNG leaves the clip already loaded.
-## The imported sheet is sliced into AtlasTextures, then baked into one
-## ImageTexture per cell. Image.load of the source PNG does not survive export.
+## Raw PNG bytes packed beside the import. Android `get_image()` on a
+## CompressedTexture2D is often empty, and a shared AtlasTexture then draws
+## one cell for the whole cycle (the idle plant sliding across the diamond).
+## These files are not imported. The export include filter packs them.
+const WALK_BYTES_DIR := "res://art/export_2x/walk_src/"
+
+
+static func walk_bytes_path(class_id: String, face: String) -> String:
+	var cls := SpellKits.normalize_class_id(class_id)
+	return "%s%s_walk_%s.pngbin" % [WALK_BYTES_DIR, cls, face.strip_edges().to_lower()]
+
+
+## The sheet as packed for the device. Null when the bytes are missing.
+static func image_from_walk_bytes(class_id: String, face: String) -> Image:
+	var path := walk_bytes_path(class_id, face)
+	if not FileAccess.file_exists(path):
+		return null
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if bytes.is_empty():
+		return null
+	var image := Image.new()
+	if image.load_png_from_buffer(bytes) != OK:
+		return null
+	if image.is_empty():
+		return null
+	return image
+
+
+## One ImageTexture per cell. Never an AtlasTexture. Fewer than two cells
+## is not a walk: a single cell is the idle slide.
+static func textures_from_image(image: Image, frame_count: int) -> Array[Texture2D]:
+	var out: Array[Texture2D] = []
+	if image == null or image.is_empty() or frame_count <= 0:
+		return out
+	var width := image.get_width()
+	var height := image.get_height()
+	if width <= 0 or height <= 0:
+		return out
+	var cells := 1
+	if width % frame_count == 0:
+		cells = frame_count
+	elif width % CELL_W == 0:
+		cells = width / CELL_W
+	if cells < 2:
+		return out
+	var frame_w := width / cells
+	if frame_w <= 0:
+		return out
+	for i in cells:
+		var cut := image.get_region(Rect2i(i * frame_w, 0, frame_w, height))
+		if cut == null or cut.is_empty():
+			return []
+		var tex := ImageTexture.create_from_image(cut)
+		if tex == null:
+			return []
+		out.append(tex)
+	return out
+
+
+## Replace every walk_<n|e|s|w> clip with standalone ImageTextures.
+## The packed PNG bytes win. The imported sheet is only a fallback, and it
+## is sliced from the full image, not left as AtlasTexture regions.
+## Authored attack/cast banks stay. A missing walk sheet leaves the clip loaded.
 static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bool:
 	var any := false
 	for face in LETTERS:
-		var res := try_load(export_png_path(class_id, "walk", face))
-		if not (res is Texture2D):
+		var textures := _walk_cell_textures(class_id, face)
+		if textures.size() < 2:
 			continue
 		var anim := "walk_%s" % face
 		if built.has_animation(anim):
 			built.remove_animation(anim)
-		if _install_clip(built, anim, _clip_from_texture(res as Texture2D, "walk", class_id)):
+		if _install_clip(built, anim, {
+			"textures": textures,
+			"fps": kind_fps("walk"),
+			"loop": true,
+		}):
 			any = true
 	return any
+
+
+static func _walk_cell_textures(class_id: String, face: String) -> Array[Texture2D]:
+	var packed := image_from_walk_bytes(class_id, face)
+	if packed != null:
+		var from_bytes := textures_from_image(packed, WALK_FRAMES)
+		if from_bytes.size() >= 2:
+			return from_bytes
+	var res := try_load(export_png_path(class_id, "walk", face))
+	if res is Texture2D:
+		var full := (res as Texture2D).get_image()
+		if full != null and not full.is_empty():
+			return textures_from_image(full, WALK_FRAMES)
+	return []
 
 
 static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:
@@ -355,7 +436,6 @@ static func _bake_compressed_atlases(src: SpriteFrames) -> SpriteFrames:
 	if not _has_playable(baked):
 		return src
 	_drop_default(baked)
-	_stabilize_walk_feet(baked)
 	return baked
 
 
