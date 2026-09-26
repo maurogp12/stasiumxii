@@ -61,16 +61,12 @@ const HUD_BOTTOM_OFFSET := -252.0
 ## Same clamp the board camera used on the 960×720 fit.
 const BOARD_ZOOM_MIN := 0.35
 const BOARD_ZOOM_MAX := 1.25
-## Phone may grow past the desktop cap. The clear play band still bounds height
-## so the map does not slide under the navy/gold chrome.
-const MOBILE_BOARD_ZOOM_MAX := 1.50
-## Iso diamond height in board pixels. A finger wants this tall on the canvas.
+## Phone cover zoom on a tall window is about 4.5. Past this the cap holds.
+const MOBILE_BOARD_ZOOM_MAX := 5.0
+## Iso diamond height in board pixels.
 const DIAMOND_H := 32.0
-## On-screen diamond height for a phone tap. Desktop fit stays 0.64 (~20px).
+## Smallest on-screen diamond. Cover zoom is larger on a normal phone.
 const MOBILE_CELL_TARGET_PX := 44.0
-## Do not crop past this fraction of the board width. Height stays inside the
-## clear play band, so the top and bottom chrome are not covering cells.
-const MOBILE_MIN_VISIBLE := 0.68
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0
 
@@ -173,24 +169,22 @@ static func play_band_for(viewport_size: Vector2, mobile: bool = false) -> Vecto
 
 
 ## Fit zoom for a board of board_w × board_h. Desktop ignores viewport_size and
-## stays on the 960×720 band (15×15 is 0.64). A phone raises that fit so a
-## diamond is tall enough to tap, while the clear play band still holds the
-## full board height and most of the width stays on screen.
+## stays on the 960×720 band (15×15 is 0.64). A phone covers the clear play
+## rectangle with the iso diamond, so cells are large and the dark gutter
+## around the board is gone. Pan still reaches the cropped edges.
 static func board_zoom(board_w: float, board_h: float, viewport_size: Vector2, mobile: bool = false) -> float:
 	var view := viewport_size if mobile else Vector2(VIEW_W, VIEW_H)
 	var span := _play_span(view, mobile)
-	var fit := minf(span.x / maxf(board_w, 1.0), span.y / maxf(board_h, 1.0))
-	var cap := MOBILE_BOARD_ZOOM_MAX if mobile else BOARD_ZOOM_MAX
-	fit = clampf(fit, BOARD_ZOOM_MIN, cap)
+	var bw := maxf(board_w, 1.0)
+	var bh := maxf(board_h, 1.0)
+	var fit := minf(span.x / bw, span.y / bh)
 	if not mobile:
-		return fit
-	var target := MOBILE_CELL_TARGET_PX / DIAMOND_H
-	var zoom := maxf(fit, target)
-	var max_clear_h := span.y / maxf(board_h, 1.0)
-	var max_visible_w := view.x / (maxf(board_w, 1.0) * MOBILE_MIN_VISIBLE)
-	zoom = minf(zoom, minf(max_clear_h, max_visible_w))
-	zoom = maxf(zoom, fit)
-	return clampf(zoom, BOARD_ZOOM_MIN, cap)
+		return clampf(fit, BOARD_ZOOM_MIN, BOARD_ZOOM_MAX)
+	# |x|/(W/2) + |y|/(H/2) = 1 on the diamond. A centered rectangle sits
+	# inside it once zoom reaches view.x/W + play_h/H.
+	var cover := view.x / bw + span.y / bh
+	var floor_zoom := MOBILE_CELL_TARGET_PX / DIAMOND_H
+	return clampf(maxf(cover, floor_zoom), BOARD_ZOOM_MIN, MOBILE_BOARD_ZOOM_MAX)
 
 
 ## (play width, play height) used to fit the diamond between the chrome.
@@ -201,7 +195,8 @@ static func _play_span(view: Vector2, mobile: bool) -> Vector2:
 
 
 ## World-space half-overflow when zoom shows less than the whole board.
-## Zero on an axis that still fits in the clear band.
+## Zero on an axis that still fits. Phone pan stops here so the gutter
+## does not come back.
 static func pan_room(board_w: float, board_h: float, viewport_size: Vector2, zoom: float, mobile: bool = false) -> Vector2:
 	var view := viewport_size if mobile else Vector2(VIEW_W, VIEW_H)
 	var span := _play_span(view, mobile)

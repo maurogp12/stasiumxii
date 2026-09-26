@@ -1792,9 +1792,10 @@ func _rebuild_grid(size: int) -> void:
 
 
 ## Zoom the diamond into the play band. Cell size stays 64×32.
-## Desktop stays the 960×720 fit. A phone raises the zoom so a diamond is
-## easier to tap, keeps the full board height inside the clear band, and
-## frames the active fighter. Middle-mouse and a walk-mode drag pan from there.
+## Desktop stays the 960×720 fit. A phone covers the clear play rectangle
+## with the iso diamond so cells are large enough to tap, and frames the
+## active fighter. Middle-mouse can pan past the fit. A phone drag stays
+## inside the board so the dark gutter does not come back.
 func _fit_board_camera() -> void:
 	_ensure_camera()
 	var n := _board_size
@@ -1818,7 +1819,10 @@ func _fit_board_camera() -> void:
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	var room := TOUCH.pan_room(board_w, board_h, viewport, zoom, mobile)
-	_pan_limit = Vector2(maxf(room.x, PAN_LIMIT), maxf(room.y, PAN_LIMIT))
+	if mobile:
+		_pan_limit = room
+	else:
+		_pan_limit = Vector2(maxf(room.x, PAN_LIMIT), maxf(room.y, PAN_LIMIT))
 	var look := center
 	if mobile:
 		var focus := _frame_focus_local()

@@ -8,13 +8,13 @@ Luca's 0.1.20 Gloam ambush clip. No APK cut. Locked kit numbers unchanged. Map l
 
 ### What was hard
 
-On a phone the 15×15 diamond was fitted into the clear band at about zoom 0.97 in portrait, or 0.64 when the window was not taller than 720. A diamond was roughly 20–31px tall, so a finger covered several cells. Walks still translated the foot in a straight line for 0.30s. The Batch-1 strip could be mid-cycle when the tile started, so the pose read as a slide, including sideways when the body had not turned into the segment.
+On a phone the 15×15 diamond sat in the middle of the clear band with a dark gutter around it. Portrait fit was about zoom 0.97, and a short window was 0.64, so a diamond was roughly 20–31px tall and a finger covered several cells. Walks still translated the foot in a straight line for 0.30s. The Batch-1 strip could be mid-cycle when the tile started, so the pose read as a slide, including sideways when the body had not turned into the segment.
 
 ### What a phone does now
 
 - Handheld orientation is portrait, so the tall viewport is the one the camera fits.
-- Phone zoom targets a 44px-tall diamond. The full board height stays inside the clear band (it does not slide under the navy/gold cards or the thumb cluster). At least 68% of the board width stays on screen. Desktop 960×720 fit stays zoom 0.64.
-- The camera frames the active fighter. A walk-mode finger drag past 48px pans the cropped sides. A short tap still selects the cell. A spell drag still aims. Mouse pick stays 22px.
+- Phone zoom covers the clear play rectangle with the iso diamond (zoom in). On a 960×1400 window a 15×15 board is zoom 3.0, so a diamond is about 96px tall and the dark margin around the board is gone. The navy/gold cards and the turn strip stay their design size above and below that band. Desktop 960×720 fit stays zoom 0.64.
+- The camera frames the active fighter. A walk-mode finger drag past 48px pans inside the board, and stops at the edge so the gutter does not come back. A short tap still selects the cell. A spell drag still aims. Mouse pick stays 22px.
 - A walk holds the foot on the tile through the press, strides on the rise, and settles on the next tile. Same 0.30s. The body faces that segment first (cardinal letter, otherwise the screen direction). Batch-1 / Batch-1c walk strips seek to the plant frame for the tile. The contact shadow stays on the foot.
 
 ### Intentionally not changed
@@ -24,7 +24,7 @@ On a phone the 15×15 diamond was fitted into the clear band at about zoom 0.97 
 - Desktop mouse pick and the 960×720 camera fit.
 - No new cosmetics. No APK cut.
 
-Headless Godot 4.7.2, 0 failed: touch adapter 455, motion 1899, combat 4574, sprite 234.
+Headless Godot 4.7.2, 0 failed: touch adapter 460, motion 1899, combat 4574, sprite 234.
 
 ## 2026-09-26 — Mobile debug APK 0.1.20
 
