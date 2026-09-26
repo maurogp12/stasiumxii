@@ -159,7 +159,7 @@ static func run(host: SceneTree) -> void:
 	var blinked: Node = board.pawns_by_seat[0]
 	host.eq(blinked.grid_position, ambush_back, "Invisible Ambush snaps to the back tile before the slash")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "Invisible Ambush does not slash from the cast cell")
-	host.eq(str(blinked.facing), "E", "Invisible Ambush faces the prey on the snap")
+	host.eq(str(blinked.facing), "W", "Invisible Ambush faces the prey on the snap")
 	host.eq(_ambush_strike_live(board), false, "Invisible Ambush does not slash on the snap")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "Invisible Ambush stays on the back tile")
 	host.eq(blinked.position, board._cell_to_local(ambush_back), "the Invisible snap is the back tile, not a body path")
@@ -192,7 +192,7 @@ static func run(host: SceneTree) -> void:
 	board._present_resolve(near.get("events", []))
 	var near_pawn: Node = board.pawns_by_seat[0]
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush snaps past the foe before the slash")
-	host.eq(str(near_pawn.facing), "E", "adjacent Invisible Ambush faces the prey on the snap")
+	host.eq(str(near_pawn.facing), "W", "adjacent Invisible Ambush faces the prey on the snap")
 	host.eq(_ambush_strike_live(board), false, "adjacent Invisible Ambush does not slash on the snap")
 	await host.create_timer(ViewMotion.AMBUSH_ARRIVE_HOLD_SEC * 0.4).timeout
 	host.eq(near_pawn.grid_position, ambush_back, "adjacent Invisible Ambush stays past the foe")

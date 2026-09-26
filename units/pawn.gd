@@ -922,8 +922,8 @@ func note_prey_vitals(unit: Dictionary) -> void:
 	_request_paint()
 
 
-## Remember the numbers on screen. Later snapshots during the collapse rewrite
-## back to these until the back-tile contact releases them.
+## Remember the numbers on screen. Later snapshots during the plant hold rewrite
+## back to these until the slash releases them.
 func freeze_shown_vitals() -> void:
 	_vitals_frozen = true
 	_frozen_vitals = hp

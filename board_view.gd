@@ -955,6 +955,13 @@ func _commit_ambush_plant(event: Dictionary, token: int) -> void:
 	_ambush_hold_facing = str(planted.facing)
 	_ambush_hold_pos = planted.position
 	_ambush_hold_event = event
+	# The sim snapshot is already post-hit. Freeze the numbers on screen so a
+	# refresh during the hold does not paint the 22 before the slash.
+	var prey_seat := int(event.get("target_seat", -1))
+	if pawns_by_seat.has(prey_seat):
+		var prey: Pawn = pawns_by_seat[prey_seat]
+		if prey != null and is_instance_valid(prey):
+			prey.freeze_shown_vitals()
 
 
 func _conceal_ambush_caster(event: Dictionary) -> void:
