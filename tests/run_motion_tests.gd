@@ -290,9 +290,8 @@ func _test_caster_and_target_kinds() -> void:
 		"spell": "ambush",
 		"teleported": true,
 	})
-	eq(_beat_names(beats), ["collapse", "snap", "face", "slash", "damage"], "Ambush hit collapses, snaps, faces, slashes, then resolves damage")
-	eq(float(beats[0].get("sec", 0.0)), MOTION.AMBUSH_COLLAPSE_SEC, "the collapse beat is on the cast cell before the snap")
-	eq(float(beats[2].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
+	eq(_beat_names(beats), ["snap", "face", "slash", "damage"], "Ambush hit snaps, faces, slashes, then resolves damage")
+	eq(float(beats[1].get("sec", 0.0)), MOTION.AMBUSH_ARRIVE_HOLD_SEC, "the face beat stands on the back tile before the slash")
 	var miss_beats: Array = MOTION.ambush_beats({
 		"type": "miss",
 		"spell": "ambush",
@@ -691,6 +690,9 @@ func _test_view_wiring() -> void:
 	truthy(anim_src.contains("arm_driven_walk"), "the walk loop starts once for the path")
 	truthy(anim_src.contains("sync_walk_plant"), "the stride seeks the plant frame")
 	truthy(anim_src.contains("walk_segment_facing"), "each segment faces the way the foot will travel")
+	truthy(anim_src.contains("begin_segment_walk"), "a step does not translate until walk_+facing is showing")
+	truthy(pawn_src.contains("func begin_segment_walk"), "the pawn can refuse a step that would slide the idle sprite")
+	truthy(pawn_src.contains("func body_is_segment_walk"), "the drawn body is walk_+facing or the step is refused")
 	var snap_at := anim_src.find("_snap_walk_facing")
 	var sample_at := anim_src.find("_sample_walk_step")
 	eq(snap_at >= 0 and sample_at > snap_at, true, "each segment faces before the foot moves")
@@ -1209,6 +1211,17 @@ func _test_driven_walk_cycle() -> void:
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	var foot := pawn.get_node("Foot") as Node2D
 	pawn.position = Vector2(48, 16)
+	MOTION.set_reduce_motion(true)
+	eq(pawn.begin_segment_walk("N"), false, "reduced motion does not claim a walking body")
+	MOTION.clear_reduce_motion()
+	eq(pawn.begin_segment_walk("N"), true, "a north segment shows walk_n before the foot may move")
+	eq(sprite.visible, false, "the idle sprite stays hidden for that segment")
+	eq(pawn.body_is_segment_walk("N"), true, "the drawn body is walk_n")
+	eq(pawn.body_is_segment_walk("E"), false, "an east check does not accept the north strip")
+	sprite.visible = true
+	eq(pawn.body_is_segment_walk("N"), false, "a visible idle sprite is not a walk segment")
+	sprite.visible = false
+	pawn.set_facing("E")
 	pawn.arm_driven_walk()
 	pawn.sync_walk_plant()
 	var strip := _visible_strip(pawn)

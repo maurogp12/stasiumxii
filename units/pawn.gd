@@ -396,6 +396,39 @@ func begin_path_walk() -> void:
 	_start_path_bounce()
 
 
+## One path segment. Facing is the segment delta, then the walk strip for that
+## letter is the body. False means the idle still is still showing: the caller
+## must not translate.
+func begin_segment_walk(dir: String) -> bool:
+	var face := dir.strip_edges().to_upper()
+	if face != "" and facing != face:
+		facing = face
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return false
+	_driven_walk = true
+	_path_walk = true
+	if not _present_driven_walk():
+		return false
+	return body_is_segment_walk(face if face != "" else facing)
+
+
+## True when the drawn body is walk_<facing> with a real cycle. The idle sprite
+## being visible is the slide.
+func body_is_segment_walk(dir: String) -> bool:
+	if _sprite != null and is_instance_valid(_sprite) and _sprite.visible:
+		return false
+	if _active_strip == null or not is_instance_valid(_active_strip) or not _active_strip.visible:
+		return false
+	var face := dir.strip_edges().to_lower()
+	var anim := str(_active_strip.animation)
+	if face == "" or anim != "walk_%s" % face:
+		return false
+	var frames := _active_strip.sprite_frames
+	if frames == null or not frames.has_animation(_active_strip.animation):
+		return false
+	return frames.get_frame_count(_active_strip.animation) >= 2
+
+
 ## Board-driven steps own the gait. Drop the free-running bounce so the plant
 ## matches the tile instead of sliding under a looping hop.
 func arm_driven_walk() -> void:

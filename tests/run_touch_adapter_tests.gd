@@ -610,7 +610,9 @@ func _test_player_zoom() -> void:
 	TOUCH.nudge_player_zoom(-1)
 	var pulled := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
 	eq(pulled < overview, true, "zoom out is wider than the default")
-	eq(pulled + 0.001 >= limits.x, true, "zoom out stops at the whole diamond")
+	eq(pulled + 0.001 >= limits.x, true, "zoom out stops at the player floor")
+	eq(limits.x + 0.001 >= TOUCH.PLAYER_ZOOM_MIN, true, "the zoom-out floor stays above the postage-stamp contain")
+	near(pulled, TOUCH.PLAYER_ZOOM_MIN, "three zoom-out presses rest on that floor")
 	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), pulled, "the chosen zoom sticks for the session")
 	TOUCH.reset_player_zoom()
 	for _i in 8:

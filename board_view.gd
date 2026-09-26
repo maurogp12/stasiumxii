@@ -853,8 +853,8 @@ func _present_resolve(events: Array) -> bool:
 	if ambush_hit.is_empty():
 		_snap_ambush_teleports(events)
 		_reveal_ambush_miss(events)
-	# A hit stays on the cast cell for the collapse. The snap is the next beat.
-	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
+	# A hit has already snapped inside _begin_ambush_arrival. Marker, label,
+	# and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
 	if ambush_hit.is_empty():
 		_play_combat_feedback(events)
@@ -875,8 +875,8 @@ func _present_resolve(events: Array) -> bool:
 		_hud.show_toast(bounce_toast)
 		swallowed = true
 	else:
-		# An Ambush hit toast waits until the body is on the back tile.
-		# Showing it during the collapse reads as damage from the cast cell.
+		# An Ambush hit toast waits until the slash. Showing it on the snap
+		# reads as damage in the same beat as the plant.
 		if ambush_hit.is_empty():
 			var toast := CombatHUD.toast_for_events(events)
 			if toast != "":
@@ -903,47 +903,33 @@ func _ambush_success_event(events: Array) -> Dictionary:
 
 
 func _ambush_present_is_duplicate(event: Dictionary) -> bool:
-	# Only while the body is still held on the cast cell. After the plant the
-	# face-hold can still be open, and the next Ambush must be allowed to start.
+	# The face-hold is open from the instant snap until the slash. A second
+	# presenter in that window must not restart the plant.
 	if event.is_empty() or _ambush_contact_armed or _ambush_hold_seat < 0:
 		return false
 	return _ambush_hold_seat == int(event.get("seat", -2))
 
 
-## Shade and Invisible share this arrival. Collapse on the cast cell, snap
-## to the back tile, face the prey, hold, then slash. The 22 floats on that slash.
+## Shade and Invisible share this arrival. Snap to the back tile and face
+## the prey immediately. Origin dust is chrome from the Shade cell, or from
+## the caster cell while Invisible — never a Shade marker for a self blink.
+## The slash and the 22 wait until that plant has been on screen.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
 	_ambush_contact_armed = false
 	_ambush_open_seat = int(event.get("seat", -1))
-	# Hold the cast cell. The snapshot has already moved. A refresh during the
-	# collapse must not teleport the sprite before the snap.
-	_capture_ambush_hold(event)
-	_conceal_ambush_caster(event)
-	# Dust the origin while the body is still on the cast cell. The slash
-	# batch is armed later, after the snap, and must not replay this puff.
 	if _vfx != null and _vfx.has_method("play_ambush_collapse"):
 		_vfx.play_ambush_collapse(event)
-	var collapse := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
-	var seat := int(event.get("seat", -1))
-	if pawns_by_seat.has(seat):
-		var caster: Pawn = pawns_by_seat[seat]
-		if caster != null and is_instance_valid(caster):
-			collapse = caster.play_ambush_collapse(collapse)
+	_commit_ambush_plant(event, token)
 	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
-	if (collapse <= 0.0 and hold <= 0.0) or VIEW_MOTION.reduce_motion() or not is_inside_tree():
-		_commit_ambush_plant(event, token)
+	if hold <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_arm_ambush_contact(event, events, token)
 		return
-	_pending_motion_sec = maxf(_pending_motion_sec, collapse + hold)
+	_pending_motion_sec = maxf(_pending_motion_sec, hold)
 	_ambush_arrival_tween = create_tween()
-	if collapse > 0.0:
-		_ambush_arrival_tween.tween_interval(collapse)
-	_ambush_arrival_tween.tween_callback(_commit_ambush_plant.bind(event, token))
-	if hold > 0.0:
-		_ambush_arrival_tween.tween_interval(hold)
+	_ambush_arrival_tween.tween_interval(hold)
 	_ambush_arrival_tween.tween_callback(_arm_ambush_contact.bind(event, events, token))
 
 
@@ -1292,7 +1278,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# Face the step before the body moves. A cardinal uses that letter. Any other
 	# segment faces the screen direction so the pawn does not slide sideways or
 	# backwards. The walk strip holds its contact frame through that turn, then
-	# the foot eases. The snapshot facing snaps only after the last land.
+	# the foot eases that one tile. Arrival keeps the last segment's facing.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -1306,7 +1292,6 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 			pawn.end_path_walk()
 			pawn.release_idle()
 		return
-	var committed := _seat_facing(seat)
 	var visual := pawn.facing
 	_stop_walk_tween()
 	_walk_tween = create_tween()
@@ -1338,8 +1323,6 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
-	if committed != "":
-		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
 	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
 		var last: Vector2i = cells[cells.size() - 1]
@@ -1374,9 +1357,11 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
-	if dir != "" and str(pawn.facing) != dir:
-		pawn.set_facing(dir)
-		pawn.retarget_walk_strip()
+	if dir == "":
+		dir = str(pawn.facing)
+	# Idle texture while the node moves is the slide. No walk strip, no translate.
+	if not pawn.begin_segment_walk(dir):
+		return
 	var u := VIEW_MOTION.step_travel(t)
 	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
 	pawn.sample_driven_gait(t)
@@ -1568,7 +1553,7 @@ func _refresh() -> void:
 	_apply_units(snap)
 	_sync_shade_markers(snap)
 	# Coach and the side cards stay on the pre-hit read until contact.
-	# Painting them during the collapse shows the strike while the body is still fading.
+	# Painting them during the plant hold shows the 22 before the slash.
 	var ambush_waiting := _ambush_open_seat >= 0 and not _ambush_contact_armed
 	if _hud != null and not ambush_waiting:
 		_hud.render(snap, legal)
