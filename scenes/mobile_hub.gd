@@ -218,13 +218,19 @@ func _layout() -> void:
 		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
 	var extra := maxf(room - cluster, 0.0)
 	# Keep the poster under the top frame. Extra space sits around the
-	# plates instead of stretching them.
+	# plates instead of stretching them. The Koliseo plate keeps the
+	# art's aspect so the lineup and the KOLISEO label stay in frame.
 	var y := top + minf(extra * 0.08, 28.0)
 	_title_row.position = Vector2(left, y)
 	_title_row.size = Vector2(width, title_h)
 	y += title_h + gap
-	_banner.position = Vector2(left, y)
-	_banner.size = Vector2(width, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
+	var banner_w := width
+	if _banner_ratio > 0.0:
+		var fitted_w := banner_h * _banner_ratio
+		if fitted_w < width:
+			banner_w = fitted_w
+	_banner.position = Vector2(left + (width - banner_w) * 0.5, y)
+	_banner.size = Vector2(banner_w, maxf(banner_h, float(DOOR_MIN_HEIGHT)))
 	y += _banner.size.y + gap
 	_raid_row.position = Vector2(left, y)
 	_raid_row.size = Vector2(width, raid_h)
@@ -336,7 +342,7 @@ func _make_art_button(label: String, tex: Texture2D, framed: bool) -> Button:
 	plate.texture = tex
 	plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	plate.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	plate.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED if framed else TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	plate.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if framed:
 		plate.offset_left = 1

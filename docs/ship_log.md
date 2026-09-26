@@ -2,9 +2,23 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Wakfu walks and Koliseo banner landed
+
+The locked sheets are in the tree. Twenty walk PNGs, 864×160 RGBA, six 144×160 cells, replaced or added in place:
+
+- `art/export_2x/characters/kestrel/anims/kestrel_walk_{e,s,n,w}.png` — Kestrel F+A
+- `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png` — Ironjaw A+A2
+- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — Gloam proposal B (amber grin). The dual-knives redesign is not the file.
+- `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender D2
+- `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion 2C
+
+`*_frames.tres` still slices kestrel, ironjaw, and gloam at those paths. Mender and Bastion load from the PNGs and have no attack, cast, hit, or death sheet. No `*_gen.png`. The hub Koliseo hero is `art/ui/hub/koliseo_banner.png` (the approved lineup). The plate keeps that art's aspect, so the five heroes and the KOLISEO label stay in frame. RAID tiles are unchanged. Zoom, landscape hub, and the stride code stay.
+
+Headless Godot 4.7.2, 0 failed: motion 2095, combat 4647, touch adapter 485, hub 206.
+
 ## 2026-09-26 — Walk sheet drop slot
 
-Luca approved Wakfu walk sheets. The files are not in the tree yet. The drop is a replace of the existing walk PNGs, 864×160 RGBA, six 144×160 cells. `*_frames.tres` already slices those paths. No `*_gen.png`. No second folder. Attack, cast, hit, and death stay.
+Luca approved Wakfu walk sheets. The drop is a replace of the existing walk PNGs, 864×160 RGBA, six 144×160 cells. `*_frames.tres` already slices those paths. No `*_gen.png`. No second folder. Attack, cast, hit, and death stay.
 
 Looks locked for that drop: Kestrel (prior Wakfu), Ironjaw A2 (Berserker A body, fierce helm with iron-jaw grill, spikes, and crest, dual double-bit axes, crimson battle-worn plate — this replaces any earlier Ironjaw Wakfu walk), Gloam proposal B (amber/yellow glowing eyes, wide chilling grin, dual curved silver daggers with gold hilts, purple cloak with gold trim — not the white-eyes sheet), Mender proposal D2 (cream/gold hooded robe, green lantern staff, face clearly visible in a more open hood), Bastion proposal 2C (charcoal-grey/gold armor, spiked mace, oversized tower shield). Paths are listed at the top of `art/export_2x/characters/README.md`.
 

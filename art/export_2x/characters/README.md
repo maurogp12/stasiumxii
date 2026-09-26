@@ -10,7 +10,7 @@ Replace these files in place. Same names. 864×160 RGBA, six frames of 144×160.
 - `art/export_2x/characters/mender/anims/mender_walk_{e,s,n,w}.png` — Mender proposal D2: cream/gold hooded robe, green lantern staff, face clearly visible (more open hood). 864×160.
 - `art/export_2x/characters/bastion/anims/bastion_walk_{e,s,n,w}.png` — Bastion proposal 2C: charcoal-grey/gold armor, spiked mace, oversized tower shield. 864×160.
 
-Until those PNGs land, playback keeps the sheets already in the kestrel, ironjaw, and gloam folders. Mender and Bastion have no walk strip yet. Kestrel stays on the prior Wakfu walk. Ironjaw's walk drop is A2 and replaces any earlier Ironjaw Wakfu strip. The Gloam file that lands must be proposal B. The Mender file that lands must be proposal D2. The Bastion file that lands must be proposal 2C.
+Those walk PNGs are in the tree. Kestrel, Ironjaw, and Gloam replace the earlier walk bytes in place. Mender and Bastion now have a walk strip and still have no attack, cast, hit, or death sheet. Kestrel stays on the prior Wakfu walk. Ironjaw's walk drop is A2 and replaces any earlier Ironjaw Wakfu strip. The Gloam file on disk is proposal B. The Mender file on disk is proposal D2. The Bastion file on disk is proposal 2C.
 
 Godot on `mobile` plays these the moment the files exist. Until then the pawn keeps today's hop and the static `art/characters/<class>/<class>_<n|e|s|w>.png` facing.
 
@@ -32,7 +32,7 @@ Animation names inside the `.tres`: `walk_e`, `walk_s`, `walk_n`, `walk_w`, `att
 
 Walk clips in the `.tres` are slices of the walk PNGs above, so replacing that PNG is the walk update. A per-facing PNG still fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
 
-`<class>` is `kestrel`, `ironjaw`, or `gloam` for the strips on disk. The same folders work later for `mender` and `bastion`.
+`<class>` is `kestrel`, `ironjaw`, `gloam`, `mender`, or `bastion` for the walk strips on disk. Mender and Bastion ship walk only.
 
 `<anim>` is `walk` or `attack` for the v3 files, plus Batch-1c `cast_mark`, `cast`, `hit`, and `death`. Gloam ships the full set. `*_gen.png` is ignored.
 

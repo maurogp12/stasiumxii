@@ -574,6 +574,8 @@ func _test_live_tree() -> void:
 	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle restores scale")
 	eq((pawn.get_node("Sprite") as Sprite2D).rotation, 0.0, "settle clears rotation")
 	await process_frame
+	# Mender now has a walk sheet. This hop is the no-strip fallback.
+	pawn.bind_motion_frames(SpriteFrames.new())
 	pawn.play_step_hop()
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var hopped: float = (pawn.get_node("Sprite") as Sprite2D).position.y
@@ -795,8 +797,9 @@ func _test_strip_fallback() -> void:
 	stand_in.name = "Sprite"
 	stand_in.sprite_frames = null
 	pawn.add_child(stand_in)
-	# Mender has no Batch-1 strips, so this still proves the empty-frame hop.
+	# Unbind the shipped Mender walk so this still proves the empty-frame hop.
 	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
+	pawn.bind_motion_frames(SpriteFrames.new())
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	truthy(sprite != null, "a strip standing in for Sprite does not replace the static body")
 	truthy(sprite.texture != null, "missing strip frames keep the facing texture")
@@ -1031,8 +1034,23 @@ func _test_strip_library_missing_and_slice() -> void:
 	eq(gloam_bank.get_frame_count("hit_s"), 4, "gloam hit_s has 4 frames")
 	eq(gloam_bank.get_frame_count("death_w"), 6, "gloam death_w has 6 frames")
 	eq(gloam_bank.get_animation_loop("death_w"), false, "gloam death does not loop")
-	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
-	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
+	for cls in ["mender", "bastion"]:
+		var walk_only := StripLibrary.frames_for(cls)
+		truthy(walk_only != null, "%s walk bank loads from the drop PNGs" % cls)
+		for face in ["e", "s", "n", "w"]:
+			var walk_name := "walk_%s" % face
+			eq(walk_only.has_animation(walk_name), true, "%s %s is on the walk bank" % [cls, walk_name])
+			eq(walk_only.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
+			eq(walk_only.get_animation_loop(walk_name), true, "%s %s loops" % [cls, walk_name])
+			eq(is_equal_approx(walk_only.get_animation_speed(walk_name), 12.0), true, "%s %s is 12 fps" % [cls, walk_name])
+			var cell_tex := walk_only.get_frame_texture(walk_name, 0)
+			truthy(cell_tex != null, "%s %s frame 0 texture is non-null" % [cls, walk_name])
+			eq(cell_tex.get_width(), 144, "%s %s cell is 144 wide" % [cls, walk_name])
+			eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])
+		eq(walk_only.has_animation("attack_e"), false, "%s has no attack strip" % cls)
+		eq(walk_only.has_animation("cast_e"), false, "%s has no cast strip" % cls)
+		eq(walk_only.has_animation("hit_e"), false, "%s has no hit strip" % cls)
+		eq(walk_only.has_animation("death_e"), false, "%s has no death strip" % cls)
 	var batch1c: Array[String] = StripLibrary.batch1c_png_paths()
 	eq(batch1c.size(), 44, "batch-1c adds cast/hit/death and the gloam set")
 	for path in batch1c:
@@ -1100,9 +1118,9 @@ func _test_strip_library_missing_and_slice() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
 	pawn.apply_snapshot(_unit("mender", "E", 0), 0)
-	eq(pawn.has_walk_strip(), false, "mender without files has no walk strip")
-	eq(pawn.has_attack_strip(), false, "mender without files has no attack strip")
-	eq(pawn.has_cast_strip(), false, "mender without files has no cast strip")
+	eq(pawn.has_walk_strip(), true, "mender east plays the dropped walk strip")
+	eq(pawn.has_attack_strip(), false, "mender walk drop has no attack strip")
+	eq(pawn.has_cast_strip(), false, "mender walk drop has no cast strip")
 	pawn.bind_motion_frames(frames)
 	eq(pawn.has_walk_strip(), true, "bound SE frames resolve for an east facing")
 	eq(str(pawn._strip_choice("walk").get("anim", "")), "walk_e", "east plays walk_e")
