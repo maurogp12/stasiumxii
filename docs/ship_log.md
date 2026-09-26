@@ -2,6 +2,10 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Slagcrown lava punch sheets
+
+Slagcrown paints the Scenario lava punches in `art/tilesets/original/pending/lava/`. Floors are lava and scorched dirt. Pools are dark ash. Cliffs are volcanic ledges. Center-tile props are lava rock and shards. The board has no grass, moss, or bushes. Crosshaven stays on the earth punch. Brinewake stays on the original coast sheet. Tags, geometry, and combat numbers are unchanged. `board_mood_punch.png` is a preview and is not a tile.
+
 ## 2026-09-26 — Crosshaven earth punch
 
 Soft lock: tierra + naturaleza. Crosshaven ground and cliffs are the dirt and stone punch, on the unprefixed dress (`ground.png`, `ground_e1.png`, `ground_e2.png`). The board paints those files in game. Moss is only on the ruin walls. The field, the cliffs, and the floor seal stay bare, so there is no lawn. The arena grade is warm earth. Ruins, the well, hay, the fence, rubble, and the rock pillar on those same paths come from the props punch. Water and the lighter mud stay the original sheet so those tags still read.
