@@ -353,6 +353,27 @@ func _test_original_sheet() -> void:
 	var slag_tex: Texture2D = art.terrain_texture("lava", 0, "slag_")
 	var slag_px: Color = slag_tex.get_image().get_pixel(32, 16)
 	truthy(slag_px.r > slag_px.b, "Slagcrown lava is the sheet lava")
+	var slag_e1: Texture2D = art.terrain_texture("ground", 1, "slag_")
+	var slag_e2: Texture2D = art.terrain_texture("ground", 2, "slag_")
+	var slag_cap: Color = slag_e1.get_image().get_pixel(32, 4)
+	truthy(slag_cap.r > slag_cap.g and slag_cap.r > slag_cap.b, "Slagcrown cliff cap is scorched rock, not grass")
+	var grass_cliff: Texture2D = art.terrain_texture("ground", 1, "")
+	truthy(_green_fraction(slag_e1) < _green_fraction(grass_cliff), "Slagcrown cliffs have less grass than Crosshaven cliffs")
+	truthy(_green_fraction(slag_e2) < _green_fraction(grass_cliff), "Slagcrown high cliffs stay off the grass wall")
+	var slag_ash: Texture2D = art.prop_texture("ash_rock", "slag_")
+	var slag_basalt: Texture2D = art.prop_texture("basalt_pillar", "slag_")
+	var slag_rubble: Texture2D = art.prop_texture("rubble", "slag_")
+	truthy(slag_ash.resource_path.ends_with("slag_prop_ash_rock.png"), "Slagcrown ash rock is the volcanic sheet")
+	truthy(slag_basalt.resource_path.ends_with("slag_prop_basalt_pillar.png"), "Slagcrown basalt is the volcanic sheet")
+	truthy(slag_rubble.resource_path.ends_with("slag_prop_rubble.png"), "Slagcrown rubble is the volcanic sheet")
+	truthy(_green_fraction(slag_basalt) < _green_fraction(art.prop_texture("basalt_pillar", "")), "Slagcrown basalt has less moss than the forest pillar")
+	truthy(_green_fraction(slag_ash) < _green_fraction(art.prop_texture("ash_rock", "")), "Slagcrown ash rock has less moss than the forest rock")
+	var haven_ash: Texture2D = art.prop_texture("ash_rock", "")
+	truthy(haven_ash.resource_path.ends_with("prop_ash_rock.png"), "Crosshaven keeps the original ash rock")
+	var haven_basalt: Texture2D = art.prop_texture("basalt_pillar", "")
+	truthy(haven_basalt.resource_path.ends_with("prop_basalt_pillar.png"), "Crosshaven keeps the mossy basalt pillar")
+	var slag_pillar: Texture2D = art.prop_texture("rock_pillar", "slag_")
+	truthy(slag_pillar.resource_path.ends_with("prop_rock_pillar.png"), "bare rock pillars stay on the shared sheet")
 	var storm_tex: Texture2D = art.terrain_texture("ground", 0, "storm_")
 	var storm_px: Color = storm_tex.get_image().get_pixel(32, 16)
 	truthy(storm_px.r < 0.4 and storm_px.b < 0.45, "Stormspire ground is dark stone")
@@ -373,6 +394,21 @@ func _test_original_sheet() -> void:
 			var tex: Texture2D = art.terrain_texture_at("ground", 0, "", Vector2i(x, y))
 			seen[tex.resource_path] = true
 	truthy(seen.size() > 1, "grassland cells use more than one grass slice")
+
+
+func _green_fraction(tex: Texture2D) -> float:
+	var img := tex.get_image()
+	var green := 0
+	var n := 0
+	for y in img.get_height():
+		for x in img.get_width():
+			var px := img.get_pixel(x, y)
+			if px.a < 0.15:
+				continue
+			n += 1
+			if px.g > px.r + 0.07 and px.g > px.b + 0.05 and px.g > 0.23:
+				green += 1
+	return float(green) / float(maxi(n, 1))
 
 
 func _ground_paint_step(tags: Dictionary) -> Dictionary:

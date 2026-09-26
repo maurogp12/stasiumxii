@@ -303,7 +303,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_ground_e1.png" width="64" height="75"/>
+  <image source="tiles/slag_ground_e1.png" width="64" height="50"/>
  </tile>
  <tile id="36">
   <properties>
@@ -311,7 +311,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_ground_e2.png" width="64" height="75"/>
+  <image source="tiles/slag_ground_e2.png" width="64" height="50"/>
  </tile>
  <tile id="37">
   <properties>
@@ -319,7 +319,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_mud_e1.png" width="64" height="75"/>
+  <image source="tiles/slag_mud_e1.png" width="64" height="50"/>
  </tile>
  <tile id="38">
   <properties>
