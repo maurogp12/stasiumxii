@@ -2,6 +2,27 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Phone combat overview and landscape hub
+
+Luca's 0.1.21 playtest. No APK cut. Locked kit numbers unchanged. Map geometry, tags, Ambush snap, tilesets, Scenario VFX, and the planted walk stay.
+
+### What was hard
+
+Handheld orientation was portrait, so the hub opened as a tall stack instead of the landscape poster (wide hero, then one RAID row). Phone combat used a cover zoom. On a 960×1400 window that was 3.0, and only a few giant cells filled the glass.
+
+### What a phone does now
+
+- Orientation is sensor landscape. The hub, the title, and combat stay landscape. The poster is still title, Koliseo banner, RAID, and the five Stasis tiles in one row. Actualizar stays on the title row.
+- Combat zoom shows most of the 15×15 diamond. A 20:9 canvas (about 1600×720) is zoom 1.48, so a diamond is about 47px tall and the board width still fits. The turn plaque and the thumb cluster overlay the edges. The corner outside the diamond uses the hub navy. Desktop 960×720 fit stays zoom 0.64.
+
+Headless Godot 4.7.2, 0 failed: hub 206, touch adapter 460.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Map layouts, board geometry, tags, and room shapes.
+- Ambush snap, original tilesets, Scenario VFX, and the planted walk.
+
 ## 2026-09-26 — Mobile debug APK 0.1.21
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.21-mobile`, `version/code` `22`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

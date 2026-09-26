@@ -21,8 +21,8 @@ extends Node2D
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
 ## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
-## sprite capsule. Phone portrait gives extra viewport height to the board and
-## raises the camera so a diamond is easier to tap. A walk-mode drag pans.
+## sprite capsule. A phone shows most of the Koliseo diamond at a modest
+## zoom, with the HUD over the edges. A walk-mode drag pans.
 ## A finger that starts on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
@@ -48,7 +48,7 @@ extends Node2D
 ## One action locks input for at most ViewMotion.ACTION_LOCK_MAX.
 ## Mobile-track chrome. A walk plants the foot, then strides to the next cell
 ## in about 0.30s. The sprite root takes the step bounce. Advance stays a snap.
-## Phone framing raises the camera so diamonds are easier to tap. Desktop fit stays.
+## Phone framing shows most of the diamond. Desktop fit stays.
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
@@ -1893,10 +1893,9 @@ func _rebuild_grid(size: int) -> void:
 
 
 ## Zoom the diamond into the play band. Cell size stays 64×32.
-## Desktop stays the 960×720 fit. A phone covers the clear play rectangle
-## with the iso diamond so cells are large enough to tap, and frames the
-## active fighter. Middle-mouse can pan past the fit. A phone drag stays
-## inside the board so the dark gutter does not come back.
+## Desktop stays the 960×720 fit. A phone keeps most of the iso diamond
+## on screen and frames the active fighter. Middle-mouse can pan past the
+## fit. A phone drag stays inside the board.
 func _fit_board_camera() -> void:
 	_ensure_camera()
 	var n := _board_size

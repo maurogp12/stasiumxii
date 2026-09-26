@@ -18,8 +18,8 @@ const BIOME_IDS: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windm
 const TAGS_ROOT := "res://art/maps/arena_colosseum_v2/tiled/"
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const BANNER_ART := "res://art/ui/hub/koliseo_banner.png"
-## Fat hit targets on the 960×720 canvas. Portrait expand keeps this floor
-## and does not crop the plates; spare height sits around the same layout.
+## Fat hit targets on the 960×720 canvas. The phone stays landscape, so
+## this poster is a wide banner over one horizontal RAID row.
 const DOOR_MIN_HEIGHT := 72
 const _ApkClient := preload("res://backend/apk_update_client.gd")
 
@@ -215,8 +215,8 @@ func _layout() -> void:
 			tile_w = fitted
 		cluster = title_h + gap + banner_h + gap + raid_h + gap + tile_h
 	var extra := maxf(room - cluster, 0.0)
-	# Keep the poster under the top frame. Portrait height stays below the
-	# footer star instead of stretching the plates.
+	# Keep the poster under the top frame. Extra space sits around the
+	# plates instead of stretching them.
 	var y := top + minf(extra * 0.08, 28.0)
 	_title_row.position = Vector2(left, y)
 	_title_row.size = Vector2(width, title_h)

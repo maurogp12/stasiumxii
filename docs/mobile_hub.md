@@ -35,7 +35,7 @@ Under a **RAID** header (crossed swords) is one row of five portrait tiles. The 
 | WINDMERE STASIS | Windmere Stasis | same run for `windmere` (Galevault) |
 | STORMSPIRE STASIS | Stormspire Stasis | same run for `stormspire` (Coilgate) |
 
-Banner and tile art are crops of that mock, stored in `art/ui/hub/` (`koliseo_banner.png`, `raid_crosshaven.png`, and the other four `raid_*.png`). Each control's `custom_minimum_size.y` is 72. At 960×720 the tiles lay out about 178×250, so the phone target stays fat. A taller expanded viewport (portrait) keeps those plate proportions and pins the footer star to the bottom of the frame. It does not crop the nameplates.
+Banner and tile art are crops of that mock, stored in `art/ui/hub/` (`koliseo_banner.png`, `raid_crosshaven.png`, and the other four `raid_*.png`). Each control's `custom_minimum_size.y` is 72. At 960×720 the tiles lay out about 178×250, so the phone target stays fat. `window/handheld/orientation` is sensor landscape, so the phone shows this wide poster (title, banner, RAID, one horizontal row) instead of a tall portrait stack. A wider landscape window keeps that same column and pins the footer star to the bottom of the frame. It does not crop the nameplates.
 
 The five ids are exactly `crosshaven`, `brinewake`, `slagcrown`, `windmere`, and `stormspire`. Boards are the existing files `art/maps/arena_colosseum_v2/tiled/{id}_15x15.*`. `door_text` stays Title Case of those ids (`Crosshaven Stasis`). The painted plate is the mock's uppercase. No other id spelling is accepted. Door names Threshgate, Tidehold, Ashmarch, Galevault, and Coilgate stay on the Stasis run screen.
 

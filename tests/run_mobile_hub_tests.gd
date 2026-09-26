@@ -17,6 +17,7 @@ func _run() -> void:
 	_test_boot_scene()
 	_test_cli_still_skips_to_koliseo_route()
 	_test_hub_doors()
+	_test_landscape_poster()
 	_test_stasis_runs()
 	_test_sources_leave_combat_alone()
 	print("Mobile hub tests: %d passed, %d failed" % [_passed, _failed])
@@ -30,6 +31,7 @@ func _test_boot_scene() -> void:
 	truthy(project.contains("window/size/viewport_height=720"), "viewport height stays 720")
 	truthy(project.contains('window/stretch/mode="canvas_items"'), "stretch mode stays canvas_items")
 	truthy(project.contains('window/stretch/aspect="expand"'), "stretch aspect stays expand")
+	truthy(project.contains("window/handheld/orientation=4"), "phones stay in landscape")
 	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
 	truthy(preset.contains('name="Android"'), "Android export preset is still named Android")
 	truthy(preset.contains("com.maurogp12.stasiumxii.mobile"), "Android package id is unchanged")
@@ -111,6 +113,28 @@ func _test_hub_doors() -> void:
 	hub.free()
 
 
+func _test_landscape_poster() -> void:
+	var hub := _hub()
+	hub.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	hub.size = Vector2(1600, 720)
+	hub._layout()
+	eq(hub.size.x > hub.size.y, true, "the phone hub viewport is landscape")
+	var banner: Button = hub._doors[0]
+	eq(banner.position.y < hub._doors[1].position.y, true, "the Koliseo banner sits above the RAID row")
+	eq(banner.size.x > hub._doors[1].size.x * 3.0, true, "the banner is the wide hero")
+	var row_y: float = hub._doors[1].position.y
+	var prev_x: float = -1.0
+	for index in range(1, 6):
+		var tile: Button = hub._doors[index]
+		near(tile.position.y, row_y, "%s stays on the horizontal RAID row" % hub.door_id(index))
+		eq(tile.position.x > prev_x, true, "%s sits to the right of the previous tile" % hub.door_id(index))
+		eq(tile.size.y >= 72.0, true, "%s tile stays a fat target" % hub.door_id(index))
+		prev_x = tile.position.x
+	var update_button := hub.find_child("Actualizar", true, false) as Button
+	truthy(update_button != null, "landscape hub keeps Actualizar")
+	hub.free()
+
+
 func _test_stasis_runs() -> void:
 	var script: Script = load("res://scenes/mobile_hub.gd")
 	var bosses := {
@@ -177,6 +201,14 @@ func _run_scene() -> Node:
 	run._auto_launch = false
 	root.add_child(run)
 	return run
+
+
+func near(actual: float, expected: float, msg: String) -> void:
+	if absf(actual - expected) > 0.5:
+		_failed += 1
+		print("FAIL: %s  (got %s expected %s)" % [msg, actual, expected])
+	else:
+		_passed += 1
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
