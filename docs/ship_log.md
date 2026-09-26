@@ -8,6 +8,8 @@ Rosie (Rosebud). Presentation only. Hit stays 22 FLEX. Cost, legality, and the e
 
 On a hit the body collapses on the origin tile, snaps to the legal back tile, slashes there, and the damage number follows that contact. The number is still the sim's facing result (backstab when the landing is the back, otherwise the front/side factor). A miss plays a whiff on the cast cell. It does not relocate and it does not deal damage.
 
+Headless Godot 4.7.2, 0 failed: combat 4571, motion 1870, VFX 459.
+
 ## 2026-09-26 — Easier mobile target taps
 
 Luca could not reliably tap an enemy on the phone. Locked ranges, AP, and kit numbers are unchanged. Desktop mouse pick is unchanged.
