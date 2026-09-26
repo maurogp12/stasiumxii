@@ -330,6 +330,7 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	})
 	eq(departure.size(), 1, "the live collapse plays one departure puff")
 	eq(departure[0]["cell"], Vector2i(2, 4), "the live collapse puff is the Shade or cast origin")
+	eq(_sheet(departure, "ambush_slash").is_empty(), true, "the slash waits until the back-tile plant")
 	eq(ROUTER.ambush_collapse_specs({"type": "miss", "spell": "ambush", "seat": 0}).is_empty(), true, "an Ambush miss does not puff a departure")
 	var contact: Array = ROUTER.recipes_for([{
 		"type": "hit",
