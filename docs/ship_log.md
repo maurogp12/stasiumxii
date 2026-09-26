@@ -8,7 +8,7 @@ Soft lock: tierra + naturaleza. Crosshaven ground and cliffs are the dirt and st
 
 Phone tap diamonds, zoom, and planted walks are unchanged. Tags, geometry, and Locked kit numbers are unchanged. Ambush stays 4 AP / 0 MP / 22 FLEX.
 
-Headless Godot 4.7.2, 0 failed: Koliseo maps 340, combat 5182.
+Headless Godot 4.7.2, 0 failed: Koliseo maps 346, combat 5182.
 
 | Arena | Pack | Atlas |
 | --- | --- | --- |
