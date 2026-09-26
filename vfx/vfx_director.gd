@@ -119,7 +119,7 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 	if _suppressed() or snapshot.is_empty():
 		return
 	var wanted: Dictionary = {}
-	_want_tokens(wanted, snapshot.get("shade_tokens", []), "shade", VfxPalette.GLOAM_RIM, 0.35)
+	# Shade bodies are board markers (board_view). A shader ring here was invisible on device.
 	_want_tokens(wanted, snapshot.get("plant_tiles", []), "plant", VfxPalette.BASTION, 0.0)
 	_want_tokens(wanted, snapshot.get("blocked_tiles", []), "wall", VfxPalette.BASTION_BLACK, 0.0)
 	for unit in snapshot.get("units", []):
@@ -274,14 +274,33 @@ func _play_projectile(spec: Dictionary) -> void:
 	var node := _acquire("projectile")
 	var from_cell := _Router.cell_of(spec.get("from", Vector2i.ZERO))
 	var to_cell := _Router.cell_of(spec.get("to", from_cell))
+	var from_pos := _pos_cell(from_cell)
+	var to_pos := _pos_cell(to_cell)
+	if bool(spec.get("hand", false)):
+		var delta := to_pos - from_pos
+		var dir := delta.normalized() if delta.length_squared() > 1.0 else Vector2(1, 0.5).normalized()
+		var caster := int(spec.get("seat", -1))
+		var pawn := _pawn(caster)
+		if pawn != null and _pawn_stands_on(pawn, from_cell):
+			from_pos = pawn.position
+			var body := pawn.get_node_or_null("BodyStrip") as Node2D
+			var sprite := pawn.get_node_or_null("Sprite") as Node2D
+			if body != null and body.visible:
+				from_pos += body.position
+			elif sprite != null:
+				from_pos += sprite.position
+		from_pos += VfxBudget.HAND_OFFSET + dir * 8.0
+		to_pos += VfxBudget.CHEST_OFFSET
 	node.play({
-		"from": _pos_cell(from_cell),
-		"to": _pos_cell(to_cell),
+		"from": from_pos,
+		"to": to_pos,
 		"arc": float(spec.get("arc", 0.0)),
 		"overshoot": float(spec.get("overshoot", 0.0)),
 		"duration": float(spec.get("duration", 0.2)),
+		"delay": float(spec.get("delay", 0.0)),
 		"tint": spec.get("tint", VfxPalette.KESTREL_AIR),
 		"width": float(spec.get("width", 3.0)),
+		"head": bool(spec.get("head", true)),
 		"z": _z_air(to_cell),
 	})
 
@@ -475,7 +494,9 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
 	var payload := spec.duplicate()
 	payload["pos"] = _body_pos(int(spec.get("seat", -1)), cell, false) if pool_name == "status" else _pos_cell(cell)
-	payload["z"] = _z_air(cell) if pool_name == "status" or str(spec.get("style", "")) == "slab" else _z_ground(cell)
+	var style := str(spec.get("style", ""))
+	var standing := pool_name == "status" or style == "slab" or style == "figure"
+	payload["z"] = _z_air(cell) if standing else _z_ground(cell)
 	payload["linger"] = true
 	if _linger.has(key):
 		var existing: Node = _linger[key]
@@ -536,7 +557,7 @@ func _want_tokens(wanted: Dictionary, raw: Variant, kind: String, tint: Color, s
 		var key := "%s:%d,%d" % [kind, cell.x, cell.y]
 		var style := ""
 		if kind == "shade":
-			style = "pool"
+			continue
 		elif kind == "plant":
 			style = "sigil"
 		elif kind == "wall":
@@ -572,12 +593,20 @@ func _follow_seat(seat: int) -> Vector2:
 	return Vector2.ZERO
 
 
+## Pawn position only when that fighter is standing on the effect cell.
+## Drop Shade's floater and an Ambush puff at the Shade are not the caster body.
 func _body_pos(seat: int, cell: Vector2i, chest: bool) -> Vector2:
+	var at := _pos_cell(cell)
 	var pawn := _pawn(seat)
-	var at := pawn.position if pawn != null else _pos_cell(cell)
+	if pawn != null and _pawn_stands_on(pawn, cell):
+		at = pawn.position
 	if chest:
 		at += VfxBudget.CHEST_OFFSET
 	return at
+
+
+func _pawn_stands_on(pawn: Node2D, cell: Vector2i) -> bool:
+	return "grid_position" in pawn and (pawn.grid_position as Vector2i) == cell
 
 
 func _pos_cell(cell: Vector2i) -> Vector2:

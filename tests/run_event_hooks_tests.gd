@@ -129,27 +129,35 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, Vector2i(5, 2)],
+		"positions": [gloam, Vector2i(4, 2)],
 		"kestrel_facing": "W",
 		"gloam_invisible": true,
 		"rolls": [1],
 	})
-	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
+	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
 	var ambush_hit := _event_of(ambush.get("events", []), "hit")
 	eq(ambush_hit.get("caster_cell"), gloam, "Ambush hit caster_cell is the cell before the jump")
-	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 2), "Ambush still lands on the empty back cell")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(5, 2), "Ambush still lands on the empty back cell")
+	var plant_from := Vector2i(2, 4)
+	var shade_at := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, Vector2i(5, 2)],
-		"gloam_shade": true,
+		"positions": [plant_from, prey],
 		"rolls": [100],
 	})
-	var ambush_miss: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(5, 2), "seat": 0})
-	eq(_event_of(ambush_miss.get("events", []), "miss").get("caster_cell"), gloam, "Ambush miss caster_cell is Gloam")
-	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still does not teleport")
+	eq(_sim.chebyshev(plant_from, shade_at), 2, "Ambush miss plant is Chebyshev 2 from Gloam")
+	eq(_sim.is_cardinal_exact(shade_at, prey, 2), true, "Ambush miss plant is Manhattan 2 cardinal from the prey")
+	var ambush_shade: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(ambush_shade.get("ok", false)), true, "Ambush miss fixture plants a Shade Manhattan 2 cardinal from the prey")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var ambush_miss: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(_event_of(ambush_miss.get("events", []), "miss").get("caster_cell"), plant_from, "Ambush miss caster_cell is Gloam")
+	eq(_sim.snapshot()["units"][0]["pos"], plant_from, "Ambush miss still does not teleport")
 
 
 func _test_caster_cell_on_cast_events() -> void:
@@ -224,7 +232,7 @@ func _test_caster_cell_survives_host_pack() -> void:
 
 func _test_ambush_origin_and_destination() -> void:
 	var gloam := Vector2i(2, 2)
-	var prey := Vector2i(5, 2)
+	var prey := Vector2i(4, 2)
 	var shade_cell := Vector2i(0, 0)
 	_sim.reset_match({
 		"seed": 1,
@@ -241,22 +249,27 @@ func _test_ambush_origin_and_destination() -> void:
 	var invisible_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	var hit := _event_of(invisible_hit.get("events", []), "hit")
 	eq(hit.get("origin"), gloam, "Invisible Ambush origin is Gloam's own cell")
-	eq(hit.get("destination"), Vector2i(6, 2), "Invisible Ambush destination is the empty back tile")
+	eq(hit.get("destination"), Vector2i(5, 2), "Invisible Ambush destination is the empty back tile")
 	eq(bool(hit.get("teleported", false)), true, "Invisible Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back stays 22 × 1.35 = 30")
 
+	# Auto Shade lands at (0, 0). The prey sits Manhattan 2 cardinal from that cell.
+	# The Shade arms only after the opponent completes a turn.
+	var near := Vector2i(2, 0)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, prey],
+		"positions": [gloam, near],
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [100],
 	})
-	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var miss := _event_of(missed.get("events", []), "miss")
 	eq(miss.get("origin"), shade_cell, "Shade Ambush miss origin is the Shade cell")
 	eq(miss.has("destination"), false, "Ambush miss emits no destination")
@@ -270,15 +283,17 @@ func _test_ambush_origin_and_destination() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [gloam, prey],
+		"positions": [gloam, near],
 		"kestrel_facing": "W",
 		"gloam_shade": true,
 		"rolls": [1],
 	})
-	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	var shade_cast: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near, "seat": 0})
 	var shade_hit := _event_of(shade_cast.get("events", []), "hit")
 	eq(shade_hit.get("origin"), shade_cell, "Shade Ambush origin is the Shade cell")
-	eq(shade_hit.get("destination"), Vector2i(6, 2), "Shade Ambush destination is the empty back tile")
+	eq(shade_hit.get("destination"), Vector2i(3, 0), "Shade Ambush destination is the empty back tile")
 	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "empty back stays 22 × 1.35 = 30")
@@ -293,13 +308,13 @@ func _test_ambush_origin_and_destination() -> void:
 		"gloam_shade": true,
 		"gloam_invisible": true,
 		"rolls": [1],
-		"blockers": [Vector2i(4, 1), Vector2i(4, 2), Vector2i(4, 3), Vector2i(5, 1), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
+		"blockers": [Vector2i(5, 1), Vector2i(5, 2), Vector2i(5, 3), Vector2i(6, 2), Vector2i(6, 3)],
 	})
 	var shades_blocked := int(_sim.snapshot()["units"][0]["shades"])
 	var blocked: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(blocked.get("illegal", false)), true, "blocked back is an illegal Ambush")
 	eq(_event_of(blocked.get("events", []), "hit").is_empty(), true, "blocked back emits no hit")
-	eq(_event_of(blocked.get("events", []), "reject").get("reason"), "no_landing", "blocked back reject reason is no_landing")
+	eq(_event_of(blocked.get("events", []), "reject").get("reason"), "illegal_back", "blocked back reject reason is illegal_back")
 	eq(_sim.snapshot()["units"][0]["pos"], gloam, "blocked back does not teleport")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
 	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "blocked back keeps Invisible")
@@ -321,14 +336,14 @@ func _test_ambush_origin_and_destination() -> void:
 	var owner_decoded: Variant = _IntentCodec.decode(owner_packed)
 	var owner_wire := _event_of((owner_decoded as Dictionary).get("events", []), "hit")
 	eq(owner_wire.get("origin"), gloam, "owner Ambush origin survives encode")
-	eq(owner_wire.get("destination"), Vector2i(6, 2), "owner Ambush destination survives encode")
+	eq(owner_wire.get("destination"), Vector2i(5, 2), "owner Ambush destination survives encode")
 	var packed: Dictionary = _host.pack_result(packed_cast, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
 	eq(wire.get("origin"), null, "opponent Ambush origin is redacted")
 	eq(wire.get("destination"), null, "opponent Ambush destination is redacted")
 	eq(bool(wire.get("invisible_retained", false)), true, "opponent Ambush hit still keeps Invisible")
-	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(6, 2), "authority Ambush landing stays on the sim")
+	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(5, 2), "authority Ambush landing stays on the sim")
 	_guest.apply_packed_state(packed)
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
 	eq(guest.get("origin"), null, "guest Ambush origin stays redacted")
@@ -558,6 +573,7 @@ func _test_shade_and_plant_snapshot() -> void:
 	eq(int(shades[0].get("y", -1)), 1, "first Shade y")
 	eq(int(shades[0].get("turns", -1)), 3, "Shade duration is 3")
 	eq(int(shades[0].get("owner_seat", -1)), 0, "Shade owner is Gloam's seat")
+	eq(int(shades[0].get("opponent_turns_completed", -1)), 0, "a fresh Shade has not seen an opponent turn")
 	eq(shades[1].get("pos"), Vector2i(2, 2), "second Shade pos")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 2, "unit Shade count stays 2")
 
@@ -595,6 +611,8 @@ func _test_shade_and_plant_snapshot() -> void:
 	eq(guest_shades.size(), 1, "guest rebuilds the Shade token")
 	eq(guest_shades[0].get("pos"), Vector2i(2, 2), "guest Shade pos matches the host")
 	eq(int(guest_shades[0].get("turns", -1)), 3, "guest Shade turns match the host")
+	eq(int(wire_shades[0].get("opponent_turns_completed", -1)), 0, "packed Shade keeps the arming clock")
+	eq(int(guest_shades[0].get("opponent_turns_completed", -1)), 0, "guest Shade keeps the arming clock")
 	eq(int(_guest.snapshot()["units"][0]["shades"]), 1, "guest unit Shade count matches the token")
 
 	_host.submit_for_seat({"type": "end_turn"}, 0)
@@ -618,14 +636,23 @@ func _test_expiry_events() -> void:
 	})
 	_sim.submit({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1), "seat": 0})
 	var early: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
-	eq(_expire(early.get("events", []), "shade").is_empty(), true, "Shade does not expire on the first turn start")
-	eq(int(_sim.snapshot()["shade_tokens"][0]["turns"]), 2, "Shade ticks 3 to 2")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	var shade_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(_expire(early.get("events", []), "shade").is_empty(), true, "Shade does not expire on the enemy turn-start")
+	eq(int(_sim.snapshot()["shade_tokens"][0]["turns"]), 3, "enemy turn-start does not tick Shade (stays 3)")
+	eq(int(_sim.snapshot()["shade_tokens"][0]["opponent_turns_completed"]), 0, "the caster ending a turn does not arm their own Shade")
+	var armed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["shade_tokens"][0]["opponent_turns_completed"]), 1, "the opponent completing a turn arms the Shade")
+	eq(int(_sim.snapshot()["shade_tokens"][0]["turns"]), 2, "first Gloam turn-start ticks Shade 3 to 2")
+	eq(_expire(armed.get("events", []), "shade").is_empty(), true, "Shade does not expire on the first owner tick")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var mid: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["shade_tokens"][0]["turns"]), 1, "second Gloam turn-start ticks Shade 2 to 1")
+	eq(_expire(mid.get("events", []), "shade").is_empty(), true, "Shade does not expire on the second owner tick")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var shade_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var shade_expire := _expire(shade_end.get("events", []), "shade")
 	eq(shade_expire.get("pos"), Vector2i(2, 1), "Shade expiry names the token cell")
 	eq(int(shade_expire.get("owner_seat", -2)), 0, "Shade expiry names the owner")
-	eq((_sim.snapshot().get("shade_tokens", []) as Array).is_empty(), true, "expired Shade leaves the snapshot")
+	eq((_sim.snapshot().get("shade_tokens", []) as Array).is_empty(), true, "expired Shade leaves the snapshot after 3 owner turn-starts")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "expired Shade clears the unit count")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Shade expiry does not change HP")
 
@@ -638,12 +665,18 @@ func _test_expiry_events() -> void:
 	})
 	_sim.submit({"type": "cast", "spell": "plant", "to": Vector2i(2, 1), "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 3, "enemy turn-start does not tick Plant")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	var plant_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 2, "first Bastion turn-start ticks Plant 3 to 2")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["plant_tiles"][0]["turns"]), 1, "second Bastion turn-start ticks Plant 2 to 1")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var plant_end: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var plant_expire := _expire(plant_end.get("events", []), "plant")
 	eq(plant_expire.get("pos"), Vector2i(2, 1), "Plant expiry names the tile")
 	eq(int(plant_expire.get("owner_seat", -2)), 0, "Plant expiry names Bastion")
-	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "expired Plant leaves the snapshot")
+	eq((_sim.snapshot().get("plant_tiles", []) as Array).is_empty(), true, "expired Plant leaves the snapshot after 3 owner turn-starts")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -725,7 +758,11 @@ func _test_expiry_events() -> void:
 	_host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 1)}, 0)
 	_host.submit_for_seat({"type": "end_turn"}, 0)
 	_host.submit_for_seat({"type": "end_turn"}, 1)
-	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	_host.submit_for_seat({"type": "end_turn"}, 1)
+	_host.submit_for_seat({"type": "end_turn"}, 0)
+	# Third owner turn-start (seat 1 ends, Gloam's turn begins) is the expiry.
+	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
 	var packed: Dictionary = _host.pack_result(host_end, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _expire((decoded as Dictionary).get("events", []), "shade")
