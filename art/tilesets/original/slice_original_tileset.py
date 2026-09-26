@@ -12,6 +12,8 @@ farm props are owned by slice_crosshaven_punch.py. Running this file's
 main() paints the old grassland sheet back over those paths. Slagcrown is
 not sliced here either. slice_lava_punch.py writes slag_* from the lava
 punch sheets. This script must not paint the partial lava cliffs back.
+Brinewake is not sliced here either. slice_brine_punch.py writes the coast
+punch. This script must not put the cobble cells back over brine_*.
 """
 from __future__ import annotations
 
@@ -62,14 +64,7 @@ PACKS = {
         "ground_e2": (CLIFF, GRASS_TALL),
         "mud_e1": (CLIFF, GRASS_LOW),
     },
-    "brine_": {
-        "ground": (FLAT, COBBLE + STONE),
-        "mud": (FLAT, SAND),
-        "water": (FLAT, [(1361, 48), (1257, 48)]),
-        "ground_e1": (CLIFF, STONE_BLOCK),
-        "ground_e2": (CLIFF, STONE_BLOCK),
-        "mud_e1": (CLIFF, STONE_BLOCK),
-    },
+    # brine_* is the coast punch (slice_brine_punch.py), not this sheet.
 }
 
 PROPS = {

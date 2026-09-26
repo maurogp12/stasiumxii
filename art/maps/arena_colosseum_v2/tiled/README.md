@@ -72,7 +72,7 @@ Paint-only (NO block / LoS / cost): ruins, wells, hay, fences, rubble, rock pill
 ### Per-region notes
 
 - **Crosshaven** — warm earth and stone; lighter mud and water still read; no lava. Builder: `build_crosshaven.py`.
-- **Brinewake** — teal stone + ocean floods; more water than Crosshaven; silt mud; lava 0.
+- **Brinewake** — wet sand, pier wood, and tide scorch; ocean floods; foam on the diamond seams; lava 0. Geometry and tags are unchanged.
 - **Slagcrown** — ash/basalt; Locked lava spoke channels; steam-pool water; little mud. Non-lava cells form one reachable set with lava impassable.
 - **Windmere** — ice-blue ground; meltwater + sparse mud; ice/crystal/spark props are paint-only.
 - **Stormspire** — dark slate/charcoal; wet cyan pools + scorched mud; conduit/spark/arc/crystal_bolt props paint-only (no charged MP / block / LoS). Builder: `build_stormspire.py`.
