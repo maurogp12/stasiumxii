@@ -19,6 +19,8 @@ The fighter is drawn about 72px above the feet. A unit cast already treated the 
 
 CombatSim still rejects an out-of-range cell after the fatter pick, and refunds the AP.
 
+Headless Godot 4.7.2, 0 failed: touch adapter 441, combat 4568.
+
 ### Intentionally not changed
 
 - Locked kit numbers, AP/MP, ranges, and damage.

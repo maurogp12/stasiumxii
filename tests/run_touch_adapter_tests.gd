@@ -196,10 +196,10 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.hits_pawn_body(beside, foe_origin, true), true, "a tap beside the chest hits the finger body")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true) == foe, false, "desktop unit pick of that slop is not the foe")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), foe, "finger unit pick of that slop is the foe")
-	var east := tiles[Vector2i(7, 6)]
+	var east: Vector2 = tiles[Vector2i(7, 6)]
 	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the finger body")
 	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), Vector2i(7, 6), "finger pick of the east diamond stays that tile")
-	var north := tiles[Vector2i(6, 5)]
+	var north: Vector2 = tiles[Vector2i(6, 5)]
 	eq(TOUCH.hits_pawn_body(north, foe_origin), false, "the north diamond stays outside the desktop body")
 	eq(TOUCH.hits_pawn_body(north, foe_origin, true), true, "the figure covers the north diamond, so a finger cast hits the unit")
 	eq(TOUCH.pick_board_cell(north, tiles, pawns, false, true), Vector2i(6, 5), "a walk tap on the north diamond stays that tile")
