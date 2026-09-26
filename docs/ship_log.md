@@ -2,6 +2,31 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.19
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.19-mobile`, `version/code` `20`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.18-debug`, so a phone on that cert upgrades in place with `adb install -r`.
+
+### Player-visible since 0.1.18
+
+- Void pathing and dress placement (#141). Terrain sheets keep the diamond in the left half, so a walk stays on the painted tile and does not cross the dark gaps. Void is impassable. Maps were not retagged.
+- Ambush (#141). On a hit the body collapses on the origin tile, snaps to the legal back tile, then slashes there. Invisible and Shade both take that path. A miss stays put and does not deal damage.
+- Easier mobile target taps and an aim ring (#141). A finger uses the painted diamond and a wider sprite capsule. The selected fighter pulses a ring while a unit spell is armed. Desktop mouse pick is unchanged.
+- A walk takes about 0.30s per tile (#140). Batch-1 / Batch-1c strips play one authored plant per tile.
+- Richer paint on the same Koliseo and Stasis layouts (#140). Board geometry, tags, and room shapes stay.
+- Navy and gold combat HUD, and a Dofus-style turn portrait strip on the center plaque (#140). The acting fighter is the gold-lit chip.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- No new cosmetics.
+- Stasis stays on `mobile`. It was not ported to `main`.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 178, stasis 361, Koliseo maps 284, combat 4574, motion 1877, VFX 459, touch adapter 441, sprite 234.
+
+Tag `mobile-0.1.19-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.19-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — Turn timeline
 
 The center plaque leads with a portrait strip in the existing seat order (seat 0, then the rest). The acting fighter is the gold-lit chip. Missing foe art is a short name tile. The turn line and the timer stay on that plaque. No new initiative rule.
