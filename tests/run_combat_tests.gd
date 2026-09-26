@@ -2022,6 +2022,8 @@ func _test_ambush_rules_keeper_lock() -> void:
 
 	# Mauro clip: Shade BEHIND a W-facing foe. Axis-past would land on the front
 	# (3,2). Facing-rear must land on (5,2) — the true back tile.
+	# Gloam starts at (3,4): Chebyshev 3 from the Shade, inside Drop Shade 1–3.
+	# (2,4) is Chebyshev 4 and cannot plant this Shade.
 	var behind_shade := Vector2i(6, 2)
 	var behind_prey := Vector2i(4, 2)
 	var facing_rear := Vector2i(5, 2)
@@ -2031,7 +2033,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 		"flat_board": true,
 		"skip_deploy": true,
 		"classes": ["gloam", "kestrel"],
-		"positions": [Vector2i(2, 4), behind_prey],
+		"positions": [Vector2i(3, 4), behind_prey],
 		"kestrel_facing": "W",
 		"rolls": [1],
 	})
