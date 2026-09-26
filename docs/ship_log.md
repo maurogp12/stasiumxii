@@ -2,6 +2,42 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.26
+
+Sideload cut recorded before this rebase. Stamp: `version/name` `0.1.26-mobile`, `version/code` `27`. This follow-up did not recut or republish the APK. The bytes below predate the Slagcrown lava punch (#167). Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK. Min SDK 24, target SDK 36. Debuggable. Permissions `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.25-debug`, so a phone on that cert upgrades in place with `adb install -r`. Same package and the same cert. Size 66796446 bytes. SHA-256 `b2f220bc404efa892dcce8d0b4394c95d523b542ddd3628555726ded1d94a3a6`. The packed APK contains the Windmere `wind_ground`, `wind_water`, cliff, and sparse-crystal slices.
+
+Hub **Actualizar** reads public releases. This cut was not uploaded, so the phone still resolves `mobile-0.1.25-debug` until tag `mobile-0.1.26-debug` exists with asset `stasiumxii-mobile-debug.apk`.
+
+### Player-visible since 0.1.25
+
+- Windmere paints the ice punch in Koliseo and in Galevault. The board dress is `wind_` when the match map id is Windmere. Geometry and tags are unchanged.
+- Stormspire paints the algo-así punch (#166). Ironjaw art-fill is scale 1.0 (#165). The rebased tree also keeps the Slagcrown lava punch (#167); that dress is not in the recorded APK bytes.
+- A 20:9 phone opens combat at zoom 1.55. One stride per tile uses the v4 walk strips (#163). Hot-seat class cards use the Locked Wakfu select plates.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Map geometry, tags, and room shapes.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): APK update 101, Koliseo maps 340.
+
+## 2026-09-26 — Windmere ice punch
+
+Soft lock: hielo, agua, sparse crystals. Presentation only. Locked Windmere geometry, tags, and cell layout are unchanged. Other families stay on their sheets.
+
+`slice_windmere_punch.py` reads the punch contact sheets and overwrites only the Windmere slices. Koliseo and Galevault both paint those slices: the board dress is `wind_` whenever the match map id is Windmere.
+
+| Punch sheet | Live slices |
+| --- | --- |
+| `art/tilesets/original/pending/ice/punch/wind_ground_punch.png` | `wind_ground.png`, `wind_ground_v1.png`, `wind_ground_v2.png`, `wind_ground_v3.png`, `wind_mud.png`, `wind_mud_v1.png`, `wind_mud_v2.png`, `wind_water.png`, `wind_water_v1.png`, `wind_water_v2.png` |
+| `art/tilesets/original/pending/ice/punch/wind_elevation_punch.png` | `wind_ground_e1.png`, `wind_ground_e1_v1.png`, `wind_mud_e1.png`, `wind_ground_e2.png` |
+| `art/tilesets/original/pending/ice/punch/wind_props_punch.png` | `wind_prop_crystal.png`, `wind_prop_ice_shard.png`, `wind_prop_spark.png`, `wind_prop_rock_pillar.png`, `wind_prop_rubble.png` |
+
+`wind_prop_ice_sheet.png` and `wind_prop_floor_seal.png` are flat diamonds from the ground punch. Flat ice and water keep a hard 64×32 diamond so the freeze/water seam stays readable. Slice output lives in `art/maps/arena_colosseum_v2/tiled/tiles/`. The earlier ice contact sheet `stasium_tileset_ice.png` stays in `pending/ice/` and is no longer the live paint.
+
 ## 2026-09-26 — Walk plant, squash, and stop (after #163)
 
 Presentation only. #163 stays: 0.30s tile, one 6-frame stride at about 20 fps, cubic ease, 3px shared hop, 50ms settle on the first tile and on a turn, plant hold on the last 18%, dust on a facing change and the final plant, v4 walks. Ambush still plants, then slashes. Kit numbers and map geometry are unchanged.
@@ -47,7 +83,7 @@ Soft lock: electric and wind. Presentation only. Locked Stormspire geometry, tag
 | `art/tilesets/original/pending/electric/storm_elevation_punch.png` | `storm_ground_e1.png`, `storm_ground_e1_v1.png`, `storm_mud_e1.png`, `storm_ground_e2.png` |
 | `art/tilesets/original/pending/electric/storm_props_punch.png` | `storm_prop_rock_pillar.png`, `storm_prop_conduit.png`, `storm_prop_crystal_bolt.png`, `storm_prop_arc.png`, `storm_prop_rubble.png`, `storm_prop_spark.png` |
 
-`storm_prop_floor_seal.png` is a flat violet diamond from the ground punch. Slice output lives in `art/maps/arena_colosseum_v2/tiled/tiles/`. The earlier electric contact sheet `stasium_tileset_electric.png` stays in `pending/electric/` and is no longer the live paint. `slice_ice_electric.py` still refreshes Windmere and does not write `storm_*`.
+`storm_prop_floor_seal.png` is a flat violet diamond from the ground punch. Slice output lives in `art/maps/arena_colosseum_v2/tiled/tiles/`. The earlier electric contact sheet `stasium_tileset_electric.png` stays in `pending/electric/` and is no longer the live paint. `slice_ice_electric.py` calls the Windmere punch slicer and does not write `storm_*`.
 
 ## 2026-09-26 — Koliseo overview zoom
 

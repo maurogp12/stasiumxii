@@ -4,8 +4,8 @@
 Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
 dress-prefixed props. Stormspire (`storm_*`) is sliced by
 slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
-Slagcrown (`slag_*`) is sliced by slice_lava_punch.py. Crosshaven and
-Brinewake stay on original-tileset-b.jpg.
+Slagcrown (`slag_*`) is sliced by slice_lava_punch.py. Crosshaven is
+sliced by slice_crosshaven_punch.py. Brinewake stays on original-tileset-b.jpg.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.
@@ -168,10 +168,16 @@ def _patch_atlas(records: list) -> None:
         "original-tileset-a.jpg",
         "original-tileset-b.jpg",
         "pending/ice/stasium_tileset_ice.png",
+        "pending/ice/punch/wind_ground_punch.png",
+        "pending/ice/punch/wind_elevation_punch.png",
+        "pending/ice/punch/wind_props_punch.png",
         "pending/electric/stasium_tileset_electric.png",
         "pending/electric/storm_ground_punch.png",
         "pending/electric/storm_elevation_punch.png",
         "pending/electric/storm_props_punch.png",
+        "crosshaven_ground_punch.png",
+        "crosshaven_elevation_punch.png",
+        "crosshaven_props_punch.png",
         "pending/lava/ground_punch.png",
         "pending/lava/elevation_punch.png",
         "pending/lava/props_punch.png",
@@ -181,7 +187,12 @@ def _patch_atlas(records: list) -> None:
     families["stormspire"] = {"pack": "electric", "prefix": "storm_", "pending_theme": None}
     atlas["pending"] = {}
     promoted = atlas.get("promoted") or {}
-    promoted["ice"] = "pending/ice/stasium_tileset_ice.png"
+    punch = HERE / "pending" / "ice" / "punch" / "wind_ground_punch.png"
+    promoted["ice"] = (
+        "pending/ice/punch/wind_ground_punch.png"
+        if punch.is_file()
+        else "pending/ice/stasium_tileset_ice.png"
+    )
     promoted["electric"] = "pending/electric/stasium_tileset_electric.png"
     atlas["promoted"] = promoted
     written = {item["file"] for item in records}
@@ -190,13 +201,7 @@ def _patch_atlas(records: list) -> None:
     ATLAS.write_text(json.dumps(atlas, indent=2) + "\n")
 
 
-def main() -> None:
-    if not ICE_SHEET.is_file() or not ELEC_SHEET.is_file():
-        raise SystemExit("missing ice or electric sheet under pending/")
-    ice = np.asarray(Image.open(ICE_SHEET).convert("RGB"))
-    ice_comps = _components(ice)
-    records: list = []
-
+def _slice_legacy_ice(ice: np.ndarray, ice_comps, records: list) -> None:
     ice_flats = {
         "ground": [(16, 129), (512, 251), (346, 250), (184, 130)],
         "mud": [(868, 132), (1192, 133), (1031, 390)],
@@ -241,9 +246,21 @@ def main() -> None:
             img = _fit_prop(cut)
         _save(name, img, records)
 
+
+def main() -> None:
     # Stormspire paint is the algo-así punch sheets. slice_storm_punch.py
-    # owns storm_*.png. Re-running this ice slicer must not restore the
-    # older electric contact-sheet slices.
+    # owns storm_*.png. This slicer must not restore those older slices.
+    records: list = []
+    punch_ground = HERE / "pending" / "ice" / "punch" / "wind_ground_punch.png"
+    if punch_ground.is_file():
+        from slice_windmere_punch import slice_windmere
+
+        records.extend(slice_windmere())
+    else:
+        if not ICE_SHEET.is_file():
+            raise SystemExit("missing ice sheet under pending/")
+        ice = np.asarray(Image.open(ICE_SHEET).convert("RGB"))
+        _slice_legacy_ice(ice, _components(ice), records)
 
     _sync_tsx()
     _patch_atlas(records)

@@ -320,6 +320,9 @@ func _test_original_sheet() -> void:
 	truthy(FileAccess.file_exists("res://art/tilesets/original/original-tileset-a.jpg"), "original sheet A is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/original-tileset-b.jpg"), "original sheet B is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/ice/stasium_tileset_ice.png"), "ice sheet is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/ice/punch/wind_ground_punch.png"), "Windmere ground punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/ice/punch/wind_elevation_punch.png"), "Windmere elevation punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/ice/punch/wind_props_punch.png"), "Windmere props punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/stasium_tileset_electric.png"), "electric sheet is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_ground_punch.png"), "Stormspire ground punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_elevation_punch.png"), "Stormspire elevation punch is in the repo")
@@ -329,7 +332,10 @@ func _test_original_sheet() -> void:
 	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_ground_punch.png"), "Crosshaven ground punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_elevation_punch.png"), "Crosshaven elevation punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_props_punch.png"), "Crosshaven props punch is in the repo")
-	truthy(themes.contains("stasium_tileset_ice.png"), "ice sheet is the Windmere source")
+	truthy(themes.contains("stasium_tileset_ice.png"), "ice sheet stays noted beside the punch")
+	truthy(themes.contains("wind_ground_punch.png"), "Windmere ground is the ice punch sheet")
+	truthy(themes.contains("wind_elevation_punch.png"), "Windmere cliffs are the ice punch sheet")
+	truthy(themes.contains("wind_props_punch.png"), "Windmere props are the ice punch sheet")
 	truthy(themes.contains("stasium_tileset_electric.png"), "electric sheet stays noted beside the punch")
 	truthy(themes.contains("storm_ground_punch.png"), "Stormspire ground is the algo-así punch sheet")
 	truthy(themes.contains("storm_elevation_punch.png"), "Stormspire cliffs are the algo-así punch sheet")
@@ -357,6 +363,10 @@ func _test_original_sheet() -> void:
 	var wind_water: Texture2D = art.terrain_texture("water", 0, "wind_")
 	var wind_water_px: Color = wind_water.get_image().get_pixel(32, 16)
 	truthy(wind_water_px.b > wind_water_px.g and wind_water_px.g > wind_water_px.r, "Windmere water is the ice-sheet water")
+	truthy(_diamond_seam(wind_tex), "Windmere ground keeps a readable diamond edge")
+	truthy(_diamond_seam(wind_water), "Windmere water keeps a readable diamond edge")
+	var wind_crystal: Texture2D = art.prop_texture("crystal", "wind_")
+	truthy(wind_crystal.get_width() <= 72, "Windmere crystal stays a sparse accent")
 	var wind_e1: Texture2D = art.terrain_texture("ground", 1, "wind_")
 	var wind_e2: Texture2D = art.terrain_texture("ground", 2, "wind_")
 	truthy(wind_e1.get_height() > 32, "Windmere cliffs hang below the diamond")
@@ -433,6 +443,21 @@ func _test_original_sheet() -> void:
 			var tex: Texture2D = art.terrain_texture_at("ground", 0, "", Vector2i(x, y))
 			seen[tex.resource_path] = true
 	truthy(seen.size() > 1, "Crosshaven cells use more than one dirt slice")
+
+
+func _diamond_seam(tex: Texture2D) -> bool:
+	var img := tex.get_image()
+	if img == null or img.get_width() != 64 or img.get_height() < 32:
+		return false
+	var tips: Array[Vector2i] = [Vector2i(32, 0), Vector2i(63, 16), Vector2i(32, 31), Vector2i(0, 16)]
+	for tip in tips:
+		if img.get_pixel(tip.x, tip.y).a < 0.75:
+			return false
+	var corners: Array[Vector2i] = [Vector2i(0, 0), Vector2i(63, 0), Vector2i(0, 31), Vector2i(63, 31)]
+	for corner in corners:
+		if img.get_pixel(corner.x, corner.y).a > 0.08:
+			return false
+	return true
 
 
 func _green_fraction(tex: Texture2D) -> float:

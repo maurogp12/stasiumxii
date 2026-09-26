@@ -3,6 +3,9 @@
     "original-tileset-a.jpg",
     "original-tileset-b.jpg",
     "pending/ice/stasium_tileset_ice.png",
+    "pending/ice/punch/wind_ground_punch.png",
+    "pending/ice/punch/wind_elevation_punch.png",
+    "pending/ice/punch/wind_props_punch.png",
     "pending/electric/stasium_tileset_electric.png",
     "pending/electric/storm_ground_punch.png",
     "pending/electric/storm_elevation_punch.png",
@@ -491,63 +494,63 @@
       "file": "wind_ground_e1.png",
       "size": [
         64,
-        67
+        72
       ]
     },
     {
       "file": "wind_ground_e1_v1.png",
       "size": [
         64,
-        67
+        73
       ]
     },
     {
       "file": "wind_mud_e1.png",
       "size": [
         64,
-        67
+        76
       ]
     },
     {
       "file": "wind_ground_e2.png",
       "size": [
         64,
-        95
+        86
       ]
     },
     {
       "file": "wind_prop_crystal.png",
       "size": [
-        45,
-        128
+        56,
+        68
       ]
     },
     {
       "file": "wind_prop_ice_shard.png",
       "size": [
-        63,
-        109
+        64,
+        88
       ]
     },
     {
       "file": "wind_prop_spark.png",
       "size": [
-        65,
-        97
+        37,
+        64
       ]
     },
     {
       "file": "wind_prop_rock_pillar.png",
       "size": [
-        61,
-        128
+        64,
+        90
       ]
     },
     {
       "file": "wind_prop_rubble.png",
       "size": [
-        55,
-        80
+        80,
+        52
       ]
     },
     {
@@ -1387,7 +1390,7 @@
     }
   ],
   "promoted": {
-    "ice": "pending/ice/stasium_tileset_ice.png",
+    "ice": "pending/ice/punch/wind_ground_punch.png",
     "electric": "pending/electric/stasium_tileset_electric.png",
     "lava": "pending/lava/"
   },
@@ -1396,5 +1399,11 @@
     "elevation": "pending/electric/storm_elevation_punch.png",
     "props": "pending/electric/storm_props_punch.png",
     "note": "Live Stormspire paint. Geometry and tags stay on the Locked maps."
+  },
+  "windmere_punch": {
+    "ground": "pending/ice/punch/wind_ground_punch.png",
+    "elevation": "pending/ice/punch/wind_elevation_punch.png",
+    "props": "pending/ice/punch/wind_props_punch.png",
+    "note": "Live Windmere paint. Geometry and tags stay on the Locked maps."
   }
 }
