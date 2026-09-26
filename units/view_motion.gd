@@ -5,10 +5,12 @@ class_name ViewMotion
 ## Mobile-track chrome (`mobile` only). Kits, hit bands, AP/MP, and marks stay put.
 ## Batch 1 walk/attack strips load from art/export_2x/characters when the
 ## files exist (SE→e, SW→s, NE→n, NW→w). Walk slides through cell centers
-## while `walk_<facing>` loops. A missing strip keeps the bounce and adds
-## squash on launch/land plus stretch at the crest. It does not play a
-## tile-tall hop. Facing turns in place for two walk frames before the
-## translate. The snapshot facing snaps only after the last land.
+## while `walk_<facing>` loops. The cycle (or the weighted hop, when the
+## strip is missing) is playing before the body translates, so a facing
+## change is a planted turn and not an idle-portrait snap. A missing strip
+## keeps the bounce and adds squash on launch/land plus stretch at the crest.
+## It does not play a tile-tall hop. The snapshot facing is applied only
+## after the last land.
 ## One-shot motions stay within ACTION_LOCK_MAX. Idle is a loop whose
 ## period is the breathe cycle (longer than one action beat).
 ## Every non-teleport spell gets caster chrome: a short squash / pull-back,
@@ -234,9 +236,8 @@ static func chrome_plans(events: Array) -> Dictionary:
 						plan["reach"] = AMBUSH_LUNGE_PX
 				elif not bool(plan.get("attack", false)):
 					plan["cast"] = true
-					# Mark Shot plays cast_mark_* when Batch-1c is on disk,
-					# otherwise the v3 attack_* bow. Detonate plays cast_* or a point pose.
-					# TODO(TA): cast_mark / cast / hit / death strips are not in this tree.
+					# Mark Shot plays cast_mark_* (bow). Detonate plays cast_*.
+					# A missing clip falls back inside the pawn, not here.
 					if spell_id == SpellKits.MARK_SHOT:
 						plan["strip"] = "cast_mark"
 					elif spell_id == SpellKits.DETONATE:

@@ -277,9 +277,19 @@ func _play_projectile(spec: Dictionary) -> void:
 	var from_pos := _pos_cell(from_cell)
 	var to_pos := _pos_cell(to_cell)
 	if bool(spec.get("hand", false)):
-		var delta := to_pos - from_pos
-		var dir := delta.normalized() if delta.length_squared() > 1.0 else Vector2(1, 0.5).normalized()
-		from_pos += VfxBudget.HAND_OFFSET + dir * 8.0
+		var seat := int(spec.get("seat", -1))
+		var pawn := _pawn(seat)
+		if pawn != null and _pawn_stands_on(pawn, from_cell):
+			from_pos = pawn.position
+		var face := Vector2.ZERO
+		if pawn != null and pawn.has_method("facing_screen"):
+			face = pawn.call("facing_screen")
+		var along := face.normalized() if face.length_squared() > 1.0 else (to_pos - from_pos).normalized()
+		if along.length_squared() < 0.01:
+			along = Vector2(1, 0.5).normalized()
+		# Weapon, not the foot origin. HAND_OFFSET is the bow height; the facing
+		# step puts the emitter on the weapon side of the body.
+		from_pos += VfxBudget.HAND_OFFSET + along * 12.0
 		to_pos += VfxBudget.CHEST_OFFSET
 	node.play({
 		"from": from_pos,

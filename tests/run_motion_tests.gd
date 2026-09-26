@@ -502,9 +502,13 @@ func _test_live_tree() -> void:
 	pawn.settle_motion()
 	victim.settle_motion()
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "lunge ends on the pawn origin")
-	eq((victim.get_node("Sprite") as Sprite2D).position.y > 4.0, true, "slump drops the corpse off a standing pose")
-	eq((victim.get_node("Sprite") as Sprite2D).scale.y < 0.35, true, "settle keeps the collapse")
-	eq((victim.get_node("Sprite") as Sprite2D).modulate.a < 0.05, true, "settle dissolves the corpse")
+	var down: AnimatedSprite2D = _visible_strip(victim)
+	truthy(down != null, "kestrel death holds a strip instead of dissolving to sparks")
+	if down != null:
+		eq(String(down.animation).begins_with("death_"), true, "the held pose is the death clip")
+		eq(down.frame, down.sprite_frames.get_frame_count(down.animation) - 1, "death holds the last frame")
+		eq(down.modulate.a > 0.9, true, "the DOWN pose stays opaque")
+	eq((victim.get_node("Sprite") as Sprite2D).visible, false, "the idle portrait stays hidden under the death strip")
 	eq(victim.position, Vector2(80, 40), "the pawn node never leaves its tile")
 	pawn.free()
 	victim.free()
@@ -574,6 +578,9 @@ func _test_view_wiring() -> void:
 	truthy(anim_src.contains("tween_property"), "the path is one chained slide")
 	eq(anim_src.contains("play_step_hop"), false, "a cell does not play its own hop")
 	truthy(anim_src.contains("begin_path_walk"), "the walk loop starts once for the path")
+	var present_at := view.find("_present_travel_facing", hop_idx)
+	var slide_at := view.find("tween_property", hop_idx)
+	eq(present_at > hop_idx and slide_at > present_at, true, "travel facing starts before the body slides")
 	truthy(anim_src.contains("origin"), "the hop starts on the departure tile, not the snapped dest")
 	truthy(pawn_src.contains("WalkStrip"), "a walk strip node can drive the hop")
 	truthy(pawn_src.contains("walk_e"), "lettered walk_e is the export_2x clip name")
@@ -729,10 +736,14 @@ func _test_strip_fallback() -> void:
 	pawn.play_step_hop()
 	eq(walk.frame, 3, "the next tile continues the walk loop")
 	eq(_walk_bounce_ok(sprite.position.y), true, "the continued walk does not hop")
+	walk.frame = 3
 	pawn.set_facing("N")
 	pawn.play_step_hop()
-	eq(String(walk.animation), "walk_ne", "a new direction snaps the walk clip")
-	eq(_walk_bounce_ok(sprite.position.y), true, "the snapped walk does not hop")
+	eq(String(walk.animation), "walk_ne", "a new direction swaps the walk clip")
+	eq(walk.frame, 3, "a facing change keeps the gait frame")
+	eq(walk.visible, true, "the facing change keeps the walk cycle up")
+	eq(sprite.visible, false, "the facing change does not pop the idle portrait")
+	eq(_walk_bounce_ok(sprite.position.y), true, "the swapped walk does not hop")
 	pawn.end_path_walk()
 	eq(sprite.visible, true, "path end plants the static sprite")
 	eq(walk.visible, false, "path end hides the walk strip")
@@ -754,8 +765,8 @@ func _test_strip_fallback() -> void:
 	eq(walk.visible, false, "a facing with no frames does not play the strip")
 	eq(sprite.visible, true, "a facing with no frames keeps the static sprite")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
-	eq(_step_bob_ok(sprite.position.y), true, "missing walk strip still bobs, not a 36px hop")
-	eq(sprite.scale != Vector2(0.5, 0.5), true, "missing walk strip squashes or stretches for weight")
+	eq(_step_bob_ok(sprite.position.y), true, "a facing with no strip still bobs, not a 36px hop")
+	eq(sprite.scale != Vector2(0.5, 0.5), true, "a facing with no strip squashes or stretches for weight")
 	pawn.settle_motion()
 	walk.queue_free()
 	await process_frame
@@ -825,6 +836,22 @@ func _test_strip_library_missing_and_slice() -> void:
 		eq((loaded as Texture2D).get_height(), 160, "strip height is one cell: %s" % path)
 		var import_text := FileAccess.get_file_as_string(path + ".import")
 		truthy(import_text.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
+	var batch1c: Array[String] = StripLibrary.batch1c_png_paths()
+	eq(batch1c.size(), 44, "batch-1c is Kestrel cast set, Ironjaw hit/death, and Gloam's full set")
+	for path in batch1c:
+		eq(FileAccess.file_exists(path), true, "batch-1c png is in the repo: %s" % path)
+		eq(ResourceLoader.exists(path), true, "APK ResourceLoader path exists: %s" % path)
+		var loaded := ResourceLoader.load(path, "", ResourceLoader.CACHE_MODE_REUSE)
+		truthy(loaded is Texture2D, "batch-1c png loads: %s" % path)
+		var expect_w := 864
+		if path.contains("_hit_") or path.contains("gloam_cast_"):
+			expect_w = 576
+		elif path.contains("gloam_attack_"):
+			expect_w = 720
+		eq((loaded as Texture2D).get_width(), expect_w, "batch-1c strip width: %s" % path)
+		eq((loaded as Texture2D).get_height(), 160, "batch-1c strip height: %s" % path)
+		var import_text := FileAccess.get_file_as_string(path + ".import")
+		truthy(import_text.contains("source_file=\"%s\"" % path), "import source_file matches export_2x: %s" % path)
 	for cls in ["kestrel", "ironjaw"]:
 		var bank := StripLibrary.try_load(StripLibrary.export_frames_path(cls)) as SpriteFrames
 		truthy(bank != null, "%s frames tres loads" % cls)
@@ -874,7 +901,24 @@ func _test_strip_library_missing_and_slice() -> void:
 					truthy(cell != null, "%s %s frame %d texture is non-null" % [cls, anim_name, i])
 					eq(regions.has(cell), false, "%s %s frame %d is its own texture" % [cls, anim_name, i])
 					regions.append(cell)
-	eq(StripLibrary.frames_for("gloam") == null, true, "batch-2 classes stay empty until their files land")
+	var gloam_bank := StripLibrary.frames_for("gloam")
+	truthy(gloam_bank != null, "gloam strip bank loads from export_2x")
+	_assert_clip(gloam_bank, "walk_e", 6, 12.0, true)
+	_assert_clip(gloam_bank, "attack_e", 5, 12.0, false)
+	_assert_clip(gloam_bank, "cast_e", 4, 10.0, false)
+	_assert_clip(gloam_bank, "hit_e", 4, 12.0, false)
+	_assert_clip(gloam_bank, "death_e", 6, 10.0, false)
+	var kestrel_played := StripLibrary.frames_for("kestrel")
+	_assert_clip(kestrel_played, "cast_e", 6, 10.0, false)
+	_assert_clip(kestrel_played, "cast_mark_e", 6, 12.0, false)
+	_assert_clip(kestrel_played, "hit_s", 4, 12.0, false)
+	_assert_clip(kestrel_played, "death_w", 6, 10.0, false)
+	var jaw_played := StripLibrary.frames_for("ironjaw")
+	_assert_clip(jaw_played, "hit_n", 4, 12.0, false)
+	_assert_clip(jaw_played, "death_e", 6, 10.0, false)
+	_assert_clip(jaw_played, "attack_e", 6, 12.0, false)
+	eq(kestrel_played.get_frame_texture("cast_mark_e", 0).get_width(), 144, "cast_mark cell is one frame wide")
+	eq(kestrel_played.get_frame_texture("death_e", 0).get_image().get_data() == kestrel_played.get_frame_texture("death_e", 5).get_image().get_data(), false, "death frames are not one repeated cell")
 	eq(StripLibrary.frames_for("mender") == null, true, "mender stays on the hop until a strip exists")
 	eq(StripLibrary.frames_for("bastion") == null, true, "bastion stays on the hop until a strip exists")
 	eq(StripLibrary.try_load(StripLibrary.grok_png_path("kestrel", "walk", "se")) == null, true, "missing grok master returns null")
@@ -920,7 +964,11 @@ func _test_strip_library_missing_and_slice() -> void:
 		shipped.set_facing(face)
 		eq(shipped.has_walk_strip(), true, "shipped kestrel %s has a walk strip" % face)
 		eq(shipped.has_attack_strip(), true, "shipped kestrel %s has an attack strip" % face)
-	eq(shipped.has_cast_strip(), false, "kestrel has no cast strip")
+	eq(shipped.has_cast_strip(), true, "kestrel cast strip is Batch-1c")
+	eq(str(shipped._strip_choice("cast").get("anim", "")), "cast_w", "kestrel west plays cast_w")
+	eq(str(shipped._strip_choice("cast_mark").get("anim", "")), "cast_mark_w", "kestrel west plays cast_mark_w")
+	eq(str(shipped._strip_choice("hit").get("anim", "")), "hit_w", "kestrel west plays hit_w")
+	eq(str(shipped._strip_choice("death").get("anim", "")), "death_w", "kestrel west plays death_w")
 	shipped.free()
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
@@ -1021,16 +1069,15 @@ func _test_batch1_disk_strips() -> void:
 	eq(str(mark_plan.get("strip", "")), "cast_mark", "Mark Shot names cast_mark for the hot-swap")
 	mark_plan["aim"] = Vector2(40, 8)
 	var bow := pawn.play_view_plan(mark_plan)
-	_assert_attack_hold(pawn, Vector2(40, 8), "Mark Shot")
 	eq(bow <= MOTION.ACTION_LOCK_MAX, true, "Mark Shot impact hold stays inside the lock")
 	await process_frame
 	strip = _visible_strip(pawn)
-	truthy(strip != null, "kestrel bow shows the attack strip")
-	eq(strip.is_playing(), true, "Mark Shot attack strip is_playing")
-	eq(String(strip.animation), "attack_e", "Mark Shot plays attack_e")
+	truthy(strip != null, "Mark Shot shows cast_mark")
+	eq(strip.is_playing(), true, "Mark Shot cast_mark is_playing")
+	eq(String(strip.animation), "cast_mark_e", "Mark Shot plays cast_mark_e")
 	eq(bow > 0.45 and bow <= 0.6, true, "the bow cycle fits the action lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "the bow cycle stays at 12 fps")
-	_assert_attack_impact(strip, "Mark Shot")
+	_assert_mark_hold(pawn, Vector2(40, 8))
 	pawn.settle_motion()
 	var det_hit: Dictionary = MOTION.chrome_plans([{
 		"type": "hit",
@@ -1054,13 +1101,43 @@ func _test_batch1_disk_strips() -> void:
 	var boom := pawn.play_view_plan(det_miss)
 	eq(boom > 0.2 and boom <= MOTION.ACTION_LOCK_MAX, true, "Detonate plays inside the action lock")
 	await process_frame
-	eq(_visible_strip(pawn), null, "Detonate does not borrow the attack strip")
-	eq(sprite.visible, true, "Detonate stays on the static pose until cast_* lands")
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "Detonate plays the cast strip")
+	eq(String(strip.animation), "cast_e", "Detonate plays cast_e")
+	eq(String(strip.animation) != "attack_e", true, "Detonate does not borrow the attack strip")
 	var point_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.cast_sec()
 	pawn._sample_cast(point_t, Vector2(40, 8))
 	eq(sprite.position.x > 4.0, true, "Detonate points toward the effect")
+	eq(strip.frame, StripLibrary.impact_frame("kestrel", "cast"), "Detonate holds the cast impact frame")
 	pawn.settle_motion()
-	eq(sprite.visible, true, "settle restores the static sprite after a disk attack")
+	var flinch := pawn.play_view_plan({"hit": true, "away": Vector2(32, 0)})
+	eq(flinch > 0.0 and flinch <= MOTION.ACTION_LOCK_MAX, true, "hit flinch fits the lock")
+	await process_frame
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "kestrel hit shows the hit strip")
+	eq(String(strip.animation), "hit_e", "kestrel east plays hit_e")
+	pawn._sample_hit(0.45, Vector2(32, 0))
+	eq(strip.modulate.r > 1.5, true, "hit flash lights the flinch strip")
+	eq(strip.position.length() > 1.0, true, "hit flinches off the tile")
+	pawn.settle_motion()
+	var slain := pawn.play_view_plan({"death": true, "tilt": 1.0})
+	eq(slain > 0.0 and slain <= MOTION.ACTION_LOCK_MAX, true, "death strip fits the lock")
+	await process_frame
+	pawn.settle_motion()
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "death settle keeps the strip")
+	eq(String(strip.animation), "death_e", "kestrel death plays death_e")
+	eq(strip.frame, strip.sprite_frames.get_frame_count("death_e") - 1, "death settle holds the last frame")
+	eq(strip.modulate.a > 0.9, true, "death settle stays opaque")
+	var dead_unit := _unit("kestrel", "E", 0)
+	dead_unit["alive"] = false
+	dead_unit["hp"] = 0
+	pawn.apply_snapshot(dead_unit, 1)
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "a refresh keeps the death strip")
+	eq(strip.frame, strip.sprite_frames.get_frame_count(strip.animation) - 1, "refresh still holds the last frame")
+	eq(strip.modulate.a > 0.9, true, "refresh does not dissolve the DOWN pose")
+	eq(sprite.visible, false, "refresh does not restore the idle portrait")
 	pawn.free()
 	var jaw := Pawn.new()
 	get_root().add_child(jaw)
@@ -1116,19 +1193,98 @@ func _test_batch1_disk_strips() -> void:
 	eq(jaw.motion_playing(), false, "Advance does not lock the sprite")
 	eq(_visible_strip(jaw), null, "Advance does not play an attack strip")
 	eq((jaw.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "Advance stays planted, no hop")
+	var jaw_hit := jaw.play_view_plan({"hit": true, "away": Vector2(0, 24)})
+	eq(jaw_hit > 0.0, true, "ironjaw hit plays")
+	await process_frame
+	jaw_strip = _visible_strip(jaw)
+	truthy(jaw_strip != null, "ironjaw hit shows the hit strip")
+	eq(String(jaw_strip.animation), "hit_n", "ironjaw north plays hit_n")
+	jaw.settle_motion()
+	jaw.play_view_plan({"death": true, "tilt": -1.0})
+	await process_frame
+	jaw.settle_motion()
+	jaw_strip = _visible_strip(jaw)
+	truthy(jaw_strip != null, "ironjaw death holds a strip")
+	eq(String(jaw_strip.animation), "death_n", "ironjaw north plays death_n")
+	eq(jaw_strip.frame, jaw_strip.sprite_frames.get_frame_count("death_n") - 1, "ironjaw death holds the last frame")
+	eq(jaw_strip.modulate.a > 0.9, true, "ironjaw DOWN pose stays opaque")
 	jaw.free()
 	var other := Pawn.new()
 	get_root().add_child(other)
 	await process_frame
 	other.apply_snapshot(_unit("gloam", "E", 0), 0)
-	eq(other.has_walk_strip(), false, "gloam still has no walk strip")
-	other.play_step_hop()
-	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
-	var gloam_y: float = (other.get_node("Sprite") as Sprite2D).position.y
-	eq(_step_bob_ok(gloam_y), true, "a class without strips still bobs, not a 36px hop")
-	eq((other.get_node("Sprite") as Sprite2D).scale != Vector2(0.5, 0.5), true, "gloam without a walk strip squashes or stretches")
+	eq(other.has_walk_strip(), true, "gloam walk strip is Batch-1c")
+	other.begin_path_walk()
+	var gloam_playing := other.play_step_hop()
+	await process_frame
+	var gloam_strip := _visible_strip(other)
+	truthy(gloam_strip != null, "gloam walk shows the export strip")
+	eq(gloam_playing, true, "gloam east walk reports the strip playing")
+	eq(String(gloam_strip.animation), "walk_e", "gloam east plays walk_e")
+	eq(gloam_strip.sprite_frames.get_frame_count("walk_e"), 6, "gloam walk is 6 frames")
+	eq(gloam_strip.sprite_frames.get_animation_loop("walk_e"), true, "gloam walk loops")
+	eq((other.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "a playing gloam walk does not squash")
+	other.end_path_walk()
+	var gloam_swing := other.play_view_plan({"attack": true, "aim": Vector2(24, 8)})
+	eq(gloam_swing > 0.0 and gloam_swing <= MOTION.ACTION_LOCK_MAX, true, "gloam attack fits the lock")
+	await process_frame
+	gloam_strip = _visible_strip(other)
+	truthy(gloam_strip != null, "gloam attack shows the strip")
+	eq(String(gloam_strip.animation), "attack_e", "gloam east plays attack_e")
+	eq(gloam_strip.sprite_frames.get_frame_count("attack_e"), 5, "gloam attack is 5 frames")
+	other._sample_attack((MOTION.ANTICIPATION_SEC + MOTION.ATTACK_OUT_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.attack_sec(), Vector2(24, 8))
+	eq(gloam_strip.frame, StripLibrary.impact_frame("gloam", "attack"), "gloam attack holds frame 2")
+	other.settle_motion()
+	other.play_view_plan({"cast": true, "strip": "cast", "aim": Vector2(24, 0)})
+	await process_frame
+	gloam_strip = _visible_strip(other)
+	truthy(gloam_strip != null, "gloam cast shows the strip")
+	eq(String(gloam_strip.animation), "cast_e", "gloam east plays cast_e")
 	other.settle_motion()
 	other.free()
+	var plain := Pawn.new()
+	get_root().add_child(plain)
+	await process_frame
+	plain.apply_snapshot(_unit("mender", "E", 0), 0)
+	eq(plain.has_walk_strip(), false, "mender still has no walk strip")
+	plain.play_step_hop()
+	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
+	var plain_sprite := plain.get_node("Sprite") as Sprite2D
+	eq(_step_bob_ok(plain_sprite.position.y), true, "a class without strips still bobs, not a 36px hop")
+	eq(plain_sprite.scale != Vector2(0.5, 0.5), true, "a class without a walk strip squashes or stretches")
+	plain.settle_motion()
+	plain.free()
+
+
+func _assert_mark_hold(pawn: Pawn, aim: Vector2) -> void:
+	var hold_t := (MOTION.ANTICIPATION_SEC + MOTION.CAST_RISE_SEC + MOTION.impact_hold_sec() * 0.5) / MOTION.cast_sec()
+	pawn._sample_cast(hold_t, aim)
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "Mark Shot keeps cast_mark on the release hold")
+	if strip == null:
+		return
+	eq(String(strip.animation).begins_with("cast_mark"), true, "the release hold is cast_mark")
+	var count := strip.sprite_frames.get_frame_count(String(strip.animation))
+	eq(strip.frame, mini(StripLibrary.impact_frame(pawn.class_id, "cast_mark"), count - 1), "Mark Shot holds the bow release frame")
+	eq(is_equal_approx(strip.speed_scale, 0.0), true, "Mark Shot stretches the release pose")
+	var pos: Vector2 = (pawn.get_node("Sprite") as Sprite2D).position
+	eq(pos.x > 4.0, true, "Mark Shot points along the aim")
+	eq(pos.y < -1.0, true, "Mark Shot holds the cast rise")
+	eq(pos.length() < MOTION.ATTACK_LUNGE_PX - 0.5, true, "Mark Shot does not take the melee lunge")
+
+
+func _assert_clip(bank: SpriteFrames, anim: String, count: int, fps: float, looped: bool) -> void:
+	truthy(bank != null and bank.has_animation(anim), "%s is in the playback bank" % anim)
+	if bank == null or not bank.has_animation(anim):
+		return
+	eq(bank.get_frame_count(anim), count, "%s frame count" % anim)
+	eq(is_equal_approx(bank.get_animation_speed(anim), fps), true, "%s fps" % anim)
+	eq(bank.get_animation_loop(anim), looped, "%s loop" % anim)
+	var cell := bank.get_frame_texture(anim, 0)
+	truthy(cell != null, "%s frame 0 texture" % anim)
+	if cell != null:
+		eq(cell.get_width(), 144, "%s cell is 144 wide" % anim)
+		eq(cell.get_height(), 160, "%s cell is 160 tall" % anim)
 
 
 func _assert_attack_hold(pawn: Pawn, aim: Vector2, msg: String) -> void:
@@ -1194,7 +1350,7 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	eq(sprite.visible, true, "failed playback keeps the static sprite")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq(_step_bob_ok(sprite.position.y), true, "failed strip playback bobs, not a 36px hop")
-	eq(sprite.scale, Vector2(0.5, 0.5), "failed strip playback does not stretch")
+	eq(sprite.scale != Vector2(0.5, 0.5), true, "failed strip playback uses the weighted hop")
 	pawn.settle_motion()
 	pawn.free()
 

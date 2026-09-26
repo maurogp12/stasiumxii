@@ -15,12 +15,11 @@ class_name Pawn
 ## bounces on the walk-cycle sine the whole time. If play() does not start,
 ## the same light bounce stays on this static sprite. There is no tile-tall hop.
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
-## when that PNG is on disk; until Batch-1c lands it uses v3 `attack_*`.
-## Detonate plays `cast_*` when present, otherwise a point pose — not attack_*.
-## Hit and death strips hot-swap the same way. Missing ones use a white flash
-## plus flinch, and a dissolve. Do not invent those frames.
-## TODO(TA): Batch-1c cast_mark / cast / hit / death and Gloam anims are not
-## in this tree. Playback already prefers those names when the files exist.
+## (bow release) with the cast point, not a melee foot lunge. If that clip is
+## missing it falls back to v3 `attack_*`. Detonate plays `cast_*` with the
+## cast pose. Hit plays `hit_*` with a flinch and a white flash. Death plays
+## `death_*` and holds the last frame opaque. Missing hit/death clips keep the
+## flash plus flinch, and the dissolve. Do not invent frames.
 ## Anticipation pulls back, the impact frame holds, then the body recovers.
 ## The clip keeps authored fps when that length still fits the 0.6s lock.
 ## A walk strip never plays the old hop arc. The fallback is the same bounce.
@@ -66,6 +65,8 @@ var _impact_frozen: bool = false
 var _body_kind: String = ""
 var _death_tilt: float = 1.0
 var _held_death_strip: bool = false
+## True when this step has no playing walk cycle, so the bounce carries weight.
+var _weight_hop: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
@@ -157,6 +158,7 @@ func play_step_hop() -> bool:
 		return false
 	_ensure_motion_strips()
 	var playing := _play_walk_flat()
+	_weight_hop = not playing
 	if not playing:
 		_hide_body_strips()
 	if _path_walk:
@@ -235,22 +237,28 @@ func begin_path_walk() -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
-	if not _play_walk_flat():
+	var playing := _play_walk_flat()
+	_weight_hop = not playing
+	if not playing:
 		_hide_body_strips()
 	_start_path_bounce()
 
 
-## Swap the walk clip when facing snaps. Does not restart the path bounce.
+## Swap the walk clip when the hop direction changes. Keeps the gait frame.
 func retarget_walk_strip() -> void:
 	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
-	_play_walk_flat()
+	var playing := _play_walk_flat()
+	_weight_hop = not playing
+	if not playing:
+		_hide_body_strips()
 
 
 ## Path end or interrupt. Plant the static facing and let idle resume.
 func end_path_walk() -> void:
 	_path_walk = false
+	_weight_hop = false
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
@@ -356,8 +364,10 @@ func play_view_plan(plan: Dictionary) -> float:
 			var aim_cast: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
 			if strip_kind == "cast_mark" and not _strip_choice("cast_mark").is_empty():
 				var bow_sec := _fit_strip_window("cast_mark", sec, steps)
+				var aim_bow := aim_cast if aim_cast.length_squared() > 0.01 else facing_screen()
 				_begin_body_strip("cast_mark", bow_sec)
-				tw.tween_method(_sample_attack.bind(aim_cast if aim_cast.length_squared() > 0.01 else facing_screen(), VIEW_MOTION.ATTACK_LUNGE_PX), 0.0, 1.0, bow_sec)
+				# Bow release stays on the cast point. A melee lunge reads as the feet.
+				tw.tween_method(_sample_cast.bind(aim_bow), 0.0, 1.0, bow_sec)
 				tw.tween_callback(_end_body_strip)
 				total += bow_sec - sec
 			elif strip_kind != "" and not _strip_choice(strip_kind).is_empty():
@@ -367,7 +377,6 @@ func play_view_plan(plan: Dictionary) -> float:
 				tw.tween_callback(_end_body_strip)
 				total += cast_play - sec
 			else:
-				# TODO(TA): Detonate cast_* is not on disk. Point pose only.
 				tw.tween_method(_sample_cast.bind(aim_cast), 0.0, 1.0, sec)
 		elif kind == "hit":
 			tw.tween_callback(_end_body_strip)
@@ -383,7 +392,6 @@ func play_view_plan(plan: Dictionary) -> float:
 		elif kind == "death":
 			var tilt := float(step.get("tilt", _death_tilt))
 			if _strip_choice("death").is_empty():
-				# TODO(TA): death_* is not on disk. Collapse and dissolve.
 				tw.tween_callback(_end_body_strip)
 				tw.tween_method(_sample_death.bind(tilt), 0.0, 1.0, sec)
 			else:
@@ -420,6 +428,7 @@ func settle_motion() -> void:
 	var died := _plan_died
 	_plan_died = false
 	_path_walk = false
+	_weight_hop = false
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
@@ -476,6 +485,9 @@ func flash_canvas() -> CanvasItem:
 
 
 func rest_modulate() -> Color:
+	# A played death strip is the DOWN pose. Dissolving it leaves sparks on an empty tile.
+	if _held_death_strip:
+		return Color.WHITE
 	if not alive:
 		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
 	return Color.WHITE
@@ -650,15 +662,17 @@ func _sample_hop(t: float) -> void:
 	_place_body(hop)
 	# Name and HP ride the bob. The seat ring stays on the pawn.
 	_ride_chrome(hop)
-	if _walk_looping or has_walk_strip():
-		_reset_walk_scale()
-	else:
+	# A playing cycle is the weight. No cycle (missing strip, or play() bailed)
+	# squashes and stretches so the step is not a flat slide.
+	if _weight_hop and not _walk_looping:
 		var mul := VIEW_MOTION.fallback_hop_scale(t)
 		var scaled := Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.scale = scaled
 		if _active_strip != null and is_instance_valid(_active_strip):
 			_active_strip.scale = scaled
+	else:
+		_reset_walk_scale()
 
 
 func _reset_walk_scale() -> void:
@@ -743,9 +757,13 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 		k = sin(clampf(t, 0.0, 1.0) * PI)
 	var mul := Vector2(lerpf(1.0, 1.10, k), lerpf(1.0, 0.84, k))
 	_sprite.scale = Vector2(SPRITE_SCALE.x * mul.x, SPRITE_SCALE.y * mul.y)
+	var flash := lerpf(1.0, 2.6, k)
+	var color := Color(flash, flash, flash)
+	_sprite.modulate = color
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = _sprite.scale
+		_active_strip.modulate = color
 
 
 func _sample_lift(t: float) -> void:
@@ -777,6 +795,7 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 	if strip == null or not is_instance_valid(strip):
 		_sample_death(t, _tilt_sign)
 		return
+	strip.modulate = Color.WHITE
 	if t >= 0.72:
 		_freeze_on_frame(strip, _last_frame(strip))
 	if _sprite != null and is_instance_valid(_sprite):
@@ -788,7 +807,9 @@ func _apply_downed_pose() -> void:
 	_stop_idle()
 	if _held_death_strip and _active_strip != null and is_instance_valid(_active_strip):
 		_freeze_on_frame(_active_strip, _last_frame(_active_strip))
+		_active_strip.modulate = Color.WHITE
 		_active_strip.visible = true
+		_strip_holds_body = true
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.visible = false
 		return
@@ -1101,6 +1122,10 @@ func _play_walk_flat() -> bool:
 		_motion_playing = true
 		_flatten_body()
 		return true
+	# Keep the gait across a corner. Restarting at frame 0 reads as a facing pop.
+	var kept_frame := -1
+	if _walk_looping and strip.is_playing():
+		kept_frame = strip.frame
 	_kill_action()
 	_end_body_strip()
 	_prepare_walk_loop(strip, anim)
@@ -1112,6 +1137,10 @@ func _play_walk_flat() -> bool:
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.visible = true
 		return false
+	if kept_frame >= 0 and strip.sprite_frames != null and strip.sprite_frames.has_animation(anim):
+		var count := strip.sprite_frames.get_frame_count(anim)
+		if count > 0:
+			strip.frame = mini(kept_frame, count - 1)
 	_active_strip = strip
 	_strip_holds_body = true
 	_walk_looping = true

@@ -42,10 +42,14 @@ const BLOCK_BLINK := 0.20
 
 const CHEST_OFFSET := Vector2(0, -30)
 const HEAD_OFFSET := Vector2(0, -52)
-## Bow / hand. Feet are the pawn origin. This lifts the emitter off the ground.
+## Bow / hand. Feet are the pawn origin. This lifts the emitter off the ground
+## onto the weapon, then the director pushes it along the facing.
 const HAND_OFFSET := Vector2(0, -46)
-## Attack frame 3 at 12 fps. Mark Shot and melee sparks wait for that cell.
+## cast_mark frame 3 at 12 fps. The bolt waits for that release, not the feet.
 const MARK_RELEASE_DELAY := 0.25
+## Kestrel cast frame 3 at 10 fps. Detonate's line waits for the cast pose.
+const CAST_RELEASE_DELAY := 0.30
+## Attack frame 3 at 12 fps. Melee sparks wait for that cell.
 const MELEE_IMPACT_DELAY := 0.25
 const STAGGER_DELAY := 0.12
 const NUMBER_LIFE := 0.75

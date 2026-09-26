@@ -3,8 +3,10 @@ extends Node2D
 ## Thin client: input + presentation only. CombatSim owns rolls and combat state.
 ## Walk: dest-click only. CombatSim expands the cheapest weighted ortho path; this
 ## view never sends intent.path. Pawns tween one ortho tile at a time along the
-## returned walk path and face each hop before the translate (final facing snaps
-## after the land, matching the snapshot's last hop).
+## returned walk path. Each hop faces the travel direction and the walk cycle
+## (or the weighted hop) is already playing before the body translates, so a
+## corner is a planted turn rather than an idle-portrait snap or a sideways
+## slide. The snapshot facing is applied after the last land.
 ## Live elevation chrome: tiles paint snapshot.tiles elevation + terrain_type.
 ## Walk highlights are CombatSim.legal_intents dests only (no client pathfinder).
 ## Z-sort is VIEW-only (BoardVisualSort). Hit bands / facing / spell LoS stay flat.
@@ -857,10 +859,11 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 	# diagonal steps even, and a corner cannot collapse into one diagonal slide.
 	# The sim has already moved the unit. Put the body back on the departure tile
 	# before the slide, or a refresh snaps it and the walk reads as a teleport.
-	# Face the step before the body moves. hop_facing covers a non-cardinal
-	# step, then a diagonal uses the screen vector so the pawn does not slide
-	# sideways. Two turn frames soften the swap. The snapshot facing snaps
-	# only after the last land. The walk strip loops the whole path.
+	# Face the hop before any translate. The walk cycle (or the weighted hop,
+	# when that facing has no strip) starts in the same callback, then two
+	# planted frames play that cycle in place. The body never slides while it
+	# is still showing the old facing. The snapshot facing is applied after
+	# the last land. The walk strip loops the whole path.
 	if _in_bounds(origin):
 		pawn.position = _cell_to_local(origin)
 		_set_pawn_cell(pawn, origin)
@@ -889,15 +892,18 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 				if along != "":
 					dir = along
 		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
-		if turn.is_empty():
-			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
-		else:
-			for face in turn:
-				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(face)))
-				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
-		if not walk_armed:
-			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
+		# Plant travel facing before the slide. An empty turn means the pawn
+		# already faces this hop, so the cycle starts as the body moves.
+		var faces: Array = turn if not turn.is_empty() else [dir]
+		for face in faces:
+			var arm_now := not walk_armed
+			if arm_now:
+				# Same call as hold_idle, so the idle portrait never paints a facing pop.
+				_present_travel_facing(pawn, str(face), true)
+			_walk_tween.tween_callback(_present_travel_facing.bind(pawn, str(face), false))
 			walk_armed = true
+			if not turn.is_empty():
+				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
 		if dir != "":
 			visual = dir
 		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
@@ -905,7 +911,7 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
 	if committed != "":
-		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
+		_walk_tween.tween_callback(_present_travel_facing.bind(pawn, committed, false))
 	await _walk_tween.finished
 	if pawn != null and is_instance_valid(pawn):
 		var last: Vector2i = cells[cells.size() - 1]
@@ -913,6 +919,19 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		_set_pawn_cell(pawn, last)
 		pawn.end_path_walk()
 		pawn.release_idle()
+
+
+## Face the hop and, on the first call, start the walk cycle or weighted hop
+## before the position tween. Later corners only retarget the clip.
+func _present_travel_facing(pawn: Pawn, dir: String, arm: bool) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	if dir != "":
+		pawn.set_facing(dir)
+	if arm:
+		pawn.begin_path_walk()
+	else:
+		pawn.retarget_walk_strip()
 
 
 func _arm_path_walk(pawn: Pawn) -> void:
@@ -946,11 +965,7 @@ func _facing_along(delta: Vector2) -> String:
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
-	if pawn == null or not is_instance_valid(pawn):
-		return
-	if dir != "":
-		pawn.set_facing(dir)
-	pawn.retarget_walk_strip()
+	_present_travel_facing(pawn, dir, false)
 
 
 func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:

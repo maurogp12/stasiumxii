@@ -348,8 +348,11 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		}
 		if spell_id == "mark_shot" or spell_id == "detonate":
 			whiff["hand"] = true
+			whiff["seat"] = caster_seat
 		if spell_id == "mark_shot":
 			whiff["delay"] = VfxBudget.MARK_RELEASE_DELAY
+		elif spell_id == "detonate":
+			whiff["delay"] = VfxBudget.CAST_RELEASE_DELAY
 		out.append(whiff)
 	if event.has("origin"):
 		out.append(_puff(caster_seat, cell_of(event.get("origin")), VfxPalette.GLOAM, 0.45))
@@ -700,6 +703,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_puff(caster, caster_cell, VfxPalette.KESTREL_AIR, 0.75))
 				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5)
 				bolt["hand"] = true
+				bolt["seat"] = caster
 				bolt["delay"] = VfxBudget.MARK_RELEASE_DELAY
 				out.append(bolt)
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
@@ -707,6 +711,8 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 			if typ == "hit":
 				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false)
 				line["hand"] = true
+				line["seat"] = caster
+				line["delay"] = VfxBudget.CAST_RELEASE_DELAY
 				out.append(line)
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))

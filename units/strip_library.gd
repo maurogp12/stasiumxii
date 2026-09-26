@@ -5,12 +5,11 @@ class_name StripLibrary
 ## Prefer TA export_2x lettered facings. Grok drawn masters are an optional
 ## fallback and are not required at runtime. Missing files return null.
 ## Never load gen_raw `*_gen.png` (identity drift).
-## Batch-1c names (`cast_mark`, `cast`, `hit`, `death`, gloam_*) hot-swap
-## from the same folder when the PNG is on disk. This cut's disk has v3
-## walk + attack for Kestrel and Ironjaw only.
-## See art/export_2x/characters/README.md.
-## TODO(TA): Batch-1c `cast_mark` / `cast` / `hit` / `death` and Gloam anims
-## are not in this tree. Do not invent those strips.
+## Batch-1c (`cast_mark`, `cast`, `hit`, `death`, and Gloam's full set) loads
+## from the same folder. Kestrel and Ironjaw walk, and Kestrel attack, stay
+## the v3 `.tres` slices. Ironjaw attack is the louder PNG the tres already
+## slices. See art/export_2x/characters/README.md and
+## art/grok_project/anims/BATCH1C_SHIPPED.md.
 
 const EXPORT_ROOT := "res://art/export_2x/characters/"
 const GROK_DIR := "res://art/grok_project/anims/"
@@ -100,6 +99,21 @@ static func batch1_png_paths() -> Array[String]:
 		for kind in ["walk", "attack"]:
 			for face in LETTERS:
 				out.append(export_png_path(cls, kind, face))
+	return out
+
+
+## Batch-1c live strips. Kestrel and Ironjaw walk stay on the v3 paths above.
+static func batch1c_png_paths() -> Array[String]:
+	var out: Array[String] = []
+	for kind in ["cast", "cast_mark", "hit", "death"]:
+		for face in LETTERS:
+			out.append(export_png_path("kestrel", kind, face))
+	for kind in ["hit", "death"]:
+		for face in LETTERS:
+			out.append(export_png_path("ironjaw", kind, face))
+	for kind in ["walk", "attack", "cast", "hit", "death"]:
+		for face in LETTERS:
+			out.append(export_png_path("gloam", kind, face))
 	return out
 
 
