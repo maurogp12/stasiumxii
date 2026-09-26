@@ -15,7 +15,7 @@ On a phone the 15×15 diamond sat in the middle of the clear band with a dark gu
 - Handheld orientation is portrait, so the tall viewport is the one the camera fits.
 - Phone zoom covers the clear play rectangle with the iso diamond (zoom in). On a 960×1400 window a 15×15 board is zoom 3.0, so a diamond is about 96px tall and the dark margin around the board is gone. The navy/gold cards and the turn strip stay their design size above and below that band. Desktop 960×720 fit stays zoom 0.64.
 - The camera frames the active fighter. A walk-mode finger drag past 48px pans inside the board, and stops at the edge so the gutter does not come back. A short tap still selects the cell. A spell drag still aims. Mouse pick stays 22px.
-- A walk holds the foot on the tile through the press, strides on the rise, and settles on the next tile. Same 0.30s. The body faces that segment first (cardinal letter, otherwise the screen direction). Batch-1 / Batch-1c walk strips seek to the plant frame for the tile. The contact shadow stays on the foot.
+- A walk holds the foot on the diamond through the press, eases along the segment for about 0.30s, and settles on the next contact. The body faces that segment first (cardinal letter, otherwise the screen direction) and the matching Batch-1 / Batch-1c strip (`walk_n/e/s/w`) plays that half-cycle. The pose is taken from the step, so a clock that stays on frame 0 cannot idle-slide. Arrival holds the contact frame, then the idle facing. The contact shadow stays on the foot.
 
 ### Intentionally not changed
 
@@ -24,7 +24,7 @@ On a phone the 15×15 diamond sat in the middle of the clear band with a dark gu
 - Desktop mouse pick and the 960×720 camera fit.
 - No new cosmetics. No APK cut.
 
-Headless Godot 4.7.2, 0 failed: touch adapter 460, motion 1899, combat 4574, sprite 234.
+Headless Godot 4.7.2, 0 failed: touch adapter 460, motion 1936, combat 4574, sprite 234.
 
 ## 2026-09-26 — Mobile debug APK 0.1.20
 

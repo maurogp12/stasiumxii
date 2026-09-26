@@ -21,6 +21,7 @@ func _finish_live() -> void:
 	await _test_live_tree()
 	await _test_strip_fallback()
 	await _test_failed_strip_falls_back_to_hop()
+	await _test_driven_walk_cycle()
 	await _test_batch1_disk_strips()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
@@ -122,6 +123,14 @@ func _test_curves_return_to_origin() -> void:
 	var stride := MOTION.step_travel(0.5)
 	eq(stride > 0.35 and stride < 0.7, true, "the stride is underway at mid tile")
 	eq(MOTION.step_travel(0.3) < MOTION.step_travel(0.55), true, "travel only moves forward")
+	eq(is_equal_approx(MOTION.step_travel(0.5), 0.5), false, "mid-tile travel is eased, not a raw lerp")
+	eq(MOTION.HOP_PX <= 6.0, true, "the body rise stays a short plant, not a long hop")
+	eq(MOTION.walk_cycle_frame(0.0, 6, 0), 0, "a step presses on the contact frame")
+	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != 0, true, "the stride leaves the idle frame")
+	eq(MOTION.walk_cycle_frame(0.5, 6, 0) != MOTION.walk_cycle_frame(1.0, 6, 0), true, "arrival is not the passing frame")
+	eq(MOTION.walk_cycle_frame(1.0, 6, 0), MOTION.walk_cycle_frame(0.0, 6, 1), "the next segment starts on the landed contact")
+	eq(MOTION.walk_cycle_frame(0.35, 6, 0) != MOTION.walk_cycle_frame(0.55, 6, 0), true, "the cycle advances through the stride")
+	eq(MOTION.walk_cycle_frame(1.0, 1, 0), 0, "a one-frame strip has nothing to advance")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(3, 2), Vector2(32, 16)), "E", "an east step faces east")
 	eq(MOTION.walk_segment_facing(Vector2i(2, 2), Vector2i(2, 1), Vector2(32, -16)), "N", "a north step faces north")
 	eq(MOTION.walk_segment_facing(Vector2i(4, 4), Vector2i(3, 4), Vector2(-32, -16)), "W", "a west step faces west")
@@ -661,6 +670,8 @@ func _test_view_wiring() -> void:
 	eq(anim_src.contains("play_step_hop"), false, "a cell does not play its own hop")
 	truthy(anim_src.contains("arm_driven_walk"), "the walk loop starts once for the path")
 	truthy(anim_src.contains("sync_walk_plant"), "the stride seeks the plant frame")
+	truthy(pawn_src.contains("walk_cycle_frame"), "a driven step samples the walk cycle")
+	truthy(motion_src.contains("func walk_cycle_frame"), "the walk cycle frame is a pure function")
 	var arm_at := anim_src.find("_arm_path_walk")
 	var turn_at := anim_src.find("TURN_FRAME_SEC")
 	eq(arm_at >= 0 and turn_at > arm_at, true, "the walk cycle starts before the in-place turn hold")
@@ -1087,6 +1098,78 @@ func _test_strip_library_missing_and_slice() -> void:
 	truthy(readme.contains("gloam_walk_{e,s,n,w}.png"), "README lists the gloam walks")
 	truthy(readme.contains("gloam_frames.tres"), "README lists the gloam frames tres")
 	truthy(readme.contains("art/grok_project/anims/"), "README keeps grok masters as fallback only")
+	pawn.free()
+
+
+func _test_driven_walk_cycle() -> void:
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	await process_frame
+	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	var foot := pawn.get_node("Foot") as Node2D
+	pawn.position = Vector2(48, 16)
+	pawn.arm_driven_walk()
+	pawn.sync_walk_plant()
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "driven walk shows the facing strip")
+	if strip == null:
+		pawn.free()
+		return
+	eq(String(strip.animation), "walk_e", "driven walk plays walk_e for an east step")
+	var count := strip.sprite_frames.get_frame_count("walk_e")
+	eq(count >= 4, true, "the east walk strip has a real cycle")
+	pawn.sample_driven_gait(0.0)
+	var plant := strip.frame
+	eq(plant, MOTION.walk_cycle_frame(0.0, count, 0), "the press shows the contact frame")
+	eq(foot.position, Vector2.ZERO, "the ground mark starts on the diamond")
+	# No process tick. A clock that never moves must still fail this.
+	pawn.sample_driven_gait(0.5)
+	eq(strip.frame == plant, false, "a driven stride leaves the idle frame")
+	eq(strip.frame, MOTION.walk_cycle_frame(0.5, count, 0), "the stride shows that walk-cycle frame")
+	eq(strip.position.y < -3.0, true, "the body rises off the foot")
+	eq(strip.position.y > -8.0, true, "the rise is not a long hop")
+	eq(foot.position, Vector2.ZERO, "the ground mark stays on the floor while the body walks")
+	eq(pawn.position, Vector2(48, 16), "the gait does not lift the foot off the cell")
+	eq(strip.offset, Vector2(0, -72), "the strip pivot stays on the diamond")
+	eq(is_equal_approx(strip.speed_scale, 0.0), true, "the step owns the cycle")
+	var passing := strip.frame
+	var held := strip.frame
+	await process_frame
+	eq(strip.frame, held, "a paused clock cannot advance off the sampled frame")
+	pawn.sample_driven_gait(1.0)
+	eq(strip.frame == passing, false, "arrival does not freeze the passing frame")
+	eq(strip.frame, MOTION.walk_cycle_frame(1.0, count, 0), "arrival holds the next contact")
+	eq(strip.position, Vector2.ZERO, "arrival plants the body on the foot")
+	var arrived := strip.frame
+	pawn.sync_walk_plant()
+	pawn.sample_driven_gait(0.0)
+	eq(strip.frame, arrived, "the next segment starts on the contact the last one landed")
+	eq(String(strip.animation), "walk_e", "the same facing keeps walk_e")
+	pawn.set_facing("S")
+	pawn.retarget_walk_strip()
+	pawn.sync_walk_plant()
+	strip = _visible_strip(pawn)
+	truthy(strip != null, "a new segment still shows a walk strip")
+	if strip != null:
+		eq(String(strip.animation), "walk_s", "the south segment plays walk_s")
+		var south_count := strip.sprite_frames.get_frame_count("walk_s")
+		pawn.sample_driven_gait(0.5)
+		eq(strip.frame == MOTION.walk_cycle_frame(0.0, south_count, 2), false, "the new facing still leaves the idle frame")
+	pawn.set_facing("N")
+	pawn.retarget_walk_strip()
+	strip = _visible_strip(pawn)
+	if strip != null:
+		eq(String(strip.animation), "walk_n", "north plays walk_n")
+	pawn.set_facing("W")
+	pawn.retarget_walk_strip()
+	strip = _visible_strip(pawn)
+	if strip != null:
+		eq(String(strip.animation), "walk_w", "west plays walk_w")
+	pawn.end_path_walk()
+	eq(sprite.visible, true, "path end shows the idle facing")
+	eq(_visible_strip(pawn), null, "path end does not leave a mid-stride strip on screen")
+	eq(foot.position, Vector2.ZERO, "the ground mark is still on the diamond after the walk")
 	pawn.free()
 
 

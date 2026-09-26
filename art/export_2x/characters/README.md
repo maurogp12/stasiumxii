@@ -85,7 +85,7 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing, and the clip is playing:** loop for the whole path. The pawn faces the step, and the cycle plays through a two-frame plant, before it slides through cell centers (about 0.30s each). `walk_strip_speed_scale` stretches one authored plant onto that tile. The snapshot facing snaps after the land. The sprite root takes a 4–6px gait (press, push-off, modest rise, settle). No tile-tall hop. Scale stays at rest while the cycle plays. Gloam uses `gloam_walk_*`.
+- **Walk strip for this facing, and the clip is playing:** the pawn faces the step (`walk_n/e/s/w`), and that half-cycle is sampled from the 0.30s tile. Press and arrival hold contact frames. A clock stuck on frame 0 is not a walk. The foot stays on the diamond. The sprite root takes a 4–6px gait. No tile-tall hop. Gloam uses `gloam_walk_*`.
 - **Walk missing, or `play()` does not start:** the same slide, the same bounce, plus squash on launch/land and stretch at the crest. Mender and Bastion stay here.
 - **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use the louder `attack_*`. Gloam Cut uses `attack_*` and holds frame 2.
 - **Mark Shot:** `cast_mark_<facing>` (6 frames, 12 fps, impact 3). If that sheet is missing it plays v3 `attack_*`. The bolt leaves hand height at the release frame, following the body if the bow has lunged.

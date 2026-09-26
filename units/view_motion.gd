@@ -409,8 +409,8 @@ const STEP_SETTLE_START := 0.82
 
 
 ## 0 on the departure tile through the press, 1 on the arrival tile through
-## the settle. The stride is the airborne middle. No sideways term: the
-## caller lerps along the segment.
+## the settle. The stride eases between those plants. No sideways term: the
+## caller moves along the segment. It is not a raw lerp of t.
 static func step_travel(t: float) -> float:
 	if t <= STEP_PRESS_END:
 		return 0.0
@@ -418,6 +418,32 @@ static func step_travel(t: float) -> float:
 		return 1.0
 	var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
 	return u * u * (3.0 - 2.0 * u)
+
+
+## Frame of the facing walk strip for this tile.
+## One tile plays half the cycle, contact to contact. The press holds the
+## departure plant. The settle holds the next plant, so arrival cannot freeze
+## on a passing frame. step_index continues that cycle onto the next segment.
+## An open stride never stays on the departure plant: that is an idle slide.
+static func walk_cycle_frame(t: float, frame_count: int, step_index: int = 0) -> int:
+	var count := maxi(frame_count, 1)
+	if count <= 1:
+		return 0
+	var half := maxi(count / 2, 1)
+	var start := (maxi(step_index, 0) * half) % count
+	var along := 0.0
+	if t <= STEP_PRESS_END:
+		along = 0.0
+	elif t >= STEP_SETTLE_START:
+		along = float(half)
+	else:
+		var u := (t - STEP_PRESS_END) / (STEP_SETTLE_START - STEP_PRESS_END)
+		var eased := u * u * (3.0 - 2.0 * u)
+		along = eased * float(half)
+	var idx := (start + int(round(along))) % count
+	if t > STEP_PRESS_END and t < STEP_SETTLE_START and idx == start:
+		idx = (start + 1) % count
+	return idx
 
 
 ## Cardinal steps use the grid letter. Any other segment faces the screen
