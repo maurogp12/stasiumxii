@@ -10,6 +10,8 @@ Looks locked for that drop: Kestrel (approved Wakfu), Ironjaw A2 (fierce helm, d
 
 The stride code stays: face the segment, sample the cycle from the foot, about 0.30s per tile, plant on arrival, ground marks on the Foot child.
 
+Headless Godot 4.7.2, 0 failed: motion 2020.
+
 ## 2026-09-26 — Walk stride on the existing strips
 
 Luca, after the landscape pass. No APK cut. No new walk sheets. Locked kit numbers unchanged. The Batch-1 / Batch-1c files under `art/export_2x/characters/{class}/anims/*_walk_{e,s,n,w}.png` are the clips that play. `*_gen.png` stays unloaded.
