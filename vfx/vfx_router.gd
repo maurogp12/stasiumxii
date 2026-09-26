@@ -276,6 +276,7 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		out.append(spark)
 		var number_delay := float(spark.get("delay", 0.0))
 		out.append(_hit_flash(target_seat, cell, number_delay))
+		out.append(_damage_float(target_seat, cell, number_delay))
 		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
@@ -342,6 +343,7 @@ static func _hold_line_recipes(event: Dictionary, connected: bool) -> Array:
 			continue
 		out.append({"id": "spark", "block": 0.0, "seat": seat, "cell": cell, "tint": VfxPalette.BASTION, "chest": true})
 		out.append(_hit_flash(seat, cell, 0.0))
+		out.append(_damage_float(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(damage), "damage", 0.0, _back_scale(row), _back_text(row, str(damage)), _back_tint(row)))
 		if not _back_tag(row).is_empty():
 			out.append(_chevron(seat, cell, event))
@@ -455,6 +457,7 @@ static func _stagger_recipes(event: Dictionary) -> Array:
 		hp = absi(int(event.get("hp_delta", 0)))
 	if hp > 0:
 		out.append(_hit_flash(seat, cell, VfxBudget.STAGGER_DELAY))
+		out.append(_damage_float(seat, cell, VfxBudget.STAGGER_DELAY))
 		out.append(_number(seat, cell, "-%d" % hp, "stagger", VfxBudget.STAGGER_DELAY, 1.0, "", Color(0, 0, 0, 0)))
 	var mp := int(event.get("stagger_mp", 0))
 	if mp <= 0:
@@ -491,7 +494,9 @@ static func _burn_tick_recipes(event: Dictionary) -> Array:
 		"flare": true,
 	}]
 	if amount > 0:
-		out.append(_hit_flash(seat, cell_of(event.get("pos", Vector2i.ZERO)), 0.0))
+		var burn_cell := cell_of(event.get("pos", Vector2i.ZERO))
+		out.append(_hit_flash(seat, burn_cell, 0.0))
+		out.append(_damage_float(seat, burn_cell, 0.0))
 		out.append(_number(seat, Vector2i.ZERO, "-%d" % amount, "burn", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	return out
 
@@ -534,6 +539,7 @@ static func _intercept_recipes(event: Dictionary) -> Array:
 	var out: Array = []
 	if amount > 0:
 		out.append(_hit_flash(seat, cell, 0.0))
+		out.append(_damage_float(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(amount), "damage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("for_cell"):
 		out.append({
@@ -754,6 +760,15 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	if typ == "intercept":
 		out.append(_ring(cell_of(event.get("interceptor_cell", Vector2i.ZERO)), VfxPalette.BASTION, false, 0.24, 0.0))
 		return out
+	if (typ == "hit" or typ == "miss") and _shows_melee_windup(spell_id):
+		# Anticipation on the caster. Life meets the contact instant so the
+		# flash, burst, float, and flinch still share that resolve.
+		var wind_life := ViewMotion.damage_resolve_sec(spell_id)
+		if wind_life < 0.12:
+			wind_life = 0.18
+		var wind := _stamp("melee_windup", caster, caster_cell, 0.0, VfxBudget.STAMP_MELEE_PX, wind_life)
+		wind["aim"] = to_cell
+		out.append(wind)
 	match spell_id:
 		"mark_shot":
 			if typ == "hit" or typ == "miss":
@@ -972,8 +987,26 @@ static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictio
 	return spec
 
 
+## Standing melee only. Ambush slashes after the plant. Mark Shot uses the bow.
+static func _shows_melee_windup(spell_id: String) -> bool:
+	if spell_id == "ambush" or spell_id == SpellKits.AMBUSH:
+		return false
+	if spell_id == "mark_shot" or spell_id == SpellKits.MARK_SHOT:
+		return false
+	return ViewMotion.caster_motion(spell_id) == "attack"
+
+
 static func _hit_flash(seat: int, cell: Vector2i, delay: float) -> Dictionary:
 	return _stamp("hit_flash", seat, cell, delay, VfxBudget.STAMP_HIT_PX, VfxBudget.STAMP_HIT_LIFE, 0.92)
+
+
+## Accent on the rising number. Same contact instant as the flash and the spark.
+## Head anchor, so it does not stack a second chest plate on the flash.
+static func _damage_float(seat: int, cell: Vector2i, delay: float) -> Dictionary:
+	var spec := _stamp("damage_float", seat, cell, delay, VfxBudget.STAMP_FLOAT_PX, VfxBudget.STAMP_FLOAT_LIFE, 0.92)
+	spec["chest"] = false
+	spec["head"] = true
+	return spec
 
 
 static func _stamp(sheet: String, seat: int, cell: Vector2i, delay: float, px: float, life: float, alpha: float = 1.0) -> Dictionary:

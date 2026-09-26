@@ -39,14 +39,21 @@ const POOL_STAMP := 6
 ## Authored overlays, in pixels on the board (before camera zoom).
 ## A phone tile is 64px wide. These stay on the body, not the screen.
 const STAMP_HIT_PX := 58.0
+## Compact accent on the number. Smaller than the chest flash.
+const STAMP_FLOAT_PX := 52.0
 const STAMP_AMBUSH_PX := 100.0
 const STAMP_MARK_PX := 76.0
 ## Bow windup. Smaller than the floor impact so the reticle stays on the hands.
 const STAMP_MARK_CAST_PX := 60.0
 const STAMP_DETONATE_PX := 118.0
 const STAMP_DUST_PX := 44.0
+## Melee anticipation on the caster. Larger than the chest flash, still on the body.
+const STAMP_MELEE_PX := 76.0
 ## Hero-frame pop. Does not add input lock.
+## Contact on the target tile: flash, compact burst, float, and flinch
+## each finish inside 0.2–0.4s of the resolve. They share that instant.
 const STAMP_HIT_LIFE := 0.30
+const STAMP_FLOAT_LIFE := 0.28
 const STAMP_SPELL_LIFE := 0.24
 ## Short footstep puff. 0.2–0.35s, not a full-path effect.
 const STAMP_DUST_LIFE := 0.30

@@ -542,9 +542,20 @@ static func anticipate_segment(segment_index: int, facing_changed: bool) -> bool
 
 
 ## Dust when the facing changes, and on the last plant. Straight middle
-## tiles stay quiet. The caller fires this when the hop is back at Y=0.
+## tiles stay quiet.
 static func dust_on_plant(facing_changed: bool, is_final: bool) -> bool:
 	return facing_changed or is_final
+
+
+## The puff is the landing: the sample where hop Y returns to 0.
+## Takeoff is also Y=0, and so is the rest of the plant window. Neither
+## of those is a puff. Mid-air is not a puff. One landing, not a trail.
+static func dust_at_landing(t: float, facing_changed: bool, is_final: bool) -> bool:
+	if not dust_on_plant(facing_changed, is_final):
+		return false
+	if not is_equal_approx(t, HOP_PLANT_AT):
+		return false
+	return hop_offset(t) == Vector2.ZERO
 
 
 ## Slight lean back along the facing, plus a small crouch. Zero at both ends

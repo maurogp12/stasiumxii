@@ -8,6 +8,10 @@ const MOTION := preload("res://units/view_motion.gd")
 var _failed: int = 0
 var _passed: int = 0
 var _sim: Node
+var _dust_last_t := -1.0
+var _dust_air_puffs := 0
+var _dust_land_t := -1.0
+var _dust_land_y := 1.0
 
 
 func _initialize() -> void:
@@ -28,6 +32,7 @@ func _finish_live() -> void:
 	await _test_batch1_disk_strips()
 	await _test_hit_flinch_playback()
 	await _test_flinch_interrupts_walk()
+	await _test_dust_callback_is_the_landing()
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
 	await _test_ambush_present_race()
@@ -210,6 +215,14 @@ func _test_curves_return_to_origin() -> void:
 	eq(MOTION.dust_on_plant(false, false), false, "a straight middle tile does not puff")
 	eq(MOTION.dust_on_plant(true, false), true, "a facing change puffs on the plant")
 	eq(MOTION.dust_on_plant(false, true), true, "the final plant puffs")
+	eq(MOTION.hop_offset(MOTION.HOP_PLANT_AT - 0.02).y < -0.05, true, "the hop is still airborne just before the plant")
+	eq(MOTION.dust_at_landing(0.0, true, true), false, "dust does not fire at takeoff")
+	eq(MOTION.dust_at_landing(0.5, true, true), false, "dust does not fire mid-air")
+	eq(MOTION.dust_at_landing(0.9, true, true), false, "a later plant frame is not a second puff")
+	eq(MOTION.dust_at_landing(1.0, true, true), false, "the end of the tile is not a second puff")
+	eq(MOTION.dust_at_landing(MOTION.HOP_PLANT_AT, false, false), false, "a straight middle landing does not puff")
+	eq(MOTION.dust_at_landing(MOTION.HOP_PLANT_AT, true, false), true, "a facing change puffs when hop Y returns to 0")
+	eq(MOTION.dust_at_landing(MOTION.HOP_PLANT_AT, false, true), true, "the final plant puffs when hop Y returns to 0")
 	var anti := MOTION.step_anticipation_offset(0.5, Vector2(20, 10))
 	eq(anti.length() > 0.5 and anti.length() < 4.0, true, "the weight shift is a small lean")
 	eq(MOTION.step_anticipation_offset(0.0, Vector2(20, 10)), Vector2.ZERO, "anticipation starts on the foot")
@@ -808,6 +821,14 @@ func _test_view_wiring() -> void:
 	eq(anti_call >= 0 and settle_at > anti_call, true, "the weight shift uses the settle duration")
 	eq(anti_call >= 0 and sample_at > anti_call, true, "the weight shift runs before the tile tween")
 	truthy(anim_src.contains("dust_on_plant"), "dust is chosen per plant, not on every tile")
+	var land_at := anim_src.find("0.0, VIEW_MOTION.HOP_PLANT_AT")
+	var puff_at := anim_src.find("_puff_footstep")
+	var settle_hop := anim_src.find("VIEW_MOTION.HOP_PLANT_AT, 1.0")
+	eq(land_at >= 0 and puff_at > land_at and settle_hop > puff_at, true, "dust is the landing, before the plant squash finishes")
+	var commit_fn := view.find("func _commit_walk_cell")
+	var puff_fn := view.find("func _puff_footstep")
+	var commit_body := view.substr(commit_fn, puff_fn - commit_fn)
+	eq(commit_body.contains("_puff_footstep"), false, "the cell commit does not puff after the hop has already landed")
 	truthy(anim_src.contains("anticipate_segment"), "only the first tile and direction changes settle")
 	truthy(anim_src.contains("is_about_face"), "a 180 is planted before the next tile")
 	truthy(anim_src.contains("_bridge_straight_tile"), "straight tiles bridge without an extra settle")
@@ -936,6 +957,33 @@ func _test_hit_flinch_playback() -> void:
 			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
 			pawn.free()
 			await process_frame
+
+
+func _test_dust_callback_is_the_landing() -> void:
+	_dust_last_t = -1.0
+	_dust_air_puffs = 0
+	_dust_land_t = -1.0
+	_dust_land_y = 1.0
+	var tween := create_tween()
+	tween.tween_method(_sample_dust_probe, 0.0, MOTION.HOP_PLANT_AT, 0.06)
+	tween.tween_callback(_mark_dust_landing)
+	await tween.finished
+	eq(_dust_air_puffs, 0, "the airborne hop does not puff")
+	eq(is_equal_approx(_dust_land_t, MOTION.HOP_PLANT_AT), true, "the puff callback is the plant sample")
+	eq(is_equal_approx(_dust_land_y, 0.0), true, "the puff callback is hop Y at 0")
+	eq(MOTION.dust_at_landing(_dust_land_t, true, false), true, "a facing-change landing is allowed to puff")
+	eq(MOTION.dust_at_landing(_dust_land_t, false, false), false, "a straight landing sample still stays quiet")
+
+
+func _sample_dust_probe(t: float) -> void:
+	_dust_last_t = t
+	if MOTION.hop_offset(t).y < -0.001 and MOTION.dust_at_landing(t, true, true):
+		_dust_air_puffs += 1
+
+
+func _mark_dust_landing() -> void:
+	_dust_land_t = _dust_last_t
+	_dust_land_y = MOTION.hop_offset(_dust_last_t).y
 
 
 func _test_flinch_interrupts_walk() -> void:

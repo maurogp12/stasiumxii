@@ -2,6 +2,24 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Combat VFX punch v3
+
+Presentation only. No APK. Post-0.1.26. Walk sheets on this tip are wakfu-ship-v5 (#177). This pack does not replace them.
+
+The transparent punch-v3 pack lives under `art/vfx/scenario/`:
+
+| Sheet | Path |
+| --- | --- |
+| Hit flash | `hit_flash.png` |
+| Damage float | `damage_float.png` |
+| Ambush slash | `ambush_slash.png` |
+| Detonate | `detonate_burst.png` |
+| Melee windup | `melee_windup.png` |
+| Footstep dust | `footstep_dust.png` |
+| Mark Shot bow | `mark_shot_cast.png` (same bytes as the attached bow; #175 timing stays 70+80+80+70) |
+
+Mark Shot impact stays the punch-v2 floor strip. The bow windup stays 70+80+80+70 (bolt on frame 4); the draw is not stretched to the contact. Ambush still plants on the back tile, then slashes, then the same contact stack. Standing melee plays the windup on the caster and it ends as the contact starts. Dust puffs only on a facing change and the final plant, at the instant hop Y returns to 0 — not on every tile, not at takeoff, and not mid-air. On contact the flash, the compact spark, the float, and the flinch share the resolve on the target tile, and each one finishes inside 0.2–0.4s. A miss does not flinch. The hit flash keeps its cyan and gold. Locked kit numbers and map geometry are unchanged.
+
 ## 2026-09-26 — Wakfu walk strips v5
 
 Presentation only. The next APK after 0.1.26 plays wakfu-ship-v5 walks. This note does not cut an APK and does not bump `version/code`.

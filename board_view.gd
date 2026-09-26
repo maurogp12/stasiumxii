@@ -1333,9 +1333,15 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		else:
 			# Straight seam. Cubic continues. The strip stays on the contact.
 			_walk_tween.tween_callback(_bridge_straight_tile.bind(pawn))
-		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+		# The hop is airborne until Y returns to 0. Dust is that landing,
+		# and only when the facing changed or this is the last plant.
+		# The squash after the landing stays quiet, and so does takeoff.
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
-		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell, dust))
+		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, VIEW_MOTION.HOP_PLANT_AT, Pawn.WALK_TILE_SEC * VIEW_MOTION.HOP_PLANT_AT)
+		if dust:
+			_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
+		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), VIEW_MOTION.HOP_PLANT_AT, 1.0, Pawn.WALK_TILE_SEC * (1.0 - VIEW_MOTION.HOP_PLANT_AT))
+		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
 	# Landed contact, then one readable idle before the face pad unlocks.
 	_walk_tween.tween_callback(_hold_stop_plant.bind(pawn))
@@ -1411,17 +1417,15 @@ func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
 	pawn.retarget_walk_strip()
 
 
-func _commit_walk_cell(pawn: Pawn, cell: Vector2i, dust: bool = false) -> void:
+func _commit_walk_cell(pawn: Pawn, cell: Vector2i) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
 	_set_pawn_cell(pawn, cell)
-	if dust:
-		_puff_footstep(pawn, cell)
 
 
-## Dust at the destination feet, after the hop is back on Y=0.
-## Facing changes and the final plant only. Not the move start, and not
-## every straight tile.
+## Dust at the destination feet, on the sample where hop Y returns to 0.
+## Facing changes and the final plant only. Not takeoff, not mid-air,
+## and not every straight tile.
 func _puff_footstep(pawn: Pawn, cell: Vector2i) -> void:
 	if _vfx == null or pawn == null or not _vfx.has_method("play_footstep"):
 		return
