@@ -1269,7 +1269,7 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
 			SpellKits.resource_label("shades"),
-			_resource_current(unit, "shades"),
+			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
 			mastery,
 			resist,
@@ -1296,6 +1296,26 @@ func _resource_current(unit: Dictionary, id: String) -> int:
 	if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has(id):
 		return int((bag as Dictionary)[id])
 	return 0
+
+
+## Live Shade tokens win over a stale unit.shades field so the card matches the tile.
+static func shade_count(unit: Dictionary, snap: Dictionary) -> int:
+	if not snap.has("shade_tokens"):
+		if unit.has("shades"):
+			return int(unit.get("shades", 0))
+		var bag: Variant = unit.get("resources", null)
+		if typeof(bag) == TYPE_DICTIONARY and (bag as Dictionary).has("shades"):
+			return int((bag as Dictionary).get("shades", 0))
+		return 0
+	var seat := int(unit.get("seat", -1))
+	var count := 0
+	for token in snap.get("shade_tokens", []):
+		if typeof(token) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = token
+		if int(rec.get("owner_seat", -1)) == seat and int(rec.get("turns", 0)) > 0:
+			count += 1
+	return count
 
 
 func _kit_footer(unit: Dictionary) -> String:

@@ -3428,6 +3428,10 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var cell: Vector2i = landing["cell"]
 	var backstab: bool = bool(landing.get("backstab", false))
 	actor["pos"] = cell
+	# Face the prey from the back tile. Miss keeps the old facing.
+	var face_dir := facing_from_step(cell, target["pos"])
+	if face_dir != "":
+		actor["facing"] = face_dir
 	if from_shade:
 		_remove_shade_at(origin["pos"], int(actor["seat"]))
 		_sync_shade_flags()
@@ -3454,6 +3458,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		"destination": cell,
 		"teleported": true,
 		"backstab": backstab,
+		"facing": str(actor.get("facing", "")),
 		"facing_mult": facing_mult,
 		"damage": damage,
 		"shade_retained": not from_shade and bool(actor.get("shade", false)),

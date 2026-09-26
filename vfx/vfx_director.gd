@@ -583,12 +583,20 @@ func _follow_seat(seat: int) -> Vector2:
 	return Vector2.ZERO
 
 
+## Pawn position only when that fighter is standing on the effect cell.
+## Drop Shade's floater and an Ambush puff at the Shade are not the caster body.
 func _body_pos(seat: int, cell: Vector2i, chest: bool) -> Vector2:
+	var at := _pos_cell(cell)
 	var pawn := _pawn(seat)
-	var at := pawn.position if pawn != null else _pos_cell(cell)
+	if pawn != null and _pawn_stands_on(pawn, cell):
+		at = pawn.position
 	if chest:
 		at += VfxBudget.CHEST_OFFSET
 	return at
+
+
+func _pawn_stands_on(pawn: Node2D, cell: Vector2i) -> bool:
+	return "grid_position" in pawn and (pawn.grid_position as Vector2i) == cell
 
 
 func _pos_cell(cell: Vector2i) -> Vector2:
