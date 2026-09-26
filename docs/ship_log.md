@@ -141,9 +141,9 @@ Coilspire’s sprite is the Coilgate door-sheet crop (spider body, tesla coils),
 
 https://github.com/maurogp12/stasiumxii/pull/137 into `mobile`. Not merged. No APK.
 
-### 2026-09-26 follow-up — foe portraits, character only
+### 2026-09-26 follow-up — one creature per foe portrait
 
-The first crops still carried concept-sheet chrome (titles, biome banners, flavor boxes) and a few filenames showed the neighbor: Warden’s file was the Drudge card, Captain’s file was Tide Skitter. Each `art/stasis/foes/*.png` is cut again from the same door sheets. The picture is that creature only, on a transparent field, in the same 144×160 canvas. Bosses stand near Ironjaw height when the drawing is tall (Warden, Captain Brineclaw, Tyrant Coilspire). A wide brute such as Slagheart stays full-body and therefore shorter. Trash stay shorter. Filenames and catalog wiring are unchanged. No APK.
+The last `art/stasis/foes/` cuts still mixed neighbors. Warden of the Sheaves held a scythe scrap plus two beasts. Captain Brineclaw held dock and a teal bird. Scarecrow Drudge held two figures side by side. Each file is cut again from that door’s concept sheet, around the labeled illustration only. One creature, transparent field, 144×160. Tall drawings (Warden, Captain Brineclaw) stand near Ironjaw height. Wide bosses (Slagheart, Serra with the glaive, Tyrant Coilspire) stay full-body and therefore shorter. Trash stay shorter. Filenames and catalog wiring are unchanged. No APK.
 
 ## 2026-09-26 — Koliseo boards feel alive
 
