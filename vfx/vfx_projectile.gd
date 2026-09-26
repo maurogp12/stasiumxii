@@ -3,6 +3,7 @@ extends "res://vfx/vfx_pooled.gd"
 ## Straight or arced mover with a short trail. Overshoot is the miss whiff.
 
 var _line: Line2D
+var _glow: Line2D
 var _head: Polygon2D
 var _from: Vector2 = Vector2.ZERO
 var _to: Vector2 = Vector2.ZERO
@@ -21,11 +22,19 @@ func _ready() -> void:
 	_line.joint_mode = Line2D.LINE_JOINT_ROUND
 	_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
 	_line.end_cap_mode = Line2D.LINE_CAP_ROUND
-	_line.z_index = 0
+	_line.z_index = 1
 	add_child(_line)
+	_glow = Line2D.new()
+	_glow.width = 9.0
+	_glow.joint_mode = Line2D.LINE_JOINT_ROUND
+	_glow.begin_cap_mode = Line2D.LINE_CAP_ROUND
+	_glow.end_cap_mode = Line2D.LINE_CAP_ROUND
+	_glow.z_index = 0
+	add_child(_glow)
+	move_child(_glow, 0)
 	_head = Polygon2D.new()
 	_head.polygon = PackedVector2Array([
-		Vector2(6, 0), Vector2(-4, 3), Vector2(-2, 0), Vector2(-4, -3),
+		Vector2(10, 0), Vector2(-6, 4.5), Vector2(-2, 0), Vector2(-6, -4.5),
 	])
 	add_child(_head)
 
@@ -45,9 +54,13 @@ func play(spec: Dictionary) -> void:
 	_elapsed = -_delay
 	_points = PackedVector2Array()
 	var tint: Color = spec.get("tint", VfxPalette.KESTREL_AIR)
-	_line.default_color = tint
-	_line.width = float(spec.get("width", 3.0))
-	_head.color = tint
+	var width := float(spec.get("width", 3.0))
+	_line.default_color = tint.lerp(Color.WHITE, 0.42)
+	_line.width = width
+	if _glow != null:
+		_glow.default_color = Color(tint.r, tint.g, tint.b, 0.42)
+		_glow.width = width * 2.8
+	_head.color = tint.lerp(Color.WHITE, 0.25)
 	_show_head = bool(spec.get("head", true))
 	_head.visible = false
 	z_as_relative = false
@@ -88,10 +101,14 @@ func _sample(t: float) -> void:
 	if _points.size() > 8:
 		_points.remove_at(0)
 	_line.points = _points
+	if _glow != null:
+		_glow.points = _points
 
 
 func release() -> void:
 	if _line != null:
 		_line.points = PackedVector2Array()
+	if _glow != null:
+		_glow.points = PackedVector2Array()
 	_points = PackedVector2Array()
 	super.release()

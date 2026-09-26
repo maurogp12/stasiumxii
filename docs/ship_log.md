@@ -59,3 +59,91 @@ A second pass against the reference beats. Locked destination stays the enemy ba
 - A backstab float is the large bouncing number (`BACKSTAB` at 1.55). The coach line stays the smaller clinical log. The button stays soft-grey until AP and Shade geometry are legal. Consume, snap, face, and slash stay on the same beat.
 
 Headless recount after this follow-up, 0 failed: combat 4510, VFX 439, motion 1828, touch adapter 403.
+
+## 2026-09-26 — Koliseo boards feel alive
+
+Look target is Dofus Koliseo: an isometric tactical arena that reads as a place, with a wind-up before the cast and a hit you can see. This pass is paint, weather, and motion chrome on the five Locked arenas. Original STASIUM sheets only. No Dofus art.
+
+### Player-visible
+
+- Crosshaven, Brinewake, Slagcrown, Windmere, and Stormspire keep their existing diamonds and get a jewel grade: emerald, sapphire, amber, ice, and amethyst, with a north-lit falloff and a slow sheen. Water and lava shimmer harder than stone. A higher tile is a little brighter than the one under it. A dark grid line and a pale gleam outline every diamond, and the outer edge of the board glows.
+- Each arena drifts its own weather over the board, under the Shade plate and the aim line. Crosshaven lifts grass motes. Brinewake blows a sea breeze. Slagcrown sends ash up off the lava. Windmere drops ice dust. Stormspire flickers violet sparks. A soft additive light wanders the middle of the diamond.
+- Walk still turns into the step before the body moves, and the walk cycle stays at rest scale. The step bounce is 6px, the top of the 4–6px band, so the plant has more weight. A missing walk strip squashes and stretches a little harder.
+- Casts dip further, rise higher, and point farther toward the effect. The wind-up squash is wider and shorter. Hits knock 6px, shake harder, and squash the body (including the hit strip). Death collapses by the middle of the beat and holds the last cell; the authored collapse plays faster so that hold has time inside the 0.6s lock.
+- Skill VFX is the same recipes. Sparks burst hotter and farther with a white core. Shots carry a glow under a brighter head. Impact rings pop out and back. Heals rise faster. Ranges, costs, and damage are the same numbers.
+
+### Files
+
+- `board/koliseo_ground.gdshader` — contrast, north light, sheen, pulse
+- `board/koliseo_life.gd` — per-arena grade and weather
+- `board/tile.gd` — grade on ship sheets, depth rim
+- `board_view.gd` — applies the grade and owns the weather layer
+- `units/view_motion.gd`, `units/pawn.gd` — step weight, cast coil, flinch, death hold
+- `vfx/vfx_spark.gd`, `vfx/vfx_projectile.gd`, `vfx/vfx_ring.gd`, `vfx/vfx_puff.gd`, `vfx/vfx_motes.gd` — punchier playback of the existing recipes
+- `tests/run_koliseo_maps_tests.gd`, `tests/run_motion_tests.gd`
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP costs, ranges, and damage.
+- Ambush legality. Ambush-without-Shade stays parked. No Ambush that does not come from a Shade (or from Gloam while Invisible).
+- No line-of-sight or fog rules. Those stay Open.
+- No cosmetics, no gender, no recolor of the fighters.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- No APK version bump and no APK cut.
+- Proto boards and unknown map ids are not dressed as a biome. They keep the flat fill.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+| Suite | Passed |
+| --- | ---: |
+| Combat | 4510 |
+| VFX | 439 |
+| Motion | 1846 |
+| Koliseo maps | 278 |
+| Event hooks | 329 |
+| Net session | 280 |
+| Elevation chrome | 189 |
+| Touch adapter | 403 |
+| Stasis | 187 |
+| Sprite | 234 |
+
+### Pull request
+
+https://github.com/maurogp12/stasiumxii/pull/136 into `mobile`. Not merged.
+
+### 2026-09-26 follow-up — Rosie jewel grid
+
+The Rosebud arena pass asked for jewel tiles, a readable grid, a glowing board edge, a landing on the walk, a hand on the action, and brighter skill flashes. Same five arenas, same original sheets, same Locked numbers.
+
+- Tile grades push further into emerald, sapphire, amber, ice, and amethyst. Windmere stays cool and still reads as a 15×15 grid with Kestrel and Ironjaw on it.
+- Each diamond draws a dark ink line and a pale gleam on a child, so the grade shader does not wash the grid out.
+- The outer diamond of the board glows in that arena's light and breathes.
+- A walk still faces the step and bounces 6px at rest scale. When the path ends, the body squashes into the tile and releases. Feet stay planted.
+- Casts and lunges reach a small hand along the aim. It hides at rest. It is the same mark on every fighter.
+- Sparks and impact rings are brighter. Recipes, ranges, costs, and damage stay the numbers they were.
+
+Headless recount, 0 failed: Koliseo maps 278, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+
+### 2026-09-26 follow-up — Rosebud energy
+
+The Windmere capture after the Rosebud pass is a glacier field: cyan, teal, ice, lavender, and a rare gold, a dark grid, and a cyan-white rim on the board and the active fighter. The five Locked arenas take that energy in their own colors. Original sheets only. Combat numbers unchanged.
+
+- Each diamond stains toward its own jewel and keeps the sheet's cracks. Windmere is cyan, teal, ice, and lavender, with a gold cell on a rare step. Crosshaven, Brinewake, Slagcrown, and Stormspire use their own four stains plus that same rare gold.
+- Grid ink is thicker and nearer black, with a cool gleam, still drawn on a child so the grade does not wash it out.
+- The board edge is a brighter arena-colored halo with a white core. The active fighter gets the same cyan-white bloom. Sprites keep their colors. A dark foot shadow keeps them readable on the bright tiles.
+- A procedural sky and ridge sit behind the diamonds. An unknown map stays bare.
+- Skill sparks and rings are brighter and still use the spell tint. Walk gait, landing squash, and the shared hand mark are the ones already shipped. No kit change, no Ambush change, no APK bump.
+
+Headless recount, 0 failed: Koliseo maps 285, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+
+### 2026-09-26 follow-up — Dofus readability, Rosebud board discarded
+
+The icy jewel board (cyan, lavender, gold stains, glowing rim, active-unit bloom) is not the look. The target is a readable Koliseo: warm painted biomes, a clear ink grid, unit sprites with walk and cast juice, and spell flashes that read on a busy board. Original STASIUM sheets only.
+
+- Tile grades only lift contrast on the existing grass, sea, ash, snow, and storm sheets. They do not replace a cell with a flat stain.
+- The grid is a warm ink stroke with a parchment gleam. The outer edge is the same ink. There is no colored rim.
+- Weather motes and a dim sun stay subtle. The active fighter is marked with a small warm ring at the feet.
+- Walk landing, the shared cast hand, and the brighter spell-tinted sparks and rings stay. Kit numbers, Ambush, and the APK do not.
+
+Headless recount, 0 failed: Koliseo maps 283, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+

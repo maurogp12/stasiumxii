@@ -5,6 +5,7 @@ extends "res://vfx/vfx_pooled.gd"
 var _particles: CPUParticles2D
 var _flash: float = 0.0
 var _life: float = 0.0
+var _tint: Color = Color.WHITE
 var _wait: float = 0.0
 var _pending: Dictionary = {}
 
@@ -17,11 +18,11 @@ func _ready() -> void:
 	_particles.one_shot = true
 	_particles.explosiveness = 1.0
 	_particles.spread = 180.0
-	_particles.gravity = Vector2(0, 28)
-	_particles.initial_velocity_min = 36.0
-	_particles.initial_velocity_max = 88.0
-	_particles.scale_amount_min = 1.2
-	_particles.scale_amount_max = 2.4
+	_particles.gravity = Vector2(0, 46)
+	_particles.initial_velocity_min = 72.0
+	_particles.initial_velocity_max = 168.0
+	_particles.scale_amount_min = 2.0
+	_particles.scale_amount_max = 4.4
 	_particles.local_coords = true
 	_particles.texture = VfxPalette.dot_texture()
 	_particles.emitting = false
@@ -59,7 +60,16 @@ func _emit(spec: Dictionary) -> void:
 	if spec.has("amount"):
 		amount = clampi(int(spec.get("amount", amount)), 1, VfxBudget.SPARK_CAP)
 	_particles.amount = amount
-	_particles.color = tint
+	_tint = tint
+	_particles.color = Color.WHITE
+	var ramp := Gradient.new()
+	ramp.offsets = PackedFloat32Array([0.0, 0.16, 1.0])
+	ramp.colors = PackedColorArray([
+		Color(1, 1, 1, 1),
+		tint,
+		Color(tint.r, tint.g, tint.b, 0.0),
+	])
+	_particles.color_ramp = ramp
 	_particles.emitting = true
 	_particles.restart()
 	_flash = 1.0
@@ -86,7 +96,10 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if _flash <= 0.0:
 		return
-	draw_circle(Vector2.ZERO, 8.0 + (1.0 - _flash) * 6.0, Color(1, 1, 1, _flash * 0.9))
+	var hot := 24.0 + (1.0 - _flash) * 20.0
+	draw_circle(Vector2.ZERO, hot * 1.85, Color(_tint.r, _tint.g, _tint.b, _flash * 0.78))
+	draw_circle(Vector2.ZERO, hot * 1.15, Color(_tint.r, _tint.g, _tint.b, _flash * 0.9))
+	draw_circle(Vector2.ZERO, hot * 0.62, Color(1, 1, 1, _flash))
 
 
 func release() -> void:

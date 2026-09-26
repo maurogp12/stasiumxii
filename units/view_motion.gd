@@ -30,9 +30,9 @@ const IDLE_PHASE_STEP := 0.73
 ## Step bounce on the sprite root. The old phone hop was HOP_PX 36, about one
 ## iso tile, with squash and stretch. That read as a cartoon arc. SoT is a
 ## 4–6px sine: feet plant on the zeros, crest stays on the body. Scale stays
-## at rest. Arena zoom is about 0.64, so 5px is a light bob, not a slide.
-const WALK_BOUNCE_PX := 5.0
-const HOP_PX := 5.0
+## at rest. Arena zoom is about 0.64, so 6px is a planted step, not a hop.
+const WALK_BOUNCE_PX := 6.0
+const HOP_PX := 6.0
 ## Two plants in one authored walk cycle (6 frames at 12 fps = 0.5s).
 ## The path loops this period. It is not one hop per tile.
 const WALK_STEP_SEC := 0.25
@@ -48,10 +48,16 @@ const ATTACK_LUNGE_PX := 18.0
 const AMBUSH_LUNGE_PX := 36.0
 
 ## Coil before the lunge or the cast release. Long enough to read on a phone.
+## Pull stays short so the lunge is already forward a tenth of a second in.
+## The squash is the readable wind-up. Cast dip is its own, deeper coil.
 const ANTICIPATION_SEC := 0.08
-const ANTICIPATION_PULL_PX := 5.0
-const ANTICIPATION_SQUASH_X := 1.16
-const ANTICIPATION_SQUASH_Y := 0.82
+const ANTICIPATION_PULL_PX := 6.0
+const ANTICIPATION_SQUASH_X := 1.28
+const ANTICIPATION_SQUASH_Y := 0.72
+const CAST_DIP_PX := 6.5
+## Plant after a walk. Feet stay on the tile. The squash is the landing weight.
+const LAND_SEC := 0.16
+const LAND_SQUASH := Vector2(1.16, 0.8)
 
 ## Impact pose. impact_hold_sec() clamps this to the lock that is still free.
 const IMPACT_HOLD_SEC := 0.20
@@ -59,34 +65,38 @@ const IMPACT_HOLD_SEC := 0.20
 const CAST_RISE_SEC := 0.12
 const CAST_HOLD_SEC := 0.20
 const CAST_RELEASE_SEC := 0.10
-const CAST_RISE_PX := 6.0
-const CAST_SCALE := 1.06
+const CAST_RISE_PX := 10.0
+const CAST_SCALE := 1.14
 
 const REACTION_DELAY := 0.06
 
 const HIT_OUT_SEC := 0.08
 const HIT_SHAKE_SEC := 0.10
 const HIT_RETURN_SEC := 0.08
-const HIT_KNOCK_PX := 5.0
-const HIT_SHAKE_PX := 1.5
+const HIT_KNOCK_PX := 6.0
+const HIT_SHAKE_PX := 2.8
+const HIT_SQUASH_X := 1.18
+const HIT_SQUASH_Y := 0.74
 
 const SUPPORT_SEC := 0.34
 const SUPPORT_RISE_PX := 4.0
 
-const DEATH_SEC := 0.36
-const DEATH_SQUASH_X := 1.22
-const DEATH_SQUASH_Y := 0.40
-const DEATH_TILT_DEG := 18.0
+const DEATH_SEC := 0.55
+const DEATH_SQUASH_X := 1.28
+const DEATH_SQUASH_Y := 0.34
+const DEATH_TILT_DEG := 26.0
 const DEATH_FADE_ALPHA := 0.0
-const DEATH_DROP_PX := 14.0
+const DEATH_DROP_PX := 18.0
+## Collapse finishes here, then the pose holds through the rest of the beat.
+const DEATH_COLLAPSE_AT := 0.42
 ## Two authored walk frames (12 fps) planted before a facing change translates.
 const TURN_FRAME_SEC := 1.0 / 12.0
 const FACING_RING: Array[String] = ["N", "E", "S", "W"]
 ## No-strip hop only. A playing walk cycle stays at rest scale.
-const FALLBACK_SQUASH := Vector2(1.14, 0.82)
-const FALLBACK_STRETCH := Vector2(0.90, 1.12)
+const FALLBACK_SQUASH := Vector2(1.2, 0.76)
+const FALLBACK_STRETCH := Vector2(0.86, 1.18)
 ## Detonate point. Connects the caster to the effect when no cast strip exists.
-const CAST_POINT_PX := 16.0
+const CAST_POINT_PX := 22.0
 
 static var _force_reduce: int = -1
 
@@ -310,6 +320,38 @@ static func plan_sec(plan: Dictionary) -> float:
 	return minf(total, ACTION_LOCK_MAX)
 
 
+## Wide plant, then back to rest. t=0 and t=1 stay at rest scale.
+static func landing_scale(t: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ONE
+	if t < 0.42:
+		var down := t / 0.42
+		return Vector2(
+			lerpf(1.0, LAND_SQUASH.x, down),
+			lerpf(1.0, LAND_SQUASH.y, down),
+		)
+	var up := (t - 0.42) / 0.58
+	return Vector2(
+		lerpf(LAND_SQUASH.x, 1.0, up),
+		lerpf(LAND_SQUASH.y, 1.0, up),
+	)
+
+
+## How far the action hand reaches, in pixels, along the aim. Rest hides it.
+static func gesture_reach(phase: String) -> float:
+	match phase:
+		"anticipation":
+			return 12.0
+		"strike":
+			return 22.0
+		"hold":
+			return 18.0
+		"recover":
+			return 8.0
+		_:
+			return 0.0
+
+
 static func hop_offset(t: float) -> Vector2:
 	if t <= 0.0 or t >= 1.0:
 		return Vector2.ZERO
@@ -429,7 +471,7 @@ static func cast_pose(t: float, dir: Vector2 = Vector2.ZERO) -> Dictionary:
 	if time <= ANTICIPATION_SEC:
 		var u := _ease_out(time / maxf(ANTICIPATION_SEC, 0.0001))
 		return {
-			"pos": Vector2(0.0, ANTICIPATION_PULL_PX * 0.45 * u),
+			"pos": Vector2(0.0, CAST_DIP_PX * u),
 			"scale": Vector2(
 				lerpf(1.0, ANTICIPATION_SQUASH_X, u),
 				lerpf(1.0, ANTICIPATION_SQUASH_Y, u),
@@ -448,6 +490,23 @@ static func cast_pose(t: float, dir: Vector2 = Vector2.ZERO) -> Dictionary:
 		"pos": Vector2(aim.x * CAST_POINT_PX * k, -CAST_RISE_PX * k),
 		"scale": Vector2(s, s),
 	}
+
+
+## Body squash through the knock. Rest at the ends so the next pose is clean.
+static func hit_squash(t: float) -> Vector2:
+	if t <= 0.0 or t >= 1.0:
+		return Vector2.ONE
+	var total := hit_sec()
+	var time := clampf(t, 0.0, 1.0) * total
+	var k := 0.0
+	if time <= HIT_OUT_SEC:
+		k = _ease_out(time / maxf(HIT_OUT_SEC, 0.0001))
+	elif time <= HIT_OUT_SEC + HIT_SHAKE_SEC:
+		k = 1.0
+	else:
+		var bt := (time - HIT_OUT_SEC - HIT_SHAKE_SEC) / maxf(HIT_RETURN_SEC, 0.0001)
+		k = 1.0 - _ease_in(bt)
+	return Vector2(lerpf(1.0, HIT_SQUASH_X, k), lerpf(1.0, HIT_SQUASH_Y, k))
 
 
 static func hit_offset(t: float, away: Vector2) -> Vector2:
@@ -474,14 +533,16 @@ static func support_offset(t: float) -> Vector2:
 
 
 static func death_pose(t: float, tilt_sign: float) -> Dictionary:
+	var u := clampf(t, 0.0, 1.0)
 	var k := 0.0
-	if t > 0.0:
-		k = _smooth(clampf(t, 0.0, 1.0))
+	if u > 0.0:
+		k = _smooth(clampf(u / maxf(DEATH_COLLAPSE_AT, 0.0001), 0.0, 1.0))
+	var fade_k := _smooth(clampf((u - 0.58) / 0.42, 0.0, 1.0))
 	var sign := -1.0 if tilt_sign < 0.0 else 1.0
 	return {
 		"scale": Vector2(lerpf(1.0, DEATH_SQUASH_X, k), lerpf(1.0, DEATH_SQUASH_Y, k)),
 		"rot": DEATH_TILT_DEG * sign * k,
-		"fade": lerpf(1.0, DEATH_FADE_ALPHA, k),
+		"fade": lerpf(1.0, DEATH_FADE_ALPHA, fade_k),
 		"drop": DEATH_DROP_PX * k,
 	}
 
