@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_phase_a_demo_map()
 	_test_mud_walk_cost()
 	_test_lava_impassable()
+	_test_solid_props_block_walk_paths()
 	_test_void_gap_not_standable()
 	_test_climb_reject()
 	_test_downhill_free()
@@ -721,7 +722,7 @@ func _test_phase_a_demo_map() -> void:
 	eq(other_size["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "a non-ship size stays open ground")
 	eq(other_size["tiles"][Vector2i(0, 0)]["elevation"], 0, "a non-ship size elevation is 0")
 
-	# Tag elevation is walk authority. paint_only does not block.
+	# Tag elevation is walk authority. Dress paint (ruins) stays walkable.
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
@@ -848,6 +849,89 @@ func _test_mud_walk_cost() -> void:
 	eq(result["illegal"], true, "second mud hop at 1 MP is rejected")
 	eq(result["reason"], "insufficient_mp", "short mud hop reason is insufficient_mp")
 	eq(_unit(0)["pos"], Vector2i(3, 2), "rejected mud hop leaves the pawn put")
+
+
+func _test_solid_props_block_walk_paths() -> void:
+	var maps: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
+	var ortho: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for map_id in maps:
+		var tags: Dictionary = CellTagMap.load_file(CellTagMap.tags_path_for(map_id))
+		var paint: Dictionary = tags.get("paint_only", {})
+		var blocked: Array[Vector2i] = []
+		for cell in paint.keys():
+			if CellTagMap.props_block_move(paint[cell]):
+				blocked.append(cell)
+		truthy(blocked.size() > 0, "%s tags include a solid prop" % map_id)
+		var stand := Vector2i(-1, -1)
+		var obstacle := Vector2i(-1, -1)
+		for cell in blocked:
+			for dir in ortho:
+				var neighbor: Vector2i = cell + dir
+				if blocked.has(neighbor):
+					continue
+				var rec: Dictionary = {}
+				for item in tags.get("cells", []):
+					if typeof(item) == TYPE_DICTIONARY and item.get("pos") == neighbor:
+						rec = item
+						break
+				if rec.is_empty():
+					continue
+				if str(rec.get("terrain", "")) == "lava" or str(rec.get("terrain", "")) == "void":
+					continue
+				stand = neighbor
+				obstacle = cell
+				break
+			if stand.x >= 0:
+				break
+		truthy(stand.x >= 0, "%s has a stand beside a solid prop" % map_id)
+		var other := Vector2i(14, 14)
+		if other == stand or other == obstacle:
+			other = Vector2i(0, 14)
+		_sim.reset_match({
+			"seed": 1,
+			"map_id": map_id,
+			"skip_deploy": true,
+			"kestrel_pos": stand,
+			"ironjaw_pos": other,
+		})
+		var live_paint: Dictionary = _sim.snapshot().get("paint_only", {})
+		for cell in blocked:
+			eq(bool(_sim.tile_at(cell).get("walkable", true)), false, "%s %s is not walkable" % [map_id, str(cell)])
+			eq(CellTagMap.props_block_move(live_paint.get(cell, [])), true, "%s keeps the solid prop tag" % map_id)
+		var onto: Dictionary = _sim.submit({"type": "move", "to": obstacle, "seat": 0})
+		eq(bool(onto.get("ok", true)), false, "%s walk onto the solid prop is rejected" % map_id)
+		eq(str(onto.get("reason", "")), "not_walkable", "%s solid prop reason is not_walkable" % map_id)
+		_sim.reset_match({
+			"seed": 1,
+			"map_id": map_id,
+			"skip_deploy": true,
+			"kestrel_pos": stand,
+			"ironjaw_pos": other,
+		})
+		var legal: Array = _sim.legal_intents(0)
+		var highlighted: Array = load("res://board/snapshot_tiles.gd").walk_dests(legal)
+		var saw_path := false
+		for dest in highlighted:
+			eq(blocked.has(dest), false, "%s blue walk highlight skips %s" % [map_id, str(dest)])
+			eq(bool(_sim.tile_at(dest).get("walkable", false)), true, "%s highlight %s is walkable" % [map_id, str(dest)])
+			var planned: Dictionary = _sim._board.validate_move(stand, dest, 3, Callable(_sim, "_walk_occupied"))
+			eq(bool(planned.get("ok", false)), true, "%s highlighted %s has a sim path" % [map_id, str(dest)])
+			var path: Array = planned.get("path", [])
+			for step in path:
+				var step_cell: Vector2i = step
+				eq(blocked.has(step_cell), false, "%s path to %s does not step on a solid prop" % [map_id, str(dest)])
+				eq(bool(_sim.tile_at(step_cell).get("walkable", false)), true, "%s path step %s is walkable" % [map_id, str(step_cell)])
+			saw_path = true
+		truthy(saw_path, "%s still has a walk that goes around the prop" % map_id)
+	# Crosshaven ruins stay dress. The fence beside them does not.
+	_sim.reset_match({"seed": 1, "map_id": "crosshaven", "skip_deploy": true})
+	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", false)), true, "Crosshaven ruins stay walkable")
+	eq(bool(_sim.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "Crosshaven fence blocks")
+	var host_snap: Dictionary = _sim.snapshot()
+	var replica: Node = load("res://backend/combat_sim.gd").new()
+	replica.apply_host_snapshot(host_snap)
+	eq(bool(replica.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "a replica keeps the fence blocked")
+	replica.free()
 
 
 func _test_lava_impassable() -> void:

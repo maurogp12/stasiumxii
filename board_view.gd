@@ -1675,6 +1675,7 @@ func _paint_highlights() -> void:
 				if tiles.has(cell) and spell_id != SpellKits.AMBUSH:
 					_tile_at(cell).set_highlight("range")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
+	# Solid props are already not walkable, so a blue path cannot cross a rock, fence, or arch.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
 	for dest in SNAPSHOT_TILES.walk_dests(legal):
 		if spell_id == "" and tiles.has(dest):

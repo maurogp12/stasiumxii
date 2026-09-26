@@ -731,6 +731,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_sync_shade_flags()
 	_board = _WalkBoard.new(_board_size, _board_size)
 	_apply_snapshot_tiles(snap.get("tiles", {}))
+	_CellTagMap.seal_blocking_props(_board, _paint_only)
 	_flow.apply_host_snapshot(snap)
 
 
@@ -740,7 +741,7 @@ func _apply_snapshot_tiles(raw: Variant) -> void:
 			if typeof(item) != TYPE_DICTIONARY:
 				continue
 			var rec: Dictionary = item
-			_board.set_tile(_as_cell(rec.get("pos", rec)), str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)))
+			_board.set_tile(_as_cell(rec.get("pos", rec)), str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)), _walkable_override(rec))
 		return
 	if typeof(raw) != TYPE_DICTIONARY:
 		return
@@ -750,7 +751,13 @@ func _apply_snapshot_tiles(raw: Variant) -> void:
 		if typeof(rec) != TYPE_DICTIONARY:
 			continue
 		var cell: Vector2i = key if key is Vector2i else _as_cell((rec as Dictionary).get("pos", key))
-		_board.set_tile(cell, str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)))
+		_board.set_tile(cell, str(rec.get("terrain_type", "ground")), int(rec.get("elevation", 0)), _walkable_override(rec))
+
+
+func _walkable_override(rec: Dictionary) -> Variant:
+	if not rec.has("walkable"):
+		return null
+	return bool(rec["walkable"])
 
 
 static func chebyshev(a: Vector2i, b: Vector2i) -> int:
@@ -2177,7 +2184,8 @@ func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 func _seed_play_board(config: Dictionary) -> void:
 	# flat_board: Ground z0. Proto 8: crop + noise. Proto 12: Mauro tokens.
 	# Ship 15: Koliseo tags when the file size matches. Empty map_id is Crosshaven.
-	# paint_only stays visual. An explicit cell_tags path uses the same hook.
+	# Dress paint stays visual. Solid props on the same tags are not walkable.
+	# An explicit cell_tags path uses the same hook.
 	if bool(config.get("flat_board", false)):
 		return
 	if _board_size == _BoardSize.PROTO:
