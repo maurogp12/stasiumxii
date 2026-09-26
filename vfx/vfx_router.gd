@@ -348,16 +348,25 @@ static func _miss_recipes(event: Dictionary) -> Array:
 	var at := cell_of(event.get("to", caster_cell))
 	if not event.has("to"):
 		at = caster_cell
+	# Invisible Ambush aims from Gloam. A miss does not throw a slash at the
+	# enemy: the whiff and the MISS stay on the caster tile. A Shade origin
+	# still whiffs from that Shade, not from the body.
+	var ambush_origin := caster_cell
+	var ambush_self := false
+	if spell_id == "ambush":
+		if event.has("origin"):
+			ambush_origin = cell_of(event.get("origin"))
+		ambush_self = ambush_origin == caster_cell
+		if ambush_self:
+			at = caster_cell
 	out.append(_number(int(event.get("target_seat", -1)), at, "MISS", "miss", 0.0, 1.0, "", Color(0, 0, 0, 0)))
-	if event.has("to") or event.has("caster_cell"):
+	if not ambush_self and (event.has("to") or event.has("caster_cell")):
 		var whiff_from := caster_cell
 		var whiff_arc := 10.0
 		var whiff_overshoot := 12.0
 		var whiff_duration := 0.22
-		# Ambush miss keeps the body put. The whiff leaves the Shade (or
-		# Gloam, while Invisible), not a dash along the old path.
 		if spell_id == "ambush" and event.has("origin"):
-			whiff_from = cell_of(event.get("origin"))
+			whiff_from = ambush_origin
 			whiff_arc = 0.0
 			whiff_overshoot = 0.0
 			whiff_duration = VfxBudget.BLOCK_BLINK

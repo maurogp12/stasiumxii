@@ -1829,6 +1829,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			miss_event["impact"] = impact_before
 		if spell_id == SpellKits.SHOULDER:
 			miss_event["pushed"] = false
+		_break_invisible_on_attack(actor)
 		_last_events.append(miss_event)
 		return _accept()
 
@@ -2057,6 +2058,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		})
 	_emit_immunity_spent(target, mitigation)
 	_check_death(target)
+	_break_invisible_on_attack(actor)
 	return _accept()
 
 
@@ -3404,6 +3406,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 			"stacks_cleared": false,
 			"coach": _last_coach,
 		})
+		_break_invisible_on_attack(actor)
 		return _accept()
 	var cleared := _clear_resource(actor, "aegis")
 	var total := 0
@@ -3475,6 +3478,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		hit_event["back"] = bool(aim_row.get("back", false))
 		_copy_push_fields(hit_event, aim_row)
 	_last_events.append(hit_event)
+	_break_invisible_on_attack(actor)
 	return _accept()
 
 
@@ -3605,6 +3609,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 			"targets": _hold_line_miss_rows(bodies),
 			"coach": _last_coach,
 		})
+		_break_invisible_on_attack(actor)
 		return _accept()
 	var total := 0
 	var hit_bodies := 0
@@ -3658,7 +3663,15 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
+	_break_invisible_on_attack(actor)
 	return _accept()
+
+
+## Soft Lock 2026-09-26: a resolved attack ends Invisible, hit or miss.
+## Drop Shade, Fade, walks, and a rejected cast do not. Fade still grants it.
+func _break_invisible_on_attack(actor: Dictionary) -> void:
+	if bool(actor.get("invisible", false)):
+		actor["invisible"] = false
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
@@ -3684,7 +3697,16 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var connected := roll <= chance
 	_intent_log.append(intent)
 	if not connected:
-		_last_coach = "MISS — Ambush (%d vs %d%%). No teleport. Shade and Invisible stay. −%d AP." % [roll, chance, ap_cost]
+		# MISS does not teleport and does not spend Shade. It is still an attack,
+		# so Invisible ends. A rejected cast never reaches this branch.
+		var was_invisible := bool(actor.get("invisible", false))
+		_break_invisible_on_attack(actor)
+		var notes := "No teleport."
+		if bool(actor.get("shade", false)):
+			notes += " Shade stays."
+		if was_invisible:
+			notes += " Invisible ends."
+		_last_coach = "MISS — Ambush (%d vs %d%%). %s −%d AP." % [roll, chance, notes, ap_cost]
 		_last_events.append({
 			"type": "miss",
 			"seat": actor["seat"],
@@ -3729,6 +3751,8 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	if struck_from != cell:
 		damage = 0
 	target["hp"] = maxi(0, int(target["hp"]) - damage)
+	# Teleport and the hit are done. The attack ends Invisible after that.
+	_break_invisible_on_attack(actor)
 	_last_coach = "HIT Ambush %d at %s." % [damage, _cell_text(cell)]
 	_last_events.append({
 		"type": "hit",

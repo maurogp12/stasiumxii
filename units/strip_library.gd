@@ -166,6 +166,8 @@ static func _load_class(class_id: String) -> SpriteFrames:
 
 ## Replace every walk_<n|e|s|w> clip with slices of that class's export_2x PNG.
 ## Authored attack/cast banks stay. A missing walk PNG leaves the clip already loaded.
+## The imported sheet is sliced into AtlasTextures, then baked into one
+## ImageTexture per cell. Image.load of the source PNG does not survive export.
 static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bool:
 	var any := false
 	for face in LETTERS:
@@ -353,6 +355,7 @@ static func _bake_compressed_atlases(src: SpriteFrames) -> SpriteFrames:
 	if not _has_playable(baked):
 		return src
 	_drop_default(baked)
+	_stabilize_walk_feet(baked)
 	return baked
 
 
@@ -377,12 +380,126 @@ static func _is_compressed_atlas(tex: Texture2D) -> bool:
 static func _bake_frame_texture(tex: Texture2D) -> Texture2D:
 	if tex == null:
 		return null
-	if not _is_compressed_atlas(tex):
+	if not (tex is AtlasTexture):
 		return tex
-	var image := tex.get_image()
-	if image == null or image.is_empty():
+	var atlas := tex as AtlasTexture
+	var region := Rect2i(
+		int(atlas.region.position.x),
+		int(atlas.region.position.y),
+		int(atlas.region.size.x),
+		int(atlas.region.size.y)
+	)
+	var direct := tex.get_image()
+	# A real cell is already the region. A device AtlasTexture often hands back
+	# the whole sheet for every frame, which paints one pose for the cycle.
+	if direct != null and not direct.is_empty() and direct.get_width() <= region.size.x and direct.get_height() <= region.size.y:
+		return ImageTexture.create_from_image(direct)
+	var sheet := direct
+	if atlas.atlas != null:
+		var full := atlas.atlas.get_image()
+		if full != null and not full.is_empty():
+			sheet = full
+	if sheet == null or sheet.is_empty():
 		return tex
-	return ImageTexture.create_from_image(image)
+	var cut := region.intersection(Rect2i(Vector2i.ZERO, sheet.get_size()))
+	if cut.size.x <= 0 or cut.size.y <= 0:
+		return tex
+	return ImageTexture.create_from_image(sheet.get_region(cut))
+
+
+## Shift passing walk cells so each foot sits on frame 0's contact.
+## Frame 0 stays the authored cell. A lifted frame reads as a pop, and a
+## foot that drifts inside the cell reads as a skate.
+static func _stabilize_walk_feet(frames: SpriteFrames) -> void:
+	if frames == null:
+		return
+	for face in LETTERS:
+		var anim := "walk_%s" % face
+		if not frames.has_animation(anim):
+			continue
+		var count := frames.get_frame_count(anim)
+		if count < 2:
+			continue
+		var base_tex := frames.get_frame_texture(anim, 0)
+		if base_tex == null:
+			continue
+		var base_img := base_tex.get_image()
+		if base_img == null or base_img.is_empty():
+			continue
+		var anchor := _foot_point(base_img)
+		if anchor.x < 0:
+			continue
+		for i in range(1, count):
+			var tex := frames.get_frame_texture(anim, i)
+			if tex == null:
+				continue
+			var img := tex.get_image()
+			if img == null or img.is_empty():
+				continue
+			var foot := _foot_point(img)
+			if foot.x < 0:
+				continue
+			var dx := anchor.x - foot.x
+			var dy := anchor.y - foot.y
+			if dx == 0 and dy == 0:
+				continue
+			var shifted := _shift_image(img, dx, dy)
+			var duration := frames.get_frame_duration(anim, i)
+			if duration <= 0.0:
+				duration = 1.0
+			frames.set_frame(anim, i, ImageTexture.create_from_image(shifted), duration)
+
+
+static func _foot_point(image: Image) -> Vector2i:
+	var width := image.get_width()
+	var height := image.get_height()
+	var foot_y := -1
+	for y in range(height - 1, -1, -1):
+		var hit := false
+		for x in width:
+			if image.get_pixel(x, y).a > 0.08:
+				hit = true
+				break
+		if hit:
+			foot_y = y
+			break
+	if foot_y < 0:
+		return Vector2i(-1, -1)
+	var sum_x := 0
+	var count := 0
+	var top := maxi(foot_y - 5, 0)
+	for y in range(top, foot_y + 1):
+		for x in width:
+			if image.get_pixel(x, y).a > 0.08:
+				sum_x += x
+				count += 1
+	if count <= 0:
+		return Vector2i(-1, -1)
+	return Vector2i(int(round(float(sum_x) / float(count))), foot_y)
+
+
+static func _shift_image(image: Image, dx: int, dy: int) -> Image:
+	var width := image.get_width()
+	var height := image.get_height()
+	var out := Image.create(width, height, false, image.get_format())
+	out.fill(Color(0, 0, 0, 0))
+	var src := Rect2i(0, 0, width, height)
+	var dest := Vector2i(dx, dy)
+	if dest.x < 0:
+		src.position.x -= dest.x
+		src.size.x += dest.x
+		dest.x = 0
+	if dest.y < 0:
+		src.position.y -= dest.y
+		src.size.y += dest.y
+		dest.y = 0
+	if dest.x + src.size.x > width:
+		src.size.x = width - dest.x
+	if dest.y + src.size.y > height:
+		src.size.y = height - dest.y
+	if src.size.x > 0 and src.size.y > 0:
+		out.blit_rect(image, src, dest)
+	return out
 
 
 static func _has_playable(frames: SpriteFrames) -> bool:

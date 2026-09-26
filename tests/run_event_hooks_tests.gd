@@ -340,15 +340,17 @@ func _test_ambush_origin_and_destination() -> void:
 	var packed: Dictionary = _host.pack_result(packed_cast, 1)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
-	eq(wire.get("origin"), null, "opponent Ambush origin is redacted")
-	eq(wire.get("destination"), null, "opponent Ambush destination is redacted")
-	eq(bool(wire.get("invisible_retained", false)), true, "opponent Ambush hit still keeps Invisible")
+	eq(bool(wire.get("invisible_retained", true)), false, "opponent Ambush hit ends Invisible")
+	eq(wire.get("origin"), gloam, "opponent sees the origin once Invisible has ended")
+	eq(wire.get("destination"), Vector2i(5, 2), "opponent sees the landing once Invisible has ended")
 	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(5, 2), "authority Ambush landing stays on the sim")
+	eq(bool(_sim.snapshot()["units"][0]["invisible"]), false, "authority Ambush hit ends Invisible")
 	_guest.apply_packed_state(packed)
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
-	eq(guest.get("origin"), null, "guest Ambush origin stays redacted")
-	eq(guest.get("destination"), null, "guest Ambush destination stays redacted")
-	eq(_unit_in(_guest.snapshot(), 0).get("pos"), null, "guest snapshot redacts the Invisible landing")
+	eq(guest.get("origin"), gloam, "guest Ambush origin is the cast cell")
+	eq(guest.get("destination"), Vector2i(5, 2), "guest Ambush destination is the back tile")
+	eq(_unit_in(_guest.snapshot(), 0).get("pos"), Vector2i(5, 2), "guest snapshot shows the landing")
+	eq(bool(_unit_in(_guest.snapshot(), 0).get("invisible", true)), false, "guest snapshot is Visible after Ambush")
 
 
 func _test_hold_line_cone_and_targets() -> void:

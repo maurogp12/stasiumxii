@@ -116,8 +116,8 @@ var _touch_commit_open := true
 ## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
 var _ambush_arrival_token := 0
 var _ambush_arrival_tween: Tween
-## Cast-cell pose held until the back-tile plant. A refresh during the collapse
-## must not paint the strike facing or the post-hit vitals on that cell.
+## Back-tile pose held until the slash. A refresh during that hold must not
+## walk the body back to the cast cell or paint the post-hit vitals early.
 var _ambush_hold_seat := -1
 var _ambush_hold_cell := Vector2i(-1, -1)
 var _ambush_hold_facing := ""
@@ -237,12 +237,12 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	if swallowed:
 		_maybe_drain_net()
 		return
-		if CombatHUD.should_play_walk_hops(events):
-			var path_event := _path_event(events)
-			if not path_event.is_empty():
-				await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
-			_maybe_drain_net()
-			return
+	if CombatHUD.should_play_walk_hops(events):
+		var path_event := _path_event(events)
+		if not path_event.is_empty():
+			await _play_walk(int(path_event.get("seat", 0)), path_event["path"], _as_cell(path_event.get("from", Vector2i(-1, -1))))
+		_maybe_drain_net()
+		return
 	_refresh()
 	_hydrate_turn_clock()
 	if _has_turn_change(events) and not _busy:
@@ -844,15 +844,17 @@ func _seat_cell(seat: int) -> Vector2i:
 
 
 func _present_resolve(events: Array) -> bool:
-	# A successful Ambush fades on the origin tile, then snaps, then slashes.
-	# The snap is deferred so the collapse is visible. A miss never snaps.
-	# Any hit waits, even when `teleported` was stripped. A second presenter
-	# for that same open arrival must not restart the tween or slash early.
+	# A hit plants on the back tile in this call, before any slash, toast, or
+	# damage float. Shade origin and Invisible origin share that snap. A miss
+	# never moves. A second presenter for an open arrival must not restart it.
 	var ambush_hit := _ambush_success_event(events)
 	if _ambush_present_is_duplicate(ambush_hit):
 		return false
 	if ambush_hit.is_empty():
 		_snap_ambush_teleports(events)
+	else:
+		_plant_ambush_body(ambush_hit)
+		_reveal_ambush_plant(ambush_hit)
 	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
 	if ambush_hit.is_empty():
@@ -909,45 +911,36 @@ func _ambush_present_is_duplicate(event: Dictionary) -> bool:
 	return _ambush_hold_seat == int(event.get("seat", -2))
 
 
-## Shade and Invisible share this arrival. Collapse on the cast cell, snap
-## onto the back tile, face the prey, then slash. The 22 floats on that slash.
+## Shade and Invisible share this arrival. The body is already on the back
+## tile. Hold there, facing the prey, then slash. The 22 floats on that slash.
 func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	_ambush_arrival_token += 1
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
 	_ambush_contact_armed = false
 	_ambush_open_seat = int(event.get("seat", -1))
+	# Capture the planted cell. A refresh during the hold must not walk the
+	# body back to the cast tile.
 	_capture_ambush_hold(event)
-	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
-	var seat := int(event.get("seat", -1))
-	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
-	if pawn == null or sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
-		_finish_ambush_arrival(event, events, token)
-		return
-	var played := pawn.play_ambush_collapse(sec)
-	if played <= 0.0:
-		_finish_ambush_arrival(event, events, token)
-		return
-	_pending_motion_sec = maxf(_pending_motion_sec, played + VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC)
-	_ambush_arrival_tween = create_tween()
-	_ambush_arrival_tween.tween_interval(sec)
-	_ambush_arrival_tween.tween_callback(_finish_ambush_arrival.bind(event, events, token))
-
-
-func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
-	if token != _ambush_arrival_token or not is_inside_tree():
-		return
-	# Plant, then face, before any slash or damage float. A miss never arrives.
-	# The collapse tween is the caller. Leave it; it has already finished.
-	_plant_ambush_body(event)
-	var hold := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
-	if hold <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
-		_ambush_arrival_tween = null
+	var sec := VIEW_MOTION.AMBUSH_ARRIVE_HOLD_SEC
+	if sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		_arm_ambush_contact(event, events, token)
 		return
+	_pending_motion_sec = maxf(_pending_motion_sec, sec)
 	_ambush_arrival_tween = create_tween()
-	_ambush_arrival_tween.tween_interval(hold)
+	_ambush_arrival_tween.tween_interval(sec)
 	_ambush_arrival_tween.tween_callback(_arm_ambush_contact.bind(event, events, token))
+
+
+func _reveal_ambush_plant(event: Dictionary) -> void:
+	if not _ambush_body_landed(event):
+		return
+	var seat := int(event.get("seat", -1))
+	if not pawns_by_seat.has(seat):
+		return
+	var arrived: Pawn = pawns_by_seat[seat]
+	if arrived != null and is_instance_valid(arrived):
+		arrived.show_ambush_plant()
 
 
 ## Slash and the facing number only after the body is standing on the back tile.
@@ -1072,6 +1065,18 @@ func _abandon_ambush_arrival() -> void:
 		return
 	_ambush_open_seat = -1
 	_ambush_hold_seat = -1
+	_release_ambush_vitals()
+
+
+## Drop an in-flight plant. The callback token advances so a late slash cannot
+## move the next body. Used when the pawn set itself is replaced.
+func _cancel_ambush_arrival() -> void:
+	_ambush_arrival_token += 1
+	_stop_ambush_arrival_tween()
+	_ambush_contact_armed = false
+	_ambush_open_seat = -1
+	_ambush_hold_seat = -1
+	_ambush_hold_event = {}
 	_release_ambush_vitals()
 
 
@@ -1297,6 +1302,10 @@ func _sync_step_plant(pawn: Pawn) -> void:
 func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> void:
 	if pawn == null or not is_instance_valid(pawn):
 		return
+	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
+	if dir != "" and str(pawn.facing) != dir:
+		pawn.set_facing(dir)
+		pawn.retarget_walk_strip()
 	var u := VIEW_MOTION.step_travel(t)
 	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
 	pawn.sample_driven_gait(t)
@@ -1495,6 +1504,9 @@ func _refresh() -> void:
 
 
 func _rebuild_pawns() -> void:
+	# The previous arrival's tween still owns the old seat. A new pawn set must
+	# not inherit that hold, or the next Ambush stays on the previous back tile.
+	_cancel_ambush_arrival()
 	_stop_flash_tweens()
 	# Pawns only. Shade markers live on ShadeMarkers. A marker that raced onto
 	# Units is moved, not freed — this pass used to free the token.
@@ -1531,10 +1543,11 @@ func _apply_units(snap: Dictionary) -> void:
 		var holding := _ambush_hold_seat == seat
 		var kept_cell := pawn.grid_position
 		var kept_pos := pawn.position
+		var kept_face := str(pawn.facing)
 		pawn.apply_snapshot(unit, int(snap.get("active_seat", 0)), burn_events)
 		if holding:
-			# Snapshot is already the back tile and the strike facing. Keep the
-			# cast cell and the pre-strike facing until the plant.
+			# The plant already happened. A refresh during the face-hold keeps
+			# that back tile and the strike facing.
 			pawn.grid_position = _ambush_hold_cell
 			pawn.position = _ambush_hold_pos
 			if _ambush_hold_facing != "":
@@ -1543,6 +1556,8 @@ func _apply_units(snap: Dictionary) -> void:
 		elif hopping:
 			pawn.grid_position = kept_cell
 			pawn.position = kept_pos
+			if kept_face != "":
+				pawn.hold_walk_facing(kept_face)
 		else:
 			pawn.position = _cell_to_local(cell)
 			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
@@ -1559,7 +1574,7 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 			continue
 		var rec: Dictionary = token
 		var cell := _as_cell(rec.get("pos", Vector2i(int(rec.get("x", -1)), int(rec.get("y", -1)))))
-		if not _in_bounds(cell):
+		if not _in_bounds(cell) or int(rec.get("turns", 0)) <= 0:
 			continue
 		live[cell] = int(rec.get("turns", 3))
 	var stale: Array = []
@@ -1573,6 +1588,8 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 		_shade_markers.erase(cell)
 	var layer := _shade_layer()
 	var origin_cell := _ambush_shade_origin(_sim().ambush_origin(CombatHUD.kit_seat(snap)))
+	if bool(_kit_unit(snap).get("invisible", false)):
+		origin_cell = Vector2i(-999, -999)
 	for cell in live.keys():
 		var marker: Node = _shade_markers.get(cell)
 		var spawned := marker == null or not is_instance_valid(marker)
