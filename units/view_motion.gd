@@ -234,9 +234,8 @@ static func chrome_plans(events: Array) -> Dictionary:
 						plan["reach"] = AMBUSH_LUNGE_PX
 				elif not bool(plan.get("attack", false)):
 					plan["cast"] = true
-					# Mark Shot plays cast_mark_* when Batch-1c is on disk,
-					# otherwise the v3 attack_* bow. Detonate plays cast_* or a point pose.
-					# TODO(TA): cast_mark / cast / hit / death strips are not in this tree.
+					# Mark Shot plays cast_mark_*. Detonate plays cast_*.
+					# A missing sheet falls back in the pawn (bow, or a point pose).
 					if spell_id == SpellKits.MARK_SHOT:
 						plan["strip"] = "cast_mark"
 					elif spell_id == SpellKits.DETONATE:

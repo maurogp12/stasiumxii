@@ -5,12 +5,9 @@ class_name StripLibrary
 ## Prefer TA export_2x lettered facings. Grok drawn masters are an optional
 ## fallback and are not required at runtime. Missing files return null.
 ## Never load gen_raw `*_gen.png` (identity drift).
-## Batch-1c names (`cast_mark`, `cast`, `hit`, `death`, gloam_*) hot-swap
-## from the same folder when the PNG is on disk. This cut's disk has v3
-## walk + attack for Kestrel and Ironjaw only.
-## See art/export_2x/characters/README.md.
-## TODO(TA): Batch-1c `cast_mark` / `cast` / `hit` / `death` and Gloam anims
-## are not in this tree. Do not invent those strips.
+## Batch-1c names (`cast_mark`, `cast`, `hit`, `death`, gloam_*) load from
+## the same folder. Authored `*_frames.tres` cells win. A PNG fills a clip
+## the tres left empty. See art/export_2x/characters/README.md.
 
 const EXPORT_ROOT := "res://art/export_2x/characters/"
 const GROK_DIR := "res://art/grok_project/anims/"
@@ -101,6 +98,30 @@ static func batch1_png_paths() -> Array[String]:
 			for face in LETTERS:
 				out.append(export_png_path(cls, kind, face))
 	return out
+
+
+## Batch-1c sheets that were not already in the v3 walk/attack set.
+## Ironjaw attack is louder in place and stays on batch1_png_paths().
+static func batch1c_png_paths() -> Array[String]:
+	var out: Array[String] = []
+	var added := {
+		"kestrel": ["cast", "cast_mark", "hit", "death"],
+		"ironjaw": ["hit", "death"],
+		"gloam": ["walk", "attack", "cast", "hit", "death"],
+	}
+	for cls in ["kestrel", "ironjaw", "gloam"]:
+		for kind in added[cls]:
+			for face in LETTERS:
+				out.append(export_png_path(cls, kind, face))
+	return out
+
+
+## Seconds from clip start to the impact cell. Playback and VFX share this.
+static func release_sec(class_id: String, kind: String) -> float:
+	var fps := kind_fps(kind)
+	if fps <= 0.0:
+		return 0.0
+	return float(impact_frame(class_id, kind)) / fps
 
 
 ## Locked map. Unknown tokens pass through so `e` stays `e`.

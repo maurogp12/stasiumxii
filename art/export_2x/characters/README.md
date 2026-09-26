@@ -20,9 +20,9 @@ Animation names inside the `.tres`: `walk_e`, `walk_s`, `walk_n`, `walk_w`, `att
 
 The `.tres` wins when that clip is present. A per-facing PNG fills a letter the `.tres` left empty. Playback bakes those cells off `CompressedTexture2D` so Android does not keep a runtime `AtlasTexture` slice.
 
-`<class>` is `kestrel` or `ironjaw` for Batch 1. The same folders work later for `gloam`, `mender`, and `bastion`.
+`<class>` is `kestrel`, `ironjaw`, or `gloam` for the strips on disk. The same folders work later for `mender` and `bastion`.
 
-`<anim>` is `walk` or `attack` for the v3 files on disk. Optional Batch-1c names in the same folder, loaded when the file exists: `cast_mark`, `cast`, `hit`, `death`. Gloam uses the same pattern. `*_gen.png` is ignored.
+`<anim>` is `walk` or `attack` for the v3 files, plus Batch-1c `cast_mark`, `cast`, `hit`, and `death`. Gloam ships the full set. `*_gen.png` is ignored.
 
 ## Facing (locked)
 
@@ -44,10 +44,27 @@ The pawn tries `walk_e` (and `attack_e`) before a drawn-master name like `walk_s
 - `art/export_2x/characters/ironjaw/anims/ironjaw_walk_{e,s,n,w}.png`
 - `art/export_2x/characters/ironjaw/anims/ironjaw_attack_{e,s,n,w}.png`
 
+Batch-1c (same cell, pivot, and letter rule):
+
+- `art/export_2x/characters/kestrel/anims/kestrel_cast_mark_{e,s,n,w}.png` — 6 frames, 12 fps, impact 3
+- `art/export_2x/characters/kestrel/anims/kestrel_cast_{e,s,n,w}.png` — 6 frames, 10 fps, impact 3
+- `art/export_2x/characters/kestrel/anims/kestrel_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/kestrel/anims/kestrel_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
+- `art/export_2x/characters/ironjaw/anims/ironjaw_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/ironjaw/anims/ironjaw_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
+- `art/export_2x/characters/gloam/anims/gloam_walk_{e,s,n,w}.png` — 6 frames, 12 fps, loop
+- `art/export_2x/characters/gloam/anims/gloam_attack_{e,s,n,w}.png` — 5 frames, 12 fps, impact 2
+- `art/export_2x/characters/gloam/anims/gloam_cast_{e,s,n,w}.png` — 4 frames, 10 fps, impact 2
+- `art/export_2x/characters/gloam/anims/gloam_hit_{e,s,n,w}.png` — 4 frames, 12 fps
+- `art/export_2x/characters/gloam/anims/gloam_death_{e,s,n,w}.png` — 6 frames, 10 fps, hold last
+
+Ironjaw `attack_*` in this folder is the louder Batch-1c slam. Kestrel walk and attack stay v3.
+
 Optional bank next to those folders:
 
 - `art/export_2x/characters/kestrel/kestrel_frames.tres`
 - `art/export_2x/characters/ironjaw/ironjaw_frames.tres`
+- `art/export_2x/characters/gloam/gloam_frames.tres`
 
 ## PNG layout
 
@@ -68,10 +85,10 @@ Not required at runtime. Used only when the lettered export file for that facing
 
 ## Playback
 
-- **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. The pawn faces the step (two turn frames when facing changes) before it slides through cell centers (about 0.22s each). The snapshot facing snaps after the land. The sprite root bounces 4–6px. No tile-tall hop. Scale stays at rest while the cycle plays.
-- **Walk missing, or `play()` does not start:** the same slide, the same bounce, plus squash on launch/land and stretch at the crest. Gloam stays here until `gloam_walk_*` is on disk.
-- **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use `attack_*`.
-- **Mark Shot:** `cast_mark_<facing>` when that PNG exists (6 frames, 12 fps, impact 3). Until then it plays v3 `attack_*`. The bolt leaves hand height at the release frame.
-- **Detonate:** `cast_<facing>` when that PNG exists (6 frames, 10 fps, impact 3). Until then a point pose. It does not borrow `attack_*`.
-- **Hit / death:** `hit_*` and `death_*` when present. Otherwise a white flash plus flinch, and a dissolve. Do not invent those frames.
+- **Walk strip for this facing, and the clip is playing:** loop at authored fps for the whole path. The pawn faces the step, and the cycle plays through a two-frame plant, before it slides through cell centers (about 0.22s each). The snapshot facing snaps after the land. The sprite root bounces 4–6px. No tile-tall hop. Scale stays at rest while the cycle plays. Gloam uses `gloam_walk_*`.
+- **Walk missing, or `play()` does not start:** the same slide, the same bounce, plus squash on launch/land and stretch at the crest. Mender and Bastion stay here.
+- **Attack strip:** one-shot plus a lunge to the tile edge (~18px). Impact frame holds inside the 0.6s lock. Ambush keeps the longer reach. Ironjaw Strike / Shoulder / Crush use the louder `attack_*`. Gloam Cut uses `attack_*` and holds frame 2.
+- **Mark Shot:** `cast_mark_<facing>` (6 frames, 12 fps, impact 3). If that sheet is missing it plays v3 `attack_*`. The bolt leaves hand height at the release frame, following the body if the bow has lunged.
+- **Detonate:** `cast_<facing>` (6 frames, 10 fps, impact 3). It does not borrow `attack_*`. A missing sheet is a point pose. The signal waits for the cast impact cell.
+- **Hit / death:** `hit_*` flinches without an extra squash. `death_*` plays and then holds the last cell, including after a snapshot rebuild. Otherwise a white flash plus flinch, and a dissolve.
 - **`*_gen.png`:** never loaded.

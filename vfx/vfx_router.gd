@@ -5,6 +5,7 @@ class_name VfxRouter
 ## Values come only from the event and the snapshot. This file does not roll or mitigate.
 
 const SHAKE_SPELLS := ["crush", "aegis_break"]
+const STRIPS := preload("res://units/strip_library.gd")
 ## Camera shake on heavy connects. Crush and Aegis Break always shake.
 const HEAVY_HIT_DAMAGE := 20
 
@@ -238,7 +239,11 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			"chest": true,
 		}
 		if spell_id == "strike" or spell_id == "shoulder" or spell_id == "crush":
-			spark["delay"] = VfxBudget.MELEE_IMPACT_DELAY
+			spark["delay"] = STRIPS.release_sec("ironjaw", "attack")
+		elif spell_id == "cut":
+			spark["delay"] = STRIPS.release_sec("gloam", "attack")
+		elif spell_id == "detonate":
+			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
 		if spell_id == "detonate":
 			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
@@ -348,8 +353,11 @@ static func _miss_recipes(event: Dictionary) -> Array:
 		}
 		if spell_id == "mark_shot" or spell_id == "detonate":
 			whiff["hand"] = true
+			whiff["seat"] = caster_seat
 		if spell_id == "mark_shot":
-			whiff["delay"] = VfxBudget.MARK_RELEASE_DELAY
+			whiff["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
+		elif spell_id == "detonate":
+			whiff["delay"] = STRIPS.release_sec("kestrel", "cast")
 		out.append(whiff)
 	if event.has("origin"):
 		out.append(_puff(caster_seat, cell_of(event.get("origin")), VfxPalette.GLOAM, 0.45))
@@ -697,16 +705,18 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	match spell_id:
 		"mark_shot":
 			if typ == "hit":
-				out.append(_puff(caster, caster_cell, VfxPalette.KESTREL_AIR, 0.75))
 				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5)
 				bolt["hand"] = true
-				bolt["delay"] = VfxBudget.MARK_RELEASE_DELAY
+				bolt["seat"] = caster
+				bolt["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
 				out.append(bolt)
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":
 				var line := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 0.0, 0.08, 2.0, false)
 				line["hand"] = true
+				line["seat"] = caster
+				line["delay"] = STRIPS.release_sec("kestrel", "cast")
 				out.append(line)
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))
