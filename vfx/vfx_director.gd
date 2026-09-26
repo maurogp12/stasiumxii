@@ -15,6 +15,7 @@ const _Motes := preload("res://vfx/vfx_motes.gd")
 const _Projectile := preload("res://vfx/vfx_projectile.gd")
 const _Ring := preload("res://vfx/vfx_ring.gd")
 const _Status := preload("res://vfx/vfx_status.gd")
+const _Stamp := preload("res://vfx/vfx_stamp.gd")
 
 @export var reduce_shake: bool = false
 
@@ -205,6 +206,8 @@ func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
 	match str(spec.get("id", "")):
 		"spark":
 			_play_burst("spark", spec, true)
+		"stamp":
+			_play_stamp(spec)
 		"puff":
 			_play_burst("puff", spec, false)
 		"motes":
@@ -255,7 +258,41 @@ func _play_burst(kind: String, spec: Dictionary, chest: bool) -> void:
 	}
 	if spec.has("amount"):
 		payload["amount"] = int(spec["amount"])
+	if kind == "spark":
+		payload["delay"] = float(spec.get("delay", 0.0))
 	node.play(payload)
+
+
+func play_footstep(at: Vector2, cell: Vector2i, intensity: float = 0.52) -> void:
+	if _suppressed():
+		return
+	var amount := clampf(intensity, 0.0, 1.0)
+	if amount < 0.05:
+		return
+	_play_stamp({
+		"sheet": "footstep_dust",
+		"pos": at,
+		"cell": cell,
+		"ground": true,
+		"alpha": lerpf(0.22, 0.48, amount),
+		"px": lerpf(22.0, VfxBudget.STAMP_DUST_PX, amount),
+		"life": VfxBudget.STAMP_DUST_LIFE,
+	})
+
+
+func _play_stamp(spec: Dictionary) -> void:
+	var node := _acquire("stamp")
+	var cell := _Router.cell_of(spec.get("cell", Vector2i.ZERO))
+	var at: Vector2 = spec["pos"] if spec.has("pos") else _body_pos(int(spec.get("seat", -1)), cell, bool(spec.get("chest", true)))
+	node.play({
+		"sheet": str(spec.get("sheet", "hit_flash")),
+		"pos": at,
+		"delay": float(spec.get("delay", 0.0)),
+		"px": float(spec.get("px", VfxBudget.STAMP_HIT_PX)),
+		"life": float(spec.get("life", VfxBudget.STAMP_HIT_LIFE)),
+		"alpha": float(spec.get("alpha", 1.0)),
+		"z": _z_ground(cell) if bool(spec.get("ground", false)) else _z_air(cell),
+	})
 
 
 func _play_number(spec: Dictionary) -> void:
@@ -650,6 +687,7 @@ func _build_pools() -> void:
 	_add_pool("projectile", _Projectile, VfxBudget.POOL_PROJECTILE)
 	_add_pool("ring", _Ring, VfxBudget.POOL_RING)
 	_add_pool("status", _Status, VfxBudget.POOL_STATUS)
+	_add_pool("stamp", _Stamp, VfxBudget.POOL_STAMP)
 
 
 func _add_pool(kind: String, script: Script, count: int) -> void:

@@ -8,6 +8,8 @@ const SHAKE_SPELLS := ["crush", "aegis_break"]
 const STRIPS := preload("res://units/strip_library.gd")
 ## Camera shake on heavy connects. Crush and Aegis Break always shake.
 const HEAVY_HIT_DAMAGE := 20
+## Mark Shot bolt travel after the release frame. The impact stamp lands then.
+const MARK_FLIGHT_SEC := 0.18
 
 
 static func recipes_for(events: Array, snapshot: Dictionary = {}) -> Array:
@@ -246,6 +248,8 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 		elif spell_id == "ambush":
 			# Armed after the snap. The number is the existing facing resolution.
 			spark["delay"] = ViewMotion.ambush_contact_sec()
+		elif spell_id == "mark_shot":
+			spark["delay"] = _mark_impact_delay()
 		elif spell_id == "detonate":
 			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
 		if spell_id == "detonate":
@@ -253,6 +257,7 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
 		out.append(spark)
 		var number_delay := float(spark.get("delay", 0.0))
+		out.append(_hit_flash(target_seat, cell, number_delay))
 		out.append(_number(target_seat, cell, str(damage), "damage", number_delay, _back_scale(event), _back_text(event, str(damage)), _back_tint(event)))
 		var back := _back_tag(event)
 		if not back.is_empty():
@@ -318,6 +323,7 @@ static func _hold_line_recipes(event: Dictionary, connected: bool) -> Array:
 		if damage <= 0:
 			continue
 		out.append({"id": "spark", "block": 0.0, "seat": seat, "cell": cell, "tint": VfxPalette.BASTION, "chest": true})
+		out.append(_hit_flash(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(damage), "damage", 0.0, _back_scale(row), _back_text(row, str(damage)), _back_tint(row)))
 		if not _back_tag(row).is_empty():
 			out.append(_chevron(seat, cell, event))
@@ -421,6 +427,7 @@ static func _stagger_recipes(event: Dictionary) -> Array:
 	if hp <= 0:
 		hp = absi(int(event.get("hp_delta", 0)))
 	if hp > 0:
+		out.append(_hit_flash(seat, cell, VfxBudget.STAGGER_DELAY))
 		out.append(_number(seat, cell, "-%d" % hp, "stagger", VfxBudget.STAGGER_DELAY, 1.0, "", Color(0, 0, 0, 0)))
 	var mp := int(event.get("stagger_mp", 0))
 	if mp <= 0:
@@ -457,6 +464,7 @@ static func _burn_tick_recipes(event: Dictionary) -> Array:
 		"flare": true,
 	}]
 	if amount > 0:
+		out.append(_hit_flash(seat, cell_of(event.get("pos", Vector2i.ZERO)), 0.0))
 		out.append(_number(seat, Vector2i.ZERO, "-%d" % amount, "burn", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	return out
 
@@ -498,6 +506,7 @@ static func _intercept_recipes(event: Dictionary) -> Array:
 	var amount := int(event.get("damage", 0))
 	var out: Array = []
 	if amount > 0:
+		out.append(_hit_flash(seat, cell, 0.0))
 		out.append(_number(seat, cell, str(amount), "damage", 0.0, 1.0, "", Color(0, 0, 0, 0)))
 	if event.has("for_cell"):
 		out.append({
@@ -721,11 +730,12 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	match spell_id:
 		"mark_shot":
 			if typ == "hit":
-				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, 0.18, 2.5)
+				var bolt := _shot(caster_cell, to_cell, VfxPalette.KESTREL_AIR, 10.0, MARK_FLIGHT_SEC, 2.5)
 				bolt["hand"] = true
 				bolt["seat"] = caster
 				bolt["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
 				out.append(bolt)
+				out.append(_stamp("mark_shot_impact", target, to_cell, _mark_impact_delay(), VfxBudget.STAMP_MARK_PX, VfxBudget.STAMP_SPELL_LIFE))
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":
@@ -734,6 +744,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				line["seat"] = caster
 				line["delay"] = STRIPS.release_sec("kestrel", "cast")
 				out.append(line)
+				out.append(_stamp("detonate_burst", target, to_cell, STRIPS.release_sec("kestrel", "cast"), VfxBudget.STAMP_DETONATE_PX, VfxBudget.STAMP_SPELL_LIFE))
 				if event.has("marks_remaining") and int(event.get("marks_remaining", 0)) <= 0:
 					out.append(_status_off("marks", target, to_cell))
 				elif int(event.get("marks_remaining", 0)) > 0:
@@ -823,7 +834,10 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))
 				out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
-				out.append(_flash("slash", target, _target_cell(event), 0.26))
+				var struck := _target_cell(event)
+				out.append(_flash("slash", target, struck, 0.26))
+				# Shade origin and Invisible self-origin share this hit beat.
+				out.append(_stamp("ambush_slash", target, struck, ViewMotion.ambush_contact_sec(), VfxBudget.STAMP_AMBUSH_PX, VfxBudget.STAMP_SPELL_LIFE))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):
 				out.append(_status_on("invisible", caster, caster_cell, 1))
@@ -895,6 +909,29 @@ static func _removed_stun(event: Dictionary) -> bool:
 		return false
 	var removed: Variant = event.get("cc_removed", [])
 	return removed is Array and removed.has("stun")
+
+
+static func _mark_impact_delay() -> float:
+	return STRIPS.release_sec("kestrel", "cast_mark") + MARK_FLIGHT_SEC
+
+
+static func _hit_flash(seat: int, cell: Vector2i, delay: float) -> Dictionary:
+	return _stamp("hit_flash", seat, cell, delay, VfxBudget.STAMP_HIT_PX, VfxBudget.STAMP_HIT_LIFE, 0.92)
+
+
+static func _stamp(sheet: String, seat: int, cell: Vector2i, delay: float, px: float, life: float, alpha: float = 1.0) -> Dictionary:
+	return {
+		"id": "stamp",
+		"block": 0.0,
+		"sheet": sheet,
+		"seat": seat,
+		"cell": cell,
+		"delay": delay,
+		"px": px,
+		"life": life,
+		"alpha": alpha,
+		"chest": true,
+	}
 
 
 static func _shot(from_cell: Vector2i, to_cell: Vector2i, tint: Color, arc: float, duration: float, width: float, head: bool = true) -> Dictionary:

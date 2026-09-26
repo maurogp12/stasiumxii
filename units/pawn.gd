@@ -72,6 +72,9 @@ var _active_strip: AnimatedSprite2D
 var _strip_holds_body: bool = false
 var _path_walk: bool = false
 var _walk_looping: bool = false
+## Which half-cycle the driven step is on. The board does not pass this.
+var _driven_step: int = 0
+var _driven_open: bool = false
 var _strip_play_scale: float = 1.0
 var _impact_frozen: bool = false
 var _body_kind: String = ""
@@ -360,6 +363,64 @@ func begin_path_walk() -> void:
 	_start_path_bounce()
 
 
+## Board-driven steps own the gait. Drop the free-running bounce so the plant
+## matches the tile instead of sliding under a looping hop.
+func arm_driven_walk() -> void:
+	_driven_step = 0
+	_driven_open = false
+	begin_path_walk()
+	_kill_bounce()
+
+
+## Seek the facing's walk clip to the contact frame for this tile.
+func sync_walk_plant() -> void:
+	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_ensure_motion_strips()
+	if not _play_walk_flat():
+		return
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip):
+		return
+	if _driven_open:
+		_driven_step += 1
+	_driven_open = true
+	strip.speed_scale = walk_strip_speed_scale()
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
+		strip.frame = VIEW_MOTION.walk_cycle_frame(0.0, frames.get_frame_count(strip.animation), _driven_step)
+		strip.frame_progress = 0.0
+
+
+## One tile of the path. t is 0 at the press and 1 at the settle.
+## The walk frame comes from t. A free clock that stays on frame 0 is an idle slide.
+func sample_driven_gait(t: float) -> void:
+	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		return
+	_kill_bounce()
+	var u := clampf(t, 0.0, 1.0)
+	_sample_hop(u)
+	_apply_driven_cycle(u)
+
+
+func _apply_driven_cycle(t: float) -> void:
+	if not _path_walk:
+		return
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip) or not strip.visible:
+		return
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(strip.animation):
+		return
+	var count := frames.get_frame_count(strip.animation)
+	if count <= 1:
+		return
+	# The step owns the pose. A running clock would leave the idle cell on screen.
+	strip.speed_scale = 0.0
+	strip.frame = VIEW_MOTION.walk_cycle_frame(t, count, _driven_step)
+	strip.frame_progress = 0.0
+
+
 ## Swap the walk clip when facing snaps. Does not restart the path bounce.
 func retarget_walk_strip() -> void:
 	if not _path_walk or VIEW_MOTION.reduce_motion() or not is_inside_tree():
@@ -371,6 +432,8 @@ func retarget_walk_strip() -> void:
 ## Path end or interrupt. Plant the static facing and let idle resume.
 func end_path_walk() -> void:
 	_path_walk = false
+	_driven_step = 0
+	_driven_open = false
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
