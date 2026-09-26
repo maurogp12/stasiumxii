@@ -1027,8 +1027,13 @@ func _arm_view_motions(events: Array) -> void:
 
 func _aim_vector(seat: int, event: Dictionary) -> Vector2:
 	var pawn: Pawn = pawns_by_seat[seat]
-	if event.has("to"):
-		var delta := _cell_to_local(_as_cell(event.get("to"))) - pawn.position
+	# Ambush `to` is the back tile (where the body just snapped). The slash
+	# aims at the struck enemy (`from`), not back along the blink.
+	var aim_at: Variant = event.get("to", null)
+	if str(event.get("spell", "")) == SpellKits.AMBUSH and event.has("from"):
+		aim_at = event.get("from")
+	if aim_at != null:
+		var delta := _cell_to_local(_as_cell(aim_at)) - pawn.position
 		if delta.length() > 2.0:
 			return delta
 	var target := int(event.get("target_seat", -1))

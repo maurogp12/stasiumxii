@@ -1539,6 +1539,16 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var origin_cell := _ambush_range_origin(actor)
 		if origin_cell != UNPLACED:
 			range_from = origin_cell
+		# The Shade plate and the Invisible self-cell are the origin, not a foe.
+		# Confirming that cell used to measure distance 0 ("target at 0") while
+		# the enemy was a legal cardinal 1–2 and the reticle sat on that enemy.
+		# Ambush has one body. An illegal body still rejects on the real gate.
+		if origin_cell != UNPLACED and dest == origin_cell:
+			var ambush_enemy := _enemy_of(int(actor["seat"]))
+			var blocked := _ambush_block_reason(actor, ambush_enemy)
+			if blocked != "":
+				return _reject(intent, blocked, _ambush_reject_text(blocked))
+			dest = ambush_enemy["pos"]
 	# Cardinal kits (Ambush) share the axis gate: one of Δx/Δy is 0 and
 	# |Δx|+|Δy| is inside min/max (Ambush 1–2). Chebyshev would accept a diagonal.
 	var dist := _range_distance(def, range_from, dest)
@@ -3472,24 +3482,22 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	return _accept()
 
 
-## Locked destination is the enemy's facing-rear tile (one step opposite their
-## facing). Range stays Manhattan 1–2 cardinal from the Ambush origin; approach
-## axis-past was wrong when the Shade sat behind the foe (that landed on the
-## front). Occupied / OOB / illegal rear rejects. Landing on the rear tile is
-## always a backstab when the rear cone math agrees (it should).
+## Locked destination is one step past the enemy on the origin axis (the back
+## tile). Facing-rear is not the landing: when the foe faces away, that tile is
+## often the cell Gloam already occupies, so the hit reads as a body slash with
+## no teleport. Occupied / OOB / unwalkable back tiles reject. Backstab follows
+## the rear cone from the landing tile, not from the old body.
 func _ambush_landing(actor: Dictionary, target: Dictionary) -> Dictionary:
 	var origin := _ambush_range_origin(actor)
 	if origin == UNPLACED:
 		return {"ok": false}
-	# Range gate still needs a cardinal origin↔enemy axis (checked in block_reason).
-	if _cardinal_unit_step(origin, target["pos"]) == Vector2i.ZERO:
+	var step := _cardinal_unit_step(origin, target["pos"])
+	if step == Vector2i.ZERO:
 		return {"ok": false}
-	var facing := str(target.get("facing", ""))
-	if not FACING_VEC.has(facing):
-		return {"ok": false}
-	var back: Vector2i = target["pos"] - FACING_VEC[facing]
+	var back: Vector2i = target["pos"] + step
 	if not _ambush_cell_ok(back, actor["pos"]):
 		return {"ok": false}
+	var facing := str(target.get("facing", ""))
 	var facing_mult := _facing_multiplier(back, target["pos"], facing)
 	var backstab := facing_mult > FRONT_SIDE_FACING + 0.001
 	return {"ok": true, "cell": back, "backstab": backstab}
