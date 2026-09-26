@@ -32,7 +32,7 @@ const BLOCKING_PROPS := {
 	"well": true,
 }
 const _INFO := {
-	"crosshaven": {"label": "Crosshaven", "blurb": "Warm gold plains"},
+	"crosshaven": {"label": "Crosshaven", "blurb": "Warm earth and stone"},
 	"brinewake": {"label": "Brinewake", "blurb": "Teal stone and ocean"},
 	"slagcrown": {"label": "Slagcrown", "blurb": "Ash basalt and lava"},
 	"windmere": {"label": "Windmere", "blurb": "Ice-blue meltwater"},

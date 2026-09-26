@@ -6,6 +6,7 @@ extends RefCounted
 ## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
+## Crosshaven paints the earth punch (dirt and stone). Moss is only on the ruin walls.
 ## Windmere paints the ice sheet. Stormspire paints the algo-así punch
 ## sheets (dark stone, cyan/violet seams, gold edge). See THEMES.md.
 

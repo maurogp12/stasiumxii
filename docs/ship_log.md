@@ -2,6 +2,22 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Crosshaven earth punch
+
+Soft lock: tierra + naturaleza. Crosshaven ground and cliffs are the dirt and stone punch, on the unprefixed dress (`ground.png`, `ground_e1.png`, `ground_e2.png`). Moss and roots stay accents. The arena grade is warm earth, so it does not wash that dirt into a lawn. Ruins, the well, hay, the fence, rubble, and the rock pillar on those same paths come from the props punch. Water and the lighter mud stay the original sheet so those tags still read. The floor seal stays the stone mark.
+
+Phone tap diamonds, zoom, and planted walks are unchanged. Tags, geometry, and Locked kit numbers are unchanged. Ambush stays 4 AP / 0 MP / 22 FLEX.
+
+Headless Godot 4.7.2, 0 failed: Koliseo maps 332, combat 5182.
+
+| Arena | Pack | Atlas |
+| --- | --- | --- |
+| Crosshaven | earth | `ground.png` and the earth-punch cliffs |
+| Brinewake | coast | `brine_*` |
+| Slagcrown | lava | `slag_*` |
+| Windmere | ice | `wind_*` |
+| Stormspire | electric | `storm_*` |
+
 ## 2026-09-26 — Stormspire algo-así punch
 
 Soft lock: electric and wind. Presentation only. Locked Stormspire geometry, tags, and cell layout are unchanged. Other families stay on their sheets.

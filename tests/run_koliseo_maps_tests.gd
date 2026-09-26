@@ -285,7 +285,7 @@ func _test_alive_grade() -> void:
 	var slag_grade: Color = life.grade_for("slagcrown", "ground", 0, Vector2i(1, 1))["grade"]
 	truthy(slag_grade.r > slag_grade.b and slag_grade.r < 1.25, "Slagcrown stays warm stone")
 	var haven_grade: Color = life.grade_for("crosshaven", "ground", 0, Vector2i(1, 1))["grade"]
-	truthy(haven_grade.g > haven_grade.r and haven_grade.g > haven_grade.b, "Crosshaven stays grass")
+	truthy(haven_grade.r >= haven_grade.g and haven_grade.g > haven_grade.b, "Crosshaven grade stays warm earth")
 	eq(life.GRID_INK.a >= 0.7, true, "the tactical grid ink is dark enough to read")
 	eq(life.GRID_GLEAM.a >= 0.4, true, "the tactical grid has a light edge")
 	truthy(life.GRID_GLEAM.r >= life.GRID_GLEAM.b, "the grid gleam stays warm")
@@ -325,6 +325,10 @@ func _test_original_sheet() -> void:
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_elevation_punch.png"), "Stormspire elevation punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_props_punch.png"), "Stormspire props punch is in the repo")
 	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
+	truthy(themes.contains("crosshaven_ground_punch.png"), "earth punch is the Crosshaven source")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_ground_punch.png"), "Crosshaven ground punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_elevation_punch.png"), "Crosshaven elevation punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_props_punch.png"), "Crosshaven props punch is in the repo")
 	truthy(themes.contains("stasium_tileset_ice.png"), "ice sheet is the Windmere source")
 	truthy(themes.contains("stasium_tileset_electric.png"), "electric sheet stays noted beside the punch")
 	truthy(themes.contains("storm_ground_punch.png"), "Stormspire ground is the algo-así punch sheet")
@@ -334,7 +338,7 @@ func _test_original_sheet() -> void:
 	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/electric_ground.png"), false, "no invented electric ground pack")
 	var atlas: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/tilesets/original/atlas_map.json"))
 	var families: Dictionary = atlas["families"]
-	eq(str(families["crosshaven"]["pack"]), "grassland", "Crosshaven uses the grassland pack")
+	eq(str(families["crosshaven"]["pack"]), "earth", "Crosshaven uses the earth pack")
 	eq(str(families["brinewake"]["pack"]), "coast", "Brinewake uses the coast pack")
 	eq(str(families["slagcrown"]["pack"]), "lava", "Slagcrown uses the lava pack")
 	eq(str(families["windmere"]["pack"]), "ice", "Windmere uses the ice pack")
@@ -343,9 +347,10 @@ func _test_original_sheet() -> void:
 	eq(families["stormspire"]["pending_theme"], null, "Stormspire electric pack is live")
 	var ground: Texture2D = art.terrain_texture("ground", 0)
 	var img := ground.get_image()
-	truthy(img.get_pixel(48, 16).a > 0.2, "grass diamond reaches the right half of the sheet")
+	truthy(img.get_pixel(48, 16).a > 0.2, "dirt diamond reaches the right half of the sheet")
 	var mid := img.get_pixel(32, 16)
-	truthy(mid.g > mid.b and mid.g > 0.25, "Crosshaven ground is painted grass")
+	truthy(mid.r > mid.g and mid.g > mid.b, "Crosshaven ground is dirt, not a lawn")
+	truthy(_green_fraction(ground) < 0.05, "Crosshaven ground is not a lawn carpet")
 	var wind_tex: Texture2D = art.terrain_texture("ground", 0, "wind_")
 	var wind_px: Color = wind_tex.get_image().get_pixel(32, 16)
 	truthy(wind_px.r > 0.7 and wind_px.b >= wind_px.r, "Windmere ground is snow from the ice sheet")
@@ -363,9 +368,12 @@ func _test_original_sheet() -> void:
 	var slag_e2: Texture2D = art.terrain_texture("ground", 2, "slag_")
 	var slag_cap: Color = slag_e1.get_image().get_pixel(32, 4)
 	truthy(slag_cap.r > slag_cap.g and slag_cap.r > slag_cap.b, "Slagcrown cliff cap is scorched rock, not grass")
-	var grass_cliff: Texture2D = art.terrain_texture("ground", 1, "")
-	truthy(_green_fraction(slag_e1) < _green_fraction(grass_cliff), "Slagcrown cliffs have less grass than Crosshaven cliffs")
-	truthy(_green_fraction(slag_e2) < _green_fraction(grass_cliff), "Slagcrown high cliffs stay off the grass wall")
+	var haven_cliff: Texture2D = art.terrain_texture("ground", 1, "")
+	var haven_cap: Color = haven_cliff.get_image().get_pixel(32, 8)
+	truthy(haven_cap.r > haven_cap.g and haven_cap.g > haven_cap.b, "Crosshaven cliff cap is dirt, not a lawn")
+	truthy(_green_fraction(haven_cliff) < 0.08, "Crosshaven cliffs keep moss as an accent")
+	truthy(_green_fraction(slag_e1) < 0.05, "Slagcrown cliffs stay off the grass wall")
+	truthy(_green_fraction(slag_e2) < 0.05, "Slagcrown high cliffs stay off the grass wall")
 	var slag_ash: Texture2D = art.prop_texture("ash_rock", "slag_")
 	var slag_basalt: Texture2D = art.prop_texture("basalt_pillar", "slag_")
 	var slag_rubble: Texture2D = art.prop_texture("rubble", "slag_")
@@ -399,7 +407,7 @@ func _test_original_sheet() -> void:
 		for y in 4:
 			var tex: Texture2D = art.terrain_texture_at("ground", 0, "", Vector2i(x, y))
 			seen[tex.resource_path] = true
-	truthy(seen.size() > 1, "grassland cells use more than one grass slice")
+	truthy(seen.size() > 1, "Crosshaven cells use more than one dirt slice")
 
 
 func _green_fraction(tex: Texture2D) -> float:
