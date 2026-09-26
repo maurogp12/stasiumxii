@@ -1160,7 +1160,7 @@ func _catalogue() -> Array:
 
 func _test_scenario_overlays() -> void:
 	var stamp_script := preload("res://vfx/vfx_stamp.gd")
-	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "damage_float", "footstep_dust"]:
+	for sheet in ["ambush_slash", "mark_shot_impact", "mark_shot_cast", "detonate_burst", "hit_flash", "damage_float", "footstep_dust", "melee_windup"]:
 		truthy(FileAccess.file_exists("res://art/vfx/scenario/%s.png" % sheet), "scenario plate %s is on disk" % sheet)
 		var tex: Texture2D = stamp_script.texture_for(sheet)
 		truthy(tex != null, "%s imports as a texture" % sheet)
@@ -1179,12 +1179,13 @@ func _test_scenario_overlays() -> void:
 		truthy(opaque, "%s has a readable core" % sheet)
 	eq(stamp_script.frame_count("hit_flash"), 6, "hit flash is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("damage_float"), 6, "damage float is a 6-frame punch-v3 strip")
-	eq(stamp_script.frame_count("footstep_dust"), 8, "footstep dust is an 8-frame plant strip")
+	eq(stamp_script.frame_count("footstep_dust"), 5, "footstep dust is a 5-frame punch-v3 plant strip")
 	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame punch-v3 strip")
 	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
 	eq(stamp_script.frame_count("mark_shot_cast"), 4, "Mark Shot cast is a 4-frame bow strip")
-	eq(stamp_script.frame_count("detonate_burst"), 1, "Detonate burst is one hero frame")
-	for sheet in ["ambush_slash", "hit_flash", "damage_float", "footstep_dust", "mark_shot_impact", "mark_shot_cast"]:
+	eq(stamp_script.frame_count("detonate_burst"), 6, "Detonate burst is a 6-frame punch-v3 strip")
+	eq(stamp_script.frame_count("melee_windup"), 4, "melee windup is a 4-frame anticipation strip")
+	for sheet in ["ambush_slash", "hit_flash", "damage_float", "footstep_dust", "detonate_burst", "melee_windup", "mark_shot_impact", "mark_shot_cast"]:
 		var laid: Texture2D = stamp_script.texture_for(sheet)
 		var prev_x := -1.0
 		for i in stamp_script.frame_count(sheet):
@@ -1200,6 +1201,13 @@ func _test_scenario_overlays() -> void:
 	eq(_sheet(strike, "hit_flash")["cell"], Vector2i(2, 1), "damage apply flashes the target")
 	eq(float(_sheet(strike, "hit_flash")["px"]), BUDGET.STAMP_HIT_PX, "the hit flash stays body-sized")
 	eq(float(_sheet(strike, "hit_flash")["block"]), 0.0, "a hit flash does not lock input")
+	var wind := _sheet(strike, "melee_windup")
+	eq(wind["cell"], Vector2i(1, 1), "melee windup sits on the caster")
+	eq(is_equal_approx(float(wind["delay"]), 0.0), true, "melee windup starts with the swing")
+	eq(is_equal_approx(float(wind["life"]), float(_sheet(strike, "hit_flash")["delay"])), true, "melee windup ends as the hit flash starts")
+	eq(float(wind["px"]), BUDGET.STAMP_MELEE_PX, "melee windup stays on the body")
+	eq(float(wind["block"]), 0.0, "melee windup does not lock input")
+	eq(wind.get("aim", Vector2i.ZERO), Vector2i(2, 1), "melee windup aims at the target")
 	var contact_delay := float(_sheet(strike, "hit_flash")["delay"])
 	eq(is_equal_approx(contact_delay, float(_first(strike, "spark").get("delay", -1.0))), true, "the compact burst lands with the flash")
 	eq(is_equal_approx(contact_delay, float(_first_kind(strike, "damage").get("delay", -1.0))), true, "the damage number lands with the flash")
@@ -1222,6 +1230,7 @@ func _test_scenario_overlays() -> void:
 	}])
 	eq(_sheet(heal, "hit_flash").is_empty(), true, "a heal does not play the damage flash")
 	eq(_sheet(heal, "damage_float").is_empty(), true, "a heal does not play the damage float")
+	eq(_sheet(heal, "melee_windup").is_empty(), true, "a heal does not play the melee windup")
 	var ambush: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "ambush", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(1, 1), "from": Vector2i(4, 4), "to": Vector2i(5, 4),
@@ -1238,6 +1247,8 @@ func _test_scenario_overlays() -> void:
 		"caster_cell": Vector2i(1, 1), "to": Vector2i(4, 3), "origin": Vector2i(2, 4), "damage": 0,
 	}])
 	eq(_sheet(ambush_miss, "ambush_slash").is_empty(), true, "an Ambush miss does not slash")
+	eq(_sheet(ambush, "melee_windup").is_empty(), true, "Ambush does not borrow the standing melee windup")
+	eq(_sheet(ambush_miss, "melee_windup").is_empty(), true, "an Ambush miss does not play the melee windup")
 	var marked: Array = ROUTER.recipes_for([{
 		"type": "hit", "spell": "mark_shot", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 8,
@@ -1299,6 +1310,8 @@ func _test_scenario_overlays() -> void:
 	}])
 	eq(_sheet(mark_miss, "mark_shot_impact").is_empty(), true, "a Mark Shot miss has no impact")
 	eq(_sheet(mark_miss, "damage_float").is_empty(), true, "a Mark Shot miss has no damage float")
+	eq(_sheet(marked, "melee_windup").is_empty(), true, "Mark Shot keeps the bow windup, not the melee strip")
+	eq(_sheet(mark_miss, "melee_windup").is_empty(), true, "a Mark Shot miss does not play the melee strip")
 	eq(_sheet(mark_miss, "mark_shot_cast")["cell"], Vector2i(2, 3), "a Mark Shot miss still winds the bow")
 	eq(bool(_sheet(mark_miss, "mark_shot_cast").get("hand", false)), true, "a Mark Shot miss still lifts the windup to the bow")
 	eq(is_equal_approx(float(_first(mark_miss, "projectile").get("delay", 0.0)), windup), true, "a Mark Shot miss still waits for the release flash")

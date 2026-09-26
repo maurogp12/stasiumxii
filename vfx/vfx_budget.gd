@@ -47,6 +47,8 @@ const STAMP_MARK_PX := 76.0
 const STAMP_MARK_CAST_PX := 60.0
 const STAMP_DETONATE_PX := 118.0
 const STAMP_DUST_PX := 44.0
+## Melee anticipation on the caster. Larger than the chest flash, still on the body.
+const STAMP_MELEE_PX := 76.0
 ## Hero-frame pop. Does not add input lock.
 ## Contact on the target tile: flash, compact burst, float, and flinch
 ## each finish inside 0.2–0.4s of the resolve. They share that instant.

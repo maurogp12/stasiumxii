@@ -2,11 +2,23 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
-## 2026-09-26 — Combat contact punch v3
+## 2026-09-26 — Combat VFX punch v3
 
-Presentation only. No APK.
+Presentation only. No APK. Post-0.1.26.
 
-Hit flash, the damage float, and Ambush slash are the transparent punch-v3 strips under `art/vfx/scenario/`. Footstep dust, Mark Shot impact, Detonate, and the Mark Shot bow windup stay on their current plates. Ambush still plants on the back tile, then slashes. On contact the flash, the compact spark, the float, and the flinch share the resolve, and each one finishes inside 0.2–0.4s. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
+The transparent punch-v3 pack lives under `art/vfx/scenario/`:
+
+| Sheet | Path |
+| --- | --- |
+| Hit flash | `hit_flash.png` |
+| Damage float | `damage_float.png` |
+| Ambush slash | `ambush_slash.png` |
+| Detonate | `detonate_burst.png` |
+| Melee windup | `melee_windup.png` |
+| Footstep dust | `footstep_dust.png` |
+| Mark Shot bow | `mark_shot_cast.png` (same bytes as the attached bow; #175 timing stays 70+80+80+70) |
+
+Mark Shot impact stays the punch-v2 floor strip. Ambush still plants on the back tile, then slashes. Standing melee plays the windup on the caster and it ends as the contact starts. Dust still puffs only on a facing change and the final plant. On contact the flash, the compact spark, the float, and the flinch share the resolve, and each one finishes inside 0.2–0.4s. The hit flash keeps its cyan and gold. Locked kit numbers, map geometry, and walks are unchanged.
 
 ## 2026-09-26 — Mobile debug APK 0.1.26
 

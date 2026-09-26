@@ -760,6 +760,15 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	if typ == "intercept":
 		out.append(_ring(cell_of(event.get("interceptor_cell", Vector2i.ZERO)), VfxPalette.BASTION, false, 0.24, 0.0))
 		return out
+	if (typ == "hit" or typ == "miss") and _shows_melee_windup(spell_id):
+		# Anticipation on the caster. Life meets the contact instant so the
+		# flash, burst, float, and flinch still share that resolve.
+		var wind_life := ViewMotion.damage_resolve_sec(spell_id)
+		if wind_life < 0.12:
+			wind_life = 0.18
+		var wind := _stamp("melee_windup", caster, caster_cell, 0.0, VfxBudget.STAMP_MELEE_PX, wind_life)
+		wind["aim"] = to_cell
+		out.append(wind)
 	match spell_id:
 		"mark_shot":
 			if typ == "hit" or typ == "miss":
@@ -976,6 +985,15 @@ static func _mark_cast_stamp(seat: int, cell: Vector2i, aim: Vector2i) -> Dictio
 	spec["hand"] = true
 	spec["aim"] = aim
 	return spec
+
+
+## Standing melee only. Ambush slashes after the plant. Mark Shot uses the bow.
+static func _shows_melee_windup(spell_id: String) -> bool:
+	if spell_id == "ambush" or spell_id == SpellKits.AMBUSH:
+		return false
+	if spell_id == "mark_shot" or spell_id == SpellKits.MARK_SHOT:
+		return false
+	return ViewMotion.caster_motion(spell_id) == "attack"
 
 
 static func _hit_flash(seat: int, cell: Vector2i, delay: float) -> Dictionary:

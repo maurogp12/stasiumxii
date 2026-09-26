@@ -1,9 +1,10 @@
 extends "res://vfx/vfx_pooled.gd"
 
 ## One-shot sprite overlay. Strips play left to right.
-## Punch v3: Ambush slash, hit flash, and the damage float. The hit flash
-## keeps the authored cyan/gold. Footstep dust and Mark Shot impact stay
-## punch v2. Detonate stays one hero plate.
+## Punch v3: Ambush slash, hit flash, damage float, Detonate, footstep dust,
+## and the melee windup. The hit flash keeps the authored cyan/gold.
+## Mark Shot impact stays punch v2. The bow windup is the punch-v3 sheet
+## already wired in #175; its 70+80+80+70 holds stay locked.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
 ## Mark Shot cast is four equal cells: spark, draw, peak reticle, release
@@ -19,6 +20,7 @@ const SHEETS := {
 	"hit_flash": "res://art/vfx/scenario/hit_flash.png",
 	"damage_float": "res://art/vfx/scenario/damage_float.png",
 	"footstep_dust": "res://art/vfx/scenario/footstep_dust.png",
+	"melee_windup": "res://art/vfx/scenario/melee_windup.png",
 }
 
 ## Equal grids. Punch-v2 strips are not equal cells, so they live in STRIPS.
@@ -70,14 +72,26 @@ const STRIPS := {
 		Rect2(1104, 177, 144, 312),
 	],
 	"footstep_dust": [
-		Rect2(37, 283, 101, 145),
-		Rect2(179, 283, 118, 145),
-		Rect2(323, 283, 145, 145),
-		Rect2(486, 283, 142, 145),
-		Rect2(652, 283, 132, 145),
-		Rect2(807, 283, 136, 145),
-		Rect2(966, 283, 136, 145),
-		Rect2(1124, 283, 126, 145),
+		Rect2(61, 265, 107, 184),
+		Rect2(222, 265, 167, 184),
+		Rect2(416, 265, 221, 184),
+		Rect2(659, 265, 202, 184),
+		Rect2(892, 265, 160, 184),
+	],
+	# Gray guide columns between cells are not frames.
+	"detonate_burst": [
+		Rect2(42, 165, 133, 353),
+		Rect2(221, 165, 199, 353),
+		Rect2(429, 165, 208, 353),
+		Rect2(644, 165, 205, 353),
+		Rect2(865, 165, 191, 353),
+		Rect2(1109, 165, 135, 353),
+	],
+	"melee_windup": [
+		Rect2(30, 165, 252, 355),
+		Rect2(337, 165, 279, 355),
+		Rect2(656, 165, 271, 355),
+		Rect2(964, 165, 312, 355),
 	],
 	# Floor rings opening into the burst, then closing. Not the sigil row.
 	"mark_shot_impact": [
