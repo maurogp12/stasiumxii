@@ -43,9 +43,11 @@ const STAMP_AMBUSH_PX := 100.0
 const STAMP_MARK_PX := 76.0
 const STAMP_DETONATE_PX := 118.0
 const STAMP_DUST_PX := 44.0
-const STAMP_HIT_LIFE := 0.16
+## 3×3 hit sheet, one pass. Does not add input lock.
+const STAMP_HIT_LIFE := 0.30
 const STAMP_SPELL_LIFE := 0.24
-const STAMP_DUST_LIFE := 0.18
+## One dust sheet per walk tile (Pawn.WALK_TILE_SEC).
+const STAMP_DUST_LIFE := 0.30
 
 const BLOCK_SLIDE := 0.18
 const BLOCK_JOLT := 0.12
