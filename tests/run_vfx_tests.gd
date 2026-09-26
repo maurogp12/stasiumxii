@@ -319,6 +319,36 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	eq(_has(ambush, "projectile"), false, "Ambush does not streak the body to the back tile")
 	eq(_has(ambush, "slide"), false, "Ambush teleports; the body does not path from Gloam")
 	eq(_first(ambush, "puff")["cell"], Vector2i(2, 4), "the collapse puff sits on the origin")
+	var departure: Array = ROUTER.ambush_collapse_specs({
+		"type": "hit",
+		"spell": "ambush",
+		"seat": 0,
+		"origin": Vector2i(2, 4),
+		"caster_cell": Vector2i(1, 1),
+		"teleported": true,
+		"damage": 30,
+	})
+	eq(departure.size(), 1, "the live collapse plays one departure puff")
+	eq(departure[0]["cell"], Vector2i(2, 4), "the live collapse puff is the Shade or cast origin")
+	eq(ROUTER.ambush_collapse_specs({"type": "miss", "spell": "ambush", "seat": 0}).is_empty(), true, "an Ambush miss does not puff a departure")
+	var contact: Array = ROUTER.recipes_for([{
+		"type": "hit",
+		"spell": "ambush",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": Vector2i(1, 1),
+		"from": Vector2i(4, 4),
+		"to": Vector2i(5, 4),
+		"origin": Vector2i(2, 4),
+		"destination": Vector2i(5, 4),
+		"teleported": true,
+		"present_phase": "contact",
+		"backstab": true,
+		"facing_mult": 1.35,
+		"damage": 30,
+	}])
+	eq(_has(contact, "puff"), false, "the slash batch does not replay the collapse puff")
+	eq(_sheet(contact, "ambush_slash").is_empty(), false, "the slash batch still stamps the strike")
 	eq(_first(ambush, "number")["cell"], Vector2i(4, 4), "facing damage sits on the enemy")
 	eq(_first(ambush, "number")["text"], "BACKSTAB 30", "facing damage keeps the existing backstab resolution")
 	eq(float(_first(ambush, "number").get("delay", 0.0)) > 0.0, true, "facing damage follows the slash")

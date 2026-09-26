@@ -922,6 +922,10 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	# collapse must not teleport the sprite before the snap.
 	_capture_ambush_hold(event)
 	_conceal_ambush_caster(event)
+	# Dust the origin while the body is still on the cast cell. The slash
+	# batch is armed later, after the snap, and must not replay this puff.
+	if _vfx != null and _vfx.has_method("play_ambush_collapse"):
+		_vfx.play_ambush_collapse(event)
 	var collapse := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
 	var seat := int(event.get("seat", -1))
 	if pawns_by_seat.has(seat):
@@ -1041,9 +1045,12 @@ func _events_for_ambush_contact(events: Array) -> Array:
 			shown.append(event)
 			continue
 		var row: Dictionary = event
-		if str(row.get("spell", "")) == SpellKits.AMBUSH and str(row.get("type", "")) == "hit" and not bool(row.get("teleported", false)):
+		if str(row.get("spell", "")) == SpellKits.AMBUSH and str(row.get("type", "")) == "hit":
 			row = row.duplicate(true)
-			row["teleported"] = true
+			if not bool(row.get("teleported", false)):
+				row["teleported"] = true
+			# The origin puff already played on the collapse. Contact is the slash.
+			row["present_phase"] = "contact"
 		shown.append(row)
 	return shown
 

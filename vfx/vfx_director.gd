@@ -80,6 +80,16 @@ func play(events: Array, snapshot: Dictionary = {}) -> float:
 	return _emit(events, snapshot, true, false)
 
 
+## Origin dust at the start of an Ambush collapse. Does not lock input and
+## does not cancel a slash that has not been armed yet.
+func play_ambush_collapse(event: Dictionary) -> void:
+	if _suppressed():
+		return
+	for spec in _Router.ambush_collapse_specs(event):
+		if typeof(spec) == TYPE_DICTIONARY:
+			_spawn(spec, false)
+
+
 func play_debug(events: Array) -> float:
 	return _emit(events, {}, false, true)
 
