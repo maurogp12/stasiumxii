@@ -2,10 +2,12 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. Facings stay
-## `art/characters/<class>/<class>_<n|e|s|w>.png`. Mirrors are baked into the
-## files — never set flip_h. Bastion _n/_w are placeholder back views loaded
-## from those same filenames.
+## centered, offset (0, -72), scale 0.5. When a walk sheet exists, the standing
+## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
+## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
+## sheet is missing, and it stays the hub portrait. It is not the combat idle
+## under a walk sheet. Mirrors are baked into the files — never set flip_h.
+## Bastion _n/_w turnarounds are placeholder back views on those filenames.
 ## Mobile-track chrome. Batch 1 strips load from
 ## `art/export_2x/characters/<class>/anims/` when the files exist
 ## (see that folder's README). Lettered names win: `walk_e` / `attack_e`
@@ -35,6 +37,8 @@ var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
 var class_id: String = ""
 var facing: String = "E"
+## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
+var invisible: bool = false
 var seat: int = 0
 ## Package crop for a Stasis foe. Empty on Koliseo bodies.
 var stasis_sprite: String = ""
@@ -65,11 +69,19 @@ var _idle_hold: bool = false
 var _motion_gen: int = 0
 ## Bumped when the collapse must stop. A late sample cannot hide the arrival.
 var _ambush_collapse_gen: int = 0
+## True only while the collapse tween is the action holding the motion lock.
+var _collapse_holds_motion: bool = false
+## Pre-strike vitals. A snapshot during the collapse must not paint the hit early.
+var _vitals_frozen: bool = false
+var _frozen_vitals: int = 0
+var _frozen_vital_cap: int = 0
 var _plan_died: bool = false
 var _death_from: Color = Color.WHITE
 var _death_sampled: bool = false
 var _active_strip: AnimatedSprite2D
 var _strip_holds_body: bool = false
+## Standing combat pose. Frame 0 of the facing walk sheet, not the static turnaround.
+var _walk_idle_plant: bool = false
 var _path_walk: bool = false
 var _walk_looping: bool = false
 ## Which half-cycle the driven step is on. The board does not pass this.
@@ -165,6 +177,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	class_id = str(unit["class_id"])
 	stasis_sprite = str(unit.get("stasis_sprite", ""))
 	facing = str(unit["facing"])
+	invisible = bool(unit.get("invisible", false))
 	seat = int(unit.get("seat", seat))
 	hp = int(unit["hp"])
 	max_hp = int(unit["max_hp"])
@@ -180,6 +193,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	rewrite_frozen_vitals()
 
 
 func burn_badge_label() -> String:
@@ -216,7 +230,9 @@ func play_step_hop() -> bool:
 		return false
 	_ensure_motion_strips()
 	var playing := _play_walk_flat()
-	if not playing:
+	# A failed play replants the walk sheet. Hiding strips here would uncover
+	# the static still for the hop.
+	if not playing and not _walk_idle_plant:
 		_hide_body_strips()
 	if _path_walk:
 		if not _bounce_running():
@@ -360,7 +376,7 @@ func begin_path_walk() -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
 	_ensure_motion_strips()
-	if not _play_walk_flat():
+	if not _play_walk_flat() and not _walk_idle_plant:
 		_hide_body_strips()
 	_start_path_bounce()
 
@@ -555,6 +571,7 @@ func play_view_plan(plan: Dictionary) -> float:
 			var aim: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
 			if aim.length_squared() < 0.01:
 				aim = facing_screen()
+			_face_strike(aim)
 			var reach := float(step.get("reach", plan.get("reach", VIEW_MOTION.ATTACK_LUNGE_PX)))
 			_begin_body_strip("attack", play_sec)
 			tw.tween_method(_sample_attack.bind(aim, reach), 0.0, 1.0, play_sec)
@@ -563,6 +580,7 @@ func play_view_plan(plan: Dictionary) -> float:
 		elif kind == "cast":
 			var strip_kind := str(step.get("strip", plan.get("strip", "cast")))
 			var aim_cast: Vector2 = step.get("dir", plan.get("aim", Vector2.ZERO))
+			_face_strike(aim_cast if aim_cast.length_squared() > 0.01 else facing_screen())
 			if strip_kind == "cast_mark" and not _strip_choice("cast_mark").is_empty():
 				var bow_sec := _fit_strip_window("cast_mark", sec, steps)
 				_begin_body_strip("cast_mark", bow_sec)
@@ -617,23 +635,33 @@ func play_ambush_collapse(sec: float) -> float:
 		return 0.0
 	_begin_action()
 	_ambush_collapse_gen += 1
+	_collapse_holds_motion = true
 	var gen := _ambush_collapse_gen
 	var tw := create_tween()
 	_action_tween = tw
 	tw.tween_method(_sample_ambush_collapse.bind(gen), 0.0, 1.0, sec)
+	tw.finished.connect(_on_ambush_collapse_finished.bind(gen), CONNECT_ONE_SHOT)
 	return sec
+
+
+func _on_ambush_collapse_finished(gen: int) -> void:
+	# A plant bumps the gen, and a later strike clears the flag in _begin_action.
+	# Either one means this collapse no longer owns the lock.
+	if gen != _ambush_collapse_gen or not _collapse_holds_motion:
+		return
+	_collapse_holds_motion = false
+	_motion_playing = false
+	_action_tween = null
 
 
 func restore_ambush_body() -> void:
 	# Drop any collapse sample that is still queued for this frame.
 	_ambush_collapse_gen += 1
-	_plant_sprite()
-	var color := rest_modulate()
-	if _sprite != null and is_instance_valid(_sprite):
-		_sprite.modulate = color
-		_sprite.visible = true
-	if _active_strip != null and is_instance_valid(_active_strip):
-		_active_strip.modulate = color
+	if _collapse_holds_motion:
+		_collapse_holds_motion = false
+		_kill_action()
+		_motion_playing = false
+	_show_rest_body()
 
 
 func _sample_ambush_collapse(t: float, gen: int) -> void:
@@ -643,7 +671,9 @@ func _sample_ambush_collapse(t: float, gen: int) -> void:
 	var shrunk := lerpf(1.0, 0.12, k)
 	_sprite.scale = SPRITE_SCALE * shrunk
 	var color := rest_modulate()
-	color.a = lerpf(1.0, 0.0, k)
+	# Start from the resting alpha. Forcing 1 here flashes a solid body
+	# on a hidden Invisible pawn before the snap.
+	color.a = lerpf(color.a, 0.0, k)
 	_sprite.modulate = color
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.scale = _sprite.scale
@@ -656,8 +686,39 @@ func _sample_ambush_whiff(t: float) -> void:
 	var k := sin(clampf(t, 0.0, 1.0) * PI)
 	_sprite.scale = Vector2(SPRITE_SCALE.x * lerpf(1.0, 1.12, k), SPRITE_SCALE.y * lerpf(1.0, 0.8, k))
 	var color := rest_modulate()
-	color.a = lerpf(1.0, 0.4, k)
+	color.a = lerpf(color.a, color.a * 0.4, k)
 	_sprite.modulate = color
+
+
+## Strike and cast strips face the prey. A tie between two letters keeps the stand,
+## so a straight screen-right aim does not spin a pawn that is already facing east.
+func _face_strike(aim: Vector2) -> void:
+	if aim.length_squared() < 1.0:
+		return
+	var face := _unique_aim_facing(aim)
+	if face == "" or face == facing:
+		return
+	facing = face
+	_sync_sprite()
+
+
+func _unique_aim_facing(aim: Vector2) -> String:
+	var unit := aim.normalized()
+	var best := ""
+	var best_dot := -2.0
+	var second := -2.0
+	for face in ["N", "E", "S", "W"]:
+		var axis: Vector2 = VIEW_MOTION.FACING_SCREEN[face]
+		var dotted := unit.dot(axis.normalized())
+		if dotted > best_dot:
+			second = best_dot
+			best_dot = dotted
+			best = face
+		elif dotted > second:
+			second = dotted
+	if best == "" or best_dot - second < 0.08:
+		return ""
+	return best
 
 
 func hold_idle() -> void:
@@ -676,6 +737,7 @@ func release_idle() -> void:
 
 
 func settle_motion() -> void:
+	_collapse_holds_motion = false
 	var died := _plan_died
 	_plan_died = false
 	_path_walk = false
@@ -689,12 +751,7 @@ func settle_motion() -> void:
 		_flashing = false
 		_apply_downed_pose()
 		return
-	_plant_sprite()
-	if not _flashing:
-		var color := rest_modulate()
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.modulate = color
-			_sprite.visible = true
+	_show_rest_body()
 	_start_idle()
 
 
@@ -744,6 +801,9 @@ func flash_canvas() -> CanvasItem:
 func rest_modulate() -> Color:
 	if not alive:
 		return Color(0.45, 0.45, 0.45, VIEW_MOTION.DEATH_FADE_ALPHA)
+	# Locked Fade: do not draw a solid body while Invisible, including the walk.
+	if invisible:
+		return Color(1, 1, 1, 0)
 	return Color.WHITE
 
 
@@ -751,6 +811,34 @@ func note_flash_settled() -> void:
 	_flashing = false
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.modulate = rest_modulate()
+
+
+## Overhead bar for a prey whose hit was already resolved. The board calls this
+## only after the caster is standing on the back tile, facing them.
+func note_prey_vitals(unit: Dictionary) -> void:
+	hp = int(unit.get("hp", hp))
+	max_hp = int(unit.get("max_hp", max_hp))
+	_request_paint()
+
+
+## Remember the numbers on screen. Later snapshots during the collapse rewrite
+## back to these until the back-tile contact releases them.
+func freeze_shown_vitals() -> void:
+	_vitals_frozen = true
+	_frozen_vitals = hp
+	_frozen_vital_cap = max_hp
+
+
+func rewrite_frozen_vitals() -> void:
+	if not _vitals_frozen:
+		return
+	hp = _frozen_vitals
+	max_hp = _frozen_vital_cap
+	_request_paint()
+
+
+func release_frozen_vitals() -> void:
+	_vitals_frozen = false
 
 
 ## Hit events only. "ward" is pale blue, "support" is heal / Cleanse, "damage" stays orange.
@@ -894,16 +982,26 @@ func _sync_sprite() -> void:
 	_ensure_visuals()
 	_sprite.flip_h = false
 	if stasis_sprite != "":
+		_walk_idle_plant = false
 		_sprite.texture = _stasis_texture(stasis_sprite)
-	else:
-		_sprite.texture = sprite_texture(class_id, facing)
+		if not _flashing:
+			_sprite.modulate = rest_modulate()
+		_sprite.visible = true
+		_hide_body_strips()
+		_request_paint()
+		return
+	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
+	elif _plant_walk_idle():
+		pass
 	else:
+		_walk_idle_plant = false
+		_active_strip = null
 		_sprite.visible = true
 		_hide_body_strips()
 	_request_paint()
@@ -922,6 +1020,7 @@ func _sync_idle() -> void:
 
 
 func _begin_action() -> int:
+	_collapse_holds_motion = false
 	_ensure_visuals()
 	_kill_landing()
 	_kill_action()
@@ -1177,7 +1276,10 @@ func _sample_idle(_t: float) -> void:
 		return
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
-	_sprite.position = Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	_sprite.position = bob
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = bob
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
 
@@ -1186,6 +1288,24 @@ func _stop_idle() -> void:
 	if _idle_tween != null and is_instance_valid(_idle_tween):
 		_idle_tween.kill()
 	_idle_tween = null
+
+
+func _show_rest_body() -> void:
+	_plant_sprite()
+	if _flashing:
+		return
+	var color := rest_modulate()
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.modulate = color
+		_active_strip.visible = true
+		_active_strip.scale = SPRITE_SCALE
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.modulate = color
+			_sprite.visible = false
+		return
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.modulate = color
+		_sprite.visible = true
 
 
 func _plant_sprite() -> void:
@@ -1198,7 +1318,14 @@ func _plant_sprite() -> void:
 	_sprite.scale = SPRITE_SCALE
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
-	_sprite.visible = true
+	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+		_active_strip.position = Vector2.ZERO
+		_active_strip.scale = SPRITE_SCALE
+		_active_strip.rotation = 0.0
+		_active_strip.visible = true
+		_sprite.visible = false
+	else:
+		_sprite.visible = true
 
 
 ## Locked letters first (SE→e, SW→s, NE→n, NW→w), then the drawn-master
@@ -1228,8 +1355,9 @@ func _start_kind_strip(kind: String, window_sec: float) -> void:
 func _begin_body_strip(kind: String, window_sec: float) -> void:
 	_ensure_motion_strips()
 	var choice := _strip_choice(kind)
-	_end_body_strip()
+	_end_body_strip(false)
 	if choice.is_empty():
+		_show_rest_or_static()
 		return
 	var strip: AnimatedSprite2D = choice["node"]
 	var anim := StringName(str(choice["anim"]))
@@ -1254,6 +1382,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 	strip.play(anim)
 	if not strip.is_playing():
 		strip.visible = false
+		_show_rest_or_static()
 		return
 	_active_strip = strip
 	_strip_holds_body = true
@@ -1263,10 +1392,11 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 		_sprite.visible = false
 
 
-func _end_body_strip() -> void:
+func _end_body_strip(replant: bool = true) -> void:
 	_walk_looping = false
 	_strip_holds_body = false
 	_impact_frozen = false
+	_walk_idle_plant = false
 	_body_kind = ""
 	if _active_strip != null and is_instance_valid(_active_strip):
 		if _active_strip.is_playing():
@@ -1275,8 +1405,60 @@ func _end_body_strip() -> void:
 		_active_strip.position = Vector2.ZERO
 	_active_strip = null
 	_hide_body_strips()
+	if replant and _plant_walk_idle():
+		return
+	if replant:
+		_show_rest_or_static()
+
+
+## Walk sheet on screen when this class has one. The foreign still only when it does not.
+func _show_rest_or_static() -> void:
+	if _plant_walk_idle():
+		return
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
+
+
+## Idle and the stride share frame 0 of this facing's walk sheet.
+## The static turnaround stays hidden so a step cannot flash a second costume.
+func _should_plant_walk_idle() -> bool:
+	if not alive or stasis_sprite != "" or _held_death_strip:
+		return false
+	return has_walk_strip()
+
+
+func _plant_walk_idle() -> bool:
+	if not _should_plant_walk_idle():
+		return false
+	_ensure_motion_strips()
+	var choice := _strip_choice("walk")
+	if choice.is_empty():
+		return false
+	var strip: AnimatedSprite2D = choice["node"]
+	var anim := StringName(str(choice["anim"]))
+	if strip == null or not is_instance_valid(strip):
+		return false
+	_hide_body_strips()
+	_prepare_strip_pose(strip)
+	if strip.animation != anim:
+		strip.animation = anim
+	var frames := strip.sprite_frames
+	if frames != null and frames.has_animation(anim) and frames.get_frame_count(anim) > 0:
+		strip.frame = 0
+		strip.frame_progress = 0.0
+	strip.speed_scale = 0.0
+	if strip.is_playing():
+		strip.pause()
+	strip.visible = true
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.position = _sprite.position
+		if not _flashing:
+			strip.modulate = _sprite.modulate
+		_sprite.visible = false
+	_active_strip = strip
+	_walk_idle_plant = true
+	_strip_holds_body = false
+	return true
 
 
 func _strip_choice(kind: String) -> Dictionary:
@@ -1398,6 +1580,11 @@ func bind_motion_frames(frames: SpriteFrames) -> void:
 	strip.visible = false
 	strip.flip_h = false
 	_prepare_strip_pose(strip)
+	_walk_idle_plant = false
+	_strip_holds_body = false
+	if _active_strip == strip:
+		_active_strip = null
+	_sync_sprite()
 
 
 func _ensure_motion_strips() -> void:
@@ -1453,18 +1640,22 @@ func _play_walk_flat() -> bool:
 		_flatten_body()
 		return true
 	_kill_action()
-	_end_body_strip()
+	# Hide the foreign still before the clip swaps. Stopping used to plant
+	# that PNG again; a start must not flash it for a frame either.
+	if _sprite != null and is_instance_valid(_sprite):
+		_sprite.visible = false
+	_end_body_strip(false)
 	_prepare_walk_loop(strip, anim)
 	_prepare_strip_pose(strip)
 	strip.visible = true
 	strip.play(anim)
 	if not strip.is_playing():
 		strip.visible = false
-		if _sprite != null and is_instance_valid(_sprite):
-			_sprite.visible = true
+		_show_rest_or_static()
 		return false
 	_active_strip = strip
 	_strip_holds_body = true
+	_walk_idle_plant = false
 	_walk_looping = true
 	_motion_playing = true
 	if _sprite != null and is_instance_valid(_sprite):

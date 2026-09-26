@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _finish_shade_board() -> void:
 	await _test_shade_markers_survive_rebuild()
+	await _test_ambush_present_race()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -39,6 +40,7 @@ func _run() -> void:
 	_test_phase_a_demo_map()
 	_test_mud_walk_cost()
 	_test_lava_impassable()
+	_test_solid_props_block_walk_paths()
 	_test_void_gap_not_standable()
 	_test_climb_reject()
 	_test_downhill_free()
@@ -55,6 +57,7 @@ func _run() -> void:
 	_test_ambush_destination_locked()
 	_test_ambush_arms_at_zero_mp()
 	_test_ambush_origin_chrome()
+	_test_ambush_shade_label_matches_origin()
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
@@ -719,7 +722,7 @@ func _test_phase_a_demo_map() -> void:
 	eq(other_size["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "a non-ship size stays open ground")
 	eq(other_size["tiles"][Vector2i(0, 0)]["elevation"], 0, "a non-ship size elevation is 0")
 
-	# Tag elevation is walk authority. paint_only does not block.
+	# Tag elevation is walk authority. Dress paint (ruins) stays walkable.
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
@@ -846,6 +849,89 @@ func _test_mud_walk_cost() -> void:
 	eq(result["illegal"], true, "second mud hop at 1 MP is rejected")
 	eq(result["reason"], "insufficient_mp", "short mud hop reason is insufficient_mp")
 	eq(_unit(0)["pos"], Vector2i(3, 2), "rejected mud hop leaves the pawn put")
+
+
+func _test_solid_props_block_walk_paths() -> void:
+	var maps: Array[String] = ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
+	var ortho: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for map_id in maps:
+		var tags: Dictionary = CellTagMap.load_file(CellTagMap.tags_path_for(map_id))
+		var paint: Dictionary = tags.get("paint_only", {})
+		var blocked: Array[Vector2i] = []
+		for cell in paint.keys():
+			if CellTagMap.props_block_move(paint[cell]):
+				blocked.append(cell)
+		truthy(blocked.size() > 0, "%s tags include a solid prop" % map_id)
+		var stand := Vector2i(-1, -1)
+		var obstacle := Vector2i(-1, -1)
+		for cell in blocked:
+			for dir in ortho:
+				var neighbor: Vector2i = cell + dir
+				if blocked.has(neighbor):
+					continue
+				var rec: Dictionary = {}
+				for item in tags.get("cells", []):
+					if typeof(item) == TYPE_DICTIONARY and item.get("pos") == neighbor:
+						rec = item
+						break
+				if rec.is_empty():
+					continue
+				if str(rec.get("terrain", "")) == "lava" or str(rec.get("terrain", "")) == "void":
+					continue
+				stand = neighbor
+				obstacle = cell
+				break
+			if stand.x >= 0:
+				break
+		truthy(stand.x >= 0, "%s has a stand beside a solid prop" % map_id)
+		var other := Vector2i(14, 14)
+		if other == stand or other == obstacle:
+			other = Vector2i(0, 14)
+		_sim.reset_match({
+			"seed": 1,
+			"map_id": map_id,
+			"skip_deploy": true,
+			"kestrel_pos": stand,
+			"ironjaw_pos": other,
+		})
+		var live_paint: Dictionary = _sim.snapshot().get("paint_only", {})
+		for cell in blocked:
+			eq(bool(_sim.tile_at(cell).get("walkable", true)), false, "%s %s is not walkable" % [map_id, str(cell)])
+			eq(CellTagMap.props_block_move(live_paint.get(cell, [])), true, "%s keeps the solid prop tag" % map_id)
+		var onto: Dictionary = _sim.submit({"type": "move", "to": obstacle, "seat": 0})
+		eq(bool(onto.get("ok", true)), false, "%s walk onto the solid prop is rejected" % map_id)
+		eq(str(onto.get("reason", "")), "not_walkable", "%s solid prop reason is not_walkable" % map_id)
+		_sim.reset_match({
+			"seed": 1,
+			"map_id": map_id,
+			"skip_deploy": true,
+			"kestrel_pos": stand,
+			"ironjaw_pos": other,
+		})
+		var legal: Array = _sim.legal_intents(0)
+		var highlighted: Array = load("res://board/snapshot_tiles.gd").walk_dests(legal)
+		var saw_path := false
+		for dest in highlighted:
+			eq(blocked.has(dest), false, "%s blue walk highlight skips %s" % [map_id, str(dest)])
+			eq(bool(_sim.tile_at(dest).get("walkable", false)), true, "%s highlight %s is walkable" % [map_id, str(dest)])
+			var planned: Dictionary = _sim._board.validate_move(stand, dest, 3, Callable(_sim, "_walk_occupied"))
+			eq(bool(planned.get("ok", false)), true, "%s highlighted %s has a sim path" % [map_id, str(dest)])
+			var path: Array = planned.get("path", [])
+			for step in path:
+				var step_cell: Vector2i = step
+				eq(blocked.has(step_cell), false, "%s path to %s does not step on a solid prop" % [map_id, str(dest)])
+				eq(bool(_sim.tile_at(step_cell).get("walkable", false)), true, "%s path step %s is walkable" % [map_id, str(step_cell)])
+			saw_path = true
+		truthy(saw_path, "%s still has a walk that goes around the prop" % map_id)
+	# Crosshaven ruins stay dress. The fence beside them does not.
+	_sim.reset_match({"seed": 1, "map_id": "crosshaven", "skip_deploy": true})
+	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", false)), true, "Crosshaven ruins stay walkable")
+	eq(bool(_sim.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "Crosshaven fence blocks")
+	var host_snap: Dictionary = _sim.snapshot()
+	var replica: Node = load("res://backend/combat_sim.gd").new()
+	replica.apply_host_snapshot(host_snap)
+	eq(bool(replica.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "a replica keeps the fence blocked")
+	replica.free()
 
 
 func _test_lava_impassable() -> void:
@@ -1676,6 +1762,54 @@ func _test_ambush_origin_chrome() -> void:
 	var marker := FileAccess.get_file_as_string("res://board/shade_marker.gd")
 	truthy(marker.contains("Ambush"), "the Shade token plate can read as the Ambush origin")
 	truthy(marker.contains("Shade"), "a Shade that is not the origin still labels itself Shade")
+
+
+func _test_ambush_shade_label_matches_origin() -> void:
+	# Luca 01:06: Shade (12,4) is not 1–2 cardinal from Kestrel (14,2).
+	# The body at (14,4) is. That range is legal only while Invisible, and
+	# the status line must not say Shade while the origin is the caster.
+	var body := Vector2i(14, 4)
+	var shade_at := Vector2i(12, 4)
+	var prey := Vector2i(14, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [body, prey],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "the far Shade plants")
+	_complete_opponent_turn()
+	eq(_sim.snapshot()["shade_tokens"][0]["pos"], shade_at, "the far Shade stays on the board")
+	eq(bool(_sim.ambush_origin(0).get("show", true)), false, "an out-of-range Shade does not open Ambush chrome")
+	eq(bool(_sim.ambush_origin(0).get("from_self", true)), false, "that hidden origin is not the body")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a Shade outside 1–2 cardinal does not arm Ambush")
+	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(rejected.get("ok", true)), false, "body range does not fire Ambush while the origin is the Shade")
+	eq(str(rejected.get("reason", "")), "out_of_range", "the far Shade rejects as out of range")
+	eq(_unit(0)["pos"], body, "the rejected Ambush leaves Gloam on the body")
+	eq(int(_unit(1)["hp"]), int(_unit(1)["max_hp"]), "the rejected Ambush does not damage from the body")
+	var shade_hud := CombatHUD.new()
+	shade_hud._build()
+	shade_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(shade_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "an out-of-range Shade does not advertise Ambush from Shade")
+	shade_hud.free()
+	_live_unit(0)["invisible"] = true
+	eq(bool(_sim.ambush_origin(0).get("from_self", false)), true, "Invisible switches the origin to the caster")
+	eq(_sim.ambush_origin(0).get("origin"), body, "Invisible origin is the body, not the far Shade")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible arms Ambush from the body at cardinal 2")
+	var self_hud := CombatHUD.new()
+	self_hud._build()
+	self_hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(self_hud._selected_label.text.contains(CombatHUD.AMBUSH_SHADE_TIP), false, "Invisible does not say Ambush from Shade")
+	self_hud.free()
+	var struck: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(struck.get("ok", false)), true, "Invisible Ambush from the body resolves")
+	eq(struck.get("events", [{}])[0].get("origin"), body, "the hit origin is the caster, not the Shade")
+	eq(_unit(0)["pos"], Vector2i(14, 1), "Invisible Ambush still plants on the back tile")
 
 
 func _test_ambush_range_from_origin() -> void:
@@ -6798,4 +6932,15 @@ func fail(msg: String) -> void:
 
 func _test_shade_markers_survive_rebuild() -> void:
 	var live := load("res://tests/shade_marker_live.gd")
+	truthy(live.has_method("run"), "shade live script parses")
+	if not live.has_method("run"):
+		return
+	await live.run(self)
+
+
+func _test_ambush_present_race() -> void:
+	var live := load("res://tests/ambush_present_race.gd")
+	truthy(live.has_method("run"), "ambush present race script parses")
+	if not live.has_method("run"):
+		return
 	await live.run(self)

@@ -2,6 +2,32 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Mobile debug APK 0.1.22
+
+Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.22-mobile`, `version/code` `23`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.
+
+Signed with the pinned shared debug keystore. Certificate SHA-256 `3725b12ee58cf1d911c373bc5ef0b6be3c47afb41421777f2b505bb4aa6063e2` matches the pin and matches `mobile-0.1.21-debug`, so a phone on that cert upgrades in place with `adb install -r`. Hub **Actualizar** still works. Same package and the same cert, so this cut is an in-place upgrade.
+
+### Player-visible since 0.1.21
+
+- Landscape hub (#150). The activity is sensor landscape, so the 960×720 poster fills the glass instead of sitting in a letterboxed strip. Title, Koliseo banner, RAID, and the five Stasis tiles stay in one row. Actualizar stays on the title row.
+- Combat zoom dialed back (#150). A 20:9 phone opens near zoom 1.48, so most of the 15×15 diamond stays on screen. **Zoom +** and **Zoom −** step the camera. Zoom out reaches the whole diamond. Zoom in stops at 2.25, under the 0.1.21 cover zoom. The choice lasts for the session.
+- Foot-planted walk (#150). About 0.30s per tile. The foot is held on the diamond through the press and the landing, and the facing walk cycle is sampled from the foot. The body leads about 10px along the facing during the stride, then returns. Arrival is the idle facing on the cell.
+- Locked Wakfu walks for all five classes (#150). Kestrel F+A, Ironjaw A+A2, Gloam proposal B, Mender D2, and Bastion 2C. Twenty 864×160 walk strips, six 144×160 cells. No `*_gen.png`.
+- Koliseo banner (#150). The hub plate uses the approved lineup and keeps that art's aspect, so the five heroes and the KOLISEO label stay in frame. RAID tiles are unchanged.
+- Hub **Actualizar** still checks public GitHub releases for the newest `mobile-*-debug` APK and hands it to the system installer. Same package `com.maurogp12.stasiumxii.mobile` and the pinned debug cert.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Map geometry, tags, and room shapes.
+- Stasis stays on `mobile`. It was not ported to `main`.
+- Package id stays `com.maurogp12.stasiumxii.mobile`. The debug keystore is unchanged. Permissions stay `INTERNET` and `REQUEST_INSTALL_PACKAGES`.
+
+Headless on this stamp (Godot 4.7.2, 0 failed): hub 206, APK update 84, stasis 361, Koliseo maps 314, combat 4647, motion 2095, VFX 528, touch adapter 485, sprite 234, elevation chrome 189.
+
+Tag `mobile-0.1.22-debug`. Install: https://github.com/maurogp12/stasiumxii/releases/download/mobile-0.1.22-debug/stasiumxii-mobile-debug.apk
+
 ## 2026-09-26 — Wakfu walks and Koliseo banner landed
 
 The locked sheets are in the tree. Twenty walk PNGs, 864×160 RGBA, six 144×160 cells, replaced or added in place:
