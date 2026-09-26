@@ -20,6 +20,7 @@ func _run() -> void:
 	_test_hit_floor_and_play_band()
 	_test_board_gestures()
 	_test_pawn_body_cast_pick()
+	_test_mobile_target_pick()
 	_test_ability_cluster_layout()
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
@@ -171,6 +172,81 @@ func _test_pawn_body_cast_pick() -> void:
 	eq(self_cast.get("ok", true), false, "casting Mark Shot on yourself still rejects")
 	eq(str(self_cast.get("reason", "")), "out_of_range", "self cell is inside Mark Shot's minimum range")
 	eq(int(far.snapshot()["units"][1]["hp"]), 80, "a rejected self cast does not hit the foe")
+	far.free()
+
+
+func _test_mobile_target_pick() -> void:
+	# Finger padding is opt-in. Desktop calls stay on the 22px circle and the 34px body.
+	eq(TOUCH.PAWN_BODY_RADIUS, 34.0, "desktop body radius stays 34")
+	eq(TOUCH.MOBILE_PAWN_BODY_RADIUS > TOUCH.PAWN_BODY_RADIUS, true, "a finger uses a fatter body")
+	eq(TOUCH.MOBILE_CELL_PICK_RADIUS > TOUCH.CELL_PICK_RADIUS, true, "off-board finger pad is wider than 22px")
+	eq(TOUCH.use_mobile_pick(), false, "headless does not force the finger pick")
+	var sort := preload("res://board/visual_sort.gd")
+	var tiles := _tile_map(sort)
+	var foe := Vector2i(6, 6)
+	var foe_origin: Vector2 = tiles[foe]
+	var pawns := [{"cell": foe, "origin": foe_origin, "sort": foe.x + foe.y}]
+	# Side of the painted diamond. The 22px circle gives this point to the east neighbor.
+	var side := foe_origin + Vector2(22, 2)
+	eq(TOUCH.diamond_metric(side, foe_origin) <= 1.0, true, "the side point sits on the painted diamond")
+	eq(TOUCH.pick_board_cell(side, tiles, pawns, false), Vector2i(7, 6), "desktop still gives the diamond side to the neighbor")
+	eq(TOUCH.pick_board_cell(side, tiles, pawns, false, true), foe, "a finger on the painted diamond selects that tile")
+	var beside := foe_origin + Vector2(48, -72)
+	eq(TOUCH.hits_pawn_body(beside, foe_origin), false, "a tap beside the chest misses the desktop body")
+	eq(TOUCH.hits_pawn_body(beside, foe_origin, true), true, "a tap beside the chest hits the finger body")
+	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true) == foe, false, "desktop unit pick of that slop is not the foe")
+	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), foe, "finger unit pick of that slop is the foe")
+	var east: Vector2 = tiles[Vector2i(7, 6)]
+	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the finger body")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), Vector2i(7, 6), "finger pick of the east diamond stays that tile")
+	var north: Vector2 = tiles[Vector2i(6, 5)]
+	eq(TOUCH.hits_pawn_body(north, foe_origin), false, "the north diamond stays outside the desktop body")
+	eq(TOUCH.hits_pawn_body(north, foe_origin, true), true, "the figure covers the north diamond, so a finger cast hits the unit")
+	eq(TOUCH.pick_board_cell(north, tiles, pawns, false, true), Vector2i(6, 5), "a walk tap on the north diamond stays that tile")
+	var outside := Vector2(0, -22)
+	eq(TOUCH.pick_board_cell(outside, tiles, [], false).x < 0, true, "desktop misses a tap 22px past the corner")
+	eq(TOUCH.pick_board_cell(outside, tiles, [], false, true), Vector2i(0, 0), "a finger just off the corner still selects the edge tile")
+	var desktop_zoom := TOUCH.board_zoom(960.0, 500.0, Vector2(960, 720), false)
+	var tall_ignored := TOUCH.board_zoom(960.0, 500.0, Vector2(960, 1400), false)
+	near(desktop_zoom, 0.64, "15×15 desktop zoom stays 0.64")
+	near(tall_ignored, desktop_zoom, "desktop framing ignores a tall window")
+	eq(TOUCH.play_band_for(Vector2(960, 1400), false), Vector2(TOUCH.PLAY_TOP, TOUCH.PLAY_BOTTOM), "desktop band stays 140..460")
+	var portrait_band := TOUCH.play_band_for(Vector2(960, 1400), true)
+	eq(portrait_band.x, TOUCH.PLAY_TOP, "portrait keeps the top chrome")
+	eq(portrait_band.y, 1400.0 - (TOUCH.VIEW_H - TOUCH.PLAY_BOTTOM), "portrait keeps the bottom chrome reserve")
+	var portrait := TOUCH.board_zoom(960.0, 500.0, Vector2(960, 1400), true)
+	eq(portrait > desktop_zoom, true, "phone portrait frames the board larger")
+	near(portrait, 928.0 / 960.0, "portrait zoom fills the width without cropping the diamond")
+	eq(portrait <= TOUCH.MOBILE_BOARD_ZOOM_MAX, true, "portrait zoom stays inside the mobile cap")
+	var pawn := Pawn.new()
+	eq(pawn.target_marked, false, "a pawn starts unmarked")
+	pawn.set_target_marked(true)
+	eq(pawn.target_marked, true, "aiming a unit marks it")
+	pawn.advance_target_pulse(0.2)
+	pawn.set_target_marked(true)
+	eq(pawn.target_marked, true, "a second mark does not clear the pulse")
+	pawn.set_target_marked(false)
+	eq(pawn.target_marked, false, "leaving the target clears the ring")
+	pawn.free()
+
+	var sim_script := load("res://backend/combat_sim.gd")
+	var far: Node = sim_script.new()
+	far.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"positions": [Vector2i(0, 0), Vector2i(8, 8)],
+	})
+	var far_cell := Vector2i(8, 8)
+	var far_origin: Vector2 = sort.cell_to_local(far_cell, 0.0)
+	var far_slop := far_origin + Vector2(48, -72)
+	var far_pawns := [{"cell": far_cell, "origin": far_origin, "sort": 16}]
+	eq(TOUCH.pick_board_cell(far_slop, _tile_map(sort), far_pawns, true) == far_cell, false, "desktop slop beside a far sprite is not that unit")
+	var far_pick := TOUCH.pick_board_cell(far_slop, _tile_map(sort), far_pawns, true, true)
+	eq(far_pick, far_cell, "finger slop beside a far sprite still resolves to that unit")
+	var out_of_range: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": far_pick})
+	eq(out_of_range.get("ok", true), false, "a fatter pick does not extend Mark Shot range")
+	eq(str(out_of_range.get("reason", "")), "out_of_range", "the reject stays the locked range rule")
+	eq(int(far.snapshot()["units"][0]["ap"]), 6, "the out-of-range finger pick refunds AP")
 	far.free()
 
 
@@ -499,6 +575,9 @@ func _test_sources_keep_desktop_and_hub() -> void:
 	var hub := FileAccess.get_file_as_string("res://scenes/mobile_hub.gd")
 	var sim := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	truthy(view.contains("res://ui/touch_adapter.gd"), "board routes pointers through the touch adapter")
+	truthy(view.contains("board_zoom"), "board camera uses the shared zoom")
+	truthy(view.contains("use_mobile_pick"), "finger padding is gated on the mobile pick")
+	truthy(view.contains("set_target_marked"), "a selected unit gets the aim ring")
 	truthy(view.contains("MOUSE_BUTTON_RIGHT"), "right-click face source stays")
 	truthy(view.contains("_face_toward"), "right-click still calls face")
 	truthy(view.contains("func _handle_left_click"), "cell commit still goes through the left-click handler")
@@ -517,6 +596,14 @@ func _test_sources_keep_desktop_and_hub() -> void:
 	var select_idx := view.find("func select_tile")
 	var unhandled := view.substr(unhandled_idx, select_idx - unhandled_idx)
 	eq(unhandled.find("ui_cancel") < unhandled.find("_face_toward"), true, "Esc still does not steal right-click face")
+
+
+func near(actual: float, expected: float, msg: String) -> void:
+	if absf(actual - expected) > 0.001:
+		_failed += 1
+		print("FAIL: %s  (got %s expected %s)" % [msg, actual, expected])
+	else:
+		_passed += 1
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

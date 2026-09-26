@@ -43,9 +43,14 @@ const ATTACK_BACK_SEC := 0.10
 ## hypot(32, 16) ≈ 36px center to center, so the edge is ~18px.
 ## Ambush keeps the longer reach.
 const ATTACK_LUNGE_PX := 18.0
-## Ambush blinks. A shared 12px lunge is still easy to miss next to the
-## BACKSTAB number, so this reach is the commit, view-only.
+## Contact slash after the snap. It is a local reach, not a board dash.
+## Facing damage stays the sim's existing resolution. This reach is view-only.
 const AMBUSH_LUNGE_PX := 36.0
+## Body collapses on the origin tile, then the snap. Kept inside the 0.6s lock
+## together with the contact slash.
+const AMBUSH_COLLAPSE_SEC := 0.08
+## Miss whiff. The body stays on the cast cell.
+const AMBUSH_WHIFF_SEC := 0.16
 
 ## Coil before the lunge or the cast release. Long enough to read on a phone.
 ## Pull stays short so the lunge is already forward a tenth of a second in.
@@ -137,6 +142,30 @@ static func impact_hold_sec(spent: float = -1.0) -> float:
 	if room <= 0.0:
 		return 0.0
 	return minf(IMPACT_HOLD_SEC, room)
+
+
+## Seconds from the start of the contact slash to the hit. Damage waits this
+## long after the snap so the number is the facing resolution, not a second hit.
+static func ambush_contact_sec() -> float:
+	return ANTICIPATION_SEC + ATTACK_OUT_SEC
+
+
+## Success: collapse at the origin, snap, slash, then the sim's facing damage.
+## Miss: whiff only. No snap and no damage beat.
+static func ambush_beats(event: Dictionary) -> Array:
+	if str(event.get("spell", "")) != SpellKits.AMBUSH and str(event.get("spell", "")) != "ambush":
+		return []
+	var typ := str(event.get("type", ""))
+	if typ == "hit" and bool(event.get("teleported", false)):
+		return [
+			{"beat": "collapse", "sec": AMBUSH_COLLAPSE_SEC},
+			{"beat": "snap"},
+			{"beat": "slash"},
+			{"beat": "damage"},
+		]
+	if typ == "miss" or typ == "hit":
+		return [{"beat": "whiff"}]
+	return []
 
 
 static func attack_phase(t: float) -> String:
@@ -234,6 +263,14 @@ static func chrome_plans(events: Array) -> Dictionary:
 		var spell_id := str(event.get("spell", ""))
 		if not caster_armed and spell_id != "" and typ in CASTER_EVENT_TYPES:
 			caster_armed = true
+			# A miss stays a whiff on the cast cell. The slash plays only after
+			# a successful snap, and that snap is the board's beat, not a lunge.
+			if spell_id == SpellKits.AMBUSH and not bool(event.get("teleported", false)):
+				var whiff_seat := int(event.get("seat", -1))
+				var whiff_plan: Dictionary = plans.get(whiff_seat, {})
+				whiff_plan["whiff"] = true
+				plans[whiff_seat] = whiff_plan
+				continue
 			var kind := caster_motion(spell_id)
 			if kind != "":
 				var seat := int(event.get("seat", -1))
@@ -284,12 +321,15 @@ static func steps_for(plan: Dictionary) -> Array:
 	var steps: Array = []
 	var attack := bool(plan.get("attack", false))
 	var cast := bool(plan.get("cast", false))
+	var whiff := bool(plan.get("whiff", false)) and not attack and not cast
 	var hit := bool(plan.get("hit", false))
 	var lift := bool(plan.get("lift", false)) and not cast
 	var death := bool(plan.get("death", false))
-	var delay := bool(plan.get("delay", false)) and not attack and not cast and (hit or lift or death)
+	var delay := bool(plan.get("delay", false)) and not attack and not cast and not whiff and (hit or lift or death)
 	if delay:
 		steps.append({"kind": "wait", "sec": REACTION_DELAY})
+	if whiff:
+		steps.append({"kind": "whiff", "sec": AMBUSH_WHIFF_SEC})
 	if attack:
 		steps.append({
 			"kind": "attack",

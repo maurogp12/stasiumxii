@@ -2,6 +2,71 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Ambush snap feel
+
+Rosie (Rosebud). Presentation only. Hit stays 22 FLEX. Cost, legality, and the existing facing resolution stay. There is no extra backstab multiplier.
+
+On a hit the body collapses on the origin tile, snaps to the legal back tile, slashes there, and the damage number follows that contact. The number is still the sim's facing result (backstab when the landing is the back, otherwise the front/side factor). A miss plays a whiff on the cast cell. It does not relocate and it does not deal damage.
+
+Headless Godot 4.7.2, 0 failed: combat 4571, motion 1870, VFX 459.
+
+## 2026-09-26 — Easier mobile target taps
+
+Luca could not reliably tap an enemy on the phone. Locked ranges, AP, and kit numbers are unchanged. Desktop mouse pick is unchanged.
+
+### What was hard
+
+The fighter is drawn about 72px above the feet. A unit cast already treated the sprite as that cell, but the capsule was 34px, and after the 0.64 board zoom a finger beside the chest missed it and hit an empty diamond. The 22px nearest-tile circle also does not cover the side of the painted diamond, so those taps selected the neighbor. On a portrait phone the viewport grows taller than 720, and the camera still fitted the board into the 320px design band, so tiles stayed small.
+
+### What a finger does now
+
+- A touch, or an Android / iOS export, uses a 52px sprite capsule. A tap beside the chest selects that living unit when the armed spell targets a unit. The east-neighbor diamond stays a tile. Walks still use the tile, not the body.
+- The same finger uses the painted 64×32 diamond, so the side of a highlighted cell selects that cell. A tap just off the board uses a 36px pad. A mouse stays at 22px.
+- Portrait framing gives the extra viewport height to the board and keeps the 260px bottom reserve. The 960×720 fit stays zoom 0.64.
+- The selected fighter pulses a ring while a unit spell is armed. The selected tile outline is thicker. Neither changes a legal cell.
+
+CombatSim still rejects an out-of-range cell after the fatter pick, and refunds the AP.
+
+Headless Godot 4.7.2, 0 failed: touch adapter 441, combat 4568.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage.
+- Desktop 22px diamond and 34px body.
+- No new skills. No APK cut.
+
+## 2026-09-26 — Void gaps and Ambush blink
+
+Luca's 0.1.18 clips. No APK cut. Locked kit numbers unchanged. Ambush without a Shade stays parked.
+
+### Root cause — illegal void pathing
+
+Threshgate and the Koliseo boards do not tag void cells. The dark gaps in the clips are unpainted quarters of the dress sheets. Each terrain PNG keeps the diamond in the left half (64×32 source height 16, 64×40 height 23, 64×48 height 29). `terrain_placement` measured that half with `Texture.get_image()`. On the APK that image is null, so the tile centered the whole sheet. Only the top-left quarter is opaque, and a walk from cell center to cell center reads as a path across voids.
+
+`TerrainDef.parse` also stored the string `void` as Ground, so a real void tag would have been standable. Void is now its own impassable terrain (not a Locked MP cost). Walk, Advance, and Ambush already refuse a tile that is not standable. Maps were not retagged. Mud and water stay walkable.
+
+### Root cause — Ambush missing teleport
+
+Resolve already planted a hit on the axis back tile and set `teleported` for both origins (caster if Invisible, otherwise the live Shade), then dealt 22 FLEX. A miss returned first and did not move. The slash is a local pose on the sprite, not a board dash. The pawn snap ran only when the event cell parsed, and it did not plant again after that pose. An Invisible or Shade hit whose destination did not parse, or a body already standing on the back tile, played the slash in place. Adjacent is not an exception: the back tile is one step past the foe on the origin axis, including when that is not the tile Gloam already occupies.
+
+The hit still assigns that cell before damage. The board plants the pawn there before the slash and again when the pose ends. A miss does not plant. Shade is still spent only for a Shade-origin hit, in that same beat.
+
+### Intentionally not changed
+
+- Locked kit numbers, AP/MP, ranges, and damage. Ambush stays 4 AP / 0 MP / 22 FLEX.
+- Ambush without a Shade (and without Invisible) stays parked.
+- No map redraw, no icy jewel boards, no walk-cycle pass.
+- Stasis stays on `mobile`.
+
+### Tests (headless Godot 4.7.2, 0 failed)
+
+| Suite | Passed |
+| --- | ---: |
+| Combat | 4568 |
+| Motion | 1861 |
+| VFX | 454 |
+| Koliseo maps | 283 |
+
 ## 2026-09-26 — Mobile debug APK 0.1.18
 
 Sideload cut of the `mobile` tip for Luca. Stamp only: `version/name` `0.1.18-mobile`, `version/code` `19`. Package `com.maurogp12.stasiumxii.mobile`. Godot `4.7.2.stable.official.ed1daf0bf`, official templates, arm64-v8a debug APK.

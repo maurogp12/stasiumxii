@@ -20,8 +20,9 @@ extends Node2D
 ## Touch: finger press/drag previews aim hit %; release commits the cell (walk,
 ## Advance, cast). The Face pad is the tap path for facing. Hover stays desktop.
 ## Unit-targeted casts resolve a tap on the fighter sprite to that living cell.
-## The 22px diamond pick stays for walks and empty tiles. A finger that starts
-## on the ability cluster can drag onto the board and release to commit.
+## Mouse diamond pick stays 22px. A finger uses the painted diamond and a fatter
+## sprite capsule. Phone portrait gives extra viewport height to the board.
+## A finger that starts on the ability cluster can drag onto the board and release to commit.
 ## Rolling enemy spells: selected chrome paints the Chebyshev range ring; walk chrome stays off.
 ## Aim preview shows Locked hit percent for rolling casts. Advance and walks have none.
 ## A dashed aim line and a predicted float follow the hover. Ambush draws that
@@ -106,6 +107,8 @@ var _touch_on_board := false
 ## Spell was armed on the cluster and the finger dragged onto the board.
 var _chrome_aim := false
 var _touch_commit_open := true
+## Bumps when a new Ambush arrival starts so a stale snap cannot fire late.
+var _ambush_arrival_token := 0
 
 
 func _ready() -> void:
@@ -126,6 +129,8 @@ func _ready() -> void:
 	_ensure_aim_line()
 	_ensure_camera()
 	_rebuild_grid(BoardSize.SHIP)
+	if not get_viewport().size_changed.is_connected(_fit_board_camera):
+		get_viewport().size_changed.connect(_fit_board_camera)
 	call_deferred("_boot")
 
 
@@ -203,6 +208,8 @@ func _on_net_state(events: Array, _snap: Dictionary) -> void:
 	var swallowed := _present_resolve(events)
 	if _pending_motion_sec > 0.0:
 		await _await_view_motions()
+		# The local slash can finish after the blink. Plant the back tile again.
+		_snap_ambush_teleports(events)
 	if _resolve_hold_refresh:
 		_resolve_hold_refresh = false
 		_refresh()
@@ -233,6 +240,7 @@ func local_to_grid(point: Vector2) -> Vector2i:
 func _process(delta: float) -> void:
 	if not _booted:
 		return
+	_pulse_target_marks(delta)
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
@@ -388,7 +396,7 @@ func _on_hud_aim_dragged(screen_pos: Vector2, committing: bool) -> void:
 			_chrome_aim = false
 		return
 	var local := ($Tiles as Node2D).make_canvas_position_local(screen_pos)
-	var cell := _pick_local(local)
+	var cell := _pick_local(local, true)
 	if not _in_bounds(cell):
 		if committing:
 			_chrome_aim = false
@@ -425,15 +433,17 @@ func _commit_cell(cell: Vector2i) -> void:
 
 func _cell_under_pointer(event: InputEvent) -> Vector2i:
 	var local: Vector2 = ($Tiles as Node2D).get_local_mouse_position()
+	var finger := false
 	if event is InputEventScreenTouch or event is InputEventScreenDrag:
 		local = ($Tiles as Node2D).make_canvas_position_local(TOUCH.pointer_position(event))
-	return _pick_local(local)
+		finger = true
+	return _pick_local(local, finger)
 
 
-func _pick_local(local: Vector2) -> Vector2i:
+func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	var prefer := _hud != null and TOUCH.spell_targets_unit(_hud.selected_spell())
 	var pawns: Array = _living_pawns_for_pick() if prefer else []
-	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer)
+	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
 
 
 func _tile_positions() -> Dictionary:
@@ -465,6 +475,34 @@ func select_tile(cell: Vector2i) -> void:
 		selected_tile.set_selected(false)
 	selected_tile = tiles[cell] as BoardTile
 	selected_tile.set_selected(true)
+	_sync_target_marks()
+
+
+## Pulse the living fighter on the selected cell while a unit spell is armed.
+## Walks and empty-tile spells leave the ring off. Rules are unchanged.
+func _sync_target_marks() -> void:
+	var cell := Vector2i(-999, -999)
+	if selected_tile != null and is_instance_valid(selected_tile):
+		cell = selected_tile.grid_position
+	var spell := ""
+	if _hud != null:
+		spell = _hud.selected_spell()
+	var show := spell != "" and TOUCH.spell_targets_unit(spell)
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		var marked := show and body.alive and body.visible and body.grid_position == cell
+		body.set_target_marked(marked)
+
+
+func _pulse_target_marks(delta: float) -> void:
+	for pawn in pawns_by_seat.values():
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		var body: Pawn = pawn
+		if body.target_marked:
+			body.advance_target_pulse(delta)
 
 
 func _handle_left_click(cell: Vector2i) -> void:
@@ -689,6 +727,7 @@ func _submit(intent: Dictionary) -> void:
 		var swallowed := _present_resolve(events)
 		if _pending_motion_sec > 0.0:
 			await _await_view_motions()
+			_snap_ambush_teleports(events)
 		if _resolve_hold_refresh:
 			_resolve_hold_refresh = false
 			_refresh()
@@ -720,10 +759,18 @@ func _snap_ambush_teleports(events: Array) -> void:
 		var seat := int(event.get("seat", -1))
 		if not pawns_by_seat.has(seat):
 			continue
-		var dest := _as_cell(event.get("destination", event.get("to", Vector2i(-1, -1))))
-		if dest.x < 0:
+		# Destination is the back tile. `to` is the same cell on a hit.
+		# A miss sets teleported false and is skipped above, so the body stays.
+		var dest := _event_cell(event, "destination")
+		if not _in_bounds(dest):
+			dest = _event_cell(event, "to")
+		if not _in_bounds(dest):
+			dest = _seat_cell(seat)
+		if not _in_bounds(dest):
 			continue
 		var pawn: Pawn = pawns_by_seat[seat]
+		# Instant plant. The attack pose is a local slash on the sprite, not a
+		# dash from the old tile. Adjacent and Invisible hits still land here.
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
 		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
@@ -732,15 +779,45 @@ func _snap_ambush_teleports(events: Array) -> void:
 			pawn.set_facing(face)
 
 
+func _event_cell(event: Dictionary, key: String) -> Vector2i:
+	if not event.has(key):
+		return Vector2i(-1, -1)
+	var raw: Variant = event.get(key)
+	if raw == null:
+		return Vector2i(-1, -1)
+	var cell := _as_cell(raw)
+	if cell.x < 0 or cell.y < 0:
+		return Vector2i(-1, -1)
+	return cell
+
+
+func _seat_cell(seat: int) -> Vector2i:
+	for unit in _sim().snapshot().get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		if int(unit.get("seat", -2)) != seat:
+			continue
+		var raw: Variant = unit.get("pos", null)
+		if raw == null:
+			return Vector2i(-1, -1)
+		return _as_cell(raw)
+	return Vector2i(-1, -1)
+
+
 func _present_resolve(events: Array) -> bool:
-	# Ambush HIT relocates before the lunge so the back tile reads. Without this
-	# snap the pawn lunges from the old cell and only jumps on refresh.
-	_snap_ambush_teleports(events)
+	# A successful Ambush fades on the origin tile, then snaps, then slashes.
+	# The snap is deferred so the collapse is visible. A miss never snaps.
+	var ambush_hit := _ambush_success_event(events)
+	if ambush_hit.is_empty():
+		_snap_ambush_teleports(events)
 	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
 	_sync_shade_chrome(events)
-	_play_combat_feedback(events)
-	_arm_view_motions(events)
-	_arm_vfx(events)
+	if ambush_hit.is_empty():
+		_play_combat_feedback(events)
+		_arm_view_motions(events)
+		_arm_vfx(events)
+	else:
+		_begin_ambush_arrival(ambush_hit, events)
 	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
@@ -762,6 +839,53 @@ func _present_resolve(events: Array) -> bool:
 		_refresh()
 	_resolve_hold_refresh = swallowed and _pending_motion_sec > 0.0
 	return swallowed
+
+
+func _ambush_success_event(events: Array) -> Dictionary:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if str(event.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if str(event.get("type", "")) != "hit":
+			continue
+		if bool(event.get("teleported", false)):
+			return event
+	return {}
+
+
+## Collapse on the current tile, then snap, slash, and the existing facing damage.
+func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
+	_ambush_arrival_token += 1
+	var token := _ambush_arrival_token
+	var sec := VIEW_MOTION.AMBUSH_COLLAPSE_SEC
+	var seat := int(event.get("seat", -1))
+	var pawn: Pawn = pawns_by_seat.get(seat) as Pawn
+	if pawn == null or sec <= 0.0 or VIEW_MOTION.reduce_motion() or not is_inside_tree():
+		_finish_ambush_arrival(event, events, token)
+		return
+	var played := pawn.play_ambush_collapse(sec)
+	if played <= 0.0:
+		_finish_ambush_arrival(event, events, token)
+		return
+	_pending_motion_sec = maxf(_pending_motion_sec, played)
+	var tw := create_tween()
+	tw.tween_interval(sec)
+	tw.tween_callback(_finish_ambush_arrival.bind(event, events, token))
+
+
+func _finish_ambush_arrival(event: Dictionary, events: Array, token: int) -> void:
+	if token != _ambush_arrival_token or not is_inside_tree():
+		return
+	var seat := int(event.get("seat", -1))
+	if pawns_by_seat.has(seat):
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn != null and is_instance_valid(pawn):
+			pawn.restore_ambush_body()
+	_snap_ambush_teleports([event])
+	_play_combat_feedback(events)
+	_arm_view_motions(events)
+	_arm_vfx(events)
 
 
 func _path_event(events: Array) -> Dictionary:
@@ -1265,10 +1389,12 @@ func _paint_highlights() -> void:
 	if snap.get("match_over", false) or _busy:
 		_paint_blocked(snap)
 		_sync_aim_line()
+		_sync_target_marks()
 		return
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
 		_paint_blocked(snap)
+		_sync_target_marks()
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
@@ -1316,6 +1442,7 @@ func _paint_highlights() -> void:
 	_paint_blocked(snap)
 	_paint_ambush_chrome(snap, spell_id)
 	_sync_aim_preview()
+	_sync_target_marks()
 
 
 ## Locked chrome. Origin and landing highlights only while legal_intents has an
@@ -1648,7 +1775,9 @@ func _rebuild_grid(size: int) -> void:
 	_fit_board_camera()
 
 
-## Zoom the 15×15 diamond into the 960×720 play band. Cell size stays 64×32.
+## Zoom the diamond into the play band. Cell size stays 64×32.
+## Desktop stays the 960×720 fit. A phone portrait (mobile pick) gives the
+## extra viewport height to the board and keeps the same bottom chrome reserve.
 ## Middle-mouse pan is clamped around that fit.
 func _fit_board_camera() -> void:
 	_ensure_camera()
@@ -1664,14 +1793,16 @@ func _fit_board_camera() -> void:
 	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
 	var board_w := maxf(max_x - min_x, 1.0)
 	var board_h := maxf(max_y - min_y, 1.0)
-	var play_w := VIEW_W - 32.0
-	var play_h := PLAY_BOTTOM - PLAY_TOP
-	var zoom := minf(play_w / board_w, play_h / board_h)
-	zoom = clampf(zoom, 0.35, 1.25)
+	var mobile := TOUCH.use_mobile_pick()
+	var viewport := Vector2(VIEW_W, VIEW_H)
+	if mobile:
+		viewport = get_viewport_rect().size
+	var band := TOUCH.play_band_for(viewport, mobile)
+	var zoom := TOUCH.board_zoom(board_w, board_h, viewport, mobile)
 	_camera.zoom = Vector2(zoom, zoom)
 	var center := Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
-	var play_center := Vector2(VIEW_W * 0.5, (PLAY_TOP + PLAY_BOTTOM) * 0.5)
-	var view_center := Vector2(VIEW_W * 0.5, VIEW_H * 0.5)
+	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
+	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
 	_fit_camera_pos = camera_world - global_position

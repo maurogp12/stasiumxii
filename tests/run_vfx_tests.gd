@@ -314,10 +314,12 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 		"damage": 30,
 		"shade_retained": false,
 	}])
-	eq(_first(ambush, "projectile")["from"], Vector2i(2, 4), "Ambush streak starts at the Shade origin")
-	eq(_first(ambush, "projectile")["to"], Vector2i(5, 4), "Ambush streak ends at the back tile")
+	eq(_has(ambush, "projectile"), false, "Ambush does not streak the body to the back tile")
 	eq(_has(ambush, "slide"), false, "Ambush teleports; the body does not path from Gloam")
-	eq(_first(ambush, "number")["cell"], Vector2i(4, 4), "BACKSTAB number sits on the enemy")
+	eq(_first(ambush, "puff")["cell"], Vector2i(2, 4), "the collapse puff sits on the origin")
+	eq(_first(ambush, "number")["cell"], Vector2i(4, 4), "facing damage sits on the enemy")
+	eq(_first(ambush, "number")["text"], "BACKSTAB 30", "facing damage keeps the existing backstab resolution")
+	eq(float(_first(ambush, "number").get("delay", 0.0)) > 0.0, true, "facing damage follows the slash")
 	eq(_first(ambush, "status_flash")["cell"], Vector2i(4, 4), "the slash sits on the enemy")
 	var ambush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss",

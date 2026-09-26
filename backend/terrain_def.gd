@@ -2,14 +2,17 @@ extends RefCounted
 
 ## Live terrain table. Ported from proto/elevation/terrain_def.gd (reference).
 ## Locked: Ground 1, Mud 2, Water 2, Lava impassable.
+## Void is not a Locked MP terrain. It is a hole: not standable, so a gap
+## cannot be stored as Ground.
 
-enum Id { GROUND, MUD, WATER, LAVA }
+enum Id { GROUND, MUD, WATER, LAVA, VOID }
 
 const NAMES := {
 	Id.GROUND: "ground",
 	Id.MUD: "mud",
 	Id.WATER: "water",
 	Id.LAVA: "lava",
+	Id.VOID: "void",
 }
 
 const DISPLAY := {
@@ -17,6 +20,7 @@ const DISPLAY := {
 	Id.MUD: "Mud",
 	Id.WATER: "Water",
 	Id.LAVA: "Lava",
+	Id.VOID: "Void",
 }
 
 
@@ -26,6 +30,7 @@ static func catalog() -> Dictionary:
 		Id.MUD: make(Id.MUD, 2, true),
 		Id.WATER: make(Id.WATER, 2, true),
 		Id.LAVA: make(Id.LAVA, 0, false),
+		Id.VOID: make(Id.VOID, 0, false),
 	}
 
 
@@ -63,5 +68,7 @@ static func parse(value: Variant) -> int:
 			return Id.WATER
 		"lava", "3":
 			return Id.LAVA
+		"void", "4":
+			return Id.VOID
 		_:
 			return Id.GROUND
