@@ -254,6 +254,32 @@ static func target_motion(flash_kind: String) -> String:
 	return ""
 
 
+## Mark Shot bolt travel after the release frame. Same length as
+## VfxRouter.MARK_FLIGHT_SEC. Kept here so the flinch does not import VFX.
+const MARK_BOLT_SEC := 0.18
+
+
+## Seconds from the caster motion (or the Ambush slash, which is armed on the
+## back tile) until damage resolves. The victim flinch waits this long.
+## A miss and a self-cast never reach it.
+static func damage_resolve_sec(spell_id: String) -> float:
+	match spell_id:
+		SpellKits.STRIKE, SpellKits.SHOULDER, SpellKits.CRUSH:
+			return StripLibrary.release_sec("ironjaw", "attack")
+		SpellKits.CUT:
+			return StripLibrary.release_sec("gloam", "attack")
+		SpellKits.AMBUSH:
+			return ambush_contact_sec()
+		SpellKits.MARK_SHOT:
+			return StripLibrary.release_sec("kestrel", "cast_mark") + MARK_BOLT_SEC
+		SpellKits.DETONATE:
+			return StripLibrary.release_sec("kestrel", "cast")
+		_:
+			if caster_motion(spell_id) == "attack":
+				return ANTICIPATION_SEC + ATTACK_OUT_SEC
+			return 0.0
+
+
 ## First commit event in the batch. Miss uses the same caster motion as hit.
 static func caster_event(events: Array) -> Dictionary:
 	for event in events:
@@ -330,10 +356,16 @@ static func chrome_plans(events: Array) -> Dictionary:
 		var react := target_motion(_flash_kind(event))
 		if react == "":
 			continue
+		var caster_seat := int(event.get("seat", -2))
 		var plan: Dictionary = plans.get(target, {})
 		if react == "hit":
+			# Flinch only when damage has resolved on someone else.
+			# A miss never gets here. A self-cast keeps the caster wind-up.
+			if int(event.get("damage", 0)) <= 0 or target == caster_seat:
+				continue
 			plan["hit"] = true
 			plan["delay"] = true
+			plan["contact"] = damage_resolve_sec(spell_id)
 		elif react == "lift":
 			plan["lift"] = true
 			plan["delay"] = true
@@ -361,7 +393,12 @@ static func steps_for(plan: Dictionary) -> Array:
 	var death := bool(plan.get("death", false))
 	var delay := bool(plan.get("delay", false)) and not attack and not cast and not whiff and (hit or lift or death)
 	if delay:
-		steps.append({"kind": "wait", "sec": REACTION_DELAY})
+		var wait_sec := REACTION_DELAY
+		# Damage flinch waits until the blow lands. Heals keep the short pause.
+		if hit and float(plan.get("contact", -1.0)) >= 0.0:
+			wait_sec = float(plan.get("contact"))
+		if wait_sec > 0.0:
+			steps.append({"kind": "wait", "sec": wait_sec})
 	if whiff:
 		steps.append({"kind": "whiff", "sec": AMBUSH_WHIFF_SEC})
 	if attack:

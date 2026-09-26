@@ -29,9 +29,11 @@ class_name Pawn
 ## Attack strips play one-shot on attack plans. Mark Shot plays `cast_mark_*`
 ## and falls back to v3 `attack_*` only when that sheet is missing.
 ## Detonate plays `cast_*` when present, otherwise a point pose — not attack_*.
-## Hit plays the facing `hit_*` strip: four 144×160 cells, flash on the
-## first, settled on the last. That strip is the recoil, so it does not
-## also take the no-strip squash. The white flash still rides on top.
+## Hit plays the facing `hit_*` strip only after damage resolves: four
+## 144×160 cells, flash on the first, settled on the last, feet on the
+## walk baseline. A miss or a self-cast does not play it. The strip is the
+## recoil, so it does not also knock or squash, and it does not resume a
+## stride it interrupted. The white flash still rides on top.
 ## Death plays `death_*` and holds the last cell. Missing sheets keep the
 ## flash plus flinch, and a dissolve.
 ## Anticipation pulls back, the impact frame holds, then the body recovers.
@@ -536,6 +538,10 @@ func sync_walk_plant() -> void:
 func sample_driven_gait(t: float) -> void:
 	if VIEW_MOTION.reduce_motion() or not is_inside_tree():
 		return
+	# A flinch cleared the stride. Later samples must not put the passing
+	# frame back on screen.
+	if not _path_walk or _hit_strip_is_body():
+		return
 	_kill_bounce()
 	var u := clampf(t, 0.0, 1.0)
 	_apply_hop_visual(u)
@@ -793,6 +799,7 @@ func play_view_plan(plan: Dictionary) -> float:
 				# TODO(TA): Detonate cast_* is not on disk. Point pose only.
 				tw.tween_method(_sample_cast.bind(aim_cast), 0.0, 1.0, sec)
 		elif kind == "hit":
+			tw.tween_callback(_interrupt_stride_for_flinch)
 			tw.tween_callback(_end_body_strip)
 			if not _strip_choice("hit").is_empty():
 				var hit_play := _fit_strip_window("hit", sec, steps)
@@ -1411,16 +1418,31 @@ func _thaw_strip_pose() -> void:
 func _sample_hit(t: float, dir: Vector2) -> void:
 	if _sprite == null:
 		return
-	var pos := VIEW_MOTION.hit_offset(t, dir)
-	# The 4-frame sheet already flashes and recoils. Squash is the fallback
-	# for a class that has no hit_<facing> clip.
-	var mul := Vector2.ONE if _hit_strip_is_body() else VIEW_MOTION.hit_squash(t)
+	# The 4-frame sheet already flashes and recoils, and its feet stay on the
+	# walk baseline. Knock and squash are the fallback when that clip is missing.
+	var planted := _hit_strip_is_body()
+	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir)
+	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t)
 	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
 	_sprite.scale = scaled
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = pos
 		_active_strip.scale = scaled
+
+
+## A flinch ends the stride. The next pose is the idle plant, not the frame
+## the walk was on when the blow landed.
+func _interrupt_stride_for_flinch() -> void:
+	_path_walk = false
+	_driven_walk = false
+	_driven_step = 0
+	_driven_open = false
+	_walk_looping = false
+	_kill_bounce()
+	_kill_landing()
+	_place_body(Vector2.ZERO)
+	_reset_walk_scale()
 
 
 func _hit_strip_is_body() -> bool:
