@@ -761,7 +761,11 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				bolt["seat"] = caster
 				bolt["delay"] = STRIPS.release_sec("kestrel", "cast_mark")
 				out.append(bolt)
-				out.append(_stamp("mark_shot_impact", target, to_cell, _mark_impact_delay(), VfxBudget.STAMP_MARK_PX, VfxBudget.STAMP_SPELL_LIFE))
+				# Rings and the burst sit on the tile. The bolt still leaves the weapon.
+				var impact := _stamp("mark_shot_impact", target, to_cell, _mark_impact_delay(), VfxBudget.STAMP_MARK_PX, VfxBudget.STAMP_SPELL_LIFE)
+				impact["chest"] = false
+				impact["ground"] = true
+				out.append(impact)
 				out.append(_status_on("marks", target, to_cell, _stack_count(snapshot, target, "marks", maxi(int(event.get("engine_gained", 1)), 1))))
 		"detonate":
 			if typ == "hit":

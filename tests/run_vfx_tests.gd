@@ -330,6 +330,7 @@ func _test_hold_line_ambush_intercept_expire() -> void:
 	})
 	eq(departure.size(), 1, "the live collapse plays one departure puff")
 	eq(departure[0]["cell"], Vector2i(2, 4), "the live collapse puff is the Shade or cast origin")
+	eq(_sheet(departure, "ambush_slash").is_empty(), true, "the slash waits until the back-tile plant")
 	eq(ROUTER.ambush_collapse_specs({"type": "miss", "spell": "ambush", "seat": 0}).is_empty(), true, "an Ambush miss does not puff a departure")
 	var contact: Array = ROUTER.recipes_for([{
 		"type": "hit",
@@ -695,18 +696,27 @@ func _test_stamp_playback() -> void:
 	if flash == null:
 		stamp.free()
 		return
-	eq(flash.region_enabled, false, "hit flash plays the whole punch plate")
-	var plate := maxf(float(flash.texture.get_width()), float(flash.texture.get_height()))
-	stamp._sample(0.22)
-	eq(is_equal_approx(flash.scale.x * plate, 60.0), true, "hit flash scales the plate to the body size")
+	eq(flash.region_enabled, true, "hit flash plays the strip")
+	var hit_span := stamp_script.span_for("hit_flash")
+	stamp._sample(0.0)
+	eq(is_equal_approx(flash.scale.x * hit_span, 60.0), true, "hit flash scales the largest frame to the body size")
+	var hit_first := flash.region_rect
+	stamp._sample(0.55)
+	eq(flash.region_rect.position.x > hit_first.position.x, true, "hit flash advances left to right")
 	stamp.play({"sheet": "footstep_dust", "px": 44.0, "life": 0.30, "pos": Vector2.ZERO})
-	eq(flash.region_enabled, false, "footstep dust plays the whole punch plate")
-	var dust_plate := maxf(float(flash.texture.get_width()), float(flash.texture.get_height()))
-	stamp._sample(0.22)
-	eq(is_equal_approx(flash.scale.x * dust_plate, 44.0), true, "footstep dust scales the plate, not a sliced cell")
+	eq(flash.region_enabled, true, "footstep dust plays the plant strip")
+	var dust_span := stamp_script.span_for("footstep_dust")
+	stamp._sample(0.0)
+	eq(is_equal_approx(flash.scale.x * dust_span, 44.0), true, "footstep dust scales the largest puff")
+	var dust_first := flash.region_rect
+	stamp._sample(0.6)
+	eq(flash.region_rect.position.x > dust_first.position.x, true, "footstep dust advances left to right")
 	stamp.play({"sheet": "ambush_slash", "px": 100.0, "life": 0.24, "pos": Vector2.ZERO})
-	eq(flash.region_enabled, false, "ambush slash plays the whole hero plate")
+	eq(flash.region_enabled, true, "ambush slash plays the strip")
 	eq(flash.texture, stamp_script.texture_for("ambush_slash"), "ambush slash keeps the full plate")
+	var slash_first := flash.region_rect
+	stamp._sample(0.7)
+	eq(flash.region_rect.position.x > slash_first.position.x, true, "ambush slash advances left to right")
 	stamp.free()
 
 
@@ -1059,11 +1069,20 @@ func _test_scenario_overlays() -> void:
 			if opaque:
 				break
 		truthy(opaque, "%s has a readable core" % sheet)
-	eq(stamp_script.frame_count("hit_flash"), 1, "hit flash is one punch plate")
-	eq(stamp_script.frame_count("footstep_dust"), 1, "footstep dust is one punch plate")
-	eq(stamp_script.frame_count("ambush_slash"), 1, "ambush slash is one hero frame")
-	eq(stamp_script.frame_count("mark_shot_impact"), 1, "Mark Shot impact is one hero frame")
+	eq(stamp_script.frame_count("hit_flash"), 7, "hit flash is a 7-frame strip")
+	eq(stamp_script.frame_count("footstep_dust"), 8, "footstep dust is an 8-frame plant strip")
+	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame strip")
+	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
 	eq(stamp_script.frame_count("detonate_burst"), 1, "Detonate burst is one hero frame")
+	for sheet in ["ambush_slash", "hit_flash", "footstep_dust", "mark_shot_impact"]:
+		var laid: Texture2D = stamp_script.texture_for(sheet)
+		var prev_x := -1.0
+		for i in stamp_script.frame_count(sheet):
+			var cel: Rect2 = stamp_script.region_for(sheet, i, laid)
+			eq(cel.position.x >= 0.0 and cel.position.y >= 0.0, true, "%s frame %d stays on the sheet" % [sheet, i])
+			eq(cel.end.x <= float(laid.get_width()) + 0.01 and cel.end.y <= float(laid.get_height()) + 0.01, true, "%s frame %d stays inside the sheet" % [sheet, i])
+			eq(cel.position.x > prev_x, true, "%s frames run left to right" % sheet)
+			prev_x = cel.position.x
 	eq(is_equal_approx(BUDGET.STAMP_DUST_LIFE, 0.30), true, "footstep dust is a short plant puff")
 	eq(BUDGET.STAMP_DUST_LIFE >= 0.20 and BUDGET.STAMP_DUST_LIFE <= 0.35, true, "footstep dust life stays inside 0.2-0.35s")
 	eq(BUDGET.STAMP_HIT_LIFE >= 0.24 and BUDGET.STAMP_HIT_LIFE <= 0.36, true, "the hit plate has time to pop")
@@ -1098,6 +1117,8 @@ func _test_scenario_overlays() -> void:
 	}])
 	var impact_delay := preload("res://units/strip_library.gd").release_sec("kestrel", "cast_mark") + ROUTER.MARK_FLIGHT_SEC
 	eq(_sheet(marked, "mark_shot_impact")["cell"], Vector2i(4, 3), "Mark Shot impact sits on the target")
+	eq(bool(_sheet(marked, "mark_shot_impact").get("ground", false)), true, "Mark Shot aim rings stay on the floor")
+	eq(bool(_sheet(marked, "mark_shot_impact").get("chest", true)), false, "Mark Shot impact is not a chest overlay")
 	eq(is_equal_approx(float(_sheet(marked, "mark_shot_impact")["delay"]), impact_delay), true, "Mark Shot impact waits for the bolt")
 	eq(is_equal_approx(float(_sheet(marked, "hit_flash")["delay"]), impact_delay), true, "the hit flash lands with the bolt")
 	var mark_miss: Array = ROUTER.recipes_for([{
