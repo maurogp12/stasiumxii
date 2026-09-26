@@ -96,9 +96,10 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if _flash <= 0.0:
 		return
-	var hot := 20.0 + (1.0 - _flash) * 18.0
-	draw_circle(Vector2.ZERO, hot * 1.7, Color(_tint.r, _tint.g, _tint.b, _flash * 0.55))
-	draw_circle(Vector2.ZERO, hot, Color(1, 1, 1, _flash))
+	var hot := 24.0 + (1.0 - _flash) * 20.0
+	draw_circle(Vector2.ZERO, hot * 1.85, Color(_tint.r, _tint.g, _tint.b, _flash * 0.78))
+	draw_circle(Vector2.ZERO, hot * 1.15, Color(_tint.r, _tint.g, _tint.b, _flash * 0.9))
+	draw_circle(Vector2.ZERO, hot * 0.62, Color(1, 1, 1, _flash))
 
 
 func release() -> void:

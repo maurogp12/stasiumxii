@@ -53,7 +53,7 @@ func play(spec: Dictionary) -> void:
 	else:
 		scale = Vector2(0.42, 0.42) * mul
 		_tween = create_tween()
-		_tween.tween_property(self, "scale", Vector2(1.48, 1.48) * mul, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_tween.tween_property(self, "scale", Vector2(1.62, 1.62) * mul, 0.09).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		_tween.tween_property(self, "scale", Vector2.ONE * mul, 0.12)
 	queue_redraw()
 
@@ -125,9 +125,9 @@ func _draw() -> void:
 
 func _draw_ellipse_ring() -> void:
 	var pts := _ellipse(28.0, 14.0)
-	draw_polyline(pts, VfxPalette.OUTLINE, 5.0, true)
-	draw_polyline(pts, Color(1, 1, 1, 0.95), 2.0, true)
-	draw_polyline(pts, _tint, 3.2, true)
+	draw_polyline(pts, VfxPalette.OUTLINE, 6.0, true)
+	draw_polyline(pts, Color(1, 1, 1, 1.0), 2.6, true)
+	draw_polyline(pts, _tint, 4.6, true)
 
 
 func _draw_sigil() -> void:

@@ -38,8 +38,8 @@ class GridInk extends Node2D:
 		var pts := host.diamond_points()
 		var loop := PackedVector2Array(pts)
 		loop.append(pts[0])
-		draw_polyline(loop, KoliseoLife.GRID_INK, 2.05, true)
-		draw_polyline(loop, KoliseoLife.GRID_GLEAM, 1.05, true)
+		draw_polyline(loop, KoliseoLife.GRID_INK, KoliseoLife.GRID_INK_PX, true)
+		draw_polyline(loop, KoliseoLife.GRID_GLEAM, KoliseoLife.GRID_GLEAM_PX, true)
 
 
 class HighlightOverlay extends Node2D:
@@ -88,7 +88,7 @@ func set_dress(dress: String) -> void:
 
 ## Ship arenas get a contrast / sheen grade. Other boards keep the raw sheet.
 func apply_koliseo_grade(map_id: String) -> void:
-	var key := "%s|%s|%d" % [map_id, terrain_type, elevation]
+	var key := "%s|%s|%d|%d,%d" % [map_id, terrain_type, elevation, grid_position.x, grid_position.y]
 	if key == _grade_key:
 		return
 	_grade_key = key
@@ -105,11 +105,14 @@ func apply_koliseo_grade(map_id: String) -> void:
 		_life_mat.shader = _KoliseoLife.GROUND_SHADER
 		material = _life_mat
 	var grade: Color = spec["grade"]
+	var jewel: Color = spec["jewel"]
 	var sheen: Color = spec["shimmer_color"]
 	_life_mat.set_shader_parameter("contrast", float(spec["contrast"]))
 	_life_mat.set_shader_parameter("sat_boost", float(spec["sat"]))
 	_life_mat.set_shader_parameter("lift", float(spec["lift"]))
 	_life_mat.set_shader_parameter("grade", Vector3(grade.r, grade.g, grade.b))
+	_life_mat.set_shader_parameter("jewel", Vector3(jewel.r, jewel.g, jewel.b))
+	_life_mat.set_shader_parameter("jewel_mix", float(spec["jewel_mix"]))
 	_life_mat.set_shader_parameter("shimmer", float(spec["shimmer"]))
 	_life_mat.set_shader_parameter("shimmer_color", Vector3(sheen.r, sheen.g, sheen.b))
 	_life_mat.set_shader_parameter("shimmer_speed", float(spec["speed"]))

@@ -50,6 +50,7 @@ var _action_tween: Tween
 var _bounce_tween: Tween
 var _landing_tween: Tween
 var _gesture: GestureHand
+var _active_halo: ActiveHalo
 var _bounce_gen: int = 0
 var _motion_playing: bool = false
 var _idle_hold: bool = false
@@ -121,6 +122,28 @@ class GestureHand extends Node2D:
 		draw_line(Vector2(3, -1), Vector2(10, -1), Color(1.0, 0.94, 0.84, 0.96), 2.2, true)
 
 
+## Cyan/white bloom on the fighter who holds the seat. Same mark for every class.
+class ActiveHalo extends Node2D:
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var pulse := 0.78 + 0.22 * sin(float(Time.get_ticks_msec()) * 0.005)
+		var foot := Vector2(0, 2)
+		draw_colored_polygon(_bloom(Vector2(0, -32), 46.0, 52.0), Color(0.15, 0.9, 1.0, 0.55 * pulse))
+		draw_colored_polygon(_bloom(foot, 34.0, 14.0), Color(0.45, 0.98, 1.0, 0.7 * pulse))
+		var ring := _bloom(foot, 30.0, 12.0)
+		ring.append(ring[0])
+		draw_polyline(ring, Color(1.0, 1.0, 1.0, 0.9 * pulse), 2.4, true)
+
+	func _bloom(center: Vector2, rx: float, ry: float) -> PackedVector2Array:
+		var pts := PackedVector2Array()
+		for i in 20:
+			var a := TAU * float(i) / 20.0
+			pts.append(center + Vector2(cos(a) * rx, sin(a) * ry))
+		return pts
+
+
 class StatusChrome extends Node2D:
 	var host: Pawn
 
@@ -141,6 +164,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	max_hp = int(unit["max_hp"])
 	alive = bool(unit["alive"])
 	is_active = int(unit["seat"]) == active_seat and alive
+	_sync_active_halo()
 	_hit_flash = false
 	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 	burn_remaining = CombatHUD.unit_burn_remaining(unit, events)
@@ -231,6 +255,26 @@ func _sample_landing(t: float) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.scale = scaled
 		_sprite.position = Vector2.ZERO
+
+
+func _sync_active_halo() -> void:
+	if not is_active:
+		if _active_halo != null and is_instance_valid(_active_halo):
+			_active_halo.visible = false
+			_active_halo.set_process(false)
+		return
+	if _active_halo == null or not is_instance_valid(_active_halo):
+		_active_halo = ActiveHalo.new()
+		_active_halo.name = "ActiveHalo"
+		_active_halo.z_index = -1
+		_active_halo.z_as_relative = true
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		_active_halo.material = mat
+		add_child(_active_halo)
+	_active_halo.visible = true
+	_active_halo.set_process(true)
+	_active_halo.queue_redraw()
 
 
 func _ensure_gesture() -> void:
@@ -1314,6 +1358,7 @@ func _draw() -> void:
 
 func _draw_ground_mark() -> void:
 	var foot := SEAT_RING_CENTER
+	_draw_ellipse(foot + Vector2(1.0, 3.0), 22.0, 9.0, Color(0.02, 0.02, 0.05, 0.55))
 	_draw_ellipse(foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
 	_draw_ellipse_ring(foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
 	if burning:
@@ -1321,7 +1366,11 @@ func _draw_ground_mark() -> void:
 	if stunned:
 		_draw_ellipse_ring(foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
-		_draw_ellipse_ring(foot, 21.0, 8.2, Color(1.0, 0.92, 0.45, 1.0), 2.6)
+		var pulse := 0.8 + 0.2 * sin(float(Time.get_ticks_msec()) * 0.006)
+		_draw_ellipse(foot, 36.0, 15.0, Color(0.15, 0.9, 1.0, 0.34 * pulse))
+		_draw_ellipse(foot, 24.0, 10.0, Color(0.75, 0.98, 1.0, 0.42 * pulse))
+		_draw_ellipse_ring(foot, 32.0, 13.0, Color(0.35, 0.95, 1.0, 0.95), 3.4)
+		_draw_ellipse_ring(foot, 26.0, 10.5, Color(1.0, 1.0, 1.0, pulse), 2.2)
 
 
 func _paint_status(canvas: CanvasItem) -> void:

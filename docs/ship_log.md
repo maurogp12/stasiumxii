@@ -124,3 +124,15 @@ The Rosebud arena pass asked for jewel tiles, a readable grid, a glowing board e
 
 Headless recount, 0 failed: Koliseo maps 278, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
 
+### 2026-09-26 follow-up — Rosebud energy
+
+The Windmere capture after the Rosebud pass is a glacier field: cyan, teal, ice, lavender, and a rare gold, a dark grid, and a cyan-white rim on the board and the active fighter. The five Locked arenas take that energy in their own colors. Original sheets only. Combat numbers unchanged.
+
+- Each diamond stains toward its own jewel and keeps the sheet's cracks. Windmere is cyan, teal, ice, and lavender, with a gold cell on a rare step. Crosshaven, Brinewake, Slagcrown, and Stormspire use their own four stains plus that same rare gold.
+- Grid ink is thicker and nearer black, with a cool gleam, still drawn on a child so the grade does not wash it out.
+- The board edge is a brighter arena-colored halo with a white core. The active fighter gets the same cyan-white bloom. Sprites keep their colors. A dark foot shadow keeps them readable on the bright tiles.
+- A procedural sky and ridge sit behind the diamonds. An unknown map stays bare.
+- Skill sparks and rings are brighter and still use the spell tint. Walk gait, landing squash, and the shared hand mark are the ones already shipped. No kit change, no Ambush change, no APK bump.
+
+Headless recount, 0 failed: Koliseo maps 285, motion 1846, combat 4510, VFX 439, elevation chrome 189, sprite 234, stasis 187, touch adapter 403.
+
