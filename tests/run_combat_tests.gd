@@ -57,6 +57,7 @@ func _run() -> void:
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
+	_test_ambush_shade_origin_teleport()
 	_test_miss_keeps_ap_no_engine()
 	_test_strike_hit_and_impact()
 	_test_back_facing_multiplier()
@@ -2028,14 +2029,14 @@ func _test_ambush_rules_keeper_lock() -> void:
 		eq(int(_unit(0)["shades"]), shades_before, "Invisible origin does not spend Shade at Manhattan %d" % dist)
 		eq(bool(_unit(0)["invisible"]), true, "Invisible Manhattan %d keeps Invisible" % dist)
 
-	# Mauro clip: Shade BEHIND a W-facing foe. Axis-past would land on the front
-	# (3,2). Facing-rear must land on (5,2) — the true back tile.
+	# Shade BEHIND a W-facing foe. The back tile is one step past the foe on the
+	# approach axis (3,2), not the facing-rear tile between Shade and foe (5,2).
+	# Landing on facing-rear left Gloam on the near side and read as a body slash.
 	# Gloam starts at (3,4): Chebyshev 3 from the Shade, inside Drop Shade 1–3.
-	# (2,4) is Chebyshev 4 and cannot plant this Shade.
 	var behind_shade := Vector2i(6, 2)
 	var behind_prey := Vector2i(4, 2)
-	var facing_rear := Vector2i(5, 2)
-	var axis_past_front := Vector2i(3, 2)
+	var axis_back := Vector2i(3, 2)
+	var facing_rear_between := Vector2i(5, 2)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2051,17 +2052,18 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, behind_prey), true, "armed behind Shade arms Ambush")
 	var behind_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": behind_prey, "seat": 0})
 	eq(bool(behind_hit.get("ok", false)), true, "behind-Shade Ambush resolves")
-	eq(_unit(0)["pos"], facing_rear, "behind-Shade Ambush lands on the facing-rear tile")
-	eq(_unit(0)["pos"] == axis_past_front, false, "behind-Shade Ambush must not land on the axis-past front tile")
-	eq(bool(behind_hit["events"][0].get("backstab", false)), true, "facing-rear Ambush is a backstab")
+	eq(_unit(0)["pos"], axis_back, "behind-Shade Ambush lands one step past the foe")
+	eq(_unit(0)["pos"] == facing_rear_between, false, "behind-Shade Ambush does not stop between Shade and foe")
+	eq(bool(behind_hit["events"][0].get("teleported", false)), true, "behind-Shade Ambush teleports")
+	eq(int(_unit(0)["shades"]), 0, "behind-Shade origin spends the Shade")
 
-	# Mauro clip ~0:49: Shade south of Kestrel Face N. Axis-past = north = FRONT.
-	# Facing-rear for Face N is south of Kestrel (clip coords scale of 9,9→9,7 Face N).
+	# Shade south of a Face-N foe. Axis back is north of the prey. Facing-rear
+	# would be south, on the near side, which is not a teleport past the body.
 	var clip_gloam := Vector2i(2, 6)
 	var clip_prey := Vector2i(4, 3)
 	var clip_shade := Vector2i(4, 5)
-	var clip_back := Vector2i(4, 4)
-	var clip_front := Vector2i(4, 2)
+	var clip_back := Vector2i(4, 2)
+	var clip_near := Vector2i(4, 4)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2071,15 +2073,16 @@ func _test_ambush_rules_keeper_lock() -> void:
 		"kestrel_facing": "N",
 		"rolls": [1],
 	})
-	eq(_sim.is_cardinal_exact(clip_shade, clip_prey, 2), true, "Mauro-clip Shade is Manhattan 2 cardinal south")
-	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": clip_shade, "seat": 0}).get("ok", false)), true, "Mauro-clip Drop Shade plants south of Face-N prey")
+	eq(_sim.is_cardinal_exact(clip_shade, clip_prey, 2), true, "south Shade is Manhattan 2 cardinal")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": clip_shade, "seat": 0}).get("ok", false)), true, "Drop Shade plants south of Face-N prey")
 	_complete_opponent_turn()
-	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, clip_prey), true, "Mauro-clip armed Shade arms Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, clip_prey), true, "armed south Shade arms Ambush")
 	var clip_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
-	eq(bool(clip_hit.get("ok", false)), true, "Mauro-clip Ambush resolves")
-	eq(_unit(0)["pos"], clip_back, "Mauro-clip Ambush lands south of Face-N prey (facing-rear)")
-	eq(_unit(0)["pos"] == clip_front, false, "Mauro-clip Ambush must not land north (axis-past front)")
-	eq(bool(clip_hit["events"][0].get("backstab", false)), true, "Mauro-clip facing-rear Ambush is a backstab")
+	eq(bool(clip_hit.get("ok", false)), true, "south-Shade Ambush resolves")
+	eq(_unit(0)["pos"], clip_back, "south-Shade Ambush lands north of the prey, past the body")
+	eq(_unit(0)["pos"] == clip_near, false, "south-Shade Ambush does not land on the near facing-rear tile")
+	eq(bool(clip_hit["events"][0].get("teleported", false)), true, "south-Shade Ambush teleports")
+	eq(_unit(0)["pos"] == clip_gloam, false, "south-Shade Ambush does not leave Gloam on the cast cell")
 
 	# Fade sets Invisible. That self-origin does not wait for an opponent turn.
 	_sim.reset_match({
@@ -2141,6 +2144,120 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
 	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+
+
+func _test_ambush_shade_origin_teleport() -> void:
+	# Playtest 0.1.15: chrome sat on a legal Shade while a confirm on that plate
+	# rejected "target at 0", and a later HIT slashed from Gloam's old tile.
+	# Origin is the Shade. The back tile is one step past the foe on that axis.
+	var gloam := Vector2i(1, 9)
+	var shade_at := Vector2i(4, 11)
+	var prey := Vector2i(4, 9)
+	var back := Vector2i(4, 8)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "N",
+		"rolls": [1],
+	})
+	eq(_sim.chebyshev(gloam, shade_at), 3, "the far Shade is inside Drop Shade")
+	eq(_sim.manhattan(gloam, prey) > 1, true, "Gloam is not adjacent to the prey")
+	eq(_sim.is_cardinal_exact(shade_at, prey, 2), true, "the Shade is Manhattan 2 cardinal from the prey")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "Drop Shade plants the far origin")
+	_complete_opponent_turn()
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "armed far Shade arms Ambush on the enemy")
+	var origin: Dictionary = _sim.ambush_origin(0)
+	eq(bool(origin.get("from_self", true)), false, "the far origin is the Shade, not Gloam")
+	eq(origin.get("origin"), shade_at, "origin chrome is the Shade tile")
+	var landing: Dictionary = _sim.ambush_landing_preview(0)
+	eq(landing.get("cell"), back, "the preview back tile is one step past the prey")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "far Shade Ambush resolves")
+	eq(str(hit.get("reason", "")), "", "far Shade Ambush is not a range reject")
+	eq(_unit(0)["pos"], back, "far Shade Ambush teleports to the back tile")
+	eq(_unit(0)["pos"] == gloam, false, "far Shade Ambush does not leave Gloam on the body")
+	eq(str(_unit(0).get("facing", "")), "S", "far Shade Ambush faces the prey from the back tile")
+	eq(int(_unit(0)["shades"]), 0, "far Shade origin spends the Shade on hit")
+	eq(bool(hit["events"][0].get("teleported", false)), true, "far Shade hit event is a teleport")
+	eq(hit["events"][0].get("destination"), back, "far Shade destination is the back tile")
+	eq(hit["events"][0].get("origin"), shade_at, "far Shade event origin is the Shade")
+	# Face N puts the rear cone south. The axis back tile is north, so this hit is the front 22.
+	eq(bool(hit["events"][0].get("backstab", true)), false, "landing in front of Face-N is not a backstab")
+	eq(int(_unit(1)["hp"]), 58, "front Ambush is 22 FLEX")
+
+	# Same geometry. Confirming the Shade plate must not read as distance 0.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [gloam, prey],
+		"kestrel_facing": "N",
+		"rolls": [1],
+	})
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0}).get("ok", false)), true, "origin-tap fixture plants the Shade")
+	_complete_opponent_turn()
+	var plate: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": shade_at, "seat": 0})
+	var plate_coach := str(plate.get("snapshot", {}).get("coach", ""))
+	eq(plate_coach.contains("target at 0"), false, "a Shade-plate confirm is not distance 0")
+	eq(bool(plate.get("ok", false)), true, "a Shade-plate confirm resolves the legal enemy")
+	eq(_unit(0)["pos"], back, "a Shade-plate confirm still teleports to the back tile")
+	eq(int(_unit(0)["shades"]), 0, "a Shade-plate confirm spends the Shade on hit")
+
+	# Diagonal Shade, body already adjacent. That is not a legal Ambush and must
+	# not connect as a body slash.
+	var near_gloam := Vector2i(3, 11)
+	var near_prey := Vector2i(3, 12)
+	var diag_shade := Vector2i(4, 11)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [near_gloam, near_prey],
+		"kestrel_facing": "S",
+		"rolls": [1],
+	})
+	eq(_sim.manhattan(near_gloam, near_prey), 1, "the body is adjacent")
+	eq(_sim._cardinal_axis_len(diag_shade, near_prey) < 0, true, "the Shade is diagonal to the prey")
+	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": diag_shade, "seat": 0}).get("ok", false)), true, "Drop Shade still plants the diagonal")
+	_complete_opponent_turn()
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a diagonal Shade does not arm Ambush just because the body is adjacent")
+	var fake: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
+	eq(str(fake.get("reason", "")), "out_of_range", "adjacent body with a diagonal Shade rejects")
+	eq(_unit(0)["pos"], near_gloam, "the reject does not blink Gloam")
+	eq(int(_unit(1)["hp"]), 80, "the reject deals no damage")
+	eq(int(_unit(0)["shades"]), 1, "the reject keeps the Shade")
+	var plate_illegal: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": diag_shade, "seat": 0})
+	var illegal_coach := str(plate_illegal.get("snapshot", {}).get("coach", ""))
+	eq(illegal_coach.contains("target at 0"), false, "an illegal Shade-plate tap is not distance 0")
+	eq(bool(plate_illegal.get("ok", true)), false, "an illegal Shade-plate tap does not resolve")
+	eq(_unit(0)["pos"], near_gloam, "an illegal Shade-plate tap leaves Gloam put")
+
+	# Invisible, body already on the facing-rear tile. The blink is still the
+	# axis back tile past the foe, not a slash from the current cell.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [near_gloam, near_prey],
+		"kestrel_facing": "S",
+		"gloam_invisible": true,
+		"rolls": [1],
+	})
+	eq(near_prey - Vector2i(0, 1), near_gloam, "Face-S rear is the tile Gloam already occupies")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, near_prey), true, "Invisible adjacent body arms Ambush")
+	var self_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
+	eq(bool(self_hit.get("ok", false)), true, "Invisible adjacent Ambush resolves")
+	eq(_unit(0)["pos"], Vector2i(3, 13), "Invisible Ambush teleports past the foe")
+	eq(_unit(0)["pos"] == near_gloam, false, "Invisible Ambush does not slash from the old tile")
+	eq(bool(self_hit["events"][0].get("teleported", false)), true, "Invisible adjacent hit teleports")
+	eq(bool(self_hit["events"][0].get("backstab", true)), false, "past a Face-S foe is the front, not a free backstab")
+	eq(int(_unit(1)["hp"]), 58, "that front hit is 22 FLEX")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
