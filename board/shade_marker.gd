@@ -9,9 +9,17 @@ extends Node2D
 
 const TOKEN_PATH := "res://art/vfx/shade/neutral_shade_token.png"
 const TILE_PATH := "res://art/vfx/shade/neutral_shade_tile_marker.png"
-const TOKEN_OFFSET := Vector2(0, -72)
+const TOKEN_TEX_H := 160.0
+## Opaque vertical center and top of neutral_shade_token.png.
+const CLOAK_CENTER_SRC_Y := 92.0
+const CLOAK_TOP_SRC_Y := 30.0
+## Sprite2D scale multiplies offset. The unit foot pivot (0, -72) lifts this
+## cloak onto the screen-north hex. -28 keeps the cloak center on the clicked
+## tile (about 8px above the diamond, nearer this cell than the next).
+const TOKEN_OFFSET := Vector2(0, -28)
 const TOKEN_SCALE := Vector2(0.5, 0.5)
-const CLOAK_PEAK := 140.0
+## Plate baseline sits just above the cloak, on the same tile.
+const CLOAK_PEAK := 40.0
 const LABEL_SIZE := 26
 const ORIGIN_LABEL_SIZE := 36
 const RIM := Color(0.97, 0.91, 1.0)
@@ -48,6 +56,26 @@ func show_token(at: Vector2, sort_z: int, remaining: int, spawned: bool = false,
 
 func plate_text() -> String:
 	return "Ambush" if _as_origin else "Shade"
+
+
+## Local texture Y, before the sprite scale. Centered sprites draw their
+## canvas center at `offset`.
+static func texture_local_y(src_y: float) -> float:
+	return TOKEN_OFFSET.y + (src_y - TOKEN_TEX_H * 0.5)
+
+
+## World Y relative to the tile after TOKEN_SCALE. Neighbor centers up the
+## screen are 32px away (one step in both grid axes).
+static func world_y(src_y: float) -> float:
+	return texture_local_y(src_y) * TOKEN_SCALE.y
+
+
+static func cloak_center_world_y() -> float:
+	return world_y(CLOAK_CENTER_SRC_Y)
+
+
+static func plate_baseline_y() -> float:
+	return -CLOAK_PEAK - 16.0
 
 
 func _pulse_in() -> void:
@@ -125,7 +153,7 @@ func paint_plate(canvas: CanvasItem) -> void:
 	var text := plate_text()
 	var size := ORIGIN_LABEL_SIZE if _as_origin else LABEL_SIZE
 	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, size)
-	var origin := Vector2(-text_size.x * 0.5, -CLOAK_PEAK - 16.0)
+	var origin := Vector2(-text_size.x * 0.5, plate_baseline_y())
 	var ascent := font.get_ascent(size)
 	var descent := font.get_descent(size)
 	var plate := Rect2(origin.x - 10.0, origin.y - ascent - 6.0, text_size.x + 20.0, ascent + descent + 12.0)
@@ -134,7 +162,7 @@ func paint_plate(canvas: CanvasItem) -> void:
 	canvas.draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1.0, 0.97, 1.0))
 	var n := mini(turns, 3)
 	for i in n:
-		var pip := Vector2(48.0, -96.0 + float(i) * 16.0)
+		var pip := Vector2(40.0, -24.0 + float(i) * 12.0)
 		canvas.draw_circle(pip, 7.0, Color(0.05, 0.02, 0.08, 1.0))
 		canvas.draw_circle(pip, 5.0, RIM)
 

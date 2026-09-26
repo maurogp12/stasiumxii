@@ -715,18 +715,20 @@ func _snap_ambush_teleports(events: Array) -> void:
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
 		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
+		var face := str(event.get("facing", ""))
+		if face != "":
+			pawn.set_facing(face)
 
 
 func _present_resolve(events: Array) -> bool:
 	# Ambush HIT relocates before the lunge so the back tile reads. Without this
 	# snap the pawn lunges from the old cell and only jumps on refresh.
 	_snap_ambush_teleports(events)
+	# Marker, label, and Shades count land in this beat. Do not wait out the lunge.
+	_sync_shade_chrome(events)
 	_play_combat_feedback(events)
 	_arm_view_motions(events)
 	_arm_vfx(events)
-	# Same accept that wrote shade_tokens. Do not wait for a second action.
-	if _includes_drop_shade(events):
-		_sync_shade_markers(_sim().snapshot())
 	var swallowed := false
 	if CombatHUD.events_include_push_blocked(events):
 		# Occupied dest is a hard body-block. Snapshot already stayed put.
@@ -1207,6 +1209,32 @@ func _includes_drop_shade(events: Array) -> bool:
 		if str(event.get("type", "")) == "cast" and str(event.get("spell", "")) == SpellKits.DROP_SHADE:
 			return true
 	return false
+
+
+## Drop Shade, a Shade-origin Ambush hit, or a Shade expire. Miss keeps the token.
+func _shade_board_changed(events: Array) -> bool:
+	if _includes_drop_shade(events):
+		return true
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = event
+		if str(rec.get("type", "")) == "expire" and str(rec.get("status", "")) == "shade":
+			return true
+		if str(rec.get("spell", "")) != SpellKits.AMBUSH:
+			continue
+		if str(rec.get("type", "")) == "hit" and bool(rec.get("teleported", false)) and not bool(rec.get("shade_retained", true)):
+			return true
+	return false
+
+
+func _sync_shade_chrome(events: Array) -> void:
+	if not _shade_board_changed(events):
+		return
+	var snap: Dictionary = _sim().snapshot()
+	_sync_shade_markers(snap)
+	if _hud != null:
+		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
 
 
 func _paint_highlights() -> void:

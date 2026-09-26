@@ -200,6 +200,8 @@ static func _hit_recipes(event: Dictionary) -> Array:
 		# TODO G7: lava displace splash is parked. No ember burst. Push slide and burn attach still run.
 		out.append({"id": "lava_todo", "block": 0.0})
 	if bool(event.get("teleported", false)) and event.has("destination"):
+		# Streak only. The body snaps in BoardView. A slide from caster_cell
+		# was a dash from Gloam instead of an instant teleport.
 		var origin: Vector2i = cell_of(event.get("origin", event.get("caster_cell", Vector2i.ZERO)))
 		var dest: Vector2i = cell_of(event.get("destination"))
 		out.append({
@@ -213,9 +215,6 @@ static func _hit_recipes(event: Dictionary) -> Array:
 			"tint": VfxPalette.GLOAM_RIM,
 			"width": 4.0,
 		})
-		var blink := _slide(event, cell_of(event.get("caster_cell", origin)), dest, VfxBudget.BLOCK_BLINK)
-		blink["seat"] = int(event.get("seat", -1))
-		out.append(blink)
 	out.append_array(_resource_recipes(event, int(event.get("seat", -1)), cell_of(event.get("caster_cell", Vector2i.ZERO))))
 	if _wants_shake(event):
 		out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
@@ -557,6 +556,9 @@ static func _is_shield_grant(event: Dictionary) -> bool:
 
 
 static func _target_cell(event: Dictionary) -> Vector2i:
+	# Ambush `to` / `destination` are the back tile. The struck body is `from`.
+	if str(event.get("spell", "")) == "ambush" and event.has("from"):
+		return cell_of(event.get("from"))
 	if event.has("to"):
 		return cell_of(event.get("to"))
 	if event.has("destination"):
@@ -794,7 +796,7 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				var origin_cell := cell_of(event.get("origin", caster_cell))
 				if origin_cell != caster_cell:
 					out.append(_puff(caster, origin_cell, VfxPalette.GLOAM, 0.85))
-				out.append(_flash("slash", target, cell_of(event.get("destination", to_cell)), 0.26))
+				out.append(_flash("slash", target, _target_cell(event), 0.26))
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):
 				out.append(_status_on("invisible", caster, caster_cell, 1))

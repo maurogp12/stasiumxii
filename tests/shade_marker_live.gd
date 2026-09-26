@@ -50,7 +50,9 @@ static func run(host: SceneTree) -> void:
 	var token := marker.get_node_or_null("Token") as Sprite2D
 	var tile := marker.get_node_or_null("TileMarker") as Sprite2D
 	host.truthy(token != null and tile != null, "Drop Shade spawns the token sprite and the tile decal")
-	host.eq(token.offset, Vector2(0, -72), "Shade token uses the unit foot offset")
+	host.eq(token.offset, load("res://board/shade_marker.gd").TOKEN_OFFSET, "Shade token uses the clicked-tile pivot")
+	var cloak_y := float(load("res://board/shade_marker.gd").cloak_center_world_y())
+	host.eq(absf(cloak_y) < absf(cloak_y + 32.0), true, "the cloak center is nearer the clicked tile than the screen-north hex")
 	host.eq(token.scale, Vector2(0.5, 0.5), "Shade token uses the unit scale")
 	host.truthy(token.texture != null, "Shade token texture is loaded")
 	host.truthy(tile.texture != null, "Shade tile decal texture is loaded")
@@ -84,6 +86,42 @@ static func run(host: SceneTree) -> void:
 	host.truthy(armed != null and is_instance_valid(armed), "the armed Shade marker is still on the board")
 	host.eq(armed.plate_text(), "Ambush", "after the opponent completes a turn the Shade plate reads Ambush")
 	host.eq(bool(armed.get("_as_origin")), true, "an armed Shade lifts the origin token")
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [origin, Vector2i(7, 4)],
+		"kestrel_facing": "W",
+		"rolls": [1],
+	})
+	board._rebuild_pawns()
+	var planted_hit: Dictionary = CombatSim.submit({
+		"type": "cast",
+		"spell": "drop_shade",
+		"to": dest,
+		"seat": 0,
+	})
+	host.eq(bool(planted_hit.get("ok", false)), true, "Ambush fixture plants the Shade")
+	CombatSim.submit({"type": "end_turn", "seat": 0})
+	CombatSim.submit({"type": "end_turn", "seat": 1})
+	CombatSim.submit({"type": "face", "dir": "N", "seat": 0})
+	board._refresh()
+	var shade_ambush: Dictionary = CombatSim.submit({
+		"type": "cast",
+		"spell": "ambush",
+		"to": Vector2i(7, 4),
+		"seat": 0,
+	})
+	host.eq(bool(shade_ambush.get("ok", false)), true, "armed Shade Ambush resolves")
+	host.eq(str(shade_ambush.get("events", [{}])[0].get("type", "")), "hit", "scripted Ambush roll connects")
+	board._present_resolve(shade_ambush.get("events", []))
+	var spent: Node = board._shade_markers.get(dest)
+	host.eq(spent == null or not is_instance_valid(spent), true, "Ambush consumes the Shade marker in the teleport beat")
+	var gloam_pawn: Node = board.pawns_by_seat[0]
+	host.eq(gloam_pawn.grid_position, Vector2i(8, 4), "Ambush snaps onto the back tile")
+	host.eq(gloam_pawn.position, board._cell_to_local(Vector2i(8, 4)), "the snap is the back tile, not a body path")
+	host.eq(str(gloam_pawn.facing), "W", "Ambush faces the prey")
 	var ambush_from := Vector2i(4, 4)
 	CombatSim.reset_match({
 		"seed": 1,
