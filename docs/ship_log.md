@@ -24,7 +24,7 @@ The cyan jagged fringe is not in the v5 PNGs (no cyan pixels on E/S/N/W). `figur
 
 Ironjaw's locked combat scale stays **1.0**, the same body scale as Kestrel and Gloam (`SPRITE_SCALE` 0.5). An open 1.25, and a one-class 1.20, do not ship.
 
-The re-attached idle-plant-clean-v1 archive is the same binary-alpha cut (every pixel alpha 0 or 255) that chops the silhouettes. It is not wired. There is no `_broken_harden_pass/` in the pack. Deploy and idle stay on wakfu-ship-v5 walk frame 0 for all five classes until a soft pass (alpha under 20 removed, fringe above that kept) is actually in the archive.
+Bastion and Ironjaw deploy/idle use the soft plants in `art/export_2x/characters/<class>/idle/<class>_idle_plant_<face>_v1.png` (144×160). Alpha under 20 is gone. The 20–254 band stays, so the silhouette is not a binary cut. The wakfu-ship-v5 walk strip still plays the stride. Kestrel, Gloam, and Mender still rest on walk frame 0. `_broken_harden_pass/` is not loaded.
 
 ## 2026-09-26 — Combat VFX punch v3
 
