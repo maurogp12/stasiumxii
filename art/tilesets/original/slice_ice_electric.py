@@ -4,8 +4,8 @@
 Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
 dress-prefixed props. Stormspire (`storm_*`) is sliced by
 slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
-Slagcrown (`slag_*`) is sliced by slice_lava_punch.py. Crosshaven is
-sliced by slice_crosshaven_punch.py. Brinewake stays on the coast punch.
+Slagcrown (`slag_*`) and Crosshaven are slices of original-tileset-b.jpg.
+Brinewake stays on the coast punch.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.
@@ -175,12 +175,6 @@ def _patch_atlas(records: list) -> None:
         "pending/electric/storm_ground_punch.png",
         "pending/electric/storm_elevation_punch.png",
         "pending/electric/storm_props_punch.png",
-        "crosshaven_ground_punch.png",
-        "crosshaven_elevation_punch.png",
-        "crosshaven_props_punch.png",
-        "pending/lava/ground_punch.png",
-        "pending/lava/elevation_punch.png",
-        "pending/lava/props_punch.png",
     ]
     families = atlas["families"]
     families["windmere"] = {"pack": "ice", "prefix": "wind_", "pending_theme": None}

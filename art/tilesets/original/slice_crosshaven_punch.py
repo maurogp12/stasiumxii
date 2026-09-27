@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Slice the Crosshaven earth punch onto the unprefixed dress.
+"""Rejected Crosshaven earth punch. Not the live dress.
 
-Soft lock: tierra + naturaleza. Dirt and stone fill the diamonds. Moss and
+The board paints original-tileset-b.jpg grassland slices. Running this
+script overwrites that restore. Soft lock: tierra + naturaleza. Dirt and
 roots stay accents, so a green lawn is not the ground. Reads the punch
 sheets in this folder and overwrites only the Crosshaven paths:
 
@@ -201,6 +202,10 @@ def _patch_atlas(records: list) -> None:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Crosshaven earth punch is not the live dress. "
+        "The board paints original-tileset-b.jpg grassland slices."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
             raise SystemExit(f"missing punch sheet {path}")

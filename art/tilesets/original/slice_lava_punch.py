@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Slice the Slagcrown lava punch onto the Koliseo dress.
+"""Rejected Slagcrown lava punch. Not the live dress.
 
+The board paints original-tileset-b.jpg slices (cracked earth, lava,
+scorched cliffs). Running this script overwrites that restore.
 Soft Lock: fuego + lava. Presentation only. Locked tags, geometry,
 walkability, and kit numbers are not opened for writing.
 
@@ -716,6 +718,10 @@ def slice_slagcrown() -> list[dict]:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints original-tileset-b.jpg slices."
+    )
     records = slice_slagcrown()
     _patch_atlas(records)
     _sync_tsx()

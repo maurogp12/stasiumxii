@@ -30,16 +30,16 @@ const EDGE_INK := Color(0.08, 0.06, 0.05, 0.92)
 ## grade / shimmer_color tint the existing sheets. shimmer_mul is per terrain.
 const _BIOMES := {
 	"crosshaven": {
-		"grade": Color(1.06, 0.98, 0.88),
-		"shimmer_color": Color(0.98, 0.90, 0.74),
-		"light": Color(1.0, 0.90, 0.72),
-		"mote": Color(0.72, 0.58, 0.36, 0.5),
+		"grade": Color(1.02, 1.12, 0.9),
+		"shimmer_color": Color(0.96, 1.0, 0.78),
+		"light": Color(1.0, 0.92, 0.7),
+		"mote": Color(0.78, 0.9, 0.45, 0.55),
 		"direction": Vector2(0.2, -1.0),
 		"gravity": Vector2(6.0, -12.0),
 		"spread": 36.0,
 		"speed_mul": 1.0,
 		"pulse_mul": 1.0,
-		"shimmer_mul": {"ground": 0.55, "mud": 0.45, "water": 1.15, "lava": 1.0},
+		"shimmer_mul": {"ground": 1.2, "mud": 0.65, "water": 1.15, "lava": 1.0},
 	},
 	"brinewake": {
 		"grade": Color(0.9, 1.02, 1.08),

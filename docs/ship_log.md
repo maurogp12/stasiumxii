@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Slagcrown and Crosshaven back on the original sheets
+
+Presentation only. Locked geometry, tags, and walkability are unchanged. Windmere ice punch, Stormspire, and Brinewake stay as they are. No APK.
+
+Crosshaven diamonds and farm props are the grassland slices from `ef474cd` (mobile before #168). Slagcrown diamonds, scorched cliffs, and volcanic props are the `original-tileset-b.jpg` slices from `79eda27` (mobile before #167, including the #164 bare-rock cliffs). The scenario punch sheets in `pending/lava/` and `crosshaven_*_punch.png` are not the live dress.
+
 ## 2026-09-27 — Brinewake elevation v2, upper-corner deck gone
 
 Soft Lock agua + costa. Presentation only. Locked Brinewake geometry, tags, walkability, and kit numbers are unchanged. No APK. `version/name` and `version/code` stay put.

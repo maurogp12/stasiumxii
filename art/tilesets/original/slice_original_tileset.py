@@ -7,13 +7,11 @@ Cliff tiles keep a 64×32 top face and hang the face below it. Props are
 uniformly scaled to that same ground scale.
 
 Windmere and Stormspire are not sliced here. slice_ice_electric.py writes
-those packs from the scenario sheets. Crosshaven ground, cliffs, and the
-farm props are owned by slice_crosshaven_punch.py. Running this file's
-main() paints the old grassland sheet back over those paths. Slagcrown is
-not sliced here either. slice_lava_punch.py writes slag_* from the lava
-punch sheets. This script must not paint the partial lava cliffs back.
-Brinewake is not sliced here either. slice_brine_punch.py writes the coast
-punch. This script must not put the cobble cells back over brine_*.
+those packs from the scenario sheets. Crosshaven and Slagcrown are this
+contact sheet: grassland for the unprefixed dress, cracked earth and
+scorched cliffs for slag_*. Brinewake is not sliced here either.
+slice_brine_punch.py writes the coast punch. This script must not put the
+cobble cells back over brine_*.
 """
 from __future__ import annotations
 
@@ -50,8 +48,15 @@ LAVA = [(1045, 192), (1153, 193)]
 GRASS_LOW = [(16, 350)]
 GRASS_TALL = [(395, 319)]
 STONE_BLOCK = [(310, 345)]
-# (310, 345) is a grass-capped forest cliff. Slagcrown does not use it.
-# slice_lava_punch.py owns every slag_* file.
+CRACKED = [(416, 48)]
+DARK = [(1359, 192)]
+# Bare dirt/rock wall. (310, 345) is a grass-capped forest cliff.
+# Taller blocks on this sheet have a highlight seam the keyer opens,
+# so low and high Slagcrown cliffs share this solid cell. Elevation
+# still lifts the higher cell.
+LAVA_CLIFF_LOW = [(623, 331)]
+LAVA_CLIFF_TALL = [(623, 331)]
+LAVA_CLIFF_MUD = [(623, 331)]
 
 # prefix -> terrain key -> (fit, anchors). First anchor is the primary PNG.
 PACKS = {
@@ -65,6 +70,15 @@ PACKS = {
         "mud_e1": (CLIFF, GRASS_LOW),
     },
     # brine_* is the coast punch (slice_brine_punch.py), not this sheet.
+    "slag_": {
+        "ground": (FLAT, CRACKED + DARK),
+        "mud": (FLAT, CRACKED),
+        "water": (FLAT, [(1361, 48)]),
+        "lava": (FLAT, LAVA),
+        "ground_e1": (CLIFF, LAVA_CLIFF_LOW),
+        "ground_e2": (CLIFF, LAVA_CLIFF_TALL),
+        "mud_e1": (CLIFF, LAVA_CLIFF_MUD),
+    },
 }
 
 PROPS = {
@@ -88,6 +102,14 @@ PROPS = {
     "prop_conduit.png": (PROP, (1336, 732)),
     "prop_crystal_bolt.png": (PROP, (1029, 828)),
     "prop_arc.png": (PROP, (937, 316)),
+}
+
+# Dress-prefixed. Crosshaven keeps the mossy originals above.
+# These cells are bare volcanic rock / scorched dirt on the same sheet.
+SLAG_PROPS = {
+    "slag_prop_basalt_pillar.png": (PROP, (1394, 805)),
+    "slag_prop_ash_rock.png": (PROP, (976, 645)),
+    "slag_prop_rubble.png": (PROP, (1095, 741)),
 }
 
 def _components(arr: np.ndarray):
@@ -286,7 +308,7 @@ def main() -> None:
     void.save(TILES / "void.png")
     written.append({"file": "void.png", "anchor": None, "fit": "empty", "size": [64, 32]})
 
-    for name, (kind, anchor) in PROPS.items():
+    for name, (kind, anchor) in {**PROPS, **SLAG_PROPS}.items():
         img = _fit(kind, _cut(arr, comps, anchor[0], anchor[1]))
         img.save(TILES / name)
         written.append(
@@ -339,10 +361,52 @@ def main() -> None:
 
 
 def reslice_slag_only() -> None:
-    """Slagcrown art comes from the lava punch sheets, not this contact sheet."""
-    from slice_lava_punch import main as punch_main
-
-    punch_main()
+    """Rewrite Slagcrown cliffs and volcanic rock props. Leave every other pack."""
+    if not SHEET.is_file():
+        raise SystemExit(f"missing sheet {SHEET}")
+    arr = np.asarray(Image.open(SHEET).convert("RGB"))
+    comps = _components(arr)
+    records = []
+    terrains = PACKS["slag_"]
+    for key, (kind, anchors) in terrains.items():
+        if kind != CLIFF:
+            continue
+        for name, anchor in zip(_names("slag_", key, len(anchors)), anchors):
+            img = _fit(kind, _cut(arr, comps, anchor[0], anchor[1]))
+            img.save(TILES / name)
+            records.append(
+                {
+                    "file": name,
+                    "anchor": [anchor[0], anchor[1]],
+                    "fit": kind,
+                    "size": [img.size[0], img.size[1]],
+                }
+            )
+            print(f"{name:28} {img.size[0]:3}x{img.size[1]:<3} from {anchor}")
+    for name, (kind, anchor) in SLAG_PROPS.items():
+        img = _fit(kind, _cut(arr, comps, anchor[0], anchor[1]))
+        img.save(TILES / name)
+        records.append(
+            {
+                "file": name,
+                "anchor": [anchor[0], anchor[1]],
+                "fit": kind,
+                "size": [img.size[0], img.size[1]],
+            }
+        )
+        print(f"{name:28} {img.size[0]:3}x{img.size[1]:<3} from {anchor}")
+    _sync_tsx()
+    atlas = json.loads(ATLAS.read_text())
+    written = {item["file"] for item in records}
+    kept = [item for item in atlas.get("files", []) if item.get("file") not in written]
+    atlas["files"] = kept + records
+    atlas["families"]["slagcrown"] = {
+        "pack": "lava",
+        "prefix": "slag_",
+        "pending_theme": None,
+    }
+    ATLAS.write_text(json.dumps(atlas, indent=2) + "\n")
+    print(f"resliced {len(records)} slag lava/rock files")
 
 
 if __name__ == "__main__":

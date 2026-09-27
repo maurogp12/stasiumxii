@@ -1,12 +1,10 @@
-Scenario lava punch sheets for Slagcrown.
+Scenario lava punch sheets. They are not the live Slagcrown dress.
 
-`slice_lava_punch.py` slices these onto `slag_*` and `slag_prop_*`. This folder keeps the source. It is not a pending hook.
+The board paints `slag_*` sliced from `original-tileset-b.jpg` (the sheets on `mobile` at `79eda27`, before #167). `slice_lava_punch.py` is not the wired source. This folder keeps the rejected punch. It is not a pending hook.
 
-| File | Use |
+| File | Rejected reference |
 | --- | --- |
-| `ground_punch.png` | Scorched rock, scorch, dark ash, and lava diamonds |
-| `elevation_punch.png` | Platforms. White background is keyed out. Stairs stay attached to the cap |
-| `props_punch.png` | Sparse props the map already paints. The wide lava strip is not sliced |
+| `ground_punch.png` | Not sliced onto the board |
+| `elevation_punch.png` | Not sliced onto the board |
+| `props_punch.png` | Not sliced onto the board |
 | `board_mood_punch.png` | Reference plate. Not sliced into tiles |
-
-Lava theme is rock, lava, and ash. No grass, moss, or bushes. `props_rejected` sheets are not a source.
