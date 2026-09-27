@@ -1113,6 +1113,11 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		if not target.is_empty() and bool(target.get("alive", true)):
 			facing_mult = _facing_multiplier(from_cell, target["pos"], str(target.get("facing", "")))
 		var base := _connect_base_damage(def, target)
+		# Same replacement as _resolve_rolling_cast. A foe sample must not
+		# show the stand-in card's Locked base while the hit uses the
+		# provisional attack. Facing stays the Locked Phase A product.
+		if int(actor.get("stasis_attack_base", -1)) >= 0:
+			base = int(actor["stasis_attack_base"])
 		# Locked Phase A sample: CritMult=1.0, Passive=1, Mastery=0. WindMod omitted.
 		# Resist 0 is not invented as Locked — provisional Open A05, labeled below.
 		out["sample_damage"] = _phase_a_damage(base, facing_mult)

@@ -26,6 +26,7 @@ func _run() -> void:
 	_test_ai()
 	_test_boards_and_provisional_hit()
 	_test_threshgate_hazards()
+	_test_resolve_readout_matches_hit()
 	_test_koliseo_strike_unchanged()
 	_start_fight_scene()
 
@@ -414,10 +415,106 @@ func _assert_fight_scene() -> void:
 	truthy(foe_art.begins_with("res://art/stasis/foes/"), "fight scene foe uses the package crop")
 	var board := _fight.get_node("BoardView")
 	eq(board.get_node_or_null("StasisChrome") != null, true, "fight scene has clickable stasis chrome")
+	ProjectSettings.set_setting(DebugChrome.OVERLAY_SETTING, false)
+	board._sync_overlay(_sim.snapshot())
+	var banner := str(board._overlay_status.text)
+	eq(banner.contains("Provisional"), false, "the provisional playtest sentence stays off the APK board")
+	truthy(banner.contains("Room"), "the room banner stays without the dev sentence")
 	_fight.free()
 	StasisCatalog.clear_run()
 	_sim.reset_match({})
 	_finish()
+
+
+## HIT coach, float, and vitals are one integer. A foe Strike connect is not 0,
+## and it does not take the MISS chrome. Locked Strike base stays 16; a back
+## hit is that base times 1.20, which rounds to 19.
+func _test_resolve_readout_matches_hit() -> void:
+	var router: Script = load("res://vfx/vfx_router.gd")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "W",
+		"ironjaw_facing": "E",
+	})
+	var preview: Dictionary = _sim.preview_cast("strike", Vector2i(4, 3), Vector2i(3, 3), 0)
+	eq(int(preview.get("sample_damage", -1)), 19, "back Strike sample is 16 × 1.20 = 19, not the unfaced 16")
+	_sim.submit({"type": "end_turn"})
+	var back: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
+	var back_event := _hit_event(back)
+	eq(int(back_event.get("damage", -1)), 19, "back Strike applies 19")
+	eq(int(back_event.get("base_damage", -1)), 16, "Locked Strike base stays 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 61, "applied vitals are 80 − 19")
+	truthy(str(back_event.get("coach", "")).begins_with("HIT 19 "), "coach HIT uses 19")
+	var back_number := _damage_number(router.recipes_for(back.get("events", [])))
+	truthy(str(back_number.get("text", "")).contains("19"), "float shows 19")
+	eq(str(back_number.get("text", "")).contains("16"), false, "float does not show the unfaced base 16")
+	eq(str(back_number.get("kind", "")), "damage", "a back HIT is not miss chrome")
+	eq(_miss_number(router.recipes_for(back.get("events", []))).is_empty(), true, "a HIT event does not emit MISS")
+
+	truthy(StasisCatalog.begin("crosshaven"), "readout fixture begins Threshgate")
+	StasisCatalog.class_id = "ironjaw"
+	var pair: Array = StasisCatalog.melee_pair("crosshaven")
+	var config: Dictionary = StasisCatalog.fight_config(pair)
+	config["rolls"] = [1, 1]
+	var snap: Dictionary = _sim.reset_match(config)
+	var foe: Dictionary = snap["units"][1]
+	var player: Dictionary = snap["units"][0]
+	var foe_preview: Dictionary = _sim.preview_cast({
+		"spell": "strike",
+		"from": foe["pos"],
+		"to": player["pos"],
+		"target_seat": 0,
+		"seat": 1,
+	})
+	var foe_sample := int(foe_preview.get("sample_damage", -1))
+	eq(foe_sample == 6 or foe_sample == 7, true, "foe aim sample is provisional 6 × facing, not Strike 16")
+	var foe_hp_before := int(foe["hp"])
+	var player_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": foe["pos"], "seat": 0})
+	var player_event := _hit_event(player_hit)
+	var dealt := int(player_event.get("damage", -1))
+	eq(dealt, _faced_damage(16, float(player_event.get("facing_mult", 1.0))), "player HIT damage is Locked base × facing")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), foe_hp_before - dealt, "foe vitals drop by the HIT integer")
+	truthy(str(player_event.get("coach", "")).begins_with("HIT %d " % dealt), "player coach HIT matches applied damage")
+	var player_number := _damage_number(router.recipes_for(player_hit.get("events", [])))
+	truthy(str(player_number.get("text", "")).contains(str(dealt)), "player float matches the HIT integer")
+	eq(str(player_number.get("kind", "")), "damage", "player HIT is not miss chrome")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var mid: Dictionary = _sim.snapshot()
+	var player_before := int(mid["units"][0]["hp"])
+	var foe_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": mid["units"][0]["pos"], "seat": 1})
+	var foe_event := _hit_event(foe_hit)
+	var foe_dealt := int(foe_event.get("damage", 0))
+	eq(foe_dealt > 0, true, "enemy Strike connect deals more than 0 to Ironjaw")
+	eq(foe_dealt, _faced_damage(StasisCatalog.PROVISIONAL_TRASH_ATTACK, float(foe_event.get("facing_mult", 1.0))), "enemy damage is provisional base × facing once")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), player_before - foe_dealt, "Ironjaw vitals drop by the enemy HIT")
+	truthy(str(foe_event.get("coach", "")).begins_with("HIT %d " % foe_dealt), "enemy coach HIT matches applied damage")
+	var foe_number := _damage_number(router.recipes_for(foe_hit.get("events", [])))
+	truthy(str(foe_number.get("text", "")).contains(str(foe_dealt)), "enemy float matches the HIT integer")
+	eq(str(foe_number.get("kind", "")), "damage", "enemy HIT is not miss chrome")
+	eq(_miss_number(router.recipes_for(foe_hit.get("events", []))).is_empty(), true, "enemy HIT does not emit MISS")
+	StasisCatalog.clear_run()
+
+
+func _damage_number(recipes: Array) -> Dictionary:
+	for item in recipes:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		if str(item.get("id", "")) == "number" and str(item.get("kind", "")) == "damage":
+			return item
+	return {}
+
+
+func _miss_number(recipes: Array) -> Dictionary:
+	for item in recipes:
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		if str(item.get("text", "")) == "MISS" or str(item.get("kind", "")) == "miss":
+			return item
+	return {}
 
 
 func _hit_event(result: Dictionary) -> Dictionary:

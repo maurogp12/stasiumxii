@@ -42,4 +42,5 @@ textures/vram_compression/import_etc2_astc=true
 [stasium]
 
 debug/show_tile_labels=false
+debug/dev_overlays=false
 view/reduce_shake=false

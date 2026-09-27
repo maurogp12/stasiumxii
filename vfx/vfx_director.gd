@@ -169,6 +169,9 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Debug sideloads are still debug builds. F9 stays off unless the flag is on.
+	if not DebugChrome.overlays_enabled():
+		return
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F9:
 		_play_next_debug()
 		get_viewport().set_input_as_handled()
@@ -188,6 +191,9 @@ func _play_next_debug() -> void:
 func _emit(events: Array, snapshot: Dictionary, lock_input: bool, ghost_motion: bool) -> float:
 	if _suppressed():
 		return 0.0
+	# The number pool keeps the previous swing. A MISS was still on screen
+	# when the next float (and a stale coach line) already belonged to a hit.
+	dismiss_combat_numbers()
 	var recipes: Array = _Router.assign_stacks(_Router.recipes_for(events, snapshot))
 	var block := _Router.blocking_sec(recipes)
 	if lock_input and block > 0.0:
@@ -812,7 +818,21 @@ func _build_readout() -> void:
 	layer.add_child(_readout)
 
 
+## Drop the previous combat text and whiff before this swing's recipes spawn.
+func dismiss_combat_numbers() -> void:
+	_release_kind("number")
+	_release_kind("projectile")
+
+
+func _release_kind(kind: String) -> void:
+	for node in _pools.get(kind, []):
+		if node != null and is_instance_valid(node) and bool(node.get("in_use")) and node.has_method("release"):
+			node.release()
+
+
 func _show_readout(text: String) -> void:
+	if not DebugChrome.overlays_enabled():
+		return
 	if _readout == null:
 		return
 	if _readout_tween != null and is_instance_valid(_readout_tween):

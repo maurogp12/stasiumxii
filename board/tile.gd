@@ -221,9 +221,10 @@ static func tile_labels_visible() -> bool:
 	return bool(ProjectSettings.get_setting(LABEL_SETTING, false))
 
 
-## F3 toggles the project setting in debug builds. Release builds ignore the key.
+## F3 toggles the project setting only when dev overlays are explicitly on.
+## A debug sideload is still a debug build, so that alone must not arm the key.
 static func consume_debug_label_key(event: InputEvent) -> bool:
-	if not OS.is_debug_build():
+	if not DebugChrome.overlays_enabled():
 		return false
 	if event == null or not (event is InputEventKey):
 		return false
