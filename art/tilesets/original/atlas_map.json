@@ -1402,8 +1402,8 @@
       "file": "storm_prop_spark.png",
       "fit": "prop",
       "size": [
-        17,
-        28
+        22,
+        17
       ]
     },
     {
@@ -1411,7 +1411,7 @@
       "fit": "prop",
       "size": [
         28,
-        14
+        16
       ]
     },
     {
@@ -1419,14 +1419,14 @@
       "fit": "prop",
       "size": [
         28,
-        17
+        15
       ]
     },
     {
       "file": "storm_prop_rock_pillar.png",
       "fit": "prop",
       "size": [
-        12,
+        14,
         32
       ]
     },
@@ -1435,7 +1435,7 @@
       "fit": "prop",
       "size": [
         18,
-        31
+        20
       ]
     },
     {
@@ -1443,7 +1443,7 @@
       "fit": "prop",
       "size": [
         16,
-        23
+        21
       ]
     }
   ],
@@ -1458,7 +1458,7 @@
     "elevation": "pending/electric/storm_elevation_punch.png",
     "props": "pending/electric/storm_props_punch.png",
     "mood": "pending/electric/board_mood_punch.png",
-    "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring."
+    "note": "Live Stormspire paint. Props are the 1280\u00d7720 small sheet. The monolith archive is not sliced. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring."
   },
   "windmere_punch": {
     "ground": "pending/ice/punch/wind_ground_punch.png",

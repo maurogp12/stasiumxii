@@ -500,6 +500,12 @@ func _test_storm_dress() -> void:
 		truthy(tex.get_height() <= 32 and tex.get_width() <= 36, "Stormspire %s fits one diamond" % prop_name)
 	var seal: Texture2D = art.prop_texture("floor_seal", "storm_")
 	truthy(seal.get_width() == 64 and seal.get_height() == 32, "the floor seal sheet stays a flat diamond")
+	var prop_sheet: Texture2D = load("res://art/tilesets/original/pending/electric/storm_props_punch.png")
+	eq(prop_sheet.get_width(), 1280, "Stormspire props sheet is the small set")
+	eq(prop_sheet.get_height(), 720, "Stormspire props sheet is not the monolith")
+	var prop_alias: Texture2D = load("res://art/tilesets/original/pending/electric/props_punch.png")
+	eq(prop_alias.get_width(), 1280, "props_punch.png is the same small sheet")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/archive/storm_props_punch_monolith.png"), "the monolith prop sheet stays archived")
 
 
 ## Soft Lock agua + costa. Presentation only: wet sand, pier wood, tide scorch.

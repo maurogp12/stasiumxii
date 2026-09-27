@@ -12,11 +12,11 @@ the look reference and are not sliced.
 
 Flat tiles are hard 64×32 diamonds with a dark rim so neighboring cells keep
 a readable seam. Cliffs keep that cap and hang a wall; the high platform is
-taller than the low one. Props are a sparse set of silhouettes, centered in
-their sprite and narrower than a tile, so the floor stays visible and line of
-sight stays open. The playable preview draws six of them, about one diamond
-tall, and leaves the tagged ring undrawn. No circular arena and no totem
-ring are painted.
+taller than the low one. Props come from the 1280×720 props_small_v2 sheet. The 2048 monolith in
+pending/electric/archive/ is not sliced. Each standing prop is centered in
+its sprite and about one diamond tall, so the floor stays visible and line of
+sight stays open. The playable preview draws six of them and leaves the
+tagged ring undrawn. No circular arena and no totem ring are painted.
 """
 from __future__ import annotations
 
@@ -467,30 +467,34 @@ def _key_props(sheet: np.ndarray) -> np.ndarray:
 
 
 def _prop_sprites(sheet: np.ndarray) -> list[dict]:
+    if tuple(sheet.shape) != (720, 1280, 3):
+        raise SystemExit(
+            f"storm props sheet must be the 1280×720 small set, got {sheet.shape}"
+        )
     keyed = _key_props(sheet)
     mask = keyed[:, :, 3] > 24
     lab, count = ndimage.label(mask)
     sprites = []
     for i in range(1, count + 1):
         ys, xs = np.where(lab == i)
-        if len(xs) < 650:
+        if len(xs) < 500:
             continue
         x0, x1 = int(xs.min()), int(xs.max())
         y0, y1 = int(ys.min()), int(ys.max())
         w, h = x1 - x0 + 1, y1 - y0 + 1
-        # Big contact groups are not one prop. A banner can be tall and narrow.
-        # Hairline banners collapse to a stick once they fit a tile. Skip them.
-        if len(xs) > 14000 or w > 200 or h > 420:
+        # Merged glow clusters on this sheet are still bigger than a tile.
+        # Keep the separate silhouettes and leave those clusters out.
+        if len(xs) > 9000 or w > 160 or h > 170:
             continue
-        if w < 28 or h < 28 or h > w * 4.2:
+        if w < 32 or h < 32 or h > w * 4.2:
             continue
-        if w > 180 and h > 180:
+        if w > 150 and h > 150:
             continue
         crop = keyed[y0 : y1 + 1, x0 : x1 + 1].copy()
         crop[crop[:, :, 3] < 20] = 0
         opaque_px = crop[:, :, 3] > 20
         opaque = int(opaque_px.sum())
-        if opaque < 700:
+        if opaque < 600:
             continue
         rgb = crop[:, :, :3].astype(np.float32)
         held = rgb[opaque_px]
@@ -535,32 +539,49 @@ def _slice_props(sheet: np.ndarray) -> list[dict]:
     sprites = _prop_sprites(sheet)
     used: set[int] = set()
 
-    def take(pool: list[dict]) -> dict:
-        for sprite in pool:
-            if id(sprite) in used:
-                continue
-            used.add(id(sprite))
-            return sprite
-        raise SystemExit("ran out of distinct prop silhouettes")
+    def take(pool: list[dict], score) -> dict:
+        ranked = [sprite for sprite in pool if id(sprite) not in used]
+        if not ranked:
+            raise SystemExit("ran out of tile-scale prop silhouettes")
+        ranked.sort(key=score, reverse=True)
+        chosen = ranked[0]
+        used.add(id(chosen))
+        return chosen
 
-    compact = [s for s in sprites if max(s["w"], s["h"]) <= 120]
-    compact.sort(key=lambda s: s["area"])
-    spark = take(compact or sorted(sprites, key=lambda s: s["area"]))
-    rubble_pool = [s for s in sprites if s["w"] >= s["h"] * 0.85 and s["h"] <= 140 and id(s) not in used]
-    rubble_pool.sort(key=lambda s: -(s["w"] / max(s["h"], 1)))
-    rubble = take(rubble_pool or [s for s in sprites if id(s) not in used])
-    arc_pool = [s for s in sprites if s["w"] > s["h"] and id(s) not in used]
-    arc_pool.sort(key=lambda s: -s["w"])
-    arc = take(arc_pool or [s for s in sprites if id(s) not in used])
-    tall = [s for s in sprites if s["h"] > s["w"] * 1.15 and id(s) not in used]
-    tall.sort(key=lambda s: -s["h"])
-    if len(tall) < 3:
-        tall = [s for s in sprites if id(s) not in used]
-        tall.sort(key=lambda s: -s["h"])
-    pillar = take(tall)
-    bolt_pool = sorted([s for s in tall if id(s) not in used], key=lambda s: -s["chroma"])
-    bolt = take(bolt_pool or [s for s in sprites if id(s) not in used])
-    conduit = take([s for s in tall if id(s) not in used] or [s for s in sprites if id(s) not in used])
+    def rubble_height(sprite: dict) -> float:
+        scale = min(28 / sprite["w"], 18 / max(sprite["h"], 1))
+        return sprite["h"] * scale
+
+    # Roles follow shape on the small sheet: the vivid crystal, one narrow
+    # pillar, one wide arc, a low rock, a small spark, and one upright conduit.
+    bolt = take(
+        [s for s in sprites if s["area"] >= 2500 and min(s["w"], s["h"]) >= 60],
+        lambda s: s["chroma"],
+    )
+    pillar = take(
+        [s for s in sprites if s["h"] >= s["w"] * 1.6],
+        lambda s: s["h"] / max(s["w"], 1),
+    )
+    arc = take(
+        [s for s in sprites if s["w"] >= s["h"] * 1.4],
+        lambda s: s["w"],
+    )
+    rubble = take(
+        [s for s in sprites if s["chroma"] < 32 and s["w"] >= s["h"] * 1.2 and s["h"] <= 80],
+        rubble_height,
+    )
+    spark = take(
+        [s for s in sprites if max(s["w"], s["h"]) <= 110 and s["chroma"] >= 20],
+        lambda s: s["chroma"],
+    )
+    conduit = take(
+        [
+            s
+            for s in sprites
+            if s["h"] >= s["w"] * 1.15 and s["chroma"] >= 12 and s["area"] >= 1000
+        ],
+        lambda s: s["h"],
+    )
     assigned = {
         "storm_prop_spark.png": spark,
         "storm_prop_rubble.png": rubble,
@@ -602,7 +623,7 @@ def _patch_atlas(records: list[dict]) -> None:
         "elevation": "pending/electric/storm_elevation_punch.png",
         "props": "pending/electric/storm_props_punch.png",
         "mood": "pending/electric/board_mood_punch.png",
-        "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring.",
+        "note": "Live Stormspire paint. Props are the 1280×720 small sheet. The monolith archive is not sliced. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring.",
     }
     written = {item["file"]: item for item in records}
     kept = [item for item in atlas.get("files", []) if item.get("file") not in written]
@@ -746,6 +767,11 @@ def _write_previews(cells: list) -> None:
     print(f"painted {painted.name}")
 
 
+def _require_png(path: Path) -> None:
+    if path.read_bytes()[:8] != b"\x89PNG\r\n\x1a\n":
+        raise SystemExit(f"{path} is not a PNG")
+
+
 def _check_aliases() -> None:
     pairs = (
         (GROUND_SHEET, MIRROR / "ground_punch.png"),
@@ -773,6 +799,8 @@ def main() -> None:
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET, MOOD_SHEET, TAGS, TMX):
         if not path.is_file():
             raise SystemExit(f"missing {path}")
+        if path.suffix == ".png":
+            _require_png(path)
     _check_aliases()
     before = (_sha(TAGS), _sha(TMX))
     ground = np.asarray(Image.open(GROUND_SHEET).convert("RGB"))
