@@ -33,6 +33,8 @@ const PUSH_BLOCKED_TOAST := "PushBlocked"
 const BOUNCE_TOAST := "Bounce"
 ## Lava forced-push lands and applies Burn. Not a Bounce toast.
 const LAVA_BURN_TOAST := "Lava - Burn"
+const WATER_SILENCE_TOAST := "Water - Silence"
+const MUD_SLOW_TOAST := "Mud - Slow"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -471,6 +473,28 @@ static func events_include_lava_burn(events: Array) -> bool:
 	return false
 
 
+static func events_include_water_silence(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if bool(event.get("silence_applied", false)):
+			return true
+		if str(event.get("type", "")) == "status" and str(event.get("status", "")) == "silence":
+			return true
+	return false
+
+
+static func events_include_mud_slow(events: Array) -> bool:
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if bool(event.get("slow_applied", false)):
+			return true
+		if str(event.get("type", "")) == "status" and str(event.get("status", "")) == "slow":
+			return true
+	return false
+
+
 static func events_include_push_bounce(events: Array) -> bool:
 	# A lava land is a displace, not a bounce, even if a bounce flag is also present.
 	if events_include_lava_burn(events):
@@ -538,6 +562,10 @@ static func toast_for_events(events: Array) -> String:
 		return PUSH_BLOCKED_TOAST
 	if events_include_lava_burn(events):
 		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), LAVA_BURN_TOAST)
+	if events_include_water_silence(events):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), WATER_SILENCE_TOAST)
+	if events_include_mud_slow(events):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), MUD_SLOW_TOAST)
 	if events_include_push_bounce(events):
 		return _join_toast(BOUNCE_TOAST, impact_gain_toast(shoulder_impact_gained(events)))
 	return impact_gain_toast(shoulder_impact_gained(events))

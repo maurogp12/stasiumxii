@@ -181,6 +181,10 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["push_occupied"], "push_blocked", "occupied dest stays push_blocked")
 	eq(snap["push_unwalkable"], "bounce_stagger", "OOB / truly blocked still bounce + stagger")
 	eq(snap["push_lava"], "displace_burn", "lava forced push displaces and burns")
+	eq(snap["push_water"], "displace_silence", "water forced push displaces and silences")
+	eq(snap["push_mud"], "displace_slow", "mud forced push displaces and slows")
+	eq(snap["slow_mp"], 1, "mud Slow cuts 1 MP")
+	eq(snap["slow_turns"], 1, "mud Slow lasts 1 turn")
 	eq(snap["push_stagger_hp"], 4, "stagger is 4 HP")
 	eq(snap["push_stagger_mp"], 1, "stagger is 1 MP when MP>=1")
 	eq(snap["shoulder_impact_connect"], 1, "clean Shoulder connect is +1 Impact")
@@ -190,6 +194,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["burn_duration"], 2, "Burn duration is 2")
 	eq(snap["units"][0]["burn_remaining"], 0, "units start with no Burn")
 	eq(snap["units"][1]["burn_remaining"], 0, "Ironjaw starts with no Burn")
+	eq(snap["units"][0]["silenced_spells"], [], "units start with no silenced spells")
+	eq(snap["units"][0]["slow_remaining"], 0, "units start with no Slow")
 	eq(snap["open_decisions"].has("A05"), true, "A05 Resist/rounding/WindMod stays Open")
 	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A′)"), "A05 note labels Stun Locked (A′)")
 	truthy(str(snap["open_notes"]["A05"]).contains("auto end_turn"), "A05 note documents A′ auto end_turn")
@@ -889,27 +895,125 @@ func _test_hazard_push_and_targets() -> void:
 		eq(bool(struck.get("ok", false)), true, "Strike resolves on %s (%s)" % [terrain, str(struck.get("reason", ""))])
 		eq(_unit(1)["pos"], Vector2i(4, 3), "Strike leaves the body on %s" % terrain)
 		eq(int(_unit(1)["hp"]) < 80, true, "Strike damages the body on %s" % terrain)
-	# Shoulder onto mud or water is a clean push. No extra hazard HP, no Burn.
-	for terrain in ["mud", "water"]:
-		_sim.reset_match({
-			"seed": 1,
-			"flat_board": true,
-			"rolls": [1],
-			"kestrel_pos": Vector2i(4, 3),
-			"ironjaw_pos": Vector2i(3, 3),
-			"kestrel_facing": "W",
-			"tiles": [{"pos": Vector2i(5, 3), "terrain": terrain, "elevation": 0}],
-		})
-		_sim.submit({"type": "end_turn"})
-		var shoved: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
-		eq(bool(shoved.get("ok", false)), true, "Shoulder onto %s resolves" % terrain)
-		eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on %s" % terrain)
-		eq(_unit(0)["hp"], 74, "%s land is the 6 Earth hit only" % terrain)
-		eq(int(_unit(0).get("burn_remaining", 0)), 0, "%s land does not start Burn" % terrain)
-		eq(_unit(1)["impact"], 1, "%s land is a clean push (+1 Impact)" % terrain)
-		eq(bool(shoved["events"][0].get("bounced", true)), false, "%s land does not bounce" % terrain)
-		eq(_event_type_count(shoved["events"], "push_bounce"), 0, "%s land is not a bounce" % terrain)
-		eq(_event_type_count(shoved["events"], "hazard"), 0, "%s land invents no hazard event" % terrain)
+	# Water silences one random spell. Mud slows −1 MP for one turn. Neither is Burn.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1, 1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [
+			{"pos": Vector2i(5, 3), "terrain": "water", "elevation": 0},
+			{"pos": Vector2i(6, 3), "terrain": "water", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	var watered: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(bool(watered.get("ok", false)), true, "Shoulder onto water resolves")
+	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on water")
+	eq(_unit(0)["hp"], 74, "water land is the 6 Earth hit only")
+	eq(int(_unit(0).get("burn_remaining", 0)), 0, "water land does not start Burn")
+	eq(int(_unit(0).get("slow_remaining", 0)), 0, "water land does not Slow")
+	var silenced_once: Array = _unit(0).get("silenced_spells", [])
+	eq(silenced_once.size(), 1, "water land silences one spell")
+	truthy(["mark_shot", "detonate"].has(str(silenced_once[0])), "the silenced spell is from Kestrel's kit")
+	eq(bool(watered["events"][0].get("silence_applied", false)), true, "water hit records Silence")
+	eq(bool(watered["events"][0].get("burn_applied", false)), false, "water hit does not record Burn")
+	eq(CombatHUD.toast_for_events(watered["events"]), "+1 Impact  Water - Silence", "water land toasts Silence")
+	eq(_unit(1)["impact"], 1, "water land is a clean push (+1 Impact)")
+	eq(bool(watered["events"][0].get("bounced", true)), false, "water land does not bounce")
+	eq(_event_type_count(watered["events"], "hazard"), 0, "water land invents no separate hazard HP")
+	eq(_sim.submit({"type": "move", "to": Vector2i(4, 3), "seat": 1})["ok"], true, "Ironjaw steps up for a second water push")
+	var watered_again: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
+	eq(bool(watered_again.get("ok", false)), true, "second Shoulder onto water resolves")
+	eq(_unit(0)["pos"], Vector2i(6, 3), "second water push lands further in")
+	var silenced_twice: Array = _unit(0).get("silenced_spells", [])
+	eq(silenced_twice.size(), 2, "a second water land silences a different spell")
+	truthy(silenced_twice.has("mark_shot") and silenced_twice.has("detonate"), "both kit spells are silenced")
+	eq(_unit(0)["hp"], 68, "second water hit is another 6 Earth and no Burn")
+	var after_water: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_unit(0)["hp"], 68, "water Silence does not tick HP")
+	eq(_unit(0)["mp"], 3, "water Silence does not cut MP")
+	eq(_unit(0)["ap"], 6, "water Silence does not cut AP")
+	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot is not offered while silenced")
+	eq(_has_legal_cast(0, "detonate"), false, "Detonate is not offered while silenced")
+	var silenced_cast: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 3), "seat": 0})
+	eq(str(silenced_cast.get("reason", "")), "spell_silenced", "a silenced spell refunds")
+	eq(_unit(0)["ap"], 6, "the silenced cast spends no AP")
+	eq(_sim.submit({"type": "move", "to": Vector2i(6, 4), "seat": 0})["ok"], true, "Kestrel can leave the water")
+	eq(_unit(0).get("silenced_spells", []).size(), 2, "leaving water does not clear the one-shot Silence")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1, 1],
+		"kestrel_pos": Vector2i(4, 3),
+		"ironjaw_pos": Vector2i(3, 3),
+		"kestrel_facing": "W",
+		"tiles": [
+			{"pos": Vector2i(5, 3), "terrain": "mud", "elevation": 0},
+			{"pos": Vector2i(6, 3), "terrain": "mud", "elevation": 0},
+		],
+	})
+	_sim.submit({"type": "end_turn"})
+	var mudded: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(bool(mudded.get("ok", false)), true, "Shoulder onto mud resolves")
+	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on mud")
+	eq(_unit(0)["hp"], 74, "mud land is the 6 Earth hit only")
+	eq(int(_unit(0).get("burn_remaining", 0)), 0, "mud land does not start Burn")
+	eq(_unit(0).get("silenced_spells", []), [], "mud land does not Silence")
+	eq(int(_unit(0).get("slow_remaining", 0)), 1, "mud land applies Slow for 1 turn")
+	eq(_unit(0)["mp"], 3, "Slow waits for the victim's turn")
+	eq(bool(mudded["events"][0].get("slow_applied", false)), true, "mud hit records Slow")
+	eq(CombatHUD.toast_for_events(mudded["events"]), "+1 Impact  Mud - Slow", "mud land toasts Slow")
+	eq(_unit(1)["impact"], 1, "mud land is a clean push (+1 Impact)")
+	eq(bool(mudded["events"][0].get("bounced", true)), false, "mud land does not bounce")
+	eq(_sim.submit({"type": "move", "to": Vector2i(4, 3), "seat": 1})["ok"], true, "Ironjaw steps up for a second mud push")
+	var mudded_again: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
+	eq(bool(mudded_again.get("ok", false)), true, "second Shoulder onto mud resolves")
+	eq(int(_unit(0).get("slow_remaining", 0)), 1, "a second mud land refreshes Slow and does not stack")
+	eq(_unit(0)["hp"], 68, "second mud hit is another 6 Earth and no Burn")
+	var slowed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_unit(0)["hp"], 68, "mud Slow does not tick HP")
+	eq(_unit(0)["ap"], 6, "mud Slow does not cut AP")
+	eq(_unit(0)["mp"], 2, "Slow cuts 1 MP at the victim's turn start")
+	eq(int(_unit(0).get("slow_remaining", 0)), 0, "the one Slow turn is spent")
+	eq(int(_first_event_where(slowed["events"], "slow").get("mp_delta", 0)), -1, "the Slow tick is −1 MP")
+	eq(str(slowed.get("snapshot", {}).get("coach", "")).contains("6/2"), true, "the turn coach shows the cut MP")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_unit(0)["mp"], 3, "the next turn refills MP after Slow")
+	# An empty trough tile beside the body is still that Strike.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["ironjaw", "kestrel"],
+		"ironjaw_pos": Vector2i(8, 6),
+		"kestrel_pos": Vector2i(9, 6),
+		"tiles": [
+			{"pos": Vector2i(9, 6), "terrain": "water", "elevation": 0},
+			{"pos": Vector2i(9, 7), "terrain": "water", "elevation": 0},
+			{"pos": Vector2i(8, 7), "terrain": "water", "elevation": 0},
+		],
+	})
+	eq(_has_legal_cast_to(0, "strike", Vector2i(9, 6)), true, "Strike offers the body on the trough")
+	var beside: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(9, 7), "seat": 0})
+	eq(bool(beside.get("ok", false)), true, "Strike on the empty trough tile hits the body (%s)" % str(beside.get("reason", "")))
+	eq(str(beside.get("snapshot", {}).get("coach", "")).contains("needs a living unit"), false, "trough tap is not a living-unit refund")
+	eq(_unit(1)["pos"], Vector2i(9, 6), "the trough tap does not move the body")
+	eq(int(_unit(1)["hp"]) < 80, true, "the trough tap deals Strike damage")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["ironjaw", "kestrel"],
+		"ironjaw_pos": Vector2i(8, 6),
+		"kestrel_pos": Vector2i(9, 6),
+		"tiles": [{"pos": Vector2i(9, 6), "terrain": "water", "elevation": 0}],
+	})
+	var ground_miss: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(8, 7), "seat": 0})
+	eq(str(ground_miss.get("reason", "")), "no_target", "an empty ground tile beside them stays a miss")
 	# Voluntary steps skip mud, water, and lava, including Advance.
 	_sim.reset_match({
 		"seed": 1,

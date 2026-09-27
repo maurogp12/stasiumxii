@@ -3,8 +3,9 @@ extends RefCounted
 ## Live terrain table. Ported from proto/elevation/terrain_def.gd (reference).
 ## Locked MP stamps: Ground 1, Mud 2, Water 2, Lava 0.
 ## Soft Lock: mud, water, and lava are voluntary impassable. Walk, path nodes,
-## and Advance landings refuse them. A forced push may still land. Mud and water
-## stay walkable for deploy and for a body that is already standing there.
+## and Advance landings refuse them. A forced push may still land. Castigo is
+## per terrain (lava Burn, water Silence, mud Slow) and lives in CombatSim.
+## Mud and water stay walkable for deploy and for a body already standing there.
 ## Void is not a Locked MP terrain. It is a hole: not standable, so a gap
 ## cannot be stored as Ground. Void is not this voluntary-impassable flag.
 
