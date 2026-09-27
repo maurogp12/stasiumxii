@@ -2,6 +2,20 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-26 — Slagcrown lava punch redo
+
+Soft Lock fuego + lava. Presentation only. Locked Slagcrown geometry, tags, walkability, and kit numbers are unchanged. No grass, moss, or bushes on the dress.
+
+`slice_lava_punch.py` reads the new punch sheets and overwrites only `slag_*` and `slag_prop_*`. The earlier lava punch Luca rejected is replaced.
+
+| Punch sheet | Live slices |
+| --- | --- |
+| `art/tilesets/original/pending/lava/ground_punch.png` | `slag_ground.png` and `slag_ground_v1`–`v4`, `slag_mud.png`, `slag_water.png`, `slag_lava.png` and `slag_lava_v1`–`v7` |
+| `art/tilesets/original/pending/lava/elevation_punch.png` | `slag_ground_e1.png`, `slag_ground_e1_v1.png`, `slag_mud_e1.png`, `slag_ground_e2.png` |
+| `art/tilesets/original/pending/lava/props_punch.png` | `slag_prop_basalt_pillar.png`, `slag_prop_rock_pillar.png`, `slag_prop_ash_rock.png`, `slag_prop_rubble.png`, `slag_prop_steam_vent.png` |
+
+`slag_prop_floor_seal.png` is a small ash mark from the ground punch, not a full diamond. Flat tiles are hard 64×32 diamonds so the seam stays readable. Elevation keeps that cap and hangs the wall; the high wall is taller, and the stair meets the cap. Blocks cut off by the sheet edge are not used. The wide strip on the prop sheet is not sliced. `board_mood_punch.png` and `stasium-ref/maps/lava/luca_preview_slagcrown.png` are reference plates and are not sliced.
+
 ## 2026-09-26 — Combat VFX punch v3
 
 Presentation only. No APK. Post-0.1.26. Walk sheets on this tip are wakfu-ship-v5 (#177). This pack does not replace them.

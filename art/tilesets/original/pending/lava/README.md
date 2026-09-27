@@ -4,9 +4,9 @@ Scenario lava punch sheets for Slagcrown.
 
 | File | Use |
 | --- | --- |
-| `ground_punch.png` | Lava and dirt/scorch diamonds |
-| `elevation_punch.png` | Volcanic cliffs |
-| `props_punch.png` | Center-tile volcanic props only. The wide scraps along the bottom are edge trims and are not sliced |
-| `board_mood_punch.png` | Wiring preview. Not sliced into tiles |
+| `ground_punch.png` | Scorched rock, scorch, dark ash, and lava diamonds |
+| `elevation_punch.png` | Platforms. White background is keyed out. Stairs stay attached to the cap |
+| `props_punch.png` | Sparse props the map already paints. The wide lava strip is not sliced |
+| `board_mood_punch.png` | Reference plate. Not sliced into tiles |
 
-Lava theme is rock, lava, and dirt. No grass, moss, or bushes.
+Lava theme is rock, lava, and ash. No grass, moss, or bushes. `props_rejected` sheets are not a source.
