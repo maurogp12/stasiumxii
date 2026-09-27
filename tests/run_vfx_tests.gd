@@ -1362,6 +1362,31 @@ func _test_scenario_overlays() -> void:
 	eq(_sheet(boom, "detonate_burst")["cell"], Vector2i(4, 3), "Detonate bursts on the target")
 	eq(is_equal_approx(float(_sheet(boom, "detonate_burst")["delay"]), preload("res://units/strip_library.gd").release_sec("kestrel", "cast")), true, "Detonate bursts on the cast resolve")
 	eq(float(_sheet(boom, "detonate_burst")["px"]) > BUDGET.STAMP_HIT_PX, true, "Detonate reads larger than a generic hit")
+	eq(is_equal_approx(float(_sheet(boom, "detonate_burst")["life"]), BUDGET.STAMP_SPELL_LIFE), true, "Detonate keeps the spell overlay life")
+	eq(BUDGET.STAMP_SPELL_LIFE >= 0.20 and BUDGET.STAMP_SPELL_LIFE <= 0.40, true, "Detonate burst finishes inside 0.2-0.4s")
+	var boom_tex: Texture2D = stamp_script.texture_for("detonate_burst")
+	eq(boom_tex.get_width(), 1280, "the detonate strip is 1280 wide")
+	eq(boom_tex.get_height(), 720, "the detonate strip is 720 tall")
+	var boom_img := boom_tex.get_image()
+	var divider_xs: Array[int] = [212, 213, 426, 639, 640, 852, 853, 1066]
+	for x in divider_xs:
+		eq(boom_img.get_pixel(x, 0).a < 0.02, true, "detonate divider x=%d is clear at the top" % x)
+		eq(boom_img.get_pixel(x, 360).a < 0.02, true, "detonate divider x=%d is clear at mid" % x)
+		eq(boom_img.get_pixel(x, 719).a < 0.02, true, "detonate divider x=%d is clear at the bottom" % x)
+	eq(boom_img.get_pixel(528, 360).a > 0.8, true, "the shock core stays opaque")
+	var boom_cells: Array[Rect2] = [
+		Rect2(42, 165, 133, 353),
+		Rect2(221, 165, 199, 353),
+		Rect2(429, 165, 208, 353),
+		Rect2(644, 165, 205, 353),
+		Rect2(865, 165, 191, 353),
+		Rect2(1109, 165, 135, 353),
+	]
+	for i in boom_cells.size():
+		var cel: Rect2 = stamp_script.region_for("detonate_burst", i, boom_tex)
+		eq(cel, boom_cells[i], "detonate cell %d crops off the divider columns" % i)
+		for x in divider_xs:
+			eq(float(x) < cel.position.x or float(x) >= cel.end.x, true, "detonate cell %d does not include divider x=%d" % [i, x])
 	var kept: Array = ROUTER.recipes_for([{
 		"type": "miss", "spell": "detonate", "seat": 0, "target_seat": 1,
 		"caster_cell": Vector2i(2, 3), "to": Vector2i(4, 3), "damage": 0, "marks_retained": true,

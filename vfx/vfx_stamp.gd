@@ -3,6 +3,11 @@ extends "res://vfx/vfx_pooled.gd"
 ## One-shot sprite overlay. Strips play left to right.
 ## Punch v3: hit flash, damage float, Detonate, footstep dust, and the melee
 ## windup. The hit flash keeps the authored cyan/gold.
+## Detonate burst is the v3b transparent strip. Same six beats: ignition,
+## burst, shock, shards, fade, and settle. The full-height divider columns
+## are clear. Crops stay off those columns, so a ghost bar is not a frame.
+## Life stays the spell overlay already used for this burst. That window
+## is inside 0.2–0.4s. No new kit timing.
 ## Ambush slash is the v5 transparent strip (scenario
 ## asset_zCcVxFNBWSMQ1vzsgA2Dfp5S). Five cells: anticipate, wind, SNAP peak,
 ## settle trails, fade. Holds are 80+120+90+50+40. The SNAP cell opens on
@@ -87,7 +92,7 @@ const STRIPS := {
 		Rect2(659, 265, 202, 184),
 		Rect2(892, 265, 160, 184),
 	],
-	# Gray guide columns between cells are not frames.
+	# Full-height divider columns are clear in v3b and are not frames.
 	"detonate_burst": [
 		Rect2(42, 165, 133, 353),
 		Rect2(221, 165, 199, 353),
