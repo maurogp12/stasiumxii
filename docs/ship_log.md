@@ -2,6 +2,18 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Bastion east walk v6d and Ironjaw east walk v6g
+
+Presentation only for the sheets. Soft Lock is not stamped. Playable review for Luca.
+
+Bastion east replaces the v6c strip in place: `art/export_2x/characters/bastion/anims/bastion_walk_e.png` and `art/export_2x/walk_src/bastion_walk_e.pngbin`. 864×160, six 144×160 cells. Brighter charcoal (median luminance about 46), gold punch, full body, transparent background. West, north, and south are not replaced.
+
+Ironjaw east stays the v6g strip already on this branch: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png` and `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. v6h is not ready. West, north, and south are not replaced.
+
+Walk PNG imports stay lossless (`compress/mode=0`) with the alpha channel kept. Device playback reads the pngbin bytes, which are the same PNG. Tile time stays 0.30s. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px.
+
+Sideload stamp for this tip: `version/name` `0.1.27-mobile`, `version/code` `28`. Tag `mobile-0.1.27-debug`. Package `com.maurogp12.stasiumxii.mobile`. The pinned debug cert is unchanged.
+
 ## 2026-09-27 — Bastion east walk v6c and Ironjaw east walk v6g
 
 Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock is not stamped. Hold merge until Luca sí on device.
