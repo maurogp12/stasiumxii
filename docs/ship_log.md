@@ -16,15 +16,15 @@ Soft Lock fuego + lava. Presentation only. Locked Slagcrown geometry, tags, walk
 
 `slag_prop_floor_seal.png` is a small ash mark from the ground punch, not a full diamond. Flat tiles are hard 64×32 diamonds so the seam stays readable. Elevation keeps that cap and hangs the wall; the high wall is taller, and the stair meets the cap. Blocks cut off by the sheet edge are not used. The wide strip on the prop sheet is not sliced. `board_mood_punch.png` and `stasium-ref/maps/lava/luca_preview_slagcrown.png` are reference plates and are not sliced.
 
-## 2026-09-26 — Combat pawn read (Bastion, Ironjaw, and the roster)
+## 2026-09-27 — Combat pawn read (Bastion, Ironjaw)
 
-Presentation only. No APK. Locked kit numbers and map geometry are unchanged. Walk sheets stay the wakfu-ship-v5 files. `*_gen.png` is still not loaded.
+Presentation only. No APK. Locked kit numbers and map geometry are unchanged. Wakfu-ship-v5 walks stay the motion sheets. `*_gen.png` is still not loaded.
 
-Deploy idle was already walk frame 0 of the locked sheet, at the bare 0.5 cell (presentation mul 1.0). That plant is about 74px. Windmere crystals are 68px, ice shards 88, rock pillars 90, and the phone overview makes the dark core look smaller than the props. The east/west sheets also carry a wide semi-transparent dark rim and interior pinholes. Over ice that rim reads as a jagged cyan fringe. The figure shader was sampling three texels out and painting that junk as a halo, then crushing the already-dark plate. Mender south was a different matte bug: about 88% of the opaque pixels are an unkeyed white plate, with a small figure floating inside it.
+The cyan jagged fringe is not in the v5 PNGs (no cyan pixels on E/S/N/W). `figure_read.gdshader` was sampling two and three texels out and painting a rim from neighbor alpha. Over Windmere ice that rim reads as a jagged cyan halo. Visible modulate is white, so Invisible was not tinting a shown body, and idle was not a stuck hit sheet.
 
-- All five classes share `ROSTER_READ_SCALE` 1.25 (sprite scale 0.625). The foot offset stays `(0, -72)`. A one-class 1.20 bump still does not ship. Ironjaw at this scale is about 93px tall, above the crystal and level with the shard.
-- `figure_read.gdshader` clips alpha below the fringe, draws a one-texel ink from solid neighbors, and lifts crushed shadows. Hue stays. Visible modulate stays white, so Invisible does not tint a shown body.
-- Walk playback mattes the cell in `StripLibrary`: drop a near-white plate, fill pinholes of 12 pixels or fewer, defringe the rim, and seat a keyed figure on foot row y=149. Opaque identity pixels stay. Mender south is the sheet this repairs. Kestrel, Gloam, Bastion, and Ironjaw keep their v5 solids.
+Ironjaw's locked combat scale stays **1.0**, the same body scale as Kestrel and Gloam (`SPRITE_SCALE` 0.5). An open 1.25, and a one-class 1.20, do not ship.
+
+Bastion and Ironjaw deploy/idle use the hard-alpha plants in `art/export_2x/characters/<class>/idle/<class>_idle_plant_<face>_v1.png` (144×160, Locked 2C and A+A2). The walk strip still plays the stride. Kestrel, Gloam, and Mender still rest on walk frame 0.
 
 ## 2026-09-26 — Combat VFX punch v3
 

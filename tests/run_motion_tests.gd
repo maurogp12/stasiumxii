@@ -953,8 +953,15 @@ func _test_hit_flinch_playback() -> void:
 				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
 			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
 			pawn.settle_motion()
-			var rested := _visible_strip(pawn)
-			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
+			var clean := Pawn.idle_plant_texture(cls, face)
+			if clean != null:
+				var body := pawn.get_node("Sprite") as Sprite2D
+				eq(body.visible, true, "%s %s returns to the clean plant" % [cls, face])
+				eq(body.texture, clean, "%s %s rest texture is the hard-alpha plant" % [cls, face])
+				eq(_visible_strip(pawn), null, "%s %s rest does not hold the flinch" % [cls, face])
+			else:
+				var rested := _visible_strip(pawn)
+				truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
 			pawn.free()
 			await process_frame
 
@@ -1037,25 +1044,6 @@ func _opaque_luma(image: Image) -> float:
 	if count <= 0:
 		return 0.0
 	return sum / float(count)
-
-
-## Opaque identity only. The playback matte may clean fringe alpha.
-func _solid_rgb_matches(authored: Image, played: Image) -> bool:
-	if authored == null or played == null:
-		return false
-	if authored.get_width() != played.get_width() or authored.get_height() != played.get_height():
-		return false
-	for y in authored.get_height():
-		for x in authored.get_width():
-			var src := authored.get_pixel(x, y)
-			if src.a < 0.9:
-				continue
-			var dst := played.get_pixel(x, y)
-			if dst.a < 0.9:
-				return false
-			if absf(src.r - dst.r) > 0.04 or absf(src.g - dst.g) > 0.04 or absf(src.b - dst.b) > 0.04:
-				return false
-	return true
 
 
 func _foot_row(image: Image) -> int:
@@ -1336,9 +1324,6 @@ func _test_strip_library_missing_and_slice() -> void:
 						var hit_row := _foot_row(played.get_frame_texture(anim_name, hit_i).get_image())
 						eq(hit_row >= 148 and hit_row <= 151, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
 						eq(absi(hit_row - walk_foot) <= 1, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
-				elif kind == "walk":
-					truthy(_solid_rgb_matches(authored_image, played_image), "%s %s frame 0 keeps the locked solid pixels" % [cls, anim_name])
-					eq(played_image.get_width(), authored_image.get_width(), "%s %s matte keeps the cell width" % [cls, anim_name])
 				else:
 					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
 				var later := played.get_frame_texture(anim_name, 3).get_image()
@@ -1726,6 +1711,24 @@ func _test_walk_idle_matches_strip() -> void:
 		await process_frame
 		var sprite := pawn.get_node("Sprite") as Sprite2D
 		var foreign := Pawn.sprite_texture(class_id, "E")
+		var clean := Pawn.idle_plant_texture(class_id, "E")
+		if clean != null:
+			eq(sprite.visible, true, "%s idle shows the clean plant" % class_id)
+			eq(sprite.texture, clean, "%s idle texture is the hard-alpha plant" % class_id)
+			eq(_visible_strip(pawn), null, "%s idle does not leave the walk strip up" % class_id)
+			pawn.arm_driven_walk()
+			eq(sprite.visible, false, "%s walk start hides the clean plant" % class_id)
+			var stride := _visible_strip(pawn)
+			truthy(stride != null, "%s walk start plays the v5 strip" % class_id)
+			if stride != null:
+				eq(String(stride.animation), "walk_e", "%s walk start stays on walk_e" % class_id)
+				eq(stride.sprite_frames.get_frame_texture("walk_e", 0) != clean, true, "%s stride is not the idle still" % class_id)
+			pawn.end_path_walk()
+			eq(sprite.visible, true, "%s stop returns to the clean plant" % class_id)
+			eq(sprite.texture, clean, "%s stop plant is the hard-alpha still" % class_id)
+			eq(_visible_strip(pawn), null, "%s stop does not hold walk frame 0" % class_id)
+			pawn.free()
+			continue
 		var idle := _visible_strip(pawn)
 		truthy(idle != null, "%s idle shows the walk sheet" % class_id)
 		if idle == null:
@@ -2087,7 +2090,7 @@ func _assert_locked_walk_png(bank: SpriteFrames, class_id: String) -> void:
 		var sheet := (ResourceLoader.load(StripLibrary.export_png_path(class_id, "walk", face)) as Texture2D).get_image()
 		var cell := sheet.get_region(Rect2i(0, 0, StripLibrary.CELL_W, sheet.get_height()))
 		eq(played.get_width(), StripLibrary.CELL_W, "%s %s playback is one cell" % [class_id, anim])
-		truthy(_solid_rgb_matches(cell, played), "%s %s frame 0 keeps the locked solid pixels" % [class_id, anim])
+		eq(played.get_data(), cell.get_data(), "%s %s frame 0 is the export_2x walk cell" % [class_id, anim])
 
 
 func _assert_strip_cells(strip: AnimatedSprite2D, anim: String) -> void:
@@ -2168,7 +2171,7 @@ func _test_class_plant_anchor() -> void:
 		eq((pawn.get_node("Foot") as Node2D).position, Vector2.ZERO, "%s plant squash does not move the shade anchor" % class_id)
 		eq(pawn.scale, Vector2.ONE, "%s plant squash leaves the collider scale alone" % class_id)
 		if class_id == "ironjaw":
-			eq(Pawn.presentation_mul("ironjaw"), Pawn.ROSTER_READ_SCALE, "ironjaw uses the shared roster read")
+			eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw art-fill stays at scale 1.0")
 			eq(is_equal_approx(Pawn.sprite_scale_for("ironjaw").y, Pawn.sprite_scale_for("bastion").y), true, "ironjaw and bastion share one body scale")
 		pawn.hold_stop_plant()
 		var stopped := _visible_strip(pawn)

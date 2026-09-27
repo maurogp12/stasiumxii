@@ -46,9 +46,9 @@ func _test_texture_paths_and_imports() -> void:
 	truthy(pawn_src.contains("Vector2(0, -72)"), "offset is the shipped foot pivot")
 	truthy(pawn_src.contains("Vector2(0.5, 0.5)"), "shipped scale is 0.5")
 	var shader := FileAccess.get_file_as_string("res://units/figure_read.gdshader")
-	truthy(shader.contains("smoothstep(0.22, 0.55, tex.a)"), "figure read clips the soft fringe")
+	truthy(shader.contains("texture(TEXTURE, UV) * COLOR"), "figure read samples the texel and keeps modulate")
+	eq(shader.contains("texture(TEXTURE, UV +"), false, "figure read does not sample a neighbor rim")
 	eq(shader.contains("px.x * 3.0"), false, "figure read does not grow a 3px halo")
-	_assert_mender_south_matte()
 
 
 func _test_sprite_node_setup() -> void:
@@ -61,49 +61,48 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
 	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
 	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
-	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the roster read")
-	eq(ironjaw_scale, Pawn.SPRITE_SCALE * Pawn.ROSTER_READ_SCALE, "roster read grows the shared 0.5 cell")
-	eq(Pawn.ROSTER_READ_SCALE, 1.25, "the shared read is 1.25")
-	eq(Pawn.presentation_mul("ironjaw"), Pawn.ROSTER_READ_SCALE, "ironjaw ships at the roster read")
-	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the bare cell")
-	eq(Pawn.capped_presentation_mul(1.25), 1.25, "1.25 is the roster read")
-	eq(Pawn.capped_presentation_mul(1.08), 1.0, "the old 1.08 nudge does not ship")
-	eq(Pawn.capped_presentation_mul(1.10), 1.0, "the old 1.10 cap does not ship")
+	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the shared cell")
+	eq(ironjaw_scale, Pawn.SPRITE_SCALE, "ironjaw stays on the 0.5 cell")
+	eq(Pawn.IRONJAW_COMBAT_SCALE, 1.0, "ironjaw locked combat scale is 1.0")
+	eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw ships at scale 1.0")
+	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the shared scale")
+	eq(Pawn.capped_presentation_mul(1.08), 1.08, "1.08 is inside the optional nudge")
+	eq(Pawn.capped_presentation_mul(1.10), 1.10, "1.10 is the top of the optional nudge")
 	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a one-class 1.20 bump is rejected")
+	eq(Pawn.capped_presentation_mul(1.25), 1.0, "an open 1.25 scale is rejected")
 	eq(Pawn.capped_presentation_mul(1.50), 1.0, "a larger bump is rejected")
 	pawn._sample_hop(0.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
 	pawn._sample_hop(1.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile edge")
-	var strip := _visible_strip(pawn)
-	truthy(strip != null, "ironjaw combat shows the walk strip")
-	if strip != null:
-		eq(strip.scale, ironjaw_scale, "ironjaw walk strip uses the presentation scale")
-		eq(strip.offset, Vector2(0, -72), "ironjaw walk strip keeps the foot pivot")
-		eq(strip.frame, 0, "ironjaw idle is walk frame 0")
-		eq(str(strip.animation).begins_with("walk_"), true, "ironjaw idle is the walk sheet")
-		eq(strip.modulate, Color.WHITE, "ironjaw walk idle is not Invisible")
+	eq(_visible_strip(pawn), null, "ironjaw idle does not leave the walk strip up")
+	eq(sprite.visible, true, "ironjaw idle shows the clean plant")
+	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "ironjaw west idle is the hard-alpha plant")
+	eq(sprite.modulate, Color.WHITE, "ironjaw idle is not Invisible")
+	_assert_clean_plant("ironjaw", "W")
 	_assert_ironjaw_feet(ironjaw_scale.y)
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")
 	eq(sprite.z_as_relative, true, "sprite z is relative")
 	eq(sprite.position, Vector2.ZERO, "sprite sits on the pawn origin")
-	eq(sprite.texture, Pawn.sprite_texture("ironjaw", "W"), "texture follows class and facing")
+	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "texture follows the ironjaw plant facing")
 	var bastion := Pawn.new()
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
 	var bastion_sprite := bastion.get_node("Sprite") as Sprite2D
-	var read_scale := Pawn.SPRITE_SCALE * Pawn.ROSTER_READ_SCALE
-	eq(bastion_sprite.scale, read_scale, "bastion uses the roster read")
+	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion matches the kestrel cell")
 	eq(bastion_sprite.modulate, Color.WHITE, "a visible bastion is not Invisible")
 	eq(sprite.modulate, Color.WHITE, "a visible ironjaw is not Invisible")
+	eq(bastion_sprite.visible, true, "bastion idle shows the clean plant")
+	eq(_visible_strip(bastion), null, "bastion idle does not leave the walk strip up")
 	for class_id in ["kestrel", "gloam", "mender", "bastion", "ironjaw"]:
-		eq(Pawn.sprite_scale_for(class_id), read_scale, "%s uses the roster read" % class_id)
-		eq(Pawn.presentation_mul(class_id), Pawn.ROSTER_READ_SCALE, "%s read factor matches the roster" % class_id)
-	eq(bastion_sprite.texture, Pawn.sprite_texture("bastion", "N"), "bastion N placeholder still loads")
+		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s uses the shared 0.5 cell" % class_id)
+		eq(Pawn.presentation_mul(class_id), 1.0, "%s combat scale is 1.0" % class_id)
+	eq(bastion_sprite.texture, Pawn.idle_plant_texture("bastion", "N"), "bastion north idle is the hard-alpha plant")
+	_assert_clean_plant("bastion", "N")
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
-	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.sprite_texture("bastion", "W"), "bastion W placeholder still loads")
+	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.idle_plant_texture("bastion", "W"), "bastion west idle follows facing")
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
 	eq(dead.modulate.a < 0.05, true, "a dead snapshot dissolves instead of standing")
@@ -258,30 +257,32 @@ func _test_name_sits_above_the_sprite() -> void:
 		pawn.free()
 
 
-func _assert_mender_south_matte() -> void:
-	var frames := StripLibrary.frames_for("mender")
-	truthy(frames != null, "mender walk bank loads")
-	if frames == null:
+func _assert_clean_plant(class_id: String, facing: String) -> void:
+	var tex := Pawn.idle_plant_texture(class_id, facing)
+	truthy(tex != null, "%s %s clean plant loads" % [class_id, facing])
+	if tex == null:
 		return
-	var cell := frames.get_frame_texture("walk_s", 0)
-	truthy(cell != null, "mender south idle cell loads")
-	if cell == null:
+	eq(tex.get_width(), 144, "%s %s plant is 144 wide" % [class_id, facing])
+	eq(tex.get_height(), 160, "%s %s plant is 160 tall" % [class_id, facing])
+	var image := tex.get_image()
+	truthy(image != null, "%s %s plant has pixels" % [class_id, facing])
+	if image == null:
 		return
-	var image := cell.get_image()
-	var opaque := 0
-	var white := 0
-	var foot := -1
-	for y in range(image.get_height() - 1, -1, -1):
+	var mid := 0
+	var cyan := 0
+	var solid := 0
+	for y in image.get_height():
 		for x in image.get_width():
 			var px := image.get_pixel(x, y)
-			if px.a > 0.08 and foot < 0:
-				foot = y
-			if px.a > 0.78:
-				opaque += 1
-				if px.r > 0.95 and px.g > 0.95 and px.b > 0.95:
-					white += 1
-	eq(foot >= 148 and foot <= 151, true, "mender south sole sits on the shared foot row")
-	eq(opaque > 0 and float(white) / float(opaque) < 0.15, true, "mender south is not an unkeyed white plate")
+			if px.a > 0.04 and px.a < 0.96:
+				mid += 1
+			if px.a >= 0.96:
+				solid += 1
+			if px.a > 0.2 and px.g > px.r + 0.12 and px.b > px.r + 0.12 and px.b > 0.35:
+				cyan += 1
+	eq(mid, 0, "%s %s plant alpha is hard" % [class_id, facing])
+	eq(cyan, 0, "%s %s plant has no cyan pixels" % [class_id, facing])
+	eq(solid > 1000, true, "%s %s plant has a readable body" % [class_id, facing])
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:

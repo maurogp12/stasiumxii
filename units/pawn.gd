@@ -124,20 +124,18 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Shared board read. The 144×160 plant at bare 0.5 is about 74px, under the
-## Windmere props (crystal 68, shard 88, pillar 90), and the soft matte made
-## the readable core smaller. Every locked class uses the same 1.25 so idle
-## and deploy grow from the foot offset (0, -72). The pawn node and the pick
-## capsule stay at scale 1. 1.0 is the bare cell. A one-class 1.20, and
-## anything else, is ignored. Identity stays on the walk sheet. Kit numbers
-## and map geometry do not read this.
-const ROSTER_READ_SCALE := 1.25
+## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
+## (~147px) against Bastion ~130px, so the shipped mul is 1.0, the same body
+## scale as Kestrel and Gloam. A later nudge may only sit in 1.08–1.10, on
+## the body sprites, growing from the foot offset (0, -72). The pawn node
+## and the pick capsule stay at scale 1. Identity is Berserker A + helm A2
+## (iron-jaw grill, dual double-bit axes). 1.20 and any open class scale
+## are rejected. Kit numbers and map geometry do not read this.
+const PRESENTATION_SCALE_MIN := 1.08
+const PRESENTATION_SCALE_CAP := 1.10
+const IRONJAW_COMBAT_SCALE := 1.0
 const CLASS_PRESENTATION_SCALE := {
-	"kestrel": ROSTER_READ_SCALE,
-	"ironjaw": ROSTER_READ_SCALE,
-	"gloam": ROSTER_READ_SCALE,
-	"mender": ROSTER_READ_SCALE,
-	"bastion": ROSTER_READ_SCALE,
+	"ironjaw": IRONJAW_COMBAT_SCALE,
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
@@ -162,20 +160,23 @@ const NAME_GAP_ABOVE_HP := 2.0
 static var _sprite_cache: Dictionary = {}
 
 
-## Resting combat scale. The five locked classes share the roster read.
-## Anything else stays on the bare 0.5 cell.
+## Resting combat scale. Missing classes stay on the shared 0.5. A listed
+## class uses the capped interim nudge. Ironjaw ships at 1.0.
 static func sprite_scale_for(class_id: String) -> Vector2:
 	return SPRITE_SCALE * presentation_mul(class_id)
 
 
-## 1.0 is the bare cell. The roster read is the only other factor that ships.
+## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
+## Anything else, including 1.20, is ignored.
 static func presentation_mul(class_id: String) -> float:
 	var key := SpellKits.normalize_class_id(class_id)
 	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
 
 
 static func capped_presentation_mul(raw: float) -> float:
-	if is_equal_approx(raw, 1.0) or is_equal_approx(raw, ROSTER_READ_SCALE):
+	if is_equal_approx(raw, 1.0):
+		return 1.0
+	if raw >= PRESENTATION_SCALE_MIN and raw <= PRESENTATION_SCALE_CAP:
 		return raw
 	return 1.0
 
@@ -663,7 +664,9 @@ func end_path_walk() -> void:
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
-	if not _walk_idle_plant:
+	# The stride already took its plant squash. A clean still, like a walk
+	# frame-0 plant, does not squash again. A missing strip still lands.
+	if not _walk_idle_plant and not _clean_idle_available():
 		_play_landing()
 
 
@@ -1116,6 +1119,23 @@ static func sprite_texture(class_id: String, facing: String) -> Texture2D:
 	return _texture_at(sprite_path(class_id, facing))
 
 
+## Hard-alpha deploy/idle still. Separate from the wakfu-ship-v5 walk.
+## Null when this class has no clean plant (Kestrel, Gloam, Mender).
+static func idle_plant_path(class_id: String, facing: String) -> String:
+	var cls := SpellKits.normalize_class_id(class_id)
+	var face := facing.strip_edges().to_lower()
+	if not FACING_ORDER.has(face):
+		face = "e"
+	return "res://art/export_2x/characters/%s/idle/%s_idle_plant_%s_v1.png" % [cls, cls, face]
+
+
+static func idle_plant_texture(class_id: String, facing: String) -> Texture2D:
+	var path := idle_plant_path(class_id, facing)
+	if not FileAccess.file_exists(path):
+		return null
+	return _texture_at(path)
+
+
 static func _stasis_texture(path: String) -> Texture2D:
 	return _texture_at(path)
 
@@ -1229,7 +1249,11 @@ func _sync_sprite() -> void:
 		_hide_body_strips()
 		_request_paint()
 		return
-	_sprite.texture = sprite_texture(class_id, facing)
+	var plant := idle_plant_texture(class_id, facing)
+	if plant != null:
+		_sprite.texture = plant
+	else:
+		_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	# A driven step owns the frame. Replanting idle here freezes the cycle on
@@ -1244,6 +1268,8 @@ func _sync_sprite() -> void:
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
+	elif plant != null:
+		_show_clean_idle()
 	elif _plant_walk_idle():
 		pass
 	else:
@@ -1710,18 +1736,45 @@ func _end_body_strip(replant: bool = true) -> void:
 		_show_rest_or_static()
 
 
-## Walk sheet on screen when this class has one. The foreign still only when it does not.
+## Walk sheet on screen when this class has one. Bastion and Ironjaw rest on
+## the hard-alpha plant instead, so a stop does not leave walk frame 0 up.
 func _show_rest_or_static() -> void:
+	if _clean_idle_available():
+		_show_clean_idle()
+		return
 	if _plant_walk_idle():
 		return
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
 
 
+## Deploy and the idle hold. The walk strip stays packed for the stride.
+func _clean_idle_available() -> bool:
+	if not alive or stasis_sprite != "" or _held_death_strip:
+		return false
+	return idle_plant_texture(class_id, facing) != null
+
+
+func _show_clean_idle() -> void:
+	_walk_idle_plant = false
+	_strip_holds_body = false
+	_active_strip = null
+	_hide_body_strips()
+	if _sprite == null or not is_instance_valid(_sprite):
+		return
+	var plant := idle_plant_texture(class_id, facing)
+	if plant != null:
+		_sprite.texture = plant
+	_sprite.visible = true
+
+
 ## Idle and the stride share frame 0 of this facing's walk sheet.
 ## The static turnaround stays hidden so a step cannot flash a second costume.
+## A clean plant is the idle instead, and the walk sheet is motion only.
 func _should_plant_walk_idle() -> bool:
 	if not alive or stasis_sprite != "" or _held_death_strip:
+		return false
+	if _clean_idle_available():
 		return false
 	return has_walk_strip()
 
