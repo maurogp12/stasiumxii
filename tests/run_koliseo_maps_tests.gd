@@ -26,6 +26,7 @@ func _run() -> void:
 	_test_alive_grade()
 	_test_original_sheet()
 	_test_brine_punch()
+	_test_slag_punch()
 	await _test_hotseat_navigates()
 	print("Koliseo map tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -500,6 +501,71 @@ func _test_brine_punch() -> void:
 	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/brinewake_15x15_tags.json"))
 	eq((tags["cells"] as Array).size(), 225, "Brinewake tags keep 225 cells")
 	eq(int((tags["size"] as Array)[0]), 15, "Brinewake tag width stays 15")
+
+
+## Soft Lock fuego + lava. Presentation only. Hard diamonds, platform walls,
+## sparse props. The floor seal is a mark, not a second floor.
+func _test_slag_punch() -> void:
+	var art := load("res://board/koliseo_art.gd")
+	var ground: Texture2D = art.terrain_texture("ground", 0, "slag_")
+	var lava: Texture2D = art.terrain_texture("lava", 0, "slag_")
+	var water: Texture2D = art.terrain_texture("water", 0, "slag_")
+	var mud: Texture2D = art.terrain_texture("mud", 0, "slag_")
+	var low: Texture2D = art.terrain_texture("ground", 1, "slag_")
+	var high: Texture2D = art.terrain_texture("ground", 2, "slag_")
+	truthy(_diamond_seam(ground), "Slagcrown ground keeps a readable diamond edge")
+	truthy(_diamond_seam(lava), "Slagcrown lava keeps a readable diamond edge")
+	truthy(_diamond_seam(water), "Slagcrown ash pool keeps a readable diamond edge")
+	truthy(_diamond_seam(mud), "Slagcrown scorch keeps a readable diamond edge")
+	truthy(high.get_height() > low.get_height() + 12, "Slagcrown high platforms are clearly taller")
+	truthy(_wall_meets_cap(low), "Slagcrown low wall meets the platform")
+	truthy(_wall_meets_cap(high), "Slagcrown high wall meets the platform")
+	var seal: Texture2D = art.prop_texture("floor_seal", "slag_")
+	truthy(seal.get_width() <= 40 and seal.get_height() <= 20, "Slagcrown floor seal does not cover the diamond")
+	var basalt: Texture2D = art.prop_texture("basalt_pillar", "slag_")
+	var pillar: Texture2D = art.prop_texture("rock_pillar", "slag_")
+	truthy(basalt.get_width() <= 48, "Slagcrown basalt pillar stays on one tile")
+	truthy(pillar.get_width() <= 40, "Slagcrown rock pillar stays narrow")
+	var dress := [
+		"slag_ground.png", "slag_ground_v1.png", "slag_ground_v2.png", "slag_ground_v3.png", "slag_ground_v4.png",
+		"slag_mud.png", "slag_water.png",
+		"slag_lava.png", "slag_lava_v1.png", "slag_lava_v2.png", "slag_lava_v3.png",
+		"slag_lava_v4.png", "slag_lava_v5.png", "slag_lava_v6.png", "slag_lava_v7.png",
+		"slag_ground_e1.png", "slag_ground_e1_v1.png", "slag_mud_e1.png", "slag_ground_e2.png",
+		"slag_prop_basalt_pillar.png", "slag_prop_rock_pillar.png", "slag_prop_ash_rock.png",
+		"slag_prop_rubble.png", "slag_prop_steam_vent.png", "slag_prop_floor_seal.png",
+	]
+	for file_name in dress:
+		var path: String = "res://art/maps/arena_colosseum_v2/tiled/tiles/" + str(file_name)
+		var tex: Texture2D = load(path)
+		truthy(tex != null, "%s is wired" % file_name)
+		truthy(_green_fraction(tex) < 0.005, "%s has no lawn" % file_name)
+	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
+	truthy(themes.contains("pending/lava/ground_punch.png"), "Slagcrown ground punch is the lava source")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/elevation_punch.png"), "Slagcrown elevation punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/props_punch.png"), "Slagcrown props punch is in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/board_mood_punch.png"), "Slagcrown mood plate stays a reference")
+	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/slagcrown_15x15_tags.json"))
+	eq((tags["cells"] as Array).size(), 225, "Slagcrown tags keep 225 cells")
+	var at := {}
+	for cell in tags["cells"]:
+		at[Vector2i(int(cell["x"]), int(cell["y"]))] = cell
+	eq(int(at[Vector2i(5, 4)]["elevation"]), 2, "Slagcrown high platform cell stays elevation 2")
+	eq(str(at[Vector2i(7, 7)]["terrain"]), "lava", "Slagcrown lava river stays lava")
+	eq(str(at[Vector2i(1, 12)]["terrain"]), "water", "Slagcrown ash pool tag stays water")
+	eq(str((at[Vector2i(0, 0)]["paint_only"] as Array)[0]), "basalt_pillar", "Slagcrown corner prop stays the basalt pillar")
+
+
+func _wall_meets_cap(tex: Texture2D) -> bool:
+	var img := tex.get_image()
+	if img == null or img.get_height() < 36 or img.get_width() != 64:
+		return false
+	if img.get_pixel(32, 16).a < 0.8:
+		return false
+	for x in img.get_width():
+		if img.get_pixel(x, 31).a > 0.5 and img.get_pixel(x, 32).a > 0.5:
+			return true
+	return false
 
 
 ## Dark warm marks on the north half of the diamond. A south shade is not crust.
