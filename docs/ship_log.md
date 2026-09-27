@@ -2,18 +2,13 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
-## 2026-09-27 — Brinewake stairs fix
+## 2026-09-27 — Brinewake elevation held, props wired
 
 Soft Lock agua + costa. Presentation only. Locked Brinewake geometry, tags, walkability, and kit numbers are unchanged. No APK. `version/name` and `version/code` stay put.
 
-`slice_brine_punch.py` reads the stairs-fix sheets and overwrites only `brine_*` cliffs and `brine_prop_*`. Ground, mud, and water stay the coast punch.
+Luca marked the upper-corner wooden deck (stairs, crates, and rope) for removal. Scenario Art is regenerating the elevation sheet. Until that sheet lands, `slice_brine_punch.py` does not overwrite `brine_ground_e1.png`, `brine_ground_e2.png`, or `brine_mud_e1.png`. Those cliff sprites stay the previous coast cliffs.
 
-| Punch sheet | Live slices |
-| --- | --- |
-| `art/tilesets/original/pending/brinewake/brine_elevation_punch.png` | `brine_ground_e1.png`, `brine_mud_e1.png`, `brine_ground_e2.png` |
-| `art/tilesets/original/pending/brinewake/brine_props_punch.png` | `brine_prop_driftwood.png`, `brine_prop_rock_cluster.png`, `brine_prop_rock_pillar.png`, `brine_prop_rubble.png`, `brine_prop_ruins.png`, `brine_prop_fence.png`, `brine_prop_waterfall.png`, `brine_prop_floor_seal.png` |
-
-The cliff cap is the upper wooden deck. The stair hangs under that cap and stops on the lower deck in the same sprite. A tread past the deck is cut, so the step does not lead into empty space. The high wall stays taller than the low wall. Props are pier-wood pieces from the props sheet, about one tile tall. The floor seal is a small mark. `stasium-ref/maps/brinewake/` mirrors the two sheets. The mood plate is not sliced.
+Props from `art/tilesets/original/pending/brinewake/brine_props_punch.png` are wired: `brine_prop_driftwood.png`, `brine_prop_rock_cluster.png`, `brine_prop_rock_pillar.png`, `brine_prop_rubble.png`, `brine_prop_ruins.png`, `brine_prop_fence.png`, `brine_prop_waterfall.png`, `brine_prop_floor_seal.png`. They stay about one tile tall. The floor seal is a small mark. Ground, mud, and water stay the coast punch. `stasium-ref/maps/brinewake/` mirrors the delivered sheets. The mood plate is not sliced.
 
 ## 2026-09-26 — Slagcrown lava punch redo
 
