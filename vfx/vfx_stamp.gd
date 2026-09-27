@@ -3,6 +3,12 @@ extends "res://vfx/vfx_pooled.gd"
 ## One-shot sprite overlay. Strips play left to right.
 ## Punch v3: hit flash, damage float, Detonate, footstep dust, and the melee
 ## windup. The hit flash keeps the authored cyan/gold.
+## Melee windup is the v3b transparent strip. Same four beats: weapon
+## telegraph, spark, crescent peak, and snap. The full-height divider
+## columns are clear. Crops stay off those columns, so a ghost bar is not
+## a frame. The strip still starts with the swing and still ends as the
+## contact starts. That window is the existing strike resolve. No new kit
+## timing.
 ## Detonate burst is the v3b transparent strip. Same six beats: ignition,
 ## burst, shock, shards, fade, and settle. The full-height divider columns
 ## are clear. Crops stay off those columns, so a ghost bar is not a frame.
@@ -101,6 +107,7 @@ const STRIPS := {
 		Rect2(865, 165, 191, 353),
 		Rect2(1109, 165, 135, 353),
 	],
+	# Full-height divider columns are clear in v3b and are not frames.
 	"melee_windup": [
 		Rect2(30, 165, 252, 355),
 		Rect2(337, 165, 279, 355),

@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Melee cast windup punch v3b
+
+Presentation only. No APK. Kit numbers, melee legality, and Locked timings are unchanged. Soft Lock pending Rosie rematch.
+
+`melee_windup.png` is the v3b transparent strip: 1280×720, four beats (weapon telegraph, spark, crescent peak, snap). The full-height divider columns from v3 (x=318–319, 639–640, 960–961) are clear. Playback crops stay off those columns, so a ghost bar is not a frame. The windup still starts with the swing and still ends as the contact starts. The stamp plays this one strip.
+
 ## 2026-09-27 — Detonate burst punch v3b
 
 Presentation only. No APK. Kit numbers, Detonate legality, and Locked timings are unchanged. Soft Lock pending Rosie rematch.
