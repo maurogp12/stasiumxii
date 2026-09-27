@@ -813,7 +813,7 @@ func _snap_ambush_teleports(events: Array) -> void:
 		# both, so Invisible cannot swing from the cast cell.
 		pawn.grid_position = dest
 		pawn.position = _cell_to_local(dest)
-		pawn.z_index = VISUAL_SORT.unit_z_index(dest, _elev_at(dest))
+		pawn.z_index = _pawn_z(dest)
 		var face := str(event.get("facing", ""))
 		if face != "":
 			pawn.set_facing(face)
@@ -920,6 +920,9 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
 	_ambush_contact_armed = false
+	# A hold left over from an earlier blink must not pin this body to the
+	# cast cell while the new hit resolves.
+	_ambush_hold_seat = -1
 	_ambush_open_seat = int(event.get("seat", -1))
 	if _vfx != null and _vfx.has_method("play_ambush_collapse"):
 		_vfx.play_ambush_collapse(event)
@@ -944,6 +947,10 @@ func _commit_ambush_plant(event: Dictionary, token: int) -> void:
 		var pawn: Pawn = pawns_by_seat[seat]
 		if pawn != null and is_instance_valid(pawn):
 			pawn.restore_ambush_body()
+	# Hide first. A snapshot that already cleared Invisible must not draw a
+	# solid slash on the cast cell. The reveal runs only after the foot is
+	# on the back tile.
+	_conceal_ambush_caster(event)
 	_snap_ambush_teleports([event])
 	_reveal_ambush_plant(event)
 	if not pawns_by_seat.has(seat):
@@ -972,7 +979,10 @@ func _conceal_ambush_caster(event: Dictionary) -> void:
 	var pawn: Pawn = pawns_by_seat[seat]
 	if pawn == null or not is_instance_valid(pawn):
 		return
-	if pawn.invisible:
+	var dest := _ambush_event_dest(event)
+	# Still on the cast tile, or still faded. Either one would read as a
+	# body slash if the strike started now.
+	if pawn.invisible or not _in_bounds(dest) or pawn.grid_position != dest:
 		pawn.conceal_for_ambush()
 
 
@@ -1655,7 +1665,7 @@ func _apply_units(snap: Dictionary) -> void:
 			pawn.position = _ambush_hold_pos
 			if _ambush_hold_facing != "":
 				pawn.set_facing(_ambush_hold_facing)
-			pawn.z_index = VISUAL_SORT.unit_z_index(_ambush_hold_cell, _elev_at(_ambush_hold_cell))
+			pawn.z_index = _pawn_z(_ambush_hold_cell)
 		elif hopping:
 			pawn.grid_position = kept_cell
 			pawn.position = kept_pos
@@ -1663,7 +1673,7 @@ func _apply_units(snap: Dictionary) -> void:
 				pawn.hold_walk_facing(kept_face)
 		else:
 			pawn.position = _cell_to_local(cell)
-			pawn.z_index = VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+			pawn.z_index = _pawn_z(cell)
 		pawn.rewrite_frozen_vitals()
 
 
@@ -1691,8 +1701,6 @@ func _sync_shade_markers(snap: Dictionary) -> void:
 		_shade_markers.erase(cell)
 	var layer := _shade_layer()
 	var origin_cell := _ambush_shade_origin(_sim().ambush_origin(CombatHUD.kit_seat(snap)))
-	if bool(_kit_unit(snap).get("invisible", false)):
-		origin_cell = Vector2i(-999, -999)
 	for cell in live.keys():
 		var marker: Node = _shade_markers.get(cell)
 		var spawned := marker == null or not is_instance_valid(marker)
@@ -1831,8 +1839,8 @@ func _paint_highlights() -> void:
 
 
 ## Locked chrome. Origin and landing highlights only while legal_intents has an
-## Ambush cast. A Shade adjacent to a foe is not an origin. Invisible aims from
-## Gloam only. Range is that origin.
+## Ambush cast. A Shade adjacent to a foe is not an origin. Invisible keeps the
+## Shade highlight when that Shade is still the jump. Range is that origin.
 func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 	var seat := CombatHUD.kit_seat(snap)
 	var legal: Array = _sim().legal_intents(seat)
@@ -1850,6 +1858,15 @@ func _paint_ambush_chrome(snap: Dictionary, spell_id: String) -> void:
 	var landing: Dictionary = _sim().ambush_landing_preview(seat)
 	if bool(landing.get("ok", false)) and tiles.has(landing.get("cell", Vector2i(-1, -1))):
 		_tile_at(landing["cell"]).set_highlight("landing")
+
+
+## Shade cloaks sit on a layer above every unit z. A plant onto that tile used
+## to slash under the cloak, which read as a body hit with no relocate.
+func _pawn_z(cell: Vector2i) -> int:
+	var z := VISUAL_SORT.unit_z_index(cell, _elev_at(cell))
+	if _shade_markers.has(cell):
+		z = maxi(z, SHADE_LAYER_Z + cell.x + cell.y + 2)
+	return z
 
 
 func _ambush_shade_origin(origin: Dictionary) -> Vector2i:
