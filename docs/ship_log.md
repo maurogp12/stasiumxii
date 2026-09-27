@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Ambush slash strip v5
+
+Presentation only. No APK. Kit numbers, Ambush legality, Invisible Soft Lock, the 22, and AP costs are unchanged. Soft Lock pending Rosie rematch.
+
+`ambush_slash.png` is the v5 transparent strip: 1280×720, five cells (anticipate, wind, SNAP peak, settle trails, fade). Magenta/cyan. Scenario `asset_zCcVxFNBWSMQ1vzsgA2Dfp5S`. The gray cell frame and the black field are not played. Holds are 80+120+90+50+40 ms (380ms, inside 0.2–0.4s). The SNAP cell opens on the contact. The strip is anchored on the planted Gloam at the back tile and faces the struck body. The v4 peak plate stays unwired. The stamp plays this one strip.
+
 ## 2026-09-27 — Mark Shot cast bow v4
 
 Presentation only. No APK. Kit numbers and ranges are unchanged.

@@ -892,8 +892,19 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 					out.append(_flash("slash", target, struck, 0.26))
 					# Shade origin and Invisible self-origin share this hit beat.
 					# BoardView arms this only after the body is planted on the back tile.
-					# The delay is the slash contact, measured from that plant.
-					out.append(_stamp("ambush_slash", target, struck, ViewMotion.ambush_contact_sec(), VfxBudget.STAMP_AMBUSH_PX, VfxBudget.STAMP_SPELL_LIFE))
+					# The strip starts with that slash. Anticipate and wind fill the
+					# beat, and the SNAP cell opens on the contact. The anchor is
+					# the planted Gloam, facing the struck body. Not the cast cell.
+					var back := to_cell
+					if event.has("destination"):
+						back = cell_of(event.get("destination"))
+					var lead := STAMP.lead_sec("ambush_slash", 2)
+					var slash_delay := maxf(ViewMotion.ambush_contact_sec() - lead, 0.0)
+					var slash := _stamp("ambush_slash", caster, back, slash_delay, VfxBudget.STAMP_AMBUSH_PX, STAMP.windup_sec("ambush_slash"))
+					slash["chest"] = false
+					slash["hand"] = true
+					slash["aim"] = struck
+					out.append(slash)
 		"fade":
 			if typ == "cast" and bool(event.get("invisible", false)):
 				out.append(_status_on("invisible", caster, caster_cell, 1))

@@ -1180,7 +1180,7 @@ func _test_scenario_overlays() -> void:
 	eq(stamp_script.frame_count("hit_flash"), 6, "hit flash is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("damage_float"), 6, "damage float is a 6-frame punch-v3 strip")
 	eq(stamp_script.frame_count("footstep_dust"), 5, "footstep dust is a 5-frame punch-v3 plant strip")
-	eq(stamp_script.frame_count("ambush_slash"), 7, "ambush slash is a 7-frame punch-v3 strip")
+	eq(stamp_script.frame_count("ambush_slash"), 5, "ambush slash is a 5-cell v5 strip")
 	eq(stamp_script.frame_count("mark_shot_impact"), 7, "Mark Shot impact is a 7-frame floor strip")
 	eq(stamp_script.frame_count("mark_shot_cast"), 4, "Mark Shot cast is a 4-frame bow strip")
 	eq(stamp_script.frame_count("detonate_burst"), 6, "Detonate burst is a 6-frame punch-v3 strip")
@@ -1237,10 +1237,44 @@ func _test_scenario_overlays() -> void:
 		"origin": Vector2i(2, 4), "destination": Vector2i(5, 4),
 		"teleported": true, "backstab": true, "facing_mult": 1.35, "damage": 30,
 	}])
-	eq(_sheet(ambush, "ambush_slash")["cell"], Vector2i(4, 4), "Shade and Invisible Ambush slash the struck body")
-	eq(_sheet(ambush, "ambush_slash")["cell"] == Vector2i(5, 4), false, "the slash is not the back tile")
-	eq(_sheet(ambush, "ambush_slash")["cell"] == Vector2i(2, 4), false, "the slash is not the origin")
-	eq(is_equal_approx(float(_sheet(ambush, "ambush_slash")["delay"]), preload("res://units/view_motion.gd").ambush_contact_sec()), true, "the slash waits for contact")
+	var slash_sheet := _sheet(ambush, "ambush_slash")
+	eq(slash_sheet["cell"], Vector2i(5, 4), "the slash is anchored on the planted back tile")
+	eq(slash_sheet["cell"] == Vector2i(4, 4), false, "the slash is not centered on the struck body")
+	eq(slash_sheet["cell"] == Vector2i(2, 4), false, "the slash is not the origin")
+	eq(slash_sheet.get("aim"), Vector2i(4, 4), "the slash faces the struck body")
+	eq(int(slash_sheet.get("seat", -1)), 0, "the slash follows the planted caster")
+	eq(bool(slash_sheet.get("hand", false)), true, "the slash stays on the planted Gloam")
+	eq(bool(slash_sheet.get("chest", true)), false, "the slash is not dropped onto the feet")
+	var contact_sec := preload("res://units/view_motion.gd").ambush_contact_sec()
+	var slash_lead := stamp_script.lead_sec("ambush_slash", 2)
+	var slash_life := stamp_script.windup_sec("ambush_slash")
+	eq(stamp_script.holds_for("ambush_slash"), [0.08, 0.12, 0.09, 0.05, 0.04], "slash frames are anticipate, wind, snap, settle, fade")
+	eq(is_equal_approx(slash_lead, contact_sec), true, "anticipate and wind fill the beat before contact")
+	eq(is_equal_approx(float(slash_sheet["delay"]), contact_sec - slash_lead), true, "the snap opens on the slash contact")
+	eq(is_equal_approx(float(slash_sheet["life"]), slash_life), true, "the strip lasts the locked holds")
+	eq(slash_life >= 0.20 and slash_life <= 0.40, true, "the slash finishes inside 0.2-0.4s")
+	eq(stamp_script.frame_at("ambush_slash", 0.0), 0, "anticipate is the first cell")
+	eq(stamp_script.frame_at("ambush_slash", 0.08), 1, "the wind starts when anticipate ends")
+	eq(stamp_script.frame_at("ambush_slash", contact_sec), 2, "the SNAP cell is up when the hit resolves")
+	eq(stamp_script.frame_at("ambush_slash", 0.29), 3, "settle trails follow the snap")
+	eq(stamp_script.frame_at("ambush_slash", 0.34), 4, "fade is the last cell")
+	var slash_tex: Texture2D = stamp_script.texture_for("ambush_slash")
+	eq(slash_tex.get_width(), 1280, "the ambush strip is 1280 wide")
+	eq(slash_tex.get_height(), 720, "the ambush strip is 720 tall")
+	var slash_img := slash_tex.get_image()
+	eq(slash_img.get_pixel(12, 360).a < 0.08, true, "the gray cell frame is not drawn")
+	eq(slash_img.get_pixel(128, 221).a < 0.08, true, "the outer guide line is not drawn")
+	eq(slash_img.get_pixel(128, 499).a < 0.08, true, "the lower guide line is not drawn")
+	eq(slash_img.get_pixel(640, 360).a > 0.8, true, "the snap core stays opaque")
+	var slash_cells: Array[Rect2] = [
+		Rect2(7, 238, 244, 243),
+		Rect2(263, 238, 244, 243),
+		Rect2(519, 238, 244, 243),
+		Rect2(775, 238, 244, 243),
+		Rect2(1031, 238, 244, 243),
+	]
+	for i in slash_cells.size():
+		eq(stamp_script.region_for("ambush_slash", i, slash_tex), slash_cells[i], "ambush cell %d crops inside the gray frame" % i)
 	eq(_sheet(ambush, "hit_flash")["cell"], Vector2i(4, 4), "Ambush damage still flashes the body")
 	var ambush_miss: Array = ROUTER.recipes_for([{
 		"type": "miss", "spell": "ambush", "seat": 0, "target_seat": 1,

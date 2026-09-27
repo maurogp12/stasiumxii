@@ -1,8 +1,13 @@
 extends "res://vfx/vfx_pooled.gd"
 
 ## One-shot sprite overlay. Strips play left to right.
-## Punch v3: Ambush slash, hit flash, damage float, Detonate, footstep dust,
-## and the melee windup. The hit flash keeps the authored cyan/gold.
+## Punch v3: hit flash, damage float, Detonate, footstep dust, and the melee
+## windup. The hit flash keeps the authored cyan/gold.
+## Ambush slash is the v5 transparent strip (scenario
+## asset_zCcVxFNBWSMQ1vzsgA2Dfp5S). Five cells: anticipate, wind, SNAP peak,
+## settle trails, fade. Holds are 80+120+90+50+40. The SNAP cell opens on
+## the contact. The gray cell frame and the black field are not frames.
+## A single-frame peak overlay is not a second stamp.
 ## Mark Shot impact stays punch v2. The bow windup is the v4 transparent
 ## strip (scenario asset_bXoujAQYZwDDQJQNGL2ouD7M). Holds stay
 ## 70+80+80+70. Cells are draw, snap burst, reticle peak, arrow-tip release.
@@ -34,7 +39,10 @@ const GRIDS := {
 ## Bow windup, in milliseconds. 70 + 80 + 80 + 70 = 300.
 ## Integers so the snap does not drift past 0.30s. Not tile time, not the body clip.
 ## The draw is not stretched out to the contact.
+## Ambush slash: 80 + 120 + 90 + 50 + 40 = 380. Anticipate and wind are the
+## 200ms before contact. The SNAP cell is the third hold. Inside 0.2–0.4s.
 const FRAME_MS := {
+	"ambush_slash": [80, 120, 90, 50, 40],
 	"mark_shot_cast": [70, 80, 80, 70],
 }
 
@@ -48,14 +56,13 @@ const INK_OFFSET := {
 ## shrinking frame stays planted instead of drifting. Padding keeps the
 ## linear filter off the neighboring cell.
 const STRIPS := {
+	# Five equal windows. The gray cell frame and the black field sit outside.
 	"ambush_slash": [
-		Rect2(31, 225, 166, 250),
-		Rect2(216, 225, 179, 250),
-		Rect2(395, 225, 213, 250),
-		Rect2(608, 225, 151, 250),
-		Rect2(777, 225, 171, 250),
-		Rect2(948, 225, 161, 250),
-		Rect2(1109, 225, 146, 250),
+		Rect2(7, 238, 244, 243),
+		Rect2(263, 238, 244, 243),
+		Rect2(519, 238, 244, 243),
+		Rect2(775, 238, 244, 243),
+		Rect2(1031, 238, 244, 243),
 	],
 	"hit_flash": [
 		Rect2(76, 232, 64, 222),
@@ -167,6 +174,16 @@ static func windup_sec(sheet: String) -> float:
 	for raw in FRAME_MS[sheet]:
 		ms += int(raw)
 	return float(ms) / 1000.0
+
+
+## Seconds until frame `index` starts. The Ambush SNAP cell is index 2.
+static func lead_sec(sheet: String, index: int) -> float:
+	var holds := holds_for(sheet)
+	var acc := 0.0
+	var last := mini(maxi(index, 0), holds.size())
+	for i in last:
+		acc += float(holds[i])
+	return acc
 
 
 ## Frame index at `elapsed` seconds. The next cell starts on the millisecond
