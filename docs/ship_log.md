@@ -2,6 +2,18 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Bastion and Ironjaw face the step
+
+Presentation only. No APK. `version/name` and `version/code` stay `0.1.27-mobile` / `28`. Soft Lock is not stamped. Locked kit numbers, map geometry, and Ambush are unchanged.
+
+Mauro's `mobile-0.1.27-debug` clip (tip `b38b935`, before the one-costume hold) shows Bastion ACTIVE, Face S, on a south walk. That build's south sheet is the older gold strip: the helm rises about 13px inside the cell while the feet stay put, so the body bobs on top of the 2.5px crest. North does the same, about 15px. West is not the v6d mirror, and the sole row slides. Idle plants are a different drawing from walk frame 0. Ironjaw Face N on that build is the old north strip: a thin dark read, about half the opaque pixels of the v6g east berserker.
+
+The one-costume hold after that APK stopped the pop by copying the east sheet onto north and south. Face S then shows the southeast body. A south step does not face south. That hold is retired.
+
+North and south are their own walks now, same costume as the live east punch. Bastion is still proposal 2C: charcoal and gold, tower shield, spiked mace. South faces SW. North faces NE, shield from behind. Ironjaw is still Berserker A + helm A2: grill, dual axes, cape, with enough iron midtone to read on grass. South faces SW. North faces NE. East stays wakfu-ship-v6d (Bastion) and wakfu-ship-v6g (Ironjaw). West stays the per-cell mirror of that east sheet. Not a runtime `flip_h`. The v5 strips are not wired. `*_gen.png` is still not loaded.
+
+Each new cell is 144×160. Feet sit on y=149 for all six frames. The helm stays on one row (Bastion y=6, Ironjaw y=18, the same band as v6g east), so the stride is the legs and not a second hop. The engine crest is unchanged: Bastion 2.5px, Ironjaw the shared 3px. Idle, the face pad, and the walk still share `walk_<facing>` frame 0. Standing does not swap in the soft plant.
+
 ## 2026-09-27 — Ironjaw and Bastion keep one costume
 
 Presentation only. No APK. Soft Lock is not stamped. Locked kit numbers, map geometry, and Ambush are unchanged.

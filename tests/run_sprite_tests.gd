@@ -125,7 +125,7 @@ func _test_sprite_node_setup() -> void:
 		eq(Pawn.idle_plant_texture(class_id, "E"), null, "%s has no separate idle plant" % class_id)
 	for class_id in ["ironjaw", "bastion"]:
 		_assert_west_is_east_mirror(class_id)
-		_assert_facing_holds_east_sheet(class_id)
+		_assert_facing_is_own_sheet(class_id)
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
@@ -314,15 +314,63 @@ func _assert_walk_identity(pawn: Pawn, class_id: String, facing: String) -> void
 	pawn.set_facing(facing)
 
 
-## North and south stay on the locked east sheet so a face change cannot
-## load the older costume. West is the mirror, checked separately.
-func _assert_facing_holds_east_sheet(class_id: String) -> void:
-	var east := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
+## North and south are their own three-quarter walks. A face pad must not
+## show the east body, and the helm must not bob inside the cell. West is
+## the mirror, checked separately. The v5 strips are not this contract.
+func _assert_facing_is_own_sheet(class_id: String) -> void:
+	var east_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
 	for face in ["n", "s"]:
 		var held := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, face))
-		eq(held == east, true, "%s walk_%s is the east sheet" % [class_id, face])
 		var png := FileAccess.get_file_as_bytes(StripLibrary.export_png_path(class_id, "walk", face))
-		eq(png == east, true, "%s walk_%s png matches the east bytes" % [class_id, face])
+		eq(held == east_bytes, false, "%s walk_%s is not the east sheet" % [class_id, face])
+		eq(png == held, true, "%s walk_%s png matches the packed bytes" % [class_id, face])
+		var img := Image.new()
+		eq(img.load_png_from_buffer(held), OK, "%s walk_%s loads" % [class_id, face])
+		eq(img.get_width(), 864, "%s walk_%s is six cells" % [class_id, face])
+		eq(img.get_height(), 160, "%s walk_%s is 160 tall" % [class_id, face])
+		var tops: Array[int] = []
+		var prev := PackedByteArray()
+		for i in 6:
+			var cell := img.get_region(Rect2i(i * 144, 0, 144, 160))
+			var metrics := _cell_metrics(cell)
+			eq(int(metrics.x) >= 148 and int(metrics.x) <= 151, true, "%s %s frame %d foot stays on the plant row" % [class_id, face, i])
+			eq(int(metrics.z) >= 4500, true, "%s %s frame %d is a solid body" % [class_id, face, i])
+			tops.append(int(metrics.y))
+			var raw := cell.get_data()
+			if i > 0:
+				eq(raw == prev, false, "%s %s frame %d is a new pose" % [class_id, face, i])
+			prev = raw
+		var lo := tops[0]
+		var hi := tops[0]
+		for t in tops:
+			lo = mini(lo, t)
+			hi = maxi(hi, t)
+		eq(hi - lo <= 6, true, "%s %s helm stays on one row" % [class_id, face])
+	var north := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "n"))
+	var south := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "s"))
+	eq(north == south, false, "%s north and south are different walks" % class_id)
+	StripLibrary.clear_cache()
+	var bank := StripLibrary.frames_for(class_id)
+	var east_cell := bank.get_frame_texture("walk_e", 0).get_image().get_data()
+	eq(bank.get_frame_texture("walk_n", 0).get_image().get_data() == east_cell, false, "%s north playback is not the east cell" % class_id)
+	eq(bank.get_frame_texture("walk_s", 0).get_image().get_data() == east_cell, false, "%s south playback is not the east cell" % class_id)
+
+
+## foot x, helm y, opaque count. Alpha under 0.08 is empty.
+func _cell_metrics(cell: Image) -> Vector3:
+	var foot := -1
+	var head := cell.get_height()
+	var count := 0
+	for y in range(cell.get_height() - 1, -1, -1):
+		var hit := false
+		for x in cell.get_width():
+			if cell.get_pixel(x, y).a > 0.08:
+				hit = true
+				count += 1
+				head = mini(head, y)
+		if hit and foot < 0:
+			foot = y
+	return Vector3(foot, head, count)
 
 
 func _assert_west_is_east_mirror(class_id: String) -> void:
