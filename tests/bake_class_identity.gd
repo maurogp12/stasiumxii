@@ -12,7 +12,7 @@ func _initialize() -> void:
 
 
 func _bake() -> void:
-	var size := Vector2i(1180, 760)
+	var size := Vector2i(1280, 980)
 	var vp := SubViewport.new()
 	vp.size = size
 	vp.transparent_bg = false
@@ -30,10 +30,10 @@ func _bake() -> void:
 		Vector2(0, size.y),
 	])
 	host.add_child(bg)
-	_tag(host, "Ironjaw  —  idle is walk frame 0, walk is the same sheet", Vector2(36, 36))
-	_row(host, "ironjaw", 210)
-	_tag(host, "Bastion  —  idle is walk frame 0, walk is the same sheet", Vector2(36, 400))
-	_row(host, "bastion", 580)
+	_tag(host, "Ironjaw  —  idle and mid-stride are one sheet, N/E/S/W", Vector2(36, 28))
+	_pair(host, "ironjaw", 200)
+	_tag(host, "Bastion  —  idle and mid-stride are one sheet, N/E/S/W", Vector2(36, 500))
+	_pair(host, "bastion", 680)
 	for _i in 4:
 		await process_frame
 	var image := vp.get_texture().get_image()
@@ -46,16 +46,16 @@ func _bake() -> void:
 	quit(0)
 
 
-func _row(host: Node2D, class_id: String, foot_y: float) -> void:
+func _pair(host: Node2D, class_id: String, foot_y: float) -> void:
 	var faces: Array[String] = ["N", "E", "S", "W"]
-	var x0 := 120.0
-	var step := 150.0
+	var x0 := 150.0
+	var step := 280.0
 	for i in faces.size():
 		var face: String = faces[i]
-		_tag(host, "idle " + face, Vector2(x0 + step * i - 28.0, foot_y - 150.0))
+		_tag(host, "idle " + face, Vector2(x0 + step * i - 36.0, foot_y - 160.0))
 		_pawn(host, class_id, face, Vector2(x0 + step * i, foot_y), false)
-	_tag(host, "walk E", Vector2(x0 + step * 4.0 - 28.0, foot_y - 150.0))
-	_pawn(host, class_id, "E", Vector2(x0 + step * 4.0, foot_y), true)
+		_tag(host, "stride " + face, Vector2(x0 + step * i + 90.0, foot_y - 160.0))
+		_pawn(host, class_id, face, Vector2(x0 + step * i + 130.0, foot_y), true)
 
 
 func _pawn(host: Node2D, class_id: String, facing: String, foot: Vector2, walking: bool) -> void:
@@ -76,12 +76,8 @@ func _pawn(host: Node2D, class_id: String, facing: String, foot: Vector2, walkin
 	if not walking:
 		return
 	pawn.arm_driven_walk()
-	var strip := _visible_strip(pawn)
-	if strip == null:
-		return
-	var count := strip.sprite_frames.get_frame_count(strip.animation)
-	strip.frame = mini(3, count - 1)
-	strip.frame_progress = 0.0
+	pawn.sync_walk_plant()
+	pawn.sample_driven_gait(0.45)
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
