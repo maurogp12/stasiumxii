@@ -326,7 +326,7 @@ func _assert_ironjaw_feet(scale_y: float) -> void:
 				break
 		if hit and foot_y < 0:
 			foot_y = y
-	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw foot row stays on the shared anchor")
+	eq(foot_y >= 152 and foot_y <= 156, true, "ironjaw v6c plant foot sits near the bottom of the cell")
 	eq(float(foot_y - head_y + 1) / float(height) >= 0.90, true, "ironjaw art-fill covers at least 90% of the cell")
 	if foot_y < 0:
 		return

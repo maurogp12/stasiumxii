@@ -153,7 +153,9 @@ func _test_curves_return_to_origin() -> void:
 	eq(is_equal_approx(MOTION.step_travel(0.2), 0.2), false, "early travel is not a linear skate")
 	eq(MOTION.HOP_PX <= 4.0, true, "the body rise stays a short hop, not a long arc")
 	eq(MOTION.hop_crest_px("bastion") >= 2.0 and MOTION.hop_crest_px("bastion") <= 3.0, true, "bastion crest stays in the heavy band")
+	eq(is_equal_approx(MOTION.hop_crest_px("bastion"), 2.5), true, "bastion crest stays at 2.5")
 	eq(MOTION.hop_crest_px("ironjaw") >= 2.0 and MOTION.hop_crest_px("ironjaw") <= 3.0, true, "ironjaw crest stays in the heavy band")
+	eq(is_equal_approx(MOTION.hop_crest_px("ironjaw"), MOTION.HOP_PX), true, "ironjaw crest is the shared 3px hop")
 	eq(MOTION.hop_crest_px("kestrel") >= 3.0 and MOTION.hop_crest_px("kestrel") <= 4.0, true, "kestrel crest stays in the light band")
 	eq(MOTION.hop_crest_px("gloam") >= 3.0 and MOTION.hop_crest_px("gloam") <= 4.0, true, "gloam crest stays in the light band")
 	eq(is_equal_approx(MOTION.hop_crest_px("mender"), MOTION.HOP_PX), true, "mender keeps the shared crest")
@@ -1320,9 +1322,12 @@ func _test_strip_library_missing_and_slice() -> void:
 				truthy(authored_image != null and played_image != null, "%s %s cell images load" % [cls, anim_name])
 				if kind == "hit":
 					var walk_foot := _foot_row(played.get_frame_texture("walk_%s" % face, 0).get_image())
+					# Ironjaw east/west v6c plants near y=154. North/south stay the v5 row.
+					var anchor_lo := 152 if cls == "ironjaw" and (face == "e" or face == "w") else 148
+					var anchor_hi := 156 if cls == "ironjaw" and (face == "e" or face == "w") else 151
 					for hit_i in played.get_frame_count(anim_name):
 						var hit_row := _foot_row(played.get_frame_texture(anim_name, hit_i).get_image())
-						eq(hit_row >= 148 and hit_row <= 151, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
+						eq(hit_row >= anchor_lo and hit_row <= anchor_hi, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
 						eq(absi(hit_row - walk_foot) <= 1, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
 				else:
 					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])
