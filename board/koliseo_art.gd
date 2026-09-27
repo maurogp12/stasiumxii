@@ -6,10 +6,10 @@ extends RefCounted
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
 ## Crosshaven paints the original grassland sheet (grass, dirt, water, farm props).
-## Brinewake paints the coast punch (wet sand, pier wood, tide scorch).
+## Brinewake paints original-tileset cobble, stone, and deep water.
 ## Slagcrown paints original-tileset cracked earth, lava, and scorched cliffs.
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
-## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
+## Stormspire paints the electric sheet (dark stone, purple energy, electric cliffs).
 ## See THEMES.md. The board loads these slices by dress prefix.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"

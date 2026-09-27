@@ -247,7 +247,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/brine_ground_e1.png" width="64" height="58"/>
+  <image source="tiles/brine_ground_e1.png" width="64" height="75"/>
  </tile>
  <tile id="29">
   <properties>
@@ -255,7 +255,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/brine_ground_e2.png" width="64" height="86"/>
+  <image source="tiles/brine_ground_e2.png" width="64" height="75"/>
  </tile>
  <tile id="30">
   <properties>
@@ -263,7 +263,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/brine_mud_e1.png" width="64" height="56"/>
+  <image source="tiles/brine_mud_e1.png" width="64" height="75"/>
  </tile>
  <tile id="31">
   <properties>
@@ -426,7 +426,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_ground_e1.png" width="64" height="74"/>
+  <image source="tiles/storm_ground_e1.png" width="64" height="70"/>
  </tile>
  <tile id="51">
   <properties>
@@ -442,6 +442,6 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_mud_e1.png" width="64" height="76"/>
+  <image source="tiles/storm_mud_e1.png" width="64" height="70"/>
  </tile>
 </tileset>

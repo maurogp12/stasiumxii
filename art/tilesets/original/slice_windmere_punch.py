@@ -359,9 +359,6 @@ def _patch_atlas(records: list[dict]) -> None:
         "pending/ice/punch/wind_elevation_punch.png",
         "pending/ice/punch/wind_props_punch.png",
         "pending/electric/stasium_tileset_electric.png",
-        "pending/electric/storm_ground_punch.png",
-        "pending/electric/storm_elevation_punch.png",
-        "pending/electric/storm_props_punch.png",
     ):
         if sheet not in sheets:
             sheets.append(sheet)

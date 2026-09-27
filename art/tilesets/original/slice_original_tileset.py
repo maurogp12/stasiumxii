@@ -6,12 +6,11 @@ in art/maps/arena_colosseum_v2/tiled/tiles/. Flat tiles fill the diamond.
 Cliff tiles keep a 64×32 top face and hang the face below it. Props are
 uniformly scaled to that same ground scale.
 
-Windmere and Stormspire are not sliced here. slice_ice_electric.py writes
-those packs from the scenario sheets. Crosshaven and Slagcrown are this
-contact sheet: grassland for the unprefixed dress, cracked earth and
-scorched cliffs for slag_*. Brinewake is not sliced here either.
-slice_brine_punch.py writes the coast punch. This script must not put the
-cobble cells back over brine_*.
+Windmere is not sliced here. slice_ice_electric.py writes that pack from
+the ice punch. Stormspire is the electric contact sheet, not this file.
+Crosshaven, Brinewake, and Slagcrown are this contact sheet: grassland for
+the unprefixed dress, cobble and stone for brine_*, cracked earth and
+scorched cliffs for slag_*.
 """
 from __future__ import annotations
 
@@ -69,7 +68,14 @@ PACKS = {
         "ground_e2": (CLIFF, GRASS_TALL),
         "mud_e1": (CLIFF, GRASS_LOW),
     },
-    # brine_* is the coast punch (slice_brine_punch.py), not this sheet.
+    "brine_": {
+        "ground": (FLAT, COBBLE + STONE),
+        "mud": (FLAT, SAND),
+        "water": (FLAT, [(1361, 48), (1257, 48)]),
+        "ground_e1": (CLIFF, STONE_BLOCK),
+        "ground_e2": (CLIFF, STONE_BLOCK),
+        "mud_e1": (CLIFF, STONE_BLOCK),
+    },
     "slag_": {
         "ground": (FLAT, CRACKED + DARK),
         "mud": (FLAT, CRACKED),

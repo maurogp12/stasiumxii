@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Slice the Stormspire algo-así punch sheets onto the Koliseo 64×32 grid.
+"""Rejected Stormspire algo-así punch. Not the live dress.
+
+The board paints the electric contact sheet slices from before #166.
+Running this script overwrites that restore.
 
 Reads the three punch contact sheets in pending/electric/ and overwrites only
 Stormspire presentation files (`storm_*` terrain and `storm_prop_*`).
@@ -253,6 +256,10 @@ def _check(records: list) -> None:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Stormspire algo-así punch is not the live dress. "
+        "The board paints the electric contact sheet."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
             raise SystemExit(f"missing punch sheet {path}")

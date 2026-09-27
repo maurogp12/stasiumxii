@@ -2,10 +2,9 @@
 """Slice the scenario ice sheet onto the Koliseo 64×32 grid.
 
 Reads pending/ice and overwrites only Windmere (`wind_*`) terrain and
-dress-prefixed props. Stormspire (`storm_*`) is sliced by
-slice_storm_punch.py from the algo-así punch sheets in pending/electric/.
-Slagcrown (`slag_*`) and Crosshaven are slices of original-tileset-b.jpg.
-Brinewake stays on the coast punch.
+dress-prefixed props. Stormspire (`storm_*`) is the electric contact
+sheet already sliced onto the board. This file must not overwrite it.
+Slagcrown, Crosshaven, and Brinewake are slices of original-tileset-b.jpg.
 
 Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the same ground scale as the original slicer.
@@ -172,9 +171,6 @@ def _patch_atlas(records: list) -> None:
         "pending/ice/punch/wind_elevation_punch.png",
         "pending/ice/punch/wind_props_punch.png",
         "pending/electric/stasium_tileset_electric.png",
-        "pending/electric/storm_ground_punch.png",
-        "pending/electric/storm_elevation_punch.png",
-        "pending/electric/storm_props_punch.png",
     ]
     families = atlas["families"]
     families["windmere"] = {"pack": "ice", "prefix": "wind_", "pending_theme": None}
@@ -242,8 +238,8 @@ def _slice_legacy_ice(ice: np.ndarray, ice_comps, records: list) -> None:
 
 
 def main() -> None:
-    # Stormspire paint is the algo-así punch sheets. slice_storm_punch.py
-    # owns storm_*.png. This slicer must not restore those older slices.
+    # Stormspire stays on the electric contact sheet. This slicer only
+    # refreshes Windmere and must not write storm_*.png.
     records: list = []
     punch_ground = HERE / "pending" / "ice" / "punch" / "wind_ground_punch.png"
     if punch_ground.is_file():

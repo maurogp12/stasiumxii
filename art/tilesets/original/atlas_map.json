@@ -6,13 +6,7 @@
     "pending/ice/punch/wind_ground_punch.png",
     "pending/ice/punch/wind_elevation_punch.png",
     "pending/ice/punch/wind_props_punch.png",
-    "pending/electric/stasium_tileset_electric.png",
-    "pending/electric/storm_ground_punch.png",
-    "pending/electric/storm_elevation_punch.png",
-    "pending/electric/storm_props_punch.png",
-    "pending/brinewake/brine_ground_punch.png",
-    "pending/brinewake/brine_elevation_punch.png",
-    "pending/brinewake/brine_props_punch.png"
+    "pending/electric/stasium_tileset_electric.png"
   ],
   "sliced_from": "original-tileset-b.jpg",
   "grid": [
@@ -532,7 +526,7 @@
       "file": "storm_ground_e1.png",
       "size": [
         64,
-        74
+        70
       ],
       "fit": "cliff"
     },
@@ -540,7 +534,7 @@
       "file": "storm_ground_e1_v1.png",
       "size": [
         64,
-        77
+        70
       ],
       "fit": "cliff"
     },
@@ -548,7 +542,7 @@
       "file": "storm_mud_e1.png",
       "size": [
         64,
-        76
+        70
       ],
       "fit": "cliff"
     },
@@ -563,48 +557,48 @@
     {
       "file": "storm_prop_crystal_bolt.png",
       "size": [
-        73,
-        107
+        71,
+        89
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_spark.png",
       "size": [
-        55,
-        72
+        37,
+        70
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_conduit.png",
       "size": [
-        88,
-        119
+        74,
+        120
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_rock_pillar.png",
       "size": [
-        83,
-        118
+        128,
+        127
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_arc.png",
       "size": [
-        120,
-        99
+        108,
+        92
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_rubble.png",
       "size": [
-        70,
-        89
+        112,
+        116
       ],
       "fit": "prop"
     },
@@ -959,15 +953,6 @@
       "source": "pending/brinewake/"
     },
     {
-      "file": "brine_ground_v2.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
       "file": "brine_mud.png",
       "fit": "punch",
       "size": [
@@ -1008,7 +993,7 @@
       "fit": "punch",
       "size": [
         64,
-        58
+        75
       ],
       "source": "pending/brinewake/"
     },
@@ -1017,7 +1002,7 @@
       "fit": "punch",
       "size": [
         64,
-        86
+        75
       ],
       "source": "pending/brinewake/"
     },
@@ -1026,79 +1011,7 @@
       "fit": "punch",
       "size": [
         64,
-        56
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rock_pillar.png",
-      "fit": "punch",
-      "size": [
-        11,
-        40
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_ruins.png",
-      "fit": "punch",
-      "size": [
-        28,
-        28
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_driftwood.png",
-      "fit": "punch",
-      "size": [
-        44,
-        12
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_fence.png",
-      "fit": "punch",
-      "size": [
-        44,
-        12
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rubble.png",
-      "fit": "punch",
-      "size": [
-        34,
-        20
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rock_cluster.png",
-      "fit": "punch",
-      "size": [
-        36,
-        21
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_waterfall.png",
-      "fit": "punch",
-      "size": [
-        11,
-        40
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_floor_seal.png",
-      "fit": "punch",
-      "size": [
-        26,
-        14
+        75
       ],
       "source": "pending/brinewake/"
     }
@@ -1107,13 +1020,7 @@
     "ice": "pending/ice/punch/wind_ground_punch.png",
     "electric": "pending/electric/stasium_tileset_electric.png",
     "lava": "original-tileset-b.jpg",
-    "brinewake": "pending/brinewake/brine_ground_punch.png"
-  },
-  "stormspire_punch": {
-    "ground": "pending/electric/storm_ground_punch.png",
-    "elevation": "pending/electric/storm_elevation_punch.png",
-    "props": "pending/electric/storm_props_punch.png",
-    "note": "Live Stormspire paint. Geometry and tags stay on the Locked maps."
+    "brinewake": "original-tileset-b.jpg"
   },
   "windmere_punch": {
     "ground": "pending/ice/punch/wind_ground_punch.png",

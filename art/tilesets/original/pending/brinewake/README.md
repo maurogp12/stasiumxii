@@ -1,5 +1,5 @@
-Brinewake coast punch, Soft Lock agua + costa.
+Rejected Brinewake coast punch. Not the live dress.
 
-`brine_ground_punch.png`, `brine_elevation_punch.png`, and `brine_props_punch.png` are the source sheets. `slice_brine_punch.py` writes `brine_*` terrain and `brine_prop_*` from them.
+The board paints `brine_*` sliced from `original-tileset-b.jpg` (the sheets on `mobile` at `9eb5431`, before #170). `slice_brine_punch.py` is not the wired source.
 
-Wet sand, pier wood, and tide scorch. Foam stays on the diamond seams. `brine_elevation_punch.png` is elevation v2: the upper-corner wooden deck is gone, and wooden stairs end on the remaining platforms. Props on `brine_props_punch.png` are sliced to about one tile. The sheets are not a pending hook, and they do not change tags or geometry.
+`brine_ground_punch.png`, `brine_elevation_punch.png`, and `brine_props_punch.png` stay in this folder as rejected references (wet sand, pier wood, tide scorch, elevation v2). They are not sliced onto the board, and they do not change tags or geometry.

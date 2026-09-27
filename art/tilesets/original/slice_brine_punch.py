@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Slice the Brinewake coast punch onto the Koliseo 64×32 grid.
+"""Rejected Brinewake coast punch. Not the live dress.
+
+The board paints original-tileset-b.jpg cobble and stone slices from
+before #170. Running this script overwrites that restore.
 
 Reads pending/brinewake contact sheets and overwrites only Brinewake
 (`brine_*` terrain and `brine_prop_*`). Crosshaven, Slagcrown, Windmere,
@@ -554,6 +557,10 @@ def _floor_seal(sheet: np.ndarray) -> Image.Image:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Brinewake coast punch is not the live dress. "
+        "The board paints original-tileset-b.jpg cobble and stone."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
             raise SystemExit(f"missing punch sheet {path}")

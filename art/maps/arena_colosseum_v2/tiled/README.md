@@ -13,7 +13,7 @@ Combat authority is the tags JSON. The sibling `.tmx` is isometric art.
 
 Built for Mauro · Sep 24 2026 (ET). Ship size **15×15** for all five arenas.
 
-**Tiles:** slices of the isometric sheets in `art/tilesets/original/` (64×32 diamonds). Crosshaven is grassland. Brinewake is coast stone. Slagcrown is lava from the original sheet. Windmere is the ice sheet. Stormspire is the electric sheet. See `art/tilesets/original/THEMES.md`. Terrain/elev tags unchanged.
+**Tiles:** slices of the isometric sheets in `art/tilesets/original/` (64×32 diamonds). Crosshaven is grassland. Brinewake is cobble and stone from the original sheet. Slagcrown is lava from the original sheet. Windmere is the ice punch. Stormspire is the electric sheet. See `art/tilesets/original/THEMES.md`. Terrain/elev tags unchanged.
 
 ## Orientation (locked)
 
@@ -72,7 +72,7 @@ Paint-only (NO block / LoS / cost): ruins, wells, hay, fences, rubble, rock pill
 ### Per-region notes
 
 - **Crosshaven** — warm gold plains; mud+water texture; no lava. Builder: `build_crosshaven.py`.
-- **Brinewake** — wet sand, pier wood, and tide scorch; ocean floods; foam on the diamond seams; tide crust is a few dark marks, not a grass carpet; lava 0. Geometry and tags are unchanged. The match board draws these `brine_*` sheets.
+- **Brinewake** — teal stone + ocean floods; more water than Crosshaven; silt mud; lava 0. Dress is the original-sheet cobble. Geometry and tags are unchanged.
 - **Slagcrown** — ash/basalt; Locked lava spoke channels; steam-pool water; little mud. Non-lava cells form one reachable set with lava impassable.
 - **Windmere** — ice-blue ground; meltwater + sparse mud; ice/crystal/spark props are paint-only.
 - **Stormspire** — dark slate/charcoal; wet cyan pools + scorched mud; conduit/spark/arc/crystal_bolt props paint-only (no charged MP / block / LoS). Builder: `build_stormspire.py`.
