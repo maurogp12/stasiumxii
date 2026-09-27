@@ -20,6 +20,18 @@ Presentation only. No APK. Kit numbers and ranges are unchanged.
 
 `mark_shot_cast.png` is the v4 transparent strip: 1280×320, four equal 320×320 cells (draw, snap burst, reticle peak, arrow-tip release). Cyan/gold, from the bow. Scenario `asset_bXoujAQYZwDDQJQNGL2ouD7M`. The cast is 70+80+80+70 ms. It is not stretched out to the contact. The snap cell stays dense. The plate is 44px and is not dropped, so the rays stay on the hands and the reticle and the arrow tip still read. The bolt flight is 0.24s, so the existing contact stack (flash, compact burst, float, flinch) lands inside 0.2–0.4s after the arrow leaves. Impact stays the punch-v2 floor strip.
 
+## 2026-09-27 — Ironjaw and Bastion east walks v6b
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5.
+
+Ironjaw and Bastion east replace the v5 punch strips in place: `art/export_2x/characters/<class>/anims/<class>_walk_e.png`, 864×160, six 144×160 cells. The same bytes are `art/export_2x/walk_src/<class>_walk_e.pngbin`, which is what combat playback reads. `.import` files and the Ironjaw `*_frames.tres` atlas slices stay (`x = 0, 144, 288, 432, 576, 720`).
+
+West is the v5 rule: each east cell flipped horizontally, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. North and south stay the current v5 three-quarter strips. No new north or south was drawn.
+
+Godot hop timing is unchanged. Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion and Ironjaw crest stays 2.5px (inside the ~3px bar, under the 4px cap). The v6b Ironjaw sheet bobs about 3px on one passing cell; `StripLibrary` already pins that foot to frame 0, so the class hop does not stack a second bounce. The hop crest lands on a cell whose feet are already on the baseline.
+
+Known sheet notes, not blockers: Ironjaw bounce about 3.7px in the source, Bastion flood-key holes and two near-duplicate frames. Judge those on the phone bake.
+
 ## 2026-09-27 — Soft Lock map presentation
 
 Presentation only. Locked geometry, tags, walkability, and kit numbers are unchanged. No APK. Windmere ice punch is untouched. Brinewake stays the coast punch (wet sand, pier wood, water).
