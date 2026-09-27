@@ -421,6 +421,8 @@ func _test_highlights_are_overlays_and_labels_are_debug() -> void:
 
 	var proj := FileAccess.get_file_as_string("res://project.godot")
 	truthy(proj.contains("debug/show_tile_labels=false"), "project setting stasium/debug/show_tile_labels defaults off")
+	truthy(proj.contains("debug/dev_overlays=false"), "dev overlays default off for APK cuts")
+	ProjectSettings.set_setting(DebugChrome.OVERLAY_SETTING, false)
 	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, false)
 	eq(BoardTile.tile_labels_visible(), false, "tile labels are hidden by default")
 	var labeled := TILE_SCRIPT.new() as BoardTile
@@ -430,12 +432,18 @@ func _test_highlights_are_overlays_and_labels_are_debug() -> void:
 	eq(labeled.elevation_text(), "0", "the elevation helper stays available for the debug label")
 	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, true)
 	eq(labeled.drawn_label(), "G 0", "the debug setting shows the terrain label")
-	eq(OS.is_debug_build(), true, "this suite runs in a debug build so F3 is live")
+	eq(OS.is_debug_build(), true, "this suite runs in a debug build")
+	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, false)
 	var key := InputEventKey.new()
 	key.pressed = true
 	key.keycode = KEY_F3
-	eq(BoardTile.consume_debug_label_key(key), true, "F3 toggles tile labels in a debug build")
+	eq(BoardTile.consume_debug_label_key(key), false, "F3 does nothing while dev overlays are off")
+	eq(BoardTile.tile_labels_visible(), false, "a debug APK cannot reveal labels without the flag")
+	ProjectSettings.set_setting(DebugChrome.OVERLAY_SETTING, true)
+	ProjectSettings.set_setting(BoardTile.LABEL_SETTING, true)
+	eq(BoardTile.consume_debug_label_key(key), true, "F3 toggles tile labels only when dev overlays are on")
 	eq(BoardTile.tile_labels_visible(), false, "F3 hides the labels again")
+	ProjectSettings.set_setting(DebugChrome.OVERLAY_SETTING, false)
 	eq(labeled.drawn_label(), "", "F3 clears the drawn label")
 	key.echo = true
 	eq(BoardTile.consume_debug_label_key(key), false, "a held F3 does not toggle twice")

@@ -202,10 +202,15 @@ func _sync_overlay(snap: Dictionary) -> void:
 			_continue_button.visible = false
 		return
 	var banner := StasisCatalog.room_banner()
-	var note := StasisCatalog.provisional_line()
+	# Playtest copy. The room banner and the continue buttons stay.
+	# The provisional sentence is a dev overlay and stays off for APK cuts.
+	var note := StasisCatalog.provisional_line() if DebugChrome.overlays_enabled() else ""
 	if bool(snap.get("match_over", false)):
 		if int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT:
-			_overlay_status.text = "%s\nFoe down. %s" % [banner, note]
+			var down := "Foe down."
+			if note != "":
+				down = "%s %s" % [down, note]
+			_overlay_status.text = "%s\n%s" % [banner, down]
 			if _continue_button != null:
 				_continue_button.text = StasisCatalog.continue_caption()
 				_continue_button.visible = true
@@ -216,7 +221,7 @@ func _sync_overlay(snap: Dictionary) -> void:
 		return
 	if _continue_button != null:
 		_continue_button.visible = false
-	_overlay_status.text = "%s\n%s" % [banner, note]
+	_overlay_status.text = banner if note == "" else "%s\n%s" % [banner, note]
 
 
 func _find_button(node: Node, text: String) -> Button:

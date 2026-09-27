@@ -861,6 +861,9 @@ func _present_resolve(events: Array) -> bool:
 		_play_combat_feedback(events)
 		_arm_view_motions(events)
 		_arm_vfx(events)
+		# Coach and vitals share this event with the float. Waiting for the
+		# motion lock left the previous HIT line up under a new MISS.
+		_commit_resolve_readout(events)
 	else:
 		_begin_ambush_arrival(ambush_hit, events)
 	var swallowed := false
@@ -1030,6 +1033,7 @@ func _arm_ambush_contact(event: Dictionary, events: Array, token: int) -> void:
 	_release_ambush_vitals()
 	var shown := _events_for_ambush_contact(events)
 	_publish_ambush_contact(shown)
+	_commit_resolve_readout(shown)
 	if _hud != null:
 		var toast := CombatHUD.toast_for_events(shown)
 		if toast != "":
@@ -2025,14 +2029,43 @@ func _sync_aim_preview(dest: Variant = null) -> void:
 	if _hud == null:
 		_sync_aim_line()
 		return
+	var snap: Dictionary = _sim().snapshot()
+	# Enemy swings must not keep the player's "HIT %%" caption on the board.
+	if not _can_control_seat(int(snap.get("active_seat", 0))):
+		_hud.set_aim_preview({})
+		_sync_aim_line()
+		return
 	var spell_id := _hud.selected_spell()
 	if spell_id == "" or not SpellKits.rolls(spell_id):
 		_hud.set_aim_preview({})
 		_sync_aim_line()
 		return
-	var snap: Dictionary = _sim().snapshot()
 	_hud.set_aim_preview(_sim().aim_hit_preview(CombatHUD.kit_seat(snap), spell_id, dest))
 	_sync_aim_line()
+
+
+## The float is already armed from these events. Paint the same snapshot now.
+## A plant hold still owns the pre-contact read; contact calls this after release.
+func _commit_resolve_readout(_events: Array) -> void:
+	if _aim_line != null and is_instance_valid(_aim_line):
+		_aim_line.clear_aim()
+	var snap: Dictionary = _sim().snapshot()
+	var ambush_waiting := _ambush_open_seat >= 0 and not _ambush_contact_armed
+	if _hud != null and not ambush_waiting:
+		_hud.set_aim_preview({})
+		_hud.render(snap, _sim().legal_intents(CombatHUD.kit_seat(snap)))
+	if ambush_waiting:
+		return
+	for unit in snap.get("units", []):
+		if typeof(unit) != TYPE_DICTIONARY:
+			continue
+		var seat := int(unit.get("seat", -1))
+		if not pawns_by_seat.has(seat):
+			continue
+		var pawn: Pawn = pawns_by_seat[seat]
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		pawn.note_resolved_vitals(unit)
 
 
 func _ensure_aim_line() -> Node2D:
@@ -2054,6 +2087,9 @@ func _sync_aim_line() -> void:
 	var snap: Dictionary = _sim().snapshot()
 	var spell_id := _hud.selected_spell()
 	if _busy or _view_locked or spell_id == "" or bool(snap.get("match_over", false)) or CombatHUD.is_deployment_phase(snap):
+		line.clear_aim()
+		return
+	if not _can_control_seat(int(snap.get("active_seat", 0))):
 		line.clear_aim()
 		return
 	var spec: Dictionary = _sim().aim_feel(CombatHUD.kit_seat(snap), spell_id, _aim_hover)

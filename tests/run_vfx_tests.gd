@@ -21,6 +21,7 @@ func _finish_live() -> void:
 	await _test_stamp_playback()
 	await _test_mark_cast_hands()
 	await _test_live_director()
+	await _test_stale_miss_cleared_by_hit()
 	await _test_shade_markers_survive_rebuild()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -646,6 +647,65 @@ func _active_sheet(director: Node, sheet: String) -> Node2D:
 		if node is Node2D and bool(node.get("in_use")) and str(node.get("_sheet")) == sheet:
 			return node
 	return null
+
+
+func _test_stale_miss_cleared_by_hit() -> void:
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 0.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 0.0\n"
+	eq(board_script.reload() == OK, true, "stale-miss board script compiles")
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	director.play([{
+		"type": "miss",
+		"spell": "strike",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": Vector2i(2, 3),
+		"to": Vector2i(3, 3),
+		"damage": 0,
+	}])
+	eq(_number_in_use(director, "MISS"), true, "a miss arms MISS chrome")
+	director.play([{
+		"type": "hit",
+		"spell": "strike",
+		"seat": 0,
+		"target_seat": 1,
+		"caster_cell": Vector2i(2, 3),
+		"to": Vector2i(3, 3),
+		"damage": 19,
+		"back": true,
+		"facing_mult": 1.2,
+	}])
+	eq(_number_in_use(director, "MISS"), false, "the next swing drops the previous MISS")
+	eq(_number_in_use_contains(director, "19"), true, "the HIT float is the event damage")
+	var proj := FileAccess.get_file_as_string("res://project.godot")
+	truthy(proj.contains("debug/dev_overlays=false"), "F9's dev overlay defaults off")
+	ProjectSettings.set_setting("stasium/debug/dev_overlays", false)
+	var key := InputEventKey.new()
+	key.pressed = true
+	key.keycode = KEY_F9
+	director._unhandled_input(key)
+	eq(director._readout.visible, false, "F9 does not open the readout when dev overlays are off")
+	board.free()
+
+
+func _number_in_use(director: Node, text: String) -> bool:
+	return _number_in_use_contains(director, text)
+
+
+func _number_in_use_contains(director: Node, text: String) -> bool:
+	for node in director.get_children():
+		if node == null or node.get("in_use") != true:
+			continue
+		var shown := str(node.get("_text"))
+		if shown == text or shown.contains(text):
+			return true
+	return false
 
 
 func _test_live_director() -> void:

@@ -1237,6 +1237,14 @@ func note_flash_settled() -> void:
 ## Overhead bar for a prey whose hit was already resolved. The board calls this
 ## only after the caster is standing on the back tile, facing them.
 func note_prey_vitals(unit: Dictionary) -> void:
+	note_resolved_vitals(unit)
+
+
+## The sim has already subtracted the hit. Paint that total with the float.
+## A plant hold keeps the pre-contact read until the slash releases it.
+func note_resolved_vitals(unit: Dictionary) -> void:
+	if _vitals_frozen:
+		return
 	hp = int(unit.get("hp", hp))
 	max_hp = int(unit.get("max_hp", max_hp))
 	_request_paint()
