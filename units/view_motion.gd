@@ -35,11 +35,10 @@ const IDLE_BOB_PX := 1.5
 const IDLE_PHASE_STEP := 0.73
 
 ## Sprite-local hop. The old phone hop was HOP_PX 36, about one iso tile.
-## The shared crest is 3px. Bastion sits a little under that. Ironjaw uses
-## the shared 3px. Kestrel and Gloam sit a little over. None clear 4px.
-## Feet plant on Y=0 at both tile edges, and the last slice of the tween
-## stays planted. No press into the floor. Walk strips squash on that plant
-## only, never mid-hop. The rise
+## The shared crest is 3px. Heavy classes sit a little under that, light
+## classes a little over, and none clear 4px. Feet plant on Y=0 at both
+## tile edges, and the last slice of the tween stays planted. No press into
+## the floor. Walk strips squash on that plant only, never mid-hop. The rise
 ## is in sprite pixels, so camera zoom does not change the stride.
 const WALK_BOUNCE_PX := 3.0
 const HOP_PX := 3.0
@@ -475,18 +474,12 @@ const FACING_SCREEN := {
 	"S": Vector2(-20, 10),
 	"W": Vector2(-20, -10),
 }
-## Shared crest is HOP_PX (3px). Bastion stays at 2.5. Ironjaw uses the
-## shared 3px. The v6b strip's ~3.7px mass shift is a pose on a planted
-## foot. The foot pin clears the passing-cell lift, and the hop crest is a
-## cell whose feet are already on the baseline, so this hop is the only
-## crest. Kestrel and Gloam sit in 3–4px. Mender keeps the shared crest.
-## Tile time stays 0.30s.
+## Shared crest is HOP_PX. Bastion and Ironjaw sit in 2–3px. Kestrel and
+## Gloam sit in 3–4px. Mender keeps the shared crest. Tile time stays 0.30s.
 static func hop_crest_px(class_id: String) -> float:
 	match SpellKits.normalize_class_id(class_id):
-		"bastion":
+		"bastion", "ironjaw":
 			return 2.5
-		"ironjaw":
-			return HOP_PX
 		"kestrel", "gloam":
 			return 3.5
 		_:

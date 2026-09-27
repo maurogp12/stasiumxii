@@ -20,17 +20,15 @@ Presentation only. No APK. Kit numbers and ranges are unchanged.
 
 `mark_shot_cast.png` is the v4 transparent strip: 1280×320, four equal 320×320 cells (draw, snap burst, reticle peak, arrow-tip release). Cyan/gold, from the bow. Scenario `asset_bXoujAQYZwDDQJQNGL2ouD7M`. The cast is 70+80+80+70 ms. It is not stretched out to the contact. The snap cell stays dense. The plate is 44px and is not dropped, so the rays stay on the hands and the reticle and the arrow tip still read. The bolt flight is 0.24s, so the existing contact stack (flash, compact burst, float, flinch) lands inside 0.2–0.4s after the arrow leaves. Impact stays the punch-v2 floor strip.
 
-## 2026-09-27 — Ironjaw and Bastion east walks v6b
+## 2026-09-27 — Bastion east walk v6b (Ironjaw v6b held)
 
-Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5.
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, Kestrel, and Ironjaw walks stay wakfu-ship-v5. Godot hop timing is unchanged: Bastion and Ironjaw crest stays 2.5px, tile time 0.30s, one stride per tile, plant hold the last 18%.
 
-Ironjaw and Bastion east replace the v5 punch strips in place: `art/export_2x/characters/<class>/anims/<class>_walk_e.png`, 864×160, six 144×160 cells. The same bytes are `art/export_2x/walk_src/<class>_walk_e.pngbin`, which is what combat playback reads. `.import` files and the Ironjaw `*_frames.tres` atlas slices stay (`x = 0, 144, 288, 432, 576, 720`).
+Bastion east is the wakfu-ship-v6b strip, in place: `art/export_2x/characters/bastion/anims/bastion_walk_e.png`, 864×160, six 144×160 cells. The same bytes are `art/export_2x/walk_src/bastion_walk_e.pngbin`. West is the per-cell horizontal mirror of that east sheet, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. Bastion north and south stay the current v5 three-quarter strips.
 
-West is the v5 rule: each east cell flipped horizontally, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. North and south stay the current v5 three-quarter strips. No new north or south was drawn.
+The Ironjaw v6b east wire is discarded. On a phone it read as an incomplete pixel blob, not Berserker A + helm A2. Ironjaw east, west, and the matching pngbin files match `mobile` again. Hold Ironjaw until a complete east v6c (full plate, grill, and dual axes, no crop cutoff).
 
-Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest is the shared 3px. The v6b Ironjaw sheet shifts its mass by about 3.7px on a late cell whose feet are already on the baseline, and one passing cell lifts about 3px. `StripLibrary` pins that lifted foot to frame 0. The hop crest lands on a cell whose feet are already there, so the 3px hop is the only crest. It does not stack on the strip bob.
-
-Known sheet notes, not blockers: Bastion flood-key holes and two near-duplicate frames. Judge stutter and flicker on the phone bake. Bastion hop is unchanged.
+Known Bastion sheet notes, not blockers: flood-key holes and two near-duplicate frames. Judge stutter and flicker on the phone bake. Bastion hop is unchanged.
 
 ## 2026-09-27 — Soft Lock map presentation
 
