@@ -9,12 +9,12 @@ Soft Lock is agua + costa: wet sand, pier wood, and tide scorch. Foam
 stays on the diamond seam. Tide crust is a few dark marks on the face.
 The green carpet on the punch sheet is not painted onto the diamonds.
 
-Elevation is on hold. Luca marked the upper-corner wooden deck
-(stairs, crates, and rope) for removal, and Scenario Art is regenerating
-that sheet. This script does not overwrite `brine_ground_e1.png`,
-`brine_ground_e2.png`, or `brine_mud_e1.png` until that sheet lands.
-Props are the sparse dock pieces on the props sheet, scaled to about
-one tile. Tags and geometry are not this script's job.
+Elevation is the regenerated sheet with the upper-corner wooden deck
+removed. A cliff keeps the 64×32 deck cap and hangs the wooden stair
+under it. The stair ends on the lower deck in that same sprite. A tread
+that continues past the deck is cut. Props are the sparse dock pieces
+on the props sheet, scaled to about one tile. Tags and geometry are
+not this script's job.
 """
 from __future__ import annotations
 
@@ -53,18 +53,14 @@ _FLATS = {
     "water": [(4, 1), (4, 2)],  # agua, the less-green water
 }
 
-# Elevation swap is held. The delivered sheet still has the upper-corner
-# deck (stairs, crates, rope) that Luca marked for removal.
-HOLD_ELEVATION = True
-
-# (x0, y0, x1, y1, total height, darken). Measured on the stairs-fix
-# elevation sheet: upper deck, wooden treads, lower deck. The tall crop
-# starts higher so the high step hangs farther and still lands.
-# Not applied while HOLD_ELEVATION is set.
+# (x0, y0, x1, y1, total height, darken). Measured on elevation v2
+# (1280×720, upper-corner deck removed): wooden treads and a wide
+# landing. The tall crop starts higher so the high step hangs farther
+# and still lands. The old sheet that still had that deck is not used.
 _STAIR_DECKS = {
-    "ground_e1": (760, 1180, 1140, 1600, 58, 1.0),
-    "ground_e2": (720, 1080, 1180, 1640, 86, 1.0),
-    "mud_e1": (760, 1180, 1140, 1600, 56, 0.74),
+    "ground_e1": (520, 300, 700, 540, 58, 1.0),
+    "ground_e2": (500, 240, 720, 560, 86, 1.0),
+    "mud_e1": (520, 300, 700, 540, 56, 0.74),
 }
 
 # (x, y, w, h, max_w, max_h). Solid pier-wood patches on the props sheet.
@@ -572,17 +568,14 @@ def main() -> None:
             _save(name, img, records)
             print(f"  {name}: {_qa(img)}")
 
-    if HOLD_ELEVATION:
-        print("  elevation held: cliff tiles stay as they are (upper-corner deck not wired)")
-    else:
-        stairs = {}
-        for key, (x0, y0, x1, y1, target_h, darken) in _STAIR_DECKS.items():
-            img = _fit_stair_deck(elev, (x0, y0, x1, y1), target_h, darken)
-            stairs[key] = img
-            _save(f"brine_{key}.png", img, records)
-            print(f"  brine_{key}.png: {_qa(img)} h={img.size[1]}")
-        if stairs["ground_e2"].size[1] <= stairs["ground_e1"].size[1]:
-            raise SystemExit("ground_e2 is not taller than ground_e1")
+    stairs = {}
+    for key, (x0, y0, x1, y1, target_h, darken) in _STAIR_DECKS.items():
+        img = _fit_stair_deck(elev, (x0, y0, x1, y1), target_h, darken)
+        stairs[key] = img
+        _save(f"brine_{key}.png", img, records)
+        print(f"  brine_{key}.png: {_qa(img)} h={img.size[1]}")
+    if stairs["ground_e2"].size[1] <= stairs["ground_e1"].size[1]:
+        raise SystemExit("ground_e2 is not taller than ground_e1")
 
     for prop, box in _PROPS.items():
         img = _prop_object(props, box)

@@ -490,6 +490,10 @@ func _test_brine_punch() -> void:
 	truthy(low.get_height() > 32, "Brinewake low cliffs hang below the diamond")
 	truthy(high.get_height() > low.get_height(), "Brinewake high cliffs are taller")
 	truthy(low.get_image().get_pixel(32, 16).a > 0.8, "Brinewake cliff cap is opaque")
+	truthy(_wall_meets_cap(low), "Brinewake low stair meets the deck")
+	truthy(_wall_meets_cap(high), "Brinewake high stair meets the deck")
+	truthy(_deck_foot(low), "Brinewake low stair lands on a deck")
+	truthy(_deck_foot(high), "Brinewake high stair lands on a deck")
 	for prop_name in ["driftwood", "rock_cluster", "rock_pillar", "rubble", "ruins", "fence", "waterfall"]:
 		var prop_tex: Texture2D = art.prop_texture(prop_name, "brine_")
 		truthy(prop_tex.get_height() <= 48, "%s stays about one tile tall" % prop_name)
