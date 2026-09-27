@@ -469,7 +469,7 @@ func _diamond_seam(tex: Texture2D) -> bool:
 	return true
 
 
-## Stormspire prop dress is held. Tags, the tmx, and blocking props stay.
+## Stormspire draws five short accents. Tags, the tmx, and blocking props stay.
 func _test_storm_dress() -> void:
 	var art := load("res://board/koliseo_art.gd")
 	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/stormspire_15x15_tags.json"))
@@ -483,11 +483,15 @@ func _test_storm_dress() -> void:
 		var cell := Vector2i(int(item.get("x", -1)), int(item.get("y", -1)))
 		drawn += art.visual_props("stormspire_15", cell, names).size()
 	truthy(tagged > 6, "Stormspire tags still list the full prop set")
-	eq(drawn, 0, "Stormspire draws no props while the dress is held")
+	eq(drawn, 5, "Stormspire draws five props")
 	eq(art.visual_props("stormspire", Vector2i(7, 5), ["conduit"]).size(), 0, "the conduit ring is not drawn")
 	eq(art.visual_props("stormspire", Vector2i(11, 5), ["rock_pillar"]).size(), 0, "the pillar square is not drawn")
-	eq(art.visual_props("stormspire", Vector2i(3, 5), ["rock_pillar"]).size(), 0, "pillars stay off the board")
-	eq(art.visual_props("stormspire", Vector2i(7, 7), ["floor_seal", "crystal_bolt"]).size(), 0, "the center mark stays off the board")
+	eq(art.visual_props("stormspire", Vector2i(7, 7), ["floor_seal", "crystal_bolt"]).size(), 0, "the center stays open")
+	var west: Array = art.visual_props("stormspire", Vector2i(3, 5), ["rock_pillar"])
+	eq(west.size(), 1, "one west pillar is drawn")
+	eq(str(west[0]), "rock_pillar", "the drawn west prop is the pillar")
+	var spark: Array = art.visual_props("stormspire", Vector2i(14, 0), ["spark"])
+	eq(spark.size(), 1, "one corner spark is drawn")
 	var wind: Array = art.visual_props("windmere", Vector2i(7, 5), ["conduit", "spark"])
 	eq(wind.size(), 2, "Windmere still draws every paint prop")
 	for prop_name in ["spark", "rubble", "arc", "crystal_bolt", "conduit", "rock_pillar"]:
@@ -496,10 +500,10 @@ func _test_storm_dress() -> void:
 	var seal: Texture2D = art.prop_texture("floor_seal", "storm_")
 	truthy(seal.get_width() == 64 and seal.get_height() == 32, "the floor seal sheet stays a flat diamond")
 	var prop_sheet: Texture2D = load("res://art/tilesets/original/pending/electric/storm_props_punch.png")
-	eq(prop_sheet.get_width(), 1280, "Stormspire props sheet is the small set")
-	eq(prop_sheet.get_height(), 720, "Stormspire props sheet is not the monolith")
+	eq(prop_sheet.get_width(), 2048, "Stormspire props sheet is the sparse v3 set")
+	eq(prop_sheet.get_height(), 2048, "Stormspire props sheet is square")
 	var prop_alias: Texture2D = load("res://art/tilesets/original/pending/electric/props_punch.png")
-	eq(prop_alias.get_width(), 1280, "props_punch.png is the same small sheet")
+	eq(prop_alias.get_width(), 2048, "props_punch.png is the same sparse sheet")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/archive/storm_props_punch_monolith.png"), "the monolith prop sheet stays archived")
 
 

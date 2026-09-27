@@ -12,11 +12,12 @@ the look reference and are not sliced.
 
 Flat tiles are hard 64×32 diamonds with a dark rim so neighboring cells keep
 a readable seam. Cliffs keep that cap and hang a wall; the high platform is
-taller than the low one. Props come from the 1280×720 props_small_v2 sheet. The 2048 monolith in
-pending/electric/archive/ is not sliced. Each standing prop is centered in
-its sprite and about one diamond tall, so the floor stays visible and line of
-sight stays open. The playable preview draws six of them and leaves the
-tagged ring undrawn. No circular arena and no totem ring are painted.
+taller than the low one. Props come from the 2048 props_sparse_v3 sheet. The
+retired 1280 sheet and the 2048 monolith in pending/electric/archive/ are not
+sliced. Each standing prop is centered in its sprite and about one diamond
+tall, so the floor stays visible and line of sight stays open. The playable
+preview draws five of them and leaves the tagged ring undrawn. No circular
+arena and no totem ring are painted.
 """
 from __future__ import annotations
 
@@ -54,19 +55,26 @@ HANG = {
     "storm_ground_e2.png": 68,
 }
 
-# Standing accents, about one 32px diamond tall. Wider than this covers the floor.
+# One diamond is 32px tall. These boxes stay inside that, so a prop cannot
+# cover the floor. The spark is a smaller crystal, not a second pillar.
 PROP_BOX = {
-    "storm_prop_spark.png": (22, 28),
-    "storm_prop_rubble.png": (28, 18),
-    "storm_prop_arc.png": (28, 20),
-    "storm_prop_crystal_bolt.png": (18, 32),
-    "storm_prop_conduit.png": (16, 32),
+    "storm_prop_spark.png": (16, 22),
+    "storm_prop_rubble.png": (28, 22),
+    "storm_prop_arc.png": (28, 22),
+    "storm_prop_crystal_bolt.png": (22, 32),
+    "storm_prop_conduit.png": (18, 32),
     "storm_prop_rock_pillar.png": (16, 32),
 }
 
-# Held empty until Scenario Art lands a short sheet. Tags stay. A filled
-# dress must be 4–6 cells, each about one diamond, and not a totem ring.
-STORM_DRESS = {}
+# Five cells, not a ring. One pillar, no center totem, conduit stays in the
+# tags and is not drawn. Matches KoliseoArt.STORM_DRESS.
+STORM_DRESS = {
+    (0, 0): frozenset({"crystal_bolt"}),
+    (14, 0): frozenset({"spark"}),
+    (6, 3): frozenset({"rubble"}),
+    (3, 5): frozenset({"rock_pillar"}),
+    (10, 6): frozenset({"arc"}),
+}
 
 
 def _sha(path: Path) -> str:
@@ -459,55 +467,58 @@ def _key_props(sheet: np.ndarray) -> np.ndarray:
     return out
 
 
+def _occupancy_bands(values: np.ndarray, threshold: float, min_len: int) -> list[tuple[int, int]]:
+    bands: list[tuple[int, int]] = []
+    start = -1
+    for index, value in enumerate(values):
+        if value > threshold and start < 0:
+            start = index
+        elif value <= threshold and start >= 0:
+            if index - start >= min_len:
+                bands.append((start, index - 1))
+            start = -1
+    if start >= 0 and len(values) - start >= min_len:
+        bands.append((start, len(values) - 1))
+    return bands
+
+
 def _prop_sprites(sheet: np.ndarray) -> list[dict]:
-    if tuple(sheet.shape) != (720, 1280, 3):
+    if tuple(sheet.shape) != (2048, 2048, 3):
         raise SystemExit(
-            f"storm props sheet must be the 1280×720 small set, got {sheet.shape}"
+            f"storm props sheet must be the 2048 sparse set, got {sheet.shape}"
         )
+    lum = sheet.astype(np.float32).mean(2)
+    rows = _occupancy_bands((lum >= 32).mean(1), 0.008, 40)
+    cols = _occupancy_bands((lum >= 32).mean(0), 0.008, 40)
     keyed = _key_props(sheet)
-    mask = keyed[:, :, 3] > 24
-    lab, count = ndimage.label(mask)
     sprites = []
-    for i in range(1, count + 1):
-        ys, xs = np.where(lab == i)
-        if len(xs) < 500:
-            continue
-        x0, x1 = int(xs.min()), int(xs.max())
-        y0, y1 = int(ys.min()), int(ys.max())
-        w, h = x1 - x0 + 1, y1 - y0 + 1
-        # Merged glow clusters on this sheet are still bigger than a tile.
-        # Keep the separate silhouettes and leave those clusters out.
-        if len(xs) > 9000 or w > 160 or h > 170:
-            continue
-        if w < 32 or h < 32 or h > w * 4.2:
-            continue
-        if w > 150 and h > 150:
-            continue
-        crop = keyed[y0 : y1 + 1, x0 : x1 + 1].copy()
-        crop[crop[:, :, 3] < 20] = 0
-        opaque_px = crop[:, :, 3] > 20
-        opaque = int(opaque_px.sum())
-        if opaque < 600:
-            continue
-        rgb = crop[:, :, :3].astype(np.float32)
-        held = rgb[opaque_px]
-        contrast = float(held.std()) if opaque else 0.0
-        if contrast < 10.0:
-            continue
-        chroma = float((held.max(1) - held.min(1)).mean()) if opaque else 0.0
-        sprites.append(
-            {
-                "img": crop,
-                "w": w,
-                "h": h,
-                "area": opaque,
-                "chroma": chroma,
-                "contrast": contrast,
-                "at": (x0, y0),
-            }
-        )
-    if len(sprites) < 6:
-        raise SystemExit(f"need 6 sparse prop silhouettes, found {len(sprites)}")
+    for y0, y1 in rows:
+        for x0, x1 in cols:
+            block = keyed[y0 : y1 + 1, x0 : x1 + 1]
+            solid = block[:, :, 3] > 24
+            if float(solid.mean()) < 0.04:
+                continue
+            ys, xs = np.where(solid)
+            crop = block[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1].copy()
+            crop[crop[:, :, 3] < 20] = 0
+            opaque_px = crop[:, :, 3] > 20
+            opaque = int(opaque_px.sum())
+            if opaque < 800:
+                continue
+            held = crop[:, :, :3].astype(np.float32)[opaque_px]
+            sprites.append(
+                {
+                    "img": crop,
+                    "w": int(crop.shape[1]),
+                    "h": int(crop.shape[0]),
+                    "area": opaque,
+                    "chroma": float((held.max(1) - held.min(1)).mean()),
+                    "contrast": float(held.std()),
+                    "at": (x0 + int(xs.min()), y0 + int(ys.min())),
+                }
+            )
+    if len(sprites) != 5:
+        raise SystemExit(f"sparse v3 should be 5 props, found {len(sprites)}")
     return sprites
 
 
@@ -541,40 +552,17 @@ def _slice_props(sheet: np.ndarray) -> list[dict]:
         used.add(id(chosen))
         return chosen
 
-    def rubble_height(sprite: dict) -> float:
-        scale = min(28 / sprite["w"], 18 / max(sprite["h"], 1))
-        return sprite["h"] * scale
-
-    # Roles follow shape on the small sheet: the vivid crystal, one narrow
-    # pillar, one wide arc, a low rock, a small spark, and one upright conduit.
-    bolt = take(
-        [s for s in sprites if s["area"] >= 2500 and min(s["w"], s["h"]) >= 60],
-        lambda s: s["chroma"],
-    )
-    pillar = take(
-        [s for s in sprites if s["h"] >= s["w"] * 1.6],
-        lambda s: s["h"] / max(s["w"], 1),
-    )
+    # Five silhouettes. The narrowest is the single pillar. The dullest wide
+    # mark is rubble. Spark reuses the crystal at a smaller box.
+    pillar = take(sprites, lambda s: s["h"] / max(s["w"], 1))
+    rubble = take(sprites, lambda s: -s["chroma"])
     arc = take(
-        [s for s in sprites if s["w"] >= s["h"] * 1.4],
-        lambda s: s["w"],
-    )
-    rubble = take(
-        [s for s in sprites if s["chroma"] < 32 and s["w"] >= s["h"] * 1.2 and s["h"] <= 80],
-        rubble_height,
-    )
-    spark = take(
-        [s for s in sprites if max(s["w"], s["h"]) <= 110 and s["chroma"] >= 20],
+        [s for s in sprites if s["w"] >= s["h"] * 0.95],
         lambda s: s["chroma"],
     )
-    conduit = take(
-        [
-            s
-            for s in sprites
-            if s["h"] >= s["w"] * 1.15 and s["chroma"] >= 12 and s["area"] >= 1000
-        ],
-        lambda s: s["h"],
-    )
+    bolt = take(sprites, lambda s: s["chroma"])
+    conduit = take(sprites, lambda s: s["h"])
+    spark = conduit
     assigned = {
         "storm_prop_spark.png": spark,
         "storm_prop_rubble.png": rubble,
@@ -616,7 +604,7 @@ def _patch_atlas(records: list[dict]) -> None:
         "elevation": "pending/electric/storm_elevation_punch.png",
         "props": "pending/electric/storm_props_punch.png",
         "mood": "pending/electric/board_mood_punch.png",
-        "note": "Live Stormspire paint. Props are the 1280×720 small sheet. The monolith archive is not sliced. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring.",
+        "note": "Live Stormspire paint. Props are the 2048 sparse v3 sheet. The board draws five short accents, not a pillar ring. The monolith archive is not sliced. Mood is reference only. Geometry and tags stay on the Locked maps.",
     }
     written = {item["file"]: item for item in records}
     kept = [item for item in atlas.get("files", []) if item.get("file") not in written]

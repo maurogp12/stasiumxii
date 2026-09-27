@@ -10,7 +10,7 @@ extends RefCounted
 ## Slagcrown paints the lava punch.
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
 ## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
-## Prop dress is held, so the board paints ground and elevation only.
+## Its dress is five short accents from the sparse sheet.
 ## The other paint_only tags stay for walkability.
 ## See THEMES.md. The board loads these slices by dress prefix.
 
@@ -51,10 +51,15 @@ static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
 ## Scenario sheets are sliced. Nothing in this list is still a hook.
 const PENDING_THEMES: Array[String] = []
-## Prop dress is held. The current sheets read as a forest of banners and
-## pillars, so the board paints ground and elevation only. Tags still block.
-## The next short sheet should land as about 4–6 props, each at most one tile tall.
-const STORM_DRESS := {}
+## Five cells from props_sparse_v3. One pillar, corners apart, center open.
+## Not a ring. Conduit and the other pillars stay in the tags and are not drawn.
+const STORM_DRESS := {
+	Vector2i(0, 0): ["crystal_bolt"],
+	Vector2i(14, 0): ["spark"],
+	Vector2i(6, 3): ["rubble"],
+	Vector2i(3, 5): ["rock_pillar"],
+	Vector2i(10, 6): ["arc"],
+}
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -193,7 +198,7 @@ static func _variant_files(file_name: String) -> Array[String]:
 	return names
 
 
-## What the board draws. Stormspire currently draws no props. Other arenas
+## What the board draws. Stormspire draws five short accents. Other arenas
 ## draw every paint_only name. This does not edit tags, walkability, or
 ## which props block movement.
 static func visual_props(map_id: String, cell: Vector2i, props: Array) -> Array:
