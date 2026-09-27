@@ -70,6 +70,14 @@ func is_walkable(cell: Vector2i) -> bool:
 	return tile.is_walkable(terrain_of(cell))
 
 
+## Mud, water, and lava. Voluntary Walk, path nodes, and Advance landings
+## refuse these. Mud and water stay walkable for deploy and occupied bodies.
+func is_voluntary_impassable(cell: Vector2i) -> bool:
+	if not in_bounds(cell):
+		return false
+	return bool(terrain_of(cell).get("voluntary_impassable", false))
+
+
 func snapshot_tiles() -> Dictionary:
 	var out := {}
 	for cell in tiles.keys():
@@ -79,8 +87,10 @@ func snapshot_tiles() -> Dictionary:
 
 
 ## Shared dest stand-on gates for walk hops and Advance teleport.
-## Walkable (lava / override), not occupied, climb<=1 / drop<=2 from `from` to `dest`.
-## Mud and water are walkable. Does not require ortho. Does not charge terrain or elevation MP.
+## Refuses mud, water, and lava, plus other unwalkable cells.
+## Not occupied, climb<=1 / drop<=2 from `from` to `dest`.
+## Does not require ortho. Does not charge terrain or elevation MP.
+## A unit already standing on mud or water may still step off onto ground.
 func stand_on_gate(from: Vector2i, dest: Vector2i, occupied: Callable) -> Dictionary:
 	if dest == from:
 		return _stand_fail("same_tile")
@@ -91,7 +101,7 @@ func stand_on_gate(from: Vector2i, dest: Vector2i, occupied: Callable) -> Dictio
 	if dest_tile == null or src_tile == null:
 		return _stand_fail("out_of_bounds")
 	var dest_def: Dictionary = terrains[dest_tile.terrain_type]
-	if not dest_tile.is_walkable(dest_def):
+	if bool(dest_def.get("voluntary_impassable", false)) or not dest_tile.is_walkable(dest_def):
 		return _stand_fail("not_walkable")
 	if _is_occupied(dest, from, occupied):
 		return _stand_fail("occupied")
@@ -145,8 +155,8 @@ func validate_move(from: Vector2i, dest: Vector2i, remaining_mp: int, occupied: 
 		return _move_fail("out_of_bounds")
 	if not in_bounds(from):
 		return _move_fail("out_of_bounds")
-	# Dest gates first so lava / occupied clicks are not just "unreachable".
-	if not is_walkable(dest):
+	# Dest gates first so mud / water / lava / occupied clicks are not "insufficient_mp".
+	if is_voluntary_impassable(dest) or not is_walkable(dest):
 		return _move_fail("not_walkable")
 	if _is_occupied(dest, from, occupied):
 		return _move_fail("occupied")

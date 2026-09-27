@@ -5,7 +5,7 @@ class_name StasisAi
 ## Advance, Shoulder, Crush, and class kits are ignored even if a test feeds them.
 ## Room A calls this once per living trash seat. CombatSim still resolves the card.
 ## Walk choices come from legal_intents. Those use the player WalkBoard
-## gates: mud and water are walkable at their dest MP, lava is impassable.
+## gates: mud, water, and lava are voluntary impassable.
 
 
 static func choose(legal: Array, actor_pos: Vector2i, foe_pos: Vector2i) -> Dictionary:
