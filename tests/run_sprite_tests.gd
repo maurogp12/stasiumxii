@@ -75,18 +75,21 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
 	pawn._sample_hop(1.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile edge")
-	eq(_visible_strip(pawn), null, "ironjaw idle does not leave the walk strip up")
-	eq(sprite.visible, true, "ironjaw idle shows the clean plant")
-	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "ironjaw west idle is the hard-alpha plant")
-	eq(sprite.modulate, Color.WHITE, "ironjaw idle is not Invisible")
-	_assert_clean_plant("ironjaw", "W")
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "ironjaw combat shows the walk strip")
+	if strip != null:
+		eq(strip.scale, ironjaw_scale, "ironjaw walk strip uses the shared scale")
+		eq(strip.offset, Vector2(0, -72), "ironjaw walk strip keeps the foot pivot")
+		eq(strip.frame, 0, "ironjaw idle is walk frame 0")
+		eq(str(strip.animation).begins_with("walk_"), true, "ironjaw idle is the walk sheet")
+		eq(strip.modulate, Color.WHITE, "ironjaw walk idle is not Invisible")
 	_assert_ironjaw_feet(ironjaw_scale.y)
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")
 	eq(sprite.z_as_relative, true, "sprite z is relative")
 	eq(sprite.position, Vector2.ZERO, "sprite sits on the pawn origin")
-	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "texture follows the ironjaw plant facing")
+	eq(sprite.texture, Pawn.sprite_texture("ironjaw", "W"), "texture follows class and facing")
 	var bastion := Pawn.new()
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
@@ -94,15 +97,12 @@ func _test_sprite_node_setup() -> void:
 	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion matches the kestrel cell")
 	eq(bastion_sprite.modulate, Color.WHITE, "a visible bastion is not Invisible")
 	eq(sprite.modulate, Color.WHITE, "a visible ironjaw is not Invisible")
-	eq(bastion_sprite.visible, true, "bastion idle shows the clean plant")
-	eq(_visible_strip(bastion), null, "bastion idle does not leave the walk strip up")
 	for class_id in ["kestrel", "gloam", "mender", "bastion", "ironjaw"]:
 		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s uses the shared 0.5 cell" % class_id)
 		eq(Pawn.presentation_mul(class_id), 1.0, "%s combat scale is 1.0" % class_id)
-	eq(bastion_sprite.texture, Pawn.idle_plant_texture("bastion", "N"), "bastion north idle is the hard-alpha plant")
-	_assert_clean_plant("bastion", "N")
+	eq(bastion_sprite.texture, Pawn.sprite_texture("bastion", "N"), "bastion N placeholder still loads")
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
-	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.idle_plant_texture("bastion", "W"), "bastion west idle follows facing")
+	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.sprite_texture("bastion", "W"), "bastion W placeholder still loads")
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
 	eq(dead.modulate.a < 0.05, true, "a dead snapshot dissolves instead of standing")
@@ -255,34 +255,6 @@ func _test_name_sits_above_the_sprite() -> void:
 		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
 		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
 		pawn.free()
-
-
-func _assert_clean_plant(class_id: String, facing: String) -> void:
-	var tex := Pawn.idle_plant_texture(class_id, facing)
-	truthy(tex != null, "%s %s clean plant loads" % [class_id, facing])
-	if tex == null:
-		return
-	eq(tex.get_width(), 144, "%s %s plant is 144 wide" % [class_id, facing])
-	eq(tex.get_height(), 160, "%s %s plant is 160 tall" % [class_id, facing])
-	var image := tex.get_image()
-	truthy(image != null, "%s %s plant has pixels" % [class_id, facing])
-	if image == null:
-		return
-	var mid := 0
-	var cyan := 0
-	var solid := 0
-	for y in image.get_height():
-		for x in image.get_width():
-			var px := image.get_pixel(x, y)
-			if px.a > 0.04 and px.a < 0.96:
-				mid += 1
-			if px.a >= 0.96:
-				solid += 1
-			if px.a > 0.2 and px.g > px.r + 0.12 and px.b > px.r + 0.12 and px.b > 0.35:
-				cyan += 1
-	eq(mid, 0, "%s %s plant alpha is hard" % [class_id, facing])
-	eq(cyan, 0, "%s %s plant has no cyan pixels" % [class_id, facing])
-	eq(solid > 1000, true, "%s %s plant has a readable body" % [class_id, facing])
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:

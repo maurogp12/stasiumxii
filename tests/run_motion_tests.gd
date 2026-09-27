@@ -953,15 +953,8 @@ func _test_hit_flinch_playback() -> void:
 				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
 			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
 			pawn.settle_motion()
-			var clean := Pawn.idle_plant_texture(cls, face)
-			if clean != null:
-				var body := pawn.get_node("Sprite") as Sprite2D
-				eq(body.visible, true, "%s %s returns to the clean plant" % [cls, face])
-				eq(body.texture, clean, "%s %s rest texture is the hard-alpha plant" % [cls, face])
-				eq(_visible_strip(pawn), null, "%s %s rest does not hold the flinch" % [cls, face])
-			else:
-				var rested := _visible_strip(pawn)
-				truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
+			var rested := _visible_strip(pawn)
+			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
 			pawn.free()
 			await process_frame
 
@@ -1711,24 +1704,6 @@ func _test_walk_idle_matches_strip() -> void:
 		await process_frame
 		var sprite := pawn.get_node("Sprite") as Sprite2D
 		var foreign := Pawn.sprite_texture(class_id, "E")
-		var clean := Pawn.idle_plant_texture(class_id, "E")
-		if clean != null:
-			eq(sprite.visible, true, "%s idle shows the clean plant" % class_id)
-			eq(sprite.texture, clean, "%s idle texture is the hard-alpha plant" % class_id)
-			eq(_visible_strip(pawn), null, "%s idle does not leave the walk strip up" % class_id)
-			pawn.arm_driven_walk()
-			eq(sprite.visible, false, "%s walk start hides the clean plant" % class_id)
-			var stride := _visible_strip(pawn)
-			truthy(stride != null, "%s walk start plays the v5 strip" % class_id)
-			if stride != null:
-				eq(String(stride.animation), "walk_e", "%s walk start stays on walk_e" % class_id)
-				eq(stride.sprite_frames.get_frame_texture("walk_e", 0) != clean, true, "%s stride is not the idle still" % class_id)
-			pawn.end_path_walk()
-			eq(sprite.visible, true, "%s stop returns to the clean plant" % class_id)
-			eq(sprite.texture, clean, "%s stop plant is the hard-alpha still" % class_id)
-			eq(_visible_strip(pawn), null, "%s stop does not hold walk frame 0" % class_id)
-			pawn.free()
-			continue
 		var idle := _visible_strip(pawn)
 		truthy(idle != null, "%s idle shows the walk sheet" % class_id)
 		if idle == null:
