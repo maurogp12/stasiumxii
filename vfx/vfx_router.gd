@@ -974,7 +974,7 @@ static func _mark_impact_delay() -> float:
 	return _mark_windup_sec() + MARK_FLIGHT_SEC
 
 
-## The four holds, including the release flash. The bolt is the next tick.
+## The four holds, including the arrow-tip release. The bolt is the next tick.
 static func _mark_cast_life() -> float:
 	return _mark_windup_sec()
 

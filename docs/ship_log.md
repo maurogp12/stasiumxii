@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Mark Shot cast bow v4
+
+Presentation only. No APK. Locked kit numbers, ranges, and the #175 bow windup (70+80+80+70) stay. Soft Lock holds until Rosie rematch + Luca.
+
+`mark_shot_cast.png` is the v4 transparent strip: 1280×320, four equal 320×320 cells (draw, snap burst, reticle peak, arrow-tip release). Cyan/gold, from the bow. Scenario `asset_bXoujAQYZwDDQJQNGL2ouD7M`. Impact stays the punch-v2 floor strip. The bolt still leaves after the last cell. The draw is not stretched to the contact.
+
 ## 2026-09-27 — Soft Lock map presentation
 
 Presentation only. Locked geometry, tags, walkability, and kit numbers are unchanged. No APK. Windmere ice punch is untouched. Brinewake stays the coast punch (wet sand, pier wood, water).

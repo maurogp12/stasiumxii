@@ -257,7 +257,7 @@ static func target_motion(flash_kind: String) -> String:
 ## Mark Shot bolt travel after the bow windup. Same length as
 ## VfxRouter.MARK_FLIGHT_SEC. Kept here so the flinch does not import VFX.
 const MARK_BOLT_SEC := 0.18
-## Bow windup before the bolt, including the release flash. Same length as
+## Bow windup before the bolt, including the arrow-tip release. Same length as
 ## the cast stamp holds (70 + 80 + 80 + 70 ms). Not tile time.
 const MARK_WINDUP_SEC := 0.30
 

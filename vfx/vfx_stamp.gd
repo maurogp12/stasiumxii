@@ -3,12 +3,13 @@ extends "res://vfx/vfx_pooled.gd"
 ## One-shot sprite overlay. Strips play left to right.
 ## Punch v3: Ambush slash, hit flash, damage float, Detonate, footstep dust,
 ## and the melee windup. The hit flash keeps the authored cyan/gold.
-## Mark Shot impact stays punch v2. The bow windup is the punch-v3 sheet
-## already wired in #175; its 70+80+80+70 holds stay locked.
+## Mark Shot impact stays punch v2. The bow windup is the v4 transparent
+## strip (scenario asset_bXoujAQYZwDDQJQNGL2ouD7M). #175 holds stay locked
+## at 70+80+80+70. Cells are draw, snap burst, reticle peak, arrow-tip release.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
-## Mark Shot cast is four equal cells: spark, draw, peak reticle, release
-## flash. Holds are absolute seconds. A longer life does not stretch them.
+## Mark Shot cast is four equal cells. Holds are absolute seconds. A longer
+## life does not stretch them.
 ## The bow ink sits above the cell center, so the offset drops it onto the hands.
 ## CombatSim never reads this file.
 
@@ -168,7 +169,7 @@ static func windup_sec(sheet: String) -> float:
 
 
 ## Frame index at `elapsed` seconds. The next cell starts on the millisecond
-## boundary, so the bolt can leave on the tick after the release flash.
+## boundary, so the bolt can leave on the tick after the arrow-tip release.
 static func frame_at(sheet: String, elapsed: float) -> int:
 	if not FRAME_MS.has(sheet):
 		return 0
