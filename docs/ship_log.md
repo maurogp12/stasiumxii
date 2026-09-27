@@ -12,6 +12,8 @@ Floors are hard 64×32 diamonds with a dark seam and a thin gold north edge. Wat
 
 The prop source is props_small_v2 (`storm_props_punch.png`, 1280×720, same bytes as `props_punch.png`). The 2048 monolith lives in `pending/electric/archive/storm_props_punch_monolith.png` and is not sliced. Standing slices still fit one diamond.
 
+In-game review is part of the done bar before more art. The check is a real Godot combat window, 1600×720, `--mobile-frame`, zoom 1.55 (the 20:9 Koliseo overview) on `stormspire_15`. It has to show the sparse dress, about one tile tall, and no circular arena or totem ring.
+
 Locked Stormspire geometry, tags, walkability, and kit numbers are unchanged. Other arenas stay on their sheets.
 
 ## 2026-09-26 — Combat VFX punch v3
