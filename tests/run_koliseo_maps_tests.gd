@@ -490,6 +490,16 @@ func _test_brine_punch() -> void:
 	truthy(low.get_height() > 32, "Brinewake low cliffs hang below the diamond")
 	truthy(high.get_height() > low.get_height(), "Brinewake high cliffs are taller")
 	truthy(low.get_image().get_pixel(32, 16).a > 0.8, "Brinewake cliff cap is opaque")
+	truthy(_wall_meets_cap(low), "Brinewake low stair meets the deck")
+	truthy(_wall_meets_cap(high), "Brinewake high stair meets the deck")
+	truthy(_deck_foot(low), "Brinewake low stair lands on a deck")
+	truthy(_deck_foot(high), "Brinewake high stair lands on a deck")
+	for prop_name in ["driftwood", "rock_cluster", "rock_pillar", "rubble", "ruins", "fence", "waterfall"]:
+		var prop_tex: Texture2D = art.prop_texture(prop_name, "brine_")
+		truthy(prop_tex.get_height() <= 48, "%s stays about one tile tall" % prop_name)
+		truthy(prop_tex.get_width() <= 48, "%s stays about one tile wide" % prop_name)
+	var brine_seal: Texture2D = art.prop_texture("floor_seal", "brine_")
+	truthy(brine_seal.get_width() <= 40 and brine_seal.get_height() <= 20, "Brinewake floor seal is a small mark")
 	var drift: Texture2D = art.prop_texture("driftwood", "brine_")
 	truthy(drift.resource_path.ends_with("brine_prop_driftwood.png"), "Brinewake driftwood is the coast prop")
 	var shared: Texture2D = art.prop_texture("driftwood", "")
@@ -554,6 +564,23 @@ func _test_slag_punch() -> void:
 	eq(str(at[Vector2i(7, 7)]["terrain"]), "lava", "Slagcrown lava river stays lava")
 	eq(str(at[Vector2i(1, 12)]["terrain"]), "water", "Slagcrown ash pool tag stays water")
 	eq(str((at[Vector2i(0, 0)]["paint_only"] as Array)[0]), "basalt_pillar", "Slagcrown corner prop stays the basalt pillar")
+
+
+## The foot of a stair sprite is a deck, not a tread dangling into empty space.
+func _deck_foot(tex: Texture2D) -> bool:
+	var img := tex.get_image()
+	if img == null or img.get_height() < 36 or img.get_width() != 64:
+		return false
+	var foot := 0
+	for y in range(img.get_height() - 1, 30, -1):
+		var wide := 0
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.2:
+				wide += 1
+		if wide > 0:
+			foot = wide
+			break
+	return foot >= 18
 
 
 func _wall_meets_cap(tex: Texture2D) -> bool:

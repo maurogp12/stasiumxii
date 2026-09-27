@@ -8,7 +8,13 @@ and Stormspire stay on their own sheets.
 Soft Lock is agua + costa: wet sand, pier wood, and tide scorch. Foam
 stays on the diamond seam. Tide crust is a few dark marks on the face.
 The green carpet on the punch sheet is not painted onto the diamonds.
-Tags and geometry are not this script's job.
+
+Elevation is the stairs-fix sheet. A cliff keeps the 64×32 deck cap and
+hangs the wooden stair under it. The stair ends on the lower deck in
+that same sprite. A tread that continues past the deck is cut, so the
+step does not lead into empty space. Props are the sparse dock pieces
+on the props sheet, scaled to about one tile. Tags and geometry are
+not this script's job.
 """
 from __future__ import annotations
 
@@ -47,23 +53,28 @@ _FLATS = {
     "water": [(4, 1), (4, 2)],  # agua, the less-green water
 }
 
-# (x, y, w, h, total height). The top face stays 64×32. e2 hangs lower.
-_CLIFFS = {
-    "ground_e1": (667, 94, 185, 130, 68),
-    "ground_e2": (481, 23, 182, 206, 96),
-    "mud_e1": (356, 280, 188, 140, 70),
+# (x0, y0, x1, y1, total height, darken). Measured on the stairs-fix
+# elevation sheet: upper deck, wooden treads, lower deck. The tall crop
+# starts higher so the high step hangs farther and still lands.
+_STAIR_DECKS = {
+    "ground_e1": (760, 1180, 1140, 1600, 58, 1.0),
+    "ground_e2": (720, 1080, 1180, 1640, 86, 1.0),
+    "mud_e1": (760, 1180, 1140, 1600, 56, 0.74),
 }
 
-# (x, y, w, h, max_w, max_h) on brine_props_punch.png.
+# (x, y, w, h, max_w, max_h). Solid pier-wood patches on the props sheet.
+# Scaled to about one tile so the arena stays sparse.
 _PROPS = {
-    "driftwood": (57, 248, 171, 141, 86, 52),
-    "rock_cluster": (704, 58, 162, 156, 74, 66),
-    "rock_pillar": (1058, 438, 170, 257, 46, 88),
-    "rubble": (481, 475, 170, 187, 80, 70),
-    "ruins": (306, 71, 161, 144, 64, 80),
-    "fence": (51, 416, 194, 79, 78, 48),
-    "waterfall": (1063, 8, 164, 240, 72, 116),
+    "rock_pillar": (472, 1272, 22, 72, 16, 40),
+    "ruins": (408, 1320, 40, 40, 28, 28),
+    "driftwood": (600, 584, 70, 22, 44, 16),
+    "fence": (888, 728, 70, 22, 44, 14),
+    "rubble": (360, 1336, 48, 30, 34, 20),
+    "rock_cluster": (1416, 1560, 48, 30, 36, 22),
+    "waterfall": (1464, 616, 22, 72, 14, 40),
 }
+# A mark on the deck. A full diamond would replace the floor.
+_SEAL_SIZE = (26, 14)
 
 
 def _key_black(rgb: np.ndarray) -> np.ndarray:
@@ -375,6 +386,172 @@ def _qa(img: Image.Image) -> str:
     return f"pale {int(pale.sum()):3d} interior {int(interior.sum()):3d} ({100.0 * interior.sum() / opaque:.2f}%)"
 
 
+def _iso_mask(width: int = 64, height: int = 32) -> np.ndarray:
+    yy, xx = np.mgrid[0:height, 0:width]
+    cx = (width - 1) / 2.0
+    cy = (height - 1) / 2.0
+    return (np.abs(xx - cx) / (cx + 1.25) + np.abs(yy - cy) / (cy + 1.25)) <= 1.0
+
+
+def _wood_rgba(rgb: np.ndarray) -> np.ndarray:
+    """Pier wood stays. Ocean, sky, and the green carpet go transparent."""
+    src = rgb[:, :, :3].astype(np.float32) if rgb.shape[2] == 4 else rgb.astype(np.float32)
+    red, green, blue = src[:, :, 0], src[:, :, 1], src[:, :, 2]
+    lum = src.mean(2)
+    wood = (red > green + 2.0) & (red > blue + 6.0) & (lum > 52.0) & (lum < 230.0)
+    wood = ndimage.binary_opening(wood, iterations=1)
+    wood = ndimage.binary_closing(wood, structure=np.ones((2, 3), bool), iterations=1)
+    out = np.zeros((src.shape[0], src.shape[1], 4), np.uint8)
+    out[:, :, :3] = np.clip(src, 0, 255).astype(np.uint8)
+    out[:, :, 3] = np.where(wood, 255, 0).astype(np.uint8)
+    return out
+
+
+def _fit_stair_deck(rgb: np.ndarray, box: tuple[int, int, int, int], target_h: int, darken: float) -> Image.Image:
+    """Upper deck becomes the 64×32 cap. Treads hang and stop on the lower deck."""
+    x0, y0, x1, y1 = box
+    crop = _wood_rgba(rgb[y0:y1, x0:x1])
+    solid = crop[:, :, 3] > 20
+    ys, xs = np.where(solid)
+    if len(xs) == 0:
+        raise SystemExit(f"stair crop {box} has no wood")
+    crop = crop[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1]
+    widths = (crop[:, :, 3] > 20).sum(1)
+    wide = np.where(widths >= max(24, int(crop.shape[1] * 0.45)))[0]
+    if len(wide) == 0:
+        raise SystemExit(f"stair crop {box} has no deck to land on")
+    bands: list[tuple[int, int]] = []
+    start = int(wide[0])
+    prev = int(wide[0])
+    for y in wide[1:]:
+        if int(y) <= prev + 4:
+            prev = int(y)
+        else:
+            bands.append((start, prev))
+            start = int(y)
+            prev = int(y)
+    bands.append((start, prev))
+    land0, land1 = bands[-1]
+    top_rows = np.where(widths >= max(18, int(crop.shape[1] * 0.22)))[0]
+    top_rows = top_rows[top_rows < land0 - 8]
+    if len(top_rows) == 0:
+        raise SystemExit(f"stair crop {box} has no upper deck")
+    cap_end = int(top_rows[0])
+    limit = int(top_rows[0] + crop.shape[0] * 0.24)
+    for y in top_rows:
+        if int(y) > limit:
+            break
+        cap_end = int(y)
+    cap = crop[: cap_end + 1]
+    stair = crop[max(0, cap_end - 4) : land1 + 1]
+    cap_img = Image.fromarray(cap).resize((64, 32), Image.Resampling.LANCZOS)
+    cap_arr = np.asarray(cap_img).copy()
+    mask = _iso_mask()
+    filled = cap_arr[:, :, 3] > 30
+    holes = mask & ~filled
+    if filled.any() and holes.any():
+        _, nearest = ndimage.distance_transform_edt(~filled, return_indices=True)
+        cap_arr[holes] = cap_arr[nearest[0][holes], nearest[1][holes]]
+    cap_arr[:, :, 3] = np.where(mask, 255, 0).astype(np.uint8)
+    edge = mask & ~ndimage.binary_erosion(mask, iterations=1)
+    rgb_cap = cap_arr[:, :, :3].astype(np.float32)
+    rgb_cap[edge] *= 0.5
+    cap_arr[:, :, :3] = np.clip(rgb_cap * darken, 0, 255).astype(np.uint8)
+    hang = target_h - 32
+    stair_img = Image.fromarray(stair).resize((64, hang), Image.Resampling.LANCZOS)
+    stair_arr = np.asarray(stair_img).copy()
+    stair_arr[:, :, :3] = np.clip(stair_arr[:, :, :3].astype(np.float32) * darken, 0, 255).astype(np.uint8)
+    stair_arr[stair_arr[:, :, 3] < 16] = 0
+    out = np.zeros((32 + stair_arr.shape[0], 64, 4), np.uint8)
+    out[:32] = cap_arr
+    out[32:] = stair_arr
+    meet = (out[31, :, 3] > 40) & (out[32, :, 3] > 40)
+    if int(meet.sum()) < 4:
+        tip = out[31, :, 3] > 40
+        out[32, tip, :3] = out[31, tip, :3]
+        out[32, tip, 3] = 255
+    out = _trim_below_deck(out)
+    out[out[:, :, 3] < 12] = 0
+    _assert_lands(out, box)
+    return Image.fromarray(out)
+
+
+def _trim_below_deck(arr: np.ndarray) -> np.ndarray:
+    """The foot of the sprite is the landing deck. Treads past that deck go."""
+    widths = (arr[:, :, 3] > 40).sum(1)
+    wide = np.where(widths >= 28)[0]
+    wide = wide[wide >= 32]
+    if len(wide) == 0:
+        return arr
+    foot = int(wide.max())
+    trimmed = arr[: foot + 1].copy()
+    trimmed[foot + 1 :] = 0
+    return trimmed
+
+
+def _assert_lands(arr: np.ndarray, box: tuple) -> None:
+    if arr.shape[1] != 64 or arr.shape[0] <= 36:
+        raise SystemExit(f"stair {box} fit is {arr.shape[1]}x{arr.shape[0]}")
+    meet = int(((arr[31, :, 3] > 40) & (arr[32, :, 3] > 40)).sum())
+    if meet < 3:
+        raise SystemExit(f"stair {box} leaves the cap")
+    rows = np.where((arr[:, :, 3] > 40).any(1))[0]
+    foot_w = int((arr[int(rows.max()), :, 3] > 40).sum())
+    if foot_w < 18:
+        raise SystemExit(f"stair {box} does not land on a deck ({foot_w}px)")
+    center = arr[16, 32]
+    if int(center[3]) < 200 or int(center[0]) + 8 < int(center[2]):
+        raise SystemExit(f"stair cap is not pier wood {center.tolist()}")
+
+
+def _prop_object(sheet: np.ndarray, box: tuple[int, int, int, int, int, int]) -> Image.Image:
+    """One pier-wood patch, rimmed, then scaled to about one tile."""
+    x, y, w, h, max_w, max_h = box
+    src = sheet[:, :, :3] if sheet.shape[2] == 4 else sheet
+    crop = src[y : y + h, x : x + w].astype(np.float32)
+    red, green, blue = crop[:, :, 0], crop[:, :, 1], crop[:, :, 2]
+    lum = crop.mean(2)
+    wood = (red > blue + 8.0) & (lum > 70.0) & (red > 80.0)
+    if float(wood.mean()) < 0.7:
+        raise SystemExit(f"prop crop {box[:4]} is not pier wood")
+    wood = ndimage.binary_closing(wood, iterations=2)
+    wood = ndimage.binary_fill_holes(wood)
+    rgba = np.zeros((crop.shape[0], crop.shape[1], 4), np.uint8)
+    rgba[:, :, :3] = np.clip(crop, 0, 255).astype(np.uint8)
+    rgba[:, :, 3] = np.where(wood, 255, 0).astype(np.uint8)
+    edge = wood & ~ndimage.binary_erosion(wood, iterations=1, border_value=0)
+    rgb = rgba[:, :, :3].astype(np.float32)
+    rgb[edge] *= 0.42
+    rgba[:, :, :3] = np.clip(rgb, 0, 255).astype(np.uint8)
+    img = _scale_prop(rgba, max_w, max_h)
+    if img.size[0] > 48 or img.size[1] > 48:
+        raise SystemExit(f"prop {box[:4]} is {img.size}, not one tile")
+    return img
+
+
+def _floor_seal(sheet: np.ndarray) -> Image.Image:
+    """Small deck mark. It sits on the diamond; it does not replace it."""
+    src = sheet[:, :, :3] if sheet.shape[2] == 4 else sheet
+    patch = src[400:470, 470:560].astype(np.float32)
+    red, green, blue = patch[:, :, 0], patch[:, :, 1], patch[:, :, 2]
+    warm = (red > 140.0) & (red > blue + 20.0) & (red > green - 10.0)
+    if int(warm.sum()) < 40:
+        raise SystemExit("floor seal patch is not deck wood")
+    color = np.median(patch[warm], axis=0)
+    spr = Image.fromarray(np.clip(patch, 0, 255).astype(np.uint8)).resize(_SEAL_SIZE, Image.Resampling.LANCZOS)
+    arr = np.asarray(spr).copy()
+    rgba = np.zeros((arr.shape[0], arr.shape[1], 4), np.uint8)
+    rgba[:, :, :3] = arr
+    mask = _iso_mask(arr.shape[1], arr.shape[0])
+    rgba[:, :, 3] = np.where(mask, 255, 0).astype(np.uint8)
+    # Pull a pale crop back toward the deck so the mark stays wood.
+    if float(np.median(rgba[:, :, 0][mask])) < 90:
+        rgba[:, :, :3][mask] = np.clip(color, 0, 255).astype(np.uint8)
+    if rgba.shape[0] >= 32 or rgba.shape[1] >= 48:
+        raise SystemExit("floor seal covers the diamond")
+    return Image.fromarray(rgba)
+
+
 def main() -> None:
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
@@ -390,18 +567,20 @@ def main() -> None:
             _save(name, img, records)
             print(f"  {name}: {_qa(img)}")
 
-    for key, (x, y, w, h, target_h) in _CLIFFS.items():
-        img = _cliff(elev, (x, y, w, h), target_h)
+    stairs = {}
+    for key, (x0, y0, x1, y1, target_h, darken) in _STAIR_DECKS.items():
+        img = _fit_stair_deck(elev, (x0, y0, x1, y1), target_h, darken)
+        stairs[key] = img
         _save(f"brine_{key}.png", img, records)
         print(f"  brine_{key}.png: {_qa(img)} h={img.size[1]}")
+    if stairs["ground_e2"].size[1] <= stairs["ground_e1"].size[1]:
+        raise SystemExit("ground_e2 is not taller than ground_e1")
 
-    for prop, (x, y, w, h, max_w, max_h) in _PROPS.items():
-        crop = props[y : y + h, x : x + w]
-        img = _scale_prop(crop, max_w, max_h)
+    for prop, box in _PROPS.items():
+        img = _prop_object(props, box)
         _save(f"brine_prop_{prop}.png", img, records)
 
-    seal = _flat_cell(ground, 0, 3)
-    _save("brine_prop_floor_seal.png", seal, records)
+    _save("brine_prop_floor_seal.png", _floor_seal(props), records)
 
     _sync_tsx()
     _patch_atlas(records)
