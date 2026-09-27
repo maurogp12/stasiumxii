@@ -1208,6 +1208,28 @@ func _test_scenario_overlays() -> void:
 	eq(float(wind["px"]), BUDGET.STAMP_MELEE_PX, "melee windup stays on the body")
 	eq(float(wind["block"]), 0.0, "melee windup does not lock input")
 	eq(wind.get("aim", Vector2i.ZERO), Vector2i(2, 1), "melee windup aims at the target")
+	eq(stamp_script.windup_sec("melee_windup"), 0.0, "melee windup keeps the swing window, not a new hold")
+	var wind_tex: Texture2D = stamp_script.texture_for("melee_windup")
+	eq(wind_tex.get_width(), 1280, "the melee windup strip is 1280 wide")
+	eq(wind_tex.get_height(), 720, "the melee windup strip is 720 tall")
+	var wind_img := wind_tex.get_image()
+	var wind_dividers: Array[int] = [318, 319, 639, 640, 960, 961]
+	for x in wind_dividers:
+		eq(wind_img.get_pixel(x, 0).a < 0.02, true, "melee divider x=%d is clear at the top" % x)
+		eq(wind_img.get_pixel(x, 360).a < 0.02, true, "melee divider x=%d is clear at mid" % x)
+		eq(wind_img.get_pixel(x, 719).a < 0.02, true, "melee divider x=%d is clear at the bottom" % x)
+	eq(wind_img.get_pixel(720, 340).a > 0.8, true, "the windup peak core stays opaque")
+	var wind_cells: Array[Rect2] = [
+		Rect2(30, 165, 252, 355),
+		Rect2(337, 165, 279, 355),
+		Rect2(656, 165, 271, 355),
+		Rect2(964, 165, 312, 355),
+	]
+	for i in wind_cells.size():
+		var wind_cel: Rect2 = stamp_script.region_for("melee_windup", i, wind_tex)
+		eq(wind_cel, wind_cells[i], "melee windup cell %d crops off the divider columns" % i)
+		for x in wind_dividers:
+			eq(float(x) < wind_cel.position.x or float(x) >= wind_cel.end.x, true, "melee windup cell %d does not include divider x=%d" % [i, x])
 	var contact_delay := float(_sheet(strike, "hit_flash")["delay"])
 	eq(is_equal_approx(contact_delay, float(_first(strike, "spark").get("delay", -1.0))), true, "the compact burst lands with the flash")
 	eq(is_equal_approx(contact_delay, float(_first_kind(strike, "damage").get("delay", -1.0))), true, "the damage number lands with the flash")
