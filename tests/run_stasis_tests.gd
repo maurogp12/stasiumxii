@@ -25,6 +25,7 @@ func _run() -> void:
 	_test_package_and_flow()
 	_test_ai()
 	_test_boards_and_provisional_hit()
+	_test_threshgate_hazards()
 	_test_koliseo_strike_unchanged()
 	_start_fight_scene()
 
@@ -282,6 +283,64 @@ func _test_room_b_board() -> void:
 	eq(water > 8, true, "Coilgate Room B has the water cross")
 	eq(mud > 8, true, "Coilgate Room B has the mud cross")
 	eq(elevated > 0, true, "Coilgate Room B has a coil throne")
+
+
+func _test_threshgate_hazards() -> void:
+	truthy(StasisCatalog.begin("crosshaven"), "hazard check begins Threshgate")
+	StasisCatalog.class_id = "ironjaw"
+	var snap: Dictionary = _sim.reset_match(StasisCatalog.fight_config())
+	var tiles: Dictionary = snap["tiles"]
+	var player_pos: Vector2i = snap["units"][0]["pos"]
+	eq(str(tiles[player_pos].get("terrain_type", "")), "mud", "Ironjaw opens on the Threshgate mud")
+	_assert_no_hazard_walks(0, tiles, "Ironjaw")
+	var off := Vector2i(-1, -1)
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("type", "")) != "move":
+			continue
+		var dest: Vector2i = intent["to"]
+		if str(tiles[dest].get("terrain_type", "")) == "ground":
+			off = dest
+			break
+	eq(off.x >= 0, true, "Ironjaw can still walk off the opening mud onto ground")
+	# Water trough east of (8, 6). A body there stays a Strike target.
+	_sim._units[0]["pos"] = Vector2i(8, 6)
+	_sim._units[1]["pos"] = Vector2i(9, 6)
+	eq(str(_sim.tile_at(Vector2i(9, 6)).get("terrain_type", "")), "water", "the trough cell is water")
+	eq(_has_stasis_cast(0, "strike", Vector2i(9, 6)), true, "Strike offers the foe standing on water")
+	var struck: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(9, 6), "seat": 0})
+	eq(bool(struck.get("ok", false)), true, "Strike hits the foe on the trough (%s)" % str(struck.get("reason", "")))
+	eq(_sim._units[1]["pos"], Vector2i(9, 6), "the hit does not shove them off the water")
+	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(10, 6), "seat": 0})
+	eq(str(advanced.get("reason", "")), "not_walkable", "Advance will not land on the water trough")
+	var ground_advance: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(8, 4), "seat": 0})
+	eq(bool(ground_advance.get("ok", false)), true, "Advance still lands on ground two cardinal north")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var foe_seat := int(_sim.snapshot().get("active_seat", -1))
+	_assert_no_hazard_walks(foe_seat, _sim.snapshot()["tiles"], "trash")
+	var chosen: Dictionary = StasisAi.choose(_sim.legal_intents(foe_seat), _sim._units[foe_seat]["pos"], _sim._units[0]["pos"])
+	if str(chosen.get("type", "")) == "move":
+		var step: Vector2i = chosen["to"]
+		var stepped := str(_sim.tile_at(step).get("terrain_type", ""))
+		eq(stepped == "mud" or stepped == "water" or stepped == "lava", false, "trash AI walk avoids hazards")
+	StasisCatalog.clear_run()
+
+
+func _assert_no_hazard_walks(seat: int, tiles: Dictionary, who: String) -> void:
+	for intent in _sim.legal_intents(seat):
+		if typeof(intent) != TYPE_DICTIONARY or str(intent.get("type", "")) != "move":
+			continue
+		var dest: Vector2i = intent["to"]
+		var terrain := str(tiles[dest].get("terrain_type", ""))
+		eq(terrain == "mud" or terrain == "water" or terrain == "lava", false, "%s walk %s is %s" % [who, str(dest), terrain])
+
+
+func _has_stasis_cast(seat: int, spell_id: String, dest: Vector2i) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if typeof(intent) != TYPE_DICTIONARY:
+			continue
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id and intent.get("to") == dest:
+			return true
+	return false
 
 
 func _koliseo_terrain(map_id: String, cell: Vector2i) -> String:

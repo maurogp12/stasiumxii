@@ -1,9 +1,12 @@
 extends RefCounted
 
 ## Live terrain table. Ported from proto/elevation/terrain_def.gd (reference).
-## Locked: Ground 1, Mud 2, Water 2, Lava impassable.
+## Locked MP: Ground 1, Mud 2, Water 2, Lava impassable.
+## hazard: voluntary Walk, path nodes, and Advance landings refuse the tile.
+## Push (and other forced displacement) may still land. Mud and water stay
+## walkable for deploy and for a body that is already standing there.
 ## Void is not a Locked MP terrain. It is a hole: not standable, so a gap
-## cannot be stored as Ground.
+## cannot be stored as Ground. Void is not a standable hazard.
 
 enum Id { GROUND, MUD, WATER, LAVA, VOID }
 
@@ -26,21 +29,22 @@ const DISPLAY := {
 
 static func catalog() -> Dictionary:
 	return {
-		Id.GROUND: make(Id.GROUND, 1, true),
-		Id.MUD: make(Id.MUD, 2, true),
-		Id.WATER: make(Id.WATER, 2, true),
-		Id.LAVA: make(Id.LAVA, 0, false),
-		Id.VOID: make(Id.VOID, 0, false),
+		Id.GROUND: make(Id.GROUND, 1, true, false),
+		Id.MUD: make(Id.MUD, 2, true, true),
+		Id.WATER: make(Id.WATER, 2, true, true),
+		Id.LAVA: make(Id.LAVA, 0, false, true),
+		Id.VOID: make(Id.VOID, 0, false, false),
 	}
 
 
-static func make(terrain_id: int, mp: int, can_walk: bool) -> Dictionary:
+static func make(terrain_id: int, mp: int, can_walk: bool, hazard: bool = false) -> Dictionary:
 	return {
 		"id": terrain_id,
 		"name": str(NAMES.get(terrain_id, "ground")),
 		"display_name": str(DISPLAY.get(terrain_id, "Ground")),
 		"base_mp": mp,
 		"walkable": can_walk,
+		"hazard": hazard,
 	}
 
 
