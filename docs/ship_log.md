@@ -28,9 +28,9 @@ Ironjaw and Bastion east replace the v5 punch strips in place: `art/export_2x/ch
 
 West is the v5 rule: each east cell flipped horizontally, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. North and south stay the current v5 three-quarter strips. No new north or south was drawn.
 
-Godot hop timing is unchanged. Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion and Ironjaw crest stays 2.5px (inside the ~3px bar, under the 4px cap). The v6b Ironjaw sheet bobs about 3px on one passing cell; `StripLibrary` already pins that foot to frame 0, so the class hop does not stack a second bounce. The hop crest lands on a cell whose feet are already on the baseline.
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest is the shared 3px. The v6b Ironjaw sheet shifts its mass by about 3.7px on a late cell whose feet are already on the baseline, and one passing cell lifts about 3px. `StripLibrary` pins that lifted foot to frame 0. The hop crest lands on a cell whose feet are already there, so the 3px hop is the only crest. It does not stack on the strip bob.
 
-Known sheet notes, not blockers: Ironjaw bounce about 3.7px in the source, Bastion flood-key holes and two near-duplicate frames. Judge those on the phone bake.
+Known sheet notes, not blockers: Bastion flood-key holes and two near-duplicate frames. Judge stutter and flicker on the phone bake. Bastion hop is unchanged.
 
 ## 2026-09-27 — Soft Lock map presentation
 
