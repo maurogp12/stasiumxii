@@ -4,13 +4,13 @@ extends "res://vfx/vfx_pooled.gd"
 ## Punch v3: Ambush slash, hit flash, damage float, Detonate, footstep dust,
 ## and the melee windup. The hit flash keeps the authored cyan/gold.
 ## Mark Shot impact stays punch v2. The bow windup is the v4 transparent
-## strip (scenario asset_bXoujAQYZwDDQJQNGL2ouD7M). #175 holds stay locked
-## at 70+80+80+70. Cells are draw, snap burst, reticle peak, arrow-tip release.
+## strip (scenario asset_bXoujAQYZwDDQJQNGL2ouD7M). Holds stay
+## 70+80+80+70. Cells are draw, snap burst, reticle peak, arrow-tip release.
 ## Mark Shot's lower band is three stack sigils. The one-shot does not play
 ## them: Marks still count on the existing pips (cap 5).
 ## Mark Shot cast is four equal cells. Holds are absolute seconds. A longer
 ## life does not stretch them.
-## The bow ink sits above the cell center, so the offset drops it onto the hands.
+## v4 ink is centered in the cell. No extra drop, or the snap rays reach the feet.
 ## CombatSim never reads this file.
 
 const SHEETS := {
@@ -31,16 +31,17 @@ const GRIDS := {
 	"mark_shot_cast": Vector2i(4, 1),
 }
 
-## Locked bow windup, in milliseconds. 70 + 80 + 80 + 70 = 300.
+## Bow windup, in milliseconds. 70 + 80 + 80 + 70 = 300.
 ## Integers so the snap does not drift past 0.30s. Not tile time, not the body clip.
+## The draw is not stretched out to the contact.
 const FRAME_MS := {
 	"mark_shot_cast": [70, 80, 80, 70],
 }
 
-## Texture pixels that move the bow ink (above the cell center) onto the
-## hand anchor. Positive Y drops the ink. The feet stay empty.
+## Texture pixels added to the hand anchor. v4 sits on the cell center, so the
+## bow gets no extra drop. Positive Y would push the snap rays toward the feet.
 const INK_OFFSET := {
-	"mark_shot_cast": Vector2(0, 26),
+	"mark_shot_cast": Vector2.ZERO,
 }
 
 ## Measured opaque frames, left to right, with a shared vertical band so a
@@ -328,7 +329,10 @@ func _sample(t: float) -> void:
 		_apply_frame(idx)
 		var fade_start := float(_frames - 1) / float(_frames)
 		if not _holds.is_empty() and _span > 0.0:
-			var lead := _span - float(_holds[_holds.size() - 1])
+			# The arrow tip stays bright for its hold. Only a short tail fades,
+			# so the release still reads. The snap cell is not lengthened.
+			var tail := minf(0.02, float(_holds[_holds.size() - 1]) * 0.35)
+			var lead := _span - tail
 			fade_start = lead / _span
 		var fade := 1.0
 		if t > fade_start:

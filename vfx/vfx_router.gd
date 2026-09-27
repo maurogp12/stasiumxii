@@ -8,8 +8,9 @@ const SHAKE_SPELLS := ["crush", "aegis_break"]
 const STRIPS := preload("res://units/strip_library.gd")
 ## Camera shake on heavy connects. Crush and Aegis Break always shake.
 const HEAVY_HIT_DAMAGE := 20
-## Mark Shot bolt travel after the bow windup. The impact stamp lands then.
-const MARK_FLIGHT_SEC := 0.18
+## Bolt travel after the arrow leaves. Contact is this gap later, inside 0.2–0.4s.
+## Not a kit number. The cast strip itself stays the 300ms holds.
+const MARK_FLIGHT_SEC := 0.24
 const STAMP := preload("res://vfx/vfx_stamp.gd")
 
 
