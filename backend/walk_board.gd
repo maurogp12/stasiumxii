@@ -70,15 +70,6 @@ func is_walkable(cell: Vector2i) -> bool:
 	return tile.is_walkable(terrain_of(cell))
 
 
-## Mud, water, and lava. Voluntary steps refuse these even when walkable is
-## still true (mud / water deploy and occupied bodies). Void is a hole, not
-## this flag.
-func is_hazard(cell: Vector2i) -> bool:
-	if not in_bounds(cell):
-		return false
-	return bool(terrain_of(cell).get("hazard", false))
-
-
 func snapshot_tiles() -> Dictionary:
 	var out := {}
 	for cell in tiles.keys():
@@ -88,10 +79,8 @@ func snapshot_tiles() -> Dictionary:
 
 
 ## Shared dest stand-on gates for walk hops and Advance teleport.
-## Hazard tiles (mud / water / lava) and other unwalkable cells are refused.
-## Not occupied, climb<=1 / drop<=2 from `from` to `dest`.
-## Does not require ortho. Does not charge terrain or elevation MP.
-## A unit already standing on a hazard may still step off onto ground.
+## Walkable (lava / override), not occupied, climb<=1 / drop<=2 from `from` to `dest`.
+## Mud and water are walkable. Does not require ortho. Does not charge terrain or elevation MP.
 func stand_on_gate(from: Vector2i, dest: Vector2i, occupied: Callable) -> Dictionary:
 	if dest == from:
 		return _stand_fail("same_tile")
@@ -102,7 +91,7 @@ func stand_on_gate(from: Vector2i, dest: Vector2i, occupied: Callable) -> Dictio
 	if dest_tile == null or src_tile == null:
 		return _stand_fail("out_of_bounds")
 	var dest_def: Dictionary = terrains[dest_tile.terrain_type]
-	if bool(dest_def.get("hazard", false)) or not dest_tile.is_walkable(dest_def):
+	if not dest_tile.is_walkable(dest_def):
 		return _stand_fail("not_walkable")
 	if _is_occupied(dest, from, occupied):
 		return _stand_fail("occupied")
@@ -156,8 +145,8 @@ func validate_move(from: Vector2i, dest: Vector2i, remaining_mp: int, occupied: 
 		return _move_fail("out_of_bounds")
 	if not in_bounds(from):
 		return _move_fail("out_of_bounds")
-	# Dest gates first so a hazard or occupied click is not "insufficient_mp".
-	if is_hazard(dest) or not is_walkable(dest):
+	# Dest gates first so lava / occupied clicks are not just "unreachable".
+	if not is_walkable(dest):
 		return _move_fail("not_walkable")
 	if _is_occupied(dest, from, occupied):
 		return _move_fail("occupied")
@@ -172,11 +161,11 @@ func validate_move(from: Vector2i, dest: Vector2i, remaining_mp: int, occupied: 
 	var adjacent := step_cost(from, dest, occupied)
 	if str(adjacent.get("reason", "")) != "not_ortho":
 		if bool(adjacent.get("ok", false)) and int(adjacent["cost"]) > remaining_mp:
-			return _move_fail("insufficient_mp")
+			return _short_mp(dest, int(adjacent["cost"]))
 		return _move_fail(str(adjacent.get("reason", "unreachable")))
 	var unlimited := reachable(from, 9999, occupied)
 	if unlimited.has(dest):
-		return _move_fail("insufficient_mp")
+		return _short_mp(dest, int(unlimited[dest]["cost"]))
 	return _move_fail("unreachable")
 
 
@@ -269,6 +258,21 @@ func _step_fail(reason: String) -> Dictionary:
 		"terrain_mp": 0,
 		"climb_mp": 0,
 		"delta": 0,
+	}
+
+
+## Path exists and the dest is walkable, but remaining MP cannot pay it.
+## cost is the cheapest path. terrain_mp is the dest tile's own stamp
+## (mud / water are 2) so a tap can name the price instead of a bare reject.
+func _short_mp(dest: Vector2i, cost: int) -> Dictionary:
+	var terrain := terrain_of(dest)
+	return {
+		"ok": false,
+		"reason": "insufficient_mp",
+		"cost": cost,
+		"path": [],
+		"terrain": str(terrain.get("name", "")),
+		"terrain_mp": int(terrain.get("base_mp", 0)),
 	}
 
 

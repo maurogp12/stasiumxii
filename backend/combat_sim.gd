@@ -62,10 +62,9 @@ const FACING_VEC := {
 ## pushes for +1 Impact. OOB / truly blocked (not lava) bounces and staggers
 ## for +2 Impact only (no stack with +1). Lava is hazardous, not a wall:
 ## forced push displaces onto lava and applies Burn. Voluntary walk onto
-## lava stays impassable. Mud and water are the same kind of hazard for a
-## voluntary step or Advance landing: the pathfinder will not enter them.
-## A forced push still lands. Mud/water landing HP is Open and uses the
-## existing Burn HP on landing (see _try_push). They do not start Burn.
+## lava stays impassable. Mud and water stay voluntary walks at dest MP 2
+## (Ground is 1). Advance may land on them. A push onto mud or water is a
+## clean push — no extra hazard HP.
 ## Director Locked Burn: 4 HP at the start of the victim's turn, duration 2.
 ## Re-apply refreshes duration and does not stack. Burn continues after
 ## leaving lava. Death is checked after each tick. burn_remaining lives on
@@ -372,9 +371,8 @@ func legal_intents(seat: int) -> Array:
 			# Card MP was already compared to the unit's MP. Do not reuse the
 			# walk budget here: exit tax shortens walks only. A 0 MP cast
 			# such as Ambush stays legal at MP 0.
-			# A body on mud, water, or lava is still a target. Hazard tiles
-			# block voluntary steps only — not Strike, Shoulder, or other
-			# unit casts. Do not consult stand_on_gate for the occupied cell.
+			# A body on mud, water, or lava is still a target. Terrain does not
+			# soft-block aim. Do not consult stand_on_gate for the occupied cell.
 			# Koliseo still offers the one other seat. A Stasis trash pack
 			# offers every living hostile to the player.
 			for hostile in _hostile_cast_targets(seat):
@@ -676,7 +674,7 @@ func snapshot() -> Dictionary:
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
 			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not a hazard tile — mud, water, or lava — not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
@@ -1605,6 +1603,17 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		# MP 0 is a walk. Name it so the toast is not read as a failed Ambush.
 		if reason == "insufficient_mp" and int(actor.get("mp", 0)) <= 0:
 			coach = "REJECT — no MP to walk."
+		elif reason == "insufficient_mp" and int(planned.get("cost", 0)) > 0:
+			# Unaffordable mud/water is not a walk highlight. Name the price
+			# so a tap on the trough is not a bare insufficient_mp.
+			var need := int(planned["cost"])
+			var have := budget
+			var terrain := str(planned.get("terrain", ""))
+			var terrain_mp := int(planned.get("terrain_mp", 0))
+			if (terrain == "mud" or terrain == "water") and terrain_mp > 0:
+				coach = "REJECT — %s costs %d MP to enter. This path needs %d MP (you have %d)." % [terrain.capitalize(), terrain_mp, need, have]
+			else:
+				coach = "REJECT — that path needs %d MP (you have %d)." % [need, have]
 		return _reject(intent, reason, coach)
 	var from: Vector2i = actor["pos"]
 	var path: Array = planned.get("path", [])
@@ -1985,9 +1994,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
-		if int(push_result.get("hazard_damage", 0)) > 0:
-			hit_event["hazard"] = str(push_result.get("hazard", ""))
-			hit_event["hazard_damage"] = int(push_result.get("hazard_damage", 0))
 	if skip_next_mp:
 		hit_event["skip_next_mp"] = true
 	_stamp_mitigation(hit_event, mitigation)
@@ -2064,7 +2070,6 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
 			"coach": burn_coach,
 		})
-	_emit_hazard_landing(target, push_result)
 	if stun_applied > 0:
 		_last_events.append({
 			"type": "status",
@@ -2572,11 +2577,6 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
 			if bool(push_result.get("burn", false)):
 				parts.append(" Burn %d HP for %d turns." % [BURN_HP, BURN_DURATION])
-			elif int(push_result.get("hazard_damage", 0)) > 0:
-				parts.append(" %s hazard %d HP." % [
-					str(push_result.get("hazard", "")).capitalize(),
-					int(push_result.get("hazard_damage", 0)),
-				])
 	var note := ""
 	for part in parts:
 		note += part
@@ -2627,11 +2627,10 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 	# Chebyshev push 1 along the caster→target line.
 	# Director Locked Shoulder:
 	# - occupied dest: push_blocked (no bounce, no stagger)
-	# - hazard dest (lava / mud / water): displace. Lava flags Burn.
-	#   Mud / water apply the Open landing HP (existing Burn HP, no Burn status).
-	# - OOB / truly blocked (not a hazard): bounce + stagger
-	# - walkable empty ground: push
-	# Do not invent climb/drop push rules. Voluntary walk still rejects hazards.
+	# - lava dest: hazardous, not a wall — displace and flag Burn
+	# - OOB / truly blocked (not lava): bounce + stagger
+	# - walkable empty (ground, mud, water): push. No extra hazard HP.
+	# Do not invent climb/drop push rules. Voluntary walk still rejects lava.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
@@ -2659,24 +2658,12 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
-	if _board.is_hazard(dest):
+	if _is_lava(dest):
 		target["pos"] = dest
 		result["to"] = dest
 		result["moved"] = true
-		var terrain_id := int(_board.terrain_of(dest).get("id", _TerrainDef.Id.GROUND))
-		var terrain_name := _TerrainDef.name_of(terrain_id)
-		result["reason"] = terrain_name
-		if terrain_id == _TerrainDef.Id.LAVA:
-			result["burn"] = true
-			return result
-		# TODO Open: mud and water have no stamped landing HP in the kit, GDD,
-		# or tile metadata. Director Locked Burn's BURN_HP is the only hazard
-		# damage already defined. Spend it on landing. Do not start Burn ticks.
-		var lost := BURN_HP
-		target["hp"] = maxi(0, int(target["hp"]) - lost)
-		result["hazard"] = terrain_name
-		result["hazard_damage"] = lost
-		result["hp_delta"] = -lost
+		result["burn"] = true
+		result["reason"] = "lava"
 		return result
 	if not _board.is_walkable(dest):
 		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
@@ -2684,23 +2671,6 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 	result["to"] = dest
 	result["moved"] = true
 	return result
-
-
-func _emit_hazard_landing(target: Dictionary, push_result: Dictionary) -> void:
-	var lost := int(push_result.get("hazard_damage", 0))
-	if lost <= 0 or target.is_empty():
-		return
-	var terrain := str(push_result.get("hazard", ""))
-	_last_events.append({
-		"type": "hazard",
-		"terrain": terrain,
-		"target_seat": int(target["seat"]),
-		"to": push_result.get("to"),
-		"damage": lost,
-		"hp_delta": -lost,
-		"hp": int(target["hp"]),
-		"coach": "%s takes %d hazard HP on %s." % [str(target.get("name", "Unit")), lost, terrain],
-	})
 
 
 func _is_lava(cell: Vector2i) -> bool:
@@ -3630,7 +3600,6 @@ func _emit_push_followups(actor: Dictionary, target: Dictionary, push_result: Di
 			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
 			"coach": burn_coach,
 		})
-	_emit_hazard_landing(target, push_result)
 
 
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
@@ -3898,11 +3867,9 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	# front, facing away). That landing is legal. Any other occupant rejects.
 	if cell != caster_pos and not _is_empty(cell):
 		return false
-	# The back tile is a voluntary landing. Hazard tiles stay illegal there.
-	# The enemy body can still stand on a hazard; that cell is the target,
-	# not this landing.
-	if _board.is_hazard(cell):
-		return false
+	# The back tile is a voluntary landing. Lava is impassable. Mud and water
+	# are walkable, so a landing there is legal. The enemy's own tile is the
+	# target and is not this check.
 	return _board.is_walkable(cell)
 
 

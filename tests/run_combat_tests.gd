@@ -516,7 +516,7 @@ func _test_manhattan_walk_costs() -> void:
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 3)})
 	eq(result["illegal"], true, "orthogonal Manhattan 2 with 1 MP left is illegal")
 	eq(result["reason"], "insufficient_mp", "reject reason is insufficient_mp")
-	eq(str(result["snapshot"].get("coach", "")), "REJECT — illegal move (insufficient_mp).", "short MP still names an illegal move")
+	eq(str(result["snapshot"].get("coach", "")), "REJECT — that path needs 2 MP (you have 1).", "short MP names the path cost")
 	eq(_unit(0)["pos"], Vector2i(3, 3), "pawn did not move")
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(2, 2), "ironjaw_pos": Vector2i(7, 7)})
 	result = _sim.submit({"type": "move", "to": Vector2i(5, 2)})
@@ -744,10 +744,8 @@ func _test_phase_a_demo_map() -> void:
 		"ironjaw_pos": Vector2i(14, 14),
 	})
 	var water: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 4)})
-	eq(bool(water.get("ok", true)), false, "water hop is not a voluntary walk")
-	eq(str(water.get("reason", "")), "not_walkable", "water dest is not_walkable")
-	eq(_unit(0)["pos"], Vector2i(1, 4), "rejected water hop leaves Kestrel put")
-	eq(_has_legal_move_to(0, Vector2i(0, 4)), false, "legal_intents omit the water tile")
+	eq(water["ok"], true, "water hop is legal")
+	eq(water["events"][0]["mp_spent"], 2, "water dest costs 2 MP")
 	_sim.reset_match({
 		"seed": 1,
 		"skip_deploy": true,
@@ -834,7 +832,6 @@ func _test_snapshot_exposes_tiles() -> void:
 
 
 func _test_mud_walk_cost() -> void:
-	# Mud keeps its MP stamp and stays occupiable. A voluntary step cannot enter it.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -842,38 +839,24 @@ func _test_mud_walk_cost() -> void:
 		"ironjaw_pos": Vector2i(7, 7),
 		"tiles": [{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.0}],
 	})
-	eq(bool(_sim.tile_at(Vector2i(3, 2)).get("walkable", false)), true, "mud stays occupiable")
-	eq(_sim.snapshot()["terrain_mp"]["mud"], 2, "Mud MP stamp stays 2")
-	eq(_has_legal_move_to(0, Vector2i(3, 2)), false, "adjacent mud is not a walk dest")
+	eq(_has_legal_move_to(0, Vector2i(3, 2)), true, "adjacent mud is legal at 3 MP")
 	var result: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2)})
-	eq(result["illegal"], true, "mud hop is rejected")
-	eq(result["reason"], "not_walkable", "mud hop reason is not_walkable, not insufficient_mp")
-	eq(_unit(0)["pos"], Vector2i(2, 2), "rejected mud hop leaves Kestrel put")
-	eq(_unit(0)["mp"], 3, "rejected mud hop spends no MP")
-	result = _sim.submit({"type": "move", "to": Vector2i(3, 3)})
-	eq(result["ok"], true, "ground beside mud is still a walk")
-	var path: Array = result["events"][0]["path"]
-	eq(path.has(Vector2i(3, 2)), false, "the path does not step on mud")
-	# A body already on mud can step off. It still cannot step onto more mud.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"kestrel_pos": Vector2i(3, 2),
-		"ironjaw_pos": Vector2i(7, 7),
-		"tiles": [
-			{"pos": Vector2i(3, 2), "terrain": "mud", "elevation": 0.0},
-			{"pos": Vector2i(4, 2), "terrain": "mud", "elevation": 0.0},
-		],
-	})
-	eq(_has_legal_move_to(0, Vector2i(3, 1)), true, "standing on mud can still walk onto ground")
-	eq(_has_legal_move_to(0, Vector2i(4, 2)), false, "standing on mud cannot walk onto more mud")
-	result = _sim.submit({"type": "move", "to": Vector2i(3, 1)})
-	eq(result["ok"], true, "leaving mud onto ground is allowed")
-	eq(_unit(0)["pos"], Vector2i(3, 1), "Kestrel stepped off the mud")
+	eq(result["ok"], true, "mud hop is legal")
+	eq(result["events"][0]["mp_spent"], 2, "mud dest costs 2 MP")
+	eq(_unit(0)["mp"], 1, "3 MP minus mud 2 leaves 1")
+	eq(_unit(0)["pos"], Vector2i(3, 2), "Kestrel landed on mud")
+	eq(_has_legal_move_to(0, Vector2i(4, 2)), true, "1 MP still reaches adjacent Ground")
+	_sim.set_tile(Vector2i(4, 2), "mud", 0.0)
+	eq(_has_legal_move_to(0, Vector2i(4, 2)), false, "1 MP cannot pay a second mud hop")
+	result = _sim.submit({"type": "move", "to": Vector2i(4, 2)})
+	eq(result["illegal"], true, "second mud hop at 1 MP is rejected")
+	eq(result["reason"], "insufficient_mp", "short mud hop reason is insufficient_mp")
+	eq(str(result["snapshot"].get("coach", "")), "REJECT — Mud costs 2 MP to enter. This path needs 2 MP (you have 1).", "short mud hop names the dest MP")
+	eq(_unit(0)["pos"], Vector2i(3, 2), "rejected mud hop leaves the pawn put")
 
 
 func _test_hazard_push_and_targets() -> void:
-	# A body on mud, water, or lava is still a Strike target.
+	# A body on mud, water, or lava is still a Strike target. Terrain does not soft-block aim.
 	for terrain in ["mud", "water", "lava"]:
 		_sim.reset_match({
 			"seed": 1,
@@ -889,7 +872,7 @@ func _test_hazard_push_and_targets() -> void:
 		eq(bool(struck.get("ok", false)), true, "Strike resolves on %s (%s)" % [terrain, str(struck.get("reason", ""))])
 		eq(_unit(1)["pos"], Vector2i(4, 3), "Strike leaves the body on %s" % terrain)
 		eq(int(_unit(1)["hp"]) < 80, true, "Strike damages the body on %s" % terrain)
-	# Shoulder onto mud or water lands and spends the existing hazard HP. Not a bounce, not Burn.
+	# Shoulder onto mud or water is a clean push. No extra hazard HP, no Burn.
 	for terrain in ["mud", "water"]:
 		_sim.reset_match({
 			"seed": 1,
@@ -904,18 +887,13 @@ func _test_hazard_push_and_targets() -> void:
 		var shoved: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 		eq(bool(shoved.get("ok", false)), true, "Shoulder onto %s resolves" % terrain)
 		eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on %s" % terrain)
-		eq(_unit(0)["hp"], 70, "%s land is 6 Earth plus hazard HP" % terrain)
+		eq(_unit(0)["hp"], 74, "%s land is the 6 Earth hit only" % terrain)
 		eq(int(_unit(0).get("burn_remaining", 0)), 0, "%s land does not start Burn" % terrain)
 		eq(_unit(1)["impact"], 1, "%s land is a clean push (+1 Impact)" % terrain)
 		eq(bool(shoved["events"][0].get("bounced", true)), false, "%s land does not bounce" % terrain)
-		eq(int(shoved["events"][0].get("hazard_damage", 0)), 4, "%s hit records hazard HP" % terrain)
-		eq(str(shoved["events"][0].get("hazard", "")), terrain, "%s hit names the terrain" % terrain)
-		var hazard := _first_event_where(shoved["events"], "hazard")
-		eq(hazard.is_empty(), false, "%s land emits a hazard event" % terrain)
-		eq(int(hazard.get("damage", 0)), 4, "%s hazard event is 4 HP" % terrain)
-		eq(str(hazard.get("terrain", "")), terrain, "%s hazard event names the tile" % terrain)
 		eq(_event_type_count(shoved["events"], "push_bounce"), 0, "%s land is not a bounce" % terrain)
-	# Ironjaw's own voluntary steps also skip the hazard, including Advance.
+		eq(_event_type_count(shoved["events"], "hazard"), 0, "%s land invents no hazard event" % terrain)
+	# Voluntary lava stays impassable. Mud and water are Advance landings. Unpaid water is not offered.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -923,20 +901,25 @@ func _test_hazard_push_and_targets() -> void:
 		"ironjaw_pos": Vector2i(2, 2),
 		"tiles": [
 			{"pos": Vector2i(3, 2), "terrain": "water", "elevation": 0},
-			{"pos": Vector2i(4, 2), "terrain": "water", "elevation": 0},
+			{"pos": Vector2i(4, 2), "terrain": "lava", "elevation": 0},
 			{"pos": Vector2i(2, 4), "terrain": "mud", "elevation": 0},
 		],
 	})
 	_sim.submit({"type": "end_turn"})
-	eq(_has_legal_move_to(1, Vector2i(3, 2)), false, "Ironjaw walk omits adjacent water")
-	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "Advance omits a water landing")
-	eq(_has_legal_advance_to(1, Vector2i(2, 4)), false, "Advance omits a mud landing")
+	eq(_has_legal_move_to(1, Vector2i(3, 2)), true, "Ironjaw walk offers adjacent water at MP 3")
+	eq(_has_legal_move_to(1, Vector2i(4, 2)), false, "Ironjaw walk omits lava")
+	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "Advance omits a lava landing")
+	eq(_has_legal_advance_to(1, Vector2i(2, 4)), true, "Advance offers a mud landing")
+	_sim._units[1]["mp"] = 1
+	eq(_has_legal_move_to(1, Vector2i(3, 2)), false, "1 MP does not offer the water tile")
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 2), "seat": 1})
-	eq(str(walked.get("reason", "")), "not_walkable", "Ironjaw walk onto water is not_walkable")
-	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2), "seat": 1})
-	eq(str(advanced.get("reason", "")), "not_walkable", "Advance onto water is not_walkable")
-	eq(_unit(1)["pos"], Vector2i(2, 2), "rejected Advance leaves Ironjaw put")
-	eq(_unit(1)["ap"], 6, "rejected Advance refunds AP")
+	eq(str(walked.get("reason", "")), "insufficient_mp", "unpaid water is insufficient_mp, not impassable")
+	eq(str(walked["snapshot"].get("coach", "")), "REJECT — Water costs 2 MP to enter. This path needs 2 MP (you have 1).", "unpaid water names the dest MP")
+	eq(_unit(1)["pos"], Vector2i(2, 2), "rejected water hop leaves Ironjaw put")
+	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(2, 4), "seat": 1})
+	eq(bool(advanced.get("ok", false)), true, "Advance lands on mud")
+	eq(_unit(1)["pos"], Vector2i(2, 4), "Advance snapped onto mud")
+	eq(_unit(1)["mp"], 1, "Advance spends 0 MP on mud")
 
 
 func _test_solid_props_block_walk_paths() -> void:
@@ -1359,8 +1342,7 @@ func _test_advance_stand_on_gates() -> void:
 	eq(_has_legal_advance_to(1, Vector2i(4, 2)), false, "legal_intents omit drop-3 Advance")
 	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["reason"], "drop_too_far", "preview_cast reflects drop gate")
 
-	# Legal dest: climb 1 onto ground, 0 MP spent. Lava between does not block a snap.
-	# Mud at the other cardinal is the same refusal as lava.
+	# Legal dest: climb 1 onto mud, 0 MP spent. Lava on the tile between does not block a snap.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1368,22 +1350,19 @@ func _test_advance_stand_on_gates() -> void:
 		"ironjaw_pos": Vector2i(2, 2),
 		"tiles": [
 			{"pos": Vector2i(3, 2), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(4, 2), "terrain": "ground", "elevation": 1},
-			{"pos": Vector2i(2, 4), "terrain": "mud", "elevation": 0},
+			{"pos": Vector2i(4, 2), "terrain": "mud", "elevation": 1},
 		],
 	})
 	_sim.submit({"type": "end_turn"})
 	eq(_sim._validate_advance(_unit(1), Vector2i(4, 2)), "", "legal Advance dest passes shared stand-on gates")
 	eq(_sim._validate_advance(_unit(1), Vector2i(3, 2)), "out_of_range", "Manhattan 1 between is not an Advance dest")
-	eq(_sim._validate_advance(_unit(1), Vector2i(2, 4)), "not_walkable", "Advance mud landing is not_walkable")
-	eq(_has_legal_advance_to(1, Vector2i(2, 4)), false, "legal_intents omit a mud Advance")
 	eq(_has_legal_advance_to(1, Vector2i(4, 2)), true, "legal_intents include a legal Advance dest")
 	eq(_sim.preview_cast(SpellKits.ADVANCE, Vector2i(2, 2), Vector2i(4, 2))["legal"], true, "preview_cast marks a legal dest")
 	result = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "legal Advance dest is accepted")
 	eq(_unit(1)["pos"], Vector2i(4, 2), "Advance snapped onto the legal dest")
 	eq(_unit(1)["ap"], 3, "legal Advance spends 3 AP")
-	eq(_unit(1)["mp"], 3, "legal Advance spends 0 MP (gate only, no climb tax)")
+	eq(_unit(1)["mp"], 3, "legal Advance spends 0 MP (gate only, no mud/climb tax)")
 	eq(result["events"][0]["mp_spent"], 0, "advance event spends 0 MP")
 
 
