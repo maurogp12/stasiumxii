@@ -959,168 +959,6 @@
       ]
     },
     {
-      "file": "brine_ground.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_ground_v1.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_ground_v2.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_mud.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_mud_v1.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_water.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_water_v1.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_ground_e1.png",
-      "fit": "punch",
-      "size": [
-        64,
-        68
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_ground_e2.png",
-      "fit": "punch",
-      "size": [
-        64,
-        96
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_mud_e1.png",
-      "fit": "punch",
-      "size": [
-        64,
-        70
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_driftwood.png",
-      "fit": "punch",
-      "size": [
-        63,
-        52
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rock_cluster.png",
-      "fit": "punch",
-      "size": [
-        69,
-        66
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rock_pillar.png",
-      "fit": "punch",
-      "size": [
-        46,
-        70
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_rubble.png",
-      "fit": "punch",
-      "size": [
-        64,
-        70
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_ruins.png",
-      "fit": "punch",
-      "size": [
-        64,
-        57
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_fence.png",
-      "fit": "punch",
-      "size": [
-        78,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_waterfall.png",
-      "fit": "punch",
-      "size": [
-        72,
-        105
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
-      "file": "brine_prop_floor_seal.png",
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/brinewake/"
-    },
-    {
       "file": "slag_ground.png",
       "anchor": [
         422,
@@ -1444,6 +1282,168 @@
         34
       ],
       "source": "pending/lava"
+    },
+    {
+      "file": "brine_ground.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_ground_v1.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_ground_v2.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_mud.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_mud_v1.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_water.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_water_v1.png",
+      "fit": "punch",
+      "size": [
+        64,
+        32
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_ground_e1.png",
+      "fit": "punch",
+      "size": [
+        64,
+        58
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_ground_e2.png",
+      "fit": "punch",
+      "size": [
+        64,
+        86
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_mud_e1.png",
+      "fit": "punch",
+      "size": [
+        64,
+        56
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_rock_pillar.png",
+      "fit": "punch",
+      "size": [
+        11,
+        40
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_ruins.png",
+      "fit": "punch",
+      "size": [
+        28,
+        28
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_driftwood.png",
+      "fit": "punch",
+      "size": [
+        44,
+        12
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_fence.png",
+      "fit": "punch",
+      "size": [
+        44,
+        12
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_rubble.png",
+      "fit": "punch",
+      "size": [
+        34,
+        20
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_rock_cluster.png",
+      "fit": "punch",
+      "size": [
+        36,
+        21
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_waterfall.png",
+      "fit": "punch",
+      "size": [
+        11,
+        40
+      ],
+      "source": "pending/brinewake/"
+    },
+    {
+      "file": "brine_prop_floor_seal.png",
+      "fit": "punch",
+      "size": [
+        26,
+        14
+      ],
+      "source": "pending/brinewake/"
     }
   ],
   "promoted": {

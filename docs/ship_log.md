@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Brinewake elevation v2, upper-corner deck gone
+
+Soft Lock agua + costa. Presentation only. Locked Brinewake geometry, tags, walkability, and kit numbers are unchanged. No APK. `version/name` and `version/code` stay put.
+
+The live elevation sheet is the regenerated punch without the upper-corner wooden deck. The earlier sheet that still had that deck is not the source. `slice_brine_punch.py` writes `brine_ground_e1.png`, `brine_mud_e1.png`, and `brine_ground_e2.png` from the remaining stairs. The cap is the upper deck. The stair hangs under it and stops on the lower deck in the same sprite. The high wall stays taller than the low wall.
+
+Props from `art/tilesets/original/pending/brinewake/brine_props_punch.png` stay wired and about one tile tall. Ground, mud, and water stay the coast punch. `stasium-ref/maps/brinewake/elevation_punch.png` mirrors the regenerated sheet. The mood plate is not sliced.
+
 ## 2026-09-26 — Slagcrown lava punch redo
 
 Soft Lock fuego + lava. Presentation only. Locked Slagcrown geometry, tags, walkability, and kit numbers are unchanged. No grass, moss, or bushes on the dress.
