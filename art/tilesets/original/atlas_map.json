@@ -18,7 +18,8 @@
     "pending/lava/props_punch.png",
     "pending/brinewake/brine_ground_punch.png",
     "pending/brinewake/brine_elevation_punch.png",
-    "pending/brinewake/brine_props_punch.png"
+    "pending/brinewake/brine_props_punch.png",
+    "pending/electric/board_mood_punch.png"
   ],
   "sliced_from": "original-tileset-b.jpg",
   "grid": [
@@ -461,166 +462,6 @@
         64,
         32
       ]
-    },
-    {
-      "file": "storm_ground.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_v2.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_v3.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_mud.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_mud_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_mud_v2.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_water.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_water_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_e1.png",
-      "size": [
-        64,
-        74
-      ],
-      "fit": "cliff"
-    },
-    {
-      "file": "storm_ground_e1_v1.png",
-      "size": [
-        64,
-        77
-      ],
-      "fit": "cliff"
-    },
-    {
-      "file": "storm_mud_e1.png",
-      "size": [
-        64,
-        76
-      ],
-      "fit": "cliff"
-    },
-    {
-      "file": "storm_ground_e2.png",
-      "size": [
-        64,
-        97
-      ],
-      "fit": "cliff"
-    },
-    {
-      "file": "storm_prop_crystal_bolt.png",
-      "size": [
-        73,
-        107
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_spark.png",
-      "size": [
-        55,
-        72
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_conduit.png",
-      "size": [
-        88,
-        119
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_rock_pillar.png",
-      "size": [
-        83,
-        118
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_arc.png",
-      "size": [
-        120,
-        99
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_rubble.png",
-      "size": [
-        70,
-        89
-      ],
-      "fit": "prop"
-    },
-    {
-      "file": "storm_prop_floor_seal.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
     },
     {
       "file": "ground.png",
@@ -1444,6 +1285,166 @@
         32
       ],
       "source": "pending/brinewake/"
+    },
+    {
+      "file": "storm_ground.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v1.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v2.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_v3.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud_v1.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_mud_v2.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_water_v1.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_prop_floor_seal.png",
+      "fit": "flat",
+      "size": [
+        64,
+        32
+      ]
+    },
+    {
+      "file": "storm_ground_e1.png",
+      "fit": "cliff",
+      "size": [
+        64,
+        72
+      ]
+    },
+    {
+      "file": "storm_ground_e1_v1.png",
+      "fit": "cliff",
+      "size": [
+        64,
+        76
+      ]
+    },
+    {
+      "file": "storm_mud_e1.png",
+      "fit": "cliff",
+      "size": [
+        64,
+        72
+      ]
+    },
+    {
+      "file": "storm_ground_e2.png",
+      "fit": "cliff",
+      "size": [
+        64,
+        100
+      ]
+    },
+    {
+      "file": "storm_prop_spark.png",
+      "fit": "prop",
+      "size": [
+        29,
+        48
+      ]
+    },
+    {
+      "file": "storm_prop_rubble.png",
+      "fit": "prop",
+      "size": [
+        52,
+        25
+      ]
+    },
+    {
+      "file": "storm_prop_arc.png",
+      "fit": "prop",
+      "size": [
+        52,
+        32
+      ]
+    },
+    {
+      "file": "storm_prop_rock_pillar.png",
+      "fit": "prop",
+      "size": [
+        30,
+        78
+      ]
+    },
+    {
+      "file": "storm_prop_crystal_bolt.png",
+      "fit": "prop",
+      "size": [
+        32,
+        55
+      ]
+    },
+    {
+      "file": "storm_prop_conduit.png",
+      "fit": "prop",
+      "size": [
+        28,
+        40
+      ]
     }
   ],
   "promoted": {
@@ -1456,7 +1457,8 @@
     "ground": "pending/electric/storm_ground_punch.png",
     "elevation": "pending/electric/storm_elevation_punch.png",
     "props": "pending/electric/storm_props_punch.png",
-    "note": "Live Stormspire paint. Geometry and tags stay on the Locked maps."
+    "mood": "pending/electric/board_mood_punch.png",
+    "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps."
   },
   "windmere_punch": {
     "ground": "pending/ice/punch/wind_ground_punch.png",

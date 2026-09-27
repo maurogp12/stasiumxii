@@ -2,6 +2,16 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Stormspire Koliseo punch redo
+
+Soft lock: electric and wind. Presentation only. No APK. Luca’s earlier Stormspire punch read as a flat mass. This pass replaces that paint.
+
+`slice_storm_punch.py` reads the new sheets and overwrites only `storm_*` terrain and `storm_prop_*`. `ground_punch.png` is the same bytes as `storm_ground_punch.png`. Elevation and props are aliased the same way. `board_mood_punch.png` and `stasium-ref/maps/stormspire/luca_preview_stormspire.png` are the look reference and are not sliced.
+
+Floors are hard 64×32 diamonds with a dark seam and a thin gold north edge. Water stays violet energy. Mud keeps cyan veins on the same dark stone. Elevation 1 hangs a short wall; elevation 2 is taller, matching the platform step. Props are six silhouettes (spark, rubble, arc, pillar, bolt, conduit), each centered and narrower than the tile, so the floor stays visible and line of sight stays open. No circular arena and no totem ring.
+
+Locked Stormspire geometry, tags, walkability, and kit numbers are unchanged. Other arenas stay on their sheets.
+
 ## 2026-09-26 — Combat VFX punch v3
 
 Presentation only. No APK. Post-0.1.26. Walk sheets on this tip are wakfu-ship-v5 (#177). This pack does not replace them.
