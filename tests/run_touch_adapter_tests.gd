@@ -180,6 +180,10 @@ func _test_mobile_target_pick() -> void:
 	# Finger padding is opt-in. Desktop calls stay on the 22px circle and the 34px body.
 	eq(TOUCH.PAWN_BODY_RADIUS, 34.0, "desktop body radius stays 34")
 	eq(TOUCH.MOBILE_PAWN_BODY_RADIUS > TOUCH.PAWN_BODY_RADIUS, true, "a finger uses a fatter body")
+	eq(TOUCH.TARGET_PAWN_BODY_RADIUS > TOUCH.MOBILE_PAWN_BODY_RADIUS, true, "a unit cast uses a wider sprite pad")
+	eq(TOUCH.TARGET_PAWN_BODY_RADIUS >= float(TOUCH.HIT_FLOOR), true, "the enemy pad is at least the 48px hit floor")
+	eq(TOUCH.TARGET_PAWN_BODY_RADIUS <= 72.0, true, "the sprite pad stays inside a primary button")
+	eq(TOUCH.SPRITE_HALF_W >= 36.0, true, "the unit cast covers the authored 72px-wide drawing")
 	eq(TOUCH.MOBILE_CELL_PICK_RADIUS > TOUCH.CELL_PICK_RADIUS, true, "off-board finger pad is wider than 22px")
 	eq(TOUCH.use_mobile_pick(), false, "headless does not force the finger pick")
 	var sort := preload("res://board/visual_sort.gd")
@@ -192,14 +196,49 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.diamond_metric(side, foe_origin) <= 1.0, true, "the side point sits on the painted diamond")
 	eq(TOUCH.pick_board_cell(side, tiles, pawns, false), Vector2i(7, 6), "desktop still gives the diamond side to the neighbor")
 	eq(TOUCH.pick_board_cell(side, tiles, pawns, false, true), foe, "a finger on the painted diamond selects that tile")
+	# (A) The enemy's own tile, including the edge the 22px circle gives away.
+	eq(TOUCH.pick_board_cell(foe_origin, tiles, pawns, true), foe, "a unit cast on the enemy tile selects that unit")
+	eq(TOUCH.pick_board_cell(side, tiles, pawns, true), foe, "the diamond edge still selects the unit under a unit cast")
+	eq(TOUCH.hits_unit_diamond(side, foe_origin), true, "that edge sits on the enemy diamond")
 	var beside := foe_origin + Vector2(48, -72)
 	eq(TOUCH.hits_pawn_body(beside, foe_origin), false, "a tap beside the chest misses the desktop body")
 	eq(TOUCH.hits_pawn_body(beside, foe_origin, true), true, "a tap beside the chest hits the finger body")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true) == foe, false, "desktop unit pick of that slop is not the foe")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), foe, "finger unit pick of that slop is the foe")
 	var east: Vector2 = tiles[Vector2i(7, 6)]
-	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the finger body")
-	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), Vector2i(7, 6), "finger pick of the east diamond stays that tile")
+	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the walk capsule")
+	eq(TOUCH.hits_pawn_body(east, foe_origin, true, true), true, "a unit-cast pad reaches the east neighbor diamond")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, false, true), Vector2i(7, 6), "a walk tap on the east diamond stays that tile")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), foe, "a unit cast on the east diamond selects the foe")
+	var overlap: Vector2 = tiles[Vector2i(4, 4)]
+	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, false), Vector2i(4, 4), "the diamond behind the foe is empty ground")
+	eq(TOUCH.hits_pawn_body(overlap, foe_origin), true, "that ground center sits on the sprite")
+	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, true), foe, "the body wins when the tap overlaps the sprite and that ground cell")
+	# (B) The drawing, including the edge that sits on empty ground two tiles away.
+	var drawing := foe_origin + Vector2(TOUCH.SPRITE_HALF_W, -80)
+	eq(TOUCH.hits_pawn_body(drawing, foe_origin), false, "the drawing edge misses the 34px desktop capsule")
+	eq(TOUCH.hits_pawn_body(drawing, foe_origin, false, true), true, "a unit cast covers that drawing edge")
+	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, false) == foe, false, "without a unit cast the drawing edge is empty ground")
+	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true), foe, "the drawing wins over the empty ground under it")
+	eq(TOUCH.pick_board_cell(drawing, tiles, pawns, true, true), foe, "a finger on the drawing selects the foe")
+	# (C) Not only the center. A rim past the painted diamond still selects the foe.
+	var rim := foe_origin + Vector2(40, 0)
+	eq(TOUCH.hits_unit_diamond(rim, foe_origin), false, "40px off center is outside the painted diamond")
+	eq(TOUCH.hits_unit_diamond(rim, foe_origin, true), true, "the finger pad still includes that rim")
+	eq(TOUCH.pick_board_cell(rim, tiles, pawns, true, true), foe, "a finger on the enemy tile rim selects the foe")
+	eq(TOUCH.pick_board_cell(rim, tiles, pawns, false, true) == foe, false, "a walk tap on that rim is not forced onto the foe")
+	var nearer := foe_origin + Vector2(10, -72)
+	var pair := [
+		{"cell": foe, "origin": foe_origin, "sort": 1},
+		{"cell": Vector2i(8, 8), "origin": foe_origin + Vector2(50, 0), "sort": 50},
+	]
+	eq(TOUCH.pick_board_cell(nearer, tiles, pair, true, true), foe, "the nearer sprite wins when both pads contain the tap")
+	var tied := [
+		{"cell": foe, "origin": foe_origin, "sort": 1},
+		{"cell": Vector2i(7, 6), "origin": foe_origin, "sort": 2},
+	]
+	var tied_chest := foe_origin + Vector2(0, -72)
+	eq(TOUCH.pick_board_cell(tied_chest, tiles, tied, true, true), Vector2i(4, 4), "an equal body tie stays the empty ground cell")
 	var north: Vector2 = tiles[Vector2i(6, 5)]
 	eq(TOUCH.hits_pawn_body(north, foe_origin), false, "the north diamond stays outside the desktop body")
 	eq(TOUCH.hits_pawn_body(north, foe_origin, true), true, "the figure covers the north diamond, so a finger cast hits the unit")
