@@ -45,6 +45,10 @@ func _test_texture_paths_and_imports() -> void:
 	truthy(pawn_src.contains("flip_h = false"), "flip_h stays off")
 	truthy(pawn_src.contains("Vector2(0, -72)"), "offset is the shipped foot pivot")
 	truthy(pawn_src.contains("Vector2(0.5, 0.5)"), "shipped scale is 0.5")
+	var shader := FileAccess.get_file_as_string("res://units/figure_read.gdshader")
+	truthy(shader.contains("smoothstep(0.22, 0.55, tex.a)"), "figure read clips the soft fringe")
+	eq(shader.contains("px.x * 3.0"), false, "figure read does not grow a 3px halo")
+	_assert_mender_south_matte()
 
 
 func _test_sprite_node_setup() -> void:
@@ -57,18 +61,16 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
 	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
 	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
-	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the shared 0.5")
-	eq(ironjaw_scale, Pawn.SPRITE_SCALE, "art-fill carries Ironjaw's size; no extra mul")
-	eq(Pawn.IRONJAW_COMBAT_SCALE, 1.0, "the optional ironjaw nudge is off")
-	eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw ships at the shared scale")
-	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the art-fill scale")
-	eq(Pawn.capped_presentation_mul(1.08), 1.08, "1.08 is the low end of the optional band")
-	eq(Pawn.capped_presentation_mul(1.10), 1.10, "1.10 is the top of the optional band")
-	eq(Pawn.capped_presentation_mul(1.07), 1.0, "below 1.08 is not a shipped nudge")
-	eq(Pawn.capped_presentation_mul(1.11), 1.0, "above 1.10 is ignored")
-	eq(Pawn.capped_presentation_mul(1.12), 1.0, "1.12 is outside the band")
-	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a 1.20 bump is rejected")
-	eq(Pawn.capped_presentation_mul(1.25), 1.0, "a larger bump is rejected")
+	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the roster read")
+	eq(ironjaw_scale, Pawn.SPRITE_SCALE * Pawn.ROSTER_READ_SCALE, "roster read grows the shared 0.5 cell")
+	eq(Pawn.ROSTER_READ_SCALE, 1.25, "the shared read is 1.25")
+	eq(Pawn.presentation_mul("ironjaw"), Pawn.ROSTER_READ_SCALE, "ironjaw ships at the roster read")
+	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the bare cell")
+	eq(Pawn.capped_presentation_mul(1.25), 1.25, "1.25 is the roster read")
+	eq(Pawn.capped_presentation_mul(1.08), 1.0, "the old 1.08 nudge does not ship")
+	eq(Pawn.capped_presentation_mul(1.10), 1.0, "the old 1.10 cap does not ship")
+	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a one-class 1.20 bump is rejected")
+	eq(Pawn.capped_presentation_mul(1.50), 1.0, "a larger bump is rejected")
 	pawn._sample_hop(0.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
 	pawn._sample_hop(1.0)
@@ -78,6 +80,9 @@ func _test_sprite_node_setup() -> void:
 	if strip != null:
 		eq(strip.scale, ironjaw_scale, "ironjaw walk strip uses the presentation scale")
 		eq(strip.offset, Vector2(0, -72), "ironjaw walk strip keeps the foot pivot")
+		eq(strip.frame, 0, "ironjaw idle is walk frame 0")
+		eq(str(strip.animation).begins_with("walk_"), true, "ironjaw idle is the walk sheet")
+		eq(strip.modulate, Color.WHITE, "ironjaw walk idle is not Invisible")
 	_assert_ironjaw_feet(ironjaw_scale.y)
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
@@ -89,9 +94,13 @@ func _test_sprite_node_setup() -> void:
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
 	var bastion_sprite := bastion.get_node("Sprite") as Sprite2D
-	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion stays on the shared scale")
-	for class_id in ["kestrel", "gloam", "mender", "bastion"]:
-		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s stays on the shared scale" % class_id)
+	var read_scale := Pawn.SPRITE_SCALE * Pawn.ROSTER_READ_SCALE
+	eq(bastion_sprite.scale, read_scale, "bastion uses the roster read")
+	eq(bastion_sprite.modulate, Color.WHITE, "a visible bastion is not Invisible")
+	eq(sprite.modulate, Color.WHITE, "a visible ironjaw is not Invisible")
+	for class_id in ["kestrel", "gloam", "mender", "bastion", "ironjaw"]:
+		eq(Pawn.sprite_scale_for(class_id), read_scale, "%s uses the roster read" % class_id)
+		eq(Pawn.presentation_mul(class_id), Pawn.ROSTER_READ_SCALE, "%s read factor matches the roster" % class_id)
 	eq(bastion_sprite.texture, Pawn.sprite_texture("bastion", "N"), "bastion N placeholder still loads")
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.sprite_texture("bastion", "W"), "bastion W placeholder still loads")
@@ -249,6 +258,32 @@ func _test_name_sits_above_the_sprite() -> void:
 		pawn.free()
 
 
+func _assert_mender_south_matte() -> void:
+	var frames := StripLibrary.frames_for("mender")
+	truthy(frames != null, "mender walk bank loads")
+	if frames == null:
+		return
+	var cell := frames.get_frame_texture("walk_s", 0)
+	truthy(cell != null, "mender south idle cell loads")
+	if cell == null:
+		return
+	var image := cell.get_image()
+	var opaque := 0
+	var white := 0
+	var foot := -1
+	for y in range(image.get_height() - 1, -1, -1):
+		for x in image.get_width():
+			var px := image.get_pixel(x, y)
+			if px.a > 0.08 and foot < 0:
+				foot = y
+			if px.a > 0.78:
+				opaque += 1
+				if px.r > 0.95 and px.g > 0.95 and px.b > 0.95:
+					white += 1
+	eq(foot >= 148 and foot <= 151, true, "mender south sole sits on the shared foot row")
+	eq(opaque > 0 and float(white) / float(opaque) < 0.15, true, "mender south is not an unkeyed white plate")
+
+
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 	for child in pawn.get_children():
 		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
@@ -286,8 +321,8 @@ func _assert_ironjaw_feet(scale_y: float) -> void:
 	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.SPRITE_OFFSET.y
 	var world_foot := local_foot * scale_y
 	var shared_foot := local_foot * Pawn.SPRITE_SCALE.y
-	eq(absf(world_foot) <= 2.0, true, "ironjaw feet stay on the diamond")
-	eq(absf(world_foot - shared_foot) <= 1.0, true, "the presentation bump does not lift the plant")
+	eq(absf(world_foot) <= 3.0, true, "ironjaw feet stay on the diamond")
+	eq(absf(world_foot - shared_foot) <= 1.5, true, "the roster read does not lift the plant off the diamond")
 
 
 func _unit_dict(class_id: String, facing: String, seat: int, living: bool = true) -> Dictionary:

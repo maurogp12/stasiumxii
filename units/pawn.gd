@@ -2,9 +2,8 @@ extends Node2D
 class_name Pawn
 
 ## One Sprite2D child ("Sprite") at the pawn origin. Feet sit on that origin:
-## centered, offset (0, -72), scale 0.5. A class may multiply that by a small
-## interim presentation factor (feet pivot, not the pick capsule). Art-fill of
-## the same 144×160 cell is the primary size fix. When a walk sheet exists, the standing
+## centered, offset (0, -72), scale 0.5, then the shared roster read (feet
+## pivot, not the pick capsule). When a walk sheet exists, the standing
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
@@ -125,17 +124,20 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
-## (~147px) against Bastion ~130px, so the shipped mul is 1.0. A later nudge
-## may only sit in 1.08–1.10, on the body sprites, growing from the foot
-## offset (0, -72). The pawn node and the pick capsule stay at scale 1.
-## Identity is Berserker A + helm A2 (iron-jaw grill, dual double-bit axes).
-## 1.20 is rejected. Kit numbers and map geometry do not read this.
-const PRESENTATION_SCALE_MIN := 1.08
-const PRESENTATION_SCALE_CAP := 1.10
-const IRONJAW_COMBAT_SCALE := 1.0
+## Shared board read. The 144×160 plant at bare 0.5 is about 74px, under the
+## Windmere props (crystal 68, shard 88, pillar 90), and the soft matte made
+## the readable core smaller. Every locked class uses the same 1.25 so idle
+## and deploy grow from the foot offset (0, -72). The pawn node and the pick
+## capsule stay at scale 1. 1.0 is the bare cell. A one-class 1.20, and
+## anything else, is ignored. Identity stays on the walk sheet. Kit numbers
+## and map geometry do not read this.
+const ROSTER_READ_SCALE := 1.25
 const CLASS_PRESENTATION_SCALE := {
-	"ironjaw": IRONJAW_COMBAT_SCALE,
+	"kestrel": ROSTER_READ_SCALE,
+	"ironjaw": ROSTER_READ_SCALE,
+	"gloam": ROSTER_READ_SCALE,
+	"mender": ROSTER_READ_SCALE,
+	"bastion": ROSTER_READ_SCALE,
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
@@ -160,23 +162,20 @@ const NAME_GAP_ABOVE_HP := 2.0
 static var _sprite_cache: Dictionary = {}
 
 
-## Resting combat scale. Missing classes stay on the shared 0.5. A listed
-## class uses the capped interim nudge.
+## Resting combat scale. The five locked classes share the roster read.
+## Anything else stays on the bare 0.5 cell.
 static func sprite_scale_for(class_id: String) -> Vector2:
 	return SPRITE_SCALE * presentation_mul(class_id)
 
 
-## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
-## Anything else, including 1.20, is ignored.
+## 1.0 is the bare cell. The roster read is the only other factor that ships.
 static func presentation_mul(class_id: String) -> float:
 	var key := SpellKits.normalize_class_id(class_id)
 	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
 
 
 static func capped_presentation_mul(raw: float) -> float:
-	if is_equal_approx(raw, 1.0):
-		return 1.0
-	if raw >= PRESENTATION_SCALE_MIN and raw <= PRESENTATION_SCALE_CAP:
+	if is_equal_approx(raw, 1.0) or is_equal_approx(raw, ROSTER_READ_SCALE):
 		return raw
 	return 1.0
 

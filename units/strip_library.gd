@@ -235,9 +235,8 @@ static func image_from_walk_bytes(class_id: String, face: String) -> Image:
 		return null
 	if image.is_empty():
 		return null
-	# The texture importer runs fix_alpha_edges on the sheet (fix_alpha_border).
-	# Raw PNG bytes skip that pass, so frame 0 would not match the tres cell.
-	image.fix_alpha_edges()
+	# Cell matte runs in textures_from_image(). A full-strip fix_alpha_edges
+	# would bleed the next frame into this cell before that pass.
 	return image
 
 
@@ -265,10 +264,274 @@ static func textures_from_image(image: Image, frame_count: int) -> Array[Texture
 		var cut := image.get_region(Rect2i(i * frame_w, 0, frame_w, height))
 		if cut == null or cut.is_empty():
 			return []
+		cut = _present_walk_cell(cut)
 		var tex := ImageTexture.create_from_image(cut)
 		if tex == null:
 			return []
 		out.append(tex)
+	return out
+
+
+## Playback matte for one walk cell. Locked opaque pixels stay. The soft
+## dark fringe and interior pinholes do not: over ice they read as a cyan
+## jag. An unkeyed near-white plate (Mender south) is dropped and the
+## figure is seated on the shared foot row. Not a gen_raw replacement.
+static func _present_walk_cell(image: Image) -> Image:
+	if image == null or image.is_empty():
+		return image
+	var work := image.duplicate() as Image
+	if work == null:
+		return image
+	if work.get_format() != Image.FORMAT_RGBA8:
+		work.convert(Image.FORMAT_RGBA8)
+	var width: int = work.get_width()
+	var height: int = work.get_height()
+	var bytes: PackedByteArray = work.get_data()
+	var keyed := _key_unkeyed_white(bytes, width, height)
+	_fill_alpha_specks(bytes, width, height)
+	_defringe_bytes(bytes, width, height)
+	work.set_data(width, height, false, Image.FORMAT_RGBA8, bytes)
+	if keyed:
+		work = _seat_keyed_figure(work)
+	work.fix_alpha_edges()
+	return work
+
+
+## A cell whose opaque pixels are mostly pure white is a plate, not a matte.
+## Returns true when that plate was removed.
+static func _key_unkeyed_white(bytes: PackedByteArray, width: int, height: int) -> bool:
+	var opaque := 0
+	var white := 0
+	var i := 0
+	var total := width * height
+	while i < total:
+		var o := i * 4
+		var a := int(bytes[o + 3])
+		if a > 200:
+			opaque += 1
+			if int(bytes[o]) > 242 and int(bytes[o + 1]) > 242 and int(bytes[o + 2]) > 242:
+				white += 1
+		i += 1
+	if opaque <= 0 or float(white) / float(opaque) <= 0.55:
+		return false
+	i = 0
+	while i < total:
+		var o := i * 4
+		var a := int(bytes[o + 3])
+		if a > 200 and int(bytes[o]) > 242 and int(bytes[o + 1]) > 242 and int(bytes[o + 2]) > 242:
+			bytes[o] = 0
+			bytes[o + 1] = 0
+			bytes[o + 2] = 0
+			bytes[o + 3] = 0
+		i += 1
+	return true
+
+
+## Pinholes inside the silhouette let the tile show through the plate.
+## Components of 12 pixels or fewer are filled from a solid neighbor.
+## Larger gaps (an axe, a cloak) stay open.
+static func _fill_alpha_specks(bytes: PackedByteArray, width: int, height: int) -> void:
+	var count := width * height
+	var open := PackedByteArray()
+	open.resize(count)
+	var seen := PackedByteArray()
+	seen.resize(count)
+	for i in count:
+		open[i] = 1 if int(bytes[i * 4 + 3]) < 40 else 0
+	var queue: Array[int] = []
+	var head := 0
+	var push_border := func(x: int, y: int) -> void:
+		if x < 0 or y < 0 or x >= width or y >= height:
+			return
+		var idx := y * width + x
+		if seen[idx] != 0 or open[idx] == 0:
+			return
+		seen[idx] = 1
+		queue.append(idx)
+	for x in width:
+		push_border.call(x, 0)
+		push_border.call(x, height - 1)
+	for y in height:
+		push_border.call(0, y)
+		push_border.call(width - 1, y)
+	while head < queue.size():
+		var idx: int = queue[head]
+		head += 1
+		var x := idx % width
+		var y := idx / width
+		push_border.call(x + 1, y)
+		push_border.call(x - 1, y)
+		push_border.call(x, y + 1)
+		push_border.call(x, y - 1)
+	var start := 0
+	while start < count:
+		if open[start] == 0 or seen[start] != 0:
+			start += 1
+			continue
+		var comp: Array[int] = []
+		seen[start] = 1
+		queue = [start]
+		head = 0
+		while head < queue.size():
+			var idx: int = queue[head]
+			head += 1
+			comp.append(idx)
+			var x := idx % width
+			var y := idx / width
+			for step in [1, -1, width, -width]:
+				var nxt: int = idx + step
+				if step == 1 and x + 1 >= width:
+					continue
+				if step == -1 and x == 0:
+					continue
+				if nxt < 0 or nxt >= count:
+					continue
+				if seen[nxt] != 0 or open[nxt] == 0:
+					continue
+				seen[nxt] = 1
+				queue.append(nxt)
+		start += 1
+		if comp.size() > 12:
+			continue
+		var rs := 0
+		var gs := 0
+		var bs := 0
+		var n := 0
+		for idx in comp:
+			var x := idx % width
+			var y := idx / width
+			for step in [0, 1, -1, width, -width]:
+				var nxt: int = idx + step
+				if step == 1 and x + 1 >= width:
+					continue
+				if step == -1 and x == 0:
+					continue
+				if nxt < 0 or nxt >= count:
+					continue
+				var o := nxt * 4
+				if int(bytes[o + 3]) <= 200:
+					continue
+				rs += int(bytes[o])
+				gs += int(bytes[o + 1])
+				bs += int(bytes[o + 2])
+				n += 1
+		if n <= 0:
+			continue
+		var cr := int(rs / float(n))
+		var cg := int(gs / float(n))
+		var cb := int(bs / float(n))
+		for idx in comp:
+			var o := idx * 4
+			bytes[o] = cr
+			bytes[o + 1] = cg
+			bytes[o + 2] = cb
+			bytes[o + 3] = 255
+
+
+## Spread solid RGB a few pixels into the semi-transparent rim so linear
+## filtering does not pull black. The outer dust (alpha under 18) is cut.
+## The v5 sole tip, around alpha 39, stays so the foot row does not jump.
+static func _defringe_bytes(bytes: PackedByteArray, width: int, height: int) -> void:
+	var count := width * height
+	for _pass in 3:
+		var copy := bytes.duplicate()
+		for y in height:
+			var row := y * width
+			for x in width:
+				var i := (row + x) * 4
+				var a := int(copy[i + 3])
+				if a >= 230:
+					continue
+				var best := a
+				var br := int(copy[i])
+				var bg := int(copy[i + 1])
+				var bb := int(copy[i + 2])
+				for dy in range(-1, 2):
+					var yy := y + dy
+					if yy < 0 or yy >= height:
+						continue
+					var nrow := yy * width
+					for dx in range(-1, 2):
+						var xx := x + dx
+						if xx < 0 or xx >= width:
+							continue
+						var j := (nrow + xx) * 4
+						var na := int(copy[j + 3])
+						if na > best:
+							best = na
+							br = int(copy[j])
+							bg = int(copy[j + 1])
+							bb = int(copy[j + 2])
+				if best > a + 20:
+					bytes[i] = br
+					bytes[i + 1] = bg
+					bytes[i + 2] = bb
+	for i in count:
+		var o := i * 4
+		if int(bytes[o + 3]) < 18:
+			bytes[o + 3] = 0
+
+
+## A keyed plate leaves a small figure floating in the cell. Scale it toward
+## the other facings and put the sole on y=149, the shared walk anchor.
+static func _seat_keyed_figure(image: Image) -> Image:
+	var bounds := _opaque_bounds(image)
+	if bounds.is_empty():
+		return image
+	var span := int(bounds["max_y"]) - int(bounds["min_y"]) + 1
+	var seated := image
+	if span > 0 and span < 110:
+		seated = _scale_figure_span(image, bounds, 132)
+	var foot := _foot_point(seated)
+	if foot.y < 0 or foot.y == 149:
+		return seated
+	return _shift_image(seated, 0, 149 - foot.y)
+
+
+static func _opaque_bounds(image: Image) -> Dictionary:
+	var width := image.get_width()
+	var height := image.get_height()
+	var min_x := width
+	var min_y := height
+	var max_x := -1
+	var max_y := -1
+	for y in height:
+		for x in width:
+			if image.get_pixel(x, y).a <= 0.08:
+				continue
+			min_x = mini(min_x, x)
+			min_y = mini(min_y, y)
+			max_x = maxi(max_x, x)
+			max_y = maxi(max_y, y)
+	if max_y < min_y:
+		return {}
+	return {"min_x": min_x, "min_y": min_y, "max_x": max_x, "max_y": max_y}
+
+
+static func _scale_figure_span(image: Image, bounds: Dictionary, target_span: int) -> Image:
+	var width := image.get_width()
+	var height := image.get_height()
+	var min_x := int(bounds["min_x"])
+	var min_y := int(bounds["min_y"])
+	var max_x := int(bounds["max_x"])
+	var max_y := int(bounds["max_y"])
+	var fig_w := max_x - min_x + 1
+	var span := max_y - min_y + 1
+	if fig_w <= 0 or span <= 0 or target_span <= 0:
+		return image
+	var new_w := maxi(1, int(round(float(fig_w) * float(target_span) / float(span))))
+	new_w = mini(new_w, width)
+	var crop := image.get_region(Rect2i(min_x, min_y, fig_w, span))
+	if crop.get_format() != Image.FORMAT_RGBA8:
+		crop.convert(Image.FORMAT_RGBA8)
+	crop.resize(new_w, target_span, Image.INTERPOLATE_LANCZOS)
+	var out := Image.create(width, height, false, Image.FORMAT_RGBA8)
+	out.fill(Color(0, 0, 0, 0))
+	var dest_x := int(round(float(min_x + max_x) * 0.5)) - new_w / 2
+	var dest_y := 149 - (target_span - 1)
+	dest_x = clampi(dest_x, 0, width - new_w)
+	dest_y = clampi(dest_y, 0, height - target_span)
+	out.blit_rect(crop, Rect2i(0, 0, new_w, target_span), Vector2i(dest_x, dest_y))
 	return out
 
 
