@@ -2,6 +2,16 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Bastion east walk v6c and Ironjaw east walk v6g
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock is not stamped. Hold merge until Luca sí on device.
+
+Ironjaw east replaces the v6f strip in place: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png`, 864×160, six 144×160 cells. The same bytes are `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. Each cell is the full berserker (plate, grill, dual axes). Feet stay on the shared row, about y=149. East frame 0 fills about 0.82 of the cell. West, north, and south are not replaced. The cell grid is unchanged.
+
+Bastion east replaces the v6b strip in place: `art/export_2x/characters/bastion/anims/bastion_walk_e.png` and `art/export_2x/walk_src/bastion_walk_e.pngbin`. 864×160, six 144×160 cells, full plate, shield, and mace. West, north, and south are not replaced.
+
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px (`HOP_PX`).
+
 ## 2026-09-27 — Ironjaw east walk v6f (Bastion v6b kept)
 
 Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock pending Rosie rematch. Hold merge until Luca sí on device.

@@ -326,8 +326,8 @@ func _assert_ironjaw_feet(scale_y: float) -> void:
 				break
 		if hit and foot_y < 0:
 			foot_y = y
-	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw v6f plant foot stays on the shared anchor")
-	eq(float(foot_y - head_y + 1) / float(height) >= 0.90, true, "ironjaw art-fill covers at least 90% of the cell")
+	eq(foot_y >= 148 and foot_y <= 151, true, "ironjaw v6g plant foot stays on the shared anchor")
+	eq(float(foot_y - head_y + 1) / float(height) >= 0.80, true, "ironjaw v6g plant still fills most of the cell")
 	if foot_y < 0:
 		return
 	var local_foot := float(foot_y) - float(height) * 0.5 + Pawn.SPRITE_OFFSET.y

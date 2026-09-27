@@ -476,7 +476,7 @@ const FACING_SCREEN := {
 	"W": Vector2(-20, -10),
 }
 ## Shared crest is HOP_PX (3px). Bastion stays at 2.5. Ironjaw uses the
-## shared 3px. The v6f strip already plants every cell on the same foot row,
+## shared 3px. The v6g strip already plants every cell on the same foot row,
 ## so the hop does not stack on a strip bob. The crest lands on a cell whose
 ## feet are already on the baseline.
 ## Kestrel and Gloam sit in 3–4px. Mender keeps the shared crest.
