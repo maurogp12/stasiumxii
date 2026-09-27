@@ -920,6 +920,9 @@ func _begin_ambush_arrival(event: Dictionary, events: Array) -> void:
 	var token := _ambush_arrival_token
 	_stop_ambush_arrival_tween()
 	_ambush_contact_armed = false
+	# A hold left over from an earlier blink must not pin this body to the
+	# cast cell while the new hit resolves.
+	_ambush_hold_seat = -1
 	_ambush_open_seat = int(event.get("seat", -1))
 	if _vfx != null and _vfx.has_method("play_ambush_collapse"):
 		_vfx.play_ambush_collapse(event)
@@ -944,6 +947,10 @@ func _commit_ambush_plant(event: Dictionary, token: int) -> void:
 		var pawn: Pawn = pawns_by_seat[seat]
 		if pawn != null and is_instance_valid(pawn):
 			pawn.restore_ambush_body()
+	# Hide first. A snapshot that already cleared Invisible must not draw a
+	# solid slash on the cast cell. The reveal runs only after the foot is
+	# on the back tile.
+	_conceal_ambush_caster(event)
 	_snap_ambush_teleports([event])
 	_reveal_ambush_plant(event)
 	if not pawns_by_seat.has(seat):
@@ -972,7 +979,10 @@ func _conceal_ambush_caster(event: Dictionary) -> void:
 	var pawn: Pawn = pawns_by_seat[seat]
 	if pawn == null or not is_instance_valid(pawn):
 		return
-	if pawn.invisible:
+	var dest := _ambush_event_dest(event)
+	# Still on the cast tile, or still faded. Either one would read as a
+	# body slash if the strike started now.
+	if pawn.invisible or not _in_bounds(dest) or pawn.grid_position != dest:
 		pawn.conceal_for_ambush()
 
 

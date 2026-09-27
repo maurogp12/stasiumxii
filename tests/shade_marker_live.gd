@@ -386,6 +386,79 @@ static func run(host: SceneTree) -> void:
 			miss_unit = unit
 	host.eq(bool(miss_unit.get("invisible", false)), false, "submit-path Ambush miss ends Invisible")
 	host.eq(bool(miss_pawn.invisible), false, "submit-path Ambush miss draws Gloam")
+
+	# Luca clip: Shades 0/2, Invisible, walked adjacent, then Ambush.
+	# The foot has to be on the enemy's back tile before the slash or the 22.
+	# A damage float or a strike strip while Gloam is still on the cast cell
+	# is the reject: Invisible Ambush damage without relocate.
+	var clip_start := Vector2i(4, 7)
+	var clip_prey := Vector2i(4, 4)
+	var clip_walk := Vector2i(4, 5)
+	var clip_back := Vector2i(4, 3)
+	CombatSim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [clip_start, clip_prey],
+		"kestrel_facing": "N",
+		"rolls": [1],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	host.eq(CombatSim.ambush_damage_if_planted(clip_walk, clip_back, 22), 0, "Invisible Ambush damage without the relocate is zero")
+	host.eq(CombatSim.ambush_damage_if_planted(clip_back, clip_back, 22), 22, "Invisible Ambush damage after the plant stays 22")
+	await board._submit({"type": "cast", "spell": "fade", "to": clip_start, "seat": 0})
+	board._settle_motions()
+	await board._submit({"type": "move", "to": clip_walk, "seat": 0})
+	board._settle_motions()
+	board._refresh()
+	var clip_pawn: Node2D = board.pawns_by_seat[0]
+	host.eq(clip_pawn.grid_position, clip_walk, "clip Gloam walks adjacent before Ambush")
+	host.eq(_seat_shades(CombatSim.snapshot()), 0, "clip Ambush has no live Shade")
+	var clip_vfx: Node = board.get("_vfx")
+	if clip_vfx != null:
+		clip_vfx.allow_headless = true
+	var clip_hud: Node = main.get_node("HUD")
+	var clip_card_before := str(clip_hud.get("_ironjaw_body").text)
+	var clip_foe: Node = board.pawns_by_seat[1]
+	var clip_hp_before := int(clip_foe.hp)
+	board._submit({"type": "cast", "spell": "ambush", "to": clip_prey, "seat": 0})
+	host.eq(clip_pawn.grid_position, clip_back, "clip Invisible Ambush plants on the back tile before the slash")
+	host.eq(clip_pawn.position.distance_to(board._cell_to_local(clip_back)) <= 1.0, true, "clip Invisible Ambush foot is on the back tile before the slash")
+	host.eq(clip_pawn.grid_position == clip_walk, false, "clip Invisible Ambush does not slash from the walked tile")
+	var clip_strike_off_back := false
+	var clip_damage_off_back := false
+	var clip_saw_strike_on_back := false
+	var clip_saw_float_on_back := false
+	for _step in 200:
+		await host.process_frame
+		var on_back: bool = (
+			clip_pawn.grid_position == clip_back
+			and clip_pawn.position.distance_to(board._cell_to_local(clip_back)) <= 1.0
+		)
+		var striking := _attack_strip_visible(clip_pawn) or _ambush_strike_live(board)
+		var damaged := int(clip_foe.hp) < clip_hp_before or str(clip_hud.get("_ironjaw_body").text) != clip_card_before
+		if striking and not on_back:
+			clip_strike_off_back = true
+		if damaged and not on_back:
+			clip_damage_off_back = true
+		if striking and on_back:
+			clip_saw_strike_on_back = true
+		if _damage_float_live(board) and on_back:
+			clip_saw_float_on_back = true
+		if clip_saw_strike_on_back and clip_saw_float_on_back:
+			break
+		if clip_strike_off_back or clip_damage_off_back:
+			break
+	host.eq(clip_strike_off_back, false, "Invisible Ambush does not slash from the cast cell")
+	host.eq(clip_damage_off_back, false, "Invisible Ambush damage without relocate")
+	host.eq(clip_saw_strike_on_back, true, "clip slash starts only after the back-tile plant")
+	host.eq(clip_saw_float_on_back, true, "clip damage float starts only after the back-tile plant")
+	host.eq(clip_pawn.grid_position, clip_back, "clip caster cell is the enemy back tile when the 22 lands")
+	host.eq(_seat_pos(CombatSim.snapshot(), 0), clip_back, "clip sim cell is the back tile")
+	host.eq(int(_seat_hp(CombatSim.snapshot(), 1)), 58, "clip Invisible Ambush front hit is 22")
+	host.eq(bool(clip_pawn.invisible), false, "clip Ambush clears Invisible")
 	main.queue_free()
 	await host.process_frame
 
@@ -424,6 +497,46 @@ static func _ambush_strike_live(board: Node) -> bool:
 		if str(node.get("_kind")) == "damage":
 			return true
 	return false
+
+
+static func _damage_float_live(board: Node) -> bool:
+	var vfx: Node = board.get("_vfx")
+	if vfx == null:
+		return false
+	var pools: Variant = vfx.get("_pools")
+	if typeof(pools) != TYPE_DICTIONARY:
+		return false
+	for node in pools.get("number", []):
+		if node == null or not bool(node.get("in_use")):
+			continue
+		if str(node.get("_kind")) != "damage":
+			continue
+		# The pool arms the number during the plant hold, still at alpha 0.
+		# It counts once the 22 is actually drawn.
+		if node is CanvasItem and (node as CanvasItem).modulate.a > 0.05:
+			return true
+	for node in pools.get("stamp", []):
+		if node == null or not bool(node.get("in_use")):
+			continue
+		if str(node.get("_sheet")) != "damage_float":
+			continue
+		if node is CanvasItem and (node as CanvasItem).modulate.a > 0.05:
+			return true
+	return false
+
+
+static func _seat_shades(snap: Dictionary) -> int:
+	for unit in snap.get("units", []):
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == 0:
+			return int(unit.get("shades", 0))
+	return -1
+
+
+static func _seat_hp(snap: Dictionary, seat: int) -> int:
+	for unit in snap.get("units", []):
+		if typeof(unit) == TYPE_DICTIONARY and int(unit.get("seat", -1)) == seat:
+			return int(unit.get("hp", -1))
+	return -1
 
 
 static func _seat_pos(snap: Dictionary, seat: int) -> Vector2i:
