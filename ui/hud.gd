@@ -411,7 +411,7 @@ static func unit_is_stunned(unit: Dictionary) -> bool:
 static func unit_is_burning(unit: Dictionary) -> bool:
 	if unit.is_empty():
 		return false
-	return unit_burn_remaining(unit) > 0
+	return unit_burn_remaining(unit) > 0 and unit_burn_stacks(unit) > 0
 
 
 ## Snapshot `burn_remaining` wins when the unit carries it. Status / burn events
@@ -444,11 +444,42 @@ static func unit_burn_remaining(unit: Dictionary, events: Array = []) -> int:
 	return maxi(0, remaining)
 
 
+## Snapshot `burn_stacks` wins when the unit carries it. Does not add stacks.
+static func unit_burn_stacks(unit: Dictionary, events: Array = []) -> int:
+	if unit.is_empty():
+		return 0
+	if unit.has("burn_stacks"):
+		return maxi(0, int(unit.get("burn_stacks", 0)))
+	var seat := int(unit.get("seat", -999))
+	var stacks := 0
+	var saw := false
+	for event in events:
+		if typeof(event) != TYPE_DICTIONARY:
+			continue
+		if int(event.get("target_seat", -999)) != seat:
+			continue
+		var kind := str(event.get("type", ""))
+		if kind == "status" and str(event.get("status", "")) == "burn" and event.has("stacks"):
+			stacks = int(event.get("stacks", 0))
+			saw = true
+		elif kind == "hit" and bool(event.get("burn_applied", false)) and event.has("burn_stacks"):
+			stacks = int(event.get("burn_stacks", 0))
+			saw = true
+		elif kind == "burn" and event.has("stacks"):
+			stacks = int(event.get("stacks", 0))
+			saw = true
+	if not saw:
+		return 1 if unit_burn_remaining(unit, events) > 0 else 0
+	return maxi(0, stacks)
+
+
 ## Icon caption. Empty when the snapshot has no turns left.
-static func burn_badge_text(remaining: int) -> String:
+## Stack count, then turns left: "BURN ×1 4".
+static func burn_badge_text(remaining: int, stacks: int = 0) -> String:
 	if remaining <= 0:
 		return ""
-	return "BURN %d" % remaining
+	var shown := stacks if stacks > 0 else 1
+	return "BURN ×%d %d" % [shown, remaining]
 
 
 static func events_include_push_blocked(events: Array) -> bool:
@@ -1531,10 +1562,10 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var stun_note := ""
 	if unit_is_stunned(unit):
 		stun_note = "  [b]STUN[/b]"
-	# Director Locked Burn: duration left is the snapshot field host replicas already carry.
+	# Soft Lock Burn: stacks and turns left are the snapshot fields host replicas carry.
 	var burn_note := ""
 	if unit_is_burning(unit):
-		burn_note = "  [b]BURN[/b] %d" % unit_burn_remaining(unit)
+		burn_note = "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
 	# Spell ids stay on the bottom bar. The card keeps HP, AP, MP, facing, and meters.
 	return "%s   HP %d/%d%s%s\nAP %d    MP %d    Face %s\n%s" % [
 		status,

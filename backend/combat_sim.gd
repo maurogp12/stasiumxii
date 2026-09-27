@@ -36,10 +36,13 @@ const STAGGER_MP := 1
 ## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
 const SHOULDER_CONNECT_IMPACT := 1
 const SHOULDER_BOUNCE_IMPACT := 2
-## Director Locked Burn: 4 HP at the start of the victim's turn, two ticks.
-## Re-apply refreshes duration. It does not stack. Impact cap still applies.
-const BURN_HP := 4
-const BURN_DURATION := 2
+## Soft Lock lava CASTIGO. Supersedes Director Locked Burn (4 HP, duration 2, no stack).
+## Land damage is immediate. Burn then ticks at the victim's turn start.
+## Index is the current stack count: 1 → 2 HP, 2 → 4 HP, 3 → 8 HP.
+const LAVA_LAND_HP := 6
+const BURN_DURATION := 4
+const BURN_MAX_STACKS := 3
+const BURN_STACK_HP: Array[int] = [0, 2, 4, 8]
 ## Soft Lock castigo. Water: silence one random spell, one-shot, no duration.
 ## Mud: −1 MP for 1 turn. Re-apply refreshes that turn; it does not stack to −2.
 const SLOW_MP := 1
@@ -68,11 +71,12 @@ const FACING_VEC := {
 ## forced push displaces onto lava and applies Burn. Voluntary walk onto
 ## lava stays impassable. Soft Lock: mud and water are voluntary impassable
 ## the same way. Walk and Advance refuse them. A forced push may land.
-## Castigo is per terrain: lava Burn (Locked), water silences one random
-## spell (one-shot, no duration), mud is Slow −1 MP for 1 turn (refresh, no stack).
-## Director Locked Burn: 4 HP at the start of the victim's turn, duration 2.
-## Re-apply refreshes duration and does not stack. Burn continues after
-## leaving lava. Death is checked after each tick. burn_remaining lives on
+## Castigo is per terrain: lava is Soft Lock (6 HP on land, then stacked Burn),
+## water silences one random spell (one-shot, no duration), mud is Slow −1 MP
+## for 1 turn (refresh, no stack). Soft Lock Burn: stacks tick 2/4/8 HP at the
+## victim's turn start, duration 4, max 3. Re-push adds a stack up to 3 and
+## refreshes duration. Cleanse clears Burn. Burn continues after leaving lava.
+## Death is checked after each tick. burn_stacks and burn_remaining live on
 ## the unit snapshot for Godot chrome and host sync.
 ## Host-owned 30s turn clock: starts on turn begin, ticks only on the authority
 ## (listen-host / hot-seat). Expiry submits the same end_turn as the HUD button.
@@ -651,9 +655,11 @@ func snapshot() -> Dictionary:
 		"push_stagger_mp": STAGGER_MP,
 		"shoulder_impact_connect": SHOULDER_CONNECT_IMPACT,
 		"shoulder_impact_bounce": SHOULDER_BOUNCE_IMPACT,
-		"burn": "locked",
-		"burn_hp": BURN_HP,
+		"burn": "soft_lock",
+		"lava_land_hp": LAVA_LAND_HP,
 		"burn_duration": BURN_DURATION,
+		"burn_max_stacks": BURN_MAX_STACKS,
+		"burn_stack_hp": [BURN_STACK_HP[1], BURN_STACK_HP[2], BURN_STACK_HP[3]],
 		"phase": flow_snap["phase_name"],
 		"phase_name": flow_snap["phase_name"],
 		"deploy": "locked",
@@ -684,7 +690,7 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable. Soft Lock castigo: a forced push onto water silences one random spell (one-shot, no duration). A forced push onto mud applies Slow −1 MP for 1 turn (refresh, no stack).",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava, deal 6 land HP immediately, then apply Soft Lock Burn (stacks 1/2/3 tick 2/4/8 HP at the victim's turn start, duration 4, max 3, re-push adds a stack up to 3 and refreshes duration, Cleanse clears it, continues after leaving lava, death check after each tick). Voluntary walk onto lava stays impassable. Soft Lock castigo: a forced push onto water silences one random spell (one-shot, no duration). A forced push onto mud applies Slow −1 MP for 1 turn (refresh, no stack).",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
@@ -1138,7 +1144,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands and applies Burn (4 HP at the victim's turn start, duration 2, refresh no stack). Soft Lock: voluntary walk and Advance also refuse mud and water. A forced push onto water silences one random spell (one-shot). A forced push onto mud applies Slow −1 MP for 1 turn.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands for 6 HP, then Soft Lock Burn (stacks tick 2/4/8 HP at the victim's turn start, duration 4, max 3). Soft Lock: voluntary walk and Advance also refuse mud and water. A forced push onto water silences one random spell (one-shot). A forced push onto mud applies Slow −1 MP for 1 turn.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1303,7 +1309,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		# Locked Stun (A′): stun_remaining + stunned-this-turn. Blocks move + cast + face.
 		"stun_remaining": 0,
 		"stunned": false,
-		# Director Locked Burn. Duration ticks left; 0 means not burning.
+		# Soft Lock lava Burn. Stacks 0–3 and turns left. Both 0 means not burning.
+		"burn_stacks": 0,
 		"burn_remaining": 0,
 		# Soft Lock water: spell ids silenced on landing. One-shot, no duration.
 		"silenced_spells": [],
@@ -1559,7 +1566,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	})
 	# Soft Lock mud: −1 MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
-	# Director Locked Burn ticks once this turn has started, including a stunned skip.
+	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
 
@@ -2024,6 +2031,9 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
+			hit_event["burn_stacks"] = int(burn_info.get("stacks", 0))
+			hit_event["burn_previous_stacks"] = int(burn_info.get("previous_stacks", 0))
+			hit_event["land_hp"] = int(burn_info.get("land_hp", 0))
 		hit_event["silence_applied"] = not silence_info.is_empty()
 		if not silence_info.is_empty():
 			hit_event["silenced_spell"] = str(silence_info.get("spell", ""))
@@ -2091,22 +2101,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 				stagger_mp_note,
 			],
 		})
-	if not burn_info.is_empty():
-		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
-		if bool(burn_info.get("refreshed", false)):
-			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
-		_last_events.append({
-			"type": "status",
-			"status": "burn",
-			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
-			"duration": BURN_DURATION,
-			"hp_per_tick": BURN_HP,
-			"refreshed": bool(burn_info.get("refreshed", false)),
-			"previous": int(burn_info.get("previous", 0)),
-			"target_seat": target["seat"],
-			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
-			"coach": burn_coach,
-		})
+	_append_lava_castigo(target, burn_info)
 	_append_soft_lock_status(target, silence_info, slow_info)
 	if stun_applied > 0:
 		_last_events.append({
@@ -2127,7 +2122,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 
 ## Reached only after an existing HP loss. cause names that path for the view.
 ## "damage" is a spell hit, Hold Line, Ambush, or an Intercept transfer.
-## "burn" is a Director Locked Burn tick. Stagger does not call this.
+## "burn" is a Soft Lock Burn tick. Stagger and lava land do not call this.
 ## There is no separate execute path.
 func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	if int(target["hp"]) > 0:
@@ -2614,7 +2609,7 @@ func _connect_extra_note(engine_gained: int, engine_name: String, marks_consumed
 		elif bool(push_result.get("moved", false)):
 			parts.append(" Pushed to %s." % _cell_text(push_result["to"]))
 			if bool(push_result.get("burn", false)):
-				parts.append(" Burn %d HP for %d turns." % [BURN_HP, BURN_DURATION])
+				parts.append(" Lava %d HP, then Burn." % LAVA_LAND_HP)
 	var note := ""
 	for part in parts:
 		note += part
@@ -2728,16 +2723,34 @@ func _is_lava(cell: Vector2i) -> bool:
 	return int(terrain.get("id", _TerrainDef.Id.GROUND)) == _TerrainDef.Id.LAVA
 
 
+func _burn_tick_hp(stacks: int) -> int:
+	var index := clampi(stacks, 0, BURN_MAX_STACKS)
+	if index <= 0 or index >= BURN_STACK_HP.size():
+		return 0
+	return BURN_STACK_HP[index]
+
+
+func _apply_lava_land(unit: Dictionary) -> int:
+	# Immediate. Not the turn-start tick and not stagger.
+	unit["hp"] = maxi(0, int(unit.get("hp", 0)) - LAVA_LAND_HP)
+	return LAVA_LAND_HP
+
+
 func _apply_burn(unit: Dictionary) -> Dictionary:
-	# Re-apply refreshes duration to 2. Do not add durations or stack tick damage.
+	# Re-push adds one stack up to 3 and refreshes duration to 4.
+	var previous_stacks := int(unit.get("burn_stacks", 0))
 	var previous := int(unit.get("burn_remaining", 0))
+	var stacks := mini(previous_stacks + 1, BURN_MAX_STACKS)
+	unit["burn_stacks"] = stacks
 	unit["burn_remaining"] = BURN_DURATION
 	return {
 		"applied": true,
-		"refreshed": previous > 0,
+		"refreshed": previous_stacks > 0 or previous > 0,
 		"previous": previous,
+		"previous_stacks": previous_stacks,
+		"stacks": stacks,
 		"remaining": BURN_DURATION,
-		"hp_per_tick": BURN_HP,
+		"hp_per_tick": _burn_tick_hp(stacks),
 	}
 
 
@@ -2749,7 +2762,9 @@ func _apply_landing_punishments(target: Dictionary, push_result: Dictionary) -> 
 	if target.is_empty():
 		return {"burn": burn, "silence": silence, "slow": slow}
 	if bool(push_result.get("burn", false)):
+		var land_hp := _apply_lava_land(target)
 		burn = _apply_burn(target)
+		burn["land_hp"] = land_hp
 	if bool(push_result.get("silence", false)):
 		silence = _apply_water_silence(target)
 	if bool(push_result.get("slow", false)):
@@ -2794,6 +2809,42 @@ func _is_spell_silenced(unit: Dictionary, spell_id: String) -> bool:
 	if typeof(silenced) != TYPE_ARRAY:
 		return false
 	return (silenced as Array).has(spell_id)
+
+
+func _append_lava_castigo(target: Dictionary, burn_info: Dictionary) -> void:
+	if burn_info.is_empty():
+		return
+	var land_hp := int(burn_info.get("land_hp", 0))
+	if land_hp > 0:
+		_last_events.append({
+			"type": "lava_land",
+			"target_seat": target["seat"],
+			"hp_delta": -land_hp,
+			"land_hp": land_hp,
+			"hp": int(target.get("hp", 0)),
+			"coach": "%s takes %d lava damage." % [str(target.get("name", "Unit")), land_hp],
+		})
+	var stacks := int(burn_info.get("stacks", 0))
+	var tick := int(burn_info.get("hp_per_tick", _burn_tick_hp(stacks)))
+	var refreshed := bool(burn_info.get("refreshed", false))
+	var burn_coach := "%s is burning (stack %d, %d HP at turn start, duration %d)." % [str(target.get("name", "Unit")), stacks, tick, BURN_DURATION]
+	if refreshed:
+		burn_coach = "%s's Burn is stack %d (duration %d)." % [str(target.get("name", "Unit")), stacks, BURN_DURATION]
+	_last_events.append({
+		"type": "status",
+		"status": "burn",
+		"stacks": stacks,
+		"previous_stacks": int(burn_info.get("previous_stacks", 0)),
+		"remaining": int(burn_info.get("remaining", BURN_DURATION)),
+		"duration": BURN_DURATION,
+		"hp_per_tick": tick,
+		"land_hp": land_hp,
+		"refreshed": refreshed,
+		"previous": int(burn_info.get("previous", 0)),
+		"target_seat": target["seat"],
+		"soft_lock": "Soft Lock CASTIGO — lava land 6, Burn stacks 2/4/8, duration 4, max 3",
+		"coach": burn_coach,
+	})
 
 
 func _append_soft_lock_status(target: Dictionary, silence_info: Dictionary, slow_info: Dictionary) -> void:
@@ -2846,16 +2897,22 @@ func _consume_mud_slow(unit: Dictionary) -> void:
 
 
 func _tick_burn(unit: Dictionary) -> void:
-	# 4 HP at the start of this unit's turn. Leaving lava does not clear it.
+	# Tick uses the current stack. Leaving lava does not clear it. Cleanse does.
 	if unit.is_empty() or not bool(unit.get("alive", false)):
 		return
+	var stacks := int(unit.get("burn_stacks", 0))
 	var remaining := int(unit.get("burn_remaining", 0))
-	if remaining <= 0:
+	if stacks <= 0 or remaining <= 0:
 		return
-	var lost := BURN_HP
+	var lost := _burn_tick_hp(stacks)
 	unit["hp"] = maxi(0, int(unit["hp"]) - lost)
-	unit["burn_remaining"] = remaining - 1
-	var left := int(unit["burn_remaining"])
+	var left := remaining - 1
+	if left <= 0:
+		unit["burn_remaining"] = 0
+		unit["burn_stacks"] = 0
+		left = 0
+	else:
+		unit["burn_remaining"] = left
 	_last_events.append({
 		"type": "burn",
 		"status": "burn",
@@ -2863,12 +2920,15 @@ func _tick_burn(unit: Dictionary) -> void:
 		"hp_delta": -lost,
 		"damage": lost,
 		"hp": int(unit["hp"]),
+		"tick_stacks": stacks,
+		"stacks": int(unit.get("burn_stacks", 0)),
 		"remaining": left,
 		"duration": BURN_DURATION,
-		"locked": "Director Locked Burn — 4 HP at start of turn, duration 2",
-		"coach": "%s burns for %d HP (%d tick%s left)." % [
+		"soft_lock": "Soft Lock CASTIGO — Burn tick uses current stacks, duration 4",
+		"coach": "%s burns for %d HP (stack %d, %d tick%s left)." % [
 			str(unit.get("name", "Unit")),
 			lost,
+			stacks,
 			left,
 			"" if left == 1 else "s",
 		],
@@ -3449,11 +3509,15 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
-		# Cleanse clears Stun only. Burn and other statuses stay.
+		# Cleanse clears Stun and Soft Lock Burn. Silence and Slow stay.
 		if int(target.get("stun_remaining", 0)) > 0 or bool(target.get("stunned", false)):
 			cc_removed.append("stun")
 		target["stun_remaining"] = 0
 		target["stunned"] = false
+		if int(target.get("burn_remaining", 0)) > 0 or int(target.get("burn_stacks", 0)) > 0:
+			cc_removed.append("burn")
+		target["burn_remaining"] = 0
+		target["burn_stacks"] = 0
 	if spell_id == SpellKits.HEARTSTOP:
 		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
 	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
@@ -3726,6 +3790,12 @@ func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dic
 	row["bounced"] = bool(push_result.get("bounced", false))
 	row["staggered"] = bool(push_result.get("staggered", false))
 	row["burn_applied"] = not burn_info.is_empty()
+	if not burn_info.is_empty():
+		row["burn_refreshed"] = bool(burn_info.get("refreshed", false))
+		row["burn_remaining"] = int(burn_info.get("remaining", 0))
+		row["burn_stacks"] = int(burn_info.get("stacks", 0))
+		row["burn_previous_stacks"] = int(burn_info.get("previous_stacks", 0))
+		row["land_hp"] = int(burn_info.get("land_hp", 0))
 	row["silence_applied"] = not silence_info.is_empty()
 	if not silence_info.is_empty():
 		row["silenced_spell"] = str(silence_info.get("spell", ""))
@@ -3735,7 +3805,7 @@ func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dic
 
 
 func _copy_push_fields(hit_event: Dictionary, row: Dictionary) -> void:
-	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied", "silence_applied", "silenced_spell", "slow_applied", "slow_remaining"]:
+	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied", "burn_refreshed", "burn_remaining", "burn_stacks", "burn_previous_stacks", "land_hp", "silence_applied", "silenced_spell", "slow_applied", "slow_remaining"]:
 		if row.has(key):
 			hit_event[key] = row[key]
 
@@ -3798,22 +3868,7 @@ func _emit_push_followups(actor: Dictionary, target: Dictionary, push_result: Di
 				stagger_mp_note,
 			],
 		})
-	if not burn_info.is_empty():
-		var burn_coach := "%s is burning (%d HP at turn start, duration %d)." % [target["name"], BURN_HP, BURN_DURATION]
-		if bool(burn_info.get("refreshed", false)):
-			burn_coach = "%s's Burn refreshes to %d (no stack)." % [target["name"], BURN_DURATION]
-		_last_events.append({
-			"type": "status",
-			"status": "burn",
-			"remaining": int(burn_info.get("remaining", BURN_DURATION)),
-			"duration": BURN_DURATION,
-			"hp_per_tick": BURN_HP,
-			"refreshed": bool(burn_info.get("refreshed", false)),
-			"previous": int(burn_info.get("previous", 0)),
-			"target_seat": target["seat"],
-			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
-			"coach": burn_coach,
-		})
+	_append_lava_castigo(target, burn_info)
 
 
 func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
@@ -4543,7 +4598,7 @@ func _decay_board_durations(unit: Dictionary) -> void:
 
 
 ## Gamedeveloper lock, Phase A. Snap Wall duration is 2 Bastion turn-starts of
-## the owner — the same tick family as Director Locked Burn (the affected
+## the owner — the same turn-start family as Soft Lock Burn (the affected
 ## unit's turn start). An enemy turn-start does not consume a turn. Do not
 ## shorten a fresh wall so it dies after one enemy turn.
 func _tick_snap_walls(unit: Dictionary) -> void:

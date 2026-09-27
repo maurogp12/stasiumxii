@@ -143,7 +143,7 @@ func sync_snapshot(snapshot: Dictionary) -> void:
 		var cell := _Router.cell_of(rec.get("pos", Vector2i.ZERO))
 		if int(rec.get("stun_remaining", 0)) > 0 or bool(rec.get("stunned", false)):
 			wanted["stun:%d" % seat] = {"pool": "status", "status": "stun", "seat": seat, "cell": cell}
-		if int(rec.get("burn_remaining", 0)) > 0:
+		if int(rec.get("burn_remaining", 0)) > 0 and int(rec.get("burn_stacks", 0)) > 0:
 			wanted["burn:%d" % seat] = {"pool": "status", "status": "burn", "seat": seat, "cell": cell}
 		if int(rec.get("shield", 0)) > 0:
 			wanted["shield:%d" % seat] = {"pool": "status", "status": "shield", "seat": seat, "cell": cell, "tint": VfxPalette.MENDER}
