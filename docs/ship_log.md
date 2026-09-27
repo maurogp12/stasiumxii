@@ -2,6 +2,16 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Ironjaw east walk v6f (Bastion v6b kept)
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock pending Rosie rematch. Hold merge until Luca sí on device.
+
+Ironjaw east replaces the rejected v6c strip in place: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png`, 864×160, six 144×160 cells. Scenario `asset_SGZq64mhnxYrVRT7s3xtH1mA`. Each cell is the full berserker (plate, grill, dual axes). The same bytes are `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. West is the per-cell horizontal mirror of that east sheet, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. Ironjaw north and south stay the current v5 three-quarter strips.
+
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px (`HOP_PX`). Every v6f cell already shares the plant foot row, so the hop does not stack on a strip bob.
+
+Bastion east and west stay the wakfu-ship-v6b wire. Soft note for the Rosie rematch, not a wire change: cell 3 reads more front-facing, and the greaves are darker. The phone bake decides Soft Lock.
+
 ## 2026-09-27 — Detonate burst punch v3b
 
 Presentation only. No APK. Kit numbers, Detonate legality, and Locked timings are unchanged. Soft Lock pending Rosie rematch.

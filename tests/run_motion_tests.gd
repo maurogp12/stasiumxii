@@ -1322,12 +1322,9 @@ func _test_strip_library_missing_and_slice() -> void:
 				truthy(authored_image != null and played_image != null, "%s %s cell images load" % [cls, anim_name])
 				if kind == "hit":
 					var walk_foot := _foot_row(played.get_frame_texture("walk_%s" % face, 0).get_image())
-					# Ironjaw east/west v6c plants near y=154. North/south stay the v5 row.
-					var anchor_lo := 152 if cls == "ironjaw" and (face == "e" or face == "w") else 148
-					var anchor_hi := 156 if cls == "ironjaw" and (face == "e" or face == "w") else 151
 					for hit_i in played.get_frame_count(anim_name):
 						var hit_row := _foot_row(played.get_frame_texture(anim_name, hit_i).get_image())
-						eq(hit_row >= anchor_lo and hit_row <= anchor_hi, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
+						eq(hit_row >= 148 and hit_row <= 151, true, "%s %s frame %d foot is on the shared anchor" % [cls, anim_name, hit_i])
 						eq(absi(hit_row - walk_foot) <= 1, true, "%s %s frame %d foot matches the walk plant" % [cls, anim_name, hit_i])
 				else:
 					eq(authored_image.get_data(), played_image.get_data(), "%s %s frame 0 matches the tres cell" % [cls, anim_name])

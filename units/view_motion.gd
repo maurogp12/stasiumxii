@@ -476,9 +476,9 @@ const FACING_SCREEN := {
 	"W": Vector2(-20, -10),
 }
 ## Shared crest is HOP_PX (3px). Bastion stays at 2.5. Ironjaw uses the
-## shared 3px. The v6c strip lifts the sole about 2px on the passing cells.
-## StripLibrary pins that foot to frame 0, and the hop crest lands on a cell
-## whose feet are already on the baseline, so this hop is the only crest.
+## shared 3px. The v6f strip already plants every cell on the same foot row,
+## so the hop does not stack on a strip bob. The crest lands on a cell whose
+## feet are already on the baseline.
 ## Kestrel and Gloam sit in 3–4px. Mender keeps the shared crest.
 ## Tile time stays 0.30s.
 static func hop_crest_px(class_id: String) -> float:
