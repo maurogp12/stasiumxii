@@ -8,11 +8,11 @@ Soft lock: electric and wind. Presentation only. No APK. Luca’s earlier Storms
 
 `slice_storm_punch.py` reads the new sheets and overwrites only `storm_*` terrain and `storm_prop_*`. `ground_punch.png` is the same bytes as `storm_ground_punch.png`. Elevation and props are aliased the same way. `board_mood_punch.png` and `stasium-ref/maps/stormspire/luca_preview_stormspire.png` are the look reference and are not sliced.
 
-Floors are hard 64×32 diamonds with a dark seam and a thin gold north edge. Water stays violet energy. Mud keeps cyan veins on the same dark stone. Elevation 1 hangs a short wall; elevation 2 is taller, matching the platform step. Standing prop sheets fit one diamond (long side at most 32px). The board draws six of them: bolt at (0, 0), spark at (14, 0), rubble at (6, 3), one pillar at (3, 5), one arc at (10, 6), and the floor seal at (7, 7). The tagged conduit ring, the pillar square, and the center cross stay in the tags and are not drawn. A storm prop whose sheet is still taller than 32px shrinks at draw time. No circular arena and no totem ring.
+Floors are hard 64×32 diamonds with a dark seam and a thin gold north edge. Water stays violet energy. Mud keeps cyan veins on the same dark stone. Elevation 1 hangs a short wall; elevation 2 is taller, matching the platform step. Prop dress is held: the current banners and pillars covered diamonds and closed line of sight, so the board paints ground and elevation only. Tags still list every prop and still block where they always did. The next sheet should be about 4–6 props, each at most one tile tall. No circular arena and no totem ring.
 
 The prop source is props_small_v2 (`storm_props_punch.png`, 1280×720, same bytes as `props_punch.png`). The 2048 monolith lives in `pending/electric/archive/storm_props_punch_monolith.png` and is not sliced. Standing slices still fit one diamond.
 
-In-game review is part of the done bar before more art. The check is a real Godot combat window, 1600×720, `--mobile-frame`, zoom 1.55 (the 20:9 Koliseo overview) on `stormspire_15`. It has to show the sparse dress, about one tile tall, and no circular arena or totem ring.
+In-game review is part of the done bar before more art. The check is a real Godot combat window, 1600×720, on `stormspire_15`, with the whole 15×15 in frame. Until the short prop sheet lands, that frame is ground and elevation only.
 
 Locked Stormspire geometry, tags, walkability, and kit numbers are unchanged. Other arenas stay on their sheets.
 

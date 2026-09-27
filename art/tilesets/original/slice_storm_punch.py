@@ -64,16 +64,9 @@ PROP_BOX = {
     "storm_prop_rock_pillar.png": (16, 32),
 }
 
-# Same six cells as KoliseoArt.STORM_DRESS. Tags stay; the ring is not drawn.
-# (14, 0) is the spark. (14, 14) is another bolt and is left off the board.
-STORM_DRESS = {
-    (0, 0): frozenset({"crystal_bolt"}),
-    (14, 0): frozenset({"spark"}),
-    (6, 3): frozenset({"rubble"}),
-    (3, 5): frozenset({"rock_pillar"}),
-    (10, 6): frozenset({"arc"}),
-    (7, 7): frozenset({"floor_seal"}),
-}
+# Held empty until Scenario Art lands a short sheet. Tags stay. A filled
+# dress must be 4–6 cells, each about one diamond, and not a totem ring.
+STORM_DRESS = {}
 
 
 def _sha(path: Path) -> str:
@@ -726,8 +719,8 @@ def _write_previews(cells: list) -> None:
                 fitted = _fit_prop_draw(img)
                 if max(fitted.size) > 32:
                     raise SystemExit(f"{prop} still reads taller than one diamond")
-    if not 4 <= drawn <= 6:
-        raise SystemExit(f"Stormspire dress should be 4–6 props, drew {drawn}")
+    if drawn != 0 and not 4 <= drawn <= 6:
+        raise SystemExit(f"Stormspire dress should be empty or 4–6 props, drew {drawn}")
     board = _render_board(cells)
     plain = Image.new("RGB", board.size, (12, 10, 18))
     plain.paste(board, mask=board.split()[-1])

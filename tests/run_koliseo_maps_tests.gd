@@ -469,7 +469,7 @@ func _diamond_seam(tex: Texture2D) -> bool:
 	return true
 
 
-## Stormspire draws six small accents. Tags, the tmx, and blocking props stay.
+## Stormspire prop dress is held. Tags, the tmx, and blocking props stay.
 func _test_storm_dress() -> void:
 	var art := load("res://board/koliseo_art.gd")
 	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/stormspire_15x15_tags.json"))
@@ -483,16 +483,11 @@ func _test_storm_dress() -> void:
 		var cell := Vector2i(int(item.get("x", -1)), int(item.get("y", -1)))
 		drawn += art.visual_props("stormspire_15", cell, names).size()
 	truthy(tagged > 6, "Stormspire tags still list the full prop set")
-	eq(drawn, 6, "Stormspire draws six props")
+	eq(drawn, 0, "Stormspire draws no props while the dress is held")
 	eq(art.visual_props("stormspire", Vector2i(7, 5), ["conduit"]).size(), 0, "the conduit ring is not drawn")
 	eq(art.visual_props("stormspire", Vector2i(11, 5), ["rock_pillar"]).size(), 0, "the pillar square is not drawn")
-	eq(art.visual_props("stormspire", Vector2i(7, 6), ["crystal_bolt"]).size(), 0, "the center cross stays undrawn")
-	var west: Array = art.visual_props("stormspire", Vector2i(3, 5), ["rock_pillar"])
-	eq(west.size(), 1, "one west pillar is drawn")
-	eq(str(west[0]), "rock_pillar", "the drawn west prop is the pillar")
-	var center: Array = art.visual_props("stormspire", Vector2i(7, 7), ["floor_seal", "crystal_bolt"])
-	eq(center.size(), 1, "the center keeps a single mark")
-	eq(str(center[0]), "floor_seal", "the center mark is the floor seal")
+	eq(art.visual_props("stormspire", Vector2i(3, 5), ["rock_pillar"]).size(), 0, "pillars stay off the board")
+	eq(art.visual_props("stormspire", Vector2i(7, 7), ["floor_seal", "crystal_bolt"]).size(), 0, "the center mark stays off the board")
 	var wind: Array = art.visual_props("windmere", Vector2i(7, 5), ["conduit", "spark"])
 	eq(wind.size(), 2, "Windmere still draws every paint prop")
 	for prop_name in ["spark", "rubble", "arc", "crystal_bolt", "conduit", "rock_pillar"]:

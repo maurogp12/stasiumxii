@@ -10,7 +10,8 @@ extends RefCounted
 ## Slagcrown paints the lava punch.
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
 ## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
-## Its dress draws six small accents. The other paint_only tags stay for walkability.
+## Prop dress is held, so the board paints ground and elevation only.
+## The other paint_only tags stay for walkability.
 ## See THEMES.md. The board loads these slices by dress prefix.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
@@ -50,16 +51,10 @@ static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
 ## Scenario sheets are sliced. Nothing in this list is still a hook.
 const PENDING_THEMES: Array[String] = []
-## Six cells, not the tagged ring. (14, 0) is a spark; (14, 14) is a second bolt
-## and stays undrawn so the corners do not stack monuments.
-const STORM_DRESS := {
-	Vector2i(0, 0): ["crystal_bolt"],
-	Vector2i(14, 0): ["spark"],
-	Vector2i(6, 3): ["rubble"],
-	Vector2i(3, 5): ["rock_pillar"],
-	Vector2i(10, 6): ["arc"],
-	Vector2i(7, 7): ["floor_seal"],
-}
+## Prop dress is held. The current sheets read as a forest of banners and
+## pillars, so the board paints ground and elevation only. Tags still block.
+## The next short sheet should land as about 4–6 props, each at most one tile tall.
+const STORM_DRESS := {}
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -198,9 +193,9 @@ static func _variant_files(file_name: String) -> Array[String]:
 	return names
 
 
-## What the board draws. Stormspire keeps about six accents on the playable
-## map. Other arenas draw every paint_only name. This does not edit tags,
-## walkability, or which props block movement.
+## What the board draws. Stormspire currently draws no props. Other arenas
+## draw every paint_only name. This does not edit tags, walkability, or
+## which props block movement.
 static func visual_props(map_id: String, cell: Vector2i, props: Array) -> Array:
 	if dress_for(map_id) != "storm_":
 		return props
