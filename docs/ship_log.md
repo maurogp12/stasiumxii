@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Soft Lock map presentation
+
+Presentation only. Locked geometry, tags, walkability, and kit numbers are unchanged. No APK. Windmere ice punch is untouched. Brinewake stays the coast punch (wet sand, pier wood, water).
+
+Crosshaven is the grassland sheet again, byte-matched to `ef474cd` (mobile parent of the earth punch). Punch-only `ground_v5`–`v7` and the extra cliff variants are gone so the picker cannot mix dirt back in. `slice_crosshaven_punch.py` refuses to run.
+
+Slagcrown and Stormspire go further back than the #184 restore parents (`79eda27`, `fc2030d`). Those parents are the original-sheet / electric-contact look Luca rejected. The live dress is `171f5b5` (Raise Koliseo graphics): readable half-diamonds, with that commit's props copied onto `slag_prop_*` and `storm_prop_*`. Punch-only variants are deleted. `slice_lava_punch.py` and `slice_storm_punch.py` refuse to run. Scenario mood plates are not sliced.
+
 ## 2026-09-27 — Brinewake elevation v2, upper-corner deck gone
 
 Soft Lock agua + costa. Presentation only. Locked Brinewake geometry, tags, walkability, and kit numbers are unchanged. No APK. `version/name` and `version/code` stay put.

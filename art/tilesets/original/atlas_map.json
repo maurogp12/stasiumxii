@@ -471,47 +471,7 @@
       "fit": "flat"
     },
     {
-      "file": "storm_ground_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_v2.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_ground_v3.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
       "file": "storm_mud.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_mud_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
-      "file": "storm_mud_v2.png",
       "size": [
         64,
         32
@@ -527,26 +487,10 @@
       "fit": "flat"
     },
     {
-      "file": "storm_water_v1.png",
-      "size": [
-        64,
-        32
-      ],
-      "fit": "flat"
-    },
-    {
       "file": "storm_ground_e1.png",
       "size": [
         64,
-        74
-      ],
-      "fit": "cliff"
-    },
-    {
-      "file": "storm_ground_e1_v1.png",
-      "size": [
-        64,
-        77
+        40
       ],
       "fit": "cliff"
     },
@@ -554,7 +498,7 @@
       "file": "storm_mud_e1.png",
       "size": [
         64,
-        76
+        40
       ],
       "fit": "cliff"
     },
@@ -562,55 +506,55 @@
       "file": "storm_ground_e2.png",
       "size": [
         64,
-        97
+        48
       ],
       "fit": "cliff"
     },
     {
       "file": "storm_prop_crystal_bolt.png",
       "size": [
-        73,
-        107
+        64,
+        104
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_spark.png",
       "size": [
-        55,
-        72
+        64,
+        48
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_conduit.png",
       "size": [
-        88,
-        119
+        64,
+        52
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_rock_pillar.png",
       "size": [
-        83,
-        118
+        64,
+        100
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_arc.png",
       "size": [
-        120,
-        99
+        64,
+        56
       ],
       "fit": "prop"
     },
     {
       "file": "storm_prop_rubble.png",
       "size": [
-        70,
-        89
+        64,
+        52
       ],
       "fit": "prop"
     },
@@ -618,7 +562,7 @@
       "file": "storm_prop_floor_seal.png",
       "size": [
         64,
-        32
+        48
       ],
       "fit": "flat"
     },
@@ -683,42 +627,6 @@
       ]
     },
     {
-      "file": "ground_v5.png",
-      "anchor": [
-        "ground",
-        20
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v6.png",
-      "anchor": [
-        "ground",
-        24
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
-      "file": "ground_v7.png",
-      "anchor": [
-        "ground",
-        28
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        32
-      ]
-    },
-    {
       "file": "ground_e1.png",
       "anchor": [
         "elev",
@@ -727,91 +635,7 @@
       "fit": "punch",
       "size": [
         64,
-        56
-      ]
-    },
-    {
-      "file": "ground_e1_v1.png",
-      "anchor": [
-        "elev",
-        10
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        41
-      ]
-    },
-    {
-      "file": "ground_e1_v2.png",
-      "anchor": [
-        "elev",
-        8
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        43
-      ]
-    },
-    {
-      "file": "ground_e1_v3.png",
-      "anchor": [
-        "elev",
-        14
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        48
-      ]
-    },
-    {
-      "file": "ground_e1_v4.png",
-      "anchor": [
-        "elev",
-        0
-      ],
-      "fit": "punch",
-      "size": [
-        64,
         49
-      ]
-    },
-    {
-      "file": "ground_e1_v5.png",
-      "anchor": [
-        "elev",
-        1
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        50
-      ]
-    },
-    {
-      "file": "ground_e1_v6.png",
-      "anchor": [
-        "elev",
-        7
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        56
-      ]
-    },
-    {
-      "file": "ground_e1_v7.png",
-      "anchor": [
-        "elev",
-        15
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        56
       ]
     },
     {
@@ -823,55 +647,7 @@
       "fit": "punch",
       "size": [
         64,
-        87
-      ]
-    },
-    {
-      "file": "ground_e2_v1.png",
-      "anchor": [
-        "elev",
-        6
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        68
-      ]
-    },
-    {
-      "file": "ground_e2_v2.png",
-      "anchor": [
-        "elev",
-        9
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        69
-      ]
-    },
-    {
-      "file": "ground_e2_v3.png",
-      "anchor": [
-        "elev",
-        4
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        73
-      ]
-    },
-    {
-      "file": "ground_e2_v4.png",
-      "anchor": [
-        "elev",
-        13
-      ],
-      "fit": "punch",
-      "size": [
-        64,
-        79
+        78
       ]
     },
     {
@@ -883,7 +659,7 @@
       "fit": "punch",
       "size": [
         64,
-        41
+        49
       ]
     },
     {
@@ -894,8 +670,8 @@
       ],
       "fit": "punch",
       "size": [
-        63,
-        88
+        36,
+        77
       ]
     },
     {
@@ -906,8 +682,8 @@
       ],
       "fit": "punch",
       "size": [
-        86,
-        63
+        90,
+        82
       ]
     },
     {
@@ -918,8 +694,8 @@
       ],
       "fit": "punch",
       "size": [
-        43,
-        64
+        63,
+        62
       ]
     },
     {
@@ -930,8 +706,8 @@
       ],
       "fit": "punch",
       "size": [
-        72,
-        84
+        50,
+        83
       ]
     },
     {
@@ -943,7 +719,7 @@
       "fit": "punch",
       "size": [
         60,
-        82
+        50
       ]
     },
     {
@@ -954,8 +730,8 @@
       ],
       "fit": "punch",
       "size": [
-        72,
-        39
+        50,
+        62
       ]
     },
     {
@@ -972,153 +748,10 @@
       "source": "pending/lava"
     },
     {
-      "file": "slag_ground_v1.png",
-      "anchor": [
-        1190,
-        1234
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_ground_v2.png",
-      "anchor": [
-        1622,
-        1162
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_ground_v3.png",
-      "anchor": [
-        1046,
-        694
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_ground_v4.png",
-      "anchor": [
-        950,
-        1594
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
       "file": "slag_lava.png",
       "anchor": [
         278,
         1198
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v1.png",
-      "anchor": [
-        1382,
-        1126
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v2.png",
-      "anchor": [
-        1766,
-        838
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v3.png",
-      "anchor": [
-        1382,
-        838
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v4.png",
-      "anchor": [
-        566,
-        1198
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v5.png",
-      "anchor": [
-        950,
-        838
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v6.png",
-      "anchor": [
-        1046,
-        1126
-      ],
-      "fit": "flat",
-      "size": [
-        64,
-        32
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_lava_v7.png",
-      "anchor": [
-        1718,
-        1162
       ],
       "fit": "flat",
       "size": [
@@ -1161,8 +794,8 @@
       ],
       "fit": "seal",
       "size": [
-        28,
-        14
+        64,
+        48
       ],
       "source": "pending/lava"
     },
@@ -1175,20 +808,7 @@
       "fit": "cliff",
       "size": [
         64,
-        54
-      ],
-      "source": "pending/lava"
-    },
-    {
-      "file": "slag_ground_e1_v1.png",
-      "anchor": [
-        538,
-        1042
-      ],
-      "fit": "cliff",
-      "size": [
-        64,
-        55
+        40
       ],
       "source": "pending/lava"
     },
@@ -1201,7 +821,7 @@
       "fit": "cliff",
       "size": [
         64,
-        55
+        40
       ],
       "source": "pending/lava"
     },
@@ -1214,7 +834,7 @@
       "fit": "cliff",
       "size": [
         64,
-        84
+        48
       ],
       "source": "pending/lava"
     },
@@ -1226,8 +846,8 @@
       ],
       "fit": "prop",
       "size": [
-        44,
-        71
+        64,
+        108
       ],
       "source": "pending/lava"
     },
@@ -1239,8 +859,8 @@
       ],
       "fit": "prop",
       "size": [
-        34,
-        68
+        64,
+        100
       ],
       "source": "pending/lava"
     },
@@ -1252,8 +872,8 @@
       ],
       "fit": "prop",
       "size": [
-        33,
-        34
+        64,
+        56
       ],
       "source": "pending/lava"
     },
@@ -1265,8 +885,8 @@
       ],
       "fit": "prop",
       "size": [
-        29,
-        26
+        64,
+        52
       ],
       "source": "pending/lava"
     },
@@ -1278,8 +898,8 @@
       ],
       "fit": "prop",
       "size": [
-        31,
-        34
+        64,
+        80
       ],
       "source": "pending/lava"
     },

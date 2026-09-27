@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Slice the Stormspire algo-así punch sheets onto the Koliseo 64×32 grid.
+"""Rejected Stormspire algo-así punch. Not the live dress.
+
+The board paints the early Koliseo diamonds from 171f5b5. Running this
+script would overwrite that restore. The body below is the old slicer
+and does not run.
+
+Slice the Stormspire algo-así punch sheets onto the Koliseo 64×32 grid.
 
 Reads the three punch contact sheets in pending/electric/ and overwrites only
 Stormspire presentation files (`storm_*` terrain and `storm_prop_*`).
@@ -11,6 +17,14 @@ Flat tiles fill a 64×32 diamond. Cliff tiles keep that top face and hang the
 wall below it. Props use the ground-diamond scale (64px per punch diamond).
 """
 from __future__ import annotations
+
+import sys
+
+if __name__ == "__main__":
+    raise SystemExit(
+        "Stormspire algo-así punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
 
 import json
 from pathlib import Path
@@ -253,6 +267,10 @@ def _check(records: list) -> None:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Stormspire algo-así punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
             raise SystemExit(f"missing punch sheet {path}")

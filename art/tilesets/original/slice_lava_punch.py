@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Slice the Slagcrown lava punch onto the Koliseo dress.
+"""Rejected Slagcrown lava punch. Not the live dress.
+
+The board paints the early Koliseo diamonds from 171f5b5. Running this
+script would overwrite that restore. The body below is the old slicer
+and does not run.
+
+Slice the Slagcrown lava punch onto the Koliseo dress.
 
 Soft Lock: fuego + lava. Presentation only. Locked tags, geometry,
 walkability, and kit numbers are not opened for writing.
@@ -20,6 +26,14 @@ on the same sprite as the platform they climb. A clipped block at the
 sheet edge is dropped so a stair does not lead into empty space.
 """
 from __future__ import annotations
+
+import sys
+
+if __name__ == "__main__":
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
 
 import hashlib
 import json
@@ -701,6 +715,10 @@ def _write_previews(cells: list) -> None:
 
 
 def slice_slagcrown() -> list[dict]:
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET, TAGS, TMX):
         if not path.is_file():
             raise SystemExit(f"missing {path}")
@@ -716,6 +734,10 @@ def slice_slagcrown() -> list[dict]:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
     records = slice_slagcrown()
     _patch_atlas(records)
     _sync_tsx()
