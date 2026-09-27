@@ -5,11 +5,11 @@ extends RefCounted
 ## A cliff sheet is 64 wide and taller: the top is the diamond, the rest
 ## hangs below it. cell_to_local stays ((x-y)*32, (x+y)*16).
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
-## Crosshaven paints the earth punch (dirt and stone). Moss is only on the ruin walls.
+## Crosshaven paints the grassland sheet from ef474cd (before the earth punch).
 ## Brinewake paints the coast punch (wet sand, pier wood, tide scorch).
-## Slagcrown paints the lava punch (hard diamonds, platform cliffs, sparse props).
+## Slagcrown paints the early diamonds from 171f5b5 (before the lava punch).
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
-## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
+## Stormspire paints the early diamonds from 171f5b5 (before the electric punch).
 ## See THEMES.md. The board loads these slices by dress prefix.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
@@ -188,7 +188,7 @@ static func _variant_files(file_name: String) -> Array[String]:
 
 
 ## Dress-prefixed props win (`wind_prop_spark.png`, `slag_prop_ash_rock.png`),
-## then the shared sheet. Slagcrown props are the lava punch slices.
+## then the shared sheet. Slagcrown props are the 171f5b5 sprites on slag_prop_*.
 static func prop_texture(prop_name: String, dress: String = "") -> Texture2D:
 	if dress != "":
 		var themed := _load("%sprop_%s.png" % [dress, prop_name])

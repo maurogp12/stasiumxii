@@ -248,8 +248,8 @@ def _slice_legacy_ice(ice: np.ndarray, ice_comps, records: list) -> None:
 
 
 def main() -> None:
-    # Stormspire paint is the algo-así punch sheets. slice_storm_punch.py
-    # owns storm_*.png. This slicer must not restore those older slices.
+    # Stormspire stays on the 171f5b5 diamonds. This slicer only
+    # refreshes Windmere and must not write storm_*.png.
     records: list = []
     punch_ground = HERE / "pending" / "ice" / "punch" / "wind_ground_punch.png"
     if punch_ground.is_file():

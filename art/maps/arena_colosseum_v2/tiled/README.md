@@ -13,7 +13,7 @@ Combat authority is the tags JSON. The sibling `.tmx` is isometric art.
 
 Built for Mauro · Sep 24 2026 (ET). Ship size **15×15** for all five arenas.
 
-**Tiles:** slices of the isometric sheets in `art/tilesets/original/` (64×32 diamonds). Crosshaven is dirt and stone (moss and roots as accents). Brinewake is coast stone. Slagcrown is lava. Windmere is the ice sheet. Stormspire is the electric sheet. See `art/tilesets/original/THEMES.md`. Terrain/elev tags unchanged.
+**Tiles:** slices of the isometric sheets in `art/tilesets/original/` (64×32 diamonds). Crosshaven is grassland from `ef474cd`. Brinewake is the coast punch (sand, wood, water). Slagcrown and Stormspire are the early diamonds from `171f5b5`. Windmere is the ice punch. See `art/tilesets/original/THEMES.md`. Terrain/elev tags unchanged.
 
 ## Orientation (locked)
 

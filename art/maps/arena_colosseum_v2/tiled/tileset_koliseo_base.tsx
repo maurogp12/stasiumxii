@@ -46,7 +46,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/ground_e1.png" width="64" height="56"/>
+  <image source="tiles/ground_e1.png" width="64" height="49"/>
  </tile>
  <tile id="6">
   <properties>
@@ -54,7 +54,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/ground_e2.png" width="64" height="87"/>
+  <image source="tiles/ground_e2.png" width="64" height="78"/>
  </tile>
  <tile id="7">
   <properties>
@@ -62,7 +62,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/mud_e1.png" width="64" height="41"/>
+  <image source="tiles/mud_e1.png" width="64" height="49"/>
  </tile>
  <tile id="8">
   <properties>
@@ -71,7 +71,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="ruins"/>
   </properties>
-  <image source="tiles/prop_ruins.png" width="72" height="84"/>
+  <image source="tiles/prop_ruins.png" width="50" height="83"/>
  </tile>
  <tile id="9">
   <properties>
@@ -80,7 +80,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="well"/>
   </properties>
-  <image source="tiles/prop_well.png" width="43" height="64"/>
+  <image source="tiles/prop_well.png" width="63" height="62"/>
  </tile>
  <tile id="10">
   <properties>
@@ -89,7 +89,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="hay"/>
   </properties>
-  <image source="tiles/prop_hay.png" width="60" height="82"/>
+  <image source="tiles/prop_hay.png" width="60" height="50"/>
  </tile>
  <tile id="11">
   <properties>
@@ -98,7 +98,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="fence"/>
   </properties>
-  <image source="tiles/prop_fence.png" width="72" height="39"/>
+  <image source="tiles/prop_fence.png" width="50" height="62"/>
  </tile>
  <tile id="12">
   <properties>
@@ -107,7 +107,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="rubble"/>
   </properties>
-  <image source="tiles/prop_rubble.png" width="86" height="63"/>
+  <image source="tiles/prop_rubble.png" width="90" height="82"/>
  </tile>
  <tile id="13">
   <properties>
@@ -116,7 +116,7 @@
    <property name="paint_only" type="bool" value="true"/>
    <property name="prop" type="string" value="rock_pillar"/>
   </properties>
-  <image source="tiles/prop_rock_pillar.png" width="63" height="88"/>
+  <image source="tiles/prop_rock_pillar.png" width="36" height="77"/>
  </tile>
  <tile id="14">
   <properties>
@@ -303,7 +303,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_ground_e1.png" width="64" height="54"/>
+  <image source="tiles/slag_ground_e1.png" width="64" height="40"/>
  </tile>
  <tile id="36">
   <properties>
@@ -311,7 +311,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_ground_e2.png" width="64" height="84"/>
+  <image source="tiles/slag_ground_e2.png" width="64" height="48"/>
  </tile>
  <tile id="37">
   <properties>
@@ -319,7 +319,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/slag_mud_e1.png" width="64" height="55"/>
+  <image source="tiles/slag_mud_e1.png" width="64" height="40"/>
  </tile>
  <tile id="38">
   <properties>
@@ -426,7 +426,7 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_ground_e1.png" width="64" height="74"/>
+  <image source="tiles/storm_ground_e1.png" width="64" height="40"/>
  </tile>
  <tile id="51">
   <properties>
@@ -434,7 +434,7 @@
    <property name="elevation" type="int" value="2"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_ground_e2.png" width="64" height="97"/>
+  <image source="tiles/storm_ground_e2.png" width="64" height="48"/>
  </tile>
  <tile id="52">
   <properties>
@@ -442,6 +442,6 @@
    <property name="elevation" type="int" value="1"/>
    <property name="paint_only" type="bool" value="false"/>
   </properties>
-  <image source="tiles/storm_mud_e1.png" width="64" height="76"/>
+  <image source="tiles/storm_mud_e1.png" width="64" height="40"/>
  </tile>
 </tileset>

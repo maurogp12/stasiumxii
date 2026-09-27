@@ -6,16 +6,24 @@ in art/maps/arena_colosseum_v2/tiled/tiles/. Flat tiles fill the diamond.
 Cliff tiles keep a 64×32 top face and hang the face below it. Props are
 uniformly scaled to that same ground scale.
 
-Windmere and Stormspire are not sliced here. slice_ice_electric.py writes
-those packs from the scenario sheets. Crosshaven ground, cliffs, and the
-farm props are owned by slice_crosshaven_punch.py. Running this file's
-main() paints the old grassland sheet back over those paths. Slagcrown is
-not sliced here either. slice_lava_punch.py writes slag_* from the lava
-punch sheets. This script must not paint the partial lava cliffs back.
-Brinewake is not sliced here either. slice_brine_punch.py writes the coast
-punch. This script must not put the cobble cells back over brine_*.
+Windmere is sliced by slice_ice_electric.py, which must not write storm_*.
+Crosshaven's live dress is the grassland restore. slice_crosshaven_punch.py
+refuses to run. This file's main() still slices the grassland sheet; it is
+not the punch. Slagcrown and Stormspire live dresses are the 171f5b5
+diamonds. slice_lava_punch.py and slice_storm_punch.py refuse to run, and
+this script does not write slag_* or storm_*. Brinewake is the coast punch.
+slice_brine_punch.py owns brine_*. This script must not put the cobble
+cells back over brine_*.
 """
 from __future__ import annotations
+
+import sys
+
+if __name__ == "__main__" and "--slag-only" in sys.argv:
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
 
 import json
 from pathlib import Path
@@ -339,10 +347,11 @@ def main() -> None:
 
 
 def reslice_slag_only() -> None:
-    """Slagcrown art comes from the lava punch sheets, not this contact sheet."""
-    from slice_lava_punch import main as punch_main
-
-    punch_main()
+    """Slagcrown art is the 171f5b5 dress. The lava punch must not overwrite it."""
+    raise SystemExit(
+        "Slagcrown lava punch is not the live dress. "
+        "The board paints the early Koliseo diamonds from 171f5b5."
+    )
 
 
 if __name__ == "__main__":

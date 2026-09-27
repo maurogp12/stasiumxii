@@ -330,18 +330,21 @@ func _test_original_sheet() -> void:
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_elevation_punch.png"), "Stormspire elevation punch is in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/electric/storm_props_punch.png"), "Stormspire props punch is in the repo")
 	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
-	truthy(themes.contains("crosshaven_ground_punch.png"), "earth punch is the Crosshaven source")
-	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_ground_punch.png"), "Crosshaven ground punch is in the repo")
-	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_elevation_punch.png"), "Crosshaven elevation punch is in the repo")
-	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_props_punch.png"), "Crosshaven props punch is in the repo")
+	truthy(themes.contains("ef474cd"), "Crosshaven live dress is the grassland restore")
+	truthy(themes.contains("crosshaven_ground_punch.png"), "earth punch stays noted as rejected")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_ground_punch.png"), "Crosshaven ground punch stays in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_elevation_punch.png"), "Crosshaven elevation punch stays in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/crosshaven_props_punch.png"), "Crosshaven props punch stays in the repo")
+	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/ground_v5.png"), false, "punch-only ground variants stay out")
 	truthy(themes.contains("stasium_tileset_ice.png"), "ice sheet stays noted beside the punch")
 	truthy(themes.contains("wind_ground_punch.png"), "Windmere ground is the ice punch sheet")
 	truthy(themes.contains("wind_elevation_punch.png"), "Windmere cliffs are the ice punch sheet")
 	truthy(themes.contains("wind_props_punch.png"), "Windmere props are the ice punch sheet")
 	truthy(themes.contains("stasium_tileset_electric.png"), "electric sheet stays noted beside the punch")
-	truthy(themes.contains("storm_ground_punch.png"), "Stormspire ground is the algo-así punch sheet")
-	truthy(themes.contains("storm_elevation_punch.png"), "Stormspire cliffs are the algo-así punch sheet")
-	truthy(themes.contains("storm_props_punch.png"), "Stormspire props are the algo-así punch sheet")
+	truthy(themes.contains("171f5b5"), "Slagcrown and Stormspire name the early diamond commit")
+	truthy(themes.contains("storm_ground_punch.png"), "algo-así punch stays noted as rejected")
+	truthy(themes.contains("storm_elevation_punch.png"), "Stormspire elevation punch stays noted as rejected")
+	truthy(themes.contains("storm_props_punch.png"), "Stormspire props punch stays noted as rejected")
 	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/ice_ground.png"), false, "no invented ice ground pack")
 	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/electric_ground.png"), false, "no invented electric ground pack")
 	var atlas: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/tilesets/original/atlas_map.json"))
@@ -355,10 +358,8 @@ func _test_original_sheet() -> void:
 	eq(families["stormspire"]["pending_theme"], null, "Stormspire electric pack is live")
 	var ground: Texture2D = art.terrain_texture("ground", 0)
 	var img := ground.get_image()
-	truthy(img.get_pixel(48, 16).a > 0.2, "dirt diamond reaches the right half of the sheet")
-	var mid := img.get_pixel(32, 16)
-	truthy(mid.r > mid.g and mid.g > mid.b, "Crosshaven ground is dirt, not a lawn")
-	truthy(_green_fraction(ground) < 0.02, "Crosshaven ground is not a lawn carpet")
+	truthy(img.get_pixel(48, 16).a > 0.2, "grassland diamond reaches the right half of the sheet")
+	truthy(_green_fraction(ground) > 0.2, "Crosshaven ground is the grassland sheet")
 	var wind_tex: Texture2D = art.terrain_texture("ground", 0, "wind_")
 	var wind_px: Color = wind_tex.get_image().get_pixel(32, 16)
 	truthy(wind_px.r > 0.7 and wind_px.b >= wind_px.r, "Windmere ground is snow from the ice sheet")
@@ -374,33 +375,36 @@ func _test_original_sheet() -> void:
 	truthy(wind_e1.get_height() > 32, "Windmere cliffs hang below the diamond")
 	truthy(wind_e2.get_height() > wind_e1.get_height(), "Windmere high cliffs are taller")
 	var slag_tex: Texture2D = art.terrain_texture("lava", 0, "slag_")
-	var slag_px: Color = slag_tex.get_image().get_pixel(32, 16)
-	truthy(slag_px.r > slag_px.b, "Slagcrown lava is the sheet lava")
+	var slag_px: Color = _content_px(slag_tex)
+	truthy(slag_px.r > slag_px.b, "Slagcrown lava is the early red diamond")
 	var slag_floor: Texture2D = art.terrain_texture("ground", 0, "slag_")
-	var slag_floor_px: Color = slag_floor.get_image().get_pixel(32, 16)
-	truthy(slag_floor_px.r > slag_floor_px.g and slag_floor_px.r > slag_floor_px.b, "Slagcrown ground is scorched dirt")
+	var slag_floor_px: Color = _content_px(slag_floor)
+	truthy(slag_floor_px.r > slag_floor_px.g and slag_floor_px.r > slag_floor_px.b, "Slagcrown ground is dark rock")
 	truthy(_green_fraction(slag_floor) < 0.02, "Slagcrown floor has no lawn")
+	truthy(_legacy_half(slag_floor), "Slagcrown ground is the early half-diamond")
 	var slag_pool: Texture2D = art.terrain_texture("water", 0, "slag_")
-	var slag_pool_px: Color = slag_pool.get_image().get_pixel(32, 16)
-	truthy(slag_pool_px.r > slag_pool_px.b and slag_pool_px.r > slag_pool_px.g, "Slagcrown pools are dark ash, not grass")
+	var slag_pool_px: Color = _content_px(slag_pool)
+	truthy(slag_pool_px.b > slag_pool_px.r and slag_pool_px.g > slag_pool_px.r, "Slagcrown water is the early cyan diamond")
 	var slag_e1: Texture2D = art.terrain_texture("ground", 1, "slag_")
 	var slag_e2: Texture2D = art.terrain_texture("ground", 2, "slag_")
-	var slag_cap: Color = slag_e1.get_image().get_pixel(32, 4)
-	truthy(slag_cap.r > slag_cap.g and slag_cap.r > slag_cap.b, "Slagcrown cliff cap is scorched rock, not grass")
+	var slag_cap: Color = _content_px(slag_e1)
+	truthy(slag_cap.r > slag_cap.g and slag_cap.r > slag_cap.b, "Slagcrown cliff is rock, not grass")
 	truthy(slag_e2.get_height() > slag_e1.get_height(), "Slagcrown high cliffs are taller than the low ledge")
 	var haven_cliff: Texture2D = art.terrain_texture("ground", 1, "")
 	var haven_cap: Color = haven_cliff.get_image().get_pixel(32, 8)
-	truthy(haven_cap.r > haven_cap.g and haven_cap.g > haven_cap.b, "Crosshaven cliff cap is dirt, not a lawn")
-	truthy(_green_fraction(haven_cliff) < 0.02, "Crosshaven cliffs stay bare earth")
+	truthy(haven_cap.g > haven_cap.r, "Crosshaven cliff cap is grass")
+	truthy(_green_fraction(haven_cliff) > 0.05, "Crosshaven cliffs keep the grass cap")
 	var ruins_tex: Texture2D = art.prop_texture("ruins", "")
 	var ruin_moss := _green_fraction(ruins_tex)
-	truthy(ruin_moss > 0.06, "moss sits on the ruin walls")
-	truthy(ruin_moss < 0.28, "ruin moss does not swallow the stone")
+	truthy(ruin_moss < 0.05, "grassland ruins are stone, not the punch moss pass")
 	var seal_tex: Texture2D = art.prop_texture("floor_seal", "")
 	truthy(_green_fraction(seal_tex) < 0.02, "the floor seal is bare stone")
-	for prop_name in ["hay", "fence", "rubble", "rock_pillar", "well"]:
+	var hay_tex: Texture2D = art.prop_texture("hay", "")
+	truthy(_green_fraction(hay_tex) > 0.4, "hay is the farm bundle")
+	for prop_name in ["fence", "rock_pillar", "well"]:
 		var prop_tex: Texture2D = art.prop_texture(prop_name, "")
-		truthy(_green_fraction(prop_tex) < 0.02, "%s stays off the moss" % prop_name)
+		truthy(_green_fraction(prop_tex) < 0.05, "%s stays off a lawn carpet" % prop_name)
+	truthy(_green_fraction(art.prop_texture("rubble", "")) < 0.08, "rubble stays mostly stone")
 	truthy(_green_fraction(slag_e1) < 0.02, "Slagcrown cliffs stay off the grass wall")
 	truthy(_green_fraction(slag_e2) < 0.02, "Slagcrown high cliffs stay off the grass wall")
 	var slag_ash: Texture2D = art.prop_texture("ash_rock", "slag_")
@@ -421,18 +425,23 @@ func _test_original_sheet() -> void:
 	truthy(slag_seal.resource_path.ends_with("slag_prop_floor_seal.png"), "Slagcrown floor seal is dark ash, not forest stone")
 	var slag_vent: Texture2D = art.prop_texture("steam_vent", "slag_")
 	truthy(slag_vent.resource_path.ends_with("slag_prop_steam_vent.png"), "Slagcrown steam vent is a lava shard")
-	truthy(_green_fraction(slag_pillar) < 0.02, "Slagcrown rock pillar has no moss")
+	truthy(_green_fraction(slag_pillar) < 0.05, "Slagcrown rock pillar has no moss")
 	truthy(_green_fraction(slag_vent) < 0.02, "Slagcrown steam vent has no moss")
 	var haven_pillar: Texture2D = art.prop_texture("rock_pillar", "")
 	truthy(haven_pillar.resource_path.ends_with("prop_rock_pillar.png"), "Crosshaven keeps the shared rock pillar")
 	var storm_tex: Texture2D = art.terrain_texture("ground", 0, "storm_")
-	var storm_px: Color = storm_tex.get_image().get_pixel(32, 16)
-	truthy(storm_px.r < 0.4 and storm_px.b < 0.45 and storm_px.g < 0.35, "Stormspire ground is dark stone, not grass")
+	var storm_px: Color = _content_px(storm_tex)
+	truthy(storm_px.b > storm_px.r and storm_px.g > storm_px.r, "Stormspire ground is the early blue-gray diamond")
+	truthy(_green_fraction(storm_tex) < 0.02, "Stormspire ground is not grass")
+	truthy(_legacy_half(storm_tex), "Stormspire ground is the early half-diamond")
 	var storm_water: Texture2D = art.terrain_texture("water", 0, "storm_")
-	var storm_water_px: Color = storm_water.get_image().get_pixel(32, 16)
-	truthy(storm_water_px.b > storm_water_px.r and storm_water_px.b > storm_water_px.g, "Stormspire water is the violet energy tile")
+	var storm_water_px: Color = _content_px(storm_water)
+	truthy(storm_water_px.b > storm_water_px.r and storm_water_px.g > storm_water_px.r, "Stormspire water is the early bright diamond")
 	var storm_e1: Texture2D = art.terrain_texture("ground", 1, "storm_")
+	var storm_e2: Texture2D = art.terrain_texture("ground", 2, "storm_")
 	truthy(storm_e1.get_height() > 32, "Stormspire cliffs hang below the diamond")
+	truthy(storm_e2.get_height() > storm_e1.get_height(), "Stormspire high cliffs are taller")
+	eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/storm_ground_v1.png"), false, "punch-only storm variants stay out")
 	var wind_spark: Texture2D = art.prop_texture("spark", "wind_")
 	var storm_spark: Texture2D = art.prop_texture("spark", "storm_")
 	truthy(wind_spark.resource_path.ends_with("wind_prop_spark.png"), "Windmere spark is the ice crystal")
@@ -444,7 +453,42 @@ func _test_original_sheet() -> void:
 		for y in 4:
 			var tex: Texture2D = art.terrain_texture_at("ground", 0, "", Vector2i(x, y))
 			seen[tex.resource_path] = true
-	truthy(seen.size() > 1, "Crosshaven cells use more than one dirt slice")
+	truthy(seen.size() > 1, "Crosshaven cells use more than one grassland slice")
+
+
+## Opaque centroid of a sheet. Early Koliseo flats keep pixels on the left half.
+func _content_px(tex: Texture2D) -> Color:
+	var img := tex.get_image()
+	var n := 0
+	var sx := 0
+	var sy := 0
+	for y in img.get_height():
+		for x in img.get_width():
+			if img.get_pixel(x, y).a < 0.8:
+				continue
+			sx += x
+			sy += y
+			n += 1
+	if n == 0:
+		return Color(0, 0, 0, 0)
+	return img.get_pixel(int(sx / float(n)), int(sy / float(n)))
+
+
+## Left-half sheet from 171f5b5. The board scales that half onto the diamond.
+func _legacy_half(tex: Texture2D) -> bool:
+	var img := tex.get_image()
+	if img == null or img.get_width() != 64 or img.get_height() < 32:
+		return false
+	if img.get_pixel(48, 16).a > 0.05:
+		return false
+	if _content_px(tex).a < 0.8:
+		return false
+	var art := load("res://board/koliseo_art.gd")
+	var placed: Dictionary = art.terrain_placement(tex)
+	if placed.is_empty():
+		return false
+	var dest: Rect2 = placed["dest"]
+	return dest.size.x >= 60.0
 
 
 func _diamond_seam(tex: Texture2D) -> bool:
@@ -513,8 +557,8 @@ func _test_brine_punch() -> void:
 	eq(int((tags["size"] as Array)[0]), 15, "Brinewake tag width stays 15")
 
 
-## Soft Lock fuego + lava. Presentation only. Hard diamonds, platform walls,
-## sparse props. The floor seal is a mark, not a second floor.
+## Soft Lock fuego + lava. Presentation only. Early half-diamonds from 171f5b5.
+## The lava punch is rejected and must not be wired back in.
 func _test_slag_punch() -> void:
 	var art := load("res://board/koliseo_art.gd")
 	var ground: Texture2D = art.terrain_texture("ground", 0, "slag_")
@@ -523,25 +567,20 @@ func _test_slag_punch() -> void:
 	var mud: Texture2D = art.terrain_texture("mud", 0, "slag_")
 	var low: Texture2D = art.terrain_texture("ground", 1, "slag_")
 	var high: Texture2D = art.terrain_texture("ground", 2, "slag_")
-	truthy(_diamond_seam(ground), "Slagcrown ground keeps a readable diamond edge")
-	truthy(_diamond_seam(lava), "Slagcrown lava keeps a readable diamond edge")
-	truthy(_diamond_seam(water), "Slagcrown ash pool keeps a readable diamond edge")
-	truthy(_diamond_seam(mud), "Slagcrown scorch keeps a readable diamond edge")
-	truthy(high.get_height() > low.get_height() + 12, "Slagcrown high platforms are clearly taller")
-	truthy(_wall_meets_cap(low), "Slagcrown low wall meets the platform")
-	truthy(_wall_meets_cap(high), "Slagcrown high wall meets the platform")
+	truthy(_legacy_half(ground), "Slagcrown ground keeps a readable half-diamond")
+	truthy(_legacy_half(lava), "Slagcrown lava keeps a readable half-diamond")
+	truthy(_legacy_half(water), "Slagcrown water keeps a readable half-diamond")
+	truthy(_legacy_half(mud), "Slagcrown mud keeps a readable half-diamond")
+	truthy(high.get_height() > low.get_height(), "Slagcrown high platforms are taller")
 	var seal: Texture2D = art.prop_texture("floor_seal", "slag_")
-	truthy(seal.get_width() <= 40 and seal.get_height() <= 20, "Slagcrown floor seal does not cover the diamond")
+	truthy(seal.resource_path.ends_with("slag_prop_floor_seal.png"), "Slagcrown floor seal is the early sprite")
 	var basalt: Texture2D = art.prop_texture("basalt_pillar", "slag_")
 	var pillar: Texture2D = art.prop_texture("rock_pillar", "slag_")
-	truthy(basalt.get_width() <= 48, "Slagcrown basalt pillar stays on one tile")
-	truthy(pillar.get_width() <= 40, "Slagcrown rock pillar stays narrow")
+	truthy(basalt.resource_path.ends_with("slag_prop_basalt_pillar.png"), "Slagcrown basalt is the early sprite")
+	truthy(pillar.resource_path.ends_with("slag_prop_rock_pillar.png"), "Slagcrown rock pillar is the early sprite")
 	var dress := [
-		"slag_ground.png", "slag_ground_v1.png", "slag_ground_v2.png", "slag_ground_v3.png", "slag_ground_v4.png",
-		"slag_mud.png", "slag_water.png",
-		"slag_lava.png", "slag_lava_v1.png", "slag_lava_v2.png", "slag_lava_v3.png",
-		"slag_lava_v4.png", "slag_lava_v5.png", "slag_lava_v6.png", "slag_lava_v7.png",
-		"slag_ground_e1.png", "slag_ground_e1_v1.png", "slag_mud_e1.png", "slag_ground_e2.png",
+		"slag_ground.png", "slag_mud.png", "slag_water.png", "slag_lava.png",
+		"slag_ground_e1.png", "slag_mud_e1.png", "slag_ground_e2.png",
 		"slag_prop_basalt_pillar.png", "slag_prop_rock_pillar.png", "slag_prop_ash_rock.png",
 		"slag_prop_rubble.png", "slag_prop_steam_vent.png", "slag_prop_floor_seal.png",
 	]
@@ -549,11 +588,13 @@ func _test_slag_punch() -> void:
 		var path: String = "res://art/maps/arena_colosseum_v2/tiled/tiles/" + str(file_name)
 		var tex: Texture2D = load(path)
 		truthy(tex != null, "%s is wired" % file_name)
-		truthy(_green_fraction(tex) < 0.005, "%s has no lawn" % file_name)
+		truthy(_green_fraction(tex) < 0.05, "%s has no lawn" % file_name)
+	for gone in ["slag_ground_v1.png", "slag_lava_v1.png", "slag_ground_e1_v1.png"]:
+		eq(FileAccess.file_exists("res://art/maps/arena_colosseum_v2/tiled/tiles/" + gone), false, "%s punch sibling stays out" % gone)
 	var themes := FileAccess.get_file_as_string("res://art/tilesets/original/THEMES.md")
-	truthy(themes.contains("pending/lava/ground_punch.png"), "Slagcrown ground punch is the lava source")
-	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/elevation_punch.png"), "Slagcrown elevation punch is in the repo")
-	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/props_punch.png"), "Slagcrown props punch is in the repo")
+	truthy(themes.contains("pending/lava/ground_punch.png"), "Slagcrown lava punch stays noted as rejected")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/elevation_punch.png"), "Slagcrown elevation punch stays in the repo")
+	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/props_punch.png"), "Slagcrown props punch stays in the repo")
 	truthy(FileAccess.file_exists("res://art/tilesets/original/pending/lava/board_mood_punch.png"), "Slagcrown mood plate stays a reference")
 	var tags: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/maps/arena_colosseum_v2/tiled/slagcrown_15x15_tags.json"))
 	eq((tags["cells"] as Array).size(), 225, "Slagcrown tags keep 225 cells")

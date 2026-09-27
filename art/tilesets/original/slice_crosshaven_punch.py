@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Slice the Crosshaven earth punch onto the unprefixed dress.
+"""Rejected Crosshaven earth punch. Not the live dress.
+
+The board paints the grassland slices from ef474cd. Running this script
+would overwrite that restore. The body below is the old slicer and does
+not run.
 
 Soft lock: tierra + naturaleza. Dirt and stone fill the diamonds. Moss and
 roots stay accents, so a green lawn is not the ground. Reads the punch
@@ -15,6 +19,14 @@ still read apart from the dirt. Floor seal stays the original stone mark.
 Tags, geometry, and combat numbers are not touched.
 """
 from __future__ import annotations
+
+import sys
+
+if __name__ == "__main__":
+    raise SystemExit(
+        "Crosshaven earth punch is not the live dress. "
+        "The board paints the grassland slices from ef474cd."
+    )
 
 import json
 from pathlib import Path
@@ -201,6 +213,10 @@ def _patch_atlas(records: list) -> None:
 
 
 def main() -> None:
+    raise SystemExit(
+        "Crosshaven earth punch is not the live dress. "
+        "The board paints the grassland slices from ef474cd."
+    )
     for path in (GROUND_SHEET, ELEV_SHEET, PROPS_SHEET):
         if not path.is_file():
             raise SystemExit(f"missing punch sheet {path}")
