@@ -664,9 +664,9 @@ func end_path_walk() -> void:
 	_kill_action()
 	_motion_playing = false
 	_plant_sprite()
-	# The stride already took its plant squash. A clean still, like a walk
-	# frame-0 plant, does not squash again. A missing strip still lands.
-	if not _walk_idle_plant and not _clean_idle_available():
+	# The stride already took its plant squash. A walk frame-0 plant does not
+	# squash again. A missing strip still lands.
+	if not _walk_idle_plant:
 		_play_landing()
 
 
@@ -1119,8 +1119,8 @@ static func sprite_texture(class_id: String, facing: String) -> Texture2D:
 	return _texture_at(sprite_path(class_id, facing))
 
 
-## Soft-alpha deploy/idle still. Separate from the wakfu-ship-v5 walk.
-## Null when this class has no clean plant (Kestrel, Gloam, Mender).
+## Old deploy still. A different costume from the walk sheet. The combat
+## body does not show it. Null when the file is missing.
 static func idle_plant_path(class_id: String, facing: String) -> String:
 	var cls := SpellKits.normalize_class_id(class_id)
 	var face := facing.strip_edges().to_lower()
@@ -1201,7 +1201,51 @@ func _ensure_foot() -> void:
 func _figure_material() -> ShaderMaterial:
 	var mat := ShaderMaterial.new()
 	mat.shader = FIGURE_SHADER
+	_write_figure_read(mat)
 	return mat
+
+
+## Ice read. Ironjaw lifts toward iron/ochre. Bastion lifts toward stone-gold.
+## The rim is one warm texel, not a cyan halo. Other classes stay a straight
+## sample. Facing does not change these colors.
+static func figure_read_for(class_id: String) -> Dictionary:
+	var key := SpellKits.normalize_class_id(class_id)
+	if key == SpellKits.CLASS_IRONJAW:
+		return {
+			"rim_ink": Color(0.24, 0.13, 0.05, 1.0),
+			"rim_px": 1.0,
+			"mid_tone": Color(0.58, 0.38, 0.16, 1.0),
+			"mid_mix": 0.45,
+		}
+	if key == SpellKits.CLASS_BASTION:
+		return {
+			"rim_ink": Color(0.30, 0.24, 0.12, 1.0),
+			"rim_px": 1.0,
+			"mid_tone": Color(0.64, 0.54, 0.34, 1.0),
+			"mid_mix": 0.40,
+		}
+	return {
+		"rim_ink": Color(0, 0, 0, 0),
+		"rim_px": 0.0,
+		"mid_tone": Color(0, 0, 0, 1),
+		"mid_mix": 0.0,
+	}
+
+
+func _write_figure_read(mat: ShaderMaterial) -> void:
+	var read := figure_read_for(class_id)
+	mat.set_shader_parameter("rim_ink", read["rim_ink"])
+	mat.set_shader_parameter("rim_px", read["rim_px"])
+	mat.set_shader_parameter("mid_tone", read["mid_tone"])
+	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+
+
+func _apply_figure_read() -> void:
+	if _sprite != null and is_instance_valid(_sprite) and _sprite.material is ShaderMaterial:
+		_write_figure_read(_sprite.material as ShaderMaterial)
+	for child in get_children():
+		if child is AnimatedSprite2D and (child as CanvasItem).material is ShaderMaterial:
+			_write_figure_read((child as CanvasItem).material as ShaderMaterial)
 
 
 func _adopt_static_sprite(sprite: Sprite2D) -> void:
@@ -1249,11 +1293,9 @@ func _sync_sprite() -> void:
 		_hide_body_strips()
 		_request_paint()
 		return
-	var plant := idle_plant_texture(class_id, facing)
-	if plant != null:
-		_sprite.texture = plant
-	else:
-		_sprite.texture = sprite_texture(class_id, facing)
+	# The static turnaround stays on this node as the missing-sheet fallback.
+	# It is not the combat idle. A walk sheet plants frame 0 of walk_<facing>.
+	_sprite.texture = sprite_texture(class_id, facing)
 	if not _flashing:
 		_sprite.modulate = rest_modulate()
 	# A driven step owns the frame. Replanting idle here freezes the cycle on
@@ -1262,14 +1304,13 @@ func _sync_sprite() -> void:
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
+		_apply_figure_read()
 		_request_paint()
 		return
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
-	elif plant != null:
-		_show_clean_idle()
 	elif _plant_walk_idle():
 		pass
 	else:
@@ -1277,6 +1318,7 @@ func _sync_sprite() -> void:
 		_active_strip = null
 		_sprite.visible = true
 		_hide_body_strips()
+	_apply_figure_read()
 	_request_paint()
 
 
@@ -1736,45 +1778,19 @@ func _end_body_strip(replant: bool = true) -> void:
 		_show_rest_or_static()
 
 
-## Walk sheet on screen when this class has one. Bastion and Ironjaw rest on
-## the soft plant instead, so a stop does not leave walk frame 0 up.
+## Walk sheet on screen when this class has one. Rest is frame 0 of that
+## sheet, so a stop does not swap in another costume.
 func _show_rest_or_static() -> void:
-	if _clean_idle_available():
-		_show_clean_idle()
-		return
 	if _plant_walk_idle():
 		return
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
 
 
-## Deploy and the idle hold. The walk strip stays packed for the stride.
-func _clean_idle_available() -> bool:
-	if not alive or stasis_sprite != "" or _held_death_strip:
-		return false
-	return idle_plant_texture(class_id, facing) != null
-
-
-func _show_clean_idle() -> void:
-	_walk_idle_plant = false
-	_strip_holds_body = false
-	_active_strip = null
-	_hide_body_strips()
-	if _sprite == null or not is_instance_valid(_sprite):
-		return
-	var plant := idle_plant_texture(class_id, facing)
-	if plant != null:
-		_sprite.texture = plant
-	_sprite.visible = true
-
-
 ## Idle and the stride share frame 0 of this facing's walk sheet.
 ## The static turnaround stays hidden so a step cannot flash a second costume.
-## A clean plant is the idle instead, and the walk sheet is motion only.
 func _should_plant_walk_idle() -> bool:
 	if not alive or stasis_sprite != "" or _held_death_strip:
-		return false
-	if _clean_idle_available():
 		return false
 	return has_walk_strip()
 
@@ -1912,6 +1928,8 @@ func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	strip.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	if not (strip.material is ShaderMaterial):
 		strip.material = _figure_material()
+	else:
+		_write_figure_read(strip.material as ShaderMaterial)
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
@@ -2150,6 +2168,9 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		var crest := VIEW_MOTION.hop_crest_px(class_id)
 		lift = clampf(-_sprite.position.y / maxf(crest, 0.001), 0.0, 1.0)
+	# Same disc on every class. It stays full size while the body hops.
+	# Seat color and the yellow active ring paint above it.
+	_draw_ellipse_on(canvas, foot + Vector2(0.0, 1.0), 14.0, 5.6, Color(0.18, 0.13, 0.09, 0.78))
 	var shadow := lerpf(1.0, 0.62, lift)
 	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
 	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)

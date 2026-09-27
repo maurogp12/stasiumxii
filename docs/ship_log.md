@@ -2,6 +2,16 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Ironjaw and Bastion keep one costume
+
+Presentation only. No APK. Soft Lock is not stamped. Locked kit numbers, map geometry, and Ambush are unchanged.
+
+Idle was a second sheet. `*_idle_plant_*_v1.png` is not the combat body. Standing, the face pad, and the walk all use `walk_<facing>` on one SpriteFrames bank. Walk is that clip cycling. A step does not swap in the soft plant.
+
+Ironjaw west is the per-cell mirror of the v6g east sheet. Bastion west is the per-cell mirror of the v6d east sheet. Same frame order. Not a runtime `flip_h`. North and south for those two classes are the east sheet, so a face change cannot load the v5 costume. Scenario will replace them when matching facings exist. `*_gen.png` is still not loaded.
+
+A 1px warm ink edge and a crushed-black lift sit on the figure read for these two classes only (iron/ochre, stone-gold). Kestrel, Gloam, and Mender stay a straight sample. The ground disc under the feet is the same size for every class and does not shrink on the hop. The seat ring and the yellow active mark stay on top.
+
 ## 2026-09-27 — Bastion east walk v6d and Ironjaw east walk v6g
 
 Presentation only for the sheets. Soft Lock is not stamped. Playable review for Luca.

@@ -46,9 +46,17 @@ func _test_texture_paths_and_imports() -> void:
 	truthy(pawn_src.contains("Vector2(0, -72)"), "offset is the shipped foot pivot")
 	truthy(pawn_src.contains("Vector2(0.5, 0.5)"), "shipped scale is 0.5")
 	var shader := FileAccess.get_file_as_string("res://units/figure_read.gdshader")
-	truthy(shader.contains("texture(TEXTURE, UV) * COLOR"), "figure read samples the texel and keeps modulate")
-	eq(shader.contains("texture(TEXTURE, UV +"), false, "figure read does not sample a neighbor rim")
+	truthy(shader.contains("COLOR = vec4(rgb, alpha) * COLOR"), "figure read keeps modulate")
 	eq(shader.contains("px.x * 3.0"), false, "figure read does not grow a 3px halo")
+	eq(shader.contains("px.x * 2.0"), false, "figure read does not grow a 2px halo")
+	eq(shader.contains("0.0, 1.0, 1.0"), false, "figure read does not paint cyan")
+	var ironjaw_read := Pawn.figure_read_for("ironjaw")
+	var bastion_read := Pawn.figure_read_for("bastion")
+	var kestrel_read := Pawn.figure_read_for("kestrel")
+	eq(float(ironjaw_read["rim_px"]), 1.0, "ironjaw rim is one texel")
+	eq(float(bastion_read["rim_px"]), 1.0, "bastion rim is one texel")
+	eq(float(kestrel_read["rim_px"]), 0.0, "kestrel stays a straight sample")
+	eq(float(kestrel_read["mid_mix"]), 0.0, "kestrel does not recolor")
 
 
 func _test_sprite_node_setup() -> void:
@@ -75,18 +83,20 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
 	pawn._sample_hop(1.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile edge")
-	eq(_visible_strip(pawn), null, "ironjaw idle does not leave the walk strip up")
-	eq(sprite.visible, true, "ironjaw idle shows the soft plant")
-	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "ironjaw west idle is the soft plant")
+	var ironjaw_idle := _visible_strip(pawn)
+	truthy(ironjaw_idle != null, "ironjaw idle shows the walk sheet")
+	eq(sprite.visible, false, "ironjaw idle hides the static turnaround")
+	if ironjaw_idle != null:
+		eq(String(ironjaw_idle.animation), "walk_w", "ironjaw west idle is walk_w")
+		eq(ironjaw_idle.frame, 0, "ironjaw west idle is walk frame 0")
+		eq(ironjaw_idle.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.modulate, Color.WHITE, "ironjaw idle is not Invisible")
-	_assert_soft_plant("ironjaw", "W")
+	_assert_walk_identity(pawn, "ironjaw", "W")
 	_assert_ironjaw_feet(ironjaw_scale.y)
-	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")
 	eq(sprite.z_as_relative, true, "sprite z is relative")
 	eq(sprite.position, Vector2.ZERO, "sprite sits on the pawn origin")
-	eq(sprite.texture, Pawn.idle_plant_texture("ironjaw", "W"), "texture follows the ironjaw plant facing")
 	var bastion := Pawn.new()
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
@@ -94,20 +104,29 @@ func _test_sprite_node_setup() -> void:
 	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion matches the kestrel cell")
 	eq(bastion_sprite.modulate, Color.WHITE, "a visible bastion is not Invisible")
 	eq(sprite.modulate, Color.WHITE, "a visible ironjaw is not Invisible")
-	eq(bastion_sprite.visible, true, "bastion idle shows the soft plant")
-	eq(_visible_strip(bastion), null, "bastion idle does not leave the walk strip up")
+	eq(bastion_sprite.visible, false, "bastion idle hides the static turnaround")
+	var bastion_idle := _visible_strip(bastion)
+	truthy(bastion_idle != null, "bastion idle shows the walk sheet")
+	if bastion_idle != null:
+		eq(String(bastion_idle.animation), "walk_n", "bastion north idle is walk_n")
+		eq(bastion_idle.frame, 0, "bastion north idle is walk frame 0")
+	_assert_walk_identity(bastion, "bastion", "N")
 	for class_id in ["kestrel", "gloam", "mender", "bastion", "ironjaw"]:
 		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s uses the shared 0.5 cell" % class_id)
 		eq(Pawn.presentation_mul(class_id), 1.0, "%s combat scale is 1.0" % class_id)
-	eq(bastion_sprite.texture, Pawn.idle_plant_texture("bastion", "N"), "bastion north idle is the soft plant")
-	_assert_soft_plant("bastion", "N")
 	for class_id in ["bastion", "ironjaw"]:
 		for face in ["E", "S", "N", "W"]:
-			_assert_soft_plant(class_id, face)
+			var body := Pawn.new()
+			get_root().add_child(body)
+			body.apply_snapshot(_unit_dict(class_id, face, 0), 0)
+			_assert_walk_identity(body, class_id, face)
+			body.free()
 	for class_id in ["kestrel", "gloam", "mender"]:
-		eq(Pawn.idle_plant_texture(class_id, "E"), null, "%s stays on walk frame 0" % class_id)
+		eq(Pawn.idle_plant_texture(class_id, "E"), null, "%s has no separate idle plant" % class_id)
+	for class_id in ["ironjaw", "bastion"]:
+		_assert_west_is_east_mirror(class_id)
+		_assert_facing_holds_east_sheet(class_id)
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
-	eq((bastion.get_node("Sprite") as Sprite2D).texture, Pawn.idle_plant_texture("bastion", "W"), "bastion west idle follows facing")
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
 	eq(dead.modulate.a < 0.05, true, "a dead snapshot dissolves instead of standing")
@@ -262,38 +281,64 @@ func _test_name_sits_above_the_sprite() -> void:
 		pawn.free()
 
 
-## Soft matte: alpha under 20 is gone, and the 20–254 band is still there.
-func _assert_soft_plant(class_id: String, facing: String) -> void:
-	var tex := Pawn.idle_plant_texture(class_id, facing)
-	truthy(tex != null, "%s %s soft plant loads" % [class_id, facing])
-	if tex == null:
+## Idle, the face snap, and the walk clip are one sheet. The soft plant is not shown.
+func _assert_walk_identity(pawn: Pawn, class_id: String, facing: String) -> void:
+	var strip := _visible_strip(pawn)
+	truthy(strip != null, "%s %s idle is the walk strip" % [class_id, facing])
+	if strip == null:
 		return
-	eq(tex.get_width(), 144, "%s %s plant is 144 wide" % [class_id, facing])
-	eq(tex.get_height(), 160, "%s %s plant is 160 tall" % [class_id, facing])
-	var image := tex.get_image()
-	truthy(image != null, "%s %s plant has pixels" % [class_id, facing])
-	if image == null:
-		return
-	var dust := 0
-	var soft := 0
-	var solid := 0
-	var cyan := 0
-	var floor_a := 20.0 / 255.0
-	for y in image.get_height():
-		for x in image.get_width():
-			var px := image.get_pixel(x, y)
-			if px.a > 0.001 and px.a < floor_a:
-				dust += 1
-			elif px.a >= floor_a and px.a < 1.0:
-				soft += 1
-			elif px.a >= 1.0:
-				solid += 1
-			if px.a > 0.2 and px.g > px.r + 0.12 and px.b > px.r + 0.12 and px.b > 0.35:
-				cyan += 1
-	eq(dust, 0, "%s %s plant has no alpha under 20" % [class_id, facing])
-	eq(soft > 0, true, "%s %s plant keeps the 20-254 alpha band" % [class_id, facing])
-	eq(cyan, 0, "%s %s plant has no cyan pixels" % [class_id, facing])
-	eq(solid > 1000, true, "%s %s plant has a readable body" % [class_id, facing])
+	var face := facing.strip_edges().to_lower()
+	var anim := "walk_%s" % face
+	eq(String(strip.animation), anim, "%s %s idle animation is the facing walk" % [class_id, facing])
+	eq(strip.frame, 0, "%s %s idle is frame 0" % [class_id, facing])
+	eq(strip.flip_h, false, "%s %s is not flip_h" % [class_id, facing])
+	eq(strip.scale, Pawn.sprite_scale_for(class_id), "%s %s keeps the shared scale" % [class_id, facing])
+	var frames := strip.sprite_frames
+	var shown := frames.get_frame_texture(anim, strip.frame)
+	var bank := StripLibrary.frames_for(class_id)
+	var locked := bank.get_frame_texture(anim, 0)
+	truthy(shown != null and locked != null, "%s %s walk frame 0 loads" % [class_id, facing])
+	if shown != null and locked != null:
+		eq(shown.get_image().get_data(), locked.get_image().get_data(), "%s %s idle cell is the walk sheet" % [class_id, facing])
+	var foreign := Pawn.idle_plant_texture(class_id, facing)
+	if foreign != null and shown != null:
+		eq(shown.get_image().get_data() == foreign.get_image().get_data(), false, "%s %s idle is not the soft plant" % [class_id, facing])
+	var other := "E" if facing != "E" else "S"
+	pawn.set_facing(other)
+	var turned := _visible_strip(pawn)
+	truthy(turned != null, "%s face snap keeps a body" % class_id)
+	if turned != null:
+		eq(turned.sprite_frames, frames, "%s face snap keeps the same frames" % class_id)
+		eq(String(turned.animation), "walk_%s" % other.to_lower(), "%s face snap matches the pad" % class_id)
+		eq(turned.frame, 0, "%s face snap plants frame 0" % class_id)
+	pawn.set_facing(facing)
+
+
+## North and south stay on the locked east sheet so a face change cannot
+## load the older costume. West is the mirror, checked separately.
+func _assert_facing_holds_east_sheet(class_id: String) -> void:
+	var east := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
+	for face in ["n", "s"]:
+		var held := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, face))
+		eq(held == east, true, "%s walk_%s is the east sheet" % [class_id, face])
+		var png := FileAccess.get_file_as_bytes(StripLibrary.export_png_path(class_id, "walk", face))
+		eq(png == east, true, "%s walk_%s png matches the east bytes" % [class_id, face])
+
+
+func _assert_west_is_east_mirror(class_id: String) -> void:
+	var east_img := Image.new()
+	var west_img := Image.new()
+	var east_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
+	var west_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "w"))
+	eq(east_img.load_png_from_buffer(east_bytes), OK, "%s east walk bytes load" % class_id)
+	eq(west_img.load_png_from_buffer(west_bytes), OK, "%s west walk bytes load" % class_id)
+	eq(east_img.get_width(), 864, "%s east walk is six cells" % class_id)
+	eq(west_img.get_width(), 864, "%s west walk is six cells" % class_id)
+	for i in 6:
+		var east := east_img.get_region(Rect2i(i * 144, 0, 144, 160))
+		var west := west_img.get_region(Rect2i(i * 144, 0, 144, 160))
+		east.flip_x()
+		eq(west.get_data() == east.get_data(), true, "%s west cell %d is the baked east mirror" % [class_id, i])
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
