@@ -820,12 +820,14 @@ func _test_death_cause() -> void:
 		"ironjaw_pos": Vector2i(6, 6),
 	})
 	_live_unit(0)["hp"] = 4
+	_live_unit(0)["burn_stacks"] = 2
 	_live_unit(0)["burn_remaining"] = 1
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var burned: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var burn_dead := _event_of(burned.get("events", []), "dead")
 	eq(str(burn_dead.get("cause", "")), "burn", "lethal Burn tick cause is burn")
-	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -4, "lethal Burn tick is still 4 HP")
+	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -4, "lethal stack 2 tick is 4 HP")
+	eq(int(_event_of(burned.get("events", []), "burn").get("tick_stacks", 0)), 2, "lethal tick uses stack 2")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "Burn tick still reduces HP to 0")
 	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "Burn tick still marks the victim dead")
 	eq(int(_sim.snapshot()["winner_seat"]), 1, "Ironjaw still wins a lethal Burn")
@@ -860,6 +862,7 @@ func _test_death_cause() -> void:
 		"fixture": true,
 	})
 	_live_unit(0)["hp"] = 4
+	_live_unit(0)["burn_stacks"] = 2
 	_live_unit(0)["burn_remaining"] = 1
 	_host.submit_for_seat({"type": "end_turn"}, 0)
 	var host_burn: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
@@ -1016,19 +1019,23 @@ func _test_cleanse_cc_removed() -> void:
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 4, "Cleanse of Stun still spends 2 AP")
 
 	_reset_mender()
-	_add_same_seat_ally(1, true, 2)
+	_add_same_seat_ally(1, true, 4, 2)
 	var both: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(2, 1), "seat": 0})
-	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")), ["stun"], "Stun flags collapse to one id")
+	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")), ["stun", "burn"], "Cleanse lists Stun and Burn")
 	var burned := _unit_at(_sim.snapshot(), Vector2i(2, 1))
-	eq(int(burned.get("burn_remaining", -1)), 2, "Cleanse does not clear Burn")
+	eq(int(burned.get("burn_remaining", -1)), 0, "Cleanse clears Burn duration")
+	eq(int(burned.get("burn_stacks", -1)), 0, "Cleanse clears Burn stacks")
 	eq(int(burned.get("stun_remaining", -1)), 0, "Cleanse still clears Stun beside Burn")
-	eq(_string_list(_event_of(both.get("events", []), "hit").get("cc_removed")).has("burn"), false, "Burn is not reported as removed")
 
 	_reset_mender()
-	_live_unit(0)["burn_remaining"] = 2
+	_live_unit(0)["burn_remaining"] = 4
+	_live_unit(0)["burn_stacks"] = 1
+	_live_unit(0)["slow_remaining"] = 1
 	var burn_only: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
-	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), [], "Burn alone leaves cc_removed empty")
-	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 2, "Burn-only Cleanse still leaves Burn")
+	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), ["burn"], "Burn alone is reported as removed")
+	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 0, "Burn-only Cleanse clears duration")
+	eq(int(_sim.snapshot()["units"][0]["burn_stacks"]), 0, "Burn-only Cleanse clears stacks")
+	eq(int(_sim.snapshot()["units"][0]["slow_remaining"]), 1, "Cleanse does not clear Slow")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1240,11 +1247,12 @@ func _reset_mender() -> void:
 	})
 
 
-func _add_same_seat_ally(stun_remaining: int, stunned: bool, burn_remaining: int) -> void:
+func _add_same_seat_ally(stun_remaining: int, stunned: bool, burn_remaining: int, burn_stacks: int = 0) -> void:
 	var ally: Dictionary = _sim._make_unit(0, "kestrel", "Ally", "air", Vector2i(2, 1), "W", true)
 	ally["stun_remaining"] = stun_remaining
 	ally["stunned"] = stunned
 	ally["burn_remaining"] = burn_remaining
+	ally["burn_stacks"] = burn_stacks
 	_sim._units.append(ally)
 
 

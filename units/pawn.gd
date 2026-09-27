@@ -66,6 +66,7 @@ var _target_pulse: float = 0.0
 var stunned: bool = false
 var burning: bool = false
 var burn_remaining: int = 0
+var burn_stacks: int = 0
 var debug_draw_tokens: bool = false
 var _hit_flash: bool = false
 var _flashing: bool = false
@@ -239,8 +240,8 @@ class StatusChrome extends Node2D:
 			host._paint_status(self)
 
 
-## `events` supply Burn only when the unit dict has no `burn_remaining`.
-## This pawn does not tick Burn; the next host snapshot replaces the number.
+## `events` supply Burn only when the unit dict has no `burn_remaining` / `burn_stacks`.
+## This pawn does not tick Burn or add stacks; the next host snapshot replaces both.
 func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> void:
 	grid_position = unit["pos"]
 	unit_name = str(unit["name"])
@@ -256,7 +257,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	_hit_flash = false
 	stunned = int(unit.get("stun_remaining", 0)) > 0 or bool(unit.get("stunned", false))
 	burn_remaining = CombatHUD.unit_burn_remaining(unit, events)
-	burning = burn_remaining > 0
+	burn_stacks = CombatHUD.unit_burn_stacks(unit, events)
+	burning = burn_remaining > 0 and burn_stacks > 0
 	if alive and (_held_death_strip or _body_kind == "death"):
 		_held_death_strip = false
 		_plan_died = false
@@ -267,7 +269,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 
 
 func burn_badge_label() -> String:
-	return CombatHUD.burn_badge_text(burn_remaining)
+	return CombatHUD.burn_badge_text(burn_remaining, burn_stacks)
 
 
 func set_facing(dir: String) -> void:
