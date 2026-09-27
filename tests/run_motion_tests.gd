@@ -607,10 +607,10 @@ func _test_pawn_samples_then_plants() -> void:
 	pawn.apply_snapshot(_unit("kestrel", "E", 0), 0)
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	eq(sprite.position, Vector2.ZERO, "snapshot leaves the sprite on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "snapshot leaves the shipped scale")
+	eq(sprite.scale, Pawn.sprite_scale_for("kestrel"), "snapshot leaves the roster read scale")
 	pawn._sample_hop(0.5)
 	eq(sprite.position.y, -MOTION.hop_crest_px("kestrel"), "pawn applies the class hop on the sprite")
-	eq(sprite.scale, Vector2(0.5, 0.5), "step bounce does not squash or stretch")
+	eq(sprite.scale, Pawn.sprite_scale_for("kestrel"), "step bounce does not squash or stretch")
 	var chrome := pawn.get_node("Chrome") as Node2D
 	eq(chrome.get_parent(), pawn, "name chrome stays on the pawn during a bounce")
 	eq(chrome.position, Vector2.ZERO, "the hop does not lift name or aim chrome")
@@ -635,7 +635,7 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.scale.y < 0.5, true, "death squashes the sprite")
 	pawn.plant_sprite()
 	eq(sprite.position, Vector2.ZERO, "plant puts feet back on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "plant restores the shipped scale")
+	eq(sprite.scale, Pawn.sprite_scale_for("kestrel"), "plant restores the roster read scale")
 	eq(sprite.rotation, 0.0, "plant clears the tilt")
 	eq(sprite.offset, Vector2(0, -72), "foot offset stays shipped")
 	pawn._sample_idle(0.0)
@@ -689,7 +689,7 @@ func _test_live_tree() -> void:
 	pawn.settle_motion()
 	eq(pawn.motion_playing(), false, "settle releases the sprite")
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "settle plants the feet")
-	eq((pawn.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "settle restores scale")
+	eq((pawn.get_node("Sprite") as Sprite2D).scale, Pawn.sprite_scale_for("mender"), "settle restores the roster read scale")
 	eq((pawn.get_node("Sprite") as Sprite2D).rotation, 0.0, "settle clears rotation")
 	await process_frame
 	# Mender now has a walk sheet. This hop is the no-strip fallback.
@@ -698,7 +698,7 @@ func _test_live_tree() -> void:
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	var hopped: float = (pawn.get_node("Sprite") as Sprite2D).position.y
 	eq(hopped < -1.0 and hopped > -MOTION.WALK_BOUNCE_PX - 0.5, true, "a live step bounce stays inside 2-4px")
-	eq((pawn.get_node("Sprite") as Sprite2D).scale != Vector2(0.5, 0.5), true, "a class without a walk strip squashes or stretches")
+	eq((pawn.get_node("Sprite") as Sprite2D).scale != Pawn.sprite_scale_for("mender"), true, "a class without a walk strip squashes or stretches")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.7).timeout
 	eq((pawn.get_node("Sprite") as Sprite2D).position, Vector2.ZERO, "a live step bounce returns to the tile center")
 	eq(pawn.motion_playing(), false, "a finished hop releases the sprite")
@@ -953,8 +953,15 @@ func _test_hit_flinch_playback() -> void:
 				eq(strip.flip_h, false, "%s %s flinch is not mirrored" % [cls, face])
 			eq(dur > 0.0 and dur <= MOTION.ACTION_LOCK_MAX, true, "%s %s hit stays inside the lock" % [cls, face])
 			pawn.settle_motion()
-			var rested := _visible_strip(pawn)
-			truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
+			var clean := Pawn.idle_plant_texture(cls, face)
+			if clean != null:
+				var body := pawn.get_node("Sprite") as Sprite2D
+				eq(body.visible, true, "%s %s returns to the soft plant" % [cls, face])
+				eq(body.texture, clean, "%s %s rest texture is the soft plant" % [cls, face])
+				eq(_visible_strip(pawn), null, "%s %s rest does not hold the flinch" % [cls, face])
+			else:
+				var rested := _visible_strip(pawn)
+				truthy(rested != null and String(rested.animation) == walk_anim, "%s %s returns to the walk plant" % [cls, face])
 			pawn.free()
 			await process_frame
 
@@ -1128,7 +1135,7 @@ func _test_strip_fallback() -> void:
 	eq(walk.sprite_frames.get_animation_loop("walk_se"), true, "the walk clip loops")
 	eq(sprite.visible, false, "the static sprite steps aside while the strip plays")
 	eq(_walk_bounce_ok(sprite.position.y), true, "a walk strip hops inside 2-4px")
-	eq(sprite.scale, Vector2(0.5, 0.5), "a walk strip does not squash or stretch")
+	eq(sprite.scale, Pawn.sprite_scale_for("mender"), "a walk strip does not squash or stretch")
 	eq((pawn.get_node("Chrome") as Node2D).position, Vector2.ZERO, "the hop does not lift name chrome")
 	await create_timer(MOTION.WALK_STEP_SEC * 0.5).timeout
 	eq(sprite.position.y < -1.5, true, "the path bounce crests a few pixels")
@@ -1162,7 +1169,7 @@ func _test_strip_fallback() -> void:
 	await process_frame
 	eq(walk.visible, true, "a lone step still plays the walk strip")
 	eq(_walk_bounce_ok(sprite.position.y), true, "a lone walk step hops inside 2-4px")
-	eq(sprite.scale, Vector2(0.5, 0.5), "a lone walk step does not stretch")
+	eq(sprite.scale, Pawn.sprite_scale_for("mender"), "a lone walk step does not stretch")
 	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
 	eq(sprite.visible, false, "a lone walk step returns to the walk plant")
 	eq(walk.visible, true, "a lone walk step keeps the walk sheet")
@@ -1175,7 +1182,7 @@ func _test_strip_fallback() -> void:
 	eq(sprite.visible, true, "a facing with no frames keeps the static sprite")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq(_step_bob_ok(sprite.position.y), true, "missing walk strip still bobs, not a 36px hop")
-	eq(sprite.scale != Vector2(0.5, 0.5), true, "missing walk strip squashes or stretches for weight")
+	eq(sprite.scale != Pawn.sprite_scale_for("mender"), true, "missing walk strip squashes or stretches for weight")
 	pawn.settle_motion()
 	walk.queue_free()
 	await process_frame
@@ -1704,6 +1711,24 @@ func _test_walk_idle_matches_strip() -> void:
 		await process_frame
 		var sprite := pawn.get_node("Sprite") as Sprite2D
 		var foreign := Pawn.sprite_texture(class_id, "E")
+		var clean := Pawn.idle_plant_texture(class_id, "E")
+		if clean != null:
+			eq(sprite.visible, true, "%s idle shows the soft plant" % class_id)
+			eq(sprite.texture, clean, "%s idle texture is the soft plant" % class_id)
+			eq(_visible_strip(pawn), null, "%s idle does not leave the walk strip up" % class_id)
+			pawn.arm_driven_walk()
+			eq(sprite.visible, false, "%s walk start hides the soft plant" % class_id)
+			var stride := _visible_strip(pawn)
+			truthy(stride != null, "%s walk start plays the v5 strip" % class_id)
+			if stride != null:
+				eq(String(stride.animation), "walk_e", "%s walk start stays on walk_e" % class_id)
+				eq(stride.sprite_frames.get_frame_texture("walk_e", 0) != clean, true, "%s stride is not the idle still" % class_id)
+			pawn.end_path_walk()
+			eq(sprite.visible, true, "%s stop returns to the soft plant" % class_id)
+			eq(sprite.texture, clean, "%s stop plant is the soft still" % class_id)
+			eq(_visible_strip(pawn), null, "%s stop does not hold walk frame 0" % class_id)
+			pawn.free()
+			continue
 		var idle := _visible_strip(pawn)
 		truthy(idle != null, "%s idle shows the walk sheet" % class_id)
 		if idle == null:
@@ -1785,7 +1810,7 @@ func _test_batch1_disk_strips() -> void:
 	eq(_walk_bounce_ok(sprite.position.y), true, "disk walk hops inside 2-4px")
 	eq(_walk_bounce_ok(strip.position.y), true, "the disk strip root takes the step hop")
 	eq(strip.offset, Vector2(0, -72), "disk strip uses the foot pivot")
-	eq(strip.scale, Vector2(0.5, 0.5), "disk strip uses the shipped scale")
+	eq(strip.scale, Pawn.sprite_scale_for("kestrel"), "disk strip uses the roster read scale")
 	eq(strip.flip_h, false, "disk strip is not mirrored at runtime")
 	strip.frame = 4
 	pawn.finish_step()
@@ -1963,7 +1988,7 @@ func _test_batch1_disk_strips() -> void:
 		eq(String(gloam_strip.animation), "walk_e", "gloam east plays walk_e")
 		eq(gloam_strip.sprite_frames.get_frame_count("walk_e"), 6, "gloam walk is 6 frames")
 		eq(gloam_strip.flip_h, false, "gloam walk is not mirrored at runtime")
-	eq((other.get_node("Sprite") as Sprite2D).scale, Vector2(0.5, 0.5), "gloam walk does not stretch")
+	eq((other.get_node("Sprite") as Sprite2D).scale, Pawn.sprite_scale_for("gloam"), "gloam walk does not stretch")
 	other.end_path_walk()
 	var cut := other.play_view_plan({"attack": true, "aim": Vector2(32, 16)})
 	await process_frame
@@ -2053,7 +2078,7 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	eq(sprite.visible, false, "failed playback does not reveal the static still")
 	await create_timer(Pawn.WALK_HOP_SEC * 0.45).timeout
 	eq(_step_bob_ok(strip.position.y), true, "failed strip playback bobs, not a 36px hop")
-	eq(strip.scale, Vector2(0.5, 0.5), "failed strip playback does not stretch")
+	eq(strip.scale, Pawn.sprite_scale_for("mender"), "failed strip playback does not stretch")
 	pawn.settle_motion()
 	pawn.free()
 
@@ -2147,7 +2172,7 @@ func _test_class_plant_anchor() -> void:
 		eq(pawn.scale, Vector2.ONE, "%s plant squash leaves the collider scale alone" % class_id)
 		if class_id == "ironjaw":
 			eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw art-fill stays at scale 1.0")
-			eq(is_equal_approx(Pawn.sprite_scale_for("ironjaw").y, 0.5), true, "ironjaw body scale stays the shared 0.5")
+			eq(is_equal_approx(Pawn.sprite_scale_for("ironjaw").y, Pawn.sprite_scale_for("bastion").y), true, "ironjaw and bastion share one body scale")
 		pawn.hold_stop_plant()
 		var stopped := _visible_strip(pawn)
 		truthy(stopped != null, "%s stop keeps the walk sheet" % class_id)

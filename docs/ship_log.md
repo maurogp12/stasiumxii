@@ -16,6 +16,16 @@ Soft Lock fuego + lava. Presentation only. Locked Slagcrown geometry, tags, walk
 
 `slag_prop_floor_seal.png` is a small ash mark from the ground punch, not a full diamond. Flat tiles are hard 64×32 diamonds so the seam stays readable. Elevation keeps that cap and hangs the wall; the high wall is taller, and the stair meets the cap. Blocks cut off by the sheet edge are not used. The wide strip on the prop sheet is not sliced. `board_mood_punch.png` and `stasium-ref/maps/lava/luca_preview_slagcrown.png` are reference plates and are not sliced.
 
+## 2026-09-27 — Combat pawn read (Bastion, Ironjaw)
+
+Presentation only. No APK. Locked kit numbers and map geometry are unchanged. Wakfu-ship-v5 walks stay the motion sheets. `*_gen.png` is still not loaded.
+
+The cyan jagged fringe is not in the v5 PNGs (no cyan pixels on E/S/N/W). `figure_read.gdshader` was sampling two and three texels out and painting a rim from neighbor alpha. Over Windmere ice that rim reads as a jagged cyan halo. Visible modulate is white, so Invisible was not tinting a shown body, and idle was not a stuck hit sheet.
+
+Ironjaw's locked combat scale stays **1.0**, the same body scale as Kestrel and Gloam (`SPRITE_SCALE` 0.5). An open 1.25, and a one-class 1.20, do not ship.
+
+Bastion and Ironjaw deploy/idle use the soft plants in `art/export_2x/characters/<class>/idle/<class>_idle_plant_<face>_v1.png` (144×160). Alpha under 20 is gone. The 20–254 band stays, so the silhouette is not a binary cut. The wakfu-ship-v5 walk strip still plays the stride. Kestrel, Gloam, and Mender still rest on walk frame 0. `_broken_harden_pass/` is not loaded.
+
 ## 2026-09-26 — Combat VFX punch v3
 
 Presentation only. No APK. Post-0.1.26. Walk sheets on this tip are wakfu-ship-v5 (#177). This pack does not replace them.
