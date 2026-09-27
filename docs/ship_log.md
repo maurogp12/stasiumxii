@@ -2,6 +2,14 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Walk draws the facing cell, not a sliding idle
+
+Presentation only. No APK. `version/name` and `version/code` stay `0.1.27-mobile` / `28`. Soft Lock is not stamped. Locked kit numbers, map geometry, and Ambush are unchanged.
+
+Mauro's phone clip is a confirmed Walk that linear-slides one idle plate. Bastion stays shield-forward. Ironjaw stays on the pose he started in. Facing does not follow the step, and the cycle does not play. The board was already sampling `walk_<facing>` and the hop. On device a paused `AnimatedSprite2D` keeps the first cell while the pawn node eases, so the picture is the plant.
+
+The drawn body is now `WalkDraw`: the sampled cell of `walk_<facing>`, including the plant. A facing change swaps that texture. The hop is the same crest on that sprite (Bastion 2.5px, Ironjaw the shared 3px). The strip stays the sampler and is not the picture. Idle, the face pad, and the stop still share frame 0 of that facing. North and south stay their own sheets. East stays v6d / v6g. West stays the baked mirror.
+
 ## 2026-09-27 — Bastion and Ironjaw face the step
 
 Presentation only. No APK. `version/name` and `version/code` stay `0.1.27-mobile` / `28`. Soft Lock is not stamped. Locked kit numbers, map geometry, and Ambush are unchanged.

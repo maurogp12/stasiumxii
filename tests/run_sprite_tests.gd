@@ -393,6 +393,8 @@ func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 	for child in pawn.get_children():
 		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
 			return child as AnimatedSprite2D
+	if pawn.walk_cell_is_drawn():
+		return pawn.walk_sampler()
 	return null
 
 

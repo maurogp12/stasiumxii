@@ -26,6 +26,7 @@ func _finish_live() -> void:
 	await _test_strip_fallback()
 	await _test_failed_strip_falls_back_to_hop()
 	await _test_driven_walk_cycle()
+	await _test_walk_draw_follows_step()
 	await _test_class_plant_anchor()
 	await _test_walk_idle_matches_strip()
 	await _test_live_walk_keeps_sheet()
@@ -1157,7 +1158,7 @@ func _test_strip_fallback() -> void:
 	eq(_walk_bounce_ok(sprite.position.y), true, "the snapped walk stays a short hop")
 	pawn.end_path_walk()
 	eq(sprite.visible, false, "path end keeps the walk identity")
-	eq(walk.visible, true, "path end plants walk frame 0")
+	eq(walk.visible or pawn.walk_cell_is_drawn(), true, "path end plants walk frame 0")
 	eq(walk.frame, 0, "path end is the plant frame, not a passing frame")
 	eq(sprite.texture != null, true, "the facing texture is still on the sprite")
 	eq(sprite.position, Vector2.ZERO, "path end plants the feet")
@@ -1169,7 +1170,7 @@ func _test_strip_fallback() -> void:
 	eq(sprite.scale, Pawn.sprite_scale_for("mender"), "a lone walk step does not stretch")
 	await create_timer(Pawn.WALK_HOP_SEC + 0.05).timeout
 	eq(sprite.visible, false, "a lone walk step returns to the walk plant")
-	eq(walk.visible, true, "a lone walk step keeps the walk sheet")
+	eq(walk.visible or pawn.walk_cell_is_drawn(), true, "a lone walk step keeps the walk sheet")
 	eq(walk.frame, 0, "a lone walk step plants frame 0")
 	eq(sprite.position, Vector2.ZERO, "a lone walk step plants the feet")
 	pawn.set_facing("W")
@@ -1498,6 +1499,62 @@ func _test_strip_library_missing_and_slice() -> void:
 	pawn.free()
 
 
+## The phone clip slid one idle cell. WalkDraw is the picture: facing and the
+## stride change that texture, and the hop sits on that same sprite.
+func _test_walk_draw_follows_step() -> void:
+	for class_id in ["bastion", "ironjaw"]:
+		var pawn := Pawn.new()
+		get_root().add_child(pawn)
+		await process_frame
+		pawn.apply_snapshot(_unit(class_id, "S", 0), 0)
+		await process_frame
+		var portrait := pawn.get_node("Sprite") as Sprite2D
+		eq(portrait.visible, false, "%s idle hides the static turnaround" % class_id)
+		eq(pawn.walk_cell_is_drawn(), true, "%s idle draws the walk cell" % class_id)
+		var bank := StripLibrary.frames_for(class_id)
+		var south_plant := bank.get_frame_texture("walk_s", 0)
+		eq(pawn.drawn_walk_texture(), south_plant, "%s idle is the south plant" % class_id)
+		eq(pawn.begin_segment_walk("E"), true, "%s east segment draws walk_e before the foot moves" % class_id)
+		eq(portrait.visible, false, "%s east segment keeps the static turnaround hidden" % class_id)
+		var count := bank.get_frame_count("walk_e")
+		pawn.sample_driven_gait(0.5)
+		var mid := MOTION.walk_cycle_frame(0.5, count, 0, pawn.walk_contact_frame())
+		var east_mid := bank.get_frame_texture("walk_e", mid)
+		eq(mid != 0, true, "%s mid-stride is not the contact frame" % class_id)
+		eq(pawn.drawn_walk_texture(), east_mid, "%s mid-stride draws the east walk cell" % class_id)
+		eq(pawn.drawn_walk_texture() == south_plant, false, "%s does not keep the south idle while stepping east" % class_id)
+		eq(pawn.drawn_walk_texture() == portrait.texture, false, "%s stride is not the static portrait" % class_id)
+		var draw := pawn.get_node("WalkDraw") as Sprite2D
+		var crest := MOTION.hop_offset(0.5, MOTION.hop_crest_px(class_id))
+		eq(draw.position, crest, "%s hop rides the drawn cell" % class_id)
+		eq(crest.y < -1.0, true, "%s hop leaves the ground" % class_id)
+		var sampler := pawn.walk_sampler()
+		eq(sampler.visible, false, "%s paused strip is not the picture" % class_id)
+		eq(String(sampler.animation), "walk_e", "%s sampler faces east" % class_id)
+		eq(sampler.frame, mid, "%s sampler frame matches the drawn cell" % class_id)
+		pawn.begin_segment_walk("N")
+		pawn.sample_driven_gait(0.5)
+		var north_count := bank.get_frame_count("walk_n")
+		var north_mid := MOTION.walk_cycle_frame(0.5, north_count, 0, pawn.walk_contact_frame())
+		eq(pawn.facing, "N", "%s facing letter follows the segment" % class_id)
+		eq(pawn.drawn_walk_texture(), bank.get_frame_texture("walk_n", north_mid), "%s north segment draws walk_n" % class_id)
+		eq(pawn.drawn_walk_texture() == east_mid, false, "%s does not keep the east cell on a north step" % class_id)
+		var kept := pawn.drawn_walk_texture()
+		pawn.apply_snapshot(_unit(class_id, "W", 0), 0)
+		pawn.hold_walk_facing("N")
+		eq(pawn.facing, "N", "%s a refresh keeps the segment facing" % class_id)
+		eq(pawn.drawn_walk_texture(), kept, "%s a refresh does not freeze a different plate" % class_id)
+		eq(portrait.visible, false, "%s refresh does not uncover the static portrait" % class_id)
+		pawn.sample_driven_gait(1.0)
+		eq(pawn.drawn_walk_texture(), bank.get_frame_texture("walk_n", 0), "%s plant draws the north contact" % class_id)
+		eq(draw.position, Vector2.ZERO, "%s plant puts the drawn cell on the foot" % class_id)
+		pawn.end_path_walk()
+		eq(pawn.walk_cell_is_drawn(), true, "%s stop stays on the walk cell" % class_id)
+		eq(pawn.drawn_walk_texture(), bank.get_frame_texture("walk_n", 0), "%s stop plants walk_n frame 0" % class_id)
+		eq(portrait.visible, false, "%s stop does not restore the static portrait" % class_id)
+		pawn.free()
+
+
 func _test_driven_walk_cycle() -> void:
 	var pawn := Pawn.new()
 	get_root().add_child(pawn)
@@ -1661,6 +1718,8 @@ func _test_live_walk_keeps_sheet() -> void:
 			var tex := shown.sprite_frames.get_frame_texture(shown.animation, shown.frame)
 			var portrait := Pawn.sprite_texture("kestrel", pawn.facing)
 			if tex == portrait:
+				foreign_during = true
+			if pawn.walk_cell_is_drawn() and pawn.drawn_walk_texture() != tex:
 				foreign_during = true
 			if pawn.facing == "E" and shown.frame != 0 and pawn.position.distance_to(origin) > 4.0:
 				saw_east_stride = true
@@ -2052,7 +2111,7 @@ func _test_failed_strip_falls_back_to_hop() -> void:
 	await process_frame
 	var sprite := pawn.get_node("Sprite") as Sprite2D
 	eq(strip.is_playing(), false, "the failed strip is not playing")
-	eq(strip.visible, true, "failed playback plants the walk sheet")
+	eq(pawn.walk_cell_is_drawn() or strip.visible, true, "failed playback plants the walk sheet")
 	eq(String(strip.animation), "walk_e", "failed playback stays on the facing walk strip")
 	eq(strip.frame, 0, "failed playback plants frame 0")
 	eq(sprite.visible, false, "failed playback does not reveal the static still")
@@ -2087,6 +2146,8 @@ func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
 	for child in pawn.get_children():
 		if child is AnimatedSprite2D and (child as AnimatedSprite2D).visible:
 			return child as AnimatedSprite2D
+	if pawn.walk_cell_is_drawn():
+		return pawn.walk_sampler()
 	return null
 
 

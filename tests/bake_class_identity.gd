@@ -76,12 +76,8 @@ func _pawn(host: Node2D, class_id: String, facing: String, foot: Vector2, walkin
 	if not walking:
 		return
 	pawn.arm_driven_walk()
-	var strip := _visible_strip(pawn)
-	if strip == null:
-		return
-	var count := strip.sprite_frames.get_frame_count(strip.animation)
-	strip.frame = mini(3, count - 1)
-	strip.frame_progress = 0.0
+	pawn.sync_walk_plant()
+	pawn.sample_driven_gait(0.45)
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:

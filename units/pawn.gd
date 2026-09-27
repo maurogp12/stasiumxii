@@ -5,6 +5,8 @@ class_name Pawn
 ## centered, offset (0, -72), scale 0.5, then the shared roster read (feet
 ## pivot, not the pick capsule). When a walk sheet exists, the standing
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
+## That cell is drawn on WalkDraw. A paused strip keeps one cell on device
+## while the pawn eases, which is the idle slide.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
 ## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
@@ -104,6 +106,10 @@ var _driven_step: int = 0
 var _driven_open: bool = false
 ## The board owns the pose. A free clock would slide the contact frame.
 var _driven_walk: bool = false
+## Walk cells draw here. The strip stays the sampler and is not the phone picture.
+var _walk_draw: Sprite2D
+var _walk_draw_stamp: bool = false
+var _walk_draw_cache: Dictionary = {}
 var _strip_play_scale: float = 1.0
 var _impact_frozen: bool = false
 var _body_kind: String = ""
@@ -473,13 +479,15 @@ func begin_segment_walk(dir: String) -> bool:
 
 
 ## True when the drawn body is walk_<facing> with a real cycle. The idle sprite
-## being visible is the slide.
+## being visible is the slide. WalkDraw is that body: the strip is only the sampler.
 func body_is_segment_walk(dir: String) -> bool:
 	if _sprite != null and is_instance_valid(_sprite) and _sprite.visible:
 		return false
+	var face := dir.strip_edges().to_lower()
+	if _walk_draw_matches(face):
+		return true
 	if _active_strip == null or not is_instance_valid(_active_strip) or not _active_strip.visible:
 		return false
-	var face := dir.strip_edges().to_lower()
 	var anim := str(_active_strip.animation)
 	if face == "" or anim != "walk_%s" % face:
 		return false
@@ -487,6 +495,155 @@ func body_is_segment_walk(dir: String) -> bool:
 	if frames == null or not frames.has_animation(_active_strip.animation):
 		return false
 	return frames.get_frame_count(_active_strip.animation) >= 2
+
+
+## The phone picture for a walk. Tests read the hidden sampler through this.
+func walk_cell_is_drawn() -> bool:
+	return _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw) and _walk_draw.visible
+
+
+func walk_sampler() -> AnimatedSprite2D:
+	if _active_strip != null and is_instance_valid(_active_strip):
+		return _active_strip
+	return null
+
+
+func drawn_walk_texture() -> Texture2D:
+	if walk_cell_is_drawn():
+		return _walk_draw.texture
+	return null
+
+
+func _walk_draw_matches(face: String) -> bool:
+	if not _walk_draw_stamp or face == "":
+		return false
+	if _walk_draw == null or not is_instance_valid(_walk_draw) or not _walk_draw.visible:
+		return false
+	if _walk_draw.texture == null:
+		return false
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip) or strip.sprite_frames == null:
+		return false
+	var anim := "walk_%s" % face
+	if str(strip.animation) != anim:
+		return false
+	var frames := strip.sprite_frames
+	if not frames.has_animation(anim) or frames.get_frame_count(anim) < 2:
+		return false
+	return true
+
+
+func _ensure_walk_draw() -> Sprite2D:
+	if _walk_draw != null and is_instance_valid(_walk_draw):
+		return _walk_draw
+	var existing := get_node_or_null("WalkDraw") as Sprite2D
+	if existing != null:
+		_walk_draw = existing
+		return existing
+	var node := Sprite2D.new()
+	node.name = "WalkDraw"
+	node.centered = true
+	node.offset = SPRITE_OFFSET
+	node.scale = _body_scale()
+	node.flip_h = false
+	node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	node.z_index = 1
+	node.z_as_relative = true
+	node.visible = false
+	node.material = _figure_material()
+	add_child(node)
+	_walk_draw = node
+	return node
+
+
+func _hide_walk_draw() -> void:
+	_walk_draw_stamp = false
+	if _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.visible = false
+
+
+## Copy the sampled cell onto WalkDraw. The strip stays paused and hidden so
+## a device that never refreshes AnimatedSprite2D.frame cannot keep the plant.
+func _publish_walk_cell() -> void:
+	var strip := _active_strip
+	if strip == null or not is_instance_valid(strip):
+		return
+	var frames := strip.sprite_frames
+	if frames == null or not frames.has_animation(strip.animation):
+		return
+	var count := frames.get_frame_count(strip.animation)
+	if count < 1:
+		return
+	var index := clampi(strip.frame, 0, count - 1)
+	var tex := _cell_texture_for_draw(frames, strip.animation, index)
+	if tex == null:
+		return
+	var draw := _ensure_walk_draw()
+	draw.texture = tex
+	draw.visible = true
+	draw.flip_h = false
+	draw.centered = true
+	draw.offset = SPRITE_OFFSET
+	draw.position = strip.position
+	draw.scale = strip.scale
+	draw.rotation = strip.rotation
+	if _sprite != null and is_instance_valid(_sprite):
+		draw.modulate = _sprite.modulate
+		_sprite.visible = false
+	else:
+		draw.modulate = rest_modulate()
+	strip.visible = false
+	strip.speed_scale = 0.0
+	strip.modulate = draw.modulate
+	_walk_draw_stamp = true
+	_apply_figure_read()
+
+
+func _cell_texture_for_draw(frames: SpriteFrames, anim: StringName, index: int) -> Texture2D:
+	var tex := frames.get_frame_texture(anim, index)
+	if tex is ImageTexture:
+		return tex
+	var key := "%s:%s" % [class_id, str(anim)]
+	if not _walk_draw_cache.has(key):
+		var built: Array[Texture2D] = []
+		var face := key.trim_prefix("walk_")
+		var packed := STRIP_LIBRARY.image_from_walk_bytes(class_id, face)
+		if packed != null:
+			built = STRIP_LIBRARY.textures_from_image(packed, frames.get_frame_count(anim))
+		_walk_draw_cache[key] = built
+	var cached: Array = _walk_draw_cache[key]
+	if index >= 0 and index < cached.size() and cached[index] != null:
+		return cached[index]
+	if tex == null:
+		return null
+	var image := tex.get_image()
+	if image != null and not image.is_empty():
+		if tex is AtlasTexture:
+			var atlas := tex as AtlasTexture
+			var region := Rect2i(
+				int(atlas.region.position.x),
+				int(atlas.region.position.y),
+				int(atlas.region.size.x),
+				int(atlas.region.size.y)
+			)
+			if image.get_width() > region.size.x or image.get_height() > region.size.y:
+				var cut := image.get_region(region)
+				if cut != null and not cut.is_empty():
+					return ImageTexture.create_from_image(cut)
+		return ImageTexture.create_from_image(image)
+	return tex
+
+
+func _sync_walk_draw_xform() -> void:
+	if not _walk_draw_stamp or _walk_draw == null or not is_instance_valid(_walk_draw):
+		return
+	if _sprite == null or not is_instance_valid(_sprite):
+		return
+	_walk_draw.position = _sprite.position
+	_walk_draw.scale = _sprite.scale
+	_walk_draw.rotation = _sprite.rotation
+	if not _flashing:
+		_walk_draw.modulate = _sprite.modulate
 
 
 ## Board-driven steps own the gait. Drop the free-running bounce so the plant
@@ -520,7 +677,9 @@ func sync_walk_plant() -> void:
 	_ensure_motion_strips()
 	_play_walk_flat()
 	var strip := _active_strip
-	if strip == null or not is_instance_valid(strip) or not strip.visible:
+	if strip == null or not is_instance_valid(strip):
+		return
+	if not strip.visible and not _walk_draw_stamp:
 		return
 	if _driven_open:
 		_driven_step += 1
@@ -530,6 +689,8 @@ func sync_walk_plant() -> void:
 	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
 		strip.frame = _sampled_walk_frame(0.0, frames.get_frame_count(strip.animation))
 		strip.frame_progress = 0.0
+	if _driven_walk or _walk_draw_stamp:
+		_publish_walk_cell()
 
 
 ## One tile of the path. t is 0 at the departure contact and 1 on the plant.
@@ -570,7 +731,7 @@ func _apply_driven_cycle(t: float) -> void:
 		var next: AnimatedSprite2D = choice["node"]
 		var anim := StringName(str(choice["anim"]))
 		if next != null and is_instance_valid(next):
-			if next.animation != anim or not next.visible:
+			if next.animation != anim or (not next.visible and not _walk_draw_stamp):
 				if _sprite != null and is_instance_valid(_sprite):
 					_sprite.visible = false
 				next.visible = true
@@ -579,8 +740,13 @@ func _apply_driven_cycle(t: float) -> void:
 				_strip_holds_body = true
 				_walk_looping = true
 				next.speed_scale = 0.0
+			elif _active_strip != next:
+				_active_strip = next
+				_strip_holds_body = true
 	var strip := _active_strip
-	if strip == null or not is_instance_valid(strip) or not strip.visible:
+	if strip == null or not is_instance_valid(strip):
+		return
+	if not strip.visible and not _walk_draw_stamp:
 		return
 	var frames := strip.sprite_frames
 	if frames == null or not frames.has_animation(strip.animation):
@@ -594,6 +760,7 @@ func _apply_driven_cycle(t: float) -> void:
 	strip.speed_scale = 0.0
 	strip.frame = _sampled_walk_frame(t, count)
 	strip.frame_progress = 0.0
+	_publish_walk_cell()
 
 
 ## Swap the walk clip when facing snaps. Does not restart the path bounce.
@@ -620,7 +787,7 @@ func bridge_straight_tile() -> void:
 	_path_walk = true
 	_driven_walk = true
 	var strip := _active_strip
-	if strip == null or not is_instance_valid(strip) or not strip.visible:
+	if strip == null or not is_instance_valid(strip) or (not strip.visible and not _walk_draw_stamp):
 		sync_walk_plant()
 		return
 	if _sprite != null and is_instance_valid(_sprite):
@@ -632,6 +799,7 @@ func bridge_straight_tile() -> void:
 			strip.frame = _sampled_walk_frame(1.0, count)
 			strip.frame_progress = 0.0
 	strip.speed_scale = 0.0
+	_publish_walk_cell()
 	_place_body(Vector2.ZERO)
 	_ride_chrome(Vector2.ZERO)
 	_apply_sprite_mul(Vector2.ONE)
@@ -647,10 +815,11 @@ func hold_stop_plant() -> void:
 	_ride_chrome(Vector2.ZERO)
 	_apply_sprite_mul(Vector2.ONE)
 	var strip := _active_strip
-	if strip != null and is_instance_valid(strip) and strip.visible:
+	if strip != null and is_instance_valid(strip) and (strip.visible or _walk_draw_stamp):
 		if _sprite != null and is_instance_valid(_sprite):
 			_sprite.visible = false
 		strip.speed_scale = 0.0
+		_publish_walk_cell()
 
 
 ## Path end or interrupt. Plant the facing walk and let idle resume.
@@ -883,6 +1052,9 @@ func _sample_ambush_collapse(t: float, gen: int) -> void:
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.scale = _sprite.scale
 		_active_strip.modulate = color
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.scale = _sprite.scale
+		_walk_draw.modulate = color
 
 
 func _sample_ambush_whiff(t: float) -> void:
@@ -893,6 +1065,9 @@ func _sample_ambush_whiff(t: float) -> void:
 	var color := rest_modulate()
 	color.a = lerpf(color.a, color.a * 0.4, k)
 	_sprite.modulate = color
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.scale = _sprite.scale
+		_walk_draw.modulate = color
 
 
 ## Strike and cast strips face the prey. A tie between two letters keeps the stand,
@@ -998,6 +1173,8 @@ func flash_ward() -> void:
 
 func flash_canvas() -> CanvasItem:
 	_ensure_visuals()
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw) and _walk_draw.visible:
+		return _walk_draw
 	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
 		return _active_strip
 	if _sprite != null:
@@ -1047,6 +1224,8 @@ func _apply_rest_color() -> void:
 		_sprite.modulate = color
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.modulate = color
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.modulate = color
 
 
 func note_flash_settled() -> void:
@@ -1158,6 +1337,8 @@ func _apply_flash(color: Color) -> void:
 		_sprite.modulate = color
 	if _active_strip != null and is_instance_valid(_active_strip) and _strip_holds_body:
 		_active_strip.modulate = color
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.modulate = color
 	_request_paint()
 
 
@@ -1246,6 +1427,8 @@ func _apply_figure_read() -> void:
 	for child in get_children():
 		if child is AnimatedSprite2D and (child as CanvasItem).material is ShaderMaterial:
 			_write_figure_read((child as CanvasItem).material as ShaderMaterial)
+	if _walk_draw != null and is_instance_valid(_walk_draw) and _walk_draw.material is ShaderMaterial:
+		_write_figure_read(_walk_draw.material as ShaderMaterial)
 
 
 func _adopt_static_sprite(sprite: Sprite2D) -> void:
@@ -1286,6 +1469,7 @@ func _sync_sprite() -> void:
 	_sprite.flip_h = false
 	if stasis_sprite != "":
 		_walk_idle_plant = false
+		_hide_walk_draw()
 		_sprite.texture = _stasis_texture(stasis_sprite)
 		if not _flashing:
 			_sprite.modulate = rest_modulate()
@@ -1300,6 +1484,15 @@ func _sync_sprite() -> void:
 		_sprite.modulate = rest_modulate()
 	# A driven step owns the frame. Replanting idle here freezes the cycle on
 	# frame 0 and the pawn skates the static plant across the diamond.
+	if _driven_walk and _walk_draw_stamp and _active_strip != null and is_instance_valid(_active_strip):
+		_sprite.visible = false
+		_active_strip.visible = false
+		if not _flashing and _walk_draw != null and is_instance_valid(_walk_draw):
+			_walk_draw.modulate = _sprite.modulate
+			_active_strip.modulate = _sprite.modulate
+		_apply_figure_read()
+		_request_paint()
+		return
 	if _driven_walk and _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
 		_sprite.visible = false
 		if not _flashing:
@@ -1307,7 +1500,8 @@ func _sync_sprite() -> void:
 		_apply_figure_read()
 		_request_paint()
 		return
-	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip):
+	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
+		_hide_walk_draw()
 		_sprite.visible = false
 		if not _flashing:
 			_active_strip.modulate = _sprite.modulate
@@ -1315,6 +1509,7 @@ func _sync_sprite() -> void:
 		pass
 	else:
 		_walk_idle_plant = false
+		_hide_walk_draw()
 		_active_strip = null
 		_sprite.visible = true
 		_hide_body_strips()
@@ -1389,11 +1584,15 @@ func _apply_sprite_mul(mul: Vector2) -> void:
 		_sprite.scale = scaled
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.scale = scaled
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.scale = scaled
 
 
 func _hold_walk_contact() -> void:
 	var strip := _active_strip
-	if strip == null or not is_instance_valid(strip) or not strip.visible:
+	if strip == null or not is_instance_valid(strip):
+		return
+	if not strip.visible and not _walk_draw_stamp:
 		return
 	if strip.is_playing():
 		strip.pause()
@@ -1402,6 +1601,8 @@ func _hold_walk_contact() -> void:
 	if frames != null and frames.has_animation(strip.animation) and frames.get_frame_count(strip.animation) > 0:
 		strip.frame = _sampled_walk_frame(0.0, frames.get_frame_count(strip.animation))
 		strip.frame_progress = 0.0
+	if _driven_walk or _walk_draw_stamp:
+		_publish_walk_cell()
 
 
 func _reset_walk_scale() -> void:
@@ -1410,6 +1611,8 @@ func _reset_walk_scale() -> void:
 		_sprite.scale = resting
 	if _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.scale = resting
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.scale = resting
 
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
@@ -1554,6 +1757,7 @@ func _sample_death_strip(t: float, _tilt_sign: float) -> void:
 	var last := _last_frame(strip)
 	if strip.frame >= last or t >= 0.58:
 		_freeze_on_frame(strip, last)
+	_hide_walk_draw()
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
 		strip.position = _sprite.position
@@ -1602,6 +1806,7 @@ func _hold_death_strip() -> bool:
 		_sprite.scale = _body_scale()
 		_sprite.rotation = 0.0
 	_freeze_on_frame(strip, _last_frame(strip))
+	_hide_walk_draw()
 	strip.visible = true
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
@@ -1647,6 +1852,8 @@ func _sample_idle(_t: float) -> void:
 	_sprite.position = bob
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = bob
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.position = bob
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
 
@@ -1662,6 +1869,17 @@ func _show_rest_body() -> void:
 	if _flashing:
 		return
 	var color := rest_modulate()
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.modulate = color
+		_walk_draw.visible = true
+		_walk_draw.scale = _body_scale()
+		if _active_strip != null and is_instance_valid(_active_strip):
+			_active_strip.modulate = color
+			_active_strip.visible = false
+		if _sprite != null and is_instance_valid(_sprite):
+			_sprite.modulate = color
+			_sprite.visible = false
+		return
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.modulate = color
 		_active_strip.visible = true
@@ -1685,13 +1903,25 @@ func _plant_sprite() -> void:
 	_sprite.scale = _body_scale()
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
-	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.position = Vector2.ZERO
+		_walk_draw.scale = _body_scale()
+		_walk_draw.rotation = 0.0
+		_walk_draw.visible = true
+		if _active_strip != null and is_instance_valid(_active_strip):
+			_active_strip.position = Vector2.ZERO
+			_active_strip.scale = _body_scale()
+			_active_strip.rotation = 0.0
+			_active_strip.visible = false
+		_sprite.visible = false
+	elif _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = Vector2.ZERO
 		_active_strip.scale = _body_scale()
 		_active_strip.rotation = 0.0
 		_active_strip.visible = true
 		_sprite.visible = false
 	else:
+		_hide_walk_draw()
 		_sprite.visible = true
 
 
@@ -1753,6 +1983,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 		return
 	_active_strip = strip
 	_strip_holds_body = true
+	_hide_walk_draw()
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.modulate = _sprite.modulate
 		strip.position = _sprite.position
@@ -1765,6 +1996,7 @@ func _end_body_strip(replant: bool = true) -> void:
 	_impact_frozen = false
 	_walk_idle_plant = false
 	_body_kind = ""
+	_hide_walk_draw()
 	if _active_strip != null and is_instance_valid(_active_strip):
 		if _active_strip.is_playing():
 			_active_strip.stop()
@@ -1817,15 +2049,16 @@ func _plant_walk_idle() -> bool:
 	strip.speed_scale = 0.0
 	if strip.is_playing():
 		strip.pause()
-	strip.visible = true
-	if _sprite != null and is_instance_valid(_sprite):
-		strip.position = _sprite.position
-		if not _flashing:
-			strip.modulate = _sprite.modulate
-		_sprite.visible = false
 	_active_strip = strip
 	_walk_idle_plant = true
 	_strip_holds_body = false
+	if _sprite != null and is_instance_valid(_sprite):
+		strip.position = _sprite.position
+		strip.scale = _sprite.scale
+		if not _flashing:
+			strip.modulate = _sprite.modulate
+		_sprite.visible = false
+	_publish_walk_cell()
 	return true
 
 
@@ -2021,6 +2254,7 @@ func _play_walk_flat() -> bool:
 	_end_body_strip(false)
 	_prepare_walk_loop(strip, anim)
 	_prepare_strip_pose(strip)
+	_hide_walk_draw()
 	strip.visible = true
 	strip.play(anim)
 	_active_strip = strip
@@ -2040,6 +2274,7 @@ func _play_walk_flat() -> bool:
 			strip.frame_progress = 0.0
 		_walk_idle_plant = true
 		_flatten_body()
+		_publish_walk_cell()
 		return false
 	_walk_idle_plant = false
 	_motion_playing = true
@@ -2063,8 +2298,7 @@ func _present_driven_walk() -> bool:
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = false
 	_prepare_strip_pose(strip)
-	var same := strip.visible and strip.animation == anim and _active_strip == strip
-	strip.visible = true
+	var same := strip.animation == anim and _active_strip == strip
 	strip.animation = anim
 	if strip.is_playing():
 		strip.pause()
@@ -2081,6 +2315,7 @@ func _present_driven_walk() -> bool:
 		strip.modulate = _sprite.modulate
 		_sprite.visible = false
 	_flatten_body()
+	_publish_walk_cell()
 	return true
 
 
@@ -2121,6 +2356,10 @@ func _place_body(pos: Vector2) -> void:
 		_active_strip.position = pos
 		if _sprite != null and is_instance_valid(_sprite):
 			_active_strip.modulate = _sprite.modulate
+	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
+		_walk_draw.position = pos
+		if _sprite != null and is_instance_valid(_sprite) and not _flashing:
+			_walk_draw.modulate = _sprite.modulate
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
 
