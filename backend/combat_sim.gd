@@ -40,6 +40,10 @@ const SHOULDER_BOUNCE_IMPACT := 2
 ## Re-apply refreshes duration. It does not stack. Impact cap still applies.
 const BURN_HP := 4
 const BURN_DURATION := 2
+## Soft Lock castigo. Water: silence one random spell, one-shot, no duration.
+## Mud: −1 MP for 1 turn. Re-apply refreshes that turn; it does not stack to −2.
+const SLOW_MP := 1
+const SLOW_TURNS := 1
 
 const FACING_VEC := {
 	"N": Vector2i(0, -1),
@@ -62,7 +66,10 @@ const FACING_VEC := {
 ## pushes for +1 Impact. OOB / truly blocked (not lava) bounces and staggers
 ## for +2 Impact only (no stack with +1). Lava is hazardous, not a wall:
 ## forced push displaces onto lava and applies Burn. Voluntary walk onto
-## lava stays impassable.
+## lava stays impassable. Soft Lock: mud and water are voluntary impassable
+## the same way. Walk and Advance refuse them. A forced push may land.
+## Castigo is per terrain: lava Burn (Locked), water silences one random
+## spell (one-shot, no duration), mud is Slow −1 MP for 1 turn (refresh, no stack).
 ## Director Locked Burn: 4 HP at the start of the victim's turn, duration 2.
 ## Re-apply refreshes duration and does not stack. Burn continues after
 ## leaving lava. Death is checked after each tick. burn_remaining lives on
@@ -297,6 +304,8 @@ func legal_intents(seat: int) -> Array:
 			out.append({"type": "move", "to": cell, "seat": seat})
 
 	for spell_id in actor["spells"]:
+		if _is_spell_silenced(actor, str(spell_id)):
+			continue
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 			continue
 		var def: Dictionary = SpellKits.spell(str(spell_id))
@@ -369,6 +378,8 @@ func legal_intents(seat: int) -> Array:
 			# Card MP was already compared to the unit's MP. Do not reuse the
 			# walk budget here: exit tax shortens walks only. A 0 MP cast
 			# such as Ambush stays legal at MP 0.
+			# A body on mud, water, or lava is still a target. Terrain does not
+			# soft-block aim. Do not consult stand_on_gate for the occupied cell.
 			# Koliseo still offers the one other seat. A Stasis trash pack
 			# offers every living hostile to the player.
 			for hostile in _hostile_cast_targets(seat):
@@ -632,6 +643,10 @@ func snapshot() -> Dictionary:
 		"push_occupied": "push_blocked",
 		"push_unwalkable": "bounce_stagger",
 		"push_lava": "displace_burn",
+		"push_water": "displace_silence",
+		"push_mud": "displace_slow",
+		"slow_mp": SLOW_MP,
+		"slow_turns": SLOW_TURNS,
 		"push_stagger_hp": STAGGER_HP,
 		"push_stagger_mp": STAGGER_MP,
 		"shoulder_impact_connect": SHOULDER_CONNECT_IMPACT,
@@ -669,8 +684,8 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable.",
-			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (walkable, not occupied, not lava, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava and apply Burn. Director Locked Burn: 4 HP at the start of the victim's turn, duration 2, re-apply refreshes and does not stack, continues after leaving lava, death check after each tick. Voluntary walk onto lava stays impassable. Soft Lock castigo: a forced push onto water silences one random spell (one-shot, no duration). A forced push onto mud applies Slow −1 MP for 1 turn (refresh, no stack).",
+			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
 			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
@@ -1118,7 +1133,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands and applies Burn (4 HP at the victim's turn start, duration 2, refresh no stack). Voluntary walk onto lava stays impassable.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands and applies Burn (4 HP at the victim's turn start, duration 2, refresh no stack). Soft Lock: voluntary walk and Advance also refuse mud and water. A forced push onto water silences one random spell (one-shot). A forced push onto mud applies Slow −1 MP for 1 turn.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1285,6 +1300,10 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"stunned": false,
 		# Director Locked Burn. Duration ticks left; 0 means not burning.
 		"burn_remaining": 0,
+		# Soft Lock water: spell ids silenced on landing. One-shot, no duration.
+		"silenced_spells": [],
+		# Soft Lock mud: turns of −1 MP left. 0 means not slowed.
+		"slow_remaining": 0,
 		"alive": true,
 		"placed": placed,
 		"locked": false,
@@ -1499,10 +1518,15 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		next_unit["skip_next_mp"] = false
 		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
 		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
+	var slow_cut := 0
+	if int(next_unit.get("slow_remaining", 0)) > 0:
+		slow_cut = mini(SLOW_MP, int(next_unit["mp"]))
 	_start_turn_timer()
 	var stunned := _is_stunned(next_unit)
 	if stunned:
 		_last_coach = "%s's turn skipped — stunned (Locked A′)." % next_unit["name"]
+	elif slow_cut > 0:
+		_last_coach = "%s's turn. AP/MP refilled to %d/%d (Slow −%d MP)." % [next_unit["name"], MAX_AP, int(next_unit["mp"]) - slow_cut, slow_cut]
 	else:
 		_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
 	var end_event := {
@@ -1528,6 +1552,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		"turn_time_limit": _turn_time_limit,
 		"coach": _last_coach,
 	})
+	# Soft Lock mud: −1 MP for this turn only. A stunned skip still consumes it.
+	_consume_mud_slow(next_unit)
 	# Director Locked Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
@@ -1599,6 +1625,8 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		# MP 0 is a walk. Name it so the toast is not read as a failed Ambush.
 		if reason == "insufficient_mp" and int(actor.get("mp", 0)) <= 0:
 			coach = "REJECT — no MP to walk."
+		elif reason == "insufficient_mp" and int(planned.get("cost", 0)) > 0:
+			coach = "REJECT — that path needs %d MP (you have %d)." % [int(planned["cost"]), budget]
 		return _reject(intent, reason, coach)
 	var from: Vector2i = actor["pos"]
 	var path: Array = planned.get("path", [])
@@ -1647,6 +1675,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	if not SpellKits.has_spell(str(actor["class_id"]), spell_id):
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit (refund)." % [def["name"], actor["name"]])
+	if _is_spell_silenced(actor, spell_id):
+		return _reject(intent, "spell_silenced", "REJECT — %s is silenced (refund)." % def["name"])
 	if SpellKits.is_gated(spell_id):
 		return _reject(intent, "open_can_wait", "REJECT — %s is open (can-wait) and is not resolved." % def["name"])
 	if not intent.has("to"):
@@ -1740,6 +1770,14 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, "no_target", "REJECT — Ambush needs an enemy (refund).")
 		return _resolve_ambush(intent, actor, ambush_target, def, dest, dist, ap_cost, mp_cost)
 
+	# A tap on the empty mud / water / lava beside a body is still that body.
+	# The trough reads as one dark tile. Do not refund "needs a living unit"
+	# when exactly one in-range enemy stands on that kind of tile next to the tap.
+	if _living_unit_at(dest).is_empty() and (target_kind == "enemy" or target_kind == "any"):
+		var beside := _hazard_neighbor_target(actor, def, range_from, dest)
+		if not beside.is_empty():
+			dest = beside["pos"]
+			dist = _range_distance(def, range_from, dest)
 	var target := _living_unit_at(dest)
 	if target.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
@@ -1909,16 +1947,17 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	var push_result := {}
 	if int(def.get("push_cells", 0)) > 0:
 		# Director Locked Shoulder: occupied = push_blocked; OOB / truly blocked = bounce + stagger.
-		# Lava is hazardous: displace and Burn. Walkable empty dest still pushes.
+		# Lava displaces and Burns. Water silences one spell. Mud slows −1 MP.
 		push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
 	if defer_shoulder_impact:
 		var impact_amount := SHOULDER_CONNECT_IMPACT
 		if bool(push_result.get("bounced", false)):
 			impact_amount = SHOULDER_BOUNCE_IMPACT
 		engine_gained = _gain_impact(actor, impact_amount)
-	var burn_info := {}
-	if bool(push_result.get("burn", false)):
-		burn_info = _apply_burn(target)
+	var punish := _apply_landing_punishments(target, push_result)
+	var burn_info: Dictionary = punish["burn"]
+	var silence_info: Dictionary = punish["silence"]
+	var slow_info: Dictionary = punish["slow"]
 
 	var facing_note := "front/side ×1.00"
 	if is_back:
@@ -1979,6 +2018,13 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		if not burn_info.is_empty():
 			hit_event["burn_refreshed"] = bool(burn_info.get("refreshed", false))
 			hit_event["burn_remaining"] = int(burn_info.get("remaining", 0))
+		hit_event["silence_applied"] = not silence_info.is_empty()
+		if not silence_info.is_empty():
+			hit_event["silenced_spell"] = str(silence_info.get("spell", ""))
+		hit_event["slow_applied"] = not slow_info.is_empty()
+		if not slow_info.is_empty():
+			hit_event["slow_remaining"] = int(slow_info.get("remaining", 0))
+			hit_event["slow_refreshed"] = bool(slow_info.get("refreshed", false))
 	if skip_next_mp:
 		hit_event["skip_next_mp"] = true
 	_stamp_mitigation(hit_event, mitigation)
@@ -2055,6 +2101,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			"locked": "Director Locked Burn — 4 HP at turn start, duration 2, refresh no stack",
 			"coach": burn_coach,
 		})
+	_append_soft_lock_status(target, silence_info, slow_info)
 	if stun_applied > 0:
 		_last_events.append({
 			"type": "status",
@@ -2612,10 +2659,12 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 	# Chebyshev push 1 along the caster→target line.
 	# Director Locked Shoulder:
 	# - occupied dest: push_blocked (no bounce, no stagger)
-	# - lava dest: hazardous, not a wall — displace and flag Burn
-	# - OOB / truly blocked (not lava): bounce + stagger
-	# - walkable empty: push
-	# Do not invent climb/drop push rules. Voluntary walk still rejects lava.
+	# - lava dest: displace and flag Burn
+	# - water dest: displace and flag one-shot Silence
+	# - mud dest: displace and flag Slow (−1 MP, 1 turn)
+	# - OOB / truly blocked (not those tiles): bounce + stagger
+	# - walkable empty ground: push
+	# Do not invent climb/drop push rules. Voluntary walk rejects mud, water, and lava.
 	var from: Vector2i = target["pos"]
 	var dest := push_destination(caster_pos, from, cells)
 	var result := {
@@ -2627,6 +2676,8 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		"bounced": false,
 		"staggered": false,
 		"burn": false,
+		"silence": false,
+		"slow": false,
 		"reason": "",
 		"stagger_hp": 0,
 		"stagger_mp": 0,
@@ -2643,12 +2694,18 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["blocked"] = true
 		result["reason"] = "occupied"
 		return result
-	if _is_lava(dest):
+	if _board.is_voluntary_impassable(dest):
 		target["pos"] = dest
 		result["to"] = dest
 		result["moved"] = true
-		result["burn"] = true
-		result["reason"] = "lava"
+		var terrain_id := int(_board.terrain_of(dest).get("id", _TerrainDef.Id.GROUND))
+		result["reason"] = _TerrainDef.name_of(terrain_id)
+		if terrain_id == _TerrainDef.Id.LAVA:
+			result["burn"] = true
+		elif terrain_id == _TerrainDef.Id.WATER:
+			result["silence"] = true
+		elif terrain_id == _TerrainDef.Id.MUD:
+			result["slow"] = true
 		return result
 	if not _board.is_walkable(dest):
 		return _apply_bounce_stagger(target, result, _unwalkable_push_reason(dest))
@@ -2676,6 +2733,110 @@ func _apply_burn(unit: Dictionary) -> Dictionary:
 		"remaining": BURN_DURATION,
 		"hp_per_tick": BURN_HP,
 	}
+
+
+## Lava Burn, water Silence, mud Slow. Empty dicts when that terrain did not land.
+func _apply_landing_punishments(target: Dictionary, push_result: Dictionary) -> Dictionary:
+	var burn := {}
+	var silence := {}
+	var slow := {}
+	if target.is_empty():
+		return {"burn": burn, "silence": silence, "slow": slow}
+	if bool(push_result.get("burn", false)):
+		burn = _apply_burn(target)
+	if bool(push_result.get("silence", false)):
+		silence = _apply_water_silence(target)
+	if bool(push_result.get("slow", false)):
+		slow = _apply_mud_slow(target)
+	return {"burn": burn, "silence": silence, "slow": slow}
+
+
+## One random spell that is not already silenced. No duration and no second copy.
+func _apply_water_silence(unit: Dictionary) -> Dictionary:
+	var already: Array = unit.get("silenced_spells", [])
+	var open: Array[String] = []
+	for spell_id in unit.get("spells", []):
+		var id := str(spell_id)
+		if id == "" or already.has(id):
+			continue
+		open.append(id)
+	if open.is_empty():
+		return {}
+	var pick := open[_rng.randi_range(0, open.size() - 1)]
+	var silenced: Array = already.duplicate()
+	silenced.append(pick)
+	unit["silenced_spells"] = silenced
+	var spell_name := str(SpellKits.spell(pick).get("name", pick))
+	return {"applied": true, "spell": pick, "name": spell_name}
+
+
+## Refresh to 1 turn of −1 MP. Do not add turns and do not cut a second MP.
+func _apply_mud_slow(unit: Dictionary) -> Dictionary:
+	var previous := int(unit.get("slow_remaining", 0))
+	unit["slow_remaining"] = SLOW_TURNS
+	return {
+		"applied": true,
+		"refreshed": previous > 0,
+		"previous": previous,
+		"remaining": SLOW_TURNS,
+		"mp_delta": -SLOW_MP,
+	}
+
+
+func _is_spell_silenced(unit: Dictionary, spell_id: String) -> bool:
+	var silenced: Variant = unit.get("silenced_spells", [])
+	if typeof(silenced) != TYPE_ARRAY:
+		return false
+	return (silenced as Array).has(spell_id)
+
+
+func _append_soft_lock_status(target: Dictionary, silence_info: Dictionary, slow_info: Dictionary) -> void:
+	if not silence_info.is_empty():
+		_last_events.append({
+			"type": "status",
+			"status": "silence",
+			"spell": str(silence_info.get("spell", "")),
+			"target_seat": target["seat"],
+			"coach": "%s's %s is silenced." % [target["name"], str(silence_info.get("name", "spell"))],
+		})
+	if slow_info.is_empty():
+		return
+	var slow_coach := "%s is slowed (−%d MP for %d turn)." % [target["name"], SLOW_MP, SLOW_TURNS]
+	if bool(slow_info.get("refreshed", false)):
+		slow_coach = "%s's Slow refreshes to %d turn (no stack)." % [target["name"], SLOW_TURNS]
+	_last_events.append({
+		"type": "status",
+		"status": "slow",
+		"remaining": int(slow_info.get("remaining", SLOW_TURNS)),
+		"duration": SLOW_TURNS,
+		"mp_delta": -SLOW_MP,
+		"refreshed": bool(slow_info.get("refreshed", false)),
+		"previous": int(slow_info.get("previous", 0)),
+		"target_seat": target["seat"],
+		"coach": slow_coach,
+	})
+
+
+## Spend the one Slow turn at this unit's turn start. Leaves the tile does not clear it.
+func _consume_mud_slow(unit: Dictionary) -> void:
+	if unit.is_empty() or not bool(unit.get("alive", false)):
+		return
+	var remaining := int(unit.get("slow_remaining", 0))
+	if remaining <= 0:
+		return
+	unit["slow_remaining"] = remaining - 1
+	var cut := mini(SLOW_MP, int(unit.get("mp", 0)))
+	unit["mp"] = int(unit["mp"]) - cut
+	_last_events.append({
+		"type": "slow",
+		"status": "slow",
+		"target_seat": int(unit["seat"]),
+		"mp_delta": -cut,
+		"mp": int(unit["mp"]),
+		"remaining": int(unit["slow_remaining"]),
+		"duration": SLOW_TURNS,
+		"coach": "%s is slowed (−%d MP this turn)." % [str(unit.get("name", "Unit")), cut],
+	})
 
 
 func _tick_burn(unit: Dictionary) -> void:
@@ -2880,6 +3041,30 @@ func _next_turn_seat(from_seat: int) -> int:
 		if seat > from_seat:
 			return seat
 	return int(seats[0])
+
+
+## Empty mud, water, or lava next to exactly one in-range enemy on that
+## kind of tile. The tap is the trough, not a miss. Two neighbors stay a miss.
+func _hazard_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vector2i, dest: Vector2i) -> Dictionary:
+	if not _board.is_voluntary_impassable(dest):
+		return {}
+	var found := {}
+	for hostile in _hostile_cast_targets(int(actor["seat"])):
+		if typeof(hostile) != TYPE_DICTIONARY:
+			continue
+		var enemy: Dictionary = hostile
+		if not bool(enemy.get("alive", false)):
+			continue
+		if not _board.is_voluntary_impassable(enemy["pos"]):
+			continue
+		if chebyshev(dest, enemy["pos"]) > 1:
+			continue
+		if not _in_spell_range(def, range_from, enemy["pos"]):
+			continue
+		if not found.is_empty():
+			return {}
+		found = enemy
+	return found
 
 
 func _living_unit_at(cell: Vector2i) -> Dictionary:
@@ -3434,10 +3619,14 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
 		var push_result: Dictionary = {}
 		var burn_info: Dictionary = {}
+		var silence_info: Dictionary = {}
+		var slow_info: Dictionary = {}
 		if int(def.get("push_cells", 0)) > 0:
 			push_result = _try_push(actor["pos"], target, int(def["push_cells"]))
-		if bool(push_result.get("burn", false)):
-			burn_info = _apply_burn(target)
+			var punish := _apply_landing_punishments(target, push_result)
+			burn_info = punish["burn"]
+			silence_info = punish["silence"]
+			slow_info = punish["slow"]
 		var row := {
 			"target_seat": int(target["seat"]),
 			"cell": cell,
@@ -3446,7 +3635,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 			"facing_mult": facing_mult,
 			"back": is_back,
 		}
-		_stamp_push_fields(row, push_result, burn_info)
+		_stamp_push_fields(row, push_result, burn_info, silence_info, slow_info)
 		_stamp_mitigation(row, mitigation)
 		targets.append(row)
 		if aim_row.is_empty() or cell == dest:
@@ -3454,6 +3643,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		total += damage
 		hit_bodies += 1
 		_emit_push_followups(actor, target, push_result, burn_info)
+		_append_soft_lock_status(target, silence_info, slow_info)
 		_emit_immunity_spent(target, mitigation)
 		_check_death(target)
 		if _match_over:
@@ -3492,7 +3682,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 	return _accept()
 
 
-func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dictionary) -> void:
+func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dictionary, silence_info: Dictionary = {}, slow_info: Dictionary = {}) -> void:
 	if push_result.is_empty():
 		return
 	row["pushed"] = bool(push_result.get("moved", false))
@@ -3503,10 +3693,16 @@ func _stamp_push_fields(row: Dictionary, push_result: Dictionary, burn_info: Dic
 	row["bounced"] = bool(push_result.get("bounced", false))
 	row["staggered"] = bool(push_result.get("staggered", false))
 	row["burn_applied"] = not burn_info.is_empty()
+	row["silence_applied"] = not silence_info.is_empty()
+	if not silence_info.is_empty():
+		row["silenced_spell"] = str(silence_info.get("spell", ""))
+	row["slow_applied"] = not slow_info.is_empty()
+	if not slow_info.is_empty():
+		row["slow_remaining"] = int(slow_info.get("remaining", 0))
 
 
 func _copy_push_fields(hit_event: Dictionary, row: Dictionary) -> void:
-	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied"]:
+	for key in ["pushed", "push_from", "push_to", "push_attempted", "push_blocked", "bounced", "staggered", "burn_applied", "silence_applied", "silenced_spell", "slow_applied", "slow_remaining"]:
 		if row.has(key):
 			hit_event[key] = row[key]
 
@@ -3851,6 +4047,11 @@ func _ambush_cell_ok(cell: Vector2i, caster_pos: Vector2i) -> bool:
 	# Facing-rear can be the tile Gloam already stands on (enemy one step in
 	# front, facing away). That landing is legal. Any other occupant rejects.
 	if cell != caster_pos and not _is_empty(cell):
+		return false
+	# The back tile is a voluntary landing. Mud, water, and lava stay illegal
+	# there. The enemy body can still stand on one of those tiles; that cell
+	# is the target, not this landing.
+	if _board.is_voluntary_impassable(cell):
 		return false
 	return _board.is_walkable(cell)
 

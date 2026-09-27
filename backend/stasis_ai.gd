@@ -4,6 +4,8 @@ class_name StasisAi
 ## One legal intent for a Stasis foe. Walk closer, then Strike.
 ## Advance, Shoulder, Crush, and class kits are ignored even if a test feeds them.
 ## Room A calls this once per living trash seat. CombatSim still resolves the card.
+## Walk choices come from legal_intents. Those use the player WalkBoard
+## gates: mud, water, and lava are voluntary impassable.
 
 
 static func choose(legal: Array, actor_pos: Vector2i, foe_pos: Vector2i) -> Dictionary:
