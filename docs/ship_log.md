@@ -2,6 +2,38 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Bastion east walk v6d and Ironjaw east walk v6g
+
+Presentation only for the sheets. Soft Lock is not stamped. Playable review for Luca.
+
+Bastion east replaces the v6c strip in place: `art/export_2x/characters/bastion/anims/bastion_walk_e.png` and `art/export_2x/walk_src/bastion_walk_e.pngbin`. 864×160, six 144×160 cells. Brighter charcoal (median luminance about 46), gold punch, full body, transparent background. West, north, and south are not replaced.
+
+Ironjaw east stays the v6g strip already on this branch: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png` and `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. v6h is not ready. West, north, and south are not replaced.
+
+Walk PNG imports stay lossless (`compress/mode=0`) with the alpha channel kept. Device playback reads the pngbin bytes, which are the same PNG. Tile time stays 0.30s. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px.
+
+Sideload stamp for this tip: `version/name` `0.1.27-mobile`, `version/code` `28`. Tag `mobile-0.1.27-debug`. Package `com.maurogp12.stasiumxii.mobile`. The pinned debug cert is unchanged.
+
+## 2026-09-27 — Bastion east walk v6c and Ironjaw east walk v6g
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock is not stamped. Hold merge until Luca sí on device.
+
+Ironjaw east replaces the v6f strip in place: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png`, 864×160, six 144×160 cells. The same bytes are `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. Each cell is the full berserker (plate, grill, dual axes). Feet stay on the shared row, about y=149. East frame 0 fills about 0.82 of the cell. West, north, and south are not replaced. The cell grid is unchanged.
+
+Bastion east replaces the v6b strip in place: `art/export_2x/characters/bastion/anims/bastion_walk_e.png` and `art/export_2x/walk_src/bastion_walk_e.pngbin`. 864×160, six 144×160 cells, full plate, shield, and mace. West, north, and south are not replaced.
+
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px (`HOP_PX`).
+
+## 2026-09-27 — Ironjaw east walk v6f (Bastion v6b kept)
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Soft Lock pending Rosie rematch. Hold merge until Luca sí on device.
+
+Ironjaw east replaces the rejected v6c strip in place: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png`, 864×160, six 144×160 cells. Scenario `asset_SGZq64mhnxYrVRT7s3xtH1mA`. Each cell is the full berserker (plate, grill, dual axes). The same bytes are `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. West is the per-cell horizontal mirror of that east sheet, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. Ironjaw north and south stay the current v5 three-quarter strips.
+
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest stays the shared 3px (`HOP_PX`). Every v6f cell already shares the plant foot row, so the hop does not stack on a strip bob.
+
+Bastion east and west stay the wakfu-ship-v6b wire. Soft note for the Rosie rematch, not a wire change: cell 3 reads more front-facing, and the greaves are darker. The phone bake decides Soft Lock.
+
 ## 2026-09-27 — Detonate burst punch v3b
 
 Presentation only. No APK. Kit numbers, Detonate legality, and Locked timings are unchanged. Soft Lock pending Rosie rematch.
@@ -19,6 +51,20 @@ Presentation only. No APK. Kit numbers, Ambush legality, Invisible Soft Lock, th
 Presentation only. No APK. Kit numbers and ranges are unchanged.
 
 `mark_shot_cast.png` is the v4 transparent strip: 1280×320, four equal 320×320 cells (draw, snap burst, reticle peak, arrow-tip release). Cyan/gold, from the bow. Scenario `asset_bXoujAQYZwDDQJQNGL2ouD7M`. The cast is 70+80+80+70 ms. It is not stretched out to the contact. The snap cell stays dense. The plate is 44px and is not dropped, so the rays stay on the hands and the reticle and the arrow tip still read. The bolt flight is 0.24s, so the existing contact stack (flash, compact burst, float, flinch) lands inside 0.2–0.4s after the arrow leaves. Impact stays the punch-v2 floor strip.
+
+## 2026-09-27 — Ironjaw east walk v6c (Bastion v6b kept)
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. Gloam, Mender, and Kestrel walks stay wakfu-ship-v5. Hold merge until Luca sí on device.
+
+Ironjaw east is the wakfu-ship-v6c strip, in place: `art/export_2x/characters/ironjaw/anims/ironjaw_walk_e.png`, 864×160, six 144×160 cells. Each cell is the full berserker (plate, grill, dual axes), not the v6b blob. The same bytes are `art/export_2x/walk_src/ironjaw_walk_e.pngbin`. West is the per-cell horizontal mirror of that east sheet, same frame order, written to `walk_w` and its pngbin. Not a runtime `flip_h`. Ironjaw north and south stay the current v5 three-quarter strips.
+
+Tile time stays 0.30s, one stride per tile, plant hold the last 18%. Bastion crest stays 2.5px. Ironjaw crest is the shared 3px (`HOP_PX`). The v6c sheet lifts the sole about 2px on the passing cells. `StripLibrary` pins that foot to frame 0. The hop crest lands on a cell whose feet are already on the baseline, so the 3px hop is the only crest. It does not stack on the strip bob.
+
+Bastion east and west stay the wakfu-ship-v6b wire. Bastion north and south stay v5. Known Bastion sheet notes, not blockers: flood-key holes and two near-duplicate frames. Bastion hop is unchanged.
+
+## 2026-09-27 — Bastion east walk v6b (Ironjaw v6b held)
+
+Presentation only. No APK. Locked kit numbers, map geometry, and Ambush are unchanged. This entry records the hold that preceded the v6c wire above. The incomplete Ironjaw v6b east strip is not the live sheet.
 
 ## 2026-09-27 — Soft Lock map presentation
 
