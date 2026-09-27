@@ -10,6 +10,7 @@ extends RefCounted
 ## Slagcrown paints the lava punch.
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
 ## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
+## Its dress draws six small accents. The other paint_only tags stay for walkability.
 ## See THEMES.md. The board loads these slices by dress prefix.
 
 const ROOT := "res://art/maps/arena_colosseum_v2/tiled/tiles/"
@@ -49,6 +50,16 @@ static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
 ## Scenario sheets are sliced. Nothing in this list is still a hook.
 const PENDING_THEMES: Array[String] = []
+## Six cells, not the tagged ring. (14, 0) is a spark; (14, 14) is a second bolt
+## and stays undrawn so the corners do not stack monuments.
+const STORM_DRESS := {
+	Vector2i(0, 0): ["crystal_bolt"],
+	Vector2i(14, 0): ["spark"],
+	Vector2i(6, 3): ["rubble"],
+	Vector2i(3, 5): ["rock_pillar"],
+	Vector2i(10, 6): ["arc"],
+	Vector2i(7, 7): ["floor_seal"],
+}
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -185,6 +196,22 @@ static func _variant_files(file_name: String) -> Array[String]:
 	if names.is_empty():
 		names.append(file_name)
 	return names
+
+
+## What the board draws. Stormspire keeps about six accents on the playable
+## map. Other arenas draw every paint_only name. This does not edit tags,
+## walkability, or which props block movement.
+static func visual_props(map_id: String, cell: Vector2i, props: Array) -> Array:
+	if dress_for(map_id) != "storm_":
+		return props
+	var allowed: Array = STORM_DRESS.get(cell, [])
+	if allowed.is_empty() or props.is_empty():
+		return []
+	var kept: Array = []
+	for prop_name in props:
+		if allowed.has(str(prop_name)):
+			kept.append(prop_name)
+	return kept
 
 
 ## Dress-prefixed props win (`wind_prop_spark.png`, `slag_prop_ash_rock.png`),

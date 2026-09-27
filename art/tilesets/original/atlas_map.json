@@ -1402,48 +1402,48 @@
       "file": "storm_prop_spark.png",
       "fit": "prop",
       "size": [
-        29,
-        48
+        17,
+        28
       ]
     },
     {
       "file": "storm_prop_rubble.png",
       "fit": "prop",
       "size": [
-        52,
-        25
+        28,
+        14
       ]
     },
     {
       "file": "storm_prop_arc.png",
       "fit": "prop",
       "size": [
-        52,
-        32
+        28,
+        17
       ]
     },
     {
       "file": "storm_prop_rock_pillar.png",
       "fit": "prop",
       "size": [
-        30,
-        78
+        12,
+        32
       ]
     },
     {
       "file": "storm_prop_crystal_bolt.png",
       "fit": "prop",
       "size": [
-        32,
-        55
+        18,
+        31
       ]
     },
     {
       "file": "storm_prop_conduit.png",
       "fit": "prop",
       "size": [
-        28,
-        40
+        16,
+        23
       ]
     }
   ],
@@ -1458,7 +1458,7 @@
     "elevation": "pending/electric/storm_elevation_punch.png",
     "props": "pending/electric/storm_props_punch.png",
     "mood": "pending/electric/board_mood_punch.png",
-    "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps."
+    "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring."
   },
   "windmere_punch": {
     "ground": "pending/ice/punch/wind_ground_punch.png",

@@ -161,8 +161,19 @@ func _paint_depth_rim() -> void:
 
 
 ## Props stand on the south tip of the diamond. paint_only never affects pathing.
+## Stormspire accents read about one diamond tall. A later monolith sheet still
+## shrinks here so a pillar cannot cover the floor.
 func _paint_prop(tex: Texture2D) -> void:
 	var size := tex.get_size()
+	if _dress == "storm_":
+		var longest := maxf(size.x, size.y)
+		var cap := float(TILE_HEIGHT)
+		if longest > cap:
+			var scale := cap / longest
+			size = Vector2(size.x * scale, size.y * scale)
+		var rect := Rect2(Vector2(-size.x * 0.5, cap * 0.5 - size.y), size)
+		draw_texture_rect(tex, rect, false)
+		return
 	draw_texture(tex, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 - size.y))
 
 

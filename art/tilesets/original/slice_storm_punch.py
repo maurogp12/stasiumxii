@@ -14,7 +14,9 @@ Flat tiles are hard 64×32 diamonds with a dark rim so neighboring cells keep
 a readable seam. Cliffs keep that cap and hang a wall; the high platform is
 taller than the low one. Props are a sparse set of silhouettes, centered in
 their sprite and narrower than a tile, so the floor stays visible and line of
-sight stays open. No circular arena and no totem ring are painted.
+sight stays open. The playable preview draws six of them, about one diamond
+tall, and leaves the tagged ring undrawn. No circular arena and no totem
+ring are painted.
 """
 from __future__ import annotations
 
@@ -52,14 +54,25 @@ HANG = {
     "storm_ground_e2.png": 68,
 }
 
-# Standing accents. Wider than this covers the floor diamond.
+# Standing accents, about one 32px diamond tall. Wider than this covers the floor.
 PROP_BOX = {
-    "storm_prop_spark.png": (40, 48),
-    "storm_prop_rubble.png": (52, 32),
-    "storm_prop_arc.png": (52, 36),
-    "storm_prop_crystal_bolt.png": (32, 64),
-    "storm_prop_conduit.png": (28, 70),
-    "storm_prop_rock_pillar.png": (30, 78),
+    "storm_prop_spark.png": (22, 28),
+    "storm_prop_rubble.png": (28, 18),
+    "storm_prop_arc.png": (28, 20),
+    "storm_prop_crystal_bolt.png": (18, 32),
+    "storm_prop_conduit.png": (16, 32),
+    "storm_prop_rock_pillar.png": (16, 32),
+}
+
+# Same six cells as KoliseoArt.STORM_DRESS. Tags stay; the ring is not drawn.
+# (14, 0) is the spark. (14, 14) is another bolt and is left off the board.
+STORM_DRESS = {
+    (0, 0): frozenset({"crystal_bolt"}),
+    (14, 0): frozenset({"spark"}),
+    (6, 3): frozenset({"rubble"}),
+    (3, 5): frozenset({"rock_pillar"}),
+    (10, 6): frozenset({"arc"}),
+    (7, 7): frozenset({"floor_seal"}),
 }
 
 
@@ -589,7 +602,7 @@ def _patch_atlas(records: list[dict]) -> None:
         "elevation": "pending/electric/storm_elevation_punch.png",
         "props": "pending/electric/storm_props_punch.png",
         "mood": "pending/electric/board_mood_punch.png",
-        "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps.",
+        "note": "Live Stormspire paint. Mood is reference only. Geometry and tags stay on the Locked maps. The board draws six small accents, not the tagged prop ring.",
     }
     written = {item["file"]: item for item in records}
     kept = [item for item in atlas.get("files", []) if item.get("file") not in written]
@@ -653,15 +666,47 @@ def _render_board(cells: list) -> Image.Image:
         if tile.height > 32:
             py -= tile.height - 32
         canvas.alpha_composite(tile, (px, py))
-        for prop in cell["paint_only"]:
-            prop_img = get(f"storm_prop_{prop}")
+        for prop in _dress_props(x, y, cell["paint_only"]):
+            prop_img = _fit_prop_draw(get(f"storm_prop_{prop}"))
             ppx = px + 32 - prop_img.width // 2
             ppy = py + 32 - prop_img.height
             canvas.alpha_composite(prop_img, (ppx, ppy))
     return canvas
 
 
+def _dress_props(x: int, y: int, props: list) -> list:
+    allowed = STORM_DRESS.get((x, y))
+    if not allowed:
+        return []
+    return [prop for prop in props if prop in allowed]
+
+
+def _fit_prop_draw(img: Image.Image) -> Image.Image:
+    """Match the Godot storm cap: the long side stays within one diamond."""
+    longest = max(img.size)
+    if longest <= 32:
+        return img
+    scale = 32 / longest
+    out = (
+        max(1, int(round(img.width * scale))),
+        max(1, int(round(img.height * scale))),
+    )
+    return img.resize(out, Image.Resampling.LANCZOS)
+
+
 def _write_previews(cells: list) -> None:
+    drawn = 0
+    for y, row in enumerate(cells):
+        for x, cell in enumerate(row):
+            shown = _dress_props(x, y, cell["paint_only"])
+            drawn += len(shown)
+            for prop in shown:
+                img = Image.open(TILES / f"storm_prop_{prop}.png")
+                fitted = _fit_prop_draw(img)
+                if max(fitted.size) > 32:
+                    raise SystemExit(f"{prop} still reads taller than one diamond")
+    if not 4 <= drawn <= 6:
+        raise SystemExit(f"Stormspire dress should be 4–6 props, drew {drawn}")
     board = _render_board(cells)
     plain = Image.new("RGB", board.size, (12, 10, 18))
     plain.paste(board, mask=board.split()[-1])
