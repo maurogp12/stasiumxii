@@ -2,6 +2,12 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Detonate burst punch v3b
+
+Presentation only. No APK. Kit numbers, Detonate legality, and Locked timings are unchanged. Soft Lock pending Rosie rematch.
+
+`detonate_burst.png` is the v3b transparent strip: 1280×720, six beats (ignition, burst, shock, shards, fade, settle). The full-height divider columns from v3 (x=212–213, 426, 639–640, 852–853, 1066) are clear. Playback crops stay off those columns, so a ghost bar is not a frame. The burst still opens on the cast resolve and still uses the spell-overlay life (0.24s, inside 0.2–0.4s). The stamp plays this one strip.
+
 ## 2026-09-27 — Ambush slash strip v5
 
 Presentation only. No APK. Kit numbers, Ambush legality, Invisible Soft Lock, the 22, and AP costs are unchanged. Soft Lock pending Rosie rematch.
