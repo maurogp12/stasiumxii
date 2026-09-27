@@ -37,7 +37,22 @@ func _run() -> void:
 	})
 	board._rebuild_pawns()
 	board._refresh()
-	board._fit_board_camera()
+	var hud := main.get_node("HUD")
+	hud.visible = false
+	# Full 15×15 in the phone frame. The 1.55 overview keeps the width and
+	# crops the diamond tips. This contain fit keeps every tile on screen.
+	var camera := board.get("_camera") as Camera2D
+	var n := 15
+	var min_x := float(0 - (n - 1)) * 32.0 - 32.0
+	var max_x := float(n - 1) * 32.0 + 32.0
+	var min_y := -16.0 - 48.0
+	var max_y := float((n - 1) + (n - 1)) * 16.0 + 16.0 + 36.0
+	var board_w := max_x - min_x
+	var board_h := max_y - min_y
+	var view_size := root.get_viewport().get_visible_rect().size
+	var zoom := minf(view_size.x / board_w, view_size.y / board_h) * 0.94
+	camera.zoom = Vector2(zoom, zoom)
+	camera.position = Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 	for _i in 3:
 		await process_frame
 	await RenderingServer.frame_post_draw
@@ -48,8 +63,7 @@ func _run() -> void:
 		quit(1)
 		return
 	var snap: Dictionary = sim.snapshot()
-	var camera := board.get("_camera") as Camera2D
-	var zoom := camera.zoom.x if camera != null else -1.0
+	zoom = camera.zoom.x if camera != null else zoom
 	print("capture map=%s size=%s viewport=%s zoom=%.3f" % [
 		str(snap.get("demo_map", snap.get("map_id", ""))),
 		image.get_size(),
