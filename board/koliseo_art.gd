@@ -7,7 +7,7 @@ extends RefCounted
 ## paint_only props are visuals. They are not walk, LoS, or MP data.
 ## Crosshaven paints the earth punch (dirt and stone). Moss is only on the ruin walls.
 ## Brinewake paints the coast punch (wet sand, pier wood, tide scorch).
-## Slagcrown paints the lava punch (hard diamonds, platform cliffs, sparse props).
+## Slagcrown paints the lava punch v4 (rock diamonds, lava seams, six tall props).
 ## Windmere paints the ice punch sheets (snow, meltwater, sparse crystals).
 ## Stormspire paints the algo-así punch sheets (dark stone, cyan/violet seams, gold edge).
 ## See THEMES.md. The board loads these slices by dress prefix.
@@ -49,6 +49,17 @@ static var _cache: Dictionary = {}
 static var _placement: Dictionary = {}
 ## Scenario sheets are sliced. Nothing in this list is still a hook.
 const PENDING_THEMES: Array[String] = []
+## Presentation only. Tags keep every paint_only name. These six cells draw
+## a tall pillar or banner. Any other Slagcrown prop draws as a small mark
+## so the rock diamonds stay readable.
+const SLAG_TALL_DRESS := {
+	Vector2i(0, 0): "basalt_pillar",
+	Vector2i(14, 0): "basalt_pillar",
+	Vector2i(0, 14): "basalt_pillar",
+	Vector2i(14, 14): "basalt_pillar",
+	Vector2i(7, 0): "banner",
+	Vector2i(7, 14): "banner",
+}
 
 
 ## `crosshaven_15` and `brinewake` both resolve. Unknown ids use the base dress.
@@ -185,6 +196,23 @@ static func _variant_files(file_name: String) -> Array[String]:
 	if names.is_empty():
 		names.append(file_name)
 	return names
+
+
+## Slagcrown keeps the locked paint_only tags. Tall art is the six perimeter
+## cells. Everything else is a small mark that does not cover the diamond.
+static func visible_props(map_id: String, cell: Vector2i, props: Array) -> Array:
+	if dress_for(map_id) != "slag_" or props.is_empty():
+		return props
+	if SLAG_TALL_DRESS.has(cell):
+		return [str(SLAG_TALL_DRESS[cell])]
+	var small: Array = []
+	for prop_name in props:
+		var name := str(prop_name)
+		if name == "floor_seal" or name == "steam_vent" or name == "rubble":
+			small.append(name)
+		else:
+			small.append("ash_rock")
+	return small
 
 
 ## Dress-prefixed props win (`wind_prop_spark.png`, `slag_prop_ash_rock.png`),

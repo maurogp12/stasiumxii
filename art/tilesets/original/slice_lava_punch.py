@@ -4,15 +4,17 @@
 Soft Lock: fuego + lava. Presentation only. Locked tags, geometry,
 walkability, and kit numbers are not opened for writing.
 
-Reads pending/lava:
-  ground_punch.png     flat diamonds (rock, scorch, ash, lava)
+Scenario punch v4 (Luca sí). Reads pending/lava:
+  ground_punch.png     rock diamonds, lava seams and pits, not lava soup
   elevation_punch.png  platforms. White background is keyed out.
-  props_punch.png      sparse props already on the map (about six)
+  props_punch.png      full scene. Only standing pillars and banners are cut.
 
-board_mood_punch.png is a reference plate and is not sliced. The wide
-lava strip and any extra banner on the prop sheet are not sliced: a
-strip across the diamond eats the floor, and the map only paints the
-six slag prop names. props_rejected sheets are not read.
+board_mood_punch.png is a reference plate and is not sliced. The prop
+sheet's floor is not sliced: a strip across the diamond eats the rock.
+Tall pillars and banners are scaled to one tile. The board draws six of
+them (four corner pillars, two edge banners). Every other paint_only
+cell keeps a small mark so a blocker still reads. props_rejected sheets
+are not read.
 
 Flat tiles are a hard 64×32 diamond with a dark rim so neighboring
 cells keep a seam. Cliffs keep that cap and hang the wall. Stairs stay
@@ -47,11 +49,21 @@ SAMPLE_RW = 78
 SAMPLE_RH = 38
 
 PROP_BOX = {
-    "slag_prop_basalt_pillar.png": (44, 92),
-    "slag_prop_rock_pillar.png": (34, 78),
-    "slag_prop_ash_rock.png": (40, 34),
-    "slag_prop_rubble.png": (34, 26),
-    "slag_prop_steam_vent.png": (32, 34),
+    "slag_prop_basalt_pillar.png": (36, 88),
+    "slag_prop_rock_pillar.png": (28, 76),
+    "slag_prop_banner.png": (30, 84),
+    "slag_prop_ash_rock.png": (22, 16),
+    "slag_prop_rubble.png": (20, 14),
+    "slag_prop_steam_vent.png": (18, 16),
+}
+# Same cells as KoliseoArt.SLAG_TALL_DRESS. Tags stay put; only the draw changes.
+TALL_DRESS = {
+    (0, 0): "basalt_pillar",
+    (14, 0): "basalt_pillar",
+    (0, 14): "basalt_pillar",
+    (14, 14): "basalt_pillar",
+    (7, 0): "banner",
+    (7, 14): "banner",
 }
 # A brand on the south of the diamond. A full 64×32 seal would replace the floor.
 SEAL_SIZE = (28, 14)
@@ -167,37 +179,40 @@ def _sample_ground(sheet: np.ndarray) -> dict[str, list[dict]]:
             fitted = _fit_flat_rgb(crop)
             if int((fitted[:, :, 3] > 200).sum()) < 900:
                 continue
-            if cy < 360:
+            if cy < 200:
                 continue
             opaque = fitted[:, :, 3] > 200
             lum_map = fitted[:, :, :3].astype(np.float32).mean(2)
             mean_lum = float(lum_map[opaque].mean())
-            if float((lum_map[opaque] < 12.0).mean()) > 0.06:
+            if float((lum_map[opaque] < 12.0).mean()) > 0.08:
                 continue
             px = _center(fitted)
             r, g, b = (float(v) for v in px)
-            if not (r > g + 4.0 and r > b + 4.0 and g > 16.0):
+            # v4 rock is darker than the rejected orange soup. Green stays low.
+            if not (r > g + 2.0 and r > b + 2.0 and g > 8.0):
                 continue
             lum = float(px.mean())
             lava_frac = float(_lava_mask(fitted[:, :, :3]).mean())
-            std = float(fitted[:, :, :3].astype(np.float32).mean(2).std())
+            std = float(lum_map[opaque].std())
             item = {
                 "img": fitted,
                 "px": px,
                 "at": (cx, cy),
                 "lum": lum,
+                "mean": mean_lum,
                 "lava": lava_frac,
                 "std": std,
             }
-            # Scorched stone keeps green and blue in the rock. A pure red cell is a stain.
-            stone = g > 28.0 and (r - g) < 95.0 and g + 6.0 > b
-            if lava_frac > 0.45 and r > 165.0 and b < 120.0 and lum > 70.0:
+            center_hot = r > 150.0 and r > g + 40.0
+            # Lava cells are the bright seams and pits. Ground stays dark rock
+            # with a few cracks, so the field is not an orange soup.
+            if lava_frac > 0.30 and r > 160.0 and b < 140.0 and lum > 55.0:
                 found["lava"].append(item)
-            elif stone and lava_frac < 0.08 and 32.0 <= mean_lum <= 58.0 and std > 8.0 and (r - g) < 36.0:
+            elif (not center_hot) and lava_frac < 0.06 and 18.0 <= mean_lum <= 36.0 and std > 5.0 and lum < 42.0:
                 found["water"].append(item)
-            elif stone and lava_frac < 0.16 and 30.0 <= lum <= 52.0 and std > 7.0:
+            elif (not center_hot) and lava_frac < 0.12 and 26.0 <= mean_lum <= 48.0 and (r - g) < 45.0 and std > 6.0:
                 found["mud"].append(item)
-            elif stone and 0.04 <= lava_frac <= 0.34 and 48.0 <= lum <= 88.0 and std > 10.0:
+            elif (not center_hot) and 0.02 <= lava_frac <= 0.20 and 26.0 <= mean_lum <= 68.0 and std > 8.0 and r < 150.0:
                 found["ground"].append(item)
     return found
 
@@ -237,11 +252,11 @@ def _slice_ground() -> list[dict]:
         "mud": _spread(found["mud"], 1, lambda item: item["lum"]),
         "water": _spread(found["water"], 1, lambda item: item["lum"]),
     }
-    # Primary lava is a pool, not a thin vein. Primary ground is scorched rock.
-    picks["lava"].sort(key=lambda item: -item["lum"])
-    rock = np.array([78.0, 52.0, 40.0], np.float32)
-    ash = np.array([42.0, 32.0, 26.0], np.float32)
-    picks["ground"].sort(key=lambda item: float(np.abs(item["px"] - rock).sum()))
+    # Primary lava is a seam or pit, not a white core. Primary ground is dark rock.
+    picks["lava"].sort(key=lambda item: (abs(item["lava"] - 0.55), abs(item["lum"] - 100.0)))
+    rock = np.array([52.0, 30.0, 24.0], np.float32)
+    ash = np.array([34.0, 24.0, 22.0], np.float32)
+    picks["ground"].sort(key=lambda item: (abs(item["lava"] - 0.08), float(np.abs(item["px"] - rock).sum())))
     picks["water"].sort(key=lambda item: float(np.abs(item["px"] - ash).sum()))
     records = []
     names = {
@@ -299,6 +314,10 @@ def _assert_flats(picks: dict) -> None:
         raise SystemExit(f"slag lava center is not lava {lava}")
     if not (water[0] > water[1] and water[0] > water[2]):
         raise SystemExit(f"slag pool center is not dark ash {water}")
+    if float(ground.mean()) > 80.0:
+        raise SystemExit(f"slag ground center is lava soup {ground}")
+    if float(lava.mean()) < float(ground.mean()) + 25.0:
+        raise SystemExit(f"slag lava is not brighter than the rock {lava} vs {ground}")
 
 
 def _key_white(rgb: np.ndarray) -> np.ndarray:
@@ -456,71 +475,150 @@ def _scale_prop(sprite: np.ndarray, max_w: int, max_h: int) -> np.ndarray:
     return arr
 
 
-def _prop_sprites(sheet: np.ndarray) -> list[dict]:
-    """Split on luminance. A loose color key bridges the dark gutters."""
+def _key_scene(rgb: np.ndarray) -> np.ndarray:
+    """Drop the white page. Keep the painted prop."""
+    src = rgb.astype(np.float32)
+    lum = src.mean(2)
+    alpha = np.where(lum > 205.0, 0.0, 1.0)
+    band = (lum > 180.0) & (lum <= 205.0)
+    alpha[band] = np.clip((205.0 - lum[band]) / 25.0, 0.0, 1.0)
+    out = np.zeros((src.shape[0], src.shape[1], 4), np.uint8)
+    out[:, :, :3] = np.clip(src, 0, 255).astype(np.uint8)
+    out[:, :, 3] = (alpha * 255.0).astype(np.uint8)
+    out[out[:, :, 3] < 16] = 0
+    return out
+
+
+def _trim_floor(arr: np.ndarray) -> np.ndarray:
+    """Cut a wide dark floor that came along with the prop base."""
+    opaque = arr[:, :, 3] > 20
+    widths = opaque.sum(1)
+    body = widths[widths > 0]
+    if body.size == 0:
+        return arr
+    med = float(np.median(body))
+    cut = arr.shape[0]
+    for y in range(arr.shape[0] - 1, arr.shape[0] // 2, -1):
+        if widths[y] > med * 1.8:
+            cut = y
+        else:
+            break
+    if cut < arr.shape[0]:
+        arr = arr[:cut]
+    ys, xs = np.where(arr[:, :, 3] > 20)
+    if len(xs) == 0:
+        return arr
+    return arr[ys.min() : ys.max() + 1, xs.min() : xs.max() + 1]
+
+
+def _standing_props(sheet: np.ndarray) -> list[dict]:
+    """Pillars and banners stick above the board edge. The floor stays put."""
     lum = sheet.astype(np.float32).mean(2)
-    mask = ndimage.binary_opening(lum > 22.0, iterations=1)
-    lab, count = ndimage.label(mask)
+    content = lum < 200.0
+    height, width = content.shape
+    top = np.full(width, height - 1, np.int32)
+    for x in range(width):
+        ys = np.where(content[:, x])[0]
+        if len(ys):
+            top[x] = int(ys[0])
+    valid = top < int(height * 0.92)
+    fallback = int(np.median(top[valid])) if valid.any() else height // 2
+    edge = ndimage.maximum_filter1d(np.where(valid, top, fallback), size=90, mode="nearest")
+    protrude = edge.astype(np.int32) - top
+    mask = valid & (protrude > 70)
+    runs: list[tuple[int, int]] = []
+    start = 0
+    inside = False
+    for x in range(width):
+        if mask[x] and not inside:
+            start = x
+            inside = True
+        elif not mask[x] and inside:
+            runs.append((start, x - 1))
+            inside = False
+    if inside:
+        runs.append((start, width - 1))
     sprites = []
-    for i in range(1, count + 1):
-        ys, xs = np.where(lab == i)
-        if len(xs) < 8000:
+    for a, b in runs:
+        span = b - a + 1
+        if span < 18 or span > 160:
             continue
-        x0, x1 = int(xs.min()), int(xs.max())
-        y0, y1 = int(ys.min()), int(ys.max())
-        local = lab[y0 : y1 + 1, x0 : x1 + 1] == i
-        crop = np.zeros((y1 - y0 + 1, x1 - x0 + 1, 4), np.uint8)
-        crop[:, :, :3] = sheet[y0 : y1 + 1, x0 : x1 + 1]
-        crop[:, :, 3] = np.where(local, 255, 0).astype(np.uint8)
-        mean = crop[local][:, :3].astype(np.float32).mean(0)
+        pad = 6
+        x0 = max(0, a - pad)
+        x1 = min(width - 1, b + pad)
+        y0 = max(0, int(top[a : b + 1].min()) - 2)
+        y1 = min(height - 1, int(np.median(edge[a : b + 1])) + 10)
+        if y1 - y0 < 80:
+            continue
+        crop = _trim_floor(_key_scene(sheet[y0 : y1 + 1, x0 : x1 + 1]))
+        opaque = crop[:, :, 3] > 20
+        if int(opaque.sum()) < 400:
+            continue
+        red = crop[:, :, 0].astype(np.float32)
+        green = crop[:, :, 1].astype(np.float32)
+        cloth = opaque & (red > green + 30.0) & (red > 80.0)
         sprites.append(
             {
                 "img": crop,
-                "w": crop.shape[1],
-                "h": crop.shape[0],
+                "w": int(crop.shape[1]),
+                "h": int(crop.shape[0]),
                 "at": (x0, y0),
-                "mean": mean,
-                "area": int(local.sum()),
+                "area": int(opaque.sum()),
+                "red": float(cloth.sum()) / float(max(int(opaque.sum()), 1)),
             }
         )
     return sprites
 
 
+def _chip_from(path: Path, size: tuple[int, int]) -> np.ndarray:
+    """A small south-tip mark. It does not replace the diamond."""
+    src = Image.open(path).convert("RGBA").resize(size, Image.Resampling.LANCZOS)
+    arr = np.asarray(src).copy()
+    mask = _iso_mask(arr.shape[1], arr.shape[0])
+    arr[:, :, 3] = np.where(mask, 255, 0).astype(np.uint8)
+    _rim(arr, mask)
+    return arr
+
+
 def _slice_props() -> list[dict]:
     sheet = np.asarray(Image.open(PROPS_SHEET).convert("RGB"))
-    sprites = _prop_sprites(sheet)
-    # A wide strip laid across a cell eats the floor. Leave it on the sheet.
-    standing = [s for s in sprites if s["w"] <= s["h"] * 2.0]
-    skipped = len(sprites) - len(standing)
-    if skipped < 1:
-        raise SystemExit("expected the wide floor strip to stay unwired")
-    pillars = [s for s in standing if s["h"] >= s["w"] * 1.35 and s["h"] >= 500]
-    pillar_ids = {id(s) for s in pillars}
-    compact = [s for s in standing if id(s) not in pillar_ids]
-    if len(pillars) < 2 or len(compact) < 3:
-        raise SystemExit(f"need 2 pillars and 3 compact props, found {len(pillars)} and {len(compact)}")
-    pillars.sort(key=lambda s: -s["h"])
-    basalt = pillars[0]
-    rock_pillar = min(pillars, key=lambda s: s["w"] / max(s["h"], 1))
-    if rock_pillar is basalt:
-        rock_pillar = pillars[1]
-    steam = max(compact, key=lambda s: float(s["mean"][0]) - float(s["mean"][2]))
-    rocks = [s for s in compact if s is not steam]
-    rocks.sort(key=lambda s: -s["area"])
+    standing = _standing_props(sheet)
+    banners = [s for s in standing if s["red"] >= 0.08 and s["h"] >= s["w"]]
+    pillars = [s for s in standing if s["red"] < 0.08 and s["h"] >= s["w"] * 1.15]
+    if not banners or len(pillars) < 2:
+        raise SystemExit(f"need 2 pillars and 1 banner, found {len(pillars)} and {len(banners)}")
+    basalt = max(pillars, key=lambda s: s["area"])
+    rock_pillar = min((s for s in pillars if s is not basalt), key=lambda s: s["w"] / max(s["h"], 1))
+    banner = max(banners, key=lambda s: s["h"] / max(s["w"], 1))
     assigned = {
         "slag_prop_basalt_pillar.png": basalt,
         "slag_prop_rock_pillar.png": rock_pillar,
-        "slag_prop_ash_rock.png": rocks[0],
-        "slag_prop_rubble.png": rocks[1] if len(rocks) > 1 else rocks[0],
-        "slag_prop_steam_vent.png": steam,
+        "slag_prop_banner.png": banner,
     }
     records = []
     for name, sprite in assigned.items():
         arr = _scale_prop(sprite["img"], *PROP_BOX[name])
-        if arr.shape[1] > 48:
+        limit = 40 if "rock_pillar" in name or "banner" in name else 48
+        if arr.shape[1] > limit:
             raise SystemExit(f"{name} is too wide for one tile ({arr.shape[1]})")
+        if arr.shape[0] <= arr.shape[1]:
+            raise SystemExit(f"{name} does not stand ({arr.shape[1]}x{arr.shape[0]})")
         _save_arr(name, arr, records, sprite["at"], "prop")
-        print(f"{name:28} {arr.shape[1]:3}x{arr.shape[0]:<3} from {sprite['w']}x{sprite['h']} at {sprite['at']}")
+        print(
+            f"{name:28} {arr.shape[1]:3}x{arr.shape[0]:<3} "
+            f"from {sprite['w']}x{sprite['h']} red {sprite['red']:.2f} at {sprite['at']}"
+        )
+    chips = {
+        "slag_prop_ash_rock.png": TILES / "slag_ground.png",
+        "slag_prop_rubble.png": TILES / "slag_ground_v1.png",
+        "slag_prop_steam_vent.png": TILES / "slag_lava.png",
+    }
+    for name, src in chips.items():
+        arr = _chip_from(src, PROP_BOX[name])
+        if arr.shape[0] >= 32 or arr.shape[1] >= 40:
+            raise SystemExit(f"{name} covers the diamond")
+        _save_arr(name, arr, records, (0, 0), "prop")
+        print(f"{name:28} {arr.shape[1]:3}x{arr.shape[0]:<3} small mark")
     return records
 
 
@@ -574,7 +672,7 @@ def _patch_atlas(records: list[dict]) -> None:
         "elevation": "pending/lava/elevation_punch.png",
         "props": "pending/lava/props_punch.png",
         "mood": "pending/lava/board_mood_punch.png",
-        "note": "Live Slagcrown paint. Mood plate is reference only. Geometry and tags stay on the Locked map.",
+        "note": "Live Slagcrown paint is scenario punch v4. Mood plate is reference only. Geometry and tags stay on the Locked map. Six tall props: corner pillars and two banners.",
     }
     written = {item["file"] for item in records}
     kept = [item for item in atlas.get("files", []) if item.get("file") not in written]
@@ -592,6 +690,21 @@ def _load_cells() -> list:
             "paint_only": list(cell["paint_only"]),
         }
     return cells
+
+
+def _dress_names(x: int, y: int, props: list) -> list[str]:
+    """Six tall props. Other cells keep a small mark. Tags are not edited."""
+    if not props:
+        return []
+    if (x, y) in TALL_DRESS:
+        return [TALL_DRESS[(x, y)]]
+    names = []
+    for prop in props:
+        if prop in ("floor_seal", "steam_vent", "rubble"):
+            names.append(prop)
+        else:
+            names.append("ash_rock")
+    return names
 
 
 def _tile_stem(cell: dict) -> str:
@@ -649,13 +762,10 @@ def _render_board(cells: list) -> Image.Image:
         if tile.height > 32:
             py -= tile.height - 32
         canvas.alpha_composite(tile, (px, py))
-        for prop in cell["paint_only"]:
+        for prop in _dress_names(x, y, cell["paint_only"]):
             prop_img = get(f"slag_prop_{prop}")
             ppx = px + 32 - prop_img.width // 2
-            if tile.height > 32:
-                ppy = py + 32 - prop_img.height
-            else:
-                ppy = py + 32 - prop_img.height
+            ppy = py + 32 - prop_img.height
             canvas.alpha_composite(prop_img, (ppx, ppy))
     return canvas
 

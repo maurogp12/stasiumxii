@@ -961,8 +961,8 @@
     {
       "file": "slag_ground.png",
       "anchor": [
-        422,
-        1522
+        902,
+        442
       ],
       "fit": "flat",
       "size": [
@@ -974,8 +974,8 @@
     {
       "file": "slag_ground_v1.png",
       "anchor": [
-        1190,
-        1234
+        758,
+        1018
       ],
       "fit": "flat",
       "size": [
@@ -987,8 +987,8 @@
     {
       "file": "slag_ground_v2.png",
       "anchor": [
-        1622,
-        1162
+        902,
+        874
       ],
       "fit": "flat",
       "size": [
@@ -1000,8 +1000,8 @@
     {
       "file": "slag_ground_v3.png",
       "anchor": [
-        1046,
-        694
+        518,
+        406
       ],
       "fit": "flat",
       "size": [
@@ -1013,8 +1013,8 @@
     {
       "file": "slag_ground_v4.png",
       "anchor": [
-        950,
-        1594
+        278,
+        1018
       ],
       "fit": "flat",
       "size": [
@@ -1027,7 +1027,7 @@
       "file": "slag_lava.png",
       "anchor": [
         278,
-        1198
+        1270
       ],
       "fit": "flat",
       "size": [
@@ -1039,8 +1039,8 @@
     {
       "file": "slag_lava_v1.png",
       "anchor": [
-        1382,
-        1126
+        662,
+        1378
       ],
       "fit": "flat",
       "size": [
@@ -1052,7 +1052,7 @@
     {
       "file": "slag_lava_v2.png",
       "anchor": [
-        1766,
+        1814,
         838
       ],
       "fit": "flat",
@@ -1065,8 +1065,8 @@
     {
       "file": "slag_lava_v3.png",
       "anchor": [
-        1382,
-        838
+        1958,
+        946
       ],
       "fit": "flat",
       "size": [
@@ -1078,8 +1078,8 @@
     {
       "file": "slag_lava_v4.png",
       "anchor": [
-        566,
-        1198
+        1814,
+        1162
       ],
       "fit": "flat",
       "size": [
@@ -1091,8 +1091,8 @@
     {
       "file": "slag_lava_v5.png",
       "anchor": [
-        950,
-        838
+        134,
+        1018
       ],
       "fit": "flat",
       "size": [
@@ -1104,8 +1104,8 @@
     {
       "file": "slag_lava_v6.png",
       "anchor": [
-        1046,
-        1126
+        230,
+        802
       ],
       "fit": "flat",
       "size": [
@@ -1117,8 +1117,8 @@
     {
       "file": "slag_lava_v7.png",
       "anchor": [
-        1718,
-        1162
+        1190,
+        1450
       ],
       "fit": "flat",
       "size": [
@@ -1130,8 +1130,8 @@
     {
       "file": "slag_mud.png",
       "anchor": [
-        758,
-        622
+        1526,
+        730
       ],
       "fit": "flat",
       "size": [
@@ -1143,8 +1143,8 @@
     {
       "file": "slag_water.png",
       "anchor": [
-        422,
-        766
+        1670,
+        1234
       ],
       "fit": "flat",
       "size": [
@@ -1156,8 +1156,8 @@
     {
       "file": "slag_prop_floor_seal.png",
       "anchor": [
-        422,
-        766
+        1670,
+        1234
       ],
       "fit": "seal",
       "size": [
@@ -1221,65 +1221,78 @@
     {
       "file": "slag_prop_basalt_pillar.png",
       "anchor": [
-        1259,
-        167
+        708,
+        226
       ],
       "fit": "prop",
       "size": [
-        44,
-        71
+        36,
+        88
       ],
       "source": "pending/lava"
     },
     {
       "file": "slag_prop_rock_pillar.png",
       "anchor": [
-        280,
-        398
+        2145,
+        426
       ],
       "fit": "prop",
       "size": [
-        34,
-        68
+        22,
+        76
+      ],
+      "source": "pending/lava"
+    },
+    {
+      "file": "slag_prop_banner.png",
+      "anchor": [
+        1736,
+        135
+      ],
+      "fit": "prop",
+      "size": [
+        28,
+        84
       ],
       "source": "pending/lava"
     },
     {
       "file": "slag_prop_ash_rock.png",
       "anchor": [
-        747,
-        1166
+        0,
+        0
       ],
       "fit": "prop",
       "size": [
-        33,
-        34
+        22,
+        16
       ],
       "source": "pending/lava"
     },
     {
       "file": "slag_prop_rubble.png",
       "anchor": [
-        989,
-        1120
+        0,
+        0
       ],
       "fit": "prop",
       "size": [
-        29,
-        26
+        20,
+        14
       ],
       "source": "pending/lava"
     },
     {
       "file": "slag_prop_steam_vent.png",
       "anchor": [
-        1328,
-        1434
+        0,
+        0
       ],
       "fit": "prop",
       "size": [
-        31,
-        34
+        18,
+        16
       ],
       "source": "pending/lava"
     },
@@ -1469,6 +1482,6 @@
     "elevation": "pending/lava/elevation_punch.png",
     "props": "pending/lava/props_punch.png",
     "mood": "pending/lava/board_mood_punch.png",
-    "note": "Live Slagcrown paint. Mood plate is reference only. Geometry and tags stay on the Locked map."
+    "note": "Live Slagcrown paint is scenario punch v4. Mood plate is reference only. Geometry and tags stay on the Locked map. Six tall props: corner pillars and two banners."
   }
 }

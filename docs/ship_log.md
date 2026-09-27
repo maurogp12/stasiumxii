@@ -2,6 +2,20 @@
 
 Durable record of feel passes on the mobile track. Kit numbers in here are reminders of what stayed Locked. They are not a second source of truth. The legal sentences live in `docs/STASIUM_XII_GDD_handoff.md`.
 
+## 2026-09-27 — Slagcrown scenario punch v4
+
+Soft Lock fuego + lava. Presentation only. Locked Slagcrown geometry, tags, walkability, and kit numbers are unchanged. No grass, moss, or bushes. This replaces the #179 orange-soup bake.
+
+`slice_lava_punch.py` reads the v4 punch sheets and overwrites only `slag_*` and `slag_prop_*`. Ground diamonds are dark rock with lava seams. Lava-tagged cells stay bright. Ash pools stay dark. Cliffs stay the elevation punch.
+
+| Punch sheet | Live slices |
+| --- | --- |
+| `art/tilesets/original/pending/lava/ground_punch.png` | `slag_ground.png` and `slag_ground_v1`–`v4`, `slag_mud.png`, `slag_water.png`, `slag_lava.png` and `slag_lava_v1`–`v7`, `slag_prop_floor_seal.png` |
+| `art/tilesets/original/pending/lava/elevation_punch.png` | `slag_ground_e1.png`, `slag_ground_e1_v1.png`, `slag_mud_e1.png`, `slag_ground_e2.png` |
+| `art/tilesets/original/pending/lava/props_punch.png` | `slag_prop_basalt_pillar.png`, `slag_prop_rock_pillar.png`, `slag_prop_banner.png` |
+
+`slag_prop_ash_rock.png`, `slag_prop_rubble.png`, and `slag_prop_steam_vent.png` are small marks cut from the ground and lava diamonds, not the prop sheet's floor. The board draws six tall props: pillars on the four corners and a banner on the north and south edge. Every other paint_only cell keeps a small mark. Tags still name the original props, and those cells still block when the prop blocks. `board_mood_punch.png` is a reference plate and is not sliced.
+
 ## 2026-09-27 — Brinewake elevation v2, upper-corner deck gone
 
 Soft Lock agua + costa. Presentation only. Locked Brinewake geometry, tags, walkability, and kit numbers are unchanged. No APK. `version/name` and `version/code` stay put.

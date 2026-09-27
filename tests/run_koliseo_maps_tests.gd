@@ -534,16 +534,27 @@ func _test_slag_punch() -> void:
 	truthy(seal.get_width() <= 40 and seal.get_height() <= 20, "Slagcrown floor seal does not cover the diamond")
 	var basalt: Texture2D = art.prop_texture("basalt_pillar", "slag_")
 	var pillar: Texture2D = art.prop_texture("rock_pillar", "slag_")
+	var banner: Texture2D = art.prop_texture("banner", "slag_")
 	truthy(basalt.get_width() <= 48, "Slagcrown basalt pillar stays on one tile")
 	truthy(pillar.get_width() <= 40, "Slagcrown rock pillar stays narrow")
+	truthy(banner.get_width() <= 36 and banner.get_height() > banner.get_width(), "Slagcrown banner is a narrow standing prop")
+	var rock := ground.get_image().get_pixel(32, 16)
+	var melt := lava.get_image().get_pixel(32, 16)
+	truthy(rock.r < 0.55 and rock.r > rock.g, "Slagcrown ground center is dark rock, not lava soup")
+	truthy(melt.r > rock.r + 0.25 and melt.r > melt.b, "Slagcrown lava is brighter than the rock")
+	eq(art.SLAG_TALL_DRESS.size(), 6, "Slagcrown draws six tall props")
+	eq(str(art.visible_props("slagcrown", Vector2i(0, 0), ["basalt_pillar"])[0]), "basalt_pillar", "corner pillar stays tall")
+	eq(str(art.visible_props("slagcrown", Vector2i(7, 0), ["basalt_pillar"])[0]), "banner", "north edge draws a banner")
+	eq(str(art.visible_props("slagcrown", Vector2i(2, 2), ["basalt_pillar"])[0]), "ash_rock", "an interior pillar stays a small mark")
+	eq(str(art.visible_props("windmere", Vector2i(0, 0), ["crystal"])[0]), "crystal", "other arenas keep their own props")
 	var dress := [
 		"slag_ground.png", "slag_ground_v1.png", "slag_ground_v2.png", "slag_ground_v3.png", "slag_ground_v4.png",
 		"slag_mud.png", "slag_water.png",
 		"slag_lava.png", "slag_lava_v1.png", "slag_lava_v2.png", "slag_lava_v3.png",
 		"slag_lava_v4.png", "slag_lava_v5.png", "slag_lava_v6.png", "slag_lava_v7.png",
 		"slag_ground_e1.png", "slag_ground_e1_v1.png", "slag_mud_e1.png", "slag_ground_e2.png",
-		"slag_prop_basalt_pillar.png", "slag_prop_rock_pillar.png", "slag_prop_ash_rock.png",
-		"slag_prop_rubble.png", "slag_prop_steam_vent.png", "slag_prop_floor_seal.png",
+		"slag_prop_basalt_pillar.png", "slag_prop_rock_pillar.png", "slag_prop_banner.png",
+		"slag_prop_ash_rock.png", "slag_prop_rubble.png", "slag_prop_steam_vent.png", "slag_prop_floor_seal.png",
 	]
 	for file_name in dress:
 		var path: String = "res://art/maps/arena_colosseum_v2/tiled/tiles/" + str(file_name)

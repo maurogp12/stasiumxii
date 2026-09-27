@@ -4,9 +4,9 @@ Scenario lava punch sheets for Slagcrown.
 
 | File | Use |
 | --- | --- |
-| `ground_punch.png` | Scorched rock, scorch, dark ash, and lava diamonds |
+| `ground_punch.png` | Scenario punch v4. Dark rock diamonds, lava seams and pits, bright lava, dark ash |
 | `elevation_punch.png` | Platforms. White background is keyed out. Stairs stay attached to the cap |
-| `props_punch.png` | Sparse props the map already paints. The wide lava strip is not sliced |
+| `props_punch.png` | Scenario punch v4 scene. Standing pillars and banners only. The floor is not sliced |
 | `board_mood_punch.png` | Reference plate. Not sliced into tiles |
 
-Lava theme is rock, lava, and ash. No grass, moss, or bushes. `props_rejected` sheets are not a source.
+Lava theme is rock, lava, and ash. No grass, moss, or bushes. `props_rejected` sheets are not a source. The board draws six tall props. Other paint_only cells stay small marks.
