@@ -125,6 +125,7 @@ func _test_sprite_node_setup() -> void:
 		eq(Pawn.idle_plant_texture(class_id, "E"), null, "%s has no separate idle plant" % class_id)
 	for class_id in ["ironjaw", "bastion"]:
 		_assert_west_is_east_mirror(class_id)
+		_assert_facing_holds_east_sheet(class_id)
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
@@ -311,6 +312,17 @@ func _assert_walk_identity(pawn: Pawn, class_id: String, facing: String) -> void
 		eq(String(turned.animation), "walk_%s" % other.to_lower(), "%s face snap matches the pad" % class_id)
 		eq(turned.frame, 0, "%s face snap plants frame 0" % class_id)
 	pawn.set_facing(facing)
+
+
+## North and south stay on the locked east sheet so a face change cannot
+## load the older costume. West is the mirror, checked separately.
+func _assert_facing_holds_east_sheet(class_id: String) -> void:
+	var east := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
+	for face in ["n", "s"]:
+		var held := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, face))
+		eq(held == east, true, "%s walk_%s is the east sheet" % [class_id, face])
+		var png := FileAccess.get_file_as_bytes(StripLibrary.export_png_path(class_id, "walk", face))
+		eq(png == east, true, "%s walk_%s png matches the east bytes" % [class_id, face])
 
 
 func _assert_west_is_east_mirror(class_id: String) -> void:
