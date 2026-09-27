@@ -1430,13 +1430,15 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
 	if dir == "":
 		dir = str(pawn.facing)
-	# Idle texture while the node moves is the slide. No walk strip, no translate.
-	if not pawn.begin_segment_walk(dir):
-		return
 	var u := VIEW_MOTION.step_travel(t)
 	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
-	pawn.sample_driven_gait(t)
+	# Idle texture while the node moves is the slide. No walk strip means no
+	# animated gait frame, but the node itself must still glide tile to tile —
+	# begin_segment_walk() only gates the walk-cycle animation, never the move.
+	if pawn.begin_segment_walk(dir):
+		pawn.sample_driven_gait(t)
 	_track_step_sort(t, pawn, src, dst)
+
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
