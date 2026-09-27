@@ -180,6 +180,8 @@ func _test_mobile_target_pick() -> void:
 	# Finger padding is opt-in. Desktop calls stay on the 22px circle and the 34px body.
 	eq(TOUCH.PAWN_BODY_RADIUS, 34.0, "desktop body radius stays 34")
 	eq(TOUCH.MOBILE_PAWN_BODY_RADIUS > TOUCH.PAWN_BODY_RADIUS, true, "a finger uses a fatter body")
+	eq(TOUCH.TARGET_PAWN_BODY_RADIUS > TOUCH.MOBILE_PAWN_BODY_RADIUS, true, "a unit cast uses a wider sprite pad")
+	eq(TOUCH.TARGET_PAWN_BODY_RADIUS <= 72.0, true, "the sprite pad stays inside a primary button")
 	eq(TOUCH.MOBILE_CELL_PICK_RADIUS > TOUCH.CELL_PICK_RADIUS, true, "off-board finger pad is wider than 22px")
 	eq(TOUCH.use_mobile_pick(), false, "headless does not force the finger pick")
 	var sort := preload("res://board/visual_sort.gd")
@@ -198,8 +200,26 @@ func _test_mobile_target_pick() -> void:
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true) == foe, false, "desktop unit pick of that slop is not the foe")
 	eq(TOUCH.pick_board_cell(beside, tiles, pawns, true, true), foe, "finger unit pick of that slop is the foe")
 	var east: Vector2 = tiles[Vector2i(7, 6)]
-	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the finger body")
-	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), Vector2i(7, 6), "finger pick of the east diamond stays that tile")
+	eq(TOUCH.hits_pawn_body(east, foe_origin, true), false, "the east neighbor diamond stays outside the walk capsule")
+	eq(TOUCH.hits_pawn_body(east, foe_origin, true, true), true, "a unit-cast pad reaches the east neighbor diamond")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, false, true), Vector2i(7, 6), "a walk tap on the east diamond stays that tile")
+	eq(TOUCH.pick_board_cell(east, tiles, pawns, true, true), foe, "a unit cast on the east diamond selects the foe")
+	var overlap: Vector2 = tiles[Vector2i(4, 4)]
+	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, false), Vector2i(4, 4), "the diamond behind the foe is empty ground")
+	eq(TOUCH.hits_pawn_body(overlap, foe_origin), true, "that ground center sits on the sprite")
+	eq(TOUCH.pick_board_cell(overlap, tiles, pawns, true), foe, "the body wins when the tap overlaps the sprite and that ground cell")
+	var nearer := foe_origin + Vector2(10, -72)
+	var pair := [
+		{"cell": foe, "origin": foe_origin, "sort": 1},
+		{"cell": Vector2i(8, 8), "origin": foe_origin + Vector2(50, 0), "sort": 50},
+	]
+	eq(TOUCH.pick_board_cell(nearer, tiles, pair, true, true), foe, "the nearer sprite wins when both pads contain the tap")
+	var tied := [
+		{"cell": foe, "origin": foe_origin, "sort": 1},
+		{"cell": Vector2i(7, 6), "origin": foe_origin, "sort": 2},
+	]
+	var tied_chest := foe_origin + Vector2(0, -72)
+	eq(TOUCH.pick_board_cell(tied_chest, tiles, tied, true, true), Vector2i(4, 4), "an equal body tie stays the empty ground cell")
 	var north: Vector2 = tiles[Vector2i(6, 5)]
 	eq(TOUCH.hits_pawn_body(north, foe_origin), false, "the north diamond stays outside the desktop body")
 	eq(TOUCH.hits_pawn_body(north, foe_origin, true), true, "the figure covers the north diamond, so a finger cast hits the unit")

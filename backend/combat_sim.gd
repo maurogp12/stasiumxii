@@ -1775,11 +1775,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, "no_target", "REJECT — Ambush needs an enemy (refund).")
 		return _resolve_ambush(intent, actor, ambush_target, def, dest, dist, ap_cost, mp_cost)
 
-	# A tap on the empty mud / water / lava beside a body is still that body.
-	# The trough reads as one dark tile. Do not refund "needs a living unit"
-	# when exactly one in-range enemy stands on that kind of tile next to the tap.
+	# Soft Lock. An empty tile beside exactly one in-range legal enemy is that
+	# enemy. Same Chebyshev neighborhood as the #194 trough snap. Ground uses
+	# it too: the trough was the first case, not a separate rule. Zero neighbors
+	# and two or more stay the tapped cell.
 	if _living_unit_at(dest).is_empty() and (target_kind == "enemy" or target_kind == "any"):
-		var beside := _hazard_neighbor_target(actor, def, range_from, dest)
+		var beside := _soft_lock_neighbor_target(actor, def, range_from, dest)
 		if not beside.is_empty():
 			dest = beside["pos"]
 			dist = _range_distance(def, range_from, dest)
@@ -3048,10 +3049,37 @@ func _next_turn_seat(from_seat: int) -> int:
 	return int(seats[0])
 
 
-## Empty mud, water, or lava next to exactly one in-range enemy on that
-## kind of tile. The tap is the trough, not a miss. Two neighbors stay a miss.
-func _hazard_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vector2i, dest: Vector2i) -> Dictionary:
-	if not _board.is_voluntary_impassable(dest):
+## Selection snap for a living-unit cast. The tapped cell is unchanged when it
+## already holds a unit, the spell is not an enemy cast, the tap is out of
+## range, or the Chebyshev neighborhood (the #194 trough test, distance <= 1)
+## does not hold exactly one in-range legal enemy. Ambush keeps its own origin
+## snap. Two neighbors stay the empty tile.
+func soft_lock_dest(seat: int, spell_id: String, dest: Vector2i) -> Vector2i:
+	if spell_id == SpellKits.AMBUSH:
+		return dest
+	var def: Dictionary = SpellKits.spell(spell_id)
+	if def.is_empty():
+		return dest
+	var target_kind := str(def.get("target", ""))
+	if target_kind != "enemy" and target_kind != "any":
+		return dest
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not bool(actor.get("alive", false)):
+		return dest
+	var beside := _soft_lock_neighbor_target(actor, def, actor["pos"], dest)
+	if beside.is_empty():
+		return dest
+	return beside["pos"]
+
+
+## Empty tile beside exactly one in-range legal enemy. Chebyshev <= 1, the
+## same neighborhood the hazard trough used. The tap itself must be in range.
+## A gate failure (Detonate with no Marks) is not a legal neighbor. Zero or
+## two or more neighbors return empty so the cast keeps the empty-tile reject.
+func _soft_lock_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vector2i, dest: Vector2i) -> Dictionary:
+	if not _living_unit_at(dest).is_empty():
+		return {}
+	if not _in_spell_range(def, range_from, dest):
 		return {}
 	var found := {}
 	for hostile in _hostile_cast_targets(int(actor["seat"])):
@@ -3060,11 +3088,11 @@ func _hazard_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vec
 		var enemy: Dictionary = hostile
 		if not bool(enemy.get("alive", false)):
 			continue
-		if not _board.is_voluntary_impassable(enemy["pos"]):
-			continue
 		if chebyshev(dest, enemy["pos"]) > 1:
 			continue
 		if not _in_spell_range(def, range_from, enemy["pos"]):
+			continue
+		if _cast_gate_reason(actor, enemy, def) != "":
 			continue
 		if not found.is_empty():
 			return {}

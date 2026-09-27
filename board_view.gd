@@ -473,9 +473,25 @@ func _cell_under_pointer(event: InputEvent) -> Vector2i:
 
 
 func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
-	var prefer := _hud != null and TOUCH.spell_targets_unit(_hud.selected_spell())
+	var spell := ""
+	if _hud != null:
+		spell = _hud.selected_spell()
+	var prefer := TOUCH.spell_targets_unit(spell)
 	var pawns: Array = _living_pawns_for_pick() if prefer else []
-	return TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
+	var cell := TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
+	return _soft_lock_cell(cell, spell, prefer)
+
+
+## Hot-seat CombatSim snaps the empty neighbor onto the one legal enemy so the
+## aim ring and the commit use that body. A net session resolves the same snap
+## on submit; this window does not invent a second rule.
+func _soft_lock_cell(cell: Vector2i, spell: String, prefer: bool) -> Vector2i:
+	if not prefer or not _in_bounds(cell):
+		return cell
+	var sim := _sim()
+	if sim == null or not sim.has_method("soft_lock_dest"):
+		return cell
+	return sim.soft_lock_dest(CombatHUD.kit_seat(sim.snapshot()), spell, cell)
 
 
 func _tile_positions() -> Dictionary:

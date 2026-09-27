@@ -46,9 +46,18 @@ const MOBILE_CELL_PICK_RADIUS := 36.0
 ## from the spine) so that diamond is not a body hit. It is not a wider
 ## CELL_PICK_RADIUS.
 const PAWN_BODY_RADIUS := 34.0
-## Finger capsule. A tap beside the chest (~48px) still selects the fighter.
-## The east neighbor diamond (~54px) stays a tile.
+## Finger capsule for walks and for taps that are not a unit cast.
+## A tap beside the chest (~48px) still selects the fighter.
+## The east neighbor diamond (~54px) stays a tile on this radius.
 const MOBILE_PAWN_BODY_RADIUS := 52.0
+## Unit-cast finger pad. Wider than the walk capsule so the enemy figure,
+## including the diamond the sprite covers, wins over empty ground.
+## 64 reaches that east-neighbor center. It is still a radius on the sprite,
+## not a new button. Walk picks keep MOBILE_PAWN_BODY_RADIUS.
+const TARGET_PAWN_BODY_RADIUS := 64.0
+## Two sprites under one tap. The nearer body wins when it is clearly closer.
+## A tie stays the ground cell so Soft Lock can refuse two neighbors.
+const BODY_PICK_TIE_PX := 8.0
 const PAWN_BODY_HEAD_Y := -108.0
 const PAWN_BODY_FEET_Y := -28.0
 
@@ -309,11 +318,16 @@ static func diamond_metric(point: Vector2, center: Vector2) -> float:
 
 
 ## True when the point lies on the fighter sprite, not the diamond at their feet.
-## mobile widens the capsule. The default radius is the desktop test.
-static func hits_pawn_body(point: Vector2, pawn_origin: Vector2, mobile: bool = false) -> bool:
+## mobile widens the capsule. targeting uses the unit-cast pad. The default
+## radius is the desktop test.
+static func hits_pawn_body(point: Vector2, pawn_origin: Vector2, mobile: bool = false, targeting: bool = false) -> bool:
 	var local := point - pawn_origin
 	var y := clampf(local.y, PAWN_BODY_HEAD_Y, PAWN_BODY_FEET_Y)
-	var radius := MOBILE_PAWN_BODY_RADIUS if mobile else PAWN_BODY_RADIUS
+	var radius := PAWN_BODY_RADIUS
+	if targeting and mobile:
+		radius = TARGET_PAWN_BODY_RADIUS
+	elif mobile:
+		radius = MOBILE_PAWN_BODY_RADIUS
 	return local.distance_to(Vector2(0.0, y)) <= radius
 
 
@@ -373,29 +387,38 @@ static func cluster_button_rect(center: Vector2, primary: bool) -> Rect2:
 ## Desktop: nearest tile inside CELL_PICK_RADIUS, else the flat iso cell.
 ## mobile: a living body uses the fatter capsule; otherwise the painted diamond
 ## (side tips included). A tap just off the board uses MOBILE_CELL_PICK_RADIUS.
-## prefer_unit does not change walk picks. living_pawns entries:
+## prefer_unit checks the body before any ground cell, and a unit cast uses
+## the wider pad. A tie between two bodies stays ground. prefer_unit does not
+## change walk picks. living_pawns entries:
 ## {cell: Vector2i, origin: Vector2, sort: int}.
 static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_pawns: Array, prefer_unit: bool, mobile: bool = false) -> Vector2i:
 	if prefer_unit:
-		var found := false
 		var best_cell := Vector2i(-1, -1)
-		var best_sort := 0
 		var best_d := 0.0
+		var second_d := 0.0
+		var hits := 0
+		var have_second := false
 		for entry in living_pawns:
 			if typeof(entry) != TYPE_DICTIONARY:
 				continue
 			var pawn: Dictionary = entry
 			var origin: Vector2 = pawn.get("origin", Vector2.ZERO)
-			if not hits_pawn_body(point, origin, mobile):
+			if not hits_pawn_body(point, origin, mobile, true):
 				continue
-			var sort := int(pawn.get("sort", 0))
 			var dist := point.distance_to(origin)
-			if not found or sort > best_sort or (sort == best_sort and dist < best_d):
-				found = true
-				best_sort = sort
+			hits += 1
+			if hits == 1 or dist < best_d:
+				if hits > 1:
+					second_d = best_d
+					have_second = true
 				best_d = dist
 				best_cell = pawn.get("cell", Vector2i(-1, -1))
-		if found:
+			elif not have_second or dist < second_d:
+				second_d = dist
+				have_second = true
+		if hits == 1:
+			return best_cell
+		if hits > 1 and have_second and best_d + BODY_PICK_TIE_PX < second_d:
 			return best_cell
 	if mobile:
 		var painted := iso_cell(point)

@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_phase_a_demo_map()
 	_test_mud_walk_cost()
 	_test_hazard_push_and_targets()
+	_test_soft_lock_target()
 	_test_lava_impassable()
 	_test_solid_props_block_walk_paths()
 	_test_void_gap_not_standable()
@@ -1012,8 +1013,10 @@ func _test_hazard_push_and_targets() -> void:
 		"kestrel_pos": Vector2i(9, 6),
 		"tiles": [{"pos": Vector2i(9, 6), "terrain": "water", "elevation": 0}],
 	})
-	var ground_miss: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(8, 7), "seat": 0})
-	eq(str(ground_miss.get("reason", "")), "no_target", "an empty ground tile beside them stays a miss")
+	var ground_snap: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(8, 7), "seat": 0})
+	eq(bool(ground_snap.get("ok", false)), true, "Strike on empty ground beside one body snaps (%s)" % str(ground_snap.get("reason", "")))
+	eq(_unit(1)["pos"], Vector2i(9, 6), "the ground snap does not move the body")
+	eq(int(_unit(1)["hp"]) < 80, true, "the ground snap deals Strike damage")
 	# Voluntary steps skip mud, water, and lava, including Advance.
 	_sim.reset_match({
 		"seed": 1,
@@ -1038,6 +1041,90 @@ func _test_hazard_push_and_targets() -> void:
 	eq(str(advanced.get("reason", "")), "not_walkable", "Advance onto water is not_walkable")
 	eq(_unit(1)["pos"], Vector2i(2, 2), "rejected Advance leaves Ironjaw put")
 	eq(_unit(1)["ap"], 6, "rejected Advance refunds AP")
+
+
+func _test_soft_lock_target() -> void:
+	# Empty ground beside exactly one in-range enemy snaps. The body stays put.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(0, 0), Vector2i(4, 0)],
+	})
+	var beside: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 1), "seat": 0})
+	eq(bool(beside.get("ok", false)), true, "Mark Shot on the empty neighbor snaps (%s)" % str(beside.get("reason", "")))
+	eq(_unit(1)["pos"], Vector2i(4, 0), "the snap does not move the foe")
+	eq(int(_unit(1)["hp"]) < 80, true, "the snap deals Mark Shot damage")
+	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 1)), Vector2i(4, 0), "selection snap names the one neighbor")
+	# Chebyshev 2 is outside the #194 neighborhood.
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2), "seat": 0})
+	eq(str(far.get("reason", "")), "no_target", "a tile two away from the foe stays empty")
+	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 2)), Vector2i(4, 2), "selection does not snap across two tiles")
+	# The far side of Strike is out of range. Do not pull an in-range body back.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["ironjaw", "kestrel"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5)],
+	})
+	var past: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
+	eq(str(past.get("reason", "")), "out_of_range", "Strike past the body stays out of range")
+	eq(int(_unit(0)["ap"]), 6, "the out-of-range tap refunds AP")
+	eq(_unit(1)["hp"], 80, "the out-of-range tap does not hit")
+	# Only the caster is beside this tile. Do not snap onto yourself.
+	var self_side: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
+	eq(str(self_side.get("reason", "")), "no_target", "a tile beside only the caster stays empty")
+	# Detonate with no Marks is not a legal neighbor.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 5)],
+	})
+	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(5, 6), "seat": 0})
+	eq(str(bare.get("reason", "")), "no_target", "Detonate without Marks does not snap")
+	eq(int(_unit(0)["ap"]), 6, "the illegal Detonate snap refunds AP")
+	# Ambush keeps its own origin rule. An empty neighbor is not a body.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"rolls": [1],
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(4, 4), Vector2i(5, 4)],
+		"gloam_invisible": true,
+	})
+	var ambush: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(6, 4), "seat": 0})
+	eq(str(ambush.get("reason", "")), "no_target", "Ambush does not snap an empty neighbor")
+	eq(_unit(0)["pos"], Vector2i(4, 4), "the refused Ambush does not blink")
+	eq(_sim.soft_lock_dest(0, SpellKits.AMBUSH, Vector2i(6, 4)), Vector2i(6, 4), "Ambush selection stays on the tapped cell")
+	# Two equally adjacent in-range enemies. The gap stays empty.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"rolls": [1],
+		"classes": ["ironjaw", "kestrel"],
+		"positions": [Vector2i(5, 5), Vector2i(6, 4), Vector2i(6, 6)],
+		"stasis_roster": [
+			{"seat": 1, "name": "North", "hp": 80, "max_hp": 80},
+			{"seat": 2, "name": "South", "hp": 80, "max_hp": 80},
+		],
+	})
+	eq(_sim.snapshot()["units"].size(), 3, "the pack test has the player and two foes")
+	var gap: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(str(gap.get("reason", "")), "no_target", "two neighbors do not snap")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "the north foe is untouched")
+	eq(int(_sim.snapshot()["units"][2]["hp"]), 80, "the south foe is untouched")
+	eq(int(_unit(0)["ap"]), 6, "the refused snap refunds AP")
+	eq(_sim.soft_lock_dest(0, SpellKits.STRIKE, Vector2i(6, 5)), Vector2i(6, 5), "selection keeps the gap")
+	var lone: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
+	eq(bool(lone.get("ok", false)), true, "one neighbor in the pack still snaps (%s)" % str(lone.get("reason", "")))
+	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(6, 4), "the snapped foe stays on their tile")
+	eq(int(_sim.snapshot()["units"][1]["hp"]) < 80, true, "the one neighbor takes the Strike")
+	eq(int(_sim.snapshot()["units"][2]["hp"]), 80, "the other foe is not hit")
 
 
 func _test_solid_props_block_walk_paths() -> void:
