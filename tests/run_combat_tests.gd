@@ -63,6 +63,7 @@ func _run() -> void:
 	_test_ambush_range_from_origin()
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
+	_test_ambush_snap_wall_ray()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
 	_test_invisible_breaks_on_attack()
@@ -7621,3 +7622,53 @@ func _test_ambush_present_race() -> void:
 	if not live.has_method("run"):
 		return
 	await live.run(self)
+
+
+func _test_ambush_snap_wall_ray() -> void:
+	# Locked: Ambush cannot pass Snap Wall. The origin must see the target on
+	# the same cardinal shot ray. A wall on that ray is illegal, grey, 0 AP.
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var wall := Vector2i(3, 2)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "bastion"],
+		"positions": [gloam, prey],
+		"gloam_invisible": true,
+		"rolls": [1],
+	})
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "Invisible Manhattan-2 Ambush is legal with no wall")
+	_sim._add_snap_wall(wall, 2, 1)
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), false, "a Snap Wall between Gloam and the foe greys Ambush")
+	eq(str(_sim.preview_cast(0, SpellKits.AMBUSH, prey).get("legal", true)), "false", "preview reads the wall as illegal")
+	var ap_before := int(_unit(0)["ap"])
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(walled.get("ok", true)), false, "Ambush through a Snap Wall rejects")
+	eq(str(walled.get("reason", "")), "wall_on_ray", "the reject names the wall on the ray")
+	eq(int(_unit(0)["ap"]), ap_before, "the walled Ambush spends 0 AP")
+	eq(_unit(0)["pos"], gloam, "the walled Ambush does not move Gloam")
+	eq(int(_unit(1)["hp"]), 80, "the walled Ambush deals no damage")
+
+	# A Shade on the far side still origins if it sees the target in range 1–2.
+	var shade_at := Vector2i(4, 4)
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "bastion"],
+		"positions": [gloam, prey],
+		"bastion_facing": "N",
+		"rolls": [1],
+	})
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants the far-side origin")
+	_complete_opponent_turn()
+	_sim._add_snap_wall(wall, 2, 1)
+	eq(_sim._ambush_ray_walled(gloam, prey), true, "the wall sits on the body ray")
+	eq(_sim._ambush_ray_walled(shade_at, prey), false, "the Shade ray is clear")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "an armed Shade with a clear ray still arms Ambush")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves past the wall")
+	eq(_unit(0)["pos"], Vector2i(4, 1), "Gloam lands on the Shade ray back tile")

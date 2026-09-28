@@ -4155,7 +4155,7 @@ func _ambush_can_offer(actor: Dictionary, enemy: Dictionary) -> bool:
 
 
 ## "" when Ambush may arm. Otherwise no_shade, shade_unarmed, out_of_range,
-## illegal_back, or no_target. Visible needs an armed Shade. Invisible may use
+## wall_on_ray, illegal_back, or no_target. Visible needs an armed Shade. Invisible may use
 ## Gloam immediately, and an armed Shade as well. A Shade stays illegal until
 ## the opponent has completed ≥1 full turn since it was Dropped.
 func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
@@ -4180,8 +4180,8 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 		return shade_block if shade_block != "" else "no_shade"
 	# Invisible self has no arming delay. An unarmed Shade must not replace
 	# that geometry reject. An armed Shade whose back tile is blocked does.
-	if self_block == "out_of_range" and shade_block == "illegal_back":
-		return "illegal_back"
+	if self_block == "out_of_range" and (shade_block == "illegal_back" or shade_block == "wall_on_ray"):
+		return shade_block
 	if self_block != "":
 		return self_block
 	return shade_block if shade_block != "" else "no_shade"
@@ -4190,6 +4190,8 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 func _ambush_reject_text(reason: String) -> String:
 	if reason == "illegal_back" or reason == "no_landing":
 		return "REJECT — Ambush back tile is occupied or illegal (refund)."
+	if reason == "wall_on_ray":
+		return "REJECT — Snap Wall blocks the Ambush ray (refund)."
 	if reason == "shade_unarmed":
 		return "REJECT — Shade is not armed for Ambush until the opponent completes a turn (refund)."
 	if reason == "no_shade":
@@ -4269,6 +4271,8 @@ func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector
 	var block := ""
 	if not axis_ok:
 		block = "out_of_range"
+	elif _ambush_ray_walled(origin_cell, enemy["pos"]):
+		block = "wall_on_ray"
 	elif from_shade and not armed:
 		block = "shade_unarmed"
 	elif not bool(landing.get("ok", false)):
@@ -4281,6 +4285,20 @@ func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector
 		"landing": landing,
 		"axis_ok": axis_ok,
 	}
+
+
+## Locked: the origin must see the target along the cardinal shot ray. A Snap
+## Wall on any cell strictly between them blocks that origin (grey, 0 AP).
+func _ambush_ray_walled(origin_cell: Vector2i, target_cell: Vector2i) -> bool:
+	var step := _cardinal_unit_step(origin_cell, target_cell)
+	if step == Vector2i.ZERO:
+		return false
+	var cell: Vector2i = origin_cell + step
+	while cell != target_cell:
+		if _snap_wall_blocks(cell):
+			return true
+		cell += step
+	return false
 
 
 func _ambush_legal_picks(actor: Dictionary, enemy: Dictionary) -> Array:
