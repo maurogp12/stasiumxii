@@ -55,6 +55,9 @@ var _local_queued: bool = false
 var _opponent_queued: bool = false
 var _match_live: bool = false
 var _prematch_phase: String = "MATCH"
+## Koliseo payout (Blueprint §9/§15). One payout per finished match.
+var _koliseo_result_noted: bool = false
+var koliseo_last_payout: Dictionary = {}
 
 
 func _ready() -> void:
@@ -788,8 +791,30 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 		var view := sim()
 		if view != null and view.has_method("apply_host_snapshot"):
 			view.apply_host_snapshot(last_snapshot)
+	_note_koliseo_result(last_snapshot)
 	state_changed.emit(last_events, decorate_snapshot(last_snapshot))
 	return last_view_result()
+
+
+## Only an online match with a live local seat is a human Koliseo fight.
+## Hot-seat, dedicated and Stasis pay nothing.
+func koliseo_pays() -> bool:
+	return (mode == Mode.HOST or mode == Mode.CLIENT) and local_seat >= 0
+
+
+func _note_koliseo_result(snap: Dictionary) -> void:
+	if not bool(snap.get("match_over", false)):
+		_koliseo_result_noted = false
+		return
+	if _koliseo_result_noted:
+		return
+	_koliseo_result_noted = true
+	koliseo_last_payout = {}
+	if not koliseo_pays() or int(snap.get("winner_seat", -1)) != local_seat:
+		return
+	var wallet := KoliseoWallet.load_saved()
+	koliseo_last_payout = wallet.record_human_win(KoliseoWallet.now_unix())
+	wallet.save()
 
 
 func last_view_result() -> Dictionary:

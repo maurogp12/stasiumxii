@@ -23,6 +23,8 @@ const BANNER_ART := "res://art/ui/hub/koliseo_banner.png"
 ## this poster is a wide banner over one horizontal RAID row.
 const DOOR_MIN_HEIGHT := 72
 const _ApkClient := preload("res://backend/apk_update_client.gd")
+const _Wallet := preload("res://backend/koliseo_wallet.gd")
+const _Shop := preload("res://scenes/koliseo_shop.gd")
 
 const NAVY := Color(0.008, 0.028, 0.07)
 const GOLD := Color(0.855, 0.69, 0.4)
@@ -43,6 +45,9 @@ var _footer: Control
 var _update_button: Button
 var _update_status: Label
 var _update_client: ApkUpdateClient
+var _wallet_label: Label
+var _shop_button: Button
+var _shop: Control
 var _banner_ratio: float = 1536.0 / 510.0
 var _tile_ratio: float = 292.0 / 410.0
 
@@ -317,9 +322,46 @@ func _make_title_row() -> HBoxContainer:
 	var rule := GoldRule.new()
 	rule.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(rule)
+	_wallet_label = Label.new()
+	_wallet_label.name = "WalletLabel"
+	_wallet_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_wallet_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if _font != null:
+		_wallet_label.add_theme_font_override("font", _font)
+	_wallet_label.add_theme_font_size_override("font_size", 14)
+	_wallet_label.add_theme_color_override("font_color", GOLD_BRIGHT)
+	row.add_child(_wallet_label)
+	refresh_wallet()
+	_shop_button = _make_update_button()
+	_shop_button.name = "Shop"
+	_shop_button.text = "Shop"
+	_shop_button.custom_minimum_size = Vector2(96, 48)
+	_shop_button.pressed.disconnect(_on_update_pressed)
+	_shop_button.pressed.connect(open_shop)
+	row.add_child(_shop_button)
 	_update_button = _make_update_button()
 	row.add_child(_update_button)
 	return row
+
+
+## Koliseo wallet (Blueprint §9 coins, §15 trophies). Read from the save file.
+func refresh_wallet() -> void:
+	if _wallet_label == null:
+		return
+	var wallet := _Wallet.load_saved()
+	_wallet_label.text = "Coins %d  ·  Trophies %d" % [wallet.coins, wallet.trophies]
+
+
+func open_shop() -> void:
+	if _shop != null and is_instance_valid(_shop):
+		return
+	var shop: KoliseoShop = _Shop.new()
+	shop.name = "KoliseoShop"
+	shop.font = _font
+	shop.wallet_changed.connect(refresh_wallet)
+	shop.closed.connect(refresh_wallet)
+	add_child(shop)
+	_shop = shop
 
 
 func _make_raid_header() -> HBoxContainer:

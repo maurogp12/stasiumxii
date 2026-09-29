@@ -50,11 +50,15 @@ on those branches) → the in-game **Actualizar** button.
 
 | 0.1.43 | **Kit change:** Kestrel Mark Shot range Chebyshev 2–7 → **2–5** (`data/kits.gd`). Range tests, README and the GDD handoff updated. Hit bands, damage and Marks unchanged. The Blueprint docx and Spells xlsx (outside git) still say 2–7 — Mauro/other agents should patch those | Mauro: "Kestrel has way too much range, Mark Shot 2 less spaces" | see 0.1.43 commits |
 
-Each version bump is its own `Stamp Android sideload …` commit. All 18
-headless suites pass on every build listed above.
+| 0.1.44 | **New system (Blueprint §9 + §15):** Koliseo wallet. Coins: first 2 human wins per UTC day pay 1 each, win 3+ / loss / dummy pay 0, wallet max 120. Trophies: 1 per human win, no daily cap, wallet 300. Hub shows "Coins N · Trophies N" and a **Shop** button: trophy shop (the 6 Blueprint SKUs, cosmetics/pet owned once, food repeatable) and Duskbrand stall (60 coins per +0 part, 5 slots, duplicates allowed for fuse). Saved in `user://koliseo_wallet.json`. "Human win" = an **online** match the local seat wins; hot-seat, dedicated server and Stasis pay nothing (question for Mauro). Bought items are stored only — wearing gear, set bonuses, AP/MP clamp and showing cosmetics are not built yet. Files: `backend/koliseo_wallet.gd`, `scenes/koliseo_shop.gd`, hook in `backend/net_session.gd` (`_note_koliseo_result`), hub row in `scenes/mobile_hub.gd`. New suite `tests/run_koliseo_wallet_tests.gd` | Mauro: "keep working on whatever you haven't worked on" (Blueprint video) | see 0.1.44 commits |
+
+Each version bump is its own `Stamp Android sideload …` commit. All
+headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.41 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.44 work into `mobile` (PR not opened yet — waiting for his OK).
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
+- Koliseo: should hot-seat wins pay coins/trophies? (0.1.44 pays online wins only — hot-seat on one phone could be farmed.)
+- Still not built from the Blueprint: gear equip + six set families + fuse/attune (§10), AP/MP clamp 8/5 from gear, Stasis loot-clear cap 5/day (§9 Soft Lock), cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).
