@@ -183,6 +183,13 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	# is unchanged. Foe HP and attack_base in that payload are provisional Open
 	# playtest numbers, not Locked kit law.
 	_apply_stasis_roster(config)
+	# Worn gear per seat (Koliseo and Stasis): {"seat_gear": {0: fight_gear, 1: ...}}.
+	var seat_gear: Variant = config.get("seat_gear", {})
+	if typeof(seat_gear) == TYPE_DICTIONARY:
+		for key in seat_gear:
+			var unit := _unit_by_seat(int(key))
+			if not unit.is_empty():
+				_apply_gear(unit, seat_gear[key])
 
 	var skip_deploy := bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos") or config.has("positions")
 	if skip_deploy:
@@ -1002,7 +1009,7 @@ func _ambush_aim_feel(seat: int, actor: Dictionary, def: Dictionary) -> Dictiona
 	if not bool(landing.get("ok", false)):
 		return _aim_hidden()
 	var mult := SpellKits.BACKSTAB_MULT if bool(landing.get("backstab", false)) else FRONT_SIDE_FACING
-	var amount := _phase_a_damage(int(def.get("base_damage", 22)), mult)
+	var amount := _phase_a_damage(int(def.get("base_damage", 22)), mult, actor, enemy, str(def.get("element", "")))
 	if amount <= 0:
 		return _aim_hidden()
 	return {
@@ -1130,7 +1137,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 			base = int(actor["stasis_attack_base"])
 		# Locked Phase A sample: CritMult=1.0, Passive=1, Mastery=0. WindMod omitted.
 		# Resist 0 is not invented as Locked — provisional Open A05, labeled below.
-		out["sample_damage"] = _phase_a_damage(base, facing_mult)
+		out["sample_damage"] = _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")))
 		notes.append("Resist 0 (provisional Open A05)")
 
 	if spell_id == SpellKits.DETONATE:
@@ -1263,10 +1270,18 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "", "on_miss": ""}
 
 
-## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1, Mastery 0.
-## WindMod omitted (not invented as 1.0). Resist 0 is Open A05.
-func _phase_a_damage(base: int, facing_mult: float) -> int:
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
+## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1.
+## WindMod omitted (not invented as 1.0). Mastery / Resist are 0 on the
+## proto body; worn gear set bonuses raise them (Mauro 29 Sep 2026: gear
+## counts in Koliseo and Stasis). Ironveil attuned resist only against
+## hits of the attuned element.
+func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "") -> int:
+	var mastery: float = MASTERY + float(actor.get("mastery", 0))
+	var resist: float = RESIST + float(target.get("resist", 0))
+	var attuned := str(target.get("attuned_element", ""))
+	if attuned != "" and element.to_lower() == attuned:
+		resist += float(target.get("attuned_resist", 0))
+	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 - clampf(resist, 0.0, 100.0) / 100.0) * facing_mult
 	return roundi(raw)
 
 
@@ -1450,8 +1465,8 @@ func _force_spawn(seat: int, cell: Vector2i) -> void:
 	actor["pos"] = cell
 	actor["placed"] = true
 	actor["locked"] = true
-	actor["ap"] = MAX_AP
-	actor["mp"] = MAX_MP
+	actor["ap"] = int(actor.get("max_ap", MAX_AP))
+	actor["mp"] = int(actor.get("max_mp", MAX_MP))
 	_flow.mark_placed(seat)
 
 
@@ -1465,8 +1480,8 @@ func _begin_combat(coach: String) -> void:
 	_active_seat = 0
 	_turn_index = 1
 	for unit in _units:
-		unit["ap"] = MAX_AP
-		unit["mp"] = MAX_MP
+		unit["ap"] = int(unit.get("max_ap", MAX_AP))
+		unit["mp"] = int(unit.get("max_mp", MAX_MP))
 		unit["locked"] = true
 	_start_turn_timer()
 	_last_coach = coach
@@ -1529,8 +1544,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_turn_index += 1
 	_invisible_wore_off = false
 	_begin_unit_turn(next_unit)
-	next_unit["ap"] = MAX_AP
-	next_unit["mp"] = MAX_MP
+	next_unit["ap"] = int(next_unit.get("max_ap", MAX_AP))
+	next_unit["mp"] = int(next_unit.get("max_mp", MAX_MP))
 	if bool(next_unit.get("skip_next_mp", false)):
 		next_unit["mp"] = 0
 		next_unit["skip_next_mp"] = false
@@ -1544,9 +1559,9 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	if stunned:
 		_last_coach = "%s's turn skipped — stunned (Locked A′)." % next_unit["name"]
 	elif slow_cut > 0:
-		_last_coach = "%s's turn. AP/MP refilled to %d/%d (Slow −%d MP)." % [next_unit["name"], MAX_AP, int(next_unit["mp"]) - slow_cut, slow_cut]
+		_last_coach = "%s's turn. AP/MP refilled to %d/%d (Slow −%d MP)." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"]) - slow_cut, slow_cut]
 	else:
-		_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
+		_last_coach = "%s's turn. AP/MP refilled to %d/%d." % [next_unit["name"], int(next_unit["ap"]), int(next_unit["mp"])]
 	if _invisible_wore_off:
 		_last_coach += " Invisible wore off — %s is visible." % next_unit["name"]
 	var end_event := {
@@ -1909,7 +1924,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	# carry the key, so kit damage is unchanged.
 	if int(actor.get("stasis_attack_base", -1)) >= 0:
 		base = int(actor["stasis_attack_base"])
-	var pre_mitigation := _phase_a_damage(base, facing_mult)
+	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")))
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
@@ -2381,6 +2396,9 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 			continue
 		if str(rec.get("name", "")) != "":
 			unit["name"] = str(rec["name"])
+		# Worn gear first, so a carried Room A hp clamps to the geared max.
+		if rec.has("gear"):
+			_apply_gear(unit, rec["gear"])
 		if rec.has("max_hp"):
 			var max_hp := maxi(int(rec["max_hp"]), 1)
 			unit["max_hp"] = max_hp
@@ -2410,6 +2428,42 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 					spells.append(id)
 			if not spells.is_empty():
 				unit["spells"] = spells
+
+
+## Online: a peer's gear can land after the host reset the match. It is
+## applied while both sides are still deploying, never mid-combat.
+func set_seat_gear(seat: int, gear: Dictionary) -> bool:
+	if _flow == null or not _flow.is_deployment():
+		return false
+	var unit := _unit_by_seat(seat)
+	if unit.is_empty():
+		return false
+	_apply_gear(unit, gear)
+	return true
+
+
+## Worn gear from the roster: {"worn": [{item_id, plus}], "attune": {family: element}}.
+## GearBag.combat_stats sanitises it (valid ids, one per slot, +0–+5, AP/MP 8/5).
+func _apply_gear(unit: Dictionary, raw: Variant) -> void:
+	if typeof(raw) != TYPE_DICTIONARY:
+		return
+	var gear: Dictionary = raw
+	var attune_raw: Variant = gear.get("attune", {})
+	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {})
+	var max_hp := roundi(float(START_HP) * (1.0 + float(stats["hp_pct"]) / 100.0))
+	var was_full := int(unit.get("hp", START_HP)) >= int(unit.get("max_hp", START_HP))
+	unit["max_hp"] = max_hp
+	unit["hp"] = max_hp if was_full else mini(int(unit.get("hp", max_hp)), max_hp)
+	unit["mastery"] = int(stats["mastery"])
+	unit["resist"] = int(stats["resist"])
+	unit["attuned_element"] = str(stats["attuned_element"])
+	unit["attuned_resist"] = int(stats["attuned_resist"])
+	unit["max_ap"] = int(stats["ap"])
+	unit["max_mp"] = int(stats["mp"])
+	unit["gear"] = GearBag.clean_worn(gear.get("worn", []))
+	if bool(unit.get("placed", false)) and _flow != null and _flow.is_combat():
+		unit["ap"] = mini(int(unit.get("ap", 0)), int(unit["max_ap"]))
+		unit["mp"] = mini(int(unit.get("mp", 0)), int(unit["max_mp"]))
 
 
 func _apply_setup_overrides(config: Dictionary) -> void:
@@ -3455,7 +3509,7 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	var passive := PASSIVE
 	if _triage_applied(target, def):
 		passive = SpellKits.TRIAGE_MULT
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + MASTERY / 100.0) * facing
+	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * facing
 	return roundi(raw)
 
 
@@ -3738,7 +3792,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult)
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")))
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -3943,7 +3997,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")))
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -4071,7 +4125,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin_cell, int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
+	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult, actor, target, str(def.get("element", "")))
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	# Pos was assigned above. Damage is the strike from that tile. A reorder

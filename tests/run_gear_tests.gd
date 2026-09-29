@@ -29,6 +29,7 @@ func _run() -> void:
 	_test_gear_screen()
 	_test_stasis_chest_wiring()
 	_test_combat_result()
+	_test_gear_in_fights()
 	_wipe()
 	print("Gear tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -318,6 +319,87 @@ func _test_combat_result() -> void:
 	window.close()
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(view.contains("hp"), false, "board_view still does not read hp")
+
+
+func _worn(family: String, slots: Array, plus: int = 0) -> Array:
+	var out: Array = []
+	for slot in slots:
+		out.append({"item_id": "%s.%s" % [family, slot], "plus": plus})
+	return out
+
+
+func _test_gear_in_fights() -> void:
+	var sim: Node = root.get_node("/root/CombatSim")
+	# No gear: the Locked proto body is unchanged.
+	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true})
+	var plain: Dictionary = sim._unit_by_seat(0)
+	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [80, 6, 3, 0, 0], "no gear = 80 HP, 6/3, Mastery 0, Resist 0")
+	# Sheaf 5pc on seat 0, Duskbrand 5pc on seat 1.
+	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true, "seat_gear": {
+		0: {"worn": _worn("sheaf", GearBag.SLOTS)},
+		1: {"worn": _worn("duskbrand", GearBag.SLOTS)},
+	}})
+	var sheaf: Dictionary = sim._unit_by_seat(0)
+	var dusk: Dictionary = sim._unit_by_seat(1)
+	eq(int(sheaf["max_hp"]), 88, "Sheaf 2pc +10% HP → 88")
+	eq(int(sheaf["hp"]), 88, "fight starts at full geared HP")
+	eq(int(sheaf["mastery"]), 8, "Sheaf 4pc +8 Mastery")
+	eq(int(sheaf["resist"]), 8, "Sheaf 5pc +8% all resist")
+	eq(int(dusk["max_ap"]), 7, "Duskbrand 5pc → 7 AP")
+	eq(int(dusk["max_mp"]), 4, "Duskbrand 5pc → 4 MP")
+	eq(int(dusk["max_hp"]), 86, "Duskbrand 4pc +8% HP → 86")
+	eq(int(dusk["mastery"]), 0, "+12% of 0 Mastery is still 0")
+	var snap: Dictionary = sim.snapshot()
+	sim.submit({"type": "end_turn", "seat": int(snap["active_seat"])})
+	var after: Dictionary = sim._unit_by_seat(1)
+	eq([int(after["ap"]), int(after["mp"])], [7, 4], "Duskbrand refills 7 AP / 4 MP at turn start")
+	# Damage formula: (1 + Mastery/100) × (1 − Resist/100).
+	eq(sim._phase_a_damage(20, 1.0, {}, {}), 20, "base damage unchanged without gear")
+	eq(sim._phase_a_damage(20, 1.0, {"mastery": 8}, {}), 22, "+8 Mastery → 21.6 → 22")
+	eq(sim._phase_a_damage(20, 1.0, {}, {"resist": 8}), 18, "+8% resist → 18.4 → 18")
+	eq(sim._phase_a_damage(20, 1.0, {}, {"attuned_element": "fire", "attuned_resist": 8}, "fire"), 18, "attuned resist vs its element")
+	eq(sim._phase_a_damage(20, 1.0, {}, {"attuned_element": "fire", "attuned_resist": 8}, "air"), 20, "attuned resist ignores other elements")
+	var att := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {"ironveil": "Fire"})
+	eq([att["attuned_element"], att["attuned_resist"]], ["fire", 8], "Ironveil 2pc attuned Fire → 8% vs fire")
+	# Cheats and junk are cleaned: bad ids, duplicate slots, +9, AP cap.
+	var junk := GearBag.combat_stats([{"item_id": "duskbrand.head", "plus": 9}, {"item_id": "duskbrand.head"}, {"item_id": "wheat.legs"}, "x"])
+	eq([junk["ap"], junk["mp"], junk["hp_pct"]], [6, 3, 0], "one Duskbrand head gives nothing")
+	var capped := GearBag.ap_mp_of_worn(_worn("stillcut", GearBag.SLOTS, 5))
+	eq([capped["ap"], capped["mp"]], [7, 4], "rare gate +1/+1 at full +5 Stillcut")
+	eq(int(GearBag.ap_mp_of_worn(_worn("duskbrand", GearBag.SLOTS))["ap"]) <= 8, true, "AP never above 8")
+	# Mid-combat gear is refused; deployment accepts it.
+	eq(sim.set_seat_gear(0, {"worn": _worn("sheaf", ["head", "chest"])}), false, "gear cannot change mid-combat")
+	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
+	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
+	eq(int(sim._unit_by_seat(1)["max_hp"]), 88, "late gear raised seat 1 HP")
+	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
+	var net: Node = (load("res://backend/net_session.gd") as Script).new()
+	net.mode = net.Mode.DEDICATED
+	net._seat_gear[1] = {"worn": _worn("sheaf", ["head", "chest"]), "attune": {}}
+	var cfg: Dictionary = net._authority_gear_config({"seat_gear": {0: {"worn": _worn("duskbrand", GearBag.SLOTS)}}})
+	eq(cfg["seat_gear"].has(0), false, "smuggled seat 0 gear is dropped")
+	eq(cfg["seat_gear"][1]["worn"].size(), 2, "seat 1 keeps the gear it sent")
+	net.mode = net.Mode.HOTSEAT
+	net._seat_gear.clear()
+	net.free()
+	# Stasis: the player's worn gear rides in the fight roster.
+	_wipe()
+	var bag := GearBag.new()
+	bag.equip(bag.add_item("sheaf", "head"))
+	bag.equip(bag.add_item("sheaf", "chest"))
+	bag.save()
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = "mender"
+	var fight_cfg := StasisCatalog.fight_config()
+	var player_rec: Dictionary = fight_cfg["stasis_roster"][0]
+	eq(player_rec["gear"]["worn"].size(), 2, "Stasis fight carries the worn gear")
+	sim.reset_match(fight_cfg)
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 88, "Stasis player gets +10% HP from Sheaf 2pc")
+	StasisCatalog.player_hp = 60
+	sim.reset_match(StasisCatalog.fight_config())
+	eq(int(sim._unit_by_seat(0)["hp"]), 60, "Room B carries Room A HP under the geared max")
+	StasisCatalog.clear_run()
+	_wipe()
 
 
 func _wipe() -> void:

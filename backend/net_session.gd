@@ -58,6 +58,10 @@ var _prematch_phase: String = "MATCH"
 ## Koliseo payout (Blueprint §9/§15). One payout per finished match.
 var _koliseo_result_noted: bool = false
 var koliseo_last_payout: Dictionary = {}
+## Worn gear per seat on the authority (Mauro 29 Sep 2026: gear counts in
+## Koliseo). Each peer sends its own; the host adds its own seat 0.
+var _seat_gear: Dictionary = {}
+var _gear_sent_seat: int = -1
 
 
 func _ready() -> void:
@@ -302,6 +306,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		if local_sim == null:
 			return _fail("no_sim")
 		return local_sim.reset_match(config)
+	config = _authority_gear_config(config)
 	if mode == Mode.DEDICATED:
 		var chosen: Array[String] = _class_ids_from_config(config)
 		if chosen.size() == 2:
@@ -784,6 +789,7 @@ func apply_packed_state(packed: Dictionary, hydrate: bool = true) -> Dictionary:
 		var viewer := int(decoded.get("viewer_seat", -1))
 		if viewer >= 0 and viewer != local_seat:
 			local_seat = viewer
+			_send_local_gear()
 			if is_inside_tree():
 				print("STASIUM XII client assigned seat %d" % local_seat)
 			_update_window_title()
@@ -856,6 +862,57 @@ func rpc_request_reset(encoded: Dictionary) -> void:
 	var decoded: Variant = IntentCodec.decode(encoded)
 	var config: Dictionary = decoded if typeof(decoded) == TYPE_DICTIONARY else {}
 	accept_reset_request(config, seat_for_peer(sender))
+
+
+## Client → authority: the sender's own worn gear. Stored for its seat only;
+## applied now if both sides are still deploying.
+@rpc("any_peer", "reliable")
+func rpc_submit_gear(payload: Dictionary) -> void:
+	if not is_authority():
+		return
+	accept_seat_gear(seat_for_peer(multiplayer.get_remote_sender_id()), payload)
+
+
+func accept_seat_gear(seat: int, payload: Variant) -> bool:
+	if seat < 0:
+		return false
+	var gear := GearBag.clean_fight_gear(payload)
+	_seat_gear[seat] = gear
+	var host_sim := sim()
+	if host_sim == null or not host_sim.has_method("set_seat_gear"):
+		return false
+	if not host_sim.set_seat_gear(seat, gear):
+		return false
+	_cache_and_broadcast({
+		"ok": true, "illegal": false, "reason": "", "events": [],
+		"snapshot": host_sim.snapshot(),
+	})
+	return true
+
+
+## Gear the host puts into a match: its own seat 0 (listen-host) plus what
+## each peer sent. Any seat_gear in the incoming config is dropped, so a
+## reset request can never set the other seat's gear.
+func _authority_gear_config(config: Dictionary) -> Dictionary:
+	var out := config.duplicate(true)
+	out.erase("seat_gear")
+	var gear := {}
+	if mode == Mode.HOST:
+		gear[HOST_SEAT] = GearBag.load_saved().fight_gear()
+	for seat in _seat_gear:
+		gear[seat] = _seat_gear[seat]
+	if not gear.is_empty():
+		out["seat_gear"] = gear
+	return out
+
+
+func _send_local_gear() -> void:
+	if mode != Mode.CLIENT or local_seat < 0 or _gear_sent_seat == local_seat:
+		return
+	if not _rpc_ready():
+		return
+	_gear_sent_seat = local_seat
+	rpc_submit_gear.rpc_id(1, GearBag.load_saved().fight_gear())
 
 
 @rpc("authority", "reliable")
@@ -962,6 +1019,7 @@ func rpc_match_assigned(payload: Dictionary) -> void:
 	var seat := int(payload.get("seat", -1))
 	if seat >= 0:
 		local_seat = seat
+		_send_local_gear()
 	var class_id := str(payload.get("class_id", ""))
 	if class_id != "":
 		selected_class_id = class_id
@@ -1097,6 +1155,8 @@ func _reset_seats() -> void:
 	_seat_held[HOST_SEAT] = false
 	_seat_held[GUEST_SEAT] = false
 	guest_peer_id = 0
+	_seat_gear.clear()
+	_gear_sent_seat = -1
 
 
 func _wire_peer_signals() -> void:

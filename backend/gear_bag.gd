@@ -12,8 +12,9 @@ extends RefCounted
 ## clamped to 8/5. Extra sources grey out.
 ## Stasis loot clears: 5 per UTC day shared across all five doors; clear 6+
 ## is allowed, chest empty (Soft Lock).
-## Gear bonuses are shown only. They do not feed CombatSim yet (waiting on
-## Mauro: which fights, and the per-item numbers).
+## Mauro 29 Sep 2026: gear counts in Koliseo PvP and in Stasis. Fights
+## receive fight_gear() and CombatSim applies combat_stats(). Per-item
+## numbers (Mobile_Sets.xlsx) are still missing, so only set bonuses count.
 
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
 const SLOT_STAT := {
@@ -324,10 +325,48 @@ func active_bonuses() -> Array:
 	return out
 
 
-## Summed numeric set stats (tiers stack).
-func bonus_stats() -> Dictionary:
+## Worn pieces as a plain list [{item_id, plus}] (one per slot). This is
+## what a fight receives; CombatSim recomputes the stats from it.
+func worn_list() -> Array:
+	var out: Array = []
+	for slot in SLOTS:
+		var it := equipped_item(slot)
+		if not it.is_empty():
+			out.append({"item_id": str(it["item_id"]), "plus": int(it["plus"])})
+	return out
+
+
+## Sanitised worn list: valid ids, one per slot, plus 0–5, at most 5.
+static func clean_worn(raw: Variant) -> Array:
+	var out: Array = []
+	var used := {}
+	if not raw is Array:
+		return out
+	for entry in raw:
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var item_id := str(entry.get("item_id", ""))
+		if not is_valid_item_id(item_id):
+			continue
+		var slot := slot_of(item_id)
+		if used.has(slot):
+			continue
+		used[slot] = true
+		out.append({"item_id": item_id, "plus": clampi(int(entry.get("plus", 0)), 0, PLUS_CAP)})
+	return out
+
+
+static func worn_counts(worn: Array) -> Dictionary:
+	var counts := {}
+	for entry in worn:
+		var fam := family_of(str(entry["item_id"]))
+		counts[fam] = int(counts.get(fam, 0)) + 1
+	return counts
+
+
+static func stats_of_worn(worn: Array) -> Dictionary:
 	var total := {}
-	var counts := set_counts()
+	var counts := worn_counts(worn)
 	for fam in FAMILY_ORDER:
 		var pieces := int(counts.get(fam, 0))
 		var stats: Dictionary = FAMILIES[fam]["stats"]
@@ -338,16 +377,13 @@ func bonus_stats() -> Dictionary:
 	return total
 
 
-## Rare plus gate: 4 worn pieces of Ironveil or Stillcut all ≥+4 → +1 MP;
-## 5 worn pieces all +5 → +1 AP.
-func rare_gate() -> Dictionary:
+static func gate_of_worn(worn: Array) -> Dictionary:
 	var out := {"ap": 0, "mp": 0}
 	for fam in RARE_GATE_FAMILIES:
 		var pluses: Array[int] = []
-		for slot in equipped:
-			var it := item(int(equipped[slot]))
-			if family_of(str(it.get("item_id", ""))) == fam:
-				pluses.append(int(it["plus"]))
+		for entry in worn:
+			if family_of(str(entry["item_id"])) == fam:
+				pluses.append(int(entry["plus"]))
 		if pluses.size() >= 4:
 			var fours := 0
 			for p in pluses:
@@ -360,11 +396,9 @@ func rare_gate() -> Dictionary:
 	return out
 
 
-## AP/MP after gear, clamped 8/5. Weapon .ap and boots .mp rare affixes are
-## not dropped yet, so they add 0 here.
-func ap_mp() -> Dictionary:
-	var stats := bonus_stats()
-	var gate := rare_gate()
+static func ap_mp_of_worn(worn: Array) -> Dictionary:
+	var stats := stats_of_worn(worn)
+	var gate := gate_of_worn(worn)
 	var raw_ap := BASE_AP + int(stats.get("ap", 0)) + int(gate["ap"])
 	var raw_mp := BASE_MP + int(stats.get("mp", 0)) + int(gate["mp"])
 	return {
@@ -372,6 +406,75 @@ func ap_mp() -> Dictionary:
 		"raw_ap": raw_ap, "raw_mp": raw_mp,
 		"ap_greyed": maxi(raw_ap - AP_CAP, 0), "mp_greyed": maxi(raw_mp - MP_CAP, 0),
 	}
+
+
+## What a fight uses from the worn set bonuses (Mauro 29 Sep 2026: gear
+## counts in Koliseo PvP and in Stasis). Per-item stats (Mobile_Sets.xlsx)
+## are not in git yet, so only set bonuses count. Init, FLEX and the 5pc
+## text effects have no combat system yet and are not applied.
+## `attune` is family → element for the Ironveil attuned resist.
+static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}) -> Dictionary:
+	var worn := clean_worn(raw_worn)
+	var stats := stats_of_worn(worn)
+	var apmp := ap_mp_of_worn(worn)
+	var flat_mastery := int(stats.get("mastery", 0))
+	var mastery := roundi(float(flat_mastery) * (1.0 + float(stats.get("mastery_pct", 0)) / 100.0))
+	var out := {
+		"hp_pct": int(stats.get("hp_pct", 0)),
+		"mastery": mastery,
+		"resist": int(stats.get("resist_pct", 0)),
+		"ap": int(apmp["ap"]),
+		"mp": int(apmp["mp"]),
+		"attuned_element": "",
+		"attuned_resist": 0,
+	}
+	var attuned_pct := int(stats.get("attuned_resist_pct", 0))
+	if attuned_pct > 0:
+		var element := str(attune_map.get("ironveil", ""))
+		if ELEMENTS.has(element):
+			out["attuned_element"] = element.to_lower()
+			out["attuned_resist"] = attuned_pct
+	return out
+
+
+## Summed numeric set stats of what is worn (tiers stack).
+func bonus_stats() -> Dictionary:
+	return stats_of_worn(worn_list())
+
+
+## Rare plus gate: 4 worn pieces of Ironveil or Stillcut all ≥+4 → +1 MP;
+## 5 worn pieces all +5 → +1 AP.
+func rare_gate() -> Dictionary:
+	return gate_of_worn(worn_list())
+
+
+## AP/MP after gear, clamped 8/5. Weapon .ap and boots .mp rare affixes are
+## not dropped yet, so they add 0 here.
+func ap_mp() -> Dictionary:
+	return ap_mp_of_worn(worn_list())
+
+
+## Sanitised fight gear from any source (a peer, a save): worn + attune.
+static func clean_fight_gear(raw: Variant) -> Dictionary:
+	var out := {"worn": [], "attune": {}}
+	if typeof(raw) != TYPE_DICTIONARY:
+		return out
+	out["worn"] = clean_worn(raw.get("worn", []))
+	var att: Variant = raw.get("attune", {})
+	if typeof(att) == TYPE_DICTIONARY:
+		for fam in att:
+			if FAMILIES.has(str(fam)) and ELEMENTS.has(str(att[fam])):
+				out["attune"][str(fam)] = str(att[fam])
+	return out
+
+
+## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
+func fight_gear() -> Dictionary:
+	var active := {}
+	for fam in attune:
+		if attune_active(fam) != "":
+			active[fam] = attune[fam]
+	return {"worn": worn_list(), "attune": active}
 
 
 func loot_clears_left(unix_seconds: int) -> int:

@@ -4,7 +4,7 @@ class_name GearScreen
 ## Hub overlay for mobile gear (Blueprint §10). Left: the five worn slots
 ## (tap to take off). Middle: the bag (tap to wear, Fuse joins two copies of
 ## the same item and plus). Right: set bonuses, attune, AP/MP after the 8/5
-## clamp. Bonuses are shown only; fights do not read them yet.
+## clamp. Worn gear goes into Stasis and online Koliseo fights.
 
 signal closed
 
@@ -234,7 +234,7 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Bonuses shown only — fights do not use gear yet.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Set bonuses count in Stasis and online Koliseo (HP, Mastery, Resist, AP/MP). Init, FLEX and 5pc effects are not active yet.", 12, GOLD_DIM))
 
 
 static func _reason_text(reason: String) -> String:

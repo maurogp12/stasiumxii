@@ -232,6 +232,10 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 	var player := {"seat": PLAYER_SEAT, "facing": "N"}
 	if player_hp >= 0:
 		player["hp"] = player_hp
+	# Worn gear counts in Stasis (Mauro 29 Sep 2026).
+	var gear := GearBag.load_saved().fight_gear()
+	if not (gear["worn"] as Array).is_empty():
+		player["gear"] = gear
 	roster.append(player)
 	positions.append(cells[0])
 	for i in foes.size():

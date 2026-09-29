@@ -58,15 +58,19 @@ on those branches) → the in-game **Actualizar** button.
 | 0.1.46 | **Dungeon rewards (§9 Soft Lock):** clearing a Stasis door (Room B boss) opens a chest: 1 random +0 piece from the ★1 families (Sheaf or Undertow). 5 loot clears per UTC day shared by all doors; clear 6+ allowed, chest empty. Chest size 1 is **provisional** (Blueprint gives no number). `StasisCatalog.STAR = 1` | same | see 0.1.46 commits |
 | 0.1.46 | **Dofus-style end-of-fight window** (`ui/combat_result.gd`) from Mauro's two screenshots: title, Victory/Defeat, duration mm:ss + turns, Winners / Losers blocks with portrait, name, HP left, loot icons, green CLOSE. Koliseo: opens ~1 s after the match ends; the online winner's loot shows the coin + trophy paid (notes for daily limit / hot-seat). Stasis: opens on the door clear (chest pieces as loot, all beaten foes listed) or on a wipe. No level / XP / kamas columns — the game has none | Mauro sent the Dofus "Resultado del combate" and "Combate terminado" pictures | see 0.1.46 commits |
 | 0.1.46 | New suite `tests/run_gear_tests.gd` (20 suites total). Wallet tests updated for stall → gear bag | — | see 0.1.46 commits |
+| — | **Decision (Mauro, 29 Sep 2026): gear counts in PvP (Koliseo) and in dungeons (Stasis).** | Mauro: "Yes pvp and dungeon" | — |
+| 0.1.47 | **Gear now changes fights.** Worn set bonuses feed CombatSim: +HP% (max HP), Mastery (damage and heals ×(1+Mastery/100)), Resist% (damage ×(1−Resist/100)), Ironveil attuned resist vs hits of that element, AP/MP max (clamped 8/5, refilled every turn). Stasis: the player's worn gear rides in the fight roster (Room B HP carry clamps to the geared max). Online Koliseo: each phone sends its own worn gear (`rpc_submit_gear`) when it gets its seat; the host keeps it per seat, drops any gear inside a reset request, recomputes stats itself (valid ids, one per slot, +0–+5, 8/5). Gear arriving during deployment applies at once; never mid-combat. **Hot-seat uses no gear** (both players share one phone — waiting on Mauro). **Not applied yet:** per-item stats (Mobile_Sets.xlsx not in git), Init, FLEX, the 5pc text effects. No gear = exact old numbers (all 20 suites pass) | Mauro: "Yes pvp and dungeon" | see 0.1.47 commits |
 
 Each version bump is its own `Stamp Android sideload …` commit. All
 headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.46 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.47 work into `mobile` (PR not opened yet — waiting for his OK).
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
-- Gear in fights: which fights read gear (Stasis only, or Koliseo too)? Per-item stats (weapon Mastery, head HP, …) live in Mobile_Sets.xlsx — not in git; needed before gear can touch CombatSim. Rare .ap/.mp affix drop rates also unknown.
+- Per-item gear stats (weapon Mastery, head HP, …) live in Mobile_Sets.xlsx — not in git. Rare .ap/.mp affix drop rates unknown. Init / FLEX / 5pc effects need their combat systems.
+- Hot-seat and gear: both players share one phone — no gear in hot-seat until Mauro decides.
+- Inventory screen + loot board after every match: Mauro is sending a reference video.
 - Stasis chest size (1 piece now, provisional).
 - Still not built: cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).
