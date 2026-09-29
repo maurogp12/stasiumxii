@@ -12,6 +12,10 @@ const _Sort := preload("res://board/visual_sort.gd")
 const GROUND_SHADER := preload("res://board/koliseo_ground.gdshader")
 const MOTE_AMOUNT := 18
 const ELEV_LIFT := 0.055
+## Dofus-style read: the whole ship board sits a step brighter, and every other
+## cell a touch lighter so the grid reads as a soft checkerboard.
+const BOARD_LIFT := 1.08
+const CHECKER_LIFT := 0.045
 
 const _TERRAIN := {
 	"ground": {"contrast": 1.10, "sat": 1.12, "shimmer": 0.10, "pulse": 0.02, "speed": 0.7},
@@ -128,7 +132,7 @@ static func grade_for(map_id: String, terrain: String, elevation: int, cell: Vec
 		"ship": true,
 		"contrast": float(base["contrast"]),
 		"sat": float(base["sat"]),
-		"lift": 1.0 + float(maxi(elevation, 0)) * ELEV_LIFT,
+		"lift": BOARD_LIFT * (1.0 + float(maxi(elevation, 0)) * ELEV_LIFT) * (1.0 + CHECKER_LIFT * float((cell.x + cell.y + 1) % 2)),
 		"shimmer": float(base["shimmer"]) * float(mul.get(terrain_key, 1.0)),
 		"pulse": float(base["pulse"]) * float(biome["pulse_mul"]),
 		"speed": float(base["speed"]) * float(biome["speed_mul"]),

@@ -54,6 +54,7 @@ extends Node2D
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
+const ARENA_SKY := preload("res://board/arena_sky.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -102,6 +103,7 @@ var _vfx: Node
 var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
 var _koliseo_life: Node2D
+var _arena_sky: Node2D
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 var _framed_cell := Vector2i(-999, -999)
@@ -2164,6 +2166,8 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
+	_ensure_arena_sky()
+	_arena_sky.bind(map_key, _board_size)
 
 
 func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:
@@ -2198,6 +2202,16 @@ func _ensure_koliseo_life() -> void:
 	add_child(_koliseo_life)
 	if units != null:
 		move_child(_koliseo_life, units.get_index())
+
+
+## Sky and island slab (view only). Sits first so every tile paints over it.
+func _ensure_arena_sky() -> void:
+	if _arena_sky != null and is_instance_valid(_arena_sky):
+		return
+	_arena_sky = ARENA_SKY.new()
+	_arena_sky.name = "ArenaSky"
+	add_child(_arena_sky)
+	move_child(_arena_sky, 0)
 
 
 func _ensure_camera() -> void:

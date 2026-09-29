@@ -14,6 +14,11 @@ const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
 ## Ambush back-tile chrome. Blue so the legal landing is not another gold range cell.
 const LEGAL_BLUE := Color(0.32, 0.66, 0.98, 1.0)
+## Dofus read: walk range is a bright green field; the two seats are blue and red.
+## Pawn seat rings reuse the team colors so a zone and its fighter match.
+const MOVE_GREEN := Color(0.40, 0.86, 0.30, 1.0)
+const TEAM_BLUE := Color(0.26, 0.54, 1.0, 1.0)
+const TEAM_RED := Color(0.94, 0.28, 0.26, 1.0)
 
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
@@ -313,7 +318,7 @@ func _highlight_flat_color() -> Color:
 	var color := Color(0, 0, 0, 0)
 	match highlight:
 		"move":
-			color = Color(0.45, 0.78, 0.92, 1.0)
+			color = MOVE_GREEN
 		"advance":
 			color = Color(0.72, 0.58, 0.95, 1.0)
 		"range":
@@ -332,9 +337,9 @@ func _highlight_flat_color() -> Color:
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":
-			color = Color(0.36, 0.72, 0.52, 1.0)
+			color = TEAM_BLUE
 		"zone_p2":
-			color = Color(0.78, 0.42, 0.42, 1.0)
+			color = TEAM_RED
 		"occupied":
 			color = Color(0.78, 0.62, 0.22, 1.0)
 		"locked":

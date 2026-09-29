@@ -2423,8 +2423,14 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	var shadow := lerpf(1.0, 0.62, lift)
 	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
 	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
-	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	# Dofus team circle: a soft team disc, a bright team ring, a dark keyline
+	# outside it and a light glint on the near rim, so the fighter reads on
+	# any tile at phone zoom.
+	var team := _seat_color()
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 0.38))
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.2, SEAT_RING_RY + 0.6, Color(0.05, 0.04, 0.06, 0.75), 1.4)
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 1.0), 2.6)
+	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
 		_draw_ellipse_ring_on(canvas, foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
@@ -2528,11 +2534,10 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 
 
 func _seat_color() -> Color:
-	# Same greens / reds as the P1 / P2 deploy zone highlights.
+	# Same blue / red as the P1 / P2 deploy zone highlights (Dofus teams).
 	# Stasis trash seats 2 and 3 are hostiles, same as seat 1.
-	if seat > 0:
-		return Color(0.78, 0.42, 0.42, 0.92)
-	return Color(0.36, 0.72, 0.52, 0.92)
+	var team: Color = BoardTile.TEAM_RED if seat > 0 else BoardTile.TEAM_BLUE
+	return Color(team.r, team.g, team.b, 0.92)
 
 
 func _body_color() -> Color:

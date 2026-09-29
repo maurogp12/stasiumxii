@@ -380,7 +380,7 @@ func _test_highlights_are_overlays_and_labels_are_debug() -> void:
 	var mud_fill := Color(0.56, 0.38, 0.20)
 	mud.set_highlight("move")
 	eq(mud.fill_color(), mud_fill, "reachable highlight leaves the mud fill")
-	eq(mud.overlay_color(), Color(0.45, 0.78, 0.92, BoardTile.HIGHLIGHT_FILL_ALPHA), "move overlay keeps the flat cyan")
+	eq(mud.overlay_color(), Color(BoardTile.MOVE_GREEN.r, BoardTile.MOVE_GREEN.g, BoardTile.MOVE_GREEN.b, BoardTile.HIGHLIGHT_FILL_ALPHA), "move overlay is the flat Dofus green")
 	eq(mud.overlay_draws_outline(), true, "move overlay draws an outline")
 	mud.set_highlight("target")
 	eq(mud.fill_color(), mud_fill, "target highlight leaves the mud fill")
