@@ -56,6 +56,7 @@ const KOLISEO_ART := preload("res://board/koliseo_art.gd")
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const ARENA_SKY := preload("res://board/arena_sky.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
+const SPELL_FLOURISH := preload("res://vfx/spell_flourish.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -106,6 +107,7 @@ var _camera: Camera2D
 var _koliseo_life: Node2D
 var _arena_sky: Node2D
 var _shake_tween: Tween
+var _flourish: Node2D
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 var _framed_cell := Vector2i(-999, -999)
@@ -1250,6 +1252,16 @@ func _play_combat_feedback(events: Array) -> void:
 				_tween_pawn_modulate(caster_pawn)
 
 
+## Wakfu-style per-class particle layer over the recipe VFX (view only).
+func _ensure_flourish() -> void:
+	if _flourish != null and is_instance_valid(_flourish):
+		return
+	_flourish = SPELL_FLOURISH.new()
+	_flourish.name = "SpellFlourish"
+	add_child(_flourish)
+	_flourish.bind_elevation(_elev_at)
+
+
 ## Impact punch (view only): a short decaying camera wobble. Bigger hits and
 ## knockouts shake more. A sine wobble, not dice, so it never touches the sim.
 func _shake_camera(dealt: float, knockout: bool) -> void:
@@ -1531,7 +1543,10 @@ func _arm_vfx(events: Array) -> void:
 	# Shares the motion input lock. Displacement beats only. Clock keeps running.
 	if _vfx == null or not _vfx.has_method("play"):
 		return
-	var block := float(_vfx.play(events, _sim().snapshot()))
+	var snap: Dictionary = _sim().snapshot()
+	var block := float(_vfx.play(events, snap))
+	_ensure_flourish()
+	_flourish.play(events, snap)
 	_pending_motion_sec = maxf(_pending_motion_sec, minf(block, VIEW_MOTION.ACTION_LOCK_MAX))
 
 
