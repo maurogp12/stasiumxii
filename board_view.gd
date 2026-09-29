@@ -53,7 +53,13 @@ extends Node2D
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
+const COMBAT_RESULT := preload("res://ui/combat_result.gd")
+## Death / finisher reads before the end-of-fight window opens.
+const RESULT_DELAY := 1.1
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
+const ARENA_SKY := preload("res://board/arena_sky.gd")
+const ARENA_LOOK := preload("res://board/arena_look.gd")
+const SPELL_FLOURISH := preload("res://vfx/spell_flourish.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -74,6 +80,9 @@ const VIEW_W: float = TOUCH.VIEW_W
 const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
 
+var _fight_started_msec: int = 0
+var _result_shown: bool = false
+var _result_layer: CanvasLayer
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
 var pawns_by_seat: Dictionary = {}
@@ -102,6 +111,14 @@ var _vfx: Node
 var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
 var _koliseo_life: Node2D
+var _arena_sky: Node2D
+var _shake_tween: Tween
+var _flourish: Node2D
+## Pinch zoom (phone): finger index -> screen position, and the pinch start.
+var _touches: Dictionary = {}
+var _pinch_dist := 0.0
+var _pinch_zoom := 0.0
+var _board_px := Vector2(960, 500)
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 var _framed_cell := Vector2i(-999, -999)
@@ -310,6 +327,55 @@ func _timer_expired(result: Dictionary) -> bool:
 		if str(event.get("type", "")) == "end_turn" and str(event.get("reason", "")) == "timer":
 			return true
 	return false
+
+
+## Two-finger pinch zooms the board camera on a phone (continuous, inside the
+## player zoom limits). While two fingers are down no cell is aimed or committed.
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var t := event as InputEventScreenTouch
+		if t.pressed:
+			_touches[t.index] = t.position
+		else:
+			_touches.erase(t.index)
+		if _touches.size() == 2:
+			_pinch_dist = _touch_spread()
+			_pinch_zoom = _camera.zoom.x if _camera != null else 1.0
+			_cancel_touch_aim()
+			get_viewport().set_input_as_handled()
+		elif _touches.size() < 2 and _pinch_dist > 0.0:
+			_pinch_dist = 0.0
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag:
+		var d := event as InputEventScreenDrag
+		if _touches.has(d.index):
+			_touches[d.index] = d.position
+		if _touches.size() >= 2 and _pinch_dist > 0.0 and _camera != null:
+			var ratio := _touch_spread() / maxf(_pinch_dist, 1.0)
+			var view := get_viewport_rect().size
+			TOUCH.set_player_zoom(_pinch_zoom * ratio, _board_px.x, _board_px.y, view)
+			var z := TOUCH.player_board_zoom(_board_px.x, _board_px.y, view, true)
+			_camera.zoom = Vector2(z, z)
+			_pan_limit = TOUCH.pan_room(_board_px.x, _board_px.y, view, z, true)
+			_clamp_camera()
+			var limits := TOUCH.player_zoom_limits(_board_px.x, _board_px.y, view, true)
+			if _hud != null and _hud.has_method("set_zoom_buttons"):
+				_hud.set_zoom_buttons(z < limits.y - 0.02, z > limits.x + 0.02)
+			get_viewport().set_input_as_handled()
+
+
+func _touch_spread() -> float:
+	var pts := _touches.values()
+	if pts.size() < 2:
+		return 0.0
+	return (pts[0] as Vector2).distance_to(pts[1] as Vector2)
+
+
+func _cancel_touch_aim() -> void:
+	_touch_on_board = false
+	_touch_commit_open = false
+	_touch_panning = true
+	_chrome_aim = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -1235,6 +1301,7 @@ func _play_combat_feedback(events: Array) -> void:
 					target_pawn.flash_support()
 				_:
 					target_pawn.flash_hit()
+					_shake_camera(float(event.get("dealt", event.get("damage", 0))), dying.has(target_seat))
 			if not dying.has(target_seat):
 				_tween_pawn_modulate(target_pawn)
 		if int(event.get("engine_gained", 0)) > 0 and str(event.get("engine", "")) == "impact":
@@ -1243,6 +1310,40 @@ func _play_combat_feedback(events: Array) -> void:
 				var caster_pawn: Pawn = pawns_by_seat[caster_seat]
 				caster_pawn.flash_impact()
 				_tween_pawn_modulate(caster_pawn)
+
+
+## Wakfu-style per-class particle layer over the recipe VFX (view only).
+func _ensure_flourish() -> void:
+	if _flourish != null and is_instance_valid(_flourish):
+		return
+	_flourish = SPELL_FLOURISH.new()
+	_flourish.name = "SpellFlourish"
+	add_child(_flourish)
+	_flourish.bind_elevation(_elev_at)
+
+
+## Impact punch (view only): a short decaying camera wobble. Bigger hits and
+## knockouts shake more. A sine wobble, not dice, so it never touches the sim.
+func _shake_camera(dealt: float, knockout: bool) -> void:
+	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
+		return
+	if dealt <= 0.0 and not knockout:
+		return
+	var amp := clampf(1.5 + dealt * 0.12, 1.5, 5.0)
+	if knockout:
+		amp = 7.0
+	if _shake_tween != null and is_instance_valid(_shake_tween):
+		_shake_tween.kill()
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(_apply_shake.bind(amp), 0.0, 1.0, 0.26 if not knockout else 0.4)
+	_shake_tween.tween_callback(func() -> void: _camera.offset = Vector2.ZERO)
+
+
+func _apply_shake(t: float, amp: float) -> void:
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	var fall := (1.0 - t) * (1.0 - t)
+	_camera.offset = Vector2(sin(t * 57.0), cos(t * 43.0) * 0.6) * amp * fall / _camera.zoom.x
 
 
 func _tween_pawn_modulate(pawn: Pawn) -> void:
@@ -1502,7 +1603,10 @@ func _arm_vfx(events: Array) -> void:
 	# Shares the motion input lock. Displacement beats only. Clock keeps running.
 	if _vfx == null or not _vfx.has_method("play"):
 		return
-	var block := float(_vfx.play(events, _sim().snapshot()))
+	var snap: Dictionary = _sim().snapshot()
+	var block := float(_vfx.play(events, snap))
+	_ensure_flourish()
+	_flourish.play(events, snap)
 	_pending_motion_sec = maxf(_pending_motion_sec, minf(block, VIEW_MOTION.ACTION_LOCK_MAX))
 
 
@@ -1636,6 +1740,69 @@ func _refresh() -> void:
 	_maybe_reframe(snap)
 	if _vfx != null and _vfx.has_method("sync_snapshot"):
 		_vfx.sync_snapshot(snap)
+	_track_result(snap)
+
+
+## Dofus-style end-of-fight window (ui/combat_result.gd). Clock starts when
+## combat starts (after deploy); the window opens once per finished match.
+func _track_result(snap: Dictionary) -> void:
+	var net := _net()
+	if net != null and net.has_method("is_dedicated") and net.is_dedicated():
+		return
+	if not bool(snap.get("match_over", false)):
+		if _result_shown:
+			_result_shown = false
+			_fight_started_msec = 0
+		if _fight_started_msec == 0 and not CombatHUD.is_deployment_phase(snap):
+			_fight_started_msec = Time.get_ticks_msec()
+		return
+	if _result_shown:
+		return
+	_result_shown = true
+	var secs := 0
+	if _fight_started_msec > 0:
+		secs = int((Time.get_ticks_msec() - _fight_started_msec) / 1000)
+	_on_match_result(snap, secs)
+
+
+## Koliseo: winners / losers, and the coins + trophies an online win paid.
+func _on_match_result(snap: Dictionary, secs: int) -> void:
+	if not is_inside_tree():
+		return
+	get_tree().create_timer(RESULT_DELAY).timeout.connect(_show_koliseo_result.bind(snap.duplicate(true), secs))
+
+
+func _show_koliseo_result(snap: Dictionary, secs: int) -> void:
+	if not is_inside_tree():
+		return
+	var net := _net()
+	var local_seat := -1
+	var payout := {}
+	if net != null and net.is_online():
+		local_seat = int(net.local_seat)
+		payout = net.koliseo_last_payout
+	show_result(CombatResult.koliseo_result(snap, local_seat, payout, secs, _portrait_of))
+
+
+func _portrait_of(unit: Dictionary) -> Texture2D:
+	if _hud != null and _hud.has_method("_portrait_for"):
+		return _hud._portrait_for(unit)
+	return null
+
+
+func show_result(data: Dictionary) -> CombatResult:
+	if _result_layer == null or not is_instance_valid(_result_layer):
+		_result_layer = CanvasLayer.new()
+		_result_layer.name = "ResultLayer"
+		_result_layer.layer = 30
+		add_child(_result_layer)
+	for child in _result_layer.get_children():
+		child.queue_free()
+	var window: CombatResult = COMBAT_RESULT.new()
+	window.name = "CombatResult"
+	window.setup(data)
+	_result_layer.add_child(window)
+	return window
 
 
 func _rebuild_pawns() -> void:
@@ -2161,9 +2328,12 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+	_apply_edge_glow(map_key)
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
+	_ensure_arena_sky()
+	_arena_sky.bind(map_key, _board_size)
 
 
 func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:
@@ -2198,6 +2368,33 @@ func _ensure_koliseo_life() -> void:
 	add_child(_koliseo_life)
 	if units != null:
 		move_child(_koliseo_life, units.get_index())
+
+
+## Look-picture glow: a cell's edges that touch the arena's hot terrain
+## (Slagcrown lava) light up on the rock side. View only.
+func _apply_edge_glow(map_key: String) -> void:
+	var style: Dictionary = ARENA_LOOK.style_for(map_key)
+	var hot := str(style.get("edge_from", ""))
+	var steps: Array[Vector2i] = [Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1)]
+	for cell in tiles.keys():
+		var tile := _tile_at(cell)
+		var mask := 0
+		if hot != "" and tile.terrain_type != hot:
+			for i in 4:
+				var rec: Dictionary = _board_data.get(cell + steps[i], {})
+				if str(rec.get("terrain_type", "")) == hot:
+					mask |= 1 << i
+		tile.set_edge_glow(mask)
+
+
+## Sky and island slab (view only). Sits first so every tile paints over it.
+func _ensure_arena_sky() -> void:
+	if _arena_sky != null and is_instance_valid(_arena_sky):
+		return
+	_arena_sky = ARENA_SKY.new()
+	_arena_sky.name = "ArenaSky"
+	add_child(_arena_sky)
+	move_child(_arena_sky, 0)
 
 
 func _ensure_camera() -> void:
@@ -2249,6 +2446,7 @@ func _fit_board_camera() -> void:
 	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
 	var board_w := maxf(max_x - min_x, 1.0)
 	var board_h := maxf(max_y - min_y, 1.0)
+	_board_px = Vector2(board_w, board_h)
 	var mobile := TOUCH.use_mobile_pick()
 	var viewport := Vector2(VIEW_W, VIEW_H)
 	if mobile:
@@ -2268,6 +2466,10 @@ func _fit_board_camera() -> void:
 		if focus.x < 1.0e8:
 			look = TOUCH.focus_point(center, focus, room)
 	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
+	if mobile:
+		# Centre the diamond in the clear space between the menus.
+		var clear := TOUCH.clear_band_for(viewport)
+		play_center.y = (clear.x + clear.y) * 0.5
 	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom

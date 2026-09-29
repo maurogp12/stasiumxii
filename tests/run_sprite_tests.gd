@@ -69,15 +69,13 @@ func _test_sprite_node_setup() -> void:
 	eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
 	eq(pawn.scale, Vector2.ONE, "presentation scale stays on the body, not the pawn")
 	var ironjaw_scale := Pawn.sprite_scale_for("ironjaw")
-	eq(sprite.scale, ironjaw_scale, "ironjaw combat scale is the shared cell")
-	eq(ironjaw_scale, Pawn.SPRITE_SCALE, "ironjaw stays on the 0.5 cell")
-	eq(Pawn.IRONJAW_COMBAT_SCALE, 1.0, "ironjaw locked combat scale is 1.0")
-	eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw ships at scale 1.0")
+	eq(sprite.scale, ironjaw_scale, "ironjaw body uses its class scale")
+	eq(Pawn.presentation_mul("ironjaw"), Pawn.HEAVY_COMBAT_SCALE, "ironjaw is a heavy body")
 	eq(Pawn.capped_presentation_mul(1.0), 1.0, "1.0 is the shared scale")
-	eq(Pawn.capped_presentation_mul(1.08), 1.08, "1.08 is inside the optional nudge")
-	eq(Pawn.capped_presentation_mul(1.10), 1.10, "1.10 is the top of the optional nudge")
-	eq(Pawn.capped_presentation_mul(1.20), 1.0, "a one-class 1.20 bump is rejected")
-	eq(Pawn.capped_presentation_mul(1.25), 1.0, "an open 1.25 scale is rejected")
+	eq(Pawn.capped_presentation_mul(1.18), 1.18, "1.18 is inside the class band")
+	eq(Pawn.capped_presentation_mul(0.88), 0.88, "0.88 is inside the class band")
+	eq(Pawn.capped_presentation_mul(1.40), 1.0, "a scale past the cap is rejected")
+	eq(Pawn.capped_presentation_mul(0.60), 1.0, "a scale under the floor is rejected")
 	eq(Pawn.capped_presentation_mul(1.50), 1.0, "a larger bump is rejected")
 	pawn._sample_hop(0.0)
 	eq(sprite.position.y, 0.0, "ironjaw hop plants on Y=0 at the tile start")
@@ -101,7 +99,7 @@ func _test_sprite_node_setup() -> void:
 	get_root().add_child(bastion)
 	bastion.apply_snapshot(_unit_dict("bastion", "N", 0), 0)
 	var bastion_sprite := bastion.get_node("Sprite") as Sprite2D
-	eq(bastion_sprite.scale, Pawn.SPRITE_SCALE, "bastion matches the kestrel cell")
+	eq(bastion_sprite.scale, Pawn.sprite_scale_for("bastion"), "bastion uses its heavy body scale")
 	eq(bastion_sprite.modulate, Color.WHITE, "a visible bastion is not Invisible")
 	eq(sprite.modulate, Color.WHITE, "a visible ironjaw is not Invisible")
 	eq(bastion_sprite.visible, false, "bastion idle hides the static turnaround")
@@ -111,9 +109,10 @@ func _test_sprite_node_setup() -> void:
 		eq(String(bastion_idle.animation), "walk_n", "bastion north idle is walk_n")
 		eq(bastion_idle.frame, 0, "bastion north idle is walk frame 0")
 	_assert_walk_identity(bastion, "bastion", "N")
-	for class_id in ["kestrel", "gloam", "mender", "bastion", "ironjaw"]:
-		eq(Pawn.sprite_scale_for(class_id), Pawn.SPRITE_SCALE, "%s uses the shared 0.5 cell" % class_id)
-		eq(Pawn.presentation_mul(class_id), 1.0, "%s combat scale is 1.0" % class_id)
+	# Mauro (29 Sep): Bastion and Ironjaw are the biggest; the others are small.
+	for heavy in ["bastion", "ironjaw"]:
+		for light in ["kestrel", "gloam", "mender"]:
+			eq(Pawn.sprite_scale_for(heavy).y > Pawn.sprite_scale_for(light).y, true, "%s is bigger than %s" % [heavy, light])
 	for class_id in ["bastion", "ironjaw"]:
 		for face in ["E", "S", "N", "W"]:
 			var body := Pawn.new()

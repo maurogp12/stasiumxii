@@ -74,7 +74,7 @@ Mastery/resist proto: **0/0** for all.
 
 | Spell | Cost | Range | Effect |
 | --- | --- | --- | --- |
-| **Mark Shot** | 2 AP / 0 MP | Chebyshev 2–7 | 8 Air FLEX; applies **Mark** on connect |
+| **Mark Shot** | 2 AP / 0 MP | Chebyshev 2–5 (was 2–7; Mauro 29 Sep) | 8 Air FLEX; applies **Mark** on connect |
 | **Detonate** | 3 AP / 0 MP | Chebyshev 1–4 | Requires ≥1 Mark on target; 6 + 6×Marks Air FLEX; **consumes** Marks |
 
 ### 5.2 Ironjaw

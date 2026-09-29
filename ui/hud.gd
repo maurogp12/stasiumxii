@@ -23,6 +23,11 @@ const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
 const GOLD_DIM := Color(0.62, 0.49, 0.28)
 const CREAM := Color(0.96, 0.92, 0.84)
+## Dofus read: AP is a blue pool, MP a green pool; seats are blue and red.
+const DOFUS_AP := Color(0.28, 0.62, 1.0)
+const DOFUS_MP := Color(0.36, 0.86, 0.34)
+const TEAM_BLUE := Color(0.26, 0.54, 1.0)
+const TEAM_RED := Color(0.94, 0.28, 0.26)
 const HUB_FONT := "res://art/ui/hub/Cinzel-Semibold.ttf"
 const STUN_GREY := Color(0.58, 0.58, 0.62, 0.82)
 const AMBUSH_SHADE_TIP := "Ambush from Shade"
@@ -64,6 +69,7 @@ var _mp_pips: HBoxContainer
 var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
+var _new_match_holder: Button
 var _ready_p1_button: Button
 var _ready_p2_button: Button
 var _clock_row: HBoxContainer
@@ -871,8 +877,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_apply_turn_label_clock()
 	_sync_turn_strip(snap)
 
-	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), GOLD_BRIGHT)
-	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), Color(0.78, 0.84, 0.9))
+	_render_pips(_ap_pips, int(active.get("ap", 0)), int(active.get("max_ap", 6)), DOFUS_AP)
+	_render_pips(_mp_pips, int(active.get("mp", 0)), int(active.get("max_mp", 3)), DOFUS_MP)
 	if _deploy_note != "" and _deploying:
 		_coach_label.text = _deploy_note
 	else:
@@ -1047,8 +1053,8 @@ func _build() -> void:
 	_selected_label = Label.new()
 	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_selected_label.custom_minimum_size = Vector2(0, 40)
-	_selected_label.add_theme_font_size_override("font_size", 16)
+	_selected_label.custom_minimum_size = Vector2(0, 22)
+	_selected_label.add_theme_font_size_override("font_size", 13)
 	_selected_label.add_theme_color_override("font_color", CREAM)
 	_selected_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
 	_selected_label.add_theme_constant_override("outline_size", 5)
@@ -1056,7 +1062,7 @@ func _build() -> void:
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
 	var combat_row := HBoxContainer.new()
-	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	combat_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	combat_row.add_theme_constant_override("separation", 8)
 	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bottom.add_child(combat_row)
@@ -1100,7 +1106,8 @@ func _build() -> void:
 		_face_buttons[dir] = button
 
 	_action_bar = FlowContainer.new()
-	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
+	# Hug the Face pad in the bottom-left corner so the middle of the board stays clear.
+	_action_bar.alignment = FlowContainer.ALIGNMENT_BEGIN
 	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
 	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_action_bar.add_theme_constant_override("h_separation", 6)
@@ -1172,7 +1179,8 @@ func _build() -> void:
 	_style_chrome_button(_new_match_button, false)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	_action_bar.add_child(_new_match_button)
+	# Kept off the map (Mauro): New Match lives in the left column under Zoom.
+	_new_match_holder = _new_match_button
 
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1233,6 +1241,8 @@ func _build() -> void:
 	_zoom_out_button = _make_zoom_button("ZoomOut", "Zoom −", -1)
 	zoom_box.add_child(_zoom_in_button)
 	zoom_box.add_child(_zoom_out_button)
+	if _new_match_holder != null:
+		zoom_box.add_child(_new_match_holder)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1417,9 +1427,20 @@ func _render_pips(row: HBoxContainer, current: int, maximum: int, fill: Color) -
 		row.remove_child(child)
 		child.free()
 	for i in range(maximum):
-		var pip := ColorRect.new()
-		pip.custom_minimum_size = Vector2(16, 10)
-		pip.color = fill if i < current else Color(0.1, 0.11, 0.15, 0.95)
+		# Round gem: lit fill with a bright rim when available, a dark socket when spent.
+		var pip := Panel.new()
+		pip.custom_minimum_size = Vector2(16, 16)
+		pip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var gem := StyleBoxFlat.new()
+		var lit := i < current
+		gem.bg_color = fill if lit else Color(0.08, 0.09, 0.13, 0.95)
+		gem.border_color = fill.lightened(0.45) if lit else Color(fill.r, fill.g, fill.b, 0.35)
+		gem.set_border_width_all(2)
+		gem.set_corner_radius_all(8)
+		if lit:
+			gem.shadow_color = Color(fill.r, fill.g, fill.b, 0.55)
+			gem.shadow_size = 3
+		pip.add_theme_stylebox_override("panel", gem)
 		row.add_child(pip)
 
 
@@ -1436,7 +1457,14 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 	for unit in turn_order(snap):
 		var seat := int(unit.get("seat", -1))
 		var acting := (not deploying) and (not over) and seat == active
-		_turn_strip.add_child(_turn_chip(unit, acting))
+		var chip := _turn_chip(unit, acting)
+		# Dofus timeline: each portrait framed in its team color.
+		var frame := _chip_frame(acting)
+		frame.border_color = TEAM_RED if seat > 0 else TEAM_BLUE
+		if acting:
+			frame.shadow_color = Color(frame.border_color.r, frame.border_color.g, frame.border_color.b, 0.75)
+		(chip as Panel).add_theme_stylebox_override("panel", frame)
+		_turn_strip.add_child(chip)
 
 
 func _turn_chip(unit: Dictionary, acting: bool) -> Control:
@@ -1600,13 +1628,17 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			resist,
 		]
 	if class_id == SpellKits.CLASS_GLOAM:
-		return "%s %d/%d  %s %d/%d  Mastery %d  Resist %d" % [
+		var hidden := ""
+		if bool(unit.get("invisible", false)) and int(unit.get("invisible_turns", 0)) > 0:
+			hidden = "  Invisible %d" % int(unit.get("invisible_turns", 0))
+		return "%s %d/%d  %s %d/%d%s  Mastery %d  Resist %d" % [
 			SpellKits.resource_label("umbral"),
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
 			SpellKits.resource_label("shades"),
 			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
+			hidden,
 			mastery,
 			resist,
 		]

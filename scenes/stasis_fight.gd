@@ -6,6 +6,7 @@ extends "res://board_view.gd"
 
 var _ai_running: bool = false
 var _cleared: bool = false
+var _chest: Dictionary = {}
 var _overlay_status: Label
 var _continue_button: Button
 var _exit_button: Button
@@ -104,9 +105,109 @@ func _continue_run() -> void:
 	StasisCatalog.carry_player_hp(int(player.get("hp", 0)))
 	if StasisCatalog.advance_after_win() == "cleared":
 		_cleared = true
+		_chest = open_chest()
 		_sync_overlay(snap)
+		show_result(stasis_result(player, _chest, true, _run_seconds(), _result_portrait))
 		return
 	_restart_fight()
+
+
+## Stasis ends a fight room by room: count turns and beaten foes; a defeat
+## opens the result window at once, a win waits for the door to clear.
+func _on_match_result(snap: Dictionary, _secs: int) -> void:
+	StasisCatalog.run_turns += int(snap.get("turn_index", 0))
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
+			StasisCatalog.run_foes.append((unit as Dictionary).duplicate(true))
+	if int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT:
+		return
+	if not is_inside_tree():
+		return
+	var player := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
+	get_tree().create_timer(RESULT_DELAY).timeout.connect(func() -> void:
+		if is_inside_tree():
+			show_result(stasis_result(player, {}, false, _run_seconds(), _result_portrait)))
+
+
+## Foes use their whole package portrait (the head crop is a sliver on
+## the result row); the player keeps the class head.
+func _result_portrait(unit: Dictionary) -> Texture2D:
+	var art := str(unit.get("stasis_sprite", ""))
+	if art != "" and ResourceLoader.exists(art):
+		return load(art) as Texture2D
+	return _portrait_of(unit)
+
+
+func _run_seconds() -> int:
+	if StasisCatalog.run_started_msec <= 0:
+		return 0
+	return int((Time.get_ticks_msec() - StasisCatalog.run_started_msec) / 1000)
+
+
+static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, secs: int, portrait: Callable = Callable()) -> Dictionary:
+	var you := {
+		"name": str(player.get("name", "You")),
+		"hp": int(player.get("hp", 0)),
+		"max_hp": int(player.get("max_hp", 80)),
+		"portrait": portrait.call(player) if portrait.is_valid() and not player.is_empty() else null,
+		"you": true,
+		"loot": [],
+	}
+	if chest.has("xp"):
+		you["xp"] = int(chest["xp"])
+		you["level"] = int(chest.get("level", 1))
+		you["levels_gained"] = int(chest.get("levels_gained", 0))
+	for it in chest.get("items", []):
+		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1})
+	var foes: Array = []
+	for unit in StasisCatalog.run_foes:
+		foes.append({
+			"name": str(unit.get("name", "")),
+			"hp": int(unit.get("hp", 0)),
+			"max_hp": int(unit.get("max_hp", 1)),
+			"portrait": portrait.call(unit) if portrait.is_valid() else null,
+			"you": false,
+			"loot": [],
+		})
+	var note := ""
+	if victory:
+		note = chest_line(chest)
+	return {
+		"title": "%s — combat result" % StasisCatalog.door_name(),
+		"outcome": "Victory" if victory else "Defeat",
+		"victory": victory,
+		"duration_sec": secs,
+		"turns": StasisCatalog.run_turns,
+		"winners": [you] if victory else foes,
+		"losers": foes if victory else [you],
+		"note": note,
+	}
+
+
+## Stasis 1 clear: one loot roll, 5 per UTC day across all doors (GearBag).
+func open_chest() -> Dictionary:
+	var bag := GearBag.load_saved()
+	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.STAR)
+	bag.save()
+	# XP: 60 × star with a chest, 20 for a clear past the daily 5.
+	var hero := HeroProgress.load_saved()
+	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.STAR, bool(loot.get("chest", false))))
+	hero.save()
+	loot["xp"] = int(gained["xp"])
+	loot["level"] = int(gained["level"])
+	loot["levels_gained"] = int(gained["levels_gained"])
+	return loot
+
+
+static func chest_line(loot: Dictionary) -> String:
+	if loot.is_empty():
+		return "Back to hub."
+	if not bool(loot.get("chest", false)):
+		return "Chest empty — 5 loot clears used today."
+	var names: Array[String] = []
+	for it in loot.get("items", []):
+		names.append(GearBag.item_label(it))
+	return "Chest: %s. Wear it in Gear." % ", ".join(names)
 
 
 func _restart_fight() -> void:
@@ -197,7 +298,7 @@ func _sync_overlay(snap: Dictionary) -> void:
 	if _overlay_status == null:
 		return
 	if _cleared:
-		_overlay_status.text = "%s cleared. Back to hub." % StasisCatalog.door_name()
+		_overlay_status.text = "%s cleared. %s" % [StasisCatalog.door_name(), chest_line(_chest)]
 		if _continue_button != null:
 			_continue_button.visible = false
 		return

@@ -42,6 +42,7 @@ func _run() -> void:
 	_test_view_wiring_does_not_touch_rules()
 	_test_class_choreography()
 	_test_scenario_overlays()
+	_test_weather_and_spell_extras()
 
 
 func _test_budgets() -> void:
@@ -1529,6 +1530,43 @@ func _first_kind(recipes: Array, kind: String) -> Dictionary:
 		if str(item.get("id", "")) == "number" and str(item.get("kind", "")) == kind:
 			return item
 	return {}
+
+
+## Windmere snowfall + caster rune circle / projectile / finisher (view only).
+func _test_weather_and_spell_extras() -> void:
+	var sky: ArenaSky = load("res://board/arena_sky.gd").new()
+	root.add_child(sky)
+	sky.bind("windmere", 15)
+	eq(sky.snow_visible(), true, "Windmere has falling snow")
+	var snow := sky.get_node("SnowFall") as SnowFall
+	eq(snow.flake_count() > 100, true, "snowfall has a real flurry of flakes")
+	sky.bind("stormspire", 15)
+	eq(sky.snow_visible(), false, "Stormspire has no snow")
+	sky.bind("crosshaven", 15)
+	eq(sky.snow_visible(), false, "Crosshaven has no snow")
+	sky.free()
+	var fl: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
+	root.add_child(fl)
+	fl.play([{"type": "hit", "spell": "detonate", "seat": 0, "caster_cell": Vector2i(2, 7), "to": Vector2i(7, 7)}], {})
+	var has_rune := false
+	var has_missile := false
+	var has_column := false
+	for child in fl.get_children():
+		has_rune = has_rune or child is SpellFlourish.RuneCircle
+		has_missile = has_missile or child is SpellFlourish.Missile
+		has_column = has_column or child is SpellFlourish.LightColumn
+	eq(has_rune, true, "every cast draws a rune circle under the caster")
+	eq(has_missile, true, "a ranged Kestrel spell flies a projectile")
+	eq(has_column, true, "Detonate gets the heavy finisher")
+	fl.free()
+	var melee: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
+	root.add_child(melee)
+	melee.play([{"type": "hit", "spell": "strike", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	var melee_missile := false
+	for child in melee.get_children():
+		melee_missile = melee_missile or child is SpellFlourish.Missile
+	eq(melee_missile, false, "Ironjaw melee has no projectile")
+	melee.free()
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

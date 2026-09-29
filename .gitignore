@@ -4,3 +4,6 @@
 
 # APK/AAB output from export_presets.cfg (export_path)
 /builds/
+
+# Python caches from build_tools scripts
+__pycache__/

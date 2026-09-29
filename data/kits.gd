@@ -104,7 +104,8 @@ const SPELLS := {
 		"mp": 0,
 		"range_mode": "chebyshev",
 		"min_range": 2,
-		"max_range": 7,
+		# Mauro (29 Sep 2026): Kestrel had too much range. 2–7 → 2–5.
+		"max_range": 5,
 		"rolls": true,
 		"element": "air",
 		"base_damage": 8,

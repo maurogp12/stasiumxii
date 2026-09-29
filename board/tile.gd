@@ -6,6 +6,8 @@ const TILE_HEIGHT: int = 32
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const _KoliseoArt := preload("res://board/koliseo_art.gd")
 const _KoliseoLife := preload("res://board/koliseo_life.gd")
+const _ArenaLook := preload("res://board/arena_look.gd")
+const _SURFACE_SHADER := preload("res://board/arena_surface.gdshader")
 ## Relative to this tile. Stays under BoardVisualSort.UNIT_Z_BIAS so the
 ## seat ring and pawn sprite still paint after the overlay, including on
 ## elevated tiles (the overlay is a child, so it lifts with the diamond).
@@ -14,6 +16,11 @@ const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
 ## Ambush back-tile chrome. Blue so the legal landing is not another gold range cell.
 const LEGAL_BLUE := Color(0.32, 0.66, 0.98, 1.0)
+## Dofus read: walk range is a bright green field; the two seats are blue and red.
+## Pawn seat rings reuse the team colors so a zone and its fighter match.
+const MOVE_GREEN := Color(0.40, 0.86, 0.30, 1.0)
+const TEAM_BLUE := Color(0.26, 0.54, 1.0, 1.0)
+const TEAM_RED := Color(0.94, 0.28, 0.26, 1.0)
 
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
@@ -23,6 +30,13 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _grade_key: String = ""
+## Arena id for the look-picture stamps (empty on proto boards).
+var _look_map: String = ""
+## Animated surface (lava, runes...) drawn by a child behind the tile's props.
+var _surface: SurfaceFx
+var _surface_stamp: Texture2D
+## Bits 0..3: edges (W-N, N-E, E-S, S-W) that touch the arena's glowing terrain.
+var _edge_glow_mask: int = 0
 var _grid_on: bool = false
 var _life_mat: ShaderMaterial
 var _grid: GridInk
@@ -38,12 +52,33 @@ class GridInk extends Node2D:
 		var pts := host.diamond_points()
 		var loop := PackedVector2Array(pts)
 		loop.append(pts[0])
-		draw_polyline(loop, KoliseoLife.GRID_INK, KoliseoLife.GRID_INK_PX, true)
-		draw_polyline(loop, KoliseoLife.GRID_GLEAM, KoliseoLife.GRID_GLEAM_PX, true)
+		var style: Dictionary = host.grid_style()
+		if (style.get("no_grid", []) as Array).has(host.terrain_type):
+			return
+		draw_polyline(loop, style.get("ink", KoliseoLife.GRID_INK), float(style.get("ink_px", KoliseoLife.GRID_INK_PX)), true)
+		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
+
+
+class SurfaceFx extends Node2D:
+	var host: BoardTile
+
+	func _draw() -> void:
+		if host != null:
+			host.paint_surface(self)
 
 
 class HighlightOverlay extends Node2D:
 	var host: BoardTile
+	var wall_t := -1.0
+
+	func _process(delta: float) -> void:
+		# Only a Snap Wall animates (rise, then the rune pulse).
+		if host == null or host.highlight != "blocked":
+			wall_t = -1.0
+			set_process(false)
+			return
+		wall_t = maxf(wall_t, 0.0) + delta
+		queue_redraw()
 
 	func _draw() -> void:
 		if host != null:
@@ -57,17 +92,33 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var points := _diamond_points()
+	var look := _ArenaLook.stamp_for(_look_map, terrain_type, grid_position) if _look_map != "" else null
 	var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
-	if tex == null:
+	if look != null:
+		_paint_look(look)
+		if not (grid_style().get("no_grid", []) as Array).has(terrain_type):
+			_paint_depth_rim()
+	elif tex == null:
+		_hide_surface()
 		draw_colored_polygon(points, fill_color())
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
 	else:
+		_hide_surface()
 		_paint_terrain(tex)
 		_paint_depth_rim()
+	var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position) if _look_map != "" else null
+	if piece != null:
+		# Centred on the cell, base a little below the diamond so it sits in the lava.
+		var size := piece.get_size()
+		draw_texture(piece, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 + 6.0 - size.y))
 	for prop_name in _paint_props:
-		var prop_tex := _KoliseoArt.prop_texture(str(prop_name), _dress)
+		if _look_map != "" and not _ArenaLook.prop_shown_at(_look_map, str(prop_name), grid_position):
+			continue
+		var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
+		if prop_tex == null:
+			prop_tex = _KoliseoArt.prop_texture(str(prop_name), _dress)
 		if prop_tex != null:
 			_paint_prop(prop_tex)
 	var label := drawn_label()
@@ -76,6 +127,96 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
+
+
+## Look-picture stamp on the diamond. A raised cell first drops two shaded
+## faces to the ground line so it reads as a block, like the pictures.
+func _paint_look(stamp: Texture2D) -> void:
+	var pts := _diamond_points()
+	var style := grid_style()
+	if elevation > 0:
+		var drop := Vector2(0, float(elevation) * BoardVisualSort.ELEVATION_PIXELS + 2.0)
+		var left_col: Color = style.get("face_left", Color(0.3, 0.26, 0.22))
+		var right_col: Color = style.get("face_right", Color(0.22, 0.19, 0.16))
+		# Lit at the top, falling into shade at the foot: a block, not a hole.
+		draw_polygon(PackedVector2Array([pts[3], pts[2], pts[2] + drop, pts[3] + drop]),
+			PackedColorArray([left_col.lightened(0.18), left_col.lightened(0.12), left_col.darkened(0.45), left_col.darkened(0.4)]))
+		draw_polygon(PackedVector2Array([pts[2], pts[1], pts[1] + drop, pts[2] + drop]),
+			PackedColorArray([right_col.lightened(0.1), right_col.lightened(0.14), right_col.darkened(0.4), right_col.darkened(0.45)]))
+		draw_line(pts[2], pts[2] + drop, Color(0, 0, 0, 0.35), 1.2, true)
+	var surface := _ArenaLook.surface_for(_look_map, terrain_type)
+	if surface.is_empty():
+		_hide_surface()
+		draw_texture_rect(stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
+	else:
+		_show_surface(stamp, int(surface[0]), float(surface[1]))
+	if elevation > 0 and style.has("lip"):
+		var lip: Color = style["lip"]
+		draw_line(pts[3], pts[2], lip, 1.6, true)
+		draw_line(pts[2], pts[1], lip, 1.6, true)
+	_paint_edge_glow(style)
+
+
+## Terrain-side glow where this cell meets the arena's hot terrain (lava).
+func _paint_edge_glow(style: Dictionary) -> void:
+	if _edge_glow_mask == 0 or not style.has("edge_glow"):
+		return
+	var glow: Color = style["edge_glow"]
+	var pts := _diamond_points()
+	var center := Vector2.ZERO
+	var edges := [[pts[3], pts[0]], [pts[0], pts[1]], [pts[1], pts[2]], [pts[2], pts[3]]]
+	for i in 4:
+		if (_edge_glow_mask >> i) & 1 == 0:
+			continue
+		var a: Vector2 = edges[i][0]
+		var b: Vector2 = edges[i][1]
+		var ia := a.lerp(center, 0.34)
+		var ib := b.lerp(center, 0.34)
+		var clear := Color(glow.r, glow.g, glow.b, 0.0)
+		draw_polygon(PackedVector2Array([a, b, ib, ia]), PackedColorArray([glow, glow, clear, clear]))
+		draw_line(a, b, Color(1.0, 0.85, 0.45, 0.9), 1.4, true)
+
+
+func set_edge_glow(mask: int) -> void:
+	if mask == _edge_glow_mask:
+		return
+	_edge_glow_mask = mask
+	_request_paint()
+
+
+func _show_surface(stamp: Texture2D, mode: int, gain: float) -> void:
+	if _surface == null or not is_instance_valid(_surface):
+		_surface = SurfaceFx.new()
+		_surface.name = "Surface"
+		_surface.host = self
+		_surface.show_behind_parent = true
+		var mat := ShaderMaterial.new()
+		mat.shader = _SURFACE_SHADER
+		_surface.material = mat
+		add_child(_surface)
+	var smat := _surface.material as ShaderMaterial
+	smat.set_shader_parameter("mode", mode)
+	smat.set_shader_parameter("gain", gain)
+	_surface.visible = true
+	if _surface_stamp != stamp:
+		_surface_stamp = stamp
+		_surface.queue_redraw()
+
+
+func _hide_surface() -> void:
+	if _surface != null and is_instance_valid(_surface):
+		_surface.visible = false
+
+
+func paint_surface(canvas: CanvasItem) -> void:
+	if _surface_stamp == null:
+		return
+	canvas.draw_texture_rect(_surface_stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
+
+
+## Grid ink for this arena. Empty keeps the shared KoliseoLife ink.
+func grid_style() -> Dictionary:
+	return _ArenaLook.style_for(_look_map) if _look_map != "" else {}
 
 
 func set_dress(dress: String) -> void:
@@ -92,7 +233,14 @@ func apply_koliseo_grade(map_id: String) -> void:
 	if key == _grade_key:
 		return
 	_grade_key = key
+	_look_map = _ArenaLook.normalize(map_id) if _ArenaLook.has_look(map_id) else ""
 	var spec: Dictionary = _KoliseoLife.grade_for(map_id, terrain_type, elevation, grid_position)
+	if _look_map != "" and bool(spec.get("ship", false)):
+		# The stamps already carry the picture's color: keep the grade light.
+		spec["contrast"] = 1.03
+		spec["sat"] = 1.04
+		spec["grade"] = Color.WHITE
+		spec["lift"] = (1.0 + float(maxi(elevation, 0)) * _KoliseoLife.ELEV_LIFT) * (1.0 + 0.035 * float((grid_position.x + grid_position.y + 1) % 2))
 	if not bool(spec.get("ship", false)):
 		_set_grid_on(false)
 		if material != null:
@@ -241,6 +389,9 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	var color := overlay_color()
 	if color.a <= 0.0:
 		return
+	if highlight == "blocked" and not is_selected:
+		_paint_snap_wall(canvas)
+		return
 	var points := _diamond_points()
 	canvas.draw_colored_polygon(points, color)
 	if overlay_draws_outline():
@@ -254,6 +405,72 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
 		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
+
+
+## Bastion Snap Wall: a charcoal rampart with gold trim and a glowing shield
+## rune, rising out of the tile when it appears. View only; the sim owns the
+## blocked cell and its duration.
+const WALL_H := 36.0
+const WALL_RISE_SEC := 0.28
+const WALL_STONE := Color(0.30, 0.28, 0.32)
+const WALL_GOLD := Color(0.95, 0.76, 0.28)
+
+
+func _paint_snap_wall(canvas: CanvasItem) -> void:
+	var t := 1.0
+	var pulse := 0.5
+	if _overlay != null and is_instance_valid(_overlay):
+		if _overlay.wall_t < 0.0:
+			_overlay.wall_t = 0.0
+			_overlay.set_process(true)
+		var e := _overlay.wall_t
+		var u := clampf(e / WALL_RISE_SEC, 0.0, 1.0)
+		# Overshoot a touch, then settle: the wall slams up.
+		t = 1.0 - pow(1.0 - u, 3.0) + sin(u * PI) * 0.12
+		pulse = 0.5 + 0.5 * sin(e * 3.0)
+	var h := WALL_H * t
+	var pts := _diamond_points()
+	# Inset a little so neighbouring walls read as separate blocks.
+	var c := Vector2.ZERO
+	var base: Array[Vector2] = []
+	for p in pts:
+		base.append(p.lerp(c, 0.12))
+	var up := Vector2(0, -h)
+	var n: Vector2 = base[0]
+	var e2: Vector2 = base[1]
+	var s2: Vector2 = base[2]
+	var w: Vector2 = base[3]
+	# Ground shadow and dust ring.
+	canvas.draw_colored_polygon(PackedVector2Array([n + Vector2(0, 3), e2 + Vector2(4, 3), s2 + Vector2(0, 5), w + Vector2(-4, 3)]), Color(0, 0, 0, 0.35))
+	# Left and right faces.
+	canvas.draw_polygon(PackedVector2Array([w, s2, s2 + up, w + up]),
+		PackedColorArray([WALL_STONE.darkened(0.25), WALL_STONE.darkened(0.1), WALL_STONE.lightened(0.12), WALL_STONE.lightened(0.05)]))
+	canvas.draw_polygon(PackedVector2Array([s2, e2, e2 + up, s2 + up]),
+		PackedColorArray([WALL_STONE.darkened(0.35), WALL_STONE.darkened(0.45), WALL_STONE.darkened(0.2), WALL_STONE.darkened(0.1)]))
+	# Stone courses.
+	for k in [0.35, 0.68]:
+		var o: Vector2 = up * float(k)
+		canvas.draw_line(w + o, s2 + o, Color(0, 0, 0, 0.35), 1.2, true)
+		canvas.draw_line(s2 + o, e2 + o, Color(0, 0, 0, 0.35), 1.2, true)
+	# Top cap.
+	var top := PackedVector2Array([n + up, e2 + up, s2 + up, w + up])
+	canvas.draw_colored_polygon(top, WALL_STONE.lightened(0.22))
+	var rim := PackedVector2Array(top)
+	rim.append(top[0])
+	canvas.draw_polyline(rim, WALL_GOLD, 1.8, true)
+	canvas.draw_line(s2, s2 + up, WALL_GOLD.darkened(0.2), 1.4, true)
+	canvas.draw_line(w, w + up, WALL_GOLD.darkened(0.35), 1.0, true)
+	canvas.draw_line(e2, e2 + up, WALL_GOLD.darkened(0.35), 1.0, true)
+	# Shield rune on the front-left face, glowing.
+	if t > 0.6:
+		var mid := (w + s2) * 0.5 + up * 0.52
+		var glow := Color(1.0, 0.82, 0.35, 0.25 + 0.35 * pulse)
+		canvas.draw_circle(mid, 7.0 + 2.0 * pulse, Color(glow.r, glow.g, glow.b, glow.a * 0.5))
+		var shield := PackedVector2Array([mid + Vector2(-4, -5), mid + Vector2(4, -6), mid + Vector2(4, 1), mid + Vector2(0, 6), mid + Vector2(-4, 2)])
+		canvas.draw_colored_polygon(shield, Color(1.0, 0.86, 0.42, 0.75 + 0.25 * pulse))
+		var edge := PackedVector2Array(shield)
+		edge.append(shield[0])
+		canvas.draw_polyline(edge, Color(0.35, 0.24, 0.06, 0.9), 1.0, true)
 
 
 func _ensure_overlay() -> void:
@@ -313,7 +530,7 @@ func _highlight_flat_color() -> Color:
 	var color := Color(0, 0, 0, 0)
 	match highlight:
 		"move":
-			color = Color(0.45, 0.78, 0.92, 1.0)
+			color = MOVE_GREEN
 		"advance":
 			color = Color(0.72, 0.58, 0.95, 1.0)
 		"range":
@@ -332,9 +549,9 @@ func _highlight_flat_color() -> Color:
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":
-			color = Color(0.36, 0.72, 0.52, 1.0)
+			color = TEAM_BLUE
 		"zone_p2":
-			color = Color(0.78, 0.42, 0.42, 1.0)
+			color = TEAM_RED
 		"occupied":
 			color = Color(0.78, 0.62, 0.22, 1.0)
 		"locked":

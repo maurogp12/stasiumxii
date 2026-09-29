@@ -131,18 +131,21 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
-## (~147px) against Bastion ~130px, so the shipped mul is 1.0, the same body
-## scale as Kestrel and Gloam. A later nudge may only sit in 1.08–1.10, on
-## the body sprites, growing from the foot offset (0, -72). The pawn node
-## and the pick capsule stay at scale 1. Identity is Berserker A + helm A2
-## (iron-jaw grill, dual double-bit axes). 1.20 and any open class scale
-## are rejected. Kit numbers and map geometry do not read this.
-const PRESENTATION_SCALE_MIN := 1.08
-const PRESENTATION_SCALE_CAP := 1.10
-const IRONJAW_COMBAT_SCALE := 1.0
+## Body scale per class (Mauro, 29 Sep): the plate fighters, Bastion and
+## Ironjaw, are the biggest; Kestrel, Gloam and Mender are small. Scale grows
+## from the foot offset (0, -72), so feet stay on the diamond. The pawn node
+## and the pick capsule stay at scale 1. Kit numbers and maps never read this.
+const PRESENTATION_SCALE_MIN := 0.80
+const PRESENTATION_SCALE_CAP := 1.25
+const HEAVY_COMBAT_SCALE := 1.18
+const LIGHT_COMBAT_SCALE := 0.88
+const IRONJAW_COMBAT_SCALE := HEAVY_COMBAT_SCALE
 const CLASS_PRESENTATION_SCALE := {
-	"ironjaw": IRONJAW_COMBAT_SCALE,
+	"ironjaw": HEAVY_COMBAT_SCALE,
+	"bastion": HEAVY_COMBAT_SCALE,
+	"kestrel": LIGHT_COMBAT_SCALE,
+	"gloam": LIGHT_COMBAT_SCALE,
+	"mender": LIGHT_COMBAT_SCALE,
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
@@ -173,8 +176,7 @@ static func sprite_scale_for(class_id: String) -> Vector2:
 	return SPRITE_SCALE * presentation_mul(class_id)
 
 
-## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
-## Anything else, including 1.20, is ignored.
+## Class multiplier inside the 0.80–1.25 band. Anything outside is ignored.
 static func presentation_mul(class_id: String) -> float:
 	var key := SpellKits.normalize_class_id(class_id)
 	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
@@ -200,7 +202,8 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 ## Shared bar clears a 0.5 figure. Ironjaw's bar rises with his presentation
 ## scale so the name still clears the taller cell.
 func head_hp_y() -> float:
-	return HEAD_HP_Y * (_body_scale().y / SPRITE_SCALE.y)
+	# Heavy bodies raise the bar; small bodies keep the shared line above them.
+	return HEAD_HP_Y * maxf(_body_scale().y / SPRITE_SCALE.y, 1.0)
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.
@@ -265,6 +268,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	# Breath and sway follow alive (and class/seat) on every body material.
+	_apply_figure_read()
 	rewrite_frozen_vitals()
 
 
@@ -1429,6 +1434,12 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
 	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+	# Living idle: a slow breath and a small head sway, per-fighter phase so a
+	# pair never breathes in lockstep. Heavy plate breathes less. Off when down.
+	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
+	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive else 0.0)
+	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive else 0.0)
+	mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(class_id.hash() % 97) * 0.13)
 
 
 func _apply_figure_read() -> void:
@@ -2423,8 +2434,14 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	var shadow := lerpf(1.0, 0.62, lift)
 	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
 	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
-	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
+	# Dofus team circle: a soft team disc, a bright team ring, a dark keyline
+	# outside it and a light glint on the near rim, so the fighter reads on
+	# any tile at phone zoom.
+	var team := _seat_color()
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 0.38))
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.2, SEAT_RING_RY + 0.6, Color(0.05, 0.04, 0.06, 0.75), 1.4)
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 1.0), 2.6)
+	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
 		_draw_ellipse_ring_on(canvas, foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
@@ -2528,11 +2545,10 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 
 
 func _seat_color() -> Color:
-	# Same greens / reds as the P1 / P2 deploy zone highlights.
+	# Same blue / red as the P1 / P2 deploy zone highlights (Dofus teams).
 	# Stasis trash seats 2 and 3 are hostiles, same as seat 1.
-	if seat > 0:
-		return Color(0.78, 0.42, 0.42, 0.92)
-	return Color(0.36, 0.72, 0.52, 0.92)
+	var team: Color = BoardTile.TEAM_RED if seat > 0 else BoardTile.TEAM_BLUE
+	return Color(team.r, team.g, team.b, 0.92)
 
 
 func _body_color() -> Color:

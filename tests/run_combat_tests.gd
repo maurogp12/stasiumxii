@@ -64,6 +64,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_ambush_snap_wall_ray()
+	_test_invisible_wears_off()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
 	_test_invisible_breaks_on_attack()
@@ -138,7 +139,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["units"][0]["mp"], 3, "Kestrel 3 MP")
 	eq(snap["crit_roll"], false, "crit roll off")
 	eq(snap["gust"], false, "Gust off")
-	eq(snap["momentum"], false, "Momentum off")
+	eq(snap["momentum"], true, "Momentum on (Mauro 29 Sep 2026)")
 	eq(snap["walk"], "weighted", "walk is Locked weighted pathfinder")
 	eq(snap["walk_cost"], "terrain_plus_elevation", "walk cost is terrain + elevation")
 	eq(snap["walk_edges"], "ortho", "walk edges are ortho-only")
@@ -448,10 +449,10 @@ func _test_both_ready_starts_combat() -> void:
 	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
 	var opening: int = _sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"])
 	eq(opening >= 3, true, "confirmed seats open at least Chebyshev 3")
-	if opening >= 2 and opening <= 7:
-		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–7")
+	if opening >= 2 and opening <= 5:
+		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5")
 	else:
-		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–7")
+		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
 	eq(kinds.has("place"), false, "place is not a combat intent")
 	var events: Array = started.get("events", [])
 	var saw_combat := false
@@ -939,9 +940,9 @@ func _test_hazard_push_and_targets() -> void:
 	var silenced_twice: Array = _unit(0).get("silenced_spells", [])
 	eq(silenced_twice.size(), 2, "a second water land silences a different spell")
 	truthy(silenced_twice.has("mark_shot") and silenced_twice.has("detonate"), "both kit spells are silenced")
-	eq(_unit(0)["hp"], 68, "second water hit is another 6 Earth and no Burn")
+	eq(_unit(0)["hp"], 67, "second water hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var after_water: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 68, "water Silence does not tick HP")
+	eq(_unit(0)["hp"], 67, "water Silence does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["mp"], 3, "water Silence does not cut MP")
 	eq(_unit(0)["ap"], 6, "water Silence does not cut AP")
 	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot is not offered while silenced")
@@ -980,9 +981,9 @@ func _test_hazard_push_and_targets() -> void:
 	var mudded_again: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
 	eq(bool(mudded_again.get("ok", false)), true, "second Shoulder onto mud resolves")
 	eq(int(_unit(0).get("slow_remaining", 0)), 1, "a second mud land refreshes Slow and does not stack")
-	eq(_unit(0)["hp"], 68, "second mud hit is another 6 Earth and no Burn")
+	eq(_unit(0)["hp"], 67, "second mud hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var slowed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 68, "mud Slow does not tick HP")
+	eq(_unit(0)["hp"], 67, "mud Slow does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["ap"], 6, "mud Slow does not cut AP")
 	eq(_unit(0)["mp"], 2, "Slow cuts 1 MP at the victim's turn start")
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "the one Slow turn is spent")
@@ -3238,7 +3239,7 @@ func _test_back_facing_multiplier() -> void:
 
 func _test_mark_shot_range_and_marks() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range 7 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range 5 Chebyshev (Mauro, 29 Sep)")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage stays 8")
 	_sim.reset_match({
 		"seed": 1,
@@ -3249,9 +3250,10 @@ func _test_mark_shot_range_and_marks() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
-	eq(_unit(1)["hp"], 72, "8 Air on connect")
+	eq(_unit(1)["hp"], 71, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
+	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
 	for dist in [6, 7]:
 		_sim.reset_match({
 			"seed": 1,
@@ -3261,10 +3263,10 @@ func _test_mark_shot_range_and_marks() -> void:
 			"ironjaw_pos": Vector2i(dist, 0),
 		})
 		result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(dist, 0)})
-		eq(result["ok"], true, "Mark Shot at range %d is legal" % dist)
-		eq(_unit(1)["hp"], 72, "8 Air on connect at range %d" % dist)
-		eq(_unit(1)["marks"], 1, "Marks stored on the target at range %d" % dist)
-		eq(result["events"][0]["hit_chance"], 70, "range %d uses the 70%% long band" % dist)
+		eq(bool(result.get("ok", true)), false, "Mark Shot at range %d is out of range" % dist)
+		eq(str(result.get("reason", "")), "out_of_range", "range %d rejects as out_of_range" % dist)
+		eq(_unit(1)["hp"], 80, "no damage at range %d" % dist)
+		eq(_unit(0)["ap"], 6, "range %d refunds the AP" % dist)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3381,8 +3383,6 @@ func _test_hit_bands() -> void:
 	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 80)
 	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
 	_assert_aim_matches_resolve(4, SpellKits.DETONATE, 75)
-	_assert_aim_matches_resolve(6, SpellKits.MARK_SHOT, 70)
-	_assert_aim_matches_resolve(7, SpellKits.MARK_SHOT, 70)
 	for dist in [9, 10, 11, 12, 13, 14]:
 		_assert_far_band_chrome(dist, int(locked[dist]))
 	_assert_past_locked_band()
@@ -3952,7 +3952,7 @@ func _test_advance_cardinal_range_gate() -> void:
 	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
 	truthy(kits.contains("Manhattan"), "kit range_text still names Manhattan")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance selected range is exactly 2 cardinal")
-	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–7", "Mark Shot selected range omits Chebyshev")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–5", "Mark Shot selected range omits Chebyshev")
 	eq(hud.contains("%d AP + Manhattan MP"), false, "HUD no longer advertises Manhattan MP for Advance")
 	eq(hud.contains("%dAP + MP"), false, "HUD Advance button is not AP + MP")
 	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
@@ -4041,7 +4041,7 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 
 
 func _test_mark_shot_range_highlights() -> void:
-	# Selecting Mark Shot must show the Chebyshev 2–7 ring, not only the enemy tile.
+	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
@@ -4052,7 +4052,7 @@ func _test_mark_shot_range_highlights() -> void:
 			if cell == origin:
 				continue
 			var dist := int(_sim.chebyshev(origin, cell))
-			if dist >= 2 and dist <= 7:
+			if dist >= 2 and dist <= 5:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
 	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
@@ -4064,11 +4064,11 @@ func _test_mark_shot_range_highlights() -> void:
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
 		painted[cell] = true
-	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–7")
+	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–5")
 	for cell in expected.keys():
 		truthy(painted.has(cell), "Chebyshev ring tile %s is highlighted" % str(cell))
 	for cell in painted.keys():
-		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–7" % str(cell))
+		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
 
 	# legal_intents still only offer the enemy dest, not every ring tile.
 	var legal_dests := 0
@@ -4107,8 +4107,8 @@ func _test_mark_shot_range_highlights() -> void:
 		if dist == 1:
 			has_r1 = true
 	truthy(has_r5, "Chebyshev 5 tiles are in Mark Shot chrome")
-	truthy(has_r6, "Chebyshev 6 is inside Mark Shot chrome")
-	truthy(has_r7, "Chebyshev 7 is inside Mark Shot chrome")
+	eq(has_r6, false, "Chebyshev 6 is outside Mark Shot chrome")
+	eq(has_r7, false, "Chebyshev 7 is outside Mark Shot chrome")
 	eq(has_r8, false, "Chebyshev 8 is outside Mark Shot chrome")
 	eq(has_r1, false, "Chebyshev 1 is outside Mark Shot chrome")
 
@@ -4397,10 +4397,10 @@ func _test_detonate_gates_and_damage() -> void:
 	result = _sim.submit({"type": "cast", "spell": "detonate", "to": Vector2i(4, 0)})
 	eq(result["ok"], true, "Detonate at Chebyshev 4 is legal")
 	eq(result["events"][0]["base_damage"], 24, "3 Marks → base 24")
-	eq(result["events"][0]["damage"], 24, "front 24 Air")
+	eq(result["events"][0]["damage"], 28, "front 24 Air (Longshot ×1.15: 24→28)")
 	eq(result["events"][0]["hit_chance"], 75, "range 4 uses the 75% mid band")
 	eq(_unit(1)["marks"], 0, "3 Marks consumed")
-	eq(_unit(1)["hp"], 56, "80-24=56")
+	eq(_unit(1)["hp"], 52, "80-28=52 with Longshot")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -4448,7 +4448,7 @@ func _test_drop_shade_range() -> void:
 	eq(SpellKits.SHADE_CAP, 2, "Shade stack cap stays 2")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.DROP_SHADE)), "range 1–3", "Drop Shade range_text is 1–3")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range stays 7")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range is 5")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range stays 4")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["min_range"]), 1, "Ambush min stays 1")
@@ -4977,7 +4977,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
 	eq(result["ok"], true, "second Shoulder connects")
 	eq(_unit(0)["pos"], Vector2i(6, 3), "second push lands on lava again")
-	eq(_unit(0)["hp"], 54, "re-push deals 6 Earth and 6 land, and no Burn tick")
+	eq(_unit(0)["hp"], 53, "re-push deals 6 Earth and 6 land, and no Burn tick (Momentum 7)")
 	eq(_unit(0)["burn_stacks"], 2, "re-push adds a stack")
 	eq(_unit(0)["burn_remaining"], 4, "re-push refreshes duration to 4")
 	eq(_unit(1)["impact"], 2, "second clean push adds +1 Impact (1+1)")
@@ -4988,7 +4988,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	eq(int(applied.get("stacks", 0)), 2, "refresh does not skip to stack 3")
 	eq(int(applied.get("hp_per_tick", 0)), 4, "stack 2 ticks 4 HP")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 50, "tick after stack 2 is 4 HP")
+	eq(_unit(0)["hp"], 49, "tick after stack 2 is 4 HP")
 	eq(_unit(0)["burn_stacks"], 2, "the tick does not consume a stack")
 	eq(_unit(0)["burn_remaining"], 3, "stack 2 still has three ticks")
 	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("tick_stacks", 0)), 2, "the tick event names stack 2")
@@ -5000,12 +5000,12 @@ func _test_shoulder_lava_burn_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 2), "seat": 1})
 	eq(result["ok"], true, "third Shoulder connects")
 	eq(_unit(0)["pos"], Vector2i(7, 2), "third push lands on lava")
-	eq(_unit(0)["hp"], 38, "third land is another 6 Earth plus 6")
+	eq(_unit(0)["hp"], 36, "third land is another 6 Earth plus 6 (Momentum 7+6)")
 	eq(_unit(0)["burn_stacks"], 3, "third push reaches max stacks")
 	eq(_unit(0)["burn_remaining"], 4, "third push refreshes duration")
 	eq(int(_first_event_where(result["events"], "status", "burn").get("hp_per_tick", 0)), 8, "stack 3 ticks 8 HP")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 30, "tick after stack 3 is 8 HP")
+	eq(_unit(0)["hp"], 28, "tick after stack 3 is 8 HP")
 	eq(int(_unit(0)["burn_stacks"]), 3, "stack 3 survives the tick")
 	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("hp_delta", 0)), -8, "stack 3 tick hp_delta is -8")
 
@@ -5015,7 +5015,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(7, 1), "seat": 1})
 	eq(result["ok"], true, "fourth Shoulder connects")
 	eq(_unit(0)["pos"], Vector2i(8, 1), "fourth push lands on lava")
-	eq(_unit(0)["hp"], 18, "cap push still deals 6 Earth plus 6 land")
+	eq(_unit(0)["hp"], 15, "cap push still deals 6 Earth plus 6 land (Momentum 7+6)")
 	eq(_unit(0)["burn_stacks"], 3, "a fourth push does not exceed 3 stacks")
 	eq(_unit(0)["burn_remaining"], 4, "a capped re-push still refreshes duration")
 	applied = _first_event_where(result["events"], "status", "burn")
@@ -5023,7 +5023,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	eq(int(applied.get("stacks", 0)), 3, "cap push stays at stack 3")
 	eq(int(applied.get("hp_per_tick", 0)), 8, "capped Burn still ticks 8 HP")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 10, "tick after the cap is still 8 HP")
+	eq(_unit(0)["hp"], 7, "tick after the cap is still 8 HP")
 	eq(_unit(0)["burn_stacks"], 3, "the capped tick keeps 3 stacks")
 
 	# Occupied lava is still a body-block: no displace, no land, no Burn.
@@ -5730,7 +5730,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 
 func _test_legal_intents_new_spell_gates() -> void:
 	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–4.
-	# Mark Shot is Chebyshev 2–7.
+	# Mark Shot is Chebyshev 2–5 (Mauro, 29 Sep).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -5779,7 +5779,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 			"ironjaw_marks": 1,
 		})
 		eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev %d" % dist)
-		eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot legal at Chebyshev %d" % dist)
+		eq(_has_legal_cast(0, "mark_shot"), dist <= 5, "Mark Shot legal only through Chebyshev 5 (at %d)" % dist)
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6168,7 +6168,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(bool(shot.get("from_shade", true)), false, "Mark Shot does not pretend to start on a Shade")
 	eq(shot.get("from"), Vector2i(0, 0), "Mark Shot starts on the caster")
 	eq(shot.get("to"), Vector2i(4, 0), "Mark Shot ends on the hovered enemy")
-	eq(str(shot.get("float_text", "")), "-8", "front Mark Shot float is the Locked sample 8")
+	eq(str(shot.get("float_text", "")), "-9", "front Mark Shot float is 8 × Longshot 1.15 = 9")
 	var wide: Dictionary = _sim.aim_feel(0, SpellKits.MARK_SHOT, Vector2i(12, 12))
 	eq(bool(wide.get("show", true)), false, "a hover outside the range ring draws no line")
 	var advance: Dictionary = _sim.aim_feel(0, SpellKits.ADVANCE, Vector2i(2, 0))
@@ -6206,12 +6206,12 @@ func _test_preview_cast() -> void:
 	eq(preview["mp"], 0, "Mark Shot costs 0 MP")
 	eq(preview["range_mode"], "chebyshev", "Mark Shot range_mode is Chebyshev")
 	eq(preview["min_range"], 2, "Mark Shot min 2")
-	eq(preview["max_range"], 7, "Mark Shot max 7")
-	eq(preview["range_text"], "range 2–7", "Mark Shot HUD range_text omits Chebyshev")
+	eq(preview["max_range"], 5, "Mark Shot max 5")
+	eq(preview["range_text"], "range 2–5", "Mark Shot HUD range_text omits Chebyshev")
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
-	eq(preview["sample_damage"], 8, "front Mark Shot samples 8 Air (CritMult 1.0, Passive 1, Mastery 0)")
+	eq(preview["sample_damage"], 9, "front Mark Shot samples 9 Air at range ≥4 (Longshot ×1.15)")
 	eq(preview["on_connect_text"], "8 Air. +1 Mark on the target.", "Mark Shot connect kit line")
 	eq(preview["on_miss_text"], "AP/MP stay spent. No Mark.", "Mark Shot miss kit line")
 	eq(preview["legal"], true, "in-range Mark Shot with a target is legal")
@@ -6240,7 +6240,7 @@ func _test_preview_cast() -> void:
 		"seat": 0,
 	})
 	eq(preview["hit_chance"], 75, "intent Dictionary Mark Shot still uses Locked 75%")
-	eq(preview["sample_damage"], 8, "intent Dictionary Mark Shot still samples 8")
+	eq(preview["sample_damage"], 9, "intent Dictionary Mark Shot samples 9 with Longshot")
 	eq(preview["rolling"], true, "intent Dictionary Mark Shot is rolling")
 
 	# Back facing uses live target facing (8 × 1.20 → 10).
@@ -6736,17 +6736,17 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	var mark_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(5, 0), 1)
 	var mark := SpellTooltip.card_text(mark_preview)
-	eq(mark_preview["sample_damage"], 8, "Mark Shot preview samples live facing 8")
+	eq(mark_preview["sample_damage"], 9, "Mark Shot preview samples live facing 9 (Longshot)")
 	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
-	eq(mark_preview["range_text"], "range 2–7", "Mark Shot preview_cast range_text is player-facing")
-	truthy(mark.contains("range 2–7"), "Mark Shot card names range from preview")
+	eq(mark_preview["range_text"], "range 2–5", "Mark Shot preview_cast range_text is player-facing")
+	truthy(mark.contains("range 2–5"), "Mark Shot card names range from preview")
 	eq(mark.contains("Chebyshev"), false, "Mark Shot card does not name Chebyshev")
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
 	truthy(mark.contains("HIT 75% (Locked)"), "Mark Shot card uses preview hit_chance")
-	truthy(mark.contains("sample 8"), "Mark Shot card uses preview sample_damage")
+	truthy(mark.contains("sample 9"), "Mark Shot card uses preview sample_damage")
 	truthy(mark.contains("CritMult(1.0) × live Facing"), "Mark Shot sample names CritMult 1.0 and live Facing")
 	eq(mark.contains("+5"), false, "Mark Shot card does not invent +5")
 	eq(mark.contains("longshot"), false, "Mark Shot card does not invent longshot")
@@ -6891,7 +6891,7 @@ func _test_spell_tooltip_cards() -> void:
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.tooltip_visible(), false, "tooltip starts hidden")
 	eq(CombatHUD.spell_card_text(mark_preview), mark, "HUD helper formats preview_cast")
-	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 8, "HUD hover preview_cast samples live facing")
+	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 9, "HUD hover preview_cast samples live facing (Longshot)")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).disabled, false, "Mark Shot is enabled at start")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Mark Shot button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.MARK_SHOT)
@@ -7672,3 +7672,40 @@ func _test_ambush_snap_wall_ray() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves past the wall")
 	eq(_unit(0)["pos"], Vector2i(4, 1), "Gloam lands on the Shade ray back tile")
+
+
+func _test_invisible_wears_off() -> void:
+	# Mauro (29 Sep): Fade's Invisible lasts 2 of Gloam's turns, then Gloam is
+	# revealed on its own. Cast on turn T: hidden through T+1, visible at T+2.
+	_sim.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(9, 9)],
+	})
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves")
+	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
+	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade starts the 2-turn clock")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible on Gloam's next turn")
+	eq(int(_unit(0)["invisible_turns"]), 1, "one Gloam turn left")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible through the second enemy turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
+	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
+	var expired := false
+	for ev in _sim.snapshot().get("last_events", []):
+		if str(ev.get("type", "")) == "expire" and str(ev.get("status", "")) == "invisible":
+			expired = true
+	eq(expired, true, "the reveal emits expire invisible")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible wore off"), "the coach names the reveal")
+	# An attack still reveals at once and clears the clock.
+	_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	_sim._break_invisible_on_attack(_sim._unit_by_seat(0))
+	eq(bool(_unit(0)["invisible"]), false, "an attack reveals immediately")
+	eq(int(_unit(0)["invisible_turns"]), 0, "an attack clears the clock")

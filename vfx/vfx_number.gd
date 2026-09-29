@@ -48,7 +48,10 @@ func play(spec: Dictionary) -> void:
 	_rise = create_tween()
 	if delay > 0.0:
 		_rise.tween_interval(delay)
-	_rise.tween_property(self, "position", risen, VfxBudget.NUMBER_RISE_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# Dofus bounce: jump up past the rise, drop back, then drift to rest.
+	var hop := position + drift * 1.6
+	_rise.tween_property(self, "position", hop, VfxBudget.NUMBER_RISE_SEC * 0.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	_rise.tween_property(self, "position", risen, VfxBudget.NUMBER_RISE_SEC * 0.65).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 	_rise.tween_property(self, "modulate:a", 0.0, VfxBudget.NUMBER_FADE_SEC)
 	_rise.finished.connect(release, CONNECT_ONE_SHOT)
 	queue_redraw()

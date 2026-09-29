@@ -17,6 +17,12 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# Never read the real player saves (gear / levels change fight numbers).
+	GearBag.save_path = "user://test_empty_gear_stasis.json"
+	HeroProgress.save_path = "user://test_empty_hero_stasis.json"
+	for stale in [GearBag.save_path, HeroProgress.save_path]:
+		if FileAccess.file_exists(stale):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(stale))
 	_sim = root.get_node_or_null("CombatSim")
 	if _sim == null:
 		_sim = load("res://backend/combat_sim.gd").new()

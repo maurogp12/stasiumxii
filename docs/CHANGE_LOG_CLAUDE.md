@@ -1,0 +1,88 @@
+# STASIUM XII — Change log (Claude sessions)
+
+Every change a Claude session makes is recorded here, newest last, so the
+other agents (Cursor, Grok) and Mauro can see what happened and why.
+
+## Rules for every agent (Mauro, 29 Sep 2026)
+
+1. **Do not change anything unless Mauro approves it or commands it.** No
+   "while I was there" fixes, no unrequested redesigns, no rule changes.
+   Suggest in chat or in `docs/things_to_review.md`; wait for his yes.
+2. **Record every change here** (what, why, who asked, commit, version).
+3. Bastion art is not touched unless Mauro asks.
+4. Only Mauro merges into `mobile` / `main`. Agents open PRs.
+5. Kit numbers and rules follow the GDD Blueprint. Do not invent Open items.
+
+Work branch for these sessions: `claude/stasium-xii-development-6ni8g2`.
+Sideload builds: `apk/<version>` branches → GitHub prerelease
+`mobile-<version>-debug` (published by `.github/workflows/publish-apk-release.yml`
+on those branches) → the in-game **Actualizar** button.
+
+---
+
+## 0.1.34 — merged to `mobile` (PR #204, `8fe3424`)
+
+| Change | Asked by | Commit |
+| --- | --- | --- |
+| Rolled `mobile` back to 0.1.32 content: reverted #202 (unapproved face-true walks for Ironjaw, Kestrel, Gloam) | Mauro: "go back to the apk before" | `6ad52fa` |
+| Board #14 (Locked): Gloam Ambush cannot pass a Snap Wall on its shot ray (`wall_on_ray`, grey, 0 AP). Range stays Manhattan 1–2 (Mauro confirmed) | Daily problem board #14 | `4d6142e` |
+| Version stamp 0.1.34-mobile (code 35) | Mauro: build the APK | `97f530e` |
+
+## 0.1.35 → 0.1.41 — on the work branch, NOT yet merged to `mobile`
+
+| Ver | Change | Asked by | Commit |
+| --- | --- | --- | --- |
+| 0.1.35 | Rebuilt Kestrel, Gloam, Ironjaw, Mender strips as one body per fighter (holes filled, costume no longer swaps in attack/cast/death). Ironjaw = Blueprint §6 red-plate SIDE walk. Bastion untouched. Scripts: `build_tools/art/rebuild_character_strips.py`, `extract_blueprint_refs.py` | Mauro: "make visuals much better, Dofus/Wakfu" | `c93725d` |
+| 0.1.35 | Dofus-style arena: sky backdrop, floating-island slab, brighter board, blue P1 / red P2 team rings and zones, green walk range | same | `903ac5e` |
+| 0.1.36 | Five arenas painted from Mauro's look pictures (lava, dock, electric, ice, city plaza): floor stamps + props cut from `art/maps/arena_look/refs/`. Scripts: `build_tools/art/arena_look.py`, `arena_props.py`. View only, tags unchanged | Mauro sent the 4 pictures + blueprint city | `46594f8` |
+| 0.1.37 | Animated lava rivers + glowing cracks (Slagcrown), crackling rune cells + lightning bolts (Stormspire), water caustics, shaded raised cells | Mauro: "lava and electric look bad" | `b870524` |
+| 0.1.38 | Living fighters: idle breath/sway, camera shake on hits | Mauro: steps 1,2,3 | `4ac5d33` |
+| 0.1.38 | Wakfu-style per-class spell flourish particles (`vfx/spell_flourish.gd`) | same | `e3a4403` |
+| 0.1.38 | Dofus HUD: blue AP gems, green MP gems, team-framed turn portraits, bouncing damage numbers | same | `39cb27a` |
+| 0.1.39 | Slagcrown: 3 edge volcanoes removed, one volcano in the map centre (7,7). Decoration only | Mauro screenshot | `ee7c3b0` |
+| 0.1.40 | Menus off the map: Zoom − fits the whole board between the menus, Zoom + to 3×, pinch zoom, New Match moved to the left column, Walk/End Turn beside the Face pad. Zoom tests updated to the new range | Mauro: "menus interfere with gameplay" | `9675ad5` |
+| 0.1.40 | Body sizes: Bastion and Ironjaw 1.18×, Kestrel/Gloam/Mender 0.88×. Size tests updated | Mauro: "Bastion and Ironjaw the biggest" | `9675ad5` |
+| 0.1.41 | **Rule change:** Gloam Invisible (Fade) lasts 2 of Gloam's turns, then wears off (`CombatSim.INVISIBLE_TURNS = 2`, expire event, status card "Invisible N"). Attack still reveals at once. Test `_test_invisible_wears_off` | Mauro: "invisible only last 2 turns" | `442a1cf` |
+| 0.1.41 | Bastion Snap Wall drawn as a stone rampart with gold trim and a glowing shield rune; slam effect on cast; smoke puff when Invisible wears off | Mauro: "the wall from Bastion looks so lame" | `c8e204f` |
+| 0.1.41 | Actualizar now works for these builds: release workflow on `apk/<version>` branches publishes `mobile-<version>-debug`. First release: `mobile-0.1.41-debug` | Mauro: "make Actualizar work" | branch `apk/0.1.41` |
+
+| 0.1.42 | Stormspire: floor tiles sampled from Mauro's second Stormspire picture (blue-grey cracked slabs); decoration thinned to 4 obelisks + 4 corner crystals; one tall obelisk tower in the centre (7,7). Lighting unchanged. The 8 blocking props (4 rock pillars, 4 arcs) are unchanged — removing them would change gameplay, not approved yet | Mauro: "too many obstacles … tiles like the pictures, do not change the lighting" | see 0.1.42 commits |
+
+| 0.1.43 | **Kit change:** Kestrel Mark Shot range Chebyshev 2–7 → **2–5** (`data/kits.gd`). Range tests, README and the GDD handoff updated. Hit bands, damage and Marks unchanged. The Blueprint docx and Spells xlsx (outside git) still say 2–7 — Mauro/other agents should patch those | Mauro: "Kestrel has way too much range, Mark Shot 2 less spaces" | see 0.1.43 commits |
+
+| 0.1.44 | **New system (Blueprint §9 + §15):** Koliseo wallet. Coins: first 2 human wins per UTC day pay 1 each, win 3+ / loss / dummy pay 0, wallet max 120. Trophies: 1 per human win, no daily cap, wallet 300. Hub shows "Coins N · Trophies N" and a **Shop** button: trophy shop (the 6 Blueprint SKUs, cosmetics/pet owned once, food repeatable) and Duskbrand stall (60 coins per +0 part, 5 slots, duplicates allowed for fuse). Saved in `user://koliseo_wallet.json`. "Human win" = an **online** match the local seat wins; hot-seat, dedicated server and Stasis pay nothing (question for Mauro). Bought items are stored only — wearing gear, set bonuses, AP/MP clamp and showing cosmetics are not built yet. Files: `backend/koliseo_wallet.gd`, `scenes/koliseo_shop.gd`, hook in `backend/net_session.gd` (`_note_koliseo_result`), hub row in `scenes/mobile_hub.gd`. New suite `tests/run_koliseo_wallet_tests.gd` | Mauro: "keep working on whatever you haven't worked on" (Blueprint video) | see 0.1.44 commits |
+| 0.1.45 | Windmere (winter arena): falling snow — ~300 flakes drifting with sway and gusts, settling on the ice and melting, a few big soft flakes near the camera (`board/snow_fall.gd`, `ArenaSky` "snowfall"). View only | Mauro: "the map of winter I would like to have snow falling" | see 0.1.45 commits |
+| 0.1.45 | Spell effects: turning rune circle under the caster on every cast; projectiles with trails for ranged casts (Kestrel arrow streak, Mender arcing orb, Gloam wobbling shadow bolt) — the hit lands when the projectile arrives; heavy finisher (white flash, double shockwave, light column, extra sparks) on Detonate, Crush, Heartstop, Nightfold, Aegis Break, Ambush. View only (`vfx/spell_flourish.gd`). Test `_test_weather_and_spell_extras` | Mauro: "work on the visual of the spells, keep improving graphics and animation" | see 0.1.45 commits |
+| — | **Decision (Mauro, 29 Sep 2026): "Only online win pays."** Koliseo coins and trophies come from online wins only; hot-seat, dedicated and Stasis pay nothing. Confirms the 0.1.44 behaviour — no code change, comment in `backend/koliseo_wallet.gd` updated | Mauro | see decision commit |
+| 0.1.46 | **New system (Blueprint §10):** gear bag (`backend/gear_bag.gd`, save `user://gear_bag.json`). Six families only (Sheaf, Undertow, Ironveil, Stillcut, Brightedge, Duskbrand), 5 slots, wear/take off, **Fuse** (same item_id + same plus → +1, cap +5; 32 × +0 = +5), **Attune** at 2 worn pieces (Air/Earth/Fire/Water; kept but resting under 2), set bonuses 2/4/5pc from the Blueprint table (tiers stack), rare plus gate (Ironveil/Stillcut), AP/MP after gear clamped **8/5**. Hub **Gear** button → `scenes/gear_screen.gd`. Duskbrand stall parts now land in the gear bag. **Bonuses are shown only — CombatSim does not read gear yet** (needs Mauro: which fights use gear, and the per-item stat numbers from Mobile_Sets.xlsx, which is not in git) | Mauro: "gears and dungs rewards work on it" | see 0.1.46 commits |
+| 0.1.46 | **Dungeon rewards (§9 Soft Lock):** clearing a Stasis door (Room B boss) opens a chest: 1 random +0 piece from the ★1 families (Sheaf or Undertow). 5 loot clears per UTC day shared by all doors; clear 6+ allowed, chest empty. Chest size 1 is **provisional** (Blueprint gives no number). `StasisCatalog.STAR = 1` | same | see 0.1.46 commits |
+| 0.1.46 | **Dofus-style end-of-fight window** (`ui/combat_result.gd`) from Mauro's two screenshots: title, Victory/Defeat, duration mm:ss + turns, Winners / Losers blocks with portrait, name, HP left, loot icons, green CLOSE. Koliseo: opens ~1 s after the match ends; the online winner's loot shows the coin + trophy paid (notes for daily limit / hot-seat). Stasis: opens on the door clear (chest pieces as loot, all beaten foes listed) or on a wipe. No level / XP / kamas columns — the game has none | Mauro sent the Dofus "Resultado del combate" and "Combate terminado" pictures | see 0.1.46 commits |
+| 0.1.46 | New suite `tests/run_gear_tests.gd` (20 suites total). Wallet tests updated for stall → gear bag | — | see 0.1.46 commits |
+| — | **Decision (Mauro, 29 Sep 2026): gear counts in PvP (Koliseo) and in dungeons (Stasis).** | Mauro: "Yes pvp and dungeon" | — |
+| 0.1.47 | **Gear now changes fights.** Worn set bonuses feed CombatSim: +HP% (max HP), Mastery (damage and heals ×(1+Mastery/100)), Resist% (damage ×(1−Resist/100)), Ironveil attuned resist vs hits of that element, AP/MP max (clamped 8/5, refilled every turn). Stasis: the player's worn gear rides in the fight roster (Room B HP carry clamps to the geared max). Online Koliseo: each phone sends its own worn gear (`rpc_submit_gear`) when it gets its seat; the host keeps it per seat, drops any gear inside a reset request, recomputes stats itself (valid ids, one per slot, +0–+5, 8/5). Gear arriving during deployment applies at once; never mid-combat. **Hot-seat uses no gear** (both players share one phone — waiting on Mauro). **Not applied yet:** per-item stats (Mobile_Sets.xlsx not in git), Init, FLEX, the 5pc text effects. No gear = exact old numbers (all 20 suites pass) | Mauro: "Yes pvp and dungeon" | see 0.1.47 commits |
+| 0.1.48 | **Per-item gear numbers from Mauro's "Mobile Startup Sets" sheet (v0.3, sent 29 Sep 2026).** `GearBag.PARTS`: all 30 +0 parts (name, HP, Mastery, Resist, Init) — totals checked against the sheet's "same parts" page. Fuse ladder ×1.00/1.12/1.26/1.41/1.58/1.78. Final HP = (80 + part HP) × (1 + set HP%). Mastery = parts + set, × Duskbrand %. Part resist goes to the family's attuned element (defaults Sheaf Earth, Undertow Air, Brightedge Fire, Ironveil Earth; Stillcut must pick; Duskbrand / under 2 pieces = Neutral). FLEX (any non-neutral damage/heal spell): set +8% (Stillcut/Brightedge 2pc) + 2-piece attune rider of that element (+10%, Stillcut +15%). Stillcut 5: first FLEX hit of the fight +15%. Koliseo arena flatten: parts count as +0 in PvP. Drop slot weights weapon 18% / others 20.5%. Items use sheet names (Sheaf Helm, Hourplate…). Gear screen shows each item's stats and your HP / Mastery / Init totals | Mauro sent the sheet | see 0.1.48 commits |
+
+**Sheet vs Blueprint conflicts (0.1.48 follows the Blueprint; Mauro to confirm):** Fuse ladder example "Sheaf Helm 24 HP" vs Parts table 28 (used 28 — matches the sheet's own totals). Worked examples give Stillcut 5 = +1 AP +1 MP; Blueprint says Stillcut 5 = first FLEX hit +15% and only Duskbrand 5 gives +1/+1 (kept Blueprint). "Set budget: one +1 AP / one +1 MP" vs cap 8/5 (kept 8/5). "Sheaf 5 is +6% all resist" vs +8% (kept +8%). "Dungeon coins, wallet max 30, 10-coin stall" vs 120 / 60 (kept 120 / 60).
+
+**Still not built from the sheet:** Init turn order, FLEX spells taking the attune element, Undertow / Ironveil / Brightedge 5pc effects, rare .ap/.mp parts (★4+), monster room scale, star curves and five-door loot mapping (both marked OPEN / parking lot on the sheet).
+| 0.1.49 | **Passives ON (Mauro 29 Sep 2026):** Kestrel Longshot ×1.15 at Chebyshev ≥4 ("if PvP breaks, drop to ×1.10 — do not delete"), Ironjaw Momentum ×1.20 after spending MP or casting Advance this turn (every MP spend goes through `_spend_mp`). Triage / Backstab / Intercept unchanged. Combat tests updated (Mark Shot at range 4+ now 9, Ironjaw pushes after moving 7) | Mauro's table | see 0.1.49 commits |
+| 0.1.49 | **Resist cap 50% per element** (was 100% = immune) | Mauro | see 0.1.49 commits |
+| 0.1.49 | **Who starts = higher Init; tie = coin flip** (sim RNG, host authority, never "host first"). Live Koliseo (online + hot-seat) and Stasis. Init = gear (Koliseo parts flattened to +0) + level growth + Swift points. Hot-seat has no gear/levels → coin flip. Scripted test fixtures keep seat 0 | Mauro | see 0.1.49 commits |
+| 0.1.49 | **Levels 1–30 per class (Soft Lock)** — `backend/hero_progress.gd`, save `user://hero_progress.json`. XP to next = 80 + 40 × (level − 1) (18560 to 30). +1 point per level: Mastery +2 / Vitality +8 HP / Swift +1 Init / Ward +2 (only the element of an active 2-piece attune). Inherent growth per class (Kestrel 2/3/1/0, Ironjaw 2/6/0/1, Mender 1/5/1/1, Gloam 2/3/1/0, Bastion 1/8/0/2 Mastery/HP/Init/Ward per level) — level-30 table matches the sheet. +1 AP at level 20 (cap 8/5). Levels ride with gear into Stasis and online Koliseo; the host recomputes and caps forged levels. **XP:** Stasis clear 60 × star, clear with no chest 20, online Koliseo win 50 / loss 15, hot-seat / dummy 0; the coin cap never cuts XP. Results window has an XP column ("+50 XP  Lv 2!"). Gear screen → **Levels** button → `scenes/character_screen.gd` to spend points. New suite `tests/run_levels_tests.gd` (21 suites). Online / Stasis / event-hook suites now use empty test saves | Mauro: "Levels … Soft Lock. Construye con la curva" | see 0.1.49 commits |
+| 0.1.50 | **Levels spec correction (Mauro's implementer spec, 29 Sep 2026):** each level-up grants **2** spend points (58 at level 30), split or stacked. Inherent **Init +1 per level for all five classes** (Ironjaw and Bastion were 0 → now +29 Init at 30 like everyone). Everything else in the spec was already live in 0.1.49 (4 buckets, resist cap 50%, +1 AP at 20 not from points, XP curve and sources, Init seat / coin flip, Longshot + Momentum on, Koliseo flattens gear plus only). New checks: boots Init per family, Undertow 2pc +8 / Duskbrand 4pc +6 Init, 58 Swift points, flatten keeps growth + Swift. The spec's source files (Mobile_Sets.xlsx, Blueprint §17–21, Implementer Spec) are not in git — implemented from the pasted text | Mauro | see 0.1.50 commits |
+
+Each version bump is its own `Stamp Android sideload …` commit. All
+headless suites (19 from 0.1.44) pass on every build listed above.
+
+## Open / waiting on Mauro
+
+- Merge the 0.1.35–0.1.50 work into `mobile`: PR https://github.com/maurogp12/stasiumxii/pull/205 opened 29 Sep 2026 at Mauro's OK ("Yes"). Only Mauro merges.
+- Ironjaw front/back art (only a side view exists in the Blueprint).
+- Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
+- Mobile Sets conflicts listed under 0.1.48.
+- Hot-seat and gear: both players share one phone — no gear in hot-seat until Mauro decides.
+- Inventory screen + loot board after every match: Mauro is sending a reference video.
+- Stasis chest size (1 piece now, provisional).
+- Still not built: cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).
+- Levels are per class (XP goes to the class that fought) — Mauro to confirm vs one account level.
+- Hot-seat: no gear, no levels, no XP (both players share a phone) — confirm.

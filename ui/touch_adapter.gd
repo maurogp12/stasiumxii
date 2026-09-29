@@ -86,6 +86,11 @@ const DIAMOND_H := 32.0
 ## The old path reserved 260px of empty gutter, then cover-zoomed into it.
 const MOBILE_FRAME_TOP := 36.0
 const MOBILE_FRAME_BOTTOM := 64.0
+## Mauro (29 Sep): the menus must not sit on the map. The clear band is the
+## space between the top plaques and the bottom thumb row. Zoom − reaches a
+## view that fits the whole diamond inside it, and the board centres in it.
+const MOBILE_CLEAR_TOP := 124.0
+const MOBILE_CLEAR_BOTTOM := 150.0
 ## Share of the limiting board axis kept on screen at the default zoom.
 ## 1.0 is a pure contain (the postage-stamp board: ~1.24 on 20:9, ~40px
 ## diamonds, ~205px black wings). 0.80 is a Koliseo overview: zoom 1.55,
@@ -97,11 +102,14 @@ const MOBILE_BOARD_KEEP := 0.80
 ## 1.55 * 0.90 sits on the 1.40 zoom-out floor. 1.55 * 1.46 reaches the
 ## 2.25 zoom-in cap. Zoom out stays above the contain fit. Zoom in stays
 ## under the 2.5 ultra-close and the 3.0 cover.
-const PLAYER_ZOOM_STEP := 1.18
-const PLAYER_ZOOM_BIAS_MIN := 0.90
-const PLAYER_ZOOM_BIAS_MAX := 1.46
-const PLAYER_ZOOM_MIN := 1.40
-const PLAYER_ZOOM_MAX := 2.25
+## Wider and finer than before (Mauro asked for more adjustable zoom): the
+## floor shows the whole diamond clear of the menus, the cap is a close view.
+## Pinch sets the bias continuously inside the same limits.
+const PLAYER_ZOOM_STEP := 1.12
+const PLAYER_ZOOM_BIAS_MIN := 0.5
+const PLAYER_ZOOM_BIAS_MAX := 2.6
+const PLAYER_ZOOM_MIN := 0.8
+const PLAYER_ZOOM_MAX := 3.0
 static var player_zoom_bias: float = 1.0
 ## A short finger slide still picks a cell. A longer drag pans the cropped map.
 const PAN_SLOP := 48.0
@@ -223,6 +231,12 @@ static func play_band_for(viewport_size: Vector2, mobile: bool = false) -> Vecto
 	return Vector2(top, bottom)
 
 
+## (top, bottom) of the space between the phone menus.
+static func clear_band_for(viewport_size: Vector2) -> Vector2:
+	var top := MOBILE_CLEAR_TOP
+	return Vector2(top, maxf(viewport_size.y - MOBILE_CLEAR_BOTTOM, top + 1.0))
+
+
 ## Fit zoom for a board of board_w × board_h. Desktop ignores viewport_size and
 ## stays on the 960×720 band (15×15 is 0.64). A phone default keeps
 ## MOBILE_BOARD_KEEP of the limiting axis: a Koliseo overview (20:9 is 1.55),
@@ -247,10 +261,9 @@ static func player_zoom_limits(board_w: float, board_h: float, viewport_size: Ve
 	var base := board_zoom(board_w, board_h, viewport_size, mobile)
 	if not mobile:
 		return Vector2(base, BOARD_ZOOM_MAX)
-	var view := viewport_size
-	var span := _play_span(view, true)
-	var fit := minf(span.x / maxf(board_w, 1.0), span.y / maxf(board_h, 1.0))
-	var floor_zoom := minf(base, maxf(fit, PLAYER_ZOOM_MIN))
+	var clear := clear_band_for(viewport_size)
+	var fit := minf((viewport_size.x - 16.0) / maxf(board_w, 1.0), (clear.y - clear.x) / maxf(board_h, 1.0))
+	var floor_zoom := minf(base, maxf(fit * 0.96, PLAYER_ZOOM_MIN))
 	return Vector2(floor_zoom, PLAYER_ZOOM_MAX)
 
 
@@ -268,6 +281,14 @@ static func nudge_player_zoom(direction: int) -> void:
 		player_zoom_bias = minf(player_zoom_bias * PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MAX)
 	elif direction < 0:
 		player_zoom_bias = maxf(player_zoom_bias / PLAYER_ZOOM_STEP, PLAYER_ZOOM_BIAS_MIN)
+
+
+## Pinch: set the bias from a target zoom (continuous), inside the limits.
+static func set_player_zoom(target: float, board_w: float, board_h: float, viewport_size: Vector2) -> void:
+	var base := board_zoom(board_w, board_h, viewport_size, true)
+	if base <= 0.0:
+		return
+	player_zoom_bias = clampf(target / base, PLAYER_ZOOM_BIAS_MIN, PLAYER_ZOOM_BIAS_MAX)
 
 
 static func reset_player_zoom() -> void:

@@ -85,6 +85,9 @@ static func local_match_config() -> Dictionary:
 		config["classes"] = [hotseat_classes[0], hotseat_classes[1]]
 	if CellTagMap.is_ship_map(hotseat_map_id):
 		config["map_id"] = CellTagMap.normalize_id(hotseat_map_id)
+	# Hot-seat uses no gear or levels, so both Init are 0: a coin flip picks
+	# who starts (Mauro 29 Sep 2026: higher Init first, tie = coin flip).
+	config["first_by_init"] = true
 	return config
 
 
