@@ -3,8 +3,8 @@ class_name InventoryScreen
 
 ## Main-menu inventory, Dofus style (Mauro 29 Sep 2026: "an inventory at the
 ## main menu where you can modify your champion, gear, fuse the equipment").
-## Left: champion picker, the champion's card with the five worn slots and
-## the Still socket around it, and the characteristics the next fight uses.
+## Left: champion picker, the champion turning on its pedestal (ChampionStage:
+## swipe or ◀ ▶) with the five worn slots and the Still socket around it, and the characteristics the next fight uses.
 ## Right: tabs (Equipment / Consumables / Stills / Cosmetics), an item grid,
 ## and a detail box with Wear, Take off and Fuse. Levels, Stills and Sets
 ## open the full screens for spend points, forging and attune.
@@ -37,6 +37,7 @@ var _header: Label
 var _status: Label
 var _champ_row: HBoxContainer
 var _doll: Control
+var _stage: ChampionStage
 var _stats_box: VBoxContainer
 var _tab_row: HBoxContainer
 var _grid: GridContainer
@@ -228,6 +229,12 @@ func _build() -> void:
 	_doll.name = "Doll"
 	_doll.custom_minimum_size = Vector2(380, 300)
 	left.add_child(_doll)
+	# The turning champion (ChampionStage) sits between the slot columns.
+	_stage = ChampionStage.new()
+	_stage.name = "ChampionStage"
+	_stage.position = Vector2(TILE + 12, 0)
+	_stage.size = Vector2(380 - (TILE + 12) * 2, 300)
+	_doll.add_child(_stage)
 	_stats_box = VBoxContainer.new()
 	_stats_box.add_theme_constant_override("separation", 2)
 	left.add_child(_stats_box)
@@ -301,18 +308,12 @@ func _refresh_champions() -> void:
 
 
 func _refresh_doll() -> void:
-	_clear(_doll)
-	var card := TextureRect.new()
-	card.name = "ChampionCard"
-	# Same select plate as ClassSelect.portrait_path (not referenced: it pulls NetSession).
-	var plate := "res://art/ui/select/%s_select.png" % champion
-	card.texture = load(plate) as Texture2D if ResourceLoader.exists(plate) else null
-	card.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	card.position = Vector2(84, 0)
-	card.size = Vector2(212, 300)
-	card.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_doll.add_child(card)
+	for child in _doll.get_children():
+		if child != _stage:
+			_doll.remove_child(child)
+			child.queue_free()
+	_stage.set_class(champion)
+	_stage.rune_tint = _worn_tint()
 	var y := 8
 	for slot in LEFT_SLOTS:
 		_doll.add_child(_slot_tile(slot, Vector2(8, y)))
@@ -562,6 +563,23 @@ func _refresh_detail() -> void:
 		_detail.add_child(vault_button)
 		return
 	_detail.add_child(_label("Tap an item to see it. Tap a worn slot to take it off.", 13, GOLD_DIM))
+
+
+## Pedestal runes glow with the rarest worn piece; dim gold with nothing worn.
+func _worn_tint() -> Color:
+	var order: Array[String] = ["Normal", "Rare", "Legendary", "Ultra"]
+	var best := -1
+	var tint := Color(0.78, 0.62, 0.36)
+	for slot in GearBag.SLOTS:
+		var worn := _bag.equipped_item(slot)
+		if worn.is_empty():
+			continue
+		var rarity := str(GearBag.FAMILIES.get(GearBag.family_of(str(worn["item_id"])), {}).get("rarity", ""))
+		var rank := order.find(rarity)
+		if rank > best:
+			best = rank
+			tint = GearScreen.RARITY_TINT.get(rarity, tint)
+	return tint
 
 
 func _rarity_tint(item_id: String) -> Color:

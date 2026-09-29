@@ -55,15 +55,23 @@ func _process(_delta: float) -> bool:
 		inv.select({"kind": "item", "uid": 3})
 	elif _frames == 14:
 		root.get_texture().get_image().save_png(_out.path_join("inventory.png"))
+		_hub.find_child("ChampionStage", true, false).turn(1)
+	elif _frames == 22:
+		root.get_texture().get_image().save_png(_out.path_join("inventory_midturn.png"))
+		_hub.find_child("ChampionStage", true, false).settle()
+		_hub.find_child("ChampionStage", true, false).turn(1)
+		_hub.find_child("ChampionStage", true, false).settle()
+	elif _frames == 26:
+		root.get_texture().get_image().save_png(_out.path_join("inventory_back.png"))
 		var inv := _hub.find_child("InventoryScreen", true, false)
 		inv.show_tab("consumables")
 		inv.select({"kind": "sku", "sku": KoliseoWallet.TONIC_SKU})
-	elif _frames == 20:
+	elif _frames == 32:
 		root.get_texture().get_image().save_png(_out.path_join("inventory_tonic.png"))
 		_hub.find_child("InventoryScreen", true, false).close()
 		_hub.open_shop()
-	elif _frames == 26:
+	elif _frames == 38:
 		root.get_texture().get_image().save_png(_out.path_join("shop_tonic.png"))
-	elif _frames == 28:
+	elif _frames == 40:
 		return true
 	return false
