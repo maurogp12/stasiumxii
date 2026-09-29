@@ -57,6 +57,15 @@ func play(events: Array, snapshot: Dictionary) -> void:
 			continue
 		var event: Dictionary = raw
 		var typ := str(event.get("type", ""))
+		if typ == "snap_wall" and event.has("to"):
+			_wall_slam(_at(_cell(event.get("to"))))
+			continue
+		if typ == "expire" and str(event.get("status", "")) == "invisible":
+			# Gloam steps out of the shadows when Invisible wears off.
+			var at_cell := _at(_cell(event.get("pos", Vector2i.ZERO)))
+			_burst(at_cell + CHEST * 0.6, Color("6B4FA0"), 18, 70.0, 0.7, 0.0, "smoke")
+			_glow(at_cell + CHEST, Color("9F8CFF"), 1.3, 0.45, 0.0)
+			continue
 		if typ != "hit" and typ != "miss" and typ != "cast":
 			continue
 		var spell_id := str(event.get("spell", ""))
@@ -113,6 +122,16 @@ static func _class_of(spell_id: String) -> String:
 			if sid == spell_id:
 				return class_id
 	return ""
+
+
+## Bastion Snap Wall: the rampart slams up with a gold shockwave, stone chunks
+## and a spark shower. The block itself is drawn by the tile.
+func _wall_slam(at: Vector2) -> void:
+	_ring(at, Color("F2D67A"), 44.0, 0.35, 0.05)
+	_ring(at, Color("D4A437"), 28.0, 0.28, 0.1)
+	_burst(at + Vector2(0, -8), Color(0.42, 0.40, 0.44), 14, 150.0, 0.55, 0.05, "rock")
+	_burst(at + Vector2(0, -24), Color("F2D67A"), 20, 130.0, 0.5, 0.12, "spark")
+	_glow(at + Vector2(0, -20), Color("F2D67A"), 1.6, 0.4, 0.1)
 
 
 func _seat_cell(snapshot: Dictionary, seat: int) -> Vector2i:
