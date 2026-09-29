@@ -40,11 +40,14 @@ func _gear(still: String, mode: String) -> Dictionary:
 	return {"worn": [], "still": {"id": still, "mode": mode}}
 
 
-func _fight(seat0: Dictionary, seat1: Dictionary = {}, classes: Array = ["kestrel", "ironjaw"]) -> void:
+func _fight(seat0: Dictionary, seat1: Dictionary = {}, classes: Array = ["kestrel", "ironjaw"], rolls: Array = []) -> void:
 	var sg := {0: seat0}
 	if not seat1.is_empty():
 		sg[1] = seat1
-	_sim.reset_match({"classes": classes, "skip_deploy": true, "positions": [Vector2i(5, 7), Vector2i(6, 7)], "seat_gear": sg})
+	var config := {"classes": classes, "skip_deploy": true, "positions": [Vector2i(5, 7), Vector2i(6, 7)], "seat_gear": sg}
+	if not rolls.is_empty():
+		config["rolls"] = rolls
+	_sim.reset_match(config)
 
 
 func _end_turns(n: int) -> void:
@@ -144,7 +147,8 @@ func _test_one_shots() -> void:
 	_sim._check_death(e)
 	eq(bool(e.get("alive", true)), false, "End works once")
 	# Mercy: first heal +8.
-	_fight(_gear("mercy", "intact"), {}, ["mender", "ironjaw"])
+	# Mend rolls to connect; a scripted roll of 1 always lands (a miss heals 0).
+	_fight(_gear("mercy", "intact"), {}, ["mender", "ironjaw"], [1])
 	var m: Dictionary = _sim._unit_by_seat(0)
 	m["hp"] = 40
 	var r: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "seat": 0, "to": Vector2i(5, 7)})
