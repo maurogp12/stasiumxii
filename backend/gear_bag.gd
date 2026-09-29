@@ -576,6 +576,10 @@ static func clean_fight_gear(raw: Variant) -> Dictionary:
 		for fam in att:
 			if FAMILIES.has(str(fam)) and ELEMENTS.has(str(att[fam])):
 				out["attune"][str(fam)] = str(att[fam])
+	# One XII Still for this fight (StillVault); cleaned again by the sim.
+	var still := StillVault.clean(raw.get("still", {}))
+	if not still.is_empty():
+		out["still"] = still
 	# Levels ride along; CombatSim recomputes them with HeroProgress.combat_stats.
 	var heroes: Variant = raw.get("heroes", {})
 	if typeof(heroes) == TYPE_DICTIONARY:
@@ -588,8 +592,13 @@ static func clean_fight_gear(raw: Variant) -> Dictionary:
 
 
 ## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
-func fight_gear() -> Dictionary:
-	return {"worn": worn_list(), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
+func fight_gear(with_still: bool = false) -> Dictionary:
+	var out := {"worn": worn_list(), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
+	if with_still:
+		var still := StillVault.load_saved().fight_still()
+		if not still.is_empty():
+			out["still"] = still
+	return out
 
 
 func loot_clears_left(unix_seconds: int) -> int:

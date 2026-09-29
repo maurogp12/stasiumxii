@@ -112,9 +112,26 @@ func _continue_run() -> void:
 	_restart_fight()
 
 
+## The Still the player carried into this fight is destroyed when it ends.
+static func consume_still(snap: Dictionary) -> String:
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
+			continue
+		var used := str(unit.get("still", ""))
+		if used == "":
+			return ""
+		var vault := StillVault.load_saved()
+		if vault.socket == used:
+			vault.consume()
+			vault.save()
+		return used
+	return ""
+
+
 ## Stasis ends a fight room by room: count turns and beaten foes; a defeat
 ## opens the result window at once, a win waits for the door to clear.
 func _on_match_result(snap: Dictionary, _secs: int) -> void:
+	consume_still(snap)
 	StasisCatalog.run_turns += int(snap.get("turn_index", 0))
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
@@ -157,6 +174,8 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 		you["xp"] = int(chest["xp"])
 		you["level"] = int(chest.get("level", 1))
 		you["levels_gained"] = int(chest.get("levels_gained", 0))
+	for frag in chest.get("fragments", []):
+		you["loot"].append({"kind": "fragment", "still": str(frag), "count": 1})
 	for it in chest.get("items", []):
 		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1})
 	var foes: Array = []
@@ -189,6 +208,11 @@ func open_chest() -> Dictionary:
 	var bag := GearBag.load_saved()
 	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.STAR)
 	bag.save()
+	# XII Still fragments (Mauro, 29 Sep): only a loot-paying chest rolls them.
+	if bool(loot.get("chest", false)):
+		var vault := StillVault.load_saved()
+		loot["fragments"] = vault.roll_chest(StasisCatalog.STAR)
+		vault.save()
 	# XP: 60 × star with a chest, 20 for a clear past the daily 5.
 	var hero := HeroProgress.load_saved()
 	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.STAR, bool(loot.get("chest", false))))
@@ -207,6 +231,8 @@ static func chest_line(loot: Dictionary) -> String:
 	var names: Array[String] = []
 	for it in loot.get("items", []):
 		names.append(GearBag.item_label(it))
+	for frag in loot.get("fragments", []):
+		names.append("%s fragment" % StillVault.display_name(str(frag)))
 	return "Chest: %s. Wear it in Gear." % ", ".join(names)
 
 
@@ -231,6 +257,8 @@ func _restart_fight() -> void:
 
 func _back_to_hub() -> void:
 	_ai_running = false
+	# Leaving mid-fight (surrender) still destroys the Still that fought.
+	consume_still(_sim().snapshot())
 	StasisCatalog.clear_run()
 	get_tree().change_scene_to_file(MobileHub.MOBILE_HUB)
 

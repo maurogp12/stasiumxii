@@ -1545,6 +1545,7 @@ func _begin_combat(coach: String) -> void:
 	if _first_by_init:
 		_active_seat = _init_first_seat()
 		coach = _init_coach(_opening_turn_coach(""))
+	_still_turn_start(_unit_by_seat(_active_seat))
 	_start_turn_timer()
 	_last_coach = coach
 	_last_events = [{
@@ -1613,6 +1614,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		next_unit["skip_next_mp"] = false
 		# Heartstop enemy badge ends when this turn consumes the skip. MP is already 0.
 		_emit_expire("skip_next_mp", next_unit["pos"], int(next_unit["seat"]), int(next_unit["seat"]))
+	_still_turn_start(next_unit)
 	var slow_cut := 0
 	if int(next_unit.get("slow_remaining", 0)) > 0:
 		slow_cut = mini(SLOW_MP, int(next_unit["mp"]))
@@ -2213,6 +2215,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	if int(target["hp"]) > 0:
 		return
+	# End Still: once, a lethal hit leaves you at 1 HP.
+	if str(target.get("still", "")) == "end" and bool(target.get("still_ready", false)):
+		target["still_ready"] = false
+		target["hp"] = 1
+		_still_fired(target, "end")
+		return
 	target["alive"] = false
 	_last_events.append({
 		"type": "dead",
@@ -2541,6 +2549,12 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	unit["max_ap"] = mini(int(stats["ap"]) + int(hero["ap"]), GearBag.AP_CAP)
 	unit["max_mp"] = int(stats["mp"])
 	unit["gear"] = GearBag.clean_worn(gear.get("worn", []))
+	# XII Still (one fight). Ready flags arm the one-shot effects.
+	var still := StillVault.clean(gear.get("still", {}))
+	unit["still"] = str(still.get("id", ""))
+	unit["still_mode"] = str(still.get("mode", ""))
+	unit["still_ready"] = unit["still"] != ""
+	unit["own_turn"] = 0
 	if bool(unit.get("placed", false)) and _flow != null and _flow.is_combat():
 		unit["ap"] = mini(int(unit.get("ap", 0)), int(unit["max_ap"]))
 		unit["mp"] = mini(int(unit.get("mp", 0)), int(unit["max_mp"]))
@@ -2673,6 +2687,14 @@ func _class_ids() -> Array:
 ## Seat 0's side against the best Init on the other side. Tie = coin flip
 ## from the sim RNG (host authority; never "host first").
 func _init_first_seat() -> int:
+	# Opening Still: that side acts first whatever the Init (both → Init).
+	var openers: Array[int] = []
+	for unit in _units:
+		if str(unit.get("still", "")) == "opening" and bool(unit.get("alive", true)):
+			openers.append(int(unit.get("seat", -1)))
+	if openers.size() == 1:
+		_init_note = "Opening Still"
+		return openers[0]
 	var mine := int(_unit_by_seat(0).get("init", 0))
 	var theirs := -1
 	var their_seat := -1
@@ -3519,6 +3541,68 @@ func _clear_resource(unit: Dictionary, field: String) -> int:
 ## same-seat Bastion may take 40% once. Shield absorbs the rest. Zero shield
 ## and zero immunity leave the formula damage unchanged.
 ## The returned damage is the HP actually lost. The other keys only describe it.
+## Stride per Mauro: Intact +1 AP +1 MP every turn (cap 8/5). Overwound
+## +4 AP +2 MP on the unit's own turns 1–2 over any cap, then −1 AP −2 MP on
+## turn 3 (floor 0), then normal. Only the Still's part ever changes;
+## gear / level AP-MP stay. Ember Overwound's burn ticks here too.
+func _still_turn_start(unit: Dictionary) -> void:
+	if unit.is_empty():
+		return
+	unit["own_turn"] = int(unit.get("own_turn", 0)) + 1
+	var burn := int(unit.get("ember_burn", 0))
+	if burn > 0:
+		unit["ember_burn"] = 0
+		unit["hp"] = maxi(int(unit["hp"]) - burn, 0)
+		_last_events.append({"type": "still", "still": "ember", "seat": int(unit["seat"]), "damage": burn, "pos": unit["pos"]})
+		_check_death(unit, "ember")
+	if str(unit.get("still", "")) != "stride":
+		return
+	var turn := int(unit["own_turn"])
+	if str(unit.get("still_mode", "")) == "overwound":
+		if turn <= 2:
+			unit["ap"] = int(unit["ap"]) + 4
+			unit["mp"] = int(unit["mp"]) + 2
+			if turn == 1:
+				_still_fired(unit, "stride")
+		elif turn == 3:
+			unit["ap"] = maxi(int(unit["ap"]) - 1, 0)
+			unit["mp"] = maxi(int(unit["mp"]) - 2, 0)
+			_last_events.append({"type": "still", "still": "stride_crack", "seat": int(unit["seat"]), "pos": unit["pos"]})
+		return
+	unit["ap"] = mini(int(unit["ap"]) + 1, maxi(GearBag.AP_CAP, int(unit.get("max_ap", MAX_AP))))
+	unit["mp"] = mini(int(unit["mp"]) + 1, maxi(GearBag.MP_CAP, int(unit.get("max_mp", MAX_MP))))
+	if turn == 1:
+		_still_fired(unit, "stride")
+
+
+## Cut / Ember on the attacker's first damaging hit, Guard on the target's
+## first hit taken. Neutral bonus lands after resist.
+func _still_on_hit(actor: Dictionary, target: Dictionary, damage: int) -> int:
+	var over := str(actor.get("still_mode", "")) == "overwound"
+	match str(actor.get("still", "")):
+		"cut":
+			if bool(actor.get("still_ready", false)):
+				actor["still_ready"] = false
+				damage += 10 if over else 4
+				_still_fired(actor, "cut")
+		"ember":
+			if bool(actor.get("still_ready", false)):
+				actor["still_ready"] = false
+				damage += 4
+				if over:
+					target["ember_burn"] = 4
+				_still_fired(actor, "ember")
+	if str(target.get("still", "")) == "guard" and bool(target.get("still_ready", false)):
+		target["still_ready"] = false
+		damage = 0 if str(target.get("still_mode", "")) == "overwound" else roundi(float(damage) * 0.75)
+		_still_fired(target, "guard")
+	return damage
+
+
+func _still_fired(unit: Dictionary, still_id: String) -> void:
+	_last_events.append({"type": "still", "still": still_id, "seat": int(unit.get("seat", -1)), "mode": str(unit.get("still_mode", "")), "pos": unit.get("pos", UNPLACED)})
+
+
 func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictionary:
 	var report := {
 		"damage": damage,
@@ -3529,6 +3613,9 @@ func _mitigate_hit(actor: Dictionary, target: Dictionary, damage: int) -> Dictio
 		"shield_remaining": int(target.get("shield", 0)),
 		"intercepted": 0,
 	}
+	if damage > 0:
+		damage = _still_on_hit(actor, target, damage)
+		report["damage"] = damage
 	if int(target.get("hit_immunity", 0)) > 0:
 		target["hit_immunity"] = int(target["hit_immunity"]) - 1
 		report["immunity_absorbed"] = true
@@ -3689,7 +3776,19 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	if spell_id != SpellKits.WARD and spell_id != SpellKits.CLEANSE:
 		# Read Triage before the heal so the threshold sees pre-heal HP.
 		triage = _triage_applied(target, def)
-		healed = _apply_heal(target, _support_heal_amount(actor, target, def))
+		var heal_amount := _support_heal_amount(actor, target, def)
+		if str(actor.get("still", "")) == "mercy" and bool(actor.get("still_ready", false)):
+			# Mercy Still: first heal +8 (Overwound +16 and Cleanse).
+			actor["still_ready"] = false
+			var over := str(actor.get("still_mode", "")) == "overwound"
+			heal_amount += 16 if over else 8
+			if over:
+				target["stun_remaining"] = 0
+				target["stunned"] = false
+				target["burn_remaining"] = 0
+				target["burn_stacks"] = 0
+			_still_fired(actor, "mercy")
+		healed = _apply_heal(target, heal_amount)
 	var engine_gained := 0
 	var engine_spent := 0
 	match str(def.get("engine_on_connect", "")):

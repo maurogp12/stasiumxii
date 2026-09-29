@@ -21,6 +21,7 @@ func _run() -> void:
 	KoliseoWallet.save_path = TEST_SAVE
 	GearBag.save_path = TEST_BAG
 	HeroProgress.save_path = "user://test_hero_run_koliseo_wallet_tests.json"
+	StillVault.save_path = "user://test_still_run_koliseo_wallet_tests.json"
 	_wipe()
 	_test_daily_coins()
 	_test_wallet_caps()

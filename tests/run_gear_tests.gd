@@ -18,6 +18,7 @@ func _initialize() -> void:
 func _run() -> void:
 	GearBag.save_path = TEST_BAG
 	HeroProgress.save_path = "user://test_hero_run_gear_tests.json"
+	StillVault.save_path = "user://test_still_run_gear_tests.json"
 	_wipe()
 	_test_families_and_slots()
 	_test_equip()
