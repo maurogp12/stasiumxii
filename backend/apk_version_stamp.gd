@@ -10,5 +10,5 @@ extends RefCounted
 ##
 ## Headless tests compare the two. A preset bump that forgets this file fails.
 
-const VERSION_NAME := "0.1.41-mobile"
-const VERSION_CODE := 42
+const VERSION_NAME := "0.1.42-mobile"
+const VERSION_CODE := 43
