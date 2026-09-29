@@ -1,0 +1,32 @@
+name: Publish sideload APK release
+
+# Pushing a tag like mobile-0.1.41-debug on a download-only apk/<version>
+# branch publishes that commit's stasiumxii-mobile-debug.apk as a GitHub
+# prerelease. The in-game Actualizar button reads these releases.
+on:
+  push:
+    tags:
+      - "mobile-*-debug"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the APK is in the tagged commit
+        run: test -f stasiumxii-mobile-debug.apk && ls -l stasiumxii-mobile-debug.apk
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION="${TAG#mobile-}"
+          VERSION="${VERSION%-debug}"
+          gh release create "$TAG" stasiumxii-mobile-debug.apk \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "STASIUM XII mobile debug APK $VERSION" \
+            --notes-file README.md \
+            --prerelease
