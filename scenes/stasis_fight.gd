@@ -220,7 +220,7 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 	if victory:
 		note = chest_line(chest)
 	return {
-		"title": "%s — combat result" % StasisCatalog.door_name(),
+		"title": "%s %s — combat result" % [StasisCatalog.door_name(), StasisCatalog.star_label()],
 		"outcome": "Victory" if victory else "Defeat",
 		"victory": victory,
 		"duration_sec": secs,
@@ -234,16 +234,16 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 ## Stasis 1 clear: one loot roll, 5 per UTC day across all doors (GearBag).
 func open_chest() -> Dictionary:
 	var bag := GearBag.load_saved()
-	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.STAR)
+	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.star)
 	bag.save()
 	# XII Still fragments (Mauro, 29 Sep): only a loot-paying chest rolls them.
 	if bool(loot.get("chest", false)):
 		var vault := StillVault.load_saved()
-		loot["fragments"] = vault.roll_chest(StasisCatalog.STAR)
+		loot["fragments"] = vault.roll_chest(StasisCatalog.star)
 		vault.save()
 	# XP: 60 × star with a chest, 20 for a clear past the daily 5.
 	var hero := HeroProgress.load_saved()
-	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.STAR, bool(loot.get("chest", false))))
+	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.star, bool(loot.get("chest", false))))
 	hero.save()
 	loot["xp"] = int(gained["xp"])
 	loot["level"] = int(gained["level"])

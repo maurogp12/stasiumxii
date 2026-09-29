@@ -16,8 +16,15 @@ class_name StasisCatalog
 ## owner. The portrait is the package crop under art/stasis/foes/. The pawn
 ## does not draw the Ironjaw sheet.
 
-## Every door today is Stasis 1 (★1). Stasis >1 is Open. Loot uses this star.
+## Default star. The player picks ★1–★5 per run (Mauro 29 Sep 2026: "every
+## star should be a lvl of difficult"); loot, XP and Still fragments use the
+## picked `star`.
 const STAR := 1
+const MAX_STAR := 5
+## Foe toughness per star: [HP multiplier, damage multiplier].
+## PROVISIONAL — the Blueprint leaves Stasis HP / dmg Open; these are Claude's
+## proposal that Mauro green-lit by asking for star difficulty. Tune freely.
+const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [1.9, 1.45], 4: [2.5, 1.7], 5: [3.2, 2.0]}
 const PLAYER_SEAT := 0
 const ENEMY_SEAT := 1
 ## Strike card owner. Not the portrait. See the note above.
@@ -101,6 +108,8 @@ static var biome_id: String = ""
 static var class_id: String = ""
 static var room: String = "a"
 static var foe_index: int = 0
+## Difficulty picked for this run (1–5).
+static var star: int = STAR
 ## -1 keeps the Locked 80. Room B carries whatever Room A left.
 static var player_hp: int = -1
 ## End-of-run window (ui/combat_result.gd): clock, turns and beaten foes
@@ -123,6 +132,7 @@ static func begin(map_id: String) -> bool:
 	class_id = ""
 	room = "a"
 	foe_index = 0
+	star = STAR
 	player_hp = -1
 	run_started_msec = Time.get_ticks_msec()
 	run_turns = 0
@@ -131,12 +141,38 @@ static func begin(map_id: String) -> bool:
 
 
 static func clear_run() -> void:
+	star = STAR
 	biome_id = ""
 	class_id = ""
 	room = "a"
 	foe_index = 0
 	player_hp = -1
 	MobileHub.pending_biome_id = ""
+
+
+static func set_star(value: int) -> void:
+	star = clampi(value, 1, MAX_STAR)
+
+
+static func hp_mult(for_star: int = -1) -> float:
+	return float(STAR_SCALE[clampi(star if for_star < 1 else for_star, 1, MAX_STAR)][0])
+
+
+static func dmg_mult(for_star: int = -1) -> float:
+	return float(STAR_SCALE[clampi(star if for_star < 1 else for_star, 1, MAX_STAR)][1])
+
+
+static func scaled_hp(base: int, for_star: int = -1) -> int:
+	return maxi(roundi(float(base) * hp_mult(for_star)), 1)
+
+
+static func scaled_attack(base: int, for_star: int = -1) -> int:
+	return maxi(roundi(float(base) * dmg_mult(for_star)), 0)
+
+
+## "★3" plus the door name, for banners and the result window.
+static func star_label(for_star: int = -1) -> String:
+	return "★%d" % clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
 
 
 static func ready_to_fight() -> bool:
@@ -185,8 +221,8 @@ static func current_foe() -> Dictionary:
 static func room_banner() -> String:
 	var door := door_name(biome_id)
 	if room == "b":
-		return "%s · Room B · %s" % [door, boss_name()]
-	return "%s · Room A · %s" % [door, " · ".join(trash_names())]
+		return "%s %s · Room B · %s" % [door, star_label(), boss_name()]
+	return "%s %s · Room A · %s" % [door, star_label(), " · ".join(trash_names())]
 
 
 static func provisional_line() -> String:
@@ -305,8 +341,8 @@ static func _room_entries() -> Array:
 			"name": str(door.get("boss", "")),
 			"attack": str(door.get("boss_attack", "Heavy Blow")),
 			"art": str(door.get("boss_art", "")),
-			"hp": PROVISIONAL_BOSS_HP,
-			"attack_base": PROVISIONAL_BOSS_ATTACK,
+			"hp": scaled_hp(PROVISIONAL_BOSS_HP),
+			"attack_base": scaled_attack(PROVISIONAL_BOSS_ATTACK),
 		}]
 	var out: Array = []
 	for entry in door.get("trash", []):
@@ -317,8 +353,8 @@ static func _room_entries() -> Array:
 			"name": str(rec.get("name", "Trash")),
 			"attack": str(rec.get("attack", "Swipe")),
 			"art": str(rec.get("art", "")),
-			"hp": PROVISIONAL_TRASH_HP,
-			"attack_base": PROVISIONAL_TRASH_ATTACK,
+			"hp": scaled_hp(PROVISIONAL_TRASH_HP),
+			"attack_base": scaled_attack(PROVISIONAL_TRASH_ATTACK),
 		})
 	return out
 

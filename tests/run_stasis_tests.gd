@@ -88,6 +88,41 @@ func _test_package_and_flow() -> void:
 	eq(StasisCatalog.current_foe()["name"], "Serra the Gale Sentinel", "room B is the boss")
 	eq(int(StasisCatalog.current_foe()["hp"]), StasisCatalog.PROVISIONAL_BOSS_HP, "boss uses the provisional HP")
 	eq(StasisCatalog.advance_after_win(), "cleared", "boss win clears the gate")
+	# Difficulty stars (Mauro: "every star should be a lvl of difficult").
+	StasisCatalog.clear_run()
+	truthy(StasisCatalog.begin("crosshaven"), "star test gate")
+	StasisCatalog.class_id = "kestrel"
+	eq(StasisCatalog.star, 1, "a new door starts at ★1")
+	var one: Array = StasisCatalog.fight_config()["stasis_roster"]
+	eq(int(one[1]["hp"]), StasisCatalog.PROVISIONAL_TRASH_HP, "★1 trash keeps the base HP")
+	StasisCatalog.set_star(5)
+	var five: Array = StasisCatalog.fight_config()["stasis_roster"]
+	eq(int(five[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_TRASH_HP * 3.2), "★5 trash HP x3.2")
+	eq(int(five[1]["attack_base"]), roundi(StasisCatalog.PROVISIONAL_TRASH_ATTACK * 2.0), "★5 trash damage x2")
+	StasisCatalog.room = "b"
+	var boss5: Array = StasisCatalog.fight_config()["stasis_roster"]
+	eq(int(boss5[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_BOSS_HP * 3.2), "★5 boss HP x3.2")
+	truthy(StasisCatalog.room_banner().contains("★5"), "the banner shows the star")
+	StasisCatalog.set_star(9)
+	eq(StasisCatalog.star, 5, "stars cap at 5")
+	StasisCatalog.set_star(0)
+	eq(StasisCatalog.star, 1, "stars floor at 1")
+	for value in range(1, 6):
+		truthy(StasisCatalog.hp_mult(value) >= StasisCatalog.hp_mult(maxi(value - 1, 1)), "★%d is at least as tough as the star below" % value)
+	var run: Node = (load("res://scenes/stasis_run.tscn") as PackedScene).instantiate()
+	run._auto_launch = false
+	StasisCatalog.clear_run()
+	MobileHub.pending_biome_id = "crosshaven"
+	root.add_child(run)
+	eq(run.star_button_count(), 5, "the door screen offers ★1–★5")
+	truthy(run.star_info_text().contains("★1"), "★1 is picked by default")
+	run.pick_star(3)
+	eq(StasisCatalog.star, 3, "picking ★3 sets the run star")
+	truthy(run.star_info_text().contains("Ironveil"), "★3 lists the Rare drops")
+	truthy(run.star_info_text().contains("180 XP"), "★3 lists its XP")
+	run.free()
+	StasisCatalog.clear_run()
+	eq(StasisCatalog.star, 1, "leaving resets the star")
 	# Foe quality pass: HD art (288x320), a boss flag only on Room B.
 	for art in ["warden_of_the_sheaves", "tyrant_coilspire", "cinder_imp", "grain_hound"]:
 		var tex := load(StasisCatalog.art_path(art)) as Texture2D
