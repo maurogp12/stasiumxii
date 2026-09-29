@@ -21,6 +21,15 @@ const VOICES := {
 	"bastion": [Color("F2D67A"), Color("D4A437"), "guard"],
 }
 
+## Heavy spells get a bigger finisher (extra shockwave, flash, more debris).
+const FINISHERS := ["detonate", "crush", "heartstop", "nightfold", "aegis_break", "ambush"]
+## Projectile look per class for ranged casts. Ironjaw and Bastion hit in melee.
+const MISSILES := {
+	"kestrel": "arrow",
+	"mender": "orb",
+	"gloam": "bolt",
+}
+
 var _elev: Callable
 static var _soft: Texture2D
 
@@ -78,13 +87,23 @@ func play(events: Array, snapshot: Dictionary) -> void:
 		var to_cell := _cell(event.get("to", caster_cell))
 		var voice: Array = VOICES[class_id]
 		var healing := class_id == "mender"
-		# Release glow on the caster for every committed spell.
+		# Release glow and a turning rune circle under the caster.
 		_glow(_at(caster_cell) + CHEST, voice[0], 0.9, 0.35, 0.0)
+		_rune(_at(caster_cell), voice[0], voice[1], 0.0)
+		var ranged := _reach(caster_cell, to_cell) > 1
+		var delay := 0.06
+		if not _same(caster_cell, to_cell):
+			delay = 0.16
+		if ranged and MISSILES.has(class_id):
+			# The strike lands when the projectile arrives.
+			delay = clampf(0.1 + 0.035 * float(_reach(caster_cell, to_cell)), 0.16, 0.34)
+			_missile(_at(caster_cell) + CHEST, _at(to_cell) + CHEST, voice[0], voice[1], str(MISSILES[class_id]), delay)
 		if typ == "miss":
-			_burst(_at(to_cell) + CHEST * 0.4, voice[1], 8, 40.0, 0.35, 0.05, "puff")
+			_burst(_at(to_cell) + CHEST * 0.4, voice[1], 8, 40.0, 0.35, delay, "puff")
 			continue
-		var delay := 0.16 if not _same(caster_cell, to_cell) else 0.06
 		var at := _at(to_cell)
+		if FINISHERS.has(spell_id) and typ == "hit":
+			_finisher(at, voice[0], voice[1], delay)
 		match str(voice[2]):
 			"wind":
 				_glow(at + CHEST, voice[1], 1.2, 0.3, delay)
@@ -132,6 +151,45 @@ func _wall_slam(at: Vector2) -> void:
 	_burst(at + Vector2(0, -8), Color(0.42, 0.40, 0.44), 14, 150.0, 0.55, 0.05, "rock")
 	_burst(at + Vector2(0, -24), Color("F2D67A"), 20, 130.0, 0.5, 0.12, "spark")
 	_glow(at + Vector2(0, -20), Color("F2D67A"), 1.6, 0.4, 0.1)
+
+
+## Heavy spell: white flash, double shockwave, a tall column of light and
+## extra debris in the class colours.
+func _finisher(at: Vector2, main: Color, accent: Color, delay: float) -> void:
+	_glow(at + CHEST, Color(1, 1, 1), 2.2, 0.22, delay)
+	_glow(at + CHEST * 0.5, main, 2.6, 0.5, delay + 0.03)
+	_ring(at, Color(1, 1, 1), 62.0, 0.38, delay)
+	_ring(at, main, 80.0, 0.5, delay + 0.08)
+	_burst(at + CHEST * 0.5, accent, 26, 220.0, 0.6, delay, "spark")
+	var column := LightColumn.new()
+	column.position = at
+	column.color = main
+	column.delay = delay
+	add_child(column)
+
+
+func _rune(at: Vector2, main: Color, accent: Color, delay: float) -> void:
+	var rune := RuneCircle.new()
+	rune.position = at
+	rune.color = main
+	rune.accent = accent
+	rune.delay = delay
+	add_child(rune)
+
+
+func _missile(from: Vector2, to: Vector2, main: Color, accent: Color, style: String, travel: float) -> void:
+	var m := Missile.new()
+	m.from = from
+	m.to = to
+	m.color = main
+	m.accent = accent
+	m.style = style
+	m.travel = travel
+	add_child(m)
+
+
+static func _reach(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 
 
 func _seat_cell(snapshot: Dictionary, seat: int) -> Vector2i:
@@ -303,3 +361,149 @@ class FlourishRing extends Node2D:
 			var ang := TAU * float(i) / 32.0
 			pts.append(Vector2(cos(ang) * rx, sin(ang) * rx * 0.5))
 		draw_polyline(pts, Color(color.r, color.g, color.b, a), 3.0 * (1.0 - u) + 1.0, true)
+
+
+## Wakfu cast circle: a flat iso ring with runes that turns and fades.
+class RuneCircle extends Node2D:
+	var color := Color.WHITE
+	var accent := Color.WHITE
+	var delay := 0.0
+	var life := 0.75
+	var _t := -1.0
+
+	func _ready() -> void:
+		var add := CanvasItemMaterial.new()
+		add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = add
+
+	func _process(delta: float) -> void:
+		if delay > 0.0:
+			delay -= delta
+			return
+		_t = maxf(_t, 0.0) + delta
+		if _t >= life:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		if _t < 0.0:
+			return
+		var u := _t / life
+		var grow := 1.0 - pow(1.0 - minf(u * 3.0, 1.0), 3.0)
+		var a := (1.0 - u) * 0.85
+		var r := 26.0 * grow
+		var spin := _t * 2.4
+		_ellipse(r, Color(color.r, color.g, color.b, a), 2.0)
+		_ellipse(r * 0.72, Color(accent.r, accent.g, accent.b, a * 0.7), 1.2)
+		# Six rune ticks between the rings, turning.
+		for i in 6:
+			var ang := spin + TAU * float(i) / 6.0
+			var p0 := Vector2(cos(ang) * r * 0.74, sin(ang) * r * 0.37)
+			var p1 := Vector2(cos(ang) * r * 0.98, sin(ang) * r * 0.49)
+			draw_line(p0, p1, Color(color.r, color.g, color.b, a), 2.0, true)
+			draw_circle(p1, 1.6, Color(1, 1, 1, a))
+		# Inner star, counter-turning.
+		var star := PackedVector2Array()
+		for i in 7:
+			var ang := -spin * 1.5 + TAU * float(i * 2 % 6) / 6.0
+			star.append(Vector2(cos(ang) * r * 0.62, sin(ang) * r * 0.31))
+		draw_polyline(star, Color(accent.r, accent.g, accent.b, a * 0.6), 1.2, true)
+
+	func _ellipse(r: float, c: Color, w: float) -> void:
+		var pts := PackedVector2Array()
+		for i in 41:
+			var ang := TAU * float(i) / 40.0
+			pts.append(Vector2(cos(ang) * r, sin(ang) * r * 0.5))
+		draw_polyline(pts, c, w, true)
+
+
+## Projectile from caster to target with a fading trail.
+## arrow: fast straight streak; orb: soft arcing ball; bolt: wobbling shadow bolt.
+class Missile extends Node2D:
+	var from := Vector2.ZERO
+	var to := Vector2.ZERO
+	var color := Color.WHITE
+	var accent := Color.WHITE
+	var style := "arrow"
+	var travel := 0.2
+	var _t := 0.0
+	var _trail: Array[Vector2] = []
+
+	func _ready() -> void:
+		var add := CanvasItemMaterial.new()
+		add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = add
+
+	func _head(u: float) -> Vector2:
+		var p := from.lerp(to, u)
+		match style:
+			"orb":
+				p.y -= sin(u * PI) * minf(from.distance_to(to) * 0.35, 70.0)
+			"bolt":
+				var n := (to - from).orthogonal().normalized()
+				p += n * sin(u * TAU * 2.0) * 6.0 * (1.0 - u)
+		return p
+
+	func _process(delta: float) -> void:
+		_t += delta
+		var u := minf(_t / maxf(travel, 0.01), 1.0)
+		if u < 1.0:
+			_trail.append(_head(u))
+			if _trail.size() > 10:
+				_trail.remove_at(0)
+		elif not _trail.is_empty():
+			_trail.remove_at(0)
+		if u >= 1.0 and _trail.is_empty():
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var n := _trail.size()
+		for i in range(1, n):
+			var k := float(i) / float(n)
+			var w := (3.0 if style == "arrow" else 6.0) * k
+			draw_line(_trail[i - 1], _trail[i], Color(color.r, color.g, color.b, 0.8 * k), w + 4.0, true)
+			draw_line(_trail[i - 1], _trail[i], Color(1, 1, 1, 0.9 * k), maxf(w * 0.4, 1.0), true)
+		var u := _t / maxf(travel, 0.01)
+		if u >= 1.0:
+			return
+		var head := _head(u)
+		var size := 3.5 if style == "arrow" else 6.0
+		draw_circle(head, size * 2.2, Color(color.r, color.g, color.b, 0.35))
+		draw_circle(head, size, Color(accent.r, accent.g, accent.b, 0.95))
+		draw_circle(head, size * 0.45, Color(1, 1, 1, 1))
+
+
+## Tall beam of light that flares up on a heavy hit and thins out.
+class LightColumn extends Node2D:
+	var color := Color.WHITE
+	var delay := 0.0
+	var life := 0.45
+	var _t := -1.0
+
+	func _ready() -> void:
+		var add := CanvasItemMaterial.new()
+		add.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = add
+
+	func _process(delta: float) -> void:
+		if delay > 0.0:
+			delay -= delta
+			return
+		_t = maxf(_t, 0.0) + delta
+		if _t >= life:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		if _t < 0.0:
+			return
+		var u := _t / life
+		var w := 22.0 * (1.0 - u)
+		var h := 150.0 * (0.4 + 0.6 * minf(u * 4.0, 1.0))
+		var a := (1.0 - u)
+		draw_rect(Rect2(-w, -h, w * 2.0, h), Color(color.r, color.g, color.b, 0.28 * a))
+		draw_rect(Rect2(-w * 0.35, -h, w * 0.7, h), Color(1, 1, 1, 0.55 * a))

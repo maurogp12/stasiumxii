@@ -13,6 +13,7 @@ const _Sort := preload("res://board/visual_sort.gd")
 const _Palette := preload("res://vfx/vfx_palette.gd")
 const SKY_SHADER := preload("res://board/arena_sky.gdshader")
 const STORM_BOLTS := preload("res://board/storm_bolts.gd")
+const SNOW_FALL := preload("res://board/snow_fall.gd")
 ## Below every tile (tile z starts at 0) and the arena light.
 const SLAB_Z := -200
 const SLAB_DEPTH := 30.0
@@ -41,6 +42,7 @@ const SKIES := {
 		"cloud": Color(0.40, 0.50, 0.66), "sun": Color(0.70, 0.82, 1.0), "clouds": 0.22,
 		"edge": "rim_wall", "slab_top": Color(0.52, 0.58, 0.68), "slab_bottom": Color(0.20, 0.24, 0.32),
 		"snow": Color(0.90, 0.94, 0.99), "rock": Color(0.44, 0.48, 0.56), "rock_dark": Color(0.27, 0.30, 0.37),
+		"snowfall": true,
 	},
 	"stormspire": {
 		"top": Color(0.02, 0.03, 0.10), "bottom": Color(0.07, 0.07, 0.20),
@@ -56,6 +58,7 @@ var _layer: CanvasLayer
 var _sky: ColorRect
 var _mat: ShaderMaterial
 var _bolts: Node2D
+var _snow: Node2D
 
 
 static func sky_for(map_id: String) -> Dictionary:
@@ -98,7 +101,26 @@ func bind(map_id: String, board_size: int) -> void:
 			_mat.set_shader_parameter("sun_color", spec["sun"])
 			_mat.set_shader_parameter("cloud_amount", float(spec["clouds"]))
 	_bind_bolts(bool(spec.get("bolts", false)), size)
+	_bind_snow(bool(spec.get("snowfall", false)), size)
 	queue_redraw()
+
+
+## Windmere snowfall (view only). Other arenas keep it hidden.
+func _bind_snow(enabled: bool, size: int) -> void:
+	if not enabled:
+		if _snow != null and is_instance_valid(_snow):
+			_snow.visible = false
+		return
+	if _snow == null or not is_instance_valid(_snow):
+		_snow = SNOW_FALL.new()
+		_snow.name = "SnowFall"
+		add_child(_snow)
+	_snow.set_board_size(size)
+	_snow.visible = true
+
+
+func snow_visible() -> bool:
+	return _snow != null and is_instance_valid(_snow) and _snow.visible
 
 
 ## Stormspire lightning (view only). Other arenas keep it hidden.
