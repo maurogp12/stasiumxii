@@ -816,11 +816,25 @@ func _note_koliseo_result(snap: Dictionary) -> void:
 		return
 	_koliseo_result_noted = true
 	koliseo_last_payout = {}
-	if not koliseo_pays() or int(snap.get("winner_seat", -1)) != local_seat:
+	if not koliseo_pays():
 		return
-	var wallet := KoliseoWallet.load_saved()
-	koliseo_last_payout = wallet.record_human_win(KoliseoWallet.now_unix())
-	wallet.save()
+	var won := int(snap.get("winner_seat", -1)) == local_seat
+	if won:
+		var wallet := KoliseoWallet.load_saved()
+		koliseo_last_payout = wallet.record_human_win(KoliseoWallet.now_unix())
+		wallet.save()
+	# XP (Characteristics sheet): human win 50, human loss 15. The coin cap
+	# never cuts XP. It goes to the class this seat played.
+	var class_id := ""
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == local_seat:
+			class_id = str(unit.get("class_id", ""))
+	var hero := HeroProgress.load_saved()
+	var gained := hero.add_xp(class_id, HeroProgress.XP_KOLISEO_WIN if won else HeroProgress.XP_KOLISEO_LOSS)
+	hero.save()
+	koliseo_last_payout["xp"] = int(gained["xp"])
+	koliseo_last_payout["level"] = int(gained["level"])
+	koliseo_last_payout["levels_gained"] = int(gained["levels_gained"])
 
 
 func last_view_result() -> Dictionary:
@@ -907,6 +921,11 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 		gear[seat]["flatten_plus"] = true
 	if not gear.is_empty():
 		out["seat_gear"] = gear
+	# Live Koliseo: higher Init acts first, tie = coin flip (never "host first").
+	# Scripted fixtures (skip_deploy / rolls) keep their authored seat order.
+	var fixture := bool(config.get("fixture", false)) or bool(config.get("skip_deploy", false)) or config.has("rolls")
+	if not fixture:
+		out["first_by_init"] = true
 	return out
 
 

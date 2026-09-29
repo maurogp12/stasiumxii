@@ -66,12 +66,15 @@ static func koliseo_result(snap: Dictionary, local_seat: int, payout: Dictionary
 		if seat == winner_seat:
 			winner_name = str(row["name"])
 			if seat == local_seat:
+				_put_xp(row, payout)
 				if int(payout.get("coins", 0)) > 0:
 					row["loot"].append({"kind": "coin", "count": int(payout["coins"])})
 				if int(payout.get("trophies", 0)) > 0:
 					row["loot"].append({"kind": "trophy", "count": int(payout["trophies"])})
 			winners.append(row)
 		else:
+			if seat == local_seat:
+				_put_xp(row, payout)
 			losers.append(row)
 	var outcome := "%s wins" % winner_name
 	var victory := true
@@ -97,6 +100,13 @@ static func koliseo_result(snap: Dictionary, local_seat: int, payout: Dictionary
 		"losers": losers,
 		"note": note,
 	}
+
+
+static func _put_xp(row: Dictionary, payout: Dictionary) -> void:
+	if payout.has("xp"):
+		row["xp"] = int(payout["xp"])
+		row["level"] = int(payout.get("level", 1))
+		row["levels_gained"] = int(payout.get("levels_gained", 0))
 
 
 func setup(result: Dictionary) -> void:
@@ -257,6 +267,7 @@ func _column_header() -> Control:
 	var row := _grid_row(HEADER)
 	row.add_child(_cell(_label("Name", 14, DIM), 3.0))
 	row.add_child(_cell(_label("HP", 14, DIM), 1.2))
+	row.add_child(_cell(_label("XP", 14, DIM), 1.6))
 	row.add_child(_cell(_label("Loot", 14, DIM), 3.4))
 	return row.get_parent()
 
@@ -307,6 +318,14 @@ func _row(entry: Dictionary, index: int) -> Control:
 	var hp := int(entry.get("hp", 0))
 	var hp_label := _label("%d / %d" % [hp, int(entry.get("max_hp", 0))] if hp > 0 else "KO", 15, TEXT if hp > 0 else RED)
 	row.add_child(_cell(hp_label, 1.2))
+	var xp_text := ""
+	if entry.has("xp"):
+		xp_text = "+%d XP" % int(entry["xp"])
+		if int(entry.get("levels_gained", 0)) > 0:
+			xp_text += "  Lv %d!" % int(entry.get("level", 1))
+	var xp_label := _label(xp_text, 15, GREEN if int(entry.get("levels_gained", 0)) > 0 else TEXT)
+	xp_label.name = "XpLabel"
+	row.add_child(_cell(xp_label, 1.6))
 	var loot_row := HBoxContainer.new()
 	loot_row.name = "Loot"
 	loot_row.add_theme_constant_override("separation", 6)

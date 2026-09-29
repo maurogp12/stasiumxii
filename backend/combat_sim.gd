@@ -29,6 +29,13 @@ const CRIT_MULT := 1.0
 const MASTERY := 0.0
 const RESIST := 0.0
 const PASSIVE := 1.0
+## Characteristics sheet (Mauro 29 Sep 2026). If PvP breaks, lower Longshot
+## to 1.10 — do not delete it.
+const LONGSHOT_MULT := 1.15
+const LONGSHOT_RANGE := 4
+const MOMENTUM_MULT := 1.20
+## Resist cap per element (100% would be immune).
+const RESIST_CAP := 50.0
 const BACK_FACING := 1.20
 const FRONT_SIDE_FACING := 1.00
 ## Director Locked Shoulder stagger: 4 HP; +1 MP only when current MP >= 1.
@@ -122,6 +129,10 @@ var _map_id: String = ""
 ## Mobile Stasis Room A only. True when the roster has more than one hostile.
 ## Koliseo never sets this. Death, turn order, and cast offers stay 1v1 without it.
 var _stasis_pack: bool = false
+## Live matches (Koliseo, Stasis): higher Init acts first, tie = coin flip
+## (Mauro 29 Sep 2026). Test fixtures that do not ask for it keep seat 0.
+var _first_by_init: bool = false
+var _init_note: String = ""
 var _demo_map: String = ""
 var _elev_seed: int = 0
 var _elevation_gen: String = "tags"
@@ -154,6 +165,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_map_id = ""
 	_demo_map = ""
 	_stasis_pack = false
+	_first_by_init = bool(config.get("first_by_init", false))
+	_init_note = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = int(config.get("elev_seed", _seed))
@@ -617,11 +630,11 @@ func snapshot() -> Dictionary:
 		"crit_roll": false,
 		"crit_mult": CRIT_MULT,
 		"mastery": MASTERY,
-		"momentum": false,
+		"momentum": true,
 		"residue": false,
 		"blends": false,
 		"gust": false,
-		"longshot": false,
+		"longshot": true,
 		"units": units,
 		"coach": _last_coach,
 		"last_events": _last_events.duplicate(true),
@@ -1283,8 +1296,34 @@ func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, targ
 	if typeof(by_elem) == TYPE_DICTIONARY and el != "":
 		resist += float((by_elem as Dictionary).get(el, 0))
 	var flex := _flex_bonus(actor, el, resolve)
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, 100.0) / 100.0) * facing_mult
+	var passive := PASSIVE * _class_passive(actor, target)
+	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, RESIST_CAP) / 100.0) * facing_mult
 	return roundi(raw)
+
+
+## Mauro 29 Sep 2026 (Characteristics sheet): Kestrel Longshot ×1.15 when the
+## target is ≥4 tiles away (Chebyshev); Ironjaw Momentum ×1.20 after spending
+## MP or casting Advance this turn. Backstab / Triage / Intercept unchanged.
+func _class_passive(actor: Dictionary, target: Dictionary) -> float:
+	if actor.is_empty() or target.is_empty():
+		return 1.0
+	match str(actor.get("class_id", "")):
+		SpellKits.CLASS_KESTREL:
+			var a: Vector2i = _as_cell(actor.get("pos", UNPLACED))
+			var b: Vector2i = _as_cell(target.get("pos", UNPLACED))
+			if maxi(absi(a.x - b.x), absi(a.y - b.y)) >= LONGSHOT_RANGE:
+				return LONGSHOT_MULT
+		SpellKits.CLASS_IRONJAW:
+			if bool(actor.get("momentum", false)):
+				return MOMENTUM_MULT
+	return 1.0
+
+
+## Every MP spend goes through here so Momentum knows the unit moved.
+func _spend_mp(actor: Dictionary, amount: int) -> void:
+	actor["mp"] = int(actor["mp"]) - amount
+	if amount > 0:
+		actor["momentum"] = true
 
 
 ## Gear FLEX bonus (Mobile Sets): any non-neutral damage/heal spell gets the
@@ -1502,6 +1541,10 @@ func _begin_combat(coach: String) -> void:
 		unit["ap"] = int(unit.get("max_ap", MAX_AP))
 		unit["mp"] = int(unit.get("max_mp", MAX_MP))
 		unit["locked"] = true
+		unit["momentum"] = false
+	if _first_by_init:
+		_active_seat = _init_first_seat()
+		coach = _init_coach(_opening_turn_coach(""))
 	_start_turn_timer()
 	_last_coach = coach
 	_last_events = [{
@@ -1688,7 +1731,7 @@ func _submit_move(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var facing_from: String = str(actor["facing"])
 	var facing_hops: Array = _face_along_walk(actor, from, path)
 	actor["pos"] = dest
-	actor["mp"] = int(actor["mp"]) - dist - tax
+	_spend_mp(actor, dist + tax)
 	_intent_log.append(intent)
 	_last_coach = "%s walks to %s (−%d MP)." % [actor["name"], _cell_text(dest), dist + tax]
 	_last_events.append({
@@ -1850,6 +1893,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 
 
 func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["momentum"] = true
 	if str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
@@ -1891,7 +1935,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	# Locked: miss retains Marks (Detonate) and Impact (Crush). AP/MP stay spent.
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var chance: int = hit_chance(dist)
 	var roll: int = _roll_d100()
 	var connected: bool = roll <= chance
@@ -2469,20 +2513,32 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	var gear: Dictionary = raw
 	var attune_raw: Variant = gear.get("attune", {})
 	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)))
-	# Final HP = (80 + part HP) × (1 + set HP%).
-	var max_hp := roundi(float(START_HP + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
+	# Levels (HeroProgress): inherent growth + spent points, recomputed here.
+	var class_id := str(unit.get("class_id", ""))
+	var hero_raw: Variant = gear.get("hero", {})
+	var heroes: Variant = gear.get("heroes", {})
+	if typeof(heroes) == TYPE_DICTIONARY and (heroes as Dictionary).has(class_id):
+		hero_raw = heroes[class_id]
+	var hero := HeroProgress.combat_stats(hero_raw, class_id)
+	# Final HP = (80 + level HP + part HP) × (1 + set HP%).
+	var max_hp := roundi(float(START_HP + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
 	var was_full := int(unit.get("hp", START_HP)) >= int(unit.get("max_hp", START_HP))
 	unit["max_hp"] = max_hp
 	unit["hp"] = max_hp if was_full else mini(int(unit.get("hp", max_hp)), max_hp)
-	unit["mastery"] = int(stats["mastery"])
+	unit["mastery"] = int(stats["mastery"]) + int(hero["mastery"])
 	unit["resist"] = int(stats["resist"])
-	unit["resist_elem"] = (stats["resist_elem"] as Dictionary).duplicate()
+	var resist_elem: Dictionary = (stats["resist_elem"] as Dictionary).duplicate()
+	# Ward only guards the element of an active 2-piece attune.
+	for element in stats["attuned"]:
+		resist_elem[element] = int(resist_elem.get(element, 0)) + int(hero["ward"])
+	unit["resist_elem"] = resist_elem
+	unit["level"] = int(hero["level"])
 	unit["flex_pct"] = int(stats["flex_pct"])
 	unit["flex_riders"] = (stats["riders"] as Dictionary).duplicate()
 	unit["first_flex_pct"] = int(stats["first_flex_pct"])
 	unit["first_flex_ready"] = int(stats["first_flex_pct"]) > 0
-	unit["init"] = int(stats["init"])
-	unit["max_ap"] = int(stats["ap"])
+	unit["init"] = int(stats["init"]) + int(hero["init"])
+	unit["max_ap"] = mini(int(stats["ap"]) + int(hero["ap"]), GearBag.AP_CAP)
 	unit["max_mp"] = int(stats["mp"])
 	unit["gear"] = GearBag.clean_worn(gear.get("worn", []))
 	if bool(unit.get("placed", false)) and _flow != null and _flow.is_combat():
@@ -2614,6 +2670,41 @@ func _class_ids() -> Array:
 	return ids
 
 
+## Seat 0's side against the best Init on the other side. Tie = coin flip
+## from the sim RNG (host authority; never "host first").
+func _init_first_seat() -> int:
+	var mine := int(_unit_by_seat(0).get("init", 0))
+	var theirs := -1
+	var their_seat := -1
+	for unit in _units:
+		var seat := int(unit.get("seat", -1))
+		if seat == 0 or not bool(unit.get("alive", true)):
+			continue
+		var v := int(unit.get("init", 0))
+		if v > theirs or (v == theirs and seat < their_seat):
+			theirs = v
+			their_seat = seat
+	if their_seat < 0:
+		return 0
+	if mine > theirs:
+		_init_note = "Init %d vs %d" % [mine, theirs]
+		return 0
+	if theirs > mine:
+		_init_note = "Init %d vs %d" % [theirs, mine]
+		return their_seat
+	_init_note = "Init tie %d — coin flip" % mine
+	return 0 if _rng.randi_range(0, 1) == 0 else their_seat
+
+
+func _init_coach(_fallback: String) -> String:
+	var actor := _unit_by_seat(_active_seat)
+	return "%s: %s starts. %d AP / %d MP." % [_init_note, str(actor.get("name", "")), int(actor.get("max_ap", MAX_AP)), int(actor.get("max_mp", MAX_MP))]
+
+
+func init_note() -> String:
+	return _init_note
+
+
 func _opening_turn_coach(lead: String) -> String:
 	var actor := _unit_by_seat(0)
 	var who := str(actor.get("name", "Kestrel"))
@@ -2623,6 +2714,7 @@ func _opening_turn_coach(lead: String) -> String:
 
 
 func _begin_unit_turn(unit: Dictionary) -> void:
+	unit["momentum"] = false
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
 	# then checking remaining would expire Stun 1 before the auto end_turn.
@@ -3564,7 +3656,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
 		return _reject(intent, "open_can_wait", "REJECT — immunity refresh is open (can-wait).")
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var chance := 0
 	var roll := 0
 	var connected := true
@@ -3660,7 +3752,7 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true
 	actor["invisible_turns"] = INVISIBLE_TURNS
@@ -3691,7 +3783,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		if _shade_count(actor) >= SpellKits.SHADE_CAP:
 			return _reject(intent, "shade_cap", "REJECT — Shade cap is %d (refund)." % SpellKits.SHADE_CAP)
 		actor["ap"] = int(actor["ap"]) - ap_cost
-		actor["mp"] = int(actor["mp"]) - mp_cost
+		_spend_mp(actor, mp_cost)
 		_shade_tokens.append({
 			"pos": dest,
 			"turns": int(def.get("shade_turns", 3)),
@@ -3718,7 +3810,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 	if spell_id == SpellKits.SNAP_WALL:
 		var spent := _spend_resource(actor, "aegis", int(def.get("spend_aegis", 2)))
 		actor["ap"] = int(actor["ap"]) - ap_cost
-		actor["mp"] = int(actor["mp"]) - mp_cost
+		_spend_mp(actor, mp_cost)
 		_add_snap_wall(dest, int(def.get("wall_turns", 2)), int(actor["seat"]))
 		_intent_log.append(intent)
 		_last_coach = "%s Snap Wall on %s (−%d AP, −%d Aegis)." % [actor["name"], _cell_text(dest), ap_cost, spent]
@@ -3742,7 +3834,7 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 func _resolve_plant(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var gained := _gain_resource(actor, "aegis", 1)
 	_plant_tiles.append({
 		"pos": dest,
@@ -3778,7 +3870,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 	if bodies.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs an enemy in the burst (refund)." % def["name"])
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var chance := hit_chance(dist)
 	var roll := _roll_d100()
 	var connected := roll <= chance
@@ -3986,7 +4078,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 	if bodies.is_empty():
 		return _reject(intent, "no_target", "REJECT — Hold Line needs an enemy in the cone (refund).")
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var dist := 1
 	var chance := hit_chance(dist)
 	var roll := _roll_d100()
@@ -4100,7 +4192,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var from_shade := bool(pick.get("from_shade", false))
 	var origin_cell: Vector2i = pick["origin"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
-	actor["mp"] = int(actor["mp"]) - mp_cost
+	_spend_mp(actor, mp_cost)
 	var chance := hit_chance(dist)
 	var roll := _roll_d100()
 	var connected := roll <= chance

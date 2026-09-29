@@ -65,13 +65,17 @@ on those branches) → the in-game **Actualizar** button.
 **Sheet vs Blueprint conflicts (0.1.48 follows the Blueprint; Mauro to confirm):** Fuse ladder example "Sheaf Helm 24 HP" vs Parts table 28 (used 28 — matches the sheet's own totals). Worked examples give Stillcut 5 = +1 AP +1 MP; Blueprint says Stillcut 5 = first FLEX hit +15% and only Duskbrand 5 gives +1/+1 (kept Blueprint). "Set budget: one +1 AP / one +1 MP" vs cap 8/5 (kept 8/5). "Sheaf 5 is +6% all resist" vs +8% (kept +8%). "Dungeon coins, wallet max 30, 10-coin stall" vs 120 / 60 (kept 120 / 60).
 
 **Still not built from the sheet:** Init turn order, FLEX spells taking the attune element, Undertow / Ironveil / Brightedge 5pc effects, rare .ap/.mp parts (★4+), monster room scale, star curves and five-door loot mapping (both marked OPEN / parking lot on the sheet).
+| 0.1.49 | **Passives ON (Mauro 29 Sep 2026):** Kestrel Longshot ×1.15 at Chebyshev ≥4 ("if PvP breaks, drop to ×1.10 — do not delete"), Ironjaw Momentum ×1.20 after spending MP or casting Advance this turn (every MP spend goes through `_spend_mp`). Triage / Backstab / Intercept unchanged. Combat tests updated (Mark Shot at range 4+ now 9, Ironjaw pushes after moving 7) | Mauro's table | see 0.1.49 commits |
+| 0.1.49 | **Resist cap 50% per element** (was 100% = immune) | Mauro | see 0.1.49 commits |
+| 0.1.49 | **Who starts = higher Init; tie = coin flip** (sim RNG, host authority, never "host first"). Live Koliseo (online + hot-seat) and Stasis. Init = gear (Koliseo parts flattened to +0) + level growth + Swift points. Hot-seat has no gear/levels → coin flip. Scripted test fixtures keep seat 0 | Mauro | see 0.1.49 commits |
+| 0.1.49 | **Levels 1–30 per class (Soft Lock)** — `backend/hero_progress.gd`, save `user://hero_progress.json`. XP to next = 80 + 40 × (level − 1) (18560 to 30). +1 point per level: Mastery +2 / Vitality +8 HP / Swift +1 Init / Ward +2 (only the element of an active 2-piece attune). Inherent growth per class (Kestrel 2/3/1/0, Ironjaw 2/6/0/1, Mender 1/5/1/1, Gloam 2/3/1/0, Bastion 1/8/0/2 Mastery/HP/Init/Ward per level) — level-30 table matches the sheet. +1 AP at level 20 (cap 8/5). Levels ride with gear into Stasis and online Koliseo; the host recomputes and caps forged levels. **XP:** Stasis clear 60 × star, clear with no chest 20, online Koliseo win 50 / loss 15, hot-seat / dummy 0; the coin cap never cuts XP. Results window has an XP column ("+50 XP  Lv 2!"). Gear screen → **Levels** button → `scenes/character_screen.gd` to spend points. New suite `tests/run_levels_tests.gd` (21 suites). Online / Stasis / event-hook suites now use empty test saves | Mauro: "Levels … Soft Lock. Construye con la curva" | see 0.1.49 commits |
 
 Each version bump is its own `Stamp Android sideload …` commit. All
 headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.48 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.49 work into `mobile` (PR not opened yet — waiting for his OK).
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
 - Mobile Sets conflicts listed under 0.1.48.
@@ -79,3 +83,5 @@ headless suites (19 from 0.1.44) pass on every build listed above.
 - Inventory screen + loot board after every match: Mauro is sending a reference video.
 - Stasis chest size (1 piece now, provisional).
 - Still not built: cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).
+- Levels are per class (XP goes to the class that fought) — Mauro to confirm vs one account level.
+- Hot-seat: no gear, no levels, no XP (both players share a phone) — confirm.

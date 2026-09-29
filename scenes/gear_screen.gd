@@ -73,6 +73,14 @@ func choose_attune(family: String, element: String) -> Dictionary:
 	return result
 
 
+func open_levels() -> CharacterScreen:
+	var screen: CharacterScreen = load("res://scenes/character_screen.gd").new()
+	screen.name = "CharacterScreen"
+	screen.font = font
+	add_child(screen)
+	return screen
+
+
 func close() -> void:
 	closed.emit()
 	queue_free()
@@ -114,6 +122,10 @@ func _build() -> void:
 	_header = _label("", 18, GOLD_BRIGHT)
 	_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top.add_child(_header)
+	var levels_button := _button("Levels")
+	levels_button.name = "OpenLevels"
+	levels_button.pressed.connect(open_levels)
+	top.add_child(levels_button)
 	var close_button := _button("Close")
 	close_button.name = "CloseGear"
 	close_button.pressed.connect(close)

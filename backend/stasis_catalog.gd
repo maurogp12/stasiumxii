@@ -234,7 +234,7 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		player["hp"] = player_hp
 	# Worn gear counts in Stasis (Mauro 29 Sep 2026).
 	var gear := GearBag.load_saved().fight_gear()
-	if not (gear["worn"] as Array).is_empty():
+	if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty():
 		player["gear"] = gear
 	roster.append(player)
 	positions.append(cells[0])
@@ -263,6 +263,8 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		"elev_seed": seed,
 		# Provisional foe numbers live only in this payload.
 		"stasis_roster": roster,
+		# Higher Init acts first, tie = coin flip (Mauro 29 Sep 2026).
+		"first_by_init": true,
 	}
 
 

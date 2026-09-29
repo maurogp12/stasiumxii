@@ -521,6 +521,12 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 		var element := element_for(fam, int(counts.get(fam, 0)), attune_map).to_lower()
 		if element != "":
 			riders[element] = int(riders.get(element, 0)) + int(ATTUNE_RIDER[fam])
+	# Elements with an active 2-piece attune (Ward from levels uses these).
+	var attuned: Array = []
+	for fam in FAMILY_ORDER:
+		var element := element_for(fam, int(counts.get(fam, 0)), attune_map).to_lower()
+		if element != "" and not attuned.has(element):
+			attuned.append(element)
 	var veil := int(stats.get("attuned_resist_pct", 0))
 	if veil > 0:
 		var veil_el := element_for("ironveil", int(counts.get("ironveil", 0)), attune_map).to_lower()
@@ -534,6 +540,7 @@ static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten
 		"resist_elem": resist_elem,
 		"flex_pct": int(stats.get("flex_pct", 0)),
 		"riders": riders,
+		"attuned": attuned,
 		"first_flex_pct": int(stats.get("first_flex_pct", 0)),
 		"init": init,
 		"ap": int(apmp["ap"]),
@@ -569,12 +576,20 @@ static func clean_fight_gear(raw: Variant) -> Dictionary:
 		for fam in att:
 			if FAMILIES.has(str(fam)) and ELEMENTS.has(str(att[fam])):
 				out["attune"][str(fam)] = str(att[fam])
+	# Levels ride along; CombatSim recomputes them with HeroProgress.combat_stats.
+	var heroes: Variant = raw.get("heroes", {})
+	if typeof(heroes) == TYPE_DICTIONARY:
+		out["heroes"] = {}
+		for class_id in heroes:
+			if HeroProgress.GROWTH.has(str(class_id)) and typeof(heroes[class_id]) == TYPE_DICTIONARY:
+				var lvl := clampi(int(heroes[class_id].get("level", 1)), 1, HeroProgress.MAX_LEVEL)
+				out["heroes"][str(class_id)] = {"level": lvl, "spent": HeroProgress.clean_spent(heroes[class_id].get("spent", {}), lvl)}
 	return out
 
 
 ## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
 func fight_gear() -> Dictionary:
-	return {"worn": worn_list(), "attune": attune.duplicate()}
+	return {"worn": worn_list(), "attune": attune.duplicate(), "heroes": HeroProgress.load_saved().fight_heroes()}
 
 
 func loot_clears_left(unix_seconds: int) -> int:

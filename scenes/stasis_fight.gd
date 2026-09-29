@@ -153,6 +153,10 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 		"you": true,
 		"loot": [],
 	}
+	if chest.has("xp"):
+		you["xp"] = int(chest["xp"])
+		you["level"] = int(chest.get("level", 1))
+		you["levels_gained"] = int(chest.get("levels_gained", 0))
 	for it in chest.get("items", []):
 		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1})
 	var foes: Array = []
@@ -185,6 +189,13 @@ func open_chest() -> Dictionary:
 	var bag := GearBag.load_saved()
 	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.STAR)
 	bag.save()
+	# XP: 60 × star with a chest, 20 for a clear past the daily 5.
+	var hero := HeroProgress.load_saved()
+	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.STAR, bool(loot.get("chest", false))))
+	hero.save()
+	loot["xp"] = int(gained["xp"])
+	loot["level"] = int(gained["level"])
+	loot["levels_gained"] = int(gained["levels_gained"])
 	return loot
 
 
