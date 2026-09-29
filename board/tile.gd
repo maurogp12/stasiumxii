@@ -114,6 +114,8 @@ func _draw() -> void:
 		var size := piece.get_size()
 		draw_texture(piece, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 + 6.0 - size.y))
 	for prop_name in _paint_props:
+		if _look_map != "" and not _ArenaLook.prop_shown_at(_look_map, str(prop_name), grid_position):
+			continue
 		var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
 		if prop_tex == null:
 			prop_tex = _KoliseoArt.prop_texture(str(prop_name), _dress)

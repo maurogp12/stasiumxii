@@ -20,6 +20,8 @@ from rembg import new_session, remove
 
 REFS = "art/maps/arena_look/refs/"
 MAX_H = 92
+# Centrepieces may stand taller than a board prop.
+TALL = {"tower"}
 OUT = "art/maps/arena_look/"
 
 # map -> prop name -> (picture box x0, y0, x1, y1, sprite width in board px[, model])
@@ -60,6 +62,8 @@ CUTS = {
         "spark": (965, 870, 1095, 1018, 22),
         # The old pink crystal spires clashed: use the picture's blue crystal.
         "crystal_bolt": ("alias", "spark"),
+        # Centre tower from the second picture (Mauro, 29 Sep).
+        "tower": ("ref2", "stormspire_look2.jpg", (800, 330, 1210, 1200, 56, "u2net")),
         # The picture's floor is clean slate: no grey rocks or plates.
         "rubble": ("none",),
         "floor_seal": ("none",),
@@ -86,7 +90,7 @@ CUTS = {
 }
 
 
-def cut(session, img, box, width, floor=70.0):
+def cut(session, img, box, width, floor=70.0, max_h=MAX_H):
     x0, y0, x1, y1 = box
     crop = img.crop((x0, y0, x1, y1))
     rgba = remove(crop, session=session)
@@ -103,10 +107,10 @@ def cut(session, img, box, width, floor=70.0):
         return None
     rgba = rgba.crop((xs.min(), ys.min(), xs.max() + 1, ys.max() + 1))
     h = max(1, int(round(rgba.height * width / float(rgba.width))))
-    if h > MAX_H:
+    if h > max_h:
         # Tall, thin cuts (ice spires) would tower over the board: cap height.
-        width = max(1, int(round(width * MAX_H / float(h))))
-        h = MAX_H
+        width = max(1, int(round(width * max_h / float(h))))
+        h = max_h
     return rgba.resize((width, h), Image.LANCZOS)
 
 
@@ -130,6 +134,17 @@ def main():
                 continue
             if entry[0] == "alias":
                 aliases.append((prop, entry[1]))
+                continue
+            if entry[0] == "ref2":
+                other = Image.open(REFS + entry[1]).convert("RGB")
+                bx0, by0, bx1, by1, bw = entry[2][:5]
+                bmodel = entry[2][5] if len(entry[2]) > 5 else "isnet-general-use"
+                if bmodel not in sessions:
+                    sessions[bmodel] = new_session(bmodel)
+                sprite = cut(sessions[bmodel], other, (bx0, by0, bx1, by1), bw, 70.0, 150 if prop in TALL else MAX_H)
+                if sprite is not None:
+                    sprite.save(os.path.join(out_dir, "prop_%s.png" % prop), optimize=True)
+                    print(name, prop, sprite.size, "from", entry[1])
                 continue
             if entry[0] == "copy":
                 Image.open(entry[1]).save(os.path.join(out_dir, "prop_%s.png" % prop), optimize=True)

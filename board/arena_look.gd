@@ -39,6 +39,15 @@ const STYLES := {
 		"face_left": Color(0.24, 0.22, 0.32), "face_right": Color(0.15, 0.14, 0.22),
 		"lip": Color(1.0, 0.80, 0.30, 0.9),
 		"surfaces": {"water": [3, 1.0], "ground": [4, 1.15], "mud": [4, 1.0]},
+		# Mauro (29 Sep): too many obstacles. Decoration props only draw on these
+		# cells; the rest are hidden (paint only, walk data unchanged). The
+		# blocking rock pillars and arcs stay. One tower stands in the centre.
+		"prop_keep": {
+			"conduit": [Vector2i(7, 2), Vector2i(7, 12), Vector2i(2, 7), Vector2i(12, 7)],
+			"spark": [Vector2i(14, 0), Vector2i(0, 14)],
+			"crystal_bolt": [Vector2i(0, 0), Vector2i(14, 14)],
+		},
+		"centerpiece": {"cell": Vector2i(7, 7), "prop": "tower"},
 	},
 	"windmere": {
 		"ink": Color(0.34, 0.40, 0.50, 0.8), "ink_px": 1.9,
@@ -127,3 +136,11 @@ static func centerpiece_for(map_id: String, cell: Vector2i) -> Texture2D:
 	if piece.is_empty() or piece.get("cell") != cell:
 		return null
 	return prop_for(map_id, str(piece.get("prop", "")))
+
+
+## False when this arena thins a decoration prop and the cell is not kept.
+static func prop_shown_at(map_id: String, prop_name: String, cell: Vector2i) -> bool:
+	var keep: Dictionary = style_for(map_id).get("prop_keep", {})
+	if not keep.has(prop_name):
+		return true
+	return (keep[prop_name] as Array).has(cell)

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://oxug55prt0v"
-path="res://.godot/imported/prop_hay.png-d2b6c215ad0d6d8eef38c5d919f82103.ctex"
+uid="uid://dw7xjvy1x74ji"
+path="res://.godot/imported/prop_tower.png-568cce501cc896d59c40d750994352f0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/maps/arena_look/crosshaven/prop_hay.png"
-dest_files=["res://.godot/imported/prop_hay.png-d2b6c215ad0d6d8eef38c5d919f82103.ctex"]
+source_file="res://art/maps/arena_look/stormspire/prop_tower.png"
+dest_files=["res://.godot/imported/prop_tower.png-568cce501cc896d59c40d750994352f0.ctex"]
 
 [params]
 

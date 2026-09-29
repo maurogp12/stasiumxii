@@ -74,6 +74,13 @@ def slate(h, s, v):
     return (v <= 0.34) & (v >= 0.06) & (s <= 0.45) & ~gold & ~navy
 
 
+def slab(h, s, v):
+    # Mauro's second Stormspire picture: blue-grey cracked stone slabs.
+    gold = (h >= 30) & (h <= 65) & (s >= 0.3) & (v >= 0.35)
+    violet = (h >= 250) & (h <= 320) & (s >= 0.3)
+    return (h >= 195) & (h <= 245) & (v >= 0.14) & (v <= 0.62) & (s <= 0.62) & ~gold & ~violet
+
+
 def rune(h, s, v):
     return (h >= 225) & (h <= 300) & (s >= 0.30) & (v >= 0.22)
 
@@ -117,8 +124,9 @@ MAPS = {
         "ref": "stormspire_look.jpg",
         "poly": [(200, 150), (1850, 150), (1850, 950), (200, 950)],
         "crop": (70, 38),
-        "gain": {"ground": 1.3},
-        "terrains": {"ground": (slate, 10, 0.90), "water": (rune, 5, 0.30)},
+        "gain": {"ground": 1.0},
+        "terrains": {"water": (rune, 5, 0.30)},
+        # Floor slabs come from the second picture (see EXTRA below).
     },
     "windmere": {
         "ref": "windmere_look.jpg",
@@ -210,6 +218,13 @@ def treat(stamp, mul=(1, 1, 1), add=(0, 0, 0), blur=0.0, desat=0.0):
     return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8), "RGBA")
 
 
+# Extra sources: map -> terrain -> (picture, floor polygon, crop, rule, count, min score).
+EXTRA = {
+    "stormspire": {
+        "ground": ("stormspire_look2.jpg", [(0, 700), (1000, 250), (1932, 700), (1932, 1932), (0, 1932)], (240, 120), slab, 10, 0.92),
+    },
+}
+
 # Terrains the picture does not show: baked from ground stamps.
 DERIVED = {
     "slagcrown": {
@@ -249,6 +264,15 @@ def main():
                 if terrain == "ground":
                     grounds.append(stamp)
             print(name, terrain, len(picks), "stamps", "best %.2f" % (picks[0][0] if picks else 0))
+        for terrain, (ref, poly, crop, rule, count, min_score) in EXTRA.get(name, {}).items():
+            extra = Image.open(REFS + ref).convert("RGB")
+            picks = pick_patches(extra, rule, poly, crop[0], crop[1], count, min_score, zlib.crc32((name + terrain + ref).encode()))
+            for i, (score, x, y) in enumerate(picks):
+                stamp = bake(extra, x, y, crop[0], crop[1], spec.get("gain", {}).get(terrain, 1.0))
+                stamp.save(os.path.join(out_dir, "%s_%d.png" % (terrain, i)), optimize=True)
+                if terrain == "ground":
+                    grounds.append(stamp)
+            print(name, terrain, len(picks), "stamps from", ref)
         for terrain, fn in DERIVED.get(name, {}).items():
             if terrain in spec["terrains"]:
                 continue
