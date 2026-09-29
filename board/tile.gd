@@ -410,10 +410,14 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 ## Bastion Snap Wall: a charcoal rampart with gold trim and a glowing shield
 ## rune, rising out of the tile when it appears. View only; the sim owns the
 ## blocked cell and its duration.
-const WALL_H := 36.0
 const WALL_RISE_SEC := 0.28
-const WALL_STONE := Color(0.30, 0.28, 0.32)
-const WALL_GOLD := Color(0.95, 0.76, 0.28)
+## Mauro (29 Sep 2026): "make it look like a realistic wall". Sprite baked
+## by build_tools/art/snap_wall.py at 4x; anchor = base diamond centre.
+const WALL_TEX := preload("res://art/vfx/wall/snap_wall.png")
+const WALL_TEX_SCALE := 0.25
+const WALL_TEX_ANCHOR := Vector2(160, 296)
+## Carved shield on the lit face, in tile-local px.
+const WALL_SHIELD := Vector2(-14.4, -13.6)
 
 
 func _paint_snap_wall(canvas: CanvasItem) -> void:
@@ -428,49 +432,18 @@ func _paint_snap_wall(canvas: CanvasItem) -> void:
 		# Overshoot a touch, then settle: the wall slams up.
 		t = 1.0 - pow(1.0 - u, 3.0) + sin(u * PI) * 0.12
 		pulse = 0.5 + 0.5 * sin(e * 3.0)
-	var h := WALL_H * t
-	var pts := _diamond_points()
-	# Inset a little so neighbouring walls read as separate blocks.
-	var c := Vector2.ZERO
-	var base: Array[Vector2] = []
-	for p in pts:
-		base.append(p.lerp(c, 0.12))
-	var up := Vector2(0, -h)
-	var n: Vector2 = base[0]
-	var e2: Vector2 = base[1]
-	var s2: Vector2 = base[2]
-	var w: Vector2 = base[3]
-	# Ground shadow and dust ring.
-	canvas.draw_colored_polygon(PackedVector2Array([n + Vector2(0, 3), e2 + Vector2(4, 3), s2 + Vector2(0, 5), w + Vector2(-4, 3)]), Color(0, 0, 0, 0.35))
-	# Left and right faces.
-	canvas.draw_polygon(PackedVector2Array([w, s2, s2 + up, w + up]),
-		PackedColorArray([WALL_STONE.darkened(0.25), WALL_STONE.darkened(0.1), WALL_STONE.lightened(0.12), WALL_STONE.lightened(0.05)]))
-	canvas.draw_polygon(PackedVector2Array([s2, e2, e2 + up, s2 + up]),
-		PackedColorArray([WALL_STONE.darkened(0.35), WALL_STONE.darkened(0.45), WALL_STONE.darkened(0.2), WALL_STONE.darkened(0.1)]))
-	# Stone courses.
-	for k in [0.35, 0.68]:
-		var o: Vector2 = up * float(k)
-		canvas.draw_line(w + o, s2 + o, Color(0, 0, 0, 0.35), 1.2, true)
-		canvas.draw_line(s2 + o, e2 + o, Color(0, 0, 0, 0.35), 1.2, true)
-	# Top cap.
-	var top := PackedVector2Array([n + up, e2 + up, s2 + up, w + up])
-	canvas.draw_colored_polygon(top, WALL_STONE.lightened(0.22))
-	var rim := PackedVector2Array(top)
-	rim.append(top[0])
-	canvas.draw_polyline(rim, WALL_GOLD, 1.8, true)
-	canvas.draw_line(s2, s2 + up, WALL_GOLD.darkened(0.2), 1.4, true)
-	canvas.draw_line(w, w + up, WALL_GOLD.darkened(0.35), 1.0, true)
-	canvas.draw_line(e2, e2 + up, WALL_GOLD.darkened(0.35), 1.0, true)
-	# Shield rune on the front-left face, glowing.
-	if t > 0.6:
-		var mid := (w + s2) * 0.5 + up * 0.52
-		var glow := Color(1.0, 0.82, 0.35, 0.25 + 0.35 * pulse)
-		canvas.draw_circle(mid, 7.0 + 2.0 * pulse, Color(glow.r, glow.g, glow.b, glow.a * 0.5))
-		var shield := PackedVector2Array([mid + Vector2(-4, -5), mid + Vector2(4, -6), mid + Vector2(4, 1), mid + Vector2(0, 6), mid + Vector2(-4, 2)])
-		canvas.draw_colored_polygon(shield, Color(1.0, 0.86, 0.42, 0.75 + 0.25 * pulse))
-		var edge := PackedVector2Array(shield)
-		edge.append(shield[0])
-		canvas.draw_polyline(edge, Color(0.35, 0.24, 0.06, 0.9), 1.0, true)
+	# Baked stone masonry block (build_tools/art/snap_wall.py, 4x). The base
+	# diamond centre is the tile origin; scaling Y from there raises it.
+	var scale := WALL_TEX_SCALE
+	var size := WALL_TEX.get_size() * scale
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.0, maxf(t, 0.02)))
+	canvas.draw_texture_rect(WALL_TEX, Rect2(-WALL_TEX_ANCHOR * scale, size), false)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	# Bastion's shield rune breathes gold once the wall is up.
+	if t > 0.8:
+		var glow := Color(1.0, 0.8, 0.32, 0.10 + 0.22 * pulse)
+		canvas.draw_circle(WALL_SHIELD, 7.5 + 1.5 * pulse, glow)
+		canvas.draw_circle(WALL_SHIELD, 3.5, Color(1.0, 0.9, 0.55, 0.12 + 0.2 * pulse))
 
 
 func _ensure_overlay() -> void:

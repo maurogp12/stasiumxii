@@ -424,6 +424,8 @@ class LootIcon extends Control:
 				return "%d trophy" % int(entry.get("count", 1))
 			"gear":
 				return GearBag.item_label({"item_id": str(entry.get("item_id", "")), "plus": int(entry.get("plus", 0))})
+			"fragment":
+				return "%s fragment" % StillVault.display_name(str(entry.get("still", "")))
 		return ""
 
 	func _draw() -> void:
@@ -443,6 +445,16 @@ class LootIcon extends Control:
 				draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.8, -r * 0.8), c + Vector2(r * 0.8, -r * 0.8), c + Vector2(r * 0.5, r * 0.1), c + Vector2(-r * 0.5, r * 0.1)]), gold)
 				draw_rect(Rect2(c + Vector2(-r * 0.14, r * 0.1), Vector2(r * 0.28, r * 0.45)), gold)
 				draw_rect(Rect2(c + Vector2(-r * 0.55, r * 0.55), Vector2(r * 1.1, r * 0.28)), gold.darkened(0.2))
+			"fragment":
+				# A small hourglass in the Still's Vault of Aeons colour.
+				var tint: Color = StillVault.COLORS.get(str(loot.get("still", "")), Color.WHITE)
+				var frame := Color(0.85, 0.68, 0.32)
+				draw_colored_polygon(PackedVector2Array([c + Vector2(-r * 0.6, -r), c + Vector2(r * 0.6, -r), c]), Color(tint.r, tint.g, tint.b, 0.55))
+				draw_colored_polygon(PackedVector2Array([c, c + Vector2(r * 0.6, r), c + Vector2(-r * 0.6, r)]), tint)
+				draw_line(c + Vector2(-r * 0.8, -r), c + Vector2(r * 0.8, -r), frame, 2.0, true)
+				draw_line(c + Vector2(-r * 0.8, r), c + Vector2(r * 0.8, r), frame, 2.0, true)
+				draw_polyline(PackedVector2Array([c + Vector2(-r * 0.6, -r), c, c + Vector2(-r * 0.6, r)]), frame, 1.2, true)
+				draw_polyline(PackedVector2Array([c + Vector2(r * 0.6, -r), c, c + Vector2(r * 0.6, r)]), frame, 1.2, true)
 			"gear":
 				var item_id := str(loot.get("item_id", ""))
 				var fam := GearBag.family_of(item_id)

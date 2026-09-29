@@ -19,6 +19,14 @@ const TROPHY_WALLET_MAX := 300
 const DUSKBRAND_PART_COST := 60
 const DUSKBRAND_SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
 const SECONDS_PER_DAY := 86400
+## Room Tonic (consumable.room_tonic, Mauro 29 Sep 2026): 1 Koliseo coin in
+## the hub shop, no trophy price, carry 3 (stacks). Drunk only in the Stasis
+## intermission (Room A cleared, Room B not loaded): heal floor(30% max HP),
+## no overheal. Never from chests; a wipe or leaving keeps unused tonics.
+const TONIC_SKU := "consumable.room_tonic"
+const TONIC_COST := 1
+const TONIC_CARRY := 3
+const TONIC_HEAL_PCT := 30
 
 ## Blueprint §15 SKU table. `once` = cosmetic or pet, owned at most once.
 const SHOP := {
@@ -44,6 +52,8 @@ var wins_today: int = 0
 var total_wins: int = 0
 ## sku → count bought.
 var owned: Dictionary = {}
+## Room Tonics carried (0–3).
+var tonics: int = 0
 
 
 static func utc_day(unix_seconds: int) -> int:
@@ -83,6 +93,7 @@ func to_dict() -> Dictionary:
 		"wins_today": wins_today,
 		"total_wins": total_wins,
 		"owned": owned.duplicate(true),
+		"tonics": tonics,
 	}
 
 
@@ -92,6 +103,7 @@ func from_dict(data: Dictionary) -> void:
 	day = int(data.get("day", -1))
 	wins_today = maxi(int(data.get("wins_today", 0)), 0)
 	total_wins = maxi(int(data.get("total_wins", 0)), 0)
+	tonics = clampi(int(data.get("tonics", 0)), 0, TONIC_CARRY)
 	owned = {}
 	var raw_owned: Variant = data.get("owned", {})
 	if typeof(raw_owned) == TYPE_DICTIONARY:
@@ -163,6 +175,32 @@ func buy_duskbrand(slot: String, bag: GearBag) -> Dictionary:
 	coins -= DUSKBRAND_PART_COST
 	var uid := bag.add_item("duskbrand", slot, 0)
 	return {"ok": true, "reason": "", "part": bag.item(uid)}
+
+
+func can_buy_tonic() -> Dictionary:
+	if tonics >= TONIC_CARRY:
+		return _fail("tonic_full")
+	if coins < TONIC_COST:
+		return _fail("not_enough_coins")
+	return {"ok": true, "reason": ""}
+
+
+func buy_tonic() -> Dictionary:
+	var gate := can_buy_tonic()
+	if not bool(gate["ok"]):
+		return gate
+	coins -= TONIC_COST
+	tonics += 1
+	return {"ok": true, "reason": "", "tonics": tonics}
+
+
+## Takes one tonic from the pack. The caller has already checked it is the
+## Stasis intermission (stasis_fight.gd) and saves the wallet.
+func use_tonic() -> bool:
+	if tonics <= 0:
+		return false
+	tonics -= 1
+	return true
 
 
 func _roll_day(unix_seconds: int) -> void:

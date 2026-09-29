@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	HeroProgress.save_path = TEST_HERO
+	StillVault.save_path = "user://test_still_run_levels_tests.json"
 	GearBag.save_path = TEST_BAG
 	KoliseoWallet.save_path = TEST_WALLET
 	_wipe()

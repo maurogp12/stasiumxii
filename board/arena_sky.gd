@@ -14,6 +14,7 @@ const _Palette := preload("res://vfx/vfx_palette.gd")
 const SKY_SHADER := preload("res://board/arena_sky.gdshader")
 const STORM_BOLTS := preload("res://board/storm_bolts.gd")
 const SNOW_FALL := preload("res://board/snow_fall.gd")
+const AMBIENT_MOTES := preload("res://board/ambient_motes.gd")
 ## Below every tile (tile z starts at 0) and the arena light.
 const SLAB_Z := -200
 const SLAB_DEPTH := 30.0
@@ -23,19 +24,19 @@ const SKIES := {
 		"top": Color(0.03, 0.05, 0.10), "bottom": Color(0.10, 0.14, 0.22),
 		"cloud": Color(0.30, 0.34, 0.44), "sun": Color(0.95, 0.80, 0.55), "clouds": 0.25,
 		"edge": "slab", "slab_top": Color(0.50, 0.44, 0.34), "slab_bottom": Color(0.20, 0.17, 0.13),
-		"lip": Color(0.10, 0.08, 0.06, 0.6),
+		"lip": Color(0.10, 0.08, 0.06, 0.6), "motes": "pollen",
 	},
 	"brinewake": {
 		"top": Color(0.01, 0.03, 0.07), "bottom": Color(0.02, 0.08, 0.17),
 		"cloud": Color(0.10, 0.22, 0.36), "sun": Color(0.30, 0.55, 0.85), "clouds": 0.35,
 		"edge": "ocean", "slab_top": Color(0.27, 0.21, 0.16), "slab_bottom": Color(0.12, 0.09, 0.07),
-		"water": Color(0.02, 0.09, 0.18), "foam": Color(0.70, 0.85, 0.95, 0.55),
+		"water": Color(0.02, 0.09, 0.18), "foam": Color(0.70, 0.85, 0.95, 0.55), "motes": "spray",
 	},
 	"slagcrown": {
 		"top": Color(0.01, 0.0, 0.0), "bottom": Color(0.10, 0.02, 0.01),
 		"cloud": Color(0.30, 0.06, 0.02), "sun": Color(1.0, 0.30, 0.06), "clouds": 0.30,
 		"edge": "slab", "slab_top": Color(0.16, 0.09, 0.07), "slab_bottom": Color(0.04, 0.02, 0.02),
-		"lip": Color(1.0, 0.42, 0.10, 0.75),
+		"lip": Color(1.0, 0.42, 0.10, 0.75), "motes": "embers",
 	},
 	"windmere": {
 		"top": Color(0.02, 0.04, 0.10), "bottom": Color(0.07, 0.11, 0.22),
@@ -48,7 +49,7 @@ const SKIES := {
 		"top": Color(0.02, 0.03, 0.10), "bottom": Color(0.07, 0.07, 0.20),
 		"cloud": Color(0.28, 0.22, 0.46), "sun": Color(0.66, 0.50, 1.0), "clouds": 0.40,
 		"edge": "slab", "slab_top": Color(0.13, 0.12, 0.18), "slab_bottom": Color(0.04, 0.04, 0.08),
-		"lip": Color(1.0, 0.80, 0.30, 0.8), "bolts": true,
+		"lip": Color(1.0, 0.80, 0.30, 0.8), "bolts": true, "motes": "sparks",
 	},
 }
 
@@ -59,6 +60,7 @@ var _sky: ColorRect
 var _mat: ShaderMaterial
 var _bolts: Node2D
 var _snow: Node2D
+var _motes: Node2D
 
 
 static func sky_for(map_id: String) -> Dictionary:
@@ -102,7 +104,28 @@ func bind(map_id: String, board_size: int) -> void:
 			_mat.set_shader_parameter("cloud_amount", float(spec["clouds"]))
 	_bind_bolts(bool(spec.get("bolts", false)), size)
 	_bind_snow(bool(spec.get("snowfall", false)), size)
+	_bind_motes(str(spec.get("motes", "")), size)
 	queue_redraw()
+
+
+## Drifting air life per arena (embers / pollen / spray / sparks). View only.
+func _bind_motes(style: String, size: int) -> void:
+	if style == "":
+		if _motes != null and is_instance_valid(_motes):
+			_motes.visible = false
+		return
+	if _motes == null or not is_instance_valid(_motes):
+		_motes = AMBIENT_MOTES.new()
+		_motes.name = "AmbientMotes"
+		add_child(_motes)
+	_motes.configure(style, size)
+	_motes.visible = true
+
+
+func motes_style() -> String:
+	if _motes == null or not is_instance_valid(_motes) or not _motes.visible:
+		return ""
+	return str(_motes.style)
 
 
 ## Windmere snowfall (view only). Other arenas keep it hidden.

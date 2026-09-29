@@ -777,6 +777,9 @@ func _test_live_director() -> void:
 	var board_src := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(marker_src.contains("canvas.draw_string"), false, "the board marker draws no text plate")
 	truthy(marker_src.contains("neutral_shade_token.png"), "the marker draws the TA Shade token")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	truthy(tile_src.contains("res://art/vfx/wall/snap_wall.png"), "Snap Wall draws the baked stone wall sprite")
+	truthy(ResourceLoader.exists("res://art/vfx/wall/snap_wall.png"), "the stone wall sprite is in the project")
 	truthy(marker_src.contains("neutral_shade_tile_marker.png"), "the marker draws the TA tile decal")
 	var marker_script: Script = load("res://board/shade_marker.gd")
 	var cloak_top := float(marker_script.world_y(marker_script.CLOAK_TOP_SRC_Y))
@@ -1537,6 +1540,12 @@ func _test_weather_and_spell_extras() -> void:
 	eq(sky.snow_visible(), true, "Windmere has falling snow")
 	var snow := sky.get_node("SnowFall") as SnowFall
 	eq(snow.flake_count() > 100, true, "snowfall has a real flurry of flakes")
+	eq(sky.motes_style(), "", "Windmere uses snow, not motes")
+	var motes_by_map := {"slagcrown": "embers", "crosshaven": "pollen", "brinewake": "spray", "stormspire": "sparks"}
+	for map_id in motes_by_map:
+		sky.bind(map_id, 15)
+		eq(sky.motes_style(), motes_by_map[map_id], "%s air life is %s" % [map_id, motes_by_map[map_id]])
+		eq((sky.get_node("AmbientMotes") as AmbientMotes).mote_count() > 30, true, "%s has a real drift of motes" % map_id)
 	sky.bind("stormspire", 15)
 	eq(sky.snow_visible(), false, "Stormspire has no snow")
 	sky.bind("crosshaven", 15)
@@ -1556,6 +1565,23 @@ func _test_weather_and_spell_extras() -> void:
 	eq(has_missile, true, "a ranged Kestrel spell flies a projectile")
 	eq(has_column, true, "Detonate gets the heavy finisher")
 	fl.free()
+	# Element impact bursts on damaging hits only.
+	var imp: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
+	root.add_child(imp)
+	imp.play([{"type": "hit", "spell": "crush", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a damaging hit spawns an element impact")
+	var burst: Node = null
+	for child in imp.get_children():
+		if child is SpellFlourish.ImpactBurst:
+			burst = child
+	eq(str(burst.element), "earth", "Crush impact is earth")
+	imp.play([{"type": "miss", "spell": "strike", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a miss spawns no impact")
+	imp.play([{"type": "hit", "spell": "mend", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a heal spawns no impact")
+	imp.play([{"type": "hit", "spell": "mark_shot", "seat": 0, "caster_cell": Vector2i(2, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 2, "Mark Shot hit adds an air impact")
+	imp.free()
 	var melee: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
 	root.add_child(melee)
 	melee.play([{"type": "hit", "spell": "strike", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})

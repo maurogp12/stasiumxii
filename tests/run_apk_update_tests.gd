@@ -20,8 +20,41 @@ func _run() -> void:
 	_test_apk_header()
 	_test_install_helper_stays_off_android()
 	_test_preset_and_sources()
+	_test_reference_art_left_out()
 	print("APK update tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
+
+
+## Mauro 29 Sep 2026 (option 4): reference art stays in git but not in the
+## phone build. No game script may load from those folders.
+const EXCLUDED_DIRS: Array[String] = ["stasium-ref/", "art/tilesets/"]
+const RUNTIME_DIRS: Array[String] = ["res://backend", "res://board", "res://scenes", "res://ui", "res://units", "res://vfx"]
+
+
+func _test_reference_art_left_out() -> void:
+	var preset := FileAccess.get_file_as_string("res://export_presets.cfg")
+	truthy(preset.contains("exclude_filter=\"stasium-ref/*, art/tilesets/*\""), "the phone build leaves the reference art out")
+	var files: Array[String] = ["res://board_view.gd", "res://main.tscn", "res://project.godot"]
+	for dir in RUNTIME_DIRS:
+		_collect(dir, files)
+	var bad: Array[String] = []
+	for path in files:
+		var text := FileAccess.get_file_as_string(path)
+		for ex in EXCLUDED_DIRS:
+			if text.contains("res://" + ex):
+				bad.append("%s → %s" % [path, ex])
+	eq(bad, [] as Array[String], "no game file loads from the excluded reference folders")
+
+
+func _collect(dir: String, out: Array[String]) -> void:
+	var d := DirAccess.open(dir)
+	if d == null:
+		return
+	for f in d.get_files():
+		if f.ends_with(".gd") or f.ends_with(".tscn") or f.ends_with(".tres"):
+			out.append(dir.path_join(f))
+	for sub in d.get_directories():
+		_collect(dir.path_join(sub), out)
 
 
 func _test_tag_and_version_compare() -> void:

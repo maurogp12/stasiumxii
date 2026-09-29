@@ -152,21 +152,11 @@ func _draw_crack() -> void:
 	draw_line(Vector2(7, 4), Vector2(18, -2), hot, 2.4, true)
 
 
+## The Snap Wall body is the baked stone block on the tile (board/tile.gd,
+## Mauro 29 Sep 2026). This token only keeps its turn pips, raised above the
+## battlements so they stay readable.
 func _draw_slab() -> void:
-	var foot := PackedVector2Array([
-		Vector2(0, -8), Vector2(16, 0), Vector2(0, 8), Vector2(-16, 0),
-	])
-	foot.append(foot[0])
-	draw_polyline(foot, VfxPalette.OUTLINE, 2.0, true)
-	var slab := PackedVector2Array([
-		Vector2(-11, -2), Vector2(11, -2), Vector2(8, -36), Vector2(-8, -36),
-	])
-	draw_colored_polygon(slab, VfxPalette.BASTION_BLACK)
-	slab.append(slab[0])
-	draw_polyline(slab, VfxPalette.OUTLINE, 2.0, true)
-	draw_polyline(slab, VfxPalette.BASTION, 1.4, true)
-	draw_line(Vector2(-6, -8), Vector2(-4, -30), VfxPalette.BASTION_PALE, 1.2, true)
-	draw_line(Vector2(6, -8), Vector2(4, -30), VfxPalette.BASTION_PALE, 1.2, true)
+	pass
 
 
 func _draw_figure() -> void:
@@ -210,7 +200,7 @@ func _draw_turns() -> void:
 	for i in n:
 		var at := Vector2(-8.0 + float(i) * 8.0, -20.0)
 		if _style == "slab":
-			at = Vector2(-8.0 + float(i) * 8.0, -18.0)
+			at = Vector2(-8.0 + float(i) * 8.0, -60.0)
 		elif _style == "figure":
 			at = Vector2(20.0, -42.0 + float(i) * 9.0)
 		draw_circle(at, radius + 0.9, VfxPalette.OUTLINE)

@@ -81,6 +81,14 @@ func open_levels() -> CharacterScreen:
 	return screen
 
 
+func open_stills() -> StillsScreen:
+	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
+	screen.name = "StillsScreen"
+	screen.font = font
+	add_child(screen)
+	return screen
+
+
 func close() -> void:
 	closed.emit()
 	queue_free()
@@ -126,6 +134,10 @@ func _build() -> void:
 	levels_button.name = "OpenLevels"
 	levels_button.pressed.connect(open_levels)
 	top.add_child(levels_button)
+	var stills_button := _button("Stills")
+	stills_button.name = "OpenStills"
+	stills_button.pressed.connect(open_stills)
+	top.add_child(stills_button)
 	var close_button := _button("Close")
 	close_button.name = "CloseGear"
 	close_button.pressed.connect(close)

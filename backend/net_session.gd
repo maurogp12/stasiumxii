@@ -851,9 +851,24 @@ func _note_koliseo_result(snap: Dictionary) -> void:
 	# XP (Characteristics sheet): human win 50, human loss 15. The coin cap
 	# never cuts XP. It goes to the class this seat played.
 	var class_id := ""
+	var still_used := ""
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == local_seat:
 			class_id = str(unit.get("class_id", ""))
+			still_used = str(unit.get("still", ""))
+	# The XII Still that fought is destroyed with the fight.
+	if still_used != "":
+		var vault := StillVault.load_saved()
+		if vault.socket == still_used:
+			vault.consume()
+			vault.save()
+		# Crown Still: an online win pays one extra trophy.
+		if still_used == "crown" and won:
+			var crown_wallet := KoliseoWallet.load_saved()
+			var before := crown_wallet.trophies
+			crown_wallet.trophies = mini(crown_wallet.trophies + 1, KoliseoWallet.TROPHY_WALLET_MAX)
+			crown_wallet.save()
+			koliseo_last_payout["trophies"] = int(koliseo_last_payout.get("trophies", 0)) + (crown_wallet.trophies - before)
 	var hero := HeroProgress.load_saved()
 	var gained := hero.add_xp(class_id, HeroProgress.XP_KOLISEO_WIN if won else HeroProgress.XP_KOLISEO_LOSS)
 	hero.save()
@@ -937,7 +952,7 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 	out.erase("seat_gear")
 	var gear := {}
 	if mode == Mode.HOST:
-		gear[HOST_SEAT] = GearBag.load_saved().fight_gear()
+		gear[HOST_SEAT] = GearBag.load_saved().fight_gear(true)
 	for seat in _seat_gear:
 		gear[seat] = _seat_gear[seat]
 	# Koliseo arena flatten (Mobile Sets): parts count as +0; set bonuses stay.
@@ -960,7 +975,7 @@ func _send_local_gear() -> void:
 	if not _rpc_ready():
 		return
 	_gear_sent_seat = local_seat
-	rpc_submit_gear.rpc_id(1, GearBag.load_saved().fight_gear())
+	rpc_submit_gear.rpc_id(1, GearBag.load_saved().fight_gear(true))
 
 
 @rpc("authority", "reliable")

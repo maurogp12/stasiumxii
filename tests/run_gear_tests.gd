@@ -18,6 +18,7 @@ func _initialize() -> void:
 func _run() -> void:
 	GearBag.save_path = TEST_BAG
 	HeroProgress.save_path = "user://test_hero_run_gear_tests.json"
+	StillVault.save_path = "user://test_still_run_gear_tests.json"
 	_wipe()
 	_test_families_and_slots()
 	_test_equip()
@@ -234,10 +235,10 @@ func _test_gear_screen() -> void:
 	var hub: Node = (load("res://scenes/mobile_hub.tscn") as PackedScene).instantiate()
 	hub._auto_launch = false
 	root.add_child(hub)
-	var gear_button := hub.find_child("Gear", true, false) as Button
-	truthy(gear_button != null, "hub has a Gear button")
-	eq(gear_button.custom_minimum_size.y >= 48, true, "Gear hit target is at least 48px")
-	eq(hub.door_count(), 6, "Gear is not a door")
+	var gear_button := hub.find_child("Inventory", true, false) as Button
+	truthy(gear_button != null, "hub has an Inventory button")
+	eq(gear_button.custom_minimum_size.y >= 48, true, "Inventory hit target is at least 48px")
+	eq(hub.door_count(), 6, "Inventory is not a door")
 	hub.open_gear()
 	var screen := hub.find_child("GearScreen", true, false) as GearScreen
 	truthy(screen != null, "Gear opens the overlay")
@@ -257,6 +258,85 @@ func _test_gear_screen() -> void:
 	screen.take_off("chest")
 	eq(GearBag.load_saved().equipped.has("chest"), false, "take off saves")
 	hub.free()
+	_test_inventory_screen()
+
+
+func _test_inventory_screen() -> void:
+	_wipe()
+	HeroProgress.save_path = "user://test_hero_inventory.json"
+	KoliseoWallet.save_path = "user://test_wallet_inventory.json"
+	for p in [HeroProgress.save_path, KoliseoWallet.save_path]:
+		if FileAccess.file_exists(p):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(p))
+	var seed := GearBag.new()
+	var a := seed.add_item("sheaf", "head")
+	var b := seed.add_item("sheaf", "head")
+	var w := seed.add_item("duskbrand", "weapon")
+	seed.save()
+	var wallet := KoliseoWallet.new()
+	wallet.tonics = 2
+	wallet.save()
+	var hub: Node = (load("res://scenes/mobile_hub.tscn") as PackedScene).instantiate()
+	hub._auto_launch = false
+	root.add_child(hub)
+	hub.open_inventory()
+	var inv := hub.find_child("InventoryScreen", true, false) as InventoryScreen
+	truthy(inv != null, "Inventory opens from the hub")
+	eq(inv.stats()["hp"], 80, "bare champion has 80 HP")
+	eq(inv.stats()["ap"], 6, "bare champion has 6 AP")
+	truthy(inv.find_child("Item_%d" % a, true, false) != null, "bag items show as grid tiles")
+	truthy(inv.find_child("Slot_head", true, false) != null, "the doll has a head slot")
+	truthy(inv.find_child("Socket", true, false) != null, "the doll has the Still socket")
+	inv.select({"kind": "item", "uid": a})
+	var fuse_button := inv.find_child("Fuse", true, false) as Button
+	eq(fuse_button.disabled, false, "two alike heads can fuse")
+	eq(bool(inv.fuse(a)["ok"]), true, "fuse from the inventory")
+	eq(int(inv.bag().item(a)["plus"]), 1, "fused head is +1")
+	eq(GearBag.load_saved().find(b), -1, "fuse is saved")
+	eq(bool(inv.wear(a)["ok"]), true, "wear from the inventory")
+	eq(inv.stats()["hp"], 80 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
+	inv.wear(w)
+	eq(inv.stats()["mastery"], int(GearBag.part_stats("duskbrand.weapon", 0)["mastery"]) + int(GearBag.part_stats("sheaf.head", 1)["mastery"]), "worn weapon adds Mastery")
+	inv.select({"kind": "slot", "slot": "head"})
+	truthy(inv.find_child("TakeOff", true, false) != null, "a worn slot offers Take off")
+	eq(bool(inv.take_off("head")["ok"]), true, "take off from the doll")
+	eq(GearBag.load_saved().equipped.has("head"), false, "take off is saved")
+	inv.show_tab("consumables")
+	truthy(inv.find_child("Sku_consumable_room_tonic", true, false) != null, "Room Tonics show under Consumables")
+	inv.show_tab("stills")
+	inv.show_tab("cosmetics")
+	var stage := inv.find_child("ChampionStage", true, false) as ChampionStage
+	truthy(stage != null, "the champion stands on the turning stage")
+	eq(stage.facing(), "s", "the champion starts facing you")
+	stage.turn(1)
+	truthy(stage.is_turning(), "a turn animates")
+	stage.settle()
+	eq(stage.facing(), "e", "turn right shows the right side")
+	stage.turn(1)
+	stage.settle()
+	eq(stage.facing(), "n", "then the back")
+	stage.turn(-1)
+	stage.settle()
+	stage.turn(-1)
+	stage.settle()
+	stage.turn(-1)
+	stage.settle()
+	eq(stage.facing(), "w", "turning left wraps to the left side")
+	truthy(stage.find_child("TurnLeft", true, false) != null and stage.find_child("TurnRight", true, false) != null, "stage has ◀ ▶ turn buttons")
+	eq(stage.rune_tint, GearScreen.RARITY_TINT["Ultra"], "runes glow with the rarest worn piece (Duskbrand = Ultra)")
+	inv.pick_champion("bastion")
+	eq(inv.champion, "bastion", "pick another champion")
+	eq(stage.class_id, "bastion", "the stage shows the picked champion")
+	eq(stage.facing(), "s", "a new champion faces you")
+	for f in ChampionStage.FACINGS:
+		truthy(ResourceLoader.exists("res://art/characters/bastion/bastion_%s.png" % f), "bastion has the %s facing" % f)
+	var levels := inv.open_levels()
+	eq(levels.selected, "bastion", "Levels opens on the picked champion")
+	levels.close()
+	var sets := inv.open_sets()
+	truthy(sets != null, "Sets opens the full gear list")
+	sets.close()
+	hub.free()
 
 
 func _test_stasis_chest_wiring() -> void:
@@ -265,7 +345,7 @@ func _test_stasis_chest_wiring() -> void:
 	eq(fight.chest_line({"chest": true, "items": [{"item_id": "undertow.legs", "plus": 0}]}), "Chest: Undertow Guards +0. Wear it in Gear.", "chest copy names the piece")
 	var src := FileAccess.get_file_as_string("res://scenes/stasis_fight.gd")
 	truthy(src.contains("record_stasis_clear"), "a Stasis clear opens the chest")
-	eq(src.contains("KoliseoWallet"), false, "Stasis never pays Koliseo coins")
+	eq(src.contains("record_human_win") or src.contains(".coins"), false, "Stasis never pays Koliseo coins")
 	eq(StasisCatalog.STAR, 1, "doors are Stasis 1 (★1)")
 
 

@@ -233,8 +233,9 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 	if player_hp >= 0:
 		player["hp"] = player_hp
 	# Worn gear counts in Stasis (Mauro 29 Sep 2026).
-	var gear := GearBag.load_saved().fight_gear()
-	if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty():
+	# The socketed XII Still rides into this fight (consumed when it ends).
+	var gear := GearBag.load_saved().fight_gear(true)
+	if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty() or gear.has("still"):
 		player["gear"] = gear
 	roster.append(player)
 	positions.append(cells[0])

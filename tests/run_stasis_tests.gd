@@ -20,7 +20,9 @@ func _run() -> void:
 	# Never read the real player saves (gear / levels change fight numbers).
 	GearBag.save_path = "user://test_empty_gear_stasis.json"
 	HeroProgress.save_path = "user://test_empty_hero_stasis.json"
-	for stale in [GearBag.save_path, HeroProgress.save_path]:
+	StillVault.save_path = "user://test_still_run_stasis_tests.json"
+	KoliseoWallet.save_path = "user://test_wallet_run_stasis_tests.json"
+	for stale in [GearBag.save_path, HeroProgress.save_path, StillVault.save_path, KoliseoWallet.save_path]:
 		if FileAccess.file_exists(stale):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(stale))
 	_sim = root.get_node_or_null("CombatSim")
@@ -426,10 +428,54 @@ func _assert_fight_scene() -> void:
 	var banner := str(board._overlay_status.text)
 	eq(banner.contains("Provisional"), false, "the provisional playtest sentence stays off the APK board")
 	truthy(banner.contains("Room"), "the room banner stays without the dev sentence")
+	_assert_room_tonic(board)
 	_fight.free()
 	StasisCatalog.clear_run()
 	_sim.reset_match({})
 	_finish()
+
+
+## Room Tonic: drinkable only once Room A is won, heals floor(30% max HP)
+## without overheal, and the healed HP is what Room B carries.
+func _assert_room_tonic(board: Node) -> void:
+	var seat := StasisCatalog.PLAYER_SEAT
+	var tonic_button := board.find_child("DrinkTonic", true, false) as Button
+	truthy(tonic_button != null, "the stasis chrome has a Drink Room Tonic button")
+	eq(tonic_button.visible, false, "no tonic mid-fight")
+	var w := KoliseoWallet.new()
+	w.tonics = 2
+	w.save()
+	eq(str(board.drink_tonic().get("reason", "")), "not_intermission", "cannot drink during Room A")
+	var player: Dictionary = _sim._unit_by_seat(seat)
+	var max_hp := int(player["max_hp"])
+	player["hp"] = 10
+	_sim._match_over = true
+	_sim._winner_seat = seat
+	board._sync_overlay(_sim.snapshot())
+	eq(tonic_button.visible, true, "Room A won: the tonic button shows")
+	eq(tonic_button.text, "Drink Room Tonic (2/3)", "button counts the carried tonics")
+	var drank: Dictionary = board.drink_tonic()
+	eq(bool(drank.get("ok", false)), true, "drink a tonic in the intermission")
+	eq(int(drank.get("healed", 0)), int(floor(max_hp * 0.3)), "tonic heals floor(30% max HP)")
+	eq(int(_sim._unit_by_seat(seat)["hp"]), 10 + int(floor(max_hp * 0.3)), "the heal lands on the champion")
+	eq(KoliseoWallet.load_saved().tonics, 1, "one tonic used")
+	_sim._unit_by_seat(seat)["hp"] = max_hp - 2
+	drank = board.drink_tonic()
+	eq(int(drank.get("healed", 0)), 2, "no overheal past max HP")
+	eq(KoliseoWallet.load_saved().tonics, 0, "second tonic used")
+	eq(str(board.drink_tonic().get("reason", "")), "no_tonic", "no tonics left")
+	w = KoliseoWallet.load_saved()
+	w.tonics = 1
+	w.save()
+	eq(str(board.drink_tonic().get("reason", "")), "full", "full HP keeps the tonic")
+	eq(KoliseoWallet.load_saved().tonics, 1, "the tonic was not spent at full HP")
+	_sim._winner_seat = 1
+	eq(str(board.drink_tonic().get("reason", "")), "not_intermission", "a wipe cannot drink")
+	eq(KoliseoWallet.load_saved().tonics, 1, "a wipe keeps the tonic")
+	_sim._winner_seat = seat
+	StasisCatalog.room = "b"
+	eq(str(board.drink_tonic().get("reason", "")), "not_intermission", "no tonic after the boss")
+	StasisCatalog.room = "a"
 
 
 ## HIT coach, float, and vitals are one integer. A foe Strike connect is not 0,
