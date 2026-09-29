@@ -200,6 +200,14 @@ func _place_champions() -> void:
 	for r in roster:
 		var cls := str(r[0])
 		var cell: Vector2i = r[1]
+		if cls == "ironjaw":
+			# Real 3D model (his sheet has one side view only).
+			var model := IronjawModel.new()
+			model.position = Vector3(cell.x + 0.5, float(heights.get(cell, 0.25)), cell.y + 0.5)
+			model.rotation.y = deg_to_rad(float(r[2]))
+			model.scale = Vector3.ONE * 1.2
+			_world.add_child(model)
+			continue
 		var sprite := Sprite3D.new()
 		sprite.texture = load("res://art/characters/%s/%s_s.png" % [cls, cls])
 		sprite.pixel_size = 0.0105
