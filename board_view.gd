@@ -1871,10 +1871,17 @@ func _apply_units(snap: Dictionary) -> void:
 ## a standing token. Ambush is the blink.
 func _sync_shade_markers(snap: Dictionary) -> void:
 	var live: Dictionary = {}
+	# Shades are secret: only their owner sees them (Mauro 29 Sep 2026).
+	# Online the host already strips the opponent's; hot-seat shows the seat
+	# holding the phone (kit_seat = local seat, else the active seat).
+	var viewer := CombatHUD.kit_seat(snap)
 	for token in snap.get("shade_tokens", []):
 		if typeof(token) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = token
+		var shade_owner := int(rec.get("owner_seat", -1))
+		if shade_owner >= 0 and viewer >= 0 and shade_owner != viewer:
+			continue
 		var cell := _as_cell(rec.get("pos", Vector2i(int(rec.get("x", -1)), int(rec.get("y", -1)))))
 		if not _in_bounds(cell) or int(rec.get("turns", 0)) <= 0:
 			continue

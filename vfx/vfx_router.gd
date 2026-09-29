@@ -522,6 +522,9 @@ static func _wall_recipes(event: Dictionary) -> Array:
 
 static func _expire_recipes(event: Dictionary) -> Array:
 	var status := str(event.get("status", ""))
+	# A redacted (secret) Shade has no cell for this viewer: nothing to show.
+	if status == "shade" and not event.has("pos"):
+		return []
 	var cell := cell_of(event.get("pos", Vector2i.ZERO))
 	var seat := int(event.get("target_seat", event.get("owner_seat", -1)))
 	return [{
@@ -875,10 +878,8 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 		"drop_shade":
 			if typ == "cast" and event.has("to"):
 				# Snappy board piece. No travel from Gloam to the tile.
+				# Puff only: no "Shade" floater text (Mauro 29 Sep 2026).
 				out.append(_puff(caster, to_cell, VfxPalette.GLOAM_RIM, 1.15))
-				var shade_label := _number(caster, to_cell, "Shade", "resource", 0.0, 1.65, "", VfxPalette.GLOAM_RIM)
-				shade_label["outline"] = VfxPalette.GLOAM
-				out.append(shade_label)
 		"ambush":
 			if typ == "hit" and bool(event.get("teleported", false)):
 				var origin_cell := cell_of(event.get("origin", caster_cell))

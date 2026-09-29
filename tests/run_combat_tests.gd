@@ -2048,8 +2048,8 @@ func _test_ambush_origin_chrome() -> void:
 	truthy(view.contains('set_highlight("origin")'), "the board paints the Ambush origin tile")
 	truthy(view.contains('set_highlight("landing")'), "the board paints the Ambush back tile while aiming")
 	var marker := FileAccess.get_file_as_string("res://board/shade_marker.gd")
-	truthy(marker.contains("Ambush"), "the Shade token plate can read as the Ambush origin")
-	truthy(marker.contains("Shade"), "a Shade that is not the origin still labels itself Shade")
+	truthy(marker.contains("_as_origin"), "the Shade token still marks the Ambush origin (halo)")
+	eq(marker.contains("canvas.draw_string"), false, "no Shade / Ambush text plate (Mauro 29 Sep 2026)")
 
 
 func _test_ambush_shade_label_matches_origin() -> void:
