@@ -21,12 +21,18 @@ var _world: Node3D
 var _units: Array = []  # [{sprite, class, yaw}]
 var _top_cache: Dictionary = {}
 var _shots: Array = []
+## Optional folder of candidate sprites (<class>_<facing>.png) that
+## replace a champion's sheet in the preview; a class found there is drawn
+## from it instead of its model or res:// art.
+var _sprite_dir := ""
 
 
 func _initialize() -> void:
 	var args := OS.get_cmdline_user_args()
 	if args.size() > 0:
 		_out = args[0]
+	if args.size() > 1:
+		_sprite_dir = args[1]
 	root.size = Vector2i(960, 720)
 	_world = Node3D.new()
 	root.add_child(_world)
@@ -76,7 +82,7 @@ func _aim(yaw_deg: float, pitch_deg: float, dist: float, target: Vector3) -> voi
 		var k := posmod(int(round(rel / (PI / 2.0))), 4)
 		# rel 0 → facing the camera ("s"); +90° → turned to screen right ("e").
 		var facing: String = ["s", "e", "n", "w"][k]
-		sprite.texture = load("res://art/characters/%s/%s_%s.png" % [u["class"], u["class"], facing])
+		sprite.texture = _sheet(str(u["class"]), facing)
 
 
 func _build_environment() -> void:
@@ -200,7 +206,7 @@ func _place_champions() -> void:
 	for r in roster:
 		var cls := str(r[0])
 		var cell: Vector2i = r[1]
-		if cls == "ironjaw":
+		if cls == "ironjaw" and not _has_candidate(cls):
 			# Real 3D model (his sheet has one side view only).
 			var model := IronjawModel.new()
 			model.position = Vector3(cell.x + 0.5, float(heights.get(cell, 0.25)), cell.y + 0.5)
@@ -209,7 +215,7 @@ func _place_champions() -> void:
 			_world.add_child(model)
 			continue
 		var sprite := Sprite3D.new()
-		sprite.texture = load("res://art/characters/%s/%s_s.png" % [cls, cls])
+		sprite.texture = _sheet(cls, "s")
 		sprite.pixel_size = 0.0105
 		sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 		sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
@@ -260,3 +266,15 @@ func _average(img: Image) -> Color:
 			acc += img.get_pixel(x, y)
 			n += 1
 	return Color(acc.r / n, acc.g / n, acc.b / n)
+
+
+func _has_candidate(cls: String) -> bool:
+	return _sprite_dir != "" and FileAccess.file_exists(_sprite_dir.path_join("%s_s.png" % cls))
+
+
+func _sheet(cls: String, facing: String) -> Texture2D:
+	if _has_candidate(cls):
+		var img := Image.load_from_file(_sprite_dir.path_join("%s_%s.png" % [cls, facing]))
+		if img != null:
+			return ImageTexture.create_from_image(img)
+	return load("res://art/characters/%s/%s_%s.png" % [cls, cls, facing])
