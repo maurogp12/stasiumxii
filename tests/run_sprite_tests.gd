@@ -46,7 +46,10 @@ func _test_texture_paths_and_imports() -> void:
 	truthy(pawn_src.contains("Vector2(0, -72)"), "offset is the shipped foot pivot")
 	truthy(pawn_src.contains("Vector2(0.5, 0.5)"), "shipped scale is 0.5")
 	var shader := FileAccess.get_file_as_string("res://units/figure_read.gdshader")
-	truthy(shader.contains("COLOR = vec4(rgb, alpha) * COLOR"), "figure read keeps modulate")
+	# Godot 4's fragment COLOR already holds the texel: multiplying by it again
+	# squared the art (near-black figures). Modulate rides a vertex varying.
+	truthy(shader.contains("v_modulate = COLOR") and shader.contains("COLOR = vec4(rgb, alpha) * v_modulate"), "figure read keeps modulate")
+	eq(shader.contains("* COLOR;"), false, "figure read does not multiply the texel by itself")
 	eq(shader.contains("px.x * 3.0"), false, "figure read does not grow a 3px halo")
 	eq(shader.contains("px.x * 2.0"), false, "figure read does not grow a 2px halo")
 	eq(shader.contains("0.0, 1.0, 1.0"), false, "figure read does not paint cyan")

@@ -16,7 +16,7 @@ const SCENES := [
 	["kestrel_walk", ["kestrel", "ironjaw"], [Vector2i(4, 7), Vector2i(10, 7)], {"type": "move", "to": Vector2i(7, 7)}, {}],
 ]
 ## Frames after the intent at which a picture is saved.
-const TAPS := [2, 6, 10, 14, 20, 28, 40]
+const TAPS := [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 24, 28, 34, 40]
 
 var _out := "user://"
 var _only := ""

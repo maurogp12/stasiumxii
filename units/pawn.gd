@@ -1180,7 +1180,8 @@ func finish_step() -> void:
 
 func flash_hit() -> void:
 	_hit_flash = true
-	_apply_flash(Color(2.8, 2.8, 2.8))
+	# Tuned for the fixed figure shader (was 2.8 while the art rendered squared).
+	_apply_flash(Color(1.9, 1.85, 1.8))
 
 
 func flash_impact() -> void:
@@ -1469,7 +1470,10 @@ static func figure_read_for(class_id: String) -> Dictionary:
 ## Stasis foes run on Ironjaw's card but must not take its ochre lift: a thin
 ## hostile rim and a neutral lift of the crushed blacks so dark creatures
 ## read on dark floors.
-const FOE_LIGHT := Color(1.22, 1.2, 1.18, 1.0)
+const FOE_LIGHT := Color(1.0, 1.0, 1.0, 1.0)
+const FIGURE_LIFT := 0.0
+const FIGURE_SAT := 1.06
+const FIGURE_EDGE := 0.3
 const FOE_READ := {
 	"rim_ink": Color(0.38, 0.05, 0.05, 1.0),
 	"rim_px": 1.3,
@@ -1484,6 +1488,11 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
 	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+	# Board light: the painted sheets are dark (mean ~56/255) and turn to
+	# silhouettes at board scale. Lift, a little colour, a warm key rim.
+	mat.set_shader_parameter("lift", FIGURE_LIFT)
+	mat.set_shader_parameter("sat", FIGURE_SAT)
+	mat.set_shader_parameter("edge_light", FIGURE_EDGE if alive else 0.0)
 	# Living idle: a slow breath and a small head sway, per-fighter phase so a
 	# pair never breathes in lockstep. Heavy plate breathes less. Off when down.
 	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
