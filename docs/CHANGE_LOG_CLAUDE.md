@@ -76,7 +76,7 @@ headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.50 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.50 work into `mobile`: PR https://github.com/maurogp12/stasiumxii/pull/205 opened 29 Sep 2026 at Mauro's OK ("Yes"). Only Mauro merges.
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
 - Mobile Sets conflicts listed under 0.1.48.
