@@ -642,26 +642,21 @@ func _test_player_zoom() -> void:
 	var limits := TOUCH.player_zoom_limits(960.0, 500.0, phone, true)
 	eq(limits.x < overview, true, "zoom out can show more of the diamond")
 	eq(limits.y > overview, true, "zoom in can move closer")
-	eq(limits.y <= TOUCH.PLAYER_ZOOM_MAX, true, "the closer view stays under the player cap")
-	eq(limits.y < 2.6, true, "the closer view is not the 0.1.21 cover zoom")
-	near(limits.x, 1.40, "zoom out rests at 1.40")
-	near(limits.y, 2.25, "zoom in stops at 2.25, under the 2.5 ultra-close")
-	var contain_span_y := (phone.y - TOUCH.MOBILE_FRAME_BOTTOM) - TOUCH.MOBILE_FRAME_TOP
-	var contain_fit := contain_span_y / 500.0
-	eq(limits.x > contain_fit + 0.10, true, "the zoom-out floor stays above the postage-stamp contain")
-	TOUCH.nudge_player_zoom(-1)
-	TOUCH.nudge_player_zoom(-1)
-	TOUCH.nudge_player_zoom(-1)
+	near(limits.y, TOUCH.PLAYER_ZOOM_MAX, "zoom in reaches the 3.0 close view")
+	# Mauro (29 Sep): zoom out must fit the whole diamond clear of the menus.
+	var clear := TOUCH.clear_band_for(phone)
+	eq(500.0 * limits.x <= (clear.y - clear.x) + 0.5, true, "zoom out fits the diamond height between the menus")
+	eq(limits.x + 0.001 >= TOUCH.PLAYER_ZOOM_MIN, true, "zoom out stays above the player floor")
+	for _i in 12:
+		TOUCH.nudge_player_zoom(-1)
 	var pulled := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
 	eq(pulled < overview, true, "zoom out is wider than the default")
-	eq(pulled + 0.001 >= limits.x, true, "zoom out stops at the player floor")
-	eq(limits.x + 0.001 >= TOUCH.PLAYER_ZOOM_MIN, true, "the zoom-out floor stays above the postage-stamp contain")
-	eq(overview - pulled > 0.12, true, "zoom out pulls further than a nudge that still looks like the close crop")
-	eq(TOUCH.DIAMOND_H * pulled >= 44.0, true, "the zoom-out diamond stays fatter than the postage-stamp contain")
-	near(pulled, TOUCH.PLAYER_ZOOM_MIN, "three zoom-out presses rest on that floor")
+	near(pulled, limits.x, "zoom out presses rest on the clear-band fit")
 	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), pulled, "the chosen zoom sticks for the session")
+	TOUCH.set_player_zoom(2.0, 960.0, 500.0, phone)
+	near(TOUCH.player_board_zoom(960.0, 500.0, phone, true), 2.0, "pinch sets a continuous zoom")
 	TOUCH.reset_player_zoom()
-	for _i in 8:
+	for _i in 20:
 		TOUCH.nudge_player_zoom(1)
 	var pushed := TOUCH.player_board_zoom(960.0, 500.0, phone, true)
 	eq(pushed > overview, true, "zoom in is closer than the overview")

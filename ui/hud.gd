@@ -69,6 +69,7 @@ var _mp_pips: HBoxContainer
 var _walk_button: Button
 var _end_turn_button: Button
 var _new_match_button: Button
+var _new_match_holder: Button
 var _ready_p1_button: Button
 var _ready_p2_button: Button
 var _clock_row: HBoxContainer
@@ -1052,8 +1053,8 @@ func _build() -> void:
 	_selected_label = Label.new()
 	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_selected_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_selected_label.custom_minimum_size = Vector2(0, 40)
-	_selected_label.add_theme_font_size_override("font_size", 16)
+	_selected_label.custom_minimum_size = Vector2(0, 22)
+	_selected_label.add_theme_font_size_override("font_size", 13)
 	_selected_label.add_theme_color_override("font_color", CREAM)
 	_selected_label.add_theme_color_override("font_outline_color", Color(0.04, 0.03, 0.05))
 	_selected_label.add_theme_constant_override("outline_size", 5)
@@ -1061,7 +1062,7 @@ func _build() -> void:
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
 	var combat_row := HBoxContainer.new()
-	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	combat_row.alignment = BoxContainer.ALIGNMENT_BEGIN
 	combat_row.add_theme_constant_override("separation", 8)
 	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bottom.add_child(combat_row)
@@ -1105,7 +1106,8 @@ func _build() -> void:
 		_face_buttons[dir] = button
 
 	_action_bar = FlowContainer.new()
-	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
+	# Hug the Face pad in the bottom-left corner so the middle of the board stays clear.
+	_action_bar.alignment = FlowContainer.ALIGNMENT_BEGIN
 	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
 	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_action_bar.add_theme_constant_override("h_separation", 6)
@@ -1177,7 +1179,8 @@ func _build() -> void:
 	_style_chrome_button(_new_match_button, false)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	_action_bar.add_child(_new_match_button)
+	# Kept off the map (Mauro): New Match lives in the left column under Zoom.
+	_new_match_holder = _new_match_button
 
 	_coach_label = Label.new()
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1238,6 +1241,8 @@ func _build() -> void:
 	_zoom_out_button = _make_zoom_button("ZoomOut", "Zoom −", -1)
 	zoom_box.add_child(_zoom_in_button)
 	zoom_box.add_child(_zoom_out_button)
+	if _new_match_holder != null:
+		zoom_box.add_child(_new_match_holder)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

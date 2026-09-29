@@ -2212,7 +2212,7 @@ func _test_class_plant_anchor() -> void:
 		eq((pawn.get_node("Foot") as Node2D).position, Vector2.ZERO, "%s plant squash does not move the shade anchor" % class_id)
 		eq(pawn.scale, Vector2.ONE, "%s plant squash leaves the collider scale alone" % class_id)
 		if class_id == "ironjaw":
-			eq(Pawn.presentation_mul("ironjaw"), 1.0, "ironjaw art-fill stays at scale 1.0")
+			eq(Pawn.presentation_mul("ironjaw"), Pawn.HEAVY_COMBAT_SCALE, "ironjaw is a heavy body")
 			eq(is_equal_approx(Pawn.sprite_scale_for("ironjaw").y, Pawn.sprite_scale_for("bastion").y), true, "ironjaw and bastion share one body scale")
 		pawn.hold_stop_plant()
 		var stopped := _visible_strip(pawn)

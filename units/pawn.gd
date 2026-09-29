@@ -131,18 +131,21 @@ const FACING_ISO := {
 const FACING_ORDER: Array[String] = ["n", "e", "s", "w"]
 const SPRITE_OFFSET := Vector2(0, -72)
 const SPRITE_SCALE := Vector2(0.5, 0.5)
-## Art-fill is the size. Ironjaw's walk plant fills ~0.92 of the 160px cell
-## (~147px) against Bastion ~130px, so the shipped mul is 1.0, the same body
-## scale as Kestrel and Gloam. A later nudge may only sit in 1.08–1.10, on
-## the body sprites, growing from the foot offset (0, -72). The pawn node
-## and the pick capsule stay at scale 1. Identity is Berserker A + helm A2
-## (iron-jaw grill, dual double-bit axes). 1.20 and any open class scale
-## are rejected. Kit numbers and map geometry do not read this.
-const PRESENTATION_SCALE_MIN := 1.08
-const PRESENTATION_SCALE_CAP := 1.10
-const IRONJAW_COMBAT_SCALE := 1.0
+## Body scale per class (Mauro, 29 Sep): the plate fighters, Bastion and
+## Ironjaw, are the biggest; Kestrel, Gloam and Mender are small. Scale grows
+## from the foot offset (0, -72), so feet stay on the diamond. The pawn node
+## and the pick capsule stay at scale 1. Kit numbers and maps never read this.
+const PRESENTATION_SCALE_MIN := 0.80
+const PRESENTATION_SCALE_CAP := 1.25
+const HEAVY_COMBAT_SCALE := 1.18
+const LIGHT_COMBAT_SCALE := 0.88
+const IRONJAW_COMBAT_SCALE := HEAVY_COMBAT_SCALE
 const CLASS_PRESENTATION_SCALE := {
-	"ironjaw": IRONJAW_COMBAT_SCALE,
+	"ironjaw": HEAVY_COMBAT_SCALE,
+	"bastion": HEAVY_COMBAT_SCALE,
+	"kestrel": LIGHT_COMBAT_SCALE,
+	"gloam": LIGHT_COMBAT_SCALE,
+	"mender": LIGHT_COMBAT_SCALE,
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
@@ -173,8 +176,7 @@ static func sprite_scale_for(class_id: String) -> Vector2:
 	return SPRITE_SCALE * presentation_mul(class_id)
 
 
-## 1.0 ships the shared scale. 1.08–1.10 is the only optional nudge.
-## Anything else, including 1.20, is ignored.
+## Class multiplier inside the 0.80–1.25 band. Anything outside is ignored.
 static func presentation_mul(class_id: String) -> float:
 	var key := SpellKits.normalize_class_id(class_id)
 	return capped_presentation_mul(float(CLASS_PRESENTATION_SCALE.get(key, 1.0)))
@@ -200,7 +202,8 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 ## Shared bar clears a 0.5 figure. Ironjaw's bar rises with his presentation
 ## scale so the name still clears the taller cell.
 func head_hp_y() -> float:
-	return HEAD_HP_Y * (_body_scale().y / SPRITE_SCALE.y)
+	# Heavy bodies raise the bar; small bodies keep the shared line above them.
+	return HEAD_HP_Y * maxf(_body_scale().y / SPRITE_SCALE.y, 1.0)
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.

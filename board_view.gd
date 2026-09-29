@@ -108,6 +108,11 @@ var _koliseo_life: Node2D
 var _arena_sky: Node2D
 var _shake_tween: Tween
 var _flourish: Node2D
+## Pinch zoom (phone): finger index -> screen position, and the pinch start.
+var _touches: Dictionary = {}
+var _pinch_dist := 0.0
+var _pinch_zoom := 0.0
+var _board_px := Vector2(960, 500)
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 var _framed_cell := Vector2i(-999, -999)
@@ -316,6 +321,55 @@ func _timer_expired(result: Dictionary) -> bool:
 		if str(event.get("type", "")) == "end_turn" and str(event.get("reason", "")) == "timer":
 			return true
 	return false
+
+
+## Two-finger pinch zooms the board camera on a phone (continuous, inside the
+## player zoom limits). While two fingers are down no cell is aimed or committed.
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		var t := event as InputEventScreenTouch
+		if t.pressed:
+			_touches[t.index] = t.position
+		else:
+			_touches.erase(t.index)
+		if _touches.size() == 2:
+			_pinch_dist = _touch_spread()
+			_pinch_zoom = _camera.zoom.x if _camera != null else 1.0
+			_cancel_touch_aim()
+			get_viewport().set_input_as_handled()
+		elif _touches.size() < 2 and _pinch_dist > 0.0:
+			_pinch_dist = 0.0
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenDrag:
+		var d := event as InputEventScreenDrag
+		if _touches.has(d.index):
+			_touches[d.index] = d.position
+		if _touches.size() >= 2 and _pinch_dist > 0.0 and _camera != null:
+			var ratio := _touch_spread() / maxf(_pinch_dist, 1.0)
+			var view := get_viewport_rect().size
+			TOUCH.set_player_zoom(_pinch_zoom * ratio, _board_px.x, _board_px.y, view)
+			var z := TOUCH.player_board_zoom(_board_px.x, _board_px.y, view, true)
+			_camera.zoom = Vector2(z, z)
+			_pan_limit = TOUCH.pan_room(_board_px.x, _board_px.y, view, z, true)
+			_clamp_camera()
+			var limits := TOUCH.player_zoom_limits(_board_px.x, _board_px.y, view, true)
+			if _hud != null and _hud.has_method("set_zoom_buttons"):
+				_hud.set_zoom_buttons(z < limits.y - 0.02, z > limits.x + 0.02)
+			get_viewport().set_input_as_handled()
+
+
+func _touch_spread() -> float:
+	var pts := _touches.values()
+	if pts.size() < 2:
+		return 0.0
+	return (pts[0] as Vector2).distance_to(pts[1] as Vector2)
+
+
+func _cancel_touch_aim() -> void:
+	_touch_on_board = false
+	_touch_commit_open = false
+	_touch_panning = true
+	_chrome_aim = false
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -2323,6 +2377,7 @@ func _fit_board_camera() -> void:
 	var max_y := float((n - 1) + (n - 1)) * 16.0 + half_h
 	var board_w := maxf(max_x - min_x, 1.0)
 	var board_h := maxf(max_y - min_y, 1.0)
+	_board_px = Vector2(board_w, board_h)
 	var mobile := TOUCH.use_mobile_pick()
 	var viewport := Vector2(VIEW_W, VIEW_H)
 	if mobile:
@@ -2342,6 +2397,10 @@ func _fit_board_camera() -> void:
 		if focus.x < 1.0e8:
 			look = TOUCH.focus_point(center, focus, room)
 	var play_center := Vector2(viewport.x * 0.5, (band.x + band.y) * 0.5)
+	if mobile:
+		# Centre the diamond in the clear space between the menus.
+		var clear := TOUCH.clear_band_for(viewport)
+		play_center.y = (clear.x + clear.y) * 0.5
 	var view_center := Vector2(viewport.x * 0.5, viewport.y * 0.5)
 	var world_center := global_position + center
 	var camera_world := world_center - (play_center - view_center) / zoom
