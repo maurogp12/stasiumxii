@@ -36,6 +36,7 @@ func _run() -> void:
 	_test_threshgate_hazards()
 	_test_resolve_readout_matches_hit()
 	_test_koliseo_strike_unchanged()
+	_test_every_room_connected()
 	_start_fight_scene()
 
 
@@ -151,6 +152,34 @@ func _test_package_and_flow() -> void:
 	boss_pawn.free()
 	trash_pawn.free()
 	StasisCatalog.clear_run()
+
+
+## Mauro 29 Sep 2026: "make sure every room has access or a clear path".
+## With the real walk rules, every standable tile and every foe is reachable
+## from the player's spawn in all ten rooms.
+func _test_every_room_connected() -> void:
+	var never := func(_a = null, _b = null) -> bool: return false
+	for biome in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
+		for room in ["a", "b"]:
+			StasisCatalog.clear_run()
+			StasisCatalog.begin(biome)
+			StasisCatalog.class_id = "kestrel"
+			StasisCatalog.room = room
+			_sim.reset_match(StasisCatalog.fight_config())
+			var board = _sim._board
+			var units: Array = _sim.snapshot()["units"]
+			var reach: Dictionary = board.reachable(units[0]["pos"], 9999, never)
+			var lost := 0
+			for y in 15:
+				for x in 15:
+					var c := Vector2i(x, y)
+					if board.is_walkable(c) and not board.is_voluntary_impassable(c) and not reach.has(c):
+						lost += 1
+			eq(lost, 0, "%s room %s: every standable tile is reachable" % [biome, room])
+			for u in units.slice(1):
+				truthy(reach.has(u["pos"]), "%s room %s: %s stands on a reachable tile" % [biome, room, u["name"]])
+	StasisCatalog.clear_run()
+	_sim.reset_match({})
 
 
 func _test_ai() -> void:

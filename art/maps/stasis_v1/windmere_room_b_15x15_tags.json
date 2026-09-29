@@ -364,7 +364,7 @@
     {
       "x": 4,
       "y": 3,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -952,7 +952,7 @@
     {
       "x": 13,
       "y": 8,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
