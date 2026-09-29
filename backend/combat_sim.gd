@@ -10,7 +10,8 @@ extends Node
 ## Proto/elevation stays reference — this file does not import it.
 
 ## Mauro (29 Sep): Invisible from Fade lasts this many of Gloam's turns.
-const INVISIBLE_TURNS := 2
+## Was 2; Mauro 29 Sep 2026: "make fade last 1 turn".
+const INVISIBLE_TURNS := 1
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
 const _MatchFlow := preload("res://backend/match_flow.gd")
@@ -3862,8 +3863,8 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 
 ## Mauro (29 Sep): Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
 ## Fade sets invisible_turns; each Gloam turn start counts one down and at 0
-## Gloam is revealed (expire "invisible"). Cast on turn T: hidden through the
-## enemy's next two turns and Gloam's turn T+1, visible from turn T+2.
+## Gloam is revealed (expire "invisible"). With 1: cast on turn T, hidden
+## through the enemy's next turn, visible from Gloam's turn T+1.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
@@ -3874,7 +3875,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	actor["invisible"] = true
 	actor["invisible_turns"] = INVISIBLE_TURNS
 	_intent_log.append(intent)
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turns. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, gained]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,

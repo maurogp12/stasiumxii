@@ -1098,8 +1098,9 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade still spends 1 MP")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var later: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit_in(_sim.snapshot(), 0).get("invisible", false)), true, "Invisible stays after a full round")
-	eq(_expire(later.get("events", []), "invisible").is_empty(), true, "Invisible does not expire")
+	# Fade lasts 1 turn (Mauro 29 Sep 2026): gone when Gloam's next turn starts.
+	eq(bool(_unit_in(_sim.snapshot(), 0).get("invisible", false)), false, "Invisible ends after one full round")
+	eq(_expire(later.get("events", []), "invisible").is_empty(), false, "Invisible expires with an event")
 
 	_host.reset_match({
 		"seed": 1,

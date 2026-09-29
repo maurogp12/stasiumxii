@@ -101,6 +101,7 @@ on those branches) → the in-game **Actualizar** button.
 | 0.1.62 | **Name plates no longer overlap:** neighbours' name plates are spread apart every frame — sideways when the champions stand side by side, the rear plate up when one stands behind (`Pawn.spread_name_plates`, called from the board) | Mauro (same) | see 0.1.62 commits |
 | 0.1.62 | **KO soul release:** a defeated champion now releases a short shaft of light and glowing wisps in their class colour (ember for a burn KO) that sway up and fade (`vfx/vfx_soul.gd`, from `VfxDirector._play_death`; was only a dust puff + ring). View only | Mauro (same) | see 0.1.62 commits |
 | 0.1.62 | Dev helper `tests/shot_cast.gd`: stages real casts (each class), a KO and a walk on the live board and saves frame strips. New VFX checks (12) for the number spacing, plate spacing and the KO effect | — | see 0.1.62 commits |
+| 0.1.63 | **Fade lasts 1 turn** (was 2): `CombatSim.INVISIBLE_TURNS := 1`. Cast Fade on your turn → Gloam stays Invisible through the enemy's next turn and is revealed when Gloam's next turn starts (expire event + coach "Invisible wore off"). Attacking still reveals at once. Coach reads "Invisible for 1 turn." Combat and event-hook tests updated to the 1-turn clock | Mauro: "Also make fade last 1 turn" | see 0.1.63 commits |
 
 Each version bump is its own `Stamp Android sideload …` commit. All
 headless suites (19 from 0.1.44) pass on every build listed above.

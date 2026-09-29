@@ -7675,8 +7675,9 @@ func _test_ambush_snap_wall_ray() -> void:
 
 
 func _test_invisible_wears_off() -> void:
-	# Mauro (29 Sep): Fade's Invisible lasts 2 of Gloam's turns, then Gloam is
-	# revealed on its own. Cast on turn T: hidden through T+1, visible at T+2.
+	# Mauro (29 Sep): Fade's Invisible lasts 1 of Gloam's turns ("make fade
+	# last 1 turn"; was 2). Cast on turn T: hidden through the enemy's turn,
+	# visible again when Gloam's turn T+1 starts.
 	_sim.reset_match({
 		"seed": 3,
 		"flat_board": true,
@@ -7687,16 +7688,13 @@ func _test_invisible_wears_off() -> void:
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade resolves")
 	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
-	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade starts the 2-turn clock")
+	eq(CombatSim.INVISIBLE_TURNS, 1, "Fade lasts 1 turn")
+	eq(int(_unit(0)["invisible_turns"]), 1, "Fade starts the 1-turn clock")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible for 1 turn."), "the coach says 1 turn")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), true, "still invisible on Gloam's next turn")
-	eq(int(_unit(0)["invisible_turns"]), 1, "one Gloam turn left")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(bool(_unit(0)["invisible"]), true, "still invisible through the second enemy turn")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's next turn start")
 	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
 	var expired := false
 	for ev in _sim.snapshot().get("last_events", []):
