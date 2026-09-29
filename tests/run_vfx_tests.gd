@@ -1565,6 +1565,23 @@ func _test_weather_and_spell_extras() -> void:
 	eq(has_missile, true, "a ranged Kestrel spell flies a projectile")
 	eq(has_column, true, "Detonate gets the heavy finisher")
 	fl.free()
+	# Element impact bursts on damaging hits only.
+	var imp: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
+	root.add_child(imp)
+	imp.play([{"type": "hit", "spell": "crush", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a damaging hit spawns an element impact")
+	var burst: Node = null
+	for child in imp.get_children():
+		if child is SpellFlourish.ImpactBurst:
+			burst = child
+	eq(str(burst.element), "earth", "Crush impact is earth")
+	imp.play([{"type": "miss", "spell": "strike", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a miss spawns no impact")
+	imp.play([{"type": "hit", "spell": "mend", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 1, "a heal spawns no impact")
+	imp.play([{"type": "hit", "spell": "mark_shot", "seat": 0, "caster_cell": Vector2i(2, 7), "to": Vector2i(7, 7)}], {})
+	eq(imp.impact_count(), 2, "Mark Shot hit adds an air impact")
+	imp.free()
 	var melee: SpellFlourish = load("res://vfx/spell_flourish.gd").new()
 	root.add_child(melee)
 	melee.play([{"type": "hit", "spell": "strike", "seat": 0, "caster_cell": Vector2i(6, 7), "to": Vector2i(7, 7)}], {})

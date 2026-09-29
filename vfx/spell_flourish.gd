@@ -132,7 +132,8 @@ func play(events: Array, snapshot: Dictionary) -> void:
 				_burst(at + CHEST * 0.5, voice[1], 18, 140.0, 0.45, delay, "spark")
 				_ring(at, voice[0], 38.0, 0.3, delay)
 		if not healing and typ == "hit":
-			_glow(at + CHEST, Color(1, 1, 1), 0.8, 0.12, delay)
+			_glow(at + CHEST, Color(1, 1, 1), 0.55, 0.1, delay)
+			_impact(at, str(SpellKits.spell(spell_id).get("element", "neutral")), delay)
 
 
 ## Kestrel and Ironjaw spells carry no class_id in the kit data; ask the kits.
@@ -171,6 +172,24 @@ func _finisher(at: Vector2, main: Color, accent: Color, delay: float) -> void:
 	column.color = main
 	column.delay = delay
 	add_child(column)
+
+
+## Element impact on a damaging hit (Wakfu-style): earth cracks + rocks,
+## water splash + ripples, air swirl + streaks, neutral star flash.
+func _impact(at: Vector2, element: String, delay: float) -> void:
+	var burst := ImpactBurst.new()
+	burst.position = at
+	burst.element = element
+	burst.delay = delay
+	add_child(burst)
+
+
+func impact_count() -> int:
+	var n := 0
+	for child in get_children():
+		if child is ImpactBurst:
+			n += 1
+	return n
 
 
 func _rune(at: Vector2, main: Color, accent: Color, delay: float) -> void:
@@ -512,3 +531,139 @@ class LightColumn extends Node2D:
 		var a := (1.0 - u)
 		draw_rect(Rect2(-w, -h, w * 2.0, h), Color(color.r, color.g, color.b, 0.28 * a))
 		draw_rect(Rect2(-w * 0.35, -h, w * 0.7, h), Color(1, 1, 1, 0.55 * a))
+
+
+## One element impact, drawn in board space at the target's feet (chest for
+## air). Lives ~0.7 s then frees itself.
+class ImpactBurst extends Node2D:
+	const LIFE := 0.85
+	const SIZE := 1.5
+	var element := "neutral"
+	var delay := 0.0
+	var _t := -1.0
+	var _bits: Array = []  # rocks / droplets: {p, v, r, spin}
+	var _cracks: Array = []  # [PackedVector2Array]
+	var _rng := RandomNumberGenerator.new()
+
+	func _ready() -> void:
+		_rng.randomize()
+		match element:
+			"earth":
+				for i in 7:
+					var ang := _rng.randf_range(-PI * 0.9, -PI * 0.1)
+					_bits.append({"p": Vector2(0, -4), "v": Vector2(cos(ang), sin(ang)) * _rng.randf_range(70.0, 150.0), "r": _rng.randf_range(2.2, 4.5), "spin": _rng.randf_range(-8.0, 8.0)})
+				for i in 6:
+					var ang := TAU * float(i) / 6.0 + _rng.randf_range(-0.3, 0.3)
+					var pts := PackedVector2Array([Vector2.ZERO])
+					var p := Vector2.ZERO
+					for k in 4:
+						p += Vector2(cos(ang + _rng.randf_range(-0.5, 0.5)), sin(ang + _rng.randf_range(-0.5, 0.5)) * 0.5) * _rng.randf_range(6.0, 10.0)
+						pts.append(p)
+					_cracks.append(pts)
+			"water":
+				for i in 12:
+					var ang := _rng.randf_range(-PI * 0.95, -PI * 0.05)
+					_bits.append({"p": Vector2(0, -6), "v": Vector2(cos(ang) * 1.2, sin(ang)) * _rng.randf_range(60.0, 130.0), "r": _rng.randf_range(1.6, 3.2), "spin": 0.0})
+
+	func _process(dt: float) -> void:
+		if delay > 0.0:
+			delay -= dt
+			return
+		_t = maxf(_t, 0.0) + dt
+		if _t >= LIFE:
+			queue_free()
+			return
+		for b in _bits:
+			b["v"] = (b["v"] as Vector2) + Vector2(0, 420.0 if element == "earth" else 300.0) * dt
+			b["p"] = (b["p"] as Vector2) + (b["v"] as Vector2) * dt
+		queue_redraw()
+
+	func _draw() -> void:
+		if _t < 0.0:
+			return
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE * SIZE)
+		var u := _t / LIFE
+		var fade := 1.0 - u
+		match element:
+			"earth":
+				_draw_earth(u, fade)
+			"water":
+				_draw_water(u, fade)
+			"air":
+				_draw_air(u, fade)
+			_:
+				_draw_star(u, fade)
+
+	func _draw_earth(u: float, fade: float) -> void:
+		var grow := minf(u * 4.0, 1.0)
+		for pts in _cracks:
+			var seg := PackedVector2Array()
+			for i in pts.size():
+				seg.append(pts[i] * grow)
+			# Thin dark fissure with a hot core: reads as a crack, not a stick.
+			draw_polyline(seg, Color(0.04, 0.02, 0.02, 0.85 * fade), 2.0, true)
+			draw_polyline(seg, Color(1.0, 0.78, 0.35, 0.95 * fade), 0.8, true)
+		for i in 3:
+			var r := 10.0 + 26.0 * u + float(i) * 6.0
+			draw_circle(Vector2(-8.0 + float(i) * 8.0, -6.0 - 10.0 * u), r * 0.45, Color(0.55, 0.47, 0.38, 0.28 * fade))
+		for b in _bits:
+			var p: Vector2 = b["p"]
+			if p.y > 6.0:
+				continue
+			var r := float(b["r"])
+			var ang := float(b["spin"]) * _t
+			var rock := PackedVector2Array()
+			for k in 5:
+				var a := ang + TAU * float(k) / 5.0
+				rock.append(p + Vector2(cos(a), sin(a)) * r * (0.8 + 0.3 * float(k % 2)))
+			draw_colored_polygon(rock, Color(0.42, 0.32, 0.22, fade))
+			draw_polyline(rock + PackedVector2Array([rock[0]]), Color(0.16, 0.10, 0.06, fade), 1.0, true)
+
+	func _draw_water(u: float, fade: float) -> void:
+		for i in 2:
+			var k := clampf(u * 1.4 - float(i) * 0.25, 0.0, 1.0)
+			if k <= 0.0:
+				continue
+			var rx := 8.0 + 34.0 * k
+			var ring := PackedVector2Array()
+			for s in 25:
+				var a := TAU * float(s) / 24.0
+				ring.append(Vector2(cos(a) * rx, sin(a) * rx * 0.45))
+			draw_polyline(ring, Color(0.05, 0.25, 0.55, 0.7 * (1.0 - k)), 4.0, true)
+			draw_polyline(ring, Color(0.55, 0.88, 1.0, 0.95 * (1.0 - k)), 2.2, true)
+		var col := minf(u * 5.0, 1.0) * (1.0 - u)
+		if col > 0.02:
+			draw_colored_polygon(PackedVector2Array([Vector2(-7, 0), Vector2(7, 0), Vector2(3, -44 * col), Vector2(-3, -44 * col)]), Color(0.55, 0.82, 1.0, 0.55 * col))
+		for b in _bits:
+			var p: Vector2 = b["p"]
+			if p.y > 4.0:
+				continue
+			draw_circle(p, float(b["r"]) + 1.0, Color(0.20, 0.50, 0.85, 0.7 * fade))
+			draw_circle(p, float(b["r"]), Color(0.80, 0.95, 1.0, fade))
+
+	func _draw_air(u: float, fade: float) -> void:
+		var c := Vector2(0, -30)
+		for i in 3:
+			var r := 10.0 + 30.0 * u + float(i) * 5.0
+			var start := u * 7.0 + TAU * float(i) / 3.0
+			var arc := PackedVector2Array()
+			for s in 13:
+				var a := start + float(s) / 12.0 * PI * 0.9
+				arc.append(c + Vector2(cos(a) * r, sin(a) * r * 0.6))
+			draw_polyline(arc, Color(0.02, 0.30, 0.25, 0.6 * fade), 4.6 * fade + 1.2, true)
+			draw_polyline(arc, Color(0.35, 1.0, 0.78, 0.95 * fade), 2.4 * fade + 0.6, true)
+		for i in 6:
+			var a := TAU * float(i) / 6.0 + 0.4
+			var from := c + Vector2(cos(a), sin(a) * 0.6) * (50.0 - 36.0 * minf(u * 2.0, 1.0))
+			var to := from + Vector2(cos(a), sin(a) * 0.6) * 10.0
+			draw_line(from, to, Color(0.02, 0.30, 0.25, 0.5 * fade), 3.2, true)
+			draw_line(from, to, Color(0.70, 1.0, 0.88, 0.9 * fade), 1.6, true)
+
+	func _draw_star(u: float, fade: float) -> void:
+		var c := Vector2(0, -30)
+		var r := 8.0 + 26.0 * minf(u * 3.0, 1.0)
+		var star := PackedVector2Array()
+		for i in 16:
+			var a := TAU * float(i) / 16.0 + u
+			star.append(c + Vector2(cos(a), sin(a)) * (r if i % 2 == 0 else r * 0.35))
+		draw_colored_polygon(star, Color(1.0, 1.0, 0.95, 0.75 * fade))
