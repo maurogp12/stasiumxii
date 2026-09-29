@@ -145,6 +145,32 @@ static func is_valid_item_id(item_id: String) -> bool:
 	return FAMILIES.has(family_of(item_id)) and SLOTS.has(slot_of(item_id)) and item_id.count(".") == 1
 
 
+## Item icons cut from the set art in the GDD Blueprint
+## (build_tools/art/gear_icons). Armour: <family>_<slot>.png. The weapon slot
+## shows that family's weapon for the class looking at it (Kestrel bow,
+## Ironjaw axes, Mender staff, Gloam daggers, Bastion mace + shield); with no
+## class it shows the Ironjaw axes.
+const ICON_ROOT := "res://art/items/gear/"
+
+
+static func icon_path(item_id: String, class_id: String = "") -> String:
+	var fam := family_of(item_id)
+	var slot := slot_of(item_id)
+	if not FAMILIES.has(fam) or not SLOTS.has(slot):
+		return ""
+	if slot == "weapon":
+		var cls := class_id if class_id in ["kestrel", "ironjaw", "mender", "gloam", "bastion"] else "ironjaw"
+		return "%s%s_weapon_%s.png" % [ICON_ROOT, fam, cls]
+	return "%s%s_%s.png" % [ICON_ROOT, fam, slot]
+
+
+static func icon(item_id: String, class_id: String = "") -> Texture2D:
+	var path := icon_path(item_id, class_id)
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	return load(path) as Texture2D
+
+
 static func item_label(item: Dictionary) -> String:
 	var item_id := str(item.get("item_id", ""))
 	var part: Dictionary = PARTS.get(item_id, {})

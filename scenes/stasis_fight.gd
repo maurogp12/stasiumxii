@@ -205,7 +205,7 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 	for frag in chest.get("fragments", []):
 		you["loot"].append({"kind": "fragment", "still": str(frag), "count": 1})
 	for it in chest.get("items", []):
-		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1})
+		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1, "class_id": StasisCatalog.class_id})
 	var foes: Array = []
 	for unit in StasisCatalog.run_foes:
 		foes.append({

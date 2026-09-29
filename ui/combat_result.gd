@@ -459,7 +459,12 @@ class LootIcon extends Control:
 				var item_id := str(loot.get("item_id", ""))
 				var fam := GearBag.family_of(item_id)
 				var tint: Color = CombatResult.FAMILY_TINT.get(fam, Color(0.7, 0.7, 0.7))
-				_draw_slot(GearBag.slot_of(item_id), c, r, tint)
+				# Set art from the Blueprint; the drawn glyph stays the fallback.
+				var art := GearBag.icon(item_id, str(loot.get("class_id", "")))
+				if art != null:
+					draw_texture_rect(art, rect.grow(-3), false)
+				else:
+					_draw_slot(GearBag.slot_of(item_id), c, r, tint)
 				var plus := int(loot.get("plus", 0))
 				if plus > 0:
 					draw_string(ThemeDB.fallback_font, Vector2(size.x - 16, size.y - 4), "+%d" % plus, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color.WHITE)

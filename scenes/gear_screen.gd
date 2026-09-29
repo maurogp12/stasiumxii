@@ -192,6 +192,7 @@ func _refresh() -> void:
 		button.name = "Slot_" + slot
 		if not worn.is_empty():
 			button.text = "%s: %s" % [slot.capitalize(), GearBag.item_label(worn)]
+			_set_icon(button, str(worn["item_id"]))
 			_tint(button, str(worn["item_id"]))
 			button.pressed.connect(take_off.bind(slot))
 		else:
@@ -210,6 +211,7 @@ func _refresh() -> void:
 		row.add_theme_constant_override("separation", 6)
 		var wear_button := _button("%s  ·  %s%s" % [GearBag.item_label(it), GearBag.part_line(str(it["item_id"]), int(it["plus"])), "  (worn)" if _bag.is_equipped(uid) else ""])
 		wear_button.name = "Item_%d" % uid
+		_set_icon(wear_button, str(it["item_id"]))
 		wear_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_tint(wear_button, str(it["item_id"]))
 		wear_button.disabled = _bag.is_equipped(uid)
@@ -281,6 +283,16 @@ func _clear(box: Node) -> void:
 	for child in box.get_children():
 		box.remove_child(child)
 		child.queue_free()
+
+
+## Set art icon (GearBag.icon) at the left of a row.
+func _set_icon(button: Button, item_id: String) -> void:
+	var art := GearBag.icon(item_id)
+	if art == null:
+		return
+	button.icon = art
+	button.expand_icon = true
+	button.add_theme_constant_override("icon_max_width", 36)
 
 
 func _tint(button: Button, item_id: String) -> void:

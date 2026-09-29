@@ -330,6 +330,24 @@ func _test_inventory_screen() -> void:
 	eq(stage.facing(), "s", "a new champion faces you")
 	for f in ChampionStage.FACINGS:
 		truthy(ResourceLoader.exists("res://art/characters/bastion/bastion_%s.png" % f), "bastion has the %s facing" % f)
+	# Set art icons (Blueprint set sheets): every family / slot, weapon per class.
+	for fam in GearBag.FAMILY_ORDER:
+		for slot in GearBag.SLOTS:
+			truthy(GearBag.icon(GearBag.item_id_for(fam, slot)) != null, "%s %s has set art" % [fam, slot])
+		for cls in ["kestrel", "ironjaw", "mender", "gloam", "bastion"]:
+			truthy(ResourceLoader.exists(GearBag.icon_path(GearBag.item_id_for(fam, "weapon"), cls)), "%s weapon art for %s" % [fam, cls])
+	eq(GearBag.icon_path("sheaf.weapon", "kestrel").get_file(), "sheaf_weapon_kestrel.png", "a Kestrel sees the Sheaf bow")
+	eq(GearBag.icon_path("sheaf.weapon").get_file(), "sheaf_weapon_ironjaw.png", "no class shows the axes")
+	eq(GearBag.icon_path("nope.head"), "", "unknown items have no art")
+	inv.show_tab("equipment")
+	var tile := inv.find_child("Item_%d" % w, true, false)
+	truthy(tile != null and tile.icon_tex != null, "bag tiles draw the set art")
+	var weapon_slot := inv.find_child("Slot_weapon", true, false)
+	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_bastion.png", "the worn weapon shows the picked champion's weapon")
+	inv.pick_champion("kestrel")
+	weapon_slot = inv.find_child("Slot_weapon", true, false)
+	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_kestrel.png", "switching champion swaps the weapon art")
+	inv.pick_champion("bastion")
 	var levels := inv.open_levels()
 	eq(levels.selected, "bastion", "Levels opens on the picked champion")
 	levels.close()
@@ -379,7 +397,7 @@ func _test_combat_result() -> void:
 	var fight: Script = load("res://scenes/stasis_fight.gd")
 	var clear: Dictionary = fight.stasis_result({"name": "Mender", "hp": 51, "max_hp": 80}, {"chest": true, "items": [{"item_id": "sheaf.boots", "plus": 0}]}, true, 200)
 	eq(str(clear["outcome"]), "Victory", "Stasis clear is a Victory")
-	eq(clear["winners"][0]["loot"], [{"kind": "gear", "item_id": "sheaf.boots", "plus": 0, "count": 1}], "chest piece shows as loot")
+	eq(clear["winners"][0]["loot"], [{"kind": "gear", "item_id": "sheaf.boots", "plus": 0, "count": 1, "class_id": StasisCatalog.class_id}], "chest piece shows as loot (with the class, for the weapon art)")
 	eq(str(clear["losers"][0]["name"]), "Grain Hound", "beaten foes listed as losers")
 	eq(int(clear["turns"]), 9, "turns over the whole run")
 	var wipe: Dictionary = fight.stasis_result({"name": "Mender", "hp": 0, "max_hp": 80}, {}, false, 90)

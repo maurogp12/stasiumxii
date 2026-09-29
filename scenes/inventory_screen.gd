@@ -352,6 +352,7 @@ func _slot_tile(slot: String, at: Vector2) -> InvTile:
 	if not worn.is_empty():
 		t.filled = true
 		t.tint = _rarity_tint(str(worn["item_id"]))
+		t.icon_tex = GearBag.icon(str(worn["item_id"]), champion)
 		t.plus = int(worn["plus"])
 		t.picked = str(picked.get("kind", "")) == "slot" and str(picked.get("slot", "")) == slot
 		t.pressed.connect(select.bind({"kind": "slot", "slot": slot}))
@@ -423,6 +424,7 @@ func _refresh_grid() -> void:
 				var t := _grid_tile("Item_%d" % uid)
 				t.glyph = GearBag.slot_of(str(it["item_id"]))
 				t.tint = _rarity_tint(str(it["item_id"]))
+				t.icon_tex = GearBag.icon(str(it["item_id"]), champion)
 				t.filled = true
 				t.plus = int(it["plus"])
 				t.badge = "E" if _bag.is_equipped(uid) else ""
@@ -512,9 +514,21 @@ func _refresh_detail() -> void:
 		var uid := int(item["uid"])
 		var item_id := str(item["item_id"])
 		var fam: Dictionary = GearBag.FAMILIES.get(GearBag.family_of(item_id), {})
+		var head := HBoxContainer.new()
+		head.add_theme_constant_override("separation", 8)
+		var art := TextureRect.new()
+		art.name = "DetailIcon"
+		art.texture = GearBag.icon(item_id, champion)
+		art.custom_minimum_size = Vector2(48, 48)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		head.add_child(art)
 		var title := _label(GearBag.item_label(item), 17, _rarity_tint(item_id))
 		title.name = "DetailName"
-		_detail.add_child(title)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		head.add_child(title)
+		_detail.add_child(head)
 		_detail.add_child(_label("%s · %s %s · %s" % [GearBag.slot_of(item_id).capitalize(), str(fam.get("name", "")), str(fam.get("rarity", "")), GearBag.part_line(item_id, int(item["plus"]))], 13, GOLD_BRIGHT))
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
@@ -667,7 +681,10 @@ class InvTile extends Button:
 		var s := size.x * 0.28
 		var ink := tint if filled else Color(0.40, 0.34, 0.24)
 		if icon_tex != null:
-			draw_texture_rect(icon_tex, r.grow(-5), false)
+			# Soft rarity glow behind the item art, then the art.
+			if filled:
+				draw_circle(c, size.x * 0.34, Color(tint.r, tint.g, tint.b, 0.16))
+			draw_texture_rect(icon_tex, r.grow(-4), false)
 		else:
 			_glyph(c, s, ink)
 		var f := font if font != null else ThemeDB.fallback_font
