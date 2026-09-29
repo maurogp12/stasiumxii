@@ -9,6 +9,8 @@ extends Node
 ## Locked walk: per-tile elevation + terrain_type; dest-click weighted pathfinder.
 ## Proto/elevation stays reference — this file does not import it.
 
+## Mauro (29 Sep): Invisible from Fade lasts this many of Gloam's turns.
+const INVISIBLE_TURNS := 2
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
 const _MatchFlow := preload("res://backend/match_flow.gd")
@@ -84,6 +86,8 @@ const FACING_VEC := {
 const OPEN_DECISIONS := ["A03", "A04", "A05", "A06", "A07"]
 const TURN_TIME_LIMIT := 30.0
 
+## Set by _tick_invisible during a turn start; the handoff coach names it.
+var _invisible_wore_off := false
 var _units: Array[Dictionary] = []
 var _active_seat: int = 0
 var _turn_index: int = 1
@@ -1300,6 +1304,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"shade": false,
 		"shades": 0,
 		"invisible": false,
+		"invisible_turns": 0,
 		"shield": 0,
 		"shield_turns": 0,
 		"hit_immunity": 0,
@@ -1522,6 +1527,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		actor["exit_tax"] = int(actor["exit_tax"]) - 1
 	_active_seat = next_seat
 	_turn_index += 1
+	_invisible_wore_off = false
 	_begin_unit_turn(next_unit)
 	next_unit["ap"] = MAX_AP
 	next_unit["mp"] = MAX_MP
@@ -1541,6 +1547,8 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		_last_coach = "%s's turn. AP/MP refilled to %d/%d (Slow −%d MP)." % [next_unit["name"], MAX_AP, int(next_unit["mp"]) - slow_cut, slow_cut]
 	else:
 		_last_coach = "%s's turn. AP/MP refilled to 6/3." % next_unit["name"]
+	if _invisible_wore_off:
+		_last_coach += " Invisible wore off — %s is visible." % next_unit["name"]
 	var end_event := {
 		"type": "end_turn",
 		"seat": actor["seat"],
@@ -2552,10 +2560,24 @@ func _begin_unit_turn(unit: Dictionary) -> void:
 	# Shade / Plant / Snap Wall share the owner turn-start clock. An enemy
 	# turn-start must not burn a duration turn (Mauro: Shade must read as 3).
 	_decay_board_durations(unit)
+	_tick_invisible(unit)
 	_tick_snap_walls(unit)
 	_tick_shield(unit)
 	if str(unit.get("class_id", "")) == SpellKits.CLASS_BASTION:
 		unit["intercept_used"] = false
+
+
+## Owner turn-start clock for Invisible (see _resolve_fade).
+func _tick_invisible(unit: Dictionary) -> void:
+	var left := int(unit.get("invisible_turns", 0))
+	if left <= 0 or not bool(unit.get("invisible", false)):
+		return
+	left -= 1
+	unit["invisible_turns"] = left
+	if left <= 0:
+		unit["invisible"] = false
+		_emit_expire("invisible", unit["pos"], int(unit["seat"]), int(unit["seat"]))
+		_invisible_wore_off = true
 
 
 func _is_stunned(unit: Dictionary) -> bool:
@@ -3550,16 +3572,21 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	return _accept()
 
 
-## Invisible has no duration. The cast (invisible, seat, caster_cell) and the
-## unit snapshot (invisible, seat, pos) are the linger. No turns field, no expire.
+## Mauro (29 Sep): Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
+## Fade sets invisible_turns; each Gloam turn start counts one down and at 0
+## Gloam is revealed (expire "invisible"). Cast on turn T: hidden through the
+## enemy's next two turns and Gloam's turn T+1, visible from turn T+2.
+## An attack still reveals at once. A fixture with invisible but no
+## invisible_turns has no clock (tests / old snapshots).
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
 	var caster_cell: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	actor["mp"] = int(actor["mp"]) - mp_cost
 	var gained := _gain_resource(actor, "umbral", 1)
 	actor["invisible"] = true
+	actor["invisible_turns"] = INVISIBLE_TURNS
 	_intent_log.append(intent)
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible. +%d Umbral." % [actor["name"], ap_cost, mp_cost, gained]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turns. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,
@@ -3569,6 +3596,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 		"ap_spent": ap_cost,
 		"mp_spent": mp_cost,
 		"invisible": true,
+		"invisible_turns": INVISIBLE_TURNS,
 		"engine_gained": gained,
 		"coach": _last_coach,
 	})
@@ -3974,6 +4002,7 @@ static func ambush_damage_if_planted(struck_from: Vector2i, landing: Vector2i, d
 func _break_invisible_on_attack(actor: Dictionary) -> void:
 	if bool(actor.get("invisible", false)):
 		actor["invisible"] = false
+	actor["invisible_turns"] = 0
 
 
 func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:

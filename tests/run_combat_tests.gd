@@ -64,6 +64,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_ambush_snap_wall_ray()
+	_test_invisible_wears_off()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
 	_test_invisible_breaks_on_attack()
@@ -7672,3 +7673,40 @@ func _test_ambush_snap_wall_ray() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves past the wall")
 	eq(_unit(0)["pos"], Vector2i(4, 1), "Gloam lands on the Shade ray back tile")
+
+
+func _test_invisible_wears_off() -> void:
+	# Mauro (29 Sep): Fade's Invisible lasts 2 of Gloam's turns, then Gloam is
+	# revealed on its own. Cast on turn T: hidden through T+1, visible at T+2.
+	_sim.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"classes": ["gloam", "kestrel"],
+		"positions": [Vector2i(2, 2), Vector2i(9, 9)],
+	})
+	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	eq(bool(faded.get("ok", false)), true, "Fade resolves")
+	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
+	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade starts the 2-turn clock")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible on Gloam's next turn")
+	eq(int(_unit(0)["invisible_turns"]), 1, "one Gloam turn left")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(bool(_unit(0)["invisible"]), true, "still invisible through the second enemy turn")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
+	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
+	var expired := false
+	for ev in _sim.snapshot().get("last_events", []):
+		if str(ev.get("type", "")) == "expire" and str(ev.get("status", "")) == "invisible":
+			expired = true
+	eq(expired, true, "the reveal emits expire invisible")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible wore off"), "the coach names the reveal")
+	# An attack still reveals at once and clears the clock.
+	_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
+	_sim._break_invisible_on_attack(_sim._unit_by_seat(0))
+	eq(bool(_unit(0)["invisible"]), false, "an attack reveals immediately")
+	eq(int(_unit(0)["invisible_turns"]), 0, "an attack clears the clock")

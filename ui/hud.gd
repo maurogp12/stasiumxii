@@ -1628,13 +1628,17 @@ func _resource_meter_line(unit: Dictionary, snap: Dictionary = {}) -> String:
 			resist,
 		]
 	if class_id == SpellKits.CLASS_GLOAM:
-		return "%s %d/%d  %s %d/%d  Mastery %d  Resist %d" % [
+		var hidden := ""
+		if bool(unit.get("invisible", false)) and int(unit.get("invisible_turns", 0)) > 0:
+			hidden = "  Invisible %d" % int(unit.get("invisible_turns", 0))
+		return "%s %d/%d  %s %d/%d%s  Mastery %d  Resist %d" % [
 			SpellKits.resource_label("umbral"),
 			_resource_current(unit, "umbral"),
 			int(unit.get("umbral_cap", SpellKits.UMBRAL_CAP)),
 			SpellKits.resource_label("shades"),
 			shade_count(unit, snap),
 			int(unit.get("shades_cap", SpellKits.SHADE_CAP)),
+			hidden,
 			mastery,
 			resist,
 		]
