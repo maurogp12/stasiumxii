@@ -10,6 +10,8 @@ var _chest: Dictionary = {}
 var _overlay_status: Label
 var _continue_button: Button
 var _exit_button: Button
+var _tonic_button: Button
+var _tonic_note: String = ""
 
 
 func _ready() -> void:
@@ -110,6 +112,32 @@ func _continue_run() -> void:
 		show_result(stasis_result(player, _chest, true, _run_seconds(), _result_portrait))
 		return
 	_restart_fight()
+
+
+## Room Tonic window: Room A won, Room B not loaded yet.
+static func in_intermission(snap: Dictionary) -> bool:
+	return StasisCatalog.room == "a" and bool(snap.get("match_over", false)) and int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT
+
+
+## Drink one Room Tonic: heal floor(30% max HP), never over max. A full-HP
+## champion keeps the tonic. The healed HP carries into Room B.
+func drink_tonic() -> Dictionary:
+	var snap: Dictionary = _sim().snapshot()
+	if not in_intermission(snap):
+		return {"ok": false, "reason": "not_intermission"}
+	var wallet := KoliseoWallet.load_saved()
+	if wallet.tonics <= 0:
+		return {"ok": false, "reason": "no_tonic"}
+	var healed := CombatSim.intermission_heal(StasisCatalog.PLAYER_SEAT, KoliseoWallet.TONIC_HEAL_PCT)
+	if healed <= 0:
+		_tonic_note = "Already at full health."
+		_sync_overlay(_sim().snapshot())
+		return {"ok": false, "reason": "full"}
+	wallet.use_tonic()
+	wallet.save()
+	_tonic_note = "Room Tonic: +%d." % healed
+	_refresh()
+	return {"ok": true, "reason": "", "healed": healed, "tonics": wallet.tonics}
 
 
 ## The Still the player carried into this fight is destroyed when it ends.
@@ -320,11 +348,26 @@ func _build_overlay() -> void:
 	_continue_button.visible = false
 	_continue_button.pressed.connect(_continue_run)
 	root.add_child(_continue_button)
+	_tonic_button = Button.new()
+	_tonic_button.name = "DrinkTonic"
+	_tonic_button.position = Vector2(256, 146)
+	_tonic_button.size = Vector2(448, 52)
+	_tonic_button.custom_minimum_size = Vector2(300, 48)
+	_tonic_button.focus_mode = Control.FOCUS_ALL
+	_tonic_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_tonic_button.add_theme_font_size_override("font_size", 18)
+	if ResourceLoader.exists(KoliseoShop.TONIC_ICON):
+		_tonic_button.icon = load(KoliseoShop.TONIC_ICON)
+		_tonic_button.add_theme_constant_override("icon_max_width", 36)
+	_tonic_button.visible = false
+	_tonic_button.pressed.connect(drink_tonic)
+	root.add_child(_tonic_button)
 
 
 func _sync_overlay(snap: Dictionary) -> void:
 	if _overlay_status == null:
 		return
+	_sync_tonic(snap)
 	if _cleared:
 		_overlay_status.text = "%s cleared. %s" % [StasisCatalog.door_name(), chest_line(_chest)]
 		if _continue_button != null:
@@ -337,6 +380,8 @@ func _sync_overlay(snap: Dictionary) -> void:
 	if bool(snap.get("match_over", false)):
 		if int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT:
 			var down := "Foe down."
+			if _tonic_note != "" and in_intermission(snap):
+				down = "%s %s" % [down, _tonic_note]
 			if note != "":
 				down = "%s %s" % [down, note]
 			_overlay_status.text = "%s\n%s" % [banner, down]
@@ -351,6 +396,23 @@ func _sync_overlay(snap: Dictionary) -> void:
 	if _continue_button != null:
 		_continue_button.visible = false
 	_overlay_status.text = banner if note == "" else "%s\n%s" % [banner, note]
+
+
+func _sync_tonic(snap: Dictionary) -> void:
+	if _tonic_button == null:
+		return
+	var open := not _cleared and in_intermission(snap)
+	if not open:
+		_tonic_note = ""
+		_tonic_button.visible = false
+		return
+	var have := KoliseoWallet.load_saved().tonics
+	var player := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
+	var full := int(player.get("hp", 0)) >= int(player.get("max_hp", 0))
+	_tonic_button.visible = true
+	_tonic_button.text = "Drink Room Tonic (%d/%d)" % [have, KoliseoWallet.TONIC_CARRY]
+	_tonic_button.disabled = have <= 0 or full
+	_tonic_button.tooltip_text = "Heal 30% of max HP before Room B. Buy them in the hub Shop (1 coin)." if have > 0 else "No Room Tonics — buy them in the hub Shop (1 coin)."
 
 
 func _find_button(node: Node, text: String) -> Button:

@@ -16,6 +16,7 @@ const GOLD := Color(0.855, 0.69, 0.4)
 const GOLD_BRIGHT := Color(0.95, 0.82, 0.52)
 const GOLD_DIM := Color(0.62, 0.49, 0.28)
 const ROW_HEIGHT := 48
+const TONIC_ICON := "res://art/items/room_tonic.png"
 
 var font: Font
 var _wallet: KoliseoWallet
@@ -24,6 +25,7 @@ var _header: Label
 var _status: Label
 var _sku_buttons: Dictionary = {}
 var _slot_buttons: Dictionary = {}
+var _tonic_button: Button
 
 
 func _ready() -> void:
@@ -69,6 +71,22 @@ func buy_duskbrand(slot: String) -> Dictionary:
 		bag.save()
 		_wallet.save()
 		_status.text = "Bought Duskbrand %s +0." % slot.capitalize()
+		wallet_changed.emit()
+	else:
+		_status.text = _reason_text(str(result.get("reason", "")))
+	_refresh()
+	return result
+
+
+func tonic_button() -> Button:
+	return _tonic_button
+
+
+func buy_tonic() -> Dictionary:
+	var result := _wallet.buy_tonic()
+	if bool(result.get("ok", false)):
+		_wallet.save()
+		_status.text = "Bought a Room Tonic (%d/%d). Drink it between Stasis rooms." % [_wallet.tonics, _Wallet.TONIC_CARRY]
 		wallet_changed.emit()
 	else:
 		_status.text = _reason_text(str(result.get("reason", "")))
@@ -134,6 +152,16 @@ func _build() -> void:
 		button.pressed.connect(buy_duskbrand.bind(slot))
 		stall_col.add_child(button)
 		_slot_buttons[slot] = button
+	stall_col.add_child(_label("Consumables", 16, GOLD))
+	_tonic_button = _button("")
+	_tonic_button.name = "BuyTonic"
+	_tonic_button.custom_minimum_size.x = 260
+	_tonic_button.tooltip_text = "Room Tonic: drink between Stasis Room A and Room B to heal 30% of max HP."
+	if ResourceLoader.exists(TONIC_ICON):
+		_tonic_button.icon = load(TONIC_ICON)
+		_tonic_button.add_theme_constant_override("icon_max_width", 34)
+	_tonic_button.pressed.connect(buy_tonic)
+	stall_col.add_child(_tonic_button)
 	columns.add_child(stall_col)
 	_status = _label("", 14, GOLD)
 	_status.name = "ShopStatus"
@@ -165,6 +193,9 @@ func _refresh() -> void:
 		var have := "  (x%d)" % count if count > 0 else ""
 		button.text = "%s +0 — %d coins%s" % [slot.capitalize(), _Wallet.DUSKBRAND_PART_COST, have]
 		button.disabled = not bool(_wallet.can_buy_duskbrand(slot).get("ok", false))
+	if _tonic_button != null:
+		_tonic_button.text = "Room Tonic — %d coin  (%d/%d)" % [_Wallet.TONIC_COST, _wallet.tonics, _Wallet.TONIC_CARRY]
+		_tonic_button.disabled = not bool(_wallet.can_buy_tonic().get("ok", false))
 
 
 static func _reason_text(reason: String) -> String:
@@ -175,6 +206,8 @@ static func _reason_text(reason: String) -> String:
 			return "Not enough coins."
 		"owned":
 			return "Already owned."
+		"tonic_full":
+			return "You already carry 3 Room Tonics."
 	return "Cannot buy."
 
 

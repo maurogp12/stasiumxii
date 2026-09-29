@@ -2513,6 +2513,24 @@ func set_seat_gear(seat: int, gear: Dictionary) -> bool:
 	return true
 
 
+## Room Tonic (Mauro 29 Sep 2026): Stasis intermission only. The fight must
+## be over and won by `seat`; heals floor(30% max HP), never over max. The
+## healed HP is what Room B carries. Returns the HP actually restored.
+func intermission_heal(seat: int, pct: int) -> int:
+	if not _match_over or _winner_seat != seat:
+		return 0
+	var unit := _unit_by_seat(seat)
+	if unit.is_empty():
+		return 0
+	var max_hp := int(unit.get("max_hp", START_HP))
+	var hp := int(unit.get("hp", 0))
+	var healed := mini(int(floor(float(max_hp) * float(pct) / 100.0)), max_hp - hp)
+	if healed <= 0:
+		return 0
+	unit["hp"] = hp + healed
+	return healed
+
+
 ## Worn gear from the roster: {"worn": [{item_id, plus}], "attune": {family: element}}.
 ## GearBag.combat_stats sanitises it (valid ids, one per slot, +0–+5, AP/MP 8/5).
 func _apply_gear(unit: Dictionary, raw: Variant) -> void:

@@ -29,6 +29,7 @@ func _run() -> void:
 	_test_duskbrand_stall()
 	_test_save_roundtrip()
 	_test_net_payout()
+	_test_room_tonic()
 	_test_hub_shop()
 	_wipe()
 	print("Koliseo wallet tests: %d passed, %d failed" % [_passed, _failed])
@@ -158,7 +159,48 @@ func _test_net_payout() -> void:
 	eq(KoliseoWallet.load_saved().trophies, 1, "the dedicated server pays nobody")
 	net.free()
 	var src := FileAccess.get_file_as_string("res://scenes/stasis_fight.gd")
-	eq(src.contains("KoliseoWallet") or src.contains("record_human_win"), false, "Stasis never pays Koliseo coins")
+	eq(src.contains("record_human_win") or src.contains(".coins") or src.contains("buy_tonic"), false, "Stasis never pays Koliseo coins")
+
+
+func _test_room_tonic() -> void:
+	eq(KoliseoWallet.TONIC_COST, 1, "Room Tonic costs 1 coin")
+	eq(KoliseoWallet.TONIC_CARRY, 3, "carry cap 3")
+	eq(KoliseoWallet.TONIC_HEAL_PCT, 30, "heals 30% max HP")
+	eq(KoliseoWallet.SHOP.has(KoliseoWallet.TONIC_SKU), false, "no trophy price for the tonic")
+	var w := KoliseoWallet.new()
+	w.trophies = 50
+	eq(str(w.buy_tonic()["reason"]), "not_enough_coins", "trophies cannot buy a tonic")
+	w.coins = 5
+	for i in 3:
+		eq(bool(w.buy_tonic()["ok"]), true, "buy tonic %d" % (i + 1))
+	eq(w.tonics, 3, "tonics stack to 3")
+	eq(str(w.buy_tonic()["reason"]), "tonic_full", "a 4th tonic is refused")
+	eq(w.coins, 2, "3 tonics cost 3 coins")
+	eq(w.trophies, 50, "tonics never cost trophies")
+	truthy(w.use_tonic(), "use a tonic")
+	eq(w.tonics, 2, "one tonic used")
+	w.save()
+	eq(KoliseoWallet.load_saved().tonics, 2, "tonics survive a reload")
+	var tampered := KoliseoWallet.new()
+	tampered.from_dict({"tonics": 9})
+	eq(tampered.tonics, 3, "loaded tonics clamp to 3")
+	var empty := KoliseoWallet.new()
+	eq(empty.use_tonic(), false, "no tonic to use")
+	# Never from chests.
+	for path in ["res://backend/gear_bag.gd", "res://backend/still_vault.gd"]:
+		eq(FileAccess.get_file_as_string(path).contains("tonic"), false, "%s never drops tonics" % path)
+	# The CombatSim heal only works once the seat has won.
+	var sim: Node = (load("res://backend/combat_sim.gd") as Script).new()
+	sim.reset_match({"seed": 1, "flat_board": true, "rolls": [1], "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(6, 3)})
+	var unit: Dictionary = sim._unit_by_seat(0)
+	unit["hp"] = 10
+	eq(sim.intermission_heal(0, 30), 0, "no heal mid-fight")
+	sim._match_over = true
+	sim._winner_seat = 1
+	eq(sim.intermission_heal(0, 30), 0, "no heal for the losing seat")
+	sim._winner_seat = 0
+	eq(sim.intermission_heal(0, 30), int(floor(int(unit["max_hp"]) * 0.3)), "winner heals floor(30%)")
+	sim.free()
 
 
 func _test_hub_shop() -> void:
@@ -188,6 +230,16 @@ func _test_hub_shop() -> void:
 	eq(label.text, "Coins 0  ·  Trophies 7", "stall spends coins")
 	eq(shop.slot_button("chest").disabled, true, "stall greys out at 0 coins")
 	eq(GearBag.load_saved().count_of("duskbrand.head"), 1, "stall part saved in the gear bag")
+	eq(shop.tonic_button().disabled, true, "tonic greys out at 0 coins")
+	var rich := KoliseoWallet.load_saved()
+	rich.coins = 1
+	rich.save()
+	shop._wallet = KoliseoWallet.load_saved()
+	shop._refresh()
+	eq(shop.tonic_button().text, "Room Tonic — 1 coin  (0/3)", "shop lists the tonic for 1 coin")
+	eq(bool(shop.buy_tonic().get("ok", false)), true, "buy a tonic in the hub shop")
+	eq(KoliseoWallet.load_saved().tonics, 1, "the tonic is saved")
+	eq(label.text, "Coins 0  ·  Trophies 7", "the tonic spends the coin")
 	hub.free()
 
 
