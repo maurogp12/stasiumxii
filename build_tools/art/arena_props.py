@@ -33,7 +33,10 @@ CUTS = {
         "rock_pillar": (520, 30, 665, 378, 30),
         "ash_rock": (870, 190, 1178, 380, 52),
         "floor_seal": (870, 190, 1178, 380, 40),
-        "steam_vent": (800, 760, 1330, 1250, 70),
+        # Mauro: one volcano, in the centre of the map. The three steam vents
+        # are hidden; ArenaLook draws "volcano" as the centrepiece on (7,7).
+        "steam_vent": ("none",),
+        "volcano": (800, 760, 1330, 1250, 112),
         # Pale stone chunks read as litter on the basalt.
         "rubble": ("none",),
     },

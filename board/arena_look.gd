@@ -24,6 +24,8 @@ const STYLES := {
 		"surfaces": {"lava": [1, 1.0], "ground": [2, 1.0], "mud": [2, 0.85]},
 		"no_grid": ["lava"],
 		"edge_glow": Color(1.0, 0.40, 0.08, 0.95), "edge_from": "lava",
+		# One volcano on the centre lava cross (Mauro, 29 Sep). Decoration only.
+		"centerpiece": {"cell": Vector2i(7, 7), "prop": "volcano"},
 	},
 	"brinewake": {
 		"ink": Color(0.05, 0.05, 0.07, 0.9), "ink_px": 2.2,
@@ -117,3 +119,11 @@ static func prop_for(map_id: String, prop_name: String) -> Texture2D:
 static func surface_for(map_id: String, terrain: String) -> Array:
 	var surfaces: Dictionary = style_for(map_id).get("surfaces", {})
 	return surfaces.get(terrain, [])
+
+
+## Big decoration an arena draws on one cell (Slagcrown's volcano), or {}.
+static func centerpiece_for(map_id: String, cell: Vector2i) -> Texture2D:
+	var piece: Dictionary = style_for(map_id).get("centerpiece", {})
+	if piece.is_empty() or piece.get("cell") != cell:
+		return null
+	return prop_for(map_id, str(piece.get("prop", "")))

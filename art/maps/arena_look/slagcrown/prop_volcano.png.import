@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b64ho4vd0jbth"
-path="res://.godot/imported/prop_ruins.png-0502d97e9ac7821a02d378f77d173967.ctex"
+uid="uid://bqtqnf2djs6mv"
+path="res://.godot/imported/prop_volcano.png-b79a05aa2a6137e09c78eebb381c1f90.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/maps/arena_look/crosshaven/prop_ruins.png"
-dest_files=["res://.godot/imported/prop_ruins.png-0502d97e9ac7821a02d378f77d173967.ctex"]
+source_file="res://art/maps/arena_look/slagcrown/prop_volcano.png"
+dest_files=["res://.godot/imported/prop_volcano.png-b79a05aa2a6137e09c78eebb381c1f90.ctex"]
 
 [params]
 

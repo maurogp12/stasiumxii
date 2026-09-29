@@ -98,6 +98,11 @@ func _draw() -> void:
 		_hide_surface()
 		_paint_terrain(tex)
 		_paint_depth_rim()
+	var piece: Texture2D = _ArenaLook.centerpiece_for(_look_map, grid_position) if _look_map != "" else null
+	if piece != null:
+		# Centred on the cell, base a little below the diamond so it sits in the lava.
+		var size := piece.get_size()
+		draw_texture(piece, Vector2(-size.x * 0.5, float(TILE_HEIGHT) * 0.5 + 6.0 - size.y))
 	for prop_name in _paint_props:
 		var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
 		if prop_tex == null:
