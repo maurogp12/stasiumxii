@@ -265,6 +265,8 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	# Breath and sway follow alive (and class/seat) on every body material.
+	_apply_figure_read()
 	rewrite_frozen_vitals()
 
 
@@ -1429,6 +1431,12 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
 	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+	# Living idle: a slow breath and a small head sway, per-fighter phase so a
+	# pair never breathes in lockstep. Heavy plate breathes less. Off when down.
+	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
+	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive else 0.0)
+	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive else 0.0)
+	mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(class_id.hash() % 97) * 0.13)
 
 
 func _apply_figure_read() -> void:

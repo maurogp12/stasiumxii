@@ -105,6 +105,7 @@ var _board_size: int = BoardSize.SHIP
 var _camera: Camera2D
 var _koliseo_life: Node2D
 var _arena_sky: Node2D
+var _shake_tween: Tween
 var _fit_camera_pos := Vector2.ZERO
 var _pan_limit := Vector2(PAN_LIMIT, PAN_LIMIT)
 var _framed_cell := Vector2i(-999, -999)
@@ -1238,6 +1239,7 @@ func _play_combat_feedback(events: Array) -> void:
 					target_pawn.flash_support()
 				_:
 					target_pawn.flash_hit()
+					_shake_camera(float(event.get("dealt", event.get("damage", 0))), dying.has(target_seat))
 			if not dying.has(target_seat):
 				_tween_pawn_modulate(target_pawn)
 		if int(event.get("engine_gained", 0)) > 0 and str(event.get("engine", "")) == "impact":
@@ -1246,6 +1248,30 @@ func _play_combat_feedback(events: Array) -> void:
 				var caster_pawn: Pawn = pawns_by_seat[caster_seat]
 				caster_pawn.flash_impact()
 				_tween_pawn_modulate(caster_pawn)
+
+
+## Impact punch (view only): a short decaying camera wobble. Bigger hits and
+## knockouts shake more. A sine wobble, not dice, so it never touches the sim.
+func _shake_camera(dealt: float, knockout: bool) -> void:
+	if _camera == null or not is_instance_valid(_camera) or not is_inside_tree():
+		return
+	if dealt <= 0.0 and not knockout:
+		return
+	var amp := clampf(1.5 + dealt * 0.12, 1.5, 5.0)
+	if knockout:
+		amp = 7.0
+	if _shake_tween != null and is_instance_valid(_shake_tween):
+		_shake_tween.kill()
+	_shake_tween = create_tween()
+	_shake_tween.tween_method(_apply_shake.bind(amp), 0.0, 1.0, 0.26 if not knockout else 0.4)
+	_shake_tween.tween_callback(func() -> void: _camera.offset = Vector2.ZERO)
+
+
+func _apply_shake(t: float, amp: float) -> void:
+	if _camera == null or not is_instance_valid(_camera):
+		return
+	var fall := (1.0 - t) * (1.0 - t)
+	_camera.offset = Vector2(sin(t * 57.0), cos(t * 43.0) * 0.6) * amp * fall / _camera.zoom.x
 
 
 func _tween_pawn_modulate(pawn: Pawn) -> void:
