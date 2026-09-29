@@ -48,6 +48,8 @@ on those branches) → the in-game **Actualizar** button.
 
 | 0.1.42 | Stormspire: floor tiles sampled from Mauro's second Stormspire picture (blue-grey cracked slabs); decoration thinned to 4 obelisks + 4 corner crystals; one tall obelisk tower in the centre (7,7). Lighting unchanged. The 8 blocking props (4 rock pillars, 4 arcs) are unchanged — removing them would change gameplay, not approved yet | Mauro: "too many obstacles … tiles like the pictures, do not change the lighting" | see 0.1.42 commits |
 
+| 0.1.43 | **Kit change:** Kestrel Mark Shot range Chebyshev 2–7 → **2–5** (`data/kits.gd`). Range tests, README and the GDD handoff updated. Hit bands, damage and Marks unchanged. The Blueprint docx and Spells xlsx (outside git) still say 2–7 — Mauro/other agents should patch those | Mauro: "Kestrel has way too much range, Mark Shot 2 less spaces" | see 0.1.43 commits |
+
 Each version bump is its own `Stamp Android sideload …` commit. All 18
 headless suites pass on every build listed above.
 

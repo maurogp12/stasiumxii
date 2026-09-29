@@ -449,10 +449,10 @@ func _test_both_ready_starts_combat() -> void:
 	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
 	var opening: int = _sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"])
 	eq(opening >= 3, true, "confirmed seats open at least Chebyshev 3")
-	if opening >= 2 and opening <= 7:
-		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–7")
+	if opening >= 2 and opening <= 5:
+		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5")
 	else:
-		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–7")
+		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
 	eq(kinds.has("place"), false, "place is not a combat intent")
 	var events: Array = started.get("events", [])
 	var saw_combat := false
@@ -3239,7 +3239,7 @@ func _test_back_facing_multiplier() -> void:
 
 func _test_mark_shot_range_and_marks() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range 7 Chebyshev")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range 5 Chebyshev (Mauro, 29 Sep)")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage stays 8")
 	_sim.reset_match({
 		"seed": 1,
@@ -3253,6 +3253,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	eq(_unit(1)["hp"], 72, "8 Air on connect")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
+	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
 	for dist in [6, 7]:
 		_sim.reset_match({
 			"seed": 1,
@@ -3262,10 +3263,10 @@ func _test_mark_shot_range_and_marks() -> void:
 			"ironjaw_pos": Vector2i(dist, 0),
 		})
 		result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(dist, 0)})
-		eq(result["ok"], true, "Mark Shot at range %d is legal" % dist)
-		eq(_unit(1)["hp"], 72, "8 Air on connect at range %d" % dist)
-		eq(_unit(1)["marks"], 1, "Marks stored on the target at range %d" % dist)
-		eq(result["events"][0]["hit_chance"], 70, "range %d uses the 70%% long band" % dist)
+		eq(bool(result.get("ok", true)), false, "Mark Shot at range %d is out of range" % dist)
+		eq(str(result.get("reason", "")), "out_of_range", "range %d rejects as out_of_range" % dist)
+		eq(_unit(1)["hp"], 80, "no damage at range %d" % dist)
+		eq(_unit(0)["ap"], 6, "range %d refunds the AP" % dist)
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3382,8 +3383,6 @@ func _test_hit_bands() -> void:
 	_assert_aim_matches_resolve(2, SpellKits.MARK_SHOT, 80)
 	_assert_aim_matches_resolve(4, SpellKits.MARK_SHOT, 75)
 	_assert_aim_matches_resolve(4, SpellKits.DETONATE, 75)
-	_assert_aim_matches_resolve(6, SpellKits.MARK_SHOT, 70)
-	_assert_aim_matches_resolve(7, SpellKits.MARK_SHOT, 70)
 	for dist in [9, 10, 11, 12, 13, 14]:
 		_assert_far_band_chrome(dist, int(locked[dist]))
 	_assert_past_locked_band()
@@ -3953,7 +3952,7 @@ func _test_advance_cardinal_range_gate() -> void:
 	var kits := FileAccess.get_file_as_string("res://data/kits.gd")
 	truthy(kits.contains("Manhattan"), "kit range_text still names Manhattan")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance selected range is exactly 2 cardinal")
-	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–7", "Mark Shot selected range omits Chebyshev")
+	eq(SpellKits.range_text(SpellKits.spell(SpellKits.MARK_SHOT)), "range 2–5", "Mark Shot selected range omits Chebyshev")
 	eq(hud.contains("%d AP + Manhattan MP"), false, "HUD no longer advertises Manhattan MP for Advance")
 	eq(hud.contains("%dAP + MP"), false, "HUD Advance button is not AP + MP")
 	eq(hud.contains("Detonate"), false, "range patch does not add Detonate")
@@ -4042,7 +4041,7 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 
 
 func _test_mark_shot_range_highlights() -> void:
-	# Selecting Mark Shot must show the Chebyshev 2–7 ring, not only the enemy tile.
+	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
@@ -4053,7 +4052,7 @@ func _test_mark_shot_range_highlights() -> void:
 			if cell == origin:
 				continue
 			var dist := int(_sim.chebyshev(origin, cell))
-			if dist >= 2 and dist <= 7:
+			if dist >= 2 and dist <= 5:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
 	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
@@ -4065,11 +4064,11 @@ func _test_mark_shot_range_highlights() -> void:
 	var painted: Dictionary = {}
 	for cell in _sim.range_highlight_cells(0, SpellKits.MARK_SHOT):
 		painted[cell] = true
-	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–7")
+	eq(painted.size(), expected.size(), "range_highlight_cells matches Chebyshev 2–5")
 	for cell in expected.keys():
 		truthy(painted.has(cell), "Chebyshev ring tile %s is highlighted" % str(cell))
 	for cell in painted.keys():
-		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–7" % str(cell))
+		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
 
 	# legal_intents still only offer the enemy dest, not every ring tile.
 	var legal_dests := 0
@@ -4108,8 +4107,8 @@ func _test_mark_shot_range_highlights() -> void:
 		if dist == 1:
 			has_r1 = true
 	truthy(has_r5, "Chebyshev 5 tiles are in Mark Shot chrome")
-	truthy(has_r6, "Chebyshev 6 is inside Mark Shot chrome")
-	truthy(has_r7, "Chebyshev 7 is inside Mark Shot chrome")
+	eq(has_r6, false, "Chebyshev 6 is outside Mark Shot chrome")
+	eq(has_r7, false, "Chebyshev 7 is outside Mark Shot chrome")
 	eq(has_r8, false, "Chebyshev 8 is outside Mark Shot chrome")
 	eq(has_r1, false, "Chebyshev 1 is outside Mark Shot chrome")
 
@@ -4449,7 +4448,7 @@ func _test_drop_shade_range() -> void:
 	eq(SpellKits.SHADE_CAP, 2, "Shade stack cap stays 2")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.DROP_SHADE)), "range 1–3", "Drop Shade range_text is 1–3")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 7, "Mark Shot max range stays 7")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range is 5")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["min_range"]), 1, "Detonate min range stays 1")
 	eq(int(SpellKits.spell(SpellKits.DETONATE)["max_range"]), 4, "Detonate max range stays 4")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["min_range"]), 1, "Ambush min stays 1")
@@ -5731,7 +5730,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 
 func _test_legal_intents_new_spell_gates() -> void:
 	# Detonate appears only with 1+ Marks on the target and Chebyshev 1–4.
-	# Mark Shot is Chebyshev 2–7.
+	# Mark Shot is Chebyshev 2–5 (Mauro, 29 Sep).
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -5780,7 +5779,7 @@ func _test_legal_intents_new_spell_gates() -> void:
 			"ironjaw_marks": 1,
 		})
 		eq(_has_legal_cast(0, "detonate"), false, "Detonate out of range at Chebyshev %d" % dist)
-		eq(_has_legal_cast(0, "mark_shot"), true, "Mark Shot legal at Chebyshev %d" % dist)
+		eq(_has_legal_cast(0, "mark_shot"), dist <= 5, "Mark Shot legal only through Chebyshev 5 (at %d)" % dist)
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6207,8 +6206,8 @@ func _test_preview_cast() -> void:
 	eq(preview["mp"], 0, "Mark Shot costs 0 MP")
 	eq(preview["range_mode"], "chebyshev", "Mark Shot range_mode is Chebyshev")
 	eq(preview["min_range"], 2, "Mark Shot min 2")
-	eq(preview["max_range"], 7, "Mark Shot max 7")
-	eq(preview["range_text"], "range 2–7", "Mark Shot HUD range_text omits Chebyshev")
+	eq(preview["max_range"], 5, "Mark Shot max 5")
+	eq(preview["range_text"], "range 2–5", "Mark Shot HUD range_text omits Chebyshev")
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
@@ -6741,8 +6740,8 @@ func _test_spell_tooltip_cards() -> void:
 	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
-	eq(mark_preview["range_text"], "range 2–7", "Mark Shot preview_cast range_text is player-facing")
-	truthy(mark.contains("range 2–7"), "Mark Shot card names range from preview")
+	eq(mark_preview["range_text"], "range 2–5", "Mark Shot preview_cast range_text is player-facing")
+	truthy(mark.contains("range 2–5"), "Mark Shot card names range from preview")
 	eq(mark.contains("Chebyshev"), false, "Mark Shot card does not name Chebyshev")
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
