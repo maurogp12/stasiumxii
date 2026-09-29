@@ -153,7 +153,10 @@ func _refresh() -> void:
 	var grey := ""
 	if int(apmp["ap_greyed"]) > 0 or int(apmp["mp_greyed"]) > 0:
 		grey = "   (extra greyed out)"
-	_header.text = "Gear   AP %d/%d   MP %d/%d%s   Stasis loot left today %d/%d" % [
+	var st := GearBag.combat_stats(_bag.worn_list(), _bag.attune)
+	var hp := roundi(float(80 + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0))
+	_header.text = "Gear   HP %d   Mastery %d   Init %d   AP %d/%d   MP %d/%d%s   Loot today %d/%d" % [
+		hp, int(st["mastery"]), int(st["init"]),
 		int(apmp["ap"]), GearBag.AP_CAP, int(apmp["mp"]), GearBag.MP_CAP, grey,
 		_bag.loot_clears_left(int(Time.get_unix_time_from_system())), GearBag.LOOT_CLEARS_PER_DAY,
 	]
@@ -181,7 +184,7 @@ func _refresh() -> void:
 		var uid := int(it["uid"])
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
-		var wear_button := _button(GearBag.item_label(it) + ("  (worn)" if _bag.is_equipped(uid) else ""))
+		var wear_button := _button("%s  ·  %s%s" % [GearBag.item_label(it), GearBag.part_line(str(it["item_id"]), int(it["plus"])), "  (worn)" if _bag.is_equipped(uid) else ""])
 		wear_button.name = "Item_%d" % uid
 		wear_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		_tint(wear_button, str(it["item_id"]))
@@ -234,7 +237,7 @@ func _refresh() -> void:
 			_sets_box.add_child(row)
 	if not any:
 		_sets_box.add_child(_label("Wear 2 pieces of one family for its first bonus.", 14, GOLD_DIM))
-	_sets_box.add_child(_label("Set bonuses count in Stasis and online Koliseo (HP, Mastery, Resist, AP/MP). Init, FLEX and 5pc effects are not active yet.", 12, GOLD_DIM))
+	_sets_box.add_child(_label("Gear counts in Stasis and online Koliseo (Koliseo counts every part as +0). Init turn order and the Undertow / Ironveil / Brightedge 5pc effects are not active yet.", 12, GOLD_DIM))
 
 
 static func _reason_text(reason: String) -> String:

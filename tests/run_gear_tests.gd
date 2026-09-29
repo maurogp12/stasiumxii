@@ -261,7 +261,7 @@ func _test_gear_screen() -> void:
 func _test_stasis_chest_wiring() -> void:
 	var fight: Script = load("res://scenes/stasis_fight.gd")
 	eq(fight.chest_line({"chest": false, "items": []}), "Chest empty — 5 loot clears used today.", "empty chest copy")
-	eq(fight.chest_line({"chest": true, "items": [{"item_id": "undertow.legs", "plus": 0}]}), "Chest: Undertow Legs +0. Wear it in Gear.", "chest copy names the piece")
+	eq(fight.chest_line({"chest": true, "items": [{"item_id": "undertow.legs", "plus": 0}]}), "Chest: Undertow Guards +0. Wear it in Gear.", "chest copy names the piece")
 	var src := FileAccess.get_file_as_string("res://scenes/stasis_fight.gd")
 	truthy(src.contains("record_stasis_clear"), "a Stasis clear opens the chest")
 	eq(src.contains("KoliseoWallet"), false, "Stasis never pays Koliseo coins")
@@ -341,14 +341,19 @@ func _test_gear_in_fights() -> void:
 	}})
 	var sheaf: Dictionary = sim._unit_by_seat(0)
 	var dusk: Dictionary = sim._unit_by_seat(1)
-	eq(int(sheaf["max_hp"]), 88, "Sheaf 2pc +10% HP → 88")
-	eq(int(sheaf["hp"]), 88, "fight starts at full geared HP")
-	eq(int(sheaf["mastery"]), 8, "Sheaf 4pc +8 Mastery")
+	eq(int(sheaf["max_hp"]), 196, "Sheaf 5: (80 + 98 part HP) × 1.10 = 196")
+	eq(int(sheaf["hp"]), 196, "fight starts at full geared HP")
+	eq(int(sheaf["mastery"]), 18, "Sheaf 5: 10 part Mastery + 8 (4pc) = 18")
 	eq(int(sheaf["resist"]), 8, "Sheaf 5pc +8% all resist")
+	eq(sheaf["resist_elem"], {"earth": 15}, "Sheaf part resist 15 goes to its default Earth attune")
+	eq(sheaf["flex_riders"], {"earth": 10}, "Sheaf 2-piece rider +10% Earth FLEX")
+	eq(int(sheaf["init"]), 3, "Sheaf boots Init 3")
 	eq(int(dusk["max_ap"]), 7, "Duskbrand 5pc → 7 AP")
 	eq(int(dusk["max_mp"]), 4, "Duskbrand 5pc → 4 MP")
-	eq(int(dusk["max_hp"]), 86, "Duskbrand 4pc +8% HP → 86")
-	eq(int(dusk["mastery"]), 0, "+12% of 0 Mastery is still 0")
+	eq(int(dusk["max_hp"]), 149, "Duskbrand: (80 + 58) × 1.08 = 149")
+	eq(int(dusk["mastery"]), 27, "Duskbrand: 24 part Mastery × 1.12 = 27")
+	eq(dusk["resist_elem"], {"neutral": 9}, "Duskbrand has no attune — resist stays Neutral")
+	eq(int(dusk["init"]), 18, "Duskbrand Init 12 parts + 6 (4pc) = 18")
 	var snap: Dictionary = sim.snapshot()
 	sim.submit({"type": "end_turn", "seat": int(snap["active_seat"])})
 	var after: Dictionary = sim._unit_by_seat(1)
@@ -357,10 +362,41 @@ func _test_gear_in_fights() -> void:
 	eq(sim._phase_a_damage(20, 1.0, {}, {}), 20, "base damage unchanged without gear")
 	eq(sim._phase_a_damage(20, 1.0, {"mastery": 8}, {}), 22, "+8 Mastery → 21.6 → 22")
 	eq(sim._phase_a_damage(20, 1.0, {}, {"resist": 8}), 18, "+8% resist → 18.4 → 18")
-	eq(sim._phase_a_damage(20, 1.0, {}, {"attuned_element": "fire", "attuned_resist": 8}, "fire"), 18, "attuned resist vs its element")
-	eq(sim._phase_a_damage(20, 1.0, {}, {"attuned_element": "fire", "attuned_resist": 8}, "air"), 20, "attuned resist ignores other elements")
+	eq(sim._phase_a_damage(20, 1.0, {}, {"resist_elem": {"fire": 8}}, "fire"), 18, "element resist vs its element")
+	eq(sim._phase_a_damage(20, 1.0, {}, {"resist_elem": {"fire": 8}}, "air"), 20, "element resist ignores other elements")
+	eq(sim._phase_a_damage(20, 1.0, {"flex_riders": {"air": 10}}, {}, "air"), 22, "Air rider +10% on an Air hit")
+	eq(sim._phase_a_damage(20, 1.0, {"flex_riders": {"air": 10}}, {}, "neutral"), 20, "neutral spells take no rider")
+	var first := {"first_flex_pct": 15, "first_flex_ready": true}
+	eq(sim._phase_a_damage(20, 1.0, first, {}, "air"), 23, "Stillcut 5 first FLEX hit +15% (preview)")
+	eq(bool(first["first_flex_ready"]), true, "a preview does not spend it")
+	sim._phase_a_damage(20, 1.0, first, {}, "air", true)
+	eq(bool(first["first_flex_ready"]), false, "a resolved hit spends it")
+	eq(sim._phase_a_damage(20, 1.0, first, {}, "air"), 20, "only the first FLEX hit")
 	var att := GearBag.combat_stats(_worn("ironveil", ["head", "chest"]), {"ironveil": "Fire"})
-	eq([att["attuned_element"], att["attuned_resist"]], ["fire", 8], "Ironveil 2pc attuned Fire → 8% vs fire")
+	eq(att["resist_elem"], {"fire": 19}, "Ironveil pick Fire: parts 5+6 plus 2pc +8 = 19 vs fire")
+	eq(att["riders"], {"fire": 10}, "Ironveil Fire rider +10%")
+	var neutral := GearBag.combat_stats(_worn("ironveil", ["head"]), {"ironveil": "Fire"})
+	eq(neutral["resist_elem"], {"neutral": 5}, "1 piece: attune grey, resist Neutral")
+	var still := GearBag.combat_stats(_worn("stillcut", ["head", "chest"]), {})
+	eq(still["riders"], {}, "Stillcut has no default element — player must pick")
+	# Sheet page 23 "Same parts, same numbers": full +0 set part totals.
+	var sheet := {"sheaf": [98, 10, 15, 3], "undertow": [64, 17, 9, 18], "ironveil": [90, 8, 27, 3], "stillcut": [92, 32, 18, 8], "brightedge": [54, 32, 7, 4], "duskbrand": [58, 24, 9, 12]}
+	for fam in sheet:
+		var tot := [0, 0, 0, 0]
+		for slot in GearBag.SLOTS:
+			var st := GearBag.part_stats("%s.%s" % [fam, slot], 0)
+			tot = [tot[0] + int(st["hp"]), tot[1] + int(st["mastery"]), tot[2] + int(st["resist"]), tot[3] + int(st["init"])]
+		eq(tot, sheet[fam], "%s part totals match the sheet (HP, Mastery, Resist, Init)" % fam)
+	# Fuse ladder multipliers.
+	eq(GearBag.part_stats("sheaf.head", 5)["hp"], 50, "Sheaf Helm 28 HP × 1.78 at +5 = 50")
+	eq(GearBag.part_stats("stillcut.weapon", 3)["mastery"], 20, "Second-Edge 14 × 1.41 at +3 = 20")
+	var flat := GearBag.combat_stats(_worn("sheaf", ["head"], 5), {}, true)
+	eq(int(flat["hp_flat"]), 28, "Koliseo flatten: a +5 helm counts as +0")
+	eq(GearBag.item_label({"item_id": "stillcut.chest", "plus": 2}), "Hourplate +2", "items use the sheet names")
+	eq(GearBag.weighted_slot(0.0), "weapon", "slot roll 0 → weapon")
+	eq(GearBag.weighted_slot(0.17), "weapon", "weapon is the first 18%")
+	eq(GearBag.weighted_slot(0.19), "head", "then head")
+	eq(GearBag.weighted_slot(0.999), "boots", "boots last")
 	# Cheats and junk are cleaned: bad ids, duplicate slots, +9, AP cap.
 	var junk := GearBag.combat_stats([{"item_id": "duskbrand.head", "plus": 9}, {"item_id": "duskbrand.head"}, {"item_id": "wheat.legs"}, "x"])
 	eq([junk["ap"], junk["mp"], junk["hp_pct"]], [6, 3, 0], "one Duskbrand head gives nothing")
@@ -371,7 +407,7 @@ func _test_gear_in_fights() -> void:
 	eq(sim.set_seat_gear(0, {"worn": _worn("sheaf", ["head", "chest"])}), false, "gear cannot change mid-combat")
 	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
 	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
-	eq(int(sim._unit_by_seat(1)["max_hp"]), 88, "late gear raised seat 1 HP")
+	eq(int(sim._unit_by_seat(1)["max_hp"]), 163, "late gear raised seat 1 HP to (80+28+40)×1.10")
 	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
 	net.mode = net.Mode.DEDICATED
@@ -394,7 +430,7 @@ func _test_gear_in_fights() -> void:
 	var player_rec: Dictionary = fight_cfg["stasis_roster"][0]
 	eq(player_rec["gear"]["worn"].size(), 2, "Stasis fight carries the worn gear")
 	sim.reset_match(fight_cfg)
-	eq(int(sim._unit_by_seat(0)["max_hp"]), 88, "Stasis player gets +10% HP from Sheaf 2pc")
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 163, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
 	StasisCatalog.player_hp = 60
 	sim.reset_match(StasisCatalog.fight_config())
 	eq(int(sim._unit_by_seat(0)["hp"]), 60, "Room B carries Room A HP under the geared max")

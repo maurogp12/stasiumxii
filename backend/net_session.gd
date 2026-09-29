@@ -901,6 +901,10 @@ func _authority_gear_config(config: Dictionary) -> Dictionary:
 		gear[HOST_SEAT] = GearBag.load_saved().fight_gear()
 	for seat in _seat_gear:
 		gear[seat] = _seat_gear[seat]
+	# Koliseo arena flatten (Mobile Sets): parts count as +0; set bonuses stay.
+	for seat in gear:
+		gear[seat] = (gear[seat] as Dictionary).duplicate(true)
+		gear[seat]["flatten_plus"] = true
 	if not gear.is_empty():
 		out["seat_gear"] = gear
 	return out

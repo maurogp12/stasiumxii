@@ -54,7 +54,7 @@ const FAMILIES := {
 	"stillcut": {
 		"name": "Stillcut", "rarity": "Rare", "role": "Cut", "source": "Stasis ★3+", "min_star": 3,
 		"bonus": {2: "+8% FLEX", 4: "+8 Mastery", 5: "First FLEX HIT of fight +15%"},
-		"stats": {2: {"flex_pct": 8}, 4: {"mastery": 8}},
+		"stats": {2: {"flex_pct": 8}, 4: {"mastery": 8}, 5: {"first_flex_pct": 15}},
 	},
 	"brightedge": {
 		"name": "Brightedge", "rarity": "Legendary", "role": "Pressure", "source": "Stasis ★5 / boss", "min_star": 5,
@@ -67,6 +67,51 @@ const FAMILIES := {
 		"stats": {2: {"mastery_pct": 12}, 4: {"hp_pct": 8, "init": 6}, 5: {"ap": 1, "mp": 1}},
 	},
 }
+## Mobile Startup Sets v0.3 (Mauro's sheet, 29 Sep 2026), "Parts" page:
+## +0 numbers per part. Weapon = Mastery, head = HP, chest = HP + resist,
+## legs = resist, boots = Init. Part resist is resist to the element that
+## family is attuned to. Rare .ap/.mp variants (★4+) are not dropped yet.
+const PARTS := {
+	"sheaf.weapon": {"name": "Sheaf Hook", "hp": 0, "mastery": 8, "resist": 0, "init": 0},
+	"sheaf.head": {"name": "Sheaf Helm", "hp": 28, "mastery": 2, "resist": 2, "init": 0},
+	"sheaf.chest": {"name": "Sheaf Coat", "hp": 40, "mastery": 0, "resist": 3, "init": 0},
+	"sheaf.legs": {"name": "Sheaf Guards", "hp": 16, "mastery": 0, "resist": 8, "init": 0},
+	"sheaf.boots": {"name": "Sheaf Treads", "hp": 14, "mastery": 0, "resist": 2, "init": 3},
+	"undertow.weapon": {"name": "Undertow Edge", "hp": 0, "mastery": 8, "resist": 0, "init": 3},
+	"undertow.head": {"name": "Undertow Helm", "hp": 18, "mastery": 3, "resist": 2, "init": 3},
+	"undertow.chest": {"name": "Undertow Plate", "hp": 26, "mastery": 2, "resist": 2, "init": 2},
+	"undertow.legs": {"name": "Undertow Guards", "hp": 12, "mastery": 2, "resist": 4, "init": 2},
+	"undertow.boots": {"name": "Undertow Treads", "hp": 8, "mastery": 2, "resist": 1, "init": 8},
+	"brightedge.weapon": {"name": "Brightedge", "hp": 0, "mastery": 12, "resist": 0, "init": 0},
+	"brightedge.head": {"name": "Gleam Helm", "hp": 16, "mastery": 6, "resist": 1, "init": 0},
+	"brightedge.chest": {"name": "Gleam Coat", "hp": 22, "mastery": 6, "resist": 2, "init": 0},
+	"brightedge.legs": {"name": "Gleam Guards", "hp": 10, "mastery": 4, "resist": 3, "init": 0},
+	"brightedge.boots": {"name": "Gleam Treads", "hp": 6, "mastery": 4, "resist": 1, "init": 4},
+	"ironveil.weapon": {"name": "Veil Bit", "hp": 0, "mastery": 7, "resist": 2, "init": 0},
+	"ironveil.head": {"name": "Veil Casque", "hp": 26, "mastery": 1, "resist": 5, "init": 0},
+	"ironveil.chest": {"name": "Veil Plate", "hp": 34, "mastery": 0, "resist": 6, "init": 0},
+	"ironveil.legs": {"name": "Veil Guards", "hp": 18, "mastery": 0, "resist": 10, "init": 0},
+	"ironveil.boots": {"name": "Veil Treads", "hp": 12, "mastery": 0, "resist": 4, "init": 3},
+	"stillcut.weapon": {"name": "Second-Edge", "hp": 0, "mastery": 14, "resist": 0, "init": 0},
+	"stillcut.head": {"name": "Stillcut Helm", "hp": 28, "mastery": 6, "resist": 4, "init": 0},
+	"stillcut.chest": {"name": "Hourplate", "hp": 32, "mastery": 4, "resist": 5, "init": 0},
+	"stillcut.legs": {"name": "Pause Greaves", "hp": 22, "mastery": 4, "resist": 7, "init": 0},
+	"stillcut.boots": {"name": "Stride", "hp": 10, "mastery": 4, "resist": 2, "init": 8},
+	"duskbrand.weapon": {"name": "Duskbrand", "hp": 0, "mastery": 10, "resist": 0, "init": 2},
+	"duskbrand.head": {"name": "Dusk Helm", "hp": 16, "mastery": 4, "resist": 2, "init": 2},
+	"duskbrand.chest": {"name": "Dusk Coat", "hp": 22, "mastery": 4, "resist": 2, "init": 1},
+	"duskbrand.legs": {"name": "Dusk Guards", "hp": 12, "mastery": 3, "resist": 4, "init": 1},
+	"duskbrand.boots": {"name": "Dusk Treads", "hp": 8, "mastery": 3, "resist": 1, "init": 6},
+}
+## Fuse ladder: plus 0..5 multiplies the part numbers.
+const FUSE_MULT: Array[float] = [1.00, 1.12, 1.26, 1.41, 1.58, 1.78]
+## Attune page. Stillcut has no default (player must pick); Duskbrand has no
+## attune row, so its part resist stays Neutral.
+const DEFAULT_ATTUNE := {"sheaf": "Earth", "undertow": "Air", "brightedge": "Fire", "ironveil": "Earth"}
+## 2-piece attune rider: +% FLEX dmg/heal of the attuned element.
+const ATTUNE_RIDER := {"sheaf": 10, "undertow": 10, "stillcut": 15, "brightedge": 10, "ironveil": 10}
+## Designer knobs slot_w_*: weapon is rarer.
+const SLOT_WEIGHT := {"weapon": 18.0, "head": 20.5, "chest": 20.5, "legs": 20.5, "boots": 20.5}
 const FAMILY_ORDER: Array[String] = ["sheaf", "undertow", "ironveil", "stillcut", "brightedge", "duskbrand"]
 ## Rare plus gate (Ironveil / Stillcut only). Not per item.
 const RARE_GATE_FAMILIES: Array[String] = ["ironveil", "stillcut"]
@@ -102,8 +147,42 @@ static func is_valid_item_id(item_id: String) -> bool:
 
 static func item_label(item: Dictionary) -> String:
 	var item_id := str(item.get("item_id", ""))
-	var fam: Dictionary = FAMILIES.get(family_of(item_id), {})
-	return "%s %s +%d" % [str(fam.get("name", "?")), slot_of(item_id).capitalize(), int(item.get("plus", 0))]
+	var part: Dictionary = PARTS.get(item_id, {})
+	var name := str(part.get("name", ""))
+	if name == "":
+		name = "%s %s" % [str(FAMILIES.get(family_of(item_id), {}).get("name", "?")), slot_of(item_id).capitalize()]
+	return "%s +%d" % [name, int(item.get("plus", 0))]
+
+
+## One part's numbers at its plus (fuse ladder), rounded.
+static func part_stats(item_id: String, plus: int) -> Dictionary:
+	var part: Dictionary = PARTS.get(item_id, {})
+	var mult: float = FUSE_MULT[clampi(plus, 0, PLUS_CAP)]
+	var out := {}
+	for key in ["hp", "mastery", "resist", "init"]:
+		out[key] = roundi(float(part.get(key, 0)) * mult)
+	return out
+
+
+## Short stat line for a part, e.g. "HP 28 · Mastery 2 · Resist 2".
+static func part_line(item_id: String, plus: int) -> String:
+	var st := part_stats(item_id, plus)
+	var bits: Array[String] = []
+	for key in ["hp", "mastery", "resist", "init"]:
+		if int(st[key]) > 0:
+			bits.append("%s %d" % [{"hp": "HP", "mastery": "Mastery", "resist": "Resist", "init": "Init"}[key], int(st[key])])
+	return " · ".join(bits)
+
+
+## The element a family's attune gives while 2+ pieces are worn: the
+## player's pick, else the family default. "" = none (Neutral).
+static func element_for(family: String, worn_count: int, attune_map: Dictionary) -> String:
+	if worn_count < ATTUNE_PIECES:
+		return ""
+	var pick := str(attune_map.get(family, ""))
+	if ELEMENTS.has(pick):
+		return pick
+	return str(DEFAULT_ATTUNE.get(family, ""))
 
 
 static func utc_day(unix_seconds: int) -> int:
@@ -305,11 +384,10 @@ func set_attune(family: String, element: String) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
-## The chosen element is kept, but it only counts while 2+ pieces are worn.
+## The chosen element (or the family default) — only while 2+ pieces are worn.
+## A pick is kept when pieces come off.
 func attune_active(family: String) -> String:
-	if not attune.has(family) or int(set_counts().get(family, 0)) < ATTUNE_PIECES:
-		return ""
-	return str(attune[family])
+	return element_for(family, int(set_counts().get(family, 0)), attune)
 
 
 ## [{family, pieces, tier, text}] for every reached tier, family order.
@@ -408,33 +486,59 @@ static func ap_mp_of_worn(worn: Array) -> Dictionary:
 	}
 
 
-## What a fight uses from the worn set bonuses (Mauro 29 Sep 2026: gear
-## counts in Koliseo PvP and in Stasis). Per-item stats (Mobile_Sets.xlsx)
-## are not in git yet, so only set bonuses count. Init, FLEX and the 5pc
-## text effects have no combat system yet and are not applied.
-## `attune` is family → element for the Ironveil attuned resist.
-static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}) -> Dictionary:
+## What a fight uses from worn gear (Mauro 29 Sep 2026: gear counts in
+## Koliseo PvP and in Stasis). Part numbers × fuse multiplier, plus the set
+## bonuses. Part resist goes to the family's attuned element (Neutral when
+## under 2 pieces or no element). FLEX = any non-neutral damage/heal spell:
+## set flex_pct + the 2-piece attune rider of that element.
+## `flatten_plus`: Koliseo arena flatten — parts count as +0.
+## Not applied yet: Init turn order, Undertow/Ironveil/Brightedge 5pc.
+static func combat_stats(raw_worn: Variant, attune_map: Dictionary = {}, flatten_plus: bool = false) -> Dictionary:
 	var worn := clean_worn(raw_worn)
+	if flatten_plus:
+		for entry in worn:
+			entry["plus"] = 0
 	var stats := stats_of_worn(worn)
 	var apmp := ap_mp_of_worn(worn)
-	var flat_mastery := int(stats.get("mastery", 0))
-	var mastery := roundi(float(flat_mastery) * (1.0 + float(stats.get("mastery_pct", 0)) / 100.0))
-	var out := {
+	var counts := worn_counts(worn)
+	var hp_flat := 0
+	var mastery_flat := int(stats.get("mastery", 0))
+	var init := int(stats.get("init", 0))
+	var resist_elem := {}
+	for entry in worn:
+		var item_id := str(entry["item_id"])
+		var fam := family_of(item_id)
+		var st := part_stats(item_id, int(entry["plus"]))
+		hp_flat += int(st["hp"])
+		mastery_flat += int(st["mastery"])
+		init += int(st["init"])
+		var element := element_for(fam, int(counts.get(fam, 0)), attune_map).to_lower()
+		if element == "":
+			element = "neutral"
+		resist_elem[element] = int(resist_elem.get(element, 0)) + int(st["resist"])
+	var riders := {}
+	for fam in ATTUNE_RIDER:
+		var element := element_for(fam, int(counts.get(fam, 0)), attune_map).to_lower()
+		if element != "":
+			riders[element] = int(riders.get(element, 0)) + int(ATTUNE_RIDER[fam])
+	var veil := int(stats.get("attuned_resist_pct", 0))
+	if veil > 0:
+		var veil_el := element_for("ironveil", int(counts.get("ironveil", 0)), attune_map).to_lower()
+		if veil_el != "":
+			resist_elem[veil_el] = int(resist_elem.get(veil_el, 0)) + veil
+	return {
+		"hp_flat": hp_flat,
 		"hp_pct": int(stats.get("hp_pct", 0)),
-		"mastery": mastery,
+		"mastery": roundi(float(mastery_flat) * (1.0 + float(stats.get("mastery_pct", 0)) / 100.0)),
 		"resist": int(stats.get("resist_pct", 0)),
+		"resist_elem": resist_elem,
+		"flex_pct": int(stats.get("flex_pct", 0)),
+		"riders": riders,
+		"first_flex_pct": int(stats.get("first_flex_pct", 0)),
+		"init": init,
 		"ap": int(apmp["ap"]),
 		"mp": int(apmp["mp"]),
-		"attuned_element": "",
-		"attuned_resist": 0,
 	}
-	var attuned_pct := int(stats.get("attuned_resist_pct", 0))
-	if attuned_pct > 0:
-		var element := str(attune_map.get("ironveil", ""))
-		if ELEMENTS.has(element):
-			out["attuned_element"] = element.to_lower()
-			out["attuned_resist"] = attuned_pct
-	return out
 
 
 ## Summed numeric set stats of what is worn (tiers stack).
@@ -470,11 +574,7 @@ static func clean_fight_gear(raw: Variant) -> Dictionary:
 
 ## Everything a fight needs from this bag: {"worn": [...], "attune": {...}}.
 func fight_gear() -> Dictionary:
-	var active := {}
-	for fam in attune:
-		if attune_active(fam) != "":
-			active[fam] = attune[fam]
-	return {"worn": worn_list(), "attune": active}
+	return {"worn": worn_list(), "attune": attune.duplicate()}
 
 
 func loot_clears_left(unix_seconds: int) -> int:
@@ -505,10 +605,23 @@ func record_stasis_clear(unix_seconds: int, star: int = 1, pick: Callable = Call
 		var r1 := float(pick.call()) if pick.is_valid() else randf()
 		var r2 := float(pick.call()) if pick.is_valid() else randf()
 		var fam := pool[mini(int(r1 * pool.size()), pool.size() - 1)]
-		var slot := SLOTS[mini(int(r2 * SLOTS.size()), SLOTS.size() - 1)]
+		var slot := weighted_slot(r2)
 		var uid := add_item(fam, slot, 0)
 		dropped.append(item(uid))
 	return {"chest": true, "items": dropped, "clears_today": loot_clears_today}
+
+
+## Slot for a 0..1 roll using the slot_w_* weights (weapon 18%, others 20.5%).
+static func weighted_slot(roll: float) -> String:
+	var total := 0.0
+	for slot in SLOTS:
+		total += float(SLOT_WEIGHT[slot])
+	var at := clampf(roll, 0.0, 0.999999) * total
+	for slot in SLOTS:
+		at -= float(SLOT_WEIGHT[slot])
+		if at < 0.0:
+			return slot
+	return SLOTS[SLOTS.size() - 1]
 
 
 static func _fail(reason: String) -> Dictionary:

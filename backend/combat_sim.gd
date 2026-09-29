@@ -1275,14 +1275,33 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 ## proto body; worn gear set bonuses raise them (Mauro 29 Sep 2026: gear
 ## counts in Koliseo and Stasis). Ironveil attuned resist only against
 ## hits of the attuned element.
-func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "") -> int:
+func _phase_a_damage(base: int, facing_mult: float, actor: Dictionary = {}, target: Dictionary = {}, element: String = "", resolve: bool = false) -> int:
 	var mastery: float = MASTERY + float(actor.get("mastery", 0))
+	var el := element.to_lower()
 	var resist: float = RESIST + float(target.get("resist", 0))
-	var attuned := str(target.get("attuned_element", ""))
-	if attuned != "" and element.to_lower() == attuned:
-		resist += float(target.get("attuned_resist", 0))
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 - clampf(resist, 0.0, 100.0) / 100.0) * facing_mult
+	var by_elem: Variant = target.get("resist_elem", {})
+	if typeof(by_elem) == TYPE_DICTIONARY and el != "":
+		resist += float((by_elem as Dictionary).get(el, 0))
+	var flex := _flex_bonus(actor, el, resolve)
+	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 + flex / 100.0) * (1.0 - clampf(resist, 0.0, 100.0) / 100.0) * facing_mult
 	return roundi(raw)
+
+
+## Gear FLEX bonus (Mobile Sets): any non-neutral damage/heal spell gets the
+## set flex_pct plus the 2-piece attune rider of its element. Stillcut 5:
+## the first FLEX HIT of the fight +15% (spent on a resolved hit).
+func _flex_bonus(actor: Dictionary, element: String, spend_first: bool) -> float:
+	if element == "" or element == "neutral" or actor.is_empty():
+		return 0.0
+	var bonus := float(actor.get("flex_pct", 0))
+	var riders: Variant = actor.get("flex_riders", {})
+	if typeof(riders) == TYPE_DICTIONARY:
+		bonus += float((riders as Dictionary).get(element, 0))
+	if bool(actor.get("first_flex_ready", false)):
+		bonus += float(actor.get("first_flex_pct", 0))
+		if spend_first:
+			actor["first_flex_ready"] = false
+	return bonus
 
 
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String, placed: bool = true) -> Dictionary:
@@ -1924,7 +1943,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	# carry the key, so kit damage is unchanged.
 	if int(actor.get("stasis_attack_base", -1)) >= 0:
 		base = int(actor["stasis_attack_base"])
-	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")))
+	var pre_mitigation := _phase_a_damage(base, facing_mult, actor, target, str(def.get("element", "")), true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
@@ -2449,15 +2468,20 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 		return
 	var gear: Dictionary = raw
 	var attune_raw: Variant = gear.get("attune", {})
-	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {})
-	var max_hp := roundi(float(START_HP) * (1.0 + float(stats["hp_pct"]) / 100.0))
+	var stats := GearBag.combat_stats(gear.get("worn", []), attune_raw if typeof(attune_raw) == TYPE_DICTIONARY else {}, bool(gear.get("flatten_plus", false)))
+	# Final HP = (80 + part HP) × (1 + set HP%).
+	var max_hp := roundi(float(START_HP + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
 	var was_full := int(unit.get("hp", START_HP)) >= int(unit.get("max_hp", START_HP))
 	unit["max_hp"] = max_hp
 	unit["hp"] = max_hp if was_full else mini(int(unit.get("hp", max_hp)), max_hp)
 	unit["mastery"] = int(stats["mastery"])
 	unit["resist"] = int(stats["resist"])
-	unit["attuned_element"] = str(stats["attuned_element"])
-	unit["attuned_resist"] = int(stats["attuned_resist"])
+	unit["resist_elem"] = (stats["resist_elem"] as Dictionary).duplicate()
+	unit["flex_pct"] = int(stats["flex_pct"])
+	unit["flex_riders"] = (stats["riders"] as Dictionary).duplicate()
+	unit["first_flex_pct"] = int(stats["first_flex_pct"])
+	unit["first_flex_ready"] = int(stats["first_flex_pct"]) > 0
+	unit["init"] = int(stats["init"])
 	unit["max_ap"] = int(stats["ap"])
 	unit["max_mp"] = int(stats["mp"])
 	unit["gear"] = GearBag.clean_worn(gear.get("worn", []))
@@ -3509,7 +3533,8 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	var passive := PASSIVE
 	if _triage_applied(target, def):
 		passive = SpellKits.TRIAGE_MULT
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * facing
+	var flex := _flex_bonus(actor, str(def.get("element", "")).to_lower(), false)
+	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + (MASTERY + float(actor.get("mastery", 0))) / 100.0) * (1.0 + flex / 100.0) * facing
 	return roundi(raw)
 
 
@@ -3792,7 +3817,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")))
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult, actor, target, str(def.get("element", "")), true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -3997,7 +4022,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")))
+		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult, actor, target, str(def.get("element", "")), true)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -4125,7 +4150,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin_cell, int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult, actor, target, str(def.get("element", "")))
+	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult, actor, target, str(def.get("element", "")), true)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	# Pos was assigned above. Damage is the strike from that tile. A reorder

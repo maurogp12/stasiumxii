@@ -60,16 +60,21 @@ on those branches) → the in-game **Actualizar** button.
 | 0.1.46 | New suite `tests/run_gear_tests.gd` (20 suites total). Wallet tests updated for stall → gear bag | — | see 0.1.46 commits |
 | — | **Decision (Mauro, 29 Sep 2026): gear counts in PvP (Koliseo) and in dungeons (Stasis).** | Mauro: "Yes pvp and dungeon" | — |
 | 0.1.47 | **Gear now changes fights.** Worn set bonuses feed CombatSim: +HP% (max HP), Mastery (damage and heals ×(1+Mastery/100)), Resist% (damage ×(1−Resist/100)), Ironveil attuned resist vs hits of that element, AP/MP max (clamped 8/5, refilled every turn). Stasis: the player's worn gear rides in the fight roster (Room B HP carry clamps to the geared max). Online Koliseo: each phone sends its own worn gear (`rpc_submit_gear`) when it gets its seat; the host keeps it per seat, drops any gear inside a reset request, recomputes stats itself (valid ids, one per slot, +0–+5, 8/5). Gear arriving during deployment applies at once; never mid-combat. **Hot-seat uses no gear** (both players share one phone — waiting on Mauro). **Not applied yet:** per-item stats (Mobile_Sets.xlsx not in git), Init, FLEX, the 5pc text effects. No gear = exact old numbers (all 20 suites pass) | Mauro: "Yes pvp and dungeon" | see 0.1.47 commits |
+| 0.1.48 | **Per-item gear numbers from Mauro's "Mobile Startup Sets" sheet (v0.3, sent 29 Sep 2026).** `GearBag.PARTS`: all 30 +0 parts (name, HP, Mastery, Resist, Init) — totals checked against the sheet's "same parts" page. Fuse ladder ×1.00/1.12/1.26/1.41/1.58/1.78. Final HP = (80 + part HP) × (1 + set HP%). Mastery = parts + set, × Duskbrand %. Part resist goes to the family's attuned element (defaults Sheaf Earth, Undertow Air, Brightedge Fire, Ironveil Earth; Stillcut must pick; Duskbrand / under 2 pieces = Neutral). FLEX (any non-neutral damage/heal spell): set +8% (Stillcut/Brightedge 2pc) + 2-piece attune rider of that element (+10%, Stillcut +15%). Stillcut 5: first FLEX hit of the fight +15%. Koliseo arena flatten: parts count as +0 in PvP. Drop slot weights weapon 18% / others 20.5%. Items use sheet names (Sheaf Helm, Hourplate…). Gear screen shows each item's stats and your HP / Mastery / Init totals | Mauro sent the sheet | see 0.1.48 commits |
+
+**Sheet vs Blueprint conflicts (0.1.48 follows the Blueprint; Mauro to confirm):** Fuse ladder example "Sheaf Helm 24 HP" vs Parts table 28 (used 28 — matches the sheet's own totals). Worked examples give Stillcut 5 = +1 AP +1 MP; Blueprint says Stillcut 5 = first FLEX hit +15% and only Duskbrand 5 gives +1/+1 (kept Blueprint). "Set budget: one +1 AP / one +1 MP" vs cap 8/5 (kept 8/5). "Sheaf 5 is +6% all resist" vs +8% (kept +8%). "Dungeon coins, wallet max 30, 10-coin stall" vs 120 / 60 (kept 120 / 60).
+
+**Still not built from the sheet:** Init turn order, FLEX spells taking the attune element, Undertow / Ironveil / Brightedge 5pc effects, rare .ap/.mp parts (★4+), monster room scale, star curves and five-door loot mapping (both marked OPEN / parking lot on the sheet).
 
 Each version bump is its own `Stamp Android sideload …` commit. All
 headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.47 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.48 work into `mobile` (PR not opened yet — waiting for his OK).
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
-- Per-item gear stats (weapon Mastery, head HP, …) live in Mobile_Sets.xlsx — not in git. Rare .ap/.mp affix drop rates unknown. Init / FLEX / 5pc effects need their combat systems.
+- Mobile Sets conflicts listed under 0.1.48.
 - Hot-seat and gear: both players share one phone — no gear in hot-seat until Mauro decides.
 - Inventory screen + loot board after every match: Mauro is sending a reference video.
 - Stasis chest size (1 piece now, provisional).
