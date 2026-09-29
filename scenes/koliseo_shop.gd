@@ -4,8 +4,8 @@ class_name KoliseoShop
 ## Hub overlay for the Koliseo wallet (Blueprint §9 and §15).
 ## Left: trophy shop (hub food, frames, titles, tints, pets).
 ## Right: Duskbrand stall (60 coins per +0 part).
-## Purchases are stored in the wallet only. Wearing gear and showing the
-## cosmetics are not built yet.
+## Trophy purchases are stored in the wallet; Duskbrand parts go to the
+## GearBag (wear them on the Gear screen). Cosmetic visuals are not built yet.
 
 signal closed
 signal wallet_changed
@@ -63,8 +63,10 @@ func buy_sku(sku: String) -> Dictionary:
 
 
 func buy_duskbrand(slot: String) -> Dictionary:
-	var result := _wallet.buy_duskbrand(slot)
+	var bag := GearBag.load_saved()
+	var result := _wallet.buy_duskbrand(slot, bag)
 	if bool(result.get("ok", false)):
+		bag.save()
 		_wallet.save()
 		_status.text = "Bought Duskbrand %s +0." % slot.capitalize()
 		wallet_changed.emit()
@@ -159,7 +161,7 @@ func _refresh() -> void:
 		button.disabled = not bool(gate.get("ok", false))
 	for slot in _slot_buttons:
 		var button: Button = _slot_buttons[slot]
-		var count := _wallet.part_count(slot)
+		var count := GearBag.load_saved().count_of(GearBag.item_id_for("duskbrand", slot))
 		var have := "  (x%d)" % count if count > 0 else ""
 		button.text = "%s +0 — %d coins%s" % [slot.capitalize(), _Wallet.DUSKBRAND_PART_COST, have]
 		button.disabled = not bool(_wallet.can_buy_duskbrand(slot).get("ok", false))

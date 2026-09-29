@@ -16,6 +16,8 @@ class_name StasisCatalog
 ## owner. The portrait is the package crop under art/stasis/foes/. The pawn
 ## does not draw the Ironjaw sheet.
 
+## Every door today is Stasis 1 (★1). Stasis >1 is Open. Loot uses this star.
+const STAR := 1
 const PLAYER_SEAT := 0
 const ENEMY_SEAT := 1
 ## Strike card owner. Not the portrait. See the note above.
@@ -101,6 +103,11 @@ static var room: String = "a"
 static var foe_index: int = 0
 ## -1 keeps the Locked 80. Room B carries whatever Room A left.
 static var player_hp: int = -1
+## End-of-run window (ui/combat_result.gd): clock, turns and beaten foes
+## across both rooms.
+static var run_started_msec: int = 0
+static var run_turns: int = 0
+static var run_foes: Array = []
 
 
 static func begin(map_id: String) -> bool:
@@ -117,6 +124,9 @@ static func begin(map_id: String) -> bool:
 	room = "a"
 	foe_index = 0
 	player_hp = -1
+	run_started_msec = Time.get_ticks_msec()
+	run_turns = 0
+	run_foes = []
 	return true
 
 

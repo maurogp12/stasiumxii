@@ -25,6 +25,7 @@ const DOOR_MIN_HEIGHT := 72
 const _ApkClient := preload("res://backend/apk_update_client.gd")
 const _Wallet := preload("res://backend/koliseo_wallet.gd")
 const _Shop := preload("res://scenes/koliseo_shop.gd")
+const _Gear := preload("res://scenes/gear_screen.gd")
 
 const NAVY := Color(0.008, 0.028, 0.07)
 const GOLD := Color(0.855, 0.69, 0.4)
@@ -48,6 +49,8 @@ var _update_client: ApkUpdateClient
 var _wallet_label: Label
 var _shop_button: Button
 var _shop: Control
+var _gear_button: Button
+var _gear: Control
 var _banner_ratio: float = 1536.0 / 510.0
 var _tile_ratio: float = 292.0 / 410.0
 
@@ -339,6 +342,13 @@ func _make_title_row() -> HBoxContainer:
 	_shop_button.pressed.disconnect(_on_update_pressed)
 	_shop_button.pressed.connect(open_shop)
 	row.add_child(_shop_button)
+	_gear_button = _make_update_button()
+	_gear_button.name = "Gear"
+	_gear_button.text = "Gear"
+	_gear_button.custom_minimum_size = Vector2(96, 48)
+	_gear_button.pressed.disconnect(_on_update_pressed)
+	_gear_button.pressed.connect(open_gear)
+	row.add_child(_gear_button)
 	_update_button = _make_update_button()
 	row.add_child(_update_button)
 	return row
@@ -350,6 +360,16 @@ func refresh_wallet() -> void:
 		return
 	var wallet := _Wallet.load_saved()
 	_wallet_label.text = "Coins %d  ·  Trophies %d" % [wallet.coins, wallet.trophies]
+
+
+func open_gear() -> void:
+	if _gear != null and is_instance_valid(_gear):
+		return
+	var gear: GearScreen = _Gear.new()
+	gear.name = "GearScreen"
+	gear.font = _font
+	add_child(gear)
+	_gear = gear
 
 
 func open_shop() -> void:

@@ -54,13 +54,19 @@ on those branches) → the in-game **Actualizar** button.
 | 0.1.45 | Windmere (winter arena): falling snow — ~300 flakes drifting with sway and gusts, settling on the ice and melting, a few big soft flakes near the camera (`board/snow_fall.gd`, `ArenaSky` "snowfall"). View only | Mauro: "the map of winter I would like to have snow falling" | see 0.1.45 commits |
 | 0.1.45 | Spell effects: turning rune circle under the caster on every cast; projectiles with trails for ranged casts (Kestrel arrow streak, Mender arcing orb, Gloam wobbling shadow bolt) — the hit lands when the projectile arrives; heavy finisher (white flash, double shockwave, light column, extra sparks) on Detonate, Crush, Heartstop, Nightfold, Aegis Break, Ambush. View only (`vfx/spell_flourish.gd`). Test `_test_weather_and_spell_extras` | Mauro: "work on the visual of the spells, keep improving graphics and animation" | see 0.1.45 commits |
 | — | **Decision (Mauro, 29 Sep 2026): "Only online win pays."** Koliseo coins and trophies come from online wins only; hot-seat, dedicated and Stasis pay nothing. Confirms the 0.1.44 behaviour — no code change, comment in `backend/koliseo_wallet.gd` updated | Mauro | see decision commit |
+| 0.1.46 | **New system (Blueprint §10):** gear bag (`backend/gear_bag.gd`, save `user://gear_bag.json`). Six families only (Sheaf, Undertow, Ironveil, Stillcut, Brightedge, Duskbrand), 5 slots, wear/take off, **Fuse** (same item_id + same plus → +1, cap +5; 32 × +0 = +5), **Attune** at 2 worn pieces (Air/Earth/Fire/Water; kept but resting under 2), set bonuses 2/4/5pc from the Blueprint table (tiers stack), rare plus gate (Ironveil/Stillcut), AP/MP after gear clamped **8/5**. Hub **Gear** button → `scenes/gear_screen.gd`. Duskbrand stall parts now land in the gear bag. **Bonuses are shown only — CombatSim does not read gear yet** (needs Mauro: which fights use gear, and the per-item stat numbers from Mobile_Sets.xlsx, which is not in git) | Mauro: "gears and dungs rewards work on it" | see 0.1.46 commits |
+| 0.1.46 | **Dungeon rewards (§9 Soft Lock):** clearing a Stasis door (Room B boss) opens a chest: 1 random +0 piece from the ★1 families (Sheaf or Undertow). 5 loot clears per UTC day shared by all doors; clear 6+ allowed, chest empty. Chest size 1 is **provisional** (Blueprint gives no number). `StasisCatalog.STAR = 1` | same | see 0.1.46 commits |
+| 0.1.46 | **Dofus-style end-of-fight window** (`ui/combat_result.gd`) from Mauro's two screenshots: title, Victory/Defeat, duration mm:ss + turns, Winners / Losers blocks with portrait, name, HP left, loot icons, green CLOSE. Koliseo: opens ~1 s after the match ends; the online winner's loot shows the coin + trophy paid (notes for daily limit / hot-seat). Stasis: opens on the door clear (chest pieces as loot, all beaten foes listed) or on a wipe. No level / XP / kamas columns — the game has none | Mauro sent the Dofus "Resultado del combate" and "Combate terminado" pictures | see 0.1.46 commits |
+| 0.1.46 | New suite `tests/run_gear_tests.gd` (20 suites total). Wallet tests updated for stall → gear bag | — | see 0.1.46 commits |
 
 Each version bump is its own `Stamp Android sideload …` commit. All
 headless suites (19 from 0.1.44) pass on every build listed above.
 
 ## Open / waiting on Mauro
 
-- Merge the 0.1.35–0.1.45 work into `mobile` (PR not opened yet — waiting for his OK).
+- Merge the 0.1.35–0.1.46 work into `mobile` (PR not opened yet — waiting for his OK).
 - Ironjaw front/back art (only a side view exists in the Blueprint).
 - Map layouts matching the look pictures (volcano/shipwreck/tower positions) would change map tags — needs approval.
-- Still not built from the Blueprint: gear equip + six set families + fuse/attune (§10), AP/MP clamp 8/5 from gear, Stasis loot-clear cap 5/day (§9 Soft Lock), cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).
+- Gear in fights: which fights read gear (Stasis only, or Koliseo too)? Per-item stats (weapon Mastery, head HP, …) live in Mobile_Sets.xlsx — not in git; needed before gear can touch CombatSim. Rare .ap/.mp affix drop rates also unknown.
+- Stasis chest size (1 piece now, provisional).
+- Still not built: cosmetic/pet visuals, hub food use (needs an out-of-fight HP system).

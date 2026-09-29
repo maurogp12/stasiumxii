@@ -44,8 +44,6 @@ var wins_today: int = 0
 var total_wins: int = 0
 ## sku → count bought.
 var owned: Dictionary = {}
-## Duskbrand +0 parts from the stall: [{"item_id": "duskbrand.weapon", "plus": 0}].
-var parts: Array = []
 
 
 static func utc_day(unix_seconds: int) -> int:
@@ -85,7 +83,6 @@ func to_dict() -> Dictionary:
 		"wins_today": wins_today,
 		"total_wins": total_wins,
 		"owned": owned.duplicate(true),
-		"parts": parts.duplicate(true),
 	}
 
 
@@ -101,12 +98,6 @@ func from_dict(data: Dictionary) -> void:
 		for sku in raw_owned:
 			if SHOP.has(str(sku)):
 				owned[str(sku)] = maxi(int(raw_owned[sku]), 0)
-	parts = []
-	var raw_parts: Variant = data.get("parts", [])
-	if typeof(raw_parts) == TYPE_ARRAY:
-		for raw in raw_parts:
-			if typeof(raw) == TYPE_DICTIONARY and str(raw.get("item_id", "")).begins_with("duskbrand."):
-				parts.append({"item_id": str(raw["item_id"]), "plus": int(raw.get("plus", 0))})
 
 
 ## Human Koliseo win. Coins only for the first 2 wins of the UTC day; a full
@@ -164,22 +155,14 @@ func can_buy_duskbrand(slot: String) -> Dictionary:
 
 
 ## +0 Duskbrand part. Duplicates are allowed (fuse needs same item_id + plus).
-func buy_duskbrand(slot: String) -> Dictionary:
+## The part goes into the GearBag; the caller saves both.
+func buy_duskbrand(slot: String, bag: GearBag) -> Dictionary:
 	var gate := can_buy_duskbrand(slot)
 	if not bool(gate["ok"]):
 		return gate
 	coins -= DUSKBRAND_PART_COST
-	var part := {"item_id": "duskbrand.%s" % slot, "plus": 0}
-	parts.append(part)
-	return {"ok": true, "reason": "", "part": part.duplicate()}
-
-
-func part_count(slot: String) -> int:
-	var count := 0
-	for part in parts:
-		if str(part.get("item_id", "")) == "duskbrand.%s" % slot:
-			count += 1
-	return count
+	var uid := bag.add_item("duskbrand", slot, 0)
+	return {"ok": true, "reason": "", "part": bag.item(uid)}
 
 
 func _roll_day(unix_seconds: int) -> void:

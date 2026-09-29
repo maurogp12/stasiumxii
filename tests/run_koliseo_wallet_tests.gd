@@ -4,6 +4,7 @@ extends SceneTree
 ## Run: godot --headless --path . -s res://tests/run_koliseo_wallet_tests.gd
 
 const TEST_SAVE := "user://test_koliseo_wallet.json"
+const TEST_BAG := "user://test_gear_bag_wallet.json"
 const DAY := 86400
 ## Noon UTC on some day, so +/- a few hours stays inside it.
 const T0 := 20000 * DAY + 43200
@@ -18,6 +19,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	KoliseoWallet.save_path = TEST_SAVE
+	GearBag.save_path = TEST_BAG
 	_wipe()
 	_test_daily_coins()
 	_test_wallet_caps()
@@ -92,16 +94,18 @@ func _test_trophy_shop() -> void:
 
 func _test_duskbrand_stall() -> void:
 	var w := KoliseoWallet.new()
+	var bag := GearBag.new()
 	w.coins = 59
-	eq(str(w.buy_duskbrand("weapon")["reason"]), "not_enough_coins", "59 coins cannot buy a part")
+	eq(str(w.buy_duskbrand("weapon", bag)["reason"]), "not_enough_coins", "59 coins cannot buy a part")
 	w.coins = 120
-	var bought := w.buy_duskbrand("weapon")
+	var bought := w.buy_duskbrand("weapon", bag)
 	eq(bool(bought["ok"]), true, "60 coins buys a part")
-	eq(bought["part"], {"item_id": "duskbrand.weapon", "plus": 0}, "the stall sells +0 parts")
-	eq(bool(w.buy_duskbrand("weapon")["ok"]), true, "duplicates allowed for fuse")
+	eq(str(bought["part"]["item_id"]), "duskbrand.weapon", "the stall sells Duskbrand parts")
+	eq(int(bought["part"]["plus"]), 0, "the stall sells +0 parts")
+	eq(bool(w.buy_duskbrand("weapon", bag)["ok"]), true, "duplicates allowed for fuse")
 	eq(w.coins, 0, "two parts cost 120 coins")
-	eq(w.part_count("weapon"), 2, "two weapon parts owned")
-	eq(str(w.buy_duskbrand("cape")["reason"]), "unknown_slot", "only the 5 slots")
+	eq(bag.count_of("duskbrand.weapon"), 2, "two weapon parts land in the gear bag")
+	eq(str(w.buy_duskbrand("cape", bag)["reason"]), "unknown_slot", "only the 5 slots")
 	eq(KoliseoWallet.DUSKBRAND_SLOTS, ["weapon", "head", "chest", "legs", "boots"], "five gear slots")
 	eq(w.trophies, 0, "coins never turn into trophies")
 
@@ -115,16 +119,15 @@ func _test_save_roundtrip() -> void:
 	w.trophies = 30
 	w.buy("cos.frame.iron")
 	w.coins = 60
-	w.buy_duskbrand("boots")
+	w.buy_duskbrand("boots", GearBag.new())
 	truthy(w.save(), "wallet saves")
 	var back := KoliseoWallet.load_saved()
 	eq(back.to_dict(), w.to_dict(), "wallet reloads the same")
 	var tampered := KoliseoWallet.new()
-	tampered.from_dict({"coins": 999, "trophies": 999, "owned": {"ap.plus": 1}, "parts": [{"item_id": "sheaf.head"}]})
+	tampered.from_dict({"coins": 999, "trophies": 999, "owned": {"ap.plus": 1}})
 	eq(tampered.coins, 120, "loaded coins clamp to 120")
 	eq(tampered.trophies, 300, "loaded trophies clamp to 300")
 	eq(tampered.owned.size(), 0, "unknown skus dropped on load")
-	eq(tampered.parts.size(), 0, "only Duskbrand parts come from the stall")
 
 
 func _test_net_payout() -> void:
@@ -182,13 +185,14 @@ func _test_hub_shop() -> void:
 	shop.buy_duskbrand("head")
 	eq(label.text, "Coins 0  ·  Trophies 7", "stall spends coins")
 	eq(shop.slot_button("chest").disabled, true, "stall greys out at 0 coins")
-	eq(KoliseoWallet.load_saved().part_count("head"), 1, "stall part saved")
+	eq(GearBag.load_saved().count_of("duskbrand.head"), 1, "stall part saved in the gear bag")
 	hub.free()
 
 
 func _wipe() -> void:
-	if FileAccess.file_exists(TEST_SAVE):
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_SAVE))
+	for path in [TEST_SAVE, TEST_BAG]:
+		if FileAccess.file_exists(path):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

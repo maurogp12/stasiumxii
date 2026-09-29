@@ -53,6 +53,9 @@ extends Node2D
 
 const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
+const COMBAT_RESULT := preload("res://ui/combat_result.gd")
+## Death / finisher reads before the end-of-fight window opens.
+const RESULT_DELAY := 1.1
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const ARENA_SKY := preload("res://board/arena_sky.gd")
 const ARENA_LOOK := preload("res://board/arena_look.gd")
@@ -77,6 +80,9 @@ const VIEW_W: float = TOUCH.VIEW_W
 const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
 
+var _fight_started_msec: int = 0
+var _result_shown: bool = false
+var _result_layer: CanvasLayer
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
 var pawns_by_seat: Dictionary = {}
@@ -1734,6 +1740,69 @@ func _refresh() -> void:
 	_maybe_reframe(snap)
 	if _vfx != null and _vfx.has_method("sync_snapshot"):
 		_vfx.sync_snapshot(snap)
+	_track_result(snap)
+
+
+## Dofus-style end-of-fight window (ui/combat_result.gd). Clock starts when
+## combat starts (after deploy); the window opens once per finished match.
+func _track_result(snap: Dictionary) -> void:
+	var net := _net()
+	if net != null and net.has_method("is_dedicated") and net.is_dedicated():
+		return
+	if not bool(snap.get("match_over", false)):
+		if _result_shown:
+			_result_shown = false
+			_fight_started_msec = 0
+		if _fight_started_msec == 0 and not CombatHUD.is_deployment_phase(snap):
+			_fight_started_msec = Time.get_ticks_msec()
+		return
+	if _result_shown:
+		return
+	_result_shown = true
+	var secs := 0
+	if _fight_started_msec > 0:
+		secs = int((Time.get_ticks_msec() - _fight_started_msec) / 1000)
+	_on_match_result(snap, secs)
+
+
+## Koliseo: winners / losers, and the coins + trophies an online win paid.
+func _on_match_result(snap: Dictionary, secs: int) -> void:
+	if not is_inside_tree():
+		return
+	get_tree().create_timer(RESULT_DELAY).timeout.connect(_show_koliseo_result.bind(snap.duplicate(true), secs))
+
+
+func _show_koliseo_result(snap: Dictionary, secs: int) -> void:
+	if not is_inside_tree():
+		return
+	var net := _net()
+	var local_seat := -1
+	var payout := {}
+	if net != null and net.is_online():
+		local_seat = int(net.local_seat)
+		payout = net.koliseo_last_payout
+	show_result(CombatResult.koliseo_result(snap, local_seat, payout, secs, _portrait_of))
+
+
+func _portrait_of(unit: Dictionary) -> Texture2D:
+	if _hud != null and _hud.has_method("_portrait_for"):
+		return _hud._portrait_for(unit)
+	return null
+
+
+func show_result(data: Dictionary) -> CombatResult:
+	if _result_layer == null or not is_instance_valid(_result_layer):
+		_result_layer = CanvasLayer.new()
+		_result_layer.name = "ResultLayer"
+		_result_layer.layer = 30
+		add_child(_result_layer)
+	for child in _result_layer.get_children():
+		child.queue_free()
+	var window: CombatResult = COMBAT_RESULT.new()
+	window.name = "CombatResult"
+	window.setup(data)
+	_result_layer.add_child(window)
+	return window
 
 
 func _rebuild_pawns() -> void:
