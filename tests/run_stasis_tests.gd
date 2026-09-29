@@ -88,6 +88,33 @@ func _test_package_and_flow() -> void:
 	eq(StasisCatalog.current_foe()["name"], "Serra the Gale Sentinel", "room B is the boss")
 	eq(int(StasisCatalog.current_foe()["hp"]), StasisCatalog.PROVISIONAL_BOSS_HP, "boss uses the provisional HP")
 	eq(StasisCatalog.advance_after_win(), "cleared", "boss win clears the gate")
+	# Foe quality pass: HD art (288x320), a boss flag only on Room B.
+	for art in ["warden_of_the_sheaves", "tyrant_coilspire", "cinder_imp", "grain_hound"]:
+		var tex := load(StasisCatalog.art_path(art)) as Texture2D
+		eq(tex.get_size(), Vector2(288, 320), "%s art is the 2x HD cut" % art)
+	StasisCatalog.clear_run()
+	StasisCatalog.begin("windmere")
+	StasisCatalog.class_id = "kestrel"
+	var trash_roster: Array = StasisCatalog.fight_config()["stasis_roster"]
+	eq(bool(trash_roster[1].get("boss", false)), false, "room A trash is not a boss")
+	StasisCatalog.room = "b"
+	var boss_roster: Array = StasisCatalog.fight_config()["stasis_roster"]
+	eq(bool(boss_roster[1].get("boss", false)), true, "room B foe is the boss")
+	_sim.reset_match(StasisCatalog.fight_config())
+	eq(bool(_sim._unit_by_seat(1).get("stasis_boss", false)), true, "the sim unit carries the boss view flag")
+	var boss_pawn := Pawn.new()
+	root.add_child(boss_pawn)
+	boss_pawn.apply_snapshot(_sim._unit_by_seat(1), 0)
+	truthy(boss_pawn.get_node_or_null("BossAura") != null, "the boss stands on its aura")
+	var trash_pawn := Pawn.new()
+	root.add_child(trash_pawn)
+	var trash_unit: Dictionary = _sim._unit_by_seat(1).duplicate()
+	trash_unit["stasis_boss"] = false
+	trash_pawn.apply_snapshot(trash_unit, 0)
+	eq(trash_pawn.get_node_or_null("BossAura"), null, "trash has no aura")
+	truthy(boss_pawn.head_hp_y() < trash_pawn.head_hp_y(), "the boss name bar sits higher (bigger body)")
+	boss_pawn.free()
+	trash_pawn.free()
 	StasisCatalog.clear_run()
 
 

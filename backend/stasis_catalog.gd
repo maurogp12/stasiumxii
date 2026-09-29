@@ -252,6 +252,8 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 			"facing": "S",
 			"spells": [STRIKE_CARD],
 			"sprite": art_path(str(entry.get("art", ""))),
+			# Room B's foe is the door boss: the board draws it bigger, with an aura.
+			"boss": room == "b",
 		})
 	var seed := _seed_for(biome_id, room, 0)
 	return {

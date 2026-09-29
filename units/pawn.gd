@@ -57,6 +57,8 @@ var invisible: bool = false
 var seat: int = 0
 ## Package crop for a Stasis foe. Empty on Koliseo bodies.
 var stasis_sprite: String = ""
+## Room B foe: drawn bigger, with a BossAura on the ground (view only).
+var stasis_boss: bool = false
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -192,8 +194,20 @@ static func capped_presentation_mul(raw: float) -> float:
 	return 1.0
 
 
+## A Stasis boss towers over the pack (Mauro: "boss looking lame").
+const BOSS_SCALE := 1.5
+
+
+## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
+func _stasis_res() -> float:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite) or _sprite.texture == null:
+		return 1.0
+	var h := float(_sprite.texture.get_height())
+	return 160.0 / h if h > 0.0 else 1.0
+
+
 func _body_scale() -> Vector2:
-	return sprite_scale_for(class_id)
+	return sprite_scale_for(class_id) * (BOSS_SCALE if stasis_boss else 1.0) * _stasis_res()
 
 
 func _body_scale_mul(mul: Vector2) -> Vector2:
@@ -205,7 +219,9 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 ## scale so the name still clears the taller cell.
 func head_hp_y() -> float:
 	# Heavy bodies raise the bar; small bodies keep the shared line above them.
-	return HEAD_HP_Y * maxf(_body_scale().y / SPRITE_SCALE.y, 1.0)
+	# World size only: the 2x foe art factor (_stasis_res) is not a size change.
+	var world := sprite_scale_for(class_id).y * (BOSS_SCALE if stasis_boss else 1.0)
+	return HEAD_HP_Y * maxf(world / SPRITE_SCALE.y, 1.0)
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.
@@ -252,6 +268,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	unit_name = str(unit["name"])
 	class_id = str(unit["class_id"])
 	stasis_sprite = str(unit.get("stasis_sprite", ""))
+	stasis_boss = bool(unit.get("stasis_boss", false)) and stasis_sprite != ""
 	facing = str(unit["facing"])
 	invisible = bool(unit.get("invisible", false))
 	seat = int(unit.get("seat", seat))
@@ -1200,6 +1217,9 @@ func rest_modulate() -> Color:
 		return Color(1, 1, 1, 0)
 	if invisible and not _ambush_strike_visible:
 		return Color(1, 1, 1, 0)
+	# Stasis foe art is darker than the heroes' and sinks into night floors.
+	if stasis_sprite != "":
+		return FOE_LIGHT
 	return Color.WHITE
 
 
@@ -1379,6 +1399,22 @@ func _ensure_visuals() -> void:
 	_ensure_chrome()
 
 
+func _sync_boss_aura() -> void:
+	var aura := get_node_or_null("BossAura")
+	if stasis_boss and alive:
+		if aura == null:
+			aura = BossAura.new()
+			aura.name = "BossAura"
+			aura.z_index = -1
+			aura.z_as_relative = true
+			add_child(aura)
+			move_child(aura, 0)
+		(aura as BossAura).tint = BossAura.tint_for(stasis_sprite)
+		(aura as BossAura).radius = Vector2(40, 18) * BOSS_SCALE * 0.8
+	elif aura != null:
+		aura.queue_free()
+
+
 func _ensure_foot() -> void:
 	if _foot != null and is_instance_valid(_foot):
 		return
@@ -1430,8 +1466,20 @@ static func figure_read_for(class_id: String) -> Dictionary:
 	}
 
 
+## Stasis foes run on Ironjaw's card but must not take its ochre lift: a thin
+## hostile rim and a neutral lift of the crushed blacks so dark creatures
+## read on dark floors.
+const FOE_LIGHT := Color(1.22, 1.2, 1.18, 1.0)
+const FOE_READ := {
+	"rim_ink": Color(0.38, 0.05, 0.05, 1.0),
+	"rim_px": 1.3,
+	"mid_tone": Color(0.32, 0.29, 0.28, 1.0),
+	"mid_mix": 0.3,
+}
+
+
 func _write_figure_read(mat: ShaderMaterial) -> void:
-	var read := figure_read_for(class_id)
+	var read := FOE_READ if stasis_sprite != "" else figure_read_for(class_id)
 	mat.set_shader_parameter("rim_ink", read["rim_ink"])
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
@@ -1494,6 +1542,9 @@ func _sync_sprite() -> void:
 		_walk_idle_plant = false
 		_hide_walk_draw()
 		_sprite.texture = _stasis_texture(stasis_sprite)
+		_sprite.offset = SPRITE_OFFSET / _stasis_res()
+		_sprite.scale = _body_scale()
+		_sync_boss_aura()
 		if not _flashing:
 			_sprite.modulate = rest_modulate()
 		_sprite.visible = true

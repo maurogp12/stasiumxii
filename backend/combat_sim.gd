@@ -2491,6 +2491,9 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 		# The pawn draws this path and does not play the Ironjaw sheet.
 		if str(rec.get("sprite", "")) != "":
 			unit["stasis_sprite"] = str(rec["sprite"])
+		# View flag only (bigger body + aura on the board). No rule reads it.
+		if bool(rec.get("boss", false)):
+			unit["stasis_boss"] = true
 		var raw_spells: Variant = rec.get("spells", null)
 		if raw_spells is Array:
 			var spells: Array = []
