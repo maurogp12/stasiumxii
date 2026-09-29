@@ -23,6 +23,7 @@ func _finish_live() -> void:
 	await _test_live_director()
 	await _test_stale_miss_cleared_by_hit()
 	await _test_shade_markers_survive_rebuild()
+	await _test_readable_numbers_and_plates()
 	print("VFX tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -43,6 +44,77 @@ func _run() -> void:
 	_test_class_choreography()
 	_test_scenario_overlays()
 	_test_weather_and_spell_extras()
+
+
+## Mauro 29 Sep: keep improving the look. "+1 Impact" printed over "BACK 19"
+## when caster and target stood side by side, and name plates overlapped.
+func _test_readable_numbers_and_plates() -> void:
+	var board_script := GDScript.new()
+	board_script.source_code = "extends Node2D\nvar pawns_by_seat: Dictionary = {}\nfunc _cell_to_local(cell: Vector2i) -> Vector2:\n\treturn BoardVisualSort.cell_to_local(cell, 1.0)\nfunc _elev_at(_cell: Vector2i) -> float:\n\treturn 1.0\n"
+	board_script.reload()
+	var board := Node2D.new()
+	board.set_script(board_script)
+	root.add_child(board)
+	var director: Node = DIRECTOR.new()
+	director.allow_headless = true
+	board.add_child(director)
+	director.bind_board(board)
+	await process_frame
+	director._play_number({"seat": 0, "cell": Vector2i(6, 7), "text": "+1 Impact", "kind": "resource", "scale": 1.0})
+	director._play_number({"seat": 1, "cell": Vector2i(7, 7), "text": "BACK 19", "kind": "damage", "scale": 1.3})
+	director._play_number({"seat": 1, "cell": Vector2i(7, 8), "text": "12", "kind": "damage", "scale": 1.0})
+	var live: Array = []
+	for node in director._pools["number"]:
+		if bool(node.in_use):
+			live.append(node)
+	eq(live.size(), 3, "three numbers are showing")
+	var clear := true
+	for i in live.size():
+		for j in range(i + 1, live.size()):
+			if (live[i].footprint() as Rect2).intersects(live[j].footprint()):
+				clear = false
+	truthy(clear, "no number covers another")
+	var dmg: Node = null
+	var tick: Node = null
+	for node in live:
+		if node._text == "BACK 19":
+			dmg = node
+		if node._text == "+1 Impact":
+			tick = node
+	eq(float(dmg.lift), 0.0, "the damage number stays over its target")
+	truthy(float(tick.lift) > 0.0, "the resource tick steps up out of the way")
+	var soul: Node2D = load("res://vfx/vfx_soul.gd").new()
+	board.add_child(soul)
+	soul._process(0.5)
+	truthy(is_instance_valid(soul) and not soul.is_queued_for_deletion(), "the KO soul release is still showing mid-way")
+	soul._process(5.0)
+	truthy(soul.is_queued_for_deletion(), "the KO soul release frees itself")
+	eq(FileAccess.get_file_as_string("res://vfx/vfx_director.gd").contains("_Soul.new()"), true, "a KO plays the soul release")
+	# Name plates: side by side spread sideways, one behind the other stacks up.
+	var a := Pawn.new()
+	var b := Pawn.new()
+	for p in [a, b]:
+		p.unit_name = "Ironjaw"
+		root.add_child(p)
+	await process_frame
+	a.position = Vector2(100, 100)
+	b.position = Vector2(130, 108)
+	Pawn.spread_name_plates([a, b])
+	var ra := a.name_plate_rect()
+	ra.position += a.position + a.name_nudge
+	var rb := b.name_plate_rect()
+	rb.position += b.position + b.name_nudge
+	eq(ra.intersects(rb), false, "side by side name plates no longer overlap")
+	truthy(a.name_nudge.x < 0.0 and b.name_nudge.x > 0.0, "the left plate moves left, the right one right")
+	b.position = Vector2(100, 104)
+	Pawn.spread_name_plates([a, b])
+	eq(a.name_nudge.x, 0.0, "stacked pawns keep their plates centred")
+	truthy(a.name_nudge.y < 0.0, "the rear plate steps up")
+	Pawn.spread_name_plates([a])
+	eq(a.name_nudge, Vector2.ZERO, "a lone pawn has no nudge")
+	a.free()
+	b.free()
+	board.free()
 
 
 func _test_budgets() -> void:

@@ -48,6 +48,8 @@ class_name Pawn
 
 var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
+## Set by the board when this name plate would cover a neighbour's.
+var name_nudge: Vector2 = Vector2.ZERO
 var class_id: String = ""
 var facing: String = "E"
 ## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
@@ -2468,6 +2470,60 @@ func name_baseline() -> float:
 	return head_hp_y() - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
 
 
+## The name plate box in pawn space, before any nudge (board spacing pass).
+func name_plate_rect() -> Rect2:
+	var font := ThemeDB.fallback_font
+	var size := font.get_string_size(unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
+	var ascent := font.get_ascent(NAME_FONT_SIZE)
+	var descent := font.get_descent(NAME_FONT_SIZE)
+	var base := name_baseline() if _sprite_ready() else 10.0
+	return Rect2(Vector2(-size.x * 0.5 - 4.0, base - ascent - 1.0), Vector2(size.x + 8.0, ascent + descent + 2.0))
+
+
+## Two champions side by side used to print their name plates on top of
+## each other. Plates that would overlap are pushed apart: sideways when the
+## pawns stand side by side, the rear plate up when one stands behind.
+static func spread_name_plates(pawns: Array) -> void:
+	var bodies: Array = []
+	for pawn in pawns:
+		if pawn != null and is_instance_valid(pawn) and pawn is Pawn and (pawn as Pawn).visible and (pawn as Pawn).unit_name != "":
+			bodies.append(pawn)
+	var nudges := {}
+	for body in bodies:
+		nudges[body] = Vector2.ZERO
+	for i in bodies.size():
+		for j in range(i + 1, bodies.size()):
+			var a: Pawn = bodies[i]
+			var b: Pawn = bodies[j]
+			var ra := a.name_plate_rect()
+			ra.position += a.position + nudges[a]
+			var rb := b.name_plate_rect()
+			rb.position += b.position + nudges[b]
+			var both := ra.intersection(rb)
+			if both.size.x <= 0.0 or both.size.y <= 0.0:
+				continue
+			var dx := b.position.x - a.position.x
+			if absf(dx) >= 8.0:
+				var half := both.size.x * 0.5 + 2.0
+				var lean := signf(dx)
+				nudges[a] += Vector2(-half * lean, 0.0)
+				nudges[b] += Vector2(half * lean, 0.0)
+			else:
+				var rear: Pawn = a if a.position.y < b.position.y else b
+				nudges[rear] += Vector2(0.0, -(both.size.y + 2.0))
+	for body in bodies:
+		(body as Pawn).set_name_nudge(nudges[body])
+
+
+func set_name_nudge(nudge: Vector2) -> void:
+	if nudge.is_equal_approx(name_nudge):
+		return
+	name_nudge = nudge
+	queue_redraw()
+	if _chrome != null:
+		_chrome.queue_redraw()
+
+
 func name_label_origin() -> Vector2:
 	var font := ThemeDB.fallback_font
 	var size := font.get_string_size(unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
@@ -2507,7 +2563,8 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 	var font := ThemeDB.fallback_font
 	var label := unit_name
 	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
-	var label_x := -size.x * 0.5
+	var label_x := -size.x * 0.5 + name_nudge.x
+	name_y += name_nudge.y
 	var name_color := Color(0.1, 0.08, 0.1)
 	if name_y < hp_y:
 		var ascent := font.get_ascent(NAME_FONT_SIZE)

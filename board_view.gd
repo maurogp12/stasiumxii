@@ -278,6 +278,7 @@ func _process(delta: float) -> void:
 	if not _booted:
 		return
 	_pulse_target_marks(delta)
+	_space_name_plates()
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
@@ -617,6 +618,11 @@ func _pulse_target_marks(delta: float) -> void:
 		var body: Pawn = pawn
 		if body.target_marked:
 			body.advance_target_pulse(delta)
+
+
+## Name plates of neighbours are spread apart (Pawn.spread_name_plates).
+func _space_name_plates() -> void:
+	Pawn.spread_name_plates(pawns_by_seat.values())
 
 
 func _handle_left_click(cell: Vector2i) -> void:

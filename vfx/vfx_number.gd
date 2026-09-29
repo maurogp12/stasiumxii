@@ -9,6 +9,9 @@ var _outline: Color = VfxPalette.NUMBER_OUTLINE
 var _font_size: int = VfxBudget.NUMBER_SIZE
 var _kind: String = ""
 var _rise: Tween
+## Extra height (px, local) when this number made room for another one.
+var lift: float = 0.0
+var _pop: float = 1.0
 
 
 func play(spec: Dictionary) -> void:
@@ -27,6 +30,8 @@ func play(spec: Dictionary) -> void:
 	_font_size = int(colors["size"])
 	_kind = str(spec.get("kind", ""))
 	var pop := float(spec.get("scale", 1.0))
+	_pop = pop
+	lift = 0.0
 	rotation = deg_to_rad(randf_range(-VfxBudget.NUMBER_TILT_DEG, VfxBudget.NUMBER_TILT_DEG))
 	scale = Vector2(0.6, 0.6) * pop
 	modulate.a = 0.0
@@ -81,7 +86,7 @@ func _draw() -> void:
 	if font == null:
 		return
 	var width := font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
-	var baseline := Vector2(-width * 0.5, _font_size * 0.35)
+	var baseline := Vector2(-width * 0.5, _font_size * 0.35 - lift)
 	font.draw_string(get_canvas_item(), baseline + Vector2(2, 3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
 	for ox in range(-4, 5, 2):
 		for oy in range(-4, 5, 2):
@@ -93,3 +98,29 @@ func _draw() -> void:
 	if _kind == "miss":
 		var slash_y := baseline.y - float(_font_size) * 0.28
 		draw_line(Vector2(baseline.x - 4.0, slash_y + 2.0), Vector2(baseline.x + width + 4.0, slash_y - float(_font_size) * 0.55), Color(0.28, 0.16, 0.1, 0.95), 3.0, true)
+
+
+## Resource and MP ticks give way to damage and heal numbers.
+func is_minor() -> bool:
+	return _kind in ["resource", "mp"]
+
+
+## Where the number sits on screen now (parent space, at its rest scale).
+func footprint() -> Rect2:
+	var font := ThemeDB.fallback_font
+	var width := 40.0
+	if font != null and _text != "":
+		width = font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
+	var s := maxf(_pop, 0.5)
+	var h := float(_font_size) * 1.05 * s
+	return Rect2(position + Vector2(-width * 0.5 * s - 4.0, -(lift + float(_font_size) * 0.8) * s), Vector2(width * s + 8.0, h))
+
+
+## Lift until this number's box sits above `other` (plus a small gap).
+func clear_above(other: Rect2) -> void:
+	var mine := footprint()
+	if not mine.intersects(other):
+		return
+	var s := maxf(_pop, 0.5)
+	lift += (mine.end.y - other.position.y + 5.0) / s
+	queue_redraw()

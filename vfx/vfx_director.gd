@@ -10,6 +10,7 @@ signal debug_beat(beat_name: String)
 const _Router := preload("res://vfx/vfx_router.gd")
 const _Spark := preload("res://vfx/vfx_spark.gd")
 const _Number := preload("res://vfx/vfx_number.gd")
+const _Soul := preload("res://vfx/vfx_soul.gd")
 const _Puff := preload("res://vfx/vfx_puff.gd")
 const _Motes := preload("res://vfx/vfx_motes.gd")
 const _Projectile := preload("res://vfx/vfx_projectile.gd")
@@ -339,6 +340,32 @@ func _play_number(spec: Dictionary) -> void:
 	node.z_as_relative = false
 	node.z_index = 900
 	node.play(spec)
+	_make_room(node)
+
+
+## Adjacent caster and target used to print "+1 Impact" on top of "BACK 19".
+## A new number never covers a live one: resource ticks step up out of the
+## way of damage / heal numbers, and anything else stacks above what is
+## already showing.
+func _make_room(fresh: Node2D) -> void:
+	if not fresh.has_method("footprint"):
+		return
+	for _pass in 4:
+		var moved := false
+		for other in _pools.get("number", []):
+			if other == fresh or other == null or not bool(other.get("in_use")):
+				continue
+			var a: Rect2 = fresh.footprint()
+			var b: Rect2 = other.footprint()
+			if not a.intersects(b):
+				continue
+			if other.is_minor() and not fresh.is_minor():
+				other.clear_above(a)
+			else:
+				fresh.clear_above(b)
+			moved = true
+		if not moved:
+			return
 
 
 func _play_projectile(spec: Dictionary) -> void:
@@ -443,6 +470,17 @@ func _play_death(spec: Dictionary) -> void:
 	if cause == "burn":
 		tint = VfxPalette.BURN
 	_puff_at(at + Vector2(0, -8), tint)
+	if pawn != null:
+		# Soul release in the class colour (one per KO, frees itself).
+		var soul := _Soul.new()
+		soul.name = "Soul_%d" % seat
+		soul.tint = VfxPalette.class_tint(str(pawn.class_id)) if "class_id" in pawn else Color(0.9, 0.85, 0.7)
+		if cause == "burn":
+			soul.tint = VfxPalette.EMBER
+		soul.position = at
+		soul.z_as_relative = false
+		soul.z_index = 850
+		add_child(soul)
 	var ring := _acquire("ring")
 	ring.play({
 		"pos": at,
