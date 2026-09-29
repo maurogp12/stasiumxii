@@ -20,6 +20,7 @@ func _run() -> void:
 	_test_landscape_poster()
 	_test_stasis_runs()
 	_test_sources_leave_combat_alone()
+	_test_intro_video()
 	print("Mobile hub tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -198,6 +199,26 @@ func _test_sources_leave_combat_alone() -> void:
 	truthy(select_src.contains("res://scenes/mobile_hub.tscn"), "class select can return to the hub")
 	truthy(select_src.contains("roll_hotseat_map"), "Koliseo still rolls a hot-seat arena")
 	eq(select_src.contains("func pick_map"), false, "class select still has no map picker")
+
+
+func _test_intro_video() -> void:
+	truthy(ResourceLoader.exists(IntroVideo.VIDEO_PATH), "intro video is in the project")
+	eq(IntroVideo.should_play(false), false, "tests / CLI routes never play the intro")
+	var hub := _hub()
+	eq(hub.find_child("IntroVideo", true, false), null, "a test hub has no intro")
+	hub.free()
+	IntroVideo.played = false
+	var intro := IntroVideo.new()
+	root.add_child(intro)
+	eq(IntroVideo.played, true, "the intro plays once per app run")
+	eq(IntroVideo.should_play(true), false, "a second hub does not replay it")
+	var tap := InputEventScreenTouch.new()
+	tap.pressed = true
+	intro._gui_input(tap)
+	eq(intro.is_done(), true, "a touch skips the intro")
+	var click := InputEventMouseButton.new()
+	click.pressed = true
+	eq(IntroVideo._is_skip(click), true, "a click skips too")
 
 
 func _hub() -> Node:

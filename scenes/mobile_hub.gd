@@ -106,6 +106,11 @@ func _ready() -> void:
 		call_deferred("open_koliseo")
 		return
 	_build()
+	# Opening video once per app start; any touch skips it (Mauro 29 Sep 2026).
+	if IntroVideo.should_play(_auto_launch):
+		var intro := IntroVideo.new()
+		intro.name = "IntroVideo"
+		add_child(intro)
 
 
 func _on_resized() -> void:
