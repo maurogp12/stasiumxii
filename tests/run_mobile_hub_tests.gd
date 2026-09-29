@@ -202,7 +202,10 @@ func _test_sources_leave_combat_alone() -> void:
 
 
 func _test_intro_video() -> void:
-	truthy(ResourceLoader.exists(IntroVideo.VIDEO_PATH), "intro video is in the project")
+	# Mauro 29 Sep 2026: "Remove the video for now". The player code stays;
+	# with no clip in the project the app start never shows it.
+	eq(ResourceLoader.exists(IntroVideo.VIDEO_PATH), false, "intro video removed for now")
+	eq(IntroVideo.should_play(true), false, "no clip = no intro at app start")
 	eq(IntroVideo.should_play(false), false, "tests / CLI routes never play the intro")
 	var hub := _hub()
 	eq(hub.find_child("IntroVideo", true, false), null, "a test hub has no intro")

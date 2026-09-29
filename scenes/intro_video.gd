@@ -5,6 +5,8 @@ class_name IntroVideo
 ## game but it can be skipped by touching the screen"). Covers the hub at
 ## app start, plays art/intro/intro.ogv once, and any tap / click / key skips
 ## it. Only the first hub of an app run shows it; CLI routes and tests do not.
+## 0.1.56: the clip is removed for now (Mauro). Put a file back at VIDEO_PATH
+## (git history has the 854×480 Theora cut) and it plays again.
 
 signal finished
 
