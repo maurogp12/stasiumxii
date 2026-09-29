@@ -9,7 +9,7 @@ extends RefCounted
 ## The trophy shop sells hub food and cosmetics only. Never Duskbrand, set parts,
 ## AP or MP. In-fight potions are parked. The pet is paint_only.
 ## A "human win" is an online match the local seat wins. Hot-seat and Stasis
-## pay nothing (waiting on Mauro for hot-seat).
+## pay nothing (Mauro confirmed 29 Sep 2026: "Only online win pays").
 
 const COINS_PER_WIN := 1
 const PAID_WINS_PER_DAY := 2
