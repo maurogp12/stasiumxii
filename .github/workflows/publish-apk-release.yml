@@ -1,12 +1,12 @@
 name: Publish sideload APK release
 
-# Pushing a tag like mobile-0.1.41-debug on a download-only apk/<version>
-# branch publishes that commit's stasiumxii-mobile-debug.apk as a GitHub
-# prerelease. The in-game Actualizar button reads these releases.
+# A push to a download-only apk/<version> branch publishes that commit's
+# stasiumxii-mobile-debug.apk as the GitHub prerelease mobile-<version>-debug
+# (GitHub creates the tag). The in-game Actualizar button reads these releases.
 on:
   push:
-    tags:
-      - "mobile-*-debug"
+    branches:
+      - "apk/**"
 
 permissions:
   contents: write
@@ -16,17 +16,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check the APK is in the tagged commit
+      - name: Check the APK is in the pushed commit
         run: test -f stasiumxii-mobile-debug.apk && ls -l stasiumxii-mobile-debug.apk
       - name: Publish prerelease
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ github.ref_name }}
+          BRANCH: ${{ github.ref_name }}
         run: |
-          VERSION="${TAG#mobile-}"
-          VERSION="${VERSION%-debug}"
-          gh release create "$TAG" stasiumxii-mobile-debug.apk \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "STASIUM XII mobile debug APK $VERSION" \
-            --notes-file README.md \
-            --prerelease
+          VERSION="${BRANCH#apk/}"
+          TAG="mobile-${VERSION}-debug"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" stasiumxii-mobile-debug.apk --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" stasiumxii-mobile-debug.apk \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "STASIUM XII mobile debug APK $VERSION" \
+              --notes-file README.md \
+              --prerelease
+          fi
