@@ -7,6 +7,7 @@ const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const _KoliseoArt := preload("res://board/koliseo_art.gd")
 const _KoliseoLife := preload("res://board/koliseo_life.gd")
 const _ArenaLook := preload("res://board/arena_look.gd")
+const _SURFACE_SHADER := preload("res://board/arena_surface.gdshader")
 ## Relative to this tile. Stays under BoardVisualSort.UNIT_Z_BIAS so the
 ## seat ring and pawn sprite still paint after the overlay, including on
 ## elevated tiles (the overlay is a child, so it lifts with the diamond).
@@ -31,6 +32,11 @@ var _paint_props: Array = []
 var _grade_key: String = ""
 ## Arena id for the look-picture stamps (empty on proto boards).
 var _look_map: String = ""
+## Animated surface (lava, runes...) drawn by a child behind the tile's props.
+var _surface: SurfaceFx
+var _surface_stamp: Texture2D
+## Bits 0..3: edges (W-N, N-E, E-S, S-W) that touch the arena's glowing terrain.
+var _edge_glow_mask: int = 0
 var _grid_on: bool = false
 var _life_mat: ShaderMaterial
 var _grid: GridInk
@@ -47,8 +53,18 @@ class GridInk extends Node2D:
 		var loop := PackedVector2Array(pts)
 		loop.append(pts[0])
 		var style: Dictionary = host.grid_style()
+		if (style.get("no_grid", []) as Array).has(host.terrain_type):
+			return
 		draw_polyline(loop, style.get("ink", KoliseoLife.GRID_INK), float(style.get("ink_px", KoliseoLife.GRID_INK_PX)), true)
 		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
+
+
+class SurfaceFx extends Node2D:
+	var host: BoardTile
+
+	func _draw() -> void:
+		if host != null:
+			host.paint_surface(self)
 
 
 class HighlightOverlay extends Node2D:
@@ -70,13 +86,16 @@ func _draw() -> void:
 	var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
 	if look != null:
 		_paint_look(look)
-		_paint_depth_rim()
+		if not (grid_style().get("no_grid", []) as Array).has(terrain_type):
+			_paint_depth_rim()
 	elif tex == null:
+		_hide_surface()
 		draw_colored_polygon(points, fill_color())
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		draw_polyline(outline, Color(0.25, 0.15, 0.25), 1.0, true)
 	else:
+		_hide_surface()
 		_paint_terrain(tex)
 		_paint_depth_rim()
 	for prop_name in _paint_props:
@@ -97,15 +116,85 @@ func _draw() -> void:
 ## faces to the ground line so it reads as a block, like the pictures.
 func _paint_look(stamp: Texture2D) -> void:
 	var pts := _diamond_points()
+	var style := grid_style()
 	if elevation > 0:
-		var style := grid_style()
 		var drop := Vector2(0, float(elevation) * BoardVisualSort.ELEVATION_PIXELS + 2.0)
 		var left_col: Color = style.get("face_left", Color(0.3, 0.26, 0.22))
 		var right_col: Color = style.get("face_right", Color(0.22, 0.19, 0.16))
-		draw_colored_polygon(PackedVector2Array([pts[3], pts[2], pts[2] + drop, pts[3] + drop]), left_col)
-		draw_colored_polygon(PackedVector2Array([pts[2], pts[1], pts[1] + drop, pts[2] + drop]), right_col)
+		# Lit at the top, falling into shade at the foot: a block, not a hole.
+		draw_polygon(PackedVector2Array([pts[3], pts[2], pts[2] + drop, pts[3] + drop]),
+			PackedColorArray([left_col.lightened(0.18), left_col.lightened(0.12), left_col.darkened(0.45), left_col.darkened(0.4)]))
+		draw_polygon(PackedVector2Array([pts[2], pts[1], pts[1] + drop, pts[2] + drop]),
+			PackedColorArray([right_col.lightened(0.1), right_col.lightened(0.14), right_col.darkened(0.4), right_col.darkened(0.45)]))
 		draw_line(pts[2], pts[2] + drop, Color(0, 0, 0, 0.35), 1.2, true)
-	draw_texture_rect(stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
+	var surface := _ArenaLook.surface_for(_look_map, terrain_type)
+	if surface.is_empty():
+		_hide_surface()
+		draw_texture_rect(stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
+	else:
+		_show_surface(stamp, int(surface[0]), float(surface[1]))
+	if elevation > 0 and style.has("lip"):
+		var lip: Color = style["lip"]
+		draw_line(pts[3], pts[2], lip, 1.6, true)
+		draw_line(pts[2], pts[1], lip, 1.6, true)
+	_paint_edge_glow(style)
+
+
+## Terrain-side glow where this cell meets the arena's hot terrain (lava).
+func _paint_edge_glow(style: Dictionary) -> void:
+	if _edge_glow_mask == 0 or not style.has("edge_glow"):
+		return
+	var glow: Color = style["edge_glow"]
+	var pts := _diamond_points()
+	var center := Vector2.ZERO
+	var edges := [[pts[3], pts[0]], [pts[0], pts[1]], [pts[1], pts[2]], [pts[2], pts[3]]]
+	for i in 4:
+		if (_edge_glow_mask >> i) & 1 == 0:
+			continue
+		var a: Vector2 = edges[i][0]
+		var b: Vector2 = edges[i][1]
+		var ia := a.lerp(center, 0.34)
+		var ib := b.lerp(center, 0.34)
+		var clear := Color(glow.r, glow.g, glow.b, 0.0)
+		draw_polygon(PackedVector2Array([a, b, ib, ia]), PackedColorArray([glow, glow, clear, clear]))
+		draw_line(a, b, Color(1.0, 0.85, 0.45, 0.9), 1.4, true)
+
+
+func set_edge_glow(mask: int) -> void:
+	if mask == _edge_glow_mask:
+		return
+	_edge_glow_mask = mask
+	_request_paint()
+
+
+func _show_surface(stamp: Texture2D, mode: int, gain: float) -> void:
+	if _surface == null or not is_instance_valid(_surface):
+		_surface = SurfaceFx.new()
+		_surface.name = "Surface"
+		_surface.host = self
+		_surface.show_behind_parent = true
+		var mat := ShaderMaterial.new()
+		mat.shader = _SURFACE_SHADER
+		_surface.material = mat
+		add_child(_surface)
+	var smat := _surface.material as ShaderMaterial
+	smat.set_shader_parameter("mode", mode)
+	smat.set_shader_parameter("gain", gain)
+	_surface.visible = true
+	if _surface_stamp != stamp:
+		_surface_stamp = stamp
+		_surface.queue_redraw()
+
+
+func _hide_surface() -> void:
+	if _surface != null and is_instance_valid(_surface):
+		_surface.visible = false
+
+
+func paint_surface(canvas: CanvasItem) -> void:
+	if _surface_stamp == null:
+		return
+	canvas.draw_texture_rect(_surface_stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
 
 
 ## Grid ink for this arena. Empty keeps the shared KoliseoLife ink.

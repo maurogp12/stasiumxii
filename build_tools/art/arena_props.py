@@ -34,6 +34,8 @@ CUTS = {
         "ash_rock": (870, 190, 1178, 380, 52),
         "floor_seal": (870, 190, 1178, 380, 40),
         "steam_vent": (800, 760, 1330, 1250, 70),
+        # Pale stone chunks read as litter on the basalt.
+        "rubble": ("none",),
     },
     "brinewake": {
         "ref": "brinewake_look.jpg",
@@ -45,13 +47,16 @@ CUTS = {
         "rubble": (1668, 124, 1800, 222, 26),
         # The old waterfall sprite read as a yellow stick on the dock.
         "waterfall": ("none",),
+        "rock_pillar": ("none",),
     },
     "stormspire": {
         "ref": "stormspire_look.jpg",
-        "conduit": (355, 195, 595, 515, 40),
-        "rock_pillar": (1215, 105, 1410, 340, 36),
+        "conduit": (355, 195, 595, 515, 46, "isnet-general-use", 150),
+        "rock_pillar": (1215, 105, 1410, 340, 36, "isnet-general-use", 150),
         "arc": (0, 25, 200, 400, 34),
         "spark": (965, 870, 1095, 1018, 22),
+        # The old pink crystal spires clashed: use the picture's blue crystal.
+        "crystal_bolt": ("alias", "spark"),
         # The picture's floor is clean slate: no grey rocks or plates.
         "rubble": ("none",),
         "floor_seal": ("none",),
@@ -78,7 +83,7 @@ CUTS = {
 }
 
 
-def cut(session, img, box, width):
+def cut(session, img, box, width, floor=70.0):
     x0, y0, x1, y1 = box
     crop = img.crop((x0, y0, x1, y1))
     rgba = remove(crop, session=session)
@@ -86,7 +91,8 @@ def cut(session, img, box, width):
     # The model leaves soft, half-clear bodies on busy painted floors. A prop
     # is a solid object: push alpha to opaque inside, keep a 1-2 px soft edge.
     soft = a[..., 3].astype(np.float32)
-    a[..., 3] = np.clip((soft - 70.0) * 3.0, 0, 255).astype(np.uint8)
+    # floor: raise it for props whose cut keeps a grey haze at the base.
+    a[..., 3] = np.clip((soft - floor) * 3.0, 0, 255).astype(np.uint8)
     rgba = Image.fromarray(a, "RGBA")
     alpha = a[..., 3]
     ys, xs = np.where(alpha > 24)
@@ -128,9 +134,10 @@ def main():
                 continue
             x0, y0, x1, y1, width = entry[:5]
             model = entry[5] if len(entry) > 5 else "isnet-general-use"
+            floor = float(entry[6]) if len(entry) > 6 else 70.0
             if model not in sessions:
                 sessions[model] = new_session(model)
-            sprite = cut(sessions[model], img, (x0, y0, x1, y1), width)
+            sprite = cut(sessions[model], img, (x0, y0, x1, y1), width, floor)
             if sprite is None:
                 print(name, prop, "EMPTY")
                 continue

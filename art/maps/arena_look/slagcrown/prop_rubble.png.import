@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnh6og1w8wgbl"
-path="res://.godot/imported/prop_rock_pillar.png-6231c98d9a4f08899465bbe8f328011b.ctex"
+uid="uid://co8vdv782c76s"
+path="res://.godot/imported/prop_rubble.png-d21845f054526ae5c603115e6aacd692.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/maps/arena_look/stormspire/prop_rock_pillar.png"
-dest_files=["res://.godot/imported/prop_rock_pillar.png-6231c98d9a4f08899465bbe8f328011b.ctex"]
+source_file="res://art/maps/arena_look/slagcrown/prop_rubble.png"
+dest_files=["res://.godot/imported/prop_rubble.png-d21845f054526ae5c603115e6aacd692.ctex"]
 
 [params]
 

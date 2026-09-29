@@ -16,29 +16,39 @@ const MAX_STAMPS := 12
 ## face_right shade the drop under a raised cell.
 const STYLES := {
 	"slagcrown": {
-		"ink": Color(0.06, 0.03, 0.02, 0.9), "ink_px": 2.2,
-		"gleam": Color(1.0, 0.42, 0.10, 0.55), "gleam_px": 1.0,
-		"face_left": Color(0.16, 0.09, 0.07), "face_right": Color(0.10, 0.06, 0.05),
+		"ink": Color(0.03, 0.01, 0.01, 0.6), "ink_px": 1.8,
+		"gleam": Color(1.0, 0.42, 0.10, 0.18), "gleam_px": 1.0,
+		"face_left": Color(0.17, 0.10, 0.08), "face_right": Color(0.10, 0.06, 0.05),
+		"lip": Color(1.0, 0.48, 0.14, 0.85),
+		# terrain -> [shader mode, gain] (board/arena_surface.gdshader)
+		"surfaces": {"lava": [1, 1.0], "ground": [2, 1.0], "mud": [2, 0.85]},
+		"no_grid": ["lava"],
+		"edge_glow": Color(1.0, 0.40, 0.08, 0.95), "edge_from": "lava",
 	},
 	"brinewake": {
 		"ink": Color(0.05, 0.05, 0.07, 0.9), "ink_px": 2.2,
 		"gleam": Color(0.55, 0.62, 0.72, 0.32), "gleam_px": 1.0,
 		"face_left": Color(0.24, 0.19, 0.15), "face_right": Color(0.16, 0.13, 0.11),
+		"surfaces": {"water": [5, 1.0]},
 	},
 	"stormspire": {
 		"ink": Color(0.10, 0.07, 0.02, 0.85), "ink_px": 2.4,
 		"gleam": Color(1.0, 0.80, 0.30, 0.85), "gleam_px": 1.3,
-		"face_left": Color(0.14, 0.13, 0.20), "face_right": Color(0.08, 0.08, 0.13),
+		"face_left": Color(0.24, 0.22, 0.32), "face_right": Color(0.15, 0.14, 0.22),
+		"lip": Color(1.0, 0.80, 0.30, 0.9),
+		"surfaces": {"water": [3, 1.0], "ground": [4, 1.15], "mud": [4, 1.0]},
 	},
 	"windmere": {
 		"ink": Color(0.34, 0.40, 0.50, 0.8), "ink_px": 1.9,
 		"gleam": Color(0.92, 0.84, 0.58, 0.55), "gleam_px": 1.0,
 		"face_left": Color(0.56, 0.62, 0.72), "face_right": Color(0.40, 0.46, 0.56),
+		"surfaces": {"water": [5, 1.0]},
 	},
 	"crosshaven": {
 		"ink": Color(0.20, 0.15, 0.10, 0.8), "ink_px": 2.0,
 		"gleam": Color(0.96, 0.88, 0.70, 0.45), "gleam_px": 1.0,
 		"face_left": Color(0.52, 0.46, 0.36), "face_right": Color(0.38, 0.33, 0.26),
+		"surfaces": {"water": [5, 1.0]},
 	},
 }
 
@@ -100,3 +110,10 @@ static func prop_for(map_id: String, prop_name: String) -> Texture2D:
 		tex = load(path) as Texture2D
 	_props[key] = tex
 	return tex
+
+
+## [mode, gain] for this arena's animated surface on a terrain, or [] for a
+## plain stamp. Modes live in board/arena_surface.gdshader.
+static func surface_for(map_id: String, terrain: String) -> Array:
+	var surfaces: Dictionary = style_for(map_id).get("surfaces", {})
+	return surfaces.get(terrain, [])

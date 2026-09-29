@@ -55,6 +55,7 @@ const TILE_SCENE: PackedScene = preload("res://board/tile.tscn")
 const KOLISEO_ART := preload("res://board/koliseo_art.gd")
 const KOLISEO_LIFE := preload("res://board/koliseo_life.gd")
 const ARENA_SKY := preload("res://board/arena_sky.gd")
+const ARENA_LOOK := preload("res://board/arena_look.gd")
 const PAWN_SCENE: PackedScene = preload("res://units/pawn.tscn")
 const COMBAT_SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -2163,6 +2164,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+	_apply_edge_glow(map_key)
 	_ensure_koliseo_life()
 	if _koliseo_life != null:
 		_koliseo_life.bind(map_key, _board_size)
@@ -2202,6 +2204,23 @@ func _ensure_koliseo_life() -> void:
 	add_child(_koliseo_life)
 	if units != null:
 		move_child(_koliseo_life, units.get_index())
+
+
+## Look-picture glow: a cell's edges that touch the arena's hot terrain
+## (Slagcrown lava) light up on the rock side. View only.
+func _apply_edge_glow(map_key: String) -> void:
+	var style: Dictionary = ARENA_LOOK.style_for(map_key)
+	var hot := str(style.get("edge_from", ""))
+	var steps: Array[Vector2i] = [Vector2i(-1, 0), Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1)]
+	for cell in tiles.keys():
+		var tile := _tile_at(cell)
+		var mask := 0
+		if hot != "" and tile.terrain_type != hot:
+			for i in 4:
+				var rec: Dictionary = _board_data.get(cell + steps[i], {})
+				if str(rec.get("terrain_type", "")) == hot:
+					mask |= 1 << i
+		tile.set_edge_glow(mask)
 
 
 ## Sky and island slab (view only). Sits first so every tile paints over it.

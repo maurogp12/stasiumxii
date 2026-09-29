@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bnh6og1w8wgbl"
-path="res://.godot/imported/prop_rock_pillar.png-6231c98d9a4f08899465bbe8f328011b.ctex"
+uid="uid://bpafijvkhkkjn"
+path="res://.godot/imported/prop_rock_pillar.png-2b5bb570eeab157129b487ba1a8195bd.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/maps/arena_look/stormspire/prop_rock_pillar.png"
-dest_files=["res://.godot/imported/prop_rock_pillar.png-6231c98d9a4f08899465bbe8f328011b.ctex"]
+source_file="res://art/maps/arena_look/brinewake/prop_rock_pillar.png"
+dest_files=["res://.godot/imported/prop_rock_pillar.png-2b5bb570eeab157129b487ba1a8195bd.ctex"]
 
 [params]
 
