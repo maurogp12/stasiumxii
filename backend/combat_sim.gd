@@ -3793,7 +3793,8 @@ func _resolve_empty_tile(intent: Dictionary, actor: Dictionary, def: Dictionary,
 		})
 		_sync_shade_flags()
 		_intent_log.append(intent)
-		_last_coach = "%s drops a Shade on %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+		# No tile in the coach: Shades are secret to their owner.
+		_last_coach = "%s drops a Shade (−%d AP)." % [actor["name"], ap_cost]
 		_last_events.append({
 			"type": "cast",
 			"spell": spell_id,

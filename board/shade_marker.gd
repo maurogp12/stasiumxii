@@ -1,11 +1,10 @@
 extends Node2D
 
 ## Board-owned Shade. Not a shader pool and not a blink: Ambush is the relocate.
-## TA token uses the unit foot pivot. The tile decal plus the plate stay
-## readable after the cast floater fades. A live Shade that is the Ambush
-## origin wears the louder "Ambush" plate, including while Gloam is Invisible
-## when that Shade is still the jump. A Shade that is not the origin stays
-## a Neutral Shade. The node lives on ShadeMarkers so pawn rebuild
+## TA token uses the unit foot pivot. The tile decal plus the cloak mark it;
+## no text plate (Mauro 29 Sep 2026). A live Shade that is the Ambush origin
+## glows louder (halo), including while Gloam is Invisible when that Shade is
+## still the jump. Only the owner sees Shades (board_view filters by seat). The node lives on ShadeMarkers so pawn rebuild
 ## cannot free it.
 
 const TOKEN_PATH := "res://art/vfx/shade/neutral_shade_token.png"
@@ -149,23 +148,15 @@ func _draw() -> void:
 	draw_polyline(ring, flash, 4.0, true)
 
 
+## Mauro (29 Sep 2026): no "Shade" / "Ambush" text box — it was too big
+## and said nothing new. The cloak and tile mark the Shade; the Ambush
+## origin keeps its halo. Only small turn pips remain.
 func paint_plate(canvas: CanvasItem) -> void:
-	var font := ThemeDB.fallback_font
-	var text := plate_text()
-	var size := ORIGIN_LABEL_SIZE if _as_origin else LABEL_SIZE
-	var text_size := font.get_string_size(text, HORIZONTAL_ALIGNMENT_CENTER, -1, size)
-	var origin := Vector2(-text_size.x * 0.5, plate_baseline_y())
-	var ascent := font.get_ascent(size)
-	var descent := font.get_descent(size)
-	var plate := Rect2(origin.x - 10.0, origin.y - ascent - 6.0, text_size.x + 20.0, ascent + descent + 12.0)
-	canvas.draw_rect(plate.grow(4.0 if _as_origin else 3.0), RIM)
-	canvas.draw_rect(plate, Color(0.16, 0.04, 0.28, 0.96) if _as_origin else Color(0.07, 0.03, 0.12, 0.96))
-	canvas.draw_string(font, origin, text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Color(1.0, 0.97, 1.0))
 	var n := mini(turns, 3)
 	for i in n:
-		var pip := Vector2(40.0, -24.0 + float(i) * 12.0)
-		canvas.draw_circle(pip, 7.0, Color(0.05, 0.02, 0.08, 1.0))
-		canvas.draw_circle(pip, 5.0, RIM)
+		var pip := Vector2(-8.0 + float(i) * 8.0, -CLOAK_PEAK - 4.0)
+		canvas.draw_circle(pip, 3.6, Color(0.05, 0.02, 0.08, 0.9))
+		canvas.draw_circle(pip, 2.4, RIM)
 
 
 func _ellipse(rx: float, ry: float) -> PackedVector2Array:

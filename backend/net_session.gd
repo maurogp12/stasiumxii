@@ -571,14 +571,15 @@ func pack_result(result: Dictionary, viewer_seat: int = -1) -> Dictionary:
 ## pos is null, pos_hidden is true, x/y are omitted. Event fields that name that
 ## unit's tile (current or the cell it just left) become null; path and cone are
 ## omitted. range and hit_chance become null when the event locates that unit.
-## Coach text replaces those coordinates with (?,?). Shade / wall / plant tokens
-## stay, including their cells. legal_intents omit `to` when it was the hidden tile.
+## Coach text replaces those coordinates with (?,?). Wall / plant tokens stay,
+## including their cells; Shades are the owner's only (_redact_shades_for_viewer). legal_intents omit `to` when it was the hidden tile.
 func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: int) -> Dictionary:
 	var out_snap: Dictionary = snap.duplicate(true) if not snap.is_empty() else {}
 	var out_events: Array = events.duplicate(true)
 	var hidden_cells: Array = []
 	if viewer_seat != HOST_SEAT and viewer_seat != GUEST_SEAT:
 		return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
+	_redact_shades_for_viewer(out_snap, out_events, viewer_seat)
 	var hidden_seats := {}
 	var secret: Array = []
 	for unit in out_snap.get("units", []):
@@ -606,6 +607,30 @@ func _redact_invisible_for_viewer(snap: Dictionary, events: Array, viewer_seat: 
 	if out_snap.has("coach"):
 		out_snap["coach"] = _scrub_coach(str(out_snap.get("coach", "")), secret)
 	return {"snapshot": out_snap, "events": out_events, "hidden_cells": hidden_cells}
+
+
+## Shades are secret to their owner (Mauro 29 Sep 2026): the opponent's
+## view loses the other seat's Shade tokens, the Drop Shade target cell and
+## the cell of a Shade expiring. An Ambush still reveals where its caster lands.
+func _redact_shades_for_viewer(out_snap: Dictionary, out_events: Array, viewer_seat: int) -> void:
+	var kept: Array = []
+	for token in out_snap.get("shade_tokens", []):
+		if typeof(token) == TYPE_DICTIONARY and int(token.get("owner_seat", -1)) != viewer_seat:
+			continue
+		kept.append(token)
+	if out_snap.has("shade_tokens"):
+		out_snap["shade_tokens"] = kept
+	var lists: Array = [out_events]
+	if out_snap.get("last_events", null) is Array:
+		lists.append(out_snap["last_events"])
+	for list in lists:
+		for event in list:
+			if typeof(event) != TYPE_DICTIONARY:
+				continue
+			if str(event.get("spell", "")) == SpellKits.DROP_SHADE and int(event.get("seat", -1)) != viewer_seat:
+				event.erase("to")
+			if str(event.get("type", "")) == "expire" and str(event.get("status", "")) == "shade" and int(event.get("owner_seat", -1)) != viewer_seat:
+				event.erase("pos")
 
 
 func _redact_events(events: Array, hidden_seats: Dictionary, hidden_cells: Array, secret: Array) -> void:

@@ -83,6 +83,11 @@ func play(events: Array, snapshot: Dictionary) -> void:
 		var class_id := _class_of(spell_id)
 		if not VOICES.has(class_id):
 			continue
+		# The host hid this cell (Invisible caster / secret Shade): draw nothing.
+		if event.has("caster_cell") and event["caster_cell"] == null:
+			continue
+		if spell_id == SpellKits.DROP_SHADE and not event.has("to"):
+			continue
 		var caster_cell := _cell(event.get("caster_cell", _seat_cell(snapshot, int(event.get("seat", -1)))))
 		var to_cell := _cell(event.get("to", caster_cell))
 		var voice: Array = VOICES[class_id]

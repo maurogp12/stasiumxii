@@ -609,10 +609,19 @@ func _test_shade_and_plant_snapshot() -> void:
 		"fixture": true,
 	})
 	var shade_cast: Dictionary = _host.submit_for_seat({"type": "cast", "spell": "drop_shade", "to": Vector2i(2, 2)}, 0)
-	var packed: Dictionary = _host.pack_result(shade_cast, 1)
+	# Shades are secret to their owner (Mauro 29 Sep 2026): seat 1 gets none.
+	var opp_decoded: Variant = _IntentCodec.decode(_host.pack_result(shade_cast, 1))
+	eq(((opp_decoded as Dictionary).get("snapshot", {}).get("shade_tokens", [1]) as Array).is_empty(), true, "the opponent's packed snapshot has no Shade")
+	var opp_cast := {}
+	for event in (opp_decoded as Dictionary).get("events", []):
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("spell", "")) == "drop_shade":
+			opp_cast = event
+	eq(opp_cast.is_empty(), false, "the opponent still learns a Shade was dropped")
+	eq(opp_cast.has("to"), false, "the opponent's Drop Shade event hides the tile")
+	var packed: Dictionary = _host.pack_result(shade_cast, 0)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire_shades: Array = (decoded as Dictionary).get("snapshot", {}).get("shade_tokens", [])
-	eq(wire_shades.size(), 1, "packed snapshot includes the Shade")
+	eq(wire_shades.size(), 1, "the owner's packed snapshot includes the Shade")
 	eq(wire_shades[0].get("pos"), Vector2i(2, 2), "packed Shade pos survives encode")
 	_guest.apply_packed_state(packed)
 	var guest_shades: Array = _guest.snapshot()["shade_tokens"]
@@ -771,7 +780,10 @@ func _test_expiry_events() -> void:
 	_host.submit_for_seat({"type": "end_turn"}, 0)
 	# Third owner turn-start (seat 1 ends, Gloam's turn begins) is the expiry.
 	var host_end: Dictionary = _host.submit_for_seat({"type": "end_turn"}, 1)
-	var packed: Dictionary = _host.pack_result(host_end, 1)
+	var opp_wire := _expire((_IntentCodec.decode(_host.pack_result(host_end, 1)) as Dictionary).get("events", []), "shade")
+	eq(opp_wire.is_empty(), false, "the opponent still gets the Shade expiry")
+	eq(opp_wire.has("pos"), false, "the opponent's Shade expiry hides the tile")
+	var packed: Dictionary = _host.pack_result(host_end, 0)
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _expire((decoded as Dictionary).get("events", []), "shade")
 	eq(wire.get("pos"), Vector2i(2, 1), "packed Shade expiry survives encode")
