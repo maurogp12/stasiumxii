@@ -4,7 +4,8 @@ extends RefCounted
 ## Levels 1–30 per class (Mauro 29 Sep 2026, Characteristics sheet +
 ## Blueprint §18, Soft Lock).
 ## XP to the next level: 80 + 40 × (level − 1)  (1→2 = 80 … 29→30 = 1200,
-## 18560 total to 30). +1 spend point per level into Mastery (+2),
+## 18560 total to 30). 2 spend points per level-up (58 at level 30), split
+## or stacked, into Mastery (+2),
 ## Vitality (+8 HP), Swift (+1 Init) or Ward (+2 resist, only the element of
 ## an active 2-piece attune). Inherent growth per level by class on top.
 ## +1 AP at level 20. AP/MP still cap 8/5. No WP.
@@ -13,17 +14,21 @@ extends RefCounted
 ## Levels are per class: XP goes to the class that fought.
 
 const MAX_LEVEL := 30
+## Mauro spec (29 Sep 2026): each level-up grants 2 spend points.
+const POINTS_PER_LEVEL := 2
 const AP_LEVEL := 20
 const BUCKETS: Array[String] = ["mastery", "vitality", "swift", "ward"]
 const PER_POINT := {"mastery": 2, "vitality": 8, "swift": 1, "ward": 2}
 const BUCKET_LABEL := {"mastery": "Mastery +2", "vitality": "Vitality +8 HP", "swift": "Swift +1 Init", "ward": "Ward +2 resist"}
 ## Inherent growth per level above 1: [Mastery, HP, Init, Ward].
+## Init +1 per level for ALL five classes (+29 at 30) — Ironjaw and Bastion
+## are not 0 (Mauro spec, 29 Sep 2026).
 const GROWTH := {
 	"kestrel": [2, 3, 1, 0],
-	"ironjaw": [2, 6, 0, 1],
+	"ironjaw": [2, 6, 1, 1],
 	"mender": [1, 5, 1, 1],
 	"gloam": [2, 3, 1, 0],
-	"bastion": [1, 8, 0, 2],
+	"bastion": [1, 8, 1, 2],
 }
 const XP_STASIS_PER_STAR := 60
 const XP_STASIS_NO_CHEST := 20
@@ -106,7 +111,7 @@ func points_free(class_id: String) -> int:
 	var used := 0
 	for b in rec["spent"]:
 		used += int(rec["spent"][b])
-	return maxi(int(rec["level"]) - 1 - used, 0)
+	return maxi((int(rec["level"]) - 1) * POINTS_PER_LEVEL - used, 0)
 
 
 ## Adds XP to one class. Returns {xp, level_before, level, levels_gained}.
@@ -156,10 +161,10 @@ func fight_heroes() -> Dictionary:
 	return out
 
 
-## Spent points cleaned: known buckets, 0+, total never above level − 1.
+## Spent points cleaned: known buckets, 0+, total never above 2 × (level − 1).
 static func clean_spent(raw: Variant, level: int) -> Dictionary:
 	var out := {}
-	var room := maxi(clampi(level, 1, MAX_LEVEL) - 1, 0)
+	var room := maxi(clampi(level, 1, MAX_LEVEL) - 1, 0) * POINTS_PER_LEVEL
 	if typeof(raw) != TYPE_DICTIONARY:
 		return out
 	for b in BUCKETS:

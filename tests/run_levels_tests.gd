@@ -51,28 +51,31 @@ func _test_levels_and_points() -> void:
 	gain = hero.add_xp("kestrel", 400)
 	eq(gain["level"], 4, "400 more: 120 + 160 → level 4, 120 left")
 	eq(hero.xp_of("kestrel"), 120, "leftover XP carries")
-	eq(hero.points_free("kestrel"), 3, "level 4 = 3 points")
+	eq(hero.points_free("kestrel"), 6, "level 4 = 2 × 3 = 6 points")
 	eq(hero.level_of("ironjaw"), 1, "levels are per class")
 	eq(bool(hero.spend("kestrel", "swift")["ok"]), true, "spend a point")
 	hero.spend("kestrel", "swift")
 	hero.spend("kestrel", "mastery")
-	eq(str(hero.spend("kestrel", "ward")["reason"]), "no_points", "no points left")
+	hero.spend("kestrel", "vitality")
+	hero.spend("kestrel", "mastery")
+	hero.spend("kestrel", "ward")
+	eq(str(hero.spend("kestrel", "ward")["reason"]), "no_points", "no points left after 6")
 	eq(str(hero.spend("kestrel", "luck")["reason"]), "unknown_bucket", "only the four buckets")
 	hero.add_xp("mender", 999999)
 	eq(hero.level_of("mender"), 30, "XP caps at level 30")
-	eq(hero.points_free("mender"), 29, "29 points at 30")
-	eq(HeroProgress.clean_spent({"mastery": 10, "vitality": 10}, 5), {"mastery": 4}, "spent points never exceed level − 1")
+	eq(hero.points_free("mender"), 58, "58 spend points at 30")
+	eq(HeroProgress.clean_spent({"mastery": 10, "vitality": 10}, 5), {"mastery": 8}, "spent points never exceed 2 × (level − 1)")
 	truthy(hero.save(), "progress saves")
 	var back := HeroProgress.load_saved()
 	eq(back.level_of("kestrel"), 4, "level reloads")
-	eq(back.record("kestrel")["spent"], {"swift": 2, "mastery": 1}, "spent points reload")
+	eq(back.record("kestrel")["spent"], {"swift": 2, "mastery": 2, "vitality": 1, "ward": 1}, "spent points reload")
 
 
 func _test_inherent_table() -> void:
-	# Characteristics sheet "At 30, inherent only (0 spend)".
+	# Level 30, inherent only (0 spend). Init +29 on every class (Mauro spec).
 	var table := {
-		"kestrel": [58, 87, 29, 0], "ironjaw": [58, 174, 0, 29], "mender": [29, 145, 29, 29],
-		"gloam": [58, 87, 29, 0], "bastion": [29, 232, 0, 58],
+		"kestrel": [58, 87, 29, 0], "ironjaw": [58, 174, 29, 29], "mender": [29, 145, 29, 29],
+		"gloam": [58, 87, 29, 0], "bastion": [29, 232, 29, 58],
 	}
 	for class_id in table:
 		var st := HeroProgress.combat_stats({"level": 30}, class_id)
@@ -81,8 +84,19 @@ func _test_inherent_table() -> void:
 	eq(HeroProgress.combat_stats({"level": 20}, "kestrel")["ap"], 1, "+1 AP at level 20")
 	var spent := HeroProgress.combat_stats({"level": 5, "spent": {"mastery": 1, "vitality": 1, "swift": 1, "ward": 1}}, "kestrel")
 	eq([spent["mastery"], spent["hp"], spent["init"], spent["ward"]], [8 + 2, 12 + 8, 4 + 1, 0 + 2], "spend adds Mastery +2, HP +8, Init +1, Ward +2")
+	var dump := HeroProgress.combat_stats({"level": 30, "spent": {"swift": 58}}, "bastion")
+	eq([dump["init"], dump["ap"]], [29 + 58, 1], "58 points into Swift: Init 87; AP only from level 20")
+	# How to gain Init (spec §7): boots +0 and the two set bonuses.
+	var boots := {"sheaf": 3, "undertow": 8, "ironveil": 3, "stillcut": 8, "brightedge": 4, "duskbrand": 6}
+	for fam in boots:
+		eq(GearBag.part_stats("%s.boots" % fam, 0)["init"], boots[fam], "%s boots +0 = %d Init" % [fam, boots[fam]])
+	eq(GearBag.stats_of_worn([{"item_id": "undertow.head", "plus": 0}, {"item_id": "undertow.chest", "plus": 0}]).get("init", 0), 8, "Undertow 2-piece +8 Init")
+	var dusk4 := []
+	for slot in ["weapon", "head", "chest", "legs"]:
+		dusk4.append({"item_id": "duskbrand.%s" % slot, "plus": 0})
+	eq(GearBag.stats_of_worn(dusk4).get("init", 0), 6, "Duskbrand 4-piece +6 Init")
 	var cheat := HeroProgress.combat_stats({"level": 99, "spent": {"mastery": 500}}, "kestrel")
-	eq([cheat["level"], cheat["mastery"]], [30, 58 + 29 * 2], "a forged level caps at 30 and 29 points")
+	eq([cheat["level"], cheat["mastery"]], [30, 58 + 58 * 2], "a forged level caps at 30 and 58 points")
 
 
 func _test_passives_and_cap() -> void:
@@ -120,6 +134,9 @@ func _test_levels_in_fights() -> void:
 	eq(int(k["max_ap"]), 7, "Kestrel 20: +1 AP")
 	eq(int(b["max_hp"]), roundi((80 + 232 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (80+232+68)×1.10")
 	eq(int(b["resist_elem"].get("earth", 0)), 5 + 58, "Ward 58 lands on the active Sheaf Earth attune")
+	# Koliseo flattens plus-rank gear only — never level growth or Swift.
+	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "stillcut.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})
+	eq(int(sim._unit_by_seat(0)["init"]), 8 + 19 + 3, "flattened: Stride +5 counts 8, level 20 growth 19 + Swift 3 stay")
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {1: {"worn": [], "heroes": heroes}}})
 	eq(sim._unit_by_seat(1)["resist_elem"], {}, "no 2-piece attune: Ward does nothing")
 
@@ -129,7 +146,7 @@ func _test_init_seat() -> void:
 	var fast := {"kestrel": {"level": 1, "spent": {}}, "bastion": {"level": 3, "spent": {"swift": 2}}}
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "first_by_init": true, "seat_gear": {1: {"worn": [], "heroes": fast}}})
 	eq(int(sim.snapshot()["active_seat"]), 1, "higher Init (seat 1) acts first")
-	truthy(str(sim.snapshot()["coach"]).contains("Init 2 vs 0"), "coach names the Init")
+	truthy(str(sim.snapshot()["coach"]).contains("Init 4 vs 0"), "coach names the Init (Bastion 3: 2 growth + 2 Swift)")
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true})
 	eq(int(sim.snapshot()["active_seat"]), 0, "fixtures without first_by_init keep seat 0")
 	var firsts := {}
@@ -197,7 +214,7 @@ func _test_screens() -> void:
 	root.add_child(screen)
 	screen.pick("ironjaw")
 	var free := screen.find_child("FreePoints", true, false) as Label
-	eq(free.text, "Free points: 2", "level 3 shows 2 free points")
+	eq(free.text, "Free points: 4", "level 3 shows 4 free points")
 	eq(bool(screen.spend("vitality")["ok"]), true, "spend from the screen")
 	eq(HeroProgress.load_saved().record("ironjaw")["spent"], {"vitality": 1}, "screen saves the spend")
 	truthy((screen.find_child("LevelStats", true, false) as Label).text.contains("HP +20"), "level 3 Ironjaw: 12 growth + 8 Vitality")
