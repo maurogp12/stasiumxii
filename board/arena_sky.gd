@@ -1,11 +1,12 @@
 class_name ArenaSky
 extends Node2D
 
-## Dofus-style scenery for the five Koliseo arenas: a painted day sky behind
-## everything and a rock slab under the board, so the arena reads as a
-## floating island instead of a diamond in a black void.
-## View only. Not walk data, not MP, not legality. Unknown maps (proto boards)
-## keep the plain clear color and no slab.
+## Scenery around the five Koliseo arenas, following Mauro's look pictures
+## (29 Sep): a dark painted backdrop behind everything, and an edge under or
+## around the board: a rock slab (Slagcrown, Stormspire, Crosshaven), dark
+## water with foam around the dock (Brinewake), or a snowy rock wall ring
+## (Windmere). View only. Not walk data, not MP, not legality. Unknown maps
+## (proto boards) keep the plain clear color and no edge.
 
 const _Maps := preload("res://backend/cell_tag_map.gd")
 const _Sort := preload("res://board/visual_sort.gd")
@@ -15,32 +16,36 @@ const SKY_SHADER := preload("res://board/arena_sky.gdshader")
 const SLAB_Z := -200
 const SLAB_DEPTH := 30.0
 
-## sky_top / sky_bottom / cloud / sun, slab top / slab bottom, cloud amount.
 const SKIES := {
 	"crosshaven": {
-		"top": Color(0.47, 0.74, 0.93), "bottom": Color(0.94, 0.95, 0.86),
-		"cloud": Color(1.0, 1.0, 1.0), "sun": Color(1.0, 0.94, 0.78), "clouds": 0.6,
-		"slab_top": Color(0.52, 0.38, 0.24), "slab_bottom": Color(0.24, 0.17, 0.11),
+		"top": Color(0.03, 0.05, 0.10), "bottom": Color(0.10, 0.14, 0.22),
+		"cloud": Color(0.30, 0.34, 0.44), "sun": Color(0.95, 0.80, 0.55), "clouds": 0.25,
+		"edge": "slab", "slab_top": Color(0.50, 0.44, 0.34), "slab_bottom": Color(0.20, 0.17, 0.13),
+		"lip": Color(0.10, 0.08, 0.06, 0.6),
 	},
 	"brinewake": {
-		"top": Color(0.30, 0.62, 0.88), "bottom": Color(0.80, 0.93, 0.96),
-		"cloud": Color(1.0, 1.0, 1.0), "sun": Color(0.96, 0.98, 0.92), "clouds": 0.55,
-		"slab_top": Color(0.40, 0.33, 0.25), "slab_bottom": Color(0.16, 0.20, 0.24),
+		"top": Color(0.01, 0.03, 0.07), "bottom": Color(0.02, 0.08, 0.17),
+		"cloud": Color(0.10, 0.22, 0.36), "sun": Color(0.30, 0.55, 0.85), "clouds": 0.35,
+		"edge": "ocean", "slab_top": Color(0.27, 0.21, 0.16), "slab_bottom": Color(0.12, 0.09, 0.07),
+		"water": Color(0.02, 0.09, 0.18), "foam": Color(0.70, 0.85, 0.95, 0.55),
 	},
 	"slagcrown": {
-		"top": Color(0.26, 0.10, 0.10), "bottom": Color(0.96, 0.56, 0.28),
-		"cloud": Color(0.55, 0.36, 0.30), "sun": Color(1.0, 0.62, 0.30), "clouds": 0.5,
-		"slab_top": Color(0.30, 0.17, 0.12), "slab_bottom": Color(0.10, 0.05, 0.05),
+		"top": Color(0.01, 0.0, 0.0), "bottom": Color(0.10, 0.02, 0.01),
+		"cloud": Color(0.30, 0.06, 0.02), "sun": Color(1.0, 0.30, 0.06), "clouds": 0.30,
+		"edge": "slab", "slab_top": Color(0.16, 0.09, 0.07), "slab_bottom": Color(0.04, 0.02, 0.02),
+		"lip": Color(1.0, 0.42, 0.10, 0.75),
 	},
 	"windmere": {
-		"top": Color(0.58, 0.77, 0.95), "bottom": Color(0.95, 0.97, 1.0),
-		"cloud": Color(1.0, 1.0, 1.0), "sun": Color(0.96, 0.98, 1.0), "clouds": 0.65,
-		"slab_top": Color(0.62, 0.72, 0.84), "slab_bottom": Color(0.30, 0.38, 0.50),
+		"top": Color(0.02, 0.04, 0.10), "bottom": Color(0.07, 0.11, 0.22),
+		"cloud": Color(0.40, 0.50, 0.66), "sun": Color(0.70, 0.82, 1.0), "clouds": 0.22,
+		"edge": "rim_wall", "slab_top": Color(0.52, 0.58, 0.68), "slab_bottom": Color(0.20, 0.24, 0.32),
+		"snow": Color(0.90, 0.94, 0.99), "rock": Color(0.44, 0.48, 0.56), "rock_dark": Color(0.27, 0.30, 0.37),
 	},
 	"stormspire": {
-		"top": Color(0.18, 0.17, 0.36), "bottom": Color(0.62, 0.56, 0.84),
-		"cloud": Color(0.70, 0.66, 0.86), "sun": Color(0.86, 0.80, 1.0), "clouds": 0.75,
-		"slab_top": Color(0.28, 0.25, 0.38), "slab_bottom": Color(0.10, 0.09, 0.16),
+		"top": Color(0.02, 0.03, 0.10), "bottom": Color(0.07, 0.07, 0.20),
+		"cloud": Color(0.28, 0.22, 0.46), "sun": Color(0.66, 0.50, 1.0), "clouds": 0.40,
+		"edge": "slab", "slab_top": Color(0.13, 0.12, 0.18), "slab_bottom": Color(0.04, 0.04, 0.08),
+		"lip": Color(1.0, 0.80, 0.30, 0.8),
 	},
 }
 
@@ -97,43 +102,124 @@ func sky_visible() -> bool:
 	return _sky != null and _sky.visible
 
 
-## Outer diamond of the board, same tips KoliseoLife uses for the edge ink.
-func _rim() -> PackedVector2Array:
+## Outer diamond of the board (N, E, S, W tips), same as KoliseoLife's edge.
+func _rim(grow: float = 0.0) -> PackedVector2Array:
 	var last := maxi(_board_size, 1) - 1
-	return PackedVector2Array([
+	var pts := PackedVector2Array([
 		_Sort.cell_to_local(Vector2i(0, 0), 0.0) + Vector2(0, -16),
 		_Sort.cell_to_local(Vector2i(last, 0), 0.0) + Vector2(32, 0),
 		_Sort.cell_to_local(Vector2i(last, last), 0.0) + Vector2(0, 16),
 		_Sort.cell_to_local(Vector2i(0, last), 0.0) + Vector2(-32, 0),
 	])
+	if grow == 0.0:
+		return pts
+	var center := (pts[0] + pts[2]) * 0.5
+	var out := PackedVector2Array()
+	for p in pts:
+		var d := p - center
+		out.append(p + Vector2(signf(d.x) * grow * 2.0, signf(d.y) * grow))
+	return out
 
 
 func _draw() -> void:
 	var spec := sky_for(_map_id)
 	if spec.is_empty():
 		return
+	match str(spec.get("edge", "slab")):
+		"ocean":
+			_draw_ocean(spec)
+		"rim_wall":
+			_draw_rim_wall(spec)
+		_:
+			_draw_slab(spec)
+
+
+func _draw_cast_shadow(rim: PackedVector2Array, alpha: float) -> void:
+	var shadow := _Palette.ellipse_texture()
+	if shadow == null:
+		return
+	var center := (rim[0] + rim[2]) * 0.5 + Vector2(0, SLAB_DEPTH + 40.0)
+	var size := Vector2(rim[1].x - rim[3].x, (rim[2].y - rim[0].y) * 0.55) * 1.05
+	draw_texture_rect(shadow, Rect2(center - size * 0.5, size), false, Color(0, 0, 0, alpha))
+
+
+## Floating slab under the board. The lip glows on lava and storm boards.
+func _draw_slab(spec: Dictionary) -> void:
 	var rim := _rim()
+	_draw_cast_shadow(rim, 0.35)
 	var east: Vector2 = rim[1]
 	var south: Vector2 = rim[2]
 	var west: Vector2 = rim[3]
 	var drop := Vector2(0, SLAB_DEPTH)
 	var top: Color = spec["slab_top"]
 	var bottom: Color = spec["slab_bottom"]
-	# Soft cast shadow on the clouds below the island.
-	var center := (rim[0] + south) * 0.5 + Vector2(0, SLAB_DEPTH + 40.0)
-	var shadow := _Palette.ellipse_texture()
-	if shadow != null:
-		var size := Vector2(east.x - west.x, (south.y - rim[0].y) * 0.55) * 1.05
-		draw_texture_rect(shadow, Rect2(center - size * 0.5, size), false, Color(0.05, 0.06, 0.12, 0.22))
-	# Two faces of the slab under the south-west and south-east rims.
-	var left := PackedVector2Array([west, south, south + drop * 1.25, west + drop])
-	var right := PackedVector2Array([south, east, east + drop, south + drop * 1.25])
-	draw_polygon(left, PackedColorArray([top, top.darkened(0.08), bottom, bottom]))
-	draw_polygon(right, PackedColorArray([top.darkened(0.22), top.darkened(0.3), bottom.darkened(0.25), bottom.darkened(0.2)]))
-	# A strata line and a dark lip so the slab reads as rock, not a ribbon.
-	var strata := Color(0, 0, 0, 0.18)
+	draw_polygon(PackedVector2Array([west, south, south + drop * 1.25, west + drop]), PackedColorArray([top, top.darkened(0.08), bottom, bottom]))
+	draw_polygon(PackedVector2Array([south, east, east + drop, south + drop * 1.25]), PackedColorArray([top.darkened(0.22), top.darkened(0.3), bottom.darkened(0.25), bottom.darkened(0.2)]))
+	var strata := Color(0, 0, 0, 0.22)
 	draw_line(west + drop * 0.45, south + drop * 0.6, strata, 2.0, true)
 	draw_line(south + drop * 0.6, east + drop * 0.45, strata, 2.0, true)
-	var lip := Color(0.06, 0.04, 0.03, 0.55)
-	draw_line(west + drop, south + drop * 1.25, lip, 2.0, true)
-	draw_line(south + drop * 1.25, east + drop, lip, 2.0, true)
+	var lip: Color = spec.get("lip", Color(0.06, 0.04, 0.03, 0.55))
+	# The board's outer edge: a lit line like the glowing seams in the pictures.
+	var ring := PackedVector2Array(rim)
+	ring.append(rim[0])
+	draw_polyline(ring, Color(lip.r, lip.g, lip.b, lip.a * 0.35), 7.0, true)
+	draw_polyline(ring, lip, 2.2, true)
+
+
+## Dark sea around the dock: a wide water skirt, a foam line hugging the pier
+## and a short plank face so the deck sits just above the water.
+func _draw_ocean(spec: Dictionary) -> void:
+	var rim := _rim()
+	var sea := _rim(90.0)
+	var water: Color = spec["water"]
+	draw_colored_polygon(sea, water)
+	var mid := _rim(40.0)
+	draw_colored_polygon(mid, water.lightened(0.05))
+	var drop := Vector2(0, 8.0)
+	var plank: Color = spec["slab_top"]
+	draw_colored_polygon(PackedVector2Array([rim[3], rim[2], rim[2] + drop, rim[3] + drop]), plank)
+	draw_colored_polygon(PackedVector2Array([rim[2], rim[1], rim[1] + drop, rim[2] + drop]), plank.darkened(0.3))
+	var foam: Color = spec["foam"]
+	for i in 3:
+		var ring := _rim(6.0 + float(i) * 9.0)
+		ring.append(ring[0])
+		var a := foam.a * (1.0 - float(i) * 0.3)
+		draw_polyline(ring, Color(foam.r, foam.g, foam.b, a), 1.6 - float(i) * 0.4, true)
+
+
+## Snowy rock wall around the ice ring. The far walls rise behind the board;
+## the near walls stay low and drop to a cliff so they never hide a cell.
+func _draw_rim_wall(spec: Dictionary) -> void:
+	var rim := _rim()
+	var outer := _rim(34.0)
+	_draw_cast_shadow(outer, 0.3)
+	var snow: Color = spec["snow"]
+	var rock: Color = spec["rock"]
+	var dark: Color = spec["rock_dark"]
+	var lift := Vector2(0, -26.0)
+	# Far walls (N-W and N-E edges): inner rock face, then the snow cap.
+	for pair in [[3, 0], [0, 1]]:
+		var a: Vector2 = rim[pair[0]]
+		var b: Vector2 = rim[pair[1]]
+		var oa: Vector2 = outer[pair[0]]
+		var ob: Vector2 = outer[pair[1]]
+		draw_colored_polygon(PackedVector2Array([a, b, b + lift, a + lift]), rock if pair[0] == 3 else dark)
+		draw_colored_polygon(PackedVector2Array([a + lift, b + lift, ob + lift, oa + lift]), snow)
+		draw_line(a + lift, b + lift, Color(1, 1, 1, 0.8), 1.5, true)
+	# Near walls (S-W and S-E edges): a snow ledge and a cliff face below it.
+	var drop := Vector2(0, SLAB_DEPTH + 6.0)
+	for pair in [[3, 2], [2, 1]]:
+		var a: Vector2 = rim[pair[0]]
+		var b: Vector2 = rim[pair[1]]
+		var oa: Vector2 = outer[pair[0]]
+		var ob: Vector2 = outer[pair[1]]
+		draw_colored_polygon(PackedVector2Array([a, b, ob, oa]), snow.darkened(0.05))
+		var face := rock if pair[0] == 3 else dark
+		draw_colored_polygon(PackedVector2Array([oa, ob, ob + drop, oa + drop]), face)
+		draw_line(oa, ob, Color(1, 1, 1, 0.7), 1.4, true)
+	# Blocky breaks in the rock so the wall reads as stacked stone.
+	for i in range(1, 10):
+		var t := float(i) / 10.0
+		for pair in [[3, 2], [2, 1]]:
+			var p: Vector2 = outer[pair[0]].lerp(outer[pair[1]], t)
+			draw_line(p, p + drop, Color(0, 0, 0, 0.18), 1.2, true)

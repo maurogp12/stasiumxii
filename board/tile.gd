@@ -6,6 +6,7 @@ const TILE_HEIGHT: int = 32
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const _KoliseoArt := preload("res://board/koliseo_art.gd")
 const _KoliseoLife := preload("res://board/koliseo_life.gd")
+const _ArenaLook := preload("res://board/arena_look.gd")
 ## Relative to this tile. Stays under BoardVisualSort.UNIT_Z_BIAS so the
 ## seat ring and pawn sprite still paint after the overlay, including on
 ## elevated tiles (the overlay is a child, so it lifts with the diamond).
@@ -28,6 +29,8 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _grade_key: String = ""
+## Arena id for the look-picture stamps (empty on proto boards).
+var _look_map: String = ""
 var _grid_on: bool = false
 var _life_mat: ShaderMaterial
 var _grid: GridInk
@@ -43,8 +46,9 @@ class GridInk extends Node2D:
 		var pts := host.diamond_points()
 		var loop := PackedVector2Array(pts)
 		loop.append(pts[0])
-		draw_polyline(loop, KoliseoLife.GRID_INK, KoliseoLife.GRID_INK_PX, true)
-		draw_polyline(loop, KoliseoLife.GRID_GLEAM, KoliseoLife.GRID_GLEAM_PX, true)
+		var style: Dictionary = host.grid_style()
+		draw_polyline(loop, style.get("ink", KoliseoLife.GRID_INK), float(style.get("ink_px", KoliseoLife.GRID_INK_PX)), true)
+		draw_polyline(loop, style.get("gleam", KoliseoLife.GRID_GLEAM), float(style.get("gleam_px", KoliseoLife.GRID_GLEAM_PX)), true)
 
 
 class HighlightOverlay extends Node2D:
@@ -62,8 +66,12 @@ func _ready() -> void:
 
 func _draw() -> void:
 	var points := _diamond_points()
+	var look := _ArenaLook.stamp_for(_look_map, terrain_type, grid_position) if _look_map != "" else null
 	var tex := _KoliseoArt.terrain_texture_at(terrain_type, elevation, _dress, grid_position)
-	if tex == null:
+	if look != null:
+		_paint_look(look)
+		_paint_depth_rim()
+	elif tex == null:
 		draw_colored_polygon(points, fill_color())
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
@@ -72,7 +80,9 @@ func _draw() -> void:
 		_paint_terrain(tex)
 		_paint_depth_rim()
 	for prop_name in _paint_props:
-		var prop_tex := _KoliseoArt.prop_texture(str(prop_name), _dress)
+		var prop_tex: Texture2D = _ArenaLook.prop_for(_look_map, str(prop_name)) if _look_map != "" else null
+		if prop_tex == null:
+			prop_tex = _KoliseoArt.prop_texture(str(prop_name), _dress)
 		if prop_tex != null:
 			_paint_prop(prop_tex)
 	var label := drawn_label()
@@ -81,6 +91,26 @@ func _draw() -> void:
 	var font := ThemeDB.fallback_font
 	var label_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
 	draw_string(font, Vector2(-label_size.x * 0.5, 4), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.08, 0.06, 0.06))
+
+
+## Look-picture stamp on the diamond. A raised cell first drops two shaded
+## faces to the ground line so it reads as a block, like the pictures.
+func _paint_look(stamp: Texture2D) -> void:
+	var pts := _diamond_points()
+	if elevation > 0:
+		var style := grid_style()
+		var drop := Vector2(0, float(elevation) * BoardVisualSort.ELEVATION_PIXELS + 2.0)
+		var left_col: Color = style.get("face_left", Color(0.3, 0.26, 0.22))
+		var right_col: Color = style.get("face_right", Color(0.22, 0.19, 0.16))
+		draw_colored_polygon(PackedVector2Array([pts[3], pts[2], pts[2] + drop, pts[3] + drop]), left_col)
+		draw_colored_polygon(PackedVector2Array([pts[2], pts[1], pts[1] + drop, pts[2] + drop]), right_col)
+		draw_line(pts[2], pts[2] + drop, Color(0, 0, 0, 0.35), 1.2, true)
+	draw_texture_rect(stamp, Rect2(-TILE_WIDTH / 2.0, -TILE_HEIGHT / 2.0, TILE_WIDTH, TILE_HEIGHT), false)
+
+
+## Grid ink for this arena. Empty keeps the shared KoliseoLife ink.
+func grid_style() -> Dictionary:
+	return _ArenaLook.style_for(_look_map) if _look_map != "" else {}
 
 
 func set_dress(dress: String) -> void:
@@ -97,7 +127,14 @@ func apply_koliseo_grade(map_id: String) -> void:
 	if key == _grade_key:
 		return
 	_grade_key = key
+	_look_map = _ArenaLook.normalize(map_id) if _ArenaLook.has_look(map_id) else ""
 	var spec: Dictionary = _KoliseoLife.grade_for(map_id, terrain_type, elevation, grid_position)
+	if _look_map != "" and bool(spec.get("ship", false)):
+		# The stamps already carry the picture's color: keep the grade light.
+		spec["contrast"] = 1.03
+		spec["sat"] = 1.04
+		spec["grade"] = Color.WHITE
+		spec["lift"] = (1.0 + float(maxi(elevation, 0)) * _KoliseoLife.ELEV_LIFT) * (1.0 + 0.035 * float((grid_position.x + grid_position.y + 1) % 2))
 	if not bool(spec.get("ship", false)):
 		_set_grid_on(false)
 		if material != null:
