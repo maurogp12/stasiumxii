@@ -67,7 +67,9 @@ Version history, reasons and Mauro's exact words are in
   ranged band keeping, Retreat / Coil Step, Sheaf Wall with spare AP). Walks
   follow the real route (`CombatSim.walk_field`), never straight-line distance
   (packs got stuck behind walls). Dead monsters fade off the board
-  (`Pawn._vanish_if_monster`); heroes keep their downed body.
+  (`Pawn._vanish_if_monster`); heroes keep their downed body. Monster walks use
+  per-body gaits (`Pawn.foe_gait`); monster turns skip the big turn banner
+  (`BoardView._quiet_handoff`).
 - VFX: `vfx/vfx_router.gd` `_foe_choreography` — bolts follow the Caster Bolt
   VFX sheet (cast flash 0.12 s, 18 tiles/s, capped 0.40 s, miss skips past);
   AOE flashes every covered tile + boss sigil flare (`units/boss_aura.gd flare()`).

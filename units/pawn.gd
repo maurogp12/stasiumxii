@@ -1740,6 +1740,9 @@ func _sample_hop(t: float) -> void:
 ## foot stay. Walk strips squash on the plant only. A missing strip keeps
 ## the fallback weight curve.
 func _apply_hop_visual(t: float) -> void:
+	if stasis_sprite != "":
+		_apply_foe_gait(t)
+		return
 	var hop := VIEW_MOTION.hop_offset(t, VIEW_MOTION.hop_crest_px(class_id))
 	_place_body(hop)
 	_ride_chrome(Vector2.ZERO)
@@ -1747,6 +1750,51 @@ func _apply_hop_visual(t: float) -> void:
 		_apply_sprite_mul(VIEW_MOTION.plant_scale(t))
 	else:
 		_apply_sprite_mul(VIEW_MOTION.fallback_hop_scale(t))
+
+
+## Monster walk gaits (Mauro 30 Sep 2026: "keep improving … walking
+## animation"). Monster paintings have no walk sheet, so each body type moves
+## the painting itself: beasts bound and lean into the step, crawlers skitter
+## low with a quick side wiggle, brutes (and bosses) stomp and squash on the
+## landing, flyers glide leaning forward. t is one tile hop, 0..1.
+static func foe_gait(kind: String, boss: bool, t: float, dir_x: float) -> Dictionary:
+	var u := clampf(t, 0.0, 1.0)
+	var arc := sin(u * PI)
+	var land := clampf((u - 0.78) / 0.22, 0.0, 1.0)
+	var land_squash := sin(land * PI)
+	var lean := 0.0
+	var squash := 0.0
+	var off := Vector2.ZERO
+	match kind:
+		"beast":
+			off = Vector2(0.0, -7.0 * arc)
+			lean = dir_x * 0.11 * arc
+			squash = 0.05 * land_squash - 0.03 * arc
+		"crawler":
+			off = Vector2(sin(u * TAU * 2.0) * 1.6, -2.0 * absf(sin(u * TAU)))
+			lean = dir_x * 0.05 + sin(u * TAU * 2.0) * 0.03
+			squash = 0.03 * absf(sin(u * TAU))
+		"flyer":
+			off = Vector2(0.0, -2.5 * arc)
+			lean = dir_x * 0.13 * arc
+		_:
+			var heavy := 1.5 if boss else 1.0
+			off = Vector2(0.0, -3.5 * arc * (0.8 if boss else 1.0))
+			lean = dir_x * 0.06 * arc
+			squash = 0.09 * heavy * land_squash
+	return {"offset": off, "lean": lean, "squash": squash}
+
+
+func _apply_foe_gait(t: float) -> void:
+	var body := foe_body_for(stasis_sprite, stasis_boss)
+	var dir_x := signf(facing_screen().x)
+	var gait := foe_gait(str(body.get("kind", "brute")), stasis_boss, t, dir_x)
+	_place_body(gait["offset"])
+	_ride_chrome(Vector2.ZERO)
+	_apply_sprite_mul(Vector2.ONE)
+	_set_foe_body(float(gait["lean"]), float(gait["squash"]))
+	if t >= 1.0:
+		_set_foe_body(0.0, 0.0)
 
 
 func _apply_sprite_mul(mul: Vector2) -> void:

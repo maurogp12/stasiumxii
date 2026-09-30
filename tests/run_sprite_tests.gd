@@ -508,6 +508,15 @@ func _test_foe_bodies() -> void:
 	truthy(pawn._vanished, "a dead monster starts fading out")
 	pawn.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Grain Hound", "pos": Vector2i(3, 3), "facing": "S", "hp": 22, "max_hp": 22, "alive": true, "stasis_sprite": "res://art/stasis/foes/grain_hound.png"}, 0)
 	eq(pawn.visible and pawn.modulate.a > 0.99, true, "a revived monster (next room) is shown again")
+	# Walk gaits: beasts bound (rise + lean into the step), brutes stomp
+	# (landing squash, bosses harder), crawlers stay low, flyers glide.
+	var beast := Pawn.foe_gait("beast", false, 0.5, 1.0)
+	truthy(float(beast["offset"].y) < -5.0 and float(beast["lean"]) > 0.05, "a beast bounds and leans into the step")
+	var brute_land := Pawn.foe_gait("brute", false, 0.89, 1.0)
+	var boss_land := Pawn.foe_gait("brute", true, 0.89, 1.0)
+	truthy(float(brute_land["squash"]) > 0.05 and float(boss_land["squash"]) > float(brute_land["squash"]), "brutes stomp; a boss lands heavier")
+	truthy(absf(float(Pawn.foe_gait("crawler", false, 0.5, 1.0)["offset"].y)) < 2.5, "crawlers skitter low")
+	eq(float(Pawn.foe_gait("beast", false, 0.5, -1.0)["lean"]) < 0.0, true, "the lean follows the walk direction")
 	var hero := Pawn.new()
 	root.add_child(hero)
 	hero.apply_snapshot({"seat": 0, "class_id": "kestrel", "name": "Kestrel", "pos": Vector2i(2, 2), "facing": "S", "hp": 0, "max_hp": 80, "alive": false}, 0)

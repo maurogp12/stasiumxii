@@ -216,6 +216,14 @@ func _online() -> bool:
 	return net != null and net.is_online()
 
 
+## Scenes where the computer plays a seat skip the big turn banner for it.
+const QUIET_HANDOFF_SEC := 0.25
+
+
+func _quiet_handoff(_seat: int) -> bool:
+	return false
+
+
 ## Scenes where the computer plays a seat override this (walk chrome off).
 func _shows_turn_chrome(_seat: int) -> bool:
 	return true
@@ -787,8 +795,12 @@ func _present_turn_handoff(result: Dictionary) -> void:
 	var next_unit := _active_unit(snap)
 	var status := CombatHUD.turn_status_text(snap)
 	var caption := status if status != "" else ""
-	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
-	await get_tree().create_timer(HANDOFF_SEC).timeout
+	if _quiet_handoff(int(next_unit.get("seat", -1))):
+		# Computer-run seat: no board-covering banner; the turn strip shows it.
+		await get_tree().create_timer(QUIET_HANDOFF_SEC).timeout
+	else:
+		_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
+		await get_tree().create_timer(HANDOFF_SEC).timeout
 	if not is_inside_tree():
 		return
 	_hud.hide_turn_banner()
