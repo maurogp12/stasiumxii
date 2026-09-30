@@ -181,6 +181,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	flow_config["board_size"] = _board_size
 	flow_config["elev_seed"] = _elev_seed
 	_flow.reset(_seed, flow_config)
+	if not config.has("deploy_zones") and _elevation_gen == "tags":
+		_flow.resample_zones(_seed, Callable(self, "_zone_cell_ok"), Callable(self, "_zones_meet"))
 	if config.has("rolls"):
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
@@ -1543,6 +1545,20 @@ func _deploy_reject_coach(seat: int, dest: Vector2i, gate: Dictionary) -> String
 	if reason == "not_walkable":
 		return "REJECT — %s is not walkable." % _cell_text(dest)
 	return "REJECT — illegal place (%s)." % reason
+
+
+## Koliseo deploy draw: a zone tile is standable ground (not water, mud,
+## lava, a prop or a wall tile).
+func _zone_cell_ok(cell: Vector2i) -> bool:
+	return _board.in_bounds(cell) and _board.is_walkable(cell) and not _board.is_voluntary_impassable(cell)
+
+
+## Both zones reach each other on foot, both ways.
+func _zones_meet(blob_a: Array, blob_b: Array) -> bool:
+	var never := func(_a = null, _b = null) -> bool: return false
+	var from_a: Dictionary = _board.reachable(blob_a[0], 9999, never)
+	var from_b: Dictionary = _board.reachable(blob_b[0], 9999, never)
+	return from_a.has(blob_b[0]) and from_b.has(blob_a[0])
 
 
 func _force_spawn(seat: int, cell: Vector2i) -> void:

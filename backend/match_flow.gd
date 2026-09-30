@@ -508,15 +508,26 @@ func snapshot() -> Dictionary:
 
 
 ## Seed-based pair of ~6-cell blobs. Prefers opening Chebyshev 4–6; accepts 3+.
-static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE) -> Dictionary:
+## `cell_ok(cell) -> bool` and `pair_ok(blob_a, blob_b) -> bool` make the
+## draw map-aware (Mauro 30 Sep 2026: "respawn areas should be random around
+## the map every single time … for every single map"): every zone tile must be
+## standable and the two zones must reach each other on foot.
+static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE, cell_ok: Callable = Callable(), pair_ok: Callable = Callable()) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 	var acceptable: Dictionary = {}
-	for _i in range(320):
+	var tries := 4000 if cell_ok.is_valid() else 320
+	for _i in range(tries):
 		var blob_a: Array[Vector2i] = _generate_blob(rng, board_size)
+		if cell_ok.is_valid() and not _blob_ok(blob_a, cell_ok):
+			continue
 		var blob_b: Array[Vector2i] = _generate_blob(rng, board_size)
+		if cell_ok.is_valid() and not _blob_ok(blob_b, cell_ok):
+			continue
 		var reason := pair_reject_reason(blob_a, blob_b, board_size)
 		if reason != "":
+			continue
+		if pair_ok.is_valid() and not bool(pair_ok.call(blob_a, blob_b)):
 			continue
 		var distance := min_chebyshev_between(blob_a, blob_b)
 		var candidate := {
@@ -543,6 +554,28 @@ static func sample_zone_pair(seed: int, board_size: int = BOARD_SIZE) -> Diction
 		"preferred": true,
 		"fallback": true,
 	}
+
+
+static func _blob_ok(blob: Array[Vector2i], cell_ok: Callable) -> bool:
+	if blob.size() != BLOB_SIZE:
+		return false
+	for cell in blob:
+		if not bool(cell_ok.call(cell)):
+			return false
+	return true
+
+
+## Redraw both zones for the loaded map (see sample_zone_pair). Keeps the
+## map-blind draw if no map-safe pair turns up.
+func resample_zones(seed: int, cell_ok: Callable, pair_ok: Callable) -> bool:
+	var sampled: Dictionary = sample_zone_pair(seed, board_size, cell_ok, pair_ok)
+	if bool(sampled.get("fallback", false)):
+		return false
+	_set_zone(SEAT_0, sampled["zones"][0])
+	_set_zone(SEAT_1, sampled["zones"][1])
+	zone_distance = int(sampled.get("distance", 0))
+	zone_preferred = bool(sampled.get("preferred", false))
+	return true
 
 
 ## Reject overlapping blobs, same-edge camping, or opening Chebyshev below 3.

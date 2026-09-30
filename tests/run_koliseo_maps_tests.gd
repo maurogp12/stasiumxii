@@ -20,6 +20,7 @@ func _run() -> void:
 	_test_each_map()
 	_test_paint_only_and_lava()
 	_test_tall_props_block_sight()
+	_test_random_deploy_zones()
 	_test_unknown_map_does_not_invent()
 	_test_cell_tags_override()
 	_test_random_ship_id()
@@ -820,3 +821,33 @@ func _test_tall_props_block_sight() -> void:
 		eq(missed, [], "%s: every tall drawn prop blocks sight" % path.get_file())
 		truthy(walls >= 1, "%s has sight walls (%d)" % [path.get_file(), walls])
 		print("  sight walls ", path.get_file(), ": ", walls)
+
+
+## Mauro 30 Sep 2026: "every time you enter a koliseo respawn areas should be
+## random around the map every single time you start a combat … for every
+## single map". Zones are redrawn each match, on standable tiles only, and the
+## two zones can always walk to each other.
+func _test_random_deploy_zones() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	var never := func(_a = null, _b = null) -> bool: return false
+	for map_id in CellTagMap.SHIP_MAPS:
+		var seen := {}
+		var bad := 0
+		var apart := 0
+		for i in 12:
+			sim.reset_match({"map_id": map_id, "seed": 1000 + i * 7919})
+			var z0: Array = sim.deploy_zone_cells(0)
+			var z1: Array = sim.deploy_zone_cells(1)
+			for cell in z0 + z1:
+				var tile: Dictionary = sim.tile_at(cell)
+				if not bool(tile.get("walkable", false)) or ["mud", "water", "lava"].has(str(tile.get("terrain_type", ""))):
+					bad += 1
+			if not sim._board.reachable(z0[0], 9999, never).has(z1[0]):
+				apart += 1
+			z0.sort()
+			seen[str(z0)] = true
+		eq(bad, 0, "%s: every deploy tile is standable ground" % map_id)
+		eq(apart, 0, "%s: the two deploy zones always reach each other" % map_id)
+		truthy(seen.size() >= 10, "%s: deploy zones change match to match (%d / 12 different)" % [map_id, seen.size()])
+	sim.queue_free()
