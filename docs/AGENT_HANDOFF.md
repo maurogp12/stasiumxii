@@ -118,6 +118,10 @@ good, and do not leave it in once he does. Revert = `ACTIVE = false` (the next
 load takes back only the tagged pieces and granted fragments), then delete
 the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
+## Balance plan (next work)
+
+See `docs/BALANCE_PLAN_HANDOFF.md` (counter wheel, class numbers, element riders). Nothing in it is in the game yet.
+
 ## Open / waiting on Mauro (do not decide these yourself)
 
 See the "Open / waiting on Mauro" list at the end of
