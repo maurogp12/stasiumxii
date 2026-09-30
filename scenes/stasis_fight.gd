@@ -10,6 +10,8 @@ var _chest: Dictionary = {}
 var _overlay_status: Label
 var _continue_button: Button
 var _exit_button: Button
+var _overlay_panel: Panel
+var _overlay_back: Button
 var _tonic_button: Button
 var _tonic_note: String = ""
 
@@ -317,6 +319,7 @@ func _build_overlay() -> void:
 	panel_style.set_corner_radius_all(12)
 	panel.add_theme_stylebox_override("panel", panel_style)
 	root.add_child(panel)
+	_overlay_panel = panel
 	_overlay_status = Label.new()
 	_overlay_status.position = Vector2(256, 14)
 	_overlay_status.size = Vector2(448, 58)
@@ -337,6 +340,7 @@ func _build_overlay() -> void:
 	back.add_theme_font_size_override("font_size", 18)
 	back.pressed.connect(_back_to_hub)
 	root.add_child(back)
+	_overlay_back = back
 	_continue_button = Button.new()
 	_continue_button.text = "Next foe"
 	_continue_button.position = Vector2(476, 76)
@@ -364,9 +368,43 @@ func _build_overlay() -> void:
 	root.add_child(_tonic_button)
 
 
+## During a fight the door banner is a slim ribbon under the top HUD row, so
+## it never hides the turn strip, AP / MP or the timer (the HUD keeps its own
+## Back to hub). After the fight it grows into the full panel with the buttons.
+func _shows_turn_chrome(seat: int) -> bool:
+	return seat == StasisCatalog.PLAYER_SEAT
+
+
+func _layout_overlay(fighting: bool) -> void:
+	if _overlay_panel == null:
+		return
+	if fighting:
+		_overlay_panel.position = Vector2(248, 142)
+		_overlay_panel.size = Vector2(464, 32)
+		_overlay_status.position = Vector2(256, 142)
+		_overlay_status.size = Vector2(448, 32)
+		_overlay_status.add_theme_font_size_override("font_size", 14)
+		if _overlay_back != null:
+			_overlay_back.visible = false
+	else:
+		_overlay_panel.position = Vector2(248, 142)
+		_overlay_panel.size = Vector2(464, 132)
+		_overlay_status.position = Vector2(256, 148)
+		_overlay_status.size = Vector2(448, 58)
+		_overlay_status.add_theme_font_size_override("font_size", 16)
+		if _overlay_back != null:
+			_overlay_back.visible = true
+			_overlay_back.position = Vector2(256, 210)
+		if _continue_button != null:
+			_continue_button.position = Vector2(476, 210)
+		if _tonic_button != null:
+			_tonic_button.position = Vector2(256, 280)
+
+
 func _sync_overlay(snap: Dictionary) -> void:
 	if _overlay_status == null:
 		return
+	_layout_overlay(not _cleared and not bool(snap.get("match_over", false)))
 	_sync_tonic(snap)
 	if _cleared:
 		_overlay_status.text = "%s cleared. %s" % [StasisCatalog.door_name(), chest_line(_chest)]
@@ -395,7 +433,8 @@ func _sync_overlay(snap: Dictionary) -> void:
 		return
 	if _continue_button != null:
 		_continue_button.visible = false
-	_overlay_status.text = banner if note == "" else "%s\n%s" % [banner, note]
+	var ribbon := StasisCatalog.room_ribbon()
+	_overlay_status.text = ribbon if note == "" else "%s\n%s" % [ribbon, note]
 
 
 func _sync_tonic(snap: Dictionary) -> void:

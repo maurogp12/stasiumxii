@@ -91,6 +91,10 @@ Version history, reasons and Mauro's exact words are in
 - Gear icons: `art/items/gear/` from the Blueprint set sheets
   (`build_tools/art/gear_icons/`, Sheaf pieces cut with BiRefNet masks).
 - Ironjaw is the Berserker art Mauro picked (`build_tools/art/ironjaw_berserker/`).
+- Stasis fight chrome: one-line ribbon during a fight (`StasisCatalog.room_ribbon`,
+  `scenes/stasis_fight.gd _layout_overlay`), no walk / range tiles on monster
+  turns (`BoardView._shows_turn_chrome`), monster turn-strip portraits framed on
+  the creature (`CombatHUD._foe_crop`).
 - **Bastion art is not touched unless Mauro asks.**
 
 ## Open / waiting on Mauro (do not decide these yourself)

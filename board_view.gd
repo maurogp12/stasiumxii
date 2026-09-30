@@ -216,6 +216,11 @@ func _online() -> bool:
 	return net != null and net.is_online()
 
 
+## Scenes where the computer plays a seat override this (walk chrome off).
+func _shows_turn_chrome(_seat: int) -> bool:
+	return true
+
+
 func _can_control_seat(seat: int) -> bool:
 	var net := _net()
 	if net == null or not net.is_online():
@@ -1977,6 +1982,12 @@ func _paint_highlights() -> void:
 	if CombatHUD.is_deployment_phase(snap):
 		_paint_deploy_highlights(snap)
 		_paint_blocked(snap)
+		_sync_target_marks()
+		return
+	if not _shows_turn_chrome(CombatHUD.kit_seat(snap)):
+		# A computer-run seat (Stasis monsters): no walk / range tiles on its turn.
+		_paint_blocked(snap)
+		_sync_aim_line()
 		_sync_target_marks()
 		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))

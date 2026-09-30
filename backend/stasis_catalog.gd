@@ -253,6 +253,14 @@ static func room_banner() -> String:
 	return "%s %s · Room A · %s" % [door, star_label(), " · ".join(trash_names())]
 
 
+## One-line ribbon for the fight screen: door, star, room and foe count.
+static func room_ribbon() -> String:
+	var door := door_name(biome_id)
+	if room == "b":
+		return "%s %s · Room B · %s" % [door, star_label(), boss_name()]
+	return "%s %s · Room A · %d foes" % [door, star_label(), trash_names().size()]
+
+
 static func provisional_line() -> String:
 	if room == "b":
 		return "Provisional Open playtest — %d HP, attack base %d before facing. Not Locked." % [PROVISIONAL_BOSS_HP, PROVISIONAL_BOSS_ATTACK]

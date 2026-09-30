@@ -1548,7 +1548,7 @@ func _chip_frame(acting: bool) -> StyleBoxFlat:
 func _portrait_for(unit: Dictionary) -> Texture2D:
 	var foe := str(unit.get("stasis_sprite", ""))
 	if foe != "" and ResourceLoader.exists(foe):
-		return _head_crop(foe)
+		return _foe_crop(foe)
 	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
 	if not SpellKits.is_roster_class(class_id):
 		return null
@@ -1576,6 +1576,36 @@ func _head_crop(path: String) -> Texture2D:
 	if head != null:
 		_head_cache[path] = head
 	return head
+
+
+## Monster paintings sit in a padded frame: frame the whole visible creature
+## (square around its opaque pixels, top-weighted) so the turn chip shows the
+## monster, not an empty corner or its feet.
+func _foe_crop(path: String) -> Texture2D:
+	var key := "foe:%s" % path
+	if _head_cache.has(key) and _head_cache[key] is Texture2D:
+		return _head_cache[key]
+	var tex := load(path) as Texture2D
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null:
+		return _head_crop(path)
+	if img.is_compressed():
+		img.decompress()
+	var used := img.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return _head_crop(path)
+	var side := float(maxi(used.size.x, mini(used.size.y, int(used.size.x * 1.15))))
+	var cx := float(used.position.x) + float(used.size.x) * 0.5
+	var top := float(used.position.y)
+	var region := Rect2(cx - side * 0.5, top, side, side)
+	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = region
+	_head_cache[key] = atlas
+	return atlas
 
 
 ## Top of the body. Same crop the turn chip used on the old south turnaround.
