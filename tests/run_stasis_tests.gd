@@ -41,6 +41,7 @@ func _run() -> void:
 	_test_every_room_connected()
 	_test_fighters_block_sight()
 	_test_foe_kits()
+	_test_foes_walk_around_walls()
 	_start_fight_scene()
 
 
@@ -343,6 +344,47 @@ func _test_foe_kits() -> void:
 	var walk := StasisAi.plan(_sim, caster_seat)
 	eq(str(walk.get("type", "")), "move", "a crowded caster walks")
 	truthy(chebyshev_of(walk["to"], Vector2i(2, 7)) >= 3, "…out to its bolt band")
+	StasisCatalog.clear_run()
+	_sim.reset_match({})
+
+
+## Mauro 30 Sep 2026 ("they get stuck there"): a monster behind a wall walks
+## the real route around it instead of parking at the wall.
+func _test_foes_walk_around_walls() -> void:
+	StasisCatalog.clear_run()
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = "kestrel"
+	StasisCatalog.room = "a"
+	var cfg: Dictionary = StasisCatalog.fight_config()
+	cfg["flat_board"] = true
+	cfg["first_by_init"] = false
+	var wall: Array = []
+	for x in range(2, 13):
+		wall.append(Vector2i(x, 5))
+	cfg["blockers"] = wall
+	_sim.reset_match(cfg)
+	var brute: Dictionary = {}
+	for u in _sim._units:
+		if int(u["seat"]) > 0:
+			u["pos"] = Vector2i(14, int(u["seat"]) + 8)
+			if brute.is_empty() and str(u.get("foe_role", "")) == "brute":
+				brute = u
+	brute["pos"] = Vector2i(7, 2)
+	_sim._units[0]["pos"] = Vector2i(7, 9)
+	var reached := false
+	for turn in 8:
+		_sim._active_seat = int(brute["seat"])
+		brute["mp"] = 3
+		brute["ap"] = 6
+		for step in 6:
+			var intent := StasisAi.plan(_sim, int(brute["seat"]))
+			if str(intent.get("type", "")) != "move":
+				break
+			_sim.submit(intent)
+		if chebyshev_of(brute["pos"], Vector2i(7, 9)) <= 1:
+			reached = true
+			break
+	truthy(reached, "the brute walks around the wall and reaches the player (at %s)" % str(brute["pos"]))
 	StasisCatalog.clear_run()
 	_sim.reset_match({})
 

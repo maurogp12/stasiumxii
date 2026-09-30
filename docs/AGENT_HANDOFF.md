@@ -64,7 +64,10 @@ Version history, reasons and Mauro's exact words are in
   `art/stasis/foes/caster_*.png`). Real caster art is Open.
 - Resolution: `CombatSim._foe_casts` (offers) / `_submit_foe_cast` (resolve).
   Planner: `StasisAi.plan` (AOE first when it connects, then the hardest hit,
-  ranged band keeping, Retreat / Coil Step, Sheaf Wall with spare AP).
+  ranged band keeping, Retreat / Coil Step, Sheaf Wall with spare AP). Walks
+  follow the real route (`CombatSim.walk_field`), never straight-line distance
+  (packs got stuck behind walls). Dead monsters fade off the board
+  (`Pawn._vanish_if_monster`); heroes keep their downed body.
 - VFX: `vfx/vfx_router.gd` `_foe_choreography` — bolts follow the Caster Bolt
   VFX sheet (cast flash 0.12 s, 18 tiles/s, capped 0.40 s, miss skips past);
   AOE flashes every covered tile + boss sigil flare (`units/boss_aura.gd flare()`).

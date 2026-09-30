@@ -287,6 +287,12 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	if alive and _vanished:
+		_vanished = false
+		modulate.a = 1.0
+		visible = true
+	elif not alive and stasis_sprite != "" and not _motion_playing:
+		_vanish_if_monster()
 	# Breath and sway follow alive (and class/seat) on every body material.
 	_apply_figure_read()
 	rewrite_frozen_vitals()
@@ -1969,6 +1975,27 @@ func _apply_downed_pose() -> void:
 	_sprite.scale = _body_scale_mul(mul)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.modulate = Color(0.45, 0.45, 0.45, float(pose.get("fade", 0.0)))
+	_vanish_if_monster()
+
+
+## Stasis monsters leave the board when they die (Mauro 30 Sep 2026: "corpses
+## are supposed to disappear once dead"): body, ring, name and bar fade out.
+## Heroes keep their downed body.
+var _vanished := false
+
+
+func _vanish_if_monster() -> void:
+	if stasis_sprite == "" or alive or _vanished:
+		return
+	_vanished = true
+	if not is_inside_tree():
+		visible = false
+		return
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not alive:
+			visible = false)
 
 
 ## Last cell of `death_<facing>`. A rebuild with no tween still shows DOWN.

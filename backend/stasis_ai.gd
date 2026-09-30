@@ -105,7 +105,7 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 			return away
 	# 4. Walk.
 	if not moves.is_empty() and int(actor.get("mp", 0)) > 0:
-		var walk := _ranged_walk(sim, moves, actor_pos, foe_pos, kit) if ranged else _melee_walk(moves, actor_pos, foe_pos)
+		var walk := _ranged_walk(sim, moves, actor_pos, foe_pos, kit) if ranged else _melee_walk(moves, actor_pos, foe_pos, sim)
 		if not walk.is_empty():
 			return walk
 	# 5. Ward with spare AP.
@@ -115,20 +115,31 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 	return end_turn
 
 
-static func _melee_walk(moves: Array, actor_pos: Vector2i, foe_pos: Vector2i) -> Dictionary:
+## Walk the real route toward the player (walking distance, not a straight
+## line), so walls and ruins are walked around instead of blocking the pack.
+static func _melee_walk(moves: Array, actor_pos: Vector2i, foe_pos: Vector2i, sim: Node = null) -> Dictionary:
+	var field: Dictionary = sim.walk_field([foe_pos]) if sim != null and sim.has_method("walk_field") else {}
+	var here := _route_score(field, actor_pos, foe_pos)
 	var best := {}
-	var best_score := _chebyshev(actor_pos, foe_pos) * 100 + absi(actor_pos.x - foe_pos.x) + absi(actor_pos.y - foe_pos.y)
+	var best_score := here
 	for intent in moves:
 		var dest: Vector2i = _cell(intent.get("to", actor_pos))
-		var score := _chebyshev(dest, foe_pos) * 100 + absi(dest.x - foe_pos.x) + absi(dest.y - foe_pos.y)
+		var score := _route_score(field, dest, foe_pos)
 		if score < best_score:
 			best_score = score
 			best = intent
 	return best
 
 
-## Walk to a tile that has a legal shot: in the band and in sight. Prefer the
-## band's middle and the shortest walk. Else close the gap (or open it).
+static func _route_score(field: Dictionary, cell: Vector2i, foe_pos: Vector2i) -> int:
+	var tie := absi(cell.x - foe_pos.x) + absi(cell.y - foe_pos.y)
+	if field.has(cell):
+		return int(field[cell]) * 100 + tie
+	return 100000 + _chebyshev(cell, foe_pos) * 100 + tie
+
+
+## Casters / ranged bosses: head for the nearest tile that has a legal shot
+## (in the band and in sight), by walking distance.
 static func _ranged_walk(sim: Node, moves: Array, actor_pos: Vector2i, foe_pos: Vector2i, kit: Array) -> Dictionary:
 	var lo := 99
 	var hi := 0
@@ -138,31 +149,31 @@ static func _ranged_walk(sim: Node, moves: Array, actor_pos: Vector2i, foe_pos: 
 			lo = mini(lo, int(def.get("min", 3)))
 			hi = maxi(hi, int(def.get("max", 7)))
 	if hi == 0:
-		return _melee_walk(moves, actor_pos, foe_pos)
+		return _melee_walk(moves, actor_pos, foe_pos, sim)
+	var near := maxi(lo, 3)
+	if _chebyshev(actor_pos, foe_pos) >= near and _chebyshev(actor_pos, foe_pos) <= hi and sim.has_line_of_sight(actor_pos, foe_pos):
+		return {}
+	var band: Array = []
+	for y in range(15):
+		for x in range(15):
+			var cell := Vector2i(x, y)
+			var d := _chebyshev(cell, foe_pos)
+			if d >= near and d <= hi and sim.has_line_of_sight(cell, foe_pos):
+				band.append(cell)
+	var field: Dictionary = sim.walk_field(band) if not band.is_empty() else {}
+	var here := int(field.get(actor_pos, 1 << 20))
 	var best := {}
-	var best_score := 1 << 30
-	var here := _chebyshev(actor_pos, foe_pos)
+	var best_score := here * 100
 	for intent in moves:
 		var dest: Vector2i = _cell(intent.get("to", actor_pos))
-		var d := _chebyshev(dest, foe_pos)
-		var score := 0
-		if d >= maxi(lo, 3) and d <= hi and sim.has_line_of_sight(dest, foe_pos):
-			score = absi(d - (maxi(lo, 3) + 1)) * 10 + _chebyshev(dest, actor_pos)
-		else:
-			var gap := (maxi(lo, 3) - d) if d < maxi(lo, 3) else (d - hi if d > hi else 0)
-			score = 1000 + gap * 100 + (0 if d <= hi else d)
+		if not field.has(dest):
+			continue
+		var score := int(field[dest]) * 100 + absi(_chebyshev(dest, foe_pos) - (near + 1))
 		if score < best_score:
 			best_score = score
 			best = intent
-	if best.is_empty():
-		return {}
-	# Do not shuffle in place: only walk when it helps.
-	var now_ok: bool = here >= maxi(lo, 3) and here <= hi and sim.has_line_of_sight(actor_pos, foe_pos)
-	if now_ok:
-		return {}
-	var cur_gap := (maxi(lo, 3) - here) if here < maxi(lo, 3) else (here - hi if here > hi else 0)
-	if best_score >= 1000 and best_score >= 1000 + cur_gap * 100:
-		return {}
+	if best.is_empty() and field.is_empty():
+		return _melee_walk(moves, actor_pos, foe_pos, sim)
 	return best
 
 

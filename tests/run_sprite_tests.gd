@@ -502,4 +502,15 @@ func _test_foe_bodies() -> void:
 	eq(pawn.foe_body_lean(), 0.0, "planting stands the foe body back up")
 	pawn._sample_hit(0.4, Vector2(20, -10))
 	truthy(pawn.foe_body_lean() > 0.02, "a blow knocking the foe right rocks its body right")
+	# Mauro 30 Sep 2026: dead monsters leave the board (no corpse, ring or name).
+	pawn._motion_playing = false
+	pawn.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Grain Hound", "pos": Vector2i(3, 3), "facing": "S", "hp": 0, "max_hp": 22, "alive": false, "stasis_sprite": "res://art/stasis/foes/grain_hound.png"}, 0)
+	truthy(pawn._vanished, "a dead monster starts fading out")
+	pawn.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Grain Hound", "pos": Vector2i(3, 3), "facing": "S", "hp": 22, "max_hp": 22, "alive": true, "stasis_sprite": "res://art/stasis/foes/grain_hound.png"}, 0)
+	eq(pawn.visible and pawn.modulate.a > 0.99, true, "a revived monster (next room) is shown again")
+	var hero := Pawn.new()
+	root.add_child(hero)
+	hero.apply_snapshot({"seat": 0, "class_id": "kestrel", "name": "Kestrel", "pos": Vector2i(2, 2), "facing": "S", "hp": 0, "max_hp": 80, "alive": false}, 0)
+	eq(hero._vanished, false, "a fallen hero keeps the downed body")
+	hero.queue_free()
 	pawn.queue_free()

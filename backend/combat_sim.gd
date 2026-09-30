@@ -196,7 +196,9 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	flow_config["board_size"] = _board_size
 	flow_config["elev_seed"] = _elev_seed
 	_flow.reset(_seed, flow_config)
-	if not config.has("deploy_zones") and _elevation_gen == "tags":
+	var deploys := not (bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos") or config.has("positions"))
+	if deploys and not config.has("deploy_zones") and _elevation_gen == "tags":
+		_zone_components = _walk_components()
 		_flow.resample_zones(_seed, Callable(self, "_zone_cell_ok"), Callable(self, "_zones_meet"))
 	if config.has("rolls"):
 		for roll in config["rolls"]:
@@ -1589,12 +1591,38 @@ func _zone_cell_ok(cell: Vector2i) -> bool:
 	return _board.in_bounds(cell) and _board.is_walkable(cell) and not _board.is_voluntary_impassable(cell)
 
 
-## Both zones reach each other on foot, both ways.
+## Both zones reach each other on foot, both ways (same two-way walk area).
 func _zones_meet(blob_a: Array, blob_b: Array) -> bool:
+	var ca := int(_zone_components.get(blob_a[0], -1))
+	return ca >= 0 and ca == int(_zone_components.get(blob_b[0], -2))
+
+
+var _zone_components: Dictionary = {}
+
+
+## Label every standable tile by its two-way walk area (one flood fill).
+func _walk_components() -> Dictionary:
 	var never := func(_a = null, _b = null) -> bool: return false
-	var from_a: Dictionary = _board.reachable(blob_a[0], 9999, never)
-	var from_b: Dictionary = _board.reachable(blob_b[0], 9999, never)
-	return from_a.has(blob_b[0]) and from_b.has(blob_a[0])
+	var label := {}
+	var next_id := 0
+	for y in range(_board_size):
+		for x in range(_board_size):
+			var start := Vector2i(x, y)
+			if label.has(start) or not _zone_cell_ok(start):
+				continue
+			label[start] = next_id
+			var stack: Array = [start]
+			while not stack.is_empty():
+				var cur: Vector2i = stack.pop_back()
+				for dir in FACING_VEC.values():
+					var n: Vector2i = cur + dir
+					if label.has(n) or not _zone_cell_ok(n):
+						continue
+					if bool(_board.step_cost(cur, n, never).get("ok", false)) and bool(_board.step_cost(n, cur, never).get("ok", false)):
+						label[n] = next_id
+						stack.append(n)
+			next_id += 1
+	return label
 
 
 func _force_spawn(seat: int, cell: Vector2i) -> void:
@@ -3489,6 +3517,54 @@ func _foe_victims(actor: Dictionary) -> Array:
 			continue
 		out.append(unit)
 	return out
+
+
+## Walking cost from every tile to the nearest source (bodies ignored, so a
+## pack does not block its own route). Monsters use it to walk around walls
+## instead of getting stuck behind them (Mauro 30 Sep 2026: "they get stuck").
+func walk_field(sources: Array) -> Dictionary:
+	var never := Callable(self, "_wall_only_occupied")
+	var best := {}
+	var frontier: Array = []
+	for raw in sources:
+		var cell: Vector2i = raw
+		if _in_bounds(cell) and not best.has(cell):
+			best[cell] = 0
+			frontier.append(cell)
+	while not frontier.is_empty():
+		var pick := 0
+		for i in frontier.size():
+			if int(best[frontier[i]]) < int(best[frontier[pick]]):
+				pick = i
+		var current: Vector2i = frontier[pick]
+		frontier.remove_at(pick)
+		for dir in FACING_VEC.values():
+			var nxt: Vector2i = current + dir
+			if not _in_bounds(nxt):
+				continue
+			# Reverse step: can a walker on `nxt` step onto `current`?
+			var step: Dictionary = _board.step_cost(nxt, current, never)
+			if not bool(step.get("ok", false)) and not best.has(nxt):
+				# Sources may be a body's tile (not standable); allow leaving it.
+				if int(best[current]) != 0:
+					continue
+				if not _board.is_walkable(nxt) or _board.is_voluntary_impassable(nxt):
+					continue
+			var cost := int(best[current]) + maxi(int(step.get("cost", 1)), 1)
+			if not best.has(nxt) or cost < int(best[nxt]):
+				best[nxt] = cost
+				frontier.append(nxt)
+	return best
+
+
+## Walls and blockers block a route; bodies do not (they move).
+func _wall_only_occupied(cell: Vector2i, _ignore: Vector2i = UNPLACED) -> bool:
+	if _snap_wall_blocks(cell):
+		return true
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return true
+	return false
 
 
 func _foe_free_cell(cell: Vector2i) -> bool:
