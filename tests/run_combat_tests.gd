@@ -88,6 +88,7 @@ func _run() -> void:
 	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
+	_test_advance_two_per_turn()
 	_test_advance_then_remaining_mp_still_walks()
 	_test_advance_cardinal_range_gate()
 	_test_advance_chrome_follows_legal_intents()
@@ -2058,7 +2059,8 @@ func _test_ambush_origin_chrome() -> void:
 		"kestrel_facing": "W",
 	})
 	origin = _sim.ambush_origin(0)
-	eq(bool(origin.get("show", true)), false, "Ambush origin chrome stays off with no Shade and no Invisible")
+	eq(bool(origin.get("show", false)), true, "visible Gloam's body is an Ambush origin (Mauro 30 Sep 2026)")
+	eq(origin.get("origin"), invisible_gloam, "the visible origin is the body")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains('set_highlight("origin")'), "the board paints the Ambush origin tile")
 	truthy(view.contains('set_highlight("landing")'), "the board paints the Ambush back tile while aiming")
@@ -2087,14 +2089,8 @@ func _test_ambush_shade_label_matches_origin() -> void:
 	eq(bool(planted.get("ok", false)), true, "the far Shade plants")
 	_complete_opponent_turn()
 	eq(_sim.snapshot()["shade_tokens"][0]["pos"], shade_at, "the far Shade stays on the board")
-	eq(bool(_sim.ambush_origin(0).get("show", true)), false, "an out-of-range Shade does not open Ambush chrome")
-	eq(bool(_sim.ambush_origin(0).get("from_self", true)), false, "that hidden origin is not the body")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a Shade outside 1–2 cardinal does not arm Ambush")
-	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(rejected.get("ok", true)), false, "body range does not fire Ambush while the origin is the Shade")
-	eq(str(rejected.get("reason", "")), "out_of_range", "the far Shade rejects as out of range")
-	eq(_unit(0)["pos"], body, "the rejected Ambush leaves Gloam on the body")
-	eq(int(_unit(1)["hp"]), int(_unit(1)["max_hp"]), "the rejected Ambush does not damage from the body")
+	eq(bool(_sim.ambush_origin(0).get("from_self", false)), true, "visible: the in-range body is the origin, not the far Shade")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "visible Gloam arms Ambush from the body (Mauro 30 Sep 2026)")
 	var shade_hud := CombatHUD.new()
 	shade_hud._build()
 	shade_hud.render(_sim.snapshot(), _sim.legal_intents(0))
@@ -2174,13 +2170,10 @@ func _test_ambush_range_from_origin() -> void:
 	eq(_sim.manhattan(far_shade, prey) > 2, true, "this Shade is outside Manhattan 2 of the prey")
 	var far_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": far_shade, "seat": 0})
 	eq(bool(far_plant.get("ok", false)), true, "Drop Shade can plant outside Ambush range")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a far Shade does not arm Ambush just because the body is in range")
-	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(str(rejected.get("reason", "")), "out_of_range", "Shade-origin range reject is out_of_range")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "the body in range arms Ambush without Invisible")
+	eq(_sim.ambush_origin(0).get("origin"), body, "the far Shade does not steal the origin")
 	_complete_opponent_turn()
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "an armed Shade still cannot target an enemy outside Manhattan 1-2")
-	var armed_far: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(str(armed_far.get("reason", "")), "out_of_range", "armed Shade-origin range reject stays out_of_range")
+	eq(_sim.ambush_origin(0).get("origin"), body, "an armed far Shade still does not steal the origin")
 	_live_unit(0)["invisible"] = true
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible Ambush uses the body, ignoring the far Shade")
 
@@ -2355,7 +2348,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	eq(_unit(0)["pos"], back_gloam, "an occupied back does not blink Gloam")
 	eq(int(_unit(1)["hp"]), 80, "an occupied back deals no damage")
 
-	# No Invisible and no Shade, even on a Manhattan-2 cardinal body, does not arm.
+	# Mauro 30 Sep 2026: no Invisible and no Shade still arms from the body.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2365,10 +2358,10 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		"kestrel_facing": "W",
 	})
 	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(4, 2), 2), true, "the bare body is Manhattan 2 cardinal")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "no Shade and no Invisible does not arm Ambush")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "no Shade and no Invisible arms Ambush from the body")
 	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
-	eq(str(bare.get("reason", "")), "no_shade", "no Shade and no Invisible rejects as no_shade")
-	eq(int(_unit(0)["ap"]), 6, "no_shade refunds AP")
+	eq(bool(bare.get("ok", false)), true, "visible body Ambush resolves")
+	eq(int(_unit(0)["ap"]), 2, "visible body Ambush spends 4 AP")
 
 	var legal_gloam := Vector2i(4, 7)
 	var legal_shade := Vector2i(3, 5)
@@ -2887,11 +2880,7 @@ func _test_invisible_breaks_on_attack() -> void:
 		"positions": [gloam, prey],
 		"kestrel_facing": "W",
 	})
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Visible Gloam without a Shade cannot Ambush")
-	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(bare.get("illegal", false)), true, "Ambush without Shade or Invisible is rejected")
-	eq(str(bare.get("reason", "")), "no_shade", "the parked body-origin stays no_shade")
-	eq(int(_unit(0)["ap"]), 6, "the parked reject refunds AP")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Visible Gloam without a Shade can Ambush (Mauro 30 Sep 2026)")
 
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade still grants Invisible")
@@ -3143,8 +3132,8 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_unit(0)["pos"], back, "a Shade-plate confirm still teleports to the back tile")
 	eq(int(_unit(0)["shades"]), 0, "a Shade-plate confirm spends the Shade on hit")
 
-	# Diagonal Shade, body already adjacent. That is not a legal Ambush and must
-	# not connect as a body slash.
+	# Diagonal Shade, body already adjacent. Since Mauro's 30 Sep 2026 rule the
+	# body is always an origin, so this is a legal body Ambush to the back tile.
 	var near_gloam := Vector2i(3, 11)
 	var near_prey := Vector2i(3, 12)
 	var diag_shade := Vector2i(4, 11)
@@ -3161,17 +3150,11 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_sim._cardinal_axis_len(diag_shade, near_prey) < 0, true, "the Shade is diagonal to the prey")
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": diag_shade, "seat": 0}).get("ok", false)), true, "Drop Shade still plants the diagonal")
 	_complete_opponent_turn()
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a diagonal Shade does not arm Ambush just because the body is adjacent")
-	var fake: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
-	eq(str(fake.get("reason", "")), "out_of_range", "adjacent body with a diagonal Shade rejects")
-	eq(_unit(0)["pos"], near_gloam, "the reject does not blink Gloam")
-	eq(int(_unit(1)["hp"]), 80, "the reject deals no damage")
-	eq(int(_unit(0)["shades"]), 1, "the reject keeps the Shade")
-	var plate_illegal: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": diag_shade, "seat": 0})
-	var illegal_coach := str(plate_illegal.get("snapshot", {}).get("coach", ""))
-	eq(illegal_coach.contains("target at 0"), false, "an illegal Shade-plate tap is not distance 0")
-	eq(bool(plate_illegal.get("ok", true)), false, "an illegal Shade-plate tap does not resolve")
-	eq(_unit(0)["pos"], near_gloam, "an illegal Shade-plate tap leaves Gloam put")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "the adjacent body arms Ambush; the diagonal Shade adds nothing")
+	var body_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
+	eq(bool(body_hit.get("ok", false)), true, "adjacent body Ambush resolves")
+	eq(body_hit["events"][0].get("origin"), near_gloam, "the origin is the body, not the diagonal Shade")
+	eq(int(_unit(0)["shades"]), 1, "a body Ambush keeps the Shade")
 
 	# Invisible, body already on the facing-rear tile. The blink is still the
 	# axis back tile past the foe, not a slash from the current cell.
@@ -3721,6 +3704,22 @@ func _test_handoff_timer_is_client_only() -> void:
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud.contains("show_turn_banner"), "HUD can show the End Turn banner")
 	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
+
+
+func _test_advance_two_per_turn() -> void:
+	# Mauro 30 Sep 2026: "ironjaw spell advance only can be used 2 times" (per turn).
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(12, 12), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.submit({"type": "end_turn"})
+	_live_unit(1)["ap"] = 12
+	eq(bool(_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)}).get("ok", false)), true, "first Advance resolves")
+	eq(bool(_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 2)}).get("ok", false)), true, "second Advance resolves")
+	eq(_has_legal_cast(1, SpellKits.ADVANCE), false, "a third Advance is not offered even with AP left")
+	var third: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(8, 2)})
+	eq(str(third.get("reason", "")), "advance_limit", "a third Advance rejects as advance_limit")
+	eq(int(_unit(1)["ap"]), 6, "the third Advance refunds its AP")
+	eq(_unit(1)["pos"], Vector2i(6, 2), "the third Advance does not move Ironjaw")
+	_complete_opponent_turn()
+	eq(_has_legal_cast(1, SpellKits.ADVANCE), true, "the Advance count resets next turn")
 
 
 func _test_advance_teleport_costs() -> void:

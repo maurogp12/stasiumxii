@@ -2002,6 +2002,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
 		if reason == "destination_occupied":
 			return _reject(intent, "destination_occupied", "REJECT — Advance needs an empty tile (refund).")
+		if reason == "advance_limit":
+			return _reject(intent, "advance_limit", "REJECT — Advance is %d uses per turn (refund)." % ADVANCE_USES_PER_TURN)
 		if reason != "":
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
@@ -2109,6 +2111,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["advance_uses"] = int(actor.get("advance_uses", 0)) + 1
 	# Teleport: dest-click snap. Never spend MP. Facing unchanged — no auto-face.
 	actor["pos"] = dest
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
@@ -2471,6 +2474,11 @@ func _validate_walk(actor: Dictionary, dest: Vector2i) -> String:
 	return str(planned.get("reason", "unreachable"))
 
 
+## Mauro, 30 Sep 2026: "ironjaw spell advance only can be used 2 times"
+## (per turn; the counter resets at each Ironjaw turn start).
+const ADVANCE_USES_PER_TURN := 2
+
+
 func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 	if str(actor.get("class_id", "")) != SpellKits.CLASS_IRONJAW:
 		return "spell_not_in_kit"
@@ -2490,6 +2498,8 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_range"
 	if int(actor["ap"]) < int(def["ap"]):
 		return "insufficient_ap"
+	if int(actor.get("advance_uses", 0)) >= ADVANCE_USES_PER_TURN:
+		return "advance_limit"
 	return _advance_stand_reason(actor["pos"], dest)
 
 
@@ -2985,6 +2995,7 @@ func _opening_turn_coach(lead: String) -> String:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["momentum"] = false
+	unit["advance_uses"] = 0
 	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
@@ -4187,7 +4198,7 @@ func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
 	var spell_id := str(def.get("id", ""))
 	if spell_id == SpellKits.DROP_SHADE and _shade_count(actor) >= SpellKits.SHADE_CAP:
 		return "shade_cap"
-	if spell_id == SpellKits.AMBUSH and not bool(actor.get("invisible", false)) and _shade_count(actor) <= 0:
+	if spell_id == SpellKits.AMBUSH and not _ambush_self_origin(actor) and _shade_count(actor) <= 0:
 		return "no_shade"
 	return ""
 
@@ -5226,7 +5237,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var caster_cell: Vector2i = actor["pos"]
 	var pick := _ambush_selected(actor, target, intent)
 	if pick.is_empty():
-		return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+		return _reject(intent, "no_shade", "REJECT — Ambush has no legal origin (refund).")
 	var landing: Dictionary = pick.get("landing", {})
 	if not bool(landing.get("ok", false)):
 		return _reject(intent, "illegal_back", "REJECT — Ambush back tile is occupied or illegal (refund).")
@@ -5406,7 +5417,7 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 		return "no_target"
 	if not _ambush_legal_picks(actor, enemy).is_empty():
 		return ""
-	var invisible := bool(actor.get("invisible", false))
+	var invisible := _ambush_self_origin(actor)
 	if _live_shades(actor).is_empty() and not invisible:
 		return "no_shade"
 	var shade_block := ""
@@ -5421,9 +5432,9 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 			self_block = reason
 	if not invisible:
 		return shade_block if shade_block != "" else "no_shade"
-	# Invisible self has no arming delay. An unarmed Shade must not replace
-	# that geometry reject. An armed Shade whose back tile is blocked does.
-	if self_block == "out_of_range" and (shade_block == "illegal_back" or shade_block == "wall_on_ray"):
+	# The body has no arming delay. When the body is out of range, the Shade's
+	# own reason (unarmed, blocked back, wall) is the more useful one.
+	if self_block == "out_of_range" and shade_block != "" and shade_block != "out_of_range":
 		return shade_block
 	if self_block != "":
 		return self_block
@@ -5438,7 +5449,7 @@ func _ambush_reject_text(reason: String) -> String:
 	if reason == "shade_unarmed":
 		return "REJECT — Shade is not armed for Ambush until the opponent completes a turn (refund)."
 	if reason == "no_shade":
-		return "REJECT — Ambush needs Invisible or a Shade (refund)."
+		return "REJECT — Ambush has no legal origin (refund)."
 	if reason == "no_target":
 		return "REJECT — Ambush needs an enemy (refund)."
 	return "REJECT — Ambush is Manhattan 1–2 cardinal from the origin (refund)."
@@ -5467,7 +5478,7 @@ func _ambush_focus_enemy(actor: Dictionary, dest: Vector2i) -> Dictionary:
 
 
 func _ambush_cell_is_origin(actor: Dictionary, cell: Vector2i) -> bool:
-	if bool(actor.get("invisible", false)) and cell == actor["pos"]:
+	if _ambush_self_origin(actor) and cell == actor["pos"]:
 		return true
 	for item in _live_shades(actor):
 		var token: Dictionary = item
@@ -5484,7 +5495,7 @@ func _ambush_measure_cell(actor: Dictionary, enemy: Dictionary) -> Vector2i:
 		var cand: Dictionary = item
 		if bool(cand.get("axis_ok", false)):
 			return cand["origin"]
-	if bool(actor.get("invisible", false)):
+	if _ambush_self_origin(actor):
 		return actor["pos"]
 	var shade := _first_shade(actor)
 	if shade.is_empty():
@@ -5492,7 +5503,17 @@ func _ambush_measure_cell(actor: Dictionary, enemy: Dictionary) -> Vector2i:
 	return shade["pos"]
 
 
-## Every Shade, then Invisible self. `block` is "" when that origin may resolve.
+## Mauro, 30 Sep 2026: "ambush can be used without being invisible". Gloam's
+## own tile is always an Ambush origin (no arming delay); Invisible is no
+## longer required. Armed Shades still add other angles.
+const AMBUSH_SELF_ALWAYS := true
+
+
+func _ambush_self_origin(actor: Dictionary) -> bool:
+	return AMBUSH_SELF_ALWAYS or bool(actor.get("invisible", false))
+
+
+## Every Shade, then Gloam's own tile. `block` is "" when that origin may resolve.
 func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
 	var out: Array = []
 	if enemy.is_empty() or not bool(enemy.get("alive", false)):
@@ -5501,7 +5522,7 @@ func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
 		var token: Dictionary = item
 		var armed := int(token.get("opponent_turns_completed", 0)) >= 1
 		out.append(_ambush_candidate(actor, enemy, token["pos"], true, armed))
-	if bool(actor.get("invisible", false)):
+	if _ambush_self_origin(actor):
 		out.append(_ambush_candidate(actor, enemy, actor["pos"], false, true))
 	return out
 
