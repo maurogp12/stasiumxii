@@ -12,6 +12,11 @@ import glob, heapq, json, os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 BLOCKING = {"arc", "ash_rock", "basalt_pillar", "fence", "rock_cluster", "rock_pillar", "well"}
+# Tall drawn props per biome also block (CellTagMap.SIGHT_PROPS / _KEEP / centrepiece).
+TALL = {"crosshaven": {"ruins", "hay", "rubble"}, "brinewake": {"ruins"}, "windmere": {"crystal", "ice_shard", "spark"}, "stormspire": {"conduit"}}
+TALL_KEEP = {("stormspire", "conduit"): {(7, 2), (7, 12), (2, 7), (12, 7)}}
+CENTER = {"slagcrown": (7, 7), "stormspire": (7, 7)}
+BIOME = [""]
 DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
 # Max extra steps a single mud / water tile may force (Stasis walks are 3 MP).
 DETOUR_LIMIT = 6
@@ -23,8 +28,20 @@ def load(path):
     return d, cells
 
 
+def solid(c):
+    b = BIOME[0]
+    props = set(c.get("paint_only", []))
+    if props & BLOCKING or CENTER.get(b) == (c["x"], c["y"]):
+        return True
+    for p in props & TALL.get(b, set()):
+        keep = TALL_KEEP.get((b, p))
+        if keep is None or (c["x"], c["y"]) in keep:
+            return True
+    return False
+
+
 def standable(c):
-    return c["terrain"] == "ground" and not (set(c.get("paint_only", [])) & BLOCKING)
+    return c["terrain"] == "ground" and not solid(c)
 
 
 def region(cells, start):
@@ -61,7 +78,7 @@ def bridge(cells, main, targets):
             if n not in cells:
                 continue
             c = cells[n]
-            if c["terrain"] == "lava" or set(c.get("paint_only", [])) & BLOCKING:
+            if c["terrain"] == "lava" or solid(c):
                 continue
             if standable(c) and abs(c["elevation"] - e) <= 1:
                 cost, ne = 0, c["elevation"]
@@ -109,7 +126,7 @@ def worst_wall_cell(cells):
     # around is long. Returns (detour, cell) for the worst one.
     best = (0, None)
     for p, c in cells.items():
-        if c["terrain"] not in ("mud", "water") or set(c.get("paint_only", [])) & BLOCKING:
+        if c["terrain"] not in ("mud", "water") or solid(c):
             continue
         for dx, dy in ((1, 0), (0, 1)):
             a, b = (p[0] - dx, p[1] - dy), (p[0] + dx, p[1] + dy)
@@ -143,6 +160,7 @@ def open_walls(cells, limit):
 
 def fix(path, limit=DETOUR_LIMIT):
     d, cells = load(path)
+    BIOME[0] = os.path.basename(path).split("_")[0]
     spawn = tuple(d["spawns"][0])
     log = []
     for _ in range(40):

@@ -167,7 +167,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["advance_stand_on"], "walk_gates", "Advance reuses walk stand-on gates")
 	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is Ground")
 	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) elevation is the tag")
-	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], false, "tall ruins block (0,0) (Mauro 30 Sep 2026: tall props block walking)")
 	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
 	eq(snap["tiles"].size(), 225, "snapshot lists all 15×15 tiles")
 	eq(snap["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only is stored beside the walk tile")
@@ -637,7 +637,7 @@ func _test_phase_a_demo_map() -> void:
 	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
 	eq(live["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is ground")
 	eq(live["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) tag elevation is 0")
-	eq(live["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(live["tiles"][Vector2i(0, 0)]["walkable"], false, "tall ruins block (0,0) (Mauro 30 Sep 2026)")
 	eq(live["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only stays off the walk tile")
 	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "Crosshaven (1,1) is mud")
 	eq(live["tiles"][Vector2i(1, 1)]["walkable"], true, "Crosshaven (1,1) mud is walkable")
@@ -772,8 +772,8 @@ func _test_phase_a_demo_map() -> void:
 		"ironjaw_pos": Vector2i(14, 14),
 	})
 	var ruins: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 0)})
-	eq(ruins["ok"], true, "paint_only ruins does not block the step")
-	eq(ruins["events"][0]["mp_spent"], 1, "ruins tile still costs ground MP")
+	eq(ruins["ok"], false, "tall ruins block the step (Mauro 30 Sep 2026)")
+	eq(_unit(0)["pos"], Vector2i(0, 1), "Kestrel stays off the ruins")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
@@ -1209,9 +1209,10 @@ func _test_solid_props_block_walk_paths() -> void:
 				eq(bool(_sim.tile_at(step_cell).get("walkable", false)), true, "%s path step %s is walkable" % [map_id, str(step_cell)])
 			saw_path = true
 		truthy(saw_path, "%s still has a walk that goes around the prop" % map_id)
-	# Crosshaven ruins stay dress. The fence beside them does not.
+	# Crosshaven ruins are a tall prop: they block like the fence beside them
+	# (Mauro 30 Sep 2026: tall props block walking too).
 	_sim.reset_match({"seed": 1, "map_id": "crosshaven", "skip_deploy": true})
-	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", false)), true, "Crosshaven ruins stay walkable")
+	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", true)), false, "Crosshaven ruins block")
 	eq(bool(_sim.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "Crosshaven fence blocks")
 	var host_snap: Dictionary = _sim.snapshot()
 	var replica: Node = load("res://backend/combat_sim.gd").new()
@@ -4089,7 +4090,9 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 
 func _test_mark_shot_range_highlights() -> void:
 	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
-	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	# The foe stands off the ring: a fighter on a line blocks the tiles behind
+	# it (Mauro 30 Sep 2026), and this checks the bare range geometry.
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(14, 14)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
 	var board_n := int(_sim.snapshot().get("board_size", 15))
@@ -4102,7 +4105,7 @@ func _test_mark_shot_range_highlights() -> void:
 			if dist >= 2 and dist <= 5:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
-	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
+	eq(expected.has(Vector2i(5, 3)), true, "a tile at Chebyshev 2 is inside the ring")
 	eq(expected.has(Vector2i(3, 0)), true, "Chebyshev 3 ortho is inside the ring")
 	eq(_sim.chebyshev(origin, Vector2i(0, 0)), 3, "(0,0) is Chebyshev 3 from (3,3)")
 	eq(expected.has(Vector2i(0, 0)), true, "Chebyshev 3 corner is inside the ring")
@@ -4118,6 +4121,7 @@ func _test_mark_shot_range_highlights() -> void:
 		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
 
 	# legal_intents still only offer the enemy dest, not every ring tile.
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var legal_dests := 0
 	for intent in _sim.legal_intents(0):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "mark_shot":

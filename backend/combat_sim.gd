@@ -589,7 +589,7 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			if dist > _HitBands.MAX_DISTANCE:
 				continue
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
-				if spell_needs_sight(def) and not has_line_of_sight(from, cell):
+				if not _spell_sees(def, from, cell):
 					continue
 				out.append(cell)
 	return out
@@ -608,7 +608,7 @@ func sight_blocked_cells(seat: int, spell_id: String) -> Array:
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
-			if cell != from and _in_spell_range(def, from, cell) and not has_line_of_sight(from, cell):
+			if cell != from and _in_spell_range(def, from, cell) and not _spell_sees(def, from, cell):
 				out.append(cell)
 	return out
 
@@ -800,7 +800,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_sync_shade_flags()
 	_board = _WalkBoard.new(_board_size, _board_size)
 	_apply_snapshot_tiles(snap.get("tiles", {}))
-	_CellTagMap.seal_blocking_props(_board, _paint_only)
+	_CellTagMap.seal_blocking_props(_board, _paint_only, _map_id)
 	_flow.apply_host_snapshot(snap)
 
 
@@ -965,7 +965,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
 	# No sight behind a wall: no hit % either (the shot cannot be taken).
-	if spell_needs_sight(def) and not has_line_of_sight(aim_from, cell):
+	if not _spell_sees(def, aim_from, cell):
 		out["no_sight"] = true
 		return out
 	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
@@ -1235,7 +1235,7 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		return "out_of_bounds"
 	if not in_range:
 		return "out_of_range"
-	if spell_needs_sight(def) and not has_line_of_sight(from_cell, to_cell):
+	if not _spell_sees(def, from_cell, to_cell):
 		return "no_line_of_sight"
 	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
 		return "insufficient_ap"
@@ -1861,8 +1861,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
 		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
-	if spell_needs_sight(def) and not has_line_of_sight(range_from, dest):
-		var wall := sight_blocker(range_from, dest)
+	if not _spell_sees(def, range_from, dest):
+		var wall := sight_blocker(range_from, dest, _sight_bodies(def))
 		return _reject(intent, "no_line_of_sight", "REJECT — %s has no line of sight: a wall at (%d,%d) blocks it (refund)." % [def["name"], wall.x, wall.y])
 
 	var ap_cost := int(def["ap"])
@@ -3472,7 +3472,8 @@ func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) ->
 ## holds a solid prop (the same props that block walking) or a tall drawn
 ## prop (CellTagMap.SIGHT_PROPS: ruins, crystals, conduits, centrepieces), a
 ## Snap Wall or a blocker, or stands higher than both the caster's and the
-## target's tiles (a raised wall). Water, mud, lava and bodies do not block. Self casts,
+## target's tiles (a raised wall), or — for a spell aimed at a fighter — a
+## fighter stands on it (not an Invisible one). Water, mud, lava don't block. Self casts,
 ## Advance (a 2-tile step), Ambush (its own ray gate) and the cone / burst
 ## around the caster do not check sight.
 func spell_needs_sight(def: Dictionary) -> bool:
@@ -3482,12 +3483,23 @@ func spell_needs_sight(def: Dictionary) -> bool:
 	return ["enemy", "ally", "any", "tile", "empty_tile"].has(str(def.get("target", "")))
 
 
-func has_line_of_sight(from_cell: Vector2i, to_cell: Vector2i) -> bool:
-	return sight_blocker(from_cell, to_cell) == Vector2i(-1, -1)
+func has_line_of_sight(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> bool:
+	return sight_blocker(from_cell, to_cell, bodies) == Vector2i(-1, -1)
+
+
+## Fighters on the line block spells aimed at a fighter. A placement on a tile
+## (Drop Shade, Snap Wall, Plant) still needs a wall-free line but may pass
+## beside / behind a body, so Gloam can still plant a Shade behind a foe.
+func _sight_bodies(def: Dictionary) -> bool:
+	return not ["tile", "empty_tile"].has(str(def.get("target", "")))
+
+
+func _spell_sees(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	return not spell_needs_sight(def) or has_line_of_sight(from_cell, to_cell, _sight_bodies(def))
 
 
 ## First tile that blocks the line, or (-1, -1) when the line is clear.
-func sight_blocker(from_cell: Vector2i, to_cell: Vector2i) -> Vector2i:
+func sight_blocker(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> Vector2i:
 	var none := Vector2i(-1, -1)
 	if from_cell == to_cell or not _in_bounds(from_cell) or not _in_bounds(to_cell):
 		return none
@@ -3505,12 +3517,12 @@ func sight_blocker(from_cell: Vector2i, to_cell: Vector2i) -> Vector2i:
 	cells.sort_custom(func(p: Vector2i, q: Vector2i) -> bool: return Vector2(p).distance_squared_to(a) < Vector2(q).distance_squared_to(a))
 	for item in cells:
 		var cell: Vector2i = item
-		if _blocks_sight(cell, top):
+		if _blocks_sight(cell, top, bodies):
 			return cell
 	return none
 
 
-func _blocks_sight(cell: Vector2i, top: int) -> bool:
+func _blocks_sight(cell: Vector2i, top: int, bodies: bool = true) -> bool:
 	if _elevation_at(cell) > top:
 		return true
 	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
@@ -3520,6 +3532,13 @@ func _blocks_sight(cell: Vector2i, top: int) -> bool:
 	for blocked in _blocked_cells:
 		if blocked == cell:
 			return true
+	# Mauro 30 Sep 2026 ("yes same here", as Dofus): a fighter standing on the
+	# line blocks it. An Invisible fighter does not (it would give him away).
+	if not bodies:
+		return false
+	var body := _living_unit_at(cell)
+	if not body.is_empty() and not bool(body.get("invisible", false)):
+		return true
 	return false
 
 
@@ -3561,7 +3580,7 @@ static func _segment_crosses_cell(a: Vector2, b: Vector2, cell: Vector2i) -> boo
 func _in_spell_reach(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
 	if not _in_spell_range(def, from_cell, to_cell):
 		return false
-	return not spell_needs_sight(def) or has_line_of_sight(from_cell, to_cell)
+	return _spell_sees(def, from_cell, to_cell)
 
 
 func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:

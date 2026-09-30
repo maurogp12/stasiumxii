@@ -1339,8 +1339,8 @@
     {
       "x": 8,
       "y": 12,
-      "terrain": "mud",
-      "elevation": 0,
+      "terrain": "ground",
+      "elevation": 1,
       "paint_only": []
     },
     {

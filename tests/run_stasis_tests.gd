@@ -37,6 +37,7 @@ func _run() -> void:
 	_test_resolve_readout_matches_hit()
 	_test_koliseo_strike_unchanged()
 	_test_every_room_connected()
+	_test_fighters_block_sight()
 	_start_fight_scene()
 
 
@@ -197,6 +198,35 @@ func _test_every_room_connected() -> void:
 						if around.has(b):
 							worst = maxi(worst, int(around[b]["cost"]) - 2)
 			truthy(worst <= 6, "%s room %s: no wet tile forces a long detour (worst +%d)" % [biome, room, worst])
+	StasisCatalog.clear_run()
+	_sim.reset_match({})
+
+
+## Mauro 30 Sep 2026 ("yes same here"): as in Dofus, a fighter standing on
+## the line blocks a shot; an Invisible one does not.
+func _test_fighters_block_sight() -> void:
+	StasisCatalog.clear_run()
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = "kestrel"
+	StasisCatalog.room = "a"
+	var cfg: Dictionary = StasisCatalog.fight_config()
+	cfg["flat_board"] = true
+	_sim.reset_match(cfg)
+	var units: Array = _sim._units
+	truthy(units.size() >= 3, "room A has a pack to line up")
+	units[0]["pos"] = Vector2i(2, 7)
+	units[1]["pos"] = Vector2i(4, 7)
+	units[2]["pos"] = Vector2i(6, 7)
+	if units.size() > 3:
+		units[3]["pos"] = Vector2i(12, 12)
+	eq(_sim.sight_blocker(Vector2i(2, 7), Vector2i(6, 7)), Vector2i(4, 7), "the front foe blocks the shot at the one behind")
+	eq(_has_stasis_cast(0, "mark_shot", Vector2i(6, 7)), false, "no Mark Shot through a fighter")
+	eq(_has_stasis_cast(0, "mark_shot", Vector2i(4, 7)), true, "the front foe is still a target")
+	units[1]["invisible"] = true
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(6, 7)), true, "an Invisible fighter does not block")
+	units[1]["invisible"] = false
+	units[1]["alive"] = false
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(6, 7)), true, "a fallen fighter does not block")
 	StasisCatalog.clear_run()
 	_sim.reset_match({})
 
