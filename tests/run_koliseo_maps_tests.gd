@@ -19,6 +19,7 @@ func _run() -> void:
 	_test_catalog()
 	_test_each_map()
 	_test_paint_only_and_lava()
+	_test_tall_props_block_sight()
 	_test_unknown_map_does_not_invent()
 	_test_cell_tags_override()
 	_test_random_ship_id()
@@ -780,3 +781,42 @@ func truthy(value: Variant, msg: String) -> void:
 		print("FAIL: %s  (got %s)" % [msg, value])
 	else:
 		_passed += 1
+
+
+## Mauro 30 Sep 2026: "double check the maps should have obstacles that are
+## not supposed to allow attack if a character is behind them unless sight is
+## clear". Every prop the board draws tall (art >= 45 px, or the centrepiece)
+## blocks sight on every Koliseo map and Stasis room; flat dress does not.
+func _test_tall_props_block_sight() -> void:
+	var CTM := preload("res://backend/cell_tag_map.gd")
+	for id in CTM.SIGHT_PROP_KEEP:
+		for prop_name in CTM.SIGHT_PROP_KEEP[id]:
+			var look_keep: Dictionary = ArenaLook.style_for(id).get("prop_keep", {})
+			eq(CTM.SIGHT_PROP_KEEP[id][prop_name], look_keep.get(prop_name, []), "%s %s: sight cells match the drawn cells" % [id, prop_name])
+	for id in CTM.SIGHT_CENTERPIECE:
+		var piece: Dictionary = ArenaLook.style_for(id).get("centerpiece", {})
+		eq(piece.get("cell"), CTM.SIGHT_CENTERPIECE[id], "%s centrepiece blocks sight where it is drawn" % id)
+	var files: Array = []
+	for id in CTM.SHIP_MAPS:
+		files.append(CTM.tags_path_for(id))
+		for room in ["a", "b"]:
+			files.append("res://art/maps/stasis_v1/%s_room_%s_15x15_tags.json" % [id, room])
+	for path in files:
+		var raw = JSON.parse_string(FileAccess.get_file_as_string(path))
+		var map_id := str(raw.get("map_id", path.get_file().get_slice("_", 0)))
+		var walls := 0
+		var missed: Array = []
+		for c in raw["cells"]:
+			var cell := Vector2i(int(c["x"]), int(c["y"]))
+			var props: Array = c.get("paint_only", [])
+			if CTM.props_block_sight(map_id, props, cell) or int(c["elevation"]) > 0:
+				walls += 1
+			for prop_name in props:
+				if not ArenaLook.prop_shown_at(map_id, str(prop_name), cell):
+					continue
+				var tex: Texture2D = ArenaLook.prop_for(map_id, str(prop_name))
+				if tex != null and tex.get_height() >= 45 and not CTM.props_block_sight(map_id, [prop_name], cell):
+					missed.append("%s@%s" % [prop_name, cell])
+		eq(missed, [], "%s: every tall drawn prop blocks sight" % path.get_file())
+		truthy(walls >= 1, "%s has sight walls (%d)" % [path.get_file(), walls])
+		print("  sight walls ", path.get_file(), ": ", walls)

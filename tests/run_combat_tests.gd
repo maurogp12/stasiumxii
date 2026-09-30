@@ -64,6 +64,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_ambush_snap_wall_ray()
+	_test_ambush_obstacle_ray()
 	_test_invisible_wears_off()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
@@ -3622,7 +3623,8 @@ func _test_line_of_sight() -> void:
 	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), false, "a Snap Wall blocks sight")
 	# Raised stone on the real Crosshaven map: z1 at (5,5) between two z0 tiles.
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
-	eq(_sim.sight_blocker(Vector2i(1, 1), Vector2i(6, 6)), Vector2i(5, 5), "a raised block higher than both ends is a wall")
+	eq(_sim.sight_blocker(Vector2i(4, 9), Vector2i(6, 9)), Vector2i(5, 9), "a raised block higher than both ends is a wall")
+	eq(_sim.sight_blocker(Vector2i(1, 1), Vector2i(6, 6)), Vector2i(3, 3), "a tall bush on the line is a wall too")
 	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot over the raised wall")
 	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
 	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
@@ -7717,6 +7719,44 @@ func _test_ambush_snap_wall_ray() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves past the wall")
 	eq(_unit(0)["pos"], Vector2i(4, 1), "Gloam lands on the Shade ray back tile")
+
+
+## Mauro 30 Sep 2026: "gloam should not be able to perform ambush if there is
+## a wall or obstacle in front of any champion unless a shadow allows him to
+## jump from another angle".
+func _test_ambush_obstacle_ray() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var rock := Vector2i(3, 2)
+	var base := {"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["gloam", "bastion"], "positions": [gloam, prey], "rolls": [1]}
+	var cfg := base.duplicate()
+	cfg["gloam_invisible"] = true
+	cfg["blockers"] = [rock]
+	_sim.reset_match(cfg)
+	eq(_sim._ambush_ray_walled(gloam, prey), true, "a solid obstacle on the ray walls Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), false, "Ambush is not offered through an obstacle")
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(str(walled.get("reason", "")), "wall_on_ray", "Ambush through an obstacle rejects as wall_on_ray")
+	eq(_unit(0)["pos"], gloam, "Gloam does not jump through the obstacle")
+	# A Shade on another side with a clear line lets him jump from that angle.
+	var shade_at := Vector2i(4, 4)
+	cfg = base.duplicate()
+	cfg["bastion_facing"] = "N"
+	cfg["blockers"] = [rock]
+	_sim.reset_match(cfg)
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants on the open side")
+	_complete_opponent_turn()
+	eq(_sim._ambush_ray_walled(shade_at, prey), false, "the Shade's ray is clear")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "the Shade gives Ambush another angle")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves around the obstacle")
+	# A raised wall (higher than both ends) walls the ray on the real map:
+	# Crosshaven (5,9) z1 between (4,9) and (6,9), both z0.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "classes": ["gloam", "bastion"], "positions": [Vector2i(4, 9), Vector2i(6, 9)], "gloam_invisible": true, "rolls": [1]})
+	eq([_sim._elevation_at(Vector2i(4, 9)), _sim._elevation_at(Vector2i(5, 9)), _sim._elevation_at(Vector2i(6, 9))], [0, 1, 0], "fixture: raised block between two floor tiles")
+	eq(_sim._ambush_ray_walled(Vector2i(4, 9), Vector2i(6, 9)), true, "a raised block on the ray walls Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, Vector2i(6, 9)), false, "no Ambush over the raised block")
 
 
 func _test_invisible_wears_off() -> void:

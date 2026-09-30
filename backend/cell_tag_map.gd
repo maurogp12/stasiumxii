@@ -31,6 +31,24 @@ const BLOCKING_PROPS := {
 	"rock_pillar": true,
 	"well": true,
 }
+## Tall props that block line of sight but not walking (Mauro 30 Sep 2026:
+## "maps should have obstacles that are not supposed to allow attack if a
+## character is behind them"). Per arena look, only props the board draws
+## tall (art 45 px or more; Crosshaven "rubble" is drawn as a bush).
+## Walk-blocking props above already block sight.
+const SIGHT_PROPS := {
+	"crosshaven": ["ruins", "hay", "rubble"],
+	"brinewake": ["ruins"],
+	"windmere": ["crystal", "ice_shard", "spark"],
+	"stormspire": ["conduit"],
+}
+## Stormspire thins its decoration (board/arena_look.gd prop_keep): only the
+## conduits it still draws block sight. Keep these two lists in step.
+const SIGHT_PROP_KEEP := {
+	"stormspire": {"conduit": [Vector2i(7, 2), Vector2i(7, 12), Vector2i(2, 7), Vector2i(12, 7)]},
+}
+## The arena centrepiece (Slagcrown volcano, Stormspire tower) blocks sight.
+const SIGHT_CENTERPIECE := {"slagcrown": Vector2i(7, 7), "stormspire": Vector2i(7, 7)}
 const _INFO := {
 	"crosshaven": {"label": "Crosshaven", "blurb": "Warm earth and stone"},
 	"brinewake": {"label": "Brinewake", "blurb": "Teal stone and ocean"},
@@ -218,6 +236,26 @@ static func props_block_move(props: Variant) -> bool:
 	for prop_name in props:
 		if BLOCKING_PROPS.has(str(prop_name)):
 			return true
+	return false
+
+
+static func props_block_sight(map_id: String, props: Variant, cell: Vector2i) -> bool:
+	if props_block_move(props):
+		return true
+	var id := normalize_id(map_id)
+	if SIGHT_CENTERPIECE.get(id, Vector2i(-1, -1)) == cell:
+		return true
+	if typeof(props) != TYPE_ARRAY:
+		return false
+	var tall: Array = SIGHT_PROPS.get(id, [])
+	var keep: Dictionary = SIGHT_PROP_KEEP.get(id, {})
+	for prop_name in props:
+		var name := str(prop_name)
+		if not tall.has(name):
+			continue
+		if keep.has(name) and not (keep[name] as Array).has(cell):
+			continue
+		return true
 	return false
 
 

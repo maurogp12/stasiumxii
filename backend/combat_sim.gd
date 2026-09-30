@@ -3469,9 +3469,10 @@ func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) ->
 ## front of the wall, has to have vision; this applies for all classes").
 ## A spell aimed at another tile needs a clear line from the caster's tile
 ## centre to the target's. A tile the line passes through blocks it when it
-## holds a solid prop (the same props that block walking), a Snap Wall or a
-## blocker, or stands higher than both the caster's and the target's tiles
-## (a raised wall). Water, mud, lava and bodies do not block. Self casts,
+## holds a solid prop (the same props that block walking) or a tall drawn
+## prop (CellTagMap.SIGHT_PROPS: ruins, crystals, conduits, centrepieces), a
+## Snap Wall or a blocker, or stands higher than both the caster's and the
+## target's tiles (a raised wall). Water, mud, lava and bodies do not block. Self casts,
 ## Advance (a 2-tile step), Ambush (its own ray gate) and the cone / burst
 ## around the caster do not check sight.
 func spell_needs_sight(def: Dictionary) -> bool:
@@ -3512,7 +3513,7 @@ func sight_blocker(from_cell: Vector2i, to_cell: Vector2i) -> Vector2i:
 func _blocks_sight(cell: Vector2i, top: int) -> bool:
 	if _elevation_at(cell) > top:
 		return true
-	if _CellTagMap.props_block_move(_paint_only.get(cell, [])):
+	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
 		return true
 	if _snap_wall_blocks(cell):
 		return true
@@ -4740,13 +4741,18 @@ func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector
 
 ## Locked: the origin must see the target along the cardinal shot ray. A Snap
 ## Wall on any cell strictly between them blocks that origin (grey, 0 AP).
+## Mauro 30 Sep 2026: Gloam cannot Ambush through a wall or obstacle; a
+## Shade on another side may still give him a clear angle. Same walls as
+## spell sight: Snap Wall / blocker, solid prop, or a tile raised above both
+## the origin and the target.
 func _ambush_ray_walled(origin_cell: Vector2i, target_cell: Vector2i) -> bool:
 	var step := _cardinal_unit_step(origin_cell, target_cell)
 	if step == Vector2i.ZERO:
 		return false
+	var top := maxi(_elevation_at(origin_cell), _elevation_at(target_cell))
 	var cell: Vector2i = origin_cell + step
 	while cell != target_cell:
-		if _snap_wall_blocks(cell):
+		if _blocks_sight(cell, top):
 			return true
 		cell += step
 	return false
