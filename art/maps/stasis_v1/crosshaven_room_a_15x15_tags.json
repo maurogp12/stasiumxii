@@ -283,7 +283,7 @@
     {
       "x": 6,
       "y": 2,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -488,7 +488,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ruins"
+      ]
     },
     {
       "x": 6,
@@ -516,7 +518,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ruins"
+      ]
     },
     {
       "x": 10,
@@ -710,7 +714,7 @@
     {
       "x": 7,
       "y": 6,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -810,7 +814,9 @@
       "y": 7,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rubble"
+      ]
     },
     {
       "x": 7,
@@ -824,7 +830,9 @@
       "y": 7,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rubble"
+      ]
     },
     {
       "x": 9,
@@ -1006,7 +1014,9 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ruins"
+      ]
     },
     {
       "x": 5,
@@ -1041,7 +1051,9 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ruins"
+      ]
     },
     {
       "x": 10,

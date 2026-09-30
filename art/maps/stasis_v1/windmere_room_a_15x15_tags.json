@@ -488,7 +488,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crystal"
+      ]
     },
     {
       "x": 6,
@@ -635,7 +637,9 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crystal"
+      ]
     },
     {
       "x": 12,
@@ -712,7 +716,9 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ice_shard"
+      ]
     },
     {
       "x": 8,
@@ -929,7 +935,9 @@
       "y": 8,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ice_shard"
+      ]
     },
     {
       "x": 9,
@@ -999,7 +1007,9 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crystal"
+      ]
     },
     {
       "x": 4,
@@ -1048,7 +1058,9 @@
       "y": 9,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "crystal"
+      ]
     },
     {
       "x": 11,
