@@ -347,7 +347,8 @@ func _print_win_table(title: String) -> void:
 		var total := int(round(100.0 * tw / float(maxi(1, tn))))
 		line += "   %d%%(%d)" % [total, games]
 		print(line)
-	OS.flush_stdout()
+	# Godot 4.7 has no OS.flush_stdout. The engine logger flushes each print,
+	# so this table is on disk before the next matchup starts.
 
 
 func _report(n: int) -> void:
@@ -372,4 +373,3 @@ func _report(n: int) -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s %d" % [k, _spell_use[k]])
-	OS.flush_stdout()
