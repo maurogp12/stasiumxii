@@ -104,6 +104,7 @@ Version history, reasons and Mauro's exact words are in
   `scenes/stasis_fight.gd _layout_overlay`), no walk / range tiles on monster
   turns (`BoardView._shows_turn_chrome`), monster turn-strip portraits framed on
   the creature (`CombatHUD._foe_crop`).
+- Tap picking (phone): the front painted diamond wins, elevation aware (`TouchAdapter.front_cell`); enemy-only spells never pick the caster's own body (`BoardView._living_pawns_for_pick(spell)`), so the tiles behind the caster stay tappable for blind attacks. Mauro 30 Sep.
 - **Bastion art is not touched unless Mauro asks.**
 
 ## TEMPORARY: balance-test kit (ON since 0.1.79)

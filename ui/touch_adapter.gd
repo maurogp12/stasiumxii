@@ -464,6 +464,26 @@ static func _pick_pawn_hit(point: Vector2, living_pawns: Array, mobile: bool, bo
 	return Vector2i(-1, -1)
 
 
+## The painted top diamond under `point` that is drawn in front (same order as
+## VisualSort.tile_z_index: row sum, then elevation read back from the lift).
+static func front_cell(point: Vector2, tile_positions: Dictionary) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	var best_z := -INF
+	for key in tile_positions.keys():
+		var cell: Vector2i = key
+		var center: Vector2 = tile_positions[key]
+		if diamond_metric(point, center) > 1.0:
+			continue
+		var row := float(cell.x + cell.y)
+		var elevation := (row * 16.0 - center.y) / 10.0
+		var z := row * 10.0 + elevation * 8.0
+		if z > best_z:
+			best_z = z
+			best = cell
+	return best
+
+
+## mobile: the front painted diamond first (elevation aware).
 ## Desktop: nearest tile inside CELL_PICK_RADIUS, else the flat iso cell.
 ## mobile: a living body uses the fatter capsule; otherwise the painted diamond
 ## (side tips included). A tap just off the board uses MOBILE_CELL_PICK_RADIUS.
@@ -480,8 +500,10 @@ static func pick_board_cell(point: Vector2, tile_positions: Dictionary, living_p
 		if stood.x >= 0:
 			return stood
 	if mobile:
-		var painted := iso_cell(point)
-		if tile_positions.has(painted) and diamond_metric(point, tile_positions[painted]) <= 1.0:
+		# The top face drawn in front wins (raised tiles cover the tile behind
+		# them; the flat iso_cell used to hand those taps to the hidden tile).
+		var painted := front_cell(point, tile_positions)
+		if painted.x >= 0:
 			return painted
 		var edge := Vector2i(-1, -1)
 		var edge_d := MOBILE_CELL_PICK_RADIUS

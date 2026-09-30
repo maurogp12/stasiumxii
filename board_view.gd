@@ -565,7 +565,7 @@ func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	if _hud != null:
 		spell = _hud.selected_spell()
 	var prefer := TOUCH.spell_targets_unit(spell)
-	var pawns: Array = _living_pawns_for_pick() if prefer else []
+	var pawns: Array = _living_pawns_for_pick(spell) if prefer else []
 	var cell := TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
 	return _soft_lock_cell(cell, spell, prefer)
 
@@ -589,10 +589,21 @@ func _tile_positions() -> Dictionary:
 	return positions
 
 
-func _living_pawns_for_pick() -> Array:
+## An enemy-only spell never picks the caster's own body: the drawing stands
+## over the tiles behind it, and a tap there (a blind "punch in the air", or a
+## foe standing behind) used to select the caster instead.
+func _living_pawns_for_pick(spell: String = "") -> Array:
 	var out: Array = []
-	for pawn in pawns_by_seat.values():
+	var skip_seat := -99
+	if spell != "" and str(SpellKits.spell(spell).get("target", "")) == "enemy":
+		var sim := _sim()
+		if sim != null:
+			skip_seat = CombatHUD.kit_seat(sim.snapshot())
+	for seat in pawns_by_seat.keys():
+		var pawn = pawns_by_seat[seat]
 		if pawn == null or not is_instance_valid(pawn):
+			continue
+		if int(seat) == skip_seat:
 			continue
 		var body: Pawn = pawn
 		if not body.visible:

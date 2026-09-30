@@ -21,6 +21,7 @@ func _run() -> void:
 	_test_board_gestures()
 	_test_pawn_body_cast_pick()
 	_test_mobile_target_pick()
+	_test_raised_tile_front_pick()
 	_test_ability_cluster_layout()
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
@@ -734,6 +735,25 @@ func near(actual: float, expected: float, msg: String) -> void:
 		print("FAIL: %s  (got %s expected %s)" % [msg, actual, expected])
 	else:
 		_passed += 1
+
+
+func _test_raised_tile_front_pick() -> void:
+	# Mauro 30 Sep 2026: taps sometimes chose the wrong tile. A raised tile's
+	# top face covers the tile behind it; the drawn front face must win.
+	var positions := {}
+	for y in range(4):
+		for x in range(4):
+			positions[Vector2i(x, y)] = BoardVisualSort.cell_to_local(Vector2i(x, y), 0.0)
+	var raised := Vector2i(2, 2)
+	positions[raised] = BoardVisualSort.cell_to_local(raised, 2.0)
+	var top: Vector2 = positions[raised]
+	eq(TOUCH.front_cell(top, positions), raised, "the raised top face is the front cell")
+	eq(TOUCH.pick_board_cell(top, positions, [], false, true), raised, "mobile tap on a raised top face picks it")
+	var flat: Vector2 = positions[Vector2i(3, 0)]
+	eq(TOUCH.pick_board_cell(flat, positions, [], false, true), Vector2i(3, 0), "a flat tile still picks itself")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_living_pawns_for_pick(spell)"), "enemy spells pick bodies without the caster's own")
+	truthy(view.contains("skip_seat = CombatHUD.kit_seat"), "the caster's seat is skipped for enemy-only spells")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
