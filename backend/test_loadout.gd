@@ -6,13 +6,14 @@ extends RefCounted
 ## once i say its good and go back to normal you shall remove all sets and put
 ## it as the regular game is designed").
 ##
-## ACTIVE = true: every class is level 30 with all 58 characteristic points
-## free to spend (Mauro: "make all characters lvl 30 with all the
-## characteristic points"), the phone's gear bag holds every set piece (6 families × 5
-## slots) at max fusion +5, the Still vault holds 99 fragments of every Still,
-## and hot-seat Koliseo seats wear the equipped loadout (normal game: no gear
-## in hot-seat). Granted pieces are tagged `test`; the grant is recorded so it
-## is added once and can be taken back.
+## ACTIVE = true: every class is level 30 (Mauro: "make all characters lvl 30
+## with all the characteristic points"). SPEND_DUEL_BUILDS spends those 58
+## points the same way tests/sim_duels.gd BUILDS does (Ward 0). Set that flag
+## false to leave all 58 free again. The phone's gear bag holds every set
+## piece (6 families × 5 slots) at max fusion +5, the Still vault holds 99
+## fragments of every Still, and hot-seat Koliseo seats wear the equipped
+## loadout (normal game: no gear in hot-seat). Granted pieces are tagged
+## `test`; the grant is recorded so it is added once and can be taken back.
 ##
 ## TO GO BACK TO NORMAL (only when Mauro says so): set ACTIVE = false. On the
 ## next load every tagged piece is removed (and unequipped) and the granted
@@ -20,6 +21,16 @@ extends RefCounted
 ## XP / points from before the grant are restored; hot-seat has no gear again.
 ## Then delete this file and its hooks (see docs/AGENT_HANDOFF.md).
 const ACTIVE := true
+## TEMPORARY (Mauro 30 Sep 2026 follow-up). true = spend the 58 level-30
+## points like tests/sim_duels.gd BUILDS. false = all 58 free, as in 0.1.80.
+const SPEND_DUEL_BUILDS := true
+const DUEL_BUILDS := {
+	"kestrel": {"mastery": 40, "vitality": 16, "swift": 2},
+	"gloam": {"mastery": 40, "vitality": 16, "swift": 2},
+	"ironjaw": {"mastery": 34, "vitality": 22, "swift": 2},
+	"mender": {"mastery": 24, "vitality": 32, "swift": 2},
+	"bastion": {"mastery": 20, "vitality": 36, "swift": 2},
+}
 const STILL_FRAGMENTS := 99
 const DEFAULT_GEAR_PATH := "user://gear_bag.json"
 const DEFAULT_STILL_PATH := "user://stills.json"
@@ -78,7 +89,7 @@ static func sync_hero(hero) -> bool:
 			var rec: Dictionary = hero.record(class_id)
 			rec["level"] = hero.MAX_LEVEL
 			rec["xp"] = 0
-			rec["spent"] = {}
+			rec["spent"] = DUEL_BUILDS[class_id].duplicate() if SPEND_DUEL_BUILDS else {}
 		hero.test_grant = true
 		return true
 	if not ACTIVE and hero.test_grant:

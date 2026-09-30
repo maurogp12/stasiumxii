@@ -3211,7 +3211,7 @@ func _test_strike_hit_and_impact() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Strike connects")
-	eq(_unit(0)["hp"], 68, "front Strike deals 12 Earth")
+	eq(_unit(0)["hp"], 66, "front Strike deals 14 Earth")
 	eq(_unit(1)["impact"], 1, "+1 Impact on connect")
 	eq(_unit(1)["ap"], 3, "Strike spends 3 AP")
 	eq(result["events"][0]["crit_mult"], 1.0, "CritMult 1.0 on hit")
@@ -3230,7 +3230,7 @@ func _test_back_facing_multiplier() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "back Strike connects")
-	eq(_unit(0)["hp"], 66, "12 × 1.20 rounds to 14, 80-14=66")
+	eq(_unit(0)["hp"], 63, "14 × 1.20 rounds to 17, 80-17=63")
 	eq(result["events"][0]["back"], true, "back flag")
 	approx(result["events"][0]["facing_mult"], 1.20, "facing 1.20")
 
@@ -3501,13 +3501,13 @@ func _test_match_over() -> void:
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
-		"rolls": [1, 1, 1, 1, 1, 1, 1],
+		"rolls": [1, 1, 1, 1, 1, 1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
 		"ironjaw_facing": "W",
 	})
-	# Front Strike is 12. Drive HP down by repeating turns.
+	# Front Strike is 14. Drive HP down by repeating turns.
 	_unit_set_hp_via_hits()
 	truthy(_sim.snapshot()["match_over"], "match ends when a seat has no living units")
 	eq(_sim.snapshot()["winner_seat"], 1, "Ironjaw wins")
@@ -3517,8 +3517,8 @@ func _test_match_over() -> void:
 
 
 func _unit_set_hp_via_hits() -> void:
-	# Strike is 12; 7 connects kill 80 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
-	for i in range(7):
+	# Strike is 14; 6 connects kill 80 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
+	for i in range(6):
 		if _sim.snapshot()["match_over"]:
 			return
 		if int(_sim.snapshot()["active_seat"]) == 0:
@@ -6836,9 +6836,9 @@ func _test_spell_tooltip_cards() -> void:
 	var strike := SpellTooltip.card_text(_sim.preview_cast(SpellKits.STRIKE, Vector2i(3, 3), Vector2i(4, 3), 0))
 	truthy(strike.contains("range 1–1"), "Strike card names range 1 from preview")
 	eq(strike.contains("Chebyshev"), false, "Strike card does not name Chebyshev")
-	truthy(strike.contains("On hit: 12 Earth. +1 Impact."), "Strike hit line is preview kit text")
+	truthy(strike.contains("On hit: 14 Earth. +1 Impact."), "Strike hit line is preview kit text")
 	truthy(strike.contains("HIT 90% (Locked)"), "Strike card uses preview melee 90%")
-	truthy(strike.contains("sample 12"), "Strike card uses preview sample_damage")
+	truthy(strike.contains("sample 14"), "Strike card uses preview sample_damage")
 
 	var shoulder_preview: Dictionary = _sim.preview_cast(SpellKits.SHOULDER, Vector2i(3, 3), Vector2i(4, 3), 0)
 	var shoulder := SpellTooltip.card_text(shoulder_preview)

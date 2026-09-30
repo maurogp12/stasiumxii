@@ -25,8 +25,8 @@ const BUCKET_LABEL := {"mastery": "Mastery +2", "vitality": "Vitality +8 HP", "s
 ## are not 0 (Mauro spec, 29 Sep 2026).
 const GROWTH := {
 	"kestrel": [2, 3, 1, 0],
-	# Mauro 30 Sep 2026 balance: Ironjaw HP per level 6 → 5.
-	"ironjaw": [2, 5, 1, 1],
+	# Mauro 30 Sep 2026 balance: Ironjaw HP per level 6 → 5; Mastery per level 2 → 1.
+	"ironjaw": [1, 5, 1, 1],
 	"mender": [1, 5, 1, 1],
 	# Mauro 30 Sep 2026 balance: Gloam HP per level 3 → 2.
 	"gloam": [2, 2, 1, 0],

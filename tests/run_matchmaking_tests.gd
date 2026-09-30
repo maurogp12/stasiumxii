@@ -769,7 +769,7 @@ func _test_heartstop() -> void:
 	})
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	eq(bool(enemy.get("ok", false)), true, "enemy Heartstop hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 62, "enemy Heartstop damage is 18")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 56, "enemy Heartstop damage is 24")
 	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "enemy Heartstop skips the next MP refill")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
 	_sim.submit({"type": "end_turn", "seat": 0})

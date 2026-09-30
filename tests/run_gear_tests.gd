@@ -260,7 +260,11 @@ func _test_temporary_kit() -> void:
 		TL.sync_hero(hero)
 		for cid in HeroProgress.GROWTH:
 			eq(hero.level_of(cid), 30, "%s is level 30" % cid)
-			eq(hero.points_free(cid), 58, "%s has all 58 characteristic points free" % cid)
+			if TL.SPEND_DUEL_BUILDS:
+				eq(hero.points_free(cid), 0, "%s spent all 58 points on the duel build" % cid)
+				eq(hero.record(cid)["spent"], TL.DUEL_BUILDS[cid], "%s spent the sim_duels BUILDS row" % cid)
+			else:
+				eq(hero.points_free(cid), 58, "%s has all 58 characteristic points free" % cid)
 		eq(int(hero.test_backup["kestrel"]["level"]), before_level, "the real progress is backed up")
 	# Revoke path (what ACTIVE = false does on the next load).
 	bag.test_grant = true

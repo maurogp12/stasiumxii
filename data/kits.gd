@@ -93,8 +93,8 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		# Mauro 30 Sep 2026 balance: 16 → 12.
-		"base_damage": 12,
+		# Mauro 30 Sep 2026 balance: 16 → 12, then 12 → 14.
+		"base_damage": 14,
 		"target": "enemy",
 		"engine_on_connect": "impact",
 	},
@@ -251,8 +251,8 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 32,
-		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18; Pulse cost 4 → 2.
-		"base_damage": 18,
+		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24; Pulse cost 4 → 2.
+		"base_damage": 24,
 		"target": "any",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 2,

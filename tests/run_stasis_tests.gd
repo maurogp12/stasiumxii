@@ -4,7 +4,7 @@ const FoeKits := preload("res://backend/foe_kits.gd")
 
 ## Mobile Stasis smoke. Two rooms (A trash pack, B boss), package foe art,
 ## schematic boards, and one CombatSim exchange. Koliseo without stasis_roster
-## stays on Strike 12 (Mauro 30 Sep 2026 balance).
+## stays on Strike 14 (Mauro 30 Sep 2026 balance).
 ## Run: godot --headless --path . -s res://tests/run_stasis_tests.gd
 
 var _failed: int = 0
@@ -62,7 +62,7 @@ func _test_package_and_flow() -> void:
 	truthy(sim_src.contains("stasis_roster"), "CombatSim applies a roster only when the key is present")
 	truthy(sim_src.contains("provisional Open"), "CombatSim comment keeps the provisional label")
 	eq(board_src.contains("stasis_"), false, "shared board view does not reference Stasis scenes")
-	eq(int(SpellKits.spell(SpellKits.STRIKE).get("base_damage", -1)), 12, "Strike base is 12 (Mauro 30 Sep 2026 balance)")
+	eq(int(SpellKits.spell(SpellKits.STRIKE).get("base_damage", -1)), 14, "Strike base is 14 (Mauro 30 Sep 2026 balance)")
 	eq(StasisCatalog.PROVISIONAL_TRASH_HP, 22, "provisional trash HP")
 	eq(StasisCatalog.PROVISIONAL_TRASH_ATTACK, 6, "provisional trash attack base")
 	eq(StasisCatalog.PROVISIONAL_BOSS_HP, 56, "provisional boss HP")
@@ -510,8 +510,8 @@ func _test_melee_exchange() -> void:
 	var player_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": enemy_pos, "seat": 0})
 	truthy(bool(player_hit.get("ok", false)), "player Strike resolves (%s)" % str(player_hit.get("reason", "")))
 	var player_event := _hit_event(player_hit)
-	eq(int(player_event.get("base_damage", -1)), 12, "player Strike keeps base 12")
-	eq(int(player_event.get("damage", -1)), _faced_damage(12, float(player_event.get("facing_mult", 1.0))), "player damage uses base 12 times facing")
+	eq(int(player_event.get("base_damage", -1)), 14, "player Strike keeps base 14")
+	eq(int(player_event.get("damage", -1)), _faced_damage(14, float(player_event.get("facing_mult", 1.0))), "player damage uses base 14 times facing")
 	var ended: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
 	truthy(bool(ended.get("ok", false)), "player can end the turn")
 	var after: Dictionary = _sim.snapshot()
@@ -691,7 +691,7 @@ func _test_koliseo_strike_unchanged() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": snap["units"][1]["pos"], "seat": 0})
 	truthy(bool(hit.get("ok", false)), "Koliseo Strike still resolves")
 	var event := _hit_event(hit)
-	eq(int(event.get("base_damage", -1)), 12, "Koliseo Strike base stays 12")
+	eq(int(event.get("base_damage", -1)), 14, "Koliseo Strike base stays 14")
 	eq(str(event.get("coach", "")).contains("Straw Swipe"), false, "Koliseo coach does not use a dungeon label")
 
 
@@ -786,8 +786,8 @@ func _assert_room_tonic(board: Node) -> void:
 
 
 ## HIT coach, float, and vitals are one integer. A foe Strike connect is not 0,
-## and it does not take the MISS chrome. Strike base stays 12; a back
-## hit is that base times 1.20, which rounds to 14.
+## and it does not take the MISS chrome. Strike base stays 14; a back
+## hit is that base times 1.20, which rounds to 17.
 func _test_resolve_readout_matches_hit() -> void:
 	var router: Script = load("res://vfx/vfx_router.gd")
 	_sim.reset_match({
@@ -800,17 +800,17 @@ func _test_resolve_readout_matches_hit() -> void:
 		"ironjaw_facing": "E",
 	})
 	var preview: Dictionary = _sim.preview_cast("strike", Vector2i(4, 3), Vector2i(3, 3), 0)
-	eq(int(preview.get("sample_damage", -1)), 14, "back Strike sample is 12 × 1.20 = 14, not the unfaced 12")
+	eq(int(preview.get("sample_damage", -1)), 17, "back Strike sample is 14 × 1.20 = 17, not the unfaced 14")
 	_sim.submit({"type": "end_turn"})
 	var back: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	var back_event := _hit_event(back)
-	eq(int(back_event.get("damage", -1)), 14, "back Strike applies 14")
-	eq(int(back_event.get("base_damage", -1)), 12, "Strike base stays 12")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 66, "applied vitals are 80 − 14")
-	truthy(str(back_event.get("coach", "")).begins_with("HIT 14 "), "coach HIT uses 14")
+	eq(int(back_event.get("damage", -1)), 17, "back Strike applies 17")
+	eq(int(back_event.get("base_damage", -1)), 14, "Strike base stays 14")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 63, "applied vitals are 80 − 17")
+	truthy(str(back_event.get("coach", "")).begins_with("HIT 17 "), "coach HIT uses 17")
 	var back_number := _damage_number(router.recipes_for(back.get("events", [])))
-	truthy(str(back_number.get("text", "")).contains("14"), "float shows 14")
-	eq(str(back_number.get("text", "")).contains("12"), false, "float does not show the unfaced base 12")
+	truthy(str(back_number.get("text", "")).contains("17"), "float shows 17")
+	eq(str(back_number.get("text", "")).contains("14"), false, "float does not show the unfaced base 14")
 	eq(str(back_number.get("kind", "")), "damage", "a back HIT is not miss chrome")
 	eq(_miss_number(router.recipes_for(back.get("events", []))).is_empty(), true, "a HIT event does not emit MISS")
 
@@ -830,12 +830,12 @@ func _test_resolve_readout_matches_hit() -> void:
 		"seat": 1,
 	})
 	var foe_sample := int(foe_preview.get("sample_damage", -1))
-	eq(foe_sample == 6 or foe_sample == 7, true, "foe aim sample is provisional 6 × facing, not Strike 12")
+	eq(foe_sample == 6 or foe_sample == 7, true, "foe aim sample is provisional 6 × facing, not Strike 14")
 	var foe_hp_before := int(foe["hp"])
 	var player_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": foe["pos"], "seat": 0})
 	var player_event := _hit_event(player_hit)
 	var dealt := int(player_event.get("damage", -1))
-	eq(dealt, _faced_damage(12, float(player_event.get("facing_mult", 1.0))), "player HIT damage is base 12 × facing")
+	eq(dealt, _faced_damage(14, float(player_event.get("facing_mult", 1.0))), "player HIT damage is base 14 × facing")
 	eq(int(_sim.snapshot()["units"][1]["hp"]), foe_hp_before - dealt, "foe vitals drop by the HIT integer")
 	truthy(str(player_event.get("coach", "")).begins_with("HIT %d " % dealt), "player coach HIT matches applied damage")
 	var player_number := _damage_number(router.recipes_for(player_hit.get("events", [])))

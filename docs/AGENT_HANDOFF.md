@@ -110,9 +110,12 @@ Version history, reasons and Mauro's exact words are in
 ## TEMPORARY: balance-test kit (ON since 0.1.79)
 
 `backend/test_loadout.gd` `ACTIVE = true` gives the phone every set piece at
-+5 fusion, 99 fragments of every Still, every class level 30 with 58 free
-characteristic points (real progress backed up in `HeroProgress.test_backup`),
-and gear + levels in hot-seat Koliseo. It is
++5 fusion, 99 fragments of every Still, and every class at level 30 (real
+progress backed up in `HeroProgress.test_backup`). `SPEND_DUEL_BUILDS`
+(temporary, default true) spends those 58 points like `tests/sim_duels.gd`
+`BUILDS`: Kestrel and Gloam 40 Mastery / 16 Vitality / 2 Swift, Ironjaw
+34 / 22 / 2, Mender 24 / 32 / 2, Bastion 20 / 36 / 2, Ward 0. Set the flag
+false to leave all 58 free again. Gear + levels go into hot-seat Koliseo. It is
 **temporary by Mauro's order** — do not remove it until he says the balance is
 good, and do not leave it in once he does. Revert = `ACTIVE = false` (the next
 load takes back only the tagged pieces and granted fragments), then delete
@@ -120,7 +123,7 @@ the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
 ## Balance plan
 
-Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 12 and HP growth +5, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 18. Advance stays 3 AP (max 2 per turn), Crush stays 24, Kestrel is unchanged. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
+Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 24. Advance stays 3 AP (max 2 per turn), Crush stays 24, Kestrel is unchanged. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
 
 ## Open / waiting on Mauro (do not decide these yourself)
 

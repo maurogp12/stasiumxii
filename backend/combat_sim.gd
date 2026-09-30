@@ -1415,7 +1415,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.DETONATE:
 			return {"on_connect": "6+6×M Air. Consumes Marks on the target.", "on_miss": "Marks stay. AP/MP stay spent."}
 		SpellKits.STRIKE:
-			return {"on_connect": "12 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
+			return {"on_connect": "14 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
 		SpellKits.SHOULDER:
 			return {"on_connect": "6 Earth. +1 Impact. Push 1.", "on_miss": "No push. No Impact. AP/MP stay spent."}
 		SpellKits.CRUSH:
@@ -2701,7 +2701,7 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 			var face := str(rec["facing"]).to_upper()
 			if FACING_VEC.has(face):
 				unit["facing"] = face
-		# Provisional Open playtest base. Not Strike's 12 (Mauro 30 Sep 2026 balance).
+		# Provisional Open playtest base. Not Strike's 14 (Mauro 30 Sep 2026 balance).
 		if rec.has("attack_base"):
 			unit["stasis_attack_base"] = maxi(int(rec["attack_base"]), 0)
 		if str(rec.get("attack_name", "")) != "":

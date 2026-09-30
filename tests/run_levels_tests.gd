@@ -75,7 +75,7 @@ func _test_levels_and_points() -> void:
 func _test_inherent_table() -> void:
 	# Level 30, inherent only (0 spend). Init +29 on every class (Mauro spec).
 	var table := {
-		"kestrel": [58, 87, 29, 0], "ironjaw": [58, 145, 29, 29], "mender": [29, 145, 29, 29],
+		"kestrel": [58, 87, 29, 0], "ironjaw": [29, 145, 29, 29], "mender": [29, 145, 29, 29],
 		"gloam": [58, 58, 29, 0], "bastion": [29, 232, 29, 58],
 	}
 	for class_id in table:

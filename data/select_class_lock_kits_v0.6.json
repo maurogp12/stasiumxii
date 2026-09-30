@@ -13,7 +13,7 @@
         {"id": "pulse_tap", "ap": 2, "mp": 0, "range": [0, 3], "engine": "spend 1 pulse", "effect": "10H FLEX ally", "notes": "miss/crit OK"},
         {"id": "ward", "ap": 3, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "20HP shield 2 turns FLEX", "notes": "miss OK; no crit"},
         {"id": "cleanse", "ap": 2, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "LOCK Neutral remove 1 CC", "notes": "no roll"},
-        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=18 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
+        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=24 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
       ]
     },
     "gloam": {

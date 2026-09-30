@@ -82,7 +82,7 @@ Mastery/resist proto: **0/0** for all.
 | Spell | Cost | Range | Effect |
 | --- | --- | --- | --- |
 | **Advance** | 3 AP / 0 MP | **Exactly 2 cardinal** (N/S/E/W Manhattan 2 only; no Manhattan 1, no diagonals) | Teleport to empty tile; **Impact if ending adjacent** to enemy |
-| **Strike** | 3 AP / 0 MP | Chebyshev 1 | 12 Earth FLEX + Impact (Mauro 30 Sep 2026 balance) |
+| **Strike** | 3 AP / 0 MP | Chebyshev 1 | 14 Earth FLEX + Impact (Mauro 30 Sep 2026 balance) |
 | **Shoulder** | 2 AP / 0 MP | Chebyshev 1 | 6 Earth FLEX + push 1 (+ Impact rules: +1 after clean push, or +2 on bounce — not both) |
 | **Crush** | 4 AP / 0 MP | Chebyshev 1 | Needs/spends **2 Impact** on connect; 24 Earth FLEX; miss keeps Impact; **Stun 1** if Impact was **4** before spend (blocks move + cast + face) |
 
@@ -94,7 +94,7 @@ Mastery/resist proto: **0/0** for all.
 | **Pulse Tap** | 2 AP / 0 MP | 0–3 | Spend 1 Pulse; 10H FLEX ally |
 | **Ward** | 3 AP / 0 MP | 0–3 | Spend 2 Pulse; 20 HP shield, 2 turns FLEX; miss OK; no crit |
 | **Cleanse** | 2 AP / 0 MP | 0–4 | +1 Pulse; LOCK Neutral remove 1 CC; no roll |
-| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 2 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **18** + skip next MP (Mauro 30 Sep 2026 balance) |
+| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 2 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **24** + skip next MP (Mauro 30 Sep 2026 balance) |
 
 ### 5.4 Gloam
 
