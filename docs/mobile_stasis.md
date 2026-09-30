@@ -47,7 +47,7 @@ Room A did not retune these for the pack. Three bodies at 22 HP, each with a ful
 | Each trash | 22 | 6 | Strike, range 1, 3 AP. Coach shows a door-specific label (for example Straw Swipe). |
 | Boss | 56 | 10 | Same card. Coach shows the boss label (for example Sheaf Cleave). |
 
-Player pool stays **80 HP**, **6 AP / 3 MP**. Strike still grants Impact on a foe whose resolver class is Ironjaw. The AI will not cast Advance, Shoulder, or Crush.
+Player pool stays the class base HP (Mauro 30 Sep 2026: class base HP), **6 AP / 3 MP**. Strike still grants Impact on a foe whose resolver class is Ironjaw. The AI will not cast Advance, Shoulder, or Crush.
 
 ## Playtest on device or in the editor
 

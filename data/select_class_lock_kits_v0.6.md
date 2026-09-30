@@ -5,19 +5,19 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
 ## mender | Mender
 - element: Water/Water
 - resource: Pulse 0–6
-- hp: 80 | mastery: 0 | resist: 0
+- hp: 85 | mastery: 0 | resist: 0
 - passive: Triage ×1.25 heals if target HP <40% (pre-heal); ally Heartstop yes, enemy no
 - spells:
   - Mend: 3AP/0MP | r0–4 | +1 Pulse | 16H FLEX ally | miss/crit OK | no facing
   - Pulse Tap: 2AP/0MP | r0–3 | spend 1 Pulse | 10H FLEX ally | miss/crit OK
   - Ward: 3AP/0MP | r0–3 | spend 2 Pulse | 20HP shield 2 turns FLEX | miss OK | no crit
   - Cleanse: 2AP/0MP | r0–4 | +1 Pulse | LOCK Neutral | remove 1 CC | no roll
-  - Heartstop: 5AP/0MP | r0–3 | spend 2 Pulse | FLEX | Ally: 32H + immunity 1 hit | Enemy: base_dmg=24 + skip next MP | Mauro 30 Sep 2026 balance
+  - Heartstop: 5AP/0MP | r0–3 | spend 2 Pulse | FLEX | Ally: 32H + immunity 1 hit | Enemy: base_dmg=20 + skip next MP | Mauro 30 Sep 2026 balance
 
 ## gloam | Gloam
 - element: Air/Neutral
 - resource: Umbral 0–4 | Shades max 2
-- hp: 80 | mastery: 0 | resist: 0
+- hp: 70 | mastery: 0 | resist: 0
 - passive: Backstab ×1.35 replaces back ×1.20
 - spells:
   - Cut: 3AP/0MP | r1 | +1 Umbral | 16D FLEX weapon | Backstab applies | Mauro 30 Sep 2026 balance
@@ -29,7 +29,7 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
 ## bastion | Bastion
 - element: Earth/Earth
 - resource: Aegis 0–4
-- hp: 80 | mastery: 0 | resist: 0
+- hp: 100 | mastery: 0 | resist: 0
 - passive: Intercept — once/Bastion turn cycle, 40% adjacent ally post-resist hit → Bastion; excl miss, Magma ticks, self-dmg
 - spells:
   - Bash: 3AP/0MP | r1 | +1 Aegis | 13D FLEX melee | Mauro 30 Sep 2026 balance
@@ -39,7 +39,7 @@ Roster: kestrel | ironjaw | mender | gloam | bastion
   - Aegis Break: 4AP/0MP | r1–2 | gate Aegis 3+ | HIT: 26D/body + push1 + clear ALL Aegis | MISS: spend 0
 
 ## Stamps (closed)
-Heartstop enemy 24 (Mauro 30 Sep 2026 balance); Ambush 22 @ Manhattan 1–2 cardinal (Shade arms after the opponent completes a turn; Fade self-origin does not wait) miss rules above; Aegis Break 26 clear-all on HIT spend 0 on MISS; Umbral 0–4; Snap Wall ships; proto 80/0/0.
+Heartstop enemy 20 (Mauro 30 Sep 2026 balance); Ambush 22 @ Manhattan 1–2 cardinal (Shade arms after the opponent completes a turn; Fade self-origin does not wait) miss rules above; Aegis Break 26 clear-all on HIT spend 0 on MISS; Umbral 0–4; Snap Wall ships; class base HP Bastion 100 / Ironjaw 90 / Mender 85 / Kestrel 75 / Gloam 70, Mastery 0, Resist 0.
 
 ## Open / can-wait (do not invent)
 Nightfold miss/Shade vs global refund; Intercept reset/multi-guard/pipeline; Neutral Primary scope; AoE vs Invisible; Heartstop immunity clock / CC priority / heal overflow / shield stack; Water Ward rider 24 vs Ward base 20; cone/ward masks.

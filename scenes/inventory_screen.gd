@@ -65,14 +65,16 @@ func stats() -> Dictionary:
 
 
 ## The characteristics the next Stasis / online Koliseo fight gives this
-## champion: base 80 HP 6 AP 3 MP, plus worn gear, plus the class level.
+## champion: Mauro 30 Sep 2026 class base HP, 6 AP / 3 MP, plus worn gear,
+## plus the class level.
 static func champion_stats(gear: GearBag, hero: HeroProgress, class_id: String) -> Dictionary:
 	var st := GearBag.combat_stats(gear.worn_list(), gear.attune)
 	var lv := HeroProgress.combat_stats(hero.fight_hero(class_id), class_id)
 	var apmp := gear.ap_mp()
+	var base_hp := preload("res://backend/combat_sim.gd").class_base_hp(class_id)
 	return {
 		"level": int(lv["level"]),
-		"hp": roundi(float(80 + int(lv["hp"]) + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0)),
+		"hp": roundi(float(base_hp + int(lv["hp"]) + int(st["hp_flat"])) * (1.0 + float(st["hp_pct"]) / 100.0)),
 		"ap": mini(int(apmp["ap"]) + int(lv["ap"]), GearBag.AP_CAP),
 		"mp": int(apmp["mp"]),
 		"init": int(st["init"]) + int(lv["init"]),

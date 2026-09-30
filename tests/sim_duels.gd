@@ -73,6 +73,7 @@ func _process(_d: float) -> bool:
 					print("    %s(s0) vs %s(s1) %s: winner %d, rounds %d, hp %s, dmg %s" % [classes[0], classes[1], map_id, int(res["winner"]), int(res["rounds"]), str(res["hp"]), str(res["dmg"])])
 				n += 1
 			print("  %s vs %s done (%d s)" % [a, b, (Time.get_ticks_msec() - t0) / 1000])
+			_print_win_table("after %s vs %s (%d duels)" % [a, b, n])
 	_report(n)
 	quit()
 	return true
@@ -317,13 +318,13 @@ func _record(classes: Array, res: Dictionary) -> void:
 		_stats[key] = row
 
 
-func _report(n: int) -> void:
-	print("\n=== %d duels, %s ===" % [n, "level 30, points spent per class, no gear" if _mode == "lvl30" else "level 1 base kits (no gear)"])
+func _print_win_table(title: String) -> void:
+	print("\n=== %s ===" % title)
 	var header := "%-9s" % ""
 	for c in CLASSES:
-		header += "%9s" % c
-	header += "   total"
-	print("win % (row vs column):")
+		header += "%12s" % c
+	header += "      total"
+	print("win % (row vs column), n per cell:")
 	print(header)
 	for a in CLASSES:
 		var line := "%-9s" % a
@@ -331,18 +332,27 @@ func _report(n: int) -> void:
 		var tn := 0
 		for b in CLASSES:
 			if a == b:
-				line += "%9s" % "-"
+				line += "%12s" % "-"
 				continue
 			var row: Dictionary = _stats.get("%s>%s" % [a, b], {})
 			if row.is_empty():
-				line += "%9s" % "."
+				line += "%12s" % "."
 				continue
 			var pts := float(row["w"]) + 0.5 * float(row["d"])
-			line += "%8d%%" % int(round(100.0 * pts / float(row["n"])))
+			var pct := int(round(100.0 * pts / float(row["n"])))
+			line += "%12s" % ("%d%%(%d)" % [pct, int(row["n"])])
 			tw += int(row["w"]) * 2 + int(row["d"])
 			tn += int(row["n"]) * 2
-		line += "   %3d%%" % (int(round(100.0 * tw / float(maxi(1, tn)))))
+		var games := int(tn / 2)
+		var total := int(round(100.0 * tw / float(maxi(1, tn))))
+		line += "   %d%%(%d)" % [total, games]
 		print(line)
+	OS.flush_stdout()
+
+
+func _report(n: int) -> void:
+	var mode := "level 30, points spent per class, no gear" if _mode == "lvl30" else "level 1 base kits (no gear)"
+	_print_win_table("%d duels, %s" % [n, mode])
 	print("\navg damage dealt per match / avg rounds:")
 	for a in CLASSES:
 		var d := 0
@@ -362,3 +372,4 @@ func _report(n: int) -> void:
 	keys.sort()
 	for k in keys:
 		print("  %s %d" % [k, _spell_use[k]])
+	OS.flush_stdout()

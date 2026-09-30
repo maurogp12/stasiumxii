@@ -130,7 +130,7 @@ static var room: String = "a"
 static var foe_index: int = 0
 ## Difficulty picked for this run (1–5).
 static var star: int = STAR
-## -1 keeps the Locked 80. Room B carries whatever Room A left.
+## -1 keeps the class base HP (Mauro 30 Sep 2026: class base HP). Room B carries whatever Room A left.
 static var player_hp: int = -1
 ## End-of-run window (ui/combat_result.gd): clock, turns and beaten foes
 ## across both rooms.

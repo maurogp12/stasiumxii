@@ -44,7 +44,7 @@ Everything that ships on the **mobile** track **merges up to PC `main`**, **exce
 ## 3. Core combat (Locked baseline)
 
 - Turn-based, isometric board.
-- Unit baseline: **80 HP**, turn refill **6 AP / 3 MP** (unless a Locked effect changes it).
+- Unit baseline: Mauro 30 Sep 2026: class base HP (Bastion 100, Ironjaw 90, Mender 85, Kestrel 75, Gloam 70), turn refill **6 AP / 3 MP** (unless a Locked effect changes it).
 - Facing: N / E / S / W matters for some kits (backstab, cones).
 - Hit model: FLEX rolls where kit says `rolls: true`; LOCK Neutral for no-roll utility.
 - Skill info on mobile: **hold** to show tooltip card; **tap** arms skill without card.
@@ -94,7 +94,7 @@ Mastery/resist proto: **0/0** for all.
 | **Pulse Tap** | 2 AP / 0 MP | 0–3 | Spend 1 Pulse; 10H FLEX ally |
 | **Ward** | 3 AP / 0 MP | 0–3 | Spend 2 Pulse; 20 HP shield, 2 turns FLEX; miss OK; no crit |
 | **Cleanse** | 2 AP / 0 MP | 0–4 | +1 Pulse; LOCK Neutral remove 1 CC; no roll |
-| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 2 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **24** + skip next MP (Mauro 30 Sep 2026 balance) |
+| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 2 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **20** + skip next MP (Mauro 30 Sep 2026 balance) |
 
 ### 5.4 Gloam
 

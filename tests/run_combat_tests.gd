@@ -138,8 +138,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(int(order[1].get("seat", -1)), 1, "turn order continues at seat 1")
 	eq(snap["units"][0]["name"], "Kestrel", "seat 0 is Kestrel")
 	eq(snap["units"][1]["name"], "Ironjaw", "seat 1 is Ironjaw")
-	eq(snap["units"][0]["hp"], 80, "Kestrel starts at 80 HP")
-	eq(snap["units"][1]["hp"], 80, "Ironjaw starts at 80 HP")
+	eq(snap["units"][0]["hp"], 75, "Kestrel starts at 75 HP")
+	eq(snap["units"][1]["hp"], 90, "Ironjaw starts at 90 HP")
 	eq(snap["units"][0]["ap"], 6, "Kestrel 6 AP")
 	eq(snap["units"][0]["mp"], 3, "Kestrel 3 MP")
 	eq(snap["crit_roll"], false, "crit roll off")
@@ -514,7 +514,7 @@ func _test_kits_still_pass_after_deploy() -> void:
 	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(0)["pos"]})
 	eq(strike["ok"], true, "Strike resolves after deploy")
 	eq(strike["illegal"], false, "Strike is not rejected")
-	eq(_unit(0)["hp"] < 80, true, "Strike dealt damage after deploy")
+	eq(_unit(0)["hp"] < int(_unit(0)["max_hp"]), true, "Strike dealt damage after deploy")
 	eq(_unit(1)["impact"], 1, "Strike still grants Impact after deploy")
 
 
@@ -911,7 +911,7 @@ func _test_hazard_push_and_targets() -> void:
 		var struck: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
 		eq(bool(struck.get("ok", false)), true, "Strike resolves on %s (%s)" % [terrain, str(struck.get("reason", ""))])
 		eq(_unit(1)["pos"], Vector2i(4, 3), "Strike leaves the body on %s" % terrain)
-		eq(int(_unit(1)["hp"]) < 80, true, "Strike damages the body on %s" % terrain)
+		eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "Strike damages the body on %s" % terrain)
 	# Water silences one random spell. Mud slows −1 MP for one turn. Neither is Burn.
 	_sim.reset_match({
 		"seed": 1,
@@ -929,7 +929,7 @@ func _test_hazard_push_and_targets() -> void:
 	var watered: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(bool(watered.get("ok", false)), true, "Shoulder onto water resolves")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on water")
-	eq(_unit(0)["hp"], 74, "water land is the 6 Earth hit only")
+	eq(_unit(0)["hp"], 69, "water land is the 6 Earth hit only")
 	eq(int(_unit(0).get("burn_remaining", 0)), 0, "water land does not start Burn")
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "water land does not Slow")
 	var silenced_once: Array = _unit(0).get("silenced_spells", [])
@@ -949,9 +949,9 @@ func _test_hazard_push_and_targets() -> void:
 	eq(silenced_twice, silenced_once, "a push while Breathless keeps the same slot")
 	eq(int(_unit(0)["breathless_stacks"]), 2, "second water push is Breathless 2")
 	eq(int(_unit(0)["breathless_remaining"]), 2, "Breathless 2 lasts 2 turns")
-	eq(_unit(0)["hp"], 67, "second water hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "second water hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var after_water: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 67, "water Silence does not tick HP (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "water Silence does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["mp"], 3, "water Silence does not cut MP")
 	eq(_unit(0)["ap"], 6, "water Silence does not cut AP")
 	var muted := str(silenced_once[0])
@@ -982,7 +982,7 @@ func _test_hazard_push_and_targets() -> void:
 	var mudded: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(bool(mudded.get("ok", false)), true, "Shoulder onto mud resolves")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on mud")
-	eq(_unit(0)["hp"], 74, "mud land is the 6 Earth hit only")
+	eq(_unit(0)["hp"], 69, "mud land is the 6 Earth hit only")
 	eq(int(_unit(0).get("burn_remaining", 0)), 0, "mud land does not start Burn")
 	eq(_unit(0).get("silenced_spells", []), [], "mud land does not Silence")
 	eq(int(_unit(0).get("slow_remaining", 0)), 1, "mud land applies Slow for 1 turn")
@@ -996,9 +996,9 @@ func _test_hazard_push_and_targets() -> void:
 	eq(bool(mudded_again.get("ok", false)), true, "second Shoulder onto mud resolves")
 	eq(int(_unit(0).get("slow_remaining", 0)), 1, "a second mud land keeps Slow at 1 turn")
 	eq(int(_unit(0).get("slow_stacks", 0)), 2, "a push while slowed stacks Slow to 2")
-	eq(_unit(0)["hp"], 67, "second mud hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "second mud hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var slowed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 67, "mud Slow does not tick HP (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "mud Slow does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["ap"], 6, "mud Slow does not cut AP")
 	eq(_unit(0)["mp"], 1, "Slow 2 cuts 2 MP at the victim's turn start")
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "the one Slow turn is spent")
@@ -1026,7 +1026,7 @@ func _test_hazard_push_and_targets() -> void:
 	eq(bool(beside.get("ok", false)), true, "Strike on the empty trough tile hits the body (%s)" % str(beside.get("reason", "")))
 	eq(str(beside.get("snapshot", {}).get("coach", "")).contains("needs a living unit"), false, "trough tap is not a living-unit refund")
 	eq(_unit(1)["pos"], Vector2i(9, 6), "the trough tap does not move the body")
-	eq(int(_unit(1)["hp"]) < 80, true, "the trough tap deals Strike damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the trough tap deals Strike damage")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1039,7 +1039,7 @@ func _test_hazard_push_and_targets() -> void:
 	var ground_snap: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(8, 7), "seat": 0})
 	eq(bool(ground_snap.get("ok", false)), true, "Strike on empty ground beside one body snaps (%s)" % str(ground_snap.get("reason", "")))
 	eq(_unit(1)["pos"], Vector2i(9, 6), "the ground snap does not move the body")
-	eq(int(_unit(1)["hp"]) < 80, true, "the ground snap deals Strike damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the ground snap deals Strike damage")
 	# Voluntary steps skip mud, water, and lava, including Advance.
 	_sim.reset_match({
 		"seed": 1,
@@ -1078,7 +1078,7 @@ func _test_soft_lock_target() -> void:
 	var beside: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 1), "seat": 0})
 	eq(bool(beside.get("ok", false)), true, "Mark Shot on the empty neighbor snaps (%s)" % str(beside.get("reason", "")))
 	eq(_unit(1)["pos"], Vector2i(4, 0), "the snap does not move the foe")
-	eq(int(_unit(1)["hp"]) < 80, true, "the snap deals Mark Shot damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the snap deals Mark Shot damage")
 	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 1)), Vector2i(4, 0), "selection snap names the one neighbor")
 	# Chebyshev 2 is outside the #194 neighborhood.
 	var far: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2), "seat": 0})
@@ -1095,7 +1095,7 @@ func _test_soft_lock_target() -> void:
 	var past: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
 	eq(str(past.get("reason", "")), "out_of_range", "Strike past the body stays out of range")
 	eq(int(_unit(0)["ap"]), 6, "the out-of-range tap refunds AP")
-	eq(_unit(1)["hp"], 80, "the out-of-range tap does not hit")
+	eq(_unit(1)["hp"], 75, "the out-of-range tap does not hit")
 	# Only the caster is beside this tile. Do not snap onto yourself.
 	var self_side: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
 	eq(str(self_side.get("reason", "")), "no_target", "a tile beside only the caster stays empty")
@@ -1146,7 +1146,7 @@ func _test_soft_lock_target() -> void:
 	var lone: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
 	eq(bool(lone.get("ok", false)), true, "one neighbor in the pack still snaps (%s)" % str(lone.get("reason", "")))
 	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(6, 4), "the snapped foe stays on their tile")
-	eq(int(_sim.snapshot()["units"][1]["hp"]) < 80, true, "the one neighbor takes the Strike")
+	eq(int(_sim.snapshot()["units"][1]["hp"]) < int(_sim.snapshot()["units"][1]["max_hp"]), true, "the one neighbor takes the Strike")
 	eq(int(_sim.snapshot()["units"][2]["hp"]), 80, "the other foe is not hit")
 
 
@@ -1748,7 +1748,7 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "same tiles are Manhattan 4")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 2)})
 	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
-	eq(_unit(1)["hp"], 72, "8 Air on connect at Chebyshev 2")
+	eq(_unit(1)["hp"], 82, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
 	# Strike / Mark Shot stay Chebyshev. Advance range is cardinal (see range-gate test).
 	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", ""), "chebyshev", "Mark Shot range_mode is Chebyshev")
@@ -1792,7 +1792,7 @@ func _test_illegal_cast_refunds() -> void:
 	eq(result["illegal"], true, "Mark Shot range 1 is illegal")
 	eq(result["reason"], "out_of_range", "out_of_range")
 	eq(_unit(0)["ap"], 6, "illegal cast refunds AP")
-	eq(_unit(1)["hp"], 80, "illegal cast deals no damage")
+	eq(_unit(1)["hp"], 90, "illegal cast deals no damage")
 	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(1, 0)})
 	eq(result["illegal"], true, "Kestrel Strike is not in kit")
 	eq(result["reason"], "spell_not_in_kit", "spell_not_in_kit")
@@ -1831,7 +1831,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(int(_unit(0)["shades"]), shades_before, "blocked back does not spend Shade")
 	eq(bool(_unit(0)["shade"]), true, "blocked back keeps Shade")
 	eq(bool(_unit(0)["invisible"]), true, "blocked back keeps Invisible")
-	eq(int(_unit(1)["hp"]), 80, "blocked back deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "blocked back deals no damage")
 	eq(_unit(1)["pos"], prey, "blocked back does not move the target")
 
 	var miss_setup: Dictionary = _sim.reset_match({
@@ -1856,7 +1856,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(str(_unit(0).get("facing", "")), str(miss_setup["units"][0].get("facing", "")), "Ambush miss does not turn Gloam")
 	eq(bool(_unit(0)["shade"]), true, "Ambush miss keeps Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
 	var miss_event: Dictionary = missed["events"][0]
 	eq(str(miss_event.get("type", "")), "miss", "Ambush miss emits miss")
 	eq(bool(miss_event.get("teleported", true)), false, "Ambush miss teleported is false")
@@ -1879,7 +1879,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(_unit(0)["pos"], back, "Invisible Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), shades_hit, "Invisible origin does not spend Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Ambush hit ends Invisible")
-	eq(int(_unit(1)["hp"]), 50, "empty back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 45, "empty back hit is 22 × 1.35 = 30")
 	var hit_event: Dictionary = hit["events"][0]
 	eq(hit_event.get("destination"), back, "Ambush hit destination is the back tile")
 	eq(bool(hit_event.get("backstab", false)), true, "empty back tile is a backstab")
@@ -1906,7 +1906,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(str(_unit(0).get("facing", "")), "W", "Shade-origin Ambush faces the prey from the back tile")
 	eq(str(shade_hit["events"][0].get("facing", "")), "W", "Ambush hit event carries the new facing")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
-	eq(int(_unit(1)["hp"]), 50, "Shade-origin back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 45, "Shade-origin back hit is 22 × 1.35 = 30")
 
 
 func _test_ambush_arms_at_zero_mp() -> void:
@@ -2306,7 +2306,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		eq(str(cast.get("reason", "")), "out_of_range", "%s rejects as out_of_range" % label)
 		eq(int(_unit(0)["ap"]), 5, "%s refunds the Ambush AP" % label)
 		eq(_unit(0)["pos"], gloam, "%s does not blink Gloam" % label)
-		eq(int(_unit(1)["hp"]), 80, "%s deals no damage" % label)
+		eq(int(_unit(1)["hp"]), 75, "%s deals no damage" % label)
 
 	# Manhattan 2 cardinal from an armed Shade, but the back tile is occupied: still illegal.
 	var back_gloam := Vector2i(2, 4)
@@ -2346,7 +2346,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	eq(str(back_cast.get("reason", "")), "illegal_back", "an occupied back rejects as illegal_back")
 	eq(int(_unit(0)["ap"]), 6, "an occupied back refunds the Ambush AP")
 	eq(_unit(0)["pos"], back_gloam, "an occupied back does not blink Gloam")
-	eq(int(_unit(1)["hp"]), 80, "an occupied back deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "an occupied back deals no damage")
 
 	# Mauro 30 Sep 2026: no Invisible and no Shade still arms from the body.
 	_sim.reset_match({
@@ -2396,7 +2396,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Manhattan 2 cardinal from the Shade still resolves")
 	eq(_unit(0)["pos"], Vector2i(6, 5), "the legal Shade Ambush lands on the empty back tile")
-	eq(int(_unit(1)["hp"]), 50, "the legal Shade Ambush is still 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 45, "the legal Shade Ambush is still 22 × 1.35")
 
 	# Chebyshev 1, 2, and 3 from Gloam still plant. Range is not Ambush's cross.
 	var planter := Vector2i(7, 7)
@@ -2465,7 +2465,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(hit.get("ok", false)), true, "armed Manhattan-2 Ambush resolves")
 	eq(_unit(0)["pos"], back, "Ambush lands one step past the foe on the approach axis")
 	eq(int(_unit(0)["shades"]), 0, "a Shade origin spends the Shade on hit")
-	eq(int(_unit(1)["hp"]), 50, "the backstab hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 45, "the backstab hit is 22 × 1.35")
 
 	# Manhattan 1 cardinal, empty back, Shade armed: accept.
 	var near_shade := Vector2i(3, 2)
@@ -2664,7 +2664,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
-	eq(int(_unit(1)["hp"]), 58, "east front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 53, "east front Ambush is 22 FLEX")
 	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2682,7 +2682,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_miss["events"][0].has("struck_from"), false, "east miss has no strike cell")
 	eq(_unit(0)["pos"], Vector2i(6, 0), "east miss leaves Gloam on the cast cell")
 	eq(bool(_unit(0)["invisible"]), false, "east miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "east miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "east miss deals no damage")
 	eq(int(_unit(0)["ap"]), 0, "east miss spends Fade 2 plus Ambush 4")
 
 	# Occupied back: reject + refund.
@@ -2725,7 +2725,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
-	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
 
 
 ## Soft Lock 2026-09-26. Drop Shade keeps Invisible. An attack resolve ends it.
@@ -2790,7 +2790,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
 	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 58, "the Shade jump front hit is 22")
+	eq(int(_unit(1)["hp"]), 53, "the Shade jump front hit is 22")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -2865,7 +2865,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(missed["events"][0].get("origin"), shade_at, "the miss origin is still the Shade")
 	eq(int(_unit(0)["shades"]), 1, "Invisible Shade Ambush miss keeps the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Shade Ambush miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "Invisible Shade Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Invisible Shade Ambush miss deals no damage")
 
 
 func _test_invisible_breaks_on_attack() -> void:
@@ -2928,7 +2928,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
-	eq(int(_unit(1)["hp"]), 50, "Invisible Ambush hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 45, "Invisible Ambush hit is 22 × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
@@ -2948,7 +2948,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(shade_hit.get("ok", false)), true, "Visible Shade Ambush resolves")
 	eq(_unit(0)["pos"], back, "Visible Shade Ambush plants on the back tile")
 	eq(shade_hit["events"][0].get("struck_from"), back, "Visible Shade Ambush hits from the back tile")
-	eq(int(_unit(1)["hp"]), 50, "Visible Shade Ambush deals the backstab 30")
+	eq(int(_unit(1)["hp"]), 45, "Visible Shade Ambush deals the backstab 30")
 	eq(int(_unit(0)["shades"]), 0, "Visible Shade Ambush spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Visible Shade Ambush stays Visible")
 
@@ -2964,7 +2964,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut fixture Fade resolves")
 	var cut_hit: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
 	eq(bool(cut_hit.get("ok", false)), true, "Cut under Invisible resolves")
-	eq(int(_unit(1)["hp"]) < 80, true, "Cut under Invisible deals damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "Cut under Invisible deals damage")
 	eq(bool(_unit(0)["invisible"]), false, "Cut hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2978,7 +2978,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut miss fixture Fade resolves")
 	var cut_miss: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
 	eq(bool(cut_miss.get("ok", false)), true, "Cut miss under Invisible resolves")
-	eq(int(_unit(1)["hp"]), 80, "Cut miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Cut miss deals no damage")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "Cut miss does not move Gloam")
 	eq(bool(_unit(0)["invisible"]), false, "Cut miss ends Invisible")
 
@@ -3066,7 +3066,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
 	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
 	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
-	eq(int(_unit(1)["hp"]), 58, "front Shade Ambush while Invisible is 22")
+	eq(int(_unit(1)["hp"]), 53, "front Shade Ambush while Invisible is 22")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
 	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
@@ -3111,7 +3111,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(hit["events"][0].get("origin"), shade_at, "far Shade event origin is the Shade")
 	# Face N puts the rear cone south. The axis back tile is north, so this hit is the front 22.
 	eq(bool(hit["events"][0].get("backstab", true)), false, "landing in front of Face-N is not a backstab")
-	eq(int(_unit(1)["hp"]), 58, "front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 53, "front Ambush is 22 FLEX")
 
 	# Same geometry. Confirming the Shade plate must not read as distance 0.
 	_sim.reset_match({
@@ -3176,7 +3176,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_unit(0)["pos"] == near_gloam, false, "Invisible Ambush does not slash from the old tile")
 	eq(bool(self_hit["events"][0].get("teleported", false)), true, "Invisible adjacent hit teleports")
 	eq(bool(self_hit["events"][0].get("backstab", true)), false, "past a Face-S foe is the front, not a free backstab")
-	eq(int(_unit(1)["hp"]), 58, "that front hit is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 53, "that front hit is 22 FLEX")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
@@ -3190,7 +3190,7 @@ func _test_miss_keeps_ap_no_engine() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "miss is a legal resolution")
-	eq(_unit(1)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["hp"], 90, "miss deals 0")
 	eq(_unit(1)["marks"], 0, "miss grants no Marks")
 	eq(_unit(0)["ap"], 4, "miss keeps the 2 AP spend")
 	var events: Array = result["events"]
@@ -3211,7 +3211,7 @@ func _test_strike_hit_and_impact() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Strike connects")
-	eq(_unit(0)["hp"], 66, "front Strike deals 14 Earth")
+	eq(_unit(0)["hp"], 61, "front Strike deals 14 Earth")
 	eq(_unit(1)["impact"], 1, "+1 Impact on connect")
 	eq(_unit(1)["ap"], 3, "Strike spends 3 AP")
 	eq(result["events"][0]["crit_mult"], 1.0, "CritMult 1.0 on hit")
@@ -3230,7 +3230,7 @@ func _test_back_facing_multiplier() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "back Strike connects")
-	eq(_unit(0)["hp"], 63, "14 × 1.20 rounds to 17, 80-17=63")
+	eq(_unit(0)["hp"], 58, "14 × 1.20 rounds to 17, 75-17=58")
 	eq(result["events"][0]["back"], true, "back flag")
 	approx(result["events"][0]["facing_mult"], 1.20, "facing 1.20")
 
@@ -3248,7 +3248,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
-	eq(_unit(1)["hp"], 71, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
+	eq(_unit(1)["hp"], 81, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
@@ -3263,7 +3263,7 @@ func _test_mark_shot_range_and_marks() -> void:
 		result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(dist, 0)})
 		eq(bool(result.get("ok", true)), false, "Mark Shot at range %d is out of range" % dist)
 		eq(str(result.get("reason", "")), "out_of_range", "range %d rejects as out_of_range" % dist)
-		eq(_unit(1)["hp"], 80, "no damage at range %d" % dist)
+		eq(_unit(1)["hp"], 90, "no damage at range %d" % dist)
 		eq(_unit(0)["ap"], 6, "range %d refunds the AP" % dist)
 	_sim.reset_match({
 		"seed": 1,
@@ -3452,14 +3452,14 @@ func _assert_far_band_chrome(dist: int, chance: int) -> void:
 	eq(result["events"][0].has("hit_chance"), false, "dist %d reject carries no rolled hit chance" % dist)
 	eq(str(result["events"][0]["coach"]).contains("open"), false, "dist %d coach does not call the band open" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Mark Shot refunds AP" % dist)
-	eq(_unit(1)["hp"], 80, "dist %d Mark Shot deals no damage" % dist)
+	eq(_unit(1)["hp"], 90, "dist %d Mark Shot deals no damage" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Mark Shot does not roll onto Marks" % dist)
 	var detonate: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": target})
 	eq(detonate["illegal"], true, "dist %d Detonate stays outside kit range" % dist)
 	eq(detonate["reason"], "out_of_range", "dist %d Detonate reject is out_of_range" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Detonate refunds AP" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Detonate does not consume Marks" % dist)
-	eq(_unit(1)["hp"], 80, "dist %d Detonate deals no damage" % dist)
+	eq(_unit(1)["hp"], 90, "dist %d Detonate deals no damage" % dist)
 
 
 func _assert_past_locked_band() -> void:
@@ -3517,7 +3517,7 @@ func _test_match_over() -> void:
 
 
 func _unit_set_hp_via_hits() -> void:
-	# Strike is 14; 6 connects kill 80 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
+	# Strike is 14; 6 connects kill 75 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
 	for i in range(6):
 		if _sim.snapshot()["match_over"]:
 			return
@@ -3645,7 +3645,7 @@ func _test_blind_attacks_on_invisible() -> void:
 	eq(bool(_unit(1)["invisible"]), true, "a whiff leaves Gloam hidden")
 	var found: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
 	eq(bool(found.get("ok", false)), true, "a punch on Gloam's tile resolves")
-	truthy(int(_unit(1)["hp"]) < 80, "the hit damages Gloam")
+	truthy(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), "the hit damages Gloam")
 	eq(bool(_unit(1)["invisible"]), false, "damage reveals Gloam")
 	eq(_event_type_count(found["events"], "revealed"), 1, "a revealed event fires")
 	eq(_sim.legal_intents(0).any(func(i): return bool(i.get("blind", false))), false, "no blind offers once nobody is hidden")
@@ -4434,7 +4434,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["illegal"], true, "Detonate without Marks is illegal")
 	eq(result["reason"], "insufficient_marks", "reject reason is insufficient_marks")
 	eq(_unit(0)["ap"], 6, "Detonate gate refunds AP")
-	eq(_unit(1)["hp"], 80, "Detonate gate deals no damage")
+	eq(_unit(1)["hp"], 90, "Detonate gate deals no damage")
 	eq(_unit(1)["marks"], 0, "Detonate gate does not invent Marks")
 
 	# Locked max is 4. Dist 5–7 refund even with Marks.
@@ -4471,7 +4471,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["marks_consumed"], 1, "connect consumes 1 Mark")
 	eq(_unit(1)["marks"], 0, "A01: target Marks consumed on connect")
 	eq(_unit(0)["marks"], 0, "caster Marks stay 0 (stack is on the target)")
-	eq(_unit(1)["hp"], 68, "80-12=68")
+	eq(_unit(1)["hp"], 78, "90-12=78")
 	eq(_unit(0)["ap"], 3, "Detonate spends 3 AP")
 	eq(_unit(0)["mp"], 3, "Detonate spends 0 MP")
 
@@ -4492,7 +4492,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["damage"], 28, "front 24 Air (Longshot ×1.15: 24→28)")
 	eq(result["events"][0]["hit_chance"], 75, "range 4 uses the 75% mid band")
 	eq(_unit(1)["marks"], 0, "3 Marks consumed")
-	eq(_unit(1)["hp"], 52, "80-28=52 with Longshot")
+	eq(_unit(1)["hp"], 62, "90-28=62 with Longshot")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -4508,7 +4508,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["back"], true, "Detonate still applies facing")
 	eq(result["events"][0]["damage"], 43, "36 × 1.20 rounds to 43")
 	eq(_unit(1)["marks"], 0, "cap stack consumed")
-	eq(_unit(1)["hp"], 37, "80-43=37")
+	eq(_unit(1)["hp"], 47, "90-43=47")
 
 	# Mark Shot then Detonate same turn: +1 Mark on target, then consume.
 	_sim.reset_match({
@@ -4726,7 +4726,7 @@ func _test_detonate_miss_retains_marks() -> void:
 	eq(result["events"][0]["marks_retained"], true, "miss retains Marks")
 	eq(result["events"][0]["marks_on_target"], 4, "miss event reports retained stack")
 	eq(_unit(1)["marks"], 4, "A01: miss does not consume target Marks")
-	eq(_unit(1)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["hp"], 90, "miss deals 0")
 	eq(_unit(0)["ap"], 3, "miss keeps the 3 AP spend")
 	eq(_unit(0)["mp"], 3, "miss keeps the 0 MP spend")
 
@@ -4759,7 +4759,7 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(result["events"][0]["bounced"], false, "walkable empty dest does not bounce")
 	eq(result["events"][0]["staggered"], false, "walkable empty dest does not stagger")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "Kestrel landed one cell away")
-	eq(_unit(0)["hp"], 74, "80-6=74")
+	eq(_unit(0)["hp"], 69, "75-6=69")
 	eq(_unit(0)["mp"], 3, "walkable empty dest does not spend target MP")
 	eq(_unit(1)["impact"], 1, "Shoulder grants Impact on connect")
 	eq(_unit(1)["ap"], 4, "Shoulder spends 2 AP")
@@ -4795,7 +4795,7 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(result["events"][0]["type"], "miss", "Shoulder miss event")
 	eq(result["events"][0]["pushed"], false, "miss does not push")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "miss leaves the target in place")
-	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(0)["hp"], 75, "miss deals 0")
 	eq(_unit(1)["impact"], 0, "miss grants no Impact")
 	eq(_unit(1)["ap"], 4, "miss keeps the 2 AP spend")
 
@@ -4831,7 +4831,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "OOB bounce still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB bounce leaves the target put")
-	eq(_unit(0)["hp"], 70, "OOB bounce is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "OOB bounce is 6 Earth + 4 stagger HP")
 	eq(_unit(0)["mp"], 2, "OOB bounce spends 1 stagger MP when MP>=1")
 	eq(_unit(1)["impact"], 2, "OOB bounce grants +2 Impact only")
 	eq(result["events"][0]["engine_gained"], 2, "OOB bounce engine gain is +2, not +1 and +2")
@@ -4854,7 +4854,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][2]["type"], "stagger", "OOB emits stagger after bounce")
 	eq(result["events"][2]["hp_delta"], -4, "stagger HP delta is -4")
 	eq(result["events"][2]["mp_delta"], -1, "stagger MP delta is -1")
-	eq(result["events"][2]["hp"], 70, "stagger event reports remaining HP")
+	eq(result["events"][2]["hp"], 65, "stagger event reports remaining HP")
 	eq(result["events"][2]["mp"], 2, "stagger event reports remaining MP")
 	eq(_event_type_count(result["events"], "push_blocked"), 0, "OOB does not emit push_blocked")
 
@@ -4872,7 +4872,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "0 MP OOB bounce still hits")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "0 MP OOB bounce stays put")
-	eq(_unit(0)["hp"], 70, "0 MP OOB still applies 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "0 MP OOB still applies 4 stagger HP")
 	eq(_unit(0)["mp"], 0, "0 MP OOB does not apply stagger MP")
 	eq(result["events"][0]["stagger_hp"], 4, "0 MP still records 4 stagger HP")
 	eq(result["events"][0]["stagger_mp"], 0, "0 MP records 0 stagger MP")
@@ -4909,7 +4909,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "unwalkable dest still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unwalkable dest bounce leaves the target put")
-	eq(_unit(0)["hp"], 70, "unwalkable dest is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "unwalkable dest is 6 Earth + 4 stagger HP")
 	eq(_unit(0)["mp"], 2, "unwalkable dest spends 1 stagger MP")
 	eq(result["events"][0]["bounced"], true, "unwalkable dest records bounced")
 	eq(result["events"][1]["type"], "push_bounce", "unwalkable dest emits push_bounce")
@@ -4941,7 +4941,7 @@ func _test_shoulder_lava_burn_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "lava Shoulder still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on lava")
-	eq(_unit(0)["hp"], 64, "push 1: 6 Earth plus 10 Fire on entering")
+	eq(_unit(0)["hp"], 59, "push 1: 6 Earth plus 10 Fire on entering")
 	eq(_unit(0)["burn_stacks"], 1, "push 1 is Burn stack 1")
 	eq(_unit(0)["burn_remaining"], 2, "stack 1 burns for 2 turns")
 	eq(_unit(1)["impact"], 1, "lava land is a clean connect (+1 Impact)")
@@ -4974,14 +4974,14 @@ func _test_shoulder_lava_burn_locked() -> void:
 
 	# Two ticks of 4 at the victim's turn starts, also after leaving lava.
 	_sim.submit({"type": "end_turn"})
-	eq(_unit(0)["hp"], 60, "tick 1 is 4 HP")
+	eq(_unit(0)["hp"], 55, "tick 1 is 4 HP")
 	eq(_unit(0)["burn_remaining"], 1, "one Burn turn left")
 	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("hp_delta", 0)), -4, "tick hp_delta is -4")
 	eq(_sim.submit({"type": "move", "to": Vector2i(5, 2), "seat": 0})["ok"], true, "leaving lava onto ground is allowed")
 	eq(_unit(0)["burn_remaining"], 1, "Burn continues after leaving lava")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 56, "tick 2 is 4 HP")
+	eq(_unit(0)["hp"], 51, "tick 2 is 4 HP")
 	eq(_unit(0)["burn_remaining"], 0, "stack 1 Burn ends after 2 ticks")
 	eq(_unit(0)["burn_stacks"], 0, "expired Burn clears stacks")
 	_sim.submit({"type": "end_turn", "seat": 0})
@@ -5111,7 +5111,7 @@ func _test_ice_and_electric_stacks() -> void:
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(int(_unit(0)["electro_stacks"]), 1, "push 1 is Electrocuted 1")
-	eq(int(_unit(0)["hp"]), 74, "Electrocuted deals no chip damage (6 Earth only)")
+	eq(int(_unit(0)["hp"]), 69, "Electrocuted deals no chip damage (6 Earth only)")
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(int(_unit(0)["ap"]), 5, "Electrocuted 1: −1 AP on the victim's turn")
 	eq(int(_unit(0)["electro_stacks"]), 0, "Electrocuted is spent")
@@ -5145,7 +5145,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "occupied push still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied dest does not move the target")
-	eq(_unit(0)["hp"], 74, "occupied push deals hit damage only (no stagger)")
+	eq(_unit(0)["hp"], 69, "occupied push deals hit damage only (no stagger)")
 	eq(_unit(0)["mp"], before_mp, "occupied dest does not spend stagger MP")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
 	eq(result["events"][0]["engine_gained"], 1, "occupied push does not invent Impact beyond +1")
@@ -5183,7 +5183,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["reason"], "insufficient_impact", "reject reason is insufficient_impact")
 	eq(_unit(1)["ap"], 6, "Crush gate refunds AP")
 	eq(_unit(1)["impact"], 1, "Crush gate does not spend Impact")
-	eq(_unit(0)["hp"], 80, "Crush gate deals no damage")
+	eq(_unit(0)["hp"], 75, "Crush gate deals no damage")
 
 	# Connect at Impact 2: spend 2, 24 Earth, no Stun.
 	_sim.reset_match({
@@ -5203,7 +5203,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["impact_spent"], 2, "connect spends 2 Impact")
 	eq(result["events"][0]["stun_applied"], 0, "Impact 2 before spend does not Stun")
 	eq(_unit(1)["impact"], 0, "2-2=0 Impact left")
-	eq(_unit(0)["hp"], 56, "80-24=56")
+	eq(_unit(0)["hp"], 51, "75-24=51")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun stored")
 	eq(_unit(1)["ap"], 2, "Crush spends 4 AP")
 	eq(_unit(1)["mp"], 3, "Crush spends 0 MP")
@@ -5269,7 +5269,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["impact_retained"], true, "miss retains Impact")
 	eq(_unit(1)["impact"], 4, "miss does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "miss does not Stun")
-	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(0)["hp"], 75, "miss deals 0")
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
 
 
@@ -5490,7 +5490,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	eq(CombatHUD.toast_for_events(result["events"]), "Bounce  +2 Impact", "OOB toast is Bounce plus +2 Impact")
 	eq(CombatHUD.toast_for_events(result["events"]).contains("+1"), false, "OOB bounce toast is not also +1")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
-	eq(_unit(0)["hp"], 70, "hit + stagger HP still applied")
+	eq(_unit(0)["hp"], 65, "hit + stagger HP still applied")
 	eq(_unit(1)["impact"], 2, "OOB bounce Impact is +2")
 
 	var walk_events: Array = [{
@@ -6223,7 +6223,7 @@ func _test_preview_cast() -> void:
 	_assert_preview_did_not_mutate(before, "Mark Shot preview is read-only")
 	var miss: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(miss["events"][0]["type"], "miss", "scripted 100 still misses after preview — RNG/rolls untouched")
-	eq(_unit(1)["hp"], 80, "Mark Shot preview did not deal damage")
+	eq(_unit(1)["hp"], 90, "Mark Shot preview did not deal damage")
 	eq(_unit(1)["marks"], 0, "Mark Shot preview did not apply Marks")
 
 	# Intent Dictionary form uses the same Mark Shot preview.
@@ -6281,7 +6281,7 @@ func _test_preview_cast() -> void:
 	eq(preview["on_miss_text"], "Marks stay. AP/MP stay spent.", "Detonate miss kit line")
 	_assert_preview_did_not_mutate(before, "Detonate preview is read-only")
 	eq(_unit(1)["marks"], 3, "Detonate preview does not consume Marks")
-	eq(_unit(1)["hp"], 80, "Detonate preview does not deal 24")
+	eq(_unit(1)["hp"], 90, "Detonate preview does not deal 24")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6326,7 +6326,7 @@ func _test_preview_cast() -> void:
 	_assert_preview_did_not_mutate(before, "Crush preview is read-only")
 	eq(_unit(1)["impact"], 4, "Crush preview does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "Crush preview does not apply Stun")
-	eq(_unit(0)["hp"], 80, "Crush preview does not deal 24")
+	eq(_unit(0)["hp"], 75, "Crush preview does not deal 24")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7282,12 +7282,12 @@ func _test_aegis_break_burst() -> void:
 	eq(hit.get("ok", false), true, "Aegis Break burst resolves")
 	eq(int(_unit(0)["aegis"]), 0, "HIT clears all Aegis")
 	eq(int(_unit(0)["ap"]), 2, "Aegis Break spends 4 AP")
-	eq(int(_unit(1)["hp"]), 54, "aimed body takes 26")
+	eq(int(_unit(1)["hp"]), 49, "aimed body takes 26")
 	eq(_unit(1)["pos"], Vector2i(4, 1), "aimed body is pushed 1")
 	eq(int(_unit(1)["marks"]), 3, "HIT does not clear Marks")
-	eq(int(second["hp"]), 54, "body inside range 1–2 takes 26")
+	eq(int(second["hp"]), 49, "body inside range 1–2 takes 26")
 	eq(second["pos"], Vector2i(1, 4), "body inside range 1–2 is pushed 1")
-	eq(int(outside["hp"]), 80, "body outside range 1–2 is not hit")
+	eq(int(outside["hp"]), 75, "body outside range 1–2 is not hit")
 	eq(outside["pos"], Vector2i(4, 2), "body outside range 1–2 is not pushed")
 	var event := _first_event_where(hit["events"], "hit")
 	eq(int(event.get("bodies", 0)), 2, "hit event counts both bodies")
@@ -7316,9 +7316,9 @@ func _test_aegis_break_burst() -> void:
 	eq(missed.get("ok", false), true, "Aegis Break miss resolves")
 	eq(int(_unit(0)["aegis"]), 4, "MISS spends 0 Aegis")
 	eq(int(_unit(0)["ap"]), 2, "MISS still spends 4 AP")
-	eq(int(_unit(1)["hp"]), 80, "MISS does not damage the aimed body")
+	eq(int(_unit(1)["hp"]), 75, "MISS does not damage the aimed body")
 	eq(_unit(1)["pos"], Vector2i(3, 1), "MISS does not push the aimed body")
-	eq(int(missed_second["hp"]), 80, "MISS does not damage the other body")
+	eq(int(missed_second["hp"]), 75, "MISS does not damage the other body")
 	eq(missed_second["pos"], Vector2i(1, 3), "MISS does not push the other body")
 	var miss := _first_event_where(missed["events"], "miss")
 	eq(int(miss.get("aegis_spent", -1)), 0, "MISS event spends 0 Aegis")
@@ -7651,7 +7651,7 @@ func _test_ambush_snap_wall_ray() -> void:
 	eq(str(walled.get("reason", "")), "wall_on_ray", "the reject names the wall on the ray")
 	eq(int(_unit(0)["ap"]), ap_before, "the walled Ambush spends 0 AP")
 	eq(_unit(0)["pos"], gloam, "the walled Ambush does not move Gloam")
-	eq(int(_unit(1)["hp"]), 80, "the walled Ambush deals no damage")
+	eq(int(_unit(1)["hp"]), 100, "the walled Ambush deals no damage")
 
 	# A Shade on the far side still origins if it sees the target in range 1–2.
 	var shade_at := Vector2i(4, 4)

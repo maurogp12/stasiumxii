@@ -361,7 +361,7 @@ func _test_inventory_screen() -> void:
 	hub.open_inventory()
 	var inv := hub.find_child("InventoryScreen", true, false) as InventoryScreen
 	truthy(inv != null, "Inventory opens from the hub")
-	eq(inv.stats()["hp"], 80, "bare champion has 80 HP")
+	eq(inv.stats()["hp"], 75, "bare Kestrel has 75 HP")
 	eq(inv.stats()["ap"], 6, "bare champion has 6 AP")
 	truthy(inv.find_child("Item_%d" % a, true, false) != null, "bag items show as grid tiles")
 	truthy(inv.find_child("Slot_head", true, false) != null, "the doll has a head slot")
@@ -373,7 +373,7 @@ func _test_inventory_screen() -> void:
 	eq(int(inv.bag().item(a)["plus"]), 1, "fused head is +1")
 	eq(GearBag.load_saved().find(b), -1, "fuse is saved")
 	eq(bool(inv.wear(a)["ok"]), true, "wear from the inventory")
-	eq(inv.stats()["hp"], 80 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
+	eq(inv.stats()["hp"], 75 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
 	inv.wear(w)
 	eq(inv.stats()["mastery"], int(GearBag.part_stats("duskbrand.weapon", 0)["mastery"]) + int(GearBag.part_stats("sheaf.head", 1)["mastery"]), "worn weapon adds Mastery")
 	inv.select({"kind": "slot", "slot": "head"})
@@ -511,7 +511,7 @@ func _test_gear_in_fights() -> void:
 	# No gear: the Locked proto body is unchanged.
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true})
 	var plain: Dictionary = sim._unit_by_seat(0)
-	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [80, 6, 3, 0, 0], "no gear = 80 HP, 6/3, Mastery 0, Resist 0")
+	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [75, 6, 3, 0, 0], "no gear = Kestrel 75 HP, 6/3, Mastery 0, Resist 0")
 	# Sheaf 5pc on seat 0, Duskbrand 5pc on seat 1.
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true, "seat_gear": {
 		0: {"worn": _worn("sheaf", GearBag.SLOTS)},
@@ -519,8 +519,8 @@ func _test_gear_in_fights() -> void:
 	}})
 	var sheaf: Dictionary = sim._unit_by_seat(0)
 	var dusk: Dictionary = sim._unit_by_seat(1)
-	eq(int(sheaf["max_hp"]), 196, "Sheaf 5: (80 + 98 part HP) × 1.10 = 196")
-	eq(int(sheaf["hp"]), 196, "fight starts at full geared HP")
+	eq(int(sheaf["max_hp"]), 190, "Sheaf 5: (75 + 98 part HP) × 1.10 = 190")
+	eq(int(sheaf["hp"]), 190, "fight starts at full geared HP")
 	eq(int(sheaf["mastery"]), 18, "Sheaf 5: 10 part Mastery + 8 (4pc) = 18")
 	eq(int(sheaf["resist"]), 8, "Sheaf 5pc +8% all resist")
 	eq(sheaf["resist_elem"], {"earth": 15}, "Sheaf part resist 15 goes to its default Earth attune")
@@ -528,7 +528,7 @@ func _test_gear_in_fights() -> void:
 	eq(int(sheaf["init"]), 3, "Sheaf boots Init 3")
 	eq(int(dusk["max_ap"]), 7, "Duskbrand 5pc → 7 AP")
 	eq(int(dusk["max_mp"]), 4, "Duskbrand 5pc → 4 MP")
-	eq(int(dusk["max_hp"]), 149, "Duskbrand: (80 + 58) × 1.08 = 149")
+	eq(int(dusk["max_hp"]), 160, "Duskbrand: (90 + 58) × 1.08 = 160")
 	eq(int(dusk["mastery"]), 27, "Duskbrand: 24 part Mastery × 1.12 = 27")
 	eq(dusk["resist_elem"], {"neutral": 9}, "Duskbrand has no attune — resist stays Neutral")
 	eq(int(dusk["init"]), 18, "Duskbrand Init 12 parts + 6 (4pc) = 18")
@@ -585,7 +585,7 @@ func _test_gear_in_fights() -> void:
 	eq(sim.set_seat_gear(0, {"worn": _worn("sheaf", ["head", "chest"])}), false, "gear cannot change mid-combat")
 	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
 	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
-	eq(int(sim._unit_by_seat(1)["max_hp"]), 163, "late gear raised seat 1 HP to (80+28+40)×1.10")
+	eq(int(sim._unit_by_seat(1)["max_hp"]), 174, "late gear raised seat 1 HP to (90+28+40)×1.10")
 	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
 	net.mode = net.Mode.DEDICATED
@@ -608,7 +608,7 @@ func _test_gear_in_fights() -> void:
 	var player_rec: Dictionary = fight_cfg["stasis_roster"][0]
 	eq(player_rec["gear"]["worn"].size(), 2, "Stasis fight carries the worn gear")
 	sim.reset_match(fight_cfg)
-	eq(int(sim._unit_by_seat(0)["max_hp"]), 163, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 168, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
 	StasisCatalog.player_hp = 60
 	sim.reset_match(StasisCatalog.fight_config())
 	eq(int(sim._unit_by_seat(0)["hp"]), 60, "Room B carries Room A HP under the geared max")

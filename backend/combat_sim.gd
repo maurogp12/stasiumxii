@@ -26,7 +26,22 @@ const _HitBands := preload("res://backend/hit_bands.gd")
 const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
-const START_HP := 80
+## Mauro 30 Sep 2026: class base HP. Replaces the flat 80.
+const CLASS_BASE_HP := {
+	"bastion": 100,
+	"ironjaw": 90,
+	"mender": 85,
+	"kestrel": 75,
+	"gloam": 70,
+}
+
+
+static func class_base_hp(class_id: String) -> int:
+	var id := str(class_id)
+	if CLASS_BASE_HP.has(id):
+		return int(CLASS_BASE_HP[id])
+	# A body with no roster class (before a Stasis HP override) is not one of the five.
+	return 80
 const CRIT_MULT := 1.0
 const MASTERY := 0.0
 const RESIST := 0.0
@@ -1500,8 +1515,8 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"element": element,
 		"pos": pos,
 		"facing": facing,
-		"hp": START_HP,
-		"max_hp": START_HP,
+		"hp": class_base_hp(class_id),
+		"max_hp": class_base_hp(class_id),
 		"ap": MAX_AP if in_combat else 0,
 		"mp": MAX_MP if in_combat else 0,
 		"max_ap": MAX_AP,
@@ -1510,7 +1525,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
-		# Workbook v0.6 proto: HP 80, Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
+		# Mauro 30 Sep 2026: class base HP. Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
 		"mastery": 0,
 		"resist": 0,
 		# Umbral 0–4 is Gloam only. Pulse 0–6 is Mender only. Aegis 0–4 is Bastion only.
@@ -2695,7 +2710,7 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 			unit["max_hp"] = max_hp
 			unit["hp"] = mini(int(unit.get("hp", max_hp)), max_hp)
 		if rec.has("hp"):
-			var cap := maxi(int(unit.get("max_hp", START_HP)), 1)
+			var cap := maxi(int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", ""))))), 1)
 			unit["hp"] = mini(maxi(int(rec["hp"]), 0), cap)
 		if rec.has("facing"):
 			var face := str(rec["facing"]).to_upper()
@@ -2762,7 +2777,7 @@ func intermission_heal(seat: int, pct: int) -> int:
 	var unit := _unit_by_seat(seat)
 	if unit.is_empty():
 		return 0
-	var max_hp := int(unit.get("max_hp", START_HP))
+	var max_hp := int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", "")))))
 	var hp := int(unit.get("hp", 0))
 	var healed := mini(int(floor(float(max_hp) * float(pct) / 100.0)), max_hp - hp)
 	if healed <= 0:
@@ -2786,9 +2801,10 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	if typeof(heroes) == TYPE_DICTIONARY and (heroes as Dictionary).has(class_id):
 		hero_raw = heroes[class_id]
 	var hero := HeroProgress.combat_stats(hero_raw, class_id)
-	# Final HP = (80 + level HP + part HP) × (1 + set HP%).
-	var max_hp := roundi(float(START_HP + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
-	var was_full := int(unit.get("hp", START_HP)) >= int(unit.get("max_hp", START_HP))
+	# Mauro 30 Sep 2026: class base HP. Final HP = (class base + level HP + part HP) × (1 + set HP%).
+	var base_hp := class_base_hp(class_id)
+	var max_hp := roundi(float(base_hp + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
+	var was_full := int(unit.get("hp", base_hp)) >= int(unit.get("max_hp", base_hp))
 	unit["max_hp"] = max_hp
 	unit["hp"] = max_hp if was_full else mini(int(unit.get("hp", max_hp)), max_hp)
 	unit["mastery"] = int(stats["mastery"]) + int(hero["mastery"])
@@ -2864,7 +2880,7 @@ func _apply_class_setup(config: Dictionary, key: String, class_id: String, field
 		unit[field] = maxi(value, 0)
 		return
 	if field == "hp":
-		unit["hp"] = mini(maxi(value, 0), int(unit.get("max_hp", START_HP)))
+		unit["hp"] = mini(maxi(value, 0), int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", ""))))))
 		return
 	var cap := int(unit.get("%s_cap" % field, value))
 	unit[field] = mini(maxi(value, 0), cap)
@@ -4638,14 +4654,14 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
 	if not bool(def.get("triage", false)):
 		return false
-	var max_hp := maxi(int(target.get("max_hp", START_HP)), 1)
+	var max_hp := maxi(int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))), 1)
 	return float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD
 
 
 func _apply_heal(target: Dictionary, amount: int) -> int:
 	if amount <= 0:
 		return 0
-	var room := int(target.get("max_hp", START_HP)) - int(target.get("hp", 0))
+	var room := int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))) - int(target.get("hp", 0))
 	var healed := mini(amount, maxi(room, 0))
 	target["hp"] = int(target["hp"]) + healed
 	return healed

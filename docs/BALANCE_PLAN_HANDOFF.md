@@ -71,7 +71,7 @@ fit in one turn, or Kestrel becomes a hard counter.
 
 ## 2. STEP 1 — class numbers (approved; numbers only, no new rules)
 
-**Applied.** Mauro's picks match the table below (no difference). That table is the approved Step 1 plan. A same-day follow-up then set Strike to 14, Ironjaw Mastery growth to +1, and Heartstop enemy damage to 24. The phone kit's `SPEND_DUEL_BUILDS` flag (temporary, default true) spends the 58 points like `tests/sim_duels.gd` `BUILDS` (Ward 0); set it false to leave them free. No APK.
+**Applied.** Mauro's picks match the table below (no difference). That table is the approved Step 1 plan. A same-day follow-up then set Strike to 14, Ironjaw Mastery growth to +1, and Heartstop enemy damage to 24, then Heartstop to 20 and class base HP (Bastion 100, Ironjaw 90, Mender 85, Kestrel 75, Gloam 70). The phone kit's `SPEND_DUEL_BUILDS` flag (temporary, default true) spends the 58 points like `tests/sim_duels.gd` `BUILDS` (Ward 0); set it false to leave them free. No APK.
 
 | What | File | Now | New |
 |---|---|---|---|

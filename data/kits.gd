@@ -251,8 +251,8 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 32,
-		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24; Pulse cost 4 → 2.
-		"base_damage": 24,
+		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24 → 20; Pulse cost 4 → 2.
+		"base_damage": 20,
 		"target": "any",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 2,

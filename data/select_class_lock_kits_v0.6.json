@@ -6,21 +6,21 @@
       "display": "Mender",
       "element": ["Water", "Water"],
       "resource": {"id": "pulse", "min": 0, "max": 6},
-      "hp": 80, "mastery": 0, "resist": 0,
+      "hp": 85, "mastery": 0, "resist": 0,
       "passive": {"id": "triage", "heal_mult": 1.25, "hp_threshold": 0.4, "applies_to_ally_heartstop": true, "applies_to_enemy_heartstop": false},
       "spells": [
         {"id": "mend", "ap": 3, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "16H FLEX ally", "notes": "miss/crit OK; no facing"},
         {"id": "pulse_tap", "ap": 2, "mp": 0, "range": [0, 3], "engine": "spend 1 pulse", "effect": "10H FLEX ally", "notes": "miss/crit OK"},
         {"id": "ward", "ap": 3, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "20HP shield 2 turns FLEX", "notes": "miss OK; no crit"},
         {"id": "cleanse", "ap": 2, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "LOCK Neutral remove 1 CC", "notes": "no roll"},
-        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=24 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
+        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=20 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
       ]
     },
     "gloam": {
       "display": "Gloam",
       "element": ["Air", "Neutral"],
       "resource": {"umbral": {"min": 0, "max": 4}, "shades": {"max": 2}},
-      "hp": 80, "mastery": 0, "resist": 0,
+      "hp": 70, "mastery": 0, "resist": 0,
       "passive": {"id": "backstab", "mult": 1.35, "replaces_back": 1.2},
       "spells": [
         {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "16D FLEX weapon", "notes": "backstab applies. Mauro 30 Sep 2026 balance"},
@@ -34,7 +34,7 @@
       "display": "Bastion",
       "element": ["Earth", "Earth"],
       "resource": {"id": "aegis", "min": 0, "max": 4},
-      "hp": 80, "mastery": 0, "resist": 0,
+      "hp": 100, "mastery": 0, "resist": 0,
       "passive": {"id": "intercept", "transfer": 0.4, "once_per_bastion_turn_cycle": true, "excludes": ["miss", "magma_ticks", "self_damage"]},
       "spells": [
         {"id": "bash", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "13D FLEX melee", "notes": "Mauro 30 Sep 2026 balance"},

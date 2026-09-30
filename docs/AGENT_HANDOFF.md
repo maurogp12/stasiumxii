@@ -123,7 +123,7 @@ the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
 ## Balance plan
 
-Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 24. Advance stays 3 AP (max 2 per turn), Crush stays 24, Kestrel is unchanged. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
+Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 20. Mauro 30 Sep 2026: class base HP is Bastion 100, Ironjaw 90, Mender 85, Kestrel 75, Gloam 70 (`CombatSim.CLASS_BASE_HP`). Advance stays 3 AP (max 2 per turn), Crush stays 24, Kestrel's kit is unchanged. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
 
 ## Open / waiting on Mauro (do not decide these yourself)
 

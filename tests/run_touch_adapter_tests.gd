@@ -173,7 +173,7 @@ func _test_pawn_body_cast_pick() -> void:
 	var self_cast: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": Vector2i(0, 0)})
 	eq(self_cast.get("ok", true), false, "casting Mark Shot on yourself still rejects")
 	eq(str(self_cast.get("reason", "")), "out_of_range", "self cell is inside Mark Shot's minimum range")
-	eq(int(far.snapshot()["units"][1]["hp"]), 80, "a rejected self cast does not hit the foe")
+	eq(int(far.snapshot()["units"][1]["hp"]), 90, "a rejected self cast does not hit the foe")
 	far.free()
 
 

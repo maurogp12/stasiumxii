@@ -444,7 +444,7 @@ func _test_boards_and_provisional_hit() -> void:
 		var player: Dictionary = units[0]
 		var enemy: Dictionary = units[1]
 		eq(str(player.get("name", "")), "Kestrel", "%s player keeps the class name" % map_id)
-		eq(int(player.get("hp", 0)), 80, "%s player starts at Locked 80 HP" % map_id)
+		eq(int(player.get("hp", 0)), 75, "%s player starts at Kestrel 75 HP" % map_id)
 		eq(player.has("stasis_attack_base"), false, "%s player has no provisional attack" % map_id)
 		eq(str(enemy.get("name", "")), str(StasisCatalog.current_foe()["name"]), "%s foe name" % map_id)
 		eq(int(enemy.get("hp", 0)), StasisCatalog.PROVISIONAL_TRASH_HP, "%s trash HP is provisional" % map_id)
@@ -535,7 +535,7 @@ func _test_melee_exchange() -> void:
 	eq(str(next["units"][1].get("stasis_sprite", "")).contains("ironjaw"), false, "warden portrait is not Ironjaw")
 	truthy(str(next["units"][1].get("stasis_sprite", "")).ends_with("warden_of_the_sheaves.png"), "warden uses the scarecrow crop")
 	eq(int(next["units"][0]["hp"]), int(carried["units"][0]["hp"]), "player HP carries into room B")
-	eq(int(next["units"][0]["max_hp"]), 80, "carried HP does not change the Locked player max")
+	eq(int(next["units"][0]["max_hp"]), 90, "carried HP does not change the Ironjaw max")
 
 
 func _test_one_trash_does_not_clear_the_room() -> void:
@@ -685,8 +685,8 @@ func _test_koliseo_strike_unchanged() -> void:
 	})
 	eq(str(snap["units"][0]["name"]), "Ironjaw", "Koliseo seat 0 stays Ironjaw")
 	eq(str(snap["units"][1]["name"]), "Kestrel", "Koliseo seat 1 stays Kestrel")
-	eq(int(snap["units"][0]["hp"]), 80, "Koliseo HP stays 80")
-	eq(int(snap["units"][1]["hp"]), 80, "Koliseo foe HP stays 80")
+	eq(int(snap["units"][0]["hp"]), 90, "Koliseo Ironjaw HP stays 90")
+	eq(int(snap["units"][1]["hp"]), 75, "Koliseo Kestrel HP stays 75")
 	eq(snap["units"][1].has("stasis_attack_base"), false, "Koliseo units have no provisional attack")
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": snap["units"][1]["pos"], "seat": 0})
 	truthy(bool(hit.get("ok", false)), "Koliseo Strike still resolves")
@@ -806,7 +806,7 @@ func _test_resolve_readout_matches_hit() -> void:
 	var back_event := _hit_event(back)
 	eq(int(back_event.get("damage", -1)), 17, "back Strike applies 17")
 	eq(int(back_event.get("base_damage", -1)), 14, "Strike base stays 14")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 63, "applied vitals are 80 − 17")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 58, "applied vitals are 75 − 17")
 	truthy(str(back_event.get("coach", "")).begins_with("HIT 17 "), "coach HIT uses 17")
 	var back_number := _damage_number(router.recipes_for(back.get("events", [])))
 	truthy(str(back_number.get("text", "")).contains("17"), "float shows 17")
