@@ -85,6 +85,7 @@ func _run() -> void:
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
 	_test_line_of_sight()
+	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
 	_test_advance_then_remaining_mp_still_walks()
@@ -3640,6 +3641,36 @@ func _test_line_of_sight() -> void:
 	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot over the raised wall")
 	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
 	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player
+## should be able to throw punches in the air and if any of the hits does
+## damage to Gloam, Gloam becomes visible".
+func _test_blind_attacks_on_invisible() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1, 1, 1, 1]})
+	var strikes: Array = _sim.legal_intents(0).filter(func(i): return str(i.get("spell", "")) == "strike")
+	eq(strikes.size(), 8, "Strike may punch every tile around Ironjaw")
+	eq(strikes.any(func(i): return i.has("target_seat")), false, "no offer names the hidden Gloam")
+	eq(bool(_sim.aim_hit_preview(0, "strike", null).get("show", false)), false, "the hit % never points at the hidden tile")
+	var ap_before := int(_unit(0)["ap"])
+	var air: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(air.get("ok", false)), true, "a punch into the empty air resolves")
+	eq(int(_unit(0)["ap"]), ap_before - 3, "the air punch spends its AP")
+	eq(bool(_first_event_where(air["events"], "miss").get("blind", false)), true, "the air punch is a blind miss")
+	eq(_unit(1)["pos"], Vector2i(6, 5), "the air punch did not snap onto Gloam")
+	eq(bool(_unit(1)["invisible"]), true, "a whiff leaves Gloam hidden")
+	var found: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(found.get("ok", false)), true, "a punch on Gloam's tile resolves")
+	truthy(int(_unit(1)["hp"]) < 80, "the hit damages Gloam")
+	eq(bool(_unit(1)["invisible"]), false, "damage reveals Gloam")
+	eq(_event_type_count(found["events"], "revealed"), 1, "a revealed event fires")
+	eq(_sim.legal_intents(0).any(func(i): return bool(i.get("blind", false))), false, "no blind offers once nobody is hidden")
+	# A hit that does no damage (Ward soaks it) keeps Gloam hidden.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1]})
+	_live_unit(1)["shield"] = 99
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(_unit(1)["invisible"]), true, "no damage, no reveal")
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
 
 

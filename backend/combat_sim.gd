@@ -441,6 +441,10 @@ func legal_intents(seat: int) -> Array:
 			# offers every living hostile to the player.
 			for hostile in _hostile_cast_targets(seat):
 				var enemy: Dictionary = hostile
+				# An Invisible enemy is never a named target (it would give
+				# its tile away); blind attacks below can still find it.
+				if bool(enemy.get("invisible", false)):
+					continue
 				if _cast_gate_reason(actor, enemy, def) != "":
 					continue
 				if _in_spell_reach(def, from, enemy["pos"]):
@@ -452,8 +456,89 @@ func legal_intents(seat: int) -> Array:
 						"seat": seat,
 					})
 
+	_append_blind_casts(out, actor)
 	out.append({"type": "end_turn", "seat": seat})
 	return out
+
+
+## Mauro 30 Sep 2026: "player should be able to throw punches in the air and
+## if any of the hits does damage to Gloam, Gloam becomes visible". While an
+## enemy is Invisible, every enemy-target attack may be aimed at any tile in
+## reach that shows no visible body. An empty tile is a whiff (AP spent); the
+## hidden unit's tile rolls normally and damage reveals it.
+func _has_invisible_hostile(seat: int) -> bool:
+	for hostile in _hostile_cast_targets(seat):
+		if bool((hostile as Dictionary).get("invisible", false)) and bool((hostile as Dictionary).get("alive", false)):
+			return true
+	return false
+
+
+func _append_blind_casts(out: Array, actor: Dictionary) -> void:
+	var seat := int(actor["seat"])
+	if not _has_invisible_hostile(seat):
+		return
+	var from: Vector2i = actor["pos"]
+	for spell_id in actor.get("spells", []):
+		var id := str(spell_id)
+		var def: Dictionary = SpellKits.spell(id)
+		if def.is_empty() or str(def.get("target", "")) != "enemy" or id == SpellKits.AMBUSH:
+			continue
+		if _is_spell_silenced(actor, id) or _is_spell_frozen(actor, id) or SpellKits.is_gated(id):
+			continue
+		if int(actor.get("ap", 0)) < int(def.get("ap", 0)) or int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+			continue
+		if _resource_gate(actor, def) != "" or _cast_gate_reason(actor, {}, def) != "":
+			continue
+		for y in range(_board_size):
+			for x in range(_board_size):
+				var cell := Vector2i(x, y)
+				if cell == from or not _in_spell_reach(def, from, cell):
+					continue
+				var body := _living_unit_at(cell)
+				if not body.is_empty() and not bool(body.get("invisible", false)):
+					continue
+				out.append({"type": "cast", "spell": id, "to": cell, "seat": seat, "blind": true})
+
+
+## Air punch: the tile held no body. AP / MP are spent, nothing is hit.
+func _resolve_whiff(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	if mp_cost > 0:
+		_spend_mp(actor, mp_cost)
+	_intent_log.append(intent)
+	var face := _dir_name(_sign_step(dest - actor["pos"]))
+	if face != "":
+		actor["facing"] = face
+	_break_invisible_on_attack(actor)
+	_last_coach = "%s strikes the empty air at %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+	_last_events.append({
+		"type": "miss",
+		"blind": true,
+		"seat": actor["seat"],
+		"spell": str(def.get("id", intent.get("spell", ""))),
+		"caster_cell": actor["pos"],
+		"to": dest,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"damage": 0,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+## Damage on an Invisible unit reveals it at once.
+func _reveal_if_hurt(target: Dictionary, damage: int) -> void:
+	if damage <= 0 or not bool(target.get("invisible", false)):
+		return
+	target["invisible"] = false
+	target["invisible_turns"] = 0
+	_emit_expire("invisible", target["pos"], int(target["seat"]), int(target["seat"]))
+	_last_events.append({
+		"type": "revealed",
+		"seat": int(target["seat"]),
+		"cell": target["pos"],
+		"coach": "%s is hit and revealed!" % str(target.get("name", "Unit")),
+	})
 
 
 ## Locked Ambush: 4 AP / 0 MP, Manhattan 1–2 cardinal from the origin, blink to the
@@ -979,7 +1064,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	var cell: Vector2i
 	if dest == null:
 		var enemy := _enemy_of(seat)
-		if enemy.is_empty() or not enemy["alive"]:
+		if enemy.is_empty() or not enemy["alive"] or bool(enemy.get("invisible", false)):
 			return out
 		cell = enemy["pos"]
 	else:
@@ -1046,7 +1131,11 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 	var cell := _as_cell(hover)
 	if not _in_spell_reach(def, from_cell, cell):
 		return _aim_hidden()
-	var floated: Dictionary = _aim_float(actor, _living_unit_at(cell), def, from_cell)
+	var under := _living_unit_at(cell)
+	# Hovering an Invisible enemy's tile must not name it or its damage.
+	if not under.is_empty() and bool(under.get("invisible", false)) and int(under.get("seat", -1)) != seat:
+		under = {}
+	var floated: Dictionary = _aim_float(actor, under, def, from_cell)
 	var text := str(floated.get("text", ""))
 	if from_cell == cell and text == "":
 		return _aim_hidden()
@@ -1997,6 +2086,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			dest = beside["pos"]
 			dist = _range_distance(def, range_from, dest)
 	var target := _living_unit_at(dest)
+	if target.is_empty() and target_kind == "enemy" and _has_invisible_hostile(int(actor["seat"])) and _in_spell_reach(def, range_from, dest):
+		return _resolve_whiff(intent, actor, def, dest, ap_cost, mp_cost)
 	if target.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
 	var support := target_kind == "ally" or (target_kind == "any" and int(target["seat"]) == int(actor["seat"]))
@@ -2113,6 +2204,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
+	_reveal_if_hurt(target, damage)
 	var engine_gained := 0
 	var engine_spent := 0
 	var engine_name := ""
@@ -3515,6 +3607,9 @@ func _foe_victims(actor: Dictionary) -> Array:
 		var other := int(unit.get("seat", -1))
 		if (seat > 0) == (other > 0):
 			continue
+		# Monsters cannot see an Invisible hero either.
+		if bool(unit.get("invisible", false)):
+			continue
 		out.append(unit)
 	return out
 
@@ -3797,6 +3892,7 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		var mitigation := _mitigate_hit(actor, target, pre)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(int(target["hp"]) - damage, 0)
+		_reveal_if_hurt(target, damage)
 		hits += 1
 		total += damage
 		event["type"] = "hit"
@@ -4051,7 +4147,7 @@ func _soft_lock_neighbor_target(actor: Dictionary, def: Dictionary, range_from: 
 		if typeof(hostile) != TYPE_DICTIONARY:
 			continue
 		var enemy: Dictionary = hostile
-		if not bool(enemy.get("alive", false)):
+		if not bool(enemy.get("alive", false)) or bool(enemy.get("invisible", false)):
 			continue
 		if chebyshev(dest, enemy["pos"]) > 1:
 			continue

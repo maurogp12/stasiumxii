@@ -373,6 +373,11 @@ func _build_overlay() -> void:
 ## Back to hub). After the fight it grows into the full panel with the buttons.
 ## Monster turns: no "X's turn" box over the board (Dofus lights the
 ## timeline instead); the player's own turn keeps the banner.
+## Stasis: the player always sees their own (Invisible) hero.
+func _viewer_sees_seat(seat: int, _snap: Dictionary) -> bool:
+	return seat == StasisCatalog.PLAYER_SEAT
+
+
 func _quiet_handoff(seat: int) -> bool:
 	return seat != StasisCatalog.PLAYER_SEAT
 

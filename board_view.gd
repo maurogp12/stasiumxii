@@ -216,6 +216,14 @@ func _online() -> bool:
 	return net != null and net.is_online()
 
 
+## Who is looking at the board. Online: the seat this device owns. Hot-seat:
+## the player whose turn it is (one phone passed between two players).
+func _viewer_sees_seat(seat: int, snap: Dictionary) -> bool:
+	if _online():
+		return _can_control_seat(seat)
+	return seat == int(snap.get("active_seat", -1))
+
+
 ## Scenes where the computer plays a seat skip the big turn banner for it.
 const QUIET_HANDOFF_SEC := 0.25
 
@@ -1859,7 +1867,12 @@ func _apply_units(snap: Dictionary) -> void:
 		var cell: Vector2i = _as_cell(raw_pos)
 		# pos null / pos_hidden: opponent wire for an Invisible unit. Do not draw it.
 		var placed := bool(unit.get("placed", true)) and not bool(unit.get("pos_hidden", false)) and raw_pos != null and cell.x >= 0 and cell.y >= 0
-		pawn.visible = placed
+		# Mauro 30 Sep 2026: an Invisible fighter is not drawn at all (no ghost,
+		# ring or status dots) for the player whose turn it is not.
+		var unseen := bool(unit.get("invisible", false)) and bool(unit.get("alive", true)) and not _viewer_sees_seat(seat, snap)
+		pawn.visible = placed and not unseen
+		if _vfx != null and _vfx.has_method("set_seat_hidden"):
+			_vfx.call("set_seat_hidden", seat, unseen)
 		if not placed:
 			continue
 		var raw_events: Variant = snap.get("last_events", [])

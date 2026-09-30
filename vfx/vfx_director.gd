@@ -638,7 +638,28 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	node.play(payload)
 	if bool(spec.get("dim", false)):
 		node.modulate.a = 0.4
+	if node is CanvasItem:
+		(node as CanvasItem).visible = not _hidden_seats.has(int(spec.get("seat", -999)))
 	_linger[key] = node
+
+
+## Hide / show every lingering status mark of one seat (an Invisible
+## fighter's dots must not give its tile away to the other player).
+var _hidden_seats := {}
+
+
+func set_seat_hidden(seat: int, hidden: bool) -> void:
+	if hidden:
+		_hidden_seats[seat] = true
+	else:
+		_hidden_seats.erase(seat)
+	var suffix := ":%d" % seat
+	for key in _linger.keys():
+		if not str(key).ends_with(suffix):
+			continue
+		var node: Node = _linger[key]
+		if node != null and is_instance_valid(node) and node is CanvasItem:
+			(node as CanvasItem).visible = not hidden
 
 
 func _dismiss_linger(key: String) -> void:

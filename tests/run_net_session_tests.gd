@@ -649,12 +649,14 @@ func _test_invisible_hidden_from_opponent() -> void:
 	for intent in kestrel_pack.get("legal_intents", {}).get(1, []):
 		if typeof(intent) != TYPE_DICTIONARY:
 			continue
-		if intent.get("to") == Vector2i(1, 1):
+		# Mauro 30 Sep 2026: blind attacks are offered on every open tile in
+		# reach; none names the hidden seat and all look the same.
+		if intent.get("to") == Vector2i(1, 1) and not bool(intent.get("blind", false)):
 			named_hidden = true
 		if str(intent.get("spell", "")) == "mark_shot":
 			saw_mark = true
-			eq(intent.has("to"), false, "mark_shot intent omits the Invisible tile")
-			eq(int(intent.get("target_seat", -1)), 0, "mark_shot still names the target seat")
+			eq(bool(intent.get("blind", false)), true, "mark_shot while the enemy is Invisible is a blind attack")
+			eq(intent.has("target_seat"), false, "a blind attack never names the hidden seat")
 	eq(saw_mark, true, "kestrel still has mark_shot while the enemy is Invisible")
 	eq(named_hidden, false, "legal_intents do not name the Invisible tile")
 	eq(_contains_cell(kestrel_pack.get("snapshot", {}).get("units", []), Vector2i(1, 1)), false, "end-turn snapshot hides the Invisible tile")
