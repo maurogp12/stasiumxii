@@ -455,8 +455,8 @@ func _test_ambush_hit() -> void:
 		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 	})
 	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
-	eq(str(rejected.get("reason", "")), "no_shade", "Ambush without Shade or Invisible is rejected")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), int(bare["units"][0]["ap"]), "no_shade does not spend AP")
+	eq(bool(rejected.get("ok", false)), true, "Ambush without Shade or Invisible resolves from the body (Mauro 30 Sep 2026)")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), int(bare["units"][0]["ap"]) - 4, "the body Ambush spends 4 AP")
 
 
 func _test_aegis_break() -> void:
