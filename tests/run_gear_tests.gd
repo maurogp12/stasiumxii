@@ -254,6 +254,14 @@ func _test_temporary_kit() -> void:
 		var vault := StillVault.new()
 		TL.sync_vault(vault)
 		eq(vault.count("mercy"), TL.STILL_FRAGMENTS, "every Still gets 99 fragments")
+		var hero := HeroProgress.new()
+		hero.add_xp("kestrel", 500)
+		var before_level := hero.level_of("kestrel")
+		TL.sync_hero(hero)
+		for cid in HeroProgress.GROWTH:
+			eq(hero.level_of(cid), 30, "%s is level 30" % cid)
+			eq(hero.points_free(cid), 58, "%s has all 58 characteristic points free" % cid)
+		eq(int(hero.test_backup["kestrel"]["level"]), before_level, "the real progress is backed up")
 	# Revoke path (what ACTIVE = false does on the next load).
 	bag.test_grant = true
 	for slot in GearBag.SLOTS:

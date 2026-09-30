@@ -36,9 +36,14 @@ const XP_KOLISEO_WIN := 50
 const XP_KOLISEO_LOSS := 15
 
 static var save_path: String = "user://hero_progress.json"
+const _TestLoadout := preload("res://backend/test_loadout.gd")
 
 ## class_id → {"xp": int (inside the current level), "level": int, "spent": {bucket: n}}
 var classes: Dictionary = {}
+## TEMPORARY balance-test kit: the real progress before the level-30 grant
+## (restored when the kit is turned off). Empty = no grant.
+var test_backup: Dictionary = {}
+var test_grant: bool = false
 
 
 static func xp_to_next(level: int) -> int:
@@ -57,13 +62,20 @@ static func total_xp_to(level: int) -> int:
 static func load_saved() -> HeroProgress:
 	var hero := HeroProgress.new()
 	if not FileAccess.file_exists(save_path):
-		return hero
+		return _with_test_loadout(hero)
 	var file := FileAccess.open(save_path, FileAccess.READ)
 	if file == null:
 		return hero
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) == TYPE_DICTIONARY:
 		hero.from_dict(parsed)
+	return _with_test_loadout(hero)
+
+
+## TEMPORARY (backend/test_loadout.gd): the real save only; tests use other paths.
+static func _with_test_loadout(hero: HeroProgress) -> HeroProgress:
+	if save_path == _TestLoadout.DEFAULT_HERO_PATH and _TestLoadout.sync_hero(hero):
+		hero.save()
 	return hero
 
 
@@ -71,11 +83,13 @@ func save() -> bool:
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string(JSON.stringify({"classes": classes}, "\t"))
+	file.store_string(JSON.stringify({"classes": classes, "test_grant": test_grant, "test_backup": test_backup}, "\t"))
 	return true
 
 
 func from_dict(data: Dictionary) -> void:
+	test_grant = bool(data.get("test_grant", false))
+	test_backup = (data.get("test_backup", {}) as Dictionary).duplicate(true) if typeof(data.get("test_backup", {})) == TYPE_DICTIONARY else {}
 	classes = {}
 	var raw: Variant = data.get("classes", {})
 	if typeof(raw) != TYPE_DICTIONARY:

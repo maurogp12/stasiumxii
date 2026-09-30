@@ -105,15 +105,20 @@ func is_minor() -> bool:
 	return _kind in ["resource", "mp"]
 
 
-## Where the number sits on screen now (parent space, at its rest scale).
+## Where the number sits on screen (parent space). It covers the whole
+## flight: the 1.45× pop and the Dofus bounce that jumps 1.6× the rise before
+## settling, so a status line (+1 Impact) is placed clear of the peak and the
+## big damage number never climbs into it.
 func footprint() -> Rect2:
 	var font := ThemeDB.fallback_font
 	var width := 40.0
 	if font != null and _text != "":
 		width = font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
-	var s := maxf(_pop, 0.5)
+	var s := maxf(_pop, 0.5) * (1.45 if not is_minor() else 1.0)
 	var h := float(_font_size) * 1.05 * s
-	return Rect2(position + Vector2(-width * 0.5 * s - 4.0, -(lift + float(_font_size) * 0.8) * s), Vector2(width * s + 8.0, h))
+	var bounce := VfxBudget.NUMBER_RISE_PX * 0.6 if not is_minor() else 0.0
+	var top := position.y - (lift + float(_font_size) * 0.8) * s - bounce
+	return Rect2(Vector2(position.x - width * 0.5 * s - 4.0, top), Vector2(width * s + 8.0, h + bounce))
 
 
 ## Lift until this number's box sits above `other` (plus a small gap).

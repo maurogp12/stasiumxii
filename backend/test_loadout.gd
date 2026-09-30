@@ -6,7 +6,9 @@ extends RefCounted
 ## once i say its good and go back to normal you shall remove all sets and put
 ## it as the regular game is designed").
 ##
-## ACTIVE = true: the phone's gear bag holds every set piece (6 families × 5
+## ACTIVE = true: every class is level 30 with all 58 characteristic points
+## free to spend (Mauro: "make all characters lvl 30 with all the
+## characteristic points"), the phone's gear bag holds every set piece (6 families × 5
 ## slots) at max fusion +5, the Still vault holds 99 fragments of every Still,
 ## and hot-seat Koliseo seats wear the equipped loadout (normal game: no gear
 ## in hot-seat). Granted pieces are tagged `test`; the grant is recorded so it
@@ -14,12 +16,14 @@ extends RefCounted
 ##
 ## TO GO BACK TO NORMAL (only when Mauro says so): set ACTIVE = false. On the
 ## next load every tagged piece is removed (and unequipped) and the granted
-## fragments / forged test Still are taken back; hot-seat has no gear again.
+## fragments / forged test Still are taken back, every class's real level /
+## XP / points from before the grant are restored; hot-seat has no gear again.
 ## Then delete this file and its hooks (see docs/AGENT_HANDOFF.md).
 const ACTIVE := true
 const STILL_FRAGMENTS := 99
 const DEFAULT_GEAR_PATH := "user://gear_bag.json"
 const DEFAULT_STILL_PATH := "user://stills.json"
+const DEFAULT_HERO_PATH := "user://hero_progress.json"
 
 
 ## Called by GearBag.load_saved on the real save only (tests use other paths).
@@ -62,5 +66,24 @@ static func sync_vault(vault) -> bool:
 		vault.socket = ""
 		vault.mode = "intact"
 		vault.test_grant = {}
+		return true
+	return false
+
+
+## Called by HeroProgress.load_saved on the real save only.
+static func sync_hero(hero) -> bool:
+	if ACTIVE and not hero.test_grant:
+		hero.test_backup = hero.classes.duplicate(true)
+		for class_id in hero.GROWTH:
+			var rec: Dictionary = hero.record(class_id)
+			rec["level"] = hero.MAX_LEVEL
+			rec["xp"] = 0
+			rec["spent"] = {}
+		hero.test_grant = true
+		return true
+	if not ACTIVE and hero.test_grant:
+		hero.classes = hero.test_backup.duplicate(true)
+		hero.test_backup = {}
+		hero.test_grant = false
 		return true
 	return false

@@ -107,7 +107,9 @@ Version history, reasons and Mauro's exact words are in
 ## TEMPORARY: balance-test kit (ON since 0.1.79)
 
 `backend/test_loadout.gd` `ACTIVE = true` gives the phone every set piece at
-+5 fusion, 99 fragments of every Still, and gear in hot-seat Koliseo. It is
++5 fusion, 99 fragments of every Still, every class level 30 with 58 free
+characteristic points (real progress backed up in `HeroProgress.test_backup`),
+and gear + levels in hot-seat Koliseo. It is
 **temporary by Mauro's order** — do not remove it until he says the balance is
 good, and do not leave it in once he does. Revert = `ACTIVE = false` (the next
 load takes back only the tagged pieces and granted fragments), then delete
