@@ -83,6 +83,7 @@ func _run() -> void:
 	_test_legal_intents_empty_for_other_seat()
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
+	_test_line_of_sight()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
 	_test_advance_then_remaining_mp_still_walks()
@@ -152,9 +153,9 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
 	eq(snap["terrain_mp"]["lava"], 0, "Lava MP stamp is 0 / impassable")
 	eq(snap["terrain_mp"]["void"], 0, "Void is impassable and has no MP cost")
-	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"], "height hit/facing/LoS, stairs/ramps/flying stay Open")
+	eq(snap["open_elevation"], ["height_hit", "height_facing", "stairs", "ramps", "flying"], "height hit/facing, stairs/ramps/flying stay Open (sight decided by Mauro 30 Sep 2026)")
 	eq(str(snap["open_elevation"]).contains("advance_climb"), false, "Advance stand-on is Locked, not Open")
-	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
+	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
 	eq(snap["board_size"], 15, "ship board is 15×15")
 	eq(snap["demo_map"], "crosshaven_15", "skip_deploy seeds Crosshaven tags")
@@ -3561,7 +3562,7 @@ func _test_wind_mod_omitted() -> void:
 
 
 func _test_legal_intents_empty_for_other_seat() -> void:
-	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	eq(_sim.legal_intents(1).size(), 0, "Ironjaw has no legal intents on Kestrel's turn")
 	truthy(_sim.legal_intents(0).size() > 0, "Kestrel has legal intents")
 	var types := {}
@@ -3584,8 +3585,52 @@ func _test_view_does_not_roll_or_own_hp() -> void:
 	eq(view.contains("hp"), false, "board_view does not mention hp")
 
 
-func _test_hud_chrome_kit_gated() -> void:
+## Mauro 30 Sep 2026: "Kestrel should not be able to attack in front of the
+## wall, has to have vision; this applies for all classes".
+func _test_line_of_sight() -> void:
+	var shot := func(legal: Array, spell: String, to: Vector2i) -> bool:
+		for intent in legal:
+			if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell and intent.get("to", Vector2i(-9, -9)) == to:
+				return true
+		return false
+	# Clear line: Mark Shot is offered.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 7), Vector2i(7, 7)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), true, "open floor has sight")
+	truthy(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(7, 7)), "Mark Shot offered with a clear line")
+	# A solid blocker on the line.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 7), Vector2i(7, 7)], "blockers": [Vector2i(4, 7)]})
+	eq(_sim.sight_blocker(Vector2i(2, 7), Vector2i(7, 7)), Vector2i(4, 7), "the blocker is the wall on the line")
+	eq(_sim.has_line_of_sight(Vector2i(7, 7), Vector2i(2, 7)), false, "sight is the same both ways")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(7, 7)), false, "Mark Shot is not offered through a wall")
+	eq(_sim.range_highlight_cells(0, "mark_shot").has(Vector2i(7, 7)), false, "no gold range tile behind the wall")
+	truthy(_sim.sight_blocked_cells(0, "mark_shot").has(Vector2i(7, 7)), "the tile behind the wall is listed as no sight")
+	var ap_before := int(_unit(0)["ap"])
+	var res: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(7, 7), "seat": 0})
+	eq(str(res.get("reason", "")), "no_line_of_sight", "a shot through the wall is rejected")
+	eq(int(_unit(0)["ap"]), ap_before, "the rejected shot costs no AP")
+	eq(str(_sim.preview_cast("mark_shot", Vector2i(2, 7), Vector2i(7, 7)).get("reason", "")), "no_line_of_sight", "the preview says no sight")
+	# Off the wall's row the line is clear again.
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 9)), true, "a line that misses the wall has sight")
+	# A line that only grazes a corner is not blocked by the corner tiles.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 2), Vector2i(4, 4)], "blockers": [Vector2i(3, 2), Vector2i(2, 3)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 2), Vector2i(4, 4)), true, "a diagonal between two blocks still sees")
+	# Melee next to a wall is never blocked (no tile between).
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "blockers": [Vector2i(5, 4), Vector2i(6, 4)]})
+	truthy(shot.call(_sim.legal_intents(0), "strike", Vector2i(6, 5)), "Strike on the next tile is not blocked")
+	# Every class: a targeted spell of the Bastion kit is gated by a Snap Wall too.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "classes": ["kestrel", "bastion"], "positions": [Vector2i(2, 7), Vector2i(7, 7)], "snap_walls": [Vector2i(5, 7)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), false, "a Snap Wall blocks sight")
+	# Raised stone on the real Crosshaven map: z1 at (5,5) between two z0 tiles.
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	eq(_sim.sight_blocker(Vector2i(1, 1), Vector2i(6, 6)), Vector2i(5, 5), "a raised block higher than both ends is a wall")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot over the raised wall")
+	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
+	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+func _test_hud_chrome_kit_gated() -> void:
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
 	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate")
 	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")

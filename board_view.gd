@@ -2004,6 +2004,10 @@ func _paint_highlights() -> void:
 			for cell in range_cells:
 				if tiles.has(cell) and spell_id != SpellKits.AMBUSH:
 					_tile_at(cell).set_highlight("range")
+			# In range but behind a wall: grey, no sight (CombatSim decides).
+			for cell in _sim().sight_blocked_cells(CombatHUD.kit_seat(snap), spell_id):
+				if tiles.has(cell):
+					_tile_at(cell).set_highlight("grey")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# Solid props are already not walkable, so a blue path cannot cross a rock, fence, or arch.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.

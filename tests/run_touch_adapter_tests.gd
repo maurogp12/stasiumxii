@@ -145,7 +145,7 @@ func _test_pawn_body_cast_pick() -> void:
 
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true, "rolls": [1]})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "rolls": [1]})
 	var missed: Dictionary = sim.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": behind})
 	eq(missed.get("ok", true), false, "casting the diamond behind the foe is illegal")
 	eq(str(missed.get("reason", "")), "no_target", "that illegal cast is no living unit")
@@ -370,7 +370,7 @@ func _test_ability_icons() -> void:
 
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)
@@ -482,7 +482,7 @@ func mark_host_primary(hud, spell_id: String) -> bool:
 func _test_hud_targets_and_tooltip_tap() -> void:
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)
@@ -606,7 +606,7 @@ func _test_hud_targets_and_tooltip_tap() -> void:
 func _test_hold_card_hides_when_drag_leaves() -> void:
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)

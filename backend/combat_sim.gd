@@ -72,7 +72,9 @@ const FACING_VEC := {
 ## to exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1,
 ## diagonals, and any non-cardinal are rejected. Advance dest uses the same
 ## stand-on gates as walk.
-## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
+## Hit bands / facing cones do not read height. Spell line of sight (Mauro
+## 30 Sep 2026): solid props, Snap Walls and tiles raised above both ends
+## block a targeted spell (see spell_needs_sight). Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
 ## push_blocked (hard body-block; hit Impact stays +1). Walkable empty dest
@@ -415,7 +417,7 @@ func legal_intents(seat: int) -> Array:
 				var enemy: Dictionary = hostile
 				if _cast_gate_reason(actor, enemy, def) != "":
 					continue
-				if _in_spell_range(def, from, enemy["pos"]):
+				if _in_spell_reach(def, from, enemy["pos"]):
 					out.append({
 						"type": "cast",
 						"spell": spell_id,
@@ -587,6 +589,26 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			if dist > _HitBands.MAX_DISTANCE:
 				continue
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+				if spell_needs_sight(def) and not has_line_of_sight(from, cell):
+					continue
+				out.append(cell)
+	return out
+
+
+## In range but behind a wall: the board paints these grey (no sight).
+func sight_blocked_cells(seat: int, spell_id: String) -> Array:
+	var out: Array = []
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not actor["alive"] or not SpellKits.has_spell(str(actor["class_id"]), spell_id):
+		return out
+	var def: Dictionary = SpellKits.spell(spell_id)
+	if def.is_empty() or not spell_needs_sight(def):
+		return out
+	var from: Vector2i = actor["pos"]
+	for y in range(_board_size):
+		for x in range(_board_size):
+			var cell := Vector2i(x, y)
+			if cell != from and _in_spell_range(def, from, cell) and not has_line_of_sight(from, cell):
 				out.append(cell)
 	return out
 
@@ -719,9 +741,9 @@ func snapshot() -> Dictionary:
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Hit / facing unchanged — no height mods. Spell line of sight (Mauro 30 Sep 2026): a solid prop, a Snap Wall or a tile raised above both ends blocks a targeted spell. Open (do not invent): height→hit/facing, stairs/ramps/flying, hit % past 14.",
 		},
-		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
+		"open_elevation": ["height_hit", "height_facing", "stairs", "ramps", "flying"],
 	}
 
 
@@ -942,6 +964,10 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
+	# No sight behind a wall: no hit % either (the shot cannot be taken).
+	if spell_needs_sight(def) and not has_line_of_sight(aim_from, cell):
+		out["no_sight"] = true
+		return out
 	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
 	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
 		out["show"] = true
@@ -989,7 +1015,7 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 		return _aim_hidden()
 	var from_cell: Vector2i = actor["pos"]
 	var cell := _as_cell(hover)
-	if not _in_spell_range(def, from_cell, cell):
+	if not _in_spell_reach(def, from_cell, cell):
 		return _aim_hidden()
 	var floated: Dictionary = _aim_float(actor, _living_unit_at(cell), def, from_cell)
 	var text := str(floated.get("text", ""))
@@ -1209,6 +1235,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		return "out_of_bounds"
 	if not in_range:
 		return "out_of_range"
+	if spell_needs_sight(def) and not has_line_of_sight(from_cell, to_cell):
+		return "no_line_of_sight"
 	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
 		return "insufficient_ap"
 	if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
@@ -1833,6 +1861,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
 		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
+	if spell_needs_sight(def) and not has_line_of_sight(range_from, dest):
+		var wall := sight_blocker(range_from, dest)
+		return _reject(intent, "no_line_of_sight", "REJECT — %s has no line of sight: a wall at (%d,%d) blocks it (refund)." % [def["name"], wall.x, wall.y])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -3375,7 +3406,7 @@ func soft_lock_dest(seat: int, spell_id: String, dest: Vector2i) -> Vector2i:
 func _soft_lock_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vector2i, dest: Vector2i) -> Dictionary:
 	if not _living_unit_at(dest).is_empty():
 		return {}
-	if not _in_spell_range(def, range_from, dest):
+	if not _in_spell_reach(def, range_from, dest):
 		return {}
 	var found := {}
 	for hostile in _hostile_cast_targets(int(actor["seat"])):
@@ -3386,7 +3417,7 @@ func _soft_lock_neighbor_target(actor: Dictionary, def: Dictionary, range_from: 
 			continue
 		if chebyshev(dest, enemy["pos"]) > 1:
 			continue
-		if not _in_spell_range(def, range_from, enemy["pos"]):
+		if not _in_spell_reach(def, range_from, enemy["pos"]):
 			continue
 		if _cast_gate_reason(actor, enemy, def) != "":
 			continue
@@ -3434,13 +3465,111 @@ func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) ->
 	return dist >= int(def.get("min_range", 0)) and dist <= int(def.get("max_range", 0))
 
 
+## Line of sight (Mauro 30 Sep 2026: "Kestrel should not be able to attack in
+## front of the wall, has to have vision; this applies for all classes").
+## A spell aimed at another tile needs a clear line from the caster's tile
+## centre to the target's. A tile the line passes through blocks it when it
+## holds a solid prop (the same props that block walking), a Snap Wall or a
+## blocker, or stands higher than both the caster's and the target's tiles
+## (a raised wall). Water, mud, lava and bodies do not block. Self casts,
+## Advance (a 2-tile step), Ambush (its own ray gate) and the cone / burst
+## around the caster do not check sight.
+func spell_needs_sight(def: Dictionary) -> bool:
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.ADVANCE or spell_id == SpellKits.AMBUSH:
+		return false
+	return ["enemy", "ally", "any", "tile", "empty_tile"].has(str(def.get("target", "")))
+
+
+func has_line_of_sight(from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	return sight_blocker(from_cell, to_cell) == Vector2i(-1, -1)
+
+
+## First tile that blocks the line, or (-1, -1) when the line is clear.
+func sight_blocker(from_cell: Vector2i, to_cell: Vector2i) -> Vector2i:
+	var none := Vector2i(-1, -1)
+	if from_cell == to_cell or not _in_bounds(from_cell) or not _in_bounds(to_cell):
+		return none
+	var top := maxi(_elevation_at(from_cell), _elevation_at(to_cell))
+	var a := Vector2(from_cell)
+	var b := Vector2(to_cell)
+	var cells: Array = []
+	for y in range(mini(from_cell.y, to_cell.y), maxi(from_cell.y, to_cell.y) + 1):
+		for x in range(mini(from_cell.x, to_cell.x), maxi(from_cell.x, to_cell.x) + 1):
+			var cell := Vector2i(x, y)
+			if cell == from_cell or cell == to_cell:
+				continue
+			if _segment_crosses_cell(a, b, cell):
+				cells.append(cell)
+	cells.sort_custom(func(p: Vector2i, q: Vector2i) -> bool: return Vector2(p).distance_squared_to(a) < Vector2(q).distance_squared_to(a))
+	for item in cells:
+		var cell: Vector2i = item
+		if _blocks_sight(cell, top):
+			return cell
+	return none
+
+
+func _blocks_sight(cell: Vector2i, top: int) -> bool:
+	if _elevation_at(cell) > top:
+		return true
+	if _CellTagMap.props_block_move(_paint_only.get(cell, [])):
+		return true
+	if _snap_wall_blocks(cell):
+		return true
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return true
+	return false
+
+
+func _elevation_at(cell: Vector2i) -> int:
+	var tile = _board.tile_at(cell)
+	return int(tile.elevation) if tile != null else 0
+
+
+## The segment between two tile centres passes through the tile's inside. The
+## tile is shrunk a hair so a line that only grazes a corner does not count.
+static func _segment_crosses_cell(a: Vector2, b: Vector2, cell: Vector2i) -> bool:
+	var h := 0.499
+	var lo := Vector2(cell) - Vector2(h, h)
+	var hi := Vector2(cell) + Vector2(h, h)
+	var t0 := 0.0
+	var t1 := 1.0
+	var d := b - a
+	for axis in 2:
+		var p := a[axis]
+		var v := d[axis]
+		if absf(v) < 0.000001:
+			if p < lo[axis] or p > hi[axis]:
+				return false
+			continue
+		var ta := (lo[axis] - p) / v
+		var tb := (hi[axis] - p) / v
+		if ta > tb:
+			var tmp := ta
+			ta = tb
+			tb = tmp
+		t0 = maxf(t0, ta)
+		t1 = minf(t1, tb)
+		if t0 > t1:
+			return false
+	return true
+
+
+## Range, then sight when the spell needs it.
+func _in_spell_reach(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	if not _in_spell_range(def, from_cell, to_cell):
+		return false
+	return not spell_needs_sight(def) or has_line_of_sight(from_cell, to_cell)
+
+
 func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:
 	var from_cell: Vector2i = actor["pos"]
 	var seat := int(actor["seat"])
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
-			if not _in_spell_range(def, from_cell, cell):
+			if not _in_spell_reach(def, from_cell, cell):
 				continue
 			if empty_only and (not _is_empty(cell) or not _board.is_walkable(cell)):
 				continue
