@@ -71,6 +71,8 @@ fit in one turn, or Kestrel becomes a hard counter.
 
 ## 2. STEP 1 — class numbers (approved; numbers only, no new rules)
 
+**Applied.** Mauro's picks match the table below (no difference). Characteristic-point spends were not changed: the phone kit still leaves all 58 points free, and the duel simulator still uses `tests/sim_duels.gd` `BUILDS`. No APK.
+
 | What | File | Now | New |
 |---|---|---|---|
 | Gloam Cut damage | `data/kits.gd` `CUT.base_damage` (≈ line 273) | 13 | **16** |

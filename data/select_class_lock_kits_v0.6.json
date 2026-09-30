@@ -13,7 +13,7 @@
         {"id": "pulse_tap", "ap": 2, "mp": 0, "range": [0, 3], "engine": "spend 1 pulse", "effect": "10H FLEX ally", "notes": "miss/crit OK"},
         {"id": "ward", "ap": 3, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "20HP shield 2 turns FLEX", "notes": "miss OK; no crit"},
         {"id": "cleanse", "ap": 2, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "LOCK Neutral remove 1 CC", "notes": "no roll"},
-        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 4 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=10 + skip next MP", "notes": "FLEX; miss/crit OK"}
+        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=18 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
       ]
     },
     "gloam": {
@@ -23,7 +23,7 @@
       "hp": 80, "mastery": 0, "resist": 0,
       "passive": {"id": "backstab", "mult": 1.35, "replaces_back": 1.2},
       "spells": [
-        {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "13D FLEX weapon", "notes": "backstab applies"},
+        {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "16D FLEX weapon", "notes": "backstab applies. Mauro 30 Sep 2026 balance"},
         {"id": "drop_shade", "ap": 1, "mp": 0, "range": [1, 3], "engine": "+1 shade max 2", "effect": "LOCK Neutral Shade 3 turns", "notes": "no roll"},
         {"id": "ambush", "ap": 4, "mp": 0, "range": "range 1–2 cardinal", "engine": "spend shade only if origin shade", "effect": "22D after jump FLEX", "notes": "origin=self if Invisible else live Shade; Shade arms only after the opponent completes >=1 full turn since that Drop (Fade/Invisible self-origin has no delay); Manhattan 1-2 cardinal, no diagonals; dest = empty standable tile one step past the enemy on that axis; occupied/illegal back = illegal_back refund; MISS: no teleport, shade kept, invisible kept, 4AP spent; button arms only when Ambush is in legal_intents"},
         {"id": "fade", "ap": 2, "mp": 1, "range": "self", "engine": "+1 umbral", "effect": "LOCK Neutral Invisible", "notes": "no roll"},
@@ -37,7 +37,7 @@
       "hp": 80, "mastery": 0, "resist": 0,
       "passive": {"id": "intercept", "transfer": 0.4, "once_per_bastion_turn_cycle": true, "excludes": ["miss", "magma_ticks", "self_damage"]},
       "spells": [
-        {"id": "bash", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "11D FLEX melee"},
+        {"id": "bash", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "13D FLEX melee", "notes": "Mauro 30 Sep 2026 balance"},
         {"id": "plant", "ap": 2, "mp": 0, "range": [1, 2], "engine": "+1 aegis", "effect": "LOCK Neutral ward tile 3 turns; allies resist next push", "notes": "no roll"},
         {"id": "hold_line", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 aegis", "effect": "7D/body FLEX front cone 3; +1MP exit tax 1 turn on connect"},
         {"id": "snap_wall", "ap": 1, "mp": 0, "range": [1, 2], "engine": "spend 2 aegis", "effect": "LOCK Neutral 1-tile blocked 2 turns", "notes": "blocks walk/Gust; ships with Bastion; 2-class board stays wall-less"},

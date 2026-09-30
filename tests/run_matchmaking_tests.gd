@@ -769,9 +769,9 @@ func _test_heartstop() -> void:
 	})
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	eq(bool(enemy.get("ok", false)), true, "enemy Heartstop hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 70, "enemy Heartstop damage is 10")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 62, "enemy Heartstop damage is 18")
 	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "enemy Heartstop skips the next MP refill")
-	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Heartstop spends 4 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill sets MP to 0")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
@@ -801,7 +801,7 @@ func _test_gloam_backstab() -> void:
 	})
 	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(cut.get("ok", false)), true, "Cut hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 62, "Gloam backstab is 13 × 1.35 = 18")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 58, "Gloam backstab is 16 × 1.35 = 22")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Cut gains 1 Umbral")
 
 

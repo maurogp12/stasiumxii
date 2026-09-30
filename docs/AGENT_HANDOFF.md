@@ -118,9 +118,9 @@ good, and do not leave it in once he does. Revert = `ACTIVE = false` (the next
 load takes back only the tagged pieces and granted fragments), then delete
 the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
-## Balance plan (next work)
+## Balance plan
 
-See `docs/BALANCE_PLAN_HANDOFF.md` (counter wheel, class numbers, element riders). Nothing in it is in the game yet.
+Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 12 and HP growth +5, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 18. Advance stays 3 AP (max 2 per turn), Crush stays 24, Kestrel is unchanged. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
 
 ## Open / waiting on Mauro (do not decide these yourself)
 

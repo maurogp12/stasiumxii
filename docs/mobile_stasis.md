@@ -38,7 +38,7 @@ Strike still resolves on Ironjaw’s Locked card. Strike is not on the other fou
 
 Balance has not stamped these. They are not Soft Lock. Do not copy them into `data/kits.gd`.
 
-The attack base is applied before the Locked facing multiplier (front/side ×1.00, back ×1.20). A back hit is higher than the base. The player’s own spells stay the Locked cards, including Strike 16.
+The attack base is applied before the Locked facing multiplier (front/side ×1.00, back ×1.20). A back hit is higher than the base. The player’s own spells stay the cards, including Strike 12 (Mauro 30 Sep 2026 balance).
 
 Room A did not retune these for the pack. Three bodies at 22 HP, each with a full turn, are hotter than the old one-at-a-time duels. That stays Open for Balance.
 
