@@ -1515,6 +1515,18 @@ const FOE_KIND := {
 	"slagheart_the_emberbrute": ["brute", ""],
 	"serra_the_gale_sentinel": ["flyer", ""],
 	"tyrant_coilspire": ["brute", ""],
+	# Caster stand-ins (recoloured melee paintings): they hover like spell
+	# channelers so they read as ranged on the board.
+	"caster_scribe_bolt": ["flyer", "right"],
+	"caster_bell_chanter": ["flyer", ""],
+	"caster_gullkin_hex": ["flyer", "right"],
+	"caster_tide_adept": ["flyer", ""],
+	"caster_ember_cantor": ["flyer", ""],
+	"caster_kiln_voice": ["flyer", "left"],
+	"caster_white_adept": ["flyer", ""],
+	"caster_gale_chanter": ["flyer", ""],
+	"caster_arc_adept": ["flyer", ""],
+	"caster_high_cantor": ["flyer", ""],
 }
 ## Max lean of a foe body into a lunge / away from a blow (UV shear per height).
 const FOE_LEAN := 0.16

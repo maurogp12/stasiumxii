@@ -31,6 +31,10 @@ const ENEMY_SEAT := 1
 const STRIKE_CARD_CLASS := "ironjaw"
 const STRIKE_CARD := "strike"
 const TRASH_COUNT := 3
+## Room 1 pack sizes (Mauro's answers, 29 Sep 2026).
+const PACK_SMALL := 4
+const PACK_BIG := 5
+const FoeKits := preload("res://backend/foe_kits.gd")
 const ART_ROOT := "res://art/stasis/foes/"
 const MAP_ROOT := "res://art/maps/stasis_v1/"
 
@@ -43,60 +47,76 @@ const PROVISIONAL_BOSS_ATTACK := 10
 
 ## Proposed door package. `attack` is a coach label for the Strike card,
 ## not a new spell id. `art` is the package-sheet crop, not an Open kit.
+## Door packages (Mauro's "Stasis bosses + room-1 packs" sheet + answers,
+## 29 Sep 2026). Names are the sheet's. `trash` is always 2 brutes, 1
+## skirmisher, then 2 casters; Room 1 fields 2 brute + 1 skirmish + 1 caster at
+## Stasis 1–2 and all 5 from Stasis 3. `art` is the stand-in painting (the
+## nearest body); casters use a recoloured copy (art/stasis/foes/caster_*.png)
+## until real caster art exists (Open).
 const DOORS := {
 	"crosshaven": {
 		"door": "Threshgate",
-		"boss": "Warden of the Sheaves",
+		"boss": "Sheaf Sovereign",
 		"boss_art": "warden_of_the_sheaves",
-		"boss_attack": "Sheaf Cleave",
+		"boss_attack": "Thresh",
 		"trash": [
-			{"name": "Scarecrow Drudge", "attack": "Straw Swipe", "art": "scarecrow_drudge"},
-			{"name": "Grain Hound", "attack": "Grain Bite", "art": "grain_hound"},
-			{"name": "Threshling", "attack": "Flail", "art": "threshling"},
+			{"name": "Plaza Guard", "role": "brute", "attack": "Hit", "art": "scarecrow_drudge"},
+			{"name": "Riot Club", "role": "brute", "attack": "Hit", "art": "threshling"},
+			{"name": "Watch Mastiff", "role": "skirmish", "attack": "Poke", "art": "grain_hound"},
+			{"name": "Scribe Bolt", "role": "caster", "attack": "Bolt", "art": "caster_scribe_bolt"},
+			{"name": "Bell Chanter", "role": "caster", "attack": "Bolt", "art": "caster_bell_chanter"},
 		],
 	},
 	"brinewake": {
 		"door": "Tidehold",
-		"boss": "Captain Brineclaw",
+		"boss": "Tide-Lord Brineclaw",
 		"boss_art": "captain_brineclaw",
-		"boss_attack": "Claw Rake",
+		"boss_attack": "Claw",
 		"trash": [
-			{"name": "Tide Skitter", "attack": "Tide Nip", "art": "tide_skitter"},
-			{"name": "Silt Raider", "attack": "Silt Jab", "art": "silt_raider"},
-			{"name": "Brine Gullkin", "attack": "Gull Peck", "art": "brine_gullkin"},
+			{"name": "Silt Raider", "role": "brute", "attack": "Hit", "art": "silt_raider"},
+			{"name": "Hawser Thug", "role": "brute", "attack": "Hit", "art": "brine_gullkin"},
+			{"name": "Dock Crab", "role": "skirmish", "attack": "Poke", "art": "tide_skitter"},
+			{"name": "Gullkin Hex", "role": "caster", "attack": "Bolt", "art": "caster_gullkin_hex"},
+			{"name": "Tide Adept", "role": "caster", "attack": "Bolt", "art": "caster_tide_adept"},
 		],
 	},
 	"slagcrown": {
 		"door": "Ashmarch",
-		"boss": "Slagheart the Emberbrute",
+		"boss": "Slagheart (Caldera Crown)",
 		"boss_art": "slagheart_the_emberbrute",
-		"boss_attack": "Ember Slam",
+		"boss_attack": "Slam",
 		"trash": [
-			{"name": "Cinder Imp", "attack": "Cinder Jab", "art": "cinder_imp"},
-			{"name": "Ash Stalker", "attack": "Ash Rake", "art": "ash_stalker"},
-			{"name": "Slag Mite", "attack": "Mite Bite", "art": "slag_mite"},
+			{"name": "Cinder Imp", "role": "brute", "attack": "Hit", "art": "cinder_imp"},
+			{"name": "Slag Mite", "role": "brute", "attack": "Hit", "art": "slag_mite"},
+			{"name": "Ash Stalker", "role": "skirmish", "attack": "Poke", "art": "ash_stalker"},
+			{"name": "Ember Cantor", "role": "caster", "attack": "Bolt", "art": "caster_ember_cantor"},
+			{"name": "Kiln Voice", "role": "caster", "attack": "Bolt", "art": "caster_kiln_voice"},
 		],
 	},
 	"windmere": {
 		"door": "Galevault",
-		"boss": "Serra the Gale Sentinel",
+		"boss": "Serra White-Spire Regent",
 		"boss_art": "serra_the_gale_sentinel",
-		"boss_attack": "Gale Cut",
+		"boss_attack": "Shard",
 		"trash": [
-			{"name": "Gale Skitter", "attack": "Skitter Dash", "art": "gale_skitter"},
-			{"name": "Gustling", "attack": "Gust Slap", "art": "gustling"},
-			{"name": "Frost Wisp", "attack": "Frost Nip", "art": "frost_wisp"},
+			{"name": "Ice Warden", "role": "brute", "attack": "Hit", "art": "frost_wisp"},
+			{"name": "Spire Foot", "role": "brute", "attack": "Hit", "art": "gustling"},
+			{"name": "Pack Wolf", "role": "skirmish", "attack": "Poke", "art": "gale_skitter"},
+			{"name": "White Adept", "role": "caster", "attack": "Bolt", "art": "caster_white_adept"},
+			{"name": "Gale Chanter", "role": "caster", "attack": "Bolt", "art": "caster_gale_chanter"},
 		],
 	},
 	"stormspire": {
 		"door": "Coilgate",
-		"boss": "Tyrant Coilspire",
+		"boss": "High Coilspire",
 		"boss_art": "tyrant_coilspire",
-		"boss_attack": "Coil Lash",
+		"boss_attack": "Arc",
 		"trash": [
-			{"name": "Sparkin", "attack": "Spark Jab", "art": "sparkin"},
-			{"name": "Volt Mote", "attack": "Volt Nip", "art": "volt_mote"},
-			{"name": "Coil Tick", "attack": "Tick Bite", "art": "coil_tick"},
+			{"name": "Coil Brute", "role": "brute", "attack": "Hit", "art": "sparkin"},
+			{"name": "Grid Warden", "role": "brute", "attack": "Hit", "art": "coil_tick"},
+			{"name": "Spark Hound", "role": "skirmish", "attack": "Poke", "art": "volt_mote"},
+			{"name": "Arc Adept", "role": "caster", "attack": "Bolt", "art": "caster_arc_adept"},
+			{"name": "High Cantor", "role": "caster", "attack": "Bolt", "art": "caster_high_cantor"},
 		],
 	},
 }
@@ -187,12 +207,20 @@ static func boss_name(map_id: String = "") -> String:
 	return str(_door(map_id).get("boss", ""))
 
 
-static func trash_names(map_id: String = "") -> Array[String]:
+static func trash_names(map_id: String = "", for_star: int = -1) -> Array[String]:
 	var names: Array[String] = []
-	for entry in _door(map_id).get("trash", []):
-		if typeof(entry) == TYPE_DICTIONARY:
-			names.append(str(entry.get("name", "")))
+	for entry in pack(map_id, for_star):
+		names.append(str(entry.get("name", "")))
 	return names
+
+
+## Room 1 pack for a star: Stasis 1–2 = 2 brutes + skirmisher + 1 caster,
+## Stasis 3+ = 3 melee + 2 casters (Mauro's answers, 29 Sep 2026).
+static func pack(map_id: String = "", for_star: int = -1) -> Array:
+	var all: Array = _door(map_id).get("trash", [])
+	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
+	var count := PACK_BIG if s >= 3 else PACK_SMALL
+	return all.slice(0, mini(count, all.size()))
 
 
 static func art_path(art_id: String) -> String:
@@ -262,6 +290,8 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		cells = positions_override.duplicate()
 	var foes := _room_entries()
 	if cells.size() < foes.size() + 1:
+		cells = cells + extra_spawns(biome_id, room, cells, foes.size() + 1 - cells.size())
+	if cells.size() < foes.size() + 1:
 		return {}
 	var roster: Array = []
 	var positions: Array = []
@@ -287,6 +317,12 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 			"attack_name": str(entry.get("attack", "")),
 			"facing": "S",
 			"spells": [STRIKE_CARD],
+			"foe_kit": entry.get("foe_kit", []),
+			"role": str(entry.get("role", "")),
+			"door": biome_id,
+			"dmg_mult": dmg_mult(),
+			"max_ap": int(entry.get("max_ap", 6)),
+			"max_mp": 3,
 			"sprite": art_path(str(entry.get("art", ""))),
 			# Room B's foe is the door boss: the board draws it bigger, with an aura.
 			"boss": room == "b",
@@ -305,6 +341,56 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		# Higher Init acts first, tie = coin flip (Mauro 29 Sep 2026).
 		"first_by_init": true,
 	}
+
+
+## Extra foe spawns when a room lists fewer than the pack: standable open
+## ground near the listed foe spawns, at least 5 from the player's spawn and
+## not touching another spawn. Deterministic (same room = same cells).
+static func extra_spawns(map_id: String, room_id: String, taken: Array, count: int) -> Array:
+	var tags := CellTagMap.load_file(tags_path(map_id, room_id))
+	var paint: Dictionary = tags.get("paint_only", {})
+	var map := str(tags.get("map_id", map_id))
+	var foes: Array = taken.slice(1)
+	var center := Vector2.ZERO
+	for c in foes:
+		center += Vector2(c)
+	if not foes.is_empty():
+		center /= float(foes.size())
+	var candidates: Array = []
+	for item in tags.get("cells", []):
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = item
+		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
+		if str(rec.get("terrain", "")) != "ground":
+			continue
+		if CellTagMap.props_block_move(paint.get(pos, []), map, pos):
+			continue
+		if not taken.is_empty() and _cheb(pos, taken[0]) < 5:
+			continue
+		candidates.append(pos)
+	candidates.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := Vector2(a).distance_squared_to(center)
+		var db := Vector2(b).distance_squared_to(center)
+		return da < db if da != db else (a.y * 100 + a.x) < (b.y * 100 + b.x))
+	var out: Array = []
+	var used: Array = taken.duplicate()
+	for pos in candidates:
+		if out.size() >= count:
+			break
+		var clear := true
+		for other in used:
+			if _cheb(pos, other) < 2:
+				clear = false
+				break
+		if clear:
+			out.append(pos)
+			used.append(pos)
+	return out
+
+
+static func _cheb(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 
 
 static func spawn_cells(map_id: String, room_id: String = "") -> Array:
@@ -341,19 +427,26 @@ static func _room_entries() -> Array:
 			"name": str(door.get("boss", "")),
 			"attack": str(door.get("boss_attack", "Heavy Blow")),
 			"art": str(door.get("boss_art", "")),
+			"role": "boss",
+			"foe_kit": FoeKits.BOSS_KITS.get(biome_id, []),
+			"max_ap": FoeKits.boss_ap(star),
 			"hp": scaled_hp(PROVISIONAL_BOSS_HP),
 			"attack_base": scaled_attack(PROVISIONAL_BOSS_ATTACK),
 		}]
 	var out: Array = []
-	for entry in door.get("trash", []):
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
+	for entry in pack(biome_id):
 		var rec: Dictionary = entry
+		var role := str(rec.get("role", "brute"))
+		var hp := scaled_hp(PROVISIONAL_TRASH_HP)
+		if role == "caster":
+			hp = maxi(roundi(float(hp) * float(FoeKits.CASTER_HP_PCT) / 100.0), 1)
 		out.append({
 			"name": str(rec.get("name", "Trash")),
-			"attack": str(rec.get("attack", "Swipe")),
+			"attack": str(rec.get("attack", "Hit")),
 			"art": str(rec.get("art", "")),
-			"hp": scaled_hp(PROVISIONAL_TRASH_HP),
+			"role": role,
+			"foe_kit": FoeKits.ROLE_KITS.get(role, ["foe.brute_hit"]),
+			"hp": hp,
 			"attack_base": scaled_attack(PROVISIONAL_TRASH_ATTACK),
 		})
 	return out

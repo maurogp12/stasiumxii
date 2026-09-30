@@ -1,5 +1,7 @@
 extends SceneTree
 
+const FoeKits := preload("res://backend/foe_kits.gd")
+
 ## Mobile Stasis smoke. Two rooms (A trash pack, B boss), package foe art,
 ## schematic boards, and one CombatSim exchange. Koliseo without stasis_roster
 ## stays on Locked Strike 16.
@@ -38,6 +40,7 @@ func _run() -> void:
 	_test_koliseo_strike_unchanged()
 	_test_every_room_connected()
 	_test_fighters_block_sight()
+	_test_foe_kits()
 	_start_fight_scene()
 
 
@@ -64,30 +67,31 @@ func _test_package_and_flow() -> void:
 	eq(StasisCatalog.PROVISIONAL_BOSS_HP, 56, "provisional boss HP")
 	eq(StasisCatalog.PROVISIONAL_BOSS_ATTACK, 10, "provisional boss attack base")
 	var expected := {
-		"crosshaven": ["Threshgate", "Warden of the Sheaves", "Scarecrow Drudge", "Grain Hound", "Threshling"],
-		"brinewake": ["Tidehold", "Captain Brineclaw", "Tide Skitter", "Silt Raider", "Brine Gullkin"],
-		"slagcrown": ["Ashmarch", "Slagheart the Emberbrute", "Cinder Imp", "Ash Stalker", "Slag Mite"],
-		"windmere": ["Galevault", "Serra the Gale Sentinel", "Gale Skitter", "Gustling", "Frost Wisp"],
-		"stormspire": ["Coilgate", "Tyrant Coilspire", "Sparkin", "Volt Mote", "Coil Tick"],
+		"crosshaven": ["Threshgate", "Sheaf Sovereign", "Plaza Guard", "Riot Club", "Watch Mastiff", "Scribe Bolt"],
+		"brinewake": ["Tidehold", "Tide-Lord Brineclaw", "Silt Raider", "Hawser Thug", "Dock Crab", "Gullkin Hex"],
+		"slagcrown": ["Ashmarch", "Slagheart (Caldera Crown)", "Cinder Imp", "Slag Mite", "Ash Stalker", "Ember Cantor"],
+		"windmere": ["Galevault", "Serra White-Spire Regent", "Ice Warden", "Spire Foot", "Pack Wolf", "White Adept"],
+		"stormspire": ["Coilgate", "High Coilspire", "Coil Brute", "Grid Warden", "Spark Hound", "Arc Adept"],
 	}
 	for map_id in expected.keys():
 		var names: Array = expected[map_id]
 		eq(StasisCatalog.door_name(map_id), names[0], "%s door name" % map_id)
 		eq(StasisCatalog.boss_name(map_id), names[1], "%s boss name" % map_id)
-		eq(StasisCatalog.trash_names(map_id), [names[2], names[3], names[4]], "%s trash names" % map_id)
+		eq(StasisCatalog.trash_names(map_id, 1), [names[2], names[3], names[4], names[5]], "%s ★1 pack (2 brute, skirmish, caster)" % map_id)
+		eq(StasisCatalog.trash_names(map_id, 3).size(), 5, "%s ★3 pack is 5 (3 melee + 2 casters)" % map_id)
 	eq(StasisCatalog.begin("brinehaven"), false, "a mixed spelling does not start a gate")
 	truthy(StasisCatalog.begin("windmere"), "windmere starts a gate")
 	eq(StasisCatalog.room, "a", "a gate opens on room A")
-	eq(StasisCatalog.current_foe()["name"], "Gale Skitter", "room A names the first trash in the pack")
-	eq(StasisCatalog.trash_names().size(), StasisCatalog.TRASH_COUNT, "room A still lists three trash")
+	eq(StasisCatalog.current_foe()["name"], "Ice Warden", "room A names the first trash in the pack")
+	eq(StasisCatalog.trash_names().size(), StasisCatalog.PACK_SMALL, "room A at ★1 lists four trash")
 	var banner := StasisCatalog.room_banner()
 	truthy(banner.contains("Room A"), "banner names room A")
-	truthy(banner.contains("Gale Skitter") and banner.contains("Gustling") and banner.contains("Frost Wisp"), "room A banner lists the whole pack")
+	truthy(banner.contains("Ice Warden") and banner.contains("Pack Wolf") and banner.contains("White Adept"), "room A banner lists the whole pack")
 	eq(banner.contains("/3"), false, "room A is not billed as trash 1/3")
 	eq(StasisCatalog.continue_caption(), "Enter Room B", "clearing room A offers room B")
 	eq(StasisCatalog.advance_after_win(), "next", "room A win is one step into room B")
 	eq(StasisCatalog.room, "b", "boss room is B")
-	eq(StasisCatalog.current_foe()["name"], "Serra the Gale Sentinel", "room B is the boss")
+	eq(StasisCatalog.current_foe()["name"], "Serra White-Spire Regent", "room B is the boss")
 	eq(int(StasisCatalog.current_foe()["hp"]), StasisCatalog.PROVISIONAL_BOSS_HP, "boss uses the provisional HP")
 	eq(StasisCatalog.advance_after_win(), "cleared", "boss win clears the gate")
 	# Difficulty stars (Mauro: "every star should be a lvl of difficult").
@@ -231,6 +235,122 @@ func _test_fighters_block_sight() -> void:
 	_sim.reset_match({})
 
 
+## Mauro's Stasis kit sheets + answers (29 Sep 2026): monster spells as data.
+func _boss_fight(biome: String, player_pos: Vector2i, boss_pos: Vector2i, tiles: Array = []) -> void:
+	StasisCatalog.clear_run()
+	StasisCatalog.begin(biome)
+	StasisCatalog.class_id = "kestrel"
+	StasisCatalog.room = "b"
+	var cfg: Dictionary = StasisCatalog.fight_config()
+	cfg["flat_board"] = true
+	cfg["positions"] = [player_pos, boss_pos]
+	cfg["tiles"] = tiles
+	cfg["first_by_init"] = false
+	cfg["rolls"] = [1, 1, 1, 1, 1, 1]
+	_sim.reset_match(cfg)
+	_sim._map_id = biome
+	_sim.submit({"type": "end_turn", "seat": 0})
+
+
+func _has_foe_cast(seat: int, spell_id: String) -> bool:
+	for intent in _sim.legal_intents(seat):
+		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell_id:
+			return true
+	return false
+
+
+func _test_foe_kits() -> void:
+	# Kits and AP on the bosses.
+	for biome in FoeKits.BOSS_KITS:
+		_boss_fight(biome, Vector2i(7, 12), Vector2i(7, 2))
+		var boss: Dictionary = _sim._unit_by_seat(1)
+		eq(boss.get("foe_kit", []), FoeKits.BOSS_KITS[biome], "%s boss carries its sheet kit" % biome)
+		eq(int(boss["ap"]), 7, "%s boss has 7 AP at ★1" % biome)
+	# Sheaf Sovereign: Reap Cone (AOE) then its cooldown.
+	_boss_fight("crosshaven", Vector2i(7, 6), Vector2i(7, 7))
+	truthy(_has_foe_cast(1, "sheaf.reap"), "Reap Cone is offered when the player stands in the cone")
+	eq(str(StasisAi.plan(_sim, 1).get("spell", "")), "sheaf.reap", "the planner opens with the AOE")
+	var hp0 := int(_sim._unit_by_seat(0)["hp"])
+	var reap: Dictionary = _sim.submit({"type": "cast", "spell": "sheaf.reap", "to": Vector2i(7, 6), "seat": 1})
+	eq(bool(reap.get("ok", false)), true, "Reap Cone resolves (%s)" % str(reap.get("reason", "")))
+	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp0, "Reap Cone hurts the player")
+	eq(int(_sim._unit_by_seat(1)["ap"]), 3, "7 AP − 4 for the AOE leaves 3")
+	eq(_has_foe_cast(1, "sheaf.reap"), false, "one AOE per turn")
+	truthy(_has_foe_cast(1, "sheaf.thresh"), "Thresh (3) still fits after the AOE")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(_has_foe_cast(1, "sheaf.reap"), false, "the AOE skips the next turn (cd)")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_sim.submit({"type": "end_turn", "seat": 0})
+	truthy(_has_foe_cast(1, "sheaf.reap"), "the AOE is back the turn after")
+	# Lunge: dash 1 beside a target at 2, then hit.
+	_boss_fight("crosshaven", Vector2i(7, 5), Vector2i(7, 7))
+	truthy(_has_foe_cast(1, "sheaf.lunge"), "Lunge reaches a target at 2")
+	_sim.submit({"type": "cast", "spell": "sheaf.lunge", "to": Vector2i(7, 5), "seat": 1})
+	eq(chebyshev_of(_sim._unit_by_seat(1)["pos"], Vector2i(7, 5)), 1, "Lunge ends beside the target")
+	# Brineclaw Hook pulls into water: Breathless stack 1.
+	_boss_fight("brinewake", Vector2i(7, 4), Vector2i(7, 7), [{"pos": Vector2i(7, 5), "terrain": "water", "elevation": 0}])
+	truthy(_has_foe_cast(1, "brine.hook"), "Hook is a 2–5 shot")
+	_sim.submit({"type": "cast", "spell": "brine.hook", "to": Vector2i(7, 4), "seat": 1})
+	eq(_sim._unit_by_seat(0)["pos"], Vector2i(7, 5), "Hook pulls the player 1 tile toward Brineclaw")
+	eq(int(_sim._unit_by_seat(0).get("breathless_stacks", 0)), 1, "landing in water is Breathless 1")
+	eq(_has_foe_cast(1, "brine.hook"), false, "Hook has a cooldown")
+	# Serra: White Fan is a line of 5; Retreat Step keeps her out of reach.
+	_boss_fight("windmere", Vector2i(7, 3), Vector2i(7, 7))
+	truthy(_has_foe_cast(1, "serra.fan"), "White Fan (line 1–5) reaches 4 tiles ahead")
+	_boss_fight("windmere", Vector2i(7, 6), Vector2i(7, 7))
+	eq(_has_foe_cast(1, "serra.shard"), false, "no Shard inside 3")
+	var step := StasisAi.plan(_sim, 1)
+	# White Fan also hits 1 ahead; with it on cd she steps away.
+	if str(step.get("spell", "")) == "serra.fan":
+		_sim.submit(step)
+		step = StasisAi.plan(_sim, 1)
+	eq(str(step.get("spell", "")), "serra.step", "a crowded Serra steps away")
+	# Slagheart Cinder Burst hits all around.
+	_boss_fight("slagcrown", Vector2i(8, 8), Vector2i(7, 7))
+	truthy(_has_foe_cast(1, "slag.burst"), "Cinder Burst hits a diagonal neighbour")
+	# Coilspire Grid Pulse: a Charged pad and the ground beside it.
+	_boss_fight("stormspire", Vector2i(3, 3), Vector2i(10, 10), [{"pos": Vector2i(3, 4), "terrain": "water", "elevation": 0}])
+	truthy(_has_foe_cast(1, "coil.pulse"), "Grid Pulse hits ground next to a Charged pad")
+	_boss_fight("stormspire", Vector2i(3, 3), Vector2i(10, 10))
+	eq(_has_foe_cast(1, "coil.pulse"), false, "no pad near the player, no Grid Pulse")
+	# Room 1 caster: bolt 3–7 with sight; never walks into 0–1 when it can shoot.
+	StasisCatalog.clear_run()
+	StasisCatalog.begin("crosshaven")
+	StasisCatalog.class_id = "kestrel"
+	StasisCatalog.room = "a"
+	var cfg: Dictionary = StasisCatalog.fight_config()
+	cfg["flat_board"] = true
+	cfg["first_by_init"] = false
+	_sim.reset_match(cfg)
+	var caster_seat := -1
+	for u in _sim._units:
+		if str(u.get("foe_role", "")) == "caster":
+			caster_seat = int(u["seat"])
+	truthy(caster_seat > 0, "the ★1 pack has a caster")
+	var caster: Dictionary = _sim._unit_by_seat(caster_seat)
+	eq(int(caster["max_hp"]), roundi(StasisCatalog.scaled_hp(StasisCatalog.PROVISIONAL_TRASH_HP) * 0.7), "caster HP is 70% of the brute")
+	for u in _sim._units:
+		if int(u["seat"]) > 0 and int(u["seat"]) != caster_seat:
+			u["pos"] = Vector2i(14, int(u["seat"]))
+	_sim._units[0]["pos"] = Vector2i(2, 7)
+	caster["pos"] = Vector2i(7, 7)
+	_sim._active_seat = caster_seat
+	truthy(_has_foe_cast(caster_seat, "foe.caster_bolt"), "the caster bolts at 5")
+	eq(str(StasisAi.plan(_sim, caster_seat).get("spell", "")), "foe.caster_bolt", "the caster shoots instead of walking")
+	caster["pos"] = Vector2i(3, 7)
+	eq(_has_foe_cast(caster_seat, "foe.caster_bolt"), false, "no bolt at 1")
+	var walk := StasisAi.plan(_sim, caster_seat)
+	eq(str(walk.get("type", "")), "move", "a crowded caster walks")
+	truthy(chebyshev_of(walk["to"], Vector2i(2, 7)) >= 3, "…out to its bolt band")
+	StasisCatalog.clear_run()
+	_sim.reset_match({})
+
+
+func chebyshev_of(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
+
+
 func _test_ai() -> void:
 	var strike: Dictionary = StasisAi.choose([
 		{"type": "move", "to": Vector2i(1, 0), "seat": 1},
@@ -270,11 +390,15 @@ func _test_boards_and_provisional_hit() -> void:
 		eq(str(snap.get("phase", "")), "TURN_1", "%s starts in combat" % map_id)
 		eq(bool(snap.get("combat_enabled", false)), true, "%s combat is enabled" % map_id)
 		var units: Array = snap.get("units", [])
-		eq(units.size(), 4, "%s room A has the player and three trash" % map_id)
+		eq(units.size(), 5, "%s room A at ★1 has the player and four trash" % map_id)
 		var order: Array = CombatHUD.turn_order(snap)
-		eq(order.size(), 4, "%s turn strip lists the living seats" % map_id)
+		eq(order.size(), 5, "%s turn strip lists the living seats" % map_id)
 		eq(int(order[0].get("seat", -1)), 0, "%s turn order starts with the player" % map_id)
-		eq(int(order[3].get("seat", -1)) > int(order[0].get("seat", -1)), true, "%s turn order follows seat order" % map_id)
+		eq(int(order[4].get("seat", -1)) > int(order[0].get("seat", -1)), true, "%s turn order follows seat order" % map_id)
+		var cells := {}
+		for u in units:
+			cells[u["pos"]] = true
+		eq(cells.size(), 5, "%s every fighter has its own tile" % map_id)
 		var player: Dictionary = units[0]
 		var enemy: Dictionary = units[1]
 		eq(str(player.get("name", "")), "Kestrel", "%s player keeps the class name" % map_id)
@@ -340,7 +464,7 @@ func _test_melee_exchange() -> void:
 	var snap: Dictionary = _sim.reset_match(config)
 	var enemy: Dictionary = snap["units"][1]
 	var enemy_pos: Vector2i = enemy["pos"]
-	eq(str(enemy.get("name", "")), "Scarecrow Drudge", "first foe is the scarecrow")
+	eq(str(enemy.get("name", "")), "Plaza Guard", "first foe is the Plaza Guard brute")
 	var player_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": enemy_pos, "seat": 0})
 	truthy(bool(player_hit.get("ok", false)), "player Strike resolves (%s)" % str(player_hit.get("reason", "")))
 	var player_event := _hit_event(player_hit)
@@ -350,13 +474,13 @@ func _test_melee_exchange() -> void:
 	truthy(bool(ended.get("ok", false)), "player can end the turn")
 	var after: Dictionary = _sim.snapshot()
 	var player_pos: Vector2i = after["units"][0]["pos"]
-	var foe_hit: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": player_pos, "seat": 1})
-	truthy(bool(foe_hit.get("ok", false)), "foe Strike resolves (%s)" % str(foe_hit.get("reason", "")))
+	eq(_has_stasis_cast(1, "strike", player_pos), false, "a brute no longer borrows the Strike card")
+	var foe_hit: Dictionary = _sim.submit({"type": "cast", "spell": "foe.brute_hit", "to": player_pos, "seat": 1})
+	truthy(bool(foe_hit.get("ok", false)), "brute Hit resolves (%s)" % str(foe_hit.get("reason", "")))
 	var foe_event := _hit_event(foe_hit)
-	eq(str(foe_event.get("spell", "")), "strike", "foe still resolves the stand-in Strike card")
-	eq(int(foe_event.get("base_damage", -1)), StasisCatalog.PROVISIONAL_TRASH_ATTACK, "foe base is the provisional attack, not 16")
-	eq(int(foe_event.get("damage", -1)), _faced_damage(StasisCatalog.PROVISIONAL_TRASH_ATTACK, float(foe_event.get("facing_mult", 1.0))), "foe damage is provisional base times facing")
-	truthy(str(foe_event.get("coach", "")).contains("Straw Swipe"), "coach uses the provisional attack label")
+	eq(str(foe_event.get("spell", "")), "foe.brute_hit", "the brute swings its own kit Hit")
+	eq(int(foe_event.get("damage", -1)), _faced_damage(StasisCatalog.PROVISIONAL_TRASH_ATTACK, float(foe_event.get("facing_mult", 1.0))), "brute damage is the provisional base times facing")
+	truthy(str(foe_event.get("coach", "")).contains("Hit"), "coach names the Hit")
 	var carried: Dictionary = _sim.snapshot()
 	StasisCatalog.carry_player_hp(int(carried["units"][0]["hp"]))
 	_test_one_trash_does_not_clear_the_room()
@@ -364,7 +488,8 @@ func _test_melee_exchange() -> void:
 	eq(StasisCatalog.room, "b", "the carried fight is room B")
 	var next: Dictionary = _sim.reset_match(StasisCatalog.fight_config())
 	eq(next["units"].size(), 2, "room B is the player and the boss")
-	eq(str(next["units"][1]["name"]), "Warden of the Sheaves", "room B foe is the warden")
+	eq(str(next["units"][1]["name"]), "Sheaf Sovereign", "room B foe is the Sheaf Sovereign")
+	eq(int(next["units"][1].get("max_ap", 0)), 7, "a ★1 boss has 7 AP")
 	eq(str(next["units"][1].get("stasis_sprite", "")).contains("ironjaw"), false, "warden portrait is not Ironjaw")
 	truthy(str(next["units"][1].get("stasis_sprite", "")).ends_with("warden_of_the_sheaves.png"), "warden uses the scarecrow crop")
 	eq(int(next["units"][0]["hp"]), int(carried["units"][0]["hp"]), "player HP carries into room B")
@@ -392,7 +517,7 @@ func _test_one_trash_does_not_clear_the_room() -> void:
 	var snap: Dictionary = _sim.reset_match(config)
 	var scarecrow: Dictionary = {}
 	for unit in snap["units"]:
-		if str(unit.get("name", "")) == "Scarecrow Drudge":
+		if str(unit.get("name", "")) == "Plaza Guard":
 			scarecrow = unit
 	eq(scarecrow.is_empty(), false, "pack contains the scarecrow")
 	var first: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": scarecrow["pos"], "seat": 0})
@@ -405,7 +530,7 @@ func _test_one_trash_does_not_clear_the_room() -> void:
 	for unit in after["units"]:
 		if int(unit.get("seat", -1)) > 0 and bool(unit.get("alive", false)):
 			living += 1
-	eq(living, 2, "the other two trash stay on the board")
+	eq(living, 3, "the other three trash stay on the board")
 
 
 func _test_room_b_board() -> void:
@@ -415,7 +540,7 @@ func _test_room_b_board() -> void:
 	var config := StasisCatalog.fight_config()
 	var snap: Dictionary = _sim.reset_match(config)
 	eq(snap["units"].size(), 2, "coilgate room B is a single boss")
-	eq(str(snap["units"][1]["name"]), "Tyrant Coilspire", "coilgate boss is Coilspire")
+	eq(str(snap["units"][1]["name"]), "High Coilspire", "coilgate boss is High Coilspire")
 	truthy(str(snap["units"][1].get("stasis_sprite", "")).ends_with("tyrant_coilspire.png"), "coilspire uses the package crop")
 	var tiles: Dictionary = snap.get("tiles", {})
 	var water := 0
@@ -554,7 +679,7 @@ func _assert_fight_scene() -> void:
 		if int(unit.get("seat", -1)) == 1:
 			enemy_name = str(unit.get("name", ""))
 	eq(enemy_name, "Cinder Imp", "fight scene spawns Ashmarch trash")
-	eq(snap.get("units", []).size(), 4, "fight scene room A is one pack, not a 1v1")
+	eq(snap.get("units", []).size(), 5, "fight scene room A is one pack, not a 1v1")
 	var foe_art := ""
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == 1:

@@ -220,7 +220,22 @@ func _suppressed() -> bool:
 
 
 func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
+	# Any recipe may wait (monster bolt impact pops on arrival).
+	var wait := float(spec.get("delay_spawn", 0.0))
+	if wait > 0.0 and is_inside_tree():
+		var later := spec.duplicate()
+		later.erase("delay_spawn")
+		get_tree().create_timer(wait).timeout.connect(func() -> void:
+			if is_instance_valid(self):
+				_spawn(later, ghost_motion))
+		return
 	match str(spec.get("id", "")):
+		"boss_flare":
+			var boss := _pawn(int(spec.get("seat", -1)))
+			if boss != null:
+				var aura := boss.get_node_or_null("BossAura")
+				if aura != null and aura.has_method("flare"):
+					aura.call("flare")
 		"spark":
 			_play_burst("spark", spec, true)
 		"stamp":

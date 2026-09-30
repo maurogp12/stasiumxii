@@ -230,7 +230,28 @@ static func idle_phase_sec(seat: int, salt: String) -> float:
 
 
 ## "attack" lunges. "cast" winds up. Advance (teleport) stays a snap.
+## Stasis monster spells: melee / dash / cone / ring swing the body; shots,
+## lines and pads are casts.
+const _FoeKits := preload("res://backend/foe_kits.gd")
+## Caster Bolt VFX sheet: cast flash 0–0.12, travel at 18 tiles/s, capped so
+## the whole bolt lands by 0.40 s.
+const FOE_BOLT_CAST_SEC := 0.12
+const FOE_BOLT_TILES_PER_SEC := 18.0
+const FOE_BOLT_MAX_SEC := 0.40
+
+
+static func foe_bolt_travel_sec(tiles: int) -> float:
+	return clampf(float(tiles) / FOE_BOLT_TILES_PER_SEC, 0.08, FOE_BOLT_MAX_SEC - FOE_BOLT_CAST_SEC)
+
+
 static func caster_motion(spell_id: String) -> String:
+	if _FoeKits.is_foe_spell(spell_id):
+		var shape := str(_FoeKits.spell(spell_id).get("shape", ""))
+		if shape in ["melee", "dash", "cone", "radius"]:
+			return "attack"
+		if shape in ["shot", "line", "pads"]:
+			return "cast"
+		return ""
 	var def := SpellKits.spell(spell_id)
 	if def.is_empty():
 		return ""
@@ -280,6 +301,8 @@ static func damage_resolve_sec(spell_id: String) -> float:
 		SpellKits.DETONATE:
 			return StripLibrary.release_sec("kestrel", "cast")
 		_:
+			if bool(_FoeKits.spell(spell_id).get("bolt", false)):
+				return FOE_BOLT_CAST_SEC + foe_bolt_travel_sec(5)
 			if caster_motion(spell_id) == "attack":
 				return ANTICIPATION_SEC + ATTACK_OUT_SEC
 			return 0.0

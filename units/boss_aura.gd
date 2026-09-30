@@ -21,6 +21,8 @@ var tint := Color(1.0, 0.6, 0.3)
 ## The boss's own turn: the sigil flares and spins up (view only).
 var active := false
 var _surge := 0.0
+## One-shot burst when the boss unleashes an area spell (0..1, decays).
+var _flare := 0.0
 ## Ground radii in pawn space (the diamond is 64×32).
 var radius := Vector2(40, 18)
 var _t := 0.0
@@ -45,7 +47,12 @@ func _ready() -> void:
 		})
 
 
+func flare() -> void:
+	_flare = 1.0
+
+
 func _process(delta: float) -> void:
+	_flare = move_toward(_flare, 0.0, delta * 1.6)
 	_surge = move_toward(_surge, 1.0 if active else 0.0, delta * 2.5)
 	_t += delta * (1.0 + 1.4 * _surge)
 	queue_redraw()
@@ -53,13 +60,19 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	var pulse := 0.5 + 0.5 * sin(_t * 2.2)
-	var gain := 1.0 + 1.3 * _surge
+	var gain := 1.0 + 1.3 * _surge + 2.0 * _flare
 	# Glow pool.
 	for k in 4:
 		var f := 1.0 - float(k) * 0.2
 		_ellipse(radius * (1.15 * f + 0.1 * pulse + 0.12 * _surge), Color(tint.r, tint.g, tint.b, (0.06 + 0.03 * pulse) * gain))
 	# Sigil: two rings and turning rune ticks.
 	_ring(radius, Color(tint.r, tint.g, tint.b, minf(0.75 * gain, 1.0)), 1.6 + 1.2 * _surge)
+	if _flare > 0.01:
+		# Area spell: a wide shockwave rolls out and a white core flashes.
+		var k := 1.0 - _flare
+		_ring(radius * (1.0 + k * 2.2), Color(1, 1, 1, 0.9 * _flare).lerp(tint, 0.35), 3.5 * _flare + 1.0)
+		_ring(radius * (0.8 + k * 1.4), Color(tint.r, tint.g, tint.b, 0.8 * _flare), 2.5)
+		_ellipse(radius * (0.6 + 0.5 * _flare), Color(1, 1, 1, 0.25 * _flare))
 	if _surge > 0.01:
 		# Shock ring rolling out from the feet while the boss acts.
 		var u := fposmod(_t * 0.6, 1.0)

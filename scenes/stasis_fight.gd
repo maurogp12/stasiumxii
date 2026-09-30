@@ -80,7 +80,7 @@ func _run_enemy_step() -> void:
 	var foe := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
 	var actor_pos: Vector2i = actor.get("pos", Vector2i.ZERO)
 	var foe_pos: Vector2i = foe.get("pos", Vector2i.ZERO)
-	var intent: Dictionary = StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
+	var intent: Dictionary = StasisAi.plan(_sim(), seat) if not actor.get("foe_kit", []).is_empty() else StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
 	if str(intent.get("type", "")) == "end_turn":
 		_busy = true
 		_hud.clear_spell()

@@ -20,6 +20,7 @@ const _TerrainDef := preload("res://backend/terrain_def.gd")
 const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const _BoardSize := preload("res://backend/board_size.gd")
 const _CellTagMap := preload("res://backend/cell_tag_map.gd")
+const FoeKits := preload("res://backend/foe_kits.gd")
 const _HitBands := preload("res://backend/hit_bands.gd")
 ## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
 const BOARD_SIZE := _BoardSize.SHIP
@@ -350,6 +351,13 @@ func legal_intents(seat: int) -> Array:
 		for cell in _board.reachable_dests(from, mp, Callable(self, "_walk_occupied")):
 			out.append({"type": "move", "to": cell, "seat": seat})
 
+	# Stasis monsters cast from their own kit (FoeKits), not a class card.
+	var foe_kit: Array = actor.get("foe_kit", []) if actor.get("foe_kit", []) is Array else []
+	if not foe_kit.is_empty():
+		for cast in _foe_casts(actor):
+			out.append(cast)
+		out.append({"type": "end_turn", "seat": seat})
+		return out
 	for spell_id in actor["spells"]:
 		if _is_spell_silenced(actor, str(spell_id)) or _is_spell_frozen(actor, str(spell_id)):
 			continue
@@ -1842,6 +1850,8 @@ func _face_along_walk(actor: Dictionary, from: Vector2i, path: Array) -> Array:
 
 func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var spell_id := str(intent.get("spell", ""))
+	if FoeKits.is_foe_spell(spell_id):
+		return _submit_foe_cast(intent, actor)
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
@@ -2573,6 +2583,23 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 		# View flag only (bigger body + aura on the board). No rule reads it.
 		if bool(rec.get("boss", false)):
 			unit["stasis_boss"] = true
+		# Stasis monster kit (FoeKits ids), role, door and AP / MP.
+		if rec.get("foe_kit", null) is Array:
+			var kit: Array = []
+			for spell_id in rec["foe_kit"]:
+				if FoeKits.is_foe_spell(str(spell_id)):
+					kit.append(str(spell_id))
+			unit["foe_kit"] = kit
+			unit["foe_cd"] = {}
+			unit["foe_role"] = str(rec.get("role", ""))
+			unit["foe_door"] = str(rec.get("door", ""))
+			unit["foe_dmg_mult"] = float(rec.get("dmg_mult", 1.0))
+		if rec.has("max_ap"):
+			unit["max_ap"] = maxi(int(rec["max_ap"]), 1)
+			unit["ap"] = int(unit["max_ap"])
+		if rec.has("max_mp"):
+			unit["max_mp"] = maxi(int(rec["max_mp"]), 0)
+			unit["mp"] = int(unit["max_mp"])
 		var raw_spells: Variant = rec.get("spells", null)
 		if raw_spells is Array:
 			var spells: Array = []
@@ -2838,6 +2865,7 @@ func _opening_turn_coach(lead: String) -> String:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["momentum"] = false
+	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
 	# then checking remaining would expire Stun 1 before the auto end_turn.
@@ -3429,6 +3457,364 @@ func _accept() -> Dictionary:
 		"events": _last_events.duplicate(true),
 		"snapshot": snapshot(),
 	}
+
+
+## ---- Stasis monster kits (FoeKits) ----------------------------------------
+## Mauro's Stasis kit sheets (29 Sep 2026). Monsters cast from `foe_kit`;
+## every offer comes from _foe_casts and a submit must match one of them.
+
+
+func _tick_foe_cooldowns(unit: Dictionary) -> void:
+	var cds: Variant = unit.get("foe_cd", null)
+	if typeof(cds) != TYPE_DICTIONARY:
+		return
+	for id in (cds as Dictionary).keys():
+		cds[id] = maxi(int(cds[id]) - 1, 0)
+
+
+func _foe_cd_ready(actor: Dictionary, spell_id: String) -> bool:
+	var cds: Variant = actor.get("foe_cd", {})
+	return typeof(cds) != TYPE_DICTIONARY or int((cds as Dictionary).get(spell_id, 0)) <= 0
+
+
+## Hostile bodies for a monster: the player's side (seat 0 and allies).
+func _foe_victims(actor: Dictionary) -> Array:
+	var out: Array = []
+	var seat := int(actor.get("seat", -1))
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+			continue
+		var other := int(unit.get("seat", -1))
+		if (seat > 0) == (other > 0):
+			continue
+		out.append(unit)
+	return out
+
+
+func _foe_free_cell(cell: Vector2i) -> bool:
+	return _in_bounds(cell) and _is_empty(cell) and _board.is_walkable(cell) and not _board.is_voluntary_impassable(cell)
+
+
+## Every legal monster cast this turn.
+func _foe_casts(actor: Dictionary) -> Array:
+	var out: Array = []
+	var seat := int(actor["seat"])
+	var from: Vector2i = actor["pos"]
+	var ap := int(actor.get("ap", 0))
+	var victims := _foe_victims(actor)
+	for raw_id in actor.get("foe_kit", []):
+		var id := str(raw_id)
+		var def: Dictionary = FoeKits.spell(id)
+		if def.is_empty() or ap < int(def.get("ap", 0)) or not _foe_cd_ready(actor, id):
+			continue
+		if _is_stunned(actor):
+			continue
+		var shape := str(def.get("shape", ""))
+		match shape:
+			"melee", "shot":
+				for v in victims:
+					var d := chebyshev(from, v["pos"])
+					if d < int(def.get("min", 1)) or d > int(def.get("max", 1)):
+						continue
+					if d > 1 and not has_line_of_sight(from, v["pos"]):
+						continue
+					out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
+			"dash":
+				for v in victims:
+					var d := chebyshev(from, v["pos"])
+					if d < int(def.get("min", 2)) or d > int(def.get("max", 2)):
+						continue
+					if d == 1 or _foe_dash_cell(from, v["pos"]) != UNPLACED:
+						out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
+			"cone", "line":
+				for dir in FACING_VEC.keys():
+					if not _foe_area_victims(actor, def, FACING_VEC[dir]).is_empty():
+						out.append({"type": "cast", "spell": id, "to": from + FACING_VEC[dir], "dir": dir, "seat": seat})
+			"radius", "pads":
+				if not _foe_area_victims(actor, def, Vector2i.ZERO).is_empty():
+					out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"self":
+				out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"step":
+				for dir in FACING_VEC.keys():
+					var cell: Vector2i = from + FACING_VEC[dir]
+					if _foe_free_cell(cell):
+						var gate: Dictionary = _board.stand_on_gate(from, cell, Callable(self, "_walk_occupied"))
+						if bool(gate.get("ok", false)):
+							out.append({"type": "cast", "spell": id, "to": cell, "seat": seat})
+	return out
+
+
+## Free tile beside the target that is one step from the caster (Lunge).
+func _foe_dash_cell(from: Vector2i, target: Vector2i) -> Vector2i:
+	var best := UNPLACED
+	var best_d := 99
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var cell := target + Vector2i(dx, dy)
+			if cell == target or chebyshev(cell, from) != 1:
+				continue
+			if not _foe_free_cell(cell):
+				continue
+			var gate: Dictionary = _board.stand_on_gate(from, cell, Callable(self, "_walk_occupied"))
+			if not bool(gate.get("ok", false)):
+				continue
+			var d := absi(cell.x - from.x) + absi(cell.y - from.y)
+			if d < best_d:
+				best_d = d
+				best = cell
+	return best
+
+
+## Tiles an area spell covers. `dir` is the cardinal facing (cone / line).
+func _foe_area_cells(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array:
+	var from: Vector2i = actor["pos"]
+	var out: Array = []
+	match str(def.get("shape", "")):
+		"cone":
+			for cell in FoeKits.cone_cells(from, dir, int(def.get("size", 2))):
+				if _in_bounds(cell):
+					out.append(cell)
+		"line":
+			var top := _elevation_at(from)
+			for k in range(1, int(def.get("size", 5)) + 1):
+				var cell: Vector2i = from + dir * k
+				if not _in_bounds(cell) or _blocks_sight(cell, top, false):
+					break
+				out.append(cell)
+		"radius":
+			for cell in FoeKits.radius_cells(from):
+				if _in_bounds(cell):
+					out.append(cell)
+		"pads":
+			for y in range(_board_size):
+				for x in range(_board_size):
+					var cell := Vector2i(x, y)
+					if _is_charged_pad(cell) or _next_to_pad(cell):
+						out.append(cell)
+	return out
+
+
+func _is_charged_pad(cell: Vector2i) -> bool:
+	return _in_bounds(cell) and hazard_family_at(cell) == "electrocuted"
+
+
+func _next_to_pad(cell: Vector2i) -> bool:
+	for n in FoeKits.radius_cells(cell):
+		if _is_charged_pad(n):
+			return true
+	return false
+
+
+func _foe_area_victims(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array:
+	var cells := _foe_area_cells(actor, def, dir)
+	var out: Array = []
+	for v in _foe_victims(actor):
+		if cells.has(v["pos"]):
+			out.append(v)
+	return out
+
+
+## Sheet damage x the star's damage scale; trash (damage 0) uses the room base.
+func _foe_base_damage(actor: Dictionary, def: Dictionary) -> int:
+	var base := int(def.get("damage", 0))
+	if base <= 0:
+		return maxi(int(actor.get("stasis_attack_base", 6)), 0)
+	return roundi(float(base) * float(actor.get("foe_dmg_mult", 1.0)))
+
+
+func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	var spell_id := str(intent.get("spell", ""))
+	var def: Dictionary = FoeKits.spell(spell_id)
+	if not (actor.get("foe_kit", []) as Array).has(spell_id):
+		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit." % [def.get("name", spell_id), actor["name"]])
+	var dest: Vector2i = _as_cell(intent.get("to", actor["pos"]))
+	var offer := {}
+	for cast in _foe_casts(actor):
+		if str(cast["spell"]) == spell_id and cast["to"] == dest:
+			offer = cast
+			break
+	if offer.is_empty():
+		return _reject(intent, "illegal_foe_cast", "REJECT — %s cannot be cast there." % def.get("name", spell_id))
+	_last_events = []
+	var ap_cost := int(def.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	var cd := FoeKits.cooldown(spell_id)
+	if cd > 0:
+		(actor["foe_cd"] as Dictionary)[spell_id] = cd
+	_intent_log.append(intent)
+	var shape := str(def.get("shape", ""))
+	var caster_cell: Vector2i = actor["pos"]
+	var name := str(def.get("name", spell_id))
+	if shape == "self":
+		actor["shield"] = int(actor.get("shield", 0)) + int(def.get("ward", 0))
+		actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
+		_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, int(def.get("ward", 0))]
+		_last_events.append({"type": "cast", "spell": spell_id, "seat": actor["seat"], "caster_cell": caster_cell, "shield": int(actor["shield"]), "ap_spent": ap_cost, "foe": true, "coach": _last_coach})
+		return _accept()
+	if shape == "step":
+		actor["pos"] = dest
+		var face := _dir_name(dest - caster_cell)
+		if face != "":
+			actor["facing"] = face
+		_last_coach = "%s: %s to %s." % [actor["name"], name, _cell_text(dest)]
+		_last_events.append({"type": "move", "seat": actor["seat"], "from": caster_cell, "to": dest, "path": [dest], "facing_from": str(actor["facing"]), "facing": str(actor["facing"]), "facing_hops": [str(actor["facing"])], "mp_spent": 0, "ap_spent": ap_cost, "spell": spell_id, "foe": true, "coach": _last_coach})
+		return _accept()
+	var victims: Array = []
+	var area: Array = []
+	var dir := Vector2i.ZERO
+	if shape in ["cone", "line"]:
+		dir = FACING_VEC.get(str(offer.get("dir", "S")), Vector2i(0, 1))
+		actor["facing"] = str(offer.get("dir", actor["facing"]))
+	if shape in ["cone", "line", "radius", "pads"]:
+		area = _foe_area_cells(actor, def, dir)
+		victims = _foe_area_victims(actor, def, dir)
+	else:
+		var target := _living_unit_at(dest)
+		if not target.is_empty():
+			victims = [target]
+		var face_to := _dir_name(_sign_step(dest - caster_cell))
+		if face_to != "":
+			actor["facing"] = face_to
+	var dash_from := caster_cell
+	if shape == "dash" and chebyshev(caster_cell, dest) == 2:
+		var cell := _foe_dash_cell(caster_cell, dest)
+		if cell != UNPLACED:
+			actor["pos"] = cell
+	var hits := 0
+	var total := 0
+	for raw in victims:
+		var target: Dictionary = raw
+		var dist := maxi(chebyshev(actor["pos"], target["pos"]), 1)
+		var chance := hit_chance(dist)
+		var roll := _roll_d100()
+		var event := {
+			"seat": actor["seat"],
+			"spell": spell_id,
+			"spell_name": name,
+			"caster_cell": caster_cell,
+			"target_seat": target["seat"],
+			"to": target["pos"],
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost if hits == 0 and total == 0 else 0,
+			"foe": true,
+			"shape": shape,
+			"element": _foe_element(actor, def),
+			"door": str(actor.get("foe_door", "")),
+			"boss": bool(actor.get("stasis_boss", false)),
+		}
+		if not area.is_empty():
+			event["area"] = area.duplicate()
+		if dash_from != actor["pos"]:
+			event["dash_from"] = dash_from
+			event["dash_to"] = actor["pos"]
+		if roll > chance:
+			event["type"] = "miss"
+			event["damage"] = 0
+			event["coach"] = "%s's %s misses %s." % [actor["name"], name, target["name"]]
+			_last_events.append(event)
+			continue
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
+		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, _foe_element(actor, def), true)
+		var mitigation := _mitigate_hit(actor, target, pre)
+		var damage := int(mitigation["damage"])
+		target["hp"] = maxi(int(target["hp"]) - damage, 0)
+		hits += 1
+		total += damage
+		event["type"] = "hit"
+		event["damage"] = damage
+		event["facing_mult"] = facing_mult
+		_stamp_mitigation(event, mitigation)
+		var push_result := {}
+		if int(def.get("push", 0)) > 0:
+			push_result = _try_push(actor["pos"], target, int(def["push"]))
+		elif int(def.get("pull", 0)) > 0:
+			push_result = _foe_pull(actor, target)
+		if not push_result.is_empty():
+			var punish := _apply_landing_punishments(target, push_result)
+			_stamp_push_fields(event, push_result, punish["burn"], punish["silence"], punish["slow"])
+			_last_events.append(event)
+			_emit_push_followups(actor, target, push_result, punish["burn"])
+			_append_soft_lock_status(target, punish["silence"], punish["slow"])
+		else:
+			_last_events.append(event)
+		if bool(def.get("frozen_on_ice", false)) and hazard_family_at(target["pos"]) == "frozen" and bool(target.get("alive", true)):
+			var frozen := _apply_frozen(target)
+			_last_events.append({"type": "status", "status": "frozen", "stacks": int(frozen["stacks"]), "remaining": int(frozen["remaining"]), "paralyzed": bool(frozen["paralyzed"]), "target_seat": target["seat"], "coach": "%s is pinned on the ice (Frozen %d)." % [target["name"], int(frozen["stacks"])]})
+		_emit_immunity_spent(target, mitigation)
+		_check_death(target)
+		if _match_over:
+			break
+	if victims.is_empty() and shape == "dash":
+		_last_events.append({"type": "miss", "seat": actor["seat"], "spell": spell_id, "caster_cell": caster_cell, "to": dest, "damage": 0, "foe": true, "coach": "%s lunges at nothing." % actor["name"]})
+	if bool(FoeKits.is_aoe(spell_id)) and hits > 0:
+		_last_coach = "%s uses %s: %d hit for %d." % [actor["name"], name, hits, total]
+	elif hits > 0:
+		_last_coach = "%s: %s for %d." % [actor["name"], name, total]
+	else:
+		_last_coach = "%s: %s misses." % [actor["name"], name]
+	for e in _last_events:
+		if typeof(e) == TYPE_DICTIONARY and str(e.get("spell", "")) == spell_id and not e.has("coach"):
+			e["coach"] = _last_coach
+	return _accept()
+
+
+## Hook: drag the target 1 tile toward the caster. Landing on a hazard applies
+## that tile's push stack (Brinewake water = Breathless). A body or wall stops it.
+func _foe_pull(actor: Dictionary, target: Dictionary) -> Dictionary:
+	var from: Vector2i = target["pos"]
+	var dest: Vector2i = from + _sign_step(actor["pos"] - from)
+	var result := {"from": from, "to": from, "attempted": dest, "moved": false, "blocked": false, "bounced": false, "staggered": false, "burn": false, "silence": false, "slow": false, "frozen": false, "electrocuted": false, "reason": "", "stagger_hp": 0, "stagger_mp": 0, "hp_delta": 0, "mp_delta": 0, "pulled": true}
+	if dest == from or not _in_bounds(dest) or not _is_empty(dest):
+		result["blocked"] = true
+		result["reason"] = "occupied"
+		return result
+	if _board.is_voluntary_impassable(dest):
+		target["pos"] = dest
+		result["to"] = dest
+		result["moved"] = true
+		var family := hazard_family_at(dest)
+		match family:
+			"burn":
+				result["burn"] = true
+			"slow":
+				result["slow"] = true
+			"breathless":
+				result["silence"] = true
+			"frozen", "electrocuted":
+				result[family] = true
+		result["reason"] = family
+		return result
+	if not _board.is_walkable(dest):
+		result["blocked"] = true
+		result["reason"] = "wall"
+		return result
+	target["pos"] = dest
+	result["to"] = dest
+	result["moved"] = true
+	return result
+
+
+func _foe_element(actor: Dictionary, def: Dictionary) -> String:
+	var el := str(def.get("element", "Neutral"))
+	if el == "door":
+		return str(FoeKits.DOOR_ELEMENT.get(str(actor.get("foe_door", "")), "Neutral"))
+	return el
+
+
+static func _sign_step(delta: Vector2i) -> Vector2i:
+	return Vector2i(signi(delta.x), signi(delta.y))
+
+
+## Cardinal facing name for a step (diagonals use the larger axis).
+func _dir_name(delta: Vector2i) -> String:
+	if delta == Vector2i.ZERO:
+		return ""
+	if absi(delta.x) >= absi(delta.y):
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
 
 
 func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:

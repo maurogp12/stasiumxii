@@ -150,11 +150,11 @@ func _test_landscape_poster() -> void:
 func _test_stasis_runs() -> void:
 	var script: Script = load("res://scenes/mobile_hub.gd")
 	var bosses := {
-		"crosshaven": "Warden of the Sheaves",
-		"brinewake": "Captain Brineclaw",
-		"slagcrown": "Slagheart the Emberbrute",
-		"windmere": "Serra the Gale Sentinel",
-		"stormspire": "Tyrant Coilspire",
+		"crosshaven": "Sheaf Sovereign",
+		"brinewake": "Tide-Lord Brineclaw",
+		"slagcrown": "Slagheart (Caldera Crown)",
+		"windmere": "Serra White-Spire Regent",
+		"stormspire": "High Coilspire",
 	}
 	for map_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
 		script.pending_biome_id = map_id
