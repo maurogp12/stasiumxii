@@ -104,6 +104,15 @@ Version history, reasons and Mauro's exact words are in
   the creature (`CombatHUD._foe_crop`).
 - **Bastion art is not touched unless Mauro asks.**
 
+## TEMPORARY: balance-test kit (ON since 0.1.79)
+
+`backend/test_loadout.gd` `ACTIVE = true` gives the phone every set piece at
++5 fusion, 99 fragments of every Still, and gear in hot-seat Koliseo. It is
+**temporary by Mauro's order** — do not remove it until he says the balance is
+good, and do not leave it in once he does. Revert = `ACTIVE = false` (the next
+load takes back only the tagged pieces and granted fragments), then delete
+the file and its hooks (listed in its header and in the 0.1.79 change-log row).
+
 ## Open / waiting on Mauro (do not decide these yourself)
 
 See the "Open / waiting on Mauro" list at the end of

@@ -28,6 +28,7 @@ func _run() -> void:
 	_test_ap_mp_clamp()
 	_test_stasis_loot()
 	_test_loot_by_star()
+	_test_temporary_kit()
 	_test_save_roundtrip()
 	_test_gear_screen()
 	_test_stasis_chest_wiring()
@@ -233,6 +234,40 @@ func _test_loot_by_star() -> void:
 	var a := GearBag.icon("sheaf.chest")
 	eq(a != null, true, "Sheaf chest icon loads")
 	eq(a == GearBag.icon("sheaf.chest"), true, "icons are cached so result/inventory draws keep them alive")
+
+
+## TEMPORARY balance-test kit (Mauro 30 Sep 2026). Grant: every piece at +5,
+## 99 fragments of every Still, once. Revoke: only the tagged pieces / granted
+## fragments go, real loot stays.
+func _test_temporary_kit() -> void:
+	var TL := preload("res://backend/test_loadout.gd")
+	var bag := GearBag.new()
+	var real := bag.add_item("sheaf", "head", 1)
+	if TL.ACTIVE:
+		eq(TL.sync_bag(bag), true, "the kit is granted")
+		eq(bag.items.size(), 1 + GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "every family × slot is added")
+		eq(bag.items.filter(func(it): return bool(it.get("test", false)) and int(it["plus"]) == GearBag.PLUS_CAP).size(), GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "all granted pieces are max fusion +5")
+		eq(TL.sync_bag(bag), false, "granted only once")
+		var round := GearBag.new()
+		round.from_dict(bag.to_dict())
+		eq(round.test_grant and round.items.filter(func(it): return bool(it.get("test", false))).size() == 30, true, "the grant survives a save")
+		var vault := StillVault.new()
+		TL.sync_vault(vault)
+		eq(vault.count("mercy"), TL.STILL_FRAGMENTS, "every Still gets 99 fragments")
+	# Revoke path (what ACTIVE = false does on the next load).
+	bag.test_grant = true
+	for slot in GearBag.SLOTS:
+		var uid := bag.add_item("duskbrand", slot, 5)
+		bag.items[bag.find(uid)]["test"] = true
+		bag.equip(uid)
+	var kept: Array = bag.items.filter(func(it): return not bool(it.get("test", false)))
+	for slot in bag.equipped.keys():
+		var idx := bag.find(int(bag.equipped[slot]))
+		if idx != -1 and bool(bag.items[idx].get("test", false)):
+			bag.equipped.erase(slot)
+	bag.items = bag.items.filter(func(it): return not bool(it.get("test", false)))
+	eq(bag.find(real) != -1 and bag.items.size() == kept.size(), true, "revoking keeps the real loot")
+	eq(bag.equipped.is_empty(), true, "revoking unequips the test pieces")
 
 
 func _test_save_roundtrip() -> void:

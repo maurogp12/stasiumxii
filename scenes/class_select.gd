@@ -1,6 +1,8 @@
 extends Control
 class_name ClassSelect
 
+const _TestLoadout := preload("res://backend/test_loadout.gd")
+
 ## Koliseo screen. Hot-seat is P1, then P2, then the local duel on a random Koliseo map.
 ## The mobile hub is the branch entry; this scene opens from the Koliseo door.
 ## Online pick calls NetSession.select_class (rpc_select_class once connected).
@@ -88,6 +90,11 @@ static func local_match_config() -> Dictionary:
 	# Hot-seat uses no gear or levels, so both Init are 0: a coin flip picks
 	# who starts (Mauro 29 Sep 2026: higher Init first, tie = coin flip).
 	config["first_by_init"] = true
+	# TEMPORARY balance-test kit (backend/test_loadout.gd): both hot-seat seats
+	# wear the phone's equipped loadout and socketed Still. Normal game: none.
+	if _TestLoadout.ACTIVE:
+		var kit := GearBag.load_saved().fight_gear(true)
+		config["seat_gear"] = {0: kit, 1: kit.duplicate(true)}
 	return config
 
 
