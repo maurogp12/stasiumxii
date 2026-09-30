@@ -164,11 +164,19 @@ static func icon_path(item_id: String, class_id: String = "") -> String:
 	return "%s%s_%s.png" % [ICON_ROOT, fam, slot]
 
 
+## Loaded icons stay referenced here. A texture loaded inside a _draw() and
+## dropped when it returns is freed before the frame renders, and the renderer
+## then paints a plain white square (the loot board bug, 0.1.64–0.1.68).
+static var _icon_cache: Dictionary = {}
+
+
 static func icon(item_id: String, class_id: String = "") -> Texture2D:
 	var path := icon_path(item_id, class_id)
 	if path == "" or not ResourceLoader.exists(path):
 		return null
-	return load(path) as Texture2D
+	if not _icon_cache.has(path):
+		_icon_cache[path] = load(path) as Texture2D
+	return _icon_cache[path]
 
 
 static func item_label(item: Dictionary) -> String:

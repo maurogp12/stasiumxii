@@ -23,6 +23,14 @@ uniform vec4 edge_color : source_color = vec4(1.0, 0.93, 0.78, 1.0);
 uniform float breath = 0.0;
 uniform float breath_phase = 0.0;
 uniform float sway = 0.0;
+uniform float breath_rate = 3.3;
+// Stasis foe body (view only, Mauro 29 Sep 2026: "the boss looks not even like
+// a monster"). lean shears the body from the feet (+ leans to screen right),
+// squash presses it into the ground, mirror turns a one-sided painting to
+// face its target. Heroes keep 0 (their facings are baked sheets).
+uniform float lean = 0.0;
+uniform float squash = 0.0;
+uniform float mirror = 0.0;
 
 // Godot 4: the fragment COLOR input is already texture x vertex colour.
 // Multiplying the texel by it again squared every colour (the painted sheets
@@ -35,16 +43,24 @@ void vertex() {
 
 vec2 living_uv(vec2 uv) {
 	float foot = 150.0 / 160.0;
-	float s = breath * sin(TIME * 3.3 + breath_phase);
+	if (mirror > 0.5) {
+		uv.x = 1.0 - uv.x;
+	}
+	float s = breath * sin(TIME * breath_rate + breath_phase) - squash;
 	uv.y = foot + (uv.y - foot) / (1.0 + s);
 	uv.x = 0.5 + (uv.x - 0.5) / (1.0 - s * 0.5);
-	uv.x += sway * sin(TIME * 1.7 + breath_phase * 1.3) * clamp(foot - uv.y, 0.0, 1.0);
+	float h = clamp(foot - uv.y, 0.0, 1.0);
+	uv.x += sway * sin(TIME * 1.7 + breath_phase * 1.3) * h;
+	uv.x -= (mirror > 0.5 ? -lean : lean) * h;
 	return uv;
 }
 
 void fragment() {
 	vec2 luv = living_uv(UV);
 	vec4 tex = texture(TEXTURE, luv);
+	if (luv.x < 0.0 || luv.x > 1.0 || luv.y < 0.0 || luv.y > 1.0) {
+		tex = vec4(0.0);
+	}
 	vec3 rgb = tex.rgb;
 	float alpha = tex.a;
 	if (mid_mix > 0.001 && alpha > 0.9) {

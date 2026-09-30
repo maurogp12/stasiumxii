@@ -266,7 +266,7 @@
     {
       "x": 5,
       "y": 2,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -301,7 +301,7 @@
     {
       "x": 10,
       "y": 2,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -630,7 +630,7 @@
     {
       "x": 12,
       "y": 5,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -875,7 +875,7 @@
     {
       "x": 2,
       "y": 8,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1260,7 +1260,7 @@
     {
       "x": 12,
       "y": 11,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1302,7 +1302,7 @@
     {
       "x": 3,
       "y": 12,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1339,7 +1339,7 @@
     {
       "x": 8,
       "y": 12,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1544,8 +1544,8 @@
     {
       "x": 7,
       "y": 14,
-      "terrain": "mud",
-      "elevation": 1,
+      "terrain": "ground",
+      "elevation": 0,
       "paint_only": [
         "driftwood"
       ]

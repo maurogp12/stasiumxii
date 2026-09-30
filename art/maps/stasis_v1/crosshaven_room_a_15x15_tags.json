@@ -500,7 +500,7 @@
     {
       "x": 7,
       "y": 4,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -822,7 +822,7 @@
     {
       "x": 8,
       "y": 7,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -920,7 +920,7 @@
     {
       "x": 7,
       "y": 8,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1517,7 +1517,7 @@
     {
       "x": 2,
       "y": 14,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },

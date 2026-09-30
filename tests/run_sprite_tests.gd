@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_flash_kinds()
 	_test_view_wires_flash_without_rules()
 	_test_name_sits_above_the_sprite()
+	_test_foe_bodies()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -469,3 +470,36 @@ func truthy(value: Variant, msg: String) -> void:
 		print("FAIL: %s  (got %s)" % [msg, value])
 	else:
 		_passed += 1
+
+
+## Mauro 29 Sep 2026: "the boss looks not even like a monster looks like just
+## a image moving". Foe paintings get a body: breath per kind, hover, lean
+## into a lunge / away from a blow, and they turn toward their target.
+func _test_foe_bodies() -> void:
+	var shader := FileAccess.get_file_as_string("res://units/figure_read.gdshader")
+	for u in ["uniform float lean", "uniform float squash", "uniform float mirror", "uniform float breath_rate"]:
+		truthy(shader.contains(u), "figure shader has %s" % u)
+	var dir := DirAccess.open("res://art/stasis/foes/")
+	for f in dir.get_files():
+		if f.ends_with(".png"):
+			truthy(Pawn.FOE_KIND.has(f.get_basename()), "%s has a foe body" % f.get_basename())
+	var hound := Pawn.foe_body_for("res://art/stasis/foes/grain_hound.png")
+	eq(str(hound["kind"]), "beast", "the hound is a beast")
+	truthy(float(Pawn.foe_body_for("res://art/stasis/foes/frost_wisp.png")["hover"]) > 0.0, "wisps hover")
+	var warden := Pawn.foe_body_for("res://art/stasis/foes/warden_of_the_sheaves.png")
+	var boss := Pawn.foe_body_for("res://art/stasis/foes/warden_of_the_sheaves.png", true)
+	truthy(float(boss["breath"]) > float(warden["breath"]) and float(boss["rate"]) < float(warden["rate"]), "a boss breathes deeper and slower")
+	eq(Pawn.foe_mirror("right", Vector2(-20, 10)), 1.0, "a right-facing painting turns to face left")
+	eq(Pawn.foe_mirror("right", Vector2(20, 10)), 0.0, "and stays when the target is right")
+	eq(Pawn.foe_mirror("left", Vector2(-20, 10)), 0.0, "a left-facing painting stays facing left")
+	eq(Pawn.foe_mirror("", Vector2(-20, 10)), 0.0, "a front painting never mirrors")
+	var pawn := Pawn.new()
+	root.add_child(pawn)
+	pawn.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Grain Hound", "pos": Vector2i(3, 3), "facing": "S", "hp": 22, "max_hp": 22, "alive": true, "stasis_sprite": "res://art/stasis/foes/grain_hound.png"}, 1)
+	pawn._sample_attack(0.35, Vector2(-20, 10))
+	truthy(pawn.foe_body_lean() < -0.05, "the foe body leans into a lunge to the left (%.3f)" % pawn.foe_body_lean())
+	pawn._plant_sprite()
+	eq(pawn.foe_body_lean(), 0.0, "planting stands the foe body back up")
+	pawn._sample_hit(0.4, Vector2(20, -10))
+	truthy(pawn.foe_body_lean() > 0.02, "a blow knocking the foe right rocks its body right")
+	pawn.queue_free()

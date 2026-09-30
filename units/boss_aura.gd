@@ -18,6 +18,9 @@ const RUNES := 12
 const MOTES := 10
 
 var tint := Color(1.0, 0.6, 0.3)
+## The boss's own turn: the sigil flares and spins up (view only).
+var active := false
+var _surge := 0.0
 ## Ground radii in pawn space (the diamond is 64×32).
 var radius := Vector2(40, 18)
 var _t := 0.0
@@ -43,18 +46,24 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	_t += delta
+	_surge = move_toward(_surge, 1.0 if active else 0.0, delta * 2.5)
+	_t += delta * (1.0 + 1.4 * _surge)
 	queue_redraw()
 
 
 func _draw() -> void:
 	var pulse := 0.5 + 0.5 * sin(_t * 2.2)
+	var gain := 1.0 + 1.3 * _surge
 	# Glow pool.
 	for k in 4:
 		var f := 1.0 - float(k) * 0.2
-		_ellipse(radius * (1.15 * f + 0.1 * pulse), Color(tint.r, tint.g, tint.b, 0.06 + 0.03 * pulse))
+		_ellipse(radius * (1.15 * f + 0.1 * pulse + 0.12 * _surge), Color(tint.r, tint.g, tint.b, (0.06 + 0.03 * pulse) * gain))
 	# Sigil: two rings and turning rune ticks.
-	_ring(radius, Color(tint.r, tint.g, tint.b, 0.75), 1.6)
+	_ring(radius, Color(tint.r, tint.g, tint.b, minf(0.75 * gain, 1.0)), 1.6 + 1.2 * _surge)
+	if _surge > 0.01:
+		# Shock ring rolling out from the feet while the boss acts.
+		var u := fposmod(_t * 0.6, 1.0)
+		_ring(radius * (1.0 + u * 0.7), Color(tint.r, tint.g, tint.b, 0.6 * (1.0 - u) * _surge), 2.0)
 	_ring(radius * 0.78, Color(tint.r, tint.g, tint.b, 0.45), 1.0)
 	for i in RUNES:
 		var a := _t * 0.45 + float(i) * TAU / float(RUNES)

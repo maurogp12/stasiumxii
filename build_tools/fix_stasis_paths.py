@@ -13,6 +13,8 @@ import glob, heapq, json, os
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 BLOCKING = {"arc", "ash_rock", "basalt_pillar", "fence", "rock_cluster", "rock_pillar", "well"}
 DIRS = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+# Max extra steps a single mud / water tile may force (Stasis walks are 3 MP).
+DETOUR_LIMIT = 6
 
 
 def load(path):
@@ -82,7 +84,64 @@ def bridge(cells, main, targets):
     return changed
 
 
-def fix(path):
+def walk_dist(cells, start):
+    # MP to walk from start: 1 per step, +1 per level climbed (as the sim).
+    dist = {start: 0}
+    heap = [(0, start)]
+    while heap:
+        d, p = heapq.heappop(heap)
+        if d > dist[p]:
+            continue
+        e = cells[p]["elevation"]
+        for dx, dy in DIRS:
+            n = (p[0] + dx, p[1] + dy)
+            if n not in cells or not standable(cells[n]) or abs(cells[n]["elevation"] - e) > 1:
+                continue
+            nd = d + 1 + max(0, cells[n]["elevation"] - e)
+            if nd < dist.get(n, 1 << 30):
+                dist[n] = nd
+                heapq.heappush(heap, (nd, n))
+    return dist
+
+
+def worst_wall_cell(cells):
+    # A mud / water cell with walkable ground on two opposite sides whose walk
+    # around is long. Returns (detour, cell) for the worst one.
+    best = (0, None)
+    for p, c in cells.items():
+        if c["terrain"] not in ("mud", "water") or set(c.get("paint_only", [])) & BLOCKING:
+            continue
+        for dx, dy in ((1, 0), (0, 1)):
+            a, b = (p[0] - dx, p[1] - dy), (p[0] + dx, p[1] + dy)
+            if a not in cells or b not in cells or not standable(cells[a]) or not standable(cells[b]):
+                continue
+            ea, eb = cells[a]["elevation"], cells[b]["elevation"]
+            if abs(ea - eb) > 2:
+                continue
+            d = walk_dist(cells, a).get(b, 99)
+            if d - 2 > best[0]:
+                best = (d - 2, p, max(min(ea, eb), max(ea, eb) - 1))
+    return best
+
+
+def open_walls(cells, limit):
+    # Mauro 29 Sep 2026 ("still having issues with maps"): long mud / water
+    # walls forced big walks around. Open a ford in the worst wall until no
+    # single wet tile costs more than `limit` extra steps to walk around.
+    log = []
+    for _ in range(40):
+        found = worst_wall_cell(cells)
+        if found[0] <= limit:
+            break
+        _, p, z = found
+        c = cells[p]
+        log.append((p, c["terrain"], c["elevation"], z))
+        c["terrain"] = "ground"
+        c["elevation"] = z
+    return log
+
+
+def fix(path, limit=DETOUR_LIMIT):
     d, cells = load(path)
     spawn = tuple(d["spawns"][0])
     log = []
@@ -93,6 +152,7 @@ def fix(path):
         if not lost:
             break
         log += bridge(cells, main, lost)
+    log += open_walls(cells, limit)
     json.dump(d, open(path, "w"), indent=2, ensure_ascii=True)
     open(path, "a").write("\n")
     return log

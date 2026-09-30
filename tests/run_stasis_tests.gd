@@ -178,6 +178,25 @@ func _test_every_room_connected() -> void:
 			eq(lost, 0, "%s room %s: every standable tile is reachable" % [biome, room])
 			for u in units.slice(1):
 				truthy(reach.has(u["pos"]), "%s room %s: %s stands on a reachable tile" % [biome, room, u["name"]])
+			# Mauro 29 Sep 2026 ("still having issues with maps"): no single mud /
+			# water tile may force a long walk around (build_tools/fix_stasis_paths.py).
+			var worst := 0
+			for y in 15:
+				for x in 15:
+					var w := Vector2i(x, y)
+					if not board.is_voluntary_impassable(w) or not board.is_walkable(w):
+						continue
+					for d in [Vector2i(1, 0), Vector2i(0, 1)]:
+						var a: Vector2i = w - d
+						var b: Vector2i = w + d
+						if not board.in_bounds(a) or not board.in_bounds(b):
+							continue
+						if not board.is_walkable(a) or board.is_voluntary_impassable(a) or not board.is_walkable(b) or board.is_voluntary_impassable(b):
+							continue
+						var around: Dictionary = board.reachable(a, 9999, never)
+						if around.has(b):
+							worst = maxi(worst, int(around[b]["cost"]) - 2)
+			truthy(worst <= 6, "%s room %s: no wet tile forces a long detour (worst +%d)" % [biome, room, worst])
 	StasisCatalog.clear_run()
 	_sim.reset_match({})
 
@@ -404,7 +423,7 @@ func _test_threshgate_hazards() -> void:
 	var struck: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(9, 6), "seat": 0})
 	eq(bool(struck.get("ok", false)), true, "Strike hits the foe on the trough (%s)" % str(struck.get("reason", "")))
 	eq(_sim._units[1]["pos"], Vector2i(9, 6), "the hit does not shove them off the water")
-	var water_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(8, 7), "seat": 0})
+	var water_walk: Dictionary = _sim.submit({"type": "move", "to": Vector2i(9, 7), "seat": 0})
 	eq(str(water_walk.get("reason", "")), "not_walkable", "Walk onto the trough is not_walkable")
 	var advanced: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(10, 6), "seat": 0})
 	eq(str(advanced.get("reason", "")), "not_walkable", "Advance will not land on the water trough")

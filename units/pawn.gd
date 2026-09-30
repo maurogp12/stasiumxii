@@ -408,7 +408,8 @@ func _hide_gesture() -> void:
 
 func _place_gesture(phase: String, aim: Vector2, body_pos: Vector2) -> void:
 	var reach := VIEW_MOTION.gesture_reach(phase)
-	if reach <= 0.0 or VIEW_MOTION.reduce_motion():
+	# A monster strikes with its own body, not the heroes' hand mark.
+	if reach <= 0.0 or VIEW_MOTION.reduce_motion() or stasis_sprite != "":
 		_hide_gesture()
 		return
 	_ensure_gesture()
@@ -1411,6 +1412,7 @@ func _sync_boss_aura() -> void:
 			add_child(aura)
 			move_child(aura, 0)
 		(aura as BossAura).tint = BossAura.tint_for(stasis_sprite)
+		(aura as BossAura).active = is_active
 		(aura as BossAura).radius = Vector2(40, 18) * BOSS_SCALE * 0.8
 	elif aura != null:
 		aura.queue_free()
@@ -1481,6 +1483,62 @@ const FOE_READ := {
 	"mid_mix": 0.3,
 }
 
+## Stasis foe life (Mauro 29 Sep 2026: "the boss looks not even like a monster
+## looks like just a image moving"). View only. Each foe painting gets a body:
+## beasts pant, crawlers skitter, brutes heave, flyers hover off the floor.
+## `faces` is the side the painting looks toward ("" = to camera); the body
+## turns (shader mirror) to face its target. Bosses breathe deeper and slower.
+const FOE_BODY := {
+	"beast": {"breath": 0.026, "rate": 5.2, "sway": 0.006, "bob": 0.8, "hover": 0.0},
+	"crawler": {"breath": 0.018, "rate": 7.5, "sway": 0.012, "bob": 0.5, "hover": 0.0},
+	"brute": {"breath": 0.034, "rate": 2.4, "sway": 0.008, "bob": 0.6, "hover": 0.0},
+	"flyer": {"breath": 0.02, "rate": 2.8, "sway": 0.016, "bob": 0.0, "hover": 7.0},
+}
+const FOE_KIND := {
+	"ash_stalker": ["beast", "left"],
+	"grain_hound": ["beast", "right"],
+	"brine_gullkin": ["beast", "right"],
+	"scarecrow_drudge": ["brute", "right"],
+	"silt_raider": ["brute", ""],
+	"cinder_imp": ["brute", ""],
+	"threshling": ["crawler", ""],
+	"slag_mite": ["crawler", "left"],
+	"tide_skitter": ["crawler", ""],
+	"gale_skitter": ["crawler", ""],
+	"coil_tick": ["crawler", ""],
+	"sparkin": ["crawler", ""],
+	"frost_wisp": ["flyer", ""],
+	"gustling": ["flyer", ""],
+	"volt_mote": ["flyer", ""],
+	"warden_of_the_sheaves": ["brute", ""],
+	"captain_brineclaw": ["brute", ""],
+	"slagheart_the_emberbrute": ["brute", ""],
+	"serra_the_gale_sentinel": ["flyer", ""],
+	"tyrant_coilspire": ["brute", ""],
+}
+## Max lean of a foe body into a lunge / away from a blow (UV shear per height).
+const FOE_LEAN := 0.16
+const FOE_HIT_LEAN := 0.12
+
+
+static func foe_body_for(art_path: String, boss: bool = false) -> Dictionary:
+	var entry: Array = FOE_KIND.get(art_path.get_file().get_basename(), ["brute", ""])
+	var body: Dictionary = (FOE_BODY[entry[0]] as Dictionary).duplicate()
+	body["kind"] = entry[0]
+	body["faces"] = entry[1]
+	if boss:
+		body["breath"] = float(body["breath"]) * 1.25
+		body["rate"] = float(body["rate"]) * 0.75
+	return body
+
+
+## 1 when a one-sided foe painting must turn to face `screen_dir`.
+static func foe_mirror(faces: String, screen_dir: Vector2) -> float:
+	if faces == "" or absf(screen_dir.x) < 0.01:
+		return 0.0
+	var wants_left := screen_dir.x < 0.0
+	return 1.0 if wants_left != (faces == "left") else 0.0
+
 
 func _write_figure_read(mat: ShaderMaterial) -> void:
 	var read := FOE_READ if stasis_sprite != "" else figure_read_for(class_id)
@@ -1498,7 +1556,16 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
 	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive else 0.0)
 	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive else 0.0)
+	mat.set_shader_parameter("breath_rate", 3.3)
 	mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(class_id.hash() % 97) * 0.13)
+	mat.set_shader_parameter("mirror", 0.0)
+	if stasis_sprite != "":
+		var body := foe_body_for(stasis_sprite, stasis_boss)
+		mat.set_shader_parameter("breath", float(body["breath"]) if alive else 0.0)
+		mat.set_shader_parameter("sway", float(body["sway"]) if alive else 0.0)
+		mat.set_shader_parameter("breath_rate", float(body["rate"]))
+		mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(unit_name.hash() % 97) * 0.13)
+		mat.set_shader_parameter("mirror", foe_mirror(str(body["faces"]), facing_screen()))
 
 
 func _apply_figure_read() -> void:
@@ -1551,9 +1618,12 @@ func _sync_sprite() -> void:
 		_walk_idle_plant = false
 		_hide_walk_draw()
 		_sprite.texture = _stasis_texture(stasis_sprite)
-		_sprite.offset = SPRITE_OFFSET / _stasis_res()
 		_sprite.scale = _body_scale()
+		# Flyers float off the floor; the shadow stays on the tile.
+		var hover := float(foe_body_for(stasis_sprite)["hover"])
+		_sprite.offset = SPRITE_OFFSET / _stasis_res() - Vector2(0.0, hover / maxf(_sprite.scale.y, 0.001))
 		_sync_boss_aura()
+		_apply_figure_read()
 		if not _flashing:
 			_sprite.modulate = rest_modulate()
 		_sprite.visible = true
@@ -1716,6 +1786,11 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 func _apply_body_pose(pose: Dictionary) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
+	# A foe painting has no attack sheet: the body winds back, then throws its
+	# weight into the lunge instead of sliding as a flat card.
+	if stasis_sprite != "":
+		_set_foe_body(clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.0, 1.0) * FOE_LEAN, (1.0 - mul.y) * 0.3)
+		mul = Vector2.ONE.lerp(mul, 0.35)
 	var scaled := _body_scale_mul(mul)
 	_ride_chrome(Vector2.ZERO)
 	if _sprite != null and is_instance_valid(_sprite):
@@ -1768,6 +1843,23 @@ func _thaw_strip_pose() -> void:
 		_active_strip.speed_scale = _strip_play_scale if _strip_play_scale > 0.0 else 1.0
 
 
+## Stasis foes only: lean (+ = screen right) and squash on the body shader.
+func _set_foe_body(lean: float, squash: float) -> void:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
+		return
+	var mat := _sprite.material as ShaderMaterial
+	if mat == null:
+		return
+	mat.set_shader_parameter("lean", lean)
+	mat.set_shader_parameter("squash", squash)
+
+
+func foe_body_lean() -> float:
+	if stasis_sprite == "" or _sprite == null or not (_sprite.material is ShaderMaterial):
+		return 0.0
+	return float((_sprite.material as ShaderMaterial).get_shader_parameter("lean"))
+
+
 func _sample_hit(t: float, dir: Vector2) -> void:
 	if _sprite == null:
 		return
@@ -1776,6 +1868,10 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	var planted := _hit_strip_is_body()
 	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir)
 	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t)
+	# A struck foe reels from the blow (upper body first) and buckles.
+	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
+	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0
+	_set_foe_body(away * reel * FOE_HIT_LEAN, reel * 0.06)
 	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
 	_sprite.scale = scaled
@@ -1932,6 +2028,8 @@ func _sample_idle(_t: float) -> void:
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
 	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	if stasis_sprite != "":
+		bob = foe_idle_offset(foe_body_for(stasis_sprite, stasis_boss), now + phase)
 	_sprite.position = bob
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = bob
@@ -1939,6 +2037,15 @@ func _sample_idle(_t: float) -> void:
 		_walk_draw.position = bob
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
+
+
+## Foe idle body offset: flyers (already raised by their sprite offset) rise,
+## sink and drift; walkers shift their weight a little.
+static func foe_idle_offset(body: Dictionary, t: float) -> Vector2:
+	var hover := float(body.get("hover", 0.0))
+	if hover > 0.0:
+		return Vector2(sin(t * 1.3) * 1.6, -sin(t * TAU / 2.4) * hover * 0.45)
+	return Vector2(0.0, sin(t * TAU / VIEW_MOTION.IDLE_PERIOD) * float(body.get("bob", VIEW_MOTION.IDLE_BOB_PX)))
 
 
 func _stop_idle() -> void:
@@ -1986,6 +2093,7 @@ func _plant_sprite() -> void:
 	_sprite.scale = _body_scale()
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
+	_set_foe_body(0.0, 0.0)
 	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
 		_walk_draw.position = Vector2.ZERO
 		_walk_draw.scale = _body_scale()

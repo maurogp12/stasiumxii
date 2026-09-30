@@ -27,6 +27,7 @@ func _run() -> void:
 	_test_set_bonuses()
 	_test_ap_mp_clamp()
 	_test_stasis_loot()
+	_test_loot_by_star()
 	_test_save_roundtrip()
 	_test_gear_screen()
 	_test_stasis_chest_wiring()
@@ -201,6 +202,37 @@ func _test_stasis_loot() -> void:
 		never.record_stasis_clear(T0 + n * DAY, 5)
 	for it in never.items:
 		eq(GearBag.family_of(str(it["item_id"])) != "duskbrand", true, "Stasis never drops Duskbrand")
+
+
+## Mauro 29 Sep 2026: "dungs with 1 star should only loot normal gear, above
+## 3 star is when start looting rare and only 5 legendary".
+func _test_loot_by_star() -> void:
+	var want := {
+		1: ["sheaf", "undertow"],
+		2: ["sheaf", "undertow"],
+		3: ["ironveil", "sheaf", "stillcut", "undertow"],
+		4: ["ironveil", "sheaf", "stillcut", "undertow"],
+		5: ["brightedge", "ironveil", "sheaf", "stillcut", "undertow"],
+	}
+	for star in want:
+		var bag := GearBag.new()
+		var n := [0]
+		var pick := func() -> float:
+			n[0] += 1
+			return fposmod(float(n[0]) * 0.1373, 1.0)
+		var seen := {}
+		for d in 40:
+			for it in bag.record_stasis_clear(T0 + d * DAY, int(star), pick)["items"]:
+				seen[GearBag.family_of(str(it["item_id"]))] = true
+		var got: Array = seen.keys()
+		got.sort()
+		eq(got, want[star], "★%d drops exactly %s" % [star, ", ".join(want[star])])
+	eq(str(GearBag.FAMILIES["sheaf"]["rarity"]), "Normal", "Sheaf is Normal")
+	eq(str(GearBag.FAMILIES["ironveil"]["rarity"]), "Rare", "Ironveil is Rare")
+	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is Legendary")
+	var a := GearBag.icon("sheaf.chest")
+	eq(a != null, true, "Sheaf chest icon loads")
+	eq(a == GearBag.icon("sheaf.chest"), true, "icons are cached so result/inventory draws keep them alive")
 
 
 func _test_save_roundtrip() -> void:

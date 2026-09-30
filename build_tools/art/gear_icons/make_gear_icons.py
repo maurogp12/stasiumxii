@@ -16,12 +16,13 @@ from scipy import ndimage as ndi
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, "src")
+MASKS = os.path.join(HERE, "masks")  # make_masks.py (rembg) for hard pieces
 OUT = os.path.abspath(os.path.join(HERE, "..", "..", "..", "art", "items", "gear"))
 SIZE = 128
 CLASSES = ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
 
 PIECES = {
-    "sheaf": ("s_sheaf", {"head": (445, 15, 590, 180), "chest": (235, 85, 440, 430), "legs": (75, 200, 225, 410), "boots": (430, 215, 610, 425)}),
+    "sheaf": ("s_sheaf", {"head": (440, 8, 596, 184), "chest": (235, 85, 440, 430), "legs": (75, 200, 225, 410), "boots": (430, 215, 610, 425)}),
     "ironveil": ("s_iron", {"head": (195, 15, 330, 225), "chest": (330, 35, 530, 350), "legs": (170, 245, 345, 425), "boots": (440, 235, 640, 432)}),
     "brightedge": ("s_bright", {"head": (215, 22, 375, 210), "chest": (395, 12, 612, 250), "legs": (145, 195, 348, 432), "boots": (350, 245, 562, 442)}),
     "duskbrand": ("s_dusk", {"head": (270, 75, 378, 232), "chest": (420, 58, 628, 252), "legs": (108, 250, 272, 416), "boots": (368, 268, 560, 414)}),
@@ -44,11 +45,16 @@ def load(name):
     return Image.open(os.path.join(SRC, name + ".jpg")).convert("RGB")
 
 
-def cut(img, box, tol=None, keep_frac=0.12):
+def cut(img, box, tol=None, keep_frac=0.12, mask_path=None):
     s = img.width / 680.0
     x0, y0, x1, y1 = [int(round(v * s)) for v in box]
     raw = img.crop((x0, y0, x1, y1))
     crop = np.asarray(raw).astype(np.float32)
+    if mask_path and os.path.exists(mask_path):
+        m = np.asarray(Image.open(mask_path).convert("L").resize(raw.size))
+        im = Image.fromarray(np.dstack([crop.astype(np.uint8), m]), "RGBA")
+        bb = Image.fromarray(np.where(m > 96, 255, 0).astype(np.uint8)).getbbox()
+        return im.crop(bb) if bb else None
     soft = np.asarray(raw.filter(ImageFilter.MedianFilter(3))).astype(np.float32)
     # Paper colour = the most common colour along the crop edge. The paper is
     # one flat colour there while the item's colours vary, so the mode stays on
@@ -129,7 +135,8 @@ def main():
     for fam, (sheet, boxes) in PIECES.items():
         img = load(sheet)
         for slot, box in boxes.items():
-            piece = cut(img, box, tol=14 if fam == "sheaf" else None)
+            mask = os.path.join(MASKS, f"{fam}_{slot}.png")
+            piece = cut(img, box, tol=14 if fam == "sheaf" else None, mask_path=mask)
             finish(piece).save(os.path.join(OUT, f"{fam}_{slot}.png"), optimize=True)
             made += 1
     iron = load("s_iron")
