@@ -196,6 +196,15 @@ static func capped_presentation_mul(raw: float) -> float:
 
 ## A Stasis boss towers over the pack (Mauro: "boss looking lame").
 const BOSS_SCALE := 1.5
+## Regular Stasis monsters read bigger on the board too (Mauro 30 Sep 2026:
+## "Yes" to ~15–20% bigger, Dofus-sized monsters). View only.
+const TRASH_SCALE := 1.18
+
+
+func _monster_scale() -> float:
+	if stasis_sprite == "":
+		return 1.0
+	return BOSS_SCALE if stasis_boss else TRASH_SCALE
 
 
 ## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
@@ -207,7 +216,7 @@ func _stasis_res() -> float:
 
 
 func _body_scale() -> Vector2:
-	return sprite_scale_for(class_id) * (BOSS_SCALE if stasis_boss else 1.0) * _stasis_res()
+	return sprite_scale_for(class_id) * _monster_scale() * _stasis_res()
 
 
 func _body_scale_mul(mul: Vector2) -> Vector2:
@@ -220,7 +229,7 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 func head_hp_y() -> float:
 	# Heavy bodies raise the bar; small bodies keep the shared line above them.
 	# World size only: the 2x foe art factor (_stasis_res) is not a size change.
-	var world := sprite_scale_for(class_id).y * (BOSS_SCALE if stasis_boss else 1.0)
+	var world := sprite_scale_for(class_id).y * _monster_scale()
 	return HEAD_HP_Y * maxf(world / SPRITE_SCALE.y, 1.0)
 
 

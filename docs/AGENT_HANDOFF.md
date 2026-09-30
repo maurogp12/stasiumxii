@@ -91,6 +91,7 @@ Version history, reasons and Mauro's exact words are in
   varying — never multiply the texel by `COLOR` again; board light, breath,
   sway, foe lean / squash / mirror). `units/pawn.gd` owns idle, walk, attack,
   hit and the foe bodies (`FOE_BODY`, `FOE_KIND`).
+- Regular Stasis monsters: 1.18× body (`Pawn.TRASH_SCALE`, Mauro's yes).
 - Bosses: 1.5× body, `units/boss_aura.gd` sigil (turn surge + AOE flare).
 - Stasis foe art: `art/stasis/foes/*.png` (HD 288×320, `build_tools/art/foes_hd/`).
 - Gear icons: `art/items/gear/` from the Blueprint set sheets

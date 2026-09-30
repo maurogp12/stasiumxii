@@ -517,6 +517,8 @@ func _test_foe_bodies() -> void:
 	truthy(float(brute_land["squash"]) > 0.05 and float(boss_land["squash"]) > float(brute_land["squash"]), "brutes stomp; a boss lands heavier")
 	truthy(absf(float(Pawn.foe_gait("crawler", false, 0.5, 1.0)["offset"].y)) < 2.5, "crawlers skitter low")
 	eq(float(Pawn.foe_gait("beast", false, 0.5, -1.0)["lean"]) < 0.0, true, "the lean follows the walk direction")
+	eq(Pawn.TRASH_SCALE, 1.18, "regular monsters draw 18% bigger (Mauro: yes)")
+	eq(pawn._monster_scale(), Pawn.TRASH_SCALE, "a Room A monster uses the trash scale")
 	var hero := Pawn.new()
 	root.add_child(hero)
 	hero.apply_snapshot({"seat": 0, "class_id": "kestrel", "name": "Kestrel", "pos": Vector2i(2, 2), "facing": "S", "hp": 0, "max_hp": 80, "alive": false}, 0)
