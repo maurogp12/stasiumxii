@@ -40,6 +40,8 @@ const BOUNCE_TOAST := "Bounce"
 const LAVA_BURN_TOAST := "Lava - Burn"
 const WATER_SILENCE_TOAST := "Water - Silence"
 const MUD_SLOW_TOAST := "Mud - Slow"
+const ICE_FROZEN_TOAST := "Ice - Frozen"
+const CHARGE_SHOCK_TOAST := "Charge - Electrocuted"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -594,6 +596,21 @@ static func impact_gain_toast(amount: int) -> String:
 	return "+%d Impact" % amount
 
 
+## Map push stacks on the unit card (Mauro's sheet): SLOW / BREATH / FROZEN /
+## SHOCK with the stack. Burn has its own note above.
+static func push_stack_notes(unit: Dictionary) -> String:
+	var out := ""
+	if int(unit.get("slow_remaining", 0)) > 0:
+		out += "  [b]SLOW[/b] ×%d" % maxi(int(unit.get("slow_stacks", 1)), 1)
+	if int(unit.get("breathless_remaining", 0)) > 0:
+		out += "  [b]BREATH[/b] ×%d %d" % [int(unit.get("breathless_stacks", 1)), int(unit.get("breathless_remaining", 0))]
+	if int(unit.get("frozen_remaining", 0)) > 0:
+		out += "  [b]FROZEN[/b] ×%d" % int(unit.get("frozen_stacks", 1))
+	if int(unit.get("electro_remaining", 0)) > 0:
+		out += "  [b]SHOCK[/b] ×%d" % int(unit.get("electro_stacks", 1))
+	return out
+
+
 static func toast_for_events(events: Array) -> String:
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
@@ -603,9 +620,20 @@ static func toast_for_events(events: Array) -> String:
 		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), WATER_SILENCE_TOAST)
 	if events_include_mud_slow(events):
 		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), MUD_SLOW_TOAST)
+	if _events_have_status(events, "frozen"):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), ICE_FROZEN_TOAST)
+	if _events_have_status(events, "electrocuted"):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), CHARGE_SHOCK_TOAST)
 	if events_include_push_bounce(events):
 		return _join_toast(BOUNCE_TOAST, impact_gain_toast(shoulder_impact_gained(events)))
 	return impact_gain_toast(shoulder_impact_gained(events))
+
+
+static func _events_have_status(events: Array, status: String) -> bool:
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "status" and str(event.get("status", "")) == status:
+			return true
+	return false
 
 
 static func _join_toast(left: String, right: String) -> String:
@@ -1594,6 +1622,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var burn_note := ""
 	if unit_is_burning(unit):
 		burn_note = "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
+	burn_note += push_stack_notes(unit)
 	# Spell ids stay on the bottom bar. The card keeps HP, AP, MP, facing, and meters.
 	return "%s   HP %d/%d%s%s\nAP %d    MP %d    Face %s\n%s" % [
 		status,

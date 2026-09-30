@@ -845,7 +845,7 @@ func _test_death_cause() -> void:
 	var burned: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var burn_dead := _event_of(burned.get("events", []), "dead")
 	eq(str(burn_dead.get("cause", "")), "burn", "lethal Burn tick cause is burn")
-	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -4, "lethal stack 2 tick is 4 HP")
+	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -5, "lethal stack 2 tick is 5 HP (push stack sheet)")
 	eq(int(_event_of(burned.get("events", []), "burn").get("tick_stacks", 0)), 2, "lethal tick uses stack 2")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "Burn tick still reduces HP to 0")
 	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "Burn tick still marks the victim dead")
@@ -1047,14 +1047,16 @@ func _test_cleanse_cc_removed() -> void:
 	eq(int(burned.get("stun_remaining", -1)), 0, "Cleanse still clears Stun beside Burn")
 
 	_reset_mender()
-	_live_unit(0)["burn_remaining"] = 4
-	_live_unit(0)["burn_stacks"] = 1
+	# Cleanse strips ONE family (Mauro's push stack sheet): Burn 2 outranks Slow 1.
+	_live_unit(0)["burn_remaining"] = 3
+	_live_unit(0)["burn_stacks"] = 2
 	_live_unit(0)["slow_remaining"] = 1
+	_live_unit(0)["slow_stacks"] = 1
 	var burn_only: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
-	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), ["burn"], "Burn alone is reported as removed")
-	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 0, "Burn-only Cleanse clears duration")
-	eq(int(_sim.snapshot()["units"][0]["burn_stacks"]), 0, "Burn-only Cleanse clears stacks")
-	eq(int(_sim.snapshot()["units"][0]["slow_remaining"]), 1, "Cleanse does not clear Slow")
+	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), ["burn"], "the higher stack (Burn 2) is removed")
+	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 0, "Cleanse clears Burn duration")
+	eq(int(_sim.snapshot()["units"][0]["burn_stacks"]), 0, "Cleanse clears Burn stacks")
+	eq(int(_sim.snapshot()["units"][0]["slow_remaining"]), 1, "only one family: Slow stays")
 
 	_host.reset_match({
 		"seed": 1,
