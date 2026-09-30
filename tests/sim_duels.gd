@@ -19,6 +19,7 @@ const BUILDS := {
 	"gloam": {"mastery": 40, "vitality": 16, "swift": 2},
 	"bastion": {"mastery": 20, "vitality": 36, "swift": 2},
 }
+const IDEAL_RANGE := {"kestrel": 4, "ironjaw": 1, "mender": 3, "gloam": 1, "bastion": 1}
 const MAX_ROUNDS := 30
 const MAX_ACTIONS := 10
 
@@ -229,6 +230,13 @@ func _eval(sim: Node, seat: int) -> float:
 	s += float(me.get("aegis", 0)) * 3.0
 	s += float(me.get("shades", 0)) * 2.5
 	s += 4.0 if bool(me.get("invisible", false)) else 0.0
+	# Positioning: each class wants its own fighting distance (melee 1,
+	# Kestrel 4 = inside Mark Shot 2–5, Mender 3).
+	var ideal := int(IDEAL_RANGE.get(str(me.get("class_id", "")), 1))
+	var mp: Vector2i = me["pos"]
+	var fp: Vector2i = foe["pos"]
+	var d := maxi(absi(mp.x - fp.x), absi(mp.y - fp.y))
+	s -= float(absi(d - ideal)) * 1.5
 	return s
 
 
