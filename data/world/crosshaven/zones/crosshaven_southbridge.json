@@ -83,25 +83,25 @@
       "type": "southbridge_spire",
       "blocks": true,
       "origin": {
-        "x": 14,
-        "y": 8
+        "x": 23,
+        "y": 6
       },
       "footprint": [
         {
-          "x": 14,
-          "y": 8
+          "x": 23,
+          "y": 6
         },
         {
-          "x": 15,
-          "y": 8
+          "x": 24,
+          "y": 6
         },
         {
-          "x": 14,
-          "y": 9
+          "x": 23,
+          "y": 7
         },
         {
-          "x": 15,
-          "y": 9
+          "x": 24,
+          "y": 7
         }
       ]
     },
@@ -651,16 +651,16 @@
       "blocks": true,
       "origin": {
         "x": 16,
-        "y": 12
+        "y": 8
       },
       "footprint": [
         {
           "x": 16,
-          "y": 12
+          "y": 8
         },
         {
           "x": 17,
-          "y": 12
+          "y": 8
         }
       ]
     },
@@ -669,17 +669,17 @@
       "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 16,
-        "y": 13
+        "x": 27,
+        "y": 10
       },
       "footprint": [
         {
-          "x": 16,
-          "y": 13
+          "x": 27,
+          "y": 10
         },
         {
-          "x": 17,
-          "y": 13
+          "x": 28,
+          "y": 10
         }
       ]
     },
@@ -707,79 +707,19 @@
       "type": "well",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 11
+        "x": 22,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 11
+          "x": 22,
+          "y": 13
         }
       ]
     },
     {
       "id": "crosshaven_southbridge_density_lamp_post_14",
       "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 17,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 17,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_southbridge_density_lamp_post_15",
-      "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 23,
-        "y": 11
-      },
-      "footprint": [
-        {
-          "x": 23,
-          "y": 11
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_southbridge_density_lamp_post_16",
-      "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 16,
-        "y": 14
-      },
-      "footprint": [
-        {
-          "x": 16,
-          "y": 14
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_southbridge_density_barrel_17",
-      "type": "barrel",
-      "blocks": true,
-      "origin": {
-        "x": 23,
-        "y": 13
-      },
-      "footprint": [
-        {
-          "x": 23,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_southbridge_density_crate_apples_18",
-      "type": "crate_apples",
       "blocks": true,
       "origin": {
         "x": 18,
@@ -793,17 +733,77 @@
       ]
     },
     {
-      "id": "crosshaven_southbridge_density_crate_apples_19",
-      "type": "crate_apples",
+      "id": "crosshaven_southbridge_density_lamp_post_15",
+      "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 24,
+        "x": 22,
         "y": 11
       },
       "footprint": [
         {
-          "x": 24,
+          "x": 22,
           "y": 11
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_density_lamp_post_16",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 23,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 23,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_density_barrel_17",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_density_crate_apples_18",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 18,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 18,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_density_crate_apples_19",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 17,
+        "y": 13
+      },
+      "footprint": [
+        {
+          "x": 17,
+          "y": 13
         }
       ]
     },
@@ -813,12 +813,12 @@
       "blocks": true,
       "origin": {
         "x": 23,
-        "y": 14
+        "y": 13
       },
       "footprint": [
         {
           "x": 23,
-          "y": 14
+          "y": 13
         }
       ]
     },
@@ -842,13 +842,13 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 18,
-        "y": 8
+        "x": 17,
+        "y": 6
       },
       "footprint": [
         {
-          "x": 18,
-          "y": 8
+          "x": 17,
+          "y": 6
         }
       ]
     },
@@ -857,13 +857,13 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 9
+        "x": 21,
+        "y": 8
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 9
+          "x": 21,
+          "y": 8
         }
       ]
     },
@@ -917,13 +917,13 @@
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 24,
-        "y": 9
+        "x": 23,
+        "y": 11
       },
       "footprint": [
         {
-          "x": 24,
-          "y": 9
+          "x": 23,
+          "y": 11
         }
       ]
     },
@@ -933,12 +933,12 @@
       "blocks": true,
       "origin": {
         "x": 24,
-        "y": 14
+        "y": 13
       },
       "footprint": [
         {
           "x": 24,
-          "y": 14
+          "y": 13
         }
       ]
     },
@@ -10178,12 +10178,6 @@
       "y": 6
     },
     {
-      "id": "crosshaven_southbridge_decor_008",
-      "type": "sunflowers_tall",
-      "x": 16,
-      "y": 8
-    },
-    {
       "id": "crosshaven_southbridge_decor_009",
       "type": "flowers_a",
       "x": 24,
@@ -10248,12 +10242,6 @@
       "type": "decal_road_grass",
       "x": 19,
       "y": 6
-    },
-    {
-      "id": "crosshaven_southbridge_decor_024",
-      "type": "decal_pebbles",
-      "x": 22,
-      "y": 8
     },
     {
       "id": "crosshaven_southbridge_decor_025",
@@ -10625,12 +10613,6 @@
       "id": "crosshaven_southbridge_decor_089",
       "type": "flowers_b",
       "x": 15,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_southbridge_decor_090",
-      "type": "tuft_a",
-      "x": 27,
       "y": 10
     },
     {
@@ -11110,8 +11092,8 @@
     {
       "id": "crosshaven_southbridge_density_flowers_02",
       "type": "flowers_a",
-      "x": 12,
-      "y": 10
+      "x": 14,
+      "y": 9
     },
     {
       "id": "crosshaven_southbridge_density_flowers_03",
@@ -11140,14 +11122,14 @@
     {
       "id": "crosshaven_southbridge_density_flowers_07",
       "type": "flowers_d",
-      "x": 27,
+      "x": 24,
       "y": 9
     },
     {
       "id": "crosshaven_southbridge_density_flowers_08",
       "type": "flowers_d",
-      "x": 25,
-      "y": 10
+      "x": 27,
+      "y": 9
     },
     {
       "id": "crosshaven_southbridge_density_flowers_09",
@@ -11200,26 +11182,26 @@
     {
       "id": "crosshaven_southbridge_density_flowers_17",
       "type": "flowers_d",
-      "x": 19,
-      "y": 8
+      "x": 18,
+      "y": 6
     },
     {
       "id": "crosshaven_southbridge_density_flowers_18",
       "type": "flowers_d",
-      "x": 18,
-      "y": 9
+      "x": 17,
+      "y": 7
     },
     {
       "id": "crosshaven_southbridge_density_flowers_19",
       "type": "decal_flowers_pink",
-      "x": 23,
-      "y": 10
+      "x": 21,
+      "y": 9
     },
     {
       "id": "crosshaven_southbridge_density_flowers_20",
       "type": "decal_flowers_pink",
-      "x": 24,
-      "y": 10
+      "x": 22,
+      "y": 9
     }
   ]
 }

@@ -77,25 +77,26 @@ LAYOUTS = {
         "lock_spawn": True,
         "plaza": (18, 15, 26, 22),
         "move": {
+            "crossroads_centerpiece": (20, 15),
             "fountain_2x2": (24, 20),
             "market_stall": (24, 16),
-            "well": (19, 21),
-            "signpost_crossroads": (17, 16),
-            "barrel": (23, 20),
+            "well": (20, 21),
+            "signpost_crossroads": (18, 15),
+            "barrel": (24, 19),
         },
         "cottages": [(14, 13), (16, 13), (24, 13), (27, 13), (16, 21), (14, 23), (24, 23), (27, 21)],
         "extra": [
             ("barn_2x2", (6, 32)),
-            ("market_stall", (24, 22)),
-            ("market_stall", (26, 20)),
-            ("lamp_post", (18, 16)),
-            ("lamp_post", (26, 16)),
-            ("lamp_post", (19, 15)),
-            ("crate_apples", (26, 22)),
+            ("market_stall", (18, 16)),
+            ("market_stall", (25, 22)),
+            ("lamp_post", (19, 19)),
+            ("lamp_post", (24, 17)),
+            ("lamp_post", (18, 19)),
+            ("crate_apples", (23, 15)),
             ("crate_apples", (25, 19)),
-            ("cart", (18, 22)),
-            ("tree", (18, 15)),
-            ("tree", (19, 22)),
+            ("cart", (25, 21)),
+            ("tree", (18, 14)),
+            ("tree", (23, 15)),
             ("hay_bale", (7, 34)),
         ],
         "farms": [("farm_cabbage", 4, 8, 4, 3), ("farm_carrot", 32, 8, 3, 3)],
@@ -117,19 +118,19 @@ LAYOUTS = {
         "extra": [
             ("farmhouse_2x2", (32, 22)),
             ("market_stall", (16, 10)),
-            ("market_stall", (16, 14)),
-            ("market_stall", (23, 14)),
-            ("well", (17, 11)),
-            ("lamp_post", (23, 11)),
-            ("lamp_post", (17, 9)),
-            ("lamp_post", (23, 16)),
-            ("barrel", (23, 12)),
-            ("crate_apples", (17, 15)),
-            ("crate_apples", (22, 15)),
-            ("cart", (23, 10)),
+            ("market_stall", (22, 10)),
+            ("market_stall", (16, 15)),
+            ("well", (22, 15)),
+            ("lamp_post", (18, 15)),
+            ("lamp_post", (23, 13)),
+            ("lamp_post", (17, 13)),
+            ("barrel", (24, 11)),
+            ("crate_apples", (18, 10)),
+            ("crate_apples", (23, 15)),
+            ("cart", (24, 15)),
             ("signpost_crossroads", (13, 13)),
+            ("tree", (18, 9)),
             ("tree", (23, 9)),
-            ("tree", (17, 16)),
             ("hay_bale", (33, 24)),
         ],
         "farms": [("farm_pumpkin", 4, 24, 4, 3)],
@@ -139,23 +140,23 @@ LAYOUTS = {
         "spawn": (16, 16),
         "lock_spawn": False,
         "plaza": (12, 14, 21, 19),
-        "move": {"cart": (20, 19)},
+        "move": {"cart": (19, 19)},
         "cottages": [(9, 12), (13, 12), (17, 12), (9, 20), (13, 20), (17, 20), (22, 20), (26, 20)],
         "extra": [
             ("barn_2x2", (22, 24)),
-            ("market_stall", (12, 18)),
-            ("market_stall", (14, 18)),
-            ("market_stall", (18, 19)),
-            ("well", (14, 15)),
-            ("lamp_post", (12, 15)),
-            ("lamp_post", (20, 14)),
-            ("lamp_post", (15, 19)),
-            ("barrel", (20, 18)),
+            ("market_stall", (12, 15)),
+            ("market_stall", (19, 14)),
+            ("market_stall", (12, 19)),
+            ("well", (18, 19)),
+            ("lamp_post", (14, 19)),
+            ("lamp_post", (18, 15)),
+            ("lamp_post", (19, 17)),
+            ("barrel", (14, 15)),
             ("crate_apples", (13, 19)),
-            ("crate_apples", (16, 18)),
+            ("crate_apples", (20, 14)),
             ("signpost_crossroads", (11, 13)),
-            ("tree", (13, 15)),
-            ("tree", (20, 15)),
+            ("tree", (14, 18)),
+            ("tree", (19, 18)),
             ("hay_bale", (23, 26)),
         ],
         "farms": [("farm_lavender", 14, 24, 4, 3)],
@@ -173,20 +174,20 @@ LAYOUTS = {
         "cottages": [(10, 12), (14, 12), (16, 12), (25, 12), (10, 20), (14, 20), (18, 20), (22, 20)],
         "extra": [
             ("barn_2x2", (4, 24)),
-            ("market_stall", (12, 18)),
-            ("market_stall", (14, 18)),
-            ("market_stall", (19, 18)),
-            ("well", (20, 15)),
-            ("lamp_post", (12, 17)),
+            ("market_stall", (12, 14)),
+            ("market_stall", (20, 14)),
+            ("market_stall", (12, 19)),
+            ("well", (18, 19)),
+            ("lamp_post", (14, 19)),
+            ("lamp_post", (18, 15)),
             ("lamp_post", (21, 17)),
-            ("lamp_post", (18, 19)),
-            ("barrel", (12, 15)),
-            ("crate_apples", (15, 19)),
-            ("crate_apples", (21, 18)),
+            ("barrel", (13, 15)),
+            ("crate_apples", (13, 19)),
+            ("crate_apples", (21, 14)),
             ("cart", (20, 19)),
             ("signpost_crossroads", (11, 13)),
-            ("tree", (13, 15)),
-            ("tree", (21, 15)),
+            ("tree", (14, 18)),
+            ("tree", (19, 18)),
             ("hay_bale", (5, 26)),
         ],
         "farms": [("farm_sunflower", 14, 24, 4, 3)],
@@ -205,20 +206,20 @@ LAYOUTS = {
         },
         "cottages": [(10, 6), (10, 9), (10, 12), (24, 6), (21, 11), (21, 14), (8, 16), (26, 18)],
         "extra": [
-            ("market_stall", (12, 12)),
+            ("market_stall", (12, 8)),
+            ("market_stall", (18, 8)),
             ("market_stall", (12, 13)),
-            ("market_stall", (19, 12)),
-            ("well", (13, 11)),
-            ("lamp_post", (13, 14)),
-            ("lamp_post", (19, 11)),
-            ("lamp_post", (12, 9)),
-            ("barrel", (19, 13)),
-            ("crate_apples", (14, 11)),
-            ("crate_apples", (20, 13)),
-            ("cart", (19, 14)),
+            ("well", (18, 13)),
+            ("lamp_post", (14, 13)),
+            ("lamp_post", (18, 11)),
+            ("lamp_post", (19, 9)),
+            ("barrel", (19, 8)),
+            ("crate_apples", (14, 8)),
+            ("crate_apples", (13, 13)),
+            ("cart", (19, 13)),
             ("signpost_crossroads", (9, 8)),
-            ("tree", (13, 8)),
-            ("tree", (19, 8)),
+            ("tree", (14, 7)),
+            ("tree", (18, 7)),
             ("hay_bale", (6, 22)),
         ],
         "farms": [("farm_plowed", 4, 22, 4, 3)],
@@ -229,27 +230,28 @@ LAYOUTS = {
         "lock_spawn": False,
         "plaza": (16, 8, 24, 14),
         "move": {
-            "southbridge_spire": (14, 8),
+            "southbridge_spire": (23, 6),
             "watermill_2x2_body": (13, 21),
             "hay_bale": (15, 23),
         },
         "cottages": [(12, 8), (12, 11), (12, 14), (25, 8), (25, 11), (25, 14), (14, 15), (23, 15)],
         "extra": [
             ("farmhouse_2x2", (30, 20)),
-            ("market_stall", (16, 12)),
-            ("market_stall", (16, 13)),
+            ("market_stall", (16, 8)),
+            ("market_stall", (26, 10)),
             ("market_stall", (23, 12)),
-            ("well", (17, 11)),
-            ("lamp_post", (17, 8)),
-            ("lamp_post", (23, 11)),
-            ("lamp_post", (16, 14)),
-            ("barrel", (23, 13)),
-            ("crate_apples", (18, 13)),
-            ("crate_apples", (24, 11)),
-            ("cart", (23, 14)),
+            ("well", (22, 13)),
+            ("lamp_post", (18, 13)),
+            ("lamp_post", (22, 11)),
+            ("lamp_post", (23, 9)),
+            ("barrel", (23, 8)),
+            ("crate_apples", (18, 8)),
+            ("crate_apples", (17, 13)),
+            ("crate_apples", (19, 16)),
+            ("cart", (23, 13)),
             ("signpost_crossroads", (15, 11)),
-            ("tree", (19, 9)),
-            ("tree", (23, 9)),
+            ("tree", (18, 7)),
+            ("tree", (22, 7)),
         ],
         "farms": [("farm_fallow", 32, 22, 4, 3)],
         "hedges": [(2, 18), (4, 18), (34, 18), (36, 18), (2, 26), (4, 26), (34, 26), (36, 26)],
@@ -461,6 +463,16 @@ def keeps_reach(walk: set[tuple[int, int]], blocked: set[tuple[int, int]], spawn
     return need <= reachable(spawn, walk, trial)
 
 
+def tight_nearby(origin: tuple[int, int]):
+    """One cell of slack, so a stall stays in its cluster instead of the rim."""
+    yield origin
+    for dy in range(-1, 2):
+        for dx in range(-1, 2):
+            if dx == 0 and dy == 0:
+                continue
+            yield (origin[0] + dx, origin[1] + dy)
+
+
 def nearby(origin: tuple[int, int]):
     yield origin
     for radius in range(1, 4):
@@ -618,6 +630,13 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
     # Spawn row and column stay open so a cluster cannot close the way out.
     spine = {(x, spawn[1]) for x in range(x0, x1 + 1)}
     spine |= {(spawn[0], y) for y in range(y0, y1 + 1)}
+    # Open pad: the spawn and the cell just south of it, plus their neighbours.
+    # The still camera stands on that south cell, in the square.
+    pad = {
+        (spawn[0] + dx, spawn[1] + dy)
+        for dx in (-1, 0, 1)
+        for dy in (-1, 0, 1, 2)
+    }
 
     blocked = blocked_map(doc)
     walk = {cell for cell, tile in tiles.items() if tile["walkable"]}
@@ -671,9 +690,10 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
     door_fronts = 0
     for prop_type, origin, required, door_front in life:
         placed_at = None
-        for spot in nearby(origin):
+        spots = nearby(origin) if door_front else tight_nearby(origin)
+        for spot in spots:
             cells = footprint(prop_type, spot)
-            if any(cell in spine for cell in cells):
+            if any(cell in spine or cell in pad for cell in cells):
                 continue
             if any(max(abs(cell[0] - spawn[0]), abs(cell[1] - spawn[1])) < 2 for cell in cells):
                 continue

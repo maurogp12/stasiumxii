@@ -789,17 +789,17 @@
       "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 16,
-        "y": 14
+        "x": 22,
+        "y": 10
       },
       "footprint": [
         {
-          "x": 16,
-          "y": 14
+          "x": 22,
+          "y": 10
         },
         {
-          "x": 17,
-          "y": 14
+          "x": 23,
+          "y": 10
         }
       ]
     },
@@ -808,17 +808,17 @@
       "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 14
+        "x": 16,
+        "y": 15
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 14
+          "x": 16,
+          "y": 15
         },
         {
-          "x": 24,
-          "y": 14
+          "x": 17,
+          "y": 15
         }
       ]
     },
@@ -827,13 +827,13 @@
       "type": "well",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 11
+        "x": 22,
+        "y": 15
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 11
+          "x": 22,
+          "y": 15
         }
       ]
     },
@@ -842,13 +842,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 11
+        "x": 18,
+        "y": 15
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 11
+          "x": 18,
+          "y": 15
         }
       ]
     },
@@ -857,13 +857,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 9
+        "x": 23,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 9
+          "x": 23,
+          "y": 13
         }
       ]
     },
@@ -872,13 +872,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 16
+        "x": 17,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 16
+          "x": 17,
+          "y": 13
         }
       ]
     },
@@ -887,12 +887,12 @@
       "type": "barrel",
       "blocks": true,
       "origin": {
-        "x": 22,
+        "x": 24,
         "y": 11
       },
       "footprint": [
         {
-          "x": 22,
+          "x": 24,
           "y": 11
         }
       ]
@@ -902,13 +902,13 @@
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 15
+        "x": 18,
+        "y": 10
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 15
+          "x": 18,
+          "y": 10
         }
       ]
     },
@@ -917,12 +917,12 @@
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 22,
+        "x": 23,
         "y": 15
       },
       "footprint": [
         {
-          "x": 22,
+          "x": 23,
           "y": 15
         }
       ]
@@ -932,13 +932,13 @@
       "type": "cart",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 10
+        "x": 24,
+        "y": 15
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 10
+          "x": 24,
+          "y": 15
         }
       ]
     },
@@ -962,12 +962,12 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 23,
+        "x": 18,
         "y": 9
       },
       "footprint": [
         {
-          "x": 23,
+          "x": 18,
           "y": 9
         }
       ]
@@ -977,13 +977,13 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 16
+        "x": 23,
+        "y": 9
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 16
+          "x": 23,
+          "y": 9
         }
       ]
     },
@@ -1067,13 +1067,13 @@
       "type": "barrel",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 15
+        "x": 24,
+        "y": 16
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 15
+          "x": 24,
+          "y": 16
         }
       ]
     },
@@ -10355,12 +10355,6 @@
       "y": 12
     },
     {
-      "id": "crosshaven_northgate_decor_012",
-      "type": "bush_small_b",
-      "x": 24,
-      "y": 16
-    },
-    {
       "id": "crosshaven_northgate_decor_013",
       "type": "bush_small_a",
       "x": 16,
@@ -10430,12 +10424,6 @@
       "id": "crosshaven_northgate_decor_025",
       "type": "decal_road_grass",
       "x": 20,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_northgate_decor_026",
-      "type": "decal_path_stones_b",
-      "x": 21,
       "y": 10
     },
     {
@@ -11299,8 +11287,8 @@
     {
       "id": "crosshaven_northgate_density_flowers_06",
       "type": "flowers_c",
-      "x": 16,
-      "y": 15
+      "x": 14,
+      "y": 16
     },
     {
       "id": "crosshaven_northgate_density_flowers_07",
@@ -11317,14 +11305,14 @@
     {
       "id": "crosshaven_northgate_density_flowers_09",
       "type": "decal_flowers_pink",
-      "x": 24,
+      "x": 27,
       "y": 15
     },
     {
       "id": "crosshaven_northgate_density_flowers_10",
       "type": "decal_flowers_pink",
-      "x": 27,
-      "y": 15
+      "x": 25,
+      "y": 16
     },
     {
       "id": "crosshaven_northgate_density_flowers_11",
@@ -11365,26 +11353,26 @@
     {
       "id": "crosshaven_northgate_density_flowers_17",
       "type": "flowers_d",
-      "x": 24,
+      "x": 19,
       "y": 9
     },
     {
       "id": "crosshaven_northgate_density_flowers_18",
       "type": "flowers_d",
-      "x": 24,
+      "x": 19,
       "y": 10
     },
     {
       "id": "crosshaven_northgate_density_flowers_19",
       "type": "decal_flowers_pink",
-      "x": 18,
-      "y": 16
+      "x": 24,
+      "y": 9
     },
     {
       "id": "crosshaven_northgate_density_flowers_20",
       "type": "decal_flowers_pink",
-      "x": 17,
-      "y": 17
+      "x": 24,
+      "y": 10
     }
   ]
 }

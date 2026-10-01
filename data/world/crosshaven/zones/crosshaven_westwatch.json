@@ -756,21 +756,40 @@
       "blocks": true,
       "origin": {
         "x": 12,
-        "y": 12
+        "y": 8
       },
       "footprint": [
         {
           "x": 12,
-          "y": 12
+          "y": 8
         },
         {
           "x": 13,
-          "y": 12
+          "y": 8
         }
       ]
     },
     {
       "id": "crosshaven_westwatch_density_market_stall_10",
+      "type": "market_stall",
+      "blocks": true,
+      "origin": {
+        "x": 18,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 18,
+          "y": 8
+        },
+        {
+          "x": 19,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_market_stall_11",
       "type": "market_stall",
       "blocks": true,
       "origin": {
@@ -789,36 +808,17 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_density_market_stall_11",
-      "type": "market_stall",
-      "blocks": true,
-      "origin": {
-        "x": 19,
-        "y": 12
-      },
-      "footprint": [
-        {
-          "x": 19,
-          "y": 12
-        },
-        {
-          "x": 20,
-          "y": 12
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_density_well_12",
       "type": "well",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 11
+        "x": 18,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 11
+          "x": 18,
+          "y": 13
         }
       ]
     },
@@ -827,13 +827,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 14
+        "x": 14,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 14
+          "x": 14,
+          "y": 13
         }
       ]
     },
@@ -842,12 +842,12 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 19,
+        "x": 18,
         "y": 11
       },
       "footprint": [
         {
-          "x": 19,
+          "x": 18,
           "y": 11
         }
       ]
@@ -857,12 +857,12 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 12,
+        "x": 19,
         "y": 9
       },
       "footprint": [
         {
-          "x": 12,
+          "x": 19,
           "y": 9
         }
       ]
@@ -873,12 +873,12 @@
       "blocks": true,
       "origin": {
         "x": 19,
-        "y": 13
+        "y": 7
       },
       "footprint": [
         {
           "x": 19,
-          "y": 13
+          "y": 7
         }
       ]
     },
@@ -888,12 +888,12 @@
       "blocks": true,
       "origin": {
         "x": 14,
-        "y": 11
+        "y": 8
       },
       "footprint": [
         {
           "x": 14,
-          "y": 11
+          "y": 8
         }
       ]
     },
@@ -902,13 +902,13 @@
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 20,
-        "y": 13
+        "x": 12,
+        "y": 12
       },
       "footprint": [
         {
-          "x": 20,
-          "y": 13
+          "x": 12,
+          "y": 12
         }
       ]
     },
@@ -918,12 +918,12 @@
       "blocks": true,
       "origin": {
         "x": 19,
-        "y": 14
+        "y": 13
       },
       "footprint": [
         {
           "x": 19,
-          "y": 14
+          "y": 13
         }
       ]
     },
@@ -932,13 +932,13 @@
       "type": "signpost_crossroads",
       "blocks": true,
       "origin": {
-        "x": 9,
-        "y": 8
+        "x": 8,
+        "y": 7
       },
       "footprint": [
         {
-          "x": 9,
-          "y": 8
+          "x": 8,
+          "y": 7
         }
       ]
     },
@@ -948,12 +948,12 @@
       "blocks": true,
       "origin": {
         "x": 13,
-        "y": 8
+        "y": 6
       },
       "footprint": [
         {
           "x": 13,
-          "y": 8
+          "y": 6
         }
       ]
     },
@@ -963,12 +963,12 @@
       "blocks": true,
       "origin": {
         "x": 19,
-        "y": 8
+        "y": 6
       },
       "footprint": [
         {
           "x": 19,
-          "y": 8
+          "y": 6
         }
       ]
     },
@@ -992,12 +992,12 @@
       "type": "barrel",
       "blocks": true,
       "origin": {
-        "x": 8,
+        "x": 9,
         "y": 7
       },
       "footprint": [
         {
-          "x": 8,
+          "x": 9,
           "y": 7
         }
       ]
@@ -1053,12 +1053,12 @@
       "blocks": true,
       "origin": {
         "x": 20,
-        "y": 14
+        "y": 13
       },
       "footprint": [
         {
           "x": 20,
-          "y": 14
+          "y": 13
         }
       ]
     },
@@ -9509,12 +9509,6 @@
       "y": 11
     },
     {
-      "id": "crosshaven_westwatch_decor_032",
-      "type": "decal_road_grass",
-      "x": 15,
-      "y": 12
-    },
-    {
       "id": "crosshaven_westwatch_decor_033",
       "type": "decal_road_stones",
       "x": 15,
@@ -10189,14 +10183,14 @@
     {
       "id": "crosshaven_westwatch_density_flowers_01",
       "type": "flowers_a",
-      "x": 9,
+      "x": 12,
       "y": 7
     },
     {
       "id": "crosshaven_westwatch_density_flowers_02",
       "type": "flowers_a",
-      "x": 12,
-      "y": 7
+      "x": 10,
+      "y": 8
     },
     {
       "id": "crosshaven_westwatch_density_flowers_03",
@@ -10237,14 +10231,14 @@
     {
       "id": "crosshaven_westwatch_density_flowers_09",
       "type": "decal_flowers_pink",
-      "x": 23,
+      "x": 20,
       "y": 12
     },
     {
       "id": "crosshaven_westwatch_density_flowers_10",
       "type": "decal_flowers_pink",
-      "x": 21,
-      "y": 13
+      "x": 23,
+      "y": 12
     },
     {
       "id": "crosshaven_westwatch_density_flowers_11",
@@ -10286,25 +10280,25 @@
       "id": "crosshaven_westwatch_density_flowers_17",
       "type": "flowers_d",
       "x": 14,
-      "y": 8
+      "y": 6
     },
     {
       "id": "crosshaven_westwatch_density_flowers_18",
       "type": "flowers_d",
       "x": 13,
-      "y": 9
+      "y": 7
     },
     {
       "id": "crosshaven_westwatch_density_flowers_19",
       "type": "decal_flowers_pink",
       "x": 20,
-      "y": 8
+      "y": 6
     },
     {
       "id": "crosshaven_westwatch_density_flowers_20",
       "type": "decal_flowers_pink",
-      "x": 19,
-      "y": 9
+      "x": 20,
+      "y": 7
     }
   ]
 }

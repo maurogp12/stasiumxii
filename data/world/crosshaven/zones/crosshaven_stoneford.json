@@ -272,12 +272,12 @@
       "type": "cart",
       "blocks": true,
       "origin": {
-        "x": 20,
+        "x": 19,
         "y": 19
       },
       "footprint": [
         {
-          "x": 20,
+          "x": 19,
           "y": 19
         }
       ]
@@ -786,16 +786,16 @@
       "blocks": true,
       "origin": {
         "x": 12,
-        "y": 18
+        "y": 15
       },
       "footprint": [
         {
           "x": 12,
-          "y": 18
+          "y": 15
         },
         {
           "x": 13,
-          "y": 18
+          "y": 15
         }
       ]
     },
@@ -804,23 +804,42 @@
       "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 17
+        "x": 19,
+        "y": 14
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 17
+          "x": 19,
+          "y": 14
         },
         {
-          "x": 14,
-          "y": 17
+          "x": 20,
+          "y": 14
         }
       ]
     },
     {
       "id": "crosshaven_stoneford_density_market_stall_12",
       "type": "market_stall",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 19
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 19
+        },
+        {
+          "x": 13,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_density_well_13",
+      "type": "well",
       "blocks": true,
       "origin": {
         "x": 18,
@@ -830,16 +849,57 @@
         {
           "x": 18,
           "y": 19
-        },
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_density_lamp_post_14",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 19
+      },
+      "footprint": [
         {
-          "x": 19,
+          "x": 14,
           "y": 19
         }
       ]
     },
     {
-      "id": "crosshaven_stoneford_density_well_13",
-      "type": "well",
+      "id": "crosshaven_stoneford_density_lamp_post_15",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 18,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 18,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_density_lamp_post_16",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 17
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_density_barrel_17",
+      "type": "barrel",
       "blocks": true,
       "origin": {
         "x": 14,
@@ -853,77 +913,17 @@
       ]
     },
     {
-      "id": "crosshaven_stoneford_density_lamp_post_14",
-      "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 12,
-        "y": 15
-      },
-      "footprint": [
-        {
-          "x": 12,
-          "y": 15
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_stoneford_density_lamp_post_15",
-      "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 20,
-        "y": 14
-      },
-      "footprint": [
-        {
-          "x": 20,
-          "y": 14
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_stoneford_density_lamp_post_16",
-      "type": "lamp_post",
-      "blocks": true,
-      "origin": {
-        "x": 15,
-        "y": 19
-      },
-      "footprint": [
-        {
-          "x": 15,
-          "y": 19
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_stoneford_density_barrel_17",
-      "type": "barrel",
-      "blocks": true,
-      "origin": {
-        "x": 20,
-        "y": 18
-      },
-      "footprint": [
-        {
-          "x": 20,
-          "y": 18
-        }
-      ]
-    },
-    {
       "id": "crosshaven_stoneford_density_crate_apples_18",
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 19
+        "x": 12,
+        "y": 18
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 19
+          "x": 12,
+          "y": 18
         }
       ]
     },
@@ -932,13 +932,13 @@
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 17,
-        "y": 18
+        "x": 19,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 17,
-          "y": 18
+          "x": 19,
+          "y": 13
         }
       ]
     },
@@ -962,13 +962,13 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 15
+        "x": 14,
+        "y": 18
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 15
+          "x": 14,
+          "y": 18
         }
       ]
     },
@@ -977,13 +977,13 @@
       "type": "tree",
       "blocks": true,
       "origin": {
-        "x": 20,
-        "y": 15
+        "x": 19,
+        "y": 18
       },
       "footprint": [
         {
-          "x": 20,
-          "y": 15
+          "x": 19,
+          "y": 18
         }
       ]
     },
@@ -10040,12 +10040,6 @@
       "y": 11
     },
     {
-      "id": "crosshaven_stoneford_decor_122",
-      "type": "tuft_b",
-      "x": 16,
-      "y": 13
-    },
-    {
       "id": "crosshaven_stoneford_decor_124",
       "type": "rock_small_c",
       "x": 30,
@@ -10384,8 +10378,8 @@
     {
       "id": "crosshaven_stoneford_density_flowers_06",
       "type": "flowers_c",
-      "x": 19,
-      "y": 13
+      "x": 17,
+      "y": 14
     },
     {
       "id": "crosshaven_stoneford_density_flowers_07",
@@ -10450,26 +10444,26 @@
     {
       "id": "crosshaven_stoneford_density_flowers_17",
       "type": "flowers_d",
-      "x": 13,
-      "y": 16
+      "x": 15,
+      "y": 18
     },
     {
       "id": "crosshaven_stoneford_density_flowers_18",
       "type": "flowers_d",
-      "x": 14,
-      "y": 16
+      "x": 15,
+      "y": 19
     },
     {
       "id": "crosshaven_stoneford_density_flowers_19",
       "type": "decal_flowers_pink",
-      "x": 21,
-      "y": 15
+      "x": 20,
+      "y": 18
     },
     {
       "id": "crosshaven_stoneford_density_flowers_20",
       "type": "decal_flowers_pink",
       "x": 20,
-      "y": 16
+      "y": 19
     }
   ]
 }
