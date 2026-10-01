@@ -19,6 +19,12 @@ alone, 2 stars need a team mate … above 3 full team." Follow-ups the same day
   If nobody is found, offer **"Fill with AI"** (an AI companion plays the
   missing seat). You can keep waiting instead.
 
+- **Party board** (Mauro, same day): before a dungeon starts, players can
+  **create a party** for a door + star (e.g. the lava boss, Slagcrown ★4) or
+  **join an open party** from a list. The list shows door, star, leader, who
+  is in (class / role) and which roles are still requested. The leader starts
+  when ready; empty seats can still be filled with AI.
+
 ## Build order
 
 1. **Engine (offline)** — `CombatSim`: a Stasis party of 1–4 heroes (team 0,
@@ -30,7 +36,8 @@ alone, 2 stars need a team mate … above 3 full team." Follow-ups the same day
    size; tuned with a party simulator to the targets above.
 4. **Finder UI (offline first)** — star + role pick, party slots, per-slot
    "request role", "Fill with AI".
-5. **Online finder** — server queue by role on Mauro's server
+5. **Online party board + finder** — create / join a party for a door + star,
+   server queue by role on Mauro's server
    (`68.201.184.207:7777`), friends' party, role requests, AI fallback.
    Built together with online 2v2 / 3v3.
 
