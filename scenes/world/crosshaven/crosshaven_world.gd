@@ -483,15 +483,13 @@ func _movie_gait(slow: bool) -> void:
 	weather.set_weather("clear")
 	weather.settle()
 	if slow:
-		await _wander(8, "walk")
-		await _wander(6, "run")
+		await _wander(5, "walk")
+		await _wander(4, "run")
 		return
-	await _wander(10, "walk")
 	await _wander(8, "walk")
 	_set_zoom(1.55)
-	await _wander(12, "run")
-	await _wander(8, "walk")
-	await _wander(8, "run")
+	await _wander(10, "run")
+	await _wander(6, "walk")
 
 
 func _movie_decor() -> void:
