@@ -440,28 +440,23 @@ func _movie_tour() -> void:
 	_set_zoom(1.85)
 	weather.set_weather("clear")
 	weather.settle()
-	await _wander(10, "walk")
+	await _wander(6, "walk")
 	weather.set_weather("light_rain")
 	await _run_link("crosshaven_road_north")
 	await _run_link("crosshaven_northgate")
-	await _wander(8, "walk")
+	await _wander(4, "walk")
 	weather.set_weather("light_cloud")
 	await _run_link("crosshaven_road_north")
 	await _run_link("crosshaven_crossroads")
 	await _run_link("crosshaven_road_east")
 	await _run_link("crosshaven_eastmarch")
-	await _wander(6, "walk")
+	await _wander(4, "walk")
+	weather.set_weather("wind")
 	await _run_link("crosshaven_road_east")
 	await _run_link("crosshaven_crossroads")
-	weather.set_weather("wind")
 	await _run_link("crosshaven_road_south")
 	await _run_link("crosshaven_southbridge")
-	await _wander(6, "run")
-	await _run_link("crosshaven_road_south")
-	await _run_link("crosshaven_crossroads")
-	await _run_link("crosshaven_road_west")
-	await _run_link("crosshaven_stoneford")
-	await _wander(6, "walk")
+	await _wander(4, "run")
 
 
 func _movie_town(zone_id: String) -> void:
@@ -471,10 +466,9 @@ func _movie_town(zone_id: String) -> void:
 	_set_zoom(1.9)
 	weather.set_weather("light_cloud")
 	weather.settle()
-	await _wander(12, "walk")
 	await _wander(10, "walk")
-	await _wander(10, "run")
 	await _wander(8, "walk")
+	await _wander(8, "run")
 
 
 func _movie_gait(slow: bool) -> void:
@@ -483,8 +477,8 @@ func _movie_gait(slow: bool) -> void:
 	weather.set_weather("clear")
 	weather.settle()
 	if slow:
-		await _wander(5, "walk")
-		await _wander(4, "run")
+		await _wander(4, "walk")
+		await _wander(3, "run")
 		return
 	await _wander(8, "walk")
 	_set_zoom(1.55)
