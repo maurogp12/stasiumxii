@@ -88,7 +88,7 @@ func _attach_loops() -> void:
 		overlay_id = "watermill_wheel_v6"
 	elif prop_type == "fountain_2x2":
 		overlay_id = "fountain_water"
-	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2":
+	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2" or prop_type == "red_roof_cottage" or prop_type == "farmhouse_2x2" or prop_type == "tavern_3x2":
 		overlay_id = "smoke_puff"
 	_overlay = Art.make_loop(overlay_id) if overlay_id != "" else null
 	if _overlay != null:
@@ -98,7 +98,8 @@ func _attach_loops() -> void:
 		if prop_type == "windmill_2x2_body":
 			_overlay.position = Vector2(0, -104)
 		elif overlay_id == "smoke_puff":
-			_overlay.position = Vector2(18, -96)
+			_overlay.position = Vector2(cover_rect.position.x + cover_rect.size.x * 0.72, cover_rect.position.y + 12.0)
+			_overlay.modulate = Color(1, 1, 1, 0.8)
 		add_child(_overlay)
 	_loops_ready = true
 
@@ -201,6 +202,7 @@ func _draw() -> void:
 	if _tex != null:
 		var s := Art.size_of(_art)
 		Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
+		_draw_window_glow(s)
 		return
 	match prop_type:
 		"tree":
@@ -213,6 +215,24 @@ func _draw() -> void:
 			_draw_centerpiece()
 		_:
 			_draw_spire(SPIRE_TINT.get(prop_type, Color("8a8a8a")))
+
+
+func _draw_window_glow(s: Vector2) -> void:
+	if VisualSettings.current == null or not VisualSettings.current.enabled("post_fx"):
+		return
+	if not _glows():
+		return
+	var a := Vector2(-s.x * 0.18, -s.y * 0.38)
+	var b := Vector2(s.x * 0.16, -s.y * 0.46)
+	draw_circle(a, 3.4, Color(1.0, 0.88, 0.48, 0.9))
+	draw_circle(b, 2.6, Color(1.0, 0.78, 0.38, 0.75))
+
+
+func _glows() -> bool:
+	for token in ["cottage", "house", "tavern", "bakery", "smithy", "mill"]:
+		if prop_type.contains(token):
+			return true
+	return false
 
 
 func _shadow(rx: float, ry: float, cy: float) -> void:

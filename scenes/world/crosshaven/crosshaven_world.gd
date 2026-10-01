@@ -57,6 +57,7 @@ var _movie_t0 := 0
 var _bench: Array[float] = []
 var _bench_until := 0.0
 var _window_before := Vector2i.ZERO
+var _zoom_tween: Tween
 
 
 func _ready() -> void:
@@ -114,6 +115,8 @@ func _ready() -> void:
 	fx.name = "Fx"
 	add_child(fx)
 	fx.setup(self, settings)
+	settings.bind(self, "post_fx", _on_look_flag)
+	settings.bind(self, "animations", _on_look_flag)
 	visuals = SettingsPanel.new()
 	visuals.name = "VisualSettings"
 	add_child(visuals)
@@ -272,7 +275,14 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _set_zoom(z: float) -> void:
 	_zoom = clampf(z, ZOOM_MIN, ZOOM_MAX)
-	camera.zoom = Vector2.ONE * _zoom
+	if camera == null:
+		return
+	if _zoom_tween != null and is_instance_valid(_zoom_tween):
+		_zoom_tween.kill()
+	_zoom_tween = create_tween()
+	_zoom_tween.set_trans(Tween.TRANS_SINE)
+	_zoom_tween.set_ease(Tween.EASE_OUT)
+	_zoom_tween.tween_property(camera, "zoom", Vector2.ONE * _zoom, 0.32)
 
 
 func _set_hover(c: Vector2i) -> void:
@@ -396,6 +406,20 @@ func _on_decor_flag(_on: bool) -> void:
 
 func _on_preset(_preset_name: String) -> void:
 	_apply_decor_density()
+	_redraw_ground_and_props()
+
+
+func _on_look_flag(_on: bool) -> void:
+	_redraw_ground_and_props()
+
+
+func _redraw_ground_and_props() -> void:
+	if ground != null and ground.has_method("redraw_all"):
+		ground.redraw_all()
+	if props_root == null:
+		return
+	for p in props_root.get_children():
+		p.queue_redraw()
 
 
 ## Full shows every sprite. Reduced keeps the roadside and building ring and
@@ -499,6 +523,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_town("crosshaven_" + mode)
 		"scale":
 			await _movie_scale()
+		"graphics":
+			await _movie_graphics()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -599,7 +625,51 @@ func _movie_gameplay() -> void:
 func _mark(tag: String) -> void:
 	if _movie_t0 == 0:
 		_movie_t0 = Time.get_ticks_msec()
-	print("MOVIE %s %.1fs" % [tag, (Time.get_ticks_msec() - _movie_t0) / 1000.0])
+	print("MOVIE %s %.1fs frame %d" % [tag, (Time.get_ticks_msec() - _movie_t0) / 1000.0, Engine.get_process_frames()])
+
+
+## Flat lap, then the same walk with bloom, shadows, and rain.
+func _movie_graphics() -> void:
+	_set_zoom(1.75)
+	weather.set_weather("clear")
+	weather.settle()
+	await _stand_on_pad(2)
+	_polish(false)
+	await get_tree().create_timer(0.5).timeout
+	_mark("before")
+	await _polish_lap()
+	_mark("mid")
+	_polish(true)
+	weather.set_weather("light_rain")
+	weather.settle()
+	await get_tree().create_timer(0.6).timeout
+	_mark("after")
+	await _polish_lap()
+	weather.set_weather("clear")
+	weather.settle()
+	await _cardinal("e", 2, "run")
+	await _cardinal("w", 2, "run")
+	_mark("end")
+
+
+func _polish(on: bool) -> void:
+	settings.apply_preset("Full")
+	if on:
+		return
+	settings.set_flag("post_fx", false)
+	settings.set_flag("sway_shadows", false)
+	settings.set_flag("weather", false)
+
+
+func _polish_lap() -> void:
+	await _cardinal("e", 2, "walk")
+	await _cardinal("w", 2, "walk")
+	await _cardinal("w", 2, "walk")
+	await _cardinal("e", 2, "walk")
+	await _cardinal("s", 1, "walk")
+	await _cardinal("n", 1, "walk")
+	await _cardinal("n", 1, "walk")
+	await _cardinal("s", 1, "walk")
 
 
 func _arrive_town(zone_id: String) -> void:

@@ -53,10 +53,10 @@ func setup(target: VisualSettings) -> void:
 		button.text = name
 		button.pressed.connect(func(): settings.apply_preset(name))
 		presets.add_child(button)
-	_add_row(col, "animations", "Ambient and decor animation")
-	_add_row(col, "weather", "Weather")
-	_add_row(col, "post_fx", "Post-processing")
-	_add_row(col, "sway_shadows", "Swaying shadows")
+	_add_row(col, "animations", "Ambient motion, birds, leaves, smoke")
+	_add_row(col, "weather", "Weather, rain, and fog")
+	_add_row(col, "post_fx", "Bloom, warmth, and vignette")
+	_add_row(col, "sway_shadows", "Contact shadows and clouds")
 	_add_row(col, "decor", "Decor and clutter")
 	var note := Label.new()
 	note.text = "Characters, ground, blockers, and exits stay on.\nEsc closes this sheet."
