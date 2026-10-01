@@ -688,24 +688,25 @@ func _movie_v7_tour() -> void:
 		"crosshaven_westwatch",
 		"crosshaven_southbridge",
 	]
+	_mark("tour-start")
 	for id in towns:
 		var z: WorldZone = map.zone(id)
 		await enter_zone(id, z.spawn, true)
+		_mark(id)
 		await _town_stroll()
+	_mark("tour-end")
 
 
 func _town_stroll() -> void:
 	var start: Vector2i = walker.anchor_cell()
-	await _cardinal("e", 3, "walk")
-	await _cardinal("s", 2, "walk")
-	await _cardinal("w", 3, "walk")
-	await _cardinal("n", 2, "walk")
+	await _cardinal("e", 2, "walk")
+	await _cardinal("s", 1, "walk")
+	await _cardinal("w", 2, "walk")
 	if walker.anchor_cell() == start:
-		await _cardinal("w", 3, "walk")
-		await _cardinal("n", 3, "walk")
-		await _cardinal("e", 2, "walk")
-		await _cardinal("s", 2, "walk")
-	await get_tree().create_timer(0.35).timeout
+		await _cardinal("n", 2, "walk")
+		await _cardinal("w", 2, "walk")
+	# The walks alone land near 34s. This dwell brings the six towns into the 45–60s clip.
+	await get_tree().create_timer(2.4).timeout
 
 
 func _movie_tour() -> void:
