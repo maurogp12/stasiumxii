@@ -490,6 +490,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_gait(false)
 		"slow":
 			await _movie_gait(true)
+		"gameplay":
+			await _movie_gameplay()
 		"decor":
 			await _movie_decor()
 		"northgate", "stoneford", "eastmarch", "westwatch", "southbridge":
@@ -548,19 +550,121 @@ func _movie_town(zone_id: String) -> void:
 	await _wander(8, "run")
 
 
+## Close-up of one walk cycle set, then one run set, each facing in turn.
+## `slow` plays that same route at 0.4 speed.
 func _movie_gait(slow: bool) -> void:
-	_set_zoom(2.2)
-	walker.playback = 0.32 if slow else 1.0
+	settings.apply_preset("Full")
+	_set_zoom(2.45)
+	walker.playback = 0.4 if slow else 1.0
 	weather.set_weather("clear")
 	weather.settle()
-	if slow:
-		await _wander(4, "walk")
-		await _wander(3, "run")
+	await _stand_on_pad(2)
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 2, "walk")
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 2, "run")
+
+
+## Crossroads, then Northgate by road, then Eastmarch and Southbridge.
+## The two later towns fade in: at this stride the connecting roads run past 90s.
+func _movie_gameplay() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.6)
+	weather.set_weather("clear")
+	weather.settle()
+	await _stand_on_pad(2)
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 2, "walk")
+	for dir in ["s", "e", "n", "w"]:
+		await _cardinal(dir, 2, "run")
+	await _run_link("crosshaven_road_north")
+	await _run_link("crosshaven_northgate")
+	await _show_faces(3, "walk")
+	await _show_faces(2, "run")
+	await _arrive_town("crosshaven_eastmarch")
+	await _show_faces(3, "walk")
+	await _show_faces(3, "run")
+	await _arrive_town("crosshaven_southbridge")
+	await _wander(4, "walk")
+	await _wander(5, "run")
+
+
+func _arrive_town(zone_id: String) -> void:
+	var z: WorldZone = map.zone(zone_id)
+	await enter_zone(zone_id, z.spawn, true)
+
+
+func _stand_on_pad(reach: int) -> void:
+	var pad := _gait_pad(reach)
+	if pad.x < 0 or pad == walker.cell:
 		return
-	await _wander(8, "walk")
-	_set_zoom(1.55)
-	await _wander(10, "run")
-	await _wander(6, "walk")
+	enter_zone(zone.zone_id, pad, false)
+	await get_tree().process_frame
+
+
+func _show_faces(tiles: int, pace: String) -> void:
+	var moved := false
+	for dir in ["e", "s", "w", "n"]:
+		var before: Vector2i = walker.cell
+		await _cardinal(dir, tiles, pace)
+		if walker.cell != before:
+			moved = true
+	if not moved:
+		await _wander(tiles * 2, pace)
+
+
+func _cardinal(dir: String, tiles: int, pace: String) -> void:
+	var step := Vector2i.ZERO
+	match dir:
+		"e":
+			step = Vector2i(1, 0)
+		"w":
+			step = Vector2i(-1, 0)
+		"s":
+			step = Vector2i(0, 1)
+		"n":
+			step = Vector2i(0, -1)
+		_:
+			return
+	var goal: Vector2i = walker.anchor_cell()
+	var cursor: Vector2i = goal
+	for _i in tiles:
+		var nxt: Vector2i = cursor + step
+		if not zone.passable_at(nxt) or not zone.exit_link(nxt).is_empty():
+			break
+		cursor = nxt
+		goal = nxt
+	if goal == walker.anchor_cell():
+		return
+	await _go(goal, pace)
+
+
+func _gait_pad(reach: int) -> Vector2i:
+	var origin: Vector2i = walker.cell
+	var best := Vector2i(-1, -1)
+	var best_d := 999999
+	for y in range(reach, zone.height - reach):
+		for x in range(reach, zone.width - reach):
+			var c := Vector2i(x, y)
+			if not _clear_cross(c, reach):
+				continue
+			var d := absi(c.x - origin.x) + absi(c.y - origin.y)
+			if d < best_d:
+				best_d = d
+				best = c
+	return best
+
+
+func _clear_cross(c: Vector2i, reach: int) -> bool:
+	if not zone.passable_at(c) or not zone.exit_link(c).is_empty():
+		return false
+	var dirs: Array[Vector2i] = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+	for dir in dirs:
+		for i in range(1, reach + 1):
+			var n: Vector2i = c + dir * i
+			if not zone.passable_at(n) or not zone.exit_link(n).is_empty():
+				return false
+	return true
 
 
 func _movie_decor() -> void:

@@ -63,13 +63,19 @@ func _run() -> void:
 
 
 func _test_strips(w: Node2D) -> void:
-	check(w.walker.frame_count("walk", "s") > 0, "walk south strip has frames")
-	check(w.walker.frame_count("walk", "n") > 0, "walk north strip has frames")
-	check(w.walker.frame_count("run", "s") > 0, "run south is a separate strip")
-	check(w.walker.frame_count("run", "e") > 0, "run east is a separate strip")
+	for dir in ["n", "e", "s", "w"]:
+		check(w.walker.frame_count("walk", dir) == 8, "walk %s is the 8-frame strip" % dir)
+		check(w.walker.frame_count("run", dir) == 8, "run %s is the 8-frame strip" % dir)
+	check(is_equal_approx(w.walker.fps_of("walk"), 12.0), "walk plays at 12 fps")
+	check(is_equal_approx(w.walker.fps_of("run"), 15.0), "run plays at 15 fps")
+	check(is_equal_approx(w.walker.stride_of("walk", "e"), 21.12), "east walk stride is ground 64 at scale 0.33")
+	check(is_equal_approx(w.walker.stride_of("walk", "s"), 16.698), "south walk stride matches the on-screen step")
+	check(is_equal_approx(w.walker.stride_of("run", "e"), 36.96), "east run stride is ground 112 at scale 0.33")
+	check(is_equal_approx(w.walker.stride_of("run", "s"), 29.2248), "south run stride matches the on-screen step")
 	var count := float(w.walker.frame_count("walk", "s"))
 	var expected: float = w.walker.stride_of("walk") * w.walker.fps_of("walk") / count
 	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is stride times fps over frame count")
+	check(w.walker.speed_of("run") > w.walker.speed_of("walk") * 2.0, "run is more than twice the walk")
 	check(w.walker.base_scale() <= 0.4 and w.walker.base_scale() > 0.2, "hero scale lets a cottage tower over them")
 	var saw_sun := false
 	var saw_flower := false

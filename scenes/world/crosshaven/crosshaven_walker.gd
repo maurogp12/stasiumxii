@@ -66,8 +66,8 @@ func fps_of(gait: String) -> float:
 	return _strips.fps_of(gait, "s")
 
 
-func stride_of(gait: String) -> float:
-	return _strips.stride_of(gait, "s")
+func stride_of(gait: String, dir: String = "s") -> float:
+	return _strips.stride_of(gait, dir)
 
 
 func speed_of(gait: String) -> float:
@@ -329,7 +329,14 @@ func _apply_strip_speed() -> void:
 	if _strips == null:
 		return
 	var gait := _gait_name()
-	_stride = _strips.stride_of(gait, facing)
+	var next_stride: float = _strips.stride_of(gait, facing)
+	# Keep the same point in the cycle when a corner changes the stride.
+	if _stride > 0.001 and not is_equal_approx(next_stride, _stride):
+		var frac := fmod(_phase / _stride, 1.0)
+		if frac < 0.0:
+			frac += 1.0
+		_phase = frac * next_stride
+	_stride = next_stride
 	_cruise = _strips.speed_of(gait, facing)
 
 

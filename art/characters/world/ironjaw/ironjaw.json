@@ -1,6 +1,18 @@
 {
   "scale": 0.33,
   "pivot": [0, -72],
-  "walk": {"fps": 36, "stride": 19.0},
-  "run": {"fps": 40, "stride": 27.6}
+  "frame_w": 144,
+  "frame_h": 160,
+  "walk": {
+    "fps": 12,
+    "stride": 21.12,
+    "n": {"stride": 16.698},
+    "s": {"stride": 16.698}
+  },
+  "run": {
+    "fps": 15,
+    "stride": 36.96,
+    "n": {"stride": 29.2248},
+    "s": {"stride": 29.2248}
+  }
 }
