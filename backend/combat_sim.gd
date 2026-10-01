@@ -162,6 +162,12 @@ var _map_id: String = ""
 ## Mobile Stasis Room A only. True when the roster has more than one hostile.
 ## Koliseo never sets this. Death, turn order, and cast offers stay 1v1 without it.
 var _stasis_pack: bool = false
+## Koliseo teams (Mauro 1 Oct 2026: 2v2 and 3v3). 1 = the classic duel.
+## Seat s plays on team s % 2 (seats 0, 2, 4 vs 1, 3, 5). Turns alternate
+## between the teams, each team ordered by Init (Dofus style).
+var _team_size: int = 1
+var _turn_order: Array[int] = []
+var _winner_team: int = -1
 ## Live matches (Koliseo, Stasis): higher Init acts first, tie = coin flip
 ## (Mauro 29 Sep 2026). Test fixtures that do not ask for it keep seat 0.
 var _first_by_init: bool = false
@@ -198,6 +204,9 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_map_id = ""
 	_demo_map = ""
 	_stasis_pack = false
+	_team_size = clampi(int(config.get("team_size", 1)), 1, 3)
+	_turn_order.clear()
+	_winner_team = -1
 	_first_by_init = bool(config.get("first_by_init", false))
 	_init_note = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
@@ -224,10 +233,12 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	# the Locked allowlist. Any unknown id falls back to that default pair.
 	var roster: Array[String] = _roster_class_ids(config)
 	var facing_used: Dictionary = {}
-	for seat in 2:
+	for seat in roster.size():
 		var class_id: String = roster[seat]
 		var facing := _facing_for(config, class_id, facing_used)
-		_units.append(_make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false))
+		var made := _make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false)
+		made["team"] = seat % 2
+		_units.append(made)
 	_apply_setup_overrides(config)
 	# Mobile Stasis only. Koliseo never passes stasis_roster, so a normal duel
 	# is unchanged. Foe HP and attack_base in that payload are provisional Open
@@ -248,7 +259,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		# Stasis Room A appends hostile seats after the Locked pair. Koliseo
 		# stays two seats because it never sets _stasis_pack.
 		var class_pos_used: Dictionary = {}
-		var spawn_seats := _units.size() if _stasis_pack else 2
+		var spawn_seats := _units.size() if (_stasis_pack or _team_size > 1) else 2
 		for seat in spawn_seats:
 			var class_id: String = str(_units[seat]["class_id"])
 			_force_spawn(seat, _spawn_cell_for(config, seat, class_id, class_pos_used))
@@ -431,6 +442,15 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "ally" or target_kind == "any":
 			if _in_spell_range(def, from, from):
 				out.append({"type": "cast", "spell": spell_id, "to": from, "target_seat": seat, "seat": seat})
+			# Teams: every living teammate in reach is an ally target too.
+			if _team_size > 1:
+				for mate in _units:
+					if int(mate["seat"]) == seat or not _allied(mate, actor) or not bool(mate.get("alive", false)):
+						continue
+					if _cast_gate_reason(actor, mate, def) != "":
+						continue
+					if _in_spell_reach(def, from, mate["pos"]):
+						out.append({"type": "cast", "spell": spell_id, "to": mate["pos"], "target_seat": mate["seat"], "seat": seat})
 			if target_kind == "ally":
 				continue
 		if def["target"] == "empty_tile":
@@ -604,7 +624,7 @@ func ready_seat(seat: int) -> Dictionary:
 
 
 func can_ready(seat: int) -> bool:
-	return _flow.can_ready(seat)
+	return _flow.can_ready(_side(seat))
 
 
 func can_place(seat: int, cell: Variant) -> Dictionary:
@@ -613,7 +633,7 @@ func can_place(seat: int, cell: Variant) -> Dictionary:
 
 func legal_deploy_cells(seat: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	for cell in _flow.legal_place_cells(seat, Callable(self, "_occupant_seat")):
+	for cell in _flow.legal_place_cells(_side(seat), Callable(self, "_deploy_occupant").bind(seat)):
 		if _board.is_walkable(cell):
 			out.append(cell)
 	return out
@@ -632,7 +652,31 @@ func tile_at(cell: Variant) -> Dictionary:
 
 
 func deploy_zone_cells(seat: int) -> Array[Vector2i]:
-	return _flow.zone_cells(seat)
+	return _flow.zone_cells(_side(seat))
+
+
+## Deploy side: the seat in a duel, the team in 2v2 / 3v3 (one zone and one
+## Ready per team).
+func _side(seat: int) -> int:
+	return team_of_seat(seat) if _team_size > 1 else seat
+
+
+## Occupant as the flow's place gate reads it: empty = -1, the placing
+## fighter itself = its side (a reposition), anyone else = blocked.
+func _deploy_occupant(cell: Vector2i, seat: int) -> int:
+	var occ := _occupant_seat(cell)
+	if occ < 0:
+		return -1
+	if occ == seat:
+		return _side(seat)
+	return 99
+
+
+func _side_all_placed(side: int) -> bool:
+	for unit in _units:
+		if _side(int(unit["seat"])) == side and not bool(unit.get("placed", false)):
+			return false
+	return true
 
 
 func match_phase_name() -> String:
@@ -757,6 +801,9 @@ func snapshot() -> Dictionary:
 		"turn_index": _turn_index,
 		"match_over": _match_over,
 		"winner_seat": _winner_seat,
+		"team_size": _team_size,
+		"winner_team": _winner_team,
+		"turn_order": _turn_order.duplicate(),
 		"seed": _seed,
 		"elev_seed": _elev_seed,
 		"elevation_gen": _elevation_gen,
@@ -1148,7 +1195,7 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 		return _aim_hidden()
 	var under := _living_unit_at(cell)
 	# Hovering an Invisible enemy's tile must not name it or its damage.
-	if not under.is_empty() and bool(under.get("invisible", false)) and int(under.get("seat", -1)) != seat:
+	if not under.is_empty() and bool(under.get("invisible", false)) and team_of_seat(int(under.get("seat", -1))) != team_of_seat(seat):
 		under = {}
 	var floated: Dictionary = _aim_float(actor, under, def, from_cell)
 	var text := str(floated.get("text", ""))
@@ -1202,7 +1249,7 @@ func _aim_float(actor: Dictionary, target: Dictionary, def: Dictionary, from_cel
 	var empty := {"text": "", "kind": ""}
 	if target.is_empty() or not bool(target.get("alive", false)):
 		return empty
-	var same := int(target.get("seat", -2)) == int(actor.get("seat", -1))
+	var same := not target.is_empty() and not actor.is_empty() and _allied(target, actor)
 	if same and int(def.get("base_heal", 0)) > 0:
 		var healed := _support_heal_amount(actor, target, def)
 		if healed <= 0:
@@ -1403,16 +1450,16 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if _burst_enemies(actor, def, false).is_empty():
 			return "no_target"
 		return ""
-	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and int(target.get("seat", -1)) == int(actor.get("seat", -2)))
+	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and _allied(target, actor))
 	if ally_cast:
-		if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) != int(actor.get("seat", -2)):
+		if target.is_empty() or not bool(target.get("alive", false)) or not _allied(target, actor):
 			return "no_target"
 		if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
 			return "open_can_wait"
 		if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
 			return "open_can_wait"
 		return ""
-	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
+	if target.is_empty() or not bool(target.get("alive", false)) or _allied(target, actor):
 		return "no_target"
 	if spell_id == SpellKits.AMBUSH:
 		return _ambush_block_reason(actor, target)
@@ -1509,6 +1556,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 	var in_combat := placed
 	return {
 		"seat": seat,
+		"team": 0 if seat == 0 else 1,
 		"id": class_id,
 		"name": unit_name,
 		"class_id": class_id,
@@ -1603,7 +1651,8 @@ func _submit_place(intent: Dictionary) -> Dictionary:
 	var from: Vector2i = actor["pos"]
 	actor["pos"] = dest
 	actor["placed"] = true
-	_flow.mark_placed(seat)
+	if _side_all_placed(_side(seat)):
+		_flow.mark_placed(_side(seat))
 	_intent_log.append(intent)
 	if was_placed:
 		_last_coach = "%s repositions to %s." % [actor["name"], _cell_text(dest)]
@@ -1624,7 +1673,7 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 	if not intent.has("seat"):
 		return _reject(intent, "missing_seat", "REJECT — ready needs a seat.")
 	var seat := int(intent["seat"])
-	var result := _flow.mark_ready(seat)
+	var result := _flow.mark_ready(_side(seat))
 	if not bool(result.get("ok", false)):
 		var reason := str(result.get("reason", "units_not_placed"))
 		var coach := "REJECT — place the required fighter before Ready."
@@ -1634,8 +1683,9 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 			coach = "REJECT — deploy is over."
 		return _reject(intent, reason, coach)
 	var actor := _unit_by_seat(seat)
-	if not actor.is_empty():
-		actor["locked"] = true
+	for mate in _units:
+		if _side(int(mate["seat"])) == _side(seat):
+			mate["locked"] = true
 	_intent_log.append(intent)
 	if _flow.is_combat():
 		_lock_all_units()
@@ -1660,11 +1710,11 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 
 func _legal_deploy_intents(seat: int) -> Array:
 	var out: Array = []
-	if _flow.is_ready(seat):
+	if _flow.is_ready(_side(seat)):
 		return out
 	for cell in legal_deploy_cells(seat):
 		out.append({"type": "place", "to": cell, "seat": seat})
-	if _flow.can_ready(seat):
+	if _flow.can_ready(_side(seat)):
 		out.append({"type": "ready", "seat": seat})
 	return out
 
@@ -1738,7 +1788,7 @@ func _force_spawn(seat: int, cell: Vector2i) -> void:
 	actor["locked"] = true
 	actor["ap"] = int(actor.get("max_ap", MAX_AP))
 	actor["mp"] = int(actor.get("max_mp", MAX_MP))
-	_flow.mark_placed(seat)
+	_flow.mark_placed(_side(seat))
 
 
 func _lock_all_units() -> void:
@@ -1758,6 +1808,8 @@ func _begin_combat(coach: String) -> void:
 	if _first_by_init:
 		_active_seat = _init_first_seat()
 		coach = _init_coach(_opening_turn_coach(""))
+	if _team_size > 1:
+		_build_turn_order(_active_seat)
 	_still_turn_start(_unit_by_seat(_active_seat))
 	_start_turn_timer()
 	_last_coach = coach
@@ -1871,6 +1923,21 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
+
+
+## Teams: a fighter that falls on its own turn (or at its turn start) passes
+## the turn on; the match goes on until a whole team is down.
+func _skip_fallen_active() -> void:
+	if _team_size <= 1 or _match_over or not _flow.is_combat():
+		return
+	var depth := 0
+	while not _match_over and depth < 6:
+		var unit := _unit_by_seat(_active_seat)
+		if unit.is_empty() or bool(unit.get("alive", false)):
+			break
+		_handoff_seat(unit, true, "fallen")
+		depth += 1
+	_auto_skip_stunned_turns()
 
 
 func _auto_skip_stunned_turns() -> void:
@@ -2065,7 +2132,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "insufficient_mp", "REJECT — %s costs %d MP (refund)." % [def["name"], mp_cost])
 	if spell_id == SpellKits.WARD or spell_id == SpellKits.HEARTSTOP:
 		var early := _living_unit_at(dest)
-		if not early.is_empty() and int(early["seat"]) == int(actor["seat"]):
+		if not early.is_empty() and _allied(early, actor):
 			if spell_id == SpellKits.WARD and int(early.get("shield", 0)) > 0:
 				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
 			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
@@ -2089,7 +2156,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_aegis_break(intent, actor, def, dest, dist, ap_cost, mp_cost)
 	if spell_id == SpellKits.AMBUSH:
 		var ambush_target := _living_unit_at(dest)
-		if ambush_target.is_empty() or int(ambush_target["seat"]) == int(actor["seat"]):
+		if ambush_target.is_empty() or _allied(ambush_target, actor):
 			return _reject(intent, "no_target", "REJECT — Ambush needs an enemy (refund).")
 		return _resolve_ambush(intent, actor, ambush_target, def, dest, dist, ap_cost, mp_cost)
 
@@ -2107,12 +2174,12 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_whiff(intent, actor, def, dest, ap_cost, mp_cost)
 	if target.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
-	var support := target_kind == "ally" or (target_kind == "any" and int(target["seat"]) == int(actor["seat"]))
+	var support := target_kind == "ally" or (target_kind == "any" and _allied(target, actor))
 	if support:
-		if target_kind == "ally" and int(target["seat"]) != int(actor["seat"]):
+		if target_kind == "ally" and not _allied(target, actor):
 			return _reject(intent, "no_target", "REJECT — %s needs an ally (refund)." % def["name"])
 		return _resolve_support(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
-	if int(target["seat"]) == int(actor["seat"]):
+	if _allied(target, actor):
 		return _reject(intent, "no_target", "REJECT — %s needs an enemy (refund)." % def["name"])
 	var gate := _cast_gate_reason(actor, target, def)
 	if gate != "":
@@ -2246,7 +2313,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			engine_name = "Mark"
 			engine_spent = marks_consumed
 		"spend_impact":
-			engine_spent = _spend_impact(actor, int(def.get("spend_impact", 2)))
+			var spend_amount := int(def.get("spend_impact", 2))
+			# Mauro 1 Oct 2026: a Crush that stuns (Impact 4 before) spends ALL
+			# Impact, so Ironjaw cannot stun every other turn.
+			if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
+				spend_amount = impact_before
+			engine_spent = _spend_impact(actor, spend_amount)
 			engine_name = "Impact"
 		"umbral":
 			engine_gained = _gain_resource(actor, "umbral", 1)
@@ -2465,12 +2537,23 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 		elif _living_stasis_hostiles().is_empty():
 			_finish_match(0)
 		return
+	if _team_size > 1:
+		# Teams: the match ends when a whole team is down.
+		var fallen_team := _team_of(target)
+		if _team_alive(fallen_team):
+			return
+		for unit in _units:
+			if _team_of(unit) != fallen_team and bool(unit.get("alive", false)):
+				_finish_match(int(unit["seat"]))
+				return
+		return
 	_finish_match(_enemy_of(int(target["seat"]))["seat"])
 
 
 func _finish_match(winner: int) -> void:
 	_match_over = true
 	_winner_seat = winner
+	_winner_team = team_of_seat(winner) if winner >= 0 else -1
 	_stop_turn_timer()
 	var winner_unit := _unit_by_seat(winner)
 	var winner_name := str(winner_unit.get("name", "Seat %d" % winner))
@@ -2561,7 +2644,7 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 	if _snap_wall_blocks(cell):
 		return {"ok": false, "reason": "occupied", "zone_kind": ""}
-	var gate := _flow.place_gate(seat, cell, _occupant_seat(cell))
+	var gate := _flow.place_gate(_side(seat), cell, _deploy_occupant(cell, seat))
 	if not bool(gate.get("ok", false)):
 		return gate
 	# Deploy: occupancy + walkable (lava / override). No elevation MP / climb cost.
@@ -2888,6 +2971,11 @@ func _apply_class_setup(config: Dictionary, key: String, class_id: String, field
 
 func _roster_class_ids(config: Dictionary) -> Array[String]:
 	var fallback: Array[String] = [SpellKits.CLASS_KESTREL, SpellKits.CLASS_IRONJAW]
+	if _team_size > 1 and not (config.has("classes") or config.has("seat_classes")):
+		var pad: Array[String] = []
+		for i in 2 * _team_size:
+			pad.append(fallback[i % 2])
+		return pad
 	var raw: Variant = null
 	if config.has("classes"):
 		raw = config["classes"]
@@ -2901,10 +2989,16 @@ func _roster_class_ids(config: Dictionary) -> Array[String]:
 		incoming = [keyed.get(0, keyed.get("0", "")), keyed.get(1, keyed.get("1", ""))]
 	else:
 		return fallback
+	var want := 2 * _team_size
+	if _team_size > 1 and incoming.size() < want:
+		var padded: Array[String] = []
+		for i in want:
+			padded.append(fallback[i % 2])
+		return padded
 	if incoming.size() < 2:
 		return fallback
 	var out: Array[String] = []
-	for i in 2:
+	for i in want:
 		var id := SpellKits.normalize_class_id(str(incoming[i]))
 		if not SpellKits.is_roster_class(id):
 			return fallback
@@ -2960,7 +3054,40 @@ func _class_ids() -> Array:
 
 ## Seat 0's side against the best Init on the other side. Tie = coin flip
 ## from the sim RNG (host authority; never "host first").
+## Teams: each team sorted by Init (high first, ties by seat), the starting
+## team first, then A1 B1 A2 B2 A3 B3. A fallen fighter is skipped.
+func _build_turn_order(first_seat: int) -> void:
+	_turn_order.clear()
+	var lists := [[], []]
+	for unit in _units:
+		lists[_team_of(unit)].append(unit)
+	for team in 2:
+		(lists[team] as Array).sort_custom(func(a, b):
+			if int(a.get("init", 0)) != int(b.get("init", 0)):
+				return int(a.get("init", 0)) > int(b.get("init", 0))
+			return int(a["seat"]) < int(b["seat"]))
+	var first_team := team_of_seat(first_seat)
+	var a: Array = lists[first_team]
+	var b: Array = lists[1 - first_team]
+	# The chosen opener leads its own team's list.
+	for i in a.size():
+		if int(a[i]["seat"]) == first_seat:
+			a.push_front(a.pop_at(i))
+			break
+	for i in maxi(a.size(), b.size()):
+		if i < a.size():
+			_turn_order.append(int(a[i]["seat"]))
+		if i < b.size():
+			_turn_order.append(int(b[i]["seat"]))
+
+
+func turn_order() -> Array[int]:
+	return _turn_order.duplicate()
+
+
 func _init_first_seat() -> int:
+	if _team_size > 1:
+		return _init_first_team_seat()
 	# Opening Still: that side acts first whatever the Init (both → Init).
 	var openers: Array[int] = []
 	for unit in _units:
@@ -2990,6 +3117,33 @@ func _init_first_seat() -> int:
 		return their_seat
 	_init_note = "Init tie %d — coin flip" % mine
 	return 0 if _rng.randi_range(0, 1) == 0 else their_seat
+
+
+## Teams: the team whose best Init is higher starts (Opening Still wins;
+## tie = coin flip); that fighter opens.
+func _init_first_team_seat() -> int:
+	var best := [-1, -1]
+	var best_seat := [-1, -1]
+	var opener := -1
+	for unit in _units:
+		var team := _team_of(unit)
+		var v := int(unit.get("init", 0))
+		if str(unit.get("still", "")) == "opening" and opener < 0:
+			opener = int(unit["seat"])
+		if v > int(best[team]) or (v == int(best[team]) and int(unit["seat"]) < int(best_seat[team])):
+			best[team] = v
+			best_seat[team] = int(unit["seat"])
+	if opener >= 0:
+		_init_note = "Opening Still"
+		return opener
+	if int(best[0]) > int(best[1]):
+		_init_note = "Init %d vs %d" % [best[0], best[1]]
+		return int(best_seat[0])
+	if int(best[1]) > int(best[0]):
+		_init_note = "Init %d vs %d" % [best[1], best[0]]
+		return int(best_seat[1])
+	_init_note = "Init tie %d — coin flip" % int(best[0])
+	return int(best_seat[0]) if _rng.randi_range(0, 1) == 0 else int(best_seat[1])
 
 
 func _init_coach(_fallback: String) -> String:
@@ -3596,6 +3750,7 @@ func _roll_d100() -> int:
 
 
 func _accept() -> Dictionary:
+	_skip_fallen_active()
 	_broadcast()
 	return {
 		"ok": true,
@@ -3631,8 +3786,7 @@ func _foe_victims(actor: Dictionary) -> Array:
 	for unit in _units:
 		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
 			continue
-		var other := int(unit.get("seat", -1))
-		if (seat > 0) == (other > 0):
+		if _allied(unit, actor):
 			continue
 		# Monsters cannot see an Invisible hero either.
 		if bool(unit.get("invisible", false)):
@@ -4079,11 +4233,64 @@ func _unit_by_seat(seat: int) -> Dictionary:
 
 
 func _enemy_of(seat: int) -> Dictionary:
-	return _unit_by_seat(1 if seat == 0 else 0)
+	if _team_size <= 1:
+		return _unit_by_seat(1 if seat == 0 else 0)
+	# Teams: the nearest living enemy (any enemy once they are all down).
+	var me := _unit_by_seat(seat)
+	var best: Dictionary = {}
+	var best_d := 999
+	for unit in _units:
+		if me.is_empty() or _allied(unit, me):
+			continue
+		if not bool(unit.get("alive", false)):
+			if best.is_empty():
+				best = unit
+			continue
+		var d := chebyshev(me["pos"], unit["pos"])
+		if d < best_d:
+			best_d = d
+			best = unit
+	return best
 
 
-## Koliseo: the other of seats 0 and 1. Stasis player: every living hostile.
+## Team of a unit: Koliseo teams set it; otherwise seat 0 vs every other seat
+## (Stasis: the hero vs the monsters).
+func _team_of(unit: Dictionary) -> int:
+	return int(unit.get("team", 0 if int(unit.get("seat", 0)) == 0 else 1))
+
+
+func _allied(a: Dictionary, b: Dictionary) -> bool:
+	return _team_of(a) == _team_of(b)
+
+
+func team_of_seat(seat: int) -> int:
+	var unit := _unit_by_seat(seat)
+	if unit.is_empty():
+		return seat % 2 if _team_size > 1 else (0 if seat == 0 else 1)
+	return _team_of(unit)
+
+
+func team_size() -> int:
+	return _team_size
+
+
+func _team_alive(team: int) -> bool:
+	for unit in _units:
+		if _team_of(unit) == team and bool(unit.get("alive", false)):
+			return true
+	return false
+
+
+## Koliseo: the other of seats 0 and 1 (teams: every living enemy).
+## Stasis player: every living hostile.
 func _hostile_cast_targets(seat: int) -> Array:
+	if _team_size > 1:
+		var me := _unit_by_seat(seat)
+		var foes: Array = []
+		for unit in _units:
+			if not me.is_empty() and not _allied(unit, me) and bool(unit.get("alive", false)):
+				foes.append(unit)
+		return foes
 	if _stasis_pack and seat == 0:
 		return _living_stasis_hostiles()
 	var enemy := _enemy_of(seat)
@@ -4109,7 +4316,8 @@ func _stasis_winner_hostile() -> int:
 
 
 func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
-	for hostile in _living_stasis_hostiles():
+	var pool: Array = _hostile_cast_targets(int(actor.get("seat", -1))) if _team_size > 1 else _living_stasis_hostiles()
+	for hostile in pool:
 		var enemy: Dictionary = hostile
 		if _ambush_can_offer(actor, enemy):
 			return enemy
@@ -4118,6 +4326,16 @@ func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
 
 ## 1v1 swaps seats. A Stasis pack walks the living seats in order, then wraps.
 func _next_turn_seat(from_seat: int) -> int:
+	if _team_size > 1:
+		if _turn_order.is_empty():
+			_build_turn_order(from_seat)
+		var at := _turn_order.find(from_seat)
+		for step in range(1, _turn_order.size() + 1):
+			var seat: int = _turn_order[(at + step) % _turn_order.size()]
+			var unit := _unit_by_seat(seat)
+			if not unit.is_empty() and bool(unit.get("alive", false)):
+				return seat
+		return -1
 	if not _stasis_pack:
 		var other := 1 if from_seat == 0 else 0
 		var unit := _unit_by_seat(other)
@@ -4407,7 +4625,7 @@ func _burst_enemies(actor: Dictionary, def: Dictionary, invisible_only: bool) ->
 			if dist < lo or dist > hi:
 				continue
 			var unit := _living_unit_at(cell)
-			if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+			if unit.is_empty() or _allied(unit, actor):
 				continue
 			var invisible := bool(unit.get("invisible", false))
 			if invisible_only == invisible:
@@ -4436,7 +4654,7 @@ func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
 		if not _in_bounds(cell):
 			continue
 		var unit := _living_unit_at(cell)
-		if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+		if unit.is_empty() or _allied(unit, actor):
 			continue
 		var invisible := bool(unit.get("invisible", false))
 		if invisible_only == invisible:
@@ -4594,7 +4812,7 @@ func _emit_immunity_spent(target: Dictionary, report: Dictionary) -> void:
 func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
 	if damage <= 0:
 		return 0
-	if int(actor.get("seat", -1)) == int(target.get("seat", -2)):
+	if _allied(actor, target):
 		return 0
 	var guards: Array = []
 	for unit in _units:
@@ -4602,7 +4820,7 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 			continue
 		if not bool(unit.get("alive", false)):
 			continue
-		if int(unit.get("seat", -1)) != int(target.get("seat", -2)):
+		if not _allied(unit, target):
 			continue
 		if unit["pos"] == target["pos"]:
 			continue
@@ -5479,7 +5697,7 @@ func _ambush_range_origin(actor: Dictionary) -> Vector2i:
 
 
 func _ambush_primary_enemy(actor: Dictionary) -> Dictionary:
-	if _stasis_pack:
+	if _stasis_pack or _team_size > 1:
 		var legal := _first_legal_ambush_target(actor)
 		if not legal.is_empty():
 			return legal
@@ -5488,7 +5706,7 @@ func _ambush_primary_enemy(actor: Dictionary) -> Dictionary:
 
 func _ambush_focus_enemy(actor: Dictionary, dest: Vector2i) -> Dictionary:
 	var at := _living_unit_at(dest)
-	if not at.is_empty() and bool(at.get("alive", false)) and int(at.get("seat", -2)) != int(actor.get("seat", -1)):
+	if not at.is_empty() and bool(at.get("alive", false)) and not _allied(at, actor):
 		return at
 	return _ambush_primary_enemy(actor)
 
@@ -5859,7 +6077,7 @@ func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: i
 func _note_opponent_shade_turns(ending_seat: int) -> void:
 	for item in _shade_tokens:
 		var token: Dictionary = item
-		if int(token.get("owner_seat", -1)) == ending_seat:
+		if team_of_seat(int(token.get("owner_seat", -1))) == team_of_seat(ending_seat):
 			continue
 		if int(token.get("turns", 0)) <= 0:
 			continue

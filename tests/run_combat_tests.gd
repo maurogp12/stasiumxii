@@ -89,6 +89,8 @@ func _run() -> void:
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
 	_test_advance_two_per_turn()
+	_test_team_match_rules()
+	_test_team_deploy()
 	_test_advance_then_remaining_mp_still_walks()
 	_test_advance_cardinal_range_gate()
 	_test_advance_chrome_follows_legal_intents()
@@ -3706,6 +3708,96 @@ func _test_handoff_timer_is_client_only() -> void:
 	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
 
 
+func _test_team_match_rules() -> void:
+	# Mauro 1 Oct 2026: Koliseo 2v2 / 3v3. Seats 0,2,4 vs 1,3,5; turns
+	# alternate teams by Init; allies heal allies; a team loses when all fall.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"team_size": 2,
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(2, 4), Vector2i(6, 3), Vector2i(3, 2), Vector2i(9, 4)],
+	})
+	var snap: Dictionary = _sim.snapshot()
+	eq(int(snap["team_size"]), 2, "2v2 match")
+	eq((snap["units"] as Array).size(), 4, "2v2 has four fighters")
+	eq(int(_unit(0)["team"]), 0, "seat 0 is team A")
+	eq(int(_unit(1)["team"]), 1, "seat 1 is team B")
+	eq(int(_unit(2)["team"]), 0, "seat 2 is team A")
+	eq(int(_unit(3)["team"]), 1, "seat 3 is team B")
+	eq(_sim.turn_order(), [0, 1, 2, 3] as Array[int], "turns alternate A1 B1 A2 B2")
+	# Mender heals the hurt teammate (Ironjaw, seat 2).
+	_live_unit(2)["hp"] = 40
+	var heal_offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == SpellKits.MEND and int(intent.get("target_seat", -1)) == 2:
+			heal_offered = true
+	eq(heal_offered, true, "Mend offers the teammate")
+	_sim.set("_scripted_rolls", [1] as Array[int])
+	var healed: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.MEND, "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(healed.get("ok", false)), true, "Mend on a teammate resolves")
+	eq(int(_unit(2)["hp"]) > 40, true, "the teammate is healed")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["active_seat"]), 1, "team B's first fighter is next")
+	# Kestrel (seat 1) may target both team A fighters, never her teammate.
+	var targets := {}
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("spell", "")) == SpellKits.MARK_SHOT:
+			targets[int(intent.get("target_seat", -1))] = true
+	eq(targets.has(0) and targets.has(2), true, "Mark Shot offers both enemies")
+	eq(targets.has(3), false, "Mark Shot never offers the teammate")
+	# One enemy down: the match goes on and its turn is skipped.
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	eq(bool(_sim.snapshot()["match_over"]), false, "one fallen fighter does not end a 2v2")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 3, "the fallen seat 2 is skipped")
+	_sim.submit({"type": "end_turn", "seat": 3})
+	eq(int(_sim.snapshot()["active_seat"]), 0, "back to team A's living fighter")
+	_live_unit(0)["hp"] = 0
+	_sim._check_death(_live_unit(0))
+	eq(bool(_sim.snapshot()["match_over"]), true, "the whole team down ends the match")
+	eq(int(_sim.snapshot()["winner_team"]), 1, "team B wins")
+	# 3v3 builds six fighters and alternates by Init.
+	_sim.reset_match({"seed": 2, "flat_board": true, "team_size": 3, "skip_deploy": true, "classes": ["kestrel", "ironjaw", "mender", "gloam", "bastion", "kestrel"]})
+	eq((_sim.snapshot()["units"] as Array).size(), 6, "3v3 has six fighters")
+	_live_unit(4)["init"] = 9
+	_sim._build_turn_order(4)
+	eq(_sim.turn_order(), [4, 1, 0, 3, 2, 5] as Array[int], "the opener leads its team, then teams alternate")
+	# A fighter that falls on its own turn passes the turn on.
+	_sim.reset_match({"seed": 3, "flat_board": true, "team_size": 2, "skip_deploy": true, "classes": ["kestrel", "ironjaw", "mender", "gloam"]})
+	var active := int(_sim.snapshot()["active_seat"])
+	_live_unit(active)["hp"] = 0
+	_sim._check_death(_live_unit(active))
+	_sim.submit({"type": "face", "dir": "N", "seat": active})
+	_sim._skip_fallen_active()
+	eq(int(_sim.snapshot()["active_seat"]) != active, true, "a fallen active fighter hands the turn on")
+	# Duels are unchanged.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true})
+	eq(int(_sim.snapshot()["team_size"]), 1, "the default is still the 1v1 duel")
+	eq((_sim.snapshot()["units"] as Array).size(), 2, "a duel keeps two fighters")
+
+
+func _test_team_deploy() -> void:
+	_sim.reset_match({"seed": 5, "team_size": 2, "classes": ["kestrel", "ironjaw", "mender", "gloam"]})
+	var zone: Array = _sim.deploy_zone_cells(0)
+	eq(zone == _sim.deploy_zone_cells(2), true, "teammates share one deploy zone")
+	var cells: Array = _sim.legal_deploy_cells(0)
+	eq(cells.size() >= 2, true, "the team zone fits both fighters")
+	eq(bool(_sim.place_unit(0, cells[0]).get("ok", false)), true, "the first teammate places")
+	eq(_sim.can_ready(0), false, "Ready waits for the whole team")
+	eq(_sim.legal_deploy_cells(2).has(cells[0]), false, "a teammate's tile is taken")
+	eq(bool(_sim.place_unit(2, cells[1]).get("ok", false)), true, "the second teammate places")
+	eq(_sim.can_ready(2), true, "the whole team placed can Ready")
+	_sim.ready_seat(0)
+	var other: Array = _sim.legal_deploy_cells(1)
+	_sim.place_unit(1, other[0])
+	_sim.place_unit(3, other[1])
+	_sim.ready_seat(3)
+	eq(_sim.match_phase_name(), "TURN_1", "both teams ready starts the fight")
+	eq(_sim.turn_order().size(), 4, "the fight has a four-fighter turn order")
+
+
 func _test_advance_two_per_turn() -> void:
 	# Mauro 30 Sep 2026: "ironjaw spell advance only can be used 2 times" (per turn).
 	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(12, 12), "ironjaw_pos": Vector2i(2, 2)})
@@ -5238,12 +5330,12 @@ func _test_crush_spend_and_stun() -> void:
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush at Impact 4 connects")
 	eq(result["events"][0]["impact_before"], 4, "Impact was 4 before the spend")
-	eq(result["events"][0]["impact_spent"], 2, "still spends 2")
+	eq(result["events"][0]["impact_spent"], 4, "a stunning Crush spends all 4 Impact (Mauro 1 Oct 2026)")
 	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
 	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
 	eq(result["events"][0]["damage"], 29, "24 × 1.20 rounds to 29")
-	eq(_unit(1)["impact"], 2, "4-2=2 Impact left")
+	eq(_unit(1)["impact"], 0, "a stunning Crush leaves 0 Impact")
 	eq(_unit(0)["stun_remaining"], 1, "Stun 1 stored on the target")
 	eq(result["events"][1]["type"], "status", "status event for Stun")
 	eq(result["events"][1]["status"], "stun", "status id is stun")
