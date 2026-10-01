@@ -15,9 +15,9 @@ Kestrel, Gloam, and Mender have no idle plant on mobile. Their idle frame is wal
 
 Mobile playback is six frames. These strips are twelve frames: each authored cell is kept, in the same order, and an in-between is inserted before the next cell (including the loop from cell 5 back to cell 0).
 
-The in-between blends only the body. Pixels from y=128 down stay on the leading authored frame, with a 12px feather, so the soles do not double. There is no separate mobile run sheet. The run strip uses the same order with the airborne in-between's body lifted 3px; the feet stay planted.
+The in-between is a 35% mix of the next pose after that pose is shifted onto the current torso, so the axes and cape do not double. Pixels from y=128 down stay on the leading authored frame, with a 12px feather. The body of that in-between is then lifted (3px walk, 7px run) and swayed sideways by 2px / 3px on alternating steps. There is no separate mobile run sheet. The run strip is this same order with the taller loft and a wider sway. The feet stay planted.
 
-The world walker does not play these strips on a clock. It picks the frame from distance traveled, one walk cycle per tile, and a longer stride while running. Facing stays the mobile four-direction lock (east, south, north, west). Pivot matches the mobile pawn: centered sprite, offset `(0, -72)` before scale.
+The world walker does not play these strips on a clock. It picks the frame from distance traveled, one walk cycle per tile, and a longer stride while running. Each step holds the planted frame at the start and end, and shows the lifted in-between through the middle of the step. Facing stays the mobile four-direction lock (east, south, north, west). Pivot matches the mobile pawn: centered sprite, offset `(0, -72)` before scale.
 
 Combat pawns still use `art/characters/<class>/` static facings. These files are only for the open-world walker.
 

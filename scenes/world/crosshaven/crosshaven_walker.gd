@@ -324,9 +324,14 @@ func _apply_gait() -> void:
 	var phase := fmod(_phase / _cycle, 1.0)
 	if phase < 0.0:
 		phase += 1.0
-	var frame := int(phase * float(FRAME_COUNT)) % FRAME_COUNT
-	var local := fmod(phase * 6.0, 1.0)
-	var amp := 5.1 if pace == "run" else 2.6
+	# Six authored plants. The odd frame is the airborne in-between.
+	# Hold the plant at the start and end of each step; show the lift in the middle.
+	var step_f := phase * 6.0
+	var step_i := int(step_f) % 6
+	var local := step_f - float(int(step_f))
+	var airborne := local > 0.18 and local < 0.58
+	var frame := step_i * 2 + (1 if airborne else 0)
+	var amp := 3.4 if pace == "run" else 1.8
 	_bob = sin(local * PI) * amp
 	_air = sin(local * PI)
 	_sprite.texture = tex

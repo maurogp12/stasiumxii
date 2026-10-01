@@ -25,7 +25,11 @@ AUTHORED = 6
 # Soles sit on this row. In-betweens blend only the body above it.
 FOOT_Y = 128
 FEATHER = 12
-RUN_LOFT = 3
+# Walk in-between lifts the body a little. Run lifts more so the stride reads airborne.
+WALK_LOFT = 3
+RUN_LOFT = 7
+WALK_SWAY = 2
+RUN_SWAY = 3
 
 SOURCE_COMMIT = "d9ec4044c98581805cce2a6732f89d0de95fbb83"
 
@@ -44,8 +48,51 @@ def _premul(rgba: np.ndarray) -> np.ndarray:
     return out
 
 
+def _shift(img: np.ndarray, dx: int, dy: int) -> np.ndarray:
+    """Positive dx moves pixels right. Positive dy moves pixels down. Empty stays clear."""
+    out = np.zeros_like(img)
+    h, w = img.shape[:2]
+    x0 = max(0, dx)
+    x1 = w + min(0, dx)
+    y0 = max(0, dy)
+    y1 = h + min(0, dy)
+    if x1 <= x0 or y1 <= y0:
+        return out
+    out[y0:y1, x0:x1] = img[y0 - dy : y1 - dy, x0 - dx : x1 - dx]
+    return out
+
+
+def _align(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    """Slide B's body onto A so a mix does not draw two torsos."""
+    aa = a[:FOOT_Y, :, 3] > 48
+    best = (0, 0, -1)
+    for dy in range(-2, 3):
+        for dx in range(-4, 5):
+            shifted = _shift(b, dx, dy)
+            bb = shifted[:FOOT_Y, :, 3] > 48
+            score = int(np.logical_and(aa, bb).sum())
+            if score > best[2]:
+                best = (dx, dy, score)
+    return _shift(b, best[0], best[1])
+
+
+def _feather_feet(body_frame: np.ndarray, feet_src: np.ndarray) -> np.ndarray:
+    out = body_frame.copy()
+    cut = FOOT_Y
+    out[cut:] = feet_src[cut:]
+    if FEATHER <= 0:
+        return out
+    band = out[cut - FEATHER : cut].astype(np.float32)
+    src = feet_src[cut - FEATHER : cut].astype(np.float32)
+    w = np.linspace(0.0, 1.0, FEATHER, dtype=np.float32)[:, None, None]
+    mixed = band * (1.0 - w) + src * w
+    out[cut - FEATHER : cut] = np.clip(mixed, 0, 255).astype(np.uint8)
+    return out
+
+
 def blend_body(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
-    """Upper-body mix. Feet stay on frame A so soles do not ghost."""
+    """Upper-body mix after the next pose is lined up. Feet stay on frame A."""
+    b = _align(a, b)
     ap = _premul(a)
     bp = _premul(b)
     mix = ap * (1.0 - t) + bp * t
@@ -55,39 +102,29 @@ def blend_body(a: np.ndarray, b: np.ndarray, t: float) -> np.ndarray:
     out = np.zeros_like(a)
     out[:, :, :3] = np.clip(rgb, 0, 255)
     out[:, :, 3] = np.clip(alpha[:, :, 0], 0, 255)
-    cut = FOOT_Y
-    out[cut:] = a[cut:]
-    if FEATHER > 0:
-        band = out[cut - FEATHER : cut].astype(np.float32)
-        src = a[cut - FEATHER : cut].astype(np.float32)
-        w = np.linspace(0.0, 1.0, FEATHER, dtype=np.float32)[:, None, None]
-        mixed = band * (1.0 - w) + src * w
-        out[cut - FEATHER : cut] = np.clip(mixed, 0, 255).astype(np.uint8)
-    return out.astype(np.uint8)
+    return _feather_feet(out.astype(np.uint8), a)
 
 
-def loft(frame: np.ndarray, pixels: int) -> np.ndarray:
-    """Lift the body. The foot band stays planted."""
-    if pixels <= 0:
+def _move_body(frame: np.ndarray, dx: int, dy: int) -> np.ndarray:
+    """Shift the body. Feet stay put, with a feather so the waist does not tear."""
+    if dx == 0 and dy == 0:
         return frame
-    out = frame.copy()
-    body = frame[:FOOT_Y]
-    lifted = np.zeros_like(body)
-    if pixels < body.shape[0]:
-        lifted[: body.shape[0] - pixels] = body[pixels:]
-    out[:FOOT_Y] = lifted
-    return out
+    moved = _shift(frame, dx, dy)
+    return _feather_feet(moved, frame)
 
 
 def cycle(cells: list[np.ndarray], gait: str) -> list[np.ndarray]:
     frames: list[np.ndarray] = []
     n = len(cells)
+    loft_px = RUN_LOFT if gait == "run" else WALK_LOFT
+    sway = RUN_SWAY if gait == "run" else WALK_SWAY
     for i in range(n):
         authored = cells[i]
         nxt = cells[(i + 1) % n]
-        mid = blend_body(authored, nxt, 0.5)
-        if gait == "run":
-            mid = loft(mid, RUN_LOFT)
+        # 0.35 keeps the leading silhouette. A half mix doubled the axes.
+        mid = blend_body(authored, nxt, 0.35)
+        side = sway if i % 2 == 0 else -sway
+        mid = _move_body(mid, side, -loft_px)
         frames.append(authored)
         frames.append(mid)
     return frames
@@ -157,8 +194,7 @@ def write_tres(class_name: str, dest: Path) -> None:
         add_anim(f"run_{facing}", f"{class_name}_run_{facing}.png", 12, 14.0, True)
         add_anim(f"idle_{facing}", f"{class_name}_idle_{facing}.png", 1, 1.0, True)
 
-    load_steps = 1 + len(ext) + len(subs)
-    text = [f'[gd_resource type="SpriteFrames" load_steps={load_steps} format=3]', ""]
+    text = ['[gd_resource type="SpriteFrames" format=3]', ""]
     text.extend(ext)
     text.append("")
     text.extend(subs)
@@ -204,9 +240,9 @@ Kestrel, Gloam, and Mender have no idle plant on mobile. Their idle frame is wal
 
 Mobile playback is six frames. These strips are twelve frames: each authored cell is kept, in the same order, and an in-between is inserted before the next cell (including the loop from cell 5 back to cell 0).
 
-The in-between blends only the body. Pixels from y={FOOT_Y} down stay on the leading authored frame, with a {FEATHER}px feather, so the soles do not double. There is no separate mobile run sheet. The run strip uses the same order with the airborne in-between's body lifted {RUN_LOFT}px; the feet stay planted.
+The in-between is a 35% mix of the next pose after that pose is shifted onto the current torso, so the axes and cape do not double. Pixels from y={FOOT_Y} down stay on the leading authored frame, with a {FEATHER}px feather. The body of that in-between is then lifted ({WALK_LOFT}px walk, {RUN_LOFT}px run) and swayed sideways by {WALK_SWAY}px / {RUN_SWAY}px on alternating steps. There is no separate mobile run sheet. The run strip is this same order with the taller loft and a wider sway. The feet stay planted.
 
-The world walker does not play these strips on a clock. It picks the frame from distance traveled, one walk cycle per tile, and a longer stride while running. Facing stays the mobile four-direction lock (east, south, north, west). Pivot matches the mobile pawn: centered sprite, offset `(0, -72)` before scale.
+The world walker does not play these strips on a clock. It picks the frame from distance traveled, one walk cycle per tile, and a longer stride while running. Each step holds the planted frame at the start and end, and shows the lifted in-between through the middle of the step. Facing stays the mobile four-direction lock (east, south, north, west). Pivot matches the mobile pawn: centered sprite, offset `(0, -72)` before scale.
 
 Combat pawns still use `art/characters/<class>/` static facings. These files are only for the open-world walker.
 

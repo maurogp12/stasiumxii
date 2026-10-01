@@ -58,6 +58,9 @@ var _bench_until := 0.0
 
 
 func _ready() -> void:
+	_read_launch_args()
+	if _movie != "":
+		DisplayServer.window_set_size(Vector2i(1280, 720))
 	var bg := CanvasLayer.new()
 	bg.layer = -10
 	add_child(bg)
@@ -112,7 +115,6 @@ func _ready() -> void:
 	visuals.setup(settings)
 
 	_build_hud()
-	_read_launch_args()
 
 	var loaded := WorldMap.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -470,7 +472,9 @@ func _movie_town(zone_id: String) -> void:
 	weather.set_weather("light_cloud")
 	weather.settle()
 	await _wander(12, "walk")
-	await _wander(8, "run")
+	await _wander(10, "walk")
+	await _wander(10, "run")
+	await _wander(8, "walk")
 
 
 func _movie_gait(slow: bool) -> void:
@@ -478,11 +482,16 @@ func _movie_gait(slow: bool) -> void:
 	walker.playback = 0.32 if slow else 1.0
 	weather.set_weather("clear")
 	weather.settle()
-	await _wander(6 if slow else 8, "walk")
-	if not slow:
-		_set_zoom(1.55)
-		await _wander(10, "run")
-		await _wander(6, "walk")
+	if slow:
+		await _wander(8, "walk")
+		await _wander(6, "run")
+		return
+	await _wander(10, "walk")
+	await _wander(8, "walk")
+	_set_zoom(1.55)
+	await _wander(12, "run")
+	await _wander(8, "walk")
+	await _wander(8, "run")
 
 
 func _movie_decor() -> void:
@@ -503,15 +512,15 @@ func _movie_settings() -> void:
 	await get_tree().create_timer(1.2).timeout
 	for flag in ["animations", "weather", "post_fx", "sway_shadows", "decor"]:
 		settings.set_flag(flag, false)
-		await get_tree().create_timer(1.6).timeout
+		await get_tree().create_timer(1.9).timeout
 	settings.apply_preset("Full")
-	await get_tree().create_timer(1.8).timeout
+	await get_tree().create_timer(2.0).timeout
 	settings.apply_preset("Reduced")
-	await get_tree().create_timer(1.6).timeout
+	await get_tree().create_timer(2.0).timeout
 	settings.apply_preset("Minimal")
-	await get_tree().create_timer(1.6).timeout
+	await get_tree().create_timer(2.0).timeout
 	settings.apply_preset("Full")
-	await get_tree().create_timer(1.2).timeout
+	await get_tree().create_timer(1.4).timeout
 
 
 func _run_link(target_zone: String) -> void:
@@ -549,6 +558,8 @@ func _exit_toward(target_zone: String) -> Vector2i:
 func _far_cell(min_tiles: int) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_d := -1
+	var fallback := Vector2i(-1, -1)
+	var fallback_d := -1
 	var origin: Vector2i = walker.anchor_cell()
 	for y in zone.height:
 		for x in range(0, zone.width, 2):
@@ -556,7 +567,12 @@ func _far_cell(min_tiles: int) -> Vector2i:
 			if not zone.passable_at(c) or not zone.exit_link(c).is_empty():
 				continue
 			var d := absi(c.x - origin.x) + absi(c.y - origin.y)
-			if d >= min_tiles and d > best_d and d < min_tiles + 8:
+			if d >= min_tiles and d > best_d and d < min_tiles + 10:
 				best_d = d
 				best = c
-	return best
+			if d > fallback_d:
+				fallback_d = d
+				fallback = c
+	if best.x >= 0:
+		return best
+	return fallback
