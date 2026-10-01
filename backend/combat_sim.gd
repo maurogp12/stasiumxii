@@ -166,6 +166,9 @@ var _stasis_pack: bool = false
 ## Seat s plays on team s % 2 (seats 0, 2, 4 vs 1, 3, 5). Turns alternate
 ## between the teams, each team ordered by Init (Dofus style).
 var _team_size: int = 1
+## Stasis party (Mauro 1 Oct 2026): 1–4 heroes (team 0, seats 0..P-1) vs the
+## monsters (team 1, seats P..). 1 = the classic solo run.
+var _party_size: int = 1
 var _turn_order: Array[int] = []
 var _winner_team: int = -1
 ## Live matches (Koliseo, Stasis): higher Init acts first, tie = coin flip
@@ -205,6 +208,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_demo_map = ""
 	_stasis_pack = false
 	_team_size = clampi(int(config.get("team_size", 1)), 1, 3)
+	_party_size = clampi(int(config.get("party_size", 1)), 1, 4) if config.has("stasis_roster") else 1
 	_turn_order.clear()
 	_winner_team = -1
 	_first_by_init = bool(config.get("first_by_init", false))
@@ -238,6 +242,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		var facing := _facing_for(config, class_id, facing_used)
 		var made := _make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false)
 		made["team"] = seat % 2
+		if _party_size > 1:
+			made["team"] = 0 if seat < _party_size else 1
 		_units.append(made)
 	_apply_setup_overrides(config)
 	# Mobile Stasis only. Koliseo never passes stasis_roster, so a normal duel
@@ -444,8 +450,8 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "ally" or target_kind == "any":
 			if _in_spell_range(def, from, from):
 				out.append({"type": "cast", "spell": spell_id, "to": from, "target_seat": seat, "seat": seat})
-			# Teams: every living teammate in reach is an ally target too.
-			if _team_size > 1:
+			# Teams / party: every living teammate in reach is an ally target too.
+			if _multi_side():
 				for mate in _units:
 					if int(mate["seat"]) == seat or not _allied(mate, actor) or not bool(mate.get("alive", false)):
 						continue
@@ -804,6 +810,7 @@ func snapshot() -> Dictionary:
 		"match_over": _match_over,
 		"winner_seat": _winner_seat,
 		"team_size": _team_size,
+		"party_size": _party_size,
 		"winner_team": _winner_team,
 		"turn_order": _turn_order.duplicate(),
 		"seed": _seed,
@@ -1930,7 +1937,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 ## Teams: a fighter that falls on its own turn (or at its turn start) passes
 ## the turn on; the match goes on until a whole team is down.
 func _skip_fallen_active() -> void:
-	if _team_size <= 1 or _match_over or not _flow.is_combat():
+	if not _multi_side() or _match_over or not _flow.is_combat():
 		return
 	var depth := 0
 	while not _match_over and depth < 6:
@@ -2534,8 +2541,10 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
 	if _stasis_pack:
-		if int(target.get("seat", -1)) == 0:
-			_finish_match(_stasis_winner_hostile())
+		# A party loses only when every hero is down.
+		if _team_of(target) == 0:
+			if not _team_alive(0):
+				_finish_match(_stasis_winner_hostile())
 		elif _living_stasis_hostiles().is_empty():
 			_finish_match(0)
 		return
@@ -2769,19 +2778,21 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 		return
 	var hostile_count := 0
 	for entry in roster:
-		if typeof(entry) == TYPE_DICTIONARY and int((entry as Dictionary).get("seat", -1)) > 0:
+		if typeof(entry) == TYPE_DICTIONARY and int((entry as Dictionary).get("seat", -1)) >= _party_size:
 			hostile_count += 1
 	# Room A puts the trash pack on the board together. Room B stays one boss.
-	_stasis_pack = hostile_count >= 2
+	# A party always walks the living seats in order (heroes, then monsters).
+	_stasis_pack = hostile_count >= 2 or _party_size > 1
 	for entry in roster:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = entry
 		var seat := int(rec.get("seat", -1))
 		var unit := _unit_by_seat(seat)
-		if unit.is_empty() and seat > 1 and _stasis_pack:
+		if unit.is_empty() and seat > _party_size and _stasis_pack:
 			var foe_name := str(rec.get("name", "Trash"))
 			unit = _make_unit(seat, SpellKits.CLASS_IRONJAW, foe_name, SpellKits.element_of(SpellKits.CLASS_IRONJAW), UNPLACED, "S", false)
+			unit["team"] = 1
 			_units.append(unit)
 		if unit.is_empty():
 			continue
@@ -2992,7 +3003,9 @@ func _roster_class_ids(config: Dictionary) -> Array[String]:
 	else:
 		return fallback
 	var want := 2 * _team_size
-	if _team_size > 1 and incoming.size() < want:
+	if _party_size > 1:
+		want = _party_size + 1
+	if (_team_size > 1 or _party_size > 1) and incoming.size() < want:
 		var padded: Array[String] = []
 		for i in want:
 			padded.append(fallback[i % 2])
@@ -3088,7 +3101,7 @@ func turn_order() -> Array[int]:
 
 
 func _init_first_seat() -> int:
-	if _team_size > 1:
+	if _multi_side():
 		return _init_first_team_seat()
 	# Opening Still: that side acts first whatever the Init (both → Init).
 	var openers: Array[int] = []
@@ -4235,7 +4248,7 @@ func _unit_by_seat(seat: int) -> Dictionary:
 
 
 func _enemy_of(seat: int) -> Dictionary:
-	if _team_size <= 1:
+	if not _multi_side():
 		return _unit_by_seat(1 if seat == 0 else 0)
 	# Teams: the nearest living enemy (any enemy once they are all down).
 	var me := _unit_by_seat(seat)
@@ -4276,6 +4289,15 @@ func team_size() -> int:
 	return _team_size
 
 
+func party_size() -> int:
+	return _party_size
+
+
+## More than one fighter on a side: Koliseo teams or a Stasis party.
+func _multi_side() -> bool:
+	return _team_size > 1 or _party_size > 1
+
+
 func _team_alive(team: int) -> bool:
 	for unit in _units:
 		if _team_of(unit) == team and bool(unit.get("alive", false)):
@@ -4286,7 +4308,7 @@ func _team_alive(team: int) -> bool:
 ## Koliseo: the other of seats 0 and 1 (teams: every living enemy).
 ## Stasis player: every living hostile.
 func _hostile_cast_targets(seat: int) -> Array:
-	if _team_size > 1:
+	if _multi_side():
 		var me := _unit_by_seat(seat)
 		var foes: Array = []
 		for unit in _units:
@@ -4304,7 +4326,7 @@ func _hostile_cast_targets(seat: int) -> Array:
 func _living_stasis_hostiles() -> Array:
 	var out: Array = []
 	for unit in _units:
-		if int(unit.get("seat", -1)) <= 0:
+		if _team_of(unit) == 0:
 			continue
 		if bool(unit.get("alive", false)):
 			out.append(unit)
@@ -4318,7 +4340,7 @@ func _stasis_winner_hostile() -> int:
 
 
 func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
-	var pool: Array = _hostile_cast_targets(int(actor.get("seat", -1))) if _team_size > 1 else _living_stasis_hostiles()
+	var pool: Array = _hostile_cast_targets(int(actor.get("seat", -1))) if _multi_side() else _living_stasis_hostiles()
 	for hostile in pool:
 		var enemy: Dictionary = hostile
 		if _ambush_can_offer(actor, enemy):

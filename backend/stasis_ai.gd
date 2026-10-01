@@ -57,6 +57,17 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 	var kit: Array = actor.get("foe_kit", []) if actor.get("foe_kit", []) is Array else []
 	var player := _unit(snap, 0)
 	var actor_pos: Vector2i = _cell(actor.get("pos", Vector2i.ZERO))
+	# A party (Mauro 1 Oct 2026): chase the nearest living hero, not seat 0.
+	var best_d := 999
+	for unit in snap.get("units", []):
+		if int(unit.get("team", 0 if int(unit.get("seat", 0)) == 0 else 1)) != 0 or not bool(unit.get("alive", false)):
+			continue
+		if bool(unit.get("invisible", false)) or unit.get("pos") == null:
+			continue
+		var d := _chebyshev(actor_pos, _cell(unit.get("pos")))
+		if d < best_d:
+			best_d = d
+			player = unit
 	var foe_pos: Vector2i = _cell(player.get("pos", Vector2i.ZERO))
 	if kit.is_empty():
 		return choose(legal, actor_pos, foe_pos)

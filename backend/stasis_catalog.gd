@@ -24,7 +24,14 @@ const MAX_STAR := 5
 ## Foe toughness per star: [HP multiplier, damage multiplier].
 ## PROVISIONAL — the Blueprint leaves Stasis HP / dmg Open; these are Claude's
 ## proposal that Mauro green-lit by asking for star difficulty. Tune freely.
-const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [1.9, 1.45], 4: [2.5, 1.7], 5: [3.2, 2.0]}
+const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [2.6, 1.8], 4: [5.9, 3.45], 5: [7.4, 4.2]}
+## Dungeon party (Mauro 1 Oct 2026): ★1 is for 1 player, ★2 for 2, ★3–★5
+## for a full party of 4. Monsters are tuned for that party whoever enters
+## ("allowed but brutal"). PARTY_SCALE = [hp, damage] on top of STAR_SCALE.
+## PROVISIONAL — tuned with tests/sim_dungeons.gd.
+const PARTY_FOR_STAR := {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}
+const PARTY_SCALE := {1: [1.0, 1.0], 2: [4.0, 2.8], 4: [3.2, 1.6]}
+const MAX_PARTY := 4
 const PLAYER_SEAT := 0
 const ENEMY_SEAT := 1
 ## Strike card owner. Not the portrait. See the note above.
@@ -130,6 +137,10 @@ static var room: String = "a"
 static var foe_index: int = 0
 ## Difficulty picked for this run (1–5).
 static var star: int = STAR
+## Party heroes in seat order; index 0 is the player (class_id). Empty = solo.
+## ai_seats: seats an AI companion plays ("Fill with AI").
+static var party_classes: Array[String] = []
+static var ai_seats: Array[int] = []
 ## -1 keeps the class base HP (Mauro 30 Sep 2026: class base HP). Room B carries whatever Room A left.
 static var player_hp: int = -1
 ## End-of-run window (ui/combat_result.gd): clock, turns and beaten foes
@@ -160,6 +171,11 @@ static func begin(map_id: String) -> bool:
 	return true
 
 
+static func clear_run_party() -> void:
+	party_classes.clear()
+	ai_seats.clear()
+
+
 static func clear_run() -> void:
 	star = STAR
 	biome_id = ""
@@ -175,11 +191,37 @@ static func set_star(value: int) -> void:
 
 
 static func hp_mult(for_star: int = -1) -> float:
-	return float(STAR_SCALE[clampi(star if for_star < 1 else for_star, 1, MAX_STAR)][0])
+	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
+	return float(STAR_SCALE[s][0]) * float(PARTY_SCALE[party_for_star(s)][0])
 
 
 static func dmg_mult(for_star: int = -1) -> float:
-	return float(STAR_SCALE[clampi(star if for_star < 1 else for_star, 1, MAX_STAR)][1])
+	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
+	return float(STAR_SCALE[s][1]) * float(PARTY_SCALE[party_for_star(s)][1])
+
+
+## Heroes a star is tuned for (1, 2 or 4).
+static func party_for_star(for_star: int = -1) -> int:
+	return int(PARTY_FOR_STAR[clampi(star if for_star < 1 else for_star, 1, MAX_STAR)])
+
+
+## Heroes actually entering: the picked party, else the solo player.
+static func party_size() -> int:
+	return clampi(maxi(party_classes.size(), 1), 1, MAX_PARTY)
+
+
+static func set_party(classes: Array, ai: Array = []) -> void:
+	party_classes.clear()
+	for id in classes:
+		var c := SpellKits.normalize_class_id(str(id))
+		if SpellKits.is_roster_class(c) and party_classes.size() < MAX_PARTY:
+			party_classes.append(c)
+	ai_seats.clear()
+	for seat in ai:
+		if int(seat) > 0 and int(seat) < party_classes.size():
+			ai_seats.append(int(seat))
+	if not party_classes.is_empty():
+		class_id = party_classes[0]
 
 
 static func scaled_hp(base: int, for_star: int = -1) -> int:
@@ -301,6 +343,9 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		cells = cells + extra_spawns(biome_id, room, cells, foes.size() + 1 - cells.size())
 	if cells.size() < foes.size() + 1:
 		return {}
+	var heroes := party_size()
+	if heroes > 1:
+		return _party_fight_config(cells, foes, heroes)
 	var roster: Array = []
 	var positions: Array = []
 	var player := {"seat": PLAYER_SEAT, "facing": "N"}
@@ -349,6 +394,95 @@ static func fight_config(positions_override: Array = []) -> Dictionary:
 		# Higher Init acts first, tie = coin flip (Mauro 29 Sep 2026).
 		"first_by_init": true,
 	}
+
+
+## Party run: heroes in seats 0..P-1 (team 0) around the player's spawn,
+## monsters from seat P. Every hero wears the phone's loadout for now (one
+## device); online parties will send each player's own gear.
+static func _party_fight_config(cells: Array, foes: Array, heroes: int) -> Dictionary:
+	var hero_cells := party_cells(biome_id, room, cells[0], heroes, cells.slice(1))
+	if hero_cells.size() < heroes:
+		return {}
+	var gear := GearBag.load_saved().fight_gear(true)
+	var roster: Array = []
+	var positions: Array = []
+	for seat in heroes:
+		var rec := {"seat": seat, "facing": "N"}
+		if seat == 0 and player_hp >= 0:
+			rec["hp"] = player_hp
+		if not (gear["worn"] as Array).is_empty() or not (gear["heroes"] as Dictionary).is_empty():
+			var g: Dictionary = gear.duplicate(true)
+			if seat > 0:
+				g.erase("still")
+			rec["gear"] = g
+		roster.append(rec)
+		positions.append(hero_cells[seat])
+	for i in foes.size():
+		var entry: Dictionary = foes[i]
+		positions.append(cells[i + 1])
+		roster.append({
+			"seat": heroes + i,
+			"name": str(entry.get("name", "")),
+			"max_hp": int(entry.get("hp", 1)),
+			"hp": int(entry.get("hp", 1)),
+			"attack_base": int(entry.get("attack_base", 0)),
+			"attack_name": str(entry.get("attack", "")),
+			"facing": "S",
+			"spells": [STRIKE_CARD],
+			"foe_kit": entry.get("foe_kit", []),
+			"role": str(entry.get("role", "")),
+			"door": biome_id,
+			"dmg_mult": dmg_mult(),
+			"max_ap": int(entry.get("max_ap", 6)),
+			"max_mp": 3,
+			"sprite": art_path(str(entry.get("art", ""))),
+			"boss": room == "b",
+		})
+	var classes: Array = party_classes.duplicate()
+	classes.append(STRIKE_CARD_CLASS)
+	var seed := _seed_for(biome_id, room, 0)
+	return {
+		"map_id": biome_id,
+		"cell_tags": tags_path(biome_id, room),
+		"classes": classes,
+		"party_size": heroes,
+		"skip_deploy": true,
+		"positions": positions,
+		"seed": seed,
+		"elev_seed": seed,
+		"stasis_roster": roster,
+		"first_by_init": true,
+	}
+
+
+## Standable ground next to the player's spawn for the other heroes
+## (nearest first, never on a foe spawn).
+static func party_cells(map_id: String, room_id: String, start: Vector2i, count: int, avoid: Array) -> Array:
+	var tags := CellTagMap.load_file(tags_path(map_id, room_id))
+	var paint: Dictionary = tags.get("paint_only", {})
+	var map := str(tags.get("map_id", map_id))
+	var ok := {}
+	for item in tags.get("cells", []):
+		if typeof(item) != TYPE_DICTIONARY:
+			continue
+		var rec: Dictionary = item
+		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
+		if str(rec.get("terrain", "")) != "ground" or CellTagMap.props_block_move(paint.get(pos, []), map, pos):
+			continue
+		ok[pos] = true
+	var out: Array = [start]
+	var ring: Array = ok.keys()
+	ring.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var da := _cheb(a, start)
+		var db := _cheb(b, start)
+		return da < db if da != db else (a.y * 100 + a.x) < (b.y * 100 + b.x))
+	for pos in ring:
+		if out.size() >= count:
+			break
+		if pos == start or avoid.has(pos):
+			continue
+		out.append(pos)
+	return out
 
 
 ## Extra foe spawns when a room lists fewer than the pack: standable open

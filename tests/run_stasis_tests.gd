@@ -33,6 +33,7 @@ func _run() -> void:
 		_sim.name = "CombatSim"
 		root.add_child(_sim)
 	_test_package_and_flow()
+	_test_party_engine()
 	_test_ai()
 	_test_boards_and_provisional_hit()
 	_test_threshgate_hazards()
@@ -104,11 +105,11 @@ func _test_package_and_flow() -> void:
 	eq(int(one[1]["hp"]), StasisCatalog.PROVISIONAL_TRASH_HP, "★1 trash keeps the base HP")
 	StasisCatalog.set_star(5)
 	var five: Array = StasisCatalog.fight_config()["stasis_roster"]
-	eq(int(five[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_TRASH_HP * 3.2), "★5 trash HP x3.2")
-	eq(int(five[1]["attack_base"]), roundi(StasisCatalog.PROVISIONAL_TRASH_ATTACK * 2.0), "★5 trash damage x2")
+	eq(int(five[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_TRASH_HP * 7.4 * 3.2), "★5 trash HP x7.4 (star) x3.2 (party of 4)")
+	eq(int(five[1]["attack_base"]), roundi(StasisCatalog.PROVISIONAL_TRASH_ATTACK * 4.2 * 1.6), "★5 trash damage x4.2 x1.6")
 	StasisCatalog.room = "b"
 	var boss5: Array = StasisCatalog.fight_config()["stasis_roster"]
-	eq(int(boss5[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_BOSS_HP * 3.2), "★5 boss HP x3.2")
+	eq(int(boss5[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_BOSS_HP * 7.4 * 3.2), "★5 boss HP x7.4 x3.2")
 	truthy(StasisCatalog.room_banner().contains("★5"), "the banner shows the star")
 	StasisCatalog.set_star(9)
 	eq(StasisCatalog.star, 5, "stars cap at 5")
@@ -885,6 +886,62 @@ func _hit_event(result: Dictionary) -> Dictionary:
 
 func _faced_damage(base: int, facing_mult: float) -> int:
 	return roundi(float(base) * facing_mult)
+
+
+func _test_party_engine() -> void:
+	# Mauro 1 Oct 2026: dungeons for a party of up to 4 heroes (team 0) vs the
+	# monsters (team 1); the run is lost only when every hero is down.
+	var roster := [
+		{"seat": 0, "facing": "N"},
+		{"seat": 1, "facing": "N"},
+		{"seat": 2, "facing": "N"},
+		{"seat": 3, "name": "Brute A", "max_hp": 40, "hp": 40, "facing": "S", "foe_kit": ["foe.brute_hit"], "role": "brute", "door": "crosshaven"},
+		{"seat": 4, "name": "Brute B", "max_hp": 40, "hp": 40, "facing": "S", "foe_kit": ["foe.brute_hit"], "role": "brute", "door": "crosshaven"},
+	]
+	_sim.reset_match({
+		"seed": 3,
+		"flat_board": true,
+		"skip_deploy": true,
+		"party_size": 3,
+		"classes": ["mender", "ironjaw", "kestrel", "ironjaw"],
+		"positions": [Vector2i(2, 2), Vector2i(3, 2), Vector2i(2, 4), Vector2i(9, 9), Vector2i(10, 9)],
+		"stasis_roster": roster,
+	})
+	var snap: Dictionary = _sim.snapshot()
+	eq(int(snap.get("party_size", 0)), 3, "the dungeon has a party of 3")
+	var units: Array = snap["units"]
+	eq(units.size(), 5, "3 heroes and 2 monsters")
+	eq(int(units[1]["team"]), 0, "seat 1 is a hero")
+	eq(int(units[2]["team"]), 0, "seat 2 is a hero")
+	eq(int(units[3]["team"]), 1, "seat 3 is a monster")
+	eq(int(units[4]["team"]), 1, "seat 4 is a monster")
+	eq(str(units[1]["class_id"]), "ironjaw", "the second hero is the picked class")
+	# The Mender heals a hurt party member.
+	var active := int(snap["active_seat"])
+	for unit in _sim._units:
+		if int(unit["seat"]) == 1:
+			unit["hp"] = 30
+	if active == 0:
+		var offered := false
+		for intent in _sim.legal_intents(0):
+			if str(intent.get("spell", "")) == SpellKits.MEND and int(intent.get("target_seat", -1)) == 1:
+				offered = true
+		eq(offered, true, "Mend offers a party member")
+	# One hero down: the run goes on. All heroes down: the run is lost.
+	for unit in _sim._units:
+		if int(unit["seat"]) == 0:
+			unit["hp"] = 0
+			_sim._check_death(unit)
+	eq(bool(_sim.snapshot()["match_over"]), false, "one fallen hero does not end the run")
+	for unit in _sim._units:
+		if int(unit["seat"]) in [1, 2]:
+			unit["hp"] = 0
+			_sim._check_death(unit)
+	eq(bool(_sim.snapshot()["match_over"]), true, "every hero down ends the run")
+	eq(int(_sim.snapshot()["winner_seat"]) >= 3, true, "the monsters win")
+	# Solo runs are unchanged.
+	_sim.reset_match(StasisCatalog.fight_config())
+	eq(int(_sim.snapshot().get("party_size", 0)), 1, "a solo run keeps party 1")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

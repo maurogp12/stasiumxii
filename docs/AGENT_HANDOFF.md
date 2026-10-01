@@ -125,6 +125,10 @@ the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
 Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 20. Mauro 1 Oct 2026 balance: Gloam Ambush 26 and Cut 17, Kestrel Mark Shot 8 (round 2 undid 7), Bastion HP growth +7, Ironjaw Crush 20 (a stunning Crush spends ALL Impact), Mender Heartstop 22; class base HP Bastion 110, Ironjaw 90, Mender 85, Kestrel 75, Gloam 75 (`CombatSim.CLASS_BASE_HP`). Advance stays 3 AP (max 2 per turn). Koliseo 2v2 / 3v3 hot-seat exists (`team_size`, see the change log); online teams are not built yet. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
 
+## Dungeon party (in progress)
+
+Plan and Mauro's answers: `docs/DUNGEON_PARTY_PLAN.md`. Engine, AI companions (`backend/hero_ai.gd`) and party difficulty (`StasisCatalog.PARTY_SCALE` / `STAR_SCALE`, tuned with `tests/sim_dungeons.gd`) are in; the finder screen and the online role queue are not built yet. AI fill is only a fallback when no player is found.
+
 ## Online server
 
 Mauro's game server is `68.201.184.207` (`NetSession.DEFAULT_SERVER`, port 7777, ENet/UDP). It runs the dedicated host (`--dedicated 7777`) and must run the same build as the phones. Online play is 1v1; online 2v2 / 3v3 is not built yet.
