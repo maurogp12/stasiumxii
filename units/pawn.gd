@@ -55,6 +55,8 @@ var facing: String = "E"
 ## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
 var invisible: bool = false
 var seat: int = 0
+## Koliseo teams: 0 = blue (A), 1 = red (B). Stasis: seat 0 vs the rest.
+var team: int = 0
 ## Package crop for a Stasis foe. Empty on Koliseo bodies.
 var stasis_sprite: String = ""
 ## Room B foe: drawn bigger, with a BossAura on the ground (view only).
@@ -281,6 +283,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	facing = str(unit["facing"])
 	invisible = bool(unit.get("invisible", false))
 	seat = int(unit.get("seat", seat))
+	team = int(unit.get("team", 0 if seat == 0 else 1))
 	hp = int(unit["hp"])
 	max_hp = int(unit["max_hp"])
 	alive = bool(unit["alive"])
@@ -2703,10 +2706,10 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	# Dofus team circle: a soft team disc, a bright team ring, a dark keyline
 	# outside it and a light glint on the near rim, so the fighter reads on
 	# any tile at phone zoom.
-	var team := _seat_color()
-	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 0.38))
+	var ring := _seat_color()
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 0.38))
 	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.2, SEAT_RING_RY + 0.6, Color(0.05, 0.04, 0.06, 0.75), 1.4)
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 1.0), 2.6)
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 1.0), 2.6)
 	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
@@ -2868,8 +2871,8 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 func _seat_color() -> Color:
 	# Same blue / red as the P1 / P2 deploy zone highlights (Dofus teams).
 	# Stasis trash seats 2 and 3 are hostiles, same as seat 1.
-	var team: Color = BoardTile.TEAM_RED if seat > 0 else BoardTile.TEAM_BLUE
-	return Color(team.r, team.g, team.b, 0.92)
+	var tint: Color = BoardTile.TEAM_RED if team == 1 else BoardTile.TEAM_BLUE
+	return Color(tint.r, tint.g, tint.b, 0.92)
 
 
 func _body_color() -> Color:

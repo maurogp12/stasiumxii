@@ -35,6 +35,8 @@ const ROLE_LINES := {
 static var hotseat_classes: Array[String] = []
 ## Short catalog id (`brinewake`). Empty keeps the Crosshaven default.
 static var hotseat_map_id: String = ""
+## Koliseo hot-seat team size (Mauro 1 Oct 2026): 1 = 1v1, 2 = 2v2, 3 = 3v3.
+static var hotseat_team_size: int = 1
 
 var _phase: String = "mode"
 var _p1: String = ""
@@ -59,6 +61,10 @@ var _queue_panel: PanelContainer
 var _queue_label: Label
 var _back_button: Button
 var _mode_buttons: Dictionary = {}
+var _size_row: HBoxContainer
+var _size_buttons: Dictionary = {}
+## Team picks in seat order: A1, B1, A2, B2, A3, B3.
+var _team_picks: Array[String] = []
 var _class_buttons: Dictionary = {}
 var _name_labels: Dictionary = {}
 var _role_labels: Dictionary = {}
@@ -83,8 +89,15 @@ static func roll_hotseat_map() -> String:
 
 static func local_match_config() -> Dictionary:
 	var config := {}
-	if hotseat_classes.size() == 2 and SpellKits.is_roster_class(hotseat_classes[0]) and SpellKits.is_roster_class(hotseat_classes[1]):
-		config["classes"] = [hotseat_classes[0], hotseat_classes[1]]
+	var size := clampi(hotseat_team_size, 1, 3)
+	var all_roster := hotseat_classes.size() == 2 * size
+	for id in hotseat_classes:
+		if not SpellKits.is_roster_class(id):
+			all_roster = false
+	if all_roster:
+		config["classes"] = hotseat_classes.duplicate()
+	if size > 1:
+		config["team_size"] = size
 	if CellTagMap.is_ship_map(hotseat_map_id):
 		config["map_id"] = CellTagMap.normalize_id(hotseat_map_id)
 	# Hot-seat uses no gear or levels, so both Init are 0: a coin flip picks
@@ -94,7 +107,10 @@ static func local_match_config() -> Dictionary:
 	# wear the phone's equipped loadout and socketed Still. Normal game: none.
 	if _TestLoadout.ACTIVE:
 		var kit := GearBag.load_saved().fight_gear(true)
-		config["seat_gear"] = {0: kit, 1: kit.duplicate(true)}
+		var seat_gear := {}
+		for seat in 2 * size:
+			seat_gear[seat] = kit.duplicate(true)
+		config["seat_gear"] = seat_gear
 	return config
 
 
@@ -152,6 +168,7 @@ func choose_mode(which: String) -> void:
 		_phase = "hotseat_p1"
 		_p1 = ""
 		_p2 = ""
+		_team_picks.clear()
 		_status.text = ""
 	elif which == "online":
 		_phase = "online"
@@ -179,6 +196,8 @@ func pick_class(class_id: String) -> Dictionary:
 			return rejected
 		_show_reject("invalid_class", id)
 		return {"ok": false, "reason": "invalid_class", "class_id": id}
+	if hotseat_team_size > 1 and (_phase == "hotseat_p1" or _phase == "hotseat_p2"):
+		return _pick_team_class(id)
 	if _phase == "hotseat_p1":
 		_p1 = id
 		_phase = "hotseat_p2"
@@ -196,6 +215,36 @@ func pick_class(class_id: String) -> Dictionary:
 	if _phase == "online":
 		return _confirm_online_class(id)
 	return {"ok": false, "reason": "mode_required", "class_id": id}
+
+
+## 2v2 / 3v3 hot-seat: picks go A1, B1, A2, B2 (A3, B3). Duplicates allowed.
+func _pick_team_class(id: String) -> Dictionary:
+	var seat := _team_picks.size()
+	_team_picks.append(id)
+	_reject.text = ""
+	_status.text = ""
+	if _team_picks.size() >= 2 * hotseat_team_size:
+		_phase = "hotseat_done"
+		_refresh_all()
+		_begin_hotseat_match()
+		return {"ok": true, "reason": "", "class_id": id, "seat": seat, "classes": hotseat_classes.duplicate()}
+	_phase = "hotseat_p1" if _team_picks.size() % 2 == 0 else "hotseat_p2"
+	_refresh_all()
+	return {"ok": true, "reason": "", "class_id": id, "seat": seat}
+
+
+func set_team_size(size: int) -> void:
+	hotseat_team_size = clampi(size, 1, 3)
+	_team_picks.clear()
+	_p1 = ""
+	_p2 = ""
+	if _phase == "hotseat_p2" or _phase == "hotseat_p1":
+		_phase = "hotseat_p1"
+	_refresh_all()
+
+
+func team_picks() -> Array[String]:
+	return _team_picks.duplicate()
 
 
 func request_queue() -> Dictionary:
@@ -228,6 +277,11 @@ func return_to_hub() -> void:
 
 func go_back() -> void:
 	if _phase == "dedicated" or _leaving:
+		return
+	if hotseat_team_size > 1 and not _team_picks.is_empty() and _phase != "hotseat_done":
+		_team_picks.pop_back()
+		_phase = "hotseat_p1" if _team_picks.size() % 2 == 0 else "hotseat_p2"
+		_refresh_all()
 		return
 	if _phase == "hotseat_p2":
 		_phase = "hotseat_p1"
@@ -357,6 +411,19 @@ func _build() -> void:
 	hub_button.add_theme_stylebox_override("normal", _hub_return_style())
 	hub_button.pressed.connect(return_to_hub)
 	mode_row.add_child(hub_button)
+
+	_size_row = HBoxContainer.new()
+	_size_row.add_theme_constant_override("separation", 12)
+	_size_row.visible = false
+	col.add_child(_size_row)
+	for size in [1, 2, 3]:
+		var b := Button.new()
+		b.text = "%d vs %d" % [size, size]
+		b.custom_minimum_size = Vector2(120, 48)
+		b.add_theme_font_size_override("font_size", 18)
+		b.pressed.connect(set_team_size.bind(size))
+		_size_buttons[size] = b
+		_size_row.add_child(b)
 
 	_prompt = Label.new()
 	_prompt.add_theme_font_size_override("font_size", 22)
@@ -554,8 +621,11 @@ func _confirm_online_class(class_id: String) -> Dictionary:
 
 func _begin_hotseat_match() -> void:
 	var sealed: Array[String] = []
-	sealed.append(_p1)
-	sealed.append(_p2)
+	if hotseat_team_size > 1:
+		sealed = _team_picks.duplicate()
+	else:
+		sealed.append(_p1)
+		sealed.append(_p2)
 	hotseat_classes = sealed
 	roll_hotseat_map()
 	if not _auto_launch or _leaving:
@@ -586,6 +656,25 @@ func _apply_prompt() -> void:
 	_join_row.visible = _phase == "online"
 	if _cards_row != null:
 		_cards_row.visible = true
+	if _size_row != null:
+		_size_row.visible = _phase == "hotseat_p1" or _phase == "hotseat_p2"
+		for size in _size_buttons.keys():
+			var sb: Button = _size_buttons[size]
+			sb.add_theme_stylebox_override("normal", _mode_style("hotseat", int(size) == hotseat_team_size))
+	if hotseat_team_size > 1 and (_phase == "hotseat_p1" or _phase == "hotseat_p2" or _phase == "hotseat_done"):
+		var n := mini(_team_picks.size(), 2 * hotseat_team_size - 1)
+		var team_a := n % 2 == 0
+		_prompt.text = "%s — pick fighter %d of %d" % ["Team A" if team_a else "Team B", n / 2 + 1, hotseat_team_size]
+		_prompt.add_theme_color_override("font_color", SEAT_P1_TEXT if team_a else SEAT_P2_TEXT)
+		_prompt_seat = n
+		_p1_chip.visible = not _team_picks.is_empty()
+		if not _team_picks.is_empty():
+			var a_names: Array = []
+			var b_names: Array = []
+			for i in _team_picks.size():
+				(a_names if i % 2 == 0 else b_names).append(SpellKits.display_name(_team_picks[i]))
+			_p1_chip_label.text = "A: %s   ·   B: %s" % [", ".join(a_names), ", ".join(b_names)]
+		return
 	if _phase == "hotseat_p1":
 		_prompt.text = "P1 — pick your class"
 		_prompt.add_theme_color_override("font_color", SEAT_P1_TEXT)

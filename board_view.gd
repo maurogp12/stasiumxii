@@ -219,9 +219,36 @@ func _online() -> bool:
 ## Who is looking at the board. Online: the seat this device owns. Hot-seat:
 ## the player whose turn it is (one phone passed between two players).
 func _viewer_sees_seat(seat: int, snap: Dictionary) -> bool:
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: a hidden fighter is visible to its own team only.
+		var team := _snap_team(snap, seat)
+		if _online():
+			for unit in snap.get("units", []):
+				if _snap_team(snap, int(unit["seat"])) == team and _can_control_seat(int(unit["seat"])):
+					return true
+			return false
+		return team == _snap_team(snap, int(snap.get("active_seat", -1)))
 	if _online():
 		return _can_control_seat(seat)
 	return seat == int(snap.get("active_seat", -1))
+
+
+func _snap_team(snap: Dictionary, seat: int) -> int:
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			return int(unit.get("team", 0 if seat == 0 else 1))
+	return seat % 2
+
+
+## Teams deploy: a tap on a team's zone places the selected fighter of that
+## team, else its next unplaced fighter. -1 when the whole team is placed.
+func _team_deploy_seat(snap: Dictionary, side: int) -> int:
+	if _deploy_selected_seat >= 0 and _snap_team(snap, _deploy_selected_seat) == side:
+		return _deploy_selected_seat
+	for unit in snap.get("units", []):
+		if _snap_team(snap, int(unit["seat"])) == side and not bool(unit.get("placed", false)):
+			return int(unit["seat"])
+	return -1
 
 
 ## Scenes where the computer plays a seat skip the big turn banner for it.
@@ -2181,7 +2208,8 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 	if occupant >= 0:
 		var snap: Dictionary = _sim().snapshot()
 		var ready: Dictionary = snap.get("ready", {})
-		if not bool(ready.get(occupant, false)):
+		var occupant_side := _snap_team(snap, occupant) if int(snap.get("team_size", 1)) > 1 else occupant
+		if not bool(ready.get(occupant_side, ready.get(str(occupant_side), false))):
 			if not _can_control_seat(occupant):
 				_hud.set_deploy_note("That fighter belongs to the other seat.")
 				return
@@ -2191,7 +2219,16 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 			_refresh()
 			return
 	var zones: Dictionary = _sim().snapshot().get("deploy_zones", {})
-	var seat := CombatHUD.deploy_seat_for_cell(cell, _deploy_selected_seat, zones)
+	var deploy_snap: Dictionary = _sim().snapshot()
+	var side_pick := _deploy_selected_seat
+	if int(deploy_snap.get("team_size", 1)) > 1 and side_pick >= 0:
+		side_pick = _snap_team(deploy_snap, side_pick)
+	var seat := CombatHUD.deploy_seat_for_cell(cell, side_pick, zones)
+	if int(deploy_snap.get("team_size", 1)) > 1:
+		seat = _team_deploy_seat(deploy_snap, seat)
+		if seat < 0:
+			_hud.set_deploy_note("Whole team placed. Tap a fighter to move it, or press Ready.")
+			return
 	if not _can_control_seat(seat):
 		_hud.set_deploy_note("That deploy zone belongs to the other seat.")
 		return

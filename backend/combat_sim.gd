@@ -268,6 +268,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		_begin_combat(_opening_turn_coach(""))
 	else:
 		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
+		if _team_size > 1:
+			_last_coach = "Deployment. Each team places its %d fighters in its zone, then Ready." % _team_size
 		_last_events = [{
 			"type": "deploy_start",
 			"phase": _flow.phase_name(),

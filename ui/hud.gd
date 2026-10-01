@@ -194,7 +194,23 @@ static func turn_order(snap: Dictionary) -> Array:
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("seat", 0)) < int(b.get("seat", 0))
 	)
+	# Teams (2v2 / 3v3): follow the host's real turn order (A1 B1 A2 B2…).
+	var order: Array = snap.get("turn_order", [])
+	if int(snap.get("team_size", 1)) > 1 and not order.is_empty():
+		var by_seat := {}
+		for unit in rows:
+			by_seat[int(unit.get("seat", -1))] = unit
+		var ordered: Array = []
+		for seat in order:
+			if by_seat.has(int(seat)):
+				ordered.append(by_seat[int(seat)])
+		return ordered
 	return rows
+
+
+## Team of a unit row: Koliseo teams carry it; otherwise seat 0 vs the rest.
+static func unit_team(unit: Dictionary) -> int:
+	return int(unit.get("team", 0 if int(unit.get("seat", 0)) == 0 else 1))
 
 
 static func turn_status_text(snap: Dictionary) -> String:
@@ -354,6 +370,15 @@ static func can_ready_from_snap(snap: Dictionary, seat: int) -> bool:
 	var ready: Dictionary = snap.get("ready", {})
 	if bool(ready.get(seat, false)):
 		return false
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: Ready needs the whole team (seat 0 = team A, seat 1 = team B).
+		var any := false
+		for unit in snap.get("units", []):
+			if unit_team(unit) == seat:
+				any = true
+				if not bool(unit.get("placed", false)):
+					return false
+		return any
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == seat:
 			return bool(unit.get("placed", false))
@@ -860,9 +885,29 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var seat0 := _unit(units, 0)
 	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
+	var card_active := [active_seat == 0, active_seat == 1]
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: each side card shows that team's acting fighter, else its
+		# first fighter still standing.
+		var active_unit := _unit(units, active_seat)
+		for team in 2:
+			var pick: Dictionary = {}
+			if not active_unit.is_empty() and unit_team(active_unit) == team:
+				pick = active_unit
+			if pick.is_empty():
+				for unit in units:
+					if typeof(unit) == TYPE_DICTIONARY and unit_team(unit) == team and bool(unit.get("alive", false)):
+						pick = unit
+						break
+			if not pick.is_empty():
+				if team == 0:
+					seat0 = pick
+				else:
+					seat1 = pick
+			card_active[team] = not active_unit.is_empty() and unit_team(active_unit) == team
 	# Stasis Room A has more than the Koliseo pair. The right card follows the
 	# living hostile whose turn it is, then the first one still standing.
-	if units.size() > 2:
+	if units.size() > 2 and int(snap.get("team_size", 1)) <= 1:
 		var shown: Dictionary = {}
 		if active_seat > 0:
 			shown = _unit(units, active_seat)
@@ -875,10 +920,10 @@ func render(snap: Dictionary, legal: Array) -> void:
 					break
 		if not shown.is_empty():
 			seat1 = shown
-	_apply_seat_banner(0, seat0, active_seat == 0 and not _deploying)
-	_apply_seat_banner(1, seat1, active_seat == 1 and not _deploying)
-	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
-	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
+	_apply_seat_banner(0, seat0, bool(card_active[0]) and not _deploying)
+	_apply_seat_banner(1, seat1, bool(card_active[1]) and not _deploying)
+	_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
+	_ironjaw_body.text = _unit_card_text(seat1, bool(card_active[1]), snap)
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
@@ -888,9 +933,12 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_clock_seconds = clock_sec
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
-		_turn_label_base = "Match over — %s wins" % str(winner.get("name", "—"))
+		if int(snap.get("team_size", 1)) > 1:
+			_turn_label_base = "Match over — Team %s wins" % ("A" if int(snap.get("winner_team", 0)) == 0 else "B")
+		else:
+			_turn_label_base = "Match over — %s wins" % str(winner.get("name", "—"))
 	elif _deploying:
-		_turn_label_base = "DEPLOYMENT  ·  place both fighters"
+		_turn_label_base = "DEPLOYMENT  ·  place every fighter" if int(snap.get("team_size", 1)) > 1 else "DEPLOYMENT  ·  place both fighters"
 	else:
 		var whose := turn_status_text(snap)
 		if whose == "":
@@ -1488,7 +1536,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var chip := _turn_chip(unit, acting)
 		# Dofus timeline: each portrait framed in its team color.
 		var frame := _chip_frame(acting)
-		frame.border_color = TEAM_RED if seat > 0 else TEAM_BLUE
+		frame.border_color = TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 		if acting:
 			frame.shadow_color = Color(frame.border_color.r, frame.border_color.g, frame.border_color.b, 0.75)
 		(chip as Panel).add_theme_stylebox_override("panel", frame)
@@ -2559,10 +2607,14 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_ready_p1_button.visible = deploying and (local_seat < 0 or local_seat == 0)
 		_ready_p1_button.disabled = not can_ready_from_snap(snap, 0)
 		_ready_p1_button.text = "P1 ready" if bool(ready.get(0, false)) else "Ready P1"
+		if int(snap.get("team_size", 1)) > 1:
+			_ready_p1_button.text = "Team A ready" if bool(ready.get(0, false)) else "Ready Team A"
 	if _ready_p2_button != null:
 		_ready_p2_button.visible = deploying and (local_seat < 0 or local_seat == 1)
 		_ready_p2_button.disabled = not can_ready_from_snap(snap, 1)
 		_ready_p2_button.text = "P2 ready" if bool(ready.get(1, false)) else "Ready P2"
+		if int(snap.get("team_size", 1)) > 1:
+			_ready_p2_button.text = "Team B ready" if bool(ready.get(1, false)) else "Ready Team B"
 	if _clock_row != null:
 		_clock_row.visible = not deploying
 	if _clock_label != null:
