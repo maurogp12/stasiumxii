@@ -497,6 +497,7 @@ func _movie_decor() -> void:
 
 func _movie_settings() -> void:
 	_set_zoom(1.7)
+	settings.apply_preset("Full")
 	weather.set_weather("light_rain")
 	weather.settle()
 	await _wander(4, "walk")
