@@ -53,6 +53,7 @@ var _screen_fx: CanvasLayer
 var _zoom := 1.6
 var _last_click_ms := 0
 var _movie := ""
+var _movie_t0 := 0
 var _bench: Array[float] = []
 var _bench_until := 0.0
 var _window_before := Vector2i.ZERO
@@ -559,34 +560,46 @@ func _movie_gait(slow: bool) -> void:
 	weather.set_weather("clear")
 	weather.settle()
 	await _stand_on_pad(2)
+	# One tile of walk still covers a full cycle; two tiles of run reads as a run.
+	# South and north are slower, so this stays inside a 20s close-up.
 	for dir in ["e", "s", "w", "n"]:
-		await _cardinal(dir, 2, "walk")
+		await _cardinal(dir, 1, "walk")
 	for dir in ["e", "s", "w", "n"]:
 		await _cardinal(dir, 2, "run")
 
 
-## Crossroads, then Northgate by road, then Eastmarch and Southbridge.
-## The two later towns fade in: at this stride the connecting roads run past 90s.
+## Crossroads, the north road into Northgate, then Eastmarch and Southbridge.
+## Later towns fade in. A full run of every connecting road at this stride exceeds 90s.
 func _movie_gameplay() -> void:
 	settings.apply_preset("Full")
 	_set_zoom(1.6)
 	weather.set_weather("clear")
 	weather.settle()
+	_mark("start")
 	await _stand_on_pad(2)
 	for dir in ["e", "s", "w", "n"]:
-		await _cardinal(dir, 2, "walk")
-	for dir in ["s", "e", "n", "w"]:
+		await _cardinal(dir, 1, "walk")
+	for dir in ["e", "s", "w", "n"]:
 		await _cardinal(dir, 2, "run")
+	_mark("crossroads")
 	await _run_link("crosshaven_road_north")
 	await _run_link("crosshaven_northgate")
-	await _show_faces(3, "walk")
-	await _show_faces(2, "run")
+	_mark("northgate")
+	await _show_faces(2, "walk")
 	await _arrive_town("crosshaven_eastmarch")
-	await _show_faces(3, "walk")
-	await _show_faces(3, "run")
+	_mark("eastmarch")
+	await _show_faces(2, "run")
 	await _arrive_town("crosshaven_southbridge")
-	await _wander(4, "walk")
-	await _wander(5, "run")
+	_mark("southbridge")
+	await _wander(3, "walk")
+	await _wander(4, "run")
+	_mark("end")
+
+
+func _mark(tag: String) -> void:
+	if _movie_t0 == 0:
+		_movie_t0 = Time.get_ticks_msec()
+	print("MOVIE %s %.1fs" % [tag, (Time.get_ticks_msec() - _movie_t0) / 1000.0])
 
 
 func _arrive_town(zone_id: String) -> void:
