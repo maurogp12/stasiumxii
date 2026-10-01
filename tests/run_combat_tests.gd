@@ -1750,7 +1750,7 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "same tiles are Manhattan 4")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 2)})
 	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
-	eq(_unit(1)["hp"], 82, "8 Air on connect at Chebyshev 2")
+	eq(_unit(1)["hp"], 83, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
 	# Strike / Mark Shot stay Chebyshev. Advance range is cardinal (see range-gate test).
 	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", ""), "chebyshev", "Mark Shot range_mode is Chebyshev")
@@ -1881,7 +1881,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(_unit(0)["pos"], back, "Invisible Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), shades_hit, "Invisible origin does not spend Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Ambush hit ends Invisible")
-	eq(int(_unit(1)["hp"]), 45, "empty back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 40, "empty back hit is 26 × 1.35 = 35")
 	var hit_event: Dictionary = hit["events"][0]
 	eq(hit_event.get("destination"), back, "Ambush hit destination is the back tile")
 	eq(bool(hit_event.get("backstab", false)), true, "empty back tile is a backstab")
@@ -1908,7 +1908,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(str(_unit(0).get("facing", "")), "W", "Shade-origin Ambush faces the prey from the back tile")
 	eq(str(shade_hit["events"][0].get("facing", "")), "W", "Ambush hit event carries the new facing")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
-	eq(int(_unit(1)["hp"]), 45, "Shade-origin back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 40, "Shade-origin back hit is 26 × 1.35 = 35")
 
 
 func _test_ambush_arms_at_zero_mp() -> void:
@@ -2016,7 +2016,7 @@ func _test_ambush_origin_chrome() -> void:
 	})
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "origin chrome does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "origin chrome does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "origin chrome does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "origin chrome does not change Ambush damage")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "origin chrome does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "origin chrome does not change Drop Shade MP")
 	eq(_sim.chebyshev(gloam, shade_at), 2, "origin chrome plant is inside Drop Shade")
@@ -2122,7 +2122,7 @@ func _test_ambush_range_from_origin() -> void:
 	eq(int(ambush["max_range"]), 2, "Ambush max range is 2")
 	eq(int(ambush["ap"]), 4, "origin range does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "origin range does not change Ambush MP")
-	eq(int(ambush["base_damage"]), 22, "origin range does not change Ambush damage")
+	eq(int(ambush["base_damage"]), 26, "origin range does not change Ambush damage")
 	eq(SpellKits.range_text(ambush), "range 1–2 cardinal", "Ambush range_text is 1–2 cardinal")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance range_text stays exactly 2 cardinal")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max is Chebyshev 3")
@@ -2246,7 +2246,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	var drop: Dictionary = SpellKits.spell(SpellKits.DROP_SHADE)
 	eq(int(ambush["ap"]), 4, "adjacent reject does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "adjacent reject does not change Ambush MP")
-	eq(int(ambush["base_damage"]), 22, "adjacent reject does not change Ambush damage")
+	eq(int(ambush["base_damage"]), 26, "adjacent reject does not change Ambush damage")
 	eq(str(ambush["range_mode"]), "cardinal", "Ambush stays cardinal")
 	eq(int(ambush["min_range"]), 1, "Ambush min is 1")
 	eq(int(ambush["max_range"]), 2, "Ambush max is 2")
@@ -2398,7 +2398,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Manhattan 2 cardinal from the Shade still resolves")
 	eq(_unit(0)["pos"], Vector2i(6, 5), "the legal Shade Ambush lands on the empty back tile")
-	eq(int(_unit(1)["hp"]), 45, "the legal Shade Ambush is still 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "the legal Shade Ambush is still 26 × 1.35")
 
 	# Chebyshev 1, 2, and 3 from Gloam still plant. Range is not Ambush's cross.
 	var planter := Vector2i(7, 7)
@@ -2467,7 +2467,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(hit.get("ok", false)), true, "armed Manhattan-2 Ambush resolves")
 	eq(_unit(0)["pos"], back, "Ambush lands one step past the foe on the approach axis")
 	eq(int(_unit(0)["shades"]), 0, "a Shade origin spends the Shade on hit")
-	eq(int(_unit(1)["hp"]), 45, "the backstab hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "the backstab hit is 26 × 1.35")
 
 	# Manhattan 1 cardinal, empty back, Shade armed: accept.
 	var near_shade := Vector2i(3, 2)
@@ -2666,7 +2666,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
-	eq(int(_unit(1)["hp"]), 53, "east front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "east front Ambush is 26 FLEX")
 	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2739,7 +2739,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	# actually plants. Drop Shade still does not clear Invisible.
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Shade-while-Invisible does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Shade-while-Invisible does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Shade-while-Invisible does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Shade-while-Invisible does not change Ambush damage")
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
 	var shade_at := Vector2i(4, 4)
@@ -2792,7 +2792,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
 	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 53, "the Shade jump front hit is 22")
+	eq(int(_unit(1)["hp"]), 49, "the Shade jump front hit is 26")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -2911,7 +2911,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush miss ends Invisible")
 	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Ambush miss is not a teleport")
 	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush damage stays 26")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(_sim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
 	eq(_sim.ambush_damage_if_planted(back, back, 22), 22, "Ambush damage after the plant stays 22")
@@ -2930,7 +2930,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
-	eq(int(_unit(1)["hp"]), 45, "Invisible Ambush hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "Invisible Ambush hit is 26 × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
@@ -2950,7 +2950,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(shade_hit.get("ok", false)), true, "Visible Shade Ambush resolves")
 	eq(_unit(0)["pos"], back, "Visible Shade Ambush plants on the back tile")
 	eq(shade_hit["events"][0].get("struck_from"), back, "Visible Shade Ambush hits from the back tile")
-	eq(int(_unit(1)["hp"]), 45, "Visible Shade Ambush deals the backstab 30")
+	eq(int(_unit(1)["hp"]), 40, "Visible Shade Ambush deals the backstab 35")
 	eq(int(_unit(0)["shades"]), 0, "Visible Shade Ambush spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Visible Shade Ambush stays Visible")
 
@@ -3010,7 +3010,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var event: Dictionary = hit.get("events", [{}])[0]
 	var dealt := hp_before - int(_unit(1)["hp"])
 	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
-	eq(dealt, 22, "Instant Invisible front hit is the locked 22")
+	eq(dealt, 26, "Instant Invisible front hit is the locked 22")
 	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
 	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
 	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")
@@ -3068,7 +3068,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
 	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
 	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
-	eq(int(_unit(1)["hp"]), 53, "front Shade Ambush while Invisible is 22")
+	eq(int(_unit(1)["hp"]), 49, "front Shade Ambush while Invisible is 26")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
 	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
@@ -3113,7 +3113,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(hit["events"][0].get("origin"), shade_at, "far Shade event origin is the Shade")
 	# Face N puts the rear cone south. The axis back tile is north, so this hit is the front 22.
 	eq(bool(hit["events"][0].get("backstab", true)), false, "landing in front of Face-N is not a backstab")
-	eq(int(_unit(1)["hp"]), 53, "front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "front Ambush is 26 FLEX")
 
 	# Same geometry. Confirming the Shade plate must not read as distance 0.
 	_sim.reset_match({
@@ -3178,7 +3178,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_unit(0)["pos"] == near_gloam, false, "Invisible Ambush does not slash from the old tile")
 	eq(bool(self_hit["events"][0].get("teleported", false)), true, "Invisible adjacent hit teleports")
 	eq(bool(self_hit["events"][0].get("backstab", true)), false, "past a Face-S foe is the front, not a free backstab")
-	eq(int(_unit(1)["hp"]), 53, "that front hit is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "that front hit is 22 FLEX")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
@@ -3240,7 +3240,7 @@ func _test_back_facing_multiplier() -> void:
 func _test_mark_shot_range_and_marks() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range 5 Chebyshev (Mauro, 29 Sep)")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage stays 8")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 7, "Mark Shot base damage is 7")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3250,7 +3250,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
-	eq(_unit(1)["hp"], 81, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
+	eq(_unit(1)["hp"], 82, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
@@ -5259,7 +5259,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 func _test_crush_spend_and_stun() -> void:
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["ap"]), 4, "Crush costs 4 AP")
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["mp"]), 0, "Crush costs 0 MP")
-	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 24, "Crush base is 24 Earth")
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 20, "Crush base is 20 Earth")
 
 	# Gate: fewer than 2 Impact rejects and refunds.
 	_sim.reset_match({
@@ -5290,12 +5290,12 @@ func _test_crush_spend_and_stun() -> void:
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush at 2 Impact connects")
-	eq(result["events"][0]["damage"], 24, "front Crush deals 24 Earth")
+	eq(result["events"][0]["damage"], 20, "front Crush deals 20 Earth")
 	eq(result["events"][0]["impact_before"], 2, "Impact before spend is 2")
 	eq(result["events"][0]["impact_spent"], 2, "connect spends 2 Impact")
 	eq(result["events"][0]["stun_applied"], 0, "Impact 2 before spend does not Stun")
 	eq(_unit(1)["impact"], 0, "2-2=0 Impact left")
-	eq(_unit(0)["hp"], 51, "75-24=51")
+	eq(_unit(0)["hp"], 55, "75-20=55")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun stored")
 	eq(_unit(1)["ap"], 2, "Crush spends 4 AP")
 	eq(_unit(1)["mp"], 3, "Crush spends 0 MP")
@@ -5334,7 +5334,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
 	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
-	eq(result["events"][0]["damage"], 29, "24 × 1.20 rounds to 29")
+	eq(result["events"][0]["damage"], 24, "24 × 1.20 rounds to 29")
 	eq(_unit(1)["impact"], 0, "a stunning Crush leaves 0 Impact")
 	eq(_unit(0)["stun_remaining"], 1, "Stun 1 stored on the target")
 	eq(result["events"][1]["type"], "status", "status event for Stun")
@@ -6184,7 +6184,7 @@ func _test_aim_feel_chrome() -> void:
 	# do not draw it. The float is the Phase A connect sample, not a new roll.
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "aim line does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "aim line does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "aim line does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "aim line does not change Ambush damage")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "aim line does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "aim line does not change Drop Shade MP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "aim line does not change Drop Shade range")
@@ -6215,7 +6215,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(armed.get("from"), shade_at, "the Ambush line starts on the Shade, not Gloam")
 	eq(armed.get("to"), prey, "the Ambush line ends on the enemy")
 	eq(armed.get("from") == gloam, false, "hovering Gloam does not retarget the line onto the body")
-	eq(str(armed.get("float_text", "")), "-30", "Backstab aim float is the 22 × 1.35 sample")
+	eq(str(armed.get("float_text", "")), "-35", "Backstab aim float is the 26 × 1.35 sample")
 	eq(str(armed.get("kind", "")), "damage", "the Ambush float is damage")
 	var ap_before := int(_sim.snapshot()["units"][0]["ap"])
 	_sim.aim_feel(0, SpellKits.AMBUSH, gloam)
@@ -6248,7 +6248,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(bool(self_origin.get("show", false)), true, "Invisible Ambush still draws an aim line")
 	eq(bool(self_origin.get("from_shade", true)), false, "Invisible aim does not leave the Shade")
 	eq(self_origin.get("from"), invisible_at, "Invisible aim starts on Gloam")
-	eq(str(self_origin.get("float_text", "")), "-30", "Invisible backstab aim still samples 30")
+	eq(str(self_origin.get("float_text", "")), "-35", "Invisible backstab aim still samples 35")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -6262,7 +6262,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(bool(shot.get("from_shade", true)), false, "Mark Shot does not pretend to start on a Shade")
 	eq(shot.get("from"), Vector2i(0, 0), "Mark Shot starts on the caster")
 	eq(shot.get("to"), Vector2i(4, 0), "Mark Shot ends on the hovered enemy")
-	eq(str(shot.get("float_text", "")), "-9", "front Mark Shot float is 8 × Longshot 1.15 = 9")
+	eq(str(shot.get("float_text", "")), "-8", "front Mark Shot float is 7 × Longshot 1.15 = 8")
 	var wide: Dictionary = _sim.aim_feel(0, SpellKits.MARK_SHOT, Vector2i(12, 12))
 	eq(bool(wide.get("show", true)), false, "a hover outside the range ring draws no line")
 	var advance: Dictionary = _sim.aim_feel(0, SpellKits.ADVANCE, Vector2i(2, 0))
@@ -6305,7 +6305,7 @@ func _test_preview_cast() -> void:
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
-	eq(preview["sample_damage"], 9, "front Mark Shot samples 9 Air at range ≥4 (Longshot ×1.15)")
+	eq(preview["sample_damage"], 8, "front Mark Shot samples 8 Air at range ≥4 (Longshot ×1.15)")
 	eq(preview["on_connect_text"], "8 Air. +1 Mark on the target.", "Mark Shot connect kit line")
 	eq(preview["on_miss_text"], "AP/MP stay spent. No Mark.", "Mark Shot miss kit line")
 	eq(preview["legal"], true, "in-range Mark Shot with a target is legal")
@@ -6334,7 +6334,7 @@ func _test_preview_cast() -> void:
 		"seat": 0,
 	})
 	eq(preview["hit_chance"], 75, "intent Dictionary Mark Shot still uses Locked 75%")
-	eq(preview["sample_damage"], 9, "intent Dictionary Mark Shot samples 9 with Longshot")
+	eq(preview["sample_damage"], 8, "intent Dictionary Mark Shot samples 8 with Longshot")
 	eq(preview["rolling"], true, "intent Dictionary Mark Shot is rolling")
 
 	# Back facing uses live target facing (8 × 1.20 → 10).
@@ -6347,7 +6347,7 @@ func _test_preview_cast() -> void:
 	})
 	preview = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1)
 	eq(preview["hit_chance"], 80, "Mark Shot Chebyshev 2 uses Locked 80% band")
-	eq(preview["sample_damage"], 10, "back Mark Shot samples 8 × 1.20 = 10")
+	eq(preview["sample_damage"], 8, "back Mark Shot samples 7 × 1.20 = 10")
 
 	# Detonate M=3 → 24 Air. Formula 6+6*M. Needs marks when M<1.
 	_sim.reset_match({
@@ -6411,7 +6411,7 @@ func _test_preview_cast() -> void:
 	eq(preview["hit_chance"], 90, "Crush melee uses Locked 90%")
 	eq(preview["impact_before"], 4, "Crush preview reports impact_before 4")
 	eq(preview["would_stun"], true, "Crush would_stun at Impact 4 spending 2")
-	eq(preview["sample_damage"], 24, "front Crush samples 24 Earth")
+	eq(preview["sample_damage"], 20, "front Crush samples 20 Earth")
 	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "Crush connect kit line")
 	eq(preview["on_miss_text"], "Impact retained. AP/MP stay spent.", "Crush miss kit line")
 	eq(preview["legal"], true, "Crush at 4 Impact is legal")
@@ -6432,7 +6432,7 @@ func _test_preview_cast() -> void:
 	preview = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
 	eq(preview["impact_before"], 2, "Crush at 2 Impact reports impact_before 2")
 	eq(preview["would_stun"], false, "Crush does not stun when Impact before is 2")
-	eq(preview["sample_damage"], 24, "Crush still samples 24 Earth at Impact 2")
+	eq(preview["sample_damage"], 20, "Crush still samples 20 Earth at Impact 2")
 
 	# Shoulder: sample 6 + push note.
 	_sim.reset_match({
@@ -6830,7 +6830,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	var mark_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(5, 0), 1)
 	var mark := SpellTooltip.card_text(mark_preview)
-	eq(mark_preview["sample_damage"], 9, "Mark Shot preview samples live facing 9 (Longshot)")
+	eq(mark_preview["sample_damage"], 8, "Mark Shot preview samples live facing 9 (Longshot)")
 	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
@@ -6840,7 +6840,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
 	truthy(mark.contains("HIT 75% (Locked)"), "Mark Shot card uses preview hit_chance")
-	truthy(mark.contains("sample 9"), "Mark Shot card uses preview sample_damage")
+	truthy(mark.contains("sample 8"), "Mark Shot card uses preview sample_damage")
 	truthy(mark.contains("CritMult(1.0) × live Facing"), "Mark Shot sample names CritMult 1.0 and live Facing")
 	eq(mark.contains("+5"), false, "Mark Shot card does not invent +5")
 	eq(mark.contains("longshot"), false, "Mark Shot card does not invent longshot")
@@ -6860,7 +6860,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	var mark_back := SpellTooltip.card_text(_sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1))
 	truthy(mark_back.contains("HIT 80% (Locked)"), "Mark Shot back preview uses Locked 80% at range 2")
-	truthy(mark_back.contains("sample 10"), "Mark Shot back preview samples 8 × 1.20 = 10")
+	truthy(mark_back.contains("sample 8"), "Mark Shot back preview samples 7 × 1.20 = 8")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6958,7 +6958,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
 	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
 	truthy(crush.contains("HIT 90% (Locked)"), "Crush card uses preview melee 90%")
-	truthy(crush.contains("sample 24"), "Crush card uses preview sample_damage")
+	truthy(crush.contains("sample 20"), "Crush card uses preview sample_damage")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6985,7 +6985,7 @@ func _test_spell_tooltip_cards() -> void:
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.tooltip_visible(), false, "tooltip starts hidden")
 	eq(CombatHUD.spell_card_text(mark_preview), mark, "HUD helper formats preview_cast")
-	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 9, "HUD hover preview_cast samples live facing (Longshot)")
+	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 8, "HUD hover preview_cast samples live facing (Longshot)")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).disabled, false, "Mark Shot is enabled at start")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Mark Shot button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.MARK_SHOT)
@@ -7743,7 +7743,7 @@ func _test_ambush_snap_wall_ray() -> void:
 	eq(str(walled.get("reason", "")), "wall_on_ray", "the reject names the wall on the ray")
 	eq(int(_unit(0)["ap"]), ap_before, "the walled Ambush spends 0 AP")
 	eq(_unit(0)["pos"], gloam, "the walled Ambush does not move Gloam")
-	eq(int(_unit(1)["hp"]), 100, "the walled Ambush deals no damage")
+	eq(int(_unit(1)["hp"]), 110, "the walled Ambush deals no damage")
 
 	# A Shade on the far side still origins if it sees the target in range 1–2.
 	var shade_at := Vector2i(4, 4)

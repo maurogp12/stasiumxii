@@ -5,7 +5,7 @@ extends SceneTree
 ## expected-value planner as tests/sim_duels.gd, scored for the whole team.
 ## Team compositions are random (duplicates allowed, as Mauro chose); the
 ## report is each class's win % per appearance, so it reads like the duel total.
-## godot --headless --path . -s res://tests/sim_teams.gd -- <team_size 2|3> <games> [base|lvl30]
+## godot --headless --path . -s res://tests/sim_teams.gd -- <team_size 2|3> <games> [base|lvl30] [seed_index]
 
 const SIM_SCRIPT := preload("res://backend/combat_sim.gd")
 const CLASSES := ["kestrel", "ironjaw", "mender", "gloam", "bastion"]
@@ -24,6 +24,7 @@ const MAX_ACTIONS := 8
 var _team_size := 2
 var _games := 20
 var _mode := "base"
+var _seed_offset := 0
 var _done := false
 var _class_pts := {}
 var _class_n := {}
@@ -39,6 +40,8 @@ func _initialize() -> void:
 		_games = int(args[1])
 	if args.size() > 2:
 		_mode = args[2]
+	if args.size() > 3:
+		_seed_offset = int(args[3]) * 100003
 	GearBag.save_path = "user://teams_bag.json"
 	HeroProgress.save_path = "user://teams_hero.json"
 	StillVault.save_path = "user://teams_still.json"
@@ -51,7 +54,7 @@ func _process(_d: float) -> bool:
 	_done = true
 	var t0 := Time.get_ticks_msec()
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 4242 + _team_size
+	rng.seed = 4242 + _team_size + _seed_offset
 	var kit := {}
 	if _mode == "lvl30":
 		var heroes := {}
@@ -63,7 +66,7 @@ func _process(_d: float) -> bool:
 		for _i in range(_team_size * 2):
 			classes.append(CLASSES[rng.randi_range(0, CLASSES.size() - 1)])
 		var map_id: String = MAPS[g % MAPS.size()]
-		var res := _play(classes, map_id, 9000 + g * 13, kit)
+		var res := _play(classes, map_id, 9000 + g * 13 + _seed_offset, kit)
 		_record(classes, res)
 		print("  game %d %s  A=%s  B=%s  winner team %d  rounds %d  (%d s)" % [g + 1, map_id, str(_team(classes, 0)), str(_team(classes, 1)), int(res["winner_team"]), int(res["rounds"]), (Time.get_ticks_msec() - t0) / 1000])
 		if (g + 1) % 5 == 0 or g + 1 == _games:

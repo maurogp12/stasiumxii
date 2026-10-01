@@ -71,7 +71,7 @@ func _test_roster_gate() -> void:
 	eq(SpellKits.UMBRAL_CAP, 4, "Umbral cap is 4")
 	eq(SpellKits.SHADE_CAP, 2, "Shade cap is 2")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush costs 4 AP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage is 22")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush damage is 26")
 	eq(int(SpellKits.spell(SpellKits.AEGIS_BREAK)["base_damage"]), 26, "Aegis Break damage is 26")
 	eq(SpellKits.is_gated(SpellKits.NIGHTFOLD), true, "Nightfold stays gated")
 	var advance: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
@@ -341,7 +341,7 @@ func _test_proto_defaults() -> void:
 		})
 		var unit: Dictionary = snap["units"][0]
 		eq(str(unit["class_id"]), class_id, "%s spawns from the class id" % class_id)
-		eq(int(unit["hp"]), {"mender": 85, "gloam": 70, "bastion": 100}[class_id], "%s proto HP is its class base" % class_id)
+		eq(int(unit["hp"]), {"mender": 85, "gloam": 75, "bastion": 110}[class_id], "%s proto HP is its class base" % class_id)
 		eq(int(unit["marks"]), 0, "%s proto marks are 0" % class_id)
 		eq(int(unit["impact"]), 0, "%s proto impact is 0" % class_id)
 		eq(int(unit["ap"]), 6, "%s combat AP stays 6" % class_id)
@@ -421,7 +421,7 @@ func _test_ambush_hit() -> void:
 	eq(actor["pos"], Vector2i(5, 2), "Ambush lands on the empty back cell")
 	eq(int(actor["shades"]), shades_before, "Invisible origin does not spend Shade")
 	eq(bool(actor["invisible"]), false, "Ambush hit ends Invisible")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 45, "true back is 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "true back is 26 × 1.35 = 35")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -769,7 +769,7 @@ func _test_heartstop() -> void:
 	})
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	eq(bool(enemy.get("ok", false)), true, "enemy Heartstop hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 55, "enemy Heartstop damage is 20")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
 	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "enemy Heartstop skips the next MP refill")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
 	_sim.submit({"type": "end_turn", "seat": 0})

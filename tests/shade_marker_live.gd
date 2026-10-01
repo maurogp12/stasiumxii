@@ -457,7 +457,7 @@ static func run(host: SceneTree) -> void:
 	host.eq(clip_saw_float_on_back, true, "clip damage float starts only after the back-tile plant")
 	host.eq(clip_pawn.grid_position, clip_back, "clip caster cell is the enemy back tile when the 22 lands")
 	host.eq(_seat_pos(CombatSim.snapshot(), 0), clip_back, "clip sim cell is the back tile")
-	host.eq(int(_seat_hp(CombatSim.snapshot(), 1)), 53, "clip Invisible Ambush front hit is 22")
+	host.eq(int(_seat_hp(CombatSim.snapshot(), 1)), 49, "clip Invisible Ambush front hit is 26")
 	host.eq(bool(clip_pawn.invisible), false, "clip Ambush clears Invisible")
 	main.queue_free()
 	await host.process_frame

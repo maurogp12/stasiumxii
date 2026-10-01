@@ -13,7 +13,7 @@
         {"id": "pulse_tap", "ap": 2, "mp": 0, "range": [0, 3], "engine": "spend 1 pulse", "effect": "10H FLEX ally", "notes": "miss/crit OK"},
         {"id": "ward", "ap": 3, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "20HP shield 2 turns FLEX", "notes": "miss OK; no crit"},
         {"id": "cleanse", "ap": 2, "mp": 0, "range": [0, 4], "engine": "+1 pulse", "effect": "LOCK Neutral remove 1 CC", "notes": "no roll"},
-        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=20 + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
+        {"id": "heartstop", "ap": 5, "mp": 0, "range": [0, 3], "engine": "spend 2 pulse", "effect": "Ally: 32H + immunity 1 hit; Enemy: base_dmg=22 (Mauro 1 Oct 2026 balance) + skip next MP", "notes": "FLEX; miss/crit OK. Mauro 30 Sep 2026 balance"}
       ]
     },
     "gloam": {
@@ -25,7 +25,7 @@
       "spells": [
         {"id": "cut", "ap": 3, "mp": 0, "range": [1, 1], "engine": "+1 umbral", "effect": "16D FLEX weapon", "notes": "backstab applies. Mauro 30 Sep 2026 balance"},
         {"id": "drop_shade", "ap": 1, "mp": 0, "range": [1, 3], "engine": "+1 shade max 2", "effect": "LOCK Neutral Shade 3 turns", "notes": "no roll"},
-        {"id": "ambush", "ap": 4, "mp": 0, "range": "range 1–2 cardinal", "engine": "spend shade only if origin shade", "effect": "22D after jump FLEX", "notes": "origin=self if Invisible else live Shade; Shade arms only after the opponent completes >=1 full turn since that Drop (Fade/Invisible self-origin has no delay); Manhattan 1-2 cardinal, no diagonals; dest = empty standable tile one step past the enemy on that axis; occupied/illegal back = illegal_back refund; MISS: no teleport, shade kept, invisible kept, 4AP spent; button arms only when Ambush is in legal_intents"},
+        {"id": "ambush", "ap": 4, "mp": 0, "range": "range 1–2 cardinal", "engine": "spend shade only if origin shade", "effect": "26D after jump FLEX (Mauro 1 Oct 2026 balance)", "notes": "origin=self if Invisible else live Shade; Shade arms only after the opponent completes >=1 full turn since that Drop (Fade/Invisible self-origin has no delay); Manhattan 1-2 cardinal, no diagonals; dest = empty standable tile one step past the enemy on that axis; occupied/illegal back = illegal_back refund; MISS: no teleport, shade kept, invisible kept, 4AP spent; button arms only when Ambush is in legal_intents"},
         {"id": "fade", "ap": 2, "mp": 1, "range": "self", "engine": "+1 umbral", "effect": "LOCK Neutral Invisible", "notes": "no roll"},
         {"id": "nightfold", "ap": 4, "mp": 0, "range": [0, 6], "engine": "shade + umbral 2+; clear umbral", "effect": "22D each adjacent after blink to Shade", "notes": "can-wait: shade commit-on-cast vs global miss refund"}
       ]

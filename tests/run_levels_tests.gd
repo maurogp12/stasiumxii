@@ -133,7 +133,7 @@ func _test_levels_in_fights() -> void:
 	eq(int(k["mastery"]), 38, "Kestrel 20: 19 × 2 Mastery")
 	eq(int(k["init"]), 19 + 3, "Kestrel 20: 19 Init + 3 Swift")
 	eq(int(k["max_ap"]), 7, "Kestrel 20: +1 AP")
-	eq(int(b["max_hp"]), roundi((100 + 232 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (100+232+68)×1.10")
+	eq(int(b["max_hp"]), roundi((110 + 232 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (110+232+68)×1.10")
 	eq(int(b["resist_elem"].get("earth", 0)), 5 + 58, "Ward 58 lands on the active Sheaf Earth attune")
 	# Koliseo flattens plus-rank gear only — never level growth or Swift.
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "stillcut.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})

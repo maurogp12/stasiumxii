@@ -211,7 +211,7 @@ func _test_caster_cell_survives_host_pack() -> void:
 	})
 	var local: Dictionary = hot.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 1)})
 	eq(_event_of(local.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "hot-seat submit keeps caster_cell")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 82, "hot-seat Mark Shot damage stays 8")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 83, "hot-seat Mark Shot damage is 7")
 	hot.free()
 
 	_host.reset_match({
@@ -259,7 +259,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(hit.get("destination"), Vector2i(5, 2), "Invisible Ambush destination is the empty back tile")
 	eq(bool(hit.get("teleported", false)), true, "Invisible Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 45, "true back stays 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "true back stays 26 × 1.35 = 35")
 
 	# Auto Shade lands at (0, 0). The prey sits Manhattan 2 cardinal from that cell.
 	# The Shade arms only after the opponent completes a turn.
@@ -303,7 +303,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(shade_hit.get("destination"), Vector2i(3, 0), "Shade Ambush destination is the empty back tile")
 	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 45, "empty back stays 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "empty back stays 26 × 1.35 = 35")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -524,11 +524,11 @@ func _test_absorbed_damage_and_intercept() -> void:
 	eq(intercept.get("interceptor_cell"), Vector2i(3, 4), "Intercept names the Bastion cell")
 	eq(intercept.get("for_cell"), Vector2i(3, 3), "Intercept names the ally cell")
 	eq(int(intercept.get("damage", -1)), 6, "Intercept transfers round 40% of 14")
-	eq(int(intercept.get("hp", -1)), 94, "Bastion HP after the transfer is 94")
+	eq(int(intercept.get("hp", -1)), 104, "Bastion HP after the transfer is 94")
 	eq(int(guard_hit.get("intercepted", -1)), 6, "hit records the intercepted amount")
 	eq(int(guard_hit.get("damage", -1)), 8, "the ally still takes the remainder")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 67, "ally HP loss stays 8")
-	eq(int(guard["hp"]), 94, "Bastion HP loss stays 6")
+	eq(int(guard["hp"]), 104, "Bastion HP loss stays 6")
 	eq(bool(guard.get("intercept_used", false)), true, "Intercept is still spent for the turn")
 
 	_host.reset_match({
@@ -672,7 +672,7 @@ func _test_expiry_events() -> void:
 	eq(int(shade_expire.get("owner_seat", -2)), 0, "Shade expiry names the owner")
 	eq((_sim.snapshot().get("shade_tokens", []) as Array).is_empty(), true, "expired Shade leaves the snapshot after 3 owner turn-starts")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "expired Shade clears the unit count")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 70, "Shade expiry does not change HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "Shade expiry does not change HP")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -984,8 +984,8 @@ func _test_triage_on_heals() -> void:
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	var enemy_hit := _event_of(enemy.get("events", []), "hit")
 	eq(enemy_hit.has("triage"), false, "enemy Heartstop does not stamp triage")
-	eq(int(enemy_hit.get("damage", -1)), 20, "enemy Heartstop damage stays 20")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 10, "enemy Heartstop still leaves 10 HP")
+	eq(int(enemy_hit.get("damage", -1)), 22, "enemy Heartstop damage is 22")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 8, "enemy Heartstop still leaves 8 HP")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1179,7 +1179,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	enemy_hot["session"].free()
 	var enemy_hit := _event_of(enemy_hot["result"].get("events", []), "hit")
 	eq(bool(enemy_hit.get("skip_next_mp", false)), true, "hot-seat enemy Heartstop sets skip_next_mp")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 55, "enemy Heartstop damage stays 20")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
 	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", false)), true, "snapshot keeps skip_next_mp")
 	eq(_unit_in(_sim.snapshot(), 1).get("pos"), Vector2i(3, 1), "skip_next_mp snapshot keeps the cell")
 	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})

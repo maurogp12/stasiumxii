@@ -28,11 +28,11 @@ const MAX_AP := 6
 const MAX_MP := 3
 ## Mauro 30 Sep 2026: class base HP. Replaces the flat 80.
 const CLASS_BASE_HP := {
-	"bastion": 100,
+	"bastion": 110,  # Mauro 1 Oct 2026 balance (was 100)
 	"ironjaw": 90,
 	"mender": 85,
 	"kestrel": 75,
-	"gloam": 70,
+	"gloam": 75,  # Mauro 1 Oct 2026 balance (was 70)
 }
 
 

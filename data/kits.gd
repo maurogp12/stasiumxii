@@ -109,7 +109,7 @@ const SPELLS := {
 		"max_range": 5,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 8,
+		"base_damage": 7,  # Mauro 1 Oct 2026 balance (was 8)
 		"target": "enemy",
 		"engine_on_connect": "mark",
 	},
@@ -159,7 +159,7 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		"base_damage": 24,
+		"base_damage": 20,  # Mauro 1 Oct 2026 balance (was 24)
 		"target": "enemy",
 		# Locked: needs/spends 2 Impact on connect; miss retains Impact.
 		"engine_on_connect": "spend_impact",
@@ -252,7 +252,7 @@ const SPELLS := {
 		"element": "water",
 		"base_heal": 32,
 		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24 → 20; Pulse cost 4 → 2.
-		"base_damage": 20,
+		"base_damage": 22,  # Mauro 1 Oct 2026 balance (was 20)
 		"target": "any",
 		"engine_on_connect": "spend_pulse",
 		"requires_pulse": 2,
@@ -303,7 +303,7 @@ const SPELLS := {
 		"max_range": 2,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 22,
+		"base_damage": 26,  # Mauro 1 Oct 2026 balance (was 22)
 		"target": "enemy",
 		"engine_on_connect": "ambush",
 	},

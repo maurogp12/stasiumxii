@@ -26,6 +26,7 @@ const MAX_ACTIONS := 10
 var _games := 4
 var _mode := "base"
 var _only := ""
+var _seed_offset := 0
 var _done := false
 var _stats := {}
 var _spell_use := {}
@@ -38,7 +39,11 @@ func _initialize() -> void:
 	if args.size() > 1:
 		_mode = args[1]
 	if args.size() > 2:
-		_only = args[2]
+		_only = "" if args[2] == "all" else args[2]
+	# Seed offset: run several processes with different seeds and add up
+	# their tables (… -- 2 lvl30 all 1, … all 2, …).
+	if args.size() > 3:
+		_seed_offset = int(args[3]) * 100003
 	GearBag.save_path = "user://duel_bag.json"
 	HeroProgress.save_path = "user://duel_hero.json"
 	StillVault.save_path = "user://duel_still.json"
@@ -67,7 +72,7 @@ func _process(_d: float) -> bool:
 				var swap := g % 2 == 1
 				var classes := [b, a] if swap else [a, b]
 				var map_id: String = MAPS[(g / 2) % MAPS.size()]
-				var res := _play(classes, map_id, 1000 + g * 7 + i * 131 + j * 17, kit)
+				var res := _play(classes, map_id, 1000 + g * 7 + i * 131 + j * 17 + _seed_offset, kit)
 				_record(classes, res)
 				if OS.get_environment("DUEL_VERBOSE") != "":
 					print("    %s(s0) vs %s(s1) %s: winner %d, rounds %d, hp %s, dmg %s" % [classes[0], classes[1], map_id, int(res["winner"]), int(res["rounds"]), str(res["hp"]), str(res["dmg"])])
