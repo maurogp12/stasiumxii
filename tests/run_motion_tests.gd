@@ -37,12 +37,17 @@ func _finish_live() -> void:
 	await _test_batch1c_hot_swap()
 	await _test_shade_markers_survive_rebuild()
 	await _test_ambush_present_race()
+	MOTION.glide = true
+	_test_glide_walk()
 	print("Motion tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
 
 
 func _run() -> void:
+	# The checks below pin the old hop / plant walk, kept as the GLIDE-off
+	# fallback. The glide walk (Mauro 2 Oct 2026) has its own test at the end.
+	MOTION.glide = false
 	_test_tunables_and_budget()
 	_test_curves_return_to_origin()
 	_test_idle_phase()
@@ -68,7 +73,7 @@ func _test_tunables_and_budget() -> void:
 	eq(MOTION.HOP_PX >= 2.0 and MOTION.HOP_PX <= 4.0, true, "hop peak is 2-4px")
 	eq(MOTION.WALK_BOUNCE_PX, MOTION.HOP_PX, "walk bounce uses the hop offset amplitude")
 	eq(MOTION.HOP_PX < 8.0, true, "the old 36px hop is gone")
-	eq(is_equal_approx(Pawn.WALK_TILE_SEC, 0.30), true, "per-tile travel is about 300ms")
+	eq(is_equal_approx(Pawn.WALK_TILE_SEC, 0.34), true, "per-tile travel is about 340ms (glide pace)")
 	eq(Pawn.WALK_TILE_SEC >= 0.25 and Pawn.WALK_TILE_SEC <= 0.35, true, "per-tile travel stays in the phase A window")
 	eq(Pawn.WALK_HOP_SEC, Pawn.WALK_TILE_SEC, "the old hop duration alias matches the tile")
 	eq(is_equal_approx(MOTION.WALK_STEP_SEC, Pawn.WALK_TILE_SEC), true, "one hop period is one tile")
@@ -76,8 +81,8 @@ func _test_tunables_and_budget() -> void:
 	eq(is_equal_approx(Pawn.walk_strip_speed_scale(), authored_cycle / Pawn.WALK_TILE_SEC), true, "walk strips play one full cycle per tile")
 	eq(is_equal_approx(Pawn.WALK_STRIP_FPS, 12.0), true, "walk strips are authored at 12 fps")
 	eq(Pawn.WALK_STRIP_FRAMES, 6, "walk strips are 6 frames")
-	eq(is_equal_approx(Pawn.walk_playback_fps(6), 20.0), true, "six frames play at about 20 fps")
-	eq(absf(Pawn.walk_playback_fps(8) - 27.0) < 0.5, true, "eight frames play at about 27 fps")
+	eq(absf(Pawn.walk_playback_fps(6) - 17.6) < 0.2, true, "six frames play at about 17.6 fps (one cycle per 0.34s tile)")
+	eq(absf(Pawn.walk_playback_fps(8) - 23.5) < 0.2, true, "eight frames play at about 23.5 fps")
 	eq(MOTION.stride_cycles_per_tile(), 1, "exactly one stride cycle per tile")
 	var plant_share := 1.0 - MOTION.HOP_PLANT_AT
 	eq(plant_share >= 0.15 and plant_share <= 0.20, true, "the plant is the last 15-20% of the tween")
@@ -172,7 +177,7 @@ func _test_curves_return_to_origin() -> void:
 	var mid_plant: Vector2 = MOTION.plant_scale((MOTION.HOP_PLANT_AT + 1.0) * 0.5)
 	eq(mid_plant.y > MOTION.PLANT_SQUASH_Y and mid_plant.y < 1.0, true, "the squash releases across the plant")
 	var plant_sec := Pawn.WALK_TILE_SEC * (1.0 - MOTION.HOP_PLANT_AT)
-	eq(plant_sec >= 0.04 and plant_sec <= 0.06, true, "plant squash releases in 40-60ms without stretching the tile")
+	eq(plant_sec >= 0.04 and plant_sec <= 0.065, true, "plant squash releases in 40-65ms without stretching the tile")
 	eq(MOTION.STOP_IDLE_SEC >= 0.05, true, "path end holds at least one readable idle frame")
 	eq(MOTION.STOP_IDLE_SEC <= 0.16, true, "the stop idle stays a short read")
 	eq(MOTION.walk_cycle_frame(0.0, 6, 0), 0, "a step starts on the contact frame")
@@ -751,7 +756,7 @@ func _test_view_wiring() -> void:
 	eq(view.contains("STEP_PAUSE"), false, "the path has no pause between cells")
 	eq(view.contains("STEP_SEC"), false, "the board does not keep a second hop duration")
 	var pawn_src := FileAccess.get_file_as_string("res://units/pawn.gd")
-	truthy(pawn_src.contains("const WALK_TILE_SEC := 0.30"), "tile travel is 0.30s on the pawn")
+	truthy(pawn_src.contains("const WALK_TILE_SEC := 0.34"), "tile travel is 0.34s on the pawn")
 	truthy(pawn_src.contains("tactical_cell"), "the tactical cell stays separate from the visual foot")
 	truthy(pawn_src.contains("class FootMark"), "the contact shadow is its own foot node")
 	truthy(pawn_src.contains("WALK_TILE_SEC)"), "the step bounce reads WALK_TILE_SEC")
@@ -825,7 +830,7 @@ func _test_view_wiring() -> void:
 	eq(anti_call >= 0 and sample_at > anti_call, true, "the weight shift runs before the tile tween")
 	truthy(anim_src.contains("dust_on_plant"), "dust is chosen per plant, not on every tile")
 	var land_at := anim_src.find("0.0, VIEW_MOTION.HOP_PLANT_AT")
-	var puff_at := anim_src.find("_puff_footstep")
+	var puff_at := anim_src.find("_puff_footstep", maxi(land_at, 0))
 	var settle_hop := anim_src.find("VIEW_MOTION.HOP_PLANT_AT, 1.0")
 	eq(land_at >= 0 and puff_at > land_at and settle_hop > puff_at, true, "dust is the landing, before the plant squash finishes")
 	var commit_fn := view.find("func _commit_walk_cell")
@@ -2260,3 +2265,41 @@ func truthy(value: Variant, msg: String) -> void:
 		print("FAIL: %s  (got %s)" % [msg, value])
 	else:
 		_passed += 1
+
+
+func _test_glide_walk() -> void:
+	# Mauro 2 Oct 2026 ("focus on the walking", the Wakfu video): one smooth
+	# glide, legs cycling the whole path, two soft footfalls per tile.
+	eq(MOTION.glide, true, "the glide walk is the default")
+	near(MOTION.step_travel(0.5), 0.5, "a middle tile travels at constant speed")
+	near(MOTION.glide_travel(0.5, false, false), 0.5, "middle tiles are linear")
+	truthy(MOTION.glide_travel(0.25, true, false) < 0.25, "the first tile eases in")
+	near(MOTION.glide_travel(1.0, true, false), 1.0, "the first tile still arrives")
+	truthy(MOTION.glide_travel(0.75, false, true) > 0.75, "the last tile eases out")
+	near(MOTION.glide_travel(0.0, false, true), 0.0, "the last tile starts where the tile before ended")
+	# Speed is continuous across the seams (no stop on a tile).
+	var d := 0.001
+	var leave_first := (MOTION.glide_travel(1.0, true, false) - MOTION.glide_travel(1.0 - d, true, false)) / d
+	var enter_last := (MOTION.glide_travel(d, false, true) - MOTION.glide_travel(0.0, false, true)) / d
+	truthy(absf(leave_first - 1.0) < 0.01, "the first tile leaves at full speed")
+	truthy(absf(enter_last - 1.0) < 0.01, "the last tile enters at full speed")
+	# Two footfalls per tile, a soft rise between them.
+	near(MOTION.hop_offset(0.5).y, 0.0, "a footfall mid tile")
+	truthy(MOTION.hop_offset(0.25).y < -0.5, "the body rises between footfalls")
+	truthy(MOTION.hop_offset(0.25).y > -2.0, "the rise is soft (under 2px)")
+	eq(MOTION.plant_scale(0.9), Vector2.ONE, "no plant squash on every tile")
+	# The stride never stops: every cell in turn, no hold on the contact.
+	var seen := {}
+	for i in 12:
+		seen[MOTION.walk_cycle_frame((float(i) + 0.5) / 12.0, 6)] = true
+	eq(seen.size(), 6, "one tile shows all six walk cells")
+	eq(MOTION.walk_cycle_frame(0.95, 6), 5, "late in the tile the stride is on its last cell, not frozen on contact")
+	eq(MOTION.anticipate_segment(2, true), false, "a turn mid path does not stop to settle")
+	eq(MOTION.dust_on_plant(true, false), false, "no dust on every turn")
+	eq(MOTION.dust_on_plant(false, true), true, "dust on the final step")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_sample_glide_step"), "the board samples the glide per tile")
+
+
+func near(actual: float, expected: float, msg: String) -> void:
+	eq(absf(actual - expected) < 0.001, true, "%s (got %s expected %s)" % [msg, actual, expected])

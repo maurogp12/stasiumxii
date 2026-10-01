@@ -18,6 +18,8 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	# Pawn hop / plant checks pin the GLIDE-off fallback walk.
+	ViewMotion.glide = false
 	_test_texture_paths_and_imports()
 	_test_sprite_node_setup()
 	_test_facing_follows_unit()

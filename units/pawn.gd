@@ -155,7 +155,8 @@ const CLASS_PRESENTATION_SCALE := {
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
-const WALK_TILE_SEC := 0.30
+## Glide walk (Mauro 2 Oct 2026): a calmer, Wakfu-like pace per tile.
+const WALK_TILE_SEC := 0.34
 const WALK_HOP_SEC := WALK_TILE_SEC
 ## Authored walk sheet: 6 frames at 12 fps (864×160). Playback is
 ## walk_playback_fps(), about 20 fps, so one cycle matches one tile.

@@ -94,6 +94,7 @@ Version history, reasons and Mauro's exact words are in
   varying — never multiply the texel by `COLOR` again; board light, breath,
   sway, foe lean / squash / mirror). `units/pawn.gd` owns idle, walk, attack,
   hit and the foe bodies (`FOE_BODY`, `FOE_KIND`).
+- Walk: Wakfu-style glide (`ViewMotion.glide`, Mauro 2 Oct 2026): constant speed, continuous stride, two soft footfalls per tile, ease only at path ends, camera follows when zoomed. Do not bring back the per-tile plant hold.
 - Regular Stasis monsters: 1.18× body (`Pawn.TRASH_SCALE`, Mauro's yes).
 - Bosses: 1.5× body, `units/boss_aura.gd` sigil (turn surge + AOE flare).
 - Stasis foe art: `art/stasis/foes/*.png` (HD 288×320, `build_tools/art/foes_hd/`).

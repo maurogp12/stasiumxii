@@ -1537,10 +1537,18 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		# and only when the facing changed or this is the last plant.
 		# The squash after the landing stays quiet, and so does takeoff.
 		var dust := VIEW_MOTION.dust_on_plant(facing_changed, cell_i == cells.size() - 1)
-		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, VIEW_MOTION.HOP_PLANT_AT, Pawn.WALK_TILE_SEC * VIEW_MOTION.HOP_PLANT_AT)
-		if dust:
-			_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
-		_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), VIEW_MOTION.HOP_PLANT_AT, 1.0, Pawn.WALK_TILE_SEC * (1.0 - VIEW_MOTION.HOP_PLANT_AT))
+		if VIEW_MOTION.glide:
+			# One glide per tile: constant speed, ease only at the path ends.
+			var first := cell_i == 0
+			var last := cell_i == cells.size() - 1
+			_walk_tween.tween_method(_sample_glide_step.bind(pawn, prev, cell, first, last), 0.0, 1.0, Pawn.WALK_TILE_SEC)
+			if dust:
+				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
+		else:
+			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), 0.0, VIEW_MOTION.HOP_PLANT_AT, Pawn.WALK_TILE_SEC * VIEW_MOTION.HOP_PLANT_AT)
+			if dust:
+				_walk_tween.tween_callback(_puff_footstep.bind(pawn, cell))
+			_walk_tween.tween_method(_sample_walk_step.bind(pawn, prev, cell), VIEW_MOTION.HOP_PLANT_AT, 1.0, Pawn.WALK_TILE_SEC * (1.0 - VIEW_MOTION.HOP_PLANT_AT))
 		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
 		prev = cell
 	# Landed contact, then one readable idle before the face pad unlocks.
@@ -1609,6 +1617,35 @@ func _sample_walk_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i) -> vo
 		pawn.sample_driven_gait(t)
 	_track_step_sort(t, pawn, src, dst)
 
+
+
+## Glide sample: the body moves on the eased path; the stride and the
+## footfall bob run on the tile's own clock so the legs never stop.
+func _sample_glide_step(t: float, pawn: Pawn, src: Vector2i, dst: Vector2i, first: bool, last: bool) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	var dir := VIEW_MOTION.walk_segment_facing(src, dst, _cell_to_local(dst) - _cell_to_local(src))
+	if dir == "":
+		dir = str(pawn.facing)
+	var u := VIEW_MOTION.glide_travel(t, first, last)
+	pawn.position = _cell_to_local(src).lerp(_cell_to_local(dst), u)
+	if pawn.begin_segment_walk(dir):
+		pawn.sample_driven_gait(u)
+	_track_step_sort(u, pawn, src, dst)
+	_follow_walker(pawn)
+
+
+## Wakfu-style follow (Mauro 2 Oct 2026, second video): when the board is
+## zoomed in, the camera drifts after the walking fighter, inside the pan
+## limits. Fit-to-screen (no pan room) does not move.
+func _follow_walker(pawn: Pawn) -> void:
+	if _camera == null or _panning or _touch_panning:
+		return
+	if _pan_limit.x <= 1.0 and _pan_limit.y <= 1.0:
+		return
+	var target := (pawn.global_position - global_position)
+	_camera.position = _camera.position.lerp(target, 0.08)
+	_clamp_camera()
 
 
 func _snap_walk_facing(pawn: Pawn, dir: String) -> void:
