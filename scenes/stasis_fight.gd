@@ -4,6 +4,8 @@ extends "res://board_view.gd"
 ## is the boss. Boards are the Stasis-1 room schematics, not the Koliseo arenas.
 ## CombatSim stays the authority. Not for PC main.
 
+const HeroAi := preload("res://backend/hero_ai.gd")
+
 var _ai_running: bool = false
 var _cleared: bool = false
 var _chest: Dictionary = {}
@@ -82,7 +84,14 @@ func _run_enemy_step() -> void:
 	var foe := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
 	var actor_pos: Vector2i = actor.get("pos", Vector2i.ZERO)
 	var foe_pos: Vector2i = foe.get("pos", Vector2i.ZERO)
-	var intent: Dictionary = StasisAi.plan(_sim(), seat) if not actor.get("foe_kit", []).is_empty() else StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
+	var intent: Dictionary
+	if _is_hero(actor):
+		# Party seat filled by AI (Mauro 1 Oct 2026: "Fill with AI").
+		intent = HeroAi.plan(_sim(), seat)
+	elif not actor.get("foe_kit", []).is_empty():
+		intent = StasisAi.plan(_sim(), seat)
+	else:
+		intent = StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
 	if str(intent.get("type", "")) == "end_turn":
 		_busy = true
 		_hud.clear_spell()
@@ -164,7 +173,7 @@ func _on_match_result(snap: Dictionary, _secs: int) -> void:
 	consume_still(snap)
 	StasisCatalog.run_turns += int(snap.get("turn_index", 0))
 	for unit in snap.get("units", []):
-		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
+		if not _is_hero(unit):
 			StasisCatalog.run_foes.append((unit as Dictionary).duplicate(true))
 	if int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT:
 		return
@@ -374,8 +383,16 @@ func _build_overlay() -> void:
 ## Monster turns: no "X's turn" box over the board (Dofus lights the
 ## timeline instead); the player's own turn keeps the banner.
 ## Stasis: the player always sees their own (Invisible) hero.
-func _viewer_sees_seat(seat: int, _snap: Dictionary) -> bool:
-	return seat == StasisCatalog.PLAYER_SEAT
+func _viewer_sees_seat(seat: int, snap: Dictionary) -> bool:
+	# The player sees their own hero and every party member.
+	return seat == StasisCatalog.PLAYER_SEAT or _is_hero(_unit_from_seat(snap, seat))
+
+
+## A party hero (team 0). Solo runs: only the player's seat.
+static func _is_hero(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("team", 0 if int(unit.get("seat", -1)) == StasisCatalog.PLAYER_SEAT else 1)) == 0
 
 
 func _quiet_handoff(seat: int) -> bool:

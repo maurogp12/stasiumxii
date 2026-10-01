@@ -19,6 +19,7 @@ func _run() -> void:
 	_test_hub_doors()
 	_test_landscape_poster()
 	_test_stasis_runs()
+	_test_dungeon_finder()
 	_test_sources_leave_combat_alone()
 	_test_intro_video()
 	print("Mobile hub tests: %d passed, %d failed" % [_passed, _failed])
@@ -229,6 +230,40 @@ func _hub() -> Node:
 	hub._auto_launch = false
 	root.add_child(hub)
 	return hub
+
+
+func _test_dungeon_finder() -> void:
+	# Mauro 1 Oct 2026: ★1 solo, ★2 two players, ★3+ a party of 4; request a
+	# role for each empty seat; "Fill with AI" only as the fallback.
+	var script: Script = load("res://scenes/mobile_hub.gd")
+	script.pending_biome_id = "crosshaven"
+	var run := _run_scene()
+	run.pick_star(1)
+	eq(run.pick_class("kestrel"), true, "★1 picks a class")
+	eq(run.party_slot_count(), 0, "★1 is solo: no party seats")
+	eq(StasisCatalog.party_size(), 1, "★1 enters alone")
+	run.pick_star(3)
+	run.pick_class("kestrel")
+	eq(run.party_slot_count(), 3, "★3 opens 3 more seats (party of 4)")
+	eq(run.slot_role(0), "Healer", "a DPS player is first offered a Healer seat")
+	eq(run.slot_role(1), "Tank", "then a Tank")
+	eq(run.slot_role(2), "DPS", "then the second DPS")
+	run.request_role(2, "Healer")
+	eq(run.slot_role(2), "Healer", "a seat can request only a Healer")
+	run.request_role(2, "DPS")
+	run.fill_with_ai(0)
+	eq(run.slot_class(0), "mender", "Fill with AI on a Healer seat is a Mender")
+	run.fill_with_ai(1)
+	eq(run.slot_class(1), "bastion", "an AI Tank is a Bastion")
+	run.enter_dungeon()
+	eq(StasisCatalog.party_size(), 3, "entering with one seat empty is a party of 3 (short-handed)")
+	eq(StasisCatalog.ai_seats, [1, 2] as Array[int], "the filled seats are AI")
+	var config: Dictionary = StasisCatalog.fight_config()
+	eq(int(config.get("party_size", 0)), 3, "the fight config carries the party")
+	eq(str((config["classes"] as Array)[1]), "mender", "seat 1 is the AI Mender")
+	run.free()
+	StasisCatalog.clear_run()
+	StasisCatalog.clear_run_party()
 
 
 func _run_scene() -> Node:

@@ -909,13 +909,15 @@ func render(snap: Dictionary, legal: Array) -> void:
 	# living hostile whose turn it is, then the first one still standing.
 	if units.size() > 2 and int(snap.get("team_size", 1)) <= 1:
 		var shown: Dictionary = {}
-		if active_seat > 0:
-			shown = _unit(units, active_seat)
+		var acting := _unit(units, active_seat)
+		if not acting.is_empty() and unit_team(acting) == 1:
+			shown = acting
 		if shown.is_empty() or not bool(shown.get("alive", false)):
 			for unit in units:
 				if typeof(unit) != TYPE_DICTIONARY:
 					continue
-				if int(unit.get("seat", -1)) > 0 and bool(unit.get("alive", false)):
+				# A dungeon party's heroes are team 0: the right card is a foe.
+				if unit_team(unit) == 1 and bool(unit.get("alive", false)):
 					shown = unit
 					break
 		if not shown.is_empty():
