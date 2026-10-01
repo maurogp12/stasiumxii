@@ -211,7 +211,7 @@ func _test_caster_cell_survives_host_pack() -> void:
 	})
 	var local: Dictionary = hot.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 1)})
 	eq(_event_of(local.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "hot-seat submit keeps caster_cell")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 83, "hot-seat Mark Shot damage is 7")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 82, "hot-seat Mark Shot damage is 8")
 	hot.free()
 
 	_host.reset_match({

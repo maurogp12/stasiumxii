@@ -1750,7 +1750,7 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "same tiles are Manhattan 4")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 2)})
 	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
-	eq(_unit(1)["hp"], 83, "8 Air on connect at Chebyshev 2")
+	eq(_unit(1)["hp"], 82, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
 	# Strike / Mark Shot stay Chebyshev. Advance range is cardinal (see range-gate test).
 	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", ""), "chebyshev", "Mark Shot range_mode is Chebyshev")
@@ -3240,7 +3240,7 @@ func _test_back_facing_multiplier() -> void:
 func _test_mark_shot_range_and_marks() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range 5 Chebyshev (Mauro, 29 Sep)")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 7, "Mark Shot base damage is 7")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage is 8")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3250,7 +3250,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
-	eq(_unit(1)["hp"], 82, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
+	eq(_unit(1)["hp"], 81, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
@@ -6262,7 +6262,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(bool(shot.get("from_shade", true)), false, "Mark Shot does not pretend to start on a Shade")
 	eq(shot.get("from"), Vector2i(0, 0), "Mark Shot starts on the caster")
 	eq(shot.get("to"), Vector2i(4, 0), "Mark Shot ends on the hovered enemy")
-	eq(str(shot.get("float_text", "")), "-8", "front Mark Shot float is 7 × Longshot 1.15 = 8")
+	eq(str(shot.get("float_text", "")), "-9", "front Mark Shot float is 8 × Longshot 1.15 = 9")
 	var wide: Dictionary = _sim.aim_feel(0, SpellKits.MARK_SHOT, Vector2i(12, 12))
 	eq(bool(wide.get("show", true)), false, "a hover outside the range ring draws no line")
 	var advance: Dictionary = _sim.aim_feel(0, SpellKits.ADVANCE, Vector2i(2, 0))
@@ -6305,7 +6305,7 @@ func _test_preview_cast() -> void:
 	eq(preview["in_range"], true, "Chebyshev 5 is in Mark Shot range")
 	eq(preview["rolling"], true, "Mark Shot is a rolling cast")
 	eq(preview["hit_chance"], 75, "Mark Shot range 5 uses Locked 75% band")
-	eq(preview["sample_damage"], 8, "front Mark Shot samples 8 Air at range ≥4 (Longshot ×1.15)")
+	eq(preview["sample_damage"], 9, "front Mark Shot samples 9 Air at range ≥4 (Longshot ×1.15)")
 	eq(preview["on_connect_text"], "8 Air. +1 Mark on the target.", "Mark Shot connect kit line")
 	eq(preview["on_miss_text"], "AP/MP stay spent. No Mark.", "Mark Shot miss kit line")
 	eq(preview["legal"], true, "in-range Mark Shot with a target is legal")
@@ -6334,7 +6334,7 @@ func _test_preview_cast() -> void:
 		"seat": 0,
 	})
 	eq(preview["hit_chance"], 75, "intent Dictionary Mark Shot still uses Locked 75%")
-	eq(preview["sample_damage"], 8, "intent Dictionary Mark Shot samples 8 with Longshot")
+	eq(preview["sample_damage"], 9, "intent Dictionary Mark Shot samples 9 with Longshot")
 	eq(preview["rolling"], true, "intent Dictionary Mark Shot is rolling")
 
 	# Back facing uses live target facing (8 × 1.20 → 10).
@@ -6347,7 +6347,7 @@ func _test_preview_cast() -> void:
 	})
 	preview = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1)
 	eq(preview["hit_chance"], 80, "Mark Shot Chebyshev 2 uses Locked 80% band")
-	eq(preview["sample_damage"], 8, "back Mark Shot samples 7 × 1.20 = 10")
+	eq(preview["sample_damage"], 10, "back Mark Shot samples 8 × 1.20 = 10")
 
 	# Detonate M=3 → 24 Air. Formula 6+6*M. Needs marks when M<1.
 	_sim.reset_match({
@@ -6830,7 +6830,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	var mark_preview: Dictionary = _sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(5, 0), 1)
 	var mark := SpellTooltip.card_text(mark_preview)
-	eq(mark_preview["sample_damage"], 8, "Mark Shot preview samples live facing 9 (Longshot)")
+	eq(mark_preview["sample_damage"], 9, "Mark Shot preview samples live facing 9 (Longshot)")
 	eq(mark_preview["hit_chance"], 75, "Mark Shot preview HIT is Locked 75 at range 5")
 	truthy(mark.contains("Mark Shot"), "Mark Shot card names the spell")
 	truthy(mark.contains("2 AP / 0 MP"), "Mark Shot card names AP/MP from preview")
@@ -6840,7 +6840,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(mark.contains("On hit: 8 Air. +1 Mark on the target."), "Mark Shot hit line is preview kit text")
 	truthy(mark.contains("On miss: AP/MP stay spent. No Mark."), "Mark Shot miss line is preview kit text")
 	truthy(mark.contains("HIT 75% (Locked)"), "Mark Shot card uses preview hit_chance")
-	truthy(mark.contains("sample 8"), "Mark Shot card uses preview sample_damage")
+	truthy(mark.contains("sample 9"), "Mark Shot card uses preview sample_damage")
 	truthy(mark.contains("CritMult(1.0) × live Facing"), "Mark Shot sample names CritMult 1.0 and live Facing")
 	eq(mark.contains("+5"), false, "Mark Shot card does not invent +5")
 	eq(mark.contains("longshot"), false, "Mark Shot card does not invent longshot")
@@ -6860,7 +6860,7 @@ func _test_spell_tooltip_cards() -> void:
 	})
 	var mark_back := SpellTooltip.card_text(_sim.preview_cast(SpellKits.MARK_SHOT, Vector2i(0, 0), Vector2i(2, 0), 1))
 	truthy(mark_back.contains("HIT 80% (Locked)"), "Mark Shot back preview uses Locked 80% at range 2")
-	truthy(mark_back.contains("sample 8"), "Mark Shot back preview samples 7 × 1.20 = 8")
+	truthy(mark_back.contains("sample 10"), "Mark Shot back preview samples 8 × 1.20 = 10")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6985,7 +6985,7 @@ func _test_spell_tooltip_cards() -> void:
 	hud.render(_sim.snapshot(), _sim.legal_intents(0))
 	eq(hud.tooltip_visible(), false, "tooltip starts hidden")
 	eq(CombatHUD.spell_card_text(mark_preview), mark, "HUD helper formats preview_cast")
-	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 8, "HUD hover preview_cast samples live facing (Longshot)")
+	eq(hud.preview_for_spell(SpellKits.MARK_SHOT)["sample_damage"], 9, "HUD hover preview_cast samples live facing (Longshot)")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).disabled, false, "Mark Shot is enabled at start")
 	eq((hud._spell_buttons[SpellKits.MARK_SHOT] as Button).mouse_entered.get_connections().is_empty(), false, "enabled Mark Shot button wires hover to preview_cast")
 	hud._on_spell_hover(SpellKits.MARK_SHOT)

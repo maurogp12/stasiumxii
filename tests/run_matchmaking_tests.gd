@@ -801,7 +801,7 @@ func _test_gloam_backstab() -> void:
 	})
 	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(cut.get("ok", false)), true, "Cut hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "Gloam backstab is 16 × 1.35 = 22")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 52, "Gloam backstab is 17 × 1.35 = 23")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Cut gains 1 Umbral")
 
 

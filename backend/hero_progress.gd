@@ -30,7 +30,7 @@ const GROWTH := {
 	"mender": [1, 5, 1, 1],
 	# Mauro 30 Sep 2026 balance: Gloam HP per level 3 → 2.
 	"gloam": [2, 2, 1, 0],
-	"bastion": [1, 8, 1, 2],
+	"bastion": [1, 7, 1, 2],  # Mauro 1 Oct 2026 balance round 2: HP +7 per level (was +8)
 }
 const XP_STASIS_PER_STAR := 60
 const XP_STASIS_NO_CHEST := 20

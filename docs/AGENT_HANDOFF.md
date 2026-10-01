@@ -123,7 +123,7 @@ the file and its hooks (listed in its header and in the 0.1.79 change-log row).
 
 ## Balance plan
 
-Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 20. Mauro 1 Oct 2026 balance: Gloam Ambush 26, Kestrel Mark Shot 7, Ironjaw Crush 20 (a stunning Crush spends ALL Impact), Mender Heartstop 22; class base HP Bastion 110, Ironjaw 90, Mender 85, Kestrel 75, Gloam 75 (`CombatSim.CLASS_BASE_HP`). Advance stays 3 AP (max 2 per turn). Koliseo 2v2 / 3v3 hot-seat exists (`team_size`, see the change log); online teams are not built yet. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
+Step 1 class numbers are in the game (Mauro 30 Sep 2026 balance): Gloam Cut 16 and HP growth +2, Ironjaw Strike 14, HP growth +5, and Mastery growth +1, Bastion Bash 13, Mender Heartstop spends 2 Pulse and deals 20. Mauro 1 Oct 2026 balance: Gloam Ambush 26 and Cut 17, Kestrel Mark Shot 8 (round 2 undid 7), Bastion HP growth +7, Ironjaw Crush 20 (a stunning Crush spends ALL Impact), Mender Heartstop 22; class base HP Bastion 110, Ironjaw 90, Mender 85, Kestrel 75, Gloam 75 (`CombatSim.CLASS_BASE_HP`). Advance stays 3 AP (max 2 per turn). Koliseo 2v2 / 3v3 hot-seat exists (`team_size`, see the change log); online teams are not built yet. Steps 2–3 (element riders, Residue, Blends) are not in the game. The counter wheel and targets are in `docs/BALANCE_PLAN_HANDOFF.md`.
 
 ## Open / waiting on Mauro (do not decide these yourself)
 

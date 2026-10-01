@@ -76,7 +76,7 @@ func _test_inherent_table() -> void:
 	# Level 30, inherent only (0 spend). Init +29 on every class (Mauro spec).
 	var table := {
 		"kestrel": [58, 87, 29, 0], "ironjaw": [29, 145, 29, 29], "mender": [29, 145, 29, 29],
-		"gloam": [58, 58, 29, 0], "bastion": [29, 232, 29, 58],
+		"gloam": [58, 58, 29, 0], "bastion": [29, 203, 29, 58],
 	}
 	for class_id in table:
 		var st := HeroProgress.combat_stats({"level": 30}, class_id)
@@ -133,7 +133,7 @@ func _test_levels_in_fights() -> void:
 	eq(int(k["mastery"]), 38, "Kestrel 20: 19 × 2 Mastery")
 	eq(int(k["init"]), 19 + 3, "Kestrel 20: 19 Init + 3 Swift")
 	eq(int(k["max_ap"]), 7, "Kestrel 20: +1 AP")
-	eq(int(b["max_hp"]), roundi((110 + 232 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (110+232+68)×1.10")
+	eq(int(b["max_hp"]), roundi((110 + 203 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (110+203+68)×1.10")
 	eq(int(b["resist_elem"].get("earth", 0)), 5 + 58, "Ward 58 lands on the active Sheaf Earth attune")
 	# Koliseo flattens plus-rank gear only — never level growth or Swift.
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "stillcut.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})

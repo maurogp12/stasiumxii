@@ -109,7 +109,7 @@ const SPELLS := {
 		"max_range": 5,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 7,  # Mauro 1 Oct 2026 balance (was 8)
+		"base_damage": 8,  # Mauro 1 Oct 2026 balance round 2 (back from 7)
 		"target": "enemy",
 		"engine_on_connect": "mark",
 	},
@@ -273,7 +273,7 @@ const SPELLS := {
 		"rolls": true,
 		"element": "air",
 		# Mauro 30 Sep 2026 balance: 13 → 16.
-		"base_damage": 16,
+		"base_damage": 17,  # Mauro 1 Oct 2026 balance round 2 (was 16)
 		"target": "enemy",
 		"engine_on_connect": "umbral",
 	},
