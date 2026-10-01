@@ -42,14 +42,22 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	position = BoardVisualSort.cell_to_local(south_cell, float(base_height)) + Vector2(0, Pick.HALF_H)
 	z_as_relative = false
 	z_index = (south_cell.x + south_cell.y) * BoardVisualSort.TILE_Z_SCALE + 2
-	var path := PROP_ART_ROOT + prop_type + ".png"
-	_tex = load(path) if ResourceLoader.exists(path) else null
 	if prop_type == "fence":
 		var o := footprint[0]
 		var along_y := _is_fence(zone, o + Vector2i(0, 1)) or _is_fence(zone, o + Vector2i(0, -1))
 		_fence_axis = 1 if along_y else 0
+	_tex = _load_art()
 	cover_rect = _cover_rect()
 	queue_redraw()
+
+
+## Fences running along y (NE-SW on screen) use the TA's `fence_wood_nesw.png`.
+func _load_art() -> Texture2D:
+	var name := prop_type
+	if prop_type == "fence" and _fence_axis == 1:
+		name = "fence_wood_nesw"
+	var path := PROP_ART_ROOT + name + ".png"
+	return load(path) if ResourceLoader.exists(path) else null
 
 
 func has_art() -> bool:
