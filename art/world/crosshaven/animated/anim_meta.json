@@ -2861,5 +2861,6 @@
    "note": "v5 smooth rotation: 48 frames over 90 deg (1.875 deg/frame, 4 symmetric sails) @ 43.2 fps = one full turn every 4.44 s. For perfectly smooth motion use windmill_sails_flat + the rotation shader in README (rotate about the hub, then scale y by 0.9)",
    "status": "PROPOSED"
   }
- }
+ },
+ "v7_note": "foliage *_sway strips + windmill/watermill strips relit per frame (same profile as the static prop); water *_ripple strips = v7 tile + v6 ripple delta; creatures/fx, cast-shadow strips and sway masks unchanged"
 }

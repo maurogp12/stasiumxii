@@ -13,6 +13,7 @@ const LOW_PLANT_SCALE := 0.50
 
 var decor_type := ""
 var core := false
+var night_only := false
 var base_z := 0
 var cover_rect := Rect2()
 var _groundish := false
@@ -89,6 +90,8 @@ func update_cover(walker_pos: Vector2, walker_z: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	if night_only:
+		modulate.a = 1.0 if _lamp_hour() else 0.0
 	if _sway == null:
 		return
 	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
@@ -97,7 +100,22 @@ func _process(_delta: float) -> void:
 		queue_redraw()
 
 
+func _lamp_hour() -> bool:
+	var host := get_parent()
+	if host != null:
+		host = host.get_parent()
+	if host == null:
+		return false
+	var weather_node: Object = host.get("weather")
+	if weather_node == null:
+		return false
+	var hour := float(weather_node.get("time_of_day"))
+	return hour < 7.0 or hour >= 16.0
+
+
 func _draw() -> void:
+	if night_only and modulate.a < 0.01:
+		return
 	if _sway != null and _sway.visible:
 		return
 	if _art.is_empty():

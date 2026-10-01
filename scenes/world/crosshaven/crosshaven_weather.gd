@@ -171,7 +171,8 @@ func _process(delta: float) -> void:
 func daylight_color() -> Color:
 	var night := Color(0.32, 0.38, 0.62)
 	var dawn := Color(1.0, 0.78, 0.62)
-	var noon := Color(1.0, 0.97, 0.88)
+	# v7 textures already carry the warm key, so noon only tips the frame.
+	var noon := Color(1.0, 0.99, 0.96)
 	var dusk := Color(0.98, 0.66, 0.5)
 	var h := time_of_day
 	if h < 5.0 or h >= 21.0:

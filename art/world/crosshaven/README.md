@@ -301,3 +301,16 @@ Additive only. v1 ids, file names, sizes, anchors and footprints are unchanged (
 * `v4_crossroads_2x.png`, `v4_<town>_2x.png`, `v4_towns_contact.png` and `v4_vs_wakfu.png`
 
 Landmark, clutter and decal placement in the mocks is renderer dressing (`cw_alive_v4.py`), not zone data. Before shipping, it needs zone-data blockers for every blocking footprint cell.
+
+## v7 painterly repaint (IN PLACE, PROPOSED art pass)
+Every file above keeps its id, path, pixel size and anchor; v7 only changes pixels, so the game picks it up with no code change.
+* Light: one global key light from the top-left (warm), cool shade; SW (left) wall faces lit, SE (right) faces in shade; soft contact
+  AO + under-eave AO only (no directional cast shadows, so the day/night grade still works).
+* Tiles: stroke-painted grass variants (clumps, tufts, clover, flowers, soft light/dark patches), warm rutted dirt roads, bevelled warm
+  cobble/flagstone with soft grout AO, depth-graded water with caustics, foam, reeds and lilies, soft grass-over transitions.
+* Props: limewash plaster without the old black blotches, calmer stone/slate, warm umber line art, roof plane light/shade + tile relief,
+  window glow, rim light, foliage clusters lit from the top-left with darker interiors.
+* Added (optional, need placement): `decal_v7_shade_pool_a`, `decal_v7_shade_pool_b`, `decal_v7_sun_dapple_a`, `decal_v7_lamp_glow`
+  (3x3 ground decals, same contract as `ground_patch_dark_a`).
+* `_mock/v7_before_after_{crossroads,northgate,southbridge}.png`, `_mock/v7_crosshaven_world_preview.png`.
+* Tools: `v2/tools/cw_v7_*.py`, check: `v2/tools/validate_v7.py`. Handoff: `v2/HANDOFF_v7.md`.

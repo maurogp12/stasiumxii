@@ -16,6 +16,7 @@ const Prop := preload("res://scenes/world/crosshaven/crosshaven_prop.gd")
 const Walker := preload("res://scenes/world/crosshaven/crosshaven_walker.gd")
 const Weather := preload("res://scenes/world/crosshaven/crosshaven_weather.gd")
 const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
+const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 
@@ -171,6 +172,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 		var d := Decor.new()
 		decor_root.add_child(d)
 		d.setup(zone, record)
+	_scatter_v7_light()
 	if fx != null:
 		fx.restock(zone)
 	walker.place(zone, cell)
@@ -506,6 +508,10 @@ func _report_bench() -> void:
 
 func _play_movie(mode: String) -> void:
 	weather.auto_rotate = false
+	if mode.begins_with("v7still_"):
+		await _movie_v7_still(mode.trim_prefix("v7still_"))
+		get_tree().quit()
+		return
 	match mode:
 		"tour":
 			await _movie_tour()
@@ -527,9 +533,179 @@ func _play_movie(mode: String) -> void:
 			await _movie_scale()
 		"graphics":
 			await _movie_graphics()
+		"v7tour":
+			await _movie_v7_tour()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
+
+
+## v7 light and shade are not zone data. Unknown decor ids fail the zone
+## loader, so these are placed when a chunk loads.
+const V7_SHADE_BUILDINGS: Array[String] = [
+	"red_roof_cottage",
+	"northgate_spire", "stoneford_spire", "eastmarch_spire", "westwatch_spire", "southbridge_spire",
+	"crossroads_centerpiece",
+	"barn_2x2", "farmhouse_2x2", "windmill_2x2_body", "bakery_2x2", "smithy_2x2",
+	"tavern_3x2", "fountain_2x2", "watermill_2x2_body", "watchtower_2x2", "fishing_hut_2x2",
+	"wall_tower",
+]
+
+
+func _scatter_v7_light() -> void:
+	var shade_at: Array[Vector2i] = []
+	var prop_cells: Array[Vector2i] = []
+	var n := 0
+	var kind := ""
+	var cells: Array = []
+	var origin: Dictionary = {}
+	var ox := 0
+	var oy := 0
+	var fw := 1
+	var fh := 1
+	var anchor := Vector2i.ZERO
+	for prop in zone.props:
+		kind = str(prop.get("type", ""))
+		cells = prop.get("footprint", [])
+		if cells.is_empty():
+			continue
+		origin = prop.get("origin", {})
+		ox = int(origin.get("x", cells[0]["x"]))
+		oy = int(origin.get("y", cells[0]["y"]))
+		prop_cells.append(Vector2i(ox, oy))
+		if not _v7_wants_shade(kind, ox, oy):
+			continue
+		fw = 1
+		fh = 1
+		for cell in cells:
+			fw = maxi(fw, int(cell["x"]) - ox + 1)
+			fh = maxi(fh, int(cell["y"]) - oy + 1)
+		anchor = Vector2i(mini(ox + fw + 1, zone.width - 1), mini(oy + fh, zone.height - 1))
+		if (kind == "tree" or kind == "tree_apple" or kind.begins_with("tree_cluster")) and _near_cells(anchor, shade_at, 5):
+			continue
+		var which := "decal_v7_shade_pool_a" if n % 2 == 0 else "decal_v7_shade_pool_b"
+		var shade := _add_v7_decal(which, anchor)
+		shade.set("core", true)
+		shade_at.append(anchor)
+		n += 1
+	for prop in zone.props:
+		kind = str(prop.get("type", ""))
+		if kind != "lamp_post" and kind != "brazier":
+			continue
+		cells = prop.get("footprint", [])
+		if cells.is_empty():
+			continue
+		origin = prop.get("origin", {})
+		ox = int(origin.get("x", cells[0]["x"]))
+		oy = int(origin.get("y", cells[0]["y"]))
+		anchor = Vector2i(mini(ox + 1, zone.width - 1), mini(oy + 1, zone.height - 1))
+		var glow := _add_v7_decal("decal_v7_lamp_glow", anchor)
+		glow.set("night_only", true)
+		glow.set("core", true)
+		var mat := CanvasItemMaterial.new()
+		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		glow.material = mat
+	for y in range(2, zone.height - 2, 6):
+		for x in range(2, zone.width - 2, 6):
+			var spot := Vector2i(x, y)
+			if zone.terrain_at(spot) != "golden_plains" or not zone.passable_at(spot):
+				continue
+			if _near_road(spot, 2) or _near_cells(spot, prop_cells, 5) or _near_cells(spot, shade_at, 4):
+				continue
+			anchor = Vector2i(mini(spot.x + 1, zone.width - 1), mini(spot.y + 1, zone.height - 1))
+			var dapple := _add_v7_decal("decal_v7_sun_dapple_a", anchor)
+			dapple.set("core", false)
+
+
+func _v7_wants_shade(kind: String, ox: int, oy: int) -> bool:
+	if V7_SHADE_BUILDINGS.has(kind) or kind == "tree_apple" or kind.begins_with("tree_cluster"):
+		return true
+	if kind != "tree":
+		return false
+	var art_id := str(Art.prop_art_id("tree", Vector2i(ox, oy), 0, zone.zone_id))
+	return art_id != "tree_pine"
+
+
+func _add_v7_decal(kind: String, cell: Vector2i) -> Node2D:
+	var d := Decor.new()
+	decor_root.add_child(d)
+	d.setup(zone, {"type": kind, "x": cell.x, "y": cell.y})
+	return d
+
+
+func _near_cells(cell: Vector2i, others: Array[Vector2i], dist: int) -> bool:
+	for other in others:
+		if absi(other.x - cell.x) + absi(other.y - cell.y) < dist:
+			return true
+	return false
+
+
+func _near_road(cell: Vector2i, dist: int) -> bool:
+	for y in range(cell.y - dist, cell.y + dist + 1):
+		for x in range(cell.x - dist, cell.x + dist + 1):
+			var n := Vector2i(x, y)
+			if zone.in_bounds(n) and zone.terrain_at(n) == "dirt_road":
+				return true
+	return false
+
+
+## Full preset, clear noon, hero just south of the town spawn.
+func _movie_v7_still(town: String) -> void:
+	settings.apply_preset("Full")
+	var zone_id := "crosshaven_" + town
+	var z: WorldZone = map.zone(zone_id)
+	var cell: Vector2i = z.spawn
+	for _i in 3:
+		var nxt: Vector2i = cell + Vector2i(0, 1)
+		if z.passable_at(nxt) and z.exit_link(nxt).is_empty():
+			cell = nxt
+	enter_zone(zone_id, cell, false)
+	await get_tree().process_frame
+	_set_zoom(1.7)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.facing = "s"
+	walker._show_idle()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	await get_tree().create_timer(0.75).timeout
+
+
+## A short walk through every town. Roads are a fade, so the clip stays under a minute.
+func _movie_v7_tour() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.65)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	var towns: Array[String] = [
+		"crosshaven_crossroads",
+		"crosshaven_northgate",
+		"crosshaven_stoneford",
+		"crosshaven_eastmarch",
+		"crosshaven_westwatch",
+		"crosshaven_southbridge",
+	]
+	for id in towns:
+		var z: WorldZone = map.zone(id)
+		await enter_zone(id, z.spawn, true)
+		await _town_stroll()
+
+
+func _town_stroll() -> void:
+	var start: Vector2i = walker.anchor_cell()
+	await _cardinal("e", 3, "walk")
+	await _cardinal("s", 2, "walk")
+	await _cardinal("w", 3, "walk")
+	await _cardinal("n", 2, "walk")
+	if walker.anchor_cell() == start:
+		await _cardinal("w", 3, "walk")
+		await _cardinal("n", 3, "walk")
+		await _cardinal("e", 2, "walk")
+		await _cardinal("s", 2, "walk")
+	await get_tree().create_timer(0.35).timeout
 
 
 func _movie_tour() -> void:

@@ -5,25 +5,26 @@ render_mode unshaded;
 // so midtones are not lifted and the HUD (a later canvas layer) is untouched.
 uniform sampler2D screen_tex : hint_screen_texture, repeat_disable, filter_linear;
 uniform float warmth : hint_range(0.0, 1.0) = 1.0;
-uniform float bloom_threshold : hint_range(0.5, 1.0) = 0.84;
-uniform float bloom_strength : hint_range(0.0, 1.5) = 0.55;
-uniform float contrast : hint_range(1.0, 1.2) = 1.08;
-uniform float saturation : hint_range(1.0, 1.2) = 1.08;
+uniform float bloom_threshold : hint_range(0.5, 1.0) = 0.86;
+uniform float bloom_strength : hint_range(0.0, 1.5) = 0.40;
+uniform float contrast : hint_range(1.0, 1.2) = 1.04;
+uniform float saturation : hint_range(1.0, 1.2) = 1.06;
 uniform float haze_max : hint_range(0.0, 0.2) = 0.15;
-uniform vec3 warm_mul : source_color = vec3(1.05, 1.0, 0.90);
+uniform vec3 warm_mul : source_color = vec3(1.02, 1.0, 0.96);
 uniform vec3 haze_col : source_color = vec3(0.45, 0.52, 0.62);
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
 	vec3 c = texture(screen_tex, uv).rgb;
-	// Golden in clear weather. Rain drives warmth to 0 so it stays slightly cool.
+	// v7 paint already has the warm key and cool shade, so this multiply stays slight.
+	// Rain drives warmth to 0 and skips it.
 	c *= mix(vec3(1.0), warm_mul, warmth);
 	float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
-	// Rain drops the golden multiply. Keep the chroma so the cool tint does not go gray.
-	float sat = mix(1.14, saturation, warmth);
+	// The paint is already saturated. +6% in clear and in rain, so rain does not go gray.
+	float sat = mix(1.06, saturation, warmth);
 	c = mix(vec3(luma), c, sat);
 	c = (c - vec3(0.5)) * contrast + vec3(0.5);
-	// Only lamps, water glints, and sun highlights. Excess above the threshold, not the midtones.
+	// Window glow, lamp heads, fire, and water sparkles. Excess above the threshold, not the midtones.
 	vec3 hi = max(c - vec3(bloom_threshold), vec3(0.0));
 	c += hi * bloom_strength;
 	// Edge and far haze. The center (the hero, under the camera) stays clear.

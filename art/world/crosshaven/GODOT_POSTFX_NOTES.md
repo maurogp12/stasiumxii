@@ -65,3 +65,9 @@ A world-space parallax `Sprite2D` with `animated/cloud_shadow_a.png` and `_b.png
 
 ## 6. Order of passes (matches the mock)
 ground tiles -> ground decals -> shadows -> y-sorted props + critters -> overlays (sails, wheel, fountain) -> fx (fire, embers, smoke, leaves, butterflies, birds) -> cloud shadows -> WorldEnvironment glow + LUT -> haze + vignette CanvasLayer -> UI.
+
+## v7 note (painterly repaint)
+The v7 textures already carry the top-left warm key light and cool shade, so keep the runtime grade gentle: the section 2 LUT and
+section 1 glow still apply, but drop saturation to about +6% (v7 grass is already Wakfu-saturated) and keep glow_hdr_threshold >= 0.85 so
+only the v7 window glow, lamp heads, fire and water sparkles bloom. Optional: draw `decal_v7_lamp_glow` with `CanvasItemMaterial.blend_mode
+= Add` under lamps / lit windows at dusk and night, and `decal_v7_shade_pool_*` (mix) on the bottom-right side of big trees and buildings.
