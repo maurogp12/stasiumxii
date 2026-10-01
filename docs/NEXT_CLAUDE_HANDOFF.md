@@ -54,7 +54,10 @@ APK publish steps are in `docs/AGENT_HANDOFF.md` ("Phone builds").
 ## Mauro's goal right now
 
 Make the game look and *move* like his two Wakfu videos ("thats the goal or
-even better"). His latest focus: **walking**.
+even better"). His latest focus: **walking**. Watch the reference he sent
+again ("Thats the goal"): `docs/media/reference/wakfu_goal_walk.mp4` and
+`docs/media/reference/wakfu_goal_walk_frames.jpg` (notes in that folder's
+README).
 
 ## Waiting on Mauro (ask, don't decide)
 
