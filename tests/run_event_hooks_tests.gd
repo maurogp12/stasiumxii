@@ -73,8 +73,8 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 	eq(bool(hit.get("ok", false)), true, "Strike hit resolves")
 	var hit_event := _event_of(hit.get("events", []), "hit")
 	eq(hit_event.get("caster_cell"), target, "Strike hit caster_cell is Ironjaw's cell")
-	eq(int(hit_event.get("damage", -1)), 16, "Strike hit damage stays 16")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), before_hp - 16, "Strike still removes 16 HP")
+	eq(int(hit_event.get("damage", -1)), 14, "Strike hit damage stays 14")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), before_hp - 14, "Strike still removes 14 HP")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "Strike still spends 3 AP")
 
 	_sim.reset_match({
@@ -90,7 +90,7 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 	var miss_event := _event_of(missed.get("events", []), "miss")
 	eq(miss_event.get("caster_cell"), target, "Strike miss caster_cell is Ironjaw's cell")
 	eq(int(miss_event.get("damage", -1)), 0, "Strike miss damage stays 0")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Strike miss still deals nothing")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "Strike miss still deals nothing")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "Strike miss still spends 3 AP")
 
 	_sim.reset_match({
@@ -117,7 +117,7 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 	})
 	var hold: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
 	eq(_event_of(hold.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "Hold Line hit caster_cell is Bastion")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 73, "Hold Line damage stays 7")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 68, "Hold Line damage stays 7")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -128,7 +128,7 @@ func _test_caster_cell_on_hit_and_miss() -> void:
 	})
 	var hold_miss: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
 	eq(_event_of(hold_miss.get("events", []), "miss").get("caster_cell"), Vector2i(1, 1), "Hold Line miss caster_cell is Bastion")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Hold Line miss still deals 0")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "Hold Line miss still deals 0")
 
 	var gloam := Vector2i(2, 2)
 	_sim.reset_match({
@@ -211,7 +211,7 @@ func _test_caster_cell_survives_host_pack() -> void:
 	})
 	var local: Dictionary = hot.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(3, 1)})
 	eq(_event_of(local.get("events", []), "hit").get("caster_cell"), Vector2i(1, 1), "hot-seat submit keeps caster_cell")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 72, "hot-seat Mark Shot damage stays 8")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 82, "hot-seat Mark Shot damage is 8")
 	hot.free()
 
 	_host.reset_match({
@@ -259,7 +259,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(hit.get("destination"), Vector2i(5, 2), "Invisible Ambush destination is the empty back tile")
 	eq(bool(hit.get("teleported", false)), true, "Invisible Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_before, "Invisible origin still does not spend Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back stays 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "true back stays 26 × 1.35 = 35")
 
 	# Auto Shade lands at (0, 0). The prey sits Manhattan 2 cardinal from that cell.
 	# The Shade arms only after the opponent completes a turn.
@@ -283,7 +283,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(bool(miss.get("teleported", true)), false, "Ambush miss teleported is false")
 	eq(_sim.snapshot()["units"][0]["pos"], gloam, "Ambush miss still stays put")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 1, "Ambush miss still keeps the Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Ambush miss still deals 0")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "Ambush miss still deals 0")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -303,7 +303,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(shade_hit.get("destination"), Vector2i(3, 0), "Shade Ambush destination is the empty back tile")
 	eq(bool(shade_hit.get("teleported", false)), true, "Shade Ambush hit teleported")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "Shade origin still spends one Shade")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "empty back stays 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "empty back stays 26 × 1.35 = 35")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -325,7 +325,7 @@ func _test_ambush_origin_and_destination() -> void:
 	eq(_sim.snapshot()["units"][0]["pos"], gloam, "blocked back does not teleport")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
 	eq(bool(_sim.snapshot()["units"][0]["invisible"]), true, "blocked back keeps Invisible")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "blocked back deals no damage")
 
 	_host.reset_match({
 		"seed": 1,
@@ -386,8 +386,8 @@ func _test_hold_line_cone_and_targets() -> void:
 	eq(int(targets[1].get("damage", -1)), 7, "second body takes 7")
 	eq(int(event.get("damage", -1)), 14, "Hold Line total is the sum of the bodies")
 	eq(int(event.get("bodies", 0)), 2, "Hold Line bodies count stays the hit count")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 73, "primary target still loses 7 HP")
-	eq(int(extra["hp"]), 73, "second body still loses 7 HP")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 68, "primary target still loses 7 HP")
+	eq(int(extra["hp"]), 68, "second body still loses 7 HP")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 1, "Hold Line still gains 1 Aegis")
 
 	_sim.reset_match({
@@ -407,7 +407,7 @@ func _test_hold_line_cone_and_targets() -> void:
 	eq(bool(missed_rows[0].get("hit", true)), false, "Hold Line miss target did not connect")
 	eq(int(missed_rows[0].get("damage", -1)), 0, "Hold Line miss target damage is 0")
 	eq(int(miss.get("bodies", -1)), 0, "Hold Line miss bodies field stays 0")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Hold Line miss still deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "Hold Line miss still deals no damage")
 	eq(int(_sim.snapshot()["units"][1]["exit_tax"]), 0, "Hold Line miss does not apply exit tax")
 
 	_host.reset_match({
@@ -448,11 +448,11 @@ func _test_absorbed_damage_and_intercept() -> void:
 	var immune: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	var immune_hit := _event_of(immune.get("events", []), "hit")
 	eq(bool(immune_hit.get("immunity_absorbed", false)), true, "immunity consumes the hit")
-	eq(int(immune_hit.get("immunity_amount", -1)), 16, "immunity amount is the pre-mitigation hit")
+	eq(int(immune_hit.get("immunity_amount", -1)), 14, "immunity amount is the pre-mitigation hit")
 	eq(int(immune_hit.get("damage", -1)), 0, "immunity leaves HP damage at 0")
 	eq(int(immune_hit.get("shield_absorbed", -1)), 0, "immunity does not touch shield")
 	eq(bool(immune_hit.get("shield_broken", true)), false, "immunity does not break shield")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "immunity still prevents HP loss")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "immunity still prevents HP loss")
 	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "immunity charge is still spent")
 
 	_sim.reset_match({
@@ -469,20 +469,20 @@ func _test_absorbed_damage_and_intercept() -> void:
 	_live_unit(0)["shield_turns"] = 2
 	var soaked: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	var soaked_hit := _event_of(soaked.get("events", []), "hit")
-	eq(int(soaked_hit.get("shield_absorbed", -1)), 16, "shield absorbs the 16 Strike")
-	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 16")
-	eq(int(soaked_hit.get("shield_remaining", -1)), 4, "shield remaining is 4")
+	eq(int(soaked_hit.get("shield_absorbed", -1)), 14, "shield absorbs the 14 Strike")
+	eq(bool(soaked_hit.get("shield_broken", true)), false, "a 20 shield is not broken by 14")
+	eq(int(soaked_hit.get("shield_remaining", -1)), 6, "shield remaining is 6")
 	eq(int(soaked_hit.get("damage", -1)), 0, "full shield leaves HP damage at 0")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "partial shield still blocks all HP")
-	eq(int(_sim.snapshot()["units"][0]["shield"]), 4, "shield pool is 4")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "partial shield still blocks all HP")
+	eq(int(_sim.snapshot()["units"][0]["shield"]), 6, "shield pool is 6")
 	_live_unit(0)["shield"] = 10
 	_live_unit(0)["shield_turns"] = 2
 	var broken: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	var broken_hit := _event_of(broken.get("events", []), "hit")
 	eq(int(broken_hit.get("shield_absorbed", -1)), 10, "broken shield absorbs its remaining pool")
 	eq(bool(broken_hit.get("shield_broken", false)), true, "shield_broken is set when the pool hits 0")
-	eq(int(broken_hit.get("damage", -1)), 6, "overflow past the shield is still 6")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 74, "overflow still reduces HP")
+	eq(int(broken_hit.get("damage", -1)), 4, "overflow past the shield is still 4")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 71, "overflow still reduces HP")
 	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "broken shield pool is 0")
 	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "broken shield clears its turns")
 
@@ -502,7 +502,7 @@ func _test_absorbed_damage_and_intercept() -> void:
 	eq(int(plain_hit.get("shield_absorbed", -1)), 0, "an unmitigated hit absorbs no shield")
 	eq(int(plain_hit.get("intercepted", -1)), 0, "a 1v1 hit does not intercept")
 	eq(_event_of(plain.get("events", []), "intercept").is_empty(), true, "1v1 emits no Intercept event")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 64, "unmitigated Strike stays 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 61, "unmitigated Strike stays 14")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -523,12 +523,12 @@ func _test_absorbed_damage_and_intercept() -> void:
 	eq(int(intercept.get("for_seat", -1)), 0, "Intercept names the ally seat")
 	eq(intercept.get("interceptor_cell"), Vector2i(3, 4), "Intercept names the Bastion cell")
 	eq(intercept.get("for_cell"), Vector2i(3, 3), "Intercept names the ally cell")
-	eq(int(intercept.get("damage", -1)), 6, "Intercept transfers round 40% of 16")
-	eq(int(intercept.get("hp", -1)), 74, "Bastion HP after the transfer is 74")
+	eq(int(intercept.get("damage", -1)), 6, "Intercept transfers round 40% of 14")
+	eq(int(intercept.get("hp", -1)), 104, "Bastion HP after the transfer is 94")
 	eq(int(guard_hit.get("intercepted", -1)), 6, "hit records the intercepted amount")
-	eq(int(guard_hit.get("damage", -1)), 10, "the ally still takes the remainder")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 70, "ally HP loss stays 10")
-	eq(int(guard["hp"]), 74, "Bastion HP loss stays 6")
+	eq(int(guard_hit.get("damage", -1)), 8, "the ally still takes the remainder")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 67, "ally HP loss stays 8")
+	eq(int(guard["hp"]), 104, "Bastion HP loss stays 6")
 	eq(bool(guard.get("intercept_used", false)), true, "Intercept is still spent for the turn")
 
 	_host.reset_match({
@@ -548,11 +548,11 @@ func _test_absorbed_damage_and_intercept() -> void:
 	var decoded: Variant = _IntentCodec.decode(packed)
 	var wire := _event_of((decoded as Dictionary).get("events", []), "hit")
 	eq(bool(wire.get("immunity_absorbed", false)), true, "packed hit keeps immunity_absorbed")
-	eq(int(wire.get("immunity_amount", -1)), 16, "packed hit keeps immunity_amount")
+	eq(int(wire.get("immunity_amount", -1)), 14, "packed hit keeps immunity_amount")
 	_guest.apply_packed_state(packed)
 	var guest := _event_of(_guest.snapshot().get("last_events", []), "hit")
 	eq(bool(guest.get("immunity_absorbed", false)), true, "guest hit keeps immunity_absorbed")
-	eq(int(_guest.snapshot()["units"][0]["hp"]), 80, "guest HP matches the immune host")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 75, "guest HP matches the immune host")
 
 
 func _test_shade_and_plant_snapshot() -> void:
@@ -672,7 +672,7 @@ func _test_expiry_events() -> void:
 	eq(int(shade_expire.get("owner_seat", -2)), 0, "Shade expiry names the owner")
 	eq((_sim.snapshot().get("shade_tokens", []) as Array).is_empty(), true, "expired Shade leaves the snapshot after 3 owner turn-starts")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), 0, "expired Shade clears the unit count")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Shade expiry does not change HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "Shade expiry does not change HP")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -741,7 +741,7 @@ func _test_expiry_events() -> void:
 	eq(int(shield_expire.get("target_seat", -2)), 0, "shield expiry names the warded seat")
 	eq(int(_sim.snapshot()["units"][0]["shield"]), 0, "expired shield amount is 0")
 	eq(int(_sim.snapshot()["units"][0]["shield_turns"]), 0, "expired shield turns are 0")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "shield expiry does not change HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 85, "shield expiry does not change HP")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -802,7 +802,7 @@ func _test_death_cause() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"kestrel_hp": 16,
+		"kestrel_hp": 14,
 		"rolls": [1],
 	}, {"type": "end_turn", "seat": 0})
 	var strike: Dictionary = hot["session"].submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
@@ -810,8 +810,8 @@ func _test_death_cause() -> void:
 	var dead := _event_of(strike.get("events", []), "dead")
 	eq(str(dead.get("cause", "")), "damage", "hot-seat lethal Strike cause is damage")
 	eq(int(dead.get("seat", -1)), 0, "lethal Strike dead event names Kestrel")
-	eq(int(_event_of(strike.get("events", []), "hit").get("damage", -1)), 16, "lethal Strike damage stays 16")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "lethal Strike still removes the last 16 HP")
+	eq(int(_event_of(strike.get("events", []), "hit").get("damage", -1)), 14, "lethal Strike damage stays 14")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "lethal Strike still removes the last 14 HP")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "lethal Strike still spends 3 AP")
 	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "lethal Strike still marks the unit dead")
 	eq(bool(_sim.snapshot()["match_over"]), true, "lethal Strike still ends the match")
@@ -829,7 +829,7 @@ func _test_death_cause() -> void:
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var lived: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	eq(_event_of(lived.get("events", []), "dead").is_empty(), true, "a non-lethal Strike emits no dead event")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 64, "non-lethal Strike still deals 16")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 61, "non-lethal Strike still deals 14")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -845,7 +845,7 @@ func _test_death_cause() -> void:
 	var burned: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
 	var burn_dead := _event_of(burned.get("events", []), "dead")
 	eq(str(burn_dead.get("cause", "")), "burn", "lethal Burn tick cause is burn")
-	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -4, "lethal stack 2 tick is 4 HP")
+	eq(int(_event_of(burned.get("events", []), "burn").get("hp_delta", 0)), -5, "lethal stack 2 tick is 5 HP (push stack sheet)")
 	eq(int(_event_of(burned.get("events", []), "burn").get("tick_stacks", 0)), 2, "lethal tick uses stack 2")
 	eq(int(_sim.snapshot()["units"][0]["hp"]), 0, "Burn tick still reduces HP to 0")
 	eq(bool(_sim.snapshot()["units"][0]["alive"]), false, "Burn tick still marks the victim dead")
@@ -858,7 +858,7 @@ func _test_death_cause() -> void:
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
-		"kestrel_hp": 16,
+		"kestrel_hp": 14,
 		"rolls": [1],
 		"fixture": true,
 	})
@@ -914,14 +914,14 @@ func _test_triage_on_heals() -> void:
 		"skip_deploy": true,
 		"classes": ["mender", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(6, 6)],
-		"mender_hp": 32,
+		"mender_hp": 34,
 		"rolls": [1],
 	})
 	var at_line: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
 	var line_hit := _event_of(at_line.get("events", []), "hit")
 	eq(line_hit.has("triage"), false, "Mend at 40% HP omits triage")
 	eq(int(line_hit.get("healed", -1)), 16, "Mend at 40% HP still heals 16")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 48, "Mend at 40% HP stays 48")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 50, "Mend at 40% HP stays 50")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -977,15 +977,15 @@ func _test_triage_on_heals() -> void:
 		"classes": ["mender", "kestrel"],
 		"positions": [Vector2i(1, 1), Vector2i(3, 1)],
 		"kestrel_facing": "W",
-		"kestrel_hp": 20,
+		"kestrel_hp": 30,
 		"mender_pulse": 4,
 		"rolls": [1],
 	})
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	var enemy_hit := _event_of(enemy.get("events", []), "hit")
 	eq(enemy_hit.has("triage"), false, "enemy Heartstop does not stamp triage")
-	eq(int(enemy_hit.get("damage", -1)), 10, "enemy Heartstop damage stays 10")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 10, "enemy Heartstop still leaves 10 HP")
+	eq(int(enemy_hit.get("damage", -1)), 22, "enemy Heartstop damage is 22")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 8, "enemy Heartstop still leaves 8 HP")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1047,14 +1047,16 @@ func _test_cleanse_cc_removed() -> void:
 	eq(int(burned.get("stun_remaining", -1)), 0, "Cleanse still clears Stun beside Burn")
 
 	_reset_mender()
-	_live_unit(0)["burn_remaining"] = 4
-	_live_unit(0)["burn_stacks"] = 1
+	# Cleanse strips ONE family (Mauro's push stack sheet): Burn 2 outranks Slow 1.
+	_live_unit(0)["burn_remaining"] = 3
+	_live_unit(0)["burn_stacks"] = 2
 	_live_unit(0)["slow_remaining"] = 1
+	_live_unit(0)["slow_stacks"] = 1
 	var burn_only: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(1, 1), "seat": 0})
-	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), ["burn"], "Burn alone is reported as removed")
-	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 0, "Burn-only Cleanse clears duration")
-	eq(int(_sim.snapshot()["units"][0]["burn_stacks"]), 0, "Burn-only Cleanse clears stacks")
-	eq(int(_sim.snapshot()["units"][0]["slow_remaining"]), 1, "Cleanse does not clear Slow")
+	eq(_string_list(_event_of(burn_only.get("events", []), "hit").get("cc_removed")), ["burn"], "the higher stack (Burn 2) is removed")
+	eq(int(_sim.snapshot()["units"][0]["burn_remaining"]), 0, "Cleanse clears Burn duration")
+	eq(int(_sim.snapshot()["units"][0]["burn_stacks"]), 0, "Cleanse clears Burn stacks")
+	eq(int(_sim.snapshot()["units"][0]["slow_remaining"]), 1, "only one family: Slow stays")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1098,8 +1100,9 @@ func _test_fade_and_heartstop_linger() -> void:
 	eq(int(_sim.snapshot()["units"][0]["mp"]), 2, "Fade still spends 1 MP")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	var later: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit_in(_sim.snapshot(), 0).get("invisible", false)), true, "Invisible stays after a full round")
-	eq(_expire(later.get("events", []), "invisible").is_empty(), true, "Invisible does not expire")
+	# Fade lasts 1 turn (Mauro 29 Sep 2026): gone when Gloam's next turn starts.
+	eq(bool(_unit_in(_sim.snapshot(), 0).get("invisible", false)), false, "Invisible ends after one full round")
+	eq(_expire(later.get("events", []), "invisible").is_empty(), false, "Invisible expires with an event")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1145,8 +1148,8 @@ func _test_fade_and_heartstop_linger() -> void:
 	var immune := _unit_in(_sim.snapshot(), 0)
 	eq(int(immune.get("hit_immunity", -1)), 1, "snapshot keeps the immunity charge")
 	eq(immune.get("pos"), Vector2i(1, 1), "immunity snapshot keeps the cell")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "full-HP Heartstop still heals 0")
-	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Heartstop still spends 4 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 85, "full-HP Heartstop still heals 0")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop still spends 2 Pulse")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1176,7 +1179,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	enemy_hot["session"].free()
 	var enemy_hit := _event_of(enemy_hot["result"].get("events", []), "hit")
 	eq(bool(enemy_hit.get("skip_next_mp", false)), true, "hot-seat enemy Heartstop sets skip_next_mp")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 70, "enemy Heartstop damage stays 10")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
 	eq(bool(_unit_in(_sim.snapshot(), 1).get("skip_next_mp", false)), true, "snapshot keeps skip_next_mp")
 	eq(_unit_in(_sim.snapshot(), 1).get("pos"), Vector2i(3, 1), "skip_next_mp snapshot keeps the cell")
 	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 0})
@@ -1225,14 +1228,14 @@ func _test_fade_and_heartstop_linger() -> void:
 	var first: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	eq(_expire(first.get("events", []), "hit_immunity").is_empty(), true, "a leftover immunity charge does not expire")
 	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 1, "one immunity charge remains")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "the first charge still prevents HP loss")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "the first charge still prevents HP loss")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 3, "the first Strike still spends 3 AP")
 	var second: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3), "seat": 1})
 	var spent := _expire(second.get("events", []), "hit_immunity")
 	eq(spent.get("pos"), Vector2i(3, 3), "hit_immunity expire names the cell")
 	eq(int(spent.get("target_seat", -1)), 0, "hit_immunity expire names the seat")
 	eq(int(_sim.snapshot()["units"][0]["hit_immunity"]), 0, "the last charge is spent")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "the last charge still prevents HP loss")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 75, "the last charge still prevents HP loss")
 
 	_host.reset_match({
 		"seed": 1,
@@ -1253,7 +1256,7 @@ func _test_fade_and_heartstop_linger() -> void:
 	_guest.apply_packed_state(break_packed)
 	eq(_expire(_guest.snapshot().get("last_events", []), "hit_immunity").get("pos"), Vector2i(3, 3), "guest hit_immunity expire matches the host")
 	eq(int(_unit_in(_guest.snapshot(), 0).get("hit_immunity", -1)), 0, "guest snapshot spends the immunity charge")
-	eq(int(_guest.snapshot()["units"][0]["hp"]), 80, "guest immune HP matches the host")
+	eq(int(_guest.snapshot()["units"][0]["hp"]), 75, "guest immune HP matches the host")
 
 
 func _reset_mender() -> void:

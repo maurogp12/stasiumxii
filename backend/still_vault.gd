@@ -13,6 +13,7 @@ extends RefCounted
 ## the cap), then a crack debuff −1 AP −2 MP on your 3rd turn, then normal.
 ## Gear / level AP-MP bonuses are never touched.
 
+const _TestLoadout := preload("res://backend/test_loadout.gd")
 const IDS: Array[String] = [
 	"opening", "stride", "cut", "mercy", "guard", "quiet",
 	"root", "ember", "tide", "silence", "crown", "end",
@@ -49,6 +50,8 @@ static var save_path: String = "user://stills.json"
 var fragments: Dictionary = {}  # id → count
 var socket: String = ""
 var mode: String = "intact"
+## TEMPORARY balance-test kit: fragments granted per id (backend/test_loadout.gd).
+var test_grant: Dictionary = {}
 
 
 static func display_name(id: String) -> String:
@@ -62,13 +65,19 @@ static func is_id(id: String) -> bool:
 static func load_saved() -> StillVault:
 	var vault := StillVault.new()
 	if not FileAccess.file_exists(save_path):
-		return vault
+		return _with_test_loadout(vault)
 	var file := FileAccess.open(save_path, FileAccess.READ)
 	if file == null:
 		return vault
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) == TYPE_DICTIONARY:
 		vault.from_dict(parsed)
+	return _with_test_loadout(vault)
+
+
+static func _with_test_loadout(vault: StillVault) -> StillVault:
+	if save_path == _TestLoadout.DEFAULT_STILL_PATH and _TestLoadout.sync_vault(vault):
+		vault.save()
 	return vault
 
 
@@ -76,7 +85,7 @@ func save() -> bool:
 	var file := FileAccess.open(save_path, FileAccess.WRITE)
 	if file == null:
 		return false
-	file.store_string(JSON.stringify({"fragments": fragments, "socket": socket, "mode": mode}, "\t"))
+	file.store_string(JSON.stringify({"fragments": fragments, "socket": socket, "mode": mode, "test_grant": test_grant}, "\t"))
 	return true
 
 
@@ -93,6 +102,12 @@ func from_dict(data: Dictionary) -> void:
 	mode = str(data.get("mode", "intact"))
 	if not MODES.has(mode):
 		mode = "intact"
+	test_grant = {}
+	var raw_grant: Variant = data.get("test_grant", {})
+	if typeof(raw_grant) == TYPE_DICTIONARY:
+		for id in raw_grant:
+			if is_id(str(id)):
+				test_grant[str(id)] = int(raw_grant[id])
 
 
 func count(id: String) -> int:

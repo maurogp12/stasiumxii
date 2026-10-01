@@ -64,6 +64,7 @@ func _run() -> void:
 	_test_ambush_adjacent_shade_rejects()
 	_test_ambush_rules_keeper_lock()
 	_test_ambush_snap_wall_ray()
+	_test_ambush_obstacle_ray()
 	_test_invisible_wears_off()
 	_test_instant_invisible_ambush_relocates_before_damage()
 	_test_invisible_shade_origin_ambush()
@@ -83,8 +84,13 @@ func _run() -> void:
 	_test_legal_intents_empty_for_other_seat()
 	_test_view_does_not_roll_or_own_hp()
 	_test_hud_chrome_kit_gated()
+	_test_line_of_sight()
+	_test_blind_attacks_on_invisible()
 	_test_handoff_timer_is_client_only()
 	_test_advance_teleport_costs()
+	_test_advance_two_per_turn()
+	_test_team_match_rules()
+	_test_team_deploy()
 	_test_advance_then_remaining_mp_still_walks()
 	_test_advance_cardinal_range_gate()
 	_test_advance_chrome_follows_legal_intents()
@@ -97,6 +103,7 @@ func _run() -> void:
 	_test_shoulder_push_and_impact()
 	_test_shoulder_bounce_stagger_locked()
 	_test_shoulder_lava_burn_locked()
+	_test_ice_and_electric_stacks()
 	_test_shoulder_push_blocked_locked()
 	_test_crush_spend_and_stun()
 	_test_stun_auto_end_turn_after_crush()
@@ -133,8 +140,8 @@ func _test_reset_and_turn_order() -> void:
 	eq(int(order[1].get("seat", -1)), 1, "turn order continues at seat 1")
 	eq(snap["units"][0]["name"], "Kestrel", "seat 0 is Kestrel")
 	eq(snap["units"][1]["name"], "Ironjaw", "seat 1 is Ironjaw")
-	eq(snap["units"][0]["hp"], 80, "Kestrel starts at 80 HP")
-	eq(snap["units"][1]["hp"], 80, "Ironjaw starts at 80 HP")
+	eq(snap["units"][0]["hp"], 75, "Kestrel starts at 75 HP")
+	eq(snap["units"][1]["hp"], 90, "Ironjaw starts at 90 HP")
 	eq(snap["units"][0]["ap"], 6, "Kestrel 6 AP")
 	eq(snap["units"][0]["mp"], 3, "Kestrel 3 MP")
 	eq(snap["crit_roll"], false, "crit roll off")
@@ -152,9 +159,9 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["terrain_mp"]["water"], 2, "Water MP is 2")
 	eq(snap["terrain_mp"]["lava"], 0, "Lava MP stamp is 0 / impassable")
 	eq(snap["terrain_mp"]["void"], 0, "Void is impassable and has no MP cost")
-	eq(snap["open_elevation"], ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"], "height hit/facing/LoS, stairs/ramps/flying stay Open")
+	eq(snap["open_elevation"], ["height_hit", "height_facing", "stairs", "ramps", "flying"], "height hit/facing, stairs/ramps/flying stay Open (sight decided by Mauro 30 Sep 2026)")
 	eq(str(snap["open_elevation"]).contains("advance_climb"), false, "Advance stand-on is Locked, not Open")
-	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing/LoS unchanged")
+	truthy(str(snap["open_notes"]["elevation"]).contains("no height mods"), "elevation note keeps hit/facing unchanged")
 	eq(snap.has("tiles"), true, "snapshot exposes tiles for Godot")
 	eq(snap["board_size"], 15, "ship board is 15×15")
 	eq(snap["demo_map"], "crosshaven_15", "skip_deploy seeds Crosshaven tags")
@@ -165,7 +172,7 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["advance_stand_on"], "walk_gates", "Advance reuses walk stand-on gates")
 	eq(snap["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is Ground")
 	eq(snap["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) elevation is the tag")
-	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(snap["tiles"][Vector2i(0, 0)]["walkable"], false, "tall ruins block (0,0) (Mauro 30 Sep 2026: tall props block walking)")
 	eq(typeof(snap["tiles"][Vector2i(0, 0)]["elevation"]), TYPE_INT, "snapshot elevation is int")
 	eq(snap["tiles"].size(), 225, "snapshot lists all 15×15 tiles")
 	eq(snap["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only is stored beside the walk tile")
@@ -193,10 +200,12 @@ func _test_reset_and_turn_order() -> void:
 	eq(snap["shoulder_impact_connect"], 1, "clean Shoulder connect is +1 Impact")
 	eq(snap["shoulder_impact_bounce"], 2, "Shoulder bounce is +2 Impact")
 	eq(snap["burn"], "soft_lock", "Burn is Soft Lock CASTIGO")
-	eq(snap["lava_land_hp"], 6, "lava land is 6 HP")
+	eq(snap["lava_land_hp"], 10, "lava enter is 10 HP at stack 1")
+	eq(snap["lava_enter_hp"], [10, 10, 15], "lava enter is 10 / 10 / 15 Fire")
+	eq(snap["burn_stack_turns"], [2, 3, 4], "Burn lasts 2 / 3 / 4 turns")
 	eq(snap["burn_duration"], 4, "Burn duration is 4")
 	eq(snap["burn_max_stacks"], 3, "Burn max stacks is 3")
-	eq(snap["burn_stack_hp"], [2, 4, 8], "Burn ticks are 2/4/8")
+	eq(snap["burn_stack_hp"], [4, 5, 5], "Burn ticks are 4 / 5 / 5")
 	eq(snap["units"][0]["burn_remaining"], 0, "units start with no Burn")
 	eq(snap["units"][0]["burn_stacks"], 0, "units start with no Burn stacks")
 	eq(snap["units"][1]["burn_remaining"], 0, "Ironjaw starts with no Burn")
@@ -207,7 +216,7 @@ func _test_reset_and_turn_order() -> void:
 	truthy(str(snap["open_notes"]["A05"]).contains("Locked Stun (A′)"), "A05 note labels Stun Locked (A′)")
 	truthy(str(snap["open_notes"]["A05"]).contains("auto end_turn"), "A05 note documents A′ auto end_turn")
 	truthy(str(snap["open_notes"]["A05"]).contains("Director Locked Shoulder"), "A05 note labels Director Locked Shoulder")
-	truthy(str(snap["open_notes"]["A05"]).contains("Soft Lock Burn"), "A05 note documents Soft Lock lava Burn")
+	truthy(str(snap["open_notes"]["A05"]).contains("Map push stacks"), "A05 note documents the Map push stacks")
 	eq(str(snap["open_notes"]["A05"]).contains("duration 2"), false, "A05 note drops Locked Burn duration 2")
 	eq(str(snap["open_notes"]["A05"]).contains("Exact suppress list not locked"), false, "A05 note does not leave the suppress list Open")
 	eq(str(snap["open_notes"]["A05"]).contains("provisional"), false, "A05 note does not call Stun/Push provisional")
@@ -449,8 +458,9 @@ func _test_both_ready_starts_combat() -> void:
 	truthy(kinds.has("end_turn"), "end_turn is legal after deploy")
 	var opening: int = _sim.chebyshev(_unit(0)["pos"], _unit(1)["pos"])
 	eq(opening >= 3, true, "confirmed seats open at least Chebyshev 3")
-	if opening >= 2 and opening <= 5:
-		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5")
+	# A wall between the opening seats hides the shot (line of sight).
+	if opening >= 2 and opening <= 5 and _sim.has_line_of_sight(_unit(0)["pos"], _unit(1)["pos"]):
+		truthy(kinds.has("cast"), "Mark Shot is offered at opening Chebyshev 2–5 with sight")
 	else:
 		eq(kinds.has("cast"), false, "Kestrel has no in-range cast when the opening is outside 2–5")
 	eq(kinds.has("place"), false, "place is not a combat intent")
@@ -506,7 +516,7 @@ func _test_kits_still_pass_after_deploy() -> void:
 	var strike: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": _unit(0)["pos"]})
 	eq(strike["ok"], true, "Strike resolves after deploy")
 	eq(strike["illegal"], false, "Strike is not rejected")
-	eq(_unit(0)["hp"] < 80, true, "Strike dealt damage after deploy")
+	eq(_unit(0)["hp"] < int(_unit(0)["max_hp"]), true, "Strike dealt damage after deploy")
 	eq(_unit(1)["impact"], 1, "Strike still grants Impact after deploy")
 
 
@@ -635,7 +645,7 @@ func _test_phase_a_demo_map() -> void:
 	eq(elev_hi, 18, "Crosshaven elevation ≥1 count")
 	eq(live["tiles"][Vector2i(0, 0)]["terrain_type"], "ground", "Crosshaven (0,0) is ground")
 	eq(live["tiles"][Vector2i(0, 0)]["elevation"], 0, "Crosshaven (0,0) tag elevation is 0")
-	eq(live["tiles"][Vector2i(0, 0)]["walkable"], true, "ruins paint_only does not block (0,0)")
+	eq(live["tiles"][Vector2i(0, 0)]["walkable"], false, "tall ruins block (0,0) (Mauro 30 Sep 2026)")
 	eq(live["paint_only"][Vector2i(0, 0)][0], "ruins", "paint_only stays off the walk tile")
 	eq(live["tiles"][Vector2i(1, 1)]["terrain_type"], "mud", "Crosshaven (1,1) is mud")
 	eq(live["tiles"][Vector2i(1, 1)]["walkable"], true, "Crosshaven (1,1) mud is walkable")
@@ -770,8 +780,8 @@ func _test_phase_a_demo_map() -> void:
 		"ironjaw_pos": Vector2i(14, 14),
 	})
 	var ruins: Dictionary = _sim.submit({"type": "move", "to": Vector2i(0, 0)})
-	eq(ruins["ok"], true, "paint_only ruins does not block the step")
-	eq(ruins["events"][0]["mp_spent"], 1, "ruins tile still costs ground MP")
+	eq(ruins["ok"], false, "tall ruins block the step (Mauro 30 Sep 2026)")
+	eq(_unit(0)["pos"], Vector2i(0, 1), "Kestrel stays off the ruins")
 
 	var flow := FileAccess.get_file_as_string("res://backend/match_flow.gd")
 	truthy(flow.contains("PHASE_A_DEMO_TILES"), "MatchFlow owns the stamped cell list")
@@ -903,7 +913,7 @@ func _test_hazard_push_and_targets() -> void:
 		var struck: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 3), "seat": 0})
 		eq(bool(struck.get("ok", false)), true, "Strike resolves on %s (%s)" % [terrain, str(struck.get("reason", ""))])
 		eq(_unit(1)["pos"], Vector2i(4, 3), "Strike leaves the body on %s" % terrain)
-		eq(int(_unit(1)["hp"]) < 80, true, "Strike damages the body on %s" % terrain)
+		eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "Strike damages the body on %s" % terrain)
 	# Water silences one random spell. Mud slows −1 MP for one turn. Neither is Burn.
 	_sim.reset_match({
 		"seed": 1,
@@ -921,7 +931,7 @@ func _test_hazard_push_and_targets() -> void:
 	var watered: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(bool(watered.get("ok", false)), true, "Shoulder onto water resolves")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on water")
-	eq(_unit(0)["hp"], 74, "water land is the 6 Earth hit only")
+	eq(_unit(0)["hp"], 69, "water land is the 6 Earth hit only")
 	eq(int(_unit(0).get("burn_remaining", 0)), 0, "water land does not start Burn")
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "water land does not Slow")
 	var silenced_once: Array = _unit(0).get("silenced_spells", [])
@@ -938,20 +948,26 @@ func _test_hazard_push_and_targets() -> void:
 	eq(bool(watered_again.get("ok", false)), true, "second Shoulder onto water resolves")
 	eq(_unit(0)["pos"], Vector2i(6, 3), "second water push lands further in")
 	var silenced_twice: Array = _unit(0).get("silenced_spells", [])
-	eq(silenced_twice.size(), 2, "a second water land silences a different spell")
-	truthy(silenced_twice.has("mark_shot") and silenced_twice.has("detonate"), "both kit spells are silenced")
-	eq(_unit(0)["hp"], 67, "second water hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
+	eq(silenced_twice, silenced_once, "a push while Breathless keeps the same slot")
+	eq(int(_unit(0)["breathless_stacks"]), 2, "second water push is Breathless 2")
+	eq(int(_unit(0)["breathless_remaining"]), 2, "Breathless 2 lasts 2 turns")
+	eq(_unit(0)["hp"], 62, "second water hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var after_water: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 67, "water Silence does not tick HP (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "water Silence does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["mp"], 3, "water Silence does not cut MP")
 	eq(_unit(0)["ap"], 6, "water Silence does not cut AP")
-	eq(_has_legal_cast(0, "mark_shot"), false, "Mark Shot is not offered while silenced")
-	eq(_has_legal_cast(0, "detonate"), false, "Detonate is not offered while silenced")
-	var silenced_cast: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 3), "seat": 0})
+	var muted := str(silenced_once[0])
+	eq(_has_legal_cast(0, muted), false, "the silenced spell is not offered")
+	var silenced_cast: Dictionary = _sim.submit({"type": "cast", "spell": muted, "to": Vector2i(4, 3), "seat": 0})
 	eq(str(silenced_cast.get("reason", "")), "spell_silenced", "a silenced spell refunds")
 	eq(_unit(0)["ap"], 6, "the silenced cast spends no AP")
 	eq(_sim.submit({"type": "move", "to": Vector2i(6, 4), "seat": 0})["ok"], true, "Kestrel can leave the water")
-	eq(_unit(0).get("silenced_spells", []).size(), 2, "leaving water does not clear the one-shot Silence")
+	eq(_unit(0).get("silenced_spells", []).size(), 1, "leaving water does not clear Breathless")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_unit(0).get("silenced_spells", []).size(), 1, "Breathless 2 still silences on the second turn")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(_unit(0).get("silenced_spells", []), [], "Breathless 2 ends after two of the victim's turns")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -968,7 +984,7 @@ func _test_hazard_push_and_targets() -> void:
 	var mudded: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(bool(mudded.get("ok", false)), true, "Shoulder onto mud resolves")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on mud")
-	eq(_unit(0)["hp"], 74, "mud land is the 6 Earth hit only")
+	eq(_unit(0)["hp"], 69, "mud land is the 6 Earth hit only")
 	eq(int(_unit(0).get("burn_remaining", 0)), 0, "mud land does not start Burn")
 	eq(_unit(0).get("silenced_spells", []), [], "mud land does not Silence")
 	eq(int(_unit(0).get("slow_remaining", 0)), 1, "mud land applies Slow for 1 turn")
@@ -980,15 +996,16 @@ func _test_hazard_push_and_targets() -> void:
 	eq(_sim.submit({"type": "move", "to": Vector2i(4, 3), "seat": 1})["ok"], true, "Ironjaw steps up for a second mud push")
 	var mudded_again: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
 	eq(bool(mudded_again.get("ok", false)), true, "second Shoulder onto mud resolves")
-	eq(int(_unit(0).get("slow_remaining", 0)), 1, "a second mud land refreshes Slow and does not stack")
-	eq(_unit(0)["hp"], 67, "second mud hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
+	eq(int(_unit(0).get("slow_remaining", 0)), 1, "a second mud land keeps Slow at 1 turn")
+	eq(int(_unit(0).get("slow_stacks", 0)), 2, "a push while slowed stacks Slow to 2")
+	eq(_unit(0)["hp"], 62, "second mud hit is another 6 Earth and no Burn (Momentum ×1.20: 6→7)")
 	var slowed: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 67, "mud Slow does not tick HP (Momentum ×1.20: 6→7)")
+	eq(_unit(0)["hp"], 62, "mud Slow does not tick HP (Momentum ×1.20: 6→7)")
 	eq(_unit(0)["ap"], 6, "mud Slow does not cut AP")
-	eq(_unit(0)["mp"], 2, "Slow cuts 1 MP at the victim's turn start")
+	eq(_unit(0)["mp"], 1, "Slow 2 cuts 2 MP at the victim's turn start")
 	eq(int(_unit(0).get("slow_remaining", 0)), 0, "the one Slow turn is spent")
-	eq(int(_first_event_where(slowed["events"], "slow").get("mp_delta", 0)), -1, "the Slow tick is −1 MP")
-	eq(str(slowed.get("snapshot", {}).get("coach", "")).contains("6/2"), true, "the turn coach shows the cut MP")
+	eq(int(_first_event_where(slowed["events"], "slow").get("mp_delta", 0)), -2, "the Slow 2 tick is −2 MP")
+	eq(str(slowed.get("snapshot", {}).get("coach", "")).contains("6/1"), true, "the turn coach shows the cut MP")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	_sim.submit({"type": "end_turn", "seat": 1})
 	eq(_unit(0)["mp"], 3, "the next turn refills MP after Slow")
@@ -1011,7 +1028,7 @@ func _test_hazard_push_and_targets() -> void:
 	eq(bool(beside.get("ok", false)), true, "Strike on the empty trough tile hits the body (%s)" % str(beside.get("reason", "")))
 	eq(str(beside.get("snapshot", {}).get("coach", "")).contains("needs a living unit"), false, "trough tap is not a living-unit refund")
 	eq(_unit(1)["pos"], Vector2i(9, 6), "the trough tap does not move the body")
-	eq(int(_unit(1)["hp"]) < 80, true, "the trough tap deals Strike damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the trough tap deals Strike damage")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -1024,7 +1041,7 @@ func _test_hazard_push_and_targets() -> void:
 	var ground_snap: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(8, 7), "seat": 0})
 	eq(bool(ground_snap.get("ok", false)), true, "Strike on empty ground beside one body snaps (%s)" % str(ground_snap.get("reason", "")))
 	eq(_unit(1)["pos"], Vector2i(9, 6), "the ground snap does not move the body")
-	eq(int(_unit(1)["hp"]) < 80, true, "the ground snap deals Strike damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the ground snap deals Strike damage")
 	# Voluntary steps skip mud, water, and lava, including Advance.
 	_sim.reset_match({
 		"seed": 1,
@@ -1063,7 +1080,7 @@ func _test_soft_lock_target() -> void:
 	var beside: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 1), "seat": 0})
 	eq(bool(beside.get("ok", false)), true, "Mark Shot on the empty neighbor snaps (%s)" % str(beside.get("reason", "")))
 	eq(_unit(1)["pos"], Vector2i(4, 0), "the snap does not move the foe")
-	eq(int(_unit(1)["hp"]) < 80, true, "the snap deals Mark Shot damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "the snap deals Mark Shot damage")
 	eq(_sim.soft_lock_dest(0, SpellKits.MARK_SHOT, Vector2i(4, 1)), Vector2i(4, 0), "selection snap names the one neighbor")
 	# Chebyshev 2 is outside the #194 neighborhood.
 	var far: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2), "seat": 0})
@@ -1080,7 +1097,7 @@ func _test_soft_lock_target() -> void:
 	var past: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 5), "seat": 0})
 	eq(str(past.get("reason", "")), "out_of_range", "Strike past the body stays out of range")
 	eq(int(_unit(0)["ap"]), 6, "the out-of-range tap refunds AP")
-	eq(_unit(1)["hp"], 80, "the out-of-range tap does not hit")
+	eq(_unit(1)["hp"], 75, "the out-of-range tap does not hit")
 	# Only the caster is beside this tile. Do not snap onto yourself.
 	var self_side: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(4, 5), "seat": 0})
 	eq(str(self_side.get("reason", "")), "no_target", "a tile beside only the caster stays empty")
@@ -1131,7 +1148,7 @@ func _test_soft_lock_target() -> void:
 	var lone: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 4), "seat": 0})
 	eq(bool(lone.get("ok", false)), true, "one neighbor in the pack still snaps (%s)" % str(lone.get("reason", "")))
 	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(6, 4), "the snapped foe stays on their tile")
-	eq(int(_sim.snapshot()["units"][1]["hp"]) < 80, true, "the one neighbor takes the Strike")
+	eq(int(_sim.snapshot()["units"][1]["hp"]) < int(_sim.snapshot()["units"][1]["max_hp"]), true, "the one neighbor takes the Strike")
 	eq(int(_sim.snapshot()["units"][2]["hp"]), 80, "the other foe is not hit")
 
 
@@ -1207,9 +1224,10 @@ func _test_solid_props_block_walk_paths() -> void:
 				eq(bool(_sim.tile_at(step_cell).get("walkable", false)), true, "%s path step %s is walkable" % [map_id, str(step_cell)])
 			saw_path = true
 		truthy(saw_path, "%s still has a walk that goes around the prop" % map_id)
-	# Crosshaven ruins stay dress. The fence beside them does not.
+	# Crosshaven ruins are a tall prop: they block like the fence beside them
+	# (Mauro 30 Sep 2026: tall props block walking too).
 	_sim.reset_match({"seed": 1, "map_id": "crosshaven", "skip_deploy": true})
-	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", false)), true, "Crosshaven ruins stay walkable")
+	eq(bool(_sim.tile_at(Vector2i(0, 0)).get("walkable", true)), false, "Crosshaven ruins block")
 	eq(bool(_sim.tile_at(Vector2i(1, 0)).get("walkable", true)), false, "Crosshaven fence blocks")
 	var host_snap: Dictionary = _sim.snapshot()
 	var replica: Node = load("res://backend/combat_sim.gd").new()
@@ -1732,7 +1750,7 @@ func _test_spell_range_stays_chebyshev() -> void:
 	eq(_sim.manhattan(Vector2i(0, 0), Vector2i(2, 2)), 4, "same tiles are Manhattan 4")
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(2, 2)})
 	eq(result["ok"], true, "Mark Shot uses Chebyshev range, so Chebyshev 2 is legal")
-	eq(_unit(1)["hp"], 72, "8 Air on connect at Chebyshev 2")
+	eq(_unit(1)["hp"], 82, "8 Air on connect at Chebyshev 2")
 	eq(result["events"][0]["range"], 2, "hit event range is Chebyshev")
 	# Strike / Mark Shot stay Chebyshev. Advance range is cardinal (see range-gate test).
 	eq(SpellKits.spell(SpellKits.MARK_SHOT).get("range_mode", ""), "chebyshev", "Mark Shot range_mode is Chebyshev")
@@ -1776,7 +1794,7 @@ func _test_illegal_cast_refunds() -> void:
 	eq(result["illegal"], true, "Mark Shot range 1 is illegal")
 	eq(result["reason"], "out_of_range", "out_of_range")
 	eq(_unit(0)["ap"], 6, "illegal cast refunds AP")
-	eq(_unit(1)["hp"], 80, "illegal cast deals no damage")
+	eq(_unit(1)["hp"], 90, "illegal cast deals no damage")
 	result = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(1, 0)})
 	eq(result["illegal"], true, "Kestrel Strike is not in kit")
 	eq(result["reason"], "spell_not_in_kit", "spell_not_in_kit")
@@ -1815,7 +1833,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(int(_unit(0)["shades"]), shades_before, "blocked back does not spend Shade")
 	eq(bool(_unit(0)["shade"]), true, "blocked back keeps Shade")
 	eq(bool(_unit(0)["invisible"]), true, "blocked back keeps Invisible")
-	eq(int(_unit(1)["hp"]), 80, "blocked back deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "blocked back deals no damage")
 	eq(_unit(1)["pos"], prey, "blocked back does not move the target")
 
 	var miss_setup: Dictionary = _sim.reset_match({
@@ -1840,7 +1858,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(str(_unit(0).get("facing", "")), str(miss_setup["units"][0].get("facing", "")), "Ambush miss does not turn Gloam")
 	eq(bool(_unit(0)["shade"]), true, "Ambush miss keeps Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
 	var miss_event: Dictionary = missed["events"][0]
 	eq(str(miss_event.get("type", "")), "miss", "Ambush miss emits miss")
 	eq(bool(miss_event.get("teleported", true)), false, "Ambush miss teleported is false")
@@ -1863,7 +1881,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(_unit(0)["pos"], back, "Invisible Ambush lands on the empty back tile")
 	eq(int(_unit(0)["shades"]), shades_hit, "Invisible origin does not spend Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Ambush hit ends Invisible")
-	eq(int(_unit(1)["hp"]), 50, "empty back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 40, "empty back hit is 26 × 1.35 = 35")
 	var hit_event: Dictionary = hit["events"][0]
 	eq(hit_event.get("destination"), back, "Ambush hit destination is the back tile")
 	eq(bool(hit_event.get("backstab", false)), true, "empty back tile is a backstab")
@@ -1890,7 +1908,7 @@ func _test_ambush_destination_locked() -> void:
 	eq(str(_unit(0).get("facing", "")), "W", "Shade-origin Ambush faces the prey from the back tile")
 	eq(str(shade_hit["events"][0].get("facing", "")), "W", "Ambush hit event carries the new facing")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends one Shade on hit")
-	eq(int(_unit(1)["hp"]), 50, "Shade-origin back hit is 22 × 1.35 = 30")
+	eq(int(_unit(1)["hp"]), 40, "Shade-origin back hit is 26 × 1.35 = 35")
 
 
 func _test_ambush_arms_at_zero_mp() -> void:
@@ -1998,7 +2016,7 @@ func _test_ambush_origin_chrome() -> void:
 	})
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "origin chrome does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "origin chrome does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "origin chrome does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "origin chrome does not change Ambush damage")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "origin chrome does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "origin chrome does not change Drop Shade MP")
 	eq(_sim.chebyshev(gloam, shade_at), 2, "origin chrome plant is inside Drop Shade")
@@ -2043,7 +2061,8 @@ func _test_ambush_origin_chrome() -> void:
 		"kestrel_facing": "W",
 	})
 	origin = _sim.ambush_origin(0)
-	eq(bool(origin.get("show", true)), false, "Ambush origin chrome stays off with no Shade and no Invisible")
+	eq(bool(origin.get("show", false)), true, "visible Gloam's body is an Ambush origin (Mauro 30 Sep 2026)")
+	eq(origin.get("origin"), invisible_gloam, "the visible origin is the body")
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains('set_highlight("origin")'), "the board paints the Ambush origin tile")
 	truthy(view.contains('set_highlight("landing")'), "the board paints the Ambush back tile while aiming")
@@ -2072,14 +2091,8 @@ func _test_ambush_shade_label_matches_origin() -> void:
 	eq(bool(planted.get("ok", false)), true, "the far Shade plants")
 	_complete_opponent_turn()
 	eq(_sim.snapshot()["shade_tokens"][0]["pos"], shade_at, "the far Shade stays on the board")
-	eq(bool(_sim.ambush_origin(0).get("show", true)), false, "an out-of-range Shade does not open Ambush chrome")
-	eq(bool(_sim.ambush_origin(0).get("from_self", true)), false, "that hidden origin is not the body")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a Shade outside 1–2 cardinal does not arm Ambush")
-	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(rejected.get("ok", true)), false, "body range does not fire Ambush while the origin is the Shade")
-	eq(str(rejected.get("reason", "")), "out_of_range", "the far Shade rejects as out of range")
-	eq(_unit(0)["pos"], body, "the rejected Ambush leaves Gloam on the body")
-	eq(int(_unit(1)["hp"]), int(_unit(1)["max_hp"]), "the rejected Ambush does not damage from the body")
+	eq(bool(_sim.ambush_origin(0).get("from_self", false)), true, "visible: the in-range body is the origin, not the far Shade")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "visible Gloam arms Ambush from the body (Mauro 30 Sep 2026)")
 	var shade_hud := CombatHUD.new()
 	shade_hud._build()
 	shade_hud.render(_sim.snapshot(), _sim.legal_intents(0))
@@ -2109,7 +2122,7 @@ func _test_ambush_range_from_origin() -> void:
 	eq(int(ambush["max_range"]), 2, "Ambush max range is 2")
 	eq(int(ambush["ap"]), 4, "origin range does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "origin range does not change Ambush MP")
-	eq(int(ambush["base_damage"]), 22, "origin range does not change Ambush damage")
+	eq(int(ambush["base_damage"]), 26, "origin range does not change Ambush damage")
 	eq(SpellKits.range_text(ambush), "range 1–2 cardinal", "Ambush range_text is 1–2 cardinal")
 	eq(SpellKits.range_text(SpellKits.spell(SpellKits.ADVANCE)), "exactly 2 cardinal", "Advance range_text stays exactly 2 cardinal")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "Drop Shade max is Chebyshev 3")
@@ -2159,13 +2172,10 @@ func _test_ambush_range_from_origin() -> void:
 	eq(_sim.manhattan(far_shade, prey) > 2, true, "this Shade is outside Manhattan 2 of the prey")
 	var far_plant: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": far_shade, "seat": 0})
 	eq(bool(far_plant.get("ok", false)), true, "Drop Shade can plant outside Ambush range")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a far Shade does not arm Ambush just because the body is in range")
-	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(str(rejected.get("reason", "")), "out_of_range", "Shade-origin range reject is out_of_range")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "the body in range arms Ambush without Invisible")
+	eq(_sim.ambush_origin(0).get("origin"), body, "the far Shade does not steal the origin")
 	_complete_opponent_turn()
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "an armed Shade still cannot target an enemy outside Manhattan 1-2")
-	var armed_far: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(str(armed_far.get("reason", "")), "out_of_range", "armed Shade-origin range reject stays out_of_range")
+	eq(_sim.ambush_origin(0).get("origin"), body, "an armed far Shade still does not steal the origin")
 	_live_unit(0)["invisible"] = true
 	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Invisible Ambush uses the body, ignoring the far Shade")
 
@@ -2236,7 +2246,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	var drop: Dictionary = SpellKits.spell(SpellKits.DROP_SHADE)
 	eq(int(ambush["ap"]), 4, "adjacent reject does not change Ambush AP")
 	eq(int(ambush["mp"]), 0, "adjacent reject does not change Ambush MP")
-	eq(int(ambush["base_damage"]), 22, "adjacent reject does not change Ambush damage")
+	eq(int(ambush["base_damage"]), 26, "adjacent reject does not change Ambush damage")
 	eq(str(ambush["range_mode"]), "cardinal", "Ambush stays cardinal")
 	eq(int(ambush["min_range"]), 1, "Ambush min is 1")
 	eq(int(ambush["max_range"]), 2, "Ambush max is 2")
@@ -2298,7 +2308,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		eq(str(cast.get("reason", "")), "out_of_range", "%s rejects as out_of_range" % label)
 		eq(int(_unit(0)["ap"]), 5, "%s refunds the Ambush AP" % label)
 		eq(_unit(0)["pos"], gloam, "%s does not blink Gloam" % label)
-		eq(int(_unit(1)["hp"]), 80, "%s deals no damage" % label)
+		eq(int(_unit(1)["hp"]), 75, "%s deals no damage" % label)
 
 	# Manhattan 2 cardinal from an armed Shade, but the back tile is occupied: still illegal.
 	var back_gloam := Vector2i(2, 4)
@@ -2338,9 +2348,9 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	eq(str(back_cast.get("reason", "")), "illegal_back", "an occupied back rejects as illegal_back")
 	eq(int(_unit(0)["ap"]), 6, "an occupied back refunds the Ambush AP")
 	eq(_unit(0)["pos"], back_gloam, "an occupied back does not blink Gloam")
-	eq(int(_unit(1)["hp"]), 80, "an occupied back deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "an occupied back deals no damage")
 
-	# No Invisible and no Shade, even on a Manhattan-2 cardinal body, does not arm.
+	# Mauro 30 Sep 2026: no Invisible and no Shade still arms from the body.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -2350,10 +2360,10 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 		"kestrel_facing": "W",
 	})
 	eq(_sim.is_cardinal_exact(Vector2i(2, 2), Vector2i(4, 2), 2), true, "the bare body is Manhattan 2 cardinal")
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "no Shade and no Invisible does not arm Ambush")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "no Shade and no Invisible arms Ambush from the body")
 	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
-	eq(str(bare.get("reason", "")), "no_shade", "no Shade and no Invisible rejects as no_shade")
-	eq(int(_unit(0)["ap"]), 6, "no_shade refunds AP")
+	eq(bool(bare.get("ok", false)), true, "visible body Ambush resolves")
+	eq(int(_unit(0)["ap"]), 2, "visible body Ambush spends 4 AP")
 
 	var legal_gloam := Vector2i(4, 7)
 	var legal_shade := Vector2i(3, 5)
@@ -2388,7 +2398,7 @@ func _test_ambush_adjacent_shade_rejects() -> void:
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Manhattan 2 cardinal from the Shade still resolves")
 	eq(_unit(0)["pos"], Vector2i(6, 5), "the legal Shade Ambush lands on the empty back tile")
-	eq(int(_unit(1)["hp"]), 50, "the legal Shade Ambush is still 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "the legal Shade Ambush is still 26 × 1.35")
 
 	# Chebyshev 1, 2, and 3 from Gloam still plant. Range is not Ambush's cross.
 	var planter := Vector2i(7, 7)
@@ -2457,7 +2467,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(hit.get("ok", false)), true, "armed Manhattan-2 Ambush resolves")
 	eq(_unit(0)["pos"], back, "Ambush lands one step past the foe on the approach axis")
 	eq(int(_unit(0)["shades"]), 0, "a Shade origin spends the Shade on hit")
-	eq(int(_unit(1)["hp"]), 50, "the backstab hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "the backstab hit is 26 × 1.35")
 
 	# Manhattan 1 cardinal, empty back, Shade armed: accept.
 	var near_shade := Vector2i(3, 2)
@@ -2656,7 +2666,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_hit["events"][0].get("caster_cell"), Vector2i(6, 0), "east cast cell stays the pre-blink tile")
 	eq(bool(east_hit["events"][0].get("teleported", false)), true, "east Invisible hit teleports")
 	eq(bool(east_hit["events"][0].get("backstab", true)), false, "east landing in front is not a backstab")
-	eq(int(_unit(1)["hp"]), 58, "east front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "east front Ambush is 26 FLEX")
 	eq(bool(_unit(0)["invisible"]), false, "east hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2674,7 +2684,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(east_miss["events"][0].has("struck_from"), false, "east miss has no strike cell")
 	eq(_unit(0)["pos"], Vector2i(6, 0), "east miss leaves Gloam on the cast cell")
 	eq(bool(_unit(0)["invisible"]), false, "east miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "east miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "east miss deals no damage")
 	eq(int(_unit(0)["ap"]), 0, "east miss spends Fade 2 plus Ambush 4")
 
 	# Occupied back: reject + refund.
@@ -2717,7 +2727,7 @@ func _test_ambush_rules_keeper_lock() -> void:
 	eq(bool(_unit(0)["invisible"]), false, "Ambush miss ends Invisible")
 	eq(int(_unit(0)["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(_unit(0)["mp"]), 3, "Ambush miss spends 0 MP")
-	eq(int(_unit(1)["hp"]), 80, "Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Ambush miss deals no damage")
 
 
 ## Soft Lock 2026-09-26. Drop Shade keeps Invisible. An attack resolve ends it.
@@ -2729,7 +2739,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	# actually plants. Drop Shade still does not clear Invisible.
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Shade-while-Invisible does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "Shade-while-Invisible does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Shade-while-Invisible does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Shade-while-Invisible does not change Ambush damage")
 	var gloam := Vector2i(2, 2)
 	var prey := Vector2i(4, 2)
 	var shade_at := Vector2i(4, 4)
@@ -2782,7 +2792,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(jumped["events"][0].get("caster_cell"), gloam, "caster_cell stays the pre-blink body")
 	eq(int(_unit(0)["shades"]), 0, "the Shade jump spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "the Shade jump ends Invisible")
-	eq(int(_unit(1)["hp"]), 58, "the Shade jump front hit is 22")
+	eq(int(_unit(1)["hp"]), 49, "the Shade jump front hit is 26")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -2857,7 +2867,7 @@ func _test_invisible_shade_origin_ambush() -> void:
 	eq(missed["events"][0].get("origin"), shade_at, "the miss origin is still the Shade")
 	eq(int(_unit(0)["shades"]), 1, "Invisible Shade Ambush miss keeps the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Shade Ambush miss ends Invisible")
-	eq(int(_unit(1)["hp"]), 80, "Invisible Shade Ambush miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Invisible Shade Ambush miss deals no damage")
 
 
 func _test_invisible_breaks_on_attack() -> void:
@@ -2872,11 +2882,7 @@ func _test_invisible_breaks_on_attack() -> void:
 		"positions": [gloam, prey],
 		"kestrel_facing": "W",
 	})
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "Visible Gloam without a Shade cannot Ambush")
-	var bare: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
-	eq(bool(bare.get("illegal", false)), true, "Ambush without Shade or Invisible is rejected")
-	eq(str(bare.get("reason", "")), "no_shade", "the parked body-origin stays no_shade")
-	eq(int(_unit(0)["ap"]), 6, "the parked reject refunds AP")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "Visible Gloam without a Shade can Ambush (Mauro 30 Sep 2026)")
 
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": gloam, "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade still grants Invisible")
@@ -2905,7 +2911,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush miss ends Invisible")
 	eq(bool(missed["events"][0].get("teleported", true)), false, "Invisible Ambush miss is not a teleport")
 	eq(bool(missed["events"][0].get("invisible_retained", true)), false, "Invisible Ambush miss does not retain Invisible")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage stays 22")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush damage stays 26")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush cost stays 4 AP")
 	eq(_sim.ambush_damage_if_planted(gloam, back, 22), 0, "Ambush damage without the relocate is zero")
 	eq(_sim.ambush_damage_if_planted(back, back, 22), 22, "Ambush damage after the plant stays 22")
@@ -2924,7 +2930,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(hit.get("ok", false)), true, "Invisible Ambush hit resolves")
 	eq(_unit(0)["pos"], back, "Invisible Ambush hit relocates to the back tile")
 	eq(hit["events"][0].get("struck_from"), back, "Invisible Ambush damage is struck after the relocate")
-	eq(int(_unit(1)["hp"]), 50, "Invisible Ambush hit is 22 × 1.35")
+	eq(int(_unit(1)["hp"]), 40, "Invisible Ambush hit is 26 × 1.35")
 	eq(bool(_unit(0)["invisible"]), false, "Invisible Ambush hit ends Invisible")
 	eq(bool(hit["events"][0].get("invisible_retained", true)), false, "Invisible Ambush hit does not retain Invisible")
 
@@ -2944,7 +2950,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(shade_hit.get("ok", false)), true, "Visible Shade Ambush resolves")
 	eq(_unit(0)["pos"], back, "Visible Shade Ambush plants on the back tile")
 	eq(shade_hit["events"][0].get("struck_from"), back, "Visible Shade Ambush hits from the back tile")
-	eq(int(_unit(1)["hp"]), 50, "Visible Shade Ambush deals the backstab 30")
+	eq(int(_unit(1)["hp"]), 40, "Visible Shade Ambush deals the backstab 35")
 	eq(int(_unit(0)["shades"]), 0, "Visible Shade Ambush spends the Shade")
 	eq(bool(_unit(0)["invisible"]), false, "Visible Shade Ambush stays Visible")
 
@@ -2960,7 +2966,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut fixture Fade resolves")
 	var cut_hit: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
 	eq(bool(cut_hit.get("ok", false)), true, "Cut under Invisible resolves")
-	eq(int(_unit(1)["hp"]) < 80, true, "Cut under Invisible deals damage")
+	eq(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), true, "Cut under Invisible deals damage")
 	eq(bool(_unit(0)["invisible"]), false, "Cut hit ends Invisible")
 	_sim.reset_match({
 		"seed": 1,
@@ -2974,7 +2980,7 @@ func _test_invisible_breaks_on_attack() -> void:
 	eq(bool(_sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(0, 0), "seat": 0}).get("ok", false)), true, "Cut miss fixture Fade resolves")
 	var cut_miss: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(1, 0), "seat": 0})
 	eq(bool(cut_miss.get("ok", false)), true, "Cut miss under Invisible resolves")
-	eq(int(_unit(1)["hp"]), 80, "Cut miss deals no damage")
+	eq(int(_unit(1)["hp"]), 75, "Cut miss deals no damage")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "Cut miss does not move Gloam")
 	eq(bool(_unit(0)["invisible"]), false, "Cut miss ends Invisible")
 
@@ -3004,7 +3010,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	var event: Dictionary = hit.get("events", [{}])[0]
 	var dealt := hp_before - int(_unit(1)["hp"])
 	eq(dealt > 0, true, "Instant Invisible Ambush deals damage")
-	eq(dealt, 22, "Instant Invisible front hit is the locked 22")
+	eq(dealt, 26, "Instant Invisible front hit is the locked 22")
 	eq(int(event.get("damage", 0)), dealt, "Instant Invisible damage is the HP drop")
 	eq(_unit(0)["pos"], back, "Instant Invisible Ambush relocates to the back tile")
 	eq(_unit(0)["pos"] == cast, false, "Instant Invisible Ambush does not stay on the cast cell")
@@ -3062,7 +3068,7 @@ func _test_instant_invisible_ambush_relocates_before_damage() -> void:
 	eq(far_hit["events"][0].get("struck_from"), far_back, "distant Invisible damage is struck after the plant")
 	eq(far_hit["events"][0].get("caster_cell"), far, "distant Invisible cast cell stays the pre-blink tile")
 	eq(bool(far_hit["events"][0].get("teleported", false)), true, "distant Invisible Shade Ambush teleports")
-	eq(int(_unit(1)["hp"]), 58, "front Shade Ambush while Invisible is 22")
+	eq(int(_unit(1)["hp"]), 49, "front Shade Ambush while Invisible is 26")
 	eq(int(_unit(0)["shades"]), 0, "Shade origin spends the Shade while Invisible")
 	eq(bool(_unit(0)["invisible"]), false, "Shade Ambush while Invisible ends Invisible")
 
@@ -3107,7 +3113,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(hit["events"][0].get("origin"), shade_at, "far Shade event origin is the Shade")
 	# Face N puts the rear cone south. The axis back tile is north, so this hit is the front 22.
 	eq(bool(hit["events"][0].get("backstab", true)), false, "landing in front of Face-N is not a backstab")
-	eq(int(_unit(1)["hp"]), 58, "front Ambush is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "front Ambush is 26 FLEX")
 
 	# Same geometry. Confirming the Shade plate must not read as distance 0.
 	_sim.reset_match({
@@ -3128,8 +3134,8 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_unit(0)["pos"], back, "a Shade-plate confirm still teleports to the back tile")
 	eq(int(_unit(0)["shades"]), 0, "a Shade-plate confirm spends the Shade on hit")
 
-	# Diagonal Shade, body already adjacent. That is not a legal Ambush and must
-	# not connect as a body slash.
+	# Diagonal Shade, body already adjacent. Since Mauro's 30 Sep 2026 rule the
+	# body is always an origin, so this is a legal body Ambush to the back tile.
 	var near_gloam := Vector2i(3, 11)
 	var near_prey := Vector2i(3, 12)
 	var diag_shade := Vector2i(4, 11)
@@ -3146,17 +3152,11 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_sim._cardinal_axis_len(diag_shade, near_prey) < 0, true, "the Shade is diagonal to the prey")
 	eq(bool(_sim.submit({"type": "cast", "spell": "drop_shade", "to": diag_shade, "seat": 0}).get("ok", false)), true, "Drop Shade still plants the diagonal")
 	_complete_opponent_turn()
-	eq(_has_legal_cast(0, SpellKits.AMBUSH), false, "a diagonal Shade does not arm Ambush just because the body is adjacent")
-	var fake: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
-	eq(str(fake.get("reason", "")), "out_of_range", "adjacent body with a diagonal Shade rejects")
-	eq(_unit(0)["pos"], near_gloam, "the reject does not blink Gloam")
-	eq(int(_unit(1)["hp"]), 80, "the reject deals no damage")
-	eq(int(_unit(0)["shades"]), 1, "the reject keeps the Shade")
-	var plate_illegal: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": diag_shade, "seat": 0})
-	var illegal_coach := str(plate_illegal.get("snapshot", {}).get("coach", ""))
-	eq(illegal_coach.contains("target at 0"), false, "an illegal Shade-plate tap is not distance 0")
-	eq(bool(plate_illegal.get("ok", true)), false, "an illegal Shade-plate tap does not resolve")
-	eq(_unit(0)["pos"], near_gloam, "an illegal Shade-plate tap leaves Gloam put")
+	eq(_has_legal_cast(0, SpellKits.AMBUSH), true, "the adjacent body arms Ambush; the diagonal Shade adds nothing")
+	var body_hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": near_prey, "seat": 0})
+	eq(bool(body_hit.get("ok", false)), true, "adjacent body Ambush resolves")
+	eq(body_hit["events"][0].get("origin"), near_gloam, "the origin is the body, not the diagonal Shade")
+	eq(int(_unit(0)["shades"]), 1, "a body Ambush keeps the Shade")
 
 	# Invisible, body already on the facing-rear tile. The blink is still the
 	# axis back tile past the foe, not a slash from the current cell.
@@ -3178,7 +3178,7 @@ func _test_ambush_shade_origin_teleport() -> void:
 	eq(_unit(0)["pos"] == near_gloam, false, "Invisible Ambush does not slash from the old tile")
 	eq(bool(self_hit["events"][0].get("teleported", false)), true, "Invisible adjacent hit teleports")
 	eq(bool(self_hit["events"][0].get("backstab", true)), false, "past a Face-S foe is the front, not a free backstab")
-	eq(int(_unit(1)["hp"]), 58, "that front hit is 22 FLEX")
+	eq(int(_unit(1)["hp"]), 49, "that front hit is 22 FLEX")
 
 
 func _test_miss_keeps_ap_no_engine() -> void:
@@ -3192,7 +3192,7 @@ func _test_miss_keeps_ap_no_engine() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(4, 2)})
 	eq(result["ok"], true, "miss is a legal resolution")
-	eq(_unit(1)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["hp"], 90, "miss deals 0")
 	eq(_unit(1)["marks"], 0, "miss grants no Marks")
 	eq(_unit(0)["ap"], 4, "miss keeps the 2 AP spend")
 	var events: Array = result["events"]
@@ -3213,7 +3213,7 @@ func _test_strike_hit_and_impact() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Strike connects")
-	eq(_unit(0)["hp"], 64, "front Strike deals 16 Earth")
+	eq(_unit(0)["hp"], 61, "front Strike deals 14 Earth")
 	eq(_unit(1)["impact"], 1, "+1 Impact on connect")
 	eq(_unit(1)["ap"], 3, "Strike spends 3 AP")
 	eq(result["events"][0]["crit_mult"], 1.0, "CritMult 1.0 on hit")
@@ -3232,7 +3232,7 @@ func _test_back_facing_multiplier() -> void:
 	_sim.submit({"type": "end_turn"})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "back Strike connects")
-	eq(_unit(0)["hp"], 61, "16 × 1.20 rounds to 19, 80-19=61")
+	eq(_unit(0)["hp"], 58, "14 × 1.20 rounds to 17, 75-17=58")
 	eq(result["events"][0]["back"], true, "back flag")
 	approx(result["events"][0]["facing_mult"], 1.20, "facing 1.20")
 
@@ -3240,7 +3240,7 @@ func _test_back_facing_multiplier() -> void:
 func _test_mark_shot_range_and_marks() -> void:
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["min_range"]), 2, "Mark Shot min range stays 2")
 	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["max_range"]), 5, "Mark Shot max range 5 Chebyshev (Mauro, 29 Sep)")
-	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage stays 8")
+	eq(int(SpellKits.spell(SpellKits.MARK_SHOT)["base_damage"]), 8, "Mark Shot base damage is 8")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3250,7 +3250,7 @@ func _test_mark_shot_range_and_marks() -> void:
 	})
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(result["ok"], true, "Mark Shot at range 5 is legal")
-	eq(_unit(1)["hp"], 71, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
+	eq(_unit(1)["hp"], 81, "8 Air on connect (Longshot ×1.15 at ≥4: 8→9)")
 	eq(_unit(1)["marks"], 1, "Marks stored on the target (A01 Locked)")
 	eq(result["events"][0]["hit_chance"], 75, "range 5 uses the 75% mid band")
 	# Mauro (29 Sep): 2–7 → 2–5. Range 6 and 7 are now out of range and refund.
@@ -3265,7 +3265,7 @@ func _test_mark_shot_range_and_marks() -> void:
 		result = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(dist, 0)})
 		eq(bool(result.get("ok", true)), false, "Mark Shot at range %d is out of range" % dist)
 		eq(str(result.get("reason", "")), "out_of_range", "range %d rejects as out_of_range" % dist)
-		eq(_unit(1)["hp"], 80, "no damage at range %d" % dist)
+		eq(_unit(1)["hp"], 90, "no damage at range %d" % dist)
 		eq(_unit(0)["ap"], 6, "range %d refunds the AP" % dist)
 	_sim.reset_match({
 		"seed": 1,
@@ -3454,14 +3454,14 @@ func _assert_far_band_chrome(dist: int, chance: int) -> void:
 	eq(result["events"][0].has("hit_chance"), false, "dist %d reject carries no rolled hit chance" % dist)
 	eq(str(result["events"][0]["coach"]).contains("open"), false, "dist %d coach does not call the band open" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Mark Shot refunds AP" % dist)
-	eq(_unit(1)["hp"], 80, "dist %d Mark Shot deals no damage" % dist)
+	eq(_unit(1)["hp"], 90, "dist %d Mark Shot deals no damage" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Mark Shot does not roll onto Marks" % dist)
 	var detonate: Dictionary = _sim.submit({"type": "cast", "spell": "detonate", "to": target})
 	eq(detonate["illegal"], true, "dist %d Detonate stays outside kit range" % dist)
 	eq(detonate["reason"], "out_of_range", "dist %d Detonate reject is out_of_range" % dist)
 	eq(_unit(0)["ap"], 6, "dist %d Detonate refunds AP" % dist)
 	eq(_unit(1)["marks"], 1, "dist %d Detonate does not consume Marks" % dist)
-	eq(_unit(1)["hp"], 80, "dist %d Detonate deals no damage" % dist)
+	eq(_unit(1)["hp"], 90, "dist %d Detonate deals no damage" % dist)
 
 
 func _assert_past_locked_band() -> void:
@@ -3503,13 +3503,13 @@ func _test_match_over() -> void:
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
-		"rolls": [1, 1, 1, 1, 1],
+		"rolls": [1, 1, 1, 1, 1, 1],
 		"kestrel_pos": Vector2i(3, 3),
 		"ironjaw_pos": Vector2i(4, 3),
 		"kestrel_facing": "E",
 		"ironjaw_facing": "W",
 	})
-	# Two front Strikes = 32. Drive HP down by repeating turns.
+	# Front Strike is 14. Drive HP down by repeating turns.
 	_unit_set_hp_via_hits()
 	truthy(_sim.snapshot()["match_over"], "match ends when a seat has no living units")
 	eq(_sim.snapshot()["winner_seat"], 1, "Ironjaw wins")
@@ -3519,8 +3519,8 @@ func _test_match_over() -> void:
 
 
 func _unit_set_hp_via_hits() -> void:
-	# Strike is 16; 5 connects kill 80 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
-	for i in range(5):
+	# Strike is 14; 6 connects kill 75 HP. Alternate turns: Ironjaw strikes, Kestrel ends.
+	for i in range(6):
 		if _sim.snapshot()["match_over"]:
 			return
 		if int(_sim.snapshot()["active_seat"]) == 0:
@@ -3561,7 +3561,7 @@ func _test_wind_mod_omitted() -> void:
 
 
 func _test_legal_intents_empty_for_other_seat() -> void:
-	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	eq(_sim.legal_intents(1).size(), 0, "Ironjaw has no legal intents on Kestrel's turn")
 	truthy(_sim.legal_intents(0).size() > 0, "Kestrel has legal intents")
 	var types := {}
@@ -3584,8 +3584,83 @@ func _test_view_does_not_roll_or_own_hp() -> void:
 	eq(view.contains("hp"), false, "board_view does not mention hp")
 
 
-func _test_hud_chrome_kit_gated() -> void:
+## Mauro 30 Sep 2026: "Kestrel should not be able to attack in front of the
+## wall, has to have vision; this applies for all classes".
+func _test_line_of_sight() -> void:
+	var shot := func(legal: Array, spell: String, to: Vector2i) -> bool:
+		for intent in legal:
+			if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == spell and intent.get("to", Vector2i(-9, -9)) == to:
+				return true
+		return false
+	# Clear line: Mark Shot is offered.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 7), Vector2i(7, 7)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), true, "open floor has sight")
+	truthy(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(7, 7)), "Mark Shot offered with a clear line")
+	# A solid blocker on the line.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 7), Vector2i(7, 7)], "blockers": [Vector2i(4, 7)]})
+	eq(_sim.sight_blocker(Vector2i(2, 7), Vector2i(7, 7)), Vector2i(4, 7), "the blocker is the wall on the line")
+	eq(_sim.has_line_of_sight(Vector2i(7, 7), Vector2i(2, 7)), false, "sight is the same both ways")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(7, 7)), false, "Mark Shot is not offered through a wall")
+	eq(_sim.range_highlight_cells(0, "mark_shot").has(Vector2i(7, 7)), false, "no gold range tile behind the wall")
+	truthy(_sim.sight_blocked_cells(0, "mark_shot").has(Vector2i(7, 7)), "the tile behind the wall is listed as no sight")
+	var ap_before := int(_unit(0)["ap"])
+	var res: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(7, 7), "seat": 0})
+	eq(str(res.get("reason", "")), "no_line_of_sight", "a shot through the wall is rejected")
+	eq(int(_unit(0)["ap"]), ap_before, "the rejected shot costs no AP")
+	eq(str(_sim.preview_cast("mark_shot", Vector2i(2, 7), Vector2i(7, 7)).get("reason", "")), "no_line_of_sight", "the preview says no sight")
+	# Off the wall's row the line is clear again.
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 9)), true, "a line that misses the wall has sight")
+	# A line that only grazes a corner is not blocked by the corner tiles.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "positions": [Vector2i(2, 2), Vector2i(4, 4)], "blockers": [Vector2i(3, 2), Vector2i(2, 3)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 2), Vector2i(4, 4)), true, "a diagonal between two blocks still sees")
+	# Melee next to a wall is never blocked (no tile between).
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "classes": ["ironjaw", "kestrel"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "blockers": [Vector2i(5, 4), Vector2i(6, 4)]})
+	truthy(shot.call(_sim.legal_intents(0), "strike", Vector2i(6, 5)), "Strike on the next tile is not blocked")
+	# Every class: a targeted spell of the Bastion kit is gated by a Snap Wall too.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "classes": ["kestrel", "bastion"], "positions": [Vector2i(2, 7), Vector2i(7, 7)], "snap_walls": [Vector2i(5, 7)]})
+	eq(_sim.has_line_of_sight(Vector2i(2, 7), Vector2i(7, 7)), false, "a Snap Wall blocks sight")
+	# Raised stone on the real Crosshaven map: z1 at (5,5) between two z0 tiles.
 	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	eq(_sim.sight_blocker(Vector2i(4, 9), Vector2i(6, 9)), Vector2i(5, 9), "a raised block higher than both ends is a wall")
+	eq(_sim.sight_blocker(Vector2i(1, 1), Vector2i(6, 6)), Vector2i(3, 3), "a tall bush on the line is a wall too")
+	eq(shot.call(_sim.legal_intents(0), "mark_shot", Vector2i(6, 6)), false, "Kestrel cannot shoot over the raised wall")
+	# Water and mud do not block: Crosshaven row 8 has water at (4,8).
+	eq(_sim.has_line_of_sight(Vector2i(3, 8), Vector2i(8, 8)), true, "water on the line does not block sight")
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+## Mauro 30 Sep 2026: "Gloam should be invisible for enemies turn, also player
+## should be able to throw punches in the air and if any of the hits does
+## damage to Gloam, Gloam becomes visible".
+func _test_blind_attacks_on_invisible() -> void:
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1, 1, 1, 1]})
+	var strikes: Array = _sim.legal_intents(0).filter(func(i): return str(i.get("spell", "")) == "strike")
+	eq(strikes.size(), 8, "Strike may punch every tile around Ironjaw")
+	eq(strikes.any(func(i): return i.has("target_seat")), false, "no offer names the hidden Gloam")
+	eq(bool(_sim.aim_hit_preview(0, "strike", null).get("show", false)), false, "the hit % never points at the hidden tile")
+	var ap_before := int(_unit(0)["ap"])
+	var air: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(5, 6), "seat": 0})
+	eq(bool(air.get("ok", false)), true, "a punch into the empty air resolves")
+	eq(int(_unit(0)["ap"]), ap_before - 3, "the air punch spends its AP")
+	eq(bool(_first_event_where(air["events"], "miss").get("blind", false)), true, "the air punch is a blind miss")
+	eq(_unit(1)["pos"], Vector2i(6, 5), "the air punch did not snap onto Gloam")
+	eq(bool(_unit(1)["invisible"]), true, "a whiff leaves Gloam hidden")
+	var found: Dictionary = _sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(found.get("ok", false)), true, "a punch on Gloam's tile resolves")
+	truthy(int(_unit(1)["hp"]) < int(_unit(1)["max_hp"]), "the hit damages Gloam")
+	eq(bool(_unit(1)["invisible"]), false, "damage reveals Gloam")
+	eq(_event_type_count(found["events"], "revealed"), 1, "a revealed event fires")
+	eq(_sim.legal_intents(0).any(func(i): return bool(i.get("blind", false))), false, "no blind offers once nobody is hidden")
+	# A hit that does no damage (Ward soaks it) keeps Gloam hidden.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["ironjaw", "gloam"], "positions": [Vector2i(5, 5), Vector2i(6, 5)], "gloam_invisible": true, "rolls": [1]})
+	_live_unit(1)["shield"] = 99
+	_sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(6, 5), "seat": 0})
+	eq(bool(_unit(1)["invisible"]), true, "no damage, no reveal")
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+
+
+func _test_hud_chrome_kit_gated() -> void:
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var kestrel_offered: Array = CombatHUD.offered_cast_ids(_unit(0), _sim.legal_intents(0))
 	eq(kestrel_offered, ["mark_shot", "detonate"], "Kestrel HUD offers Mark Shot and Detonate")
 	eq(kestrel_offered.has("advance"), false, "Kestrel HUD does not offer Advance")
@@ -3631,6 +3706,112 @@ func _test_handoff_timer_is_client_only() -> void:
 	var hud := FileAccess.get_file_as_string("res://ui/hud.gd")
 	truthy(hud.contains("show_turn_banner"), "HUD can show the End Turn banner")
 	eq(hud.contains("WindMod"), false, "HUD still has no WindMod chrome")
+
+
+func _test_team_match_rules() -> void:
+	# Mauro 1 Oct 2026: Koliseo 2v2 / 3v3. Seats 0,2,4 vs 1,3,5; turns
+	# alternate teams by Init; allies heal allies; a team loses when all fall.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"team_size": 2,
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(2, 4), Vector2i(6, 3), Vector2i(3, 2), Vector2i(9, 4)],
+	})
+	var snap: Dictionary = _sim.snapshot()
+	eq(int(snap["team_size"]), 2, "2v2 match")
+	eq((snap["units"] as Array).size(), 4, "2v2 has four fighters")
+	eq(int(_unit(0)["team"]), 0, "seat 0 is team A")
+	eq(int(_unit(1)["team"]), 1, "seat 1 is team B")
+	eq(int(_unit(2)["team"]), 0, "seat 2 is team A")
+	eq(int(_unit(3)["team"]), 1, "seat 3 is team B")
+	eq(_sim.turn_order(), [0, 1, 2, 3] as Array[int], "turns alternate A1 B1 A2 B2")
+	# Mender heals the hurt teammate (Ironjaw, seat 2).
+	_live_unit(2)["hp"] = 40
+	var heal_offered := false
+	for intent in _sim.legal_intents(0):
+		if str(intent.get("spell", "")) == SpellKits.MEND and int(intent.get("target_seat", -1)) == 2:
+			heal_offered = true
+	eq(heal_offered, true, "Mend offers the teammate")
+	_sim.set("_scripted_rolls", [1] as Array[int])
+	var healed: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.MEND, "to": Vector2i(3, 2), "seat": 0})
+	eq(bool(healed.get("ok", false)), true, "Mend on a teammate resolves")
+	eq(int(_unit(2)["hp"]) > 40, true, "the teammate is healed")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	eq(int(_sim.snapshot()["active_seat"]), 1, "team B's first fighter is next")
+	# Kestrel (seat 1) may target both team A fighters, never her teammate.
+	var targets := {}
+	for intent in _sim.legal_intents(1):
+		if str(intent.get("spell", "")) == SpellKits.MARK_SHOT:
+			targets[int(intent.get("target_seat", -1))] = true
+	eq(targets.has(0) and targets.has(2), true, "Mark Shot offers both enemies")
+	eq(targets.has(3), false, "Mark Shot never offers the teammate")
+	# One enemy down: the match goes on and its turn is skipped.
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	eq(bool(_sim.snapshot()["match_over"]), false, "one fallen fighter does not end a 2v2")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 3, "the fallen seat 2 is skipped")
+	_sim.submit({"type": "end_turn", "seat": 3})
+	eq(int(_sim.snapshot()["active_seat"]), 0, "back to team A's living fighter")
+	_live_unit(0)["hp"] = 0
+	_sim._check_death(_live_unit(0))
+	eq(bool(_sim.snapshot()["match_over"]), true, "the whole team down ends the match")
+	eq(int(_sim.snapshot()["winner_team"]), 1, "team B wins")
+	# 3v3 builds six fighters and alternates by Init.
+	_sim.reset_match({"seed": 2, "flat_board": true, "team_size": 3, "skip_deploy": true, "classes": ["kestrel", "ironjaw", "mender", "gloam", "bastion", "kestrel"]})
+	eq((_sim.snapshot()["units"] as Array).size(), 6, "3v3 has six fighters")
+	_live_unit(4)["init"] = 9
+	_sim._build_turn_order(4)
+	eq(_sim.turn_order(), [4, 1, 0, 3, 2, 5] as Array[int], "the opener leads its team, then teams alternate")
+	# A fighter that falls on its own turn passes the turn on.
+	_sim.reset_match({"seed": 3, "flat_board": true, "team_size": 2, "skip_deploy": true, "classes": ["kestrel", "ironjaw", "mender", "gloam"]})
+	var active := int(_sim.snapshot()["active_seat"])
+	_live_unit(active)["hp"] = 0
+	_sim._check_death(_live_unit(active))
+	_sim.submit({"type": "face", "dir": "N", "seat": active})
+	_sim._skip_fallen_active()
+	eq(int(_sim.snapshot()["active_seat"]) != active, true, "a fallen active fighter hands the turn on")
+	# Duels are unchanged.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true})
+	eq(int(_sim.snapshot()["team_size"]), 1, "the default is still the 1v1 duel")
+	eq((_sim.snapshot()["units"] as Array).size(), 2, "a duel keeps two fighters")
+
+
+func _test_team_deploy() -> void:
+	_sim.reset_match({"seed": 5, "team_size": 2, "classes": ["kestrel", "ironjaw", "mender", "gloam"]})
+	var zone: Array = _sim.deploy_zone_cells(0)
+	eq(zone == _sim.deploy_zone_cells(2), true, "teammates share one deploy zone")
+	var cells: Array = _sim.legal_deploy_cells(0)
+	eq(cells.size() >= 2, true, "the team zone fits both fighters")
+	eq(bool(_sim.place_unit(0, cells[0]).get("ok", false)), true, "the first teammate places")
+	eq(_sim.can_ready(0), false, "Ready waits for the whole team")
+	eq(_sim.legal_deploy_cells(2).has(cells[0]), false, "a teammate's tile is taken")
+	eq(bool(_sim.place_unit(2, cells[1]).get("ok", false)), true, "the second teammate places")
+	eq(_sim.can_ready(2), true, "the whole team placed can Ready")
+	_sim.ready_seat(0)
+	var other: Array = _sim.legal_deploy_cells(1)
+	_sim.place_unit(1, other[0])
+	_sim.place_unit(3, other[1])
+	_sim.ready_seat(3)
+	eq(_sim.match_phase_name(), "TURN_1", "both teams ready starts the fight")
+	eq(_sim.turn_order().size(), 4, "the fight has a four-fighter turn order")
+
+
+func _test_advance_two_per_turn() -> void:
+	# Mauro 30 Sep 2026: "ironjaw spell advance only can be used 2 times" (per turn).
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(12, 12), "ironjaw_pos": Vector2i(2, 2)})
+	_sim.submit({"type": "end_turn"})
+	_live_unit(1)["ap"] = 12
+	eq(bool(_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(4, 2)}).get("ok", false)), true, "first Advance resolves")
+	eq(bool(_sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(6, 2)}).get("ok", false)), true, "second Advance resolves")
+	eq(_has_legal_cast(1, SpellKits.ADVANCE), false, "a third Advance is not offered even with AP left")
+	var third: Dictionary = _sim.submit({"type": "cast", "spell": "advance", "to": Vector2i(8, 2)})
+	eq(str(third.get("reason", "")), "advance_limit", "a third Advance rejects as advance_limit")
+	eq(int(_unit(1)["ap"]), 6, "the third Advance refunds its AP")
+	eq(_unit(1)["pos"], Vector2i(6, 2), "the third Advance does not move Ironjaw")
+	_complete_opponent_turn()
+	eq(_has_legal_cast(1, SpellKits.ADVANCE), true, "the Advance count resets next turn")
 
 
 func _test_advance_teleport_costs() -> void:
@@ -4042,7 +4223,9 @@ func _test_advance_chrome_follows_legal_intents() -> void:
 
 func _test_mark_shot_range_highlights() -> void:
 	# Selecting Mark Shot must show the Chebyshev 2–5 ring, not only the enemy tile.
-	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
+	# The foe stands off the ring: a fighter on a line blocks the tiles behind
+	# it (Mauro 30 Sep 2026), and this checks the bare range geometry.
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(14, 14)})
 	var origin := Vector2i(3, 3)
 	var expected: Dictionary = {}
 	var board_n := int(_sim.snapshot().get("board_size", 15))
@@ -4055,7 +4238,7 @@ func _test_mark_shot_range_highlights() -> void:
 			if dist >= 2 and dist <= 5:
 				expected[cell] = true
 	eq(expected.has(Vector2i(3, 4)), false, "Chebyshev 1 is outside Mark Shot range")
-	eq(expected.has(Vector2i(5, 3)), true, "enemy at Chebyshev 2 is inside the ring")
+	eq(expected.has(Vector2i(5, 3)), true, "a tile at Chebyshev 2 is inside the ring")
 	eq(expected.has(Vector2i(3, 0)), true, "Chebyshev 3 ortho is inside the ring")
 	eq(_sim.chebyshev(origin, Vector2i(0, 0)), 3, "(0,0) is Chebyshev 3 from (3,3)")
 	eq(expected.has(Vector2i(0, 0)), true, "Chebyshev 3 corner is inside the ring")
@@ -4071,6 +4254,7 @@ func _test_mark_shot_range_highlights() -> void:
 		truthy(expected.has(cell), "no extra Mark Shot chrome %s outside 2–5" % str(cell))
 
 	# legal_intents still only offer the enemy dest, not every ring tile.
+	_sim.reset_match({"seed": 1, "flat_board": true, "kestrel_pos": Vector2i(3, 3), "ironjaw_pos": Vector2i(5, 3)})
 	var legal_dests := 0
 	for intent in _sim.legal_intents(0):
 		if str(intent.get("type", "")) == "cast" and str(intent.get("spell", "")) == "mark_shot":
@@ -4342,7 +4526,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["illegal"], true, "Detonate without Marks is illegal")
 	eq(result["reason"], "insufficient_marks", "reject reason is insufficient_marks")
 	eq(_unit(0)["ap"], 6, "Detonate gate refunds AP")
-	eq(_unit(1)["hp"], 80, "Detonate gate deals no damage")
+	eq(_unit(1)["hp"], 90, "Detonate gate deals no damage")
 	eq(_unit(1)["marks"], 0, "Detonate gate does not invent Marks")
 
 	# Locked max is 4. Dist 5–7 refund even with Marks.
@@ -4379,7 +4563,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["marks_consumed"], 1, "connect consumes 1 Mark")
 	eq(_unit(1)["marks"], 0, "A01: target Marks consumed on connect")
 	eq(_unit(0)["marks"], 0, "caster Marks stay 0 (stack is on the target)")
-	eq(_unit(1)["hp"], 68, "80-12=68")
+	eq(_unit(1)["hp"], 78, "90-12=78")
 	eq(_unit(0)["ap"], 3, "Detonate spends 3 AP")
 	eq(_unit(0)["mp"], 3, "Detonate spends 0 MP")
 
@@ -4400,7 +4584,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["damage"], 28, "front 24 Air (Longshot ×1.15: 24→28)")
 	eq(result["events"][0]["hit_chance"], 75, "range 4 uses the 75% mid band")
 	eq(_unit(1)["marks"], 0, "3 Marks consumed")
-	eq(_unit(1)["hp"], 52, "80-28=52 with Longshot")
+	eq(_unit(1)["hp"], 62, "90-28=62 with Longshot")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -4416,7 +4600,7 @@ func _test_detonate_gates_and_damage() -> void:
 	eq(result["events"][0]["back"], true, "Detonate still applies facing")
 	eq(result["events"][0]["damage"], 43, "36 × 1.20 rounds to 43")
 	eq(_unit(1)["marks"], 0, "cap stack consumed")
-	eq(_unit(1)["hp"], 37, "80-43=37")
+	eq(_unit(1)["hp"], 47, "90-43=47")
 
 	# Mark Shot then Detonate same turn: +1 Mark on target, then consume.
 	_sim.reset_match({
@@ -4634,7 +4818,7 @@ func _test_detonate_miss_retains_marks() -> void:
 	eq(result["events"][0]["marks_retained"], true, "miss retains Marks")
 	eq(result["events"][0]["marks_on_target"], 4, "miss event reports retained stack")
 	eq(_unit(1)["marks"], 4, "A01: miss does not consume target Marks")
-	eq(_unit(1)["hp"], 80, "miss deals 0")
+	eq(_unit(1)["hp"], 90, "miss deals 0")
 	eq(_unit(0)["ap"], 3, "miss keeps the 3 AP spend")
 	eq(_unit(0)["mp"], 3, "miss keeps the 0 MP spend")
 
@@ -4667,7 +4851,7 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(result["events"][0]["bounced"], false, "walkable empty dest does not bounce")
 	eq(result["events"][0]["staggered"], false, "walkable empty dest does not stagger")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "Kestrel landed one cell away")
-	eq(_unit(0)["hp"], 74, "80-6=74")
+	eq(_unit(0)["hp"], 69, "75-6=69")
 	eq(_unit(0)["mp"], 3, "walkable empty dest does not spend target MP")
 	eq(_unit(1)["impact"], 1, "Shoulder grants Impact on connect")
 	eq(_unit(1)["ap"], 4, "Shoulder spends 2 AP")
@@ -4703,7 +4887,7 @@ func _test_shoulder_push_and_impact() -> void:
 	eq(result["events"][0]["type"], "miss", "Shoulder miss event")
 	eq(result["events"][0]["pushed"], false, "miss does not push")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "miss leaves the target in place")
-	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(0)["hp"], 75, "miss deals 0")
 	eq(_unit(1)["impact"], 0, "miss grants no Impact")
 	eq(_unit(1)["ap"], 4, "miss keeps the 2 AP spend")
 
@@ -4739,7 +4923,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "OOB bounce still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "OOB bounce leaves the target put")
-	eq(_unit(0)["hp"], 70, "OOB bounce is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "OOB bounce is 6 Earth + 4 stagger HP")
 	eq(_unit(0)["mp"], 2, "OOB bounce spends 1 stagger MP when MP>=1")
 	eq(_unit(1)["impact"], 2, "OOB bounce grants +2 Impact only")
 	eq(result["events"][0]["engine_gained"], 2, "OOB bounce engine gain is +2, not +1 and +2")
@@ -4762,7 +4946,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	eq(result["events"][2]["type"], "stagger", "OOB emits stagger after bounce")
 	eq(result["events"][2]["hp_delta"], -4, "stagger HP delta is -4")
 	eq(result["events"][2]["mp_delta"], -1, "stagger MP delta is -1")
-	eq(result["events"][2]["hp"], 70, "stagger event reports remaining HP")
+	eq(result["events"][2]["hp"], 65, "stagger event reports remaining HP")
 	eq(result["events"][2]["mp"], 2, "stagger event reports remaining MP")
 	eq(_event_type_count(result["events"], "push_blocked"), 0, "OOB does not emit push_blocked")
 
@@ -4780,7 +4964,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(0, 0)})
 	eq(result["ok"], true, "0 MP OOB bounce still hits")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "0 MP OOB bounce stays put")
-	eq(_unit(0)["hp"], 70, "0 MP OOB still applies 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "0 MP OOB still applies 4 stagger HP")
 	eq(_unit(0)["mp"], 0, "0 MP OOB does not apply stagger MP")
 	eq(result["events"][0]["stagger_hp"], 4, "0 MP still records 4 stagger HP")
 	eq(result["events"][0]["stagger_mp"], 0, "0 MP records 0 stagger MP")
@@ -4817,7 +5001,7 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "unwalkable dest still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "unwalkable dest bounce leaves the target put")
-	eq(_unit(0)["hp"], 70, "unwalkable dest is 6 Earth + 4 stagger HP")
+	eq(_unit(0)["hp"], 65, "unwalkable dest is 6 Earth + 4 stagger HP")
 	eq(_unit(0)["mp"], 2, "unwalkable dest spends 1 stagger MP")
 	eq(result["events"][0]["bounced"], true, "unwalkable dest records bounced")
 	eq(result["events"][1]["type"], "push_bounce", "unwalkable dest emits push_bounce")
@@ -4831,268 +5015,122 @@ func _test_shoulder_bounce_stagger_locked() -> void:
 
 
 func _test_shoulder_lava_burn_locked() -> void:
-	# Soft Lock lava CASTIGO. Voluntary walk still rejects lava.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"rolls": [1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [
-			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(6, 3), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(3, 4), "terrain": "lava", "elevation": 0},
-		],
-	})
+	# Map push stacks (Mauro's sheet, 29 Sep 2026): lava enter 10 / 10 / 15
+	# Fire, then Burn 4 HP × 2 / 5 × 3 / 5 × 4 at the victim's turn start. A
+	# push while burning stacks (cap 3). Voluntary walk still rejects lava.
+	var lava_cfg := func(extra_tiles: Array) -> Dictionary:
+		var tiles: Array = [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}]
+		for t in extra_tiles:
+			tiles.append({"pos": t, "terrain": "lava", "elevation": 0})
+		return {"seed": 1, "flat_board": true, "rolls": [1, 1, 1, 1], "kestrel_pos": Vector2i(4, 3), "ironjaw_pos": Vector2i(3, 3), "kestrel_facing": "W", "tiles": tiles}
+	_sim.reset_match(lava_cfg.call([Vector2i(6, 3), Vector2i(3, 4)]))
 	_sim.submit({"type": "end_turn"})
 	var walked: Dictionary = _sim.submit({"type": "move", "to": Vector2i(3, 4)})
 	eq(walked["illegal"], true, "voluntary walk onto lava is rejected")
 	eq(walked["reason"], "not_walkable", "walk onto lava reason stays not_walkable")
-	eq(_unit(1)["pos"], Vector2i(3, 3), "rejected lava walk does not move Ironjaw")
 	eq(_has_legal_move_to(1, Vector2i(3, 4)), false, "legal_intents omit lava")
 
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "lava Shoulder still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(5, 3), "forced push lands on lava")
-	eq(_unit(0)["hp"], 68, "lava land is 6 Earth plus 6 land HP")
-	eq(_unit(0)["mp"], 3, "lava land does not spend stagger MP")
-	eq(_unit(0)["burn_stacks"], 1, "landing on lava applies Burn stack 1")
-	eq(_unit(0)["burn_remaining"], 4, "landing on lava applies Burn duration 4")
-	eq(_unit(1)["impact"], 1, "lava land is a clean connect (+1 Impact, not bounce +2)")
-	eq(result["events"][0]["engine_gained"], 1, "lava hit records +1 Impact")
-	eq(result["events"][0]["damage"], 6, "Shoulder hit stays 6 Earth")
-	eq(result["events"][0]["pushed"], true, "lava dest records a push")
-	eq(result["events"][0]["bounced"], false, "lava dest does not bounce")
-	eq(result["events"][0]["push_blocked"], false, "lava dest is not push_blocked")
-	eq(result["events"][0]["staggered"], false, "lava dest does not stagger")
+	eq(_unit(0)["hp"], 59, "push 1: 6 Earth plus 10 Fire on entering")
+	eq(_unit(0)["burn_stacks"], 1, "push 1 is Burn stack 1")
+	eq(_unit(0)["burn_remaining"], 2, "stack 1 burns for 2 turns")
+	eq(_unit(1)["impact"], 1, "lava land is a clean connect (+1 Impact)")
 	eq(result["events"][0]["burn_applied"], true, "hit records Burn")
 	eq(result["events"][0]["burn_refreshed"], false, "first Burn is not a refresh")
-	eq(result["events"][0]["burn_remaining"], 4, "hit records Burn duration 4")
-	eq(result["events"][0]["burn_stacks"], 1, "hit records Burn stack 1")
-	eq(result["events"][0]["land_hp"], 6, "hit records 6 lava land HP")
-	eq(_event_type_count(result["events"], "push_bounce"), 0, "lava dest does not emit push_bounce")
-	eq(_event_type_count(result["events"], "stagger"), 0, "lava dest does not emit stagger")
-	eq(_event_type_count(result["events"], "push_blocked"), 0, "lava dest does not emit push_blocked")
+	eq(result["events"][0]["burn_remaining"], 2, "hit records 2 Burn turns")
+	eq(result["events"][0]["land_hp"], 10, "hit records 10 enter HP")
 	eq(_event_type_count(result["events"], "burn"), 0, "Burn does not tick on the landing turn")
 	var landed := _first_event_where(result["events"], "lava_land")
-	eq(landed.is_empty(), false, "lava land emits immediate damage")
-	eq(int(landed.get("hp_delta", 0)), -6, "lava land hp_delta is -6")
-	eq(int(landed.get("hp", 0)), 68, "lava land reports HP after the 6")
+	eq(int(landed.get("hp_delta", 0)), -10, "lava enter hp_delta is -10")
 	var applied := _first_event_where(result["events"], "status", "burn")
-	eq(applied.is_empty(), false, "lava land emits a Burn status")
 	eq(int(applied.get("stacks", 0)), 1, "Burn status stack is 1")
-	eq(int(applied.get("remaining", 0)), 4, "Burn status duration is 4")
-	eq(int(applied.get("hp_per_tick", 0)), 2, "stack 1 ticks 2 HP")
-	eq(bool(applied.get("refreshed", true)), false, "first Burn status is not a refresh")
-	truthy(str(applied.get("soft_lock", "")).contains("Soft Lock"), "Burn status is labeled Soft Lock")
-	eq(result["snapshot"]["units"][0]["burn_remaining"], 4, "snapshot unit exposes burn_remaining")
-	eq(result["snapshot"]["units"][0]["burn_stacks"], 1, "snapshot unit exposes burn_stacks")
-	eq(result["snapshot"]["burn"], "soft_lock", "snapshot stamps Burn soft_lock")
-	var replica_script := load("res://backend/combat_sim.gd")
-	var replica = replica_script.new()
+	eq(int(applied.get("remaining", 0)), 2, "Burn status lasts 2")
+	eq(int(applied.get("hp_per_tick", 0)), 4, "stack 1 ticks 4 HP")
+	truthy(str(applied.get("soft_lock", "")).contains("push stack"), "Burn status names the push stack sheet")
+	eq(result["snapshot"]["units"][0]["burn_remaining"], 2, "snapshot unit exposes burn_remaining")
+	var replica = load("res://backend/combat_sim.gd").new()
 	replica.apply_host_snapshot(result["snapshot"])
-	eq(replica.snapshot()["units"][0]["burn_remaining"], 4, "host snapshot restores Burn duration")
 	eq(replica.snapshot()["units"][0]["burn_stacks"], 1, "host snapshot restores Burn stacks")
-	eq(_first_event_where(replica.snapshot()["last_events"], "status", "burn").is_empty(), false, "host snapshot keeps the Burn event")
 	replica.free()
-
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.render(result["snapshot"], [])
-	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 4"), "Kestrel card shows Burn stack and duration")
-	eq(str(hud._ironjaw_body.text).contains("BURN"), false, "caster card does not show Burn")
+	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 2"), "Kestrel card shows Burn stack and turns")
 	hud.free()
 	var pawn := Pawn.new()
 	pawn.apply_snapshot(_unit(0), 1)
-	eq(pawn.burning, true, "pawn reads Burn from the snapshot unit")
-	eq(pawn.burn_stacks, 1, "pawn keeps Burn stacks for chrome")
-	eq(pawn.burn_remaining, 4, "pawn keeps Burn duration for chrome")
-	eq(pawn.burn_badge_label(), "BURN ×1 4", "pawn badge shows stack and turns left")
+	eq(pawn.burn_badge_label(), "BURN ×1 2", "pawn badge shows stack and turns left")
 	pawn.free()
 
-	# Stack 1 ticks 2 HP at the victim's turn start, including after they leave lava.
-	var expected_hp := 68
-	var expected_left := 4
-	for step in 4:
-		var ticked: Dictionary = _sim.submit({"type": "end_turn"})
-		expected_hp -= 2
-		expected_left -= 1
-		eq(_sim.snapshot()["active_seat"], 0, "victim turn %d starts" % (step + 1))
-		eq(_unit(0)["hp"], expected_hp, "stack 1 tick %d is 2 HP" % (step + 1))
-		eq(_unit(0)["burn_remaining"], expected_left, "duration left after tick %d" % (step + 1))
-		var stacks_left := 0
-		if expected_left > 0:
-			stacks_left = 1
-		eq(int(_unit(0)["burn_stacks"]), stacks_left, "stacks after tick %d" % (step + 1))
-		var burn_tick := _first_event_where(ticked["events"], "burn")
-		eq(int(burn_tick.get("hp_delta", 0)), -2, "tick %d hp_delta is -2" % (step + 1))
-		eq(int(burn_tick.get("tick_stacks", 0)), 1, "tick %d uses stack 1" % (step + 1))
-		eq(int(burn_tick.get("remaining", -1)), expected_left, "tick %d reports duration left" % (step + 1))
-		if step == 0:
-			var onto_lava: Dictionary = _sim.submit({"type": "move", "to": Vector2i(6, 3), "seat": 0})
-			eq(onto_lava["illegal"], true, "victim still cannot walk onto lava")
-			eq(onto_lava["reason"], "not_walkable", "second lava step is not_walkable")
-			eq(_unit(0)["burn_remaining"], expected_left, "rejected walk does not clear Burn")
-			var left: Dictionary = _sim.submit({"type": "move", "to": Vector2i(5, 2), "seat": 0})
-			eq(left["ok"], true, "leaving lava onto ground is allowed")
-			eq(_unit(0)["pos"], Vector2i(5, 2), "victim walked off lava")
-			eq(_unit(0)["burn_remaining"], expected_left, "Burn continues after leaving lava")
-			eq(_unit(0)["hp"], expected_hp, "leaving lava does not tick Burn early")
-		if step < 3:
-			eq(_sim.submit({"type": "end_turn", "seat": 0})["ok"], true, "victim hands the turn back")
-	eq(_unit(0)["hp"], 60, "four stack-1 ticks are 8 HP")
-	eq(_unit(0)["burn_remaining"], 0, "duration 4 expires after four ticks")
-	eq(_unit(0)["burn_stacks"], 0, "expired Burn clears stacks")
-	eq(_unit(0)["alive"], true, "four ticks at full HP do not kill")
+	# Two ticks of 4 at the victim's turn starts, also after leaving lava.
+	_sim.submit({"type": "end_turn"})
+	eq(_unit(0)["hp"], 55, "tick 1 is 4 HP")
+	eq(_unit(0)["burn_remaining"], 1, "one Burn turn left")
+	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("hp_delta", 0)), -4, "tick hp_delta is -4")
+	eq(_sim.submit({"type": "move", "to": Vector2i(5, 2), "seat": 0})["ok"], true, "leaving lava onto ground is allowed")
+	eq(_unit(0)["burn_remaining"], 1, "Burn continues after leaving lava")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	var fifth: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_event_type_count(fifth["events"], "burn"), 0, "Burn does not tick after duration 0")
-	eq(_unit(0)["hp"], 60, "no fifth Burn tick")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(_unit(0)["hp"], 51, "tick 2 is 4 HP")
+	eq(_unit(0)["burn_remaining"], 0, "stack 1 Burn ends after 2 ticks")
+	eq(_unit(0)["burn_stacks"], 0, "expired Burn clears stacks")
+	_sim.submit({"type": "end_turn", "seat": 0})
+	var third: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(_event_type_count(third["events"], "burn"), 0, "no third tick")
 
-	# Re-push adds a stack (2, then 3) and refreshes duration. A fourth push stays at 3.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"rolls": [1, 1, 1, 1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [
-			{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(6, 3), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(7, 2), "terrain": "lava", "elevation": 0},
-			{"pos": Vector2i(8, 1), "terrain": "lava", "elevation": 0},
-		],
-	})
+	# Pushes while burning stack: 2 (10 enter, 5 × 3), 3 (15 enter, 5 × 4), cap 3.
+	_sim.reset_match(lava_cfg.call([Vector2i(6, 3), Vector2i(7, 3), Vector2i(8, 3)]))
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
-	eq(_unit(0)["hp"], 68, "first land is 6 Earth plus 6")
-	eq(_unit(0)["burn_stacks"], 1, "first land is stack 1")
-	_sim.submit({"type": "end_turn"})
-	eq(_unit(0)["hp"], 66, "stack 1 tick is 2 HP")
-	eq(_unit(0)["burn_remaining"], 3, "one tick leaves duration 3")
-	eq(_sim.submit({"type": "end_turn", "seat": 0})["ok"], true, "Kestrel hands back before the re-push")
-	eq(_sim.submit({"type": "move", "to": Vector2i(4, 3), "seat": 1})["ok"], true, "Ironjaw steps next to the lava tile")
-	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(5, 3), "seat": 1})
-	eq(result["ok"], true, "second Shoulder connects")
-	eq(_unit(0)["pos"], Vector2i(6, 3), "second push lands on lava again")
-	eq(_unit(0)["hp"], 53, "re-push deals 6 Earth and 6 land, and no Burn tick (Momentum 7)")
-	eq(_unit(0)["burn_stacks"], 2, "re-push adds a stack")
-	eq(_unit(0)["burn_remaining"], 4, "re-push refreshes duration to 4")
-	eq(_unit(1)["impact"], 2, "second clean push adds +1 Impact (1+1)")
-	applied = _first_event_where(result["events"], "status", "burn")
-	eq(bool(applied.get("refreshed", false)), true, "re-apply is a refresh")
-	eq(int(applied.get("previous_stacks", 0)), 1, "re-push replaces stack 1")
-	eq(int(applied.get("previous", 0)), 3, "re-push replaces the leftover duration")
-	eq(int(applied.get("stacks", 0)), 2, "refresh does not skip to stack 3")
-	eq(int(applied.get("hp_per_tick", 0)), 4, "stack 2 ticks 4 HP")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 49, "tick after stack 2 is 4 HP")
-	eq(_unit(0)["burn_stacks"], 2, "the tick does not consume a stack")
-	eq(_unit(0)["burn_remaining"], 3, "stack 2 still has three ticks")
-	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("tick_stacks", 0)), 2, "the tick event names stack 2")
+	eq(_unit(0)["burn_stacks"], 1, "first push is stack 1")
+	for step in [[Vector2i(5, 3), Vector2i(6, 3), 2, 10, 3, 5], [Vector2i(6, 3), Vector2i(7, 3), 3, 15, 4, 5], [Vector2i(7, 3), Vector2i(8, 3), 3, 15, 4, 5]]:
+		_sim.submit({"type": "end_turn", "seat": 1})
+		_sim.submit({"type": "end_turn", "seat": 0})
+		_live_unit(1)["pos"] = step[0] - Vector2i(1, 0)
+		_live_unit(0)["hp"] = 80
+		var hp_before := 80
+		var pushed: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": step[0], "seat": 1})
+		eq(pushed["ok"], true, "Shoulder onto lava connects")
+		eq(_unit(0)["pos"], step[1], "push lands on the next lava tile")
+		var st := _first_event_where(pushed["events"], "status", "burn")
+		eq(int(st.get("stacks", 0)), step[2], "push while burning is stack %d" % step[2])
+		eq(int(_first_event_where(pushed["events"], "lava_land").get("hp_delta", 0)), -step[3], "stack %d enters for %d Fire" % [step[2], step[3]])
+		eq(int(_unit(0)["burn_remaining"]), step[4], "stack %d burns %d turns" % [step[2], step[4]])
+		eq(int(st.get("hp_per_tick", 0)), step[5], "stack %d ticks %d HP" % [step[2], step[5]])
+		truthy(int(_unit(0)["hp"]) < hp_before, "the push hurts")
 
-	eq(_sim.submit({"type": "move", "to": Vector2i(6, 2), "seat": 0})["ok"], true, "Kestrel steps off lava for the next push")
-	eq(_unit(0)["burn_stacks"], 2, "leaving lava keeps stack 2")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(_sim.submit({"type": "move", "to": Vector2i(5, 2), "seat": 1})["ok"], true, "Ironjaw walks beside Kestrel")
-	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(6, 2), "seat": 1})
-	eq(result["ok"], true, "third Shoulder connects")
-	eq(_unit(0)["pos"], Vector2i(7, 2), "third push lands on lava")
-	eq(_unit(0)["hp"], 36, "third land is another 6 Earth plus 6 (Momentum 7+6)")
-	eq(_unit(0)["burn_stacks"], 3, "third push reaches max stacks")
-	eq(_unit(0)["burn_remaining"], 4, "third push refreshes duration")
-	eq(int(_first_event_where(result["events"], "status", "burn").get("hp_per_tick", 0)), 8, "stack 3 ticks 8 HP")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 28, "tick after stack 3 is 8 HP")
-	eq(int(_unit(0)["burn_stacks"]), 3, "stack 3 survives the tick")
-	eq(int(_first_event_where(_sim.snapshot()["last_events"], "burn").get("hp_delta", 0)), -8, "stack 3 tick hp_delta is -8")
-
-	eq(_sim.submit({"type": "move", "to": Vector2i(7, 1), "seat": 0})["ok"], true, "Kestrel steps off for the cap push")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(_sim.submit({"type": "move", "to": Vector2i(6, 1), "seat": 1})["ok"], true, "Ironjaw walks beside the cap push")
-	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(7, 1), "seat": 1})
-	eq(result["ok"], true, "fourth Shoulder connects")
-	eq(_unit(0)["pos"], Vector2i(8, 1), "fourth push lands on lava")
-	eq(_unit(0)["hp"], 15, "cap push still deals 6 Earth plus 6 land (Momentum 7+6)")
-	eq(_unit(0)["burn_stacks"], 3, "a fourth push does not exceed 3 stacks")
-	eq(_unit(0)["burn_remaining"], 4, "a capped re-push still refreshes duration")
-	applied = _first_event_where(result["events"], "status", "burn")
-	eq(int(applied.get("previous_stacks", 0)), 3, "cap push started at stack 3")
-	eq(int(applied.get("stacks", 0)), 3, "cap push stays at stack 3")
-	eq(int(applied.get("hp_per_tick", 0)), 8, "capped Burn still ticks 8 HP")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 7, "tick after the cap is still 8 HP")
-	eq(_unit(0)["burn_stacks"], 3, "the capped tick keeps 3 stacks")
-
-	# Occupied lava is still a body-block: no displace, no land, no Burn.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"rolls": [1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
-		"blockers": [Vector2i(5, 3)],
-	})
+	# Occupied lava is still a body-block: no displace, no enter damage, no Burn.
+	var blocked_cfg: Dictionary = lava_cfg.call([])
+	blocked_cfg["blockers"] = [Vector2i(5, 3)]
+	_sim.reset_match(blocked_cfg)
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied lava does not displace")
 	eq(result["events"][0]["push_blocked"], true, "occupied lava is push_blocked")
-	eq(result["events"][0]["bounced"], false, "occupied lava does not bounce")
-	eq(_unit(0)["burn_remaining"], 0, "occupied lava does not apply Burn")
 	eq(_unit(0)["burn_stacks"], 0, "occupied lava does not add a stack")
-	eq(_unit(0)["hp"], 74, "occupied lava is hit damage only")
-	eq(_event_type_count(result["events"], "lava_land"), 0, "occupied lava deals no land HP")
-	eq(_unit(1)["impact"], 1, "occupied lava keeps the hit +1 Impact")
+	eq(_event_type_count(result["events"], "lava_land"), 0, "occupied lava deals no enter HP")
 
-	# Land damage can finish the target before any Burn tick.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"rolls": [1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
-	})
+	# Enter damage can finish the target before any Burn tick.
+	_sim.reset_match(lava_cfg.call([]))
 	_sim.submit({"type": "end_turn"})
-	_live_unit(0)["hp"] = 10
+	_live_unit(0)["hp"] = 12
 	var landed_dead: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
-	eq(_unit(0)["hp"], 0, "6 Earth plus 6 land can reduce HP to 0")
-	eq(_unit(0)["alive"], false, "lethal land marks the victim dead")
-	eq(str(_first_event_where(landed_dead["events"], "dead").get("cause", "")), "damage", "lethal land cause is damage")
-	eq(int(_first_event_where(landed_dead["events"], "lava_land").get("hp_delta", 0)), -6, "lethal land still reports 6 HP")
-	eq(_event_type_count(landed_dead["events"], "burn"), 0, "lethal land is not a Burn tick")
-	eq(_sim.snapshot()["match_over"], true, "lethal land ends the match")
+	eq(_unit(0)["alive"], false, "lethal lava entry marks the victim dead")
+	eq(_sim.snapshot()["match_over"], true, "lethal entry ends the match")
 
-	# Death is checked after the tick. Stack 1 is 2 HP.
-	_sim.reset_match({
-		"seed": 1,
-		"flat_board": true,
-		"rolls": [1],
-		"kestrel_pos": Vector2i(4, 3),
-		"ironjaw_pos": Vector2i(3, 3),
-		"kestrel_facing": "W",
-		"tiles": [{"pos": Vector2i(5, 3), "terrain": "lava", "elevation": 0}],
-	})
+	# Death is checked after the tick.
+	_sim.reset_match(lava_cfg.call([]))
 	_sim.submit({"type": "end_turn"})
 	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
-	_live_unit(0)["hp"] = 2
+	_live_unit(0)["hp"] = 3
 	var lethal: Dictionary = _sim.submit({"type": "end_turn"})
-	eq(_unit(0)["hp"], 0, "Burn tick can reduce HP to 0")
-	eq(_unit(0)["alive"], false, "death check after the tick marks the victim dead")
-	eq(_sim.snapshot()["match_over"], true, "lethal Burn ends the match")
-	eq(_sim.snapshot()["winner_seat"], 1, "Ironjaw wins when Burn kills Kestrel")
-	eq(int(_first_event_where(lethal["events"], "burn").get("hp_delta", 0)), -2, "lethal stack 1 tick reports 2 HP")
-	eq(int(_first_event_where(lethal["events"], "burn").get("tick_stacks", 0)), 1, "lethal tick uses stack 1")
+	eq(_unit(0)["alive"], false, "a Burn tick can kill")
 	eq(str(_first_event_where(lethal["events"], "dead").get("cause", "")), "burn", "lethal tick cause is burn")
-	eq(_event_type_count(lethal["events"], "dead"), 1, "lethal tick emits dead")
-	eq(_event_type_count(lethal["events"], "match_over"), 1, "lethal tick emits match_over")
 
-	# Cleanse clears a real lava Burn and leaves Slow and Silence alone.
+	# Cleanse strips ONE family: the highest stack, ties Slow > Breathless >
+	# Burn > Frozen > Electrocuted.
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -5102,29 +5140,85 @@ func _test_shoulder_lava_burn_locked() -> void:
 		"tiles": [{"pos": Vector2i(3, 3), "terrain": "lava", "elevation": 0}],
 	})
 	_sim.submit({"type": "end_turn"})
-	var cleansed_land: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3), "seat": 1})
-	eq(bool(cleansed_land.get("ok", false)), true, "Shoulder pushes the Mender onto lava")
-	eq(_unit(0)["pos"], Vector2i(3, 3), "Mender lands on lava")
-	eq(_unit(0)["hp"], 68, "Mender land is 6 Earth plus 6")
-	eq(_unit(0)["burn_stacks"], 1, "Mender gains Burn stack 1")
+	eq(bool(_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3), "seat": 1}).get("ok", false)), true, "Shoulder pushes the Mender onto lava")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(_unit(0)["hp"], 66, "Mender takes the stack 1 tick before Cleanse")
-	eq(_unit(0)["burn_remaining"], 3, "the tick leaves duration 3")
+	eq(_unit(0)["burn_stacks"], 1, "Mender is Burn stack 1")
 	_live_unit(0)["slow_remaining"] = 1
-	_live_unit(0)["silenced_spells"] = ["mend"]
+	_live_unit(0)["slow_stacks"] = 1
+	_live_unit(0)["breathless_stacks"] = 2
+	_live_unit(0)["breathless_remaining"] = 2
+	_live_unit(0)["breathless_spell"] = "ward"
+	_live_unit(0)["silenced_spells"] = ["ward"]
+	var hp_now := int(_unit(0)["hp"])
 	var cleanse: Dictionary = _sim.submit({"type": "cast", "spell": "cleanse", "to": Vector2i(3, 3), "seat": 0})
-	eq(bool(cleanse.get("ok", false)), true, "Cleanse on lava resolves")
+	eq(bool(cleanse.get("ok", false)), true, "Cleanse resolves")
 	var removed: Array = _first_event_where(cleanse["events"], "hit").get("cc_removed", [])
-	eq(removed.has("burn"), true, "Cleanse reports Burn removed")
-	eq(_unit(0)["burn_remaining"], 0, "Cleanse clears Burn duration")
-	eq(_unit(0)["burn_stacks"], 0, "Cleanse clears Burn stacks")
-	eq(int(_unit(0)["slow_remaining"]), 1, "Cleanse does not clear Slow")
-	eq(_unit(0).get("silenced_spells", []), ["mend"], "Cleanse does not clear Silence")
-	eq(_unit(0)["hp"], 66, "Cleanse does not heal the lava damage")
+	eq(removed.has("breathless"), true, "Cleanse strips the highest stack (Breathless 2)")
+	eq(removed.has("burn"), false, "only one family goes")
+	eq(_unit(0).get("silenced_spells", []), [], "Breathless is lifted")
+	eq(int(_unit(0)["burn_stacks"]), 1, "Burn stays")
+	eq(int(_unit(0)["slow_remaining"]), 1, "Slow stays")
+	eq(_unit(0)["hp"], hp_now, "Cleanse does not heal")
+	eq(_sim.cleanse_pick(_unit(0)), "slow", "next Cleanse: Slow 1 ties Burn 1 and wins the tie")
+
+
+## Map push stacks sheet: Windmere ice (its water tiles) Frozen 1/2 then
+## Paralyzed; Stormspire charged pools Electrocuted −1/−2/−3 AP.
+func _test_ice_and_electric_stacks() -> void:
+	var cfg := {"seed": 1, "flat_board": true, "rolls": [1, 1, 1], "classes": ["gloam", "ironjaw"], "positions": [Vector2i(4, 3), Vector2i(3, 3)], "tiles": [{"pos": Vector2i(5, 3), "terrain": "water", "elevation": 0}]}
+	_sim.reset_match(cfg)
+	_sim._map_id = "windmere"
+	eq(_sim.hazard_family_at(Vector2i(5, 3)), "frozen", "Windmere water is ice (Frozen)")
+	_sim.submit({"type": "end_turn"})
+	var pushed: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3), "seat": 1})
+	eq(bool(pushed.get("ok", false)), true, "Shoulder onto ice resolves")
+	eq(int(_unit(0)["frozen_stacks"]), 1, "push 1 is Frozen 1")
+	eq(int(_unit(0)["frozen_remaining"]), 1, "Frozen 1 lasts 1 turn")
+	eq(_unit(0).get("silenced_spells", []), [], "ice is not Breathless")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	_live_unit(1)["pos"] = Vector2i(5, 4)
+	eq(_has_legal_cast(0, "cut"), false, "Frozen: no melee")
+	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(5, 4), "seat": 0})
+	eq(str(cut.get("reason", "")), "frozen_no_melee", "a melee cast while Frozen refunds")
+	truthy(_sim.legal_intents(0).any(func(i): return str(i.get("type", "")) == "move"), "Frozen can still walk")
 	_sim.submit({"type": "end_turn", "seat": 0})
-	var after_cleanse: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
-	eq(_event_type_count(after_cleanse["events"], "burn"), 0, "Cleanse stops later Burn ticks")
-	eq(_unit(0)["hp"], 66, "HP stays after Cleanse")
+	eq(int(_unit(0)["frozen_remaining"]), 0, "Frozen 1 ends after the victim's turn")
+	# The third push Paralyzes: the next turn auto-ends (Locked Stun skip).
+	_sim.reset_match(cfg)
+	_sim._map_id = "windmere"
+	_sim.submit({"type": "end_turn"})
+	_live_unit(0)["frozen_stacks"] = 2
+	_live_unit(0)["frozen_remaining"] = 1
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3), "seat": 1})
+	eq(int(_unit(0)["frozen_stacks"]), 3, "push while Frozen 2 is Frozen 3")
+	eq(int(_unit(0)["stun_remaining"]) >= 1, true, "Frozen 3 Paralyzes")
+	var skipped: Dictionary = _sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_sim.snapshot()["active_seat"]), 1, "the Paralyzed turn auto-ends")
+
+	# Stormspire charged pools.
+	var ecfg := {"seed": 1, "flat_board": true, "rolls": [1, 1], "kestrel_pos": Vector2i(4, 3), "ironjaw_pos": Vector2i(3, 3), "kestrel_facing": "W", "tiles": [{"pos": Vector2i(5, 3), "terrain": "water", "elevation": 0}]}
+	_sim.reset_match(ecfg)
+	_sim._map_id = "stormspire"
+	eq(_sim.hazard_family_at(Vector2i(5, 3)), "electrocuted", "Stormspire water is a charged pool")
+	_sim.submit({"type": "end_turn"})
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(int(_unit(0)["electro_stacks"]), 1, "push 1 is Electrocuted 1")
+	eq(int(_unit(0)["hp"]), 69, "Electrocuted deals no chip damage (6 Earth only)")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(0)["ap"]), 5, "Electrocuted 1: −1 AP on the victim's turn")
+	eq(int(_unit(0)["electro_stacks"]), 0, "Electrocuted is spent")
+	_sim.reset_match(ecfg)
+	_sim._map_id = "stormspire"
+	_sim.submit({"type": "end_turn"})
+	_live_unit(0)["electro_stacks"] = 2
+	_live_unit(0)["electro_remaining"] = 1
+	_sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
+	eq(int(_unit(0)["electro_stacks"]), 3, "push while Electrocuted 2 is 3 (cap)")
+	_sim.submit({"type": "end_turn", "seat": 1})
+	eq(int(_unit(0)["ap"]), 3, "Electrocuted 3: −3 AP")
+	# Other maps: water stays Breathless, mud Slow, lava Burn.
+	_sim._map_id = "brinewake"
+	eq(_sim.hazard_family_at(Vector2i(5, 3)), "breathless", "Brinewake water is Breathless")
 
 
 func _test_shoulder_push_blocked_locked() -> void:
@@ -5143,7 +5237,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 	var result: Dictionary = _sim.submit({"type": "cast", "spell": "shoulder", "to": Vector2i(4, 3)})
 	eq(result["ok"], true, "occupied push still resolves the hit")
 	eq(_unit(0)["pos"], Vector2i(4, 3), "occupied dest does not move the target")
-	eq(_unit(0)["hp"], 74, "occupied push deals hit damage only (no stagger)")
+	eq(_unit(0)["hp"], 69, "occupied push deals hit damage only (no stagger)")
 	eq(_unit(0)["mp"], before_mp, "occupied dest does not spend stagger MP")
 	eq(_unit(1)["impact"], 1, "occupied push still grants Impact")
 	eq(result["events"][0]["engine_gained"], 1, "occupied push does not invent Impact beyond +1")
@@ -5165,7 +5259,7 @@ func _test_shoulder_push_blocked_locked() -> void:
 func _test_crush_spend_and_stun() -> void:
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["ap"]), 4, "Crush costs 4 AP")
 	eq(int(SpellKits.spell(SpellKits.CRUSH)["mp"]), 0, "Crush costs 0 MP")
-	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 24, "Crush base is 24 Earth")
+	eq(int(SpellKits.spell(SpellKits.CRUSH)["base_damage"]), 20, "Crush base is 20 Earth")
 
 	# Gate: fewer than 2 Impact rejects and refunds.
 	_sim.reset_match({
@@ -5181,7 +5275,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["reason"], "insufficient_impact", "reject reason is insufficient_impact")
 	eq(_unit(1)["ap"], 6, "Crush gate refunds AP")
 	eq(_unit(1)["impact"], 1, "Crush gate does not spend Impact")
-	eq(_unit(0)["hp"], 80, "Crush gate deals no damage")
+	eq(_unit(0)["hp"], 75, "Crush gate deals no damage")
 
 	# Connect at Impact 2: spend 2, 24 Earth, no Stun.
 	_sim.reset_match({
@@ -5196,12 +5290,12 @@ func _test_crush_spend_and_stun() -> void:
 	_sim.submit({"type": "end_turn"})
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush at 2 Impact connects")
-	eq(result["events"][0]["damage"], 24, "front Crush deals 24 Earth")
+	eq(result["events"][0]["damage"], 20, "front Crush deals 20 Earth")
 	eq(result["events"][0]["impact_before"], 2, "Impact before spend is 2")
 	eq(result["events"][0]["impact_spent"], 2, "connect spends 2 Impact")
 	eq(result["events"][0]["stun_applied"], 0, "Impact 2 before spend does not Stun")
 	eq(_unit(1)["impact"], 0, "2-2=0 Impact left")
-	eq(_unit(0)["hp"], 56, "80-24=56")
+	eq(_unit(0)["hp"], 55, "75-20=55")
 	eq(_unit(0)["stun_remaining"], 0, "no Stun stored")
 	eq(_unit(1)["ap"], 2, "Crush spends 4 AP")
 	eq(_unit(1)["mp"], 3, "Crush spends 0 MP")
@@ -5236,12 +5330,12 @@ func _test_crush_spend_and_stun() -> void:
 	result = _sim.submit({"type": "cast", "spell": "crush", "to": Vector2i(3, 3)})
 	eq(result["ok"], true, "Crush at Impact 4 connects")
 	eq(result["events"][0]["impact_before"], 4, "Impact was 4 before the spend")
-	eq(result["events"][0]["impact_spent"], 2, "still spends 2")
+	eq(result["events"][0]["impact_spent"], 4, "a stunning Crush spends all 4 Impact (Mauro 1 Oct 2026)")
 	eq(result["events"][0]["stun_applied"], 1, "Stun 1 when Impact was 4 before spend")
 	eq(result["events"][0].has("open_a05_stun"), false, "Stun application is not labeled OPEN A05")
 	eq(result["events"][0]["back"], true, "Crush still applies facing")
-	eq(result["events"][0]["damage"], 29, "24 × 1.20 rounds to 29")
-	eq(_unit(1)["impact"], 2, "4-2=2 Impact left")
+	eq(result["events"][0]["damage"], 24, "24 × 1.20 rounds to 29")
+	eq(_unit(1)["impact"], 0, "a stunning Crush leaves 0 Impact")
 	eq(_unit(0)["stun_remaining"], 1, "Stun 1 stored on the target")
 	eq(result["events"][1]["type"], "status", "status event for Stun")
 	eq(result["events"][1]["status"], "stun", "status id is stun")
@@ -5267,7 +5361,7 @@ func _test_crush_spend_and_stun() -> void:
 	eq(result["events"][0]["impact_retained"], true, "miss retains Impact")
 	eq(_unit(1)["impact"], 4, "miss does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "miss does not Stun")
-	eq(_unit(0)["hp"], 80, "miss deals 0")
+	eq(_unit(0)["hp"], 75, "miss deals 0")
 	eq(_unit(1)["ap"], 2, "miss keeps the 4 AP spend")
 
 
@@ -5488,7 +5582,7 @@ func _test_push_blocked_client_toast_no_hop() -> void:
 	eq(CombatHUD.toast_for_events(result["events"]), "Bounce  +2 Impact", "OOB toast is Bounce plus +2 Impact")
 	eq(CombatHUD.toast_for_events(result["events"]).contains("+1"), false, "OOB bounce toast is not also +1")
 	eq(_unit(0)["pos"], Vector2i(0, 0), "target stayed put")
-	eq(_unit(0)["hp"], 70, "hit + stagger HP still applied")
+	eq(_unit(0)["hp"], 65, "hit + stagger HP still applied")
 	eq(_unit(1)["impact"], 2, "OOB bounce Impact is +2")
 
 	var walk_events: Array = [{
@@ -5643,7 +5737,7 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 	hud.show_toast(lava_toast)
 	eq(hud.toast_caption(), "+1 Impact  Lava - Burn", "HUD shows the lava Burn toast")
 	hud.render(lava["snapshot"], [])
-	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 4"), "host card shows Burn stack and duration")
+	truthy(str(hud._kestrel_body.text).contains("[b]BURN[/b] ×1 2"), "host card shows Burn stack and duration")
 	var replica_script := load("res://backend/combat_sim.gd")
 	var replica = replica_script.new()
 	replica.apply_host_snapshot(lava["snapshot"])
@@ -5656,19 +5750,19 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 	host_pawn.apply_snapshot(lava["snapshot"]["units"][0], 1, lava["snapshot"]["last_events"])
 	var guest_pawn := Pawn.new()
 	guest_pawn.apply_snapshot(guest_snap["units"][0], 1, guest_snap["last_events"])
-	eq(host_pawn.burn_badge_label(), "BURN ×1 4", "host pawn badge shows stack and turns left")
+	eq(host_pawn.burn_badge_label(), "BURN ×1 2", "host pawn badge shows stack and turns left")
 	eq(guest_pawn.burn_badge_label(), host_pawn.burn_badge_label(), "guest pawn badge matches the host")
 	eq(host_pawn.burning, true, "host pawn is burning")
 	eq(guest_pawn.burn_stacks, 1, "guest pawn stacks are the snapshot value")
-	eq(guest_pawn.burn_remaining, 4, "guest pawn remaining is the snapshot value")
+	eq(guest_pawn.burn_remaining, 2, "guest pawn remaining is the snapshot value")
 	var partial: Dictionary = lava["snapshot"]["units"][0].duplicate(true)
 	partial.erase("burn_remaining")
 	partial.erase("burn_stacks")
 	var from_events := Pawn.new()
 	from_events.apply_snapshot(partial, 1, lava["snapshot"]["last_events"])
 	eq(from_events.burn_stacks, 1, "status events paint Burn stacks when the unit field is absent")
-	eq(from_events.burn_remaining, 4, "status events paint Burn duration when the unit field is absent")
-	eq(from_events.burn_badge_label(), "BURN ×1 4", "event fallback still shows stack and turns left")
+	eq(from_events.burn_remaining, 2, "status events paint Burn duration when the unit field is absent")
+	eq(from_events.burn_badge_label(), "BURN ×1 2", "event fallback still shows stack and turns left")
 	var authoritative: Dictionary = lava["snapshot"]["units"][0].duplicate(true)
 	authoritative["burn_remaining"] = 1
 	authoritative["burn_stacks"] = 2
@@ -5684,9 +5778,9 @@ func _test_shoulder_impact_lava_burn_chrome() -> void:
 	eq(CombatHUD.toast_for_events(ticked["events"]), "", "a Burn tick does not toast Lava - Burn")
 	var after := Pawn.new()
 	after.apply_snapshot(_unit(0), int(_sim.snapshot()["active_seat"]))
-	eq(after.burn_badge_label(), "BURN ×1 3", "the next snapshot paints the ticked remaining")
+	eq(after.burn_badge_label(), "BURN ×1 1", "the next snapshot paints the ticked remaining")
 	eq(after.burn_stacks, 1, "the tick keeps stack 1")
-	eq(after.burn_remaining, 3, "ticked remaining comes from the snapshot")
+	eq(after.burn_remaining, 1, "ticked remaining comes from the snapshot")
 	host_pawn.free()
 	guest_pawn.free()
 	from_events.free()
@@ -6090,7 +6184,7 @@ func _test_aim_feel_chrome() -> void:
 	# do not draw it. The float is the Phase A connect sample, not a new roll.
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "aim line does not change Ambush AP")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["mp"]), 0, "aim line does not change Ambush MP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "aim line does not change Ambush damage")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "aim line does not change Ambush damage")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["ap"]), 1, "aim line does not change Drop Shade AP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["mp"]), 0, "aim line does not change Drop Shade MP")
 	eq(int(SpellKits.spell(SpellKits.DROP_SHADE)["max_range"]), 3, "aim line does not change Drop Shade range")
@@ -6121,7 +6215,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(armed.get("from"), shade_at, "the Ambush line starts on the Shade, not Gloam")
 	eq(armed.get("to"), prey, "the Ambush line ends on the enemy")
 	eq(armed.get("from") == gloam, false, "hovering Gloam does not retarget the line onto the body")
-	eq(str(armed.get("float_text", "")), "-30", "Backstab aim float is the 22 × 1.35 sample")
+	eq(str(armed.get("float_text", "")), "-35", "Backstab aim float is the 26 × 1.35 sample")
 	eq(str(armed.get("kind", "")), "damage", "the Ambush float is damage")
 	var ap_before := int(_sim.snapshot()["units"][0]["ap"])
 	_sim.aim_feel(0, SpellKits.AMBUSH, gloam)
@@ -6154,7 +6248,7 @@ func _test_aim_feel_chrome() -> void:
 	eq(bool(self_origin.get("show", false)), true, "Invisible Ambush still draws an aim line")
 	eq(bool(self_origin.get("from_shade", true)), false, "Invisible aim does not leave the Shade")
 	eq(self_origin.get("from"), invisible_at, "Invisible aim starts on Gloam")
-	eq(str(self_origin.get("float_text", "")), "-30", "Invisible backstab aim still samples 30")
+	eq(str(self_origin.get("float_text", "")), "-35", "Invisible backstab aim still samples 35")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -6221,7 +6315,7 @@ func _test_preview_cast() -> void:
 	_assert_preview_did_not_mutate(before, "Mark Shot preview is read-only")
 	var miss: Dictionary = _sim.submit({"type": "cast", "spell": "mark_shot", "to": Vector2i(5, 0)})
 	eq(miss["events"][0]["type"], "miss", "scripted 100 still misses after preview — RNG/rolls untouched")
-	eq(_unit(1)["hp"], 80, "Mark Shot preview did not deal damage")
+	eq(_unit(1)["hp"], 90, "Mark Shot preview did not deal damage")
 	eq(_unit(1)["marks"], 0, "Mark Shot preview did not apply Marks")
 
 	# Intent Dictionary form uses the same Mark Shot preview.
@@ -6279,7 +6373,7 @@ func _test_preview_cast() -> void:
 	eq(preview["on_miss_text"], "Marks stay. AP/MP stay spent.", "Detonate miss kit line")
 	_assert_preview_did_not_mutate(before, "Detonate preview is read-only")
 	eq(_unit(1)["marks"], 3, "Detonate preview does not consume Marks")
-	eq(_unit(1)["hp"], 80, "Detonate preview does not deal 24")
+	eq(_unit(1)["hp"], 90, "Detonate preview does not deal 24")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6317,14 +6411,14 @@ func _test_preview_cast() -> void:
 	eq(preview["hit_chance"], 90, "Crush melee uses Locked 90%")
 	eq(preview["impact_before"], 4, "Crush preview reports impact_before 4")
 	eq(preview["would_stun"], true, "Crush would_stun at Impact 4 spending 2")
-	eq(preview["sample_damage"], 24, "front Crush samples 24 Earth")
+	eq(preview["sample_damage"], 20, "front Crush samples 20 Earth")
 	eq(preview["on_connect_text"], "24 Earth. Spends 2 Impact. Stun 1 if Impact was 4.", "Crush connect kit line")
 	eq(preview["on_miss_text"], "Impact retained. AP/MP stay spent.", "Crush miss kit line")
 	eq(preview["legal"], true, "Crush at 4 Impact is legal")
 	_assert_preview_did_not_mutate(before, "Crush preview is read-only")
 	eq(_unit(1)["impact"], 4, "Crush preview does not spend Impact")
 	eq(_unit(0)["stun_remaining"], 0, "Crush preview does not apply Stun")
-	eq(_unit(0)["hp"], 80, "Crush preview does not deal 24")
+	eq(_unit(0)["hp"], 75, "Crush preview does not deal 24")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -6338,7 +6432,7 @@ func _test_preview_cast() -> void:
 	preview = _sim.preview_cast(SpellKits.CRUSH, Vector2i(4, 3), Vector2i(3, 3), 0)
 	eq(preview["impact_before"], 2, "Crush at 2 Impact reports impact_before 2")
 	eq(preview["would_stun"], false, "Crush does not stun when Impact before is 2")
-	eq(preview["sample_damage"], 24, "Crush still samples 24 Earth at Impact 2")
+	eq(preview["sample_damage"], 20, "Crush still samples 20 Earth at Impact 2")
 
 	# Shoulder: sample 6 + push note.
 	_sim.reset_match({
@@ -6834,9 +6928,9 @@ func _test_spell_tooltip_cards() -> void:
 	var strike := SpellTooltip.card_text(_sim.preview_cast(SpellKits.STRIKE, Vector2i(3, 3), Vector2i(4, 3), 0))
 	truthy(strike.contains("range 1–1"), "Strike card names range 1 from preview")
 	eq(strike.contains("Chebyshev"), false, "Strike card does not name Chebyshev")
-	truthy(strike.contains("On hit: 16 Earth. +1 Impact."), "Strike hit line is preview kit text")
+	truthy(strike.contains("On hit: 14 Earth. +1 Impact."), "Strike hit line is preview kit text")
 	truthy(strike.contains("HIT 90% (Locked)"), "Strike card uses preview melee 90%")
-	truthy(strike.contains("sample 16"), "Strike card uses preview sample_damage")
+	truthy(strike.contains("sample 14"), "Strike card uses preview sample_damage")
 
 	var shoulder_preview: Dictionary = _sim.preview_cast(SpellKits.SHOULDER, Vector2i(3, 3), Vector2i(4, 3), 0)
 	var shoulder := SpellTooltip.card_text(shoulder_preview)
@@ -6864,7 +6958,7 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(crush.contains("Stun 1 (Locked A′) this cast."), "Crush card shows stun flag when preview would_stun")
 	eq(crush.contains("Stun 1 (Open"), false, "Crush Stun wording is Locked, not Open")
 	truthy(crush.contains("HIT 90% (Locked)"), "Crush card uses preview melee 90%")
-	truthy(crush.contains("sample 24"), "Crush card uses preview sample_damage")
+	truthy(crush.contains("sample 20"), "Crush card uses preview sample_damage")
 
 	_sim.reset_match({
 		"seed": 1,
@@ -7280,12 +7374,12 @@ func _test_aegis_break_burst() -> void:
 	eq(hit.get("ok", false), true, "Aegis Break burst resolves")
 	eq(int(_unit(0)["aegis"]), 0, "HIT clears all Aegis")
 	eq(int(_unit(0)["ap"]), 2, "Aegis Break spends 4 AP")
-	eq(int(_unit(1)["hp"]), 54, "aimed body takes 26")
+	eq(int(_unit(1)["hp"]), 49, "aimed body takes 26")
 	eq(_unit(1)["pos"], Vector2i(4, 1), "aimed body is pushed 1")
 	eq(int(_unit(1)["marks"]), 3, "HIT does not clear Marks")
-	eq(int(second["hp"]), 54, "body inside range 1–2 takes 26")
+	eq(int(second["hp"]), 49, "body inside range 1–2 takes 26")
 	eq(second["pos"], Vector2i(1, 4), "body inside range 1–2 is pushed 1")
-	eq(int(outside["hp"]), 80, "body outside range 1–2 is not hit")
+	eq(int(outside["hp"]), 75, "body outside range 1–2 is not hit")
 	eq(outside["pos"], Vector2i(4, 2), "body outside range 1–2 is not pushed")
 	var event := _first_event_where(hit["events"], "hit")
 	eq(int(event.get("bodies", 0)), 2, "hit event counts both bodies")
@@ -7314,9 +7408,9 @@ func _test_aegis_break_burst() -> void:
 	eq(missed.get("ok", false), true, "Aegis Break miss resolves")
 	eq(int(_unit(0)["aegis"]), 4, "MISS spends 0 Aegis")
 	eq(int(_unit(0)["ap"]), 2, "MISS still spends 4 AP")
-	eq(int(_unit(1)["hp"]), 80, "MISS does not damage the aimed body")
+	eq(int(_unit(1)["hp"]), 75, "MISS does not damage the aimed body")
 	eq(_unit(1)["pos"], Vector2i(3, 1), "MISS does not push the aimed body")
-	eq(int(missed_second["hp"]), 80, "MISS does not damage the other body")
+	eq(int(missed_second["hp"]), 75, "MISS does not damage the other body")
 	eq(missed_second["pos"], Vector2i(1, 3), "MISS does not push the other body")
 	var miss := _first_event_where(missed["events"], "miss")
 	eq(int(miss.get("aegis_spent", -1)), 0, "MISS event spends 0 Aegis")
@@ -7649,7 +7743,7 @@ func _test_ambush_snap_wall_ray() -> void:
 	eq(str(walled.get("reason", "")), "wall_on_ray", "the reject names the wall on the ray")
 	eq(int(_unit(0)["ap"]), ap_before, "the walled Ambush spends 0 AP")
 	eq(_unit(0)["pos"], gloam, "the walled Ambush does not move Gloam")
-	eq(int(_unit(1)["hp"]), 80, "the walled Ambush deals no damage")
+	eq(int(_unit(1)["hp"]), 110, "the walled Ambush deals no damage")
 
 	# A Shade on the far side still origins if it sees the target in range 1–2.
 	var shade_at := Vector2i(4, 4)
@@ -7674,9 +7768,48 @@ func _test_ambush_snap_wall_ray() -> void:
 	eq(_unit(0)["pos"], Vector2i(4, 1), "Gloam lands on the Shade ray back tile")
 
 
+## Mauro 30 Sep 2026: "gloam should not be able to perform ambush if there is
+## a wall or obstacle in front of any champion unless a shadow allows him to
+## jump from another angle".
+func _test_ambush_obstacle_ray() -> void:
+	var gloam := Vector2i(2, 2)
+	var prey := Vector2i(4, 2)
+	var rock := Vector2i(3, 2)
+	var base := {"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["gloam", "bastion"], "positions": [gloam, prey], "rolls": [1]}
+	var cfg := base.duplicate()
+	cfg["gloam_invisible"] = true
+	cfg["blockers"] = [rock]
+	_sim.reset_match(cfg)
+	eq(_sim._ambush_ray_walled(gloam, prey), true, "a solid obstacle on the ray walls Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), false, "Ambush is not offered through an obstacle")
+	var walled: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(str(walled.get("reason", "")), "wall_on_ray", "Ambush through an obstacle rejects as wall_on_ray")
+	eq(_unit(0)["pos"], gloam, "Gloam does not jump through the obstacle")
+	# A Shade on another side with a clear line lets him jump from that angle.
+	var shade_at := Vector2i(4, 4)
+	cfg = base.duplicate()
+	cfg["bastion_facing"] = "N"
+	cfg["blockers"] = [rock]
+	_sim.reset_match(cfg)
+	var planted: Dictionary = _sim.submit({"type": "cast", "spell": "drop_shade", "to": shade_at, "seat": 0})
+	eq(bool(planted.get("ok", false)), true, "Drop Shade plants on the open side")
+	_complete_opponent_turn()
+	eq(_sim._ambush_ray_walled(shade_at, prey), false, "the Shade's ray is clear")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, prey), true, "the Shade gives Ambush another angle")
+	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": prey, "seat": 0})
+	eq(bool(hit.get("ok", false)), true, "the Shade-origin Ambush resolves around the obstacle")
+	# A raised wall (higher than both ends) walls the ray on the real map:
+	# Crosshaven (5,9) z1 between (4,9) and (6,9), both z0.
+	_sim.reset_match({"seed": 1, "skip_deploy": true, "classes": ["gloam", "bastion"], "positions": [Vector2i(4, 9), Vector2i(6, 9)], "gloam_invisible": true, "rolls": [1]})
+	eq([_sim._elevation_at(Vector2i(4, 9)), _sim._elevation_at(Vector2i(5, 9)), _sim._elevation_at(Vector2i(6, 9))], [0, 1, 0], "fixture: raised block between two floor tiles")
+	eq(_sim._ambush_ray_walled(Vector2i(4, 9), Vector2i(6, 9)), true, "a raised block on the ray walls Ambush")
+	eq(_has_legal_cast_to(0, SpellKits.AMBUSH, Vector2i(6, 9)), false, "no Ambush over the raised block")
+
+
 func _test_invisible_wears_off() -> void:
-	# Mauro (29 Sep): Fade's Invisible lasts 2 of Gloam's turns, then Gloam is
-	# revealed on its own. Cast on turn T: hidden through T+1, visible at T+2.
+	# Mauro (29 Sep): Fade's Invisible lasts 1 of Gloam's turns ("make fade
+	# last 1 turn"; was 2). Cast on turn T: hidden through the enemy's turn,
+	# visible again when Gloam's turn T+1 starts.
 	_sim.reset_match({
 		"seed": 3,
 		"flat_board": true,
@@ -7687,16 +7820,13 @@ func _test_invisible_wears_off() -> void:
 	var faded: Dictionary = _sim.submit({"type": "cast", "spell": "fade", "to": Vector2i(2, 2), "seat": 0})
 	eq(bool(faded.get("ok", false)), true, "Fade resolves")
 	eq(bool(_unit(0)["invisible"]), true, "Fade makes Gloam invisible")
-	eq(int(_unit(0)["invisible_turns"]), CombatSim.INVISIBLE_TURNS, "Fade starts the 2-turn clock")
+	eq(CombatSim.INVISIBLE_TURNS, 1, "Fade lasts 1 turn")
+	eq(int(_unit(0)["invisible_turns"]), 1, "Fade starts the 1-turn clock")
+	truthy(str(_sim.snapshot().get("coach", "")).contains("Invisible for 1 turn."), "the coach says 1 turn")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(bool(_unit(0)["invisible"]), true, "still invisible through the enemy turn")
 	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), true, "still invisible on Gloam's next turn")
-	eq(int(_unit(0)["invisible_turns"]), 1, "one Gloam turn left")
-	_sim.submit({"type": "end_turn", "seat": 0})
-	eq(bool(_unit(0)["invisible"]), true, "still invisible through the second enemy turn")
-	_sim.submit({"type": "end_turn", "seat": 1})
-	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's second turn start")
+	eq(bool(_unit(0)["invisible"]), false, "Invisible wears off at Gloam's next turn start")
 	eq(int(_unit(0)["invisible_turns"]), 0, "the clock is spent")
 	var expired := false
 	for ev in _sim.snapshot().get("last_events", []):

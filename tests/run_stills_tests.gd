@@ -178,7 +178,10 @@ func _test_opening_and_carry() -> void:
 	eq(StasisCatalog.fight_config()["stasis_roster"][0]["gear"]["still"]["id"], "stride", "Stasis fight carries the Still")
 	StasisCatalog.clear_run()
 	var cs: Script = load("res://scenes/class_select.gd")
-	eq(cs.local_match_config().has("seat_gear"), false, "hot-seat carries no Still")
+	# TEMPORARY balance-test kit (backend/test_loadout.gd): while it is on,
+	# hot-seat seats wear the phone's loadout; the normal game carries none.
+	var kit_on: bool = load("res://backend/test_loadout.gd").ACTIVE
+	eq(cs.local_match_config().has("seat_gear"), kit_on, "hot-seat gear only while the temporary test kit is on")
 
 
 func _test_consume_and_chest() -> void:

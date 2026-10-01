@@ -58,6 +58,28 @@ static func class_tint(class_id: String) -> Color:
 			return KESTREL_AIR
 
 
+## Stasis monster spells: by element / door (Caster Bolt VFX sheet skins).
+const FOE_TINTS := {
+	"crosshaven": Color(0.95, 0.84, 0.55),
+	"brinewake": Color(0.27, 0.84, 0.80),
+	"slagcrown": Color(1.0, 0.59, 0.24),
+	"windmere": Color(0.78, 0.91, 1.0),
+	"stormspire": Color(1.0, 0.84, 0.35),
+	"Earth": Color(0.93, 0.76, 0.42),
+	"Water": Color(0.27, 0.84, 0.80),
+	"Fire": Color(1.0, 0.52, 0.18),
+	"Air": Color(0.80, 0.90, 1.0),
+	"Neutral": Color(0.92, 0.88, 0.80),
+}
+
+
+static func foe_tint(event: Dictionary) -> Color:
+	var door := str(event.get("door", ""))
+	if FOE_TINTS.has(door) and str(event.get("spell", "")) == "foe.caster_bolt":
+		return FOE_TINTS[door]
+	return FOE_TINTS.get(str(event.get("element", "Neutral")), FOE_TINTS["Neutral"])
+
+
 static func spell_tint(spell_id: String) -> Color:
 	var def: Dictionary = SpellKits.spell(spell_id)
 	return class_tint(str(def.get("class_id", "")))

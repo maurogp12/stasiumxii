@@ -75,8 +75,8 @@ func _test_levels_and_points() -> void:
 func _test_inherent_table() -> void:
 	# Level 30, inherent only (0 spend). Init +29 on every class (Mauro spec).
 	var table := {
-		"kestrel": [58, 87, 29, 0], "ironjaw": [58, 174, 29, 29], "mender": [29, 145, 29, 29],
-		"gloam": [58, 87, 29, 0], "bastion": [29, 232, 29, 58],
+		"kestrel": [58, 87, 29, 0], "ironjaw": [29, 145, 29, 29], "mender": [29, 145, 29, 29],
+		"gloam": [58, 58, 29, 0], "bastion": [29, 203, 29, 58],
 	}
 	for class_id in table:
 		var st := HeroProgress.combat_stats({"level": 30}, class_id)
@@ -129,11 +129,11 @@ func _test_levels_in_fights() -> void:
 	var k: Dictionary = sim._unit_by_seat(0)
 	var b: Dictionary = sim._unit_by_seat(1)
 	eq(int(k["level"]), 20, "seat 0 fights as its Kestrel level")
-	eq(int(k["max_hp"]), 80 + 19 * 3, "Kestrel 20: 80 + 57 HP")
+	eq(int(k["max_hp"]), 75 + 19 * 3, "Kestrel 20: 75 + 57 HP")
 	eq(int(k["mastery"]), 38, "Kestrel 20: 19 × 2 Mastery")
 	eq(int(k["init"]), 19 + 3, "Kestrel 20: 19 Init + 3 Swift")
 	eq(int(k["max_ap"]), 7, "Kestrel 20: +1 AP")
-	eq(int(b["max_hp"]), roundi((80 + 232 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (80+232+68)×1.10")
+	eq(int(b["max_hp"]), roundi((110 + 203 + 68) * 1.10), "Bastion 30 + Sheaf helm/coat: (110+203+68)×1.10")
 	eq(int(b["resist_elem"].get("earth", 0)), 5 + 58, "Ward 58 lands on the active Sheaf Earth attune")
 	# Koliseo flattens plus-rank gear only — never level growth or Swift.
 	sim.reset_match({"classes": ["kestrel", "bastion"], "skip_deploy": true, "seat_gear": {0: {"worn": [{"item_id": "stillcut.boots", "plus": 5}], "heroes": heroes, "flatten_plus": true}}})
@@ -218,7 +218,7 @@ func _test_screens() -> void:
 	eq(free.text, "Free points: 4", "level 3 shows 4 free points")
 	eq(bool(screen.spend("vitality")["ok"]), true, "spend from the screen")
 	eq(HeroProgress.load_saved().record("ironjaw")["spent"], {"vitality": 1}, "screen saves the spend")
-	truthy((screen.find_child("LevelStats", true, false) as Label).text.contains("HP +20"), "level 3 Ironjaw: 12 growth + 8 Vitality")
+	truthy((screen.find_child("LevelStats", true, false) as Label).text.contains("HP +18"), "level 3 Ironjaw: 10 growth + 8 Vitality")
 	screen.free()
 	var gear: GearScreen = load("res://scenes/gear_screen.gd").new()
 	root.add_child(gear)

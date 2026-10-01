@@ -93,7 +93,8 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		"base_damage": 16,
+		# Mauro 30 Sep 2026 balance: 16 → 12, then 12 → 14.
+		"base_damage": 14,
 		"target": "enemy",
 		"engine_on_connect": "impact",
 	},
@@ -108,7 +109,7 @@ const SPELLS := {
 		"max_range": 5,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 8,
+		"base_damage": 8,  # Mauro 1 Oct 2026 balance round 2 (back from 7)
 		"target": "enemy",
 		"engine_on_connect": "mark",
 	},
@@ -158,7 +159,7 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		"base_damage": 24,
+		"base_damage": 20,  # Mauro 1 Oct 2026 balance (was 24)
 		"target": "enemy",
 		# Locked: needs/spends 2 Impact on connect; miss retains Impact.
 		"engine_on_connect": "spend_impact",
@@ -250,11 +251,12 @@ const SPELLS := {
 		"rolls": true,
 		"element": "water",
 		"base_heal": 32,
-		"base_damage": 10,
+		# Mauro 30 Sep 2026 balance: enemy damage 10 → 18 → 24 → 20; Pulse cost 4 → 2.
+		"base_damage": 22,  # Mauro 1 Oct 2026 balance (was 20)
 		"target": "any",
 		"engine_on_connect": "spend_pulse",
-		"requires_pulse": 4,
-		"spend_pulse": 4,
+		"requires_pulse": 2,
+		"spend_pulse": 2,
 		"triage": true,
 		"ally_immunity_hits": 1,
 		"enemy_skip_mp": true,
@@ -270,7 +272,8 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 13,
+		# Mauro 30 Sep 2026 balance: 13 → 16.
+		"base_damage": 17,  # Mauro 1 Oct 2026 balance round 2 (was 16)
 		"target": "enemy",
 		"engine_on_connect": "umbral",
 	},
@@ -300,7 +303,7 @@ const SPELLS := {
 		"max_range": 2,
 		"rolls": true,
 		"element": "air",
-		"base_damage": 22,
+		"base_damage": 26,  # Mauro 1 Oct 2026 balance (was 22)
 		"target": "enemy",
 		"engine_on_connect": "ambush",
 	},
@@ -346,7 +349,8 @@ const SPELLS := {
 		"max_range": 1,
 		"rolls": true,
 		"element": "earth",
-		"base_damage": 11,
+		# Mauro 30 Sep 2026 balance: 11 → 13.
+		"base_damage": 13,
 		"target": "enemy",
 		"engine_on_connect": "aegis",
 	},

@@ -12,6 +12,9 @@ extends Node
 enum Mode { HOTSEAT, HOST, CLIENT, DEDICATED }
 
 const DEFAULT_PORT := 7777
+## Mauro's game server (1 Oct 2026). Online screens start with this host;
+## the player can still type another one.
+const DEFAULT_SERVER := "68.201.184.207"
 const HOST_SEAT := 0
 const GUEST_SEAT := 1
 const LISTEN_HOST_CLIENTS := 1
@@ -32,7 +35,7 @@ var last_legal_deploy: Dictionary = {0: [], 1: []}
 var last_packed: Dictionary = {}
 var guest_peer_id: int = 0
 var listen_port: int = DEFAULT_PORT
-var join_address: String = "127.0.0.1"
+var join_address: String = DEFAULT_SERVER
 
 var _sim: Node = null
 var _cli_host: bool = false
@@ -767,6 +770,12 @@ func _redact_hidden_intent_cells(intents: Array, hidden_cells: Array) -> Array:
 			out.append(item)
 			continue
 		var intent: Dictionary = (item as Dictionary).duplicate(true)
+		# A blind attack (Mauro 30 Sep 2026: punches in the air) is offered on
+		# every open tile in reach, so the hidden tile is one of many identical
+		# offers and keeps its `to`: stripping it would single the tile out.
+		if bool(intent.get("blind", false)):
+			out.append(intent)
+			continue
 		if intent.has("to") and intent["to"] is Vector2i and hidden_cells.has(intent["to"]):
 			intent.erase("to")
 		if intent.has("path") and _value_has_hidden_cell(intent.get("path"), hidden_cells):

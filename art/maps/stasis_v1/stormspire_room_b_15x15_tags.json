@@ -72,7 +72,7 @@
     {
       "x": 7,
       "y": 0,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -796,7 +796,7 @@
     {
       "x": 0,
       "y": 7,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -852,8 +852,8 @@
     {
       "x": 8,
       "y": 7,
-      "terrain": "water",
-      "elevation": 1,
+      "terrain": "ground",
+      "elevation": 0,
       "paint_only": []
     },
     {
@@ -894,7 +894,7 @@
     {
       "x": 14,
       "y": 7,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -968,7 +968,7 @@
     {
       "x": 9,
       "y": 8,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1172,7 +1172,7 @@
     {
       "x": 7,
       "y": 10,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1618,7 +1618,7 @@
     {
       "x": 7,
       "y": 14,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },

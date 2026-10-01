@@ -169,7 +169,7 @@ func _test_hud_paints_snapshot() -> void:
 	eq(hud._spell_buttons.has("mend"), true, "Mend button id is the card id")
 	eq(hud._spell_buttons.has("nightfold"), false, "gated Nightfold is not a button")
 	var card := hud._kestrel_body.text
-	truthy(card.contains("HP 80/80"), "card prints snapshot HP")
+	truthy(card.contains("HP 85/85"), "card prints snapshot HP")
 	truthy(card.contains("Pulse 0/6"), "Pulse meter uses the snapshot cap")
 	truthy(card.contains("Mastery 0"), "proto mastery is 0")
 	truthy(card.contains("Resist 0"), "proto resist is 0")

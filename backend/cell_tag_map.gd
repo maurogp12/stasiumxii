@@ -31,6 +31,25 @@ const BLOCKING_PROPS := {
 	"rock_pillar": true,
 	"well": true,
 }
+## Tall props that block line of sight and walking (Mauro 30 Sep 2026:
+## "maps should have obstacles that are not supposed to allow attack if a
+## character is behind them"; then "yes" to blocking walking too). Per arena
+## look, only props the board draws
+## tall (art 45 px or more; Crosshaven "rubble" is drawn as a bush).
+## Walk-blocking props above already block sight.
+const SIGHT_PROPS := {
+	"crosshaven": ["ruins", "hay", "rubble"],
+	"brinewake": ["ruins"],
+	"windmere": ["crystal", "ice_shard", "spark"],
+	"stormspire": ["conduit"],
+}
+## Stormspire thins its decoration (board/arena_look.gd prop_keep): only the
+## conduits it still draws block sight. Keep these two lists in step.
+const SIGHT_PROP_KEEP := {
+	"stormspire": {"conduit": [Vector2i(7, 2), Vector2i(7, 12), Vector2i(2, 7), Vector2i(12, 7)]},
+}
+## The arena centrepiece (Slagcrown volcano, Stormspire tower) blocks sight.
+const SIGHT_CENTERPIECE := {"slagcrown": Vector2i(7, 7), "stormspire": Vector2i(7, 7)}
 const _INFO := {
 	"crosshaven": {"label": "Crosshaven", "blurb": "Warm earth and stone"},
 	"brinewake": {"label": "Brinewake", "blurb": "Teal stone and ocean"},
@@ -212,12 +231,38 @@ static func map_id_for(path: String) -> String:
 	return MAP_ID
 
 
-static func props_block_move(props: Variant) -> bool:
+## Solid props block walking (and sight). With a map id, the arena's tall
+## drawn props (SIGHT_PROPS, centrepiece) count too: Mauro 30 Sep 2026 asked
+## for them to block walking as well as sight.
+static func props_block_move(props: Variant, map_id: String = "", cell: Vector2i = Vector2i(-1, -1)) -> bool:
+	if typeof(props) == TYPE_ARRAY:
+		for prop_name in props:
+			if BLOCKING_PROPS.has(str(prop_name)):
+				return true
+	if map_id == "":
+		return false
+	return _tall_prop_at(map_id, props, cell)
+
+
+static func props_block_sight(map_id: String, props: Variant, cell: Vector2i) -> bool:
+	return props_block_move(props, map_id, cell)
+
+
+static func _tall_prop_at(map_id: String, props: Variant, cell: Vector2i) -> bool:
+	var id := normalize_id(map_id)
+	if SIGHT_CENTERPIECE.get(id, Vector2i(-1, -1)) == cell:
+		return true
 	if typeof(props) != TYPE_ARRAY:
 		return false
+	var tall: Array = SIGHT_PROPS.get(id, [])
+	var keep: Dictionary = SIGHT_PROP_KEEP.get(id, {})
 	for prop_name in props:
-		if BLOCKING_PROPS.has(str(prop_name)):
-			return true
+		var name := str(prop_name)
+		if not tall.has(name):
+			continue
+		if keep.has(name) and not (keep[name] as Array).has(cell):
+			continue
+		return true
 	return false
 
 
@@ -233,19 +278,23 @@ static func apply(board, tags: Dictionary) -> bool:
 		var rec: Dictionary = item
 		var pos: Vector2i = rec.get("pos", Vector2i(-1, -1))
 		board.set_tile(pos, rec.get("terrain", "ground"), int(rec.get("elevation", 0)))
-	seal_blocking_props(board, tags.get("paint_only", {}))
+	seal_blocking_props(board, tags.get("paint_only", {}), str(tags.get("map_id", "")))
 	return true
 
 
 ## A rock, fence, arch, well, or pillar keeps its terrain tag and loses standability.
 ## The pathfinder already refuses a tile that is not walkable, so the route
 ## goes around instead of through.
-static func seal_blocking_props(board, paint: Variant) -> void:
+static func seal_blocking_props(board, paint: Variant, map_id: String = "") -> void:
 	if typeof(paint) != TYPE_DICTIONARY or board == null:
 		return
 	var props_by_cell: Dictionary = paint
-	for cell in props_by_cell.keys():
-		if not props_block_move(props_by_cell[cell]):
+	var cells: Array = props_by_cell.keys()
+	var piece: Vector2i = SIGHT_CENTERPIECE.get(normalize_id(map_id), Vector2i(-1, -1)) if map_id != "" else Vector2i(-1, -1)
+	if piece != Vector2i(-1, -1) and not cells.has(piece):
+		cells.append(piece)
+	for cell in cells:
+		if not props_block_move(props_by_cell.get(cell, []), map_id, cell):
 			continue
 		var tile = board.tile_at(cell)
 		if tile == null:

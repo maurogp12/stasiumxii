@@ -84,7 +84,7 @@ func _build() -> void:
 	var join_row := HBoxContainer.new()
 	join_row.add_theme_constant_override("separation", 8)
 	col.add_child(join_row)
-	_join_ip = _field("127.0.0.1")
+	_join_ip = _field(NetSession.DEFAULT_SERVER)
 	_join_ip.custom_minimum_size = Vector2(180, 32)
 	_join_port = _field("7777")
 	join_row.add_child(_label("Join IP"))

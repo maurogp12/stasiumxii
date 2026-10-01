@@ -40,6 +40,8 @@ const BOUNCE_TOAST := "Bounce"
 const LAVA_BURN_TOAST := "Lava - Burn"
 const WATER_SILENCE_TOAST := "Water - Silence"
 const MUD_SLOW_TOAST := "Mud - Slow"
+const ICE_FROZEN_TOAST := "Ice - Frozen"
+const CHARGE_SHOCK_TOAST := "Charge - Electrocuted"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
@@ -192,7 +194,23 @@ static func turn_order(snap: Dictionary) -> Array:
 	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
 		return int(a.get("seat", 0)) < int(b.get("seat", 0))
 	)
+	# Teams (2v2 / 3v3): follow the host's real turn order (A1 B1 A2 B2…).
+	var order: Array = snap.get("turn_order", [])
+	if int(snap.get("team_size", 1)) > 1 and not order.is_empty():
+		var by_seat := {}
+		for unit in rows:
+			by_seat[int(unit.get("seat", -1))] = unit
+		var ordered: Array = []
+		for seat in order:
+			if by_seat.has(int(seat)):
+				ordered.append(by_seat[int(seat)])
+		return ordered
 	return rows
+
+
+## Team of a unit row: Koliseo teams carry it; otherwise seat 0 vs the rest.
+static func unit_team(unit: Dictionary) -> int:
+	return int(unit.get("team", 0 if int(unit.get("seat", 0)) == 0 else 1))
 
 
 static func turn_status_text(snap: Dictionary) -> String:
@@ -352,6 +370,15 @@ static func can_ready_from_snap(snap: Dictionary, seat: int) -> bool:
 	var ready: Dictionary = snap.get("ready", {})
 	if bool(ready.get(seat, false)):
 		return false
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: Ready needs the whole team (seat 0 = team A, seat 1 = team B).
+		var any := false
+		for unit in snap.get("units", []):
+			if unit_team(unit) == seat:
+				any = true
+				if not bool(unit.get("placed", false)):
+					return false
+		return any
 	for unit in snap.get("units", []):
 		if int(unit.get("seat", -1)) == seat:
 			return bool(unit.get("placed", false))
@@ -594,6 +621,21 @@ static func impact_gain_toast(amount: int) -> String:
 	return "+%d Impact" % amount
 
 
+## Map push stacks on the unit card (Mauro's sheet): SLOW / BREATH / FROZEN /
+## SHOCK with the stack. Burn has its own note above.
+static func push_stack_notes(unit: Dictionary) -> String:
+	var out := ""
+	if int(unit.get("slow_remaining", 0)) > 0:
+		out += "  [b]SLOW[/b] ×%d" % maxi(int(unit.get("slow_stacks", 1)), 1)
+	if int(unit.get("breathless_remaining", 0)) > 0:
+		out += "  [b]BREATH[/b] ×%d %d" % [int(unit.get("breathless_stacks", 1)), int(unit.get("breathless_remaining", 0))]
+	if int(unit.get("frozen_remaining", 0)) > 0:
+		out += "  [b]FROZEN[/b] ×%d" % int(unit.get("frozen_stacks", 1))
+	if int(unit.get("electro_remaining", 0)) > 0:
+		out += "  [b]SHOCK[/b] ×%d" % int(unit.get("electro_stacks", 1))
+	return out
+
+
 static func toast_for_events(events: Array) -> String:
 	if events_include_push_blocked(events):
 		return PUSH_BLOCKED_TOAST
@@ -603,9 +645,20 @@ static func toast_for_events(events: Array) -> String:
 		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), WATER_SILENCE_TOAST)
 	if events_include_mud_slow(events):
 		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), MUD_SLOW_TOAST)
+	if _events_have_status(events, "frozen"):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), ICE_FROZEN_TOAST)
+	if _events_have_status(events, "electrocuted"):
+		return _join_toast(impact_gain_toast(shoulder_impact_gained(events)), CHARGE_SHOCK_TOAST)
 	if events_include_push_bounce(events):
 		return _join_toast(BOUNCE_TOAST, impact_gain_toast(shoulder_impact_gained(events)))
 	return impact_gain_toast(shoulder_impact_gained(events))
+
+
+static func _events_have_status(events: Array, status: String) -> bool:
+	for event in events:
+		if typeof(event) == TYPE_DICTIONARY and str(event.get("type", "")) == "status" and str(event.get("status", "")) == status:
+			return true
+	return false
 
 
 static func _join_toast(left: String, right: String) -> String:
@@ -832,25 +885,47 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var seat0 := _unit(units, 0)
 	var seat1 := _unit(units, 1)
 	var active_seat := snap_active_seat(snap)
+	var card_active := [active_seat == 0, active_seat == 1]
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: each side card shows that team's acting fighter, else its
+		# first fighter still standing.
+		var active_unit := _unit(units, active_seat)
+		for team in 2:
+			var pick: Dictionary = {}
+			if not active_unit.is_empty() and unit_team(active_unit) == team:
+				pick = active_unit
+			if pick.is_empty():
+				for unit in units:
+					if typeof(unit) == TYPE_DICTIONARY and unit_team(unit) == team and bool(unit.get("alive", false)):
+						pick = unit
+						break
+			if not pick.is_empty():
+				if team == 0:
+					seat0 = pick
+				else:
+					seat1 = pick
+			card_active[team] = not active_unit.is_empty() and unit_team(active_unit) == team
 	# Stasis Room A has more than the Koliseo pair. The right card follows the
 	# living hostile whose turn it is, then the first one still standing.
-	if units.size() > 2:
+	if units.size() > 2 and int(snap.get("team_size", 1)) <= 1:
 		var shown: Dictionary = {}
-		if active_seat > 0:
-			shown = _unit(units, active_seat)
+		var acting := _unit(units, active_seat)
+		if not acting.is_empty() and unit_team(acting) == 1:
+			shown = acting
 		if shown.is_empty() or not bool(shown.get("alive", false)):
 			for unit in units:
 				if typeof(unit) != TYPE_DICTIONARY:
 					continue
-				if int(unit.get("seat", -1)) > 0 and bool(unit.get("alive", false)):
+				# A dungeon party's heroes are team 0: the right card is a foe.
+				if unit_team(unit) == 1 and bool(unit.get("alive", false)):
 					shown = unit
 					break
 		if not shown.is_empty():
 			seat1 = shown
-	_apply_seat_banner(0, seat0, active_seat == 0 and not _deploying)
-	_apply_seat_banner(1, seat1, active_seat == 1 and not _deploying)
-	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
-	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
+	_apply_seat_banner(0, seat0, bool(card_active[0]) and not _deploying)
+	_apply_seat_banner(1, seat1, bool(card_active[1]) and not _deploying)
+	_kestrel_body.text = _unit_card_text(seat0, bool(card_active[0]), snap)
+	_ironjaw_body.text = _unit_card_text(seat1, bool(card_active[1]), snap)
 
 	var active := _unit(units, active_seat)
 	var chrome := _unit(units, kit_seat(snap))
@@ -860,9 +935,12 @@ func render(snap: Dictionary, legal: Array) -> void:
 		_clock_seconds = clock_sec
 	if snap.get("match_over", false):
 		var winner := _unit(units, int(snap.get("winner_seat", -1)))
-		_turn_label_base = "Match over — %s wins" % str(winner.get("name", "—"))
+		if int(snap.get("team_size", 1)) > 1:
+			_turn_label_base = "Match over — Team %s wins" % ("A" if int(snap.get("winner_team", 0)) == 0 else "B")
+		else:
+			_turn_label_base = "Match over — %s wins" % str(winner.get("name", "—"))
 	elif _deploying:
-		_turn_label_base = "DEPLOYMENT  ·  place both fighters"
+		_turn_label_base = "DEPLOYMENT  ·  place every fighter" if int(snap.get("team_size", 1)) > 1 else "DEPLOYMENT  ·  place both fighters"
 	else:
 		var whose := turn_status_text(snap)
 		if whose == "":
@@ -1460,7 +1538,7 @@ func _sync_turn_strip(snap: Dictionary) -> void:
 		var chip := _turn_chip(unit, acting)
 		# Dofus timeline: each portrait framed in its team color.
 		var frame := _chip_frame(acting)
-		frame.border_color = TEAM_RED if seat > 0 else TEAM_BLUE
+		frame.border_color = TEAM_RED if unit_team(unit) == 1 else TEAM_BLUE
 		if acting:
 			frame.shadow_color = Color(frame.border_color.r, frame.border_color.g, frame.border_color.b, 0.75)
 		(chip as Panel).add_theme_stylebox_override("panel", frame)
@@ -1520,7 +1598,7 @@ func _chip_frame(acting: bool) -> StyleBoxFlat:
 func _portrait_for(unit: Dictionary) -> Texture2D:
 	var foe := str(unit.get("stasis_sprite", ""))
 	if foe != "" and ResourceLoader.exists(foe):
-		return _head_crop(foe)
+		return _foe_crop(foe)
 	var class_id := SpellKits.normalize_class_id(str(unit.get("class_id", "")))
 	if not SpellKits.is_roster_class(class_id):
 		return null
@@ -1548,6 +1626,36 @@ func _head_crop(path: String) -> Texture2D:
 	if head != null:
 		_head_cache[path] = head
 	return head
+
+
+## Monster paintings sit in a padded frame: frame the whole visible creature
+## (square around its opaque pixels, top-weighted) so the turn chip shows the
+## monster, not an empty corner or its feet.
+func _foe_crop(path: String) -> Texture2D:
+	var key := "foe:%s" % path
+	if _head_cache.has(key) and _head_cache[key] is Texture2D:
+		return _head_cache[key]
+	var tex := load(path) as Texture2D
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null:
+		return _head_crop(path)
+	if img.is_compressed():
+		img.decompress()
+	var used := img.get_used_rect()
+	if used.size.x <= 0 or used.size.y <= 0:
+		return _head_crop(path)
+	var side := float(maxi(used.size.x, mini(used.size.y, int(used.size.x * 1.15))))
+	var cx := float(used.position.x) + float(used.size.x) * 0.5
+	var top := float(used.position.y)
+	var region := Rect2(cx - side * 0.5, top, side, side)
+	region.position.x = clampf(region.position.x, 0.0, maxf(float(img.get_width()) - side, 0.0))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = tex
+	atlas.region = region
+	_head_cache[key] = atlas
+	return atlas
 
 
 ## Top of the body. Same crop the turn chip used on the old south turnaround.
@@ -1594,6 +1702,7 @@ func _unit_card_text(unit: Dictionary, active: bool, snap: Dictionary = {}) -> S
 	var burn_note := ""
 	if unit_is_burning(unit):
 		burn_note = "  [b]BURN[/b] ×%d %d" % [unit_burn_stacks(unit), unit_burn_remaining(unit)]
+	burn_note += push_stack_notes(unit)
 	# Spell ids stay on the bottom bar. The card keeps HP, AP, MP, facing, and meters.
 	return "%s   HP %d/%d%s%s\nAP %d    MP %d    Face %s\n%s" % [
 		status,
@@ -2500,10 +2609,14 @@ func _sync_deploy_chrome(snap: Dictionary) -> void:
 		_ready_p1_button.visible = deploying and (local_seat < 0 or local_seat == 0)
 		_ready_p1_button.disabled = not can_ready_from_snap(snap, 0)
 		_ready_p1_button.text = "P1 ready" if bool(ready.get(0, false)) else "Ready P1"
+		if int(snap.get("team_size", 1)) > 1:
+			_ready_p1_button.text = "Team A ready" if bool(ready.get(0, false)) else "Ready Team A"
 	if _ready_p2_button != null:
 		_ready_p2_button.visible = deploying and (local_seat < 0 or local_seat == 1)
 		_ready_p2_button.disabled = not can_ready_from_snap(snap, 1)
 		_ready_p2_button.text = "P2 ready" if bool(ready.get(1, false)) else "Ready P2"
+		if int(snap.get("team_size", 1)) > 1:
+			_ready_p2_button.text = "Team B ready" if bool(ready.get(1, false)) else "Ready Team B"
 	if _clock_row != null:
 		_clock_row.visible = not deploying
 	if _clock_label != null:

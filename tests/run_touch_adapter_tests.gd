@@ -21,6 +21,7 @@ func _run() -> void:
 	_test_board_gestures()
 	_test_pawn_body_cast_pick()
 	_test_mobile_target_pick()
+	_test_raised_tile_front_pick()
 	_test_ability_cluster_layout()
 	_test_ability_icons()
 	_test_hud_targets_and_tooltip_tap()
@@ -145,7 +146,7 @@ func _test_pawn_body_cast_pick() -> void:
 
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true, "rolls": [1]})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true, "rolls": [1]})
 	var missed: Dictionary = sim.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": behind})
 	eq(missed.get("ok", true), false, "casting the diamond behind the foe is illegal")
 	eq(str(missed.get("reason", "")), "no_target", "that illegal cast is no living unit")
@@ -172,7 +173,7 @@ func _test_pawn_body_cast_pick() -> void:
 	var self_cast: Dictionary = far.submit({"type": "cast", "spell": SpellKits.MARK_SHOT, "to": Vector2i(0, 0)})
 	eq(self_cast.get("ok", true), false, "casting Mark Shot on yourself still rejects")
 	eq(str(self_cast.get("reason", "")), "out_of_range", "self cell is inside Mark Shot's minimum range")
-	eq(int(far.snapshot()["units"][1]["hp"]), 80, "a rejected self cast does not hit the foe")
+	eq(int(far.snapshot()["units"][1]["hp"]), 90, "a rejected self cast does not hit the foe")
 	far.free()
 
 
@@ -370,7 +371,7 @@ func _test_ability_icons() -> void:
 
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)
@@ -482,7 +483,7 @@ func mark_host_primary(hud, spell_id: String) -> bool:
 func _test_hud_targets_and_tooltip_tap() -> void:
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)
@@ -606,7 +607,7 @@ func _test_hud_targets_and_tooltip_tap() -> void:
 func _test_hold_card_hides_when_drag_leaves() -> void:
 	var sim_script := load("res://backend/combat_sim.gd")
 	var sim: Node = sim_script.new()
-	sim.reset_match({"seed": 1, "skip_deploy": true})
+	sim.reset_match({"seed": 1, "skip_deploy": true, "flat_board": true})
 	var hud := CombatHUD.new()
 	hud._build()
 	hud.set_preview_source(sim)
@@ -734,6 +735,25 @@ func near(actual: float, expected: float, msg: String) -> void:
 		print("FAIL: %s  (got %s expected %s)" % [msg, actual, expected])
 	else:
 		_passed += 1
+
+
+func _test_raised_tile_front_pick() -> void:
+	# Mauro 30 Sep 2026: taps sometimes chose the wrong tile. A raised tile's
+	# top face covers the tile behind it; the drawn front face must win.
+	var positions := {}
+	for y in range(4):
+		for x in range(4):
+			positions[Vector2i(x, y)] = BoardVisualSort.cell_to_local(Vector2i(x, y), 0.0)
+	var raised := Vector2i(2, 2)
+	positions[raised] = BoardVisualSort.cell_to_local(raised, 2.0)
+	var top: Vector2 = positions[raised]
+	eq(TOUCH.front_cell(top, positions), raised, "the raised top face is the front cell")
+	eq(TOUCH.pick_board_cell(top, positions, [], false, true), raised, "mobile tap on a raised top face picks it")
+	var flat: Vector2 = positions[Vector2i(3, 0)]
+	eq(TOUCH.pick_board_cell(flat, positions, [], false, true), Vector2i(3, 0), "a flat tile still picks itself")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(view.contains("_living_pawns_for_pick(spell)"), "enemy spells pick bodies without the caster's own")
+	truthy(view.contains("skip_seat = CombatHUD.kit_seat"), "the caster's seat is skipped for enemy-only spells")
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

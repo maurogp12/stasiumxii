@@ -216,6 +216,54 @@ func _online() -> bool:
 	return net != null and net.is_online()
 
 
+## Who is looking at the board. Online: the seat this device owns. Hot-seat:
+## the player whose turn it is (one phone passed between two players).
+func _viewer_sees_seat(seat: int, snap: Dictionary) -> bool:
+	if int(snap.get("team_size", 1)) > 1:
+		# Teams: a hidden fighter is visible to its own team only.
+		var team := _snap_team(snap, seat)
+		if _online():
+			for unit in snap.get("units", []):
+				if _snap_team(snap, int(unit["seat"])) == team and _can_control_seat(int(unit["seat"])):
+					return true
+			return false
+		return team == _snap_team(snap, int(snap.get("active_seat", -1)))
+	if _online():
+		return _can_control_seat(seat)
+	return seat == int(snap.get("active_seat", -1))
+
+
+func _snap_team(snap: Dictionary, seat: int) -> int:
+	for unit in snap.get("units", []):
+		if int(unit.get("seat", -1)) == seat:
+			return int(unit.get("team", 0 if seat == 0 else 1))
+	return seat % 2
+
+
+## Teams deploy: a tap on a team's zone places the selected fighter of that
+## team, else its next unplaced fighter. -1 when the whole team is placed.
+func _team_deploy_seat(snap: Dictionary, side: int) -> int:
+	if _deploy_selected_seat >= 0 and _snap_team(snap, _deploy_selected_seat) == side:
+		return _deploy_selected_seat
+	for unit in snap.get("units", []):
+		if _snap_team(snap, int(unit["seat"])) == side and not bool(unit.get("placed", false)):
+			return int(unit["seat"])
+	return -1
+
+
+## Scenes where the computer plays a seat skip the big turn banner for it.
+const QUIET_HANDOFF_SEC := 0.25
+
+
+func _quiet_handoff(_seat: int) -> bool:
+	return false
+
+
+## Scenes where the computer plays a seat override this (walk chrome off).
+func _shows_turn_chrome(_seat: int) -> bool:
+	return true
+
+
 func _can_control_seat(seat: int) -> bool:
 	var net := _net()
 	if net == null or not net.is_online():
@@ -278,6 +326,7 @@ func _process(delta: float) -> void:
 	if not _booted:
 		return
 	_pulse_target_marks(delta)
+	_space_name_plates()
 	var snap: Dictionary = _sim().snapshot()
 	if CombatHUD.is_deployment_phase(snap) or bool(snap.get("match_over", false)):
 		_hydrate_turn_clock(snap)
@@ -543,7 +592,7 @@ func _pick_local(local: Vector2, mobile: bool = false) -> Vector2i:
 	if _hud != null:
 		spell = _hud.selected_spell()
 	var prefer := TOUCH.spell_targets_unit(spell)
-	var pawns: Array = _living_pawns_for_pick() if prefer else []
+	var pawns: Array = _living_pawns_for_pick(spell) if prefer else []
 	var cell := TOUCH.pick_board_cell(local, _tile_positions(), pawns, prefer, mobile or TOUCH.use_mobile_pick())
 	return _soft_lock_cell(cell, spell, prefer)
 
@@ -567,10 +616,21 @@ func _tile_positions() -> Dictionary:
 	return positions
 
 
-func _living_pawns_for_pick() -> Array:
+## An enemy-only spell never picks the caster's own body: the drawing stands
+## over the tiles behind it, and a tap there (a blind "punch in the air", or a
+## foe standing behind) used to select the caster instead.
+func _living_pawns_for_pick(spell: String = "") -> Array:
 	var out: Array = []
-	for pawn in pawns_by_seat.values():
+	var skip_seat := -99
+	if spell != "" and str(SpellKits.spell(spell).get("target", "")) == "enemy":
+		var sim := _sim()
+		if sim != null:
+			skip_seat = CombatHUD.kit_seat(sim.snapshot())
+	for seat in pawns_by_seat.keys():
+		var pawn = pawns_by_seat[seat]
 		if pawn == null or not is_instance_valid(pawn):
+			continue
+		if int(seat) == skip_seat:
 			continue
 		var body: Pawn = pawn
 		if not body.visible:
@@ -617,6 +677,11 @@ func _pulse_target_marks(delta: float) -> void:
 		var body: Pawn = pawn
 		if body.target_marked:
 			body.advance_target_pulse(delta)
+
+
+## Name plates of neighbours are spread apart (Pawn.spread_name_plates).
+func _space_name_plates() -> void:
+	Pawn.spread_name_plates(pawns_by_seat.values())
 
 
 func _handle_left_click(cell: Vector2i) -> void:
@@ -776,8 +841,12 @@ func _present_turn_handoff(result: Dictionary) -> void:
 	var next_unit := _active_unit(snap)
 	var status := CombatHUD.turn_status_text(snap)
 	var caption := status if status != "" else ""
-	_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
-	await get_tree().create_timer(HANDOFF_SEC).timeout
+	if _quiet_handoff(int(next_unit.get("seat", -1))):
+		# Computer-run seat: no board-covering banner; the turn strip shows it.
+		await get_tree().create_timer(QUIET_HANDOFF_SEC).timeout
+	else:
+		_hud.show_turn_banner(str(next_unit.get("name", "Next")), str(next_unit.get("class_id", "")), caption)
+		await get_tree().create_timer(HANDOFF_SEC).timeout
 	if not is_inside_tree():
 		return
 	_hud.hide_turn_banner()
@@ -1836,7 +1905,12 @@ func _apply_units(snap: Dictionary) -> void:
 		var cell: Vector2i = _as_cell(raw_pos)
 		# pos null / pos_hidden: opponent wire for an Invisible unit. Do not draw it.
 		var placed := bool(unit.get("placed", true)) and not bool(unit.get("pos_hidden", false)) and raw_pos != null and cell.x >= 0 and cell.y >= 0
-		pawn.visible = placed
+		# Mauro 30 Sep 2026: an Invisible fighter is not drawn at all (no ghost,
+		# ring or status dots) for the player whose turn it is not.
+		var unseen := bool(unit.get("invisible", false)) and bool(unit.get("alive", true)) and not _viewer_sees_seat(seat, snap)
+		pawn.visible = placed and not unseen
+		if _vfx != null and _vfx.has_method("set_seat_hidden"):
+			_vfx.call("set_seat_hidden", seat, unseen)
 		if not placed:
 			continue
 		var raw_events: Variant = snap.get("last_events", [])
@@ -1973,6 +2047,12 @@ func _paint_highlights() -> void:
 		_paint_blocked(snap)
 		_sync_target_marks()
 		return
+	if not _shows_turn_chrome(CombatHUD.kit_seat(snap)):
+		# A computer-run seat (Stasis monsters): no walk / range tiles on its turn.
+		_paint_blocked(snap)
+		_sync_aim_line()
+		_sync_target_marks()
+		return
 	var legal: Array = _sim().legal_intents(CombatHUD.kit_seat(snap))
 	var spell_id := _hud.selected_spell()
 	var actor := _kit_unit(snap)
@@ -1998,6 +2078,10 @@ func _paint_highlights() -> void:
 			for cell in range_cells:
 				if tiles.has(cell) and spell_id != SpellKits.AMBUSH:
 					_tile_at(cell).set_highlight("range")
+			# In range but behind a wall: grey, no sight (CombatSim decides).
+			for cell in _sim().sight_blocked_cells(CombatHUD.kit_seat(snap), spell_id):
+				if tiles.has(cell):
+					_tile_at(cell).set_highlight("grey")
 	# Walk chrome follows sim-legal dests only. Do not invent weighted reachability here.
 	# Solid props are already not walkable, so a blue path cannot cross a rock, fence, or arch.
 	# kind == "move" and spell_id == "" — walk highlights stay off while a spell is selected.
@@ -2124,7 +2208,8 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 	if occupant >= 0:
 		var snap: Dictionary = _sim().snapshot()
 		var ready: Dictionary = snap.get("ready", {})
-		if not bool(ready.get(occupant, false)):
+		var occupant_side := _snap_team(snap, occupant) if int(snap.get("team_size", 1)) > 1 else occupant
+		if not bool(ready.get(occupant_side, ready.get(str(occupant_side), false))):
 			if not _can_control_seat(occupant):
 				_hud.set_deploy_note("That fighter belongs to the other seat.")
 				return
@@ -2134,7 +2219,16 @@ func _handle_deploy_click(cell: Vector2i) -> void:
 			_refresh()
 			return
 	var zones: Dictionary = _sim().snapshot().get("deploy_zones", {})
-	var seat := CombatHUD.deploy_seat_for_cell(cell, _deploy_selected_seat, zones)
+	var deploy_snap: Dictionary = _sim().snapshot()
+	var side_pick := _deploy_selected_seat
+	if int(deploy_snap.get("team_size", 1)) > 1 and side_pick >= 0:
+		side_pick = _snap_team(deploy_snap, side_pick)
+	var seat := CombatHUD.deploy_seat_for_cell(cell, side_pick, zones)
+	if int(deploy_snap.get("team_size", 1)) > 1:
+		seat = _team_deploy_seat(deploy_snap, seat)
+		if seat < 0:
+			_hud.set_deploy_note("Whole team placed. Tap a fighter to move it, or press Ready.")
+			return
 	if not _can_control_seat(seat):
 		_hud.set_deploy_note("That deploy zone belongs to the other seat.")
 		return

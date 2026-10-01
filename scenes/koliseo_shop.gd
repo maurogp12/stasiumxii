@@ -149,6 +149,11 @@ func _build() -> void:
 		var button := _button("")
 		button.name = "Duskbrand_" + slot
 		button.custom_minimum_size.x = 260
+		var art := GearBag.icon(GearBag.item_id_for("duskbrand", slot))
+		if art != null:
+			button.icon = art
+			button.expand_icon = true
+			button.add_theme_constant_override("icon_max_width", 34)
 		button.pressed.connect(buy_duskbrand.bind(slot))
 		stall_col.add_child(button)
 		_slot_buttons[slot] = button

@@ -10,7 +10,8 @@ extends Node
 ## Proto/elevation stays reference — this file does not import it.
 
 ## Mauro (29 Sep): Invisible from Fade lasts this many of Gloam's turns.
-const INVISIBLE_TURNS := 2
+## Was 2; Mauro 29 Sep 2026: "make fade last 1 turn".
+const INVISIBLE_TURNS := 1
 const RULES_VERSION := "phase-a-gdd-0.2"
 const UNPLACED := Vector2i(-1, -1)
 const _MatchFlow := preload("res://backend/match_flow.gd")
@@ -19,12 +20,28 @@ const _TerrainDef := preload("res://backend/terrain_def.gd")
 const _ElevationCost := preload("res://backend/elevation_cost.gd")
 const _BoardSize := preload("res://backend/board_size.gd")
 const _CellTagMap := preload("res://backend/cell_tag_map.gd")
+const FoeKits := preload("res://backend/foe_kits.gd")
 const _HitBands := preload("res://backend/hit_bands.gd")
 ## Ship default is 15×15. MatchConfig.board_size 8 and 12 are proto only.
 const BOARD_SIZE := _BoardSize.SHIP
 const MAX_AP := 6
 const MAX_MP := 3
-const START_HP := 80
+## Mauro 30 Sep 2026: class base HP. Replaces the flat 80.
+const CLASS_BASE_HP := {
+	"bastion": 110,  # Mauro 1 Oct 2026 balance (was 100)
+	"ironjaw": 90,
+	"mender": 85,
+	"kestrel": 75,
+	"gloam": 75,  # Mauro 1 Oct 2026 balance (was 70)
+}
+
+
+static func class_base_hp(class_id: String) -> int:
+	var id := str(class_id)
+	if CLASS_BASE_HP.has(id):
+		return int(CLASS_BASE_HP[id])
+	# A body with no roster class (before a Stasis HP override) is not one of the five.
+	return 80
 const CRIT_MULT := 1.0
 const MASTERY := 0.0
 const RESIST := 0.0
@@ -45,17 +62,31 @@ const STAGGER_MP := 1
 ## Bounce (OOB / truly blocked, not lava): +2 Impact only. Do not add +1 on top.
 const SHOULDER_CONNECT_IMPACT := 1
 const SHOULDER_BOUNCE_IMPACT := 2
-## Soft Lock lava CASTIGO. Supersedes Director Locked Burn (4 HP, duration 2, no stack).
-## Land damage is immediate. Burn then ticks at the victim's turn start.
-## Index is the current stack count: 1 → 2 HP, 2 → 4 HP, 3 → 8 HP.
-const LAVA_LAND_HP := 6
-const BURN_DURATION := 4
+## Map push stacks (Mauro, "STASIUM XII Map push stacks + Cleanse", 29 Sep
+## 2026). A PUSH onto a hazard stacks 1–3 while that CC is live; walk-on never
+## stacks (voluntary walks refuse hazards anyway). Index = stack.
+## Crosshaven mud Slow · Brinewake water Breathless · Slagcrown lava Burn ·
+## Windmere ice (its water tiles) Frozen · Stormspire charged pools (its
+## water tiles) Electrocuted. Mud is Slow and water Breathless on the others.
+const HAZARD_MAX_STACKS := 3
+## Lava: enter damage (Fire) then Burn ticks at the victim's turn start.
+const LAVA_ENTER_HP: Array[int] = [0, 10, 10, 15]
+const BURN_STACK_HP: Array[int] = [0, 4, 5, 5]
+const BURN_STACK_TURNS: Array[int] = [0, 2, 3, 4]
 const BURN_MAX_STACKS := 3
-const BURN_STACK_HP: Array[int] = [0, 2, 4, 8]
-## Soft Lock castigo. Water: silence one random spell, one-shot, no duration.
-## Mud: −1 MP for 1 turn. Re-apply refreshes that turn; it does not stack to −2.
+const LAVA_LAND_HP := 10
+const BURN_DURATION := 4
+## Mud Slow: −1/−2/−3 MP on the victim's next turn (1 turn, refresh).
 const SLOW_MP := 1
 const SLOW_TURNS := 1
+## Water Breathless: 1 random kit spell silenced (same slot on a re-push) for
+## 1/2/3 of the victim's turns.
+const BREATHLESS_TURNS: Array[int] = [0, 1, 2, 3]
+## Ice Frozen: no melee (spells and walk OK) for 1/2 turns; stack 3 Paralyzed
+## (auto End Turn, the Locked Stun skip).
+const FROZEN_TURNS: Array[int] = [0, 1, 2, 1]
+## Stormspire Electrocuted: −1/−2/−3 AP on the victim's next turn (clamp 0).
+const ELECTRO_TURNS := 1
 
 const FACING_VEC := {
 	"N": Vector2i(0, -1),
@@ -71,7 +102,9 @@ const FACING_VEC := {
 ## to exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1,
 ## diagonals, and any non-cardinal are rejected. Advance dest uses the same
 ## stand-on gates as walk.
-## Hit bands / facing cones / spell LoS do not read height. Locked Stun (A′):
+## Hit bands / facing cones do not read height. Spell line of sight (Mauro
+## 30 Sep 2026): solid props, Snap Walls and tiles raised above both ends
+## block a targeted spell (see spell_needs_sight). Locked Stun (A′):
 ## blocks move + cast + face; auto end_turn on that seat's turn start (player
 ## never presses End Turn). Director Locked Shoulder: occupied dest is
 ## push_blocked (hard body-block; hit Impact stays +1). Walkable empty dest
@@ -82,7 +115,7 @@ const FACING_VEC := {
 ## the same way. Walk and Advance refuse them. A forced push may land.
 ## Castigo is per terrain: lava is Soft Lock (6 HP on land, then stacked Burn),
 ## water silences one random spell (one-shot, no duration), mud is Slow −1 MP
-## for 1 turn (refresh, no stack). Soft Lock Burn: stacks tick 2/4/8 HP at the
+## for 1 turn. Superseded by the Map push stacks sheet (see HAZARD_MAX_STACKS): Burn stacks tick 4/5/5 HP at the
 ## victim's turn start, duration 4, max 3. Re-push adds a stack up to 3 and
 ## refreshes duration. Cleanse clears Burn. Burn continues after leaving lava.
 ## Death is checked after each tick. burn_stacks and burn_remaining live on
@@ -129,6 +162,15 @@ var _map_id: String = ""
 ## Mobile Stasis Room A only. True when the roster has more than one hostile.
 ## Koliseo never sets this. Death, turn order, and cast offers stay 1v1 without it.
 var _stasis_pack: bool = false
+## Koliseo teams (Mauro 1 Oct 2026: 2v2 and 3v3). 1 = the classic duel.
+## Seat s plays on team s % 2 (seats 0, 2, 4 vs 1, 3, 5). Turns alternate
+## between the teams, each team ordered by Init (Dofus style).
+var _team_size: int = 1
+## Stasis party (Mauro 1 Oct 2026): 1–4 heroes (team 0, seats 0..P-1) vs the
+## monsters (team 1, seats P..). 1 = the classic solo run.
+var _party_size: int = 1
+var _turn_order: Array[int] = []
+var _winner_team: int = -1
 ## Live matches (Koliseo, Stasis): higher Init acts first, tie = coin flip
 ## (Mauro 29 Sep 2026). Test fixtures that do not ask for it keep seat 0.
 var _first_by_init: bool = false
@@ -165,6 +207,10 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_map_id = ""
 	_demo_map = ""
 	_stasis_pack = false
+	_team_size = clampi(int(config.get("team_size", 1)), 1, 3)
+	_party_size = clampi(int(config.get("party_size", 1)), 1, 4) if config.has("stasis_roster") else 1
+	_turn_order.clear()
+	_winner_team = -1
 	_first_by_init = bool(config.get("first_by_init", false))
 	_init_note = ""
 	# New Match generates a fresh seed unless MatchConfig.seed / elev_seed is set.
@@ -178,6 +224,10 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	flow_config["board_size"] = _board_size
 	flow_config["elev_seed"] = _elev_seed
 	_flow.reset(_seed, flow_config)
+	var deploys := not (bool(config.get("skip_deploy", false)) or config.has("kestrel_pos") or config.has("ironjaw_pos") or config.has("positions"))
+	if deploys and not config.has("deploy_zones") and _elevation_gen == "tags":
+		_zone_components = _walk_components()
+		_flow.resample_zones(_seed, Callable(self, "_zone_cell_ok"), Callable(self, "_zones_meet"))
 	if config.has("rolls"):
 		for roll in config["rolls"]:
 			_scripted_rolls.append(int(roll))
@@ -187,10 +237,14 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	# the Locked allowlist. Any unknown id falls back to that default pair.
 	var roster: Array[String] = _roster_class_ids(config)
 	var facing_used: Dictionary = {}
-	for seat in 2:
+	for seat in roster.size():
 		var class_id: String = roster[seat]
 		var facing := _facing_for(config, class_id, facing_used)
-		_units.append(_make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false))
+		var made := _make_unit(seat, class_id, SpellKits.display_name(class_id), SpellKits.element_of(class_id), UNPLACED, facing, false)
+		made["team"] = seat % 2
+		if _party_size > 1:
+			made["team"] = 0 if seat < _party_size else 1
+		_units.append(made)
 	_apply_setup_overrides(config)
 	# Mobile Stasis only. Koliseo never passes stasis_roster, so a normal duel
 	# is unchanged. Foe HP and attack_base in that payload are provisional Open
@@ -211,7 +265,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		# Stasis Room A appends hostile seats after the Locked pair. Koliseo
 		# stays two seats because it never sets _stasis_pack.
 		var class_pos_used: Dictionary = {}
-		var spawn_seats := _units.size() if _stasis_pack else 2
+		var spawn_seats := _units.size() if (_stasis_pack or _team_size > 1) else 2
 		for seat in spawn_seats:
 			var class_id: String = str(_units[seat]["class_id"])
 			_force_spawn(seat, _spawn_cell_for(config, seat, class_id, class_pos_used))
@@ -220,6 +274,8 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 		_begin_combat(_opening_turn_coach(""))
 	else:
 		_last_coach = "Deployment. Place one fighter in your deploy zone, then Ready."
+		if _team_size > 1:
+			_last_coach = "Deployment. Each team places its %d fighters in its zone, then Ready." % _team_size
 		_last_events = [{
 			"type": "deploy_start",
 			"phase": _flow.phase_name(),
@@ -331,8 +387,15 @@ func legal_intents(seat: int) -> Array:
 		for cell in _board.reachable_dests(from, mp, Callable(self, "_walk_occupied")):
 			out.append({"type": "move", "to": cell, "seat": seat})
 
+	# Stasis monsters cast from their own kit (FoeKits), not a class card.
+	var foe_kit: Array = actor.get("foe_kit", []) if actor.get("foe_kit", []) is Array else []
+	if not foe_kit.is_empty():
+		for cast in _foe_casts(actor):
+			out.append(cast)
+		out.append({"type": "end_turn", "seat": seat})
+		return out
 	for spell_id in actor["spells"]:
-		if _is_spell_silenced(actor, str(spell_id)):
+		if _is_spell_silenced(actor, str(spell_id)) or _is_spell_frozen(actor, str(spell_id)):
 			continue
 		if spell_id == SpellKits.ADVANCE and str(actor["class_id"]) != SpellKits.CLASS_IRONJAW:
 			continue
@@ -387,6 +450,15 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "ally" or target_kind == "any":
 			if _in_spell_range(def, from, from):
 				out.append({"type": "cast", "spell": spell_id, "to": from, "target_seat": seat, "seat": seat})
+			# Teams / party: every living teammate in reach is an ally target too.
+			if _multi_side():
+				for mate in _units:
+					if int(mate["seat"]) == seat or not _allied(mate, actor) or not bool(mate.get("alive", false)):
+						continue
+					if _cast_gate_reason(actor, mate, def) != "":
+						continue
+					if _in_spell_reach(def, from, mate["pos"]):
+						out.append({"type": "cast", "spell": spell_id, "to": mate["pos"], "target_seat": mate["seat"], "seat": seat})
 			if target_kind == "ally":
 				continue
 		if def["target"] == "empty_tile":
@@ -412,9 +484,13 @@ func legal_intents(seat: int) -> Array:
 			# offers every living hostile to the player.
 			for hostile in _hostile_cast_targets(seat):
 				var enemy: Dictionary = hostile
+				# An Invisible enemy is never a named target (it would give
+				# its tile away); blind attacks below can still find it.
+				if bool(enemy.get("invisible", false)):
+					continue
 				if _cast_gate_reason(actor, enemy, def) != "":
 					continue
-				if _in_spell_range(def, from, enemy["pos"]):
+				if _in_spell_reach(def, from, enemy["pos"]):
 					out.append({
 						"type": "cast",
 						"spell": spell_id,
@@ -423,8 +499,89 @@ func legal_intents(seat: int) -> Array:
 						"seat": seat,
 					})
 
+	_append_blind_casts(out, actor)
 	out.append({"type": "end_turn", "seat": seat})
 	return out
+
+
+## Mauro 30 Sep 2026: "player should be able to throw punches in the air and
+## if any of the hits does damage to Gloam, Gloam becomes visible". While an
+## enemy is Invisible, every enemy-target attack may be aimed at any tile in
+## reach that shows no visible body. An empty tile is a whiff (AP spent); the
+## hidden unit's tile rolls normally and damage reveals it.
+func _has_invisible_hostile(seat: int) -> bool:
+	for hostile in _hostile_cast_targets(seat):
+		if bool((hostile as Dictionary).get("invisible", false)) and bool((hostile as Dictionary).get("alive", false)):
+			return true
+	return false
+
+
+func _append_blind_casts(out: Array, actor: Dictionary) -> void:
+	var seat := int(actor["seat"])
+	if not _has_invisible_hostile(seat):
+		return
+	var from: Vector2i = actor["pos"]
+	for spell_id in actor.get("spells", []):
+		var id := str(spell_id)
+		var def: Dictionary = SpellKits.spell(id)
+		if def.is_empty() or str(def.get("target", "")) != "enemy" or id == SpellKits.AMBUSH:
+			continue
+		if _is_spell_silenced(actor, id) or _is_spell_frozen(actor, id) or SpellKits.is_gated(id):
+			continue
+		if int(actor.get("ap", 0)) < int(def.get("ap", 0)) or int(actor.get("mp", 0)) < int(def.get("mp", 0)):
+			continue
+		if _resource_gate(actor, def) != "" or _cast_gate_reason(actor, {}, def) != "":
+			continue
+		for y in range(_board_size):
+			for x in range(_board_size):
+				var cell := Vector2i(x, y)
+				if cell == from or not _in_spell_reach(def, from, cell):
+					continue
+				var body := _living_unit_at(cell)
+				if not body.is_empty() and not bool(body.get("invisible", false)):
+					continue
+				out.append({"type": "cast", "spell": id, "to": cell, "seat": seat, "blind": true})
+
+
+## Air punch: the tile held no body. AP / MP are spent, nothing is hit.
+func _resolve_whiff(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, ap_cost: int, mp_cost: int) -> Dictionary:
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	if mp_cost > 0:
+		_spend_mp(actor, mp_cost)
+	_intent_log.append(intent)
+	var face := _dir_name(_sign_step(dest - actor["pos"]))
+	if face != "":
+		actor["facing"] = face
+	_break_invisible_on_attack(actor)
+	_last_coach = "%s strikes the empty air at %s (−%d AP)." % [actor["name"], _cell_text(dest), ap_cost]
+	_last_events.append({
+		"type": "miss",
+		"blind": true,
+		"seat": actor["seat"],
+		"spell": str(def.get("id", intent.get("spell", ""))),
+		"caster_cell": actor["pos"],
+		"to": dest,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"damage": 0,
+		"coach": _last_coach,
+	})
+	return _accept()
+
+
+## Damage on an Invisible unit reveals it at once.
+func _reveal_if_hurt(target: Dictionary, damage: int) -> void:
+	if damage <= 0 or not bool(target.get("invisible", false)):
+		return
+	target["invisible"] = false
+	target["invisible_turns"] = 0
+	_emit_expire("invisible", target["pos"], int(target["seat"]), int(target["seat"]))
+	_last_events.append({
+		"type": "revealed",
+		"seat": int(target["seat"]),
+		"cell": target["pos"],
+		"coach": "%s is hit and revealed!" % str(target.get("name", "Unit")),
+	})
 
 
 ## Locked Ambush: 4 AP / 0 MP, Manhattan 1–2 cardinal from the origin, blink to the
@@ -475,7 +632,7 @@ func ready_seat(seat: int) -> Dictionary:
 
 
 func can_ready(seat: int) -> bool:
-	return _flow.can_ready(seat)
+	return _flow.can_ready(_side(seat))
 
 
 func can_place(seat: int, cell: Variant) -> Dictionary:
@@ -484,7 +641,7 @@ func can_place(seat: int, cell: Variant) -> Dictionary:
 
 func legal_deploy_cells(seat: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	for cell in _flow.legal_place_cells(seat, Callable(self, "_occupant_seat")):
+	for cell in _flow.legal_place_cells(_side(seat), Callable(self, "_deploy_occupant").bind(seat)):
 		if _board.is_walkable(cell):
 			out.append(cell)
 	return out
@@ -503,7 +660,31 @@ func tile_at(cell: Variant) -> Dictionary:
 
 
 func deploy_zone_cells(seat: int) -> Array[Vector2i]:
-	return _flow.zone_cells(seat)
+	return _flow.zone_cells(_side(seat))
+
+
+## Deploy side: the seat in a duel, the team in 2v2 / 3v3 (one zone and one
+## Ready per team).
+func _side(seat: int) -> int:
+	return team_of_seat(seat) if _team_size > 1 else seat
+
+
+## Occupant as the flow's place gate reads it: empty = -1, the placing
+## fighter itself = its side (a reposition), anyone else = blocked.
+func _deploy_occupant(cell: Vector2i, seat: int) -> int:
+	var occ := _occupant_seat(cell)
+	if occ < 0:
+		return -1
+	if occ == seat:
+		return _side(seat)
+	return 99
+
+
+func _side_all_placed(side: int) -> bool:
+	for unit in _units:
+		if _side(int(unit["seat"])) == side and not bool(unit.get("placed", false)):
+			return false
+	return true
 
 
 func match_phase_name() -> String:
@@ -586,6 +767,26 @@ func range_highlight_cells(seat: int, spell_id: String) -> Array:
 			if dist > _HitBands.MAX_DISTANCE:
 				continue
 			if dist >= int(def["min_range"]) and dist <= int(def["max_range"]):
+				if not _spell_sees(def, from, cell):
+					continue
+				out.append(cell)
+	return out
+
+
+## In range but behind a wall: the board paints these grey (no sight).
+func sight_blocked_cells(seat: int, spell_id: String) -> Array:
+	var out: Array = []
+	var actor := _unit_by_seat(seat)
+	if actor.is_empty() or not actor["alive"] or not SpellKits.has_spell(str(actor["class_id"]), spell_id):
+		return out
+	var def: Dictionary = SpellKits.spell(spell_id)
+	if def.is_empty() or not spell_needs_sight(def):
+		return out
+	var from: Vector2i = actor["pos"]
+	for y in range(_board_size):
+		for x in range(_board_size):
+			var cell := Vector2i(x, y)
+			if cell != from and _in_spell_range(def, from, cell) and not _spell_sees(def, from, cell):
 				out.append(cell)
 	return out
 
@@ -608,6 +809,10 @@ func snapshot() -> Dictionary:
 		"turn_index": _turn_index,
 		"match_over": _match_over,
 		"winner_seat": _winner_seat,
+		"team_size": _team_size,
+		"party_size": _party_size,
+		"winner_team": _winner_team,
+		"turn_order": _turn_order.duplicate(),
 		"seed": _seed,
 		"elev_seed": _elev_seed,
 		"elevation_gen": _elevation_gen,
@@ -681,6 +886,9 @@ func snapshot() -> Dictionary:
 		"shoulder_impact_bounce": SHOULDER_BOUNCE_IMPACT,
 		"burn": "soft_lock",
 		"lava_land_hp": LAVA_LAND_HP,
+		"lava_enter_hp": [LAVA_ENTER_HP[1], LAVA_ENTER_HP[2], LAVA_ENTER_HP[3]],
+		"burn_stack_turns": [BURN_STACK_TURNS[1], BURN_STACK_TURNS[2], BURN_STACK_TURNS[3]],
+		"hazard_push_stacks": "slow/breathless/burn/frozen/electrocuted, push while live stacks to 3",
 		"burn_duration": BURN_DURATION,
 		"burn_max_stacks": BURN_MAX_STACKS,
 		"burn_stack_hp": [BURN_STACK_HP[1], BURN_STACK_HP[2], BURN_STACK_HP[3]],
@@ -714,13 +922,13 @@ func snapshot() -> Dictionary:
 		"open_notes": {
 			"A03": "Omitted: Gust/wind heading. WindMod omitted (not invented as 1.0).",
 			"A04": "Crit *roll* OFF. CritMult held at 1.0. No elemental riders.",
-			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Lava is hazardous for a forced push: displace onto lava, deal 6 land HP immediately, then apply Soft Lock Burn (stacks 1/2/3 tick 2/4/8 HP at the victim's turn start, duration 4, max 3, re-push adds a stack up to 3 and refreshes duration, Cleanse clears it, continues after leaving lava, death check after each tick). Voluntary walk onto lava stays impassable. Soft Lock castigo: a forced push onto water silences one random spell (one-shot, no duration). A forced push onto mud applies Slow −1 MP for 1 turn (refresh, no stack).",
+			"A05": "Open: Resist 0, damage rounded to nearest int. WindMod omitted from the formula. Locked Stun (A′): stun_remaining on the unit; reject move/cast/face with stunned_cannot_act; auto end_turn on that seat's turn start (player never presses End Turn). Decrement at start of that unit's turn after setting stunned-this-turn so Stun 1 covers the incoming (skipped) turn. Director Locked Shoulder: occupied dest is push_blocked (hard body-block, no bounce/stagger; Impact stays the hit +1). Walkable empty dest pushes for +1 Impact. OOB / truly blocked (not lava) bounces (target stays) and staggers (4 HP; +1 MP if current MP >= 1) for +2 Impact only (no stack with +1). Map push stacks (Mauro 29 Sep 2026): a forced push onto a hazard stacks 1–3 while live. Lava enter 10/10/15 Fire then Burn 4×2 / 5×3 / 5×4; water Breathless (1 spell silenced 1/2/3 turns, same slot); mud Slow −1/−2/−3 MP; Windmere ice Frozen (no melee 1/2 turns, 3 = Paralyzed); Stormspire charge Electrocuted −1/−2/−3 AP. Cleanse strips one family. Voluntary walk onto hazards stays impassable.",
 			"A06": "Advance (Locked teleport): dest-click snap, 3 AP / 0 MP, client path ignored. Range gate is exactly 2 cardinal spaces (N/S/E/W at Manhattan 2). Manhattan 1, diagonals, and any non-cardinal are rejected. Dest must pass the same stand-on gates as walk (not mud, water, or lava, not occupied, climb<=1 / drop<=2). Gate only — no terrain+elev MP spend. Illegal dest refunds. legal_intents / preview_cast use the shared helper. leftover MP still walks (legal_intents is mp>0, not AP). No hop path. +1 Impact if Chebyshev 1 to an enemy after landing. Facing unchanged — Advance does not auto-face.",
 			"A07": "Provisional Open: back = 90° rear cone (facing-axis dominates and is opposite). Front/side ×1.00, back ×1.20.",
 			"deploy": "Locked flow: simultaneous place/reposition, Ready gated on place, both ready → lock → Turn 1. Proposed (shipped live): seed-sampled ~6-cell blobs (2×3 or organic), interior allowed, min opening Chebyshev 3 (prefer 4–6), reject overlap and same-edge camping. Open: fog/hidden enemy, deploy timer, multi-unit. No networking.",
-			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Facing / spell LoS unchanged — no height mods. Open (do not invent): height→hit/facing/LoS, stairs/ramps/flying, hit % past 14.",
+			"elevation": "Locked walk: per-tile integer elevation + terrain_type. Ship terrain + elevation load from the picked Koliseo tags file when size is 15×15 (default Crosshaven; map_id selects brinewake, slagcrown, windmere, or stormspire; no invented layout). paint_only is visual only. Proto board_size 8 keeps the 8×8 crop plus seeded noise. Proto board_size 12 keeps Mauro's token grid. Terrain MP Ground 1, Mud 2, Water 2, Lava impassable. Uphill +1 per integer z step; downhill 0. Max climb 1 / drop 2 (no z1→z3 hop); ortho-only. Walk cost = dest terrain + elev Δ. Weighted pathfinder; legal cells from remaining MP. Advance uses the same stand-on gates (no MP spend). Hit bands are Locked through Chebyshev 14 (see HitBands). Dist past 14 has no percent. Hit / facing unchanged — no height mods. Spell line of sight (Mauro 30 Sep 2026): a solid prop, a Snap Wall or a tile raised above both ends blocks a targeted spell. Open (do not invent): height→hit/facing, stairs/ramps/flying, hit % past 14.",
 		},
-		"open_elevation": ["height_hit", "height_facing", "height_los", "stairs", "ramps", "flying"],
+		"open_elevation": ["height_hit", "height_facing", "stairs", "ramps", "flying"],
 	}
 
 
@@ -777,7 +985,7 @@ func apply_host_snapshot(snap: Dictionary) -> void:
 		_sync_shade_flags()
 	_board = _WalkBoard.new(_board_size, _board_size)
 	_apply_snapshot_tiles(snap.get("tiles", {}))
-	_CellTagMap.seal_blocking_props(_board, _paint_only)
+	_CellTagMap.seal_blocking_props(_board, _paint_only, _map_id)
 	_flow.apply_host_snapshot(snap)
 
 
@@ -927,7 +1135,7 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	var cell: Vector2i
 	if dest == null:
 		var enemy := _enemy_of(seat)
-		if enemy.is_empty() or not enemy["alive"]:
+		if enemy.is_empty() or not enemy["alive"] or bool(enemy.get("invisible", false)):
 			return out
 		cell = enemy["pos"]
 	else:
@@ -941,6 +1149,10 @@ func aim_hit_preview(seat: int, spell_id: String, dest: Variant = null) -> Dicti
 	out["range"] = dist
 	var chance := hit_chance(dist)
 	out["hit_chance"] = chance
+	# No sight behind a wall: no hit % either (the shot cannot be taken).
+	if not _spell_sees(def, aim_from, cell):
+		out["no_sight"] = true
+		return out
 	# Locked % for Chebyshev 1–14. Dist >14 stays hidden (no invented %).
 	if chance >= 0 and dist >= 1 and dist <= _HitBands.MAX_DISTANCE:
 		out["show"] = true
@@ -988,9 +1200,13 @@ func aim_feel(seat: int, spell_id: String, hover: Variant = null) -> Dictionary:
 		return _aim_hidden()
 	var from_cell: Vector2i = actor["pos"]
 	var cell := _as_cell(hover)
-	if not _in_spell_range(def, from_cell, cell):
+	if not _in_spell_reach(def, from_cell, cell):
 		return _aim_hidden()
-	var floated: Dictionary = _aim_float(actor, _living_unit_at(cell), def, from_cell)
+	var under := _living_unit_at(cell)
+	# Hovering an Invisible enemy's tile must not name it or its damage.
+	if not under.is_empty() and bool(under.get("invisible", false)) and team_of_seat(int(under.get("seat", -1))) != team_of_seat(seat):
+		under = {}
+	var floated: Dictionary = _aim_float(actor, under, def, from_cell)
 	var text := str(floated.get("text", ""))
 	if from_cell == cell and text == "":
 		return _aim_hidden()
@@ -1042,7 +1258,7 @@ func _aim_float(actor: Dictionary, target: Dictionary, def: Dictionary, from_cel
 	var empty := {"text": "", "kind": ""}
 	if target.is_empty() or not bool(target.get("alive", false)):
 		return empty
-	var same := int(target.get("seat", -2)) == int(actor.get("seat", -1))
+	var same := not target.is_empty() and not actor.is_empty() and _allied(target, actor)
 	if same and int(def.get("base_heal", 0)) > 0:
 		var healed := _support_heal_amount(actor, target, def)
 		if healed <= 0:
@@ -1168,7 +1384,7 @@ func preview_cast(spell_or_intent: Variant, from: Variant = null, to: Variant = 
 		out["impact_before"] = impact_before
 		out["would_stun"] = impact_before == int(def.get("stun_if_impact_before", 4)) and impact_before >= spend
 	elif spell_id == SpellKits.SHOULDER:
-		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Lava is hazardous: forced push lands for 6 HP, then Soft Lock Burn (stacks tick 2/4/8 HP at the victim's turn start, duration 4, max 3). Soft Lock: voluntary walk and Advance also refuse mud and water. A forced push onto water silences one random spell (one-shot). A forced push onto mud applies Slow −1 MP for 1 turn.")
+		notes.append("Push 1 along the line. Director Locked Shoulder: walkable empty dest pushes (+1 Impact). Occupied dest is push_blocked (hard body-block). OOB / truly blocked dest bounces + staggers (4 HP; +1 MP if MP>=1) for +2 Impact only (no stack with +1). Hazard pushes stack 1–3 (Map push stacks): lava 10/10/15 + Burn 4×2 / 5×3 / 5×4, water Breathless, mud Slow −1/−2/−3 MP, Windmere ice Frozen, Stormspire charge Electrocuted. Voluntary walk and Advance refuse mud and water.")
 
 	out["notes"] = notes
 	out["reason"] = _preview_reason(def, actor, target, from_cell, to_cell, out["in_range"])
@@ -1208,6 +1424,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		return "out_of_bounds"
 	if not in_range:
 		return "out_of_range"
+	if not _spell_sees(def, from_cell, to_cell):
+		return "no_line_of_sight"
 	if int(actor.get("ap", 0)) < int(def.get("ap", 0)):
 		return "insufficient_ap"
 	if int(actor.get("mp", 0)) < int(def.get("mp", 0)):
@@ -1241,16 +1459,16 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if _burst_enemies(actor, def, false).is_empty():
 			return "no_target"
 		return ""
-	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and int(target.get("seat", -1)) == int(actor.get("seat", -2)))
+	var ally_cast := target_kind == "ally" or (target_kind == "any" and not target.is_empty() and _allied(target, actor))
 	if ally_cast:
-		if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) != int(actor.get("seat", -2)):
+		if target.is_empty() or not bool(target.get("alive", false)) or not _allied(target, actor):
 			return "no_target"
 		if spell_id == SpellKits.WARD and int(target.get("shield", 0)) > 0:
 			return "open_can_wait"
 		if spell_id == SpellKits.HEARTSTOP and int(target.get("hit_immunity", 0)) > 0:
 			return "open_can_wait"
 		return ""
-	if target.is_empty() or not bool(target.get("alive", false)) or int(target.get("seat", -1)) == int(actor.get("seat", -2)):
+	if target.is_empty() or not bool(target.get("alive", false)) or _allied(target, actor):
 		return "no_target"
 	if spell_id == SpellKits.AMBUSH:
 		return _ambush_block_reason(actor, target)
@@ -1268,7 +1486,7 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 		SpellKits.DETONATE:
 			return {"on_connect": "6+6×M Air. Consumes Marks on the target.", "on_miss": "Marks stay. AP/MP stay spent."}
 		SpellKits.STRIKE:
-			return {"on_connect": "16 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
+			return {"on_connect": "14 Earth. +1 Impact.", "on_miss": "AP/MP stay spent. No Impact."}
 		SpellKits.SHOULDER:
 			return {"on_connect": "6 Earth. +1 Impact. Push 1.", "on_miss": "No push. No Impact. AP/MP stay spent."}
 		SpellKits.CRUSH:
@@ -1347,14 +1565,15 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 	var in_combat := placed
 	return {
 		"seat": seat,
+		"team": 0 if seat == 0 else 1,
 		"id": class_id,
 		"name": unit_name,
 		"class_id": class_id,
 		"element": element,
 		"pos": pos,
 		"facing": facing,
-		"hp": START_HP,
-		"max_hp": START_HP,
+		"hp": class_base_hp(class_id),
+		"max_hp": class_base_hp(class_id),
 		"ap": MAX_AP if in_combat else 0,
 		"mp": MAX_MP if in_combat else 0,
 		"max_ap": MAX_AP,
@@ -1363,7 +1582,7 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"impact": 0,
 		"marks_cap": SpellKits.MARKS_CAP,
 		"impact_cap": SpellKits.IMPACT_CAP,
-		# Workbook v0.6 proto: HP 80, Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
+		# Mauro 30 Sep 2026: class base HP. Mastery 0, Resist 0. Combat refill stays 6 AP / 3 MP.
 		"mastery": 0,
 		"resist": 0,
 		# Umbral 0–4 is Gloam only. Pulse 0–6 is Mender only. Aegis 0–4 is Bastion only.
@@ -1392,8 +1611,19 @@ func _make_unit(seat: int, class_id: String, unit_name: String, element: String,
 		"burn_remaining": 0,
 		# Soft Lock water: spell ids silenced on landing. One-shot, no duration.
 		"silenced_spells": [],
-		# Soft Lock mud: turns of −1 MP left. 0 means not slowed.
+		# Map push stacks. Slow (mud) −stack MP next turn.
 		"slow_remaining": 0,
+		"slow_stacks": 0,
+		# Breathless (water): silenced spell slot and turns left.
+		"breathless_stacks": 0,
+		"breathless_remaining": 0,
+		"breathless_spell": "",
+		# Frozen (ice): no melee while > 0; stack 3 also Paralyzes.
+		"frozen_stacks": 0,
+		"frozen_remaining": 0,
+		# Electrocuted (Stormspire): −stack AP next turn.
+		"electro_stacks": 0,
+		"electro_remaining": 0,
 		"alive": true,
 		"placed": placed,
 		"locked": false,
@@ -1430,7 +1660,8 @@ func _submit_place(intent: Dictionary) -> Dictionary:
 	var from: Vector2i = actor["pos"]
 	actor["pos"] = dest
 	actor["placed"] = true
-	_flow.mark_placed(seat)
+	if _side_all_placed(_side(seat)):
+		_flow.mark_placed(_side(seat))
 	_intent_log.append(intent)
 	if was_placed:
 		_last_coach = "%s repositions to %s." % [actor["name"], _cell_text(dest)]
@@ -1451,7 +1682,7 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 	if not intent.has("seat"):
 		return _reject(intent, "missing_seat", "REJECT — ready needs a seat.")
 	var seat := int(intent["seat"])
-	var result := _flow.mark_ready(seat)
+	var result := _flow.mark_ready(_side(seat))
 	if not bool(result.get("ok", false)):
 		var reason := str(result.get("reason", "units_not_placed"))
 		var coach := "REJECT — place the required fighter before Ready."
@@ -1461,8 +1692,9 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 			coach = "REJECT — deploy is over."
 		return _reject(intent, reason, coach)
 	var actor := _unit_by_seat(seat)
-	if not actor.is_empty():
-		actor["locked"] = true
+	for mate in _units:
+		if _side(int(mate["seat"])) == _side(seat):
+			mate["locked"] = true
 	_intent_log.append(intent)
 	if _flow.is_combat():
 		_lock_all_units()
@@ -1487,11 +1719,11 @@ func _submit_ready(intent: Dictionary) -> Dictionary:
 
 func _legal_deploy_intents(seat: int) -> Array:
 	var out: Array = []
-	if _flow.is_ready(seat):
+	if _flow.is_ready(_side(seat)):
 		return out
 	for cell in legal_deploy_cells(seat):
 		out.append({"type": "place", "to": cell, "seat": seat})
-	if _flow.can_ready(seat):
+	if _flow.can_ready(_side(seat)):
 		out.append({"type": "ready", "seat": seat})
 	return out
 
@@ -1516,6 +1748,46 @@ func _deploy_reject_coach(seat: int, dest: Vector2i, gate: Dictionary) -> String
 	return "REJECT — illegal place (%s)." % reason
 
 
+## Koliseo deploy draw: a zone tile is standable ground (not water, mud,
+## lava, a prop or a wall tile).
+func _zone_cell_ok(cell: Vector2i) -> bool:
+	return _board.in_bounds(cell) and _board.is_walkable(cell) and not _board.is_voluntary_impassable(cell)
+
+
+## Both zones reach each other on foot, both ways (same two-way walk area).
+func _zones_meet(blob_a: Array, blob_b: Array) -> bool:
+	var ca := int(_zone_components.get(blob_a[0], -1))
+	return ca >= 0 and ca == int(_zone_components.get(blob_b[0], -2))
+
+
+var _zone_components: Dictionary = {}
+
+
+## Label every standable tile by its two-way walk area (one flood fill).
+func _walk_components() -> Dictionary:
+	var never := func(_a = null, _b = null) -> bool: return false
+	var label := {}
+	var next_id := 0
+	for y in range(_board_size):
+		for x in range(_board_size):
+			var start := Vector2i(x, y)
+			if label.has(start) or not _zone_cell_ok(start):
+				continue
+			label[start] = next_id
+			var stack: Array = [start]
+			while not stack.is_empty():
+				var cur: Vector2i = stack.pop_back()
+				for dir in FACING_VEC.values():
+					var n: Vector2i = cur + dir
+					if label.has(n) or not _zone_cell_ok(n):
+						continue
+					if bool(_board.step_cost(cur, n, never).get("ok", false)) and bool(_board.step_cost(n, cur, never).get("ok", false)):
+						label[n] = next_id
+						stack.append(n)
+			next_id += 1
+	return label
+
+
 func _force_spawn(seat: int, cell: Vector2i) -> void:
 	var actor := _unit_by_seat(seat)
 	if actor.is_empty():
@@ -1525,7 +1797,7 @@ func _force_spawn(seat: int, cell: Vector2i) -> void:
 	actor["locked"] = true
 	actor["ap"] = int(actor.get("max_ap", MAX_AP))
 	actor["mp"] = int(actor.get("max_mp", MAX_MP))
-	_flow.mark_placed(seat)
+	_flow.mark_placed(_side(seat))
 
 
 func _lock_all_units() -> void:
@@ -1545,6 +1817,8 @@ func _begin_combat(coach: String) -> void:
 	if _first_by_init:
 		_active_seat = _init_first_seat()
 		coach = _init_coach(_opening_turn_coach(""))
+	if _team_size > 1:
+		_build_turn_order(_active_seat)
 	_still_turn_start(_unit_by_seat(_active_seat))
 	_start_turn_timer()
 	_last_coach = coach
@@ -1603,6 +1877,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 
 	if int(actor.get("exit_tax", 0)) > 0:
 		actor["exit_tax"] = int(actor["exit_tax"]) - 1
+	_expire_turn_statuses(actor)
 	_active_seat = next_seat
 	_turn_index += 1
 	_invisible_wore_off = false
@@ -1617,7 +1892,7 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 	_still_turn_start(next_unit)
 	var slow_cut := 0
 	if int(next_unit.get("slow_remaining", 0)) > 0:
-		slow_cut = mini(SLOW_MP, int(next_unit["mp"]))
+		slow_cut = mini(SLOW_MP * maxi(int(next_unit.get("slow_stacks", 1)), 1), int(next_unit["mp"]))
 	_start_turn_timer()
 	var stunned := _is_stunned(next_unit)
 	if stunned:
@@ -1651,11 +1926,27 @@ func _handoff_seat(actor: Dictionary, auto_skip: bool, skip_reason: String = "")
 		"turn_time_limit": _turn_time_limit,
 		"coach": _last_coach,
 	})
-	# Soft Lock mud: −1 MP for this turn only. A stunned skip still consumes it.
+	# Mud Slow: −stack MP for this turn only. A stunned skip still consumes it.
 	_consume_mud_slow(next_unit)
+	_consume_electrocuted(next_unit)
 	# Soft Lock Burn ticks once this turn has started, including a stunned skip.
 	_tick_burn(next_unit)
 	return next_unit
+
+
+## Teams: a fighter that falls on its own turn (or at its turn start) passes
+## the turn on; the match goes on until a whole team is down.
+func _skip_fallen_active() -> void:
+	if not _multi_side() or _match_over or not _flow.is_combat():
+		return
+	var depth := 0
+	while not _match_over and depth < 6:
+		var unit := _unit_by_seat(_active_seat)
+		if unit.is_empty() or bool(unit.get("alive", false)):
+			break
+		_handoff_seat(unit, true, "fallen")
+		depth += 1
+	_auto_skip_stunned_turns()
 
 
 func _auto_skip_stunned_turns() -> void:
@@ -1767,6 +2058,8 @@ func _face_along_walk(actor: Dictionary, from: Vector2i, path: Array) -> Array:
 
 func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	var spell_id := str(intent.get("spell", ""))
+	if FoeKits.is_foe_spell(spell_id):
+		return _submit_foe_cast(intent, actor)
 	var def: Dictionary = SpellKits.spell(spell_id)
 	if def.is_empty():
 		return _reject(intent, "unknown_spell", "REJECT — unknown spell.")
@@ -1776,6 +2069,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit (refund)." % [def["name"], actor["name"]])
 	if _is_spell_silenced(actor, spell_id):
 		return _reject(intent, "spell_silenced", "REJECT — %s is silenced (refund)." % def["name"])
+	if _is_spell_frozen(actor, spell_id):
+		return _reject(intent, "frozen_no_melee", "REJECT — Frozen: no melee (%s) this turn (refund)." % def["name"])
 	if SpellKits.is_gated(spell_id):
 		return _reject(intent, "open_can_wait", "REJECT — %s is open (can-wait) and is not resolved." % def["name"])
 	if not intent.has("to"):
@@ -1798,6 +2093,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			return _reject(intent, "insufficient_ap", "REJECT — Advance costs %d AP (refund)." % advance_ap)
 		if reason == "destination_occupied":
 			return _reject(intent, "destination_occupied", "REJECT — Advance needs an empty tile (refund).")
+		if reason == "advance_limit":
+			return _reject(intent, "advance_limit", "REJECT — Advance is %d uses per turn (refund)." % ADVANCE_USES_PER_TURN)
 		if reason != "":
 			return _reject(intent, reason, "REJECT — illegal Advance (%s)." % reason)
 		return _resolve_advance(intent, actor, def, dest, advance_ap, advance_mp)
@@ -1832,6 +2129,9 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "out_of_range", "REJECT — %s range %d–%d, target at %d (refund)." % [def["name"], def["min_range"], def["max_range"], dist])
 	if dist > _HitBands.MAX_DISTANCE:
 		return _reject(intent, "out_of_range", "REJECT — %s Chebyshev %d has no locked hit %% (refund)." % [def["name"], dist])
+	if not _spell_sees(def, range_from, dest):
+		var wall := sight_blocker(range_from, dest, _sight_bodies(def))
+		return _reject(intent, "no_line_of_sight", "REJECT — %s has no line of sight: a wall at (%d,%d) blocks it (refund)." % [def["name"], wall.x, wall.y])
 
 	var ap_cost := int(def["ap"])
 	var mp_cost := int(def["mp"])
@@ -1841,7 +2141,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, "insufficient_mp", "REJECT — %s costs %d MP (refund)." % [def["name"], mp_cost])
 	if spell_id == SpellKits.WARD or spell_id == SpellKits.HEARTSTOP:
 		var early := _living_unit_at(dest)
-		if not early.is_empty() and int(early["seat"]) == int(actor["seat"]):
+		if not early.is_empty() and _allied(early, actor):
 			if spell_id == SpellKits.WARD and int(early.get("shield", 0)) > 0:
 				return _reject(intent, "open_can_wait", "REJECT — shield stacking is open (can-wait).")
 			if spell_id == SpellKits.HEARTSTOP and int(early.get("hit_immunity", 0)) > 0:
@@ -1865,7 +2165,7 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _resolve_aegis_break(intent, actor, def, dest, dist, ap_cost, mp_cost)
 	if spell_id == SpellKits.AMBUSH:
 		var ambush_target := _living_unit_at(dest)
-		if ambush_target.is_empty() or int(ambush_target["seat"]) == int(actor["seat"]):
+		if ambush_target.is_empty() or _allied(ambush_target, actor):
 			return _reject(intent, "no_target", "REJECT — Ambush needs an enemy (refund).")
 		return _resolve_ambush(intent, actor, ambush_target, def, dest, dist, ap_cost, mp_cost)
 
@@ -1879,14 +2179,16 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 			dest = beside["pos"]
 			dist = _range_distance(def, range_from, dest)
 	var target := _living_unit_at(dest)
+	if target.is_empty() and target_kind == "enemy" and _has_invisible_hostile(int(actor["seat"])) and _in_spell_reach(def, range_from, dest):
+		return _resolve_whiff(intent, actor, def, dest, ap_cost, mp_cost)
 	if target.is_empty():
 		return _reject(intent, "no_target", "REJECT — %s needs a living unit (refund)." % def["name"])
-	var support := target_kind == "ally" or (target_kind == "any" and int(target["seat"]) == int(actor["seat"]))
+	var support := target_kind == "ally" or (target_kind == "any" and _allied(target, actor))
 	if support:
-		if target_kind == "ally" and int(target["seat"]) != int(actor["seat"]):
+		if target_kind == "ally" and not _allied(target, actor):
 			return _reject(intent, "no_target", "REJECT — %s needs an ally (refund)." % def["name"])
 		return _resolve_support(intent, actor, target, def, dest, dist, ap_cost, mp_cost)
-	if int(target["seat"]) == int(actor["seat"]):
+	if _allied(target, actor):
 		return _reject(intent, "no_target", "REJECT — %s needs an enemy (refund)." % def["name"])
 	var gate := _cast_gate_reason(actor, target, def)
 	if gate != "":
@@ -1900,6 +2202,7 @@ func _resolve_advance(intent: Dictionary, actor: Dictionary, _def: Dictionary, d
 		return _reject(intent, "spell_not_in_kit", "REJECT — Advance is Ironjaw-only (refund).")
 	var from: Vector2i = actor["pos"]
 	actor["ap"] = int(actor["ap"]) - ap_cost
+	actor["advance_uses"] = int(actor.get("advance_uses", 0)) + 1
 	# Teleport: dest-click snap. Never spend MP. Facing unchanged — no auto-face.
 	actor["pos"] = dest
 	var enemy: Dictionary = _enemy_of(int(actor["seat"]))
@@ -1995,6 +2298,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 	target["hp"] = int(target["hp"]) - damage
 	if int(target["hp"]) < 0:
 		target["hp"] = 0
+	_reveal_if_hurt(target, damage)
 	var engine_gained := 0
 	var engine_spent := 0
 	var engine_name := ""
@@ -2018,7 +2322,12 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 			engine_name = "Mark"
 			engine_spent = marks_consumed
 		"spend_impact":
-			engine_spent = _spend_impact(actor, int(def.get("spend_impact", 2)))
+			var spend_amount := int(def.get("spend_impact", 2))
+			# Mauro 1 Oct 2026: a Crush that stuns (Impact 4 before) spends ALL
+			# Impact, so Ironjaw cannot stun every other turn.
+			if spell_id == SpellKits.CRUSH and impact_before >= int(def.get("stun_if_impact_before", 4)):
+				spend_amount = impact_before
+			engine_spent = _spend_impact(actor, spend_amount)
 			engine_name = "Impact"
 		"umbral":
 			engine_gained = _gain_resource(actor, "umbral", 1)
@@ -2232,10 +2541,22 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 	# Stasis Room A keeps fighting until the player or every hostile is down.
 	# Koliseo is still one death ends the match.
 	if _stasis_pack:
-		if int(target.get("seat", -1)) == 0:
-			_finish_match(_stasis_winner_hostile())
+		# A party loses only when every hero is down.
+		if _team_of(target) == 0:
+			if not _team_alive(0):
+				_finish_match(_stasis_winner_hostile())
 		elif _living_stasis_hostiles().is_empty():
 			_finish_match(0)
+		return
+	if _team_size > 1:
+		# Teams: the match ends when a whole team is down.
+		var fallen_team := _team_of(target)
+		if _team_alive(fallen_team):
+			return
+		for unit in _units:
+			if _team_of(unit) != fallen_team and bool(unit.get("alive", false)):
+				_finish_match(int(unit["seat"]))
+				return
 		return
 	_finish_match(_enemy_of(int(target["seat"]))["seat"])
 
@@ -2243,6 +2564,7 @@ func _check_death(target: Dictionary, cause: String = "damage") -> void:
 func _finish_match(winner: int) -> void:
 	_match_over = true
 	_winner_seat = winner
+	_winner_team = team_of_seat(winner) if winner >= 0 else -1
 	_stop_turn_timer()
 	var winner_unit := _unit_by_seat(winner)
 	var winner_name := str(winner_unit.get("name", "Seat %d" % winner))
@@ -2259,6 +2581,11 @@ func _validate_walk(actor: Dictionary, dest: Vector2i) -> String:
 	if bool(planned.get("ok", false)):
 		return ""
 	return str(planned.get("reason", "unreachable"))
+
+
+## Mauro, 30 Sep 2026: "ironjaw spell advance only can be used 2 times"
+## (per turn; the counter resets at each Ironjaw turn start).
+const ADVANCE_USES_PER_TURN := 2
 
 
 func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
@@ -2280,6 +2607,8 @@ func _validate_advance(actor: Dictionary, dest: Vector2i) -> String:
 		return "out_of_range"
 	if int(actor["ap"]) < int(def["ap"]):
 		return "insufficient_ap"
+	if int(actor.get("advance_uses", 0)) >= ADVANCE_USES_PER_TURN:
+		return "advance_limit"
 	return _advance_stand_reason(actor["pos"], dest)
 
 
@@ -2326,7 +2655,7 @@ func _facing_multiplier(attacker_pos: Vector2i, target_pos: Vector2i, target_fac
 func _deploy_place_gate(seat: int, cell: Vector2i) -> Dictionary:
 	if _snap_wall_blocks(cell):
 		return {"ok": false, "reason": "occupied", "zone_kind": ""}
-	var gate := _flow.place_gate(seat, cell, _occupant_seat(cell))
+	var gate := _flow.place_gate(_side(seat), cell, _deploy_occupant(cell, seat))
 	if not bool(gate.get("ok", false)):
 		return gate
 	# Deploy: occupancy + walkable (lava / override). No elevation MP / climb cost.
@@ -2449,19 +2778,21 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 		return
 	var hostile_count := 0
 	for entry in roster:
-		if typeof(entry) == TYPE_DICTIONARY and int((entry as Dictionary).get("seat", -1)) > 0:
+		if typeof(entry) == TYPE_DICTIONARY and int((entry as Dictionary).get("seat", -1)) >= _party_size:
 			hostile_count += 1
 	# Room A puts the trash pack on the board together. Room B stays one boss.
-	_stasis_pack = hostile_count >= 2
+	# A party always walks the living seats in order (heroes, then monsters).
+	_stasis_pack = hostile_count >= 2 or _party_size > 1
 	for entry in roster:
 		if typeof(entry) != TYPE_DICTIONARY:
 			continue
 		var rec: Dictionary = entry
 		var seat := int(rec.get("seat", -1))
 		var unit := _unit_by_seat(seat)
-		if unit.is_empty() and seat > 1 and _stasis_pack:
+		if unit.is_empty() and seat > _party_size and _stasis_pack:
 			var foe_name := str(rec.get("name", "Trash"))
 			unit = _make_unit(seat, SpellKits.CLASS_IRONJAW, foe_name, SpellKits.element_of(SpellKits.CLASS_IRONJAW), UNPLACED, "S", false)
+			unit["team"] = 1
 			_units.append(unit)
 		if unit.is_empty():
 			continue
@@ -2475,13 +2806,13 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 			unit["max_hp"] = max_hp
 			unit["hp"] = mini(int(unit.get("hp", max_hp)), max_hp)
 		if rec.has("hp"):
-			var cap := maxi(int(unit.get("max_hp", START_HP)), 1)
+			var cap := maxi(int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", ""))))), 1)
 			unit["hp"] = mini(maxi(int(rec["hp"]), 0), cap)
 		if rec.has("facing"):
 			var face := str(rec["facing"]).to_upper()
 			if FACING_VEC.has(face):
 				unit["facing"] = face
-		# Provisional Open playtest base. Not Strike's Locked 16.
+		# Provisional Open playtest base. Not Strike's 14 (Mauro 30 Sep 2026 balance).
 		if rec.has("attack_base"):
 			unit["stasis_attack_base"] = maxi(int(rec["attack_base"]), 0)
 		if str(rec.get("attack_name", "")) != "":
@@ -2490,6 +2821,26 @@ func _apply_stasis_roster(config: Dictionary) -> void:
 		# The pawn draws this path and does not play the Ironjaw sheet.
 		if str(rec.get("sprite", "")) != "":
 			unit["stasis_sprite"] = str(rec["sprite"])
+		# View flag only (bigger body + aura on the board). No rule reads it.
+		if bool(rec.get("boss", false)):
+			unit["stasis_boss"] = true
+		# Stasis monster kit (FoeKits ids), role, door and AP / MP.
+		if rec.get("foe_kit", null) is Array:
+			var kit: Array = []
+			for spell_id in rec["foe_kit"]:
+				if FoeKits.is_foe_spell(str(spell_id)):
+					kit.append(str(spell_id))
+			unit["foe_kit"] = kit
+			unit["foe_cd"] = {}
+			unit["foe_role"] = str(rec.get("role", ""))
+			unit["foe_door"] = str(rec.get("door", ""))
+			unit["foe_dmg_mult"] = float(rec.get("dmg_mult", 1.0))
+		if rec.has("max_ap"):
+			unit["max_ap"] = maxi(int(rec["max_ap"]), 1)
+			unit["ap"] = int(unit["max_ap"])
+		if rec.has("max_mp"):
+			unit["max_mp"] = maxi(int(rec["max_mp"]), 0)
+			unit["mp"] = int(unit["max_mp"])
 		var raw_spells: Variant = rec.get("spells", null)
 		if raw_spells is Array:
 			var spells: Array = []
@@ -2522,7 +2873,7 @@ func intermission_heal(seat: int, pct: int) -> int:
 	var unit := _unit_by_seat(seat)
 	if unit.is_empty():
 		return 0
-	var max_hp := int(unit.get("max_hp", START_HP))
+	var max_hp := int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", "")))))
 	var hp := int(unit.get("hp", 0))
 	var healed := mini(int(floor(float(max_hp) * float(pct) / 100.0)), max_hp - hp)
 	if healed <= 0:
@@ -2546,9 +2897,10 @@ func _apply_gear(unit: Dictionary, raw: Variant) -> void:
 	if typeof(heroes) == TYPE_DICTIONARY and (heroes as Dictionary).has(class_id):
 		hero_raw = heroes[class_id]
 	var hero := HeroProgress.combat_stats(hero_raw, class_id)
-	# Final HP = (80 + level HP + part HP) × (1 + set HP%).
-	var max_hp := roundi(float(START_HP + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
-	var was_full := int(unit.get("hp", START_HP)) >= int(unit.get("max_hp", START_HP))
+	# Mauro 30 Sep 2026: class base HP. Final HP = (class base + level HP + part HP) × (1 + set HP%).
+	var base_hp := class_base_hp(class_id)
+	var max_hp := roundi(float(base_hp + int(hero["hp"]) + int(stats["hp_flat"])) * (1.0 + float(stats["hp_pct"]) / 100.0))
+	var was_full := int(unit.get("hp", base_hp)) >= int(unit.get("max_hp", base_hp))
 	unit["max_hp"] = max_hp
 	unit["hp"] = max_hp if was_full else mini(int(unit.get("hp", max_hp)), max_hp)
 	unit["mastery"] = int(stats["mastery"]) + int(hero["mastery"])
@@ -2624,7 +2976,7 @@ func _apply_class_setup(config: Dictionary, key: String, class_id: String, field
 		unit[field] = maxi(value, 0)
 		return
 	if field == "hp":
-		unit["hp"] = mini(maxi(value, 0), int(unit.get("max_hp", START_HP)))
+		unit["hp"] = mini(maxi(value, 0), int(unit.get("max_hp", class_base_hp(str(unit.get("class_id", ""))))))
 		return
 	var cap := int(unit.get("%s_cap" % field, value))
 	unit[field] = mini(maxi(value, 0), cap)
@@ -2632,6 +2984,11 @@ func _apply_class_setup(config: Dictionary, key: String, class_id: String, field
 
 func _roster_class_ids(config: Dictionary) -> Array[String]:
 	var fallback: Array[String] = [SpellKits.CLASS_KESTREL, SpellKits.CLASS_IRONJAW]
+	if _team_size > 1 and not (config.has("classes") or config.has("seat_classes")):
+		var pad: Array[String] = []
+		for i in 2 * _team_size:
+			pad.append(fallback[i % 2])
+		return pad
 	var raw: Variant = null
 	if config.has("classes"):
 		raw = config["classes"]
@@ -2645,10 +3002,18 @@ func _roster_class_ids(config: Dictionary) -> Array[String]:
 		incoming = [keyed.get(0, keyed.get("0", "")), keyed.get(1, keyed.get("1", ""))]
 	else:
 		return fallback
+	var want := 2 * _team_size
+	if _party_size > 1:
+		want = _party_size + 1
+	if (_team_size > 1 or _party_size > 1) and incoming.size() < want:
+		var padded: Array[String] = []
+		for i in want:
+			padded.append(fallback[i % 2])
+		return padded
 	if incoming.size() < 2:
 		return fallback
 	var out: Array[String] = []
-	for i in 2:
+	for i in want:
 		var id := SpellKits.normalize_class_id(str(incoming[i]))
 		if not SpellKits.is_roster_class(id):
 			return fallback
@@ -2704,7 +3069,40 @@ func _class_ids() -> Array:
 
 ## Seat 0's side against the best Init on the other side. Tie = coin flip
 ## from the sim RNG (host authority; never "host first").
+## Teams: each team sorted by Init (high first, ties by seat), the starting
+## team first, then A1 B1 A2 B2 A3 B3. A fallen fighter is skipped.
+func _build_turn_order(first_seat: int) -> void:
+	_turn_order.clear()
+	var lists := [[], []]
+	for unit in _units:
+		lists[_team_of(unit)].append(unit)
+	for team in 2:
+		(lists[team] as Array).sort_custom(func(a, b):
+			if int(a.get("init", 0)) != int(b.get("init", 0)):
+				return int(a.get("init", 0)) > int(b.get("init", 0))
+			return int(a["seat"]) < int(b["seat"]))
+	var first_team := team_of_seat(first_seat)
+	var a: Array = lists[first_team]
+	var b: Array = lists[1 - first_team]
+	# The chosen opener leads its own team's list.
+	for i in a.size():
+		if int(a[i]["seat"]) == first_seat:
+			a.push_front(a.pop_at(i))
+			break
+	for i in maxi(a.size(), b.size()):
+		if i < a.size():
+			_turn_order.append(int(a[i]["seat"]))
+		if i < b.size():
+			_turn_order.append(int(b[i]["seat"]))
+
+
+func turn_order() -> Array[int]:
+	return _turn_order.duplicate()
+
+
 func _init_first_seat() -> int:
+	if _multi_side():
+		return _init_first_team_seat()
 	# Opening Still: that side acts first whatever the Init (both → Init).
 	var openers: Array[int] = []
 	for unit in _units:
@@ -2736,6 +3134,33 @@ func _init_first_seat() -> int:
 	return 0 if _rng.randi_range(0, 1) == 0 else their_seat
 
 
+## Teams: the team whose best Init is higher starts (Opening Still wins;
+## tie = coin flip); that fighter opens.
+func _init_first_team_seat() -> int:
+	var best := [-1, -1]
+	var best_seat := [-1, -1]
+	var opener := -1
+	for unit in _units:
+		var team := _team_of(unit)
+		var v := int(unit.get("init", 0))
+		if str(unit.get("still", "")) == "opening" and opener < 0:
+			opener = int(unit["seat"])
+		if v > int(best[team]) or (v == int(best[team]) and int(unit["seat"]) < int(best_seat[team])):
+			best[team] = v
+			best_seat[team] = int(unit["seat"])
+	if opener >= 0:
+		_init_note = "Opening Still"
+		return opener
+	if int(best[0]) > int(best[1]):
+		_init_note = "Init %d vs %d" % [best[0], best[1]]
+		return int(best_seat[0])
+	if int(best[1]) > int(best[0]):
+		_init_note = "Init %d vs %d" % [best[1], best[0]]
+		return int(best_seat[1])
+	_init_note = "Init tie %d — coin flip" % int(best[0])
+	return int(best_seat[0]) if _rng.randi_range(0, 1) == 0 else int(best_seat[1])
+
+
 func _init_coach(_fallback: String) -> String:
 	var actor := _unit_by_seat(_active_seat)
 	return "%s: %s starts. %d AP / %d MP." % [_init_note, str(actor.get("name", "")), int(actor.get("max_ap", MAX_AP)), int(actor.get("max_mp", MAX_MP))]
@@ -2755,6 +3180,8 @@ func _opening_turn_coach(lead: String) -> String:
 
 func _begin_unit_turn(unit: Dictionary) -> void:
 	unit["momentum"] = false
+	unit["advance_uses"] = 0
+	_tick_foe_cooldowns(unit)
 	# Locked Stun (A′): decrement stun at start of that unit's turn.
 	# Stun 1 must cover this incoming (skipped) turn. Decrementing remaining and
 	# then checking remaining would expire Stun 1 before the auto end_turn.
@@ -2933,10 +3360,13 @@ func _try_push(caster_pos: Vector2i, target: Dictionary, cells: int) -> Dictiona
 		result["moved"] = true
 		var terrain_id := int(_board.terrain_of(dest).get("id", _TerrainDef.Id.GROUND))
 		result["reason"] = _TerrainDef.name_of(terrain_id)
+		result["frozen"] = false
+		result["electrocuted"] = false
 		if terrain_id == _TerrainDef.Id.LAVA:
 			result["burn"] = true
 		elif terrain_id == _TerrainDef.Id.WATER:
-			result["silence"] = true
+			var family := hazard_family_at(dest)
+			result[family if family != "breathless" else "silence"] = true
 		elif terrain_id == _TerrainDef.Id.MUD:
 			result["slow"] = true
 		return result
@@ -2962,26 +3392,51 @@ func _burn_tick_hp(stacks: int) -> int:
 	return BURN_STACK_HP[index]
 
 
-func _apply_lava_land(unit: Dictionary) -> int:
-	# Immediate. Not the turn-start tick and not stagger.
-	unit["hp"] = maxi(0, int(unit.get("hp", 0)) - LAVA_LAND_HP)
-	return LAVA_LAND_HP
+## Which push stack a hazard tile applies on this map ("" for none).
+func hazard_family_at(cell: Vector2i) -> String:
+	var terrain_id := int(_board.terrain_of(cell).get("id", _TerrainDef.Id.GROUND))
+	if terrain_id == _TerrainDef.Id.LAVA:
+		return "burn"
+	if terrain_id == _TerrainDef.Id.MUD:
+		return "slow"
+	if terrain_id == _TerrainDef.Id.WATER:
+		var map := _CellTagMap.normalize_id(_map_id)
+		if map == "windmere":
+			return "frozen"
+		if map == "stormspire":
+			return "electrocuted"
+		return "breathless"
+	return ""
+
+
+## Next stack for a family: +1 while that CC is live, else a fresh 1. Cap 3.
+func _next_stack(unit: Dictionary, stacks_key: String, remaining_key: String) -> int:
+	var live := int(unit.get(remaining_key, 0)) > 0 and int(unit.get(stacks_key, 0)) > 0
+	return mini(int(unit.get(stacks_key, 0)) + 1, HAZARD_MAX_STACKS) if live else 1
+
+
+func _apply_lava_land(unit: Dictionary, stacks: int = 1) -> int:
+	# Immediate Fire on entering. Not the turn-start tick and not stagger.
+	var hp := LAVA_ENTER_HP[clampi(stacks, 1, BURN_MAX_STACKS)]
+	unit["hp"] = maxi(0, int(unit.get("hp", 0)) - hp)
+	return hp
 
 
 func _apply_burn(unit: Dictionary) -> Dictionary:
-	# Re-push adds one stack up to 3 and refreshes duration to 4.
+	# Re-push while burning adds a stack (cap 3); the DoT and length follow it.
 	var previous_stacks := int(unit.get("burn_stacks", 0))
 	var previous := int(unit.get("burn_remaining", 0))
-	var stacks := mini(previous_stacks + 1, BURN_MAX_STACKS)
+	var stacks := _next_stack(unit, "burn_stacks", "burn_remaining")
+	var turns := BURN_STACK_TURNS[stacks]
 	unit["burn_stacks"] = stacks
-	unit["burn_remaining"] = BURN_DURATION
+	unit["burn_remaining"] = turns
 	return {
 		"applied": true,
-		"refreshed": previous_stacks > 0 or previous > 0,
+		"refreshed": previous_stacks > 0 and previous > 0,
 		"previous": previous,
 		"previous_stacks": previous_stacks,
 		"stacks": stacks,
-		"remaining": BURN_DURATION,
+		"remaining": turns,
 		"hp_per_tick": _burn_tick_hp(stacks),
 	}
 
@@ -2994,46 +3449,143 @@ func _apply_landing_punishments(target: Dictionary, push_result: Dictionary) -> 
 	if target.is_empty():
 		return {"burn": burn, "silence": silence, "slow": slow}
 	if bool(push_result.get("burn", false)):
-		var land_hp := _apply_lava_land(target)
 		burn = _apply_burn(target)
-		burn["land_hp"] = land_hp
+		burn["land_hp"] = _apply_lava_land(target, int(burn["stacks"]))
 	if bool(push_result.get("silence", false)):
 		silence = _apply_water_silence(target)
 	if bool(push_result.get("slow", false)):
 		slow = _apply_mud_slow(target)
-	return {"burn": burn, "silence": silence, "slow": slow}
+	var frozen := {}
+	var electro := {}
+	if bool(push_result.get("frozen", false)):
+		frozen = _apply_frozen(target)
+		var paralyzed := bool(frozen.get("paralyzed", false))
+		_last_events.append({
+			"type": "status",
+			"status": "frozen",
+			"stacks": int(frozen["stacks"]),
+			"remaining": int(frozen["remaining"]),
+			"paralyzed": paralyzed,
+			"target_seat": target["seat"],
+			"coach": ("%s is Paralyzed (Frozen 3): next turn auto-ends." if paralyzed else "%s is Frozen %d: no melee for %d turn(s).") % ([target["name"]] if paralyzed else [target["name"], int(frozen["stacks"]), int(frozen["remaining"])]),
+		})
+	if bool(push_result.get("electrocuted", false)):
+		electro = _apply_electrocuted(target)
+		_last_events.append({
+			"type": "status",
+			"status": "electrocuted",
+			"stacks": int(electro["stacks"]),
+			"ap_delta": int(electro["ap_delta"]),
+			"target_seat": target["seat"],
+			"coach": "%s is Electrocuted %d: −%d AP next turn." % [target["name"], int(electro["stacks"]), int(electro["stacks"])],
+		})
+	return {"burn": burn, "silence": silence, "slow": slow, "frozen": frozen, "electro": electro}
 
 
-## One random spell that is not already silenced. No duration and no second copy.
+## Breathless: one random kit spell silenced for 1/2/3 of the victim's turns.
+## A re-push while Breathless keeps the same slot and lengthens it.
 func _apply_water_silence(unit: Dictionary) -> Dictionary:
-	var already: Array = unit.get("silenced_spells", [])
-	var open: Array[String] = []
-	for spell_id in unit.get("spells", []):
-		var id := str(spell_id)
-		if id == "" or already.has(id):
-			continue
-		open.append(id)
-	if open.is_empty():
-		return {}
-	var pick := open[_rng.randi_range(0, open.size() - 1)]
-	var silenced: Array = already.duplicate()
-	silenced.append(pick)
-	unit["silenced_spells"] = silenced
+	var stacks := _next_stack(unit, "breathless_stacks", "breathless_remaining")
+	var pick := str(unit.get("breathless_spell", "")) if stacks > 1 else ""
+	if pick == "":
+		var open: Array[String] = []
+		for spell_id in unit.get("spells", []):
+			if str(spell_id) != "":
+				open.append(str(spell_id))
+		if open.is_empty():
+			return {}
+		pick = open[_rng.randi_range(0, open.size() - 1)]
+	unit["breathless_stacks"] = stacks
+	unit["breathless_remaining"] = BREATHLESS_TURNS[stacks]
+	unit["breathless_spell"] = pick
+	unit["silenced_spells"] = [pick]
 	var spell_name := str(SpellKits.spell(pick).get("name", pick))
-	return {"applied": true, "spell": pick, "name": spell_name}
+	return {"applied": true, "spell": pick, "name": spell_name, "stacks": stacks, "remaining": BREATHLESS_TURNS[stacks]}
 
 
-## Refresh to 1 turn of −1 MP. Do not add turns and do not cut a second MP.
+## Slow: −1/−2/−3 MP on the victim's next turn. A re-push while slowed stacks.
 func _apply_mud_slow(unit: Dictionary) -> Dictionary:
 	var previous := int(unit.get("slow_remaining", 0))
+	var stacks := _next_stack(unit, "slow_stacks", "slow_remaining")
+	unit["slow_stacks"] = stacks
 	unit["slow_remaining"] = SLOW_TURNS
 	return {
 		"applied": true,
 		"refreshed": previous > 0,
 		"previous": previous,
+		"stacks": stacks,
 		"remaining": SLOW_TURNS,
-		"mp_delta": -SLOW_MP,
+		"mp_delta": -SLOW_MP * stacks,
 	}
+
+
+## Frozen: no melee for 1/2 turns; the third push Paralyzes (auto End Turn).
+func _apply_frozen(unit: Dictionary) -> Dictionary:
+	var stacks := _next_stack(unit, "frozen_stacks", "frozen_remaining")
+	unit["frozen_stacks"] = stacks
+	unit["frozen_remaining"] = FROZEN_TURNS[stacks]
+	var paralyzed := stacks >= HAZARD_MAX_STACKS
+	if paralyzed:
+		unit["stun_remaining"] = maxi(int(unit.get("stun_remaining", 0)), 1)
+	return {"applied": true, "stacks": stacks, "remaining": FROZEN_TURNS[stacks], "paralyzed": paralyzed}
+
+
+## Electrocuted: −1/−2/−3 AP on the victim's next turn (clamp 0).
+func _apply_electrocuted(unit: Dictionary) -> Dictionary:
+	var stacks := _next_stack(unit, "electro_stacks", "electro_remaining")
+	unit["electro_stacks"] = stacks
+	unit["electro_remaining"] = ELECTRO_TURNS
+	return {"applied": true, "stacks": stacks, "remaining": ELECTRO_TURNS, "ap_delta": -stacks}
+
+
+## Melee = a range-1 spell aimed at another fighter (Frozen blocks these).
+func _is_melee(def: Dictionary) -> bool:
+	var kind := str(def.get("target", ""))
+	if kind == "self" or kind == "ally" or kind == "tile" or kind == "empty_tile":
+		return false
+	return int(def.get("max_range", 0)) <= 1
+
+
+func _is_spell_frozen(unit: Dictionary, spell_id: String) -> bool:
+	if int(unit.get("frozen_remaining", 0)) <= 0:
+		return false
+	return _is_melee(SpellKits.spell(spell_id))
+
+
+## Breathless and Frozen count the victim's own turns: one ends here.
+func _expire_turn_statuses(unit: Dictionary) -> void:
+	if int(unit.get("breathless_remaining", 0)) > 0:
+		unit["breathless_remaining"] = int(unit["breathless_remaining"]) - 1
+		if int(unit["breathless_remaining"]) <= 0:
+			unit["breathless_stacks"] = 0
+			unit["breathless_spell"] = ""
+			unit["silenced_spells"] = []
+	if int(unit.get("frozen_remaining", 0)) > 0:
+		unit["frozen_remaining"] = int(unit["frozen_remaining"]) - 1
+		if int(unit["frozen_remaining"]) <= 0:
+			unit["frozen_stacks"] = 0
+
+
+## Electrocuted spends at the victim's turn start: −stack AP this turn.
+func _consume_electrocuted(unit: Dictionary) -> void:
+	if unit.is_empty() or not bool(unit.get("alive", false)):
+		return
+	if int(unit.get("electro_remaining", 0)) <= 0:
+		return
+	var stacks := maxi(int(unit.get("electro_stacks", 1)), 1)
+	var cut := mini(stacks, int(unit.get("ap", 0)))
+	unit["ap"] = int(unit["ap"]) - cut
+	unit["electro_remaining"] = int(unit["electro_remaining"]) - 1
+	if int(unit["electro_remaining"]) <= 0:
+		unit["electro_stacks"] = 0
+	_last_events.append({
+		"type": "electrocuted",
+		"status": "electrocuted",
+		"target_seat": int(unit["seat"]),
+		"ap_delta": -cut,
+		"ap": int(unit["ap"]),
+		"coach": "%s is Electrocuted (−%d AP this turn)." % [str(unit.get("name", "Unit")), cut],
+	})
 
 
 func _is_spell_silenced(unit: Dictionary, spell_id: String) -> bool:
@@ -3059,22 +3611,23 @@ func _append_lava_castigo(target: Dictionary, burn_info: Dictionary) -> void:
 	var stacks := int(burn_info.get("stacks", 0))
 	var tick := int(burn_info.get("hp_per_tick", _burn_tick_hp(stacks)))
 	var refreshed := bool(burn_info.get("refreshed", false))
-	var burn_coach := "%s is burning (stack %d, %d HP at turn start, duration %d)." % [str(target.get("name", "Unit")), stacks, tick, BURN_DURATION]
+	var turns := int(burn_info.get("remaining", BURN_STACK_TURNS[clampi(stacks, 1, BURN_MAX_STACKS)]))
+	var burn_coach := "%s is burning (stack %d, %d HP at turn start for %d turns)." % [str(target.get("name", "Unit")), stacks, tick, turns]
 	if refreshed:
-		burn_coach = "%s's Burn is stack %d (duration %d)." % [str(target.get("name", "Unit")), stacks, BURN_DURATION]
+		burn_coach = "%s's Burn is stack %d (%d HP × %d)." % [str(target.get("name", "Unit")), stacks, tick, turns]
 	_last_events.append({
 		"type": "status",
 		"status": "burn",
 		"stacks": stacks,
 		"previous_stacks": int(burn_info.get("previous_stacks", 0)),
-		"remaining": int(burn_info.get("remaining", BURN_DURATION)),
-		"duration": BURN_DURATION,
+		"remaining": turns,
+		"duration": turns,
 		"hp_per_tick": tick,
 		"land_hp": land_hp,
 		"refreshed": refreshed,
 		"previous": int(burn_info.get("previous", 0)),
 		"target_seat": target["seat"],
-		"soft_lock": "Soft Lock CASTIGO — lava land 6, Burn stacks 2/4/8, duration 4, max 3",
+		"soft_lock": "Map push stack — lava enter 10/10/15 Fire, Burn 4×2 / 5×3 / 5×4, max 3",
 		"coach": burn_coach,
 	})
 
@@ -3114,8 +3667,10 @@ func _consume_mud_slow(unit: Dictionary) -> void:
 	if remaining <= 0:
 		return
 	unit["slow_remaining"] = remaining - 1
-	var cut := mini(SLOW_MP, int(unit.get("mp", 0)))
+	var cut := mini(SLOW_MP * maxi(int(unit.get("slow_stacks", 1)), 1), int(unit.get("mp", 0)))
 	unit["mp"] = int(unit["mp"]) - cut
+	if int(unit["slow_remaining"]) <= 0:
+		unit["slow_stacks"] = 0
 	_last_events.append({
 		"type": "slow",
 		"status": "slow",
@@ -3210,6 +3765,7 @@ func _roll_d100() -> int:
 
 
 func _accept() -> Dictionary:
+	_skip_fallen_active()
 	_broadcast()
 	return {
 		"ok": true,
@@ -3218,6 +3774,415 @@ func _accept() -> Dictionary:
 		"events": _last_events.duplicate(true),
 		"snapshot": snapshot(),
 	}
+
+
+## ---- Stasis monster kits (FoeKits) ----------------------------------------
+## Mauro's Stasis kit sheets (29 Sep 2026). Monsters cast from `foe_kit`;
+## every offer comes from _foe_casts and a submit must match one of them.
+
+
+func _tick_foe_cooldowns(unit: Dictionary) -> void:
+	var cds: Variant = unit.get("foe_cd", null)
+	if typeof(cds) != TYPE_DICTIONARY:
+		return
+	for id in (cds as Dictionary).keys():
+		cds[id] = maxi(int(cds[id]) - 1, 0)
+
+
+func _foe_cd_ready(actor: Dictionary, spell_id: String) -> bool:
+	var cds: Variant = actor.get("foe_cd", {})
+	return typeof(cds) != TYPE_DICTIONARY or int((cds as Dictionary).get(spell_id, 0)) <= 0
+
+
+## Hostile bodies for a monster: the player's side (seat 0 and allies).
+func _foe_victims(actor: Dictionary) -> Array:
+	var out: Array = []
+	var seat := int(actor.get("seat", -1))
+	for unit in _units:
+		if not bool(unit.get("alive", false)) or not bool(unit.get("placed", true)):
+			continue
+		if _allied(unit, actor):
+			continue
+		# Monsters cannot see an Invisible hero either.
+		if bool(unit.get("invisible", false)):
+			continue
+		out.append(unit)
+	return out
+
+
+## Walking cost from every tile to the nearest source (bodies ignored, so a
+## pack does not block its own route). Monsters use it to walk around walls
+## instead of getting stuck behind them (Mauro 30 Sep 2026: "they get stuck").
+func walk_field(sources: Array) -> Dictionary:
+	var never := Callable(self, "_wall_only_occupied")
+	var best := {}
+	var frontier: Array = []
+	for raw in sources:
+		var cell: Vector2i = raw
+		if _in_bounds(cell) and not best.has(cell):
+			best[cell] = 0
+			frontier.append(cell)
+	while not frontier.is_empty():
+		var pick := 0
+		for i in frontier.size():
+			if int(best[frontier[i]]) < int(best[frontier[pick]]):
+				pick = i
+		var current: Vector2i = frontier[pick]
+		frontier.remove_at(pick)
+		for dir in FACING_VEC.values():
+			var nxt: Vector2i = current + dir
+			if not _in_bounds(nxt):
+				continue
+			# Reverse step: can a walker on `nxt` step onto `current`?
+			var step: Dictionary = _board.step_cost(nxt, current, never)
+			if not bool(step.get("ok", false)) and not best.has(nxt):
+				# Sources may be a body's tile (not standable); allow leaving it.
+				if int(best[current]) != 0:
+					continue
+				if not _board.is_walkable(nxt) or _board.is_voluntary_impassable(nxt):
+					continue
+			var cost := int(best[current]) + maxi(int(step.get("cost", 1)), 1)
+			if not best.has(nxt) or cost < int(best[nxt]):
+				best[nxt] = cost
+				frontier.append(nxt)
+	return best
+
+
+## Walls and blockers block a route; bodies do not (they move).
+func _wall_only_occupied(cell: Vector2i, _ignore: Vector2i = UNPLACED) -> bool:
+	if _snap_wall_blocks(cell):
+		return true
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return true
+	return false
+
+
+func _foe_free_cell(cell: Vector2i) -> bool:
+	return _in_bounds(cell) and _is_empty(cell) and _board.is_walkable(cell) and not _board.is_voluntary_impassable(cell)
+
+
+## Every legal monster cast this turn.
+func _foe_casts(actor: Dictionary) -> Array:
+	var out: Array = []
+	var seat := int(actor["seat"])
+	var from: Vector2i = actor["pos"]
+	var ap := int(actor.get("ap", 0))
+	var victims := _foe_victims(actor)
+	for raw_id in actor.get("foe_kit", []):
+		var id := str(raw_id)
+		var def: Dictionary = FoeKits.spell(id)
+		if def.is_empty() or ap < int(def.get("ap", 0)) or not _foe_cd_ready(actor, id):
+			continue
+		if _is_stunned(actor):
+			continue
+		var shape := str(def.get("shape", ""))
+		match shape:
+			"melee", "shot":
+				for v in victims:
+					var d := chebyshev(from, v["pos"])
+					if d < int(def.get("min", 1)) or d > int(def.get("max", 1)):
+						continue
+					if d > 1 and not has_line_of_sight(from, v["pos"]):
+						continue
+					out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
+			"dash":
+				for v in victims:
+					var d := chebyshev(from, v["pos"])
+					if d < int(def.get("min", 2)) or d > int(def.get("max", 2)):
+						continue
+					if d == 1 or _foe_dash_cell(from, v["pos"]) != UNPLACED:
+						out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
+			"cone", "line":
+				for dir in FACING_VEC.keys():
+					if not _foe_area_victims(actor, def, FACING_VEC[dir]).is_empty():
+						out.append({"type": "cast", "spell": id, "to": from + FACING_VEC[dir], "dir": dir, "seat": seat})
+			"radius", "pads":
+				if not _foe_area_victims(actor, def, Vector2i.ZERO).is_empty():
+					out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"self":
+				out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"step":
+				for dir in FACING_VEC.keys():
+					var cell: Vector2i = from + FACING_VEC[dir]
+					if _foe_free_cell(cell):
+						var gate: Dictionary = _board.stand_on_gate(from, cell, Callable(self, "_walk_occupied"))
+						if bool(gate.get("ok", false)):
+							out.append({"type": "cast", "spell": id, "to": cell, "seat": seat})
+	return out
+
+
+## Free tile beside the target that is one step from the caster (Lunge).
+func _foe_dash_cell(from: Vector2i, target: Vector2i) -> Vector2i:
+	var best := UNPLACED
+	var best_d := 99
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			var cell := target + Vector2i(dx, dy)
+			if cell == target or chebyshev(cell, from) != 1:
+				continue
+			if not _foe_free_cell(cell):
+				continue
+			var gate: Dictionary = _board.stand_on_gate(from, cell, Callable(self, "_walk_occupied"))
+			if not bool(gate.get("ok", false)):
+				continue
+			var d := absi(cell.x - from.x) + absi(cell.y - from.y)
+			if d < best_d:
+				best_d = d
+				best = cell
+	return best
+
+
+## Tiles an area spell covers. `dir` is the cardinal facing (cone / line).
+func _foe_area_cells(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array:
+	var from: Vector2i = actor["pos"]
+	var out: Array = []
+	match str(def.get("shape", "")):
+		"cone":
+			for cell in FoeKits.cone_cells(from, dir, int(def.get("size", 2))):
+				if _in_bounds(cell):
+					out.append(cell)
+		"line":
+			var top := _elevation_at(from)
+			for k in range(1, int(def.get("size", 5)) + 1):
+				var cell: Vector2i = from + dir * k
+				if not _in_bounds(cell) or _blocks_sight(cell, top, false):
+					break
+				out.append(cell)
+		"radius":
+			for cell in FoeKits.radius_cells(from):
+				if _in_bounds(cell):
+					out.append(cell)
+		"pads":
+			for y in range(_board_size):
+				for x in range(_board_size):
+					var cell := Vector2i(x, y)
+					if _is_charged_pad(cell) or _next_to_pad(cell):
+						out.append(cell)
+	return out
+
+
+func _is_charged_pad(cell: Vector2i) -> bool:
+	return _in_bounds(cell) and hazard_family_at(cell) == "electrocuted"
+
+
+func _next_to_pad(cell: Vector2i) -> bool:
+	for n in FoeKits.radius_cells(cell):
+		if _is_charged_pad(n):
+			return true
+	return false
+
+
+func _foe_area_victims(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array:
+	var cells := _foe_area_cells(actor, def, dir)
+	var out: Array = []
+	for v in _foe_victims(actor):
+		if cells.has(v["pos"]):
+			out.append(v)
+	return out
+
+
+## Sheet damage x the star's damage scale; trash (damage 0) uses the room base.
+func _foe_base_damage(actor: Dictionary, def: Dictionary) -> int:
+	var base := int(def.get("damage", 0))
+	if base <= 0:
+		return maxi(int(actor.get("stasis_attack_base", 6)), 0)
+	return roundi(float(base) * float(actor.get("foe_dmg_mult", 1.0)))
+
+
+func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
+	var spell_id := str(intent.get("spell", ""))
+	var def: Dictionary = FoeKits.spell(spell_id)
+	if not (actor.get("foe_kit", []) as Array).has(spell_id):
+		return _reject(intent, "spell_not_in_kit", "REJECT — %s is not in %s's kit." % [def.get("name", spell_id), actor["name"]])
+	var dest: Vector2i = _as_cell(intent.get("to", actor["pos"]))
+	var offer := {}
+	for cast in _foe_casts(actor):
+		if str(cast["spell"]) == spell_id and cast["to"] == dest:
+			offer = cast
+			break
+	if offer.is_empty():
+		return _reject(intent, "illegal_foe_cast", "REJECT — %s cannot be cast there." % def.get("name", spell_id))
+	_last_events = []
+	var ap_cost := int(def.get("ap", 0))
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	var cd := FoeKits.cooldown(spell_id)
+	if cd > 0:
+		(actor["foe_cd"] as Dictionary)[spell_id] = cd
+	_intent_log.append(intent)
+	var shape := str(def.get("shape", ""))
+	var caster_cell: Vector2i = actor["pos"]
+	var name := str(def.get("name", spell_id))
+	if shape == "self":
+		actor["shield"] = int(actor.get("shield", 0)) + int(def.get("ward", 0))
+		actor["shield_turns"] = maxi(int(actor.get("shield_turns", 0)), 2)
+		_last_coach = "%s raises %s (+%d Ward)." % [actor["name"], name, int(def.get("ward", 0))]
+		_last_events.append({"type": "cast", "spell": spell_id, "seat": actor["seat"], "caster_cell": caster_cell, "shield": int(actor["shield"]), "ap_spent": ap_cost, "foe": true, "coach": _last_coach})
+		return _accept()
+	if shape == "step":
+		actor["pos"] = dest
+		var face := _dir_name(dest - caster_cell)
+		if face != "":
+			actor["facing"] = face
+		_last_coach = "%s: %s to %s." % [actor["name"], name, _cell_text(dest)]
+		_last_events.append({"type": "move", "seat": actor["seat"], "from": caster_cell, "to": dest, "path": [dest], "facing_from": str(actor["facing"]), "facing": str(actor["facing"]), "facing_hops": [str(actor["facing"])], "mp_spent": 0, "ap_spent": ap_cost, "spell": spell_id, "foe": true, "coach": _last_coach})
+		return _accept()
+	var victims: Array = []
+	var area: Array = []
+	var dir := Vector2i.ZERO
+	if shape in ["cone", "line"]:
+		dir = FACING_VEC.get(str(offer.get("dir", "S")), Vector2i(0, 1))
+		actor["facing"] = str(offer.get("dir", actor["facing"]))
+	if shape in ["cone", "line", "radius", "pads"]:
+		area = _foe_area_cells(actor, def, dir)
+		victims = _foe_area_victims(actor, def, dir)
+	else:
+		var target := _living_unit_at(dest)
+		if not target.is_empty():
+			victims = [target]
+		var face_to := _dir_name(_sign_step(dest - caster_cell))
+		if face_to != "":
+			actor["facing"] = face_to
+	var dash_from := caster_cell
+	if shape == "dash" and chebyshev(caster_cell, dest) == 2:
+		var cell := _foe_dash_cell(caster_cell, dest)
+		if cell != UNPLACED:
+			actor["pos"] = cell
+	var hits := 0
+	var total := 0
+	for raw in victims:
+		var target: Dictionary = raw
+		var dist := maxi(chebyshev(actor["pos"], target["pos"]), 1)
+		var chance := hit_chance(dist)
+		var roll := _roll_d100()
+		var event := {
+			"seat": actor["seat"],
+			"spell": spell_id,
+			"spell_name": name,
+			"caster_cell": caster_cell,
+			"target_seat": target["seat"],
+			"to": target["pos"],
+			"range": dist,
+			"hit_chance": chance,
+			"roll": roll,
+			"ap_spent": ap_cost if hits == 0 and total == 0 else 0,
+			"foe": true,
+			"shape": shape,
+			"element": _foe_element(actor, def),
+			"door": str(actor.get("foe_door", "")),
+			"boss": bool(actor.get("stasis_boss", false)),
+		}
+		if not area.is_empty():
+			event["area"] = area.duplicate()
+		if dash_from != actor["pos"]:
+			event["dash_from"] = dash_from
+			event["dash_to"] = actor["pos"]
+		if roll > chance:
+			event["type"] = "miss"
+			event["damage"] = 0
+			event["coach"] = "%s's %s misses %s." % [actor["name"], name, target["name"]]
+			_last_events.append(event)
+			continue
+		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "")))
+		var pre := _phase_a_damage(_foe_base_damage(actor, def), facing_mult, actor, target, _foe_element(actor, def), true)
+		var mitigation := _mitigate_hit(actor, target, pre)
+		var damage := int(mitigation["damage"])
+		target["hp"] = maxi(int(target["hp"]) - damage, 0)
+		_reveal_if_hurt(target, damage)
+		hits += 1
+		total += damage
+		event["type"] = "hit"
+		event["damage"] = damage
+		event["facing_mult"] = facing_mult
+		_stamp_mitigation(event, mitigation)
+		var push_result := {}
+		if int(def.get("push", 0)) > 0:
+			push_result = _try_push(actor["pos"], target, int(def["push"]))
+		elif int(def.get("pull", 0)) > 0:
+			push_result = _foe_pull(actor, target)
+		if not push_result.is_empty():
+			var punish := _apply_landing_punishments(target, push_result)
+			_stamp_push_fields(event, push_result, punish["burn"], punish["silence"], punish["slow"])
+			_last_events.append(event)
+			_emit_push_followups(actor, target, push_result, punish["burn"])
+			_append_soft_lock_status(target, punish["silence"], punish["slow"])
+		else:
+			_last_events.append(event)
+		if bool(def.get("frozen_on_ice", false)) and hazard_family_at(target["pos"]) == "frozen" and bool(target.get("alive", true)):
+			var frozen := _apply_frozen(target)
+			_last_events.append({"type": "status", "status": "frozen", "stacks": int(frozen["stacks"]), "remaining": int(frozen["remaining"]), "paralyzed": bool(frozen["paralyzed"]), "target_seat": target["seat"], "coach": "%s is pinned on the ice (Frozen %d)." % [target["name"], int(frozen["stacks"])]})
+		_emit_immunity_spent(target, mitigation)
+		_check_death(target)
+		if _match_over:
+			break
+	if victims.is_empty() and shape == "dash":
+		_last_events.append({"type": "miss", "seat": actor["seat"], "spell": spell_id, "caster_cell": caster_cell, "to": dest, "damage": 0, "foe": true, "coach": "%s lunges at nothing." % actor["name"]})
+	if bool(FoeKits.is_aoe(spell_id)) and hits > 0:
+		_last_coach = "%s uses %s: %d hit for %d." % [actor["name"], name, hits, total]
+	elif hits > 0:
+		_last_coach = "%s: %s for %d." % [actor["name"], name, total]
+	else:
+		_last_coach = "%s: %s misses." % [actor["name"], name]
+	for e in _last_events:
+		if typeof(e) == TYPE_DICTIONARY and str(e.get("spell", "")) == spell_id and not e.has("coach"):
+			e["coach"] = _last_coach
+	return _accept()
+
+
+## Hook: drag the target 1 tile toward the caster. Landing on a hazard applies
+## that tile's push stack (Brinewake water = Breathless). A body or wall stops it.
+func _foe_pull(actor: Dictionary, target: Dictionary) -> Dictionary:
+	var from: Vector2i = target["pos"]
+	var dest: Vector2i = from + _sign_step(actor["pos"] - from)
+	var result := {"from": from, "to": from, "attempted": dest, "moved": false, "blocked": false, "bounced": false, "staggered": false, "burn": false, "silence": false, "slow": false, "frozen": false, "electrocuted": false, "reason": "", "stagger_hp": 0, "stagger_mp": 0, "hp_delta": 0, "mp_delta": 0, "pulled": true}
+	if dest == from or not _in_bounds(dest) or not _is_empty(dest):
+		result["blocked"] = true
+		result["reason"] = "occupied"
+		return result
+	if _board.is_voluntary_impassable(dest):
+		target["pos"] = dest
+		result["to"] = dest
+		result["moved"] = true
+		var family := hazard_family_at(dest)
+		match family:
+			"burn":
+				result["burn"] = true
+			"slow":
+				result["slow"] = true
+			"breathless":
+				result["silence"] = true
+			"frozen", "electrocuted":
+				result[family] = true
+		result["reason"] = family
+		return result
+	if not _board.is_walkable(dest):
+		result["blocked"] = true
+		result["reason"] = "wall"
+		return result
+	target["pos"] = dest
+	result["to"] = dest
+	result["moved"] = true
+	return result
+
+
+func _foe_element(actor: Dictionary, def: Dictionary) -> String:
+	var el := str(def.get("element", "Neutral"))
+	if el == "door":
+		return str(FoeKits.DOOR_ELEMENT.get(str(actor.get("foe_door", "")), "Neutral"))
+	return el
+
+
+static func _sign_step(delta: Vector2i) -> Vector2i:
+	return Vector2i(signi(delta.x), signi(delta.y))
+
+
+## Cardinal facing name for a step (diagonals use the larger axis).
+func _dir_name(delta: Vector2i) -> String:
+	if delta == Vector2i.ZERO:
+		return ""
+	if absi(delta.x) >= absi(delta.y):
+		return "E" if delta.x > 0 else "W"
+	return "S" if delta.y > 0 else "N"
 
 
 func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
@@ -3283,11 +4248,73 @@ func _unit_by_seat(seat: int) -> Dictionary:
 
 
 func _enemy_of(seat: int) -> Dictionary:
-	return _unit_by_seat(1 if seat == 0 else 0)
+	if not _multi_side():
+		return _unit_by_seat(1 if seat == 0 else 0)
+	# Teams: the nearest living enemy (any enemy once they are all down).
+	var me := _unit_by_seat(seat)
+	var best: Dictionary = {}
+	var best_d := 999
+	for unit in _units:
+		if me.is_empty() or _allied(unit, me):
+			continue
+		if not bool(unit.get("alive", false)):
+			if best.is_empty():
+				best = unit
+			continue
+		var d := chebyshev(me["pos"], unit["pos"])
+		if d < best_d:
+			best_d = d
+			best = unit
+	return best
 
 
-## Koliseo: the other of seats 0 and 1. Stasis player: every living hostile.
+## Team of a unit: Koliseo teams set it; otherwise seat 0 vs every other seat
+## (Stasis: the hero vs the monsters).
+func _team_of(unit: Dictionary) -> int:
+	return int(unit.get("team", 0 if int(unit.get("seat", 0)) == 0 else 1))
+
+
+func _allied(a: Dictionary, b: Dictionary) -> bool:
+	return _team_of(a) == _team_of(b)
+
+
+func team_of_seat(seat: int) -> int:
+	var unit := _unit_by_seat(seat)
+	if unit.is_empty():
+		return seat % 2 if _team_size > 1 else (0 if seat == 0 else 1)
+	return _team_of(unit)
+
+
+func team_size() -> int:
+	return _team_size
+
+
+func party_size() -> int:
+	return _party_size
+
+
+## More than one fighter on a side: Koliseo teams or a Stasis party.
+func _multi_side() -> bool:
+	return _team_size > 1 or _party_size > 1
+
+
+func _team_alive(team: int) -> bool:
+	for unit in _units:
+		if _team_of(unit) == team and bool(unit.get("alive", false)):
+			return true
+	return false
+
+
+## Koliseo: the other of seats 0 and 1 (teams: every living enemy).
+## Stasis player: every living hostile.
 func _hostile_cast_targets(seat: int) -> Array:
+	if _multi_side():
+		var me := _unit_by_seat(seat)
+		var foes: Array = []
+		for unit in _units:
+			if not me.is_empty() and not _allied(unit, me) and bool(unit.get("alive", false)):
+				foes.append(unit)
+		return foes
 	if _stasis_pack and seat == 0:
 		return _living_stasis_hostiles()
 	var enemy := _enemy_of(seat)
@@ -3299,7 +4326,7 @@ func _hostile_cast_targets(seat: int) -> Array:
 func _living_stasis_hostiles() -> Array:
 	var out: Array = []
 	for unit in _units:
-		if int(unit.get("seat", -1)) <= 0:
+		if _team_of(unit) == 0:
 			continue
 		if bool(unit.get("alive", false)):
 			out.append(unit)
@@ -3313,7 +4340,8 @@ func _stasis_winner_hostile() -> int:
 
 
 func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
-	for hostile in _living_stasis_hostiles():
+	var pool: Array = _hostile_cast_targets(int(actor.get("seat", -1))) if _multi_side() else _living_stasis_hostiles()
+	for hostile in pool:
 		var enemy: Dictionary = hostile
 		if _ambush_can_offer(actor, enemy):
 			return enemy
@@ -3322,6 +4350,16 @@ func _first_legal_ambush_target(actor: Dictionary) -> Dictionary:
 
 ## 1v1 swaps seats. A Stasis pack walks the living seats in order, then wraps.
 func _next_turn_seat(from_seat: int) -> int:
+	if _team_size > 1:
+		if _turn_order.is_empty():
+			_build_turn_order(from_seat)
+		var at := _turn_order.find(from_seat)
+		for step in range(1, _turn_order.size() + 1):
+			var seat: int = _turn_order[(at + step) % _turn_order.size()]
+			var unit := _unit_by_seat(seat)
+			if not unit.is_empty() and bool(unit.get("alive", false)):
+				return seat
+		return -1
 	if not _stasis_pack:
 		var other := 1 if from_seat == 0 else 0
 		var unit := _unit_by_seat(other)
@@ -3371,18 +4409,18 @@ func soft_lock_dest(seat: int, spell_id: String, dest: Vector2i) -> Vector2i:
 func _soft_lock_neighbor_target(actor: Dictionary, def: Dictionary, range_from: Vector2i, dest: Vector2i) -> Dictionary:
 	if not _living_unit_at(dest).is_empty():
 		return {}
-	if not _in_spell_range(def, range_from, dest):
+	if not _in_spell_reach(def, range_from, dest):
 		return {}
 	var found := {}
 	for hostile in _hostile_cast_targets(int(actor["seat"])):
 		if typeof(hostile) != TYPE_DICTIONARY:
 			continue
 		var enemy: Dictionary = hostile
-		if not bool(enemy.get("alive", false)):
+		if not bool(enemy.get("alive", false)) or bool(enemy.get("invisible", false)):
 			continue
 		if chebyshev(dest, enemy["pos"]) > 1:
 			continue
-		if not _in_spell_range(def, range_from, enemy["pos"]):
+		if not _in_spell_reach(def, range_from, enemy["pos"]):
 			continue
 		if _cast_gate_reason(actor, enemy, def) != "":
 			continue
@@ -3418,7 +4456,7 @@ func _resource_gate(actor: Dictionary, def: Dictionary) -> String:
 	var spell_id := str(def.get("id", ""))
 	if spell_id == SpellKits.DROP_SHADE and _shade_count(actor) >= SpellKits.SHADE_CAP:
 		return "shade_cap"
-	if spell_id == SpellKits.AMBUSH and not bool(actor.get("invisible", false)) and _shade_count(actor) <= 0:
+	if spell_id == SpellKits.AMBUSH and not _ambush_self_origin(actor) and _shade_count(actor) <= 0:
 		return "no_shade"
 	return ""
 
@@ -3430,13 +4468,131 @@ func _in_spell_range(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) ->
 	return dist >= int(def.get("min_range", 0)) and dist <= int(def.get("max_range", 0))
 
 
+## Line of sight (Mauro 30 Sep 2026: "Kestrel should not be able to attack in
+## front of the wall, has to have vision; this applies for all classes").
+## A spell aimed at another tile needs a clear line from the caster's tile
+## centre to the target's. A tile the line passes through blocks it when it
+## holds a solid prop (the same props that block walking) or a tall drawn
+## prop (CellTagMap.SIGHT_PROPS: ruins, crystals, conduits, centrepieces), a
+## Snap Wall or a blocker, or stands higher than both the caster's and the
+## target's tiles (a raised wall), or — for a spell aimed at a fighter — a
+## fighter stands on it (not an Invisible one). Water, mud, lava don't block. Self casts,
+## Advance (a 2-tile step), Ambush (its own ray gate) and the cone / burst
+## around the caster do not check sight.
+func spell_needs_sight(def: Dictionary) -> bool:
+	var spell_id := str(def.get("id", ""))
+	if spell_id == SpellKits.ADVANCE or spell_id == SpellKits.AMBUSH:
+		return false
+	return ["enemy", "ally", "any", "tile", "empty_tile"].has(str(def.get("target", "")))
+
+
+func has_line_of_sight(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> bool:
+	return sight_blocker(from_cell, to_cell, bodies) == Vector2i(-1, -1)
+
+
+## Fighters on the line block spells aimed at a fighter. A placement on a tile
+## (Drop Shade, Snap Wall, Plant) still needs a wall-free line but may pass
+## beside / behind a body, so Gloam can still plant a Shade behind a foe.
+func _sight_bodies(def: Dictionary) -> bool:
+	return not ["tile", "empty_tile"].has(str(def.get("target", "")))
+
+
+func _spell_sees(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	return not spell_needs_sight(def) or has_line_of_sight(from_cell, to_cell, _sight_bodies(def))
+
+
+## First tile that blocks the line, or (-1, -1) when the line is clear.
+func sight_blocker(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> Vector2i:
+	var none := Vector2i(-1, -1)
+	if from_cell == to_cell or not _in_bounds(from_cell) or not _in_bounds(to_cell):
+		return none
+	var top := maxi(_elevation_at(from_cell), _elevation_at(to_cell))
+	var a := Vector2(from_cell)
+	var b := Vector2(to_cell)
+	var cells: Array = []
+	for y in range(mini(from_cell.y, to_cell.y), maxi(from_cell.y, to_cell.y) + 1):
+		for x in range(mini(from_cell.x, to_cell.x), maxi(from_cell.x, to_cell.x) + 1):
+			var cell := Vector2i(x, y)
+			if cell == from_cell or cell == to_cell:
+				continue
+			if _segment_crosses_cell(a, b, cell):
+				cells.append(cell)
+	cells.sort_custom(func(p: Vector2i, q: Vector2i) -> bool: return Vector2(p).distance_squared_to(a) < Vector2(q).distance_squared_to(a))
+	for item in cells:
+		var cell: Vector2i = item
+		if _blocks_sight(cell, top, bodies):
+			return cell
+	return none
+
+
+func _blocks_sight(cell: Vector2i, top: int, bodies: bool = true) -> bool:
+	if _elevation_at(cell) > top:
+		return true
+	if _CellTagMap.props_block_sight(_map_id, _paint_only.get(cell, []), cell):
+		return true
+	if _snap_wall_blocks(cell):
+		return true
+	for blocked in _blocked_cells:
+		if blocked == cell:
+			return true
+	# Mauro 30 Sep 2026 ("yes same here", as Dofus): a fighter standing on the
+	# line blocks it. An Invisible fighter does not (it would give him away).
+	if not bodies:
+		return false
+	var body := _living_unit_at(cell)
+	if not body.is_empty() and not bool(body.get("invisible", false)):
+		return true
+	return false
+
+
+func _elevation_at(cell: Vector2i) -> int:
+	var tile = _board.tile_at(cell)
+	return int(tile.elevation) if tile != null else 0
+
+
+## The segment between two tile centres passes through the tile's inside. The
+## tile is shrunk a hair so a line that only grazes a corner does not count.
+static func _segment_crosses_cell(a: Vector2, b: Vector2, cell: Vector2i) -> bool:
+	var h := 0.499
+	var lo := Vector2(cell) - Vector2(h, h)
+	var hi := Vector2(cell) + Vector2(h, h)
+	var t0 := 0.0
+	var t1 := 1.0
+	var d := b - a
+	for axis in 2:
+		var p := a[axis]
+		var v := d[axis]
+		if absf(v) < 0.000001:
+			if p < lo[axis] or p > hi[axis]:
+				return false
+			continue
+		var ta := (lo[axis] - p) / v
+		var tb := (hi[axis] - p) / v
+		if ta > tb:
+			var tmp := ta
+			ta = tb
+			tb = tmp
+		t0 = maxf(t0, ta)
+		t1 = minf(t1, tb)
+		if t0 > t1:
+			return false
+	return true
+
+
+## Range, then sight when the spell needs it.
+func _in_spell_reach(def: Dictionary, from_cell: Vector2i, to_cell: Vector2i) -> bool:
+	if not _in_spell_range(def, from_cell, to_cell):
+		return false
+	return _spell_sees(def, from_cell, to_cell)
+
+
 func _append_ranged_cells(out: Array, actor: Dictionary, def: Dictionary, spell_id: String, empty_only: bool) -> void:
 	var from_cell: Vector2i = actor["pos"]
 	var seat := int(actor["seat"])
 	for y in range(_board_size):
 		for x in range(_board_size):
 			var cell := Vector2i(x, y)
-			if not _in_spell_range(def, from_cell, cell):
+			if not _in_spell_reach(def, from_cell, cell):
 				continue
 			if empty_only and (not _is_empty(cell) or not _board.is_walkable(cell)):
 				continue
@@ -3493,7 +4649,7 @@ func _burst_enemies(actor: Dictionary, def: Dictionary, invisible_only: bool) ->
 			if dist < lo or dist > hi:
 				continue
 			var unit := _living_unit_at(cell)
-			if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+			if unit.is_empty() or _allied(unit, actor):
 				continue
 			var invisible := bool(unit.get("invisible", false))
 			if invisible_only == invisible:
@@ -3522,7 +4678,7 @@ func _cone_enemies(actor: Dictionary, invisible_only: bool) -> Array:
 		if not _in_bounds(cell):
 			continue
 		var unit := _living_unit_at(cell)
-		if unit.is_empty() or int(unit["seat"]) == int(actor["seat"]):
+		if unit.is_empty() or _allied(unit, actor):
 			continue
 		var invisible := bool(unit.get("invisible", false))
 		if invisible_only == invisible:
@@ -3680,7 +4836,7 @@ func _emit_immunity_spent(target: Dictionary, report: Dictionary) -> void:
 func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> int:
 	if damage <= 0:
 		return 0
-	if int(actor.get("seat", -1)) == int(target.get("seat", -2)):
+	if _allied(actor, target):
 		return 0
 	var guards: Array = []
 	for unit in _units:
@@ -3688,7 +4844,7 @@ func _intercept_transfer(actor: Dictionary, target: Dictionary, damage: int) -> 
 			continue
 		if not bool(unit.get("alive", false)):
 			continue
-		if int(unit.get("seat", -1)) != int(target.get("seat", -2)):
+		if not _allied(unit, target):
 			continue
 		if unit["pos"] == target["pos"]:
 			continue
@@ -3740,14 +4896,14 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 func _triage_applied(target: Dictionary, def: Dictionary) -> bool:
 	if not bool(def.get("triage", false)):
 		return false
-	var max_hp := maxi(int(target.get("max_hp", START_HP)), 1)
+	var max_hp := maxi(int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))), 1)
 	return float(int(target.get("hp", 0))) / float(max_hp) < SpellKits.TRIAGE_HP_THRESHOLD
 
 
 func _apply_heal(target: Dictionary, amount: int) -> int:
 	if amount <= 0:
 		return 0
-	var room := int(target.get("max_hp", START_HP)) - int(target.get("hp", 0))
+	var room := int(target.get("max_hp", class_base_hp(str(target.get("class_id", ""))))) - int(target.get("hp", 0))
 	var healed := mini(amount, maxi(room, 0))
 	target["hp"] = int(target["hp"]) + healed
 	return healed
@@ -3819,15 +4975,17 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 		target["shield_turns"] = int(def.get("shield_turns", 2))
 	var cc_removed: Array = []
 	if spell_id == SpellKits.CLEANSE:
-		# Cleanse clears Stun and Soft Lock Burn. Silence and Slow stay.
+		# Cleanse clears Stun, then strips ONE map family (Mauro's Map push
+		# stacks sheet): the highest stack; ties go Slow, Breathless, Burn,
+		# Frozen, Electrocuted.
 		if int(target.get("stun_remaining", 0)) > 0 or bool(target.get("stunned", false)):
 			cc_removed.append("stun")
 		target["stun_remaining"] = 0
 		target["stunned"] = false
-		if int(target.get("burn_remaining", 0)) > 0 or int(target.get("burn_stacks", 0)) > 0:
-			cc_removed.append("burn")
-		target["burn_remaining"] = 0
-		target["burn_stacks"] = 0
+		var family := cleanse_pick(target)
+		if family != "":
+			_strip_family(target, family)
+			cc_removed.append(family)
 	if spell_id == SpellKits.HEARTSTOP:
 		target["hit_immunity"] = int(def.get("ally_immunity_hits", 1))
 	_last_coach = "HIT %s on %s." % [def["name"], target["name"]]
@@ -3860,10 +5018,46 @@ func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary,
 	return _accept()
 
 
+const CLEANSE_ORDER := ["slow", "breathless", "burn", "frozen", "electrocuted"]
+const _FAMILY_KEYS := {
+	"slow": ["slow_stacks", "slow_remaining"],
+	"breathless": ["breathless_stacks", "breathless_remaining"],
+	"burn": ["burn_stacks", "burn_remaining"],
+	"frozen": ["frozen_stacks", "frozen_remaining"],
+	"electrocuted": ["electro_stacks", "electro_remaining"],
+}
+
+
+## The family Cleanse strips: highest live stack, ties in CLEANSE_ORDER.
+static func cleanse_pick(unit: Dictionary) -> String:
+	var best := ""
+	var best_stack := 0
+	for family in CLEANSE_ORDER:
+		var keys: Array = _FAMILY_KEYS[family]
+		var stack := int(unit.get(keys[0], 0))
+		if int(unit.get(keys[1], 0)) <= 0:
+			stack = 0
+		if family == "slow" and stack == 0 and int(unit.get("slow_remaining", 0)) > 0:
+			stack = 1
+		if stack > best_stack:
+			best = family
+			best_stack = stack
+	return best
+
+
+func _strip_family(unit: Dictionary, family: String) -> void:
+	var keys: Array = _FAMILY_KEYS[family]
+	unit[keys[0]] = 0
+	unit[keys[1]] = 0
+	if family == "breathless":
+		unit["breathless_spell"] = ""
+		unit["silenced_spells"] = []
+
+
 ## Mauro (29 Sep): Invisible lasts INVISIBLE_TURNS of Gloam's own turns.
 ## Fade sets invisible_turns; each Gloam turn start counts one down and at 0
-## Gloam is revealed (expire "invisible"). Cast on turn T: hidden through the
-## enemy's next two turns and Gloam's turn T+1, visible from turn T+2.
+## Gloam is revealed (expire "invisible"). With 1: cast on turn T, hidden
+## through the enemy's next turn, visible from Gloam's turn T+1.
 ## An attack still reveals at once. A fixture with invisible but no
 ## invisible_turns has no clock (tests / old snapshots).
 func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_cost: int, mp_cost: int) -> Dictionary:
@@ -3874,7 +5068,7 @@ func _resolve_fade(intent: Dictionary, actor: Dictionary, def: Dictionary, ap_co
 	actor["invisible"] = true
 	actor["invisible_turns"] = INVISIBLE_TURNS
 	_intent_log.append(intent)
-	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turns. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, gained]
+	_last_coach = "%s Fade (−%d AP / −%d MP). Invisible for %d turn%s. +%d Umbral." % [actor["name"], ap_cost, mp_cost, INVISIBLE_TURNS, "" if INVISIBLE_TURNS == 1 else "s", gained]
 	_last_events.append({
 		"type": "cast",
 		"spell": SpellKits.FADE,
@@ -4301,7 +5495,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 	var caster_cell: Vector2i = actor["pos"]
 	var pick := _ambush_selected(actor, target, intent)
 	if pick.is_empty():
-		return _reject(intent, "no_shade", "REJECT — Ambush needs Invisible or a Shade (refund).")
+		return _reject(intent, "no_shade", "REJECT — Ambush has no legal origin (refund).")
 	var landing: Dictionary = pick.get("landing", {})
 	if not bool(landing.get("ok", false)):
 		return _reject(intent, "illegal_back", "REJECT — Ambush back tile is occupied or illegal (refund).")
@@ -4481,7 +5675,7 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 		return "no_target"
 	if not _ambush_legal_picks(actor, enemy).is_empty():
 		return ""
-	var invisible := bool(actor.get("invisible", false))
+	var invisible := _ambush_self_origin(actor)
 	if _live_shades(actor).is_empty() and not invisible:
 		return "no_shade"
 	var shade_block := ""
@@ -4496,9 +5690,9 @@ func _ambush_block_reason(actor: Dictionary, enemy: Dictionary) -> String:
 			self_block = reason
 	if not invisible:
 		return shade_block if shade_block != "" else "no_shade"
-	# Invisible self has no arming delay. An unarmed Shade must not replace
-	# that geometry reject. An armed Shade whose back tile is blocked does.
-	if self_block == "out_of_range" and (shade_block == "illegal_back" or shade_block == "wall_on_ray"):
+	# The body has no arming delay. When the body is out of range, the Shade's
+	# own reason (unarmed, blocked back, wall) is the more useful one.
+	if self_block == "out_of_range" and shade_block != "" and shade_block != "out_of_range":
 		return shade_block
 	if self_block != "":
 		return self_block
@@ -4513,7 +5707,7 @@ func _ambush_reject_text(reason: String) -> String:
 	if reason == "shade_unarmed":
 		return "REJECT — Shade is not armed for Ambush until the opponent completes a turn (refund)."
 	if reason == "no_shade":
-		return "REJECT — Ambush needs Invisible or a Shade (refund)."
+		return "REJECT — Ambush has no legal origin (refund)."
 	if reason == "no_target":
 		return "REJECT — Ambush needs an enemy (refund)."
 	return "REJECT — Ambush is Manhattan 1–2 cardinal from the origin (refund)."
@@ -4527,7 +5721,7 @@ func _ambush_range_origin(actor: Dictionary) -> Vector2i:
 
 
 func _ambush_primary_enemy(actor: Dictionary) -> Dictionary:
-	if _stasis_pack:
+	if _stasis_pack or _team_size > 1:
 		var legal := _first_legal_ambush_target(actor)
 		if not legal.is_empty():
 			return legal
@@ -4536,13 +5730,13 @@ func _ambush_primary_enemy(actor: Dictionary) -> Dictionary:
 
 func _ambush_focus_enemy(actor: Dictionary, dest: Vector2i) -> Dictionary:
 	var at := _living_unit_at(dest)
-	if not at.is_empty() and bool(at.get("alive", false)) and int(at.get("seat", -2)) != int(actor.get("seat", -1)):
+	if not at.is_empty() and bool(at.get("alive", false)) and not _allied(at, actor):
 		return at
 	return _ambush_primary_enemy(actor)
 
 
 func _ambush_cell_is_origin(actor: Dictionary, cell: Vector2i) -> bool:
-	if bool(actor.get("invisible", false)) and cell == actor["pos"]:
+	if _ambush_self_origin(actor) and cell == actor["pos"]:
 		return true
 	for item in _live_shades(actor):
 		var token: Dictionary = item
@@ -4559,7 +5753,7 @@ func _ambush_measure_cell(actor: Dictionary, enemy: Dictionary) -> Vector2i:
 		var cand: Dictionary = item
 		if bool(cand.get("axis_ok", false)):
 			return cand["origin"]
-	if bool(actor.get("invisible", false)):
+	if _ambush_self_origin(actor):
 		return actor["pos"]
 	var shade := _first_shade(actor)
 	if shade.is_empty():
@@ -4567,7 +5761,17 @@ func _ambush_measure_cell(actor: Dictionary, enemy: Dictionary) -> Vector2i:
 	return shade["pos"]
 
 
-## Every Shade, then Invisible self. `block` is "" when that origin may resolve.
+## Mauro, 30 Sep 2026: "ambush can be used without being invisible". Gloam's
+## own tile is always an Ambush origin (no arming delay); Invisible is no
+## longer required. Armed Shades still add other angles.
+const AMBUSH_SELF_ALWAYS := true
+
+
+func _ambush_self_origin(actor: Dictionary) -> bool:
+	return AMBUSH_SELF_ALWAYS or bool(actor.get("invisible", false))
+
+
+## Every Shade, then Gloam's own tile. `block` is "" when that origin may resolve.
 func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
 	var out: Array = []
 	if enemy.is_empty() or not bool(enemy.get("alive", false)):
@@ -4576,7 +5780,7 @@ func _ambush_candidates(actor: Dictionary, enemy: Dictionary) -> Array:
 		var token: Dictionary = item
 		var armed := int(token.get("opponent_turns_completed", 0)) >= 1
 		out.append(_ambush_candidate(actor, enemy, token["pos"], true, armed))
-	if bool(actor.get("invisible", false)):
+	if _ambush_self_origin(actor):
 		out.append(_ambush_candidate(actor, enemy, actor["pos"], false, true))
 	return out
 
@@ -4607,13 +5811,18 @@ func _ambush_candidate(actor: Dictionary, enemy: Dictionary, origin_cell: Vector
 
 ## Locked: the origin must see the target along the cardinal shot ray. A Snap
 ## Wall on any cell strictly between them blocks that origin (grey, 0 AP).
+## Mauro 30 Sep 2026: Gloam cannot Ambush through a wall or obstacle; a
+## Shade on another side may still give him a clear angle. Same walls as
+## spell sight: Snap Wall / blocker, solid prop, or a tile raised above both
+## the origin and the target.
 func _ambush_ray_walled(origin_cell: Vector2i, target_cell: Vector2i) -> bool:
 	var step := _cardinal_unit_step(origin_cell, target_cell)
 	if step == Vector2i.ZERO:
 		return false
+	var top := maxi(_elevation_at(origin_cell), _elevation_at(target_cell))
 	var cell: Vector2i = origin_cell + step
 	while cell != target_cell:
-		if _snap_wall_blocks(cell):
+		if _blocks_sight(cell, top):
 			return true
 		cell += step
 	return false
@@ -4892,7 +6101,7 @@ func _emit_expire(status: String, pos: Vector2i, owner_seat: int, target_seat: i
 func _note_opponent_shade_turns(ending_seat: int) -> void:
 	for item in _shade_tokens:
 		var token: Dictionary = item
-		if int(token.get("owner_seat", -1)) == ending_seat:
+		if team_of_seat(int(token.get("owner_seat", -1))) == team_of_seat(ending_seat):
 			continue
 		if int(token.get("turns", 0)) <= 0:
 			continue

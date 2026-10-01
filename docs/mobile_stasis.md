@@ -38,7 +38,7 @@ Strike still resolves on Ironjaw’s Locked card. Strike is not on the other fou
 
 Balance has not stamped these. They are not Soft Lock. Do not copy them into `data/kits.gd`.
 
-The attack base is applied before the Locked facing multiplier (front/side ×1.00, back ×1.20). A back hit is higher than the base. The player’s own spells stay the Locked cards, including Strike 16.
+The attack base is applied before the Locked facing multiplier (front/side ×1.00, back ×1.20). A back hit is higher than the base. The player’s own spells stay the cards, including Strike 14 (Mauro 30 Sep 2026 balance).
 
 Room A did not retune these for the pack. Three bodies at 22 HP, each with a full turn, are hotter than the old one-at-a-time duels. That stays Open for Balance.
 
@@ -47,7 +47,7 @@ Room A did not retune these for the pack. Three bodies at 22 HP, each with a ful
 | Each trash | 22 | 6 | Strike, range 1, 3 AP. Coach shows a door-specific label (for example Straw Swipe). |
 | Boss | 56 | 10 | Same card. Coach shows the boss label (for example Sheaf Cleave). |
 
-Player pool stays **80 HP**, **6 AP / 3 MP**. Strike still grants Impact on a foe whose resolver class is Ironjaw. The AI will not cast Advance, Shoulder, or Crush.
+Player pool stays the class base HP (Mauro 30 Sep 2026: class base HP), **6 AP / 3 MP**. Strike still grants Impact on a foe whose resolver class is Ironjaw. The AI will not cast Advance, Shoulder, or Crush.
 
 ## Playtest on device or in the editor
 

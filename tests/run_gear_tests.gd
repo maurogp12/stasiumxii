@@ -27,6 +27,8 @@ func _run() -> void:
 	_test_set_bonuses()
 	_test_ap_mp_clamp()
 	_test_stasis_loot()
+	_test_loot_by_star()
+	_test_temporary_kit()
 	_test_save_roundtrip()
 	_test_gear_screen()
 	_test_stasis_chest_wiring()
@@ -203,6 +205,83 @@ func _test_stasis_loot() -> void:
 		eq(GearBag.family_of(str(it["item_id"])) != "duskbrand", true, "Stasis never drops Duskbrand")
 
 
+## Mauro 29 Sep 2026: "dungs with 1 star should only loot normal gear, above
+## 3 star is when start looting rare and only 5 legendary".
+func _test_loot_by_star() -> void:
+	var want := {
+		1: ["sheaf", "undertow"],
+		2: ["sheaf", "undertow"],
+		3: ["ironveil", "sheaf", "stillcut", "undertow"],
+		4: ["ironveil", "sheaf", "stillcut", "undertow"],
+		5: ["brightedge", "ironveil", "sheaf", "stillcut", "undertow"],
+	}
+	for star in want:
+		var bag := GearBag.new()
+		var n := [0]
+		var pick := func() -> float:
+			n[0] += 1
+			return fposmod(float(n[0]) * 0.1373, 1.0)
+		var seen := {}
+		for d in 40:
+			for it in bag.record_stasis_clear(T0 + d * DAY, int(star), pick)["items"]:
+				seen[GearBag.family_of(str(it["item_id"]))] = true
+		var got: Array = seen.keys()
+		got.sort()
+		eq(got, want[star], "★%d drops exactly %s" % [star, ", ".join(want[star])])
+	eq(str(GearBag.FAMILIES["sheaf"]["rarity"]), "Normal", "Sheaf is Normal")
+	eq(str(GearBag.FAMILIES["ironveil"]["rarity"]), "Rare", "Ironveil is Rare")
+	eq(str(GearBag.FAMILIES["brightedge"]["rarity"]), "Legendary", "Brightedge is Legendary")
+	var a := GearBag.icon("sheaf.chest")
+	eq(a != null, true, "Sheaf chest icon loads")
+	eq(a == GearBag.icon("sheaf.chest"), true, "icons are cached so result/inventory draws keep them alive")
+
+
+## TEMPORARY balance-test kit (Mauro 30 Sep 2026). Grant: every piece at +5,
+## 99 fragments of every Still, once. Revoke: only the tagged pieces / granted
+## fragments go, real loot stays.
+func _test_temporary_kit() -> void:
+	var TL := preload("res://backend/test_loadout.gd")
+	var bag := GearBag.new()
+	var real := bag.add_item("sheaf", "head", 1)
+	if TL.ACTIVE:
+		eq(TL.sync_bag(bag), true, "the kit is granted")
+		eq(bag.items.size(), 1 + GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "every family × slot is added")
+		eq(bag.items.filter(func(it): return bool(it.get("test", false)) and int(it["plus"]) == GearBag.PLUS_CAP).size(), GearBag.FAMILY_ORDER.size() * GearBag.SLOTS.size(), "all granted pieces are max fusion +5")
+		eq(TL.sync_bag(bag), false, "granted only once")
+		var round := GearBag.new()
+		round.from_dict(bag.to_dict())
+		eq(round.test_grant and round.items.filter(func(it): return bool(it.get("test", false))).size() == 30, true, "the grant survives a save")
+		var vault := StillVault.new()
+		TL.sync_vault(vault)
+		eq(vault.count("mercy"), TL.STILL_FRAGMENTS, "every Still gets 99 fragments")
+		var hero := HeroProgress.new()
+		hero.add_xp("kestrel", 500)
+		var before_level := hero.level_of("kestrel")
+		TL.sync_hero(hero)
+		for cid in HeroProgress.GROWTH:
+			eq(hero.level_of(cid), 30, "%s is level 30" % cid)
+			if TL.SPEND_DUEL_BUILDS:
+				eq(hero.points_free(cid), 0, "%s spent all 58 points on the duel build" % cid)
+				eq(hero.record(cid)["spent"], TL.DUEL_BUILDS[cid], "%s spent the sim_duels BUILDS row" % cid)
+			else:
+				eq(hero.points_free(cid), 58, "%s has all 58 characteristic points free" % cid)
+		eq(int(hero.test_backup["kestrel"]["level"]), before_level, "the real progress is backed up")
+	# Revoke path (what ACTIVE = false does on the next load).
+	bag.test_grant = true
+	for slot in GearBag.SLOTS:
+		var uid := bag.add_item("duskbrand", slot, 5)
+		bag.items[bag.find(uid)]["test"] = true
+		bag.equip(uid)
+	var kept: Array = bag.items.filter(func(it): return not bool(it.get("test", false)))
+	for slot in bag.equipped.keys():
+		var idx := bag.find(int(bag.equipped[slot]))
+		if idx != -1 and bool(bag.items[idx].get("test", false)):
+			bag.equipped.erase(slot)
+	bag.items = bag.items.filter(func(it): return not bool(it.get("test", false)))
+	eq(bag.find(real) != -1 and bag.items.size() == kept.size(), true, "revoking keeps the real loot")
+	eq(bag.equipped.is_empty(), true, "revoking unequips the test pieces")
+
+
 func _test_save_roundtrip() -> void:
 	_wipe()
 	eq(GearBag.load_saved().items.size(), 0, "no file = empty bag")
@@ -282,7 +361,7 @@ func _test_inventory_screen() -> void:
 	hub.open_inventory()
 	var inv := hub.find_child("InventoryScreen", true, false) as InventoryScreen
 	truthy(inv != null, "Inventory opens from the hub")
-	eq(inv.stats()["hp"], 80, "bare champion has 80 HP")
+	eq(inv.stats()["hp"], 75, "bare Kestrel has 75 HP")
 	eq(inv.stats()["ap"], 6, "bare champion has 6 AP")
 	truthy(inv.find_child("Item_%d" % a, true, false) != null, "bag items show as grid tiles")
 	truthy(inv.find_child("Slot_head", true, false) != null, "the doll has a head slot")
@@ -294,7 +373,7 @@ func _test_inventory_screen() -> void:
 	eq(int(inv.bag().item(a)["plus"]), 1, "fused head is +1")
 	eq(GearBag.load_saved().find(b), -1, "fuse is saved")
 	eq(bool(inv.wear(a)["ok"]), true, "wear from the inventory")
-	eq(inv.stats()["hp"], 80 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
+	eq(inv.stats()["hp"], 75 + int(GearBag.part_stats("sheaf.head", 1)["hp"]), "worn head adds its HP")
 	inv.wear(w)
 	eq(inv.stats()["mastery"], int(GearBag.part_stats("duskbrand.weapon", 0)["mastery"]) + int(GearBag.part_stats("sheaf.head", 1)["mastery"]), "worn weapon adds Mastery")
 	inv.select({"kind": "slot", "slot": "head"})
@@ -330,6 +409,24 @@ func _test_inventory_screen() -> void:
 	eq(stage.facing(), "s", "a new champion faces you")
 	for f in ChampionStage.FACINGS:
 		truthy(ResourceLoader.exists("res://art/characters/bastion/bastion_%s.png" % f), "bastion has the %s facing" % f)
+	# Set art icons (Blueprint set sheets): every family / slot, weapon per class.
+	for fam in GearBag.FAMILY_ORDER:
+		for slot in GearBag.SLOTS:
+			truthy(GearBag.icon(GearBag.item_id_for(fam, slot)) != null, "%s %s has set art" % [fam, slot])
+		for cls in ["kestrel", "ironjaw", "mender", "gloam", "bastion"]:
+			truthy(ResourceLoader.exists(GearBag.icon_path(GearBag.item_id_for(fam, "weapon"), cls)), "%s weapon art for %s" % [fam, cls])
+	eq(GearBag.icon_path("sheaf.weapon", "kestrel").get_file(), "sheaf_weapon_kestrel.png", "a Kestrel sees the Sheaf bow")
+	eq(GearBag.icon_path("sheaf.weapon").get_file(), "sheaf_weapon_ironjaw.png", "no class shows the axes")
+	eq(GearBag.icon_path("nope.head"), "", "unknown items have no art")
+	inv.show_tab("equipment")
+	var tile := inv.find_child("Item_%d" % w, true, false)
+	truthy(tile != null and tile.icon_tex != null, "bag tiles draw the set art")
+	var weapon_slot := inv.find_child("Slot_weapon", true, false)
+	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_bastion.png", "the worn weapon shows the picked champion's weapon")
+	inv.pick_champion("kestrel")
+	weapon_slot = inv.find_child("Slot_weapon", true, false)
+	eq(weapon_slot.icon_tex.resource_path.get_file(), "duskbrand_weapon_kestrel.png", "switching champion swaps the weapon art")
+	inv.pick_champion("bastion")
 	var levels := inv.open_levels()
 	eq(levels.selected, "bastion", "Levels opens on the picked champion")
 	levels.close()
@@ -379,7 +476,7 @@ func _test_combat_result() -> void:
 	var fight: Script = load("res://scenes/stasis_fight.gd")
 	var clear: Dictionary = fight.stasis_result({"name": "Mender", "hp": 51, "max_hp": 80}, {"chest": true, "items": [{"item_id": "sheaf.boots", "plus": 0}]}, true, 200)
 	eq(str(clear["outcome"]), "Victory", "Stasis clear is a Victory")
-	eq(clear["winners"][0]["loot"], [{"kind": "gear", "item_id": "sheaf.boots", "plus": 0, "count": 1}], "chest piece shows as loot")
+	eq(clear["winners"][0]["loot"], [{"kind": "gear", "item_id": "sheaf.boots", "plus": 0, "count": 1, "class_id": StasisCatalog.class_id}], "chest piece shows as loot (with the class, for the weapon art)")
 	eq(str(clear["losers"][0]["name"]), "Grain Hound", "beaten foes listed as losers")
 	eq(int(clear["turns"]), 9, "turns over the whole run")
 	var wipe: Dictionary = fight.stasis_result({"name": "Mender", "hp": 0, "max_hp": 80}, {}, false, 90)
@@ -414,7 +511,7 @@ func _test_gear_in_fights() -> void:
 	# No gear: the Locked proto body is unchanged.
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true})
 	var plain: Dictionary = sim._unit_by_seat(0)
-	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [80, 6, 3, 0, 0], "no gear = 80 HP, 6/3, Mastery 0, Resist 0")
+	eq([int(plain["max_hp"]), int(plain["max_ap"]), int(plain["max_mp"]), int(plain["mastery"]), int(plain["resist"])], [75, 6, 3, 0, 0], "no gear = Kestrel 75 HP, 6/3, Mastery 0, Resist 0")
 	# Sheaf 5pc on seat 0, Duskbrand 5pc on seat 1.
 	sim.reset_match({"classes": ["kestrel", "ironjaw"], "skip_deploy": true, "seat_gear": {
 		0: {"worn": _worn("sheaf", GearBag.SLOTS)},
@@ -422,8 +519,8 @@ func _test_gear_in_fights() -> void:
 	}})
 	var sheaf: Dictionary = sim._unit_by_seat(0)
 	var dusk: Dictionary = sim._unit_by_seat(1)
-	eq(int(sheaf["max_hp"]), 196, "Sheaf 5: (80 + 98 part HP) × 1.10 = 196")
-	eq(int(sheaf["hp"]), 196, "fight starts at full geared HP")
+	eq(int(sheaf["max_hp"]), 190, "Sheaf 5: (75 + 98 part HP) × 1.10 = 190")
+	eq(int(sheaf["hp"]), 190, "fight starts at full geared HP")
 	eq(int(sheaf["mastery"]), 18, "Sheaf 5: 10 part Mastery + 8 (4pc) = 18")
 	eq(int(sheaf["resist"]), 8, "Sheaf 5pc +8% all resist")
 	eq(sheaf["resist_elem"], {"earth": 15}, "Sheaf part resist 15 goes to its default Earth attune")
@@ -431,7 +528,7 @@ func _test_gear_in_fights() -> void:
 	eq(int(sheaf["init"]), 3, "Sheaf boots Init 3")
 	eq(int(dusk["max_ap"]), 7, "Duskbrand 5pc → 7 AP")
 	eq(int(dusk["max_mp"]), 4, "Duskbrand 5pc → 4 MP")
-	eq(int(dusk["max_hp"]), 149, "Duskbrand: (80 + 58) × 1.08 = 149")
+	eq(int(dusk["max_hp"]), 160, "Duskbrand: (90 + 58) × 1.08 = 160")
 	eq(int(dusk["mastery"]), 27, "Duskbrand: 24 part Mastery × 1.12 = 27")
 	eq(dusk["resist_elem"], {"neutral": 9}, "Duskbrand has no attune — resist stays Neutral")
 	eq(int(dusk["init"]), 18, "Duskbrand Init 12 parts + 6 (4pc) = 18")
@@ -488,7 +585,7 @@ func _test_gear_in_fights() -> void:
 	eq(sim.set_seat_gear(0, {"worn": _worn("sheaf", ["head", "chest"])}), false, "gear cannot change mid-combat")
 	sim.reset_match({"classes": ["kestrel", "ironjaw"]})
 	eq(sim.set_seat_gear(1, {"worn": _worn("sheaf", ["head", "chest"])}), true, "gear applies during deployment")
-	eq(int(sim._unit_by_seat(1)["max_hp"]), 163, "late gear raised seat 1 HP to (80+28+40)×1.10")
+	eq(int(sim._unit_by_seat(1)["max_hp"]), 174, "late gear raised seat 1 HP to (90+28+40)×1.10")
 	# Authority: a reset config cannot smuggle gear; each seat's own gear is used.
 	var net: Node = (load("res://backend/net_session.gd") as Script).new()
 	net.mode = net.Mode.DEDICATED
@@ -511,7 +608,7 @@ func _test_gear_in_fights() -> void:
 	var player_rec: Dictionary = fight_cfg["stasis_roster"][0]
 	eq(player_rec["gear"]["worn"].size(), 2, "Stasis fight carries the worn gear")
 	sim.reset_match(fight_cfg)
-	eq(int(sim._unit_by_seat(0)["max_hp"]), 163, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
+	eq(int(sim._unit_by_seat(0)["max_hp"]), 168, "Stasis player gets helm + coat HP and Sheaf 2pc +10%")
 	StasisCatalog.player_hp = 60
 	sim.reset_match(StasisCatalog.fight_config())
 	eq(int(sim._unit_by_seat(0)["hp"]), 60, "Room B carries Room A HP under the geared max")

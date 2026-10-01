@@ -10,6 +10,7 @@ signal debug_beat(beat_name: String)
 const _Router := preload("res://vfx/vfx_router.gd")
 const _Spark := preload("res://vfx/vfx_spark.gd")
 const _Number := preload("res://vfx/vfx_number.gd")
+const _Soul := preload("res://vfx/vfx_soul.gd")
 const _Puff := preload("res://vfx/vfx_puff.gd")
 const _Motes := preload("res://vfx/vfx_motes.gd")
 const _Projectile := preload("res://vfx/vfx_projectile.gd")
@@ -219,7 +220,22 @@ func _suppressed() -> bool:
 
 
 func _spawn(spec: Dictionary, ghost_motion: bool) -> void:
+	# Any recipe may wait (monster bolt impact pops on arrival).
+	var wait := float(spec.get("delay_spawn", 0.0))
+	if wait > 0.0 and is_inside_tree():
+		var later := spec.duplicate()
+		later.erase("delay_spawn")
+		get_tree().create_timer(wait).timeout.connect(func() -> void:
+			if is_instance_valid(self):
+				_spawn(later, ghost_motion))
+		return
 	match str(spec.get("id", "")):
+		"boss_flare":
+			var boss := _pawn(int(spec.get("seat", -1)))
+			if boss != null:
+				var aura := boss.get_node_or_null("BossAura")
+				if aura != null and aura.has_method("flare"):
+					aura.call("flare")
 		"spark":
 			_play_burst("spark", spec, true)
 		"stamp":
@@ -339,6 +355,32 @@ func _play_number(spec: Dictionary) -> void:
 	node.z_as_relative = false
 	node.z_index = 900
 	node.play(spec)
+	_make_room(node)
+
+
+## Adjacent caster and target used to print "+1 Impact" on top of "BACK 19".
+## A new number never covers a live one: resource ticks step up out of the
+## way of damage / heal numbers, and anything else stacks above what is
+## already showing.
+func _make_room(fresh: Node2D) -> void:
+	if not fresh.has_method("footprint"):
+		return
+	for _pass in 4:
+		var moved := false
+		for other in _pools.get("number", []):
+			if other == fresh or other == null or not bool(other.get("in_use")):
+				continue
+			var a: Rect2 = fresh.footprint()
+			var b: Rect2 = other.footprint()
+			if not a.intersects(b):
+				continue
+			if other.is_minor() and not fresh.is_minor():
+				other.clear_above(a)
+			else:
+				fresh.clear_above(b)
+			moved = true
+		if not moved:
+			return
 
 
 func _play_projectile(spec: Dictionary) -> void:
@@ -443,6 +485,17 @@ func _play_death(spec: Dictionary) -> void:
 	if cause == "burn":
 		tint = VfxPalette.BURN
 	_puff_at(at + Vector2(0, -8), tint)
+	if pawn != null:
+		# Soul release in the class colour (one per KO, frees itself).
+		var soul := _Soul.new()
+		soul.name = "Soul_%d" % seat
+		soul.tint = VfxPalette.class_tint(str(pawn.class_id)) if "class_id" in pawn else Color(0.9, 0.85, 0.7)
+		if cause == "burn":
+			soul.tint = VfxPalette.EMBER
+		soul.position = at
+		soul.z_as_relative = false
+		soul.z_index = 850
+		add_child(soul)
 	var ring := _acquire("ring")
 	ring.play({
 		"pos": at,
@@ -585,7 +638,28 @@ func _ensure_linger(key: String, spec: Dictionary) -> void:
 	node.play(payload)
 	if bool(spec.get("dim", false)):
 		node.modulate.a = 0.4
+	if node is CanvasItem:
+		(node as CanvasItem).visible = not _hidden_seats.has(int(spec.get("seat", -999)))
 	_linger[key] = node
+
+
+## Hide / show every lingering status mark of one seat (an Invisible
+## fighter's dots must not give its tile away to the other player).
+var _hidden_seats := {}
+
+
+func set_seat_hidden(seat: int, hidden: bool) -> void:
+	if hidden:
+		_hidden_seats[seat] = true
+	else:
+		_hidden_seats.erase(seat)
+	var suffix := ":%d" % seat
+	for key in _linger.keys():
+		if not str(key).ends_with(suffix):
+			continue
+		var node: Node = _linger[key]
+		if node != null and is_instance_valid(node) and node is CanvasItem:
+			(node as CanvasItem).visible = not hidden
 
 
 func _dismiss_linger(key: String) -> void:

@@ -4,12 +4,16 @@ extends "res://board_view.gd"
 ## is the boss. Boards are the Stasis-1 room schematics, not the Koliseo arenas.
 ## CombatSim stays the authority. Not for PC main.
 
+const HeroAi := preload("res://backend/hero_ai.gd")
+
 var _ai_running: bool = false
 var _cleared: bool = false
 var _chest: Dictionary = {}
 var _overlay_status: Label
 var _continue_button: Button
 var _exit_button: Button
+var _overlay_panel: Panel
+var _overlay_back: Button
 var _tonic_button: Button
 var _tonic_note: String = ""
 
@@ -80,7 +84,14 @@ func _run_enemy_step() -> void:
 	var foe := _unit_from_seat(snap, StasisCatalog.PLAYER_SEAT)
 	var actor_pos: Vector2i = actor.get("pos", Vector2i.ZERO)
 	var foe_pos: Vector2i = foe.get("pos", Vector2i.ZERO)
-	var intent: Dictionary = StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
+	var intent: Dictionary
+	if _is_hero(actor):
+		# Party seat filled by AI (Mauro 1 Oct 2026: "Fill with AI").
+		intent = HeroAi.plan(_sim(), seat)
+	elif not actor.get("foe_kit", []).is_empty():
+		intent = StasisAi.plan(_sim(), seat)
+	else:
+		intent = StasisAi.choose(_sim().legal_intents(seat), actor_pos, foe_pos)
 	if str(intent.get("type", "")) == "end_turn":
 		_busy = true
 		_hud.clear_spell()
@@ -162,7 +173,7 @@ func _on_match_result(snap: Dictionary, _secs: int) -> void:
 	consume_still(snap)
 	StasisCatalog.run_turns += int(snap.get("turn_index", 0))
 	for unit in snap.get("units", []):
-		if int(unit.get("seat", -1)) != StasisCatalog.PLAYER_SEAT:
+		if not _is_hero(unit):
 			StasisCatalog.run_foes.append((unit as Dictionary).duplicate(true))
 	if int(snap.get("winner_seat", -1)) == StasisCatalog.PLAYER_SEAT:
 		return
@@ -205,7 +216,7 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 	for frag in chest.get("fragments", []):
 		you["loot"].append({"kind": "fragment", "still": str(frag), "count": 1})
 	for it in chest.get("items", []):
-		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1})
+		you["loot"].append({"kind": "gear", "item_id": str(it.get("item_id", "")), "plus": int(it.get("plus", 0)), "count": 1, "class_id": StasisCatalog.class_id})
 	var foes: Array = []
 	for unit in StasisCatalog.run_foes:
 		foes.append({
@@ -220,7 +231,7 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 	if victory:
 		note = chest_line(chest)
 	return {
-		"title": "%s — combat result" % StasisCatalog.door_name(),
+		"title": "%s %s — combat result" % [StasisCatalog.door_name(), StasisCatalog.star_label()],
 		"outcome": "Victory" if victory else "Defeat",
 		"victory": victory,
 		"duration_sec": secs,
@@ -234,16 +245,16 @@ static func stasis_result(player: Dictionary, chest: Dictionary, victory: bool, 
 ## Stasis 1 clear: one loot roll, 5 per UTC day across all doors (GearBag).
 func open_chest() -> Dictionary:
 	var bag := GearBag.load_saved()
-	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.STAR)
+	var loot := bag.record_stasis_clear(int(Time.get_unix_time_from_system()), StasisCatalog.star)
 	bag.save()
 	# XII Still fragments (Mauro, 29 Sep): only a loot-paying chest rolls them.
 	if bool(loot.get("chest", false)):
 		var vault := StillVault.load_saved()
-		loot["fragments"] = vault.roll_chest(StasisCatalog.STAR)
+		loot["fragments"] = vault.roll_chest(StasisCatalog.star)
 		vault.save()
 	# XP: 60 × star with a chest, 20 for a clear past the daily 5.
 	var hero := HeroProgress.load_saved()
-	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.STAR, bool(loot.get("chest", false))))
+	var gained := hero.add_xp(StasisCatalog.class_id, HeroProgress.stasis_xp(StasisCatalog.star, bool(loot.get("chest", false))))
 	hero.save()
 	loot["xp"] = int(gained["xp"])
 	loot["level"] = int(gained["level"])
@@ -317,6 +328,7 @@ func _build_overlay() -> void:
 	panel_style.set_corner_radius_all(12)
 	panel.add_theme_stylebox_override("panel", panel_style)
 	root.add_child(panel)
+	_overlay_panel = panel
 	_overlay_status = Label.new()
 	_overlay_status.position = Vector2(256, 14)
 	_overlay_status.size = Vector2(448, 58)
@@ -337,6 +349,7 @@ func _build_overlay() -> void:
 	back.add_theme_font_size_override("font_size", 18)
 	back.pressed.connect(_back_to_hub)
 	root.add_child(back)
+	_overlay_back = back
 	_continue_button = Button.new()
 	_continue_button.text = "Next foe"
 	_continue_button.position = Vector2(476, 76)
@@ -364,9 +377,62 @@ func _build_overlay() -> void:
 	root.add_child(_tonic_button)
 
 
+## During a fight the door banner is a slim ribbon under the top HUD row, so
+## it never hides the turn strip, AP / MP or the timer (the HUD keeps its own
+## Back to hub). After the fight it grows into the full panel with the buttons.
+## Monster turns: no "X's turn" box over the board (Dofus lights the
+## timeline instead); the player's own turn keeps the banner.
+## Stasis: the player always sees their own (Invisible) hero.
+func _viewer_sees_seat(seat: int, snap: Dictionary) -> bool:
+	# The player sees their own hero and every party member.
+	return seat == StasisCatalog.PLAYER_SEAT or _is_hero(_unit_from_seat(snap, seat))
+
+
+## A party hero (team 0). Solo runs: only the player's seat.
+static func _is_hero(unit: Dictionary) -> bool:
+	if unit.is_empty():
+		return false
+	return int(unit.get("team", 0 if int(unit.get("seat", -1)) == StasisCatalog.PLAYER_SEAT else 1)) == 0
+
+
+func _quiet_handoff(seat: int) -> bool:
+	return seat != StasisCatalog.PLAYER_SEAT
+
+
+func _shows_turn_chrome(seat: int) -> bool:
+	return seat == StasisCatalog.PLAYER_SEAT
+
+
+func _layout_overlay(fighting: bool) -> void:
+	if _overlay_panel == null:
+		return
+	if fighting:
+		_overlay_panel.position = Vector2(248, 142)
+		_overlay_panel.size = Vector2(464, 32)
+		_overlay_status.position = Vector2(256, 142)
+		_overlay_status.size = Vector2(448, 32)
+		_overlay_status.add_theme_font_size_override("font_size", 14)
+		if _overlay_back != null:
+			_overlay_back.visible = false
+	else:
+		_overlay_panel.position = Vector2(248, 142)
+		_overlay_panel.size = Vector2(464, 132)
+		_overlay_status.position = Vector2(256, 148)
+		_overlay_status.size = Vector2(448, 58)
+		_overlay_status.add_theme_font_size_override("font_size", 16)
+		if _overlay_back != null:
+			_overlay_back.visible = true
+			_overlay_back.position = Vector2(256, 210)
+		if _continue_button != null:
+			_continue_button.position = Vector2(476, 210)
+		if _tonic_button != null:
+			_tonic_button.position = Vector2(256, 280)
+
+
 func _sync_overlay(snap: Dictionary) -> void:
 	if _overlay_status == null:
 		return
+	_layout_overlay(not _cleared and not bool(snap.get("match_over", false)))
 	_sync_tonic(snap)
 	if _cleared:
 		_overlay_status.text = "%s cleared. %s" % [StasisCatalog.door_name(), chest_line(_chest)]
@@ -395,7 +461,8 @@ func _sync_overlay(snap: Dictionary) -> void:
 		return
 	if _continue_button != null:
 		_continue_button.visible = false
-	_overlay_status.text = banner if note == "" else "%s\n%s" % [banner, note]
+	var ribbon := StasisCatalog.room_ribbon()
+	_overlay_status.text = ribbon if note == "" else "%s\n%s" % [ribbon, note]
 
 
 func _sync_tonic(snap: Dictionary) -> void:

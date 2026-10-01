@@ -44,7 +44,7 @@ Everything that ships on the **mobile** track **merges up to PC `main`**, **exce
 ## 3. Core combat (Locked baseline)
 
 - Turn-based, isometric board.
-- Unit baseline: **80 HP**, turn refill **6 AP / 3 MP** (unless a Locked effect changes it).
+- Unit baseline: Mauro 30 Sep 2026: class base HP (Bastion 100, Ironjaw 90, Mender 85, Kestrel 75, Gloam 70), turn refill **6 AP / 3 MP** (unless a Locked effect changes it).
 - Facing: N / E / S / W matters for some kits (backstab, cones).
 - Hit model: FLEX rolls where kit says `rolls: true`; LOCK Neutral for no-roll utility.
 - Skill info on mobile: **hold** to show tooltip card; **tap** arms skill without card.
@@ -82,7 +82,7 @@ Mastery/resist proto: **0/0** for all.
 | Spell | Cost | Range | Effect |
 | --- | --- | --- | --- |
 | **Advance** | 3 AP / 0 MP | **Exactly 2 cardinal** (N/S/E/W Manhattan 2 only; no Manhattan 1, no diagonals) | Teleport to empty tile; **Impact if ending adjacent** to enemy |
-| **Strike** | 3 AP / 0 MP | Chebyshev 1 | 16 Earth FLEX + Impact |
+| **Strike** | 3 AP / 0 MP | Chebyshev 1 | 14 Earth FLEX + Impact (Mauro 30 Sep 2026 balance) |
 | **Shoulder** | 2 AP / 0 MP | Chebyshev 1 | 6 Earth FLEX + push 1 (+ Impact rules: +1 after clean push, or +2 on bounce — not both) |
 | **Crush** | 4 AP / 0 MP | Chebyshev 1 | Needs/spends **2 Impact** on connect; 24 Earth FLEX; miss keeps Impact; **Stun 1** if Impact was **4** before spend (blocks move + cast + face) |
 
@@ -94,13 +94,13 @@ Mastery/resist proto: **0/0** for all.
 | **Pulse Tap** | 2 AP / 0 MP | 0–3 | Spend 1 Pulse; 10H FLEX ally |
 | **Ward** | 3 AP / 0 MP | 0–3 | Spend 2 Pulse; 20 HP shield, 2 turns FLEX; miss OK; no crit |
 | **Cleanse** | 2 AP / 0 MP | 0–4 | +1 Pulse; LOCK Neutral remove 1 CC; no roll |
-| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 4 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **10** + skip next MP |
+| **Heartstop** | 5 AP / 0 MP | 0–3 | Spend 2 Pulse; **Ally:** 32H + immunity 1 hit; **Enemy:** base_dmg **20** + skip next MP (Mauro 30 Sep 2026 balance) |
 
 ### 5.4 Gloam
 
 | Spell | Cost | Range | Effect |
 | --- | --- | --- | --- |
-| **Cut** | 3 AP / 0 MP | 1 | +1 Umbral; 13 Air FLEX weapon; Backstab applies |
+| **Cut** | 3 AP / 0 MP | 1 | +1 Umbral; 16 Air FLEX weapon; Backstab applies (Mauro 30 Sep 2026 balance) |
 | **Drop Shade** | 1 AP / 0 MP | Chebyshev **1–3** | +1 Shade (max 2); LOCK Neutral; Shade lasts 3 turns; **place-only** (not a teleport); no roll |
 | **Ambush** | 4 AP / 0 MP | see legal sentence below | Jump then 22 Air FLEX |
 | **Fade** | 2 AP / 1 MP | self | +1 Umbral; LOCK Neutral Invisible; no roll |
@@ -118,7 +118,7 @@ Mastery/resist proto: **0/0** for all.
 
 | Spell | Cost | Range | Effect |
 | --- | --- | --- | --- |
-| **Bash** | 3 AP / 0 MP | 1 | +1 Aegis; 11 Earth FLEX melee |
+| **Bash** | 3 AP / 0 MP | 1 | +1 Aegis; 13 Earth FLEX melee (Mauro 30 Sep 2026 balance) |
 | **Plant** | 2 AP / 0 MP | 1–2 | +1 Aegis; LOCK Neutral ward tile 3 turns; allies resist next push |
 | **Hold Line** | 3 AP / 0 MP | 1 | +1 Aegis; 7D/body FLEX front cone 3; +1 MP exit tax 1 turn on connect |
 | **Snap Wall** | 1 AP / 0 MP | 1–2 | Spend 2 Aegis; LOCK Neutral 1-tile blocked **2 Bastion turn-starts** (Burn tick family); blocks walk/Gust |

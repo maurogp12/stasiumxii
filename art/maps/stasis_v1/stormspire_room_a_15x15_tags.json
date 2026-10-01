@@ -78,7 +78,7 @@
     {
       "x": 7,
       "y": 0,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -288,7 +288,7 @@
     {
       "x": 7,
       "y": 2,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -372,7 +372,7 @@
     {
       "x": 4,
       "y": 3,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -397,7 +397,9 @@
       "y": 3,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "arc"
+      ]
     },
     {
       "x": 8,
@@ -530,7 +532,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rock_pillar"
+      ]
     },
     {
       "x": 12,
@@ -586,7 +590,9 @@
       "y": 5,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rock_pillar"
+      ]
     },
     {
       "x": 5,
@@ -735,7 +741,9 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "arc"
+      ]
     },
     {
       "x": 11,
@@ -768,7 +776,7 @@
     {
       "x": 0,
       "y": 7,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -866,7 +874,7 @@
     {
       "x": 14,
       "y": 7,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1113,7 +1121,9 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rock_pillar"
+      ]
     },
     {
       "x": 5,
@@ -1246,7 +1256,9 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "rock_pillar"
+      ]
     },
     {
       "x": 9,
@@ -1293,7 +1305,7 @@
     {
       "x": 0,
       "y": 12,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1398,7 +1410,7 @@
     {
       "x": 0,
       "y": 13,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },

@@ -1,7 +1,7 @@
 extends SceneTree
 
 ## Koliseo ship maps: tags load, lava stays on Slagcrown, solid props block
-## movement, dress paint stays walkable, and hot-seat rolls one of the five arenas.
+## movement, flat dress paint stays walkable (tall props block, Mauro 30 Sep 2026), and hot-seat rolls one of the five arenas.
 ## Run: godot --headless --path . -s res://tests/run_koliseo_maps_tests.gd
 
 const MAPS := ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]
@@ -19,6 +19,8 @@ func _run() -> void:
 	_test_catalog()
 	_test_each_map()
 	_test_paint_only_and_lava()
+	_test_tall_props_block_sight()
+	_test_random_deploy_zones()
 	_test_unknown_map_does_not_invent()
 	_test_cell_tags_override()
 	_test_random_ship_id()
@@ -94,7 +96,7 @@ func _test_paint_only_and_lava() -> void:
 		eq(str(tile.get("terrain_type", "")), "ground", "%s painted step keeps its terrain tag" % map_id)
 		var paint: Dictionary = sim.snapshot().get("paint_only", {})
 		truthy(paint.has(dest), "%s stores paint_only beside the tile" % map_id)
-		var blocks := CellTagMap.props_block_move(paint.get(dest, []))
+		var blocks := CellTagMap.props_block_move(paint.get(dest, []), map_id, dest)
 		eq(bool(tile.get("walkable", false)), not blocks, "%s %s walkable matches the prop" % [map_id, prop])
 		var moved: Dictionary = sim.submit({"type": "move", "to": dest})
 		if blocks:
@@ -780,3 +782,72 @@ func truthy(value: Variant, msg: String) -> void:
 		print("FAIL: %s  (got %s)" % [msg, value])
 	else:
 		_passed += 1
+
+
+## Mauro 30 Sep 2026: "double check the maps should have obstacles that are
+## not supposed to allow attack if a character is behind them unless sight is
+## clear". Every prop the board draws tall (art >= 45 px, or the centrepiece)
+## blocks sight on every Koliseo map and Stasis room; flat dress does not.
+func _test_tall_props_block_sight() -> void:
+	var CTM := preload("res://backend/cell_tag_map.gd")
+	for id in CTM.SIGHT_PROP_KEEP:
+		for prop_name in CTM.SIGHT_PROP_KEEP[id]:
+			var look_keep: Dictionary = ArenaLook.style_for(id).get("prop_keep", {})
+			eq(CTM.SIGHT_PROP_KEEP[id][prop_name], look_keep.get(prop_name, []), "%s %s: sight cells match the drawn cells" % [id, prop_name])
+	for id in CTM.SIGHT_CENTERPIECE:
+		var piece: Dictionary = ArenaLook.style_for(id).get("centerpiece", {})
+		eq(piece.get("cell"), CTM.SIGHT_CENTERPIECE[id], "%s centrepiece blocks sight where it is drawn" % id)
+	var files: Array = []
+	for id in CTM.SHIP_MAPS:
+		files.append(CTM.tags_path_for(id))
+		for room in ["a", "b"]:
+			files.append("res://art/maps/stasis_v1/%s_room_%s_15x15_tags.json" % [id, room])
+	for path in files:
+		var raw = JSON.parse_string(FileAccess.get_file_as_string(path))
+		var map_id := str(raw.get("map_id", path.get_file().get_slice("_", 0)))
+		var walls := 0
+		var missed: Array = []
+		for c in raw["cells"]:
+			var cell := Vector2i(int(c["x"]), int(c["y"]))
+			var props: Array = c.get("paint_only", [])
+			if CTM.props_block_sight(map_id, props, cell) or int(c["elevation"]) > 0:
+				walls += 1
+			for prop_name in props:
+				if not ArenaLook.prop_shown_at(map_id, str(prop_name), cell):
+					continue
+				var tex: Texture2D = ArenaLook.prop_for(map_id, str(prop_name))
+				if tex != null and tex.get_height() >= 45 and not CTM.props_block_sight(map_id, [prop_name], cell):
+					missed.append("%s@%s" % [prop_name, cell])
+		eq(missed, [], "%s: every tall drawn prop blocks sight" % path.get_file())
+		truthy(walls >= 1, "%s has sight walls (%d)" % [path.get_file(), walls])
+		print("  sight walls ", path.get_file(), ": ", walls)
+
+
+## Mauro 30 Sep 2026: "every time you enter a koliseo respawn areas should be
+## random around the map every single time you start a combat … for every
+## single map". Zones are redrawn each match, on standable tiles only, and the
+## two zones can always walk to each other.
+func _test_random_deploy_zones() -> void:
+	var sim: Node = load("res://backend/combat_sim.gd").new()
+	root.add_child(sim)
+	var never := func(_a = null, _b = null) -> bool: return false
+	for map_id in CellTagMap.SHIP_MAPS:
+		var seen := {}
+		var bad := 0
+		var apart := 0
+		for i in 12:
+			sim.reset_match({"map_id": map_id, "seed": 1000 + i * 7919})
+			var z0: Array = sim.deploy_zone_cells(0)
+			var z1: Array = sim.deploy_zone_cells(1)
+			for cell in z0 + z1:
+				var tile: Dictionary = sim.tile_at(cell)
+				if not bool(tile.get("walkable", false)) or ["mud", "water", "lava"].has(str(tile.get("terrain_type", ""))):
+					bad += 1
+			if not sim._board.reachable(z0[0], 9999, never).has(z1[0]):
+				apart += 1
+			z0.sort()
+			seen[str(z0)] = true
+		eq(bad, 0, "%s: every deploy tile is standable ground" % map_id)
+		eq(apart, 0, "%s: the two deploy zones always reach each other" % map_id)
+		truthy(seen.size() >= 10, "%s: deploy zones change match to match (%d / 12 different)" % [map_id, seen.size()])
+	sim.queue_free()

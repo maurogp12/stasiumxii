@@ -134,7 +134,7 @@
     {
       "x": 0,
       "y": 1,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -288,7 +288,7 @@
     {
       "x": 7,
       "y": 2,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -490,7 +490,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "basalt_pillar"
+      ]
     },
     {
       "x": 6,
@@ -525,7 +527,9 @@
       "y": 4,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "basalt_pillar"
+      ]
     },
     {
       "x": 11,
@@ -716,7 +720,9 @@
       "y": 6,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ash_rock"
+      ]
     },
     {
       "x": 8,
@@ -728,7 +734,7 @@
     {
       "x": 9,
       "y": 6,
-      "terrain": "mud",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1117,7 +1123,9 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "basalt_pillar"
+      ]
     },
     {
       "x": 5,
@@ -1138,7 +1146,9 @@
       "y": 10,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "ash_rock"
+      ]
     },
     {
       "x": 8,
@@ -1257,7 +1267,9 @@
       "y": 11,
       "terrain": "ground",
       "elevation": 0,
-      "paint_only": []
+      "paint_only": [
+        "basalt_pillar"
+      ]
     },
     {
       "x": 10,

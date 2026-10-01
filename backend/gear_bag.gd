@@ -16,6 +16,7 @@ extends RefCounted
 ## receive fight_gear() and CombatSim applies combat_stats(). Per-item
 ## numbers (Mobile_Sets.xlsx) are still missing, so only set bonuses count.
 
+const _TestLoadout := preload("res://backend/test_loadout.gd")
 const SLOTS: Array[String] = ["weapon", "head", "chest", "legs", "boots"]
 const SLOT_STAT := {
 	"weapon": "Mastery", "head": "HP", "chest": "HP + resist", "legs": "resist", "boots": "Init",
@@ -127,6 +128,8 @@ var attune: Dictionary = {}
 var next_uid: int = 1
 var loot_day: int = -1
 var loot_clears_today: int = 0
+## TEMPORARY balance-test kit granted (backend/test_loadout.gd).
+var test_grant: bool = false
 
 
 static func item_id_for(family: String, slot: String) -> String:
@@ -143,6 +146,40 @@ static func slot_of(item_id: String) -> String:
 
 static func is_valid_item_id(item_id: String) -> bool:
 	return FAMILIES.has(family_of(item_id)) and SLOTS.has(slot_of(item_id)) and item_id.count(".") == 1
+
+
+## Item icons cut from the set art in the GDD Blueprint
+## (build_tools/art/gear_icons). Armour: <family>_<slot>.png. The weapon slot
+## shows that family's weapon for the class looking at it (Kestrel bow,
+## Ironjaw axes, Mender staff, Gloam daggers, Bastion mace + shield); with no
+## class it shows the Ironjaw axes.
+const ICON_ROOT := "res://art/items/gear/"
+
+
+static func icon_path(item_id: String, class_id: String = "") -> String:
+	var fam := family_of(item_id)
+	var slot := slot_of(item_id)
+	if not FAMILIES.has(fam) or not SLOTS.has(slot):
+		return ""
+	if slot == "weapon":
+		var cls := class_id if class_id in ["kestrel", "ironjaw", "mender", "gloam", "bastion"] else "ironjaw"
+		return "%s%s_weapon_%s.png" % [ICON_ROOT, fam, cls]
+	return "%s%s_%s.png" % [ICON_ROOT, fam, slot]
+
+
+## Loaded icons stay referenced here. A texture loaded inside a _draw() and
+## dropped when it returns is freed before the frame renders, and the renderer
+## then paints a plain white square (the loot board bug, 0.1.64–0.1.68).
+static var _icon_cache: Dictionary = {}
+
+
+static func icon(item_id: String, class_id: String = "") -> Texture2D:
+	var path := icon_path(item_id, class_id)
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	if not _icon_cache.has(path):
+		_icon_cache[path] = load(path) as Texture2D
+	return _icon_cache[path]
 
 
 static func item_label(item: Dictionary) -> String:
@@ -192,13 +229,20 @@ static func utc_day(unix_seconds: int) -> int:
 static func load_saved() -> GearBag:
 	var bag := GearBag.new()
 	if not FileAccess.file_exists(save_path):
-		return bag
+		return _with_test_loadout(bag)
 	var file := FileAccess.open(save_path, FileAccess.READ)
 	if file == null:
 		return bag
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if typeof(parsed) == TYPE_DICTIONARY:
 		bag.from_dict(parsed)
+	return _with_test_loadout(bag)
+
+
+## TEMPORARY (backend/test_loadout.gd): the real save only; tests use other paths.
+static func _with_test_loadout(bag: GearBag) -> GearBag:
+	if save_path == _TestLoadout.DEFAULT_GEAR_PATH and _TestLoadout.sync_bag(bag):
+		bag.save()
 	return bag
 
 
@@ -218,6 +262,7 @@ func to_dict() -> Dictionary:
 		"next_uid": next_uid,
 		"loot_day": loot_day,
 		"loot_clears_today": loot_clears_today,
+		"test_grant": test_grant,
 	}
 
 
@@ -234,6 +279,8 @@ func from_dict(data: Dictionary) -> void:
 		if uid <= 0 or find(uid) != -1:
 			continue
 		items.append({"uid": uid, "item_id": item_id, "plus": clampi(int(raw.get("plus", 0)), 0, PLUS_CAP)})
+		if bool(raw.get("test", false)):
+			items[-1]["test"] = true
 		top_uid = maxi(top_uid, uid)
 	next_uid = maxi(int(data.get("next_uid", 1)), top_uid + 1)
 	equipped = {}
@@ -252,6 +299,7 @@ func from_dict(data: Dictionary) -> void:
 				attune[str(fam)] = str(raw_att[fam])
 	loot_day = int(data.get("loot_day", -1))
 	loot_clears_today = maxi(int(data.get("loot_clears_today", 0)), 0)
+	test_grant = bool(data.get("test_grant", false))
 
 
 func find(uid: int) -> int:

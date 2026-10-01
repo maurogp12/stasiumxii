@@ -71,7 +71,7 @@ func _test_roster_gate() -> void:
 	eq(SpellKits.UMBRAL_CAP, 4, "Umbral cap is 4")
 	eq(SpellKits.SHADE_CAP, 2, "Shade cap is 2")
 	eq(int(SpellKits.spell(SpellKits.AMBUSH)["ap"]), 4, "Ambush costs 4 AP")
-	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 22, "Ambush damage is 22")
+	eq(int(SpellKits.spell(SpellKits.AMBUSH)["base_damage"]), 26, "Ambush damage is 26")
 	eq(int(SpellKits.spell(SpellKits.AEGIS_BREAK)["base_damage"]), 26, "Aegis Break damage is 26")
 	eq(SpellKits.is_gated(SpellKits.NIGHTFOLD), true, "Nightfold stays gated")
 	var advance: Dictionary = SpellKits.spell(SpellKits.ADVANCE)
@@ -341,7 +341,7 @@ func _test_proto_defaults() -> void:
 		})
 		var unit: Dictionary = snap["units"][0]
 		eq(str(unit["class_id"]), class_id, "%s spawns from the class id" % class_id)
-		eq(int(unit["hp"]), 80, "%s proto HP is 80" % class_id)
+		eq(int(unit["hp"]), {"mender": 85, "gloam": 75, "bastion": 110}[class_id], "%s proto HP is its class base" % class_id)
 		eq(int(unit["marks"]), 0, "%s proto marks are 0" % class_id)
 		eq(int(unit["impact"]), 0, "%s proto impact is 0" % class_id)
 		eq(int(unit["ap"]), 6, "%s combat AP stays 6" % class_id)
@@ -399,7 +399,7 @@ func _test_ambush_miss_keeps_shade() -> void:
 	eq(bool(actor["invisible"]), false, "Ambush miss ends Invisible")
 	eq(int(actor["ap"]), 2, "Ambush miss spends 4 AP")
 	eq(int(actor["mp"]), 3, "Ambush miss does not spend MP")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "Ambush miss deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "Ambush miss deals no damage")
 
 
 func _test_ambush_hit() -> void:
@@ -421,7 +421,7 @@ func _test_ambush_hit() -> void:
 	eq(actor["pos"], Vector2i(5, 2), "Ambush lands on the empty back cell")
 	eq(int(actor["shades"]), shades_before, "Invisible origin does not spend Shade")
 	eq(bool(actor["invisible"]), false, "Ambush hit ends Invisible")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 50, "true back is 22 × 1.35 = 30")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 40, "true back is 26 × 1.35 = 35")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -446,7 +446,7 @@ func _test_ambush_hit() -> void:
 	eq(_sim.snapshot()["units"][0]["pos"], Vector2i(2, 4), "blocked back does not move onto an adjacent cell")
 	eq(int(_sim.snapshot()["units"][0]["shades"]), shades_blocked, "blocked back does not spend Shade")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), ap_blocked, "blocked back refunds AP")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "blocked back deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "blocked back deals no damage")
 	var bare: Dictionary = _sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -455,8 +455,8 @@ func _test_ambush_hit() -> void:
 		"positions": [Vector2i(2, 2), Vector2i(4, 2)],
 	})
 	var rejected: Dictionary = _sim.submit({"type": "cast", "spell": "ambush", "to": Vector2i(4, 2), "seat": 0})
-	eq(str(rejected.get("reason", "")), "no_shade", "Ambush without Shade or Invisible is rejected")
-	eq(int(_sim.snapshot()["units"][0]["ap"]), int(bare["units"][0]["ap"]), "no_shade does not spend AP")
+	eq(bool(rejected.get("ok", false)), true, "Ambush without Shade or Invisible resolves from the body (Mauro 30 Sep 2026)")
+	eq(int(_sim.snapshot()["units"][0]["ap"]), int(bare["units"][0]["ap"]) - 4, "the body Ambush spends 4 AP")
 
 
 func _test_aegis_break() -> void:
@@ -477,7 +477,7 @@ func _test_aegis_break() -> void:
 	var victim: Dictionary = _sim.snapshot()["units"][1]
 	eq(int(caster["aegis"]), 0, "HIT clears all Aegis on the caster")
 	eq(int(caster["ap"]), 2, "Aegis Break spends 4 AP")
-	eq(int(victim["hp"]), 54, "Aegis Break hit is 26")
+	eq(int(victim["hp"]), 49, "Aegis Break hit is 26")
 	eq(victim["pos"], Vector2i(4, 1), "Aegis Break pushes 1")
 	eq(int(victim["marks"]), 3, "HIT does not clear Marks")
 	_sim.reset_match({
@@ -497,11 +497,11 @@ func _test_aegis_break() -> void:
 	var burst: Dictionary = _sim.submit({"type": "cast", "spell": "aegis_break", "to": Vector2i(3, 1), "seat": 0})
 	eq(bool(burst.get("ok", false)), true, "Aegis Break burst hit resolves")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 0, "burst HIT clears all Aegis once")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 54, "aimed body takes 26")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 49, "aimed body takes 26")
 	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(4, 1), "aimed body is pushed 1")
-	eq(int(second["hp"]), 54, "second body in range 1–2 takes 26")
+	eq(int(second["hp"]), 49, "second body in range 1–2 takes 26")
 	eq(second["pos"], Vector2i(1, 4), "second body is pushed 1")
-	eq(int(outside["hp"]), 80, "a body outside range 1–2 takes no damage")
+	eq(int(outside["hp"]), 75, "a body outside range 1–2 takes no damage")
 	eq(outside["pos"], Vector2i(4, 2), "a body outside range 1–2 is not pushed")
 	var burst_hit: Dictionary = {}
 	for event in burst.get("events", []):
@@ -526,7 +526,7 @@ func _test_aegis_break() -> void:
 	eq(bool(missed.get("ok", false)), true, "Aegis Break miss resolves")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 4, "MISS spends 0 Aegis")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 2, "MISS still spends 4 AP")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 80, "MISS deals no damage")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 75, "MISS deals no damage")
 	eq(_sim.snapshot()["units"][1]["pos"], Vector2i(3, 1), "MISS does not push")
 	var miss_event: Dictionary = {}
 	for event in missed.get("events", []):
@@ -707,7 +707,7 @@ func _test_mender_heals_and_ward() -> void:
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Cleanse gains 1 Pulse with no CC")
 	var missed: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
 	eq(bool(missed.get("ok", false)), true, "Mend miss still resolves")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 80, "Mend miss does not heal")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 85, "Mend miss does not heal")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Mend miss does not gain Pulse")
 
 
@@ -745,7 +745,7 @@ func _test_hold_line_exit_tax() -> void:
 	})
 	var hit: Dictionary = _sim.submit({"type": "cast", "spell": "hold_line", "to": Vector2i(2, 1), "seat": 0})
 	eq(bool(hit.get("ok", false)), true, "Hold Line hits the front cone")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 73, "Hold Line is 7 per body")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 68, "Hold Line is 7 per body")
 	eq(int(_sim.snapshot()["units"][1]["exit_tax"]), 1, "Hold Line applies a 1-turn exit tax")
 	eq(int(_sim.snapshot()["units"][0]["aegis"]), 1, "Hold Line gains 1 Aegis on connect")
 	_sim.submit({"type": "end_turn", "seat": 0})
@@ -769,9 +769,9 @@ func _test_heartstop() -> void:
 	})
 	var enemy: Dictionary = _sim.submit({"type": "cast", "spell": "heartstop", "to": Vector2i(3, 1), "seat": 0})
 	eq(bool(enemy.get("ok", false)), true, "enemy Heartstop hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 70, "enemy Heartstop damage is 10")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 53, "enemy Heartstop damage is 22")
 	eq(bool(_sim.snapshot()["units"][1]["skip_next_mp"]), true, "enemy Heartstop skips the next MP refill")
-	eq(int(_sim.snapshot()["units"][0]["pulse"]), 0, "Heartstop spends 4 Pulse")
+	eq(int(_sim.snapshot()["units"][0]["pulse"]), 2, "Heartstop spends 2 Pulse")
 	_sim.submit({"type": "end_turn", "seat": 0})
 	eq(int(_sim.snapshot()["units"][1]["mp"]), 0, "skipped refill sets MP to 0")
 	eq(int(_sim.snapshot()["units"][1]["ap"]), 6, "skipped refill still refills AP")
@@ -801,7 +801,7 @@ func _test_gloam_backstab() -> void:
 	})
 	var cut: Dictionary = _sim.submit({"type": "cast", "spell": "cut", "to": Vector2i(3, 2), "seat": 0})
 	eq(bool(cut.get("ok", false)), true, "Cut hits")
-	eq(int(_sim.snapshot()["units"][1]["hp"]), 62, "Gloam backstab is 13 × 1.35 = 18")
+	eq(int(_sim.snapshot()["units"][1]["hp"]), 52, "Gloam backstab is 17 × 1.35 = 23")
 	eq(int(_sim.snapshot()["units"][0]["umbral"]), 1, "Cut gains 1 Umbral")
 
 

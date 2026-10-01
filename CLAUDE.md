@@ -12,3 +12,6 @@
   branch, which publishes the `mobile-<version>-debug` release that the
   in-game Actualizar button installs.
 - Run all `tests/run_*_tests.gd` suites (Godot 4.7.2 headless) before pushing.
+- Read `docs/AGENT_HANDOFF.md` first: it maps every system Mauro has approved
+  (line of sight, push stacks, Stasis kits, maps, looks). Do not change any of
+  it unless Mauro commands it. The game stays 2D (Dofus / Waven / Wakfu look).

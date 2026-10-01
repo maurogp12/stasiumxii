@@ -48,13 +48,19 @@ class_name Pawn
 
 var grid_position: Vector2i = Vector2i.ZERO
 var unit_name: String = ""
+## Set by the board when this name plate would cover a neighbour's.
+var name_nudge: Vector2 = Vector2.ZERO
 var class_id: String = ""
 var facing: String = "E"
 ## Fade's Neutral Invisible. The solid body stays off; status chrome is the read.
 var invisible: bool = false
 var seat: int = 0
+## Koliseo teams: 0 = blue (A), 1 = red (B). Stasis: seat 0 vs the rest.
+var team: int = 0
 ## Package crop for a Stasis foe. Empty on Koliseo bodies.
 var stasis_sprite: String = ""
+## Room B foe: drawn bigger, with a BossAura on the ground (view only).
+var stasis_boss: bool = false
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -190,8 +196,29 @@ static func capped_presentation_mul(raw: float) -> float:
 	return 1.0
 
 
+## A Stasis boss towers over the pack (Mauro: "boss looking lame").
+const BOSS_SCALE := 1.5
+## Regular Stasis monsters read bigger on the board too (Mauro 30 Sep 2026:
+## "Yes" to ~15–20% bigger, Dofus-sized monsters). View only.
+const TRASH_SCALE := 1.18
+
+
+func _monster_scale() -> float:
+	if stasis_sprite == "":
+		return 1.0
+	return BOSS_SCALE if stasis_boss else TRASH_SCALE
+
+
+## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
+func _stasis_res() -> float:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite) or _sprite.texture == null:
+		return 1.0
+	var h := float(_sprite.texture.get_height())
+	return 160.0 / h if h > 0.0 else 1.0
+
+
 func _body_scale() -> Vector2:
-	return sprite_scale_for(class_id)
+	return sprite_scale_for(class_id) * _monster_scale() * _stasis_res()
 
 
 func _body_scale_mul(mul: Vector2) -> Vector2:
@@ -203,7 +230,9 @@ func _body_scale_mul(mul: Vector2) -> Vector2:
 ## scale so the name still clears the taller cell.
 func head_hp_y() -> float:
 	# Heavy bodies raise the bar; small bodies keep the shared line above them.
-	return HEAD_HP_Y * maxf(_body_scale().y / SPRITE_SCALE.y, 1.0)
+	# World size only: the 2x foe art factor (_stasis_res) is not a size change.
+	var world := sprite_scale_for(class_id).y * _monster_scale()
+	return HEAD_HP_Y * maxf(world / SPRITE_SCALE.y, 1.0)
 
 
 ## Ground contact. Stays on the visual foot. The body sprite rises above it.
@@ -250,9 +279,11 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 	unit_name = str(unit["name"])
 	class_id = str(unit["class_id"])
 	stasis_sprite = str(unit.get("stasis_sprite", ""))
+	stasis_boss = bool(unit.get("stasis_boss", false)) and stasis_sprite != ""
 	facing = str(unit["facing"])
 	invisible = bool(unit.get("invisible", false))
 	seat = int(unit.get("seat", seat))
+	team = int(unit.get("team", 0 if seat == 0 else 1))
 	hp = int(unit["hp"])
 	max_hp = int(unit["max_hp"])
 	alive = bool(unit["alive"])
@@ -268,6 +299,12 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_end_body_strip()
 	_sync_sprite()
 	_sync_idle()
+	if alive and _vanished:
+		_vanished = false
+		modulate.a = 1.0
+		visible = true
+	elif not alive and stasis_sprite != "" and not _motion_playing:
+		_vanish_if_monster()
 	# Breath and sway follow alive (and class/seat) on every body material.
 	_apply_figure_read()
 	rewrite_frozen_vitals()
@@ -389,7 +426,8 @@ func _hide_gesture() -> void:
 
 func _place_gesture(phase: String, aim: Vector2, body_pos: Vector2) -> void:
 	var reach := VIEW_MOTION.gesture_reach(phase)
-	if reach <= 0.0 or VIEW_MOTION.reduce_motion():
+	# A monster strikes with its own body, not the heroes' hand mark.
+	if reach <= 0.0 or VIEW_MOTION.reduce_motion() or stasis_sprite != "":
 		_hide_gesture()
 		return
 	_ensure_gesture()
@@ -1161,7 +1199,8 @@ func finish_step() -> void:
 
 func flash_hit() -> void:
 	_hit_flash = true
-	_apply_flash(Color(2.8, 2.8, 2.8))
+	# Tuned for the fixed figure shader (was 2.8 while the art rendered squared).
+	_apply_flash(Color(1.9, 1.85, 1.8))
 
 
 func flash_impact() -> void:
@@ -1198,6 +1237,9 @@ func rest_modulate() -> Color:
 		return Color(1, 1, 1, 0)
 	if invisible and not _ambush_strike_visible:
 		return Color(1, 1, 1, 0)
+	# Stasis foe art is darker than the heroes' and sinks into night floors.
+	if stasis_sprite != "":
+		return FOE_LIGHT
 	return Color.WHITE
 
 
@@ -1377,6 +1419,23 @@ func _ensure_visuals() -> void:
 	_ensure_chrome()
 
 
+func _sync_boss_aura() -> void:
+	var aura := get_node_or_null("BossAura")
+	if stasis_boss and alive:
+		if aura == null:
+			aura = BossAura.new()
+			aura.name = "BossAura"
+			aura.z_index = -1
+			aura.z_as_relative = true
+			add_child(aura)
+			move_child(aura, 0)
+		(aura as BossAura).tint = BossAura.tint_for(stasis_sprite)
+		(aura as BossAura).active = is_active
+		(aura as BossAura).radius = Vector2(40, 18) * BOSS_SCALE * 0.8
+	elif aura != null:
+		aura.queue_free()
+
+
 func _ensure_foot() -> void:
 	if _foot != null and is_instance_valid(_foot):
 		return
@@ -1428,18 +1487,115 @@ static func figure_read_for(class_id: String) -> Dictionary:
 	}
 
 
+## Stasis foes run on Ironjaw's card but must not take its ochre lift: a thin
+## hostile rim and a neutral lift of the crushed blacks so dark creatures
+## read on dark floors.
+const FOE_LIGHT := Color(1.0, 1.0, 1.0, 1.0)
+const FIGURE_LIFT := 0.0
+const FIGURE_SAT := 1.06
+const FIGURE_EDGE := 0.3
+const FOE_READ := {
+	"rim_ink": Color(0.38, 0.05, 0.05, 1.0),
+	"rim_px": 1.3,
+	"mid_tone": Color(0.32, 0.29, 0.28, 1.0),
+	"mid_mix": 0.3,
+}
+
+## Stasis foe life (Mauro 29 Sep 2026: "the boss looks not even like a monster
+## looks like just a image moving"). View only. Each foe painting gets a body:
+## beasts pant, crawlers skitter, brutes heave, flyers hover off the floor.
+## `faces` is the side the painting looks toward ("" = to camera); the body
+## turns (shader mirror) to face its target. Bosses breathe deeper and slower.
+const FOE_BODY := {
+	"beast": {"breath": 0.026, "rate": 5.2, "sway": 0.006, "bob": 0.8, "hover": 0.0},
+	"crawler": {"breath": 0.018, "rate": 7.5, "sway": 0.012, "bob": 0.5, "hover": 0.0},
+	"brute": {"breath": 0.034, "rate": 2.4, "sway": 0.008, "bob": 0.6, "hover": 0.0},
+	"flyer": {"breath": 0.02, "rate": 2.8, "sway": 0.016, "bob": 0.0, "hover": 7.0},
+}
+const FOE_KIND := {
+	"ash_stalker": ["beast", "left"],
+	"grain_hound": ["beast", "right"],
+	"brine_gullkin": ["beast", "right"],
+	"scarecrow_drudge": ["brute", "right"],
+	"silt_raider": ["brute", ""],
+	"cinder_imp": ["brute", ""],
+	"threshling": ["crawler", ""],
+	"slag_mite": ["crawler", "left"],
+	"tide_skitter": ["crawler", ""],
+	"gale_skitter": ["crawler", ""],
+	"coil_tick": ["crawler", ""],
+	"sparkin": ["crawler", ""],
+	"frost_wisp": ["flyer", ""],
+	"gustling": ["flyer", ""],
+	"volt_mote": ["flyer", ""],
+	"warden_of_the_sheaves": ["brute", ""],
+	"captain_brineclaw": ["brute", ""],
+	"slagheart_the_emberbrute": ["brute", ""],
+	"serra_the_gale_sentinel": ["flyer", ""],
+	"tyrant_coilspire": ["brute", ""],
+	# Caster stand-ins (recoloured melee paintings): they hover like spell
+	# channelers so they read as ranged on the board.
+	"caster_scribe_bolt": ["flyer", "right"],
+	"caster_bell_chanter": ["flyer", ""],
+	"caster_gullkin_hex": ["flyer", "right"],
+	"caster_tide_adept": ["flyer", ""],
+	"caster_ember_cantor": ["flyer", ""],
+	"caster_kiln_voice": ["flyer", "left"],
+	"caster_white_adept": ["flyer", ""],
+	"caster_gale_chanter": ["flyer", ""],
+	"caster_arc_adept": ["flyer", ""],
+	"caster_high_cantor": ["flyer", ""],
+}
+## Max lean of a foe body into a lunge / away from a blow (UV shear per height).
+const FOE_LEAN := 0.16
+const FOE_HIT_LEAN := 0.12
+
+
+static func foe_body_for(art_path: String, boss: bool = false) -> Dictionary:
+	var entry: Array = FOE_KIND.get(art_path.get_file().get_basename(), ["brute", ""])
+	var body: Dictionary = (FOE_BODY[entry[0]] as Dictionary).duplicate()
+	body["kind"] = entry[0]
+	body["faces"] = entry[1]
+	if boss:
+		body["breath"] = float(body["breath"]) * 1.25
+		body["rate"] = float(body["rate"]) * 0.75
+	return body
+
+
+## 1 when a one-sided foe painting must turn to face `screen_dir`.
+static func foe_mirror(faces: String, screen_dir: Vector2) -> float:
+	if faces == "" or absf(screen_dir.x) < 0.01:
+		return 0.0
+	var wants_left := screen_dir.x < 0.0
+	return 1.0 if wants_left != (faces == "left") else 0.0
+
+
 func _write_figure_read(mat: ShaderMaterial) -> void:
-	var read := figure_read_for(class_id)
+	var read := FOE_READ if stasis_sprite != "" else figure_read_for(class_id)
 	mat.set_shader_parameter("rim_ink", read["rim_ink"])
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
 	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+	# Board light: the painted sheets are dark (mean ~56/255) and turn to
+	# silhouettes at board scale. Lift, a little colour, a warm key rim.
+	mat.set_shader_parameter("lift", FIGURE_LIFT)
+	mat.set_shader_parameter("sat", FIGURE_SAT)
+	mat.set_shader_parameter("edge_light", FIGURE_EDGE if alive else 0.0)
 	# Living idle: a slow breath and a small head sway, per-fighter phase so a
 	# pair never breathes in lockstep. Heavy plate breathes less. Off when down.
 	var heavy := class_id == SpellKits.CLASS_IRONJAW or class_id == SpellKits.CLASS_BASTION
 	mat.set_shader_parameter("breath", (0.016 if heavy else 0.024) if alive else 0.0)
 	mat.set_shader_parameter("sway", (0.004 if heavy else 0.009) if alive else 0.0)
+	mat.set_shader_parameter("breath_rate", 3.3)
 	mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(class_id.hash() % 97) * 0.13)
+	mat.set_shader_parameter("mirror", 0.0)
+	if stasis_sprite != "":
+		var body := foe_body_for(stasis_sprite, stasis_boss)
+		mat.set_shader_parameter("breath", float(body["breath"]) if alive else 0.0)
+		mat.set_shader_parameter("sway", float(body["sway"]) if alive else 0.0)
+		mat.set_shader_parameter("breath_rate", float(body["rate"]))
+		mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(unit_name.hash() % 97) * 0.13)
+		mat.set_shader_parameter("mirror", foe_mirror(str(body["faces"]), facing_screen()))
 
 
 func _apply_figure_read() -> void:
@@ -1492,6 +1648,12 @@ func _sync_sprite() -> void:
 		_walk_idle_plant = false
 		_hide_walk_draw()
 		_sprite.texture = _stasis_texture(stasis_sprite)
+		_sprite.scale = _body_scale()
+		# Flyers float off the floor; the shadow stays on the tile.
+		var hover := float(foe_body_for(stasis_sprite)["hover"])
+		_sprite.offset = SPRITE_OFFSET / _stasis_res() - Vector2(0.0, hover / maxf(_sprite.scale.y, 0.001))
+		_sync_boss_aura()
+		_apply_figure_read()
 		if not _flashing:
 			_sprite.modulate = rest_modulate()
 		_sprite.visible = true
@@ -1590,6 +1752,9 @@ func _sample_hop(t: float) -> void:
 ## foot stay. Walk strips squash on the plant only. A missing strip keeps
 ## the fallback weight curve.
 func _apply_hop_visual(t: float) -> void:
+	if stasis_sprite != "":
+		_apply_foe_gait(t)
+		return
 	var hop := VIEW_MOTION.hop_offset(t, VIEW_MOTION.hop_crest_px(class_id))
 	_place_body(hop)
 	_ride_chrome(Vector2.ZERO)
@@ -1597,6 +1762,51 @@ func _apply_hop_visual(t: float) -> void:
 		_apply_sprite_mul(VIEW_MOTION.plant_scale(t))
 	else:
 		_apply_sprite_mul(VIEW_MOTION.fallback_hop_scale(t))
+
+
+## Monster walk gaits (Mauro 30 Sep 2026: "keep improving … walking
+## animation"). Monster paintings have no walk sheet, so each body type moves
+## the painting itself: beasts bound and lean into the step, crawlers skitter
+## low with a quick side wiggle, brutes (and bosses) stomp and squash on the
+## landing, flyers glide leaning forward. t is one tile hop, 0..1.
+static func foe_gait(kind: String, boss: bool, t: float, dir_x: float) -> Dictionary:
+	var u := clampf(t, 0.0, 1.0)
+	var arc := sin(u * PI)
+	var land := clampf((u - 0.78) / 0.22, 0.0, 1.0)
+	var land_squash := sin(land * PI)
+	var lean := 0.0
+	var squash := 0.0
+	var off := Vector2.ZERO
+	match kind:
+		"beast":
+			off = Vector2(0.0, -7.0 * arc)
+			lean = dir_x * 0.11 * arc
+			squash = 0.05 * land_squash - 0.03 * arc
+		"crawler":
+			off = Vector2(sin(u * TAU * 2.0) * 1.6, -2.0 * absf(sin(u * TAU)))
+			lean = dir_x * 0.05 + sin(u * TAU * 2.0) * 0.03
+			squash = 0.03 * absf(sin(u * TAU))
+		"flyer":
+			off = Vector2(0.0, -2.5 * arc)
+			lean = dir_x * 0.13 * arc
+		_:
+			var heavy := 1.5 if boss else 1.0
+			off = Vector2(0.0, -3.5 * arc * (0.8 if boss else 1.0))
+			lean = dir_x * 0.06 * arc
+			squash = 0.09 * heavy * land_squash
+	return {"offset": off, "lean": lean, "squash": squash}
+
+
+func _apply_foe_gait(t: float) -> void:
+	var body := foe_body_for(stasis_sprite, stasis_boss)
+	var dir_x := signf(facing_screen().x)
+	var gait := foe_gait(str(body.get("kind", "brute")), stasis_boss, t, dir_x)
+	_place_body(gait["offset"])
+	_ride_chrome(Vector2.ZERO)
+	_apply_sprite_mul(Vector2.ONE)
+	_set_foe_body(float(gait["lean"]), float(gait["squash"]))
+	if t >= 1.0:
+		_set_foe_body(0.0, 0.0)
 
 
 func _apply_sprite_mul(mul: Vector2) -> void:
@@ -1654,6 +1864,11 @@ func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 func _apply_body_pose(pose: Dictionary) -> void:
 	var pos: Vector2 = pose.get("pos", Vector2.ZERO)
 	var mul: Vector2 = pose.get("scale", Vector2.ONE)
+	# A foe painting has no attack sheet: the body winds back, then throws its
+	# weight into the lunge instead of sliding as a flat card.
+	if stasis_sprite != "":
+		_set_foe_body(clampf(pos.x / maxf(VIEW_MOTION.ATTACK_LUNGE_PX, 1.0), -1.0, 1.0) * FOE_LEAN, (1.0 - mul.y) * 0.3)
+		mul = Vector2.ONE.lerp(mul, 0.35)
 	var scaled := _body_scale_mul(mul)
 	_ride_chrome(Vector2.ZERO)
 	if _sprite != null and is_instance_valid(_sprite):
@@ -1706,6 +1921,23 @@ func _thaw_strip_pose() -> void:
 		_active_strip.speed_scale = _strip_play_scale if _strip_play_scale > 0.0 else 1.0
 
 
+## Stasis foes only: lean (+ = screen right) and squash on the body shader.
+func _set_foe_body(lean: float, squash: float) -> void:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
+		return
+	var mat := _sprite.material as ShaderMaterial
+	if mat == null:
+		return
+	mat.set_shader_parameter("lean", lean)
+	mat.set_shader_parameter("squash", squash)
+
+
+func foe_body_lean() -> float:
+	if stasis_sprite == "" or _sprite == null or not (_sprite.material is ShaderMaterial):
+		return 0.0
+	return float((_sprite.material as ShaderMaterial).get_shader_parameter("lean"))
+
+
 func _sample_hit(t: float, dir: Vector2) -> void:
 	if _sprite == null:
 		return
@@ -1714,6 +1946,10 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	var planted := _hit_strip_is_body()
 	var pos := Vector2.ZERO if planted else VIEW_MOTION.hit_offset(t, dir)
 	var mul := Vector2.ONE if planted else VIEW_MOTION.hit_squash(t)
+	# A struck foe reels from the blow (upper body first) and buckles.
+	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
+	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0
+	_set_foe_body(away * reel * FOE_HIT_LEAN, reel * 0.06)
 	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
 	_sprite.scale = scaled
@@ -1799,6 +2035,27 @@ func _apply_downed_pose() -> void:
 	_sprite.scale = _body_scale_mul(mul)
 	_sprite.rotation_degrees = float(pose.get("rot", 0.0))
 	_sprite.modulate = Color(0.45, 0.45, 0.45, float(pose.get("fade", 0.0)))
+	_vanish_if_monster()
+
+
+## Stasis monsters leave the board when they die (Mauro 30 Sep 2026: "corpses
+## are supposed to disappear once dead"): body, ring, name and bar fade out.
+## Heroes keep their downed body.
+var _vanished := false
+
+
+func _vanish_if_monster() -> void:
+	if stasis_sprite == "" or alive or _vanished:
+		return
+	_vanished = true
+	if not is_inside_tree():
+		visible = false
+		return
+	var tw := create_tween()
+	tw.tween_property(self, "modulate:a", 0.0, 0.6)
+	tw.tween_callback(func() -> void:
+		if not alive:
+			visible = false)
 
 
 ## Last cell of `death_<facing>`. A rebuild with no tween still shows DOWN.
@@ -1870,6 +2127,8 @@ func _sample_idle(_t: float) -> void:
 	var phase := VIEW_MOTION.idle_phase_sec(seat, "%s:%s" % [class_id, unit_name])
 	var now := Time.get_ticks_msec() / 1000.0
 	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
+	if stasis_sprite != "":
+		bob = foe_idle_offset(foe_body_for(stasis_sprite, stasis_boss), now + phase)
 	_sprite.position = bob
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = bob
@@ -1877,6 +2136,15 @@ func _sample_idle(_t: float) -> void:
 		_walk_draw.position = bob
 	if _foot != null and is_instance_valid(_foot):
 		_foot.queue_redraw()
+
+
+## Foe idle body offset: flyers (already raised by their sprite offset) rise,
+## sink and drift; walkers shift their weight a little.
+static func foe_idle_offset(body: Dictionary, t: float) -> Vector2:
+	var hover := float(body.get("hover", 0.0))
+	if hover > 0.0:
+		return Vector2(sin(t * 1.3) * 1.6, -sin(t * TAU / 2.4) * hover * 0.45)
+	return Vector2(0.0, sin(t * TAU / VIEW_MOTION.IDLE_PERIOD) * float(body.get("bob", VIEW_MOTION.IDLE_BOB_PX)))
 
 
 func _stop_idle() -> void:
@@ -1924,6 +2192,7 @@ func _plant_sprite() -> void:
 	_sprite.scale = _body_scale()
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
+	_set_foe_body(0.0, 0.0)
 	if _walk_draw_stamp and _walk_draw != null and is_instance_valid(_walk_draw):
 		_walk_draw.position = Vector2.ZERO
 		_walk_draw.scale = _body_scale()
@@ -2437,10 +2706,10 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	# Dofus team circle: a soft team disc, a bright team ring, a dark keyline
 	# outside it and a light glint on the near rim, so the fighter reads on
 	# any tile at phone zoom.
-	var team := _seat_color()
-	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 0.38))
+	var ring := _seat_color()
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 0.38))
 	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.2, SEAT_RING_RY + 0.6, Color(0.05, 0.04, 0.06, 0.75), 1.4)
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(team.r, team.g, team.b, 1.0), 2.6)
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 1.0), 2.6)
 	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
@@ -2466,6 +2735,60 @@ func _paint_status(canvas: CanvasItem) -> void:
 ## stays on the pawn through a hop. Lunges and the idle bob leave it there too.
 func name_baseline() -> float:
 	return head_hp_y() - NAME_GAP_ABOVE_HP - ThemeDB.fallback_font.get_descent(NAME_FONT_SIZE)
+
+
+## The name plate box in pawn space, before any nudge (board spacing pass).
+func name_plate_rect() -> Rect2:
+	var font := ThemeDB.fallback_font
+	var size := font.get_string_size(unit_name, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
+	var ascent := font.get_ascent(NAME_FONT_SIZE)
+	var descent := font.get_descent(NAME_FONT_SIZE)
+	var base := name_baseline() if _sprite_ready() else 10.0
+	return Rect2(Vector2(-size.x * 0.5 - 4.0, base - ascent - 1.0), Vector2(size.x + 8.0, ascent + descent + 2.0))
+
+
+## Two champions side by side used to print their name plates on top of
+## each other. Plates that would overlap are pushed apart: sideways when the
+## pawns stand side by side, the rear plate up when one stands behind.
+static func spread_name_plates(pawns: Array) -> void:
+	var bodies: Array = []
+	for pawn in pawns:
+		if pawn != null and is_instance_valid(pawn) and pawn is Pawn and (pawn as Pawn).visible and (pawn as Pawn).unit_name != "":
+			bodies.append(pawn)
+	var nudges := {}
+	for body in bodies:
+		nudges[body] = Vector2.ZERO
+	for i in bodies.size():
+		for j in range(i + 1, bodies.size()):
+			var a: Pawn = bodies[i]
+			var b: Pawn = bodies[j]
+			var ra := a.name_plate_rect()
+			ra.position += a.position + nudges[a]
+			var rb := b.name_plate_rect()
+			rb.position += b.position + nudges[b]
+			var both := ra.intersection(rb)
+			if both.size.x <= 0.0 or both.size.y <= 0.0:
+				continue
+			var dx := b.position.x - a.position.x
+			if absf(dx) >= 8.0:
+				var half := both.size.x * 0.5 + 2.0
+				var lean := signf(dx)
+				nudges[a] += Vector2(-half * lean, 0.0)
+				nudges[b] += Vector2(half * lean, 0.0)
+			else:
+				var rear: Pawn = a if a.position.y < b.position.y else b
+				nudges[rear] += Vector2(0.0, -(both.size.y + 2.0))
+	for body in bodies:
+		(body as Pawn).set_name_nudge(nudges[body])
+
+
+func set_name_nudge(nudge: Vector2) -> void:
+	if nudge.is_equal_approx(name_nudge):
+		return
+	name_nudge = nudge
+	queue_redraw()
+	if _chrome != null:
+		_chrome.queue_redraw()
 
 
 func name_label_origin() -> Vector2:
@@ -2507,7 +2830,8 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 	var font := ThemeDB.fallback_font
 	var label := unit_name
 	var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_CENTER, -1, NAME_FONT_SIZE)
-	var label_x := -size.x * 0.5
+	var label_x := -size.x * 0.5 + name_nudge.x
+	name_y += name_nudge.y
 	var name_color := Color(0.1, 0.08, 0.1)
 	if name_y < hp_y:
 		var ascent := font.get_ascent(NAME_FONT_SIZE)
@@ -2547,8 +2871,8 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 func _seat_color() -> Color:
 	# Same blue / red as the P1 / P2 deploy zone highlights (Dofus teams).
 	# Stasis trash seats 2 and 3 are hostiles, same as seat 1.
-	var team: Color = BoardTile.TEAM_RED if seat > 0 else BoardTile.TEAM_BLUE
-	return Color(team.r, team.g, team.b, 0.92)
+	var tint: Color = BoardTile.TEAM_RED if team == 1 else BoardTile.TEAM_BLUE
+	return Color(tint.r, tint.g, tint.b, 0.92)
 
 
 func _body_color() -> Color:

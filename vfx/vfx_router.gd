@@ -250,7 +250,7 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 	var cell := _target_cell(event)
 	var damage := int(event.get("damage", 0))
 	var spell_id := str(event.get("spell", ""))
-	var tint: Color = VfxPalette.spell_tint(spell_id)
+	var tint: Color = VfxPalette.foe_tint(event) if bool(event.get("foe", false)) else VfxPalette.spell_tint(spell_id)
 	if damage > 0:
 		var spark := {
 			"id": "spark",
@@ -271,6 +271,8 @@ static func _damage_hit_recipes(event: Dictionary) -> Array:
 			spark["delay"] = _mark_impact_delay()
 		elif spell_id == "detonate":
 			spark["delay"] = STRIPS.release_sec("kestrel", "cast")
+		elif bool(event.get("foe", false)) and _foe_is_bolt(spell_id):
+			spark["delay"] = _foe_bolt_land(event)
 		if spell_id == "detonate":
 			var marks := maxi(int(event.get("marks_consumed", 1)), 1)
 			spark["amount"] = clampi(8 + (marks - 1) * 4, 8, VfxBudget.SPARK_CAP)
@@ -749,6 +751,8 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 	var spell_id := str(event.get("spell", ""))
 	var typ := str(event.get("type", ""))
 	var out: Array = []
+	if bool(event.get("foe", false)):
+		return _foe_choreography(event)
 	var caster := int(event.get("seat", -1))
 	var caster_cell := cell_of(event.get("caster_cell", Vector2i.ZERO))
 	var target := int(event.get("target_seat", -1))
@@ -948,6 +952,70 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 					out.append(_status_off("aegis", caster, caster_cell))
 			elif typ == "miss":
 				out.append(_ring(caster_cell, VfxPalette.BASTION, false, 0.18, 0.0))
+	return out
+
+
+## ---- Stasis monster spells (Mauro's kit + Caster Bolt VFX sheets) --------
+const _FoeKits := preload("res://backend/foe_kits.gd")
+
+
+static func _foe_is_bolt(spell_id: String) -> bool:
+	return bool(_FoeKits.spell(spell_id).get("bolt", false))
+
+
+static func _foe_bolt_land(event: Dictionary) -> float:
+	var tiles := _chebyshev(cell_of(event.get("caster_cell", Vector2i.ZERO)), cell_of(event.get("to", Vector2i.ZERO)))
+	return ViewMotion.FOE_BOLT_CAST_SEC + ViewMotion.foe_bolt_travel_sec(tiles)
+
+
+static func _foe_choreography(event: Dictionary) -> Array:
+	var out: Array = []
+	var spell_id := str(event.get("spell", ""))
+	var typ := str(event.get("type", ""))
+	var caster := int(event.get("seat", -1))
+	var caster_cell := cell_of(event.get("caster_cell", Vector2i.ZERO))
+	var to_cell := cell_of(event.get("to", caster_cell))
+	var tint := VfxPalette.foe_tint(event)
+	var def: Dictionary = _FoeKits.spell(spell_id)
+	var shape := str(def.get("shape", ""))
+	if typ != "hit" and typ != "miss":
+		return out
+	if bool(def.get("bolt", false)):
+		# Cast: hand / staff flash in the door colour, the body stays put.
+		out.append(_puff(caster, caster_cell, tint, 0.75))
+		var tiles := _chebyshev(caster_cell, to_cell)
+		var travel := ViewMotion.foe_bolt_travel_sec(tiles)
+		var bolt := _shot(caster_cell, to_cell, tint, 7.0, travel, 5.5)
+		bolt["delay"] = ViewMotion.FOE_BOLT_CAST_SEC
+		bolt["hand"] = true
+		bolt["seat"] = caster
+		if typ == "miss":
+			# MISS: the bolt skips past the tile and fades. No pop, no number.
+			bolt["overshoot"] = 34.0
+			bolt["whiff"] = true
+		out.append(bolt)
+		if typ == "hit":
+			var pop := _ring(to_cell, tint, false, 0.18, 0.0, "crack")
+			pop["delay_spawn"] = ViewMotion.FOE_BOLT_CAST_SEC + travel
+			out.append(pop)
+		return out
+	if bool(def.get("aoe", false)):
+		# Area spell: every covered tile flashes, a shock ring at the caster,
+		# the boss sigil flares.
+		for raw in event.get("area", []):
+			out.append(_ring(cell_of(raw), tint, false, 0.32, 0.0))
+		out.append(_ring(caster_cell, tint, false, 0.42, 0.0, "crack"))
+		if bool(event.get("boss", false)):
+			out.append({"id": "boss_flare", "block": 0.0, "seat": caster})
+			out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX * 1.4, "duration": VfxBudget.SHAKE_SEC})
+		return out
+	if event.has("dash_from"):
+		var dash := _shot(cell_of(event["dash_from"]), cell_of(event["dash_to"]), tint, 0.0, 0.12, 4.0, false)
+		out.append(dash)
+	if shape in ["melee", "dash"] and typ == "hit":
+		out.append(_ring(to_cell, tint, false, 0.22, 0.0, "crack"))
+		if bool(event.get("boss", false)):
+			out.append({"id": "shake", "block": 0.0, "amplitude": VfxBudget.SHAKE_PX, "duration": VfxBudget.SHAKE_SEC})
 	return out
 
 

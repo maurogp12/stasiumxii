@@ -21,6 +21,7 @@ func _run() -> void:
 	_test_launch_cards()
 	_test_hotseat_p1_then_p2()
 	_test_hotseat_default_pair()
+	_test_hotseat_teams()
 	_test_online_select_class()
 	_test_dedicated_hides_picker()
 	_test_board_uses_roster()
@@ -212,6 +213,33 @@ func _test_board_uses_roster() -> void:
 
 func _sim() -> Node:
 	return root.get_node("CombatSim")
+
+
+func _test_hotseat_teams() -> void:
+	# Mauro 1 Oct 2026: hot-seat 2v2 / 3v3; picks go A1 B1 A2 B2; duplicates allowed.
+	var picker := _picker()
+	picker.choose_mode("hotseat")
+	picker.set_team_size(2)
+	truthy(picker.prompt_text().contains("Team A"), "2v2 starts with Team A")
+	picker.pick_class("ironjaw")
+	truthy(picker.prompt_text().contains("Team B"), "then Team B picks")
+	picker.pick_class("kestrel")
+	picker.pick_class("ironjaw")
+	picker.go_back()
+	eq(picker.team_picks().size(), 2, "Back undoes the last team pick")
+	picker.pick_class("ironjaw")
+	var last: Dictionary = picker.pick_class("mender")
+	eq(bool(last.get("ok", false)), true, "the fourth pick seals the 2v2")
+	eq(_script.hotseat_classes.size(), 4, "four fighters sealed")
+	eq(_script.hotseat_classes[2], "ironjaw", "a duplicate class is allowed")
+	var config: Dictionary = _script.local_match_config()
+	eq(int(config.get("team_size", 1)), 2, "the match config asks for 2v2")
+	var sim := _sim()
+	sim.reset_match(config)
+	eq((sim.snapshot()["units"] as Array).size(), 4, "the 2v2 board has four fighters")
+	picker.free()
+	_script.hotseat_team_size = 1
+	_script.hotseat_classes = [] as Array[String]
 
 
 func _net() -> Node:
