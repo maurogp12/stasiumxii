@@ -52,6 +52,7 @@ func _run() -> void:
 	_test_weather(w)
 	_test_all_zones(w)
 	_test_exit(w)
+	_test_kit(w)
 
 	w.queue_free()
 	print("crosshaven world tests: %d passed, %d failed" % [passed, failed])
@@ -206,3 +207,56 @@ func _test_exit(w: Node2D) -> void:
 			check(landed["zone"] == str(exit_rec["target_zone"]) and landed["cell"] == to,
 				"exit %s/%s lands on link.to (got %s %s)" % [id, exit_rec["id"], landed["zone"], landed["cell"]])
 	check(tried >= 20, "covered every exit (%d)" % tried)
+
+
+func _test_kit(w: Node2D) -> void:
+	# Picker logic runs on data alone, with or without the art files present.
+	var z: WorldZone = w.map.zone(w.map.start_zone)
+	var edge_found := false
+	var interior_found := false
+	for y in z.height:
+		for x in z.width:
+			var c := Vector2i(x, y)
+			if z.terrain_at(c) != "dirt_road":
+				continue
+			var p: Dictionary = CrosshavenArt.pick_tile(z, c)
+			var open_sides: Array = []
+			for side in CrosshavenArt.SIDES:
+				var n: Vector2i = c + CrosshavenArt.SIDE_DIR[side]
+				if not z.in_bounds(n) or z.terrain_at(n) != "dirt_road":
+					open_sides.append(side)
+			if open_sides.is_empty():
+				interior_found = interior_found or str(p["floor"]).begins_with("dirt_road_") and not str(p["floor"]).contains("edge")
+			else:
+				edge_found = edge_found or str(p["floor"]) == "dirt_road_edge_" + "_".join(open_sides)
+	check(edge_found, "road next to plains picks dirt_road_edge_<sides>")
+	check(interior_found, "road interior picks an interior variant")
+	check(CrosshavenArt.h(3, 5, 7) == (((3 * 73856093) ^ (5 * 19349663) ^ (15 * 83492791)) & 0x7fffffff) % 7, "kit hash matches README")
+	check(CrosshavenArt.prop_art_id("fence", Vector2i(0, 0), 1) == "fence_wood_nesw", "fence along y uses fence_wood_nesw")
+	check(CrosshavenArt.prop_art_id("fence", Vector2i(0, 0), 0) == "fence", "fence along x uses fence")
+	# With the kit on disk, every picked floor id resolves to a real file.
+	if not CrosshavenArt.has("tiles", "golden_plains"):
+		print("note: art kit not present, skipping file checks")
+		return
+	var missing := {}
+	for id in w.map.zones.keys():
+		var zz: WorldZone = w.map.zone(id)
+		for y in zz.height:
+			for x in zz.width:
+				var c := Vector2i(x, y)
+				var p: Dictionary = CrosshavenArt.pick_tile(zz, c)
+				for piece in [p["floor"]] + p["corners"]:
+					if not CrosshavenArt.has("tiles", piece):
+						missing[piece] = true
+				for strip in CrosshavenArt.face_strips(zz, c):
+					if not CrosshavenArt.has("tiles", strip["id"]):
+						missing[strip["id"]] = true
+	check(missing.is_empty(), "every picked tile piece exists in the kit (missing %s)" % [missing.keys()])
+	w._load_zone(w.map.start_zone, w.map.start_cell)
+	check(w.ground.uses_kit(), "ground switches to the kit when art is present")
+	var fences_y := 0
+	for p in w.props_root.get_children():
+		check(p.has_art(), "prop %s has kit art" % p.prop_id)
+		if p.prop_type == "fence" and p._fence_axis == 1:
+			fences_y += 1
+			check(p.art_id == "fence_wood_nesw", "fence %s along y draws nesw" % p.prop_id)

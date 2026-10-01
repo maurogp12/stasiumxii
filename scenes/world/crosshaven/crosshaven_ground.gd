@@ -9,6 +9,7 @@ extends Node2D
 
 const TILE_ART_ROOT := "res://art/world/crosshaven/tiles/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
+const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 
 const TOP := {
 	"golden_plains": Color("d8c27a"),
@@ -25,7 +26,7 @@ const SIDE := {
 const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
 
 var zone: WorldZone
-var _art: Dictionary = {}
+var _use_kit := false
 var _exit_dirs: Dictionary = {}
 
 
@@ -39,11 +40,11 @@ func setup(target: WorldZone) -> void:
 	zone = target
 	for child in get_children():
 		child.queue_free()
-	_art.clear()
+	# Use the kit once its four base terrain tiles exist.
+	_use_kit = true
 	for terrain in TOP.keys():
-		var path := TILE_ART_ROOT + str(terrain) + ".png"
-		if ResourceLoader.exists(path):
-			_art[terrain] = load(path)
+		if not Art.has("tiles", str(terrain)):
+			_use_kit = false
 	_exit_dirs.clear()
 	for exit_rec in zone.exits:
 		var dir: Vector2i = WorldZone.EDGE_DIR.get(str(exit_rec["edge"]), Vector2i.ZERO)
@@ -59,8 +60,8 @@ func setup(target: WorldZone) -> void:
 		add_child(row)
 
 
-func has_art(terrain: String) -> bool:
-	return _art.has(terrain)
+func uses_kit() -> bool:
+	return _use_kit
 
 
 func _draw_row(row: Node2D, s: int) -> void:
@@ -76,19 +77,14 @@ func _draw_row(row: Node2D, s: int) -> void:
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	var terrain := zone.terrain_at(cell)
 	var steps := zone.height_at(cell)
+	if _use_kit:
+		_draw_cell_kit(ci, cell, terrain, steps)
+		return
 	var top: Color = TOP.get(terrain, Color.MAGENTA)
 	var side: Color = SIDE.get(terrain, Color.DARK_MAGENTA)
 	var lifted := Pick.diamond(cell, float(steps))
 	if steps > 0:
-		var drop := Vector2(0, float(steps) * BoardVisualSort.ELEVATION_PIXELS)
-		ci.draw_colored_polygon(PackedVector2Array([lifted[3], lifted[2], lifted[2] + drop, lifted[3] + drop]), side)
-		ci.draw_colored_polygon(PackedVector2Array([lifted[2], lifted[1], lifted[1] + drop, lifted[2] + drop]), side.darkened(0.18))
-	if _art.has(terrain):
-		var tex: Texture2D = _art[terrain]
-		var size := tex.get_size()
-		var center := BoardVisualSort.cell_to_local(cell, float(steps))
-		ci.draw_texture(tex, center + Vector2(-size.x * 0.5, Pick.HALF_H - size.y))
-		return
+		_draw_flat_faces(ci, lifted, steps, side)
 	# Painted placeholder: soft per-cell variation so the plains read hand-made.
 	var n := _hash(cell)
 	var tint := top.lightened(0.06 * n) if terrain != "water" else top.lightened(0.04 * n)
@@ -102,6 +98,42 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 		ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
 	var edge := Color(0, 0, 0, 0.06)
 	ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
+
+
+func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: Color) -> void:
+	var drop := Vector2(0, float(steps) * BoardVisualSort.ELEVATION_PIXELS)
+	ci.draw_colored_polygon(PackedVector2Array([lifted[3], lifted[2], lifted[2] + drop, lifted[3] + drop]), side)
+	ci.draw_colored_polygon(PackedVector2Array([lifted[2], lifted[1], lifted[1] + drop, lifted[2] + drop]), side.darkened(0.18))
+
+
+## Technical Artist kit path: height strips, autotiled floor, corner decals.
+func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+	var center := BoardVisualSort.cell_to_local(cell, float(steps))
+	var south_tip := center + Vector2(0, Pick.HALF_H)
+	if steps > 0:
+		var strips := Art.face_strips(zone, cell)
+		var all_found := true
+		for strip in strips:
+			if not Art.has("tiles", strip["id"]):
+				all_found = false
+				break
+		if all_found:
+			for strip in strips:
+				Art.draw_at(ci, Art.texture("tiles", strip["id"]), south_tip + strip["offset"])
+		else:
+			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(terrain, Color.DARK_MAGENTA))
+	var pick := Art.pick_tile(zone, cell)
+	var floor_art := Art.texture("tiles", pick["floor"])
+	if floor_art.is_empty():
+		floor_art = Art.texture("tiles", terrain)
+	if not floor_art.is_empty():
+		var size := Art.size_of(floor_art)
+		Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y))
+	for corner_id in pick["corners"]:
+		var corner_art := Art.texture("tiles", corner_id)
+		if not corner_art.is_empty():
+			var csize := Art.size_of(corner_art)
+			Art.draw_at(ci, corner_art, south_tip + Vector2(-csize.x * 0.5, -csize.y))
 
 
 func _draw_exit(ci: Node2D, cell: Vector2i, dir: Vector2i) -> void:

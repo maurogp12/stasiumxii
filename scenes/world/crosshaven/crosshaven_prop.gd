@@ -7,6 +7,7 @@ extends Node2D
 
 const PROP_ART_ROOT := "res://art/world/crosshaven/props/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
+const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 
 const SPIRE_TINT := {
 	"northgate_spire": Color("7d93b8"),
@@ -51,13 +52,19 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	queue_redraw()
 
 
-## Fences running along y (NE-SW on screen) use the TA's `fence_wood_nesw.png`.
+## Kit art id for this placement: fences along y use `fence_wood_nesw`,
+## trees and cottages pick a variant by hash of their origin (kit README).
+var art_id := ""
+var _art: Dictionary = {}
+
+
 func _load_art() -> Texture2D:
-	var name := prop_type
-	if prop_type == "fence" and _fence_axis == 1:
-		name = "fence_wood_nesw"
-	var path := PROP_ART_ROOT + name + ".png"
-	return load(path) if ResourceLoader.exists(path) else null
+	art_id = Art.prop_art_id(prop_type, footprint[0], _fence_axis)
+	_art = Art.texture("props", art_id)
+	if _art.is_empty() and art_id != prop_type:
+		art_id = prop_type
+		_art = Art.texture("props", prop_type)
+	return _art.get("tex", null)
 
 
 func has_art() -> bool:
@@ -76,7 +83,7 @@ func _is_fence(zone: WorldZone, cell: Vector2i) -> bool:
 
 func _cover_rect() -> Rect2:
 	if _tex != null:
-		var s := _tex.get_size()
+		var s := Art.size_of(_art)
 		return Rect2(-s.x * 0.5, -s.y, s.x, s.y)
 	match prop_type:
 		"tree":
@@ -101,8 +108,8 @@ func update_cover(walker_cell: Vector2i, walker_pos: Vector2) -> void:
 
 func _draw() -> void:
 	if _tex != null:
-		var s := _tex.get_size()
-		draw_texture(_tex, Vector2(-s.x * 0.5, -s.y))
+		var s := Art.size_of(_art)
+		Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
 		return
 	match prop_type:
 		"tree":

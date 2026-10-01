@@ -45,15 +45,19 @@ before the chunk swaps.
 Weather is client-visual only (zone `presentation` is Proposed). It does not
 touch movement or anything the server checks.
 
-## Art drop-in
+## Art (Technical Artist kit, PR #212)
 
-Painted placeholders draw until a file exists:
+`crosshaven_art.gd` loads `art/world/crosshaven/` (see its `README.md`) and
+falls back to painted stand-ins for anything missing, so the scene runs with
+or without the kit.
 
-- Tiles: `res://art/world/crosshaven/tiles/<terrain>.png` (`golden_plains`, `dirt_road`, `water`, `cliff`).
-  64 px wide; the image bottom sits on the diamond's south tip (like `board/tile.gd`).
-- Props: `res://art/world/crosshaven/props/<type>.png` (`tree`, `fence`, `red_roof_cottage`,
-  `crossroads_centerpiece`, `<town>_spire`). Bottom-centre sits on the footprint's south tip
-  (for 2×2 props, the south corner of origin+(1,1)).
+- Ground switches to the kit once the four base tiles exist. Road, water and
+  cliff autotile against plains with the README picker (`<family>_edge_<sides>`
+  plus `_corner_<c>` decals); interiors pick a variant by the kit hash.
+- Height steps draw the kit's 32×26 face strips (`top`, `a`/`b`, cliff `base_ground`/`base_water`).
+- Props: fences along y use `fence_wood_nesw`; trees and cottages pick a
+  variant by hash of their origin.
+- 2x masters are preferred and drawn at half size, so zooming in stays sharp.
 
 ## Known limits / Open
 
