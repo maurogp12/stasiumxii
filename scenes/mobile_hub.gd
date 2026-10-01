@@ -20,6 +20,8 @@ const DOOR_MIN_HEIGHT := 72
 var _auto_launch: bool = true
 var _doors: Array[Button] = []
 var _door_ids: Array[String] = []
+var _visuals: VisualSettings
+var _visual_panel: VisualSettingsPanel
 
 
 static func boot_route(args: PackedStringArray) -> String:
@@ -111,6 +113,7 @@ func _build() -> void:
 	col.add_child(blurb)
 
 	_add_door(col, "koliseo", "Koliseo")
+	_add_visual_button(col)
 
 
 func _add_door(parent: Node, door_id: String, label: String) -> void:
@@ -133,6 +136,27 @@ func _add_door(parent: Node, door_id: String, label: String) -> void:
 	parent.add_child(button)
 	_doors.append(button)
 	_door_ids.append(door_id)
+
+
+func _add_visual_button(parent: Node) -> void:
+	_visuals = VisualSettings.new()
+	_visual_panel = VisualSettingsPanel.new()
+	add_child(_visual_panel)
+	_visual_panel.setup(_visuals)
+	var button := Button.new()
+	button.text = "Visual Settings"
+	button.custom_minimum_size = Vector2(0, 48)
+	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	button.focus_mode = Control.FOCUS_ALL
+	button.pressed.connect(func(): _visual_panel.show_panel())
+	parent.add_child(button)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if _visual_panel == null:
+		return
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		_visual_panel.toggle()
 
 
 func _door_style(lit: bool) -> StyleBoxFlat:

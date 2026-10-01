@@ -347,6 +347,90 @@
           "y": 26
         }
       ]
+    },
+    {
+      "id": "crosshaven_westwatch_watchtower_2x2_01",
+      "type": "watchtower_2x2",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 13
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 13
+        },
+        {
+          "x": 27,
+          "y": 13
+        },
+        {
+          "x": 26,
+          "y": 14
+        },
+        {
+          "x": 27,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_barn_2x2_01",
+      "type": "barn_2x2",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 11
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 11
+        },
+        {
+          "x": 26,
+          "y": 11
+        },
+        {
+          "x": 25,
+          "y": 12
+        },
+        {
+          "x": 26,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_scarecrow_01",
+      "type": "scarecrow",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 13
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_tree_apple_01",
+      "type": "tree_apple",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 12
+        }
+      ]
     }
   ],
   "tiles": [
@@ -4266,28 +4350,28 @@
     {
       "x": 19,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4518,28 +4602,28 @@
     {
       "x": 19,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4770,28 +4854,28 @@
     {
       "x": 19,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -8423,5 +8507,439 @@
       "light_rain"
     ],
     "day_night": true
-  }
+  },
+  "decor": [
+    {
+      "id": "crosshaven_westwatch_decor_001",
+      "type": "lilypads_a",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_decor_002",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_decor_003",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_decor_004",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_decor_005",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_decor_006",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_decor_007",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_decor_008",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_009",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_010",
+      "type": "flowers_a",
+      "x": 12,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_011",
+      "type": "flowers_a",
+      "x": 24,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_012",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_013",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_014",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_015",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_westwatch_decor_016",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_westwatch_decor_017",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_westwatch_decor_018",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_westwatch_decor_019",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_westwatch_decor_020",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_westwatch_decor_021",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_022",
+      "type": "ford_stones",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_023",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_024",
+      "type": "bush_small_a",
+      "x": 20,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_025",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_026",
+      "type": "bush_small_a",
+      "x": 32,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_027",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_westwatch_decor_028",
+      "type": "bush_small_a",
+      "x": 5,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_westwatch_decor_029",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_westwatch_decor_030",
+      "type": "bush_small_a",
+      "x": 28,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_decor_031",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_decor_032",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_decor_033",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_decor_034",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_decor_035",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_decor_036",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_decor_037",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_decor_038",
+      "type": "flowers_a",
+      "x": 34,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_decor_039",
+      "type": "ford_stones",
+      "x": 0,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_westwatch_decor_040",
+      "type": "bush_small_a",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_westwatch_decor_041",
+      "type": "bush_small_a",
+      "x": 19,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_westwatch_decor_042",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_westwatch_decor_043",
+      "type": "flowers_a",
+      "x": 20,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_westwatch_decor_044",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_westwatch_decor_045",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_westwatch_decor_046",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_westwatch_decor_047",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_westwatch_decor_048",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_westwatch_decor_049",
+      "type": "reeds_b",
+      "x": 2,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_westwatch_decor_050",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_westwatch_decor_051",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_westwatch_decor_052",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_westwatch_decor_053",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_westwatch_decor_054",
+      "type": "bush_small_a",
+      "x": 19,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_westwatch_decor_055",
+      "type": "bush_small_a",
+      "x": 21,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_westwatch_decor_056",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_westwatch_decor_057",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_westwatch_decor_058",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_westwatch_decor_059",
+      "type": "flowers_a",
+      "x": 28,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_westwatch_decor_060",
+      "type": "flowers_a",
+      "x": 32,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_westwatch_decor_061",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_decor_062",
+      "type": "bush_small_a",
+      "x": 26,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_decor_063",
+      "type": "reeds_b",
+      "x": 0,
+      "y": 18
+    },
+    {
+      "id": "crosshaven_westwatch_decor_064",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_decor_065",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_decor_066",
+      "type": "bush_small_a",
+      "x": 30,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_decor_067",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_decor_068",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_decor_069",
+      "type": "bush_small_a",
+      "x": 11,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_westwatch_decor_070",
+      "type": "decal_pebbles",
+      "x": 14,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_westwatch_decor_071",
+      "type": "bush_small_a",
+      "x": 21,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_westwatch_decor_072",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 20
+    }
+  ]
 }

@@ -23,6 +23,13 @@ var _leaves: CPUParticles2D
 var _amount := {"light_cloud": 0.0, "light_rain": 0.0, "wind": 0.0}
 var _next_rotate := 90.0
 var _rng := RandomNumberGenerator.new()
+## When false, rain, cloud cover, and leaves hide. Day and night tint stays.
+var visuals_enabled := true
+
+
+func set_visuals_enabled(on: bool) -> void:
+	visuals_enabled = on
+	_apply(0.0)
 
 
 func setup(world: Node2D, screen_layer: CanvasLayer) -> void:
@@ -177,14 +184,14 @@ func clock_text() -> String:
 func _apply(delta: float) -> void:
 	if _modulate == null:
 		return
-	_modulate.color = current_tint()
+	_modulate.color = current_tint() if visuals_enabled else daylight_color()
 	var cover := maxf(_amount["light_cloud"], _amount["light_rain"] * 0.8)
-	_cloud.modulate.a = cover
+	_cloud.modulate.a = cover if visuals_enabled else 0.0
 	_cloud.region_rect.position += Vector2(14.0, 4.0) * delta * (1.0 + 2.0 * _amount["wind"])
-	_rain.emitting = _amount["light_rain"] > 0.05
-	_rain.modulate.a = _amount["light_rain"]
-	_leaves.emitting = _amount["wind"] > 0.05
-	_leaves.modulate.a = _amount["wind"]
+	_rain.emitting = visuals_enabled and _amount["light_rain"] > 0.05
+	_rain.modulate.a = _amount["light_rain"] if visuals_enabled else 0.0
+	_leaves.emitting = visuals_enabled and _amount["wind"] > 0.05
+	_leaves.modulate.a = _amount["wind"] if visuals_enabled else 0.0
 
 
 static func _streak_texture() -> Texture2D:

@@ -9,12 +9,24 @@ const FORMAT := "stasium.zone"
 const FORMAT_VERSION := 1
 const MAX_CHUNK := 128
 
-const TILE_ORDER: Array[String] = ["golden_plains", "dirt_road", "water", "cliff"]
+const TILE_ORDER: Array[String] = [
+	"golden_plains", "dirt_road", "water", "cliff",
+	"farm_cabbage", "farm_carrot", "farm_fallow", "farm_lavender",
+	"farm_plowed", "farm_pumpkin", "farm_soil", "farm_sunflower",
+]
 const TILE_WALKABLE := {
 	"golden_plains": true,
 	"dirt_road": true,
 	"water": false,
 	"cliff": false,
+	"farm_cabbage": true,
+	"farm_carrot": true,
+	"farm_fallow": true,
+	"farm_lavender": true,
+	"farm_plowed": true,
+	"farm_pumpkin": true,
+	"farm_soil": true,
+	"farm_sunflower": true,
 }
 const PROP_ORDER: Array[String] = [
 	"tree",
@@ -26,6 +38,52 @@ const PROP_ORDER: Array[String] = [
 	"westwatch_spire",
 	"southbridge_spire",
 	"crossroads_centerpiece",
+	"barn_2x2",
+	"farmhouse_2x2",
+	"windmill_2x2_body",
+	"bakery_2x2",
+	"smithy_2x2",
+	"tavern_3x2",
+	"fountain_2x2",
+	"watermill_2x2_body",
+	"watchtower_2x2",
+	"fishing_hut_2x2",
+	"market_stall",
+	"cart",
+	"scarecrow",
+	"farm_fence_nesw",
+	"farm_fence_nwse",
+	"hedgerow_nesw",
+	"hedgerow_nwse",
+	"lamp_post",
+	"well",
+	"hay_bale",
+	"waystone",
+	"wall_tower",
+	"stone_wall_high_nwse",
+	"stone_wall_high_nesw",
+	"quarry_rocks_a",
+	"net_rack",
+	"rowboat",
+	"crate_apples",
+	"signpost_crossroads",
+	"brazier",
+	"tree_apple",
+	"haystack",
+	"barrel",
+	"tree_cluster_2x2_a",
+]
+## Walk-through art. Never added to the blocked grid.
+const DECOR_TYPES: Array[String] = [
+	"bush_small_a", "bush_small_b",
+	"decal_dirt_blend", "decal_flowers_pink", "decal_flowers_yellow", "decal_leaves",
+	"decal_moss", "decal_path_stones_a", "decal_path_stones_b", "decal_pebbles",
+	"decal_puddle_a", "decal_puddle_b", "decal_road_grass", "decal_road_stones",
+	"flowers_a", "flowers_b", "flowers_c", "flowers_d",
+	"ford_stones", "grass_tuft_a", "grass_tuft_b", "grass_tuft_tall_a",
+	"lilypads_a", "mushrooms_a", "mushrooms_b",
+	"reeds_a", "reeds_b", "rock_small_c", "rock_small_d",
+	"sunflowers_tall", "sunflowers_tall_b", "tuft_a", "tuft_b",
 ]
 ## Offsets from the northwest origin. +x east, +y south.
 const PROP_FOOTPRINTS := {
@@ -38,6 +96,40 @@ const PROP_FOOTPRINTS := {
 	"westwatch_spire": [[0, 0], [1, 0], [0, 1], [1, 1]],
 	"southbridge_spire": [[0, 0], [1, 0], [0, 1], [1, 1]],
 	"crossroads_centerpiece": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"barn_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"farmhouse_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"windmill_2x2_body": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"bakery_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"smithy_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"tavern_3x2": [[0, 0], [1, 0], [2, 0], [0, 1], [1, 1], [2, 1]],
+	"fountain_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"watermill_2x2_body": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"watchtower_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"fishing_hut_2x2": [[0, 0], [1, 0], [0, 1], [1, 1]],
+	"market_stall": [[0, 0], [1, 0]],
+	"cart": [[0, 0]],
+	"scarecrow": [[0, 0]],
+	"farm_fence_nesw": [[0, 0]],
+	"farm_fence_nwse": [[0, 0]],
+	"hedgerow_nesw": [[0, 0]],
+	"hedgerow_nwse": [[0, 0]],
+	"lamp_post": [[0, 0]],
+	"well": [[0, 0]],
+	"hay_bale": [[0, 0]],
+	"waystone": [[0, 0]],
+	"wall_tower": [[0, 0]],
+	"stone_wall_high_nwse": [[0, 0]],
+	"stone_wall_high_nesw": [[0, 0]],
+	"quarry_rocks_a": [[0, 0]],
+	"net_rack": [[0, 0]],
+	"rowboat": [[0, 0]],
+	"crate_apples": [[0, 0]],
+	"signpost_crossroads": [[0, 0]],
+	"brazier": [[0, 0]],
+	"tree_apple": [[0, 0]],
+	"haystack": [[0, 0]],
+	"barrel": [[0, 0]],
+	"tree_cluster_2x2_a": [[0, 0], [1, 0], [0, 1], [1, 1]],
 }
 const EDGES: Array[String] = ["north", "south", "east", "west"]
 const EDGE_DIR := {
@@ -60,6 +152,7 @@ var width: int = 0
 var height: int = 0
 var spawn: Vector2i = Vector2i.ZERO
 var props: Array = []
+var decor: Array = []
 var exits: Array = []
 var points_of_interest: Array = []
 var presentation: Dictionary = {}
@@ -90,7 +183,7 @@ static func validate_document(doc: Dictionary) -> Dictionary:
 	var errors: Array = []
 	_unknown(doc, [
 		"format", "format_version", "zone_id", "region", "width", "height",
-		"spawn", "points_of_interest", "exits", "props", "tiles", "presentation",
+		"spawn", "points_of_interest", "exits", "props", "decor", "tiles", "presentation",
 	], errors, "zone")
 	if str(doc.get("format", "")) != FORMAT:
 		_err(errors, "format must be %s" % FORMAT)
@@ -109,6 +202,8 @@ static func validate_document(doc: Dictionary) -> Dictionary:
 	var spawn := _read_cell(doc.get("spawn", null), "spawn", errors)
 	var walkable := _read_tiles(doc.get("tiles", null), width, height, errors)
 	var blocked := _read_props(doc.get("props", null), width, height, errors)
+	if doc.has("decor"):
+		_read_decor(doc.get("decor", null), width, height, errors)
 	_read_exits(doc.get("exits", null), width, height, walkable, blocked, errors)
 	_read_pois(doc.get("points_of_interest", null), width, height, walkable, blocked, errors)
 	if bool(spawn.get("ok", false)):
@@ -183,9 +278,14 @@ func _apply(doc: Dictionary) -> void:
 		_heights[index] = int(tile["height"])
 	props = (doc["props"] as Array).duplicate(true)
 	for prop in props:
+		if not bool(prop.get("blocks", true)):
+			continue
 		for footprint in prop["footprint"]:
 			var cell := Vector2i(int(footprint["x"]), int(footprint["y"]))
 			_blocked[_index(cell)] = 1
+	decor = []
+	if doc.has("decor") and typeof(doc["decor"]) == TYPE_ARRAY:
+		decor = (doc["decor"] as Array).duplicate(true)
 	exits = (doc["exits"] as Array).duplicate(true)
 	for exit_rec in exits:
 		for link in exit_rec["links"]:
@@ -267,8 +367,10 @@ static func _read_props(value: Variant, width: int, height: int, errors: Array) 
 		if not PROP_FOOTPRINTS.has(prop_type):
 			_err(errors, "%s type is not a prop id" % label)
 			continue
-		if typeof(prop.get("blocks", null)) != TYPE_BOOL or not bool(prop["blocks"]):
-			_err(errors, "%s blocks must be true" % label)
+		if typeof(prop.get("blocks", null)) != TYPE_BOOL:
+			_err(errors, "%s blocks must be a boolean" % label)
+			continue
+		var does_block := bool(prop["blocks"])
 		var origin := _read_cell(prop.get("origin", null), "%s origin" % label, errors)
 		if typeof(prop.get("footprint", null)) != TYPE_ARRAY:
 			_err(errors, "%s footprint must be an array" % label)
@@ -289,7 +391,7 @@ static func _read_props(value: Variant, width: int, height: int, errors: Array) 
 			if not _inside(at, width, height):
 				_err(errors, "%s footprint %s is out of bounds" % [label, at])
 				continue
-			if blocked.has(at):
+			if does_block and blocked.has(at):
 				_err(errors, "%s overlaps %s" % [label, at])
 			got[at] = true
 		for offset in shape:
@@ -297,10 +399,40 @@ static func _read_props(value: Variant, width: int, height: int, errors: Array) 
 			if not got.has(at):
 				_err(errors, "%s footprint does not match %s offsets" % [label, prop_type])
 				break
-		if got.size() == shape.size():
+		if does_block and got.size() == shape.size():
 			for at in got.keys():
 				blocked[at] = true
 	return blocked
+
+
+static func _read_decor(value: Variant, width: int, height: int, errors: Array) -> void:
+	if typeof(value) != TYPE_ARRAY:
+		_err(errors, "decor must be an array")
+		return
+	var seen := {}
+	for index in (value as Array).size():
+		var item = (value as Array)[index]
+		var label := "decor[%d]" % index
+		if typeof(item) != TYPE_DICTIONARY:
+			_err(errors, "%s must be an object" % label)
+			continue
+		var decor_rec: Dictionary = item
+		_unknown(decor_rec, ["id", "type", "x", "y"], errors, label)
+		var decor_id := str(decor_rec.get("id", ""))
+		if not _is_id(decor_id):
+			_err(errors, "%s id must be snake_case" % label)
+		elif seen.has(decor_id):
+			_err(errors, "%s duplicates id %s" % [label, decor_id])
+		seen[decor_id] = true
+		var decor_type := str(decor_rec.get("type", ""))
+		if not DECOR_TYPES.has(decor_type):
+			_err(errors, "%s type is not a decor id" % label)
+		if not _whole(decor_rec.get("x", null)) or not _whole(decor_rec.get("y", null)):
+			_err(errors, "%s needs integer x and y" % label)
+			continue
+		var cell := Vector2i(int(decor_rec["x"]), int(decor_rec["y"]))
+		if not _inside(cell, width, height):
+			_err(errors, "%s is out of bounds" % label)
 
 
 static func _read_exits(value: Variant, width: int, height: int, walkable: Dictionary, blocked: Dictionary, errors: Array) -> void:

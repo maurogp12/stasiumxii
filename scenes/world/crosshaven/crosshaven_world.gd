@@ -15,6 +15,9 @@ const Ground := preload("res://scenes/world/crosshaven/crosshaven_ground.gd")
 const Prop := preload("res://scenes/world/crosshaven/crosshaven_prop.gd")
 const Walker := preload("res://scenes/world/crosshaven/crosshaven_walker.gd")
 const Weather := preload("res://scenes/world/crosshaven/crosshaven_weather.gd")
+const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
+const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
+const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 
 const SEA := Color("2d4f63")
 const ZOOM_MIN := 1.0
@@ -30,9 +33,13 @@ var load_errors: Array = []
 
 var ground: Node2D
 var props_root: Node2D
+var decor_root: Node2D
 var walker: Node2D
 var camera: Camera2D
 var weather: Node
+var settings: VisualSettings
+var visuals: CanvasLayer
+var fx: Node
 var hover_cell := Vector2i(-1, -1)
 
 var _hover: Node2D
@@ -44,6 +51,10 @@ var _banner: Label
 var _fade: ColorRect
 var _screen_fx: CanvasLayer
 var _zoom := 1.6
+var _last_click_ms := 0
+var _movie := ""
+var _bench: Array[float] = []
+var _bench_until := 0.0
 
 
 func _ready() -> void:
@@ -55,9 +66,14 @@ func _ready() -> void:
 	sea.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.add_child(sea)
 
+	settings = VisualSettings.new()
 	props_root = Node2D.new()
 	props_root.name = "Props"
 	add_child(props_root)
+	decor_root = Node2D.new()
+	decor_root.name = "Decor"
+	add_child(decor_root)
+	settings.bind(self, "decor", _on_decor_flag)
 
 	_hover = Node2D.new()
 	_hover.name = "Hover"
@@ -73,7 +89,7 @@ func _ready() -> void:
 
 	camera = Camera2D.new()
 	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 6.0
+	camera.position_smoothing_speed = 4.0
 	camera.zoom = Vector2.ONE * _zoom
 	add_child(camera)
 
@@ -85,8 +101,18 @@ func _ready() -> void:
 	add_child(weather)
 	weather.setup(self, _screen_fx)
 	weather.weather_changed.connect(func(_w): _refresh_hud())
+	settings.bind(weather, "weather", weather.set_visuals_enabled)
+	fx = Fx.new()
+	fx.name = "Fx"
+	add_child(fx)
+	fx.setup(self, settings)
+	visuals = SettingsPanel.new()
+	visuals.name = "VisualSettings"
+	add_child(visuals)
+	visuals.setup(settings)
 
 	_build_hud()
+	_read_launch_args()
 
 	var loaded := WorldMap.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -95,6 +121,8 @@ func _ready() -> void:
 		return
 	map = loaded["map"]
 	enter_zone(map.start_zone, map.start_cell, false)
+	if _movie != "":
+		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
 
 
 func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
@@ -127,6 +155,14 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 		var p := Prop.new()
 		props_root.add_child(p)
 		p.setup(zone, record)
+	for child in decor_root.get_children():
+		child.free()
+	for record in zone.decor:
+		var d := Decor.new()
+		decor_root.add_child(d)
+		d.setup(zone, record)
+	if fx != null:
+		fx.restock(zone)
 	walker.place(zone, cell)
 	hover_cell = Vector2i(-1, -1)
 	_hover.queue_redraw()
@@ -145,7 +181,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 
 
 ## Click-to-walk to a cell in the current chunk. Returns the WorldWalk result.
-func walk_to(target: Vector2i) -> Dictionary:
+func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	if zone == null or _transitioning:
 		return {"ok": false, "reason": "busy"}
 	var from: Vector2i = walker.anchor_cell()
@@ -162,8 +198,13 @@ func walk_to(target: Vector2i) -> Dictionary:
 	var path: Array = result["path"]
 	for i in range(1, path.size()):
 		steps.append(Vector2i(int(path[i]["x"]), int(path[i]["y"])))
+	if pace == "auto":
+		var now := Time.get_ticks_msec()
+		if _last_click_ms > 0 and now - _last_click_ms < 280:
+			pace = "run"
+		_last_click_ms = now
 	_pending_exit = not zone.exit_link(target).is_empty()
-	walker.walk(steps)
+	walker.walk(steps, pace)
 	return result
 
 
@@ -200,6 +241,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
+				if visuals != null and visuals.visible:
+					return
 				var c := cell_at_screen(event.position)
 				if c.x >= 0:
 					walk_to(c)
@@ -214,6 +257,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_2:
 				weather.time_scale = 1.0 if weather.time_scale > 1.0 else 30.0
 				_refresh_hud()
+			KEY_ESCAPE:
+				if visuals != null:
+					visuals.toggle()
 
 
 func _set_zoom(z: float) -> void:
@@ -246,6 +292,11 @@ func _draw_hover() -> void:
 
 
 func _process(delta: float) -> void:
+	if _bench_until > 0.0:
+		_bench.append(delta)
+		if Time.get_ticks_msec() / 1000.0 >= _bench_until:
+			_report_bench()
+			return
 	if walker == null or zone == null:
 		return
 	camera.position = walker.position
@@ -259,6 +310,11 @@ func _build_hud() -> void:
 	var hud := CanvasLayer.new()
 	hud.layer = 10
 	add_child(hud)
+	var gear := Button.new()
+	gear.text = "Visuals"
+	gear.position = Vector2(820, 12)
+	gear.pressed.connect(func(): visuals.toggle())
+	hud.add_child(gear)
 	_hud_label = Label.new()
 	_hud_label.position = Vector2(14, 10)
 	_hud_label.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
@@ -296,7 +352,211 @@ func _refresh_hud() -> void:
 		return
 	var c: Vector2i = walker.cell
 	var speed := "  (time x30)" if weather.time_scale > 1.0 else ""
-	_hud_label.text = "%s\nCell %d, %d   height %d\nWeather: %s   %s%s\nClick to walk · wheel to zoom · 1 weather · 2 fast time" % [
+	_hud_label.text = "%s\nCell %d, %d   height %d\nWeather: %s   %s%s\nClick to walk · double-click to run · Esc visuals" % [
 		Pick.zone_name(zone), c.x, c.y, zone.height_at(c),
 		str(weather.weather).replace("_", " "), weather.clock_text(), speed,
 	]
+
+
+func _on_decor_flag(on: bool) -> void:
+	if decor_root != null:
+		decor_root.visible = on
+
+
+func _exit_tree() -> void:
+	if settings != null:
+		settings.detach()
+
+
+func _read_launch_args() -> void:
+	var args := OS.get_cmdline_user_args()
+	for i in args.size():
+		if args[i] == "--movie" and i + 1 < args.size():
+			_movie = str(args[i + 1])
+		elif args[i] == "--bench" and i + 1 < args.size():
+			_movie = "bench:" + str(args[i + 1])
+
+
+func _start_movie() -> void:
+	if _movie.begins_with("bench:"):
+		_run_bench(_movie.trim_prefix("bench:"))
+		return
+	await _play_movie(_movie)
+
+
+func _run_bench(preset_name: String) -> void:
+	settings.apply_preset(preset_name)
+	weather.set_weather("light_rain" if preset_name == "Full" else "clear")
+	weather.settle()
+	_set_zoom(1.6)
+	var target := _far_cell(18)
+	walk_to(target, "run")
+	_bench.clear()
+	_bench_until = Time.get_ticks_msec() / 1000.0 + 4.0
+
+
+func _report_bench() -> void:
+	_bench_until = 0.0
+	if _bench.is_empty():
+		print("BENCH empty")
+		get_tree().quit()
+		return
+	var sorted := _bench.duplicate()
+	sorted.sort()
+	var sum := 0.0
+	for d in _bench:
+		sum += d
+	var avg := sum / float(_bench.size())
+	var p95: float = sorted[mini(sorted.size() - 1, int(float(sorted.size()) * 0.95))]
+	print("BENCH preset=%s frames=%d avg_ms=%.2f p95_ms=%.2f min_fps=%.1f" % [
+		settings.preset, _bench.size(), avg * 1000.0, p95 * 1000.0, 1.0 / maxf(p95, 0.0001),
+	])
+	get_tree().quit()
+
+
+func _play_movie(mode: String) -> void:
+	weather.auto_rotate = false
+	match mode:
+		"tour":
+			await _movie_tour()
+		"settings":
+			await _movie_settings()
+		"gait":
+			await _movie_gait(false)
+		"slow":
+			await _movie_gait(true)
+		"decor":
+			await _movie_decor()
+		"northgate", "stoneford", "eastmarch", "westwatch", "southbridge":
+			await _movie_town("crosshaven_" + mode)
+		_:
+			push_error("unknown movie %s" % mode)
+	get_tree().quit()
+
+
+func _movie_tour() -> void:
+	_set_zoom(1.85)
+	weather.set_weather("clear")
+	weather.settle()
+	await _wander(10, "walk")
+	weather.set_weather("light_rain")
+	await _run_link("crosshaven_road_north")
+	await _run_link("crosshaven_northgate")
+	await _wander(8, "walk")
+	weather.set_weather("light_cloud")
+	await _run_link("crosshaven_road_north")
+	await _run_link("crosshaven_crossroads")
+	await _run_link("crosshaven_road_east")
+	await _run_link("crosshaven_eastmarch")
+	await _wander(6, "walk")
+	await _run_link("crosshaven_road_east")
+	await _run_link("crosshaven_crossroads")
+	weather.set_weather("wind")
+	await _run_link("crosshaven_road_south")
+	await _run_link("crosshaven_southbridge")
+	await _wander(6, "run")
+	await _run_link("crosshaven_road_south")
+	await _run_link("crosshaven_crossroads")
+	await _run_link("crosshaven_road_west")
+	await _run_link("crosshaven_stoneford")
+	await _wander(6, "walk")
+
+
+func _movie_town(zone_id: String) -> void:
+	var z: WorldZone = map.zone(zone_id)
+	enter_zone(zone_id, z.spawn, false)
+	await get_tree().process_frame
+	_set_zoom(1.9)
+	weather.set_weather("light_cloud")
+	weather.settle()
+	await _wander(12, "walk")
+	await _wander(8, "run")
+
+
+func _movie_gait(slow: bool) -> void:
+	_set_zoom(2.2)
+	walker.playback = 0.32 if slow else 1.0
+	weather.set_weather("clear")
+	weather.settle()
+	await _wander(6 if slow else 8, "walk")
+	if not slow:
+		_set_zoom(1.55)
+		await _wander(10, "run")
+		await _wander(6, "walk")
+
+
+func _movie_decor() -> void:
+	_set_zoom(1.9)
+	weather.set_weather("clear")
+	weather.settle()
+	await _wander(8, "walk")
+	await _run_link("crosshaven_road_north")
+	await _wander(4, "run")
+
+
+func _movie_settings() -> void:
+	_set_zoom(1.7)
+	weather.set_weather("light_rain")
+	weather.settle()
+	await _wander(4, "walk")
+	visuals.show_panel()
+	await get_tree().create_timer(1.2).timeout
+	for flag in ["animations", "weather", "post_fx", "sway_shadows", "decor"]:
+		settings.set_flag(flag, false)
+		await get_tree().create_timer(1.6).timeout
+	settings.apply_preset("Full")
+	await get_tree().create_timer(1.8).timeout
+	settings.apply_preset("Reduced")
+	await get_tree().create_timer(1.6).timeout
+	settings.apply_preset("Minimal")
+	await get_tree().create_timer(1.6).timeout
+	settings.apply_preset("Full")
+	await get_tree().create_timer(1.2).timeout
+
+
+func _run_link(target_zone: String) -> void:
+	var gate := _exit_toward(target_zone)
+	if gate.x < 0:
+		return
+	await _go(gate, "run")
+
+
+func _wander(tiles: int, pace: String) -> void:
+	var goal := _far_cell(tiles)
+	if goal.x < 0:
+		return
+	await _go(goal, pace)
+
+
+func _go(target: Vector2i, pace: String) -> void:
+	walk_to(target, pace)
+	var guard := 0
+	while (walker.is_moving() or _transitioning) and guard < 4000:
+		await get_tree().process_frame
+		guard += 1
+
+
+func _exit_toward(target_zone: String) -> Vector2i:
+	for exit_rec in zone.exits:
+		if str(exit_rec["target_zone"]) != target_zone:
+			continue
+		var link: Dictionary = exit_rec["links"][0]
+		var frm: Dictionary = link["from"]
+		return Vector2i(int(frm["x"]), int(frm["y"]))
+	return Vector2i(-1, -1)
+
+
+func _far_cell(min_tiles: int) -> Vector2i:
+	var best := Vector2i(-1, -1)
+	var best_d := -1
+	var origin: Vector2i = walker.anchor_cell()
+	for y in zone.height:
+		for x in range(0, zone.width, 2):
+			var c := Vector2i(x, y)
+			if not zone.passable_at(c) or not zone.exit_link(c).is_empty():
+				continue
+			var d := absi(c.x - origin.x) + absi(c.y - origin.y)
+			if d >= min_tiles and d > best_d and d < min_tiles + 8:
+				best_d = d
+				best = c
+	return best

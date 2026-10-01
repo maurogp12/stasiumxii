@@ -99,6 +99,28 @@ func _test_schema_rejects() -> void:
 	}]
 	_rejects(unknown, "bush is not a prop id")
 	eq(WorldZone.parse(_min_doc())["ok"], true, "minimal golden plains zone parses")
+	_test_blocks_false()
+
+
+func _test_blocks_false() -> void:
+	var doc := _min_doc()
+	doc["props"] = [{
+		"id": "shade_tree",
+		"type": "tree",
+		"blocks": false,
+		"origin": {"x": 0, "y": 0},
+		"footprint": [{"x": 0, "y": 0}],
+	}]
+	doc["decor"] = [{"id": "flower_01", "type": "flowers_c", "x": 0, "y": 0}]
+	var parsed: Dictionary = WorldZone.parse(doc)
+	eq(parsed["ok"], true, "blocks false and decor parse")
+	var zone: WorldZone = parsed["zone"]
+	eq(zone.blocked_at(Vector2i.ZERO), false, "blocks false does not block the cell")
+	eq(zone.passable_at(Vector2i.ZERO), true, "decor does not block the cell")
+	eq(zone.decor.size(), 1, "decor is kept on the zone")
+	var bad := _min_doc()
+	bad["decor"] = [{"id": "nope", "type": "not_a_decor", "x": 0, "y": 0}]
+	eq(WorldZone.parse(bad)["ok"], false, "unknown decor id is rejected")
 
 
 func _test_arena_tags_remain() -> void:

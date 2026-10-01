@@ -347,6 +347,93 @@
           "y": 5
         }
       ]
+    },
+    {
+      "id": "crosshaven_northgate_bakery_2x2_01",
+      "type": "bakery_2x2",
+      "blocks": true,
+      "origin": {
+        "x": 16,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 16,
+          "y": 12
+        },
+        {
+          "x": 17,
+          "y": 12
+        },
+        {
+          "x": 16,
+          "y": 13
+        },
+        {
+          "x": 17,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_wall_tower_01",
+      "type": "wall_tower",
+      "blocks": true,
+      "origin": {
+        "x": 16,
+        "y": 10
+      },
+      "footprint": [
+        {
+          "x": 16,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_stone_wall_high_nwse_01",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 16,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 16,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_stone_wall_high_nesw_01",
+      "type": "stone_wall_high_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 17,
+        "y": 10
+      },
+      "footprint": [
+        {
+          "x": 17,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_northgate_brazier_01",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 15,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 15,
+          "y": 12
+        }
+      ]
     }
   ],
   "tiles": [
@@ -4651,28 +4738,28 @@
     {
       "x": 14,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
@@ -4931,28 +5018,28 @@
     {
       "x": 14,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
@@ -5211,28 +5298,28 @@
     {
       "x": 14,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_pumpkin",
       "walkable": true,
       "height": 0
     },
@@ -9320,5 +9407,439 @@
       "wind"
     ],
     "day_night": true
-  }
+  },
+  "decor": [
+    {
+      "id": "crosshaven_northgate_decor_001",
+      "type": "bush_small_a",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_northgate_decor_002",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_northgate_decor_003",
+      "type": "bush_small_a",
+      "x": 15,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_northgate_decor_004",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_northgate_decor_005",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_northgate_decor_006",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_northgate_decor_007",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_northgate_decor_008",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_northgate_decor_009",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_010",
+      "type": "bush_small_a",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_011",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_012",
+      "type": "bush_small_a",
+      "x": 20,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_013",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_014",
+      "type": "bush_small_a",
+      "x": 32,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_015",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_northgate_decor_016",
+      "type": "bush_small_a",
+      "x": 5,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_northgate_decor_017",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_northgate_decor_018",
+      "type": "bush_small_a",
+      "x": 28,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_northgate_decor_019",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_northgate_decor_020",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_northgate_decor_021",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_northgate_decor_022",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_023",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_024",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_025",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_026",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_027",
+      "type": "flowers_a",
+      "x": 34,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_028",
+      "type": "bush_small_a",
+      "x": 39,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_northgate_decor_029",
+      "type": "bush_small_a",
+      "x": 0,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_northgate_decor_030",
+      "type": "bush_small_a",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_northgate_decor_031",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_northgate_decor_032",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_northgate_decor_033",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_northgate_decor_034",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_northgate_decor_035",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_northgate_decor_036",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_northgate_decor_037",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_northgate_decor_038",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_northgate_decor_039",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_northgate_decor_040",
+      "type": "flowers_a",
+      "x": 2,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_decor_041",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_decor_042",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_decor_043",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_decor_044",
+      "type": "flowers_a",
+      "x": 36,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_northgate_decor_045",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_northgate_decor_046",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_northgate_decor_047",
+      "type": "bush_small_a",
+      "x": 17,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_northgate_decor_048",
+      "type": "flowers_a",
+      "x": 26,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_northgate_decor_049",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_northgate_decor_050",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_northgate_decor_051",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_northgate_decor_052",
+      "type": "flowers_c",
+      "x": 16,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_northgate_decor_053",
+      "type": "flowers_a",
+      "x": 28,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_northgate_decor_054",
+      "type": "flowers_a",
+      "x": 32,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_northgate_decor_055",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_northgate_decor_056",
+      "type": "bush_small_a",
+      "x": 26,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_northgate_decor_057",
+      "type": "flowers_a",
+      "x": 0,
+      "y": 18
+    },
+    {
+      "id": "crosshaven_northgate_decor_058",
+      "type": "flowers_a",
+      "x": 14,
+      "y": 18
+    },
+    {
+      "id": "crosshaven_northgate_decor_059",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 18
+    },
+    {
+      "id": "crosshaven_northgate_decor_060",
+      "type": "bush_small_a",
+      "x": 2,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_northgate_decor_061",
+      "type": "bush_small_a",
+      "x": 30,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_northgate_decor_062",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_northgate_decor_063",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_northgate_decor_064",
+      "type": "bush_small_a",
+      "x": 11,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_northgate_decor_065",
+      "type": "bush_small_a",
+      "x": 39,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_northgate_decor_066",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_decor_067",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_decor_068",
+      "type": "bush_small_a",
+      "x": 24,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_decor_069",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_decor_070",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_northgate_decor_071",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 22
+    },
+    {
+      "id": "crosshaven_northgate_decor_072",
+      "type": "flowers_a",
+      "x": 8,
+      "y": 22
+    }
+  ]
 }

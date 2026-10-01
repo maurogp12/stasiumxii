@@ -19,6 +19,7 @@ const SPIRE_TINT := {
 
 var prop_type := ""
 var prop_id := ""
+var zone_id := ""
 var footprint: Array[Vector2i] = []
 var south_cell := Vector2i.ZERO
 var base_height := 0
@@ -31,6 +32,7 @@ var _fence_axis := 0  # 0: along x (NE-SW screen), 1: along y
 func setup(zone: WorldZone, record: Dictionary) -> void:
 	prop_type = str(record["type"])
 	prop_id = str(record.get("id", prop_type))
+	zone_id = zone.zone_id
 	footprint.clear()
 	for c in record["footprint"]:
 		footprint.append(Vector2i(int(c["x"]), int(c["y"])))
@@ -49,7 +51,67 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		_fence_axis = 1 if along_y else 0
 	_tex = _load_art()
 	cover_rect = _cover_rect()
+	_attach_loops()
 	queue_redraw()
+
+
+var _sway: AnimatedSprite2D
+var _shadow_sway: AnimatedSprite2D
+var _overlay: AnimatedSprite2D
+var _loops_ready := false
+
+
+func _attach_loops() -> void:
+	var sway_id := art_id + "_sway"
+	if Art.anim_meta(sway_id).is_empty() and prop_type == "tree":
+		sway_id = "tree_sway"
+	_sway = Art.make_loop(sway_id)
+	if _sway != null:
+		_sway.visible = false
+		_sway.z_index = 1
+		add_child(_sway)
+	_shadow_sway = Art.make_loop(art_id + "_shadow_sway")
+	if _shadow_sway != null:
+		_shadow_sway.visible = false
+		_shadow_sway.z_index = 0
+		add_child(_shadow_sway)
+	var overlay_id := ""
+	if prop_type == "windmill_2x2_body":
+		overlay_id = "windmill_sails_v5"
+	elif prop_type == "watermill_2x2_body":
+		overlay_id = "watermill_wheel_v6"
+	elif prop_type == "fountain_2x2":
+		overlay_id = "fountain_water"
+	elif prop_type == "bakery_2x2" or prop_type == "smithy_2x2":
+		overlay_id = "smoke_puff"
+	_overlay = Art.make_loop(overlay_id) if overlay_id != "" else null
+	if _overlay != null:
+		_overlay.visible = false
+		_overlay.z_as_relative = true
+		_overlay.z_index = 2
+		if prop_type == "windmill_2x2_body":
+			_overlay.position = Vector2(0, -104)
+		elif overlay_id == "smoke_puff":
+			_overlay.position = Vector2(18, -96)
+		add_child(_overlay)
+	_loops_ready = true
+
+
+func _process(_delta: float) -> void:
+	if not _loops_ready:
+		return
+	var anim_on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
+	var shadow_on := anim_on and VisualSettings.current != null and VisualSettings.current.enabled("sway_shadows")
+	var changed := false
+	if _sway != null and _sway.visible != anim_on:
+		_sway.visible = anim_on
+		changed = true
+	if _shadow_sway != null and _shadow_sway.visible != shadow_on:
+		_shadow_sway.visible = shadow_on
+	if _overlay != null and _overlay.visible != anim_on:
+		_overlay.visible = anim_on
+	if changed:
+		queue_redraw()
 
 
 ## Kit art id for this placement: fences along y use `fence_wood_nesw`,
@@ -59,7 +121,7 @@ var _art: Dictionary = {}
 
 
 func _load_art() -> Texture2D:
-	art_id = Art.prop_art_id(prop_type, footprint[0], _fence_axis)
+	art_id = Art.prop_art_id(prop_type, footprint[0], _fence_axis, zone_id)
 	_art = Art.texture("props", art_id)
 	if _art.is_empty() and art_id != prop_type:
 		art_id = prop_type
@@ -107,6 +169,8 @@ func update_cover(walker_cell: Vector2i, walker_pos: Vector2) -> void:
 
 
 func _draw() -> void:
+	if _sway != null and _sway.visible:
+		return
 	if _tex != null:
 		var s := Art.size_of(_art)
 		Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))

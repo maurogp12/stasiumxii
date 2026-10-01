@@ -332,6 +332,48 @@
           "y": 26
         }
       ]
+    },
+    {
+      "id": "crosshaven_southbridge_watermill_2x2_body_01",
+      "type": "watermill_2x2_body",
+      "blocks": true,
+      "origin": {
+        "x": 16,
+        "y": 13
+      },
+      "footprint": [
+        {
+          "x": 16,
+          "y": 13
+        },
+        {
+          "x": 17,
+          "y": 13
+        },
+        {
+          "x": 16,
+          "y": 14
+        },
+        {
+          "x": 17,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_hay_bale_01",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 15,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 15,
+          "y": 12
+        }
+      ]
     }
   ],
   "tiles": [
@@ -4636,28 +4678,28 @@
     {
       "x": 14,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4916,28 +4958,28 @@
     {
       "x": 14,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5196,28 +5238,28 @@
     {
       "x": 14,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -9305,5 +9347,439 @@
       "light_cloud"
     ],
     "day_night": true
-  }
+  },
+  "decor": [
+    {
+      "id": "crosshaven_southbridge_decor_001",
+      "type": "flowers_a",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_decor_002",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_decor_003",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_decor_004",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_decor_005",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_decor_006",
+      "type": "bush_small_a",
+      "x": 16,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_decor_007",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_decor_008",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_decor_009",
+      "type": "bush_small_a",
+      "x": 36,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_decor_010",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_011",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_012",
+      "type": "flowers_a",
+      "x": 12,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_013",
+      "type": "decal_path_stones_b",
+      "x": 22,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_014",
+      "type": "flowers_a",
+      "x": 24,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_015",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_016",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_017",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_018",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_019",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_decor_020",
+      "type": "bush_small_a",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_decor_021",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_decor_022",
+      "type": "bush_small_a",
+      "x": 15,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_decor_023",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_decor_024",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_decor_025",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_decor_026",
+      "type": "decal_path_stones_b",
+      "x": 20,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_decor_027",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_southbridge_decor_028",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_029",
+      "type": "bush_small_a",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_030",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_031",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_032",
+      "type": "bush_small_a",
+      "x": 32,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_033",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_southbridge_decor_034",
+      "type": "bush_small_a",
+      "x": 5,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_southbridge_decor_035",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_southbridge_decor_036",
+      "type": "bush_small_a",
+      "x": 28,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_southbridge_decor_037",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_southbridge_decor_038",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_southbridge_decor_039",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_southbridge_decor_040",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_041",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_042",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_043",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_044",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_045",
+      "type": "flowers_a",
+      "x": 34,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_046",
+      "type": "bush_small_a",
+      "x": 39,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_southbridge_decor_047",
+      "type": "bush_small_a",
+      "x": 0,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_southbridge_decor_048",
+      "type": "bush_small_a",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_southbridge_decor_049",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_southbridge_decor_050",
+      "type": "bush_small_a",
+      "x": 1,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_southbridge_decor_051",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_southbridge_decor_052",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_southbridge_decor_053",
+      "type": "bush_small_a",
+      "x": 37,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_southbridge_decor_054",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_southbridge_decor_055",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_southbridge_decor_056",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_southbridge_decor_057",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_southbridge_decor_058",
+      "type": "flowers_a",
+      "x": 2,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_southbridge_decor_059",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_southbridge_decor_060",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_southbridge_decor_061",
+      "type": "flowers_a",
+      "x": 36,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_southbridge_decor_062",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_southbridge_decor_063",
+      "type": "flowers_a",
+      "x": 26,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_southbridge_decor_064",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_southbridge_decor_065",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_southbridge_decor_066",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_southbridge_decor_067",
+      "type": "flowers_c",
+      "x": 16,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_southbridge_decor_068",
+      "type": "flowers_a",
+      "x": 28,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_southbridge_decor_069",
+      "type": "flowers_a",
+      "x": 32,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_southbridge_decor_070",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_southbridge_decor_071",
+      "type": "bush_small_a",
+      "x": 26,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_southbridge_decor_072",
+      "type": "flowers_a",
+      "x": 0,
+      "y": 18
+    }
+  ]
 }

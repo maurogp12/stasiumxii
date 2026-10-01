@@ -28,6 +28,8 @@ const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
 var zone: WorldZone
 var _use_kit := false
 var _exit_dirs: Dictionary = {}
+var _ripple_frame := 0
+var _water_rows: Dictionary = {}
 
 
 ## Ground is split into one canvas item per diagonal (x+y), z = diagonal * 10,
@@ -58,6 +60,38 @@ func setup(target: WorldZone) -> void:
 		row.z_index = row_z(d)
 		row.draw.connect(_draw_row.bind(row, d))
 		add_child(row)
+	_mark_water_rows()
+
+
+func _mark_water_rows() -> void:
+	_water_rows.clear()
+	for y in zone.height:
+		for x in zone.width:
+			if zone.terrain_at(Vector2i(x, y)) == "water":
+				_water_rows[x + y] = true
+
+
+func _process(_delta: float) -> void:
+	if zone == null or _water_rows.is_empty():
+		return
+	var on := VisualSettings.current != null and VisualSettings.current.enabled("animations")
+	if not on:
+		if _ripple_frame != -1:
+			_ripple_frame = -1
+			_redraw_water()
+		return
+	var frame := int(float(Time.get_ticks_msec()) * 7.2 / 1000.0) % 8
+	if frame == _ripple_frame:
+		return
+	_ripple_frame = frame
+	_redraw_water()
+
+
+func _redraw_water() -> void:
+	for d in _water_rows.keys():
+		var row := get_node_or_null("Row%d" % int(d))
+		if row != null:
+			row.queue_redraw()
 
 
 func uses_kit() -> bool:
@@ -123,17 +157,43 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> 
 		else:
 			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(terrain, Color.DARK_MAGENTA))
 	var pick := Art.pick_tile(zone, cell)
-	var floor_art := Art.texture("tiles", pick["floor"])
-	if floor_art.is_empty():
-		floor_art = Art.texture("tiles", terrain)
-	if not floor_art.is_empty():
-		var size := Art.size_of(floor_art)
-		Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y))
+	var floor_id := str(pick["floor"])
+	var drew_ripple := false
+	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
+		drew_ripple = _draw_ripple(ci, floor_id + "_ripple", south_tip)
+	if not drew_ripple:
+		var floor_art := Art.texture("tiles", floor_id)
+		if floor_art.is_empty():
+			floor_art = Art.texture("tiles", terrain)
+		if not floor_art.is_empty():
+			var size := Art.size_of(floor_art)
+			Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y))
 	for corner_id in pick["corners"]:
 		var corner_art := Art.texture("tiles", corner_id)
 		if not corner_art.is_empty():
 			var csize := Art.size_of(corner_art)
 			Art.draw_at(ci, corner_art, south_tip + Vector2(-csize.x * 0.5, -csize.y))
+	var lip := str(pick.get("lip", ""))
+	if lip != "":
+		var lip_art := Art.texture("tiles", lip)
+		if not lip_art.is_empty():
+			var lsize := Art.size_of(lip_art)
+			Art.draw_at(ci, lip_art, south_tip + Vector2(-lsize.x * 0.5, -lsize.y))
+
+
+func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2) -> bool:
+	var meta := Art.anim_meta(anim_id)
+	var tex := Art.anim_texture(anim_id)
+	if tex == null or meta.is_empty():
+		return false
+	var size: Array = meta.get("frame_size", [])
+	if size.size() < 2:
+		return false
+	var fw := float(size[0])
+	var fh := float(size[1])
+	var region := Rect2(_ripple_frame * fw, 0, fw, fh)
+	ci.draw_texture_rect_region(tex, Rect2(south_tip + Vector2(-fw * 0.5, -fh), Vector2(fw, fh)), region)
+	return true
 
 
 func _draw_exit(ci: Node2D, cell: Vector2i, dir: Vector2i) -> void:

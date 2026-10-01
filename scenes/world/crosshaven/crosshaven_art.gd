@@ -43,8 +43,19 @@ const CORNER_PREFIX := {
 	"cliff": "cliff_corner_",
 }
 const TREE_VARIANTS := ["tree_oak_a", "tree_oak_b", "tree_autumn_a", "tree_autumn_b", "tree_pine"]
+const FARM_TERRAINS: Array[String] = [
+	"farm_cabbage", "farm_carrot", "farm_fallow", "farm_lavender",
+	"farm_plowed", "farm_pumpkin", "farm_soil", "farm_sunflower",
+]
+const COTTAGE_SKIN := {
+	"crosshaven_northgate": "cottage_slate",
+	"crosshaven_stoneford": "cottage_stone",
+	"crosshaven_eastmarch": "cottage_thatch",
+	"crosshaven_southbridge": "cottage_terracotta",
+}
 
 static var _cache: Dictionary = {}
+static var _anim_meta: Dictionary = {}
 
 
 ## {tex: Texture2D, scale: float} or {} when the file is missing.
@@ -85,24 +96,81 @@ static func _joins(zone: WorldZone, terrain: String, cell: Vector2i) -> bool:
 ## Floor id plus corner decals for one cell, per the kit's README picker.
 static func pick_tile(zone: WorldZone, cell: Vector2i) -> Dictionary:
 	var terrain := zone.terrain_at(cell)
+	if FARM_TERRAINS.has(terrain):
+		var farm := _autotile(zone, cell, terrain, terrain + "_edge_", terrain + "_corner_", [terrain + "_a", terrain + "_b"])
+		farm["lip"] = ""
+		return farm
 	var pieces: Array = INTERIOR.get(terrain, [terrain])
 	var floor_id: String = pieces[h(cell.x, cell.y, pieces.size())]
 	var corners: Array[String] = []
+	var lip := ""
 	if not EDGE_PREFIX.has(terrain):
-		return {"floor": floor_id, "corners": corners}
+		if terrain == "golden_plains":
+			lip = grass_lip(zone, cell)
+		return {"floor": floor_id, "corners": corners, "lip": lip}
 	var g: Array[String] = []
 	for side in SIDES:
 		if not _joins(zone, terrain, cell + SIDE_DIR[side]):
 			g.append(side)
 	if not g.is_empty():
 		floor_id = str(EDGE_PREFIX[terrain]) + "_".join(g)
+	elif terrain == "dirt_road" and _near_poi(zone, cell, 7):
+		var macro := "dirt_road_flagstone_m%d%d" % [posmod(cell.x, 3), posmod(cell.y, 3)]
+		if h(cell.x, cell.y, 6) == 0 and has("tiles", macro + "_moss"):
+			macro = macro + "_moss"
+		if has("tiles", macro):
+			floor_id = macro
 	for c in ["n", "e", "s", "w"]:
 		var rec: Array = CORNERS[c]
 		if g.has(rec[1]) or g.has(rec[2]):
 			continue
 		if not _joins(zone, terrain, cell + rec[0]):
 			corners.append(str(CORNER_PREFIX[terrain]) + c)
+	return {"floor": floor_id, "corners": corners, "lip": lip}
+
+
+static func _autotile(zone: WorldZone, cell: Vector2i, terrain: String, edge_prefix: String, corner_prefix: String, interiors: Array) -> Dictionary:
+	var floor_id: String = interiors[posmod(cell.x + cell.y, interiors.size())]
+	var corners: Array[String] = []
+	var g: Array[String] = []
+	for side in SIDES:
+		if not _joins(zone, terrain, cell + SIDE_DIR[side]):
+			g.append(side)
+	if not g.is_empty():
+		var edge_id := edge_prefix + "_".join(g)
+		if has("tiles", edge_id):
+			floor_id = edge_id
+	for c in ["n", "e", "s", "w"]:
+		var rec: Array = CORNERS[c]
+		if g.has(rec[1]) or g.has(rec[2]):
+			continue
+		if not _joins(zone, terrain, cell + rec[0]):
+			var corner_id := corner_prefix + str(c)
+			if has("tiles", corner_id):
+				corners.append(corner_id)
 	return {"floor": floor_id, "corners": corners}
+
+
+static func grass_lip(zone: WorldZone, cell: Vector2i) -> String:
+	if zone.terrain_at(cell) != "golden_plains":
+		return ""
+	var g: Array[String] = []
+	for side in SIDES:
+		var n: Vector2i = cell + SIDE_DIR[side]
+		if zone.in_bounds(n) and zone.terrain_at(n) == "dirt_road":
+			g.append(side)
+	if g.is_empty():
+		return ""
+	var id := "grass_lip_" + "_".join(g)
+	return id if has("tiles", id) else ""
+
+
+static func _near_poi(zone: WorldZone, cell: Vector2i, radius: int) -> bool:
+	for poi in zone.points_of_interest:
+		var at := Vector2i(int(poi["x"]), int(poi["y"]))
+		if maxi(absi(at.x - cell.x), absi(at.y - cell.y)) <= radius:
+			return true
+	return false
 
 
 ## Height-face strips for one cell: [{id, offset}] relative to the lifted south tip.
@@ -143,15 +211,94 @@ static func size_of(art: Dictionary) -> Vector2:
 
 
 ## Zone prop -> kit file id, with per-placement variants by hash of the origin.
-static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int) -> String:
+## `zone_id` picks a town cottage skin. Callers that omit it keep the v1 file.
+static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zone_id: String = "") -> String:
 	match prop_type:
 		"fence":
 			return "fence_wood_nesw" if fence_axis == 1 else "fence"
 		"tree":
-			var id: String = TREE_VARIANTS[h(origin.x, origin.y, TREE_VARIANTS.size())]
+			var variants := _tree_variants(zone_id)
+			var id: String = variants[h(origin.x, origin.y, variants.size())]
 			return id if has("props", id) else "tree"
 		"red_roof_cottage":
+			var skin := str(COTTAGE_SKIN.get(zone_id, ""))
+			if skin != "" and has("props", skin):
+				return skin
 			if h(origin.x, origin.y, 2) == 1 and has("props", "red_roof_cottage_b"):
 				return "red_roof_cottage_b"
 			return "red_roof_cottage"
 	return prop_type
+
+
+static func _tree_variants(zone_id: String) -> Array:
+	if zone_id.find("northgate") >= 0:
+		return ["tree_pine", "tree_pine", "tree_oak_a"]
+	if zone_id.find("eastmarch") >= 0 or zone_id.find("westwatch") >= 0:
+		return ["tree_autumn_a", "tree_autumn_b", "tree_oak_b"]
+	return TREE_VARIANTS
+
+
+static func anim_meta(anim_id: String) -> Dictionary:
+	if _anim_meta.is_empty():
+		var file := FileAccess.open("res://art/world/crosshaven/animated/anim_meta.json", FileAccess.READ)
+		if file == null:
+			_anim_meta = {"_missing": true}
+		else:
+			var parsed: Variant = JSON.parse_string(file.get_as_text())
+			file.close()
+			if typeof(parsed) == TYPE_DICTIONARY:
+				_anim_meta = (parsed as Dictionary).get("animations", {"_missing": true})
+			else:
+				_anim_meta = {"_missing": true}
+	var rec: Variant = _anim_meta.get(anim_id, {})
+	return rec if typeof(rec) == TYPE_DICTIONARY else {}
+
+
+## Bottom-center loop player for a strip in anim_meta, or null when it is missing.
+static func anim_texture(anim_id: String) -> Texture2D:
+	var key := "anim/" + anim_id
+	if _cache.has(key):
+		var cached: Variant = _cache[key]
+		return cached if cached is Texture2D else null
+	var meta := anim_meta(anim_id)
+	var tex: Texture2D = null
+	if meta.has("file"):
+		var path := ROOT + str(meta["file"])
+		if ResourceLoader.exists(path):
+			tex = load(path)
+	_cache[key] = tex
+	return tex
+
+
+static func make_loop(anim_id: String) -> AnimatedSprite2D:
+	var meta := anim_meta(anim_id)
+	if meta.is_empty() or not meta.has("file"):
+		return null
+	var frames := int(meta.get("frames", 1))
+	var fps := float(meta.get("fps", 8.0))
+	var size: Array = meta.get("frame_size", [64, 32])
+	if size.size() < 2 or frames < 1:
+		return null
+	var path := ROOT + str(meta["file"])
+	if not ResourceLoader.exists(path):
+		return null
+	var tex: Texture2D = load(path)
+	var fw := int(size[0])
+	var fh := int(size[1])
+	var sheet := SpriteFrames.new()
+	sheet.add_animation("loop")
+	sheet.set_animation_loop("loop", true)
+	sheet.set_animation_speed("loop", maxf(fps, 0.1))
+	for i in frames:
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(i * fw, 0, fw, fh)
+		sheet.add_frame("loop", atlas)
+	var sprite := AnimatedSprite2D.new()
+	sprite.sprite_frames = sheet
+	sprite.centered = true
+	sprite.position = Vector2(0, -float(fh) * 0.5)
+	sprite.frame = h(fw, fh, frames)
+	sprite.speed_scale = 0.88 + float(h(fh, fw, 20)) / 100.0
+	sprite.play("loop")
+	return sprite

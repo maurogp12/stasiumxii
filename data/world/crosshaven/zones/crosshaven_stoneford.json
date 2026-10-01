@@ -347,6 +347,78 @@
           "y": 26
         }
       ]
+    },
+    {
+      "id": "crosshaven_stoneford_smithy_2x2_01",
+      "type": "smithy_2x2",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 12
+        },
+        {
+          "x": 27,
+          "y": 12
+        },
+        {
+          "x": 26,
+          "y": 13
+        },
+        {
+          "x": 27,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_quarry_rocks_a_01",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 11
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_cart_01",
+      "type": "cart",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 12
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_waystone_01",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 10
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 10
+        }
+      ]
     }
   ],
   "tiles": [
@@ -3237,28 +3309,28 @@
     {
       "x": 16,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
@@ -3489,28 +3561,28 @@
     {
       "x": 16,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
@@ -3741,28 +3813,28 @@
     {
       "x": 16,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_lavender",
       "walkable": true,
       "height": 0
     },
@@ -8423,5 +8495,439 @@
       "light_rain"
     ],
     "day_night": true
-  }
+  },
+  "decor": [
+    {
+      "id": "crosshaven_stoneford_decor_001",
+      "type": "lilypads_a",
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_decor_002",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_decor_003",
+      "type": "flowers_a",
+      "x": 18,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_decor_004",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_decor_005",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_decor_006",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_decor_007",
+      "type": "bush_small_a",
+      "x": 16,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_decor_008",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_decor_009",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_decor_010",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_011",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_012",
+      "type": "flowers_a",
+      "x": 12,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_013",
+      "type": "flowers_a",
+      "x": 24,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_014",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_015",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_016",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_017",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_decor_018",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_decor_019",
+      "type": "bush_small_a",
+      "x": 12,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_decor_020",
+      "type": "bush_small_a",
+      "x": 15,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_decor_021",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_decor_022",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_decor_023",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_stoneford_decor_024",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_stoneford_decor_025",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_026",
+      "type": "ford_stones",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_027",
+      "type": "ford_stones",
+      "x": 8,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_028",
+      "type": "bush_small_a",
+      "x": 20,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_029",
+      "type": "bush_small_a",
+      "x": 23,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_030",
+      "type": "bush_small_a",
+      "x": 32,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_031",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_decor_032",
+      "type": "bush_small_a",
+      "x": 5,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_stoneford_decor_033",
+      "type": "bush_small_a",
+      "x": 29,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_stoneford_decor_034",
+      "type": "bush_small_a",
+      "x": 31,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_stoneford_decor_035",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_stoneford_decor_036",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_stoneford_decor_037",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_stoneford_decor_038",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_stoneford_decor_039",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_stoneford_decor_040",
+      "type": "flowers_a",
+      "x": 34,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_stoneford_decor_041",
+      "type": "ford_stones",
+      "x": 0,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_stoneford_decor_042",
+      "type": "bush_small_a",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_stoneford_decor_043",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_stoneford_decor_044",
+      "type": "bush_small_a",
+      "x": 19,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_stoneford_decor_045",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_stoneford_decor_046",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_stoneford_decor_047",
+      "type": "flowers_a",
+      "x": 20,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_stoneford_decor_048",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_stoneford_decor_049",
+      "type": "bush_small_a",
+      "x": 35,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_stoneford_decor_050",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_stoneford_decor_051",
+      "type": "bush_small_a",
+      "x": 10,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_stoneford_decor_052",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_stoneford_decor_053",
+      "type": "reeds_b",
+      "x": 2,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_stoneford_decor_054",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_stoneford_decor_055",
+      "type": "flowers_a",
+      "x": 10,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_stoneford_decor_056",
+      "type": "bush_small_a",
+      "x": 13,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_stoneford_decor_057",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_stoneford_decor_058",
+      "type": "decal_path_stones_a",
+      "x": 28,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_stoneford_decor_059",
+      "type": "decal_road_grass",
+      "x": 10,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_stoneford_decor_060",
+      "type": "decal_path_stones_a",
+      "x": 24,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_stoneford_decor_061",
+      "type": "reeds_b",
+      "x": 0,
+      "y": 18
+    },
+    {
+      "id": "crosshaven_stoneford_decor_062",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_stoneford_decor_063",
+      "type": "bush_small_a",
+      "x": 27,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_stoneford_decor_064",
+      "type": "bush_small_a",
+      "x": 30,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_stoneford_decor_065",
+      "type": "bush_small_a",
+      "x": 33,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_stoneford_decor_066",
+      "type": "bush_small_a",
+      "x": 34,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_stoneford_decor_067",
+      "type": "bush_small_a",
+      "x": 11,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_stoneford_decor_068",
+      "type": "bush_small_a",
+      "x": 21,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_stoneford_decor_069",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_stoneford_decor_070",
+      "type": "bush_small_a",
+      "x": 7,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_stoneford_decor_071",
+      "type": "ford_stones",
+      "x": 8,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_stoneford_decor_072",
+      "type": "bush_small_a",
+      "x": 24,
+      "y": 21
+    }
+  ]
 }

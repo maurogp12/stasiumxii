@@ -231,3 +231,9 @@ godot --headless --path . -s res://tests/run_crosshaven_zone_tests.gd
 - Road landmark names.
 - The weather strings on each chunk (`clear`, `light_cloud`, `light_rain`, `wind`).
 - Keeping walkable height changes to one step in this data, without making that a server rule.
+
+## v6 on the integration branch
+
+Farm terrains (`farm_cabbage`, `farm_carrot`, `farm_fallow`, `farm_lavender`, `farm_plowed`, `farm_pumpkin`, `farm_soil`, `farm_sunflower`) are walkable ground, same as plains. The prop catalog grew with the v6 buildings and town props. Every catalog prop still has `blocks: true` in the schema. An **instance** may set `blocks` to `false`, and then its footprint does not block. `decor` is an optional array of `{id, type, x, y}` sprites that never block and never change pathing.
+
+`build_crosshaven_zones.py` rewrites the chunks from scratch. Run `build_crosshaven_dressing.py` after it to put the crops, extra blockers, and decor back. A blocker is written only when every other passable cell stays reachable from that chunk's spawn.

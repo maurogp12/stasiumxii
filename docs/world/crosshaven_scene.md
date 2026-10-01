@@ -17,10 +17,14 @@ this is movement, map scrolling, weather and look only.
 | Input | Does |
 | --- | --- |
 | Left click | Walk there (path from `WorldWalk.find_path`) |
+| Double-click | Run (also used automatically on long paths) |
 | Click a gold-arrow edge tile | Walk off the chunk into the linked one (short fade) |
 | Mouse wheel | Zoom 1.0–2.5 |
 | `1` | Cycle weather: clear, light cloud, light rain, wind |
 | `2` | Toggle day/night speed ×30 |
+| `Esc` or Visuals | Open visual settings (also on the hub) |
+
+The player is Ironjaw, using PC copies of the mobile walk strips under `art/characters/world/`. Movement eases in and out, cuts corners slightly, and picks walk frames from distance traveled. Visual settings persist in `user://crosshaven_visual.cfg`.
 
 Hover colours: green walkable, red blocked (water, cliff, prop), gold exit.
 

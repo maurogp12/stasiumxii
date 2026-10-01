@@ -22,39 +22,757 @@
     "tileCatalog": {
       "description": "Stable terrain sprite ids. walkable is required for that id.",
       "const": [
-        {"id": "golden_plains", "walkable": true, "footprint": "1x1 cell"},
-        {"id": "dirt_road", "walkable": true, "footprint": "1x1 cell"},
-        {"id": "water", "walkable": false, "footprint": "1x1 cell"},
-        {"id": "cliff", "walkable": false, "footprint": "1x1 cell"}
+        {
+          "id": "golden_plains",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "dirt_road",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "water",
+          "walkable": false,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "cliff",
+          "walkable": false,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_cabbage",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_carrot",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_fallow",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_lavender",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_plowed",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_pumpkin",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_soil",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        },
+        {
+          "id": "farm_sunflower",
+          "walkable": true,
+          "footprint": "1x1 cell"
+        }
       ]
     },
     "propCatalog": {
-      "description": "Stable prop sprite ids. footprint offsets are relative to origin. Every listed prop blocks those tiles.",
+      "description": "Stable prop sprite ids. footprint offsets are relative to origin. Catalog blocks is true: the type is a blocker. An instance may set blocks to false, and then its footprint does not block.",
       "const": [
-        {"id": "tree", "blocks": true, "footprint": [[0, 0]]},
-        {"id": "fence", "blocks": true, "footprint": [[0, 0]]},
-        {"id": "red_roof_cottage", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "northgate_spire", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "stoneford_spire", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "eastmarch_spire", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "westwatch_spire", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "southbridge_spire", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]},
-        {"id": "crossroads_centerpiece", "blocks": true, "footprint": [[0, 0], [1, 0], [0, 1], [1, 1]]}
+        {
+          "id": "tree",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "fence",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "red_roof_cottage",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "northgate_spire",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "stoneford_spire",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "eastmarch_spire",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "westwatch_spire",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "southbridge_spire",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "crossroads_centerpiece",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "barn_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "farmhouse_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "windmill_2x2_body",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "bakery_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "smithy_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "tavern_3x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              2,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "fountain_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "watermill_2x2_body",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "watchtower_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "fishing_hut_2x2",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        },
+        {
+          "id": "market_stall",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "cart",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "scarecrow",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "farm_fence_nesw",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "farm_fence_nwse",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "hedgerow_nesw",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "hedgerow_nwse",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "lamp_post",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "well",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "hay_bale",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "waystone",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "wall_tower",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "stone_wall_high_nwse",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "stone_wall_high_nesw",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "quarry_rocks_a",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "net_rack",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "rowboat",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "crate_apples",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "signpost_crossroads",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "brazier",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "tree_apple",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "haystack",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "barrel",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ]
+          ]
+        },
+        {
+          "id": "tree_cluster_2x2_a",
+          "blocks": true,
+          "footprint": [
+            [
+              0,
+              0
+            ],
+            [
+              1,
+              0
+            ],
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ]
+        }
       ]
     },
     "cell": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["x", "y"],
+      "required": [
+        "x",
+        "y"
+      ],
       "properties": {
-        "x": {"type": "integer", "minimum": 0},
-        "y": {"type": "integer", "minimum": 0}
+        "x": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "y": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     }
   },
   "properties": {
-    "format": {"const": "stasium.zone"},
-    "format_version": {"const": 1},
+    "format": {
+      "const": "stasium.zone"
+    },
+    "format_version": {
+      "const": 1
+    },
     "zone_id": {
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$",
@@ -64,22 +782,56 @@
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
-    "width": {"type": "integer", "minimum": 1, "maximum": 128},
-    "height": {"type": "integer", "minimum": 1, "maximum": 128},
-    "spawn": {"$ref": "#/$defs/cell"},
+    "width": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 128
+    },
+    "height": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 128
+    },
+    "spawn": {
+      "$ref": "#/$defs/cell"
+    },
     "points_of_interest": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "kind", "x", "y"],
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "x",
+          "y"
+        ],
         "properties": {
-          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-          "name": {"type": "string", "minLength": 1},
-          "kind": {"enum": ["town", "crossroads", "landmark"]},
-          "x": {"type": "integer", "minimum": 0},
-          "y": {"type": "integer", "minimum": 0}
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "town",
+              "crossroads",
+              "landmark"
+            ]
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          }
         }
       }
     },
@@ -88,21 +840,46 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "edge", "target_zone", "links"],
+        "required": [
+          "id",
+          "edge",
+          "target_zone",
+          "links"
+        ],
         "properties": {
-          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
-          "edge": {"enum": ["north", "south", "east", "west"]},
-          "target_zone": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "edge": {
+            "enum": [
+              "north",
+              "south",
+              "east",
+              "west"
+            ]
+          },
+          "target_zone": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
           "links": {
             "type": "array",
             "minItems": 1,
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["from", "to"],
+              "required": [
+                "from",
+                "to"
+              ],
               "properties": {
-                "from": {"$ref": "#/$defs/cell"},
-                "to": {"$ref": "#/$defs/cell"}
+                "from": {
+                  "$ref": "#/$defs/cell"
+                },
+                "to": {
+                  "$ref": "#/$defs/cell"
+                }
               }
             }
           }
@@ -114,7 +891,13 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "type", "blocks", "origin", "footprint"],
+        "required": [
+          "id",
+          "type",
+          "blocks",
+          "origin",
+          "footprint"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -132,15 +915,56 @@
               "eastmarch_spire",
               "westwatch_spire",
               "southbridge_spire",
-              "crossroads_centerpiece"
+              "crossroads_centerpiece",
+              "barn_2x2",
+              "farmhouse_2x2",
+              "windmill_2x2_body",
+              "bakery_2x2",
+              "smithy_2x2",
+              "tavern_3x2",
+              "fountain_2x2",
+              "watermill_2x2_body",
+              "watchtower_2x2",
+              "fishing_hut_2x2",
+              "market_stall",
+              "cart",
+              "scarecrow",
+              "farm_fence_nesw",
+              "farm_fence_nwse",
+              "hedgerow_nesw",
+              "hedgerow_nwse",
+              "lamp_post",
+              "well",
+              "hay_bale",
+              "waystone",
+              "wall_tower",
+              "stone_wall_high_nwse",
+              "stone_wall_high_nesw",
+              "quarry_rocks_a",
+              "net_rack",
+              "rowboat",
+              "crate_apples",
+              "signpost_crossroads",
+              "brazier",
+              "tree_apple",
+              "haystack",
+              "barrel",
+              "tree_cluster_2x2_a"
             ]
           },
-          "blocks": {"const": true},
-          "origin": {"$ref": "#/$defs/cell"},
+          "blocks": {
+            "type": "boolean",
+            "description": "When true, every footprint cell blocks walking. When false, the prop is visual only."
+          },
+          "origin": {
+            "$ref": "#/$defs/cell"
+          },
           "footprint": {
             "type": "array",
             "minItems": 1,
-            "items": {"$ref": "#/$defs/cell"}
+            "items": {
+              "$ref": "#/$defs/cell"
+            }
           }
         }
       }
@@ -152,14 +976,41 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["x", "y", "terrain", "walkable", "height"],
+        "required": [
+          "x",
+          "y",
+          "terrain",
+          "walkable",
+          "height"
+        ],
         "properties": {
-          "x": {"type": "integer", "minimum": 0},
-          "y": {"type": "integer", "minimum": 0},
-          "terrain": {
-            "enum": ["golden_plains", "dirt_road", "water", "cliff"]
+          "x": {
+            "type": "integer",
+            "minimum": 0
           },
-          "walkable": {"type": "boolean"},
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "terrain": {
+            "enum": [
+              "golden_plains",
+              "dirt_road",
+              "water",
+              "cliff",
+              "farm_cabbage",
+              "farm_carrot",
+              "farm_fallow",
+              "farm_lavender",
+              "farm_plowed",
+              "farm_pumpkin",
+              "farm_soil",
+              "farm_sunflower"
+            ]
+          },
+          "walkable": {
+            "type": "boolean"
+          },
           "height": {
             "type": "integer",
             "minimum": 0,
@@ -169,17 +1020,55 @@
         "allOf": [
           {
             "if": {
-              "properties": {"terrain": {"enum": ["golden_plains", "dirt_road"]}},
-              "required": ["terrain"]
+              "properties": {
+                "terrain": {
+                  "enum": [
+                    "golden_plains",
+                    "dirt_road",
+                    "farm_cabbage",
+                    "farm_carrot",
+                    "farm_fallow",
+                    "farm_lavender",
+                    "farm_plowed",
+                    "farm_pumpkin",
+                    "farm_soil",
+                    "farm_sunflower"
+                  ]
+                }
+              },
+              "required": [
+                "terrain"
+              ]
             },
-            "then": {"properties": {"walkable": {"const": true}}}
+            "then": {
+              "properties": {
+                "walkable": {
+                  "const": true
+                }
+              }
+            }
           },
           {
             "if": {
-              "properties": {"terrain": {"enum": ["water", "cliff"]}},
-              "required": ["terrain"]
+              "properties": {
+                "terrain": {
+                  "enum": [
+                    "water",
+                    "cliff"
+                  ]
+                }
+              },
+              "required": [
+                "terrain"
+              ]
             },
-            "then": {"properties": {"walkable": {"const": false}}}
+            "then": {
+              "properties": {
+                "walkable": {
+                  "const": false
+                }
+              }
+            }
           }
         ]
       }
@@ -188,17 +1077,63 @@
       "description": "PROPOSED. Client-visual only. The server walk authority ignores this object.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["status", "authority", "default_weather", "day_night"],
+      "required": [
+        "status",
+        "authority",
+        "default_weather",
+        "day_night"
+      ],
       "properties": {
-        "status": {"const": "proposed"},
-        "authority": {"const": "client_visual"},
+        "status": {
+          "const": "proposed"
+        },
+        "authority": {
+          "const": "client_visual"
+        },
         "default_weather": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": {"type": "string", "pattern": "^[a-z][a-z_]*$"}
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z_]*$"
+          }
         },
-        "day_night": {"type": "boolean"}
+        "day_night": {
+          "type": "boolean"
+        }
+      }
+    },
+    "decor": {
+      "type": "array",
+      "description": "Optional walk-through clutter. Never blocks, never changes pathing. type is a decor sprite id.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "type",
+          "x",
+          "y"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "type": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "x": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "y": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
       }
     }
   }

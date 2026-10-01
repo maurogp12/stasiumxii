@@ -23,6 +23,8 @@ func _initialize() -> void:
 
 
 func _spawn() -> Node2D:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
 	var w: Node2D = WORLD.instantiate()
 	w.instant_transitions = true
 	root.add_child(w)
