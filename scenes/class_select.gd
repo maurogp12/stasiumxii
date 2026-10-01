@@ -255,7 +255,7 @@ func request_queue() -> Dictionary:
 	if NetSession.is_queue_client() and NetSession.is_client():
 		_show_waiting()
 		return {"ok": true, "reason": "", "status": "waiting"}
-	var address := _join_ip.text.strip_edges() if _join_ip != null else "127.0.0.1"
+	var address := _join_ip.text.strip_edges() if _join_ip != null else NetSession.DEFAULT_SERVER
 	var port := int(_join_port.text) if _join_port != null else NetSession.DEFAULT_PORT
 	var result: Dictionary = NetSession.start_queue_client(address, port)
 	if not bool(result.get("ok", false)):
@@ -456,7 +456,7 @@ func _build() -> void:
 	host_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_join_row.add_child(host_label)
 	_join_ip = LineEdit.new()
-	_join_ip.text = NetSession.join_address if NetSession.join_address != "" else "127.0.0.1"
+	_join_ip.text = NetSession.join_address if NetSession.join_address != "" else NetSession.DEFAULT_SERVER
 	_join_ip.custom_minimum_size = Vector2(180, 36)
 	_join_ip.placeholder_text = "127.0.0.1"
 	_join_row.add_child(_join_ip)
