@@ -53,6 +53,10 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		_fence_axis = 1 if along_y else 0
 	_tex = _load_art()
 	cover_rect = _cover_rect()
+	var clutter := _clutter_scale(prop_type)
+	if clutter != 1.0:
+		scale = Vector2(clutter, clutter)
+		cover_rect = Rect2(cover_rect.position * clutter, cover_rect.size * clutter)
 	_attach_loops()
 	queue_redraw()
 
@@ -120,6 +124,18 @@ func _process(_delta: float) -> void:
 ## trees and cottages pick a variant by hash of their origin (kit README).
 var art_id := ""
 var _art: Dictionary = {}
+
+
+## Hay sits with the sunflowers. Hedges stay a shoulder-high barrier.
+## Buildings, trees, mills and gates are left at full size.
+func _clutter_scale(kind: String) -> float:
+	match kind:
+		"hay_bale", "haystack":
+			return 0.58
+		"hedgerow_nesw", "hedgerow_nwse":
+			return 0.62
+		_:
+			return 1.0
 
 
 func _load_art() -> Texture2D:

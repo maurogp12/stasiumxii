@@ -6,6 +6,11 @@ extends Node2D
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 
+## Hero is 0.33, about 40px tall. Sunflowers land at his shoulder. Grass,
+## flowers, mushrooms and small bushes stay between ankle and knee.
+const TALL_PLANT_SCALE := 0.58
+const LOW_PLANT_SCALE := 0.50
+
 var decor_type := ""
 var core := false
 var base_z := 0
@@ -25,8 +30,10 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	z_index = base_z
 	core = _is_core(zone, cell)
 	_art = Art.texture("props", decor_type)
+	var plant := _plant_scale(decor_type)
+	scale = Vector2(plant, plant)
 	if not _art.is_empty():
-		var size := Art.size_of(_art)
+		var size := Art.size_of(_art) * plant
 		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 	if not _groundish and core:
 		_sway = Art.make_loop(decor_type + "_sway")
@@ -34,6 +41,22 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 			_sway.visible = false
 			add_child(_sway)
 	queue_redraw()
+
+
+func _plant_scale(kind: String) -> float:
+	match kind:
+		"sunflowers_tall", "sunflowers_tall_b":
+			return TALL_PLANT_SCALE
+		"flowers_a", "flowers_b", "flowers_c", "flowers_d", \
+		"grass_tuft_a", "grass_tuft_b", "grass_tuft_tall_a", \
+		"tuft_a", "tuft_b", \
+		"mushrooms_a", "mushrooms_b", \
+		"bush_small_a", "bush_small_b", \
+		"reeds_a", "reeds_b", \
+		"rock_small_c", "rock_small_d":
+			return LOW_PLANT_SCALE
+		_:
+			return 1.0
 
 
 func _is_core(zone: WorldZone, cell: Vector2i) -> bool:

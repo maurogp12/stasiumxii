@@ -526,7 +526,7 @@ func _movie_tour() -> void:
 
 ## Hero standing in front of a Northgate cottage, for scale stills.
 func _movie_scale() -> void:
-	enter_zone("crosshaven_northgate", Vector2i(9, 11), false)
+	enter_zone("crosshaven_northgate", Vector2i(10, 12), false)
 	await get_tree().process_frame
 	_set_zoom(2.05)
 	weather.set_weather("clear")

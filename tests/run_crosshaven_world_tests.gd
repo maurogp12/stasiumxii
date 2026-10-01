@@ -71,6 +71,29 @@ func _test_strips(w: Node2D) -> void:
 	var expected: float = w.walker.stride_of("walk") * w.walker.fps_of("walk") / count
 	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is stride times fps over frame count")
 	check(w.walker.base_scale() <= 0.4 and w.walker.base_scale() > 0.2, "hero scale lets a cottage tower over them")
+	var saw_sun := false
+	var saw_flower := false
+	var saw_cottage := false
+	var saw_tree := false
+	for d in w.decor_root.get_children():
+		if d.decor_type == "sunflowers_tall":
+			saw_sun = true
+			check(is_equal_approx(d.scale.y, 0.58), "sunflowers draw at shoulder height")
+		elif d.decor_type == "flowers_a" or d.decor_type == "grass_tuft_a" or d.decor_type == "mushrooms_a":
+			saw_flower = true
+			check(is_equal_approx(d.scale.y, 0.50), "%s stays ankle to knee" % d.decor_type)
+	for p in w.props_root.get_children():
+		if p.prop_type == "red_roof_cottage" or p.prop_type == "crossroads_centerpiece":
+			saw_cottage = true
+			check(is_equal_approx(p.scale.y, 1.0), "%s stays full size" % p.prop_type)
+		elif p.prop_type == "tree":
+			saw_tree = true
+			check(is_equal_approx(p.scale.y, 1.0), "trees stay full size")
+		elif p.prop_type == "hedgerow_nesw":
+			check(is_equal_approx(p.scale.y, 0.62), "hedges sit at shoulder height")
+	check(saw_sun, "crossroads has a sunflower to scale")
+	check(saw_flower, "crossroads has low plants to scale")
+	check(saw_cottage and saw_tree, "crossroads has a full-size building and tree")
 
 
 func _test_pick(w: Node2D) -> void:
