@@ -6,16 +6,16 @@
   "width": 36,
   "height": 32,
   "spawn": {
-    "x": 25,
-    "y": 13
+    "x": 16,
+    "y": 10
   },
   "points_of_interest": [
     {
       "id": "westwatch_center",
       "name": "Westwatch",
       "kind": "town",
-      "x": 25,
-      "y": 13
+      "x": 16,
+      "y": 10
     }
   ],
   "exits": [
@@ -102,114 +102,6 @@
         {
           "x": 23,
           "y": 13
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_red_roof_cottage_01",
-      "type": "red_roof_cottage",
-      "blocks": true,
-      "origin": {
-        "x": 6,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 6,
-          "y": 8
-        },
-        {
-          "x": 7,
-          "y": 8
-        },
-        {
-          "x": 6,
-          "y": 9
-        },
-        {
-          "x": 7,
-          "y": 9
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_red_roof_cottage_02",
-      "type": "red_roof_cottage",
-      "blocks": true,
-      "origin": {
-        "x": 24,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 24,
-          "y": 8
-        },
-        {
-          "x": 25,
-          "y": 8
-        },
-        {
-          "x": 24,
-          "y": 9
-        },
-        {
-          "x": 25,
-          "y": 9
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_red_roof_cottage_03",
-      "type": "red_roof_cottage",
-      "blocks": true,
-      "origin": {
-        "x": 6,
-        "y": 18
-      },
-      "footprint": [
-        {
-          "x": 6,
-          "y": 18
-        },
-        {
-          "x": 7,
-          "y": 18
-        },
-        {
-          "x": 6,
-          "y": 19
-        },
-        {
-          "x": 7,
-          "y": 19
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_red_roof_cottage_04",
-      "type": "red_roof_cottage",
-      "blocks": true,
-      "origin": {
-        "x": 24,
-        "y": 20
-      },
-      "footprint": [
-        {
-          "x": 24,
-          "y": 20
-        },
-        {
-          "x": 25,
-          "y": 20
-        },
-        {
-          "x": 24,
-          "y": 21
-        },
-        {
-          "x": 25,
-          "y": 21
         }
       ]
     },
@@ -353,25 +245,25 @@
       "type": "watchtower_2x2",
       "blocks": true,
       "origin": {
-        "x": 26,
-        "y": 13
+        "x": 30,
+        "y": 11
       },
       "footprint": [
         {
-          "x": 26,
-          "y": 13
+          "x": 30,
+          "y": 11
         },
         {
-          "x": 27,
-          "y": 13
+          "x": 31,
+          "y": 11
         },
         {
-          "x": 26,
-          "y": 14
+          "x": 30,
+          "y": 12
         },
         {
-          "x": 27,
-          "y": 14
+          "x": 31,
+          "y": 12
         }
       ]
     },
@@ -463,21 +355,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_tree_03",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 21,
-        "y": 19
-      },
-      "footprint": [
-        {
-          "x": 21,
-          "y": 19
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_tree_04",
       "type": "tree",
       "blocks": true,
@@ -493,36 +370,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_tree_05",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 20,
-        "y": 6
-      },
-      "footprint": [
-        {
-          "x": 20,
-          "y": 6
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_scatter_tree_06",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 11,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 11,
-          "y": 8
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_tree_07",
       "type": "tree",
       "blocks": true,
@@ -534,21 +381,6 @@
         {
           "x": 21,
           "y": 2
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_scatter_tree_08",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 20,
-        "y": 11
-      },
-      "footprint": [
-        {
-          "x": 20,
-          "y": 11
         }
       ]
     },
@@ -583,21 +415,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_tree_11",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 12,
-        "y": 11
-      },
-      "footprint": [
-        {
-          "x": 12,
-          "y": 11
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_tree_12",
       "type": "tree",
       "blocks": true,
@@ -628,21 +445,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_tree_14",
-      "type": "tree",
-      "blocks": true,
-      "origin": {
-        "x": 21,
-        "y": 14
-      },
-      "footprint": [
-        {
-          "x": 21,
-          "y": 14
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_hedgerow_nesw_01",
       "type": "hedgerow_nesw",
       "blocks": true,
@@ -654,21 +456,6 @@
         {
           "x": 19,
           "y": 21
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nesw_02",
-      "type": "hedgerow_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 19,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 19,
-          "y": 9
         }
       ]
     },
@@ -688,36 +475,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nesw_04",
-      "type": "hedgerow_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 19,
-        "y": 13
-      },
-      "footprint": [
-        {
-          "x": 19,
-          "y": 13
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nesw_05",
-      "type": "hedgerow_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 16
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 16
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_hedgerow_nesw_06",
       "type": "hedgerow_nesw",
       "blocks": true,
@@ -729,21 +486,6 @@
         {
           "x": 19,
           "y": 4
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nesw_07",
-      "type": "hedgerow_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 6
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 6
         }
       ]
     },
@@ -778,21 +520,6 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nwse_02",
-      "type": "hedgerow_nwse",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 9
-        }
-      ]
-    },
-    {
       "id": "crosshaven_westwatch_scatter_hedgerow_nwse_03",
       "type": "hedgerow_nwse",
       "blocks": true,
@@ -808,17 +535,597 @@
       ]
     },
     {
-      "id": "crosshaven_westwatch_scatter_hedgerow_nwse_04",
-      "type": "hedgerow_nwse",
+      "id": "crosshaven_westwatch_density_red_roof_cottage_01",
+      "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 13,
-        "y": 13
+        "x": 4,
+        "y": 6
       },
       "footprint": [
         {
-          "x": 13,
-          "y": 13
+          "x": 4,
+          "y": 6
+        },
+        {
+          "x": 5,
+          "y": 6
+        },
+        {
+          "x": 4,
+          "y": 7
+        },
+        {
+          "x": 5,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_02",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 6
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 6
+        },
+        {
+          "x": 9,
+          "y": 6
+        },
+        {
+          "x": 8,
+          "y": 7
+        },
+        {
+          "x": 9,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_03",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 16
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 16
+        },
+        {
+          "x": 5,
+          "y": 16
+        },
+        {
+          "x": 4,
+          "y": 17
+        },
+        {
+          "x": 5,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_04",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 16
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 16
+        },
+        {
+          "x": 9,
+          "y": 16
+        },
+        {
+          "x": 8,
+          "y": 17
+        },
+        {
+          "x": 9,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_05",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 20,
+        "y": 6
+      },
+      "footprint": [
+        {
+          "x": 20,
+          "y": 6
+        },
+        {
+          "x": 21,
+          "y": 6
+        },
+        {
+          "x": 20,
+          "y": 7
+        },
+        {
+          "x": 21,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_06",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 28,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 28,
+          "y": 8
+        },
+        {
+          "x": 29,
+          "y": 8
+        },
+        {
+          "x": 28,
+          "y": 9
+        },
+        {
+          "x": 29,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_07",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 20,
+        "y": 18
+      },
+      "footprint": [
+        {
+          "x": 20,
+          "y": 18
+        },
+        {
+          "x": 21,
+          "y": 18
+        },
+        {
+          "x": 20,
+          "y": 19
+        },
+        {
+          "x": 21,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_red_roof_cottage_08",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 28,
+        "y": 16
+      },
+      "footprint": [
+        {
+          "x": 28,
+          "y": 16
+        },
+        {
+          "x": 29,
+          "y": 16
+        },
+        {
+          "x": 28,
+          "y": 17
+        },
+        {
+          "x": 29,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_market_stall_09",
+      "type": "market_stall",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 14
+        },
+        {
+          "x": 11,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_well_10",
+      "type": "well",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_lamp_post_11",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_lamp_post_12",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_lamp_post_13",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_lamp_post_14",
+      "type": "lamp_post",
+      "blocks": true,
+      "origin": {
+        "x": 29,
+        "y": 11
+      },
+      "footprint": [
+        {
+          "x": 29,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_barrel_15",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_barrel_16",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_crate_apples_17",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 18
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_crate_apples_18",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 20
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_cart_19",
+      "type": "cart",
+      "blocks": true,
+      "origin": {
+        "x": 30,
+        "y": 20
+      },
+      "footprint": [
+        {
+          "x": 30,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_signpost_crossroads_20",
+      "type": "signpost_crossroads",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hay_bale_21",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_farm_fence_nwse_22",
+      "type": "farm_fence_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 21
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_farm_fence_nwse_23",
+      "type": "farm_fence_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 5,
+        "y": 21
+      },
+      "footprint": [
+        {
+          "x": 5,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_farm_fence_nwse_24",
+      "type": "farm_fence_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 7,
+        "y": 21
+      },
+      "footprint": [
+        {
+          "x": 7,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_farm_fence_nesw_25",
+      "type": "farm_fence_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 3,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_farm_fence_nesw_26",
+      "type": "farm_fence_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 3,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_27",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 26
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_28",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 26
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_29",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 26
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_30",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 26
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_31",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 30,
+        "y": 4
+      },
+      "footprint": [
+        {
+          "x": 30,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_32",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 32,
+        "y": 4
+      },
+      "footprint": [
+        {
+          "x": 32,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_density_hedgerow_nwse_33",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 30,
+        "y": 24
+      },
+      "footprint": [
+        {
+          "x": 30,
+          "y": 24
         }
       ]
     }
@@ -2409,28 +2716,28 @@
     {
       "x": 10,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -2472,28 +2779,28 @@
     {
       "x": 19,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -2661,28 +2968,28 @@
     {
       "x": 10,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -2724,28 +3031,28 @@
     {
       "x": 19,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -2871,70 +3178,70 @@
     {
       "x": 4,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -2976,28 +3283,28 @@
     {
       "x": 19,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3165,28 +3472,28 @@
     {
       "x": 10,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3228,28 +3535,28 @@
     {
       "x": 19,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3417,28 +3724,28 @@
     {
       "x": 10,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3480,28 +3787,28 @@
     {
       "x": 19,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3543,14 +3850,14 @@
     {
       "x": 28,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3669,28 +3976,28 @@
     {
       "x": 10,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3732,28 +4039,28 @@
     {
       "x": 19,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3795,7 +4102,7 @@
     {
       "x": 28,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3921,28 +4228,28 @@
     {
       "x": 10,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -3984,28 +4291,28 @@
     {
       "x": 19,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4047,7 +4354,7 @@
     {
       "x": 28,
       "y": 12,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4173,28 +4480,28 @@
     {
       "x": 10,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4236,28 +4543,28 @@
     {
       "x": 19,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4278,49 +4585,49 @@
     {
       "x": 25,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4425,28 +4732,28 @@
     {
       "x": 10,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4488,49 +4795,49 @@
     {
       "x": 19,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4544,7 +4851,7 @@
     {
       "x": 27,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4677,28 +4984,28 @@
     {
       "x": 10,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4740,28 +5047,28 @@
     {
       "x": 19,
       "y": 15,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 15,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 15,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 15,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4796,7 +5103,7 @@
     {
       "x": 27,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4929,28 +5236,28 @@
     {
       "x": 10,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -4992,28 +5299,28 @@
     {
       "x": 19,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 16,
-      "terrain": "farm_plowed",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5048,7 +5355,7 @@
     {
       "x": 27,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5181,7 +5488,7 @@
     {
       "x": 10,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5244,28 +5551,28 @@
     {
       "x": 19,
       "y": 17,
-      "terrain": "farm_plowed",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 17,
-      "terrain": "farm_plowed",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 17,
-      "terrain": "farm_plowed",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 17,
-      "terrain": "farm_plowed",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5300,7 +5607,7 @@
     {
       "x": 27,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5391,49 +5698,49 @@
     {
       "x": 4,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -5552,21 +5859,21 @@
     {
       "x": 27,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -6000,21 +6307,21 @@
     {
       "x": 19,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -6399,14 +6706,14 @@
     {
       "x": 4,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -6420,7 +6727,7 @@
     {
       "x": 7,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -6651,28 +6958,28 @@
     {
       "x": 4,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -6903,28 +7210,28 @@
     {
       "x": 4,
       "y": 24,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 24,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 24,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 24,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -8942,12 +9249,6 @@
       "y": 6
     },
     {
-      "id": "crosshaven_westwatch_decor_008",
-      "type": "flowers_a",
-      "x": 12,
-      "y": 8
-    },
-    {
       "id": "crosshaven_westwatch_decor_009",
       "type": "sunflowers_tall",
       "x": 20,
@@ -8978,12 +9279,6 @@
       "y": 12
     },
     {
-      "id": "crosshaven_westwatch_decor_014",
-      "type": "flowers_d",
-      "x": 12,
-      "y": 14
-    },
-    {
       "id": "crosshaven_westwatch_decor_015",
       "type": "flowers_a",
       "x": 20,
@@ -8999,12 +9294,6 @@
       "id": "crosshaven_westwatch_decor_017",
       "type": "flowers_d",
       "x": 12,
-      "y": 18
-    },
-    {
-      "id": "crosshaven_westwatch_decor_018",
-      "type": "bush_small_b",
-      "x": 20,
       "y": 18
     },
     {
@@ -9362,18 +9651,6 @@
       "y": 5
     },
     {
-      "id": "crosshaven_westwatch_decor_078",
-      "type": "tuft_a",
-      "x": 9,
-      "y": 6
-    },
-    {
-      "id": "crosshaven_westwatch_decor_079",
-      "type": "rock_small_c",
-      "x": 21,
-      "y": 6
-    },
-    {
       "id": "crosshaven_westwatch_decor_080",
       "type": "grass_tuft_a",
       "x": 22,
@@ -9434,12 +9711,6 @@
       "y": 9
     },
     {
-      "id": "crosshaven_westwatch_decor_090",
-      "type": "mushrooms_a",
-      "x": 28,
-      "y": 9
-    },
-    {
       "id": "crosshaven_westwatch_decor_091",
       "type": "decal_leaves",
       "x": 33,
@@ -9467,18 +9738,6 @@
       "id": "crosshaven_westwatch_decor_095",
       "type": "tuft_a",
       "x": 9,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_westwatch_decor_096",
-      "type": "grass_tuft_b",
-      "x": 29,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_westwatch_decor_097",
-      "type": "flowers_b",
-      "x": 30,
       "y": 11
     },
     {
@@ -9594,12 +9853,6 @@
       "type": "flowers_c",
       "x": 34,
       "y": 16
-    },
-    {
-      "id": "crosshaven_westwatch_decor_117",
-      "type": "flowers_d",
-      "x": 4,
-      "y": 17
     },
     {
       "id": "crosshaven_westwatch_decor_118",
@@ -9740,12 +9993,6 @@
       "y": 24
     },
     {
-      "id": "crosshaven_westwatch_decor_141",
-      "type": "flowers_c",
-      "x": 30,
-      "y": 24
-    },
-    {
       "id": "crosshaven_westwatch_decor_142",
       "type": "bush_small_a",
       "x": 31,
@@ -9840,6 +10087,102 @@
       "type": "flowers_c",
       "x": 30,
       "y": 28
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_01",
+      "type": "flowers_a",
+      "x": 3,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_02",
+      "type": "flowers_a",
+      "x": 4,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_03",
+      "type": "flowers_b",
+      "x": 10,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_04",
+      "type": "flowers_b",
+      "x": 8,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_05",
+      "type": "flowers_c",
+      "x": 3,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_06",
+      "type": "flowers_c",
+      "x": 6,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_07",
+      "type": "flowers_d",
+      "x": 7,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_08",
+      "type": "flowers_d",
+      "x": 10,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_09",
+      "type": "decal_flowers_pink",
+      "x": 19,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_10",
+      "type": "decal_flowers_pink",
+      "x": 20,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_11",
+      "type": "decal_flowers_yellow",
+      "x": 27,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_12",
+      "type": "decal_flowers_yellow",
+      "x": 30,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_13",
+      "type": "flowers_a",
+      "x": 19,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_14",
+      "type": "flowers_a",
+      "x": 22,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_15",
+      "type": "flowers_b",
+      "x": 27,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_westwatch_density_flowers_16",
+      "type": "flowers_b",
+      "x": 30,
+      "y": 17
     }
   ]
 }

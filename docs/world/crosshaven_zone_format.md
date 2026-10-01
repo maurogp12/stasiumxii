@@ -237,3 +237,9 @@ godot --headless --path . -s res://tests/run_crosshaven_zone_tests.gd
 Farm terrains (`farm_cabbage`, `farm_carrot`, `farm_fallow`, `farm_lavender`, `farm_plowed`, `farm_pumpkin`, `farm_soil`, `farm_sunflower`) are walkable ground, same as plains. The prop catalog grew with the v6 buildings and town props. Every catalog prop still has `blocks: true` in the schema. An **instance** may set `blocks` to `false`, and then its footprint does not block. `decor` is an optional array of `{id, type, x, y}` sprites that never block and never change pathing.
 
 `build_crosshaven_zones.py` rewrites the chunks from scratch. Run `build_crosshaven_dressing.py` after it to put the crops, extra blockers, and decor back. A blocker is written only when every other passable cell stays reachable from that chunk's spawn.
+
+## Town density
+
+`build_crosshaven_density.py` is a third pass on the five towns and the crossroads. It does not add prop ids or tile ids. It rewrites those six zone files in place: a `dirt_road` plaza, cottages around it, door lanes, and street props from the existing catalog. Interior `dirt_road` within seven cells of a point of interest draws as flagstone (`pick_tile` in `scenes/world/crosshaven/crosshaven_art.gd`). Benches are not in the prop catalog, so the squares use stalls, wells, barrels, crates, carts, lamps, and signposts.
+
+Regenerating chunks wipes this pass. Run the zone builder, then dressing, then density. The crossroads spawn stays `(22, 18)`. The other town spawns move onto the open square. Through-roads and exit mouths stay free of new blockers.
