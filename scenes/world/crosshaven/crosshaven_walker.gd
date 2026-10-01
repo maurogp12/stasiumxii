@@ -15,6 +15,11 @@ const CLASS_ID := "ironjaw"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
+## Idle/walk/run and facing swaps crossfade. Short enough that a step still reads.
+const BLEND_SEC := 0.10
+## How fast a finished plant returns to the root. The camera follows the offset,
+## so this is a speed change along the path, not a vertical bob.
+const RELEASE_SEC := 0.18
 
 var zone: WorldZone
 var cell := Vector2i.ZERO
@@ -40,12 +45,18 @@ var _air := 0.0
 var _idle_t := 0.0
 var _phase := 0.0
 var _halt_after := false
-## East/west strips plant the foot on a flat line. The iso step also moves in Y.
-## Hold the sole's screen Y while it is down, and ease that hold off in the air.
-var _foot_cycle := -1
-var _foot_origin_y := 0.0
-var _foot_sole_y := 0.0
-var _foot_release := 0.0
+## Gait actually on screen. `pace` is the request; it takes over on a plant, not mid-stride.
+var _shown_pace := "walk"
+var _fade: Sprite2D
+var _blend_left := 0.0
+## Path point versus the drawn pivot. The pivot locks to the sole while it is
+## down, then returns to the path. The camera follows `position`, so that
+## return is not a bob against the view.
+var _visual := Vector2.ZERO
+var _planted := false
+var _lock := Vector2.ZERO
+var _release_anchor := Vector2.ZERO
+var _release_u := 1.0
 
 
 func _ready() -> void:
@@ -55,6 +66,12 @@ func _ready() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.centered = true
 	_sprite.offset = _strips.pivot
+	_fade = Sprite2D.new()
+	_fade.centered = true
+	_fade.offset = _strips.pivot
+	_fade.visible = false
+	_fade.z_index = -1
+	add_child(_fade)
 	add_child(_sprite)
 	_apply_strip_speed()
 	_show_idle()
@@ -85,6 +102,7 @@ func place(target_zone: WorldZone, at: Vector2i) -> void:
 	cell = at
 	facing = "s"
 	pace = "walk"
+	_shown_pace = "walk"
 	_queue.clear()
 	_samples.clear()
 	_moving = false
@@ -95,6 +113,7 @@ func place(target_zone: WorldZone, at: Vector2i) -> void:
 	_bob = 0.0
 	_air = 0.0
 	position = _cell_pos(at)
+	_visual = position
 	z_index = _z_for(at)
 	_show_idle()
 	queue_redraw()
@@ -102,6 +121,23 @@ func place(target_zone: WorldZone, at: Vector2i) -> void:
 
 func is_moving() -> bool:
 	return _moving
+
+
+## Sprite shift that keeps a planted sole in the world. The camera follows this
+## so the shift is not a bob against the view.
+func visual_offset() -> Vector2:
+	if _sprite == null:
+		return Vector2.ZERO
+	return _sprite.position
+
+
+func foot_planted() -> bool:
+	return _moving and _on_contact(_gait_name(), facing, _frame_index())
+
+
+func planted_sole_world() -> Vector2:
+	var frame := _frame_index()
+	return position + _sole_of(_gait_name(), facing, frame)
 
 
 func anchor_cell() -> Vector2i:
@@ -117,6 +153,8 @@ func walk(steps: Array[Vector2i], pace_name: String = "auto") -> void:
 		use = "run" if steps.size() >= 14 else "walk"
 	pace = use
 	_halt_after = false
+	if not _moving:
+		_shown_pace = use
 	if _moving:
 		var pending := _pending_cell()
 		var rest: Array[Vector2i] = [pending]
@@ -145,6 +183,9 @@ func _process(delta: float) -> void:
 
 func advance(delta: float) -> void:
 	delta *= playback
+	_tick_blend(delta)
+	if _release_u < 1.0:
+		_release_u = minf(1.0, _release_u + delta / RELEASE_SEC)
 	if not _moving:
 		_idle_t += delta
 		_show_idle()
@@ -159,18 +200,22 @@ func advance(delta: float) -> void:
 		_moving = false
 		if not _samples.is_empty():
 			position = _samples[_samples.size() - 1]["pos"]
+		_visual = position
 		z_index = _z_for(cell)
 		_bob = 0.0
+		_planted = false
 		_show_idle()
 		arrived.emit(cell)
 		return
-	position = _point_at(_traveled)
-	_face_toward(_pending_cell())
-	_apply_gait()
+	var root := _point_at(_traveled)
+	_sync_pace()
+	_sync_facing(false)
+	_apply_gait(root)
 	_update_z()
 
 
 func _rebuild(from_cell: Vector2i, from_pos: Vector2) -> void:
+	var from_rest := not _moving
 	var cells: Array[Vector2i] = [from_cell]
 	for step in _queue:
 		cells.append(step)
@@ -181,51 +226,145 @@ func _rebuild(from_cell: Vector2i, from_pos: Vector2) -> void:
 	_total = 0.0
 	if not _samples.is_empty():
 		_total = float(_samples[_samples.size() - 1]["dist"])
-	_apply_strip_speed()
 	_moving = _total > 0.4
+	_visual = from_pos
+	_planted = false
+	_release_u = 1.0
 	if _moving:
-		_face_toward(_pending_cell())
-		_apply_gait()
+		_sync_facing(from_rest)
+		_sync_pace()
+		_apply_strip_speed()
+		_apply_gait(from_pos)
 	else:
 		_show_idle()
 
 
 func _bake(cells: Array[Vector2i], first_pos: Vector2) -> Array:
-	var raw: PackedVector2Array = PackedVector2Array()
-	raw.append(first_pos)
-	for i in range(1, cells.size()):
-		raw.append(_cell_pos(cells[i]))
-	var marks: Array = [{"pos": raw[0], "has": false, "cell": Vector2i.ZERO}]
-	for i in range(1, raw.size()):
-		var here: Vector2 = raw[i]
-		var prev: Vector2 = raw[i - 1]
-		var arrive: Vector2i = cells[i]
-		var last := i == raw.size() - 1
-		if not last:
-			var nxt: Vector2 = raw[i + 1]
-			var vin := here - prev
-			var vout := nxt - here
-			var lin := vin.length()
-			var lout := vout.length()
-			var aligned := true
-			if lin > 0.01 and lout > 0.01:
-				aligned = vin.normalized().dot(vout.normalized()) > 0.98
-			if not aligned and lin > 8.0 and lout > 8.0:
-				var cut_in := minf(CORNER_CUT, lin * 0.35)
-				var cut_out := minf(CORNER_CUT, lout * 0.35)
-				var a := here - vin.normalized() * cut_in
-				var b := here + vout.normalized() * cut_out
-				marks.append({"pos": a, "has": false, "cell": Vector2i.ZERO})
-				for step in [0.35, 0.5, 0.75, 1.0]:
-					var t := float(step)
-					marks.append({
-						"pos": _quad(a, here, b, t),
-						"has": is_equal_approx(t, 0.5),
-						"cell": arrive,
-					})
-				continue
-		marks.append({"pos": here, "has": true, "cell": arrive})
-	return _measure(marks)
+	var marks: Array = [{"pos": first_pos, "has": false, "cell": Vector2i.ZERO, "face": ""}]
+	var i := 0
+	while i < cells.size() - 1:
+		var j := _segment_end(cells, i)
+		var face := _segment_facing(cells, i, j)
+		var origin := _cell_pos(cells[i])
+		var dest := _cell_pos(cells[j])
+		var span := j - i
+		for k in range(i + 1, j + 1):
+			var t := float(k - i) / float(span)
+			marks.append({
+				"pos": origin.lerp(dest, t),
+				"has": true,
+				"cell": cells[k],
+				"face": face,
+			})
+		i = j
+	return _measure(_cut_corners(marks))
+
+
+## A colinear ortho run, or a staircase that crosses the grid diagonally.
+## Those staircases become one straight screen segment so the facing and the
+## speed stay constant instead of flipping at every cell.
+func _segment_end(cells: Array[Vector2i], i: int) -> int:
+	var step0 := cells[i + 1] - cells[i]
+	var end := i + 1
+	if end >= cells.size() - 1:
+		return end
+	var nxt := cells[end + 1] - cells[end]
+	if nxt == step0:
+		while end < cells.size() - 1 and cells[end + 1] - cells[end] == step0:
+			end += 1
+		return end
+	if step0.x * nxt.x + step0.y * nxt.y != 0:
+		return end
+	var other := nxt
+	var prev_step := step0
+	while end < cells.size() - 1:
+		var nstep := cells[end + 1] - cells[end]
+		if nstep == prev_step:
+			break
+		if nstep != step0 and nstep != other:
+			break
+		prev_step = nstep
+		end += 1
+	return end
+
+
+func _segment_facing(cells: Array[Vector2i], i: int, j: int) -> String:
+	var delta := cells[j] - cells[i]
+	if delta.x != 0 and delta.y != 0:
+		return _best_screen_facing(delta)
+	return _ortho_facing(cells[i + 1] - cells[i])
+
+
+func _ortho_facing(step: Vector2i) -> String:
+	if step.x > 0:
+		return "e"
+	if step.x < 0:
+		return "w"
+	if step.y > 0:
+		return "s"
+	return "n"
+
+
+## Facing whose iso step best matches the screen direction of a diagonal run.
+func _best_screen_facing(delta: Vector2i) -> String:
+	var screen := BoardVisualSort.cell_to_local(delta)
+	var best := "s"
+	var best_dot := -1.0e9
+	for dir in ["e", "w", "s", "n"]:
+		var d := screen.dot(_iso_step(dir))
+		if d > best_dot:
+			best_dot = d
+			best = dir
+	return best
+
+
+func _iso_step(dir: String) -> Vector2:
+	match dir:
+		"e":
+			return Vector2(32, 16)
+		"w":
+			return Vector2(-32, -16)
+		"s":
+			return Vector2(-32, 16)
+		_:
+			return Vector2(32, -16)
+
+
+func _cut_corners(marks: Array) -> Array:
+	if marks.size() < 3:
+		return marks
+	var out: Array = [marks[0]]
+	for i in range(1, marks.size() - 1):
+		var prev: Vector2 = out[out.size() - 1]["pos"]
+		var here: Vector2 = marks[i]["pos"]
+		var nxt: Vector2 = marks[i + 1]["pos"]
+		var arrive: Vector2i = marks[i]["cell"]
+		var face: String = str(marks[i]["face"])
+		var vin := here - prev
+		var vout := nxt - here
+		var lin := vin.length()
+		var lout := vout.length()
+		var aligned := true
+		if lin > 0.01 and lout > 0.01:
+			aligned = vin.normalized().dot(vout.normalized()) > 0.98
+		if not aligned and lin > 8.0 and lout > 8.0:
+			var cut_in := minf(CORNER_CUT, lin * 0.35)
+			var cut_out := minf(CORNER_CUT, lout * 0.35)
+			var a := here - vin.normalized() * cut_in
+			var b := here + vout.normalized() * cut_out
+			out.append({"pos": a, "has": false, "cell": Vector2i.ZERO, "face": face})
+			for step in [0.35, 0.5, 0.75, 1.0]:
+				var t := float(step)
+				out.append({
+					"pos": _quad(a, here, b, t),
+					"has": is_equal_approx(t, 0.5),
+					"cell": arrive,
+					"face": face,
+				})
+			continue
+		out.append(marks[i])
+	out.append(marks[marks.size() - 1])
+	return out
 
 
 func _quad(a: Vector2, b: Vector2, c: Vector2, t: float) -> Vector2:
@@ -240,7 +379,13 @@ func _measure(marks: Array) -> Array:
 	for mark in marks:
 		var pos: Vector2 = mark["pos"]
 		dist += prev.distance_to(pos)
-		out.append({"pos": pos, "dist": dist, "has": mark["has"], "cell": mark["cell"]})
+		out.append({
+			"pos": pos,
+			"dist": dist,
+			"has": mark["has"],
+			"cell": mark["cell"],
+			"face": str(mark.get("face", "")),
+		})
 		prev = pos
 	return out
 
@@ -314,21 +459,37 @@ func _speed_at(traveled: float, total: float, cruise: float) -> float:
 	return cruise * gate
 
 
-func _face_toward(target: Vector2i) -> void:
-	var d := target - cell
-	if d.x > 0:
-		facing = "e"
-	elif d.x < 0:
-		facing = "w"
-	elif d.y > 0:
-		facing = "s"
-	elif d.y < 0:
-		facing = "n"
-	_apply_strip_speed()
+func _facing_ahead() -> String:
+	for i in range(_cursor, _samples.size()):
+		var sample: Dictionary = _samples[i]
+		var face := str(sample.get("face", ""))
+		if face != "" and float(sample["dist"]) >= _traveled - 0.001:
+			return face
+	return facing
+
+
+## Turn when a sole is down, not halfway through a stride.
+func _sync_facing(force: bool) -> void:
+	var want := _facing_ahead()
+	if want == "" or want == facing:
+		return
+	if force or _on_contact(_gait_name(), facing, _frame_index()):
+		facing = want
+		_planted = false
+		_apply_strip_speed()
+
+
+func _sync_pace() -> void:
+	if pace == _shown_pace:
+		return
+	if _on_contact(_gait_name(), facing, _frame_index()):
+		_shown_pace = pace
+		_planted = false
+		_apply_strip_speed()
 
 
 func _gait_name() -> String:
-	return "run" if pace == "run" else "walk"
+	return "run" if _shown_pace == "run" else "walk"
 
 
 func _apply_strip_speed() -> void:
@@ -346,7 +507,7 @@ func _apply_strip_speed() -> void:
 	_cruise = _strips.speed_of(gait, facing)
 
 
-func _apply_gait() -> void:
+func _apply_gait(root: Vector2) -> void:
 	var gait := _gait_name()
 	var tex: Texture2D = _strips.texture(gait, facing)
 	if tex == null:
@@ -361,25 +522,55 @@ func _apply_gait() -> void:
 	var cell_size: Vector2i = _strips.frame_size(gait)
 	_bob = 0.0
 	_air = 0.0
-	_sprite.texture = tex
-	_sprite.region_enabled = true
-	_sprite.region_rect = Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y)
-	_sprite.scale = Vector2(_strips.scale, _strips.scale)
-	_sprite.position = _foot_offset(frame)
+	_visual = _visual_for(frame, root)
+	position = _visual
+	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(_strips.scale, _strips.scale), Vector2.ZERO)
 	queue_redraw()
 
 
 func _show_idle() -> void:
 	var tex: Texture2D = _strips.idle(facing)
-	_sprite.texture = tex
-	_sprite.region_enabled = false
 	var breath := sin(_idle_t * TAU * 1.35) * 0.012
-	_sprite.scale = Vector2(_strips.scale * (1.0 - breath * 0.4), _strips.scale * (1.0 + breath))
-	_sprite.position = Vector2.ZERO
-	_foot_cycle = -1
+	var sc := Vector2(_strips.scale * (1.0 - breath * 0.4), _strips.scale * (1.0 + breath))
+	_present(tex, false, Rect2(), sc, Vector2.ZERO)
+	_visual = position
+	_planted = false
+	_release_u = 1.0
 	_bob = 0.0
 	_air = 0.0
 	queue_redraw()
+
+
+func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot: Vector2) -> void:
+	if tex != _sprite.texture and _sprite.texture != null:
+		_begin_fade()
+	_sprite.texture = tex
+	_sprite.region_enabled = region_on
+	if region_on:
+		_sprite.region_rect = region
+	_sprite.scale = sc
+	_sprite.position = foot
+
+
+func _begin_fade() -> void:
+	_fade.texture = _sprite.texture
+	_fade.region_enabled = _sprite.region_enabled
+	_fade.region_rect = _sprite.region_rect
+	_fade.scale = _sprite.scale
+	_fade.position = _sprite.position
+	_fade.modulate.a = 1.0
+	_fade.visible = true
+	_blend_left = BLEND_SEC
+
+
+func _tick_blend(delta: float) -> void:
+	if _fade == null or not _fade.visible:
+		return
+	_blend_left = maxf(0.0, _blend_left - delta)
+	if _blend_left <= 0.0:
+		_fade.visible = false
+		return
+	_fade.modulate.a = _blend_left / BLEND_SEC
 
 
 func _update_z() -> void:
@@ -405,70 +596,74 @@ func _cell_pos(c: Vector2i) -> Vector2:
 	return BoardVisualSort.cell_to_local(c, float(zone.height_at(c)))
 
 
-## Sole lift in world pixels, measured from the pivot on the east strip (west matches).
-func _sole_lift(gait: String, frame: int) -> float:
-	var dy := -1.0
-	if gait == "run":
-		match frame:
-			0:
-				dy = -2.0
-			1:
-				dy = -1.0
-			2:
-				dy = -2.0
-			3:
-				dy = -7.0
-			4:
-				dy = -6.0
-			5:
-				dy = -3.0
-			6:
-				dy = -7.0
-			_:
-				dy = -5.0
-	else:
-		match frame:
-			0:
-				dy = -3.0
-			1, 2, 3:
-				dy = -1.0
-			4:
-				dy = -2.0
-			5:
-				dy = -3.0
-			_:
-				dy = -6.0
-	var s: float = _strips.scale if _strips != null else 0.33
-	return dy * s
+## Sole, in world pixels from the node, measured on each strip. Contact bits are
+## the frames where that sole stays on the ground and moves with one foot.
+const _SOLE := {
+	"walk": {
+		"e": [Vector2(9.74, -1.32), Vector2(14.19, -0.66), Vector2(11.55, -0.66), Vector2(8.91, -0.66), Vector2(6.11, -0.99), Vector2(6.77, -1.65), Vector2(11.55, -2.31), Vector2(8.91, -2.31)],
+		"w": [Vector2(-10.07, -1.32), Vector2(-14.52, -0.66), Vector2(-11.88, -0.66), Vector2(-9.24, -0.66), Vector2(-6.44, -0.99), Vector2(-7.10, -1.65), Vector2(-11.88, -2.31), Vector2(-9.24, -2.31)],
+		"s": [Vector2(-9.90, -1.65), Vector2(-8.75, -0.99), Vector2(-6.93, -1.98), Vector2(-5.45, -2.64), Vector2(-6.60, 0.00), Vector2(-5.45, 0.66), Vector2(-3.63, -0.33), Vector2(-1.82, -1.32)],
+		"n": [Vector2(-2.90, -2.66), Vector2(6.60, -3.30), Vector2(4.79, -2.31), Vector2(2.81, -1.32), Vector2(0.40, -1.01), Vector2(-15.02, -0.33), Vector2(-13.20, -2.64), Vector2(-0.49, -2.97)],
+	},
+	"run": {
+		"e": [Vector2(9.08, -0.99), Vector2(10.23, -0.66), Vector2(7.76, -1.32), Vector2(5.28, -2.64), Vector2(9.08, -2.64), Vector2(-0.49, -1.65), Vector2(7.92, -2.97), Vector2(17.66, -2.31)],
+		"s": [Vector2(-9.08, -1.32), Vector2(-6.11, -2.31), Vector2(-5.12, -3.30), Vector2(-6.93, -0.66), Vector2(-5.78, 0.33), Vector2(-2.81, -0.66), Vector2(-16.97, -3.31), Vector2(-10.23, -2.31)],
+		"w": [Vector2(-9.41, -0.99), Vector2(-10.56, -0.66), Vector2(-8.09, -1.32), Vector2(-5.61, -2.64), Vector2(-9.41, -2.64), Vector2(0.17, -1.65), Vector2(-8.25, -2.97), Vector2(-17.98, -2.31)],
+		"n": [Vector2(7.10, -3.96), Vector2(3.96, -1.98), Vector2(0.24, -2.00), Vector2(-14.69, -2.64), Vector2(-19.96, -1.98), Vector2(-20.96, -0.33), Vector2(-17.98, -1.65), Vector2(-14.36, -4.29)],
+	},
+}
+## Bit i set means frame i is a plant. Walk east/west is frames 1-4, south 4-5.
+## Run east/west is frames 0-2. North plants jump between feet, so they stay free.
+const _PLANT := {
+	"walk": {"e": 30, "w": 30, "s": 48, "n": 0},
+	"run": {"e": 7, "w": 7, "s": 0, "n": 0},
+}
 
 
-func _foot_in_air(gait: String, frame: int) -> bool:
-	if gait == "run":
-		return frame >= 3
-	return frame >= 6
-
-
-func _foot_offset(frame: int) -> Vector2:
-	if facing != "e" and facing != "w":
-		_foot_cycle = -1
-		return Vector2.ZERO
-	var gait := _gait_name()
+func _frame_index() -> int:
+	var count := maxi(1, _strips.frame_count(_gait_name(), facing))
 	var span := maxf(_stride, 0.001)
-	var cycle := int(_phase / span)
-	var sole_y := _sole_lift(gait, frame)
-	if cycle != _foot_cycle:
-		_foot_cycle = cycle
-		_foot_origin_y = position.y
-		_foot_sole_y = sole_y
-		_foot_release = 0.0
-	var held := _foot_origin_y - position.y + _foot_sole_y - sole_y
-	if not _foot_in_air(gait, frame):
-		_foot_release = held
-		return Vector2(0.0, held)
-	var slots := 5 if gait == "run" else 2
-	var index := frame - (3 if gait == "run" else 6)
-	var u := float(index + 1) / float(slots)
-	return Vector2(0.0, _foot_release * (1.0 - u))
+	var phase := fmod(_phase / span, 1.0)
+	if phase < 0.0:
+		phase += 1.0
+	return int(phase * float(count)) % count
+
+
+func _sole_of(gait: String, dir: String, frame: int) -> Vector2:
+	var rows: Dictionary = _SOLE.get(gait, {})
+	var row: Array = rows.get(dir, [])
+	if row.is_empty():
+		return Vector2.ZERO
+	var sole: Vector2 = row[frame % row.size()]
+	return sole
+
+
+func _on_contact(gait: String, dir: String, frame: int) -> bool:
+	var rows: Dictionary = _PLANT.get(gait, {})
+	var mask := int(rows.get(dir, 0))
+	return (mask & (1 << frame)) != 0
+
+
+## Pivot while the sole is down, then a return to the path point `root`.
+## The sole's world position is `_visual + sole`.
+func _visual_for(frame: int, root: Vector2) -> Vector2:
+	var gait := _gait_name()
+	var sole := _sole_of(gait, facing, frame)
+	if _on_contact(gait, facing, frame):
+		_release_u = 1.0
+		if not _planted:
+			_planted = true
+			_lock = _visual + sole
+		return _lock - sole
+	if _planted:
+		_planted = false
+		_release_anchor = _visual
+		_release_u = 0.0
+	if _release_u >= 1.0:
+		return root
+	var t := clampf(_release_u, 0.0, 1.0)
+	var eased := t * t * (3.0 - 2.0 * t)
+	return _release_anchor.lerp(root, eased)
 
 
 func _draw() -> void:

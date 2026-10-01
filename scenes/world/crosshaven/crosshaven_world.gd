@@ -317,7 +317,7 @@ func _process(delta: float) -> void:
 			return
 	if walker == null or zone == null:
 		return
-	camera.position = walker.position
+	camera.position = walker.position + walker.visual_offset()
 	var feet: Vector2 = walker.position
 	var wz: int = walker.z_index
 	for p in props_root.get_children():
@@ -513,6 +513,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_settings()
 		"gait":
 			await _movie_gait(false)
+		"gait_v2":
+			await _movie_gait_v2()
 		"slow":
 			await _movie_gait(true)
 		"gameplay":
@@ -575,6 +577,31 @@ func _movie_town(zone_id: String) -> void:
 	await _wander(10, "walk")
 	await _wander(8, "walk")
 	await _wander(8, "run")
+
+
+## Click-walk and run through all four facings, with stops, turns, a diagonal,
+## then the same kind of step in slow motion. Aimed at about 20s.
+func _movie_gait_v2() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(2.2)
+	weather.set_weather("clear")
+	weather.settle()
+	await _stand_on_pad(3)
+	walker.playback = 1.0
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 1, "walk")
+		await get_tree().create_timer(0.55).timeout
+	for dir in ["e", "s", "w", "n"]:
+		await _cardinal(dir, 1, "run")
+		await get_tree().create_timer(0.40).timeout
+	var diag: Vector2i = walker.anchor_cell() + Vector2i(2, 2)
+	if zone.passable_at(diag) and zone.exit_link(diag).is_empty():
+		await _go(diag, "walk")
+		await get_tree().create_timer(0.45).timeout
+	walker.playback = 0.4
+	await _cardinal("e", 1, "walk")
+	walker.playback = 1.0
+	await get_tree().create_timer(0.25).timeout
 
 
 ## Close-up of one walk cycle set, then one run set, each facing in turn.
