@@ -6,10 +6,13 @@ both passes. This script only edits the five towns and the crossroads, and
 only with prop and tile ids already in the catalog.
 
 Interior dirt_road within chebyshev 7 of a point of interest is drawn as
-flagstone by crosshaven_art.gd pick_tile. A plaza is that dirt_road rect.
+flagstone by crosshaven_art.gd pick_tile. The v9 plaza is about 40% smaller
+than the v8 square so the houses frame it. The middle holds a well or
+fountain, a stall cluster, lamps, and a couple of trees. A walk path stays
+open from the spawn to every exit and every door.
 The crossroads spawn stays (22, 18). Other town spawns move onto the square.
-New blockers stay off the original through-road, off exit mouths, and off
-the 3x3 around the spawn. Every passable cell must stay reachable.
+New blockers stay off the through-road outside the plaza, off exit mouths,
+and off the 3x3 around the spawn. Every passable cell must stay reachable.
 """
 
 from __future__ import annotations
@@ -45,6 +48,7 @@ DOOR_TYPES = {
     "northgate_spire", "stoneford_spire", "eastmarch_spire", "westwatch_spire", "southbridge_spire",
 }
 SHEDS = {"barn_2x2", "farmhouse_2x2"}
+MUST_LIFE = {"market_stall", "well", "signpost_crossroads"}
 FLOWERS = ["flowers_a", "flowers_b", "flowers_c", "flowers_d", "decal_flowers_pink", "decal_flowers_yellow"]
 TOWNS = [
     "crosshaven_crossroads",
@@ -55,27 +59,43 @@ TOWNS = [
     "crosshaven_southbridge",
 ]
 
-# Plaza rects sit inside chebyshev 7 of the spawn so the open square is flagstone.
-# Cottages are 2x2. Life props sit off the original road and off the spawn's 3x3.
+# v8 flagstone counts (interior dirt_road within chebyshev 7 of the spawn).
+# v9 plazas are sized so the same count falls by about 40%.
+V8_FLAGSTONE = {
+    "crosshaven_crossroads": 170,
+    "crosshaven_northgate": 111,
+    "crosshaven_stoneford": 95,
+    "crosshaven_eastmarch": 101,
+    "crosshaven_westwatch": 123,
+    "crosshaven_southbridge": 124,
+}
+# Plaza rects are the flagstone wings. Cottages sit on the rim. Life props
+# fill the interior and stay off the spawn's 3x3.
 LAYOUTS = {
     "crosshaven_crossroads": {
         "spawn": (22, 18),
         "lock_spawn": True,
-        "plaza": (15, 12, 29, 24),
-        "move": {"fountain_2x2": (24, 22)},
-        "cottages": [(8, 13), (12, 13), (15, 13), (27, 13), (31, 13), (12, 21), (15, 21), (27, 21)],
+        "plaza": (18, 15, 26, 22),
+        "move": {
+            "fountain_2x2": (24, 20),
+            "market_stall": (24, 16),
+            "well": (19, 21),
+            "signpost_crossroads": (17, 16),
+            "barrel": (23, 20),
+        },
+        "cottages": [(14, 13), (16, 13), (24, 13), (27, 13), (16, 21), (14, 23), (24, 23), (27, 21)],
         "extra": [
             ("barn_2x2", (6, 32)),
-            ("market_stall", (24, 14)),
-            ("lamp_post", (14, 15)),
-            ("lamp_post", (30, 15)),
-            ("lamp_post", (14, 22)),
-            ("lamp_post", (29, 22)),
-            ("barrel", (11, 15)),
-            ("barrel", (30, 14)),
-            ("crate_apples", (11, 23)),
-            ("crate_apples", (29, 23)),
-            ("cart", (6, 24)),
+            ("market_stall", (24, 22)),
+            ("market_stall", (26, 20)),
+            ("lamp_post", (18, 16)),
+            ("lamp_post", (26, 16)),
+            ("lamp_post", (19, 15)),
+            ("crate_apples", (26, 22)),
+            ("crate_apples", (25, 19)),
+            ("cart", (18, 22)),
+            ("tree", (18, 15)),
+            ("tree", (19, 22)),
             ("hay_bale", (7, 34)),
         ],
         "farms": [("farm_cabbage", 4, 8, 4, 3), ("farm_carrot", 32, 8, 3, 3)],
@@ -84,30 +104,32 @@ LAYOUTS = {
     "crosshaven_northgate": {
         "spawn": (20, 12),
         "lock_spawn": False,
-        "plaza": (14, 8, 26, 17),
+        "plaza": (16, 9, 24, 16),
         "move": {
-            "northgate_spire": (12, 8),
-            "bakery_2x2": (24, 8),
+            "northgate_spire": (14, 8),
+            "bakery_2x2": (25, 8),
             "wall_tower": (16, 4),
             "stone_wall_high_nwse": (15, 4),
             "stone_wall_high_nesw": (17, 4),
             "brazier": (16, 5),
         },
-        "cottages": [(8, 8), (8, 14), (12, 14), (24, 14), (28, 8), (28, 14), (8, 20), (28, 20)],
+        "cottages": [(12, 8), (14, 11), (14, 14), (25, 11), (25, 14), (14, 17), (23, 17), (27, 8)],
         "extra": [
             ("farmhouse_2x2", (32, 22)),
-            ("market_stall", (14, 11)),
-            ("well", (26, 12)),
-            ("lamp_post", (14, 16)),
-            ("lamp_post", (26, 16)),
-            ("lamp_post", (10, 11)),
-            ("lamp_post", (27, 11)),
-            ("barrel", (11, 10)),
-            ("barrel", (29, 10)),
-            ("crate_apples", (11, 16)),
-            ("crate_apples", (29, 16)),
-            ("cart", (14, 20)),
-            ("signpost_crossroads", (26, 11)),
+            ("market_stall", (16, 10)),
+            ("market_stall", (16, 14)),
+            ("market_stall", (23, 14)),
+            ("well", (17, 11)),
+            ("lamp_post", (23, 11)),
+            ("lamp_post", (17, 9)),
+            ("lamp_post", (23, 16)),
+            ("barrel", (23, 12)),
+            ("crate_apples", (17, 15)),
+            ("crate_apples", (22, 15)),
+            ("cart", (23, 10)),
+            ("signpost_crossroads", (13, 13)),
+            ("tree", (23, 9)),
+            ("tree", (17, 16)),
             ("hay_bale", (33, 24)),
         ],
         "farms": [("farm_pumpkin", 4, 24, 4, 3)],
@@ -116,23 +138,24 @@ LAYOUTS = {
     "crosshaven_stoneford": {
         "spawn": (16, 16),
         "lock_spawn": False,
-        "plaza": (10, 12, 22, 20),
-        "move": {},
-        "cottages": [(10, 10), (13, 10), (29, 10), (32, 10), (10, 20), (13, 20), (28, 20), (32, 20)],
+        "plaza": (12, 14, 21, 19),
+        "move": {"cart": (20, 19)},
+        "cottages": [(9, 12), (13, 12), (17, 12), (9, 20), (13, 20), (17, 20), (22, 20), (26, 20)],
         "extra": [
             ("barn_2x2", (22, 24)),
-            ("market_stall", (11, 19)),
-            ("well", (20, 12)),
-            ("lamp_post", (10, 19)),
-            ("lamp_post", (21, 19)),
-            ("lamp_post", (30, 13)),
-            ("lamp_post", (33, 13)),
-            ("barrel", (12, 12)),
-            ("barrel", (31, 12)),
-            ("crate_apples", (12, 22)),
-            ("crate_apples", (30, 22)),
-            ("cart", (20, 22)),
-            ("signpost_crossroads", (20, 20)),
+            ("market_stall", (12, 18)),
+            ("market_stall", (14, 18)),
+            ("market_stall", (18, 19)),
+            ("well", (14, 15)),
+            ("lamp_post", (12, 15)),
+            ("lamp_post", (20, 14)),
+            ("lamp_post", (15, 19)),
+            ("barrel", (20, 18)),
+            ("crate_apples", (13, 19)),
+            ("crate_apples", (16, 18)),
+            ("signpost_crossroads", (11, 13)),
+            ("tree", (13, 15)),
+            ("tree", (20, 15)),
             ("hay_bale", (23, 26)),
         ],
         "farms": [("farm_lavender", 14, 24, 4, 3)],
@@ -141,23 +164,29 @@ LAYOUTS = {
     "crosshaven_eastmarch": {
         "spawn": (16, 16),
         "lock_spawn": False,
-        "plaza": (10, 12, 24, 20),
-        "move": {},
-        "cottages": [(8, 10), (12, 10), (26, 10), (30, 10), (8, 20), (12, 20), (26, 20), (30, 20)],
+        "plaza": (12, 14, 22, 19),
+        "move": {
+            "eastmarch_spire": (18, 12),
+            "fishing_hut_2x2": (23, 12),
+            "net_rack": (22, 11),
+        },
+        "cottages": [(10, 12), (14, 12), (16, 12), (25, 12), (10, 20), (14, 20), (18, 20), (22, 20)],
         "extra": [
             ("barn_2x2", (4, 24)),
-            ("market_stall", (10, 19)),
-            ("well", (22, 12)),
-            ("lamp_post", (10, 13)),
-            ("lamp_post", (23, 13)),
-            ("lamp_post", (9, 21)),
-            ("lamp_post", (24, 21)),
-            ("barrel", (11, 12)),
-            ("barrel", (29, 12)),
-            ("crate_apples", (11, 22)),
-            ("crate_apples", (29, 22)),
-            ("cart", (18, 22)),
-            ("signpost_crossroads", (14, 12)),
+            ("market_stall", (12, 18)),
+            ("market_stall", (14, 18)),
+            ("market_stall", (19, 18)),
+            ("well", (20, 15)),
+            ("lamp_post", (12, 17)),
+            ("lamp_post", (21, 17)),
+            ("lamp_post", (18, 19)),
+            ("barrel", (12, 15)),
+            ("crate_apples", (15, 19)),
+            ("crate_apples", (21, 18)),
+            ("cart", (20, 19)),
+            ("signpost_crossroads", (11, 13)),
+            ("tree", (13, 15)),
+            ("tree", (21, 15)),
             ("hay_bale", (5, 26)),
         ],
         "farms": [("farm_sunflower", 14, 24, 4, 3)],
@@ -166,22 +195,30 @@ LAYOUTS = {
     "crosshaven_westwatch": {
         "spawn": (16, 10),
         "lock_spawn": False,
-        "plaza": (10, 6, 22, 16),
-        "move": {"watchtower_2x2": (30, 11)},
-        "cottages": [(4, 6), (8, 6), (4, 16), (8, 16), (20, 6), (28, 8), (20, 18), (28, 16)],
+        "plaza": (12, 8, 20, 14),
+        "move": {
+            "westwatch_spire": (21, 8),
+            "watchtower_2x2": (23, 10),
+            "barn_2x2": (24, 16),
+            "scarecrow": (23, 18),
+            "tree_apple": (25, 14),
+        },
+        "cottages": [(10, 6), (10, 9), (10, 12), (24, 6), (21, 11), (21, 14), (8, 16), (26, 18)],
         "extra": [
-            ("market_stall", (10, 14)),
-            ("well", (12, 8)),
-            ("lamp_post", (11, 8)),
-            ("lamp_post", (21, 8)),
-            ("lamp_post", (11, 15)),
-            ("lamp_post", (30, 12)),
-            ("barrel", (6, 8)),
-            ("barrel", (22, 8)),
-            ("crate_apples", (6, 18)),
-            ("crate_apples", (22, 20)),
-            ("cart", (30, 20)),
-            ("signpost_crossroads", (12, 14)),
+            ("market_stall", (12, 12)),
+            ("market_stall", (12, 13)),
+            ("market_stall", (19, 12)),
+            ("well", (13, 11)),
+            ("lamp_post", (13, 14)),
+            ("lamp_post", (19, 11)),
+            ("lamp_post", (12, 9)),
+            ("barrel", (19, 13)),
+            ("crate_apples", (14, 11)),
+            ("crate_apples", (20, 13)),
+            ("cart", (19, 14)),
+            ("signpost_crossroads", (9, 8)),
+            ("tree", (13, 8)),
+            ("tree", (19, 8)),
             ("hay_bale", (6, 22)),
         ],
         "farms": [("farm_plowed", 4, 22, 4, 3)],
@@ -190,26 +227,29 @@ LAYOUTS = {
     "crosshaven_southbridge": {
         "spawn": (20, 10),
         "lock_spawn": False,
-        "plaza": (14, 6, 26, 16),
+        "plaza": (16, 8, 24, 14),
         "move": {
+            "southbridge_spire": (14, 8),
             "watermill_2x2_body": (13, 21),
             "hay_bale": (15, 23),
         },
-        "cottages": [(6, 6), (10, 6), (6, 14), (10, 14), (24, 6), (28, 6), (24, 14), (28, 14)],
+        "cottages": [(12, 8), (12, 11), (12, 14), (25, 8), (25, 11), (25, 14), (14, 15), (23, 15)],
         "extra": [
             ("farmhouse_2x2", (30, 20)),
-            ("market_stall", (14, 14)),
-            ("well", (26, 10)),
-            ("lamp_post", (15, 8)),
-            ("lamp_post", (25, 8)),
-            ("lamp_post", (15, 15)),
-            ("lamp_post", (25, 15)),
-            ("barrel", (8, 8)),
-            ("barrel", (29, 8)),
-            ("crate_apples", (8, 16)),
-            ("crate_apples", (29, 16)),
-            ("cart", (16, 18)),
-            ("signpost_crossroads", (26, 12)),
+            ("market_stall", (16, 12)),
+            ("market_stall", (16, 13)),
+            ("market_stall", (23, 12)),
+            ("well", (17, 11)),
+            ("lamp_post", (17, 8)),
+            ("lamp_post", (23, 11)),
+            ("lamp_post", (16, 14)),
+            ("barrel", (23, 13)),
+            ("crate_apples", (18, 13)),
+            ("crate_apples", (24, 11)),
+            ("cart", (23, 14)),
+            ("signpost_crossroads", (15, 11)),
+            ("tree", (19, 9)),
+            ("tree", (23, 9)),
         ],
         "farms": [("farm_fallow", 32, 22, 4, 3)],
         "hedges": [(2, 18), (4, 18), (34, 18), (36, 18), (2, 26), (4, 26), (34, 26), (36, 26)],
@@ -557,6 +597,11 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
                 doomed.add((x + dx, y + dy))
     clear_clutter(doc, doomed)
 
+    # The previous plaza is also dirt_road. Put those wings back to grass so
+    # the flagstone footprint is only the through-road plus this smaller rect.
+    for cell, tile in tiles.items():
+        if tile["terrain"] == "dirt_road" and cell not in artery:
+            paint(tile, "golden_plains")
     for y in range(y0, y1 + 1):
         for x in range(x0, x1 + 1):
             tile = tiles.get((x, y))
@@ -566,12 +611,27 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
                 continue
             if tile["terrain"] == "golden_plains" or tile["terrain"].startswith("farm_") or tile["terrain"] == "dirt_road":
                 paint(tile, "dirt_road")
+    # Stalls and the well may sit on the road inside the square. The road
+    # outside the square, and the exits, stay empty.
+    plaza_cells = {(x, y) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)}
+    artery = artery - plaza_cells
+    # Spawn row and column stay open so a cluster cannot close the way out.
+    spine = {(x, spawn[1]) for x in range(x0, x1 + 1)}
+    spine |= {(spawn[0], y) for y in range(y0, y1 + 1)}
 
     blocked = blocked_map(doc)
     walk = {cell for cell, tile in tiles.items() if tile["walkable"]}
     serial = 1
     buildings = [(prop_type, origin) for prop_type, origin in planned if prop_type == "red_roof_cottage" or prop_type in SHEDS]
-    life = [(prop_type, origin) for prop_type, origin in planned if prop_type != "red_roof_cottage" and prop_type not in SHEDS]
+    life = [
+        (prop_type, origin, prop_type in MUST_LIFE, False)
+        for prop_type, origin in planned
+        if prop_type != "red_roof_cottage" and prop_type not in SHEDS
+    ]
+    # A barrel or crate just west of each south door, off the door cell itself.
+    for index, origin in enumerate(layout["cottages"]):
+        kind = "barrel" if index % 2 == 0 else "crate_apples"
+        life.append((kind, (origin[0] - 1, origin[1] + 2), False, True))
     for prop_type, origin in buildings:
         cells = footprint(prop_type, origin)
         reason = placeable(doc, tiles, blocked, artery, reserved, cells)
@@ -608,11 +668,13 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
     for prop in doc["props"]:
         if prop["type"] in DOOR_TYPES:
             door_spots.update(door_cells((0, 0), prop_cells(prop)))
-    must_life = {"market_stall", "well", "signpost_crossroads"}
-    for prop_type, origin in life:
+    door_fronts = 0
+    for prop_type, origin, required, door_front in life:
         placed_at = None
         for spot in nearby(origin):
             cells = footprint(prop_type, spot)
+            if any(cell in spine for cell in cells):
+                continue
             if any(max(abs(cell[0] - spawn[0]), abs(cell[1] - spawn[1])) < 2 for cell in cells):
                 continue
             if any(cell in door_spots for cell in cells):
@@ -634,8 +696,12 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
                 blocked[cell] = prop
             placed_at = spot
             break
-        if placed_at is None and prop_type in must_life:
+        if placed_at is None and required:
             errors.append(f"could not place {prop_type} near {origin}")
+        if placed_at is not None and door_front:
+            door_fronts += 1
+    if door_fronts < 3:
+        errors.append(f"only {door_fronts} props landed in front of houses")
 
     def try_blocker(prop_type: str, cell: tuple[int, int]) -> None:
         nonlocal serial
@@ -701,6 +767,29 @@ def apply_town(doc: dict, layout: dict) -> list[str]:
             decor.append({
                 "id": decor_id,
                 "type": FLOWERS[index % len(FLOWERS)],
+                "x": cell[0],
+                "y": cell[1],
+            })
+            planted += 1
+            if planted >= 2:
+                break
+    # Planter clumps beside the trees that stand in the square.
+    trees = [prop for prop in doc["props"] if prop["type"] == "tree" and "_density_" in prop["id"]]
+    for index, prop in enumerate(trees):
+        ox, oy = prop_cells(prop)[0]
+        planted = 0
+        for dx, dy in ((1, 0), (0, 1), (1, 1), (-1, 0), (0, -1)):
+            cell = (ox + dx, oy + dy)
+            tile = tiles.get(cell)
+            if tile is None or cell in blocked or not tile["walkable"]:
+                continue
+            if tile["terrain"] in ("water", "cliff"):
+                continue
+            decor_id = f"{doc['zone_id']}_density_flowers_{decor_serial:02d}"
+            decor_serial += 1
+            decor.append({
+                "id": decor_id,
+                "type": FLOWERS[(index + 3) % len(FLOWERS)],
                 "x": cell[0],
                 "y": cell[1],
             })
@@ -795,7 +884,38 @@ def validate(zones: dict[str, dict]) -> list[str]:
                 frm = (link["from"]["x"], link["from"]["y"])
                 if tiles[frm]["terrain"] != "dirt_road" or frm in blocked_cells:
                     errors.append(f"{zone_id} exit {frm} is not an open road")
+        got = flagstone_count(doc)
+        base = V8_FLAGSTONE[zone_id]
+        shrink = (base - got) / base
+        print(f"flagstone {zone_id} v8={base} v9={got} shrink={shrink:.1%}")
+        if shrink < 0.35 or shrink > 0.45:
+            errors.append(f"{zone_id} flagstone shrink {shrink:.1%} ({base} -> {got}) is outside 35-45%")
     return errors
+
+
+def flagstone_count(doc: dict) -> int:
+    """Interior dirt_road within chebyshev 7 of a point of interest.
+
+    Matches pick_tile: a dirt cell becomes flagstone only when all four
+    orthogonal neighbours are also dirt_road and a POI is within 7 cells.
+    """
+    tiles = index_terrain(doc)
+    pois = [(poi["x"], poi["y"]) for poi in doc["points_of_interest"]]
+    count = 0
+    for (x, y), tile in tiles.items():
+        if tile["terrain"] != "dirt_road":
+            continue
+        if not any(max(abs(x - px), abs(y - py)) <= 7 for px, py in pois):
+            continue
+        interior = True
+        for dx, dy in DIRS:
+            neighbour = tiles.get((x + dx, y + dy))
+            if neighbour is None or neighbour["terrain"] != "dirt_road":
+                interior = False
+                break
+        if interior:
+            count += 1
+    return count
 
 
 def artery_of_current(tiles: dict) -> set[tuple[int, int]]:

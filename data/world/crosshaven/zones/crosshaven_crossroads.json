@@ -489,24 +489,24 @@
       "blocks": true,
       "origin": {
         "x": 24,
-        "y": 22
+        "y": 20
       },
       "footprint": [
         {
           "x": 24,
-          "y": 22
+          "y": 20
         },
         {
           "x": 25,
-          "y": 22
+          "y": 20
         },
         {
           "x": 24,
-          "y": 23
+          "y": 21
         },
         {
           "x": 25,
-          "y": 23
+          "y": 21
         }
       ]
     },
@@ -515,13 +515,13 @@
       "type": "signpost_crossroads",
       "blocks": true,
       "origin": {
-        "x": 25,
-        "y": 21
+        "x": 17,
+        "y": 16
       },
       "footprint": [
         {
-          "x": 25,
-          "y": 21
+          "x": 17,
+          "y": 16
         }
       ]
     },
@@ -530,13 +530,13 @@
       "type": "well",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 23
+        "x": 19,
+        "y": 21
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 23
+          "x": 19,
+          "y": 21
         }
       ]
     },
@@ -545,17 +545,17 @@
       "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 23,
-        "y": 12
+        "x": 24,
+        "y": 16
       },
       "footprint": [
         {
-          "x": 23,
-          "y": 12
+          "x": 24,
+          "y": 16
         },
         {
-          "x": 24,
-          "y": 12
+          "x": 25,
+          "y": 16
         }
       ]
     },
@@ -579,13 +579,13 @@
       "type": "barrel",
       "blocks": true,
       "origin": {
-        "x": 26,
-        "y": 21
+        "x": 23,
+        "y": 20
       },
       "footprint": [
         {
-          "x": 26,
-          "y": 21
+          "x": 23,
+          "y": 20
         }
       ]
     },
@@ -980,21 +980,6 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_scatter_hedgerow_nwse_06",
-      "type": "hedgerow_nwse",
-      "blocks": true,
-      "origin": {
-        "x": 15,
-        "y": 25
-      },
-      "footprint": [
-        {
-          "x": 15,
-          "y": 25
-        }
-      ]
-    },
-    {
       "id": "crosshaven_crossroads_scatter_hedgerow_nwse_07",
       "type": "hedgerow_nwse",
       "blocks": true,
@@ -1209,24 +1194,24 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 8,
+        "x": 14,
         "y": 13
       },
       "footprint": [
         {
-          "x": 8,
+          "x": 14,
           "y": 13
         },
         {
-          "x": 9,
+          "x": 15,
           "y": 13
         },
         {
-          "x": 8,
+          "x": 14,
           "y": 14
         },
         {
-          "x": 9,
+          "x": 15,
           "y": 14
         }
       ]
@@ -1236,24 +1221,24 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 12,
+        "x": 16,
         "y": 13
       },
       "footprint": [
         {
-          "x": 12,
+          "x": 16,
           "y": 13
         },
         {
-          "x": 13,
+          "x": 17,
           "y": 13
         },
         {
-          "x": 12,
+          "x": 16,
           "y": 14
         },
         {
-          "x": 13,
+          "x": 17,
           "y": 14
         }
       ]
@@ -1263,24 +1248,24 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 15,
+        "x": 24,
         "y": 13
       },
       "footprint": [
         {
-          "x": 15,
+          "x": 24,
           "y": 13
         },
         {
-          "x": 16,
+          "x": 25,
           "y": 13
         },
         {
-          "x": 15,
+          "x": 24,
           "y": 14
         },
         {
-          "x": 16,
+          "x": 25,
           "y": 14
         }
       ]
@@ -1317,25 +1302,25 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 31,
-        "y": 13
+        "x": 16,
+        "y": 21
       },
       "footprint": [
         {
-          "x": 31,
-          "y": 13
+          "x": 16,
+          "y": 21
         },
         {
-          "x": 32,
-          "y": 13
+          "x": 17,
+          "y": 21
         },
         {
-          "x": 31,
-          "y": 14
+          "x": 16,
+          "y": 22
         },
         {
-          "x": 32,
-          "y": 14
+          "x": 17,
+          "y": 22
         }
       ]
     },
@@ -1344,25 +1329,25 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 12,
-        "y": 21
+        "x": 14,
+        "y": 23
       },
       "footprint": [
         {
-          "x": 12,
-          "y": 21
+          "x": 14,
+          "y": 23
         },
         {
-          "x": 13,
-          "y": 21
+          "x": 15,
+          "y": 23
         },
         {
-          "x": 12,
-          "y": 22
+          "x": 14,
+          "y": 24
         },
         {
-          "x": 13,
-          "y": 22
+          "x": 15,
+          "y": 24
         }
       ]
     },
@@ -1371,25 +1356,25 @@
       "type": "red_roof_cottage",
       "blocks": true,
       "origin": {
-        "x": 15,
-        "y": 21
+        "x": 24,
+        "y": 23
       },
       "footprint": [
         {
-          "x": 15,
-          "y": 21
+          "x": 24,
+          "y": 23
         },
         {
-          "x": 16,
-          "y": 21
+          "x": 25,
+          "y": 23
         },
         {
-          "x": 15,
-          "y": 22
+          "x": 24,
+          "y": 24
         },
         {
-          "x": 16,
-          "y": 22
+          "x": 25,
+          "y": 24
         }
       ]
     },
@@ -1453,31 +1438,35 @@
       "blocks": true,
       "origin": {
         "x": 24,
-        "y": 14
+        "y": 22
       },
       "footprint": [
         {
           "x": 24,
-          "y": 14
+          "y": 22
         },
         {
           "x": 25,
-          "y": 14
+          "y": 22
         }
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_lamp_post_11",
-      "type": "lamp_post",
+      "id": "crosshaven_crossroads_density_market_stall_11",
+      "type": "market_stall",
       "blocks": true,
       "origin": {
-        "x": 14,
-        "y": 15
+        "x": 25,
+        "y": 19
       },
       "footprint": [
         {
-          "x": 14,
-          "y": 15
+          "x": 25,
+          "y": 19
+        },
+        {
+          "x": 26,
+          "y": 19
         }
       ]
     },
@@ -1486,13 +1475,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 30,
-        "y": 15
+        "x": 18,
+        "y": 16
       },
       "footprint": [
         {
-          "x": 30,
-          "y": 15
+          "x": 18,
+          "y": 16
         }
       ]
     },
@@ -1501,13 +1490,13 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 14,
-        "y": 22
+        "x": 26,
+        "y": 16
       },
       "footprint": [
         {
-          "x": 14,
-          "y": 22
+          "x": 26,
+          "y": 16
         }
       ]
     },
@@ -1516,88 +1505,88 @@
       "type": "lamp_post",
       "blocks": true,
       "origin": {
-        "x": 29,
-        "y": 22
-      },
-      "footprint": [
-        {
-          "x": 29,
-          "y": 22
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_crossroads_density_barrel_15",
-      "type": "barrel",
-      "blocks": true,
-      "origin": {
-        "x": 11,
+        "x": 19,
         "y": 15
       },
       "footprint": [
         {
-          "x": 11,
+          "x": 19,
           "y": 15
         }
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_barrel_16",
-      "type": "barrel",
-      "blocks": true,
-      "origin": {
-        "x": 30,
-        "y": 14
-      },
-      "footprint": [
-        {
-          "x": 30,
-          "y": 14
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_crossroads_density_crate_apples_17",
+      "id": "crosshaven_crossroads_density_crate_apples_15",
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 11,
-        "y": 23
+        "x": 26,
+        "y": 22
       },
       "footprint": [
         {
-          "x": 11,
-          "y": 23
+          "x": 26,
+          "y": 22
         }
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_crate_apples_18",
+      "id": "crosshaven_crossroads_density_crate_apples_16",
       "type": "crate_apples",
       "blocks": true,
       "origin": {
-        "x": 29,
-        "y": 23
+        "x": 24,
+        "y": 19
       },
       "footprint": [
         {
-          "x": 29,
-          "y": 23
+          "x": 24,
+          "y": 19
         }
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_cart_19",
+      "id": "crosshaven_crossroads_density_cart_17",
       "type": "cart",
       "blocks": true,
       "origin": {
-        "x": 6,
-        "y": 24
+        "x": 18,
+        "y": 22
       },
       "footprint": [
         {
-          "x": 6,
-          "y": 24
+          "x": 18,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_tree_18",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 18,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 18,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_tree_19",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 22
         }
       ]
     },
@@ -1617,7 +1606,127 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nwse_21",
+      "id": "crosshaven_crossroads_density_barrel_21",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_crate_apples_22",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 13
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_barrel_23",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 23,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 23,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_crate_apples_24",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_barrel_25",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 14,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_crate_apples_26",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_barrel_27",
+      "type": "barrel",
+      "blocks": true,
+      "origin": {
+        "x": 23,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 23,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_crate_apples_28",
+      "type": "crate_apples",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_crossroads_density_farm_fence_nwse_29",
       "type": "farm_fence_nwse",
       "blocks": true,
       "origin": {
@@ -1632,7 +1741,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nwse_22",
+      "id": "crosshaven_crossroads_density_farm_fence_nwse_30",
       "type": "farm_fence_nwse",
       "blocks": true,
       "origin": {
@@ -1647,7 +1756,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nwse_23",
+      "id": "crosshaven_crossroads_density_farm_fence_nwse_31",
       "type": "farm_fence_nwse",
       "blocks": true,
       "origin": {
@@ -1662,7 +1771,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nesw_24",
+      "id": "crosshaven_crossroads_density_farm_fence_nesw_32",
       "type": "farm_fence_nesw",
       "blocks": true,
       "origin": {
@@ -1677,7 +1786,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nesw_25",
+      "id": "crosshaven_crossroads_density_farm_fence_nesw_33",
       "type": "farm_fence_nesw",
       "blocks": true,
       "origin": {
@@ -1692,7 +1801,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nwse_26",
+      "id": "crosshaven_crossroads_density_farm_fence_nwse_34",
       "type": "farm_fence_nwse",
       "blocks": true,
       "origin": {
@@ -1707,7 +1816,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nwse_27",
+      "id": "crosshaven_crossroads_density_farm_fence_nwse_35",
       "type": "farm_fence_nwse",
       "blocks": true,
       "origin": {
@@ -1722,7 +1831,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nesw_28",
+      "id": "crosshaven_crossroads_density_farm_fence_nesw_36",
       "type": "farm_fence_nesw",
       "blocks": true,
       "origin": {
@@ -1737,7 +1846,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_farm_fence_nesw_29",
+      "id": "crosshaven_crossroads_density_farm_fence_nesw_37",
       "type": "farm_fence_nesw",
       "blocks": true,
       "origin": {
@@ -1752,7 +1861,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_hedgerow_nwse_30",
+      "id": "crosshaven_crossroads_density_hedgerow_nwse_38",
       "type": "hedgerow_nwse",
       "blocks": true,
       "origin": {
@@ -1767,7 +1876,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_hedgerow_nwse_31",
+      "id": "crosshaven_crossroads_density_hedgerow_nwse_39",
       "type": "hedgerow_nwse",
       "blocks": true,
       "origin": {
@@ -1782,7 +1891,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_hedgerow_nwse_32",
+      "id": "crosshaven_crossroads_density_hedgerow_nwse_40",
       "type": "hedgerow_nwse",
       "blocks": true,
       "origin": {
@@ -1797,7 +1906,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_hedgerow_nwse_33",
+      "id": "crosshaven_crossroads_density_hedgerow_nwse_41",
       "type": "hedgerow_nwse",
       "blocks": true,
       "origin": {
@@ -1812,7 +1921,7 @@
       ]
     },
     {
-      "id": "crosshaven_crossroads_density_hedgerow_nwse_34",
+      "id": "crosshaven_crossroads_density_hedgerow_nwse_42",
       "type": "hedgerow_nwse",
       "blocks": true,
       "origin": {
@@ -5296,21 +5405,21 @@
     {
       "x": 15,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5352,49 +5461,49 @@
     {
       "x": 23,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 12,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5576,21 +5685,21 @@
     {
       "x": 15,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5632,49 +5741,49 @@
     {
       "x": 23,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 13,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5856,21 +5965,21 @@
     {
       "x": 15,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -5912,49 +6021,49 @@
     {
       "x": 23,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 14,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6087,14 +6196,14 @@
     {
       "x": 8,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6115,21 +6224,21 @@
     {
       "x": 12,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -6234,7 +6343,7 @@
     {
       "x": 29,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -6248,14 +6357,14 @@
     {
       "x": 31,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 32,
       "y": 15,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7816,21 +7925,21 @@
     {
       "x": 15,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -7900,21 +8009,21 @@
     {
       "x": 27,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 21,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8096,21 +8205,21 @@
     {
       "x": 15,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8180,21 +8289,21 @@
     {
       "x": 27,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 22,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8355,28 +8464,28 @@
     {
       "x": 12,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8432,21 +8541,21 @@
     {
       "x": 23,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8474,7 +8583,7 @@
     {
       "x": 29,
       "y": 23,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8656,21 +8765,21 @@
     {
       "x": 15,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 16,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 17,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8712,49 +8821,49 @@
     {
       "x": 23,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 24,
-      "terrain": "dirt_road",
+      "terrain": "golden_plains",
       "walkable": true,
       "height": 0
     },
@@ -8929,14 +9038,14 @@
     {
       "x": 14,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -8992,21 +9101,21 @@
     {
       "x": 23,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 25,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -12011,12 +12120,6 @@
       "y": 14
     },
     {
-      "id": "crosshaven_crossroads_decor_018",
-      "type": "tuft_a",
-      "x": 26,
-      "y": 14
-    },
-    {
       "id": "crosshaven_crossroads_decor_022",
       "type": "grass_tuft_tall_a",
       "x": 34,
@@ -12065,12 +12168,6 @@
       "y": 22
     },
     {
-      "id": "crosshaven_crossroads_decor_031",
-      "type": "flowers_a",
-      "x": 26,
-      "y": 22
-    },
-    {
       "id": "crosshaven_crossroads_decor_033",
       "type": "bush_small_b",
       "x": 30,
@@ -12116,12 +12213,6 @@
       "id": "crosshaven_crossroads_decor_041",
       "type": "sunflowers_tall",
       "x": 12,
-      "y": 24
-    },
-    {
-      "id": "crosshaven_crossroads_decor_042",
-      "type": "bush_small_a",
-      "x": 14,
       "y": 24
     },
     {
@@ -12308,12 +12399,6 @@
       "id": "crosshaven_crossroads_decor_074",
       "type": "decal_road_stones",
       "x": 20,
-      "y": 19
-    },
-    {
-      "id": "crosshaven_crossroads_decor_075",
-      "type": "decal_path_stones_a",
-      "x": 26,
       "y": 19
     },
     {
@@ -12875,12 +12960,6 @@
       "y": 13
     },
     {
-      "id": "crosshaven_crossroads_decor_175",
-      "type": "tuft_b",
-      "x": 23,
-      "y": 14
-    },
-    {
       "id": "crosshaven_crossroads_decor_177",
       "type": "mushrooms_a",
       "x": 6,
@@ -13177,97 +13256,121 @@
     {
       "id": "crosshaven_crossroads_density_flowers_01",
       "type": "flowers_a",
-      "x": 7,
+      "x": 13,
       "y": 14
     },
     {
       "id": "crosshaven_crossroads_density_flowers_02",
       "type": "flowers_a",
-      "x": 8,
+      "x": 14,
       "y": 15
     },
     {
       "id": "crosshaven_crossroads_density_flowers_03",
       "type": "flowers_b",
-      "x": 11,
+      "x": 18,
       "y": 14
     },
     {
       "id": "crosshaven_crossroads_density_flowers_04",
       "type": "flowers_b",
-      "x": 14,
-      "y": 14
+      "x": 16,
+      "y": 15
     },
     {
       "id": "crosshaven_crossroads_density_flowers_05",
       "type": "flowers_c",
-      "x": 14,
-      "y": 14
+      "x": 24,
+      "y": 15
     },
     {
       "id": "crosshaven_crossroads_density_flowers_06",
       "type": "flowers_c",
-      "x": 17,
-      "y": 14
+      "x": 25,
+      "y": 12
     },
     {
       "id": "crosshaven_crossroads_density_flowers_07",
-      "type": "flowers_d",
-      "x": 26,
-      "y": 14
-    },
-    {
-      "id": "crosshaven_crossroads_density_flowers_08",
       "type": "flowers_d",
       "x": 29,
       "y": 14
     },
     {
+      "id": "crosshaven_crossroads_density_flowers_08",
+      "type": "flowers_d",
+      "x": 27,
+      "y": 15
+    },
+    {
       "id": "crosshaven_crossroads_density_flowers_09",
       "type": "decal_flowers_pink",
-      "x": 33,
-      "y": 14
+      "x": 15,
+      "y": 22
     },
     {
       "id": "crosshaven_crossroads_density_flowers_10",
       "type": "decal_flowers_pink",
-      "x": 31,
-      "y": 15
+      "x": 16,
+      "y": 23
     },
     {
       "id": "crosshaven_crossroads_density_flowers_11",
       "type": "decal_flowers_yellow",
-      "x": 11,
-      "y": 22
+      "x": 13,
+      "y": 24
     },
     {
       "id": "crosshaven_crossroads_density_flowers_12",
       "type": "decal_flowers_yellow",
-      "x": 12,
-      "y": 23
+      "x": 16,
+      "y": 24
     },
     {
       "id": "crosshaven_crossroads_density_flowers_13",
       "type": "flowers_a",
-      "x": 17,
-      "y": 22
+      "x": 23,
+      "y": 24
     },
     {
       "id": "crosshaven_crossroads_density_flowers_14",
       "type": "flowers_a",
-      "x": 15,
-      "y": 23
+      "x": 26,
+      "y": 24
     },
     {
       "id": "crosshaven_crossroads_density_flowers_15",
       "type": "flowers_b",
-      "x": 26,
+      "x": 29,
       "y": 22
     },
     {
       "id": "crosshaven_crossroads_density_flowers_16",
       "type": "flowers_b",
       "x": 27,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_crossroads_density_flowers_17",
+      "type": "flowers_d",
+      "x": 19,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_crossroads_density_flowers_18",
+      "type": "flowers_d",
+      "x": 17,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_crossroads_density_flowers_19",
+      "type": "decal_flowers_pink",
+      "x": 20,
+      "y": 22
+    },
+    {
+      "id": "crosshaven_crossroads_density_flowers_20",
+      "type": "decal_flowers_pink",
+      "x": 19,
       "y": 23
     }
   ]

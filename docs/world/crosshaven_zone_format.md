@@ -240,6 +240,6 @@ Farm terrains (`farm_cabbage`, `farm_carrot`, `farm_fallow`, `farm_lavender`, `f
 
 ## Town density
 
-`build_crosshaven_density.py` is a third pass on the five towns and the crossroads. It does not add prop ids or tile ids. It rewrites those six zone files in place: a `dirt_road` plaza, cottages around it, door lanes, and street props from the existing catalog. Interior `dirt_road` within seven cells of a point of interest draws as flagstone (`pick_tile` in `scenes/world/crosshaven/crosshaven_art.gd`). Benches are not in the prop catalog, so the squares use stalls, wells, barrels, crates, carts, lamps, and signposts.
+`build_crosshaven_density.py` is a third pass on the five towns and the crossroads. It does not add prop ids or tile ids. It rewrites those six zone files in place: a `dirt_road` plaza, cottages around it, door lanes, and street props from the existing catalog. Interior `dirt_road` within seven cells of a point of interest draws as flagstone (`pick_tile` in `scenes/world/crosshaven/crosshaven_art.gd`). The v9 plaza is about 40% smaller than the v8 square. The middle holds a well or fountain, a stall cluster, lamps, and a couple of trees, and the spawn's row and column stay open. Benches are not in the prop catalog, so the squares use stalls, wells, barrels, crates, carts, lamps, and signposts.
 
 Regenerating chunks wipes this pass. Run the zone builder, then dressing, then density. The crossroads spawn stays `(22, 18)`. The other town spawns move onto the open square. Through-roads and exit mouths stay free of new blockers.
