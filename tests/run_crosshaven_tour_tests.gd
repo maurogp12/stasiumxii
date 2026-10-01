@@ -115,7 +115,8 @@ func _gait(w: Node2D) -> void:
 	_drive(w, walk_samples)
 	check(w.walker.facing == _facing(zone.spawn, walk_goal) or walk_samples.size() > 0, "walk plays a facing")
 	var walk_avg := _mid(walk_samples)
-	check(walk_avg > 3.2 and walk_avg < 7.2, "walk cruise is near 108 px/s (%.2f px/tick)" % walk_avg)
+	var walk_tick: float = w.walker.speed_of("walk") * 0.05
+	check(walk_avg > walk_tick * 0.55 and walk_avg < walk_tick * 1.35, "walk cruise follows the strip (%.2f px/tick, strip %.2f)" % [walk_avg, walk_tick])
 	check(_peak(walk_samples) < 12.0, "walk has no position pop")
 	var run_goal := _band(zone, w.walker.cell, 16)
 	var run_samples: Array = []

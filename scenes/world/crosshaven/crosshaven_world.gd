@@ -494,6 +494,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_decor()
 		"northgate", "stoneford", "eastmarch", "westwatch", "southbridge":
 			await _movie_town("crosshaven_" + mode)
+		"scale":
+			await _movie_scale()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -520,6 +522,18 @@ func _movie_tour() -> void:
 	await _run_link("crosshaven_road_south")
 	await _run_link("crosshaven_southbridge")
 	await _wander(4, "run")
+
+
+## Hero standing in front of a Northgate cottage, for scale stills.
+func _movie_scale() -> void:
+	enter_zone("crosshaven_northgate", Vector2i(9, 11), false)
+	await get_tree().process_frame
+	_set_zoom(2.05)
+	weather.set_weather("clear")
+	weather.settle()
+	walker.facing = "s"
+	walker._show_idle()
+	await get_tree().create_timer(0.5).timeout
 
 
 func _movie_town(zone_id: String) -> void:

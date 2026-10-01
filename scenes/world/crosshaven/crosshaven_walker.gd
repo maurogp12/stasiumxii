@@ -1,27 +1,20 @@
 extends Node2D
 
-## VIEW ONLY. Ironjaw walks Crosshaven on the PC copies of the mobile strips.
+## VIEW ONLY. Ironjaw walks Crosshaven from data-driven strips.
 ## Paths still come from `WorldWalk.find_path`. This node only animates them.
 ## `advance(delta)` is public so tests can step it deterministically.
+##
+## Art lives in `res://art/characters/world/ironjaw/` and is described by
+## `ironjaw.json` (scale, pivot, fps, stride). See `world_strips.gd`.
 
 signal stepped(cell: Vector2i)
 signal arrived(cell: Vector2i)
 
-const STRIP := "res://art/characters/world/ironjaw/ironjaw_%s_%s.png"
-const IDLE := "res://art/characters/world/ironjaw/ironjaw_idle_%s.png"
-const FRAME_W := 144.0
-const FRAME_H := 160.0
-const FRAME_COUNT := 12
-## Mobile pawn is centered with offset (0, -72). 0.62 keeps cottages taller.
-const BASE_SCALE := 0.62
-const PIVOT := Vector2(0, -72)
-const WALK_SPEED := 108.0
-const RUN_SPEED := 176.0
-## One authored cycle per tile at a walk. Run takes a longer stride.
-const WALK_CYCLE := 35.78
-const RUN_CYCLE := 52.0
+const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
+const CLASS_ID := "ironjaw"
 const CORNER_CUT := 10.0
-const EASE_PX := 46.0
+## Ease distance, in strides, so a shorter hero still eases over about one step.
+const EASE_STRIDES := 1.3
 
 var zone: WorldZone
 var cell := Vector2i.ZERO
@@ -32,8 +25,7 @@ var auto_advance := true
 var playback := 1.0
 
 var _sprite: Sprite2D
-var _strips: Dictionary = {}
-var _idles: Dictionary = {}
+var _strips
 var _queue: Array[Vector2i] = []
 var _moving := false
 var _samples: Array = []
@@ -41,8 +33,8 @@ var _cursor := 0
 var _traveled := 0.0
 var _total := 0.0
 var _leg_start := 0.0
-var _cruise := WALK_SPEED
-var _cycle := WALK_CYCLE
+var _cruise := 57.0
+var _stride := 19.0
 var _bob := 0.0
 var _air := 0.0
 var _idle_t := 0.0
@@ -52,20 +44,34 @@ var _halt_after := false
 
 func _ready() -> void:
 	z_as_relative = false
+	_strips = Strips.new()
+	_strips.load_class(CLASS_ID)
 	_sprite = Sprite2D.new()
 	_sprite.centered = true
-	_sprite.offset = PIVOT
+	_sprite.offset = _strips.pivot
 	add_child(_sprite)
-	for gait in ["walk", "run"]:
-		for dir in ["n", "e", "s", "w"]:
-			var path := STRIP % [gait, dir]
-			if ResourceLoader.exists(path):
-				_strips["%s_%s" % [gait, dir]] = load(path)
-	for dir in ["n", "e", "s", "w"]:
-		var path := IDLE % dir
-		if ResourceLoader.exists(path):
-			_idles[dir] = load(path)
+	_apply_strip_speed()
 	_show_idle()
+
+
+func base_scale() -> float:
+	return _strips.scale
+
+
+func frame_count(gait: String, dir: String) -> int:
+	return _strips.frame_count(gait, dir)
+
+
+func fps_of(gait: String) -> float:
+	return _strips.fps_of(gait, "s")
+
+
+func stride_of(gait: String) -> float:
+	return _strips.stride_of(gait, "s")
+
+
+func speed_of(gait: String) -> float:
+	return _strips.speed_of(gait, "s")
 
 
 func place(target_zone: WorldZone, at: Vector2i) -> void:
@@ -169,8 +175,7 @@ func _rebuild(from_cell: Vector2i, from_pos: Vector2) -> void:
 	_total = 0.0
 	if not _samples.is_empty():
 		_total = float(_samples[_samples.size() - 1]["dist"])
-	_cruise = RUN_SPEED if pace == "run" else WALK_SPEED
-	_cycle = RUN_CYCLE if pace == "run" else WALK_CYCLE
+	_apply_strip_speed()
 	_moving = _total > 0.4
 	if _moving:
 		_face_toward(_pending_cell())
@@ -290,7 +295,7 @@ func _pending_dist() -> float:
 
 
 func _speed_at(traveled: float, total: float, cruise: float) -> float:
-	var ease := minf(EASE_PX, total * 0.22)
+	var ease := minf(_stride * EASE_STRIDES, total * 0.22)
 	if ease < 1.0:
 		return cruise
 	var gate := 1.0
@@ -313,43 +318,50 @@ func _face_toward(target: Vector2i) -> void:
 		facing = "s"
 	elif d.y < 0:
 		facing = "n"
+	_apply_strip_speed()
+
+
+func _gait_name() -> String:
+	return "run" if pace == "run" else "walk"
+
+
+func _apply_strip_speed() -> void:
+	if _strips == null:
+		return
+	var gait := _gait_name()
+	_stride = _strips.stride_of(gait, facing)
+	_cruise = _strips.speed_of(gait, facing)
 
 
 func _apply_gait() -> void:
-	var key := "%s_%s" % [pace if pace == "run" else "walk", facing]
-	var tex: Texture2D = _strips.get(key, null)
+	var gait := _gait_name()
+	var tex: Texture2D = _strips.texture(gait, facing)
 	if tex == null:
 		_show_idle()
 		return
-	var phase := fmod(_phase / _cycle, 1.0)
+	var count := maxi(1, _strips.frame_count(gait, facing))
+	var span := maxf(_stride, 0.001)
+	var phase := fmod(_phase / span, 1.0)
 	if phase < 0.0:
 		phase += 1.0
-	# Six authored plants. The odd frame is the airborne in-between.
-	# Hold the plant at the start and end of each step; show the lift in the middle.
-	var step_f := phase * 6.0
-	var step_i := int(step_f) % 6
-	var local := step_f - float(int(step_f))
-	var airborne := local > 0.18 and local < 0.58
-	var frame := step_i * 2 + (1 if airborne else 0)
-	var amp := 3.4 if pace == "run" else 1.8
-	_bob = sin(local * PI) * amp
-	_air = sin(local * PI)
+	var frame := int(phase * float(count)) % count
+	var cell_size: Vector2i = _strips.frame_size(gait)
+	_bob = 0.0
+	_air = 0.0
 	_sprite.texture = tex
 	_sprite.region_enabled = true
-	_sprite.region_rect = Rect2(frame * FRAME_W, 0, FRAME_W, FRAME_H)
-	var sy := lerpf(0.93, 1.06, _air)
-	var sx := lerpf(1.06, 0.97, _air)
-	_sprite.scale = Vector2(BASE_SCALE * sx, BASE_SCALE * sy)
-	_sprite.position = Vector2(0, -_bob)
+	_sprite.region_rect = Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y)
+	_sprite.scale = Vector2(_strips.scale, _strips.scale)
+	_sprite.position = Vector2.ZERO
 	queue_redraw()
 
 
 func _show_idle() -> void:
-	var tex: Texture2D = _idles.get(facing, null)
+	var tex: Texture2D = _strips.idle(facing)
 	_sprite.texture = tex
 	_sprite.region_enabled = false
-	var breath := sin(_idle_t * TAU * 1.35) * 0.016
-	_sprite.scale = Vector2(BASE_SCALE * (1.0 - breath * 0.4), BASE_SCALE * (1.0 + breath))
+	var breath := sin(_idle_t * TAU * 1.35) * 0.012
+	_sprite.scale = Vector2(_strips.scale * (1.0 - breath * 0.4), _strips.scale * (1.0 + breath))
 	_sprite.position = Vector2.ZERO
 	_bob = 0.0
 	_air = 0.0
@@ -380,13 +392,13 @@ func _cell_pos(c: Vector2i) -> Vector2:
 
 
 func _draw() -> void:
-	var plant := 1.0 - clampf(_bob / 5.1, 0.0, 1.0)
-	var rx := 15.0 + plant * 3.0
-	var ry := 5.6 + plant * 1.3
+	var s: float = _strips.scale if _strips != null else 0.33
+	var rx := 24.0 * s
+	var ry := 9.0 * s
 	var pts := PackedVector2Array()
 	for i in 18:
 		var a := TAU * float(i) / 18.0
 		pts.append(Vector2(cos(a) * rx, sin(a) * ry))
-	draw_colored_polygon(pts, Color(0, 0, 0, 0.26 + plant * 0.08))
-	if _strips.is_empty():
+	draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
+	if _strips == null or not _strips.has_gait("walk"):
 		draw_circle(Vector2(0, -28), 10, Color("6a5344"))

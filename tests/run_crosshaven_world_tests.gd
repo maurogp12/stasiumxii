@@ -47,6 +47,7 @@ func _run() -> void:
 	check(w.walker.cell == w.map.start_cell, "player on start cell")
 	check(w.map.start_zone == "crosshaven_crossroads" and w.map.start_cell == Vector2i(22, 18), "start is crossroads (22,18)")
 
+	_test_strips(w)
 	_test_pick(w)
 	_test_walk(w)
 	_test_reject(w)
@@ -59,6 +60,17 @@ func _run() -> void:
 	w.queue_free()
 	print("crosshaven world tests: %d passed, %d failed" % [passed, failed])
 	quit(1 if failed > 0 else 0)
+
+
+func _test_strips(w: Node2D) -> void:
+	check(w.walker.frame_count("walk", "s") > 0, "walk south strip has frames")
+	check(w.walker.frame_count("walk", "n") > 0, "walk north strip has frames")
+	check(w.walker.frame_count("run", "s") > 0, "run south is a separate strip")
+	check(w.walker.frame_count("run", "e") > 0, "run east is a separate strip")
+	var count := float(w.walker.frame_count("walk", "s"))
+	var expected: float = w.walker.stride_of("walk") * w.walker.fps_of("walk") / count
+	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is stride times fps over frame count")
+	check(w.walker.base_scale() <= 0.4 and w.walker.base_scale() > 0.2, "hero scale lets a cottage tower over them")
 
 
 func _test_pick(w: Node2D) -> void:

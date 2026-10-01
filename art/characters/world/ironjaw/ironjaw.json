@@ -1,0 +1,6 @@
+{
+  "scale": 0.33,
+  "pivot": [0, -72],
+  "walk": {"fps": 36, "stride": 19.0},
+  "run": {"fps": 40, "stride": 27.6}
+}
