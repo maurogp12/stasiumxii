@@ -1,0 +1,83 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "crosshaven",
+  "start_zone": "crosshaven_crossroads",
+  "start": {
+    "zone_id": "crosshaven_crossroads",
+    "x": 22,
+    "y": 18
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "crosshaven_crossroads",
+      "file": "zones/crosshaven_crossroads.json",
+      "width": 40,
+      "height": 36
+    },
+    {
+      "zone_id": "crosshaven_road_north",
+      "file": "zones/crosshaven_road_north.json",
+      "width": 24,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_northgate",
+      "file": "zones/crosshaven_northgate.json",
+      "width": 40,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_road_west",
+      "file": "zones/crosshaven_road_west.json",
+      "width": 36,
+      "height": 24
+    },
+    {
+      "zone_id": "crosshaven_stoneford",
+      "file": "zones/crosshaven_stoneford.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_road_east",
+      "file": "zones/crosshaven_road_east.json",
+      "width": 36,
+      "height": 24
+    },
+    {
+      "zone_id": "crosshaven_eastmarch",
+      "file": "zones/crosshaven_eastmarch.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_road_southwest",
+      "file": "zones/crosshaven_road_southwest.json",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_westwatch",
+      "file": "zones/crosshaven_westwatch.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_road_south",
+      "file": "zones/crosshaven_road_south.json",
+      "width": 24,
+      "height": 36
+    },
+    {
+      "zone_id": "crosshaven_southbridge",
+      "file": "zones/crosshaven_southbridge.json",
+      "width": 40,
+      "height": 32
+    }
+  ]
+}

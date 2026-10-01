@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/zone-index.v1.json",
+  "title": "Stasium open-world zone index",
+  "description": "Index for one region. Zone files live beside this index under zones/.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format",
+    "format_version",
+    "region",
+    "start_zone",
+    "start",
+    "max_climb_steps",
+    "movement",
+    "zones"
+  ],
+  "properties": {
+    "format": {"const": "stasium.zone_index"},
+    "format_version": {"const": 1},
+    "region": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "start_zone": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "start": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zone_id", "x", "y"],
+      "properties": {
+        "zone_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0}
+      }
+    },
+    "max_climb_steps": {
+      "description": "OPEN. -1 means no climb limit (the shipped default). A value >= 0 is the maximum upward height-step delta allowed on one ortho step. Drops are not limited. This is not the combat elevation rule.",
+      "type": "integer",
+      "minimum": -1
+    },
+    "movement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adjacency"],
+      "properties": {
+        "adjacency": {
+          "description": "v1 uses the board grid's 4-neighbor ortho rule. Diagonal movement is Open and not accepted.",
+          "const": "ortho"
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["zone_id", "file", "width", "height"],
+        "properties": {
+          "zone_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "file": {"type": "string", "pattern": "^zones/[a-z0-9_]+\\.json$"},
+          "width": {"type": "integer", "minimum": 1, "maximum": 128},
+          "height": {"type": "integer", "minimum": 1, "maximum": 128}
+        }
+      }
+    }
+  }
+}
