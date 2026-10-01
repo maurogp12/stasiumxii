@@ -9,15 +9,13 @@ const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 
 var _grade: ColorRect
 var _shadows: Sprite2D
-var _shadows_b: Sprite2D
 var _contacts: Node2D
 var _critters: Node2D
 var _pollen: CPUParticles2D
 var _fall: CPUParticles2D
-var _env: WorldEnvironment
+var _grade_mat: ShaderMaterial
 var _settings: VisualSettings
 var _world: Node2D
-var _hdr_before := false
 
 
 class ContactBlob extends Node2D:
@@ -32,9 +30,9 @@ class ContactBlob extends Node2D:
 
 	func _ellipse(erx: float, ery: float, col: Color, at: Vector2) -> void:
 		var pts := PackedVector2Array()
-		pts.resize(14)
-		for i in 14:
-			var a := TAU * float(i) / 14.0
+		pts.resize(8)
+		for i in 8:
+			var a := TAU * float(i) / 8.0
 			pts[i] = at + Vector2(cos(a) * erx, sin(a) * ery)
 		draw_colored_polygon(pts, col)
 
@@ -42,44 +40,21 @@ class ContactBlob extends Node2D:
 func setup(world: Node2D, settings: VisualSettings) -> void:
 	_settings = settings
 	_world = world
-	var vp := world.get_viewport()
-	if vp != null:
-		_hdr_before = vp.use_hdr_2d
-		vp.use_hdr_2d = true
-	_env = WorldEnvironment.new()
-	var env := Environment.new()
-	env.background_mode = Environment.BG_CANVAS
-	env.glow_enabled = true
-	env.glow_intensity = 0.35
-	env.glow_strength = 0.5
-	env.glow_bloom = 0.06
-	env.glow_hdr_threshold = 0.62
-	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_SOFTLIGHT
-	env.set_glow_level(1, 0.8)
-	env.set_glow_level(2, 0.4)
-	env.set_glow_level(3, 0.0)
-	env.set_glow_level(4, 0.0)
-	env.set_glow_level(5, 0.0)
-	env.set_glow_level(6, 0.0)
-	_env.environment = env
-	world.add_child(_env)
 	var layer := CanvasLayer.new()
 	layer.layer = 6
 	world.add_child(layer)
 	_grade = ColorRect.new()
 	_grade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_grade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
+	_grade_mat = ShaderMaterial.new()
 	var shader: Shader = load("res://scenes/world/crosshaven/crosshaven_grade.gdshader")
-	mat.shader = shader
-	_grade.material = mat
+	_grade_mat.shader = shader
+	_grade.material = _grade_mat
 	layer.add_child(_grade)
-	_shadows = _cloud_layer("cloud_shadow_a", Color(0.25, 0.3, 0.4, 0.20), Vector2(-800, -400))
-	_shadows_b = _cloud_layer("cloud_shadow_b", Color(0.22, 0.28, 0.38, 0.14), Vector2(-600, -200))
+	# One drifting cloud sheet. A second fullscreen layer cost more than it added.
+	_shadows = _cloud_layer("cloud_shadow_a", Color(0.22, 0.28, 0.38, 0.16), Vector2(-800, -400))
 	if _shadows != null:
 		world.add_child(_shadows)
-	if _shadows_b != null:
-		world.add_child(_shadows_b)
 	_contacts = Node2D.new()
 	_contacts.name = "ContactShadows"
 	world.add_child(_contacts)
@@ -87,8 +62,8 @@ func setup(world: Node2D, settings: VisualSettings) -> void:
 	_critters.name = "Critters"
 	world.add_child(_critters)
 	var mote := _soft_dot()
-	_pollen = _air_particles(22, Color(0.98, 0.90, 0.45, 0.55), mote, false)
-	_fall = _air_particles(12, Color(0.72, 0.42, 0.18, 0.75), mote, true)
+	_pollen = _air_particles(12, Color(0.98, 0.90, 0.45, 0.55), mote, false)
+	_fall = _air_particles(8, Color(0.72, 0.42, 0.18, 0.75), mote, true)
 	world.add_child(_pollen)
 	world.add_child(_fall)
 	settings.bind(self, "post_fx", _on_post_fx)
@@ -164,15 +139,11 @@ func _soft_dot() -> Texture2D:
 func _on_post_fx(on: bool) -> void:
 	if _grade != null:
 		_grade.visible = on
-	if _env != null and _env.environment != null:
-		_env.environment.glow_enabled = on
 
 
 func _on_sway_shadows(on: bool) -> void:
 	if _shadows != null:
 		_shadows.visible = on
-	if _shadows_b != null:
-		_shadows_b.visible = on
 	if _contacts != null:
 		_contacts.visible = on
 
@@ -227,6 +198,8 @@ func _add_contacts(zone: WorldZone) -> void:
 			if cell.x + cell.y > south.x + south.y:
 				south = cell
 		var kind := str(record["type"])
+		if not _casts_shadow(kind, footprint.size()):
+			continue
 		var blob := ContactBlob.new()
 		var size := _shadow_size(kind, footprint.size())
 		blob.rx = size.x
@@ -246,6 +219,12 @@ func _shadow_size(kind: String, cells: int) -> Vector3:
 	if kind == "fence" or kind.contains("hedge") or kind.contains("wall"):
 		return Vector3(18, 5.5, 0)
 	return Vector3(12, 4.5, 0)
+
+
+func _casts_shadow(kind: String, cells: int) -> bool:
+	if _is_building(kind) or kind.contains("tree") or kind == "fence" or kind.contains("hedge") or kind.contains("wall"):
+		return true
+	return cells >= 2
 
 
 func _is_building(kind: String) -> bool:
@@ -295,19 +274,14 @@ func _add_critter(zone: WorldZone, cell: Vector2i, anim_id: String, speed: float
 
 
 func _exit_tree() -> void:
-	if _world != null and is_instance_valid(_world):
-		var vp := _world.get_viewport()
-		if vp != null:
-			vp.use_hdr_2d = _hdr_before
 	if _settings != null:
 		_settings.detach()
 
 
 func _process(delta: float) -> void:
+	_sync_grade()
 	if _shadows != null and _shadows.visible:
-		_shadows.region_rect.position += Vector2(18.0, 6.0) * delta
-	if _shadows_b != null and _shadows_b.visible:
-		_shadows_b.region_rect.position += Vector2(9.0, 3.0) * delta
+		_shadows.region_rect.position += Vector2(14.0, 5.0) * delta
 	_follow_air()
 	if _critters == null or not _critters.visible:
 		return
@@ -332,6 +306,19 @@ func _step_bird(body: Node2D, delta: float, t: float) -> void:
 	if x > max_x:
 		x = min_x
 	body.position = Vector2(x, base_y + sin(t * 1.4 + phase) * 10.0)
+
+
+func _sync_grade() -> void:
+	if _grade_mat == null or _world == null:
+		return
+	var rain_amt := 0.0
+	var weather_node: Object = _world.get("weather")
+	if weather_node != null:
+		var amounts: Variant = weather_node.get("_amount")
+		if typeof(amounts) == TYPE_DICTIONARY:
+			rain_amt = float((amounts as Dictionary).get("light_rain", 0.0))
+	# Clear stays warm. Rain drops the golden multiply so the tint can cool it.
+	_grade_mat.set_shader_parameter("warmth", clampf(1.0 - rain_amt, 0.0, 1.0))
 
 
 func _follow_air() -> void:

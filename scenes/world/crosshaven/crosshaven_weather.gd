@@ -20,7 +20,6 @@ var _modulate: CanvasModulate
 var _cloud: Sprite2D
 var _rain: CPUParticles2D
 var _splash: CPUParticles2D
-var _fog: ColorRect
 var _leaves: CPUParticles2D
 var _amount := {"light_cloud": 0.0, "light_rain": 0.0, "wind": 0.0}
 var _next_rotate := 90.0
@@ -66,7 +65,7 @@ func setup(world: Node2D, screen_layer: CanvasLayer) -> void:
 	world.add_child(_cloud)
 
 	_rain = CPUParticles2D.new()
-	_rain.amount = 260
+	_rain.amount = 140
 	_rain.lifetime = 0.85
 	_rain.preprocess = 1.0
 	_rain.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -103,12 +102,6 @@ func setup(world: Node2D, screen_layer: CanvasLayer) -> void:
 	_splash.position = Vector2(480, 420)
 	_splash.emitting = false
 	screen_layer.add_child(_splash)
-
-	_fog = ColorRect.new()
-	_fog.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_fog.color = Color(0.62, 0.7, 0.8, 0.0)
-	screen_layer.add_child(_fog)
 
 	_leaves = CPUParticles2D.new()
 	_leaves.amount = 36
@@ -178,7 +171,7 @@ func _process(delta: float) -> void:
 func daylight_color() -> Color:
 	var night := Color(0.32, 0.38, 0.62)
 	var dawn := Color(1.0, 0.78, 0.62)
-	var noon := Color(1.0, 0.96, 0.9)
+	var noon := Color(1.0, 0.97, 0.88)
 	var dusk := Color(0.98, 0.66, 0.5)
 	var h := time_of_day
 	if h < 5.0 or h >= 21.0:
@@ -196,8 +189,10 @@ func daylight_color() -> Color:
 
 func current_tint() -> Color:
 	var c := daylight_color()
-	c = c.lerp(c * Color(0.86, 0.88, 0.94), _amount["light_cloud"])
-	c = c.lerp(c * Color(0.7, 0.74, 0.84), _amount["light_rain"])
+	# A light cloud only cools a little. Rain is about 7% darker and slightly cooler,
+	# never brighter and never pulled toward gray.
+	c = c.lerp(c * Color(0.96, 0.97, 0.99), _amount["light_cloud"])
+	c = c.lerp(c * Color(0.93, 0.95, 0.99), _amount["light_rain"])
 	c.a = 1.0
 	return c
 
@@ -216,8 +211,8 @@ func _apply(delta: float) -> void:
 	var rain_amt: float = float(_amount["light_rain"])
 	var cloud_amt: float = float(_amount["light_cloud"])
 	var wind_amt: float = float(_amount["wind"])
-	var cover := maxf(cloud_amt, rain_amt * 0.8)
-	_cloud.modulate.a = cover if visuals_enabled else 0.0
+	var cover := maxf(cloud_amt, rain_amt * 0.55)
+	_cloud.modulate.a = cover * 0.28 if visuals_enabled else 0.0
 	_cloud.region_rect.position += Vector2(14.0, 4.0) * delta * (1.0 + 2.0 * wind_amt)
 	var rain_on: bool = visuals_enabled and rain_amt > 0.05
 	_rain.emitting = rain_on
@@ -225,11 +220,6 @@ func _apply(delta: float) -> void:
 	if _splash != null:
 		_splash.emitting = rain_on
 		_splash.modulate.a = rain_amt if visuals_enabled else 0.0
-	if _fog != null:
-		var fog_a := 0.0
-		if visuals_enabled:
-			fog_a = rain_amt * 0.22 + cloud_amt * 0.10
-		_fog.color = Color(0.62, 0.7, 0.8, fog_a)
 	_leaves.emitting = visuals_enabled and wind_amt > 0.05
 	_leaves.modulate.a = wind_amt if visuals_enabled else 0.0
 

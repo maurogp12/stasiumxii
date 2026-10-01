@@ -80,7 +80,7 @@ func _process(_delta: float) -> void:
 			_ripple_frame = -1
 			_redraw_water()
 		return
-	var frame := int(float(Time.get_ticks_msec()) * 7.2 / 1000.0) % 8
+	var frame := int(float(Time.get_ticks_msec()) * 4.0 / 1000.0) % 8
 	if frame == _ripple_frame:
 		return
 	_ripple_frame = frame
@@ -178,11 +178,8 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> 
 		if not corner_art.is_empty():
 			var csize := Art.size_of(corner_art)
 			Art.draw_at(ci, corner_art, south_tip + Vector2(-csize.x * 0.5, -csize.y))
-	if terrain == "water":
-		if VisualSettings.current != null and VisualSettings.current.enabled("animations"):
-			_draw_water_polish(ci, cell, steps)
-	elif VisualSettings.current != null and VisualSettings.current.enabled("post_fx"):
-		_draw_ground_wash(ci, cell, steps, terrain)
+	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
+		_draw_water_polish(ci, cell, steps)
 	var lip := str(pick.get("lip", ""))
 	if lip != "":
 		var lip_art := Art.texture("tiles", lip)
@@ -197,7 +194,9 @@ func _draw_water_polish(ci: Node2D, cell: Vector2i, steps: int) -> void:
 	var phase := 0.0 if _ripple_frame < 0 else float(_ripple_frame) / 8.0
 	var c := BoardVisualSort.cell_to_local(cell, float(steps))
 	var shimmer_y := -2.0 + 3.0 * sin(phase * TAU + n * 6.0)
-	ci.draw_line(c + Vector2(-10, shimmer_y), c + Vector2(8, shimmer_y * 0.35), Color(1, 1, 1, 0.28), 1.2)
+	ci.draw_line(c + Vector2(-10, shimmer_y), c + Vector2(8, shimmer_y * 0.35), Color(1, 1, 1, 0.22), 1.2)
+	if n > 0.72:
+		ci.draw_circle(c + Vector2(-2.0 + n * 4.0, shimmer_y), 1.15, Color(1, 1, 1, 0.95))
 	ci.draw_line(c + Vector2(-3, 1), c + Vector2(-3, 6), Color(0.85, 0.95, 1, 0.16), 1.4)
 	_foam_if_shore(ci, cell, d, Vector2i(0, -1), 0, 1)
 	_foam_if_shore(ci, cell, d, Vector2i(1, 0), 1, 2)
@@ -210,17 +209,6 @@ func _foam_if_shore(ci: Node2D, cell: Vector2i, d: PackedVector2Array, step: Vec
 	if zone.in_bounds(nb) and zone.terrain_at(nb) == "water":
 		return
 	ci.draw_line(d[ia], d[ib], Color(0.92, 0.97, 1.0, 0.55), 1.6)
-
-
-func _draw_ground_wash(ci: Node2D, cell: Vector2i, steps: int, terrain: String) -> void:
-	var n := _hash(cell)
-	var d := Pick.diamond(cell, float(steps))
-	var wash := Color(0.55, 0.72, 0.4, 0.055)
-	if terrain == "dirt_road":
-		wash = Color(0.62, 0.42, 0.22, 0.08)
-	elif n > 0.55:
-		wash = Color(0.95, 0.82, 0.55, 0.07)
-	ci.draw_colored_polygon(d, wash)
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2) -> bool:

@@ -224,8 +224,8 @@ func _draw_window_glow(s: Vector2) -> void:
 		return
 	var a := Vector2(-s.x * 0.18, -s.y * 0.38)
 	var b := Vector2(s.x * 0.16, -s.y * 0.46)
-	draw_circle(a, 3.4, Color(1.0, 0.88, 0.48, 0.9))
-	draw_circle(b, 2.6, Color(1.0, 0.78, 0.38, 0.75))
+	draw_circle(a, 2.4, Color(1.0, 0.96, 0.72, 1.0))
+	draw_circle(b, 1.8, Color(1.0, 0.9, 0.55, 0.95))
 
 
 func _glows() -> bool:

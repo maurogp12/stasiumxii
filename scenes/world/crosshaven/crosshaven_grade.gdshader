@@ -1,33 +1,39 @@
 shader_type canvas_item;
 render_mode unshaded;
 
+// One screen sample for the grade. Bloom is the same sample's highlight excess,
+// so midtones are not lifted and the HUD (a later canvas layer) is untouched.
 uniform sampler2D screen_tex : hint_screen_texture, repeat_disable, filter_linear;
-uniform float bloom_threshold : hint_range(0.0, 1.0) = 0.58;
-uniform float bloom_softness : hint_range(0.01, 1.0) = 0.28;
-uniform float bloom_strength : hint_range(0.0, 1.0) = 0.42;
-uniform float warmth : hint_range(0.0, 0.5) = 0.14;
-uniform float vignette : hint_range(0.0, 1.0) = 0.32;
-uniform float haze : hint_range(0.0, 0.5) = 0.12;
-uniform vec3 warm_col : source_color = vec3(1.0, 0.92, 0.78);
-uniform vec3 haze_col : source_color = vec3(0.70, 0.80, 0.90);
+uniform float warmth : hint_range(0.0, 1.0) = 1.0;
+uniform float bloom_threshold : hint_range(0.5, 1.0) = 0.84;
+uniform float bloom_strength : hint_range(0.0, 1.5) = 0.55;
+uniform float contrast : hint_range(1.0, 1.2) = 1.08;
+uniform float saturation : hint_range(1.0, 1.2) = 1.08;
+uniform float haze_max : hint_range(0.0, 0.2) = 0.15;
+uniform vec3 warm_mul : source_color = vec3(1.05, 1.0, 0.90);
+uniform vec3 haze_col : source_color = vec3(0.45, 0.52, 0.62);
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
-	vec2 px = SCREEN_PIXEL_SIZE * 2.4;
 	vec3 c = texture(screen_tex, uv).rgb;
-	vec3 blur = c * 0.36;
-	blur += texture(screen_tex, uv + vec2(px.x, 0.0)).rgb * 0.16;
-	blur += texture(screen_tex, uv - vec2(px.x, 0.0)).rgb * 0.16;
-	blur += texture(screen_tex, uv + vec2(0.0, px.y)).rgb * 0.16;
-	blur += texture(screen_tex, uv - vec2(0.0, px.y)).rgb * 0.16;
-	float luma = dot(blur, vec3(0.2126, 0.7152, 0.0722));
-	float mask = smoothstep(bloom_threshold, bloom_threshold + bloom_softness, luma);
-	vec3 graded = mix(c, warm_col, warmth);
-	graded += blur * mask * bloom_strength;
-	float far = smoothstep(0.62, 0.0, uv.y);
-	graded = mix(graded, haze_col, haze * far);
+	// Golden in clear weather. Rain drives warmth to 0 so it stays slightly cool.
+	c *= mix(vec3(1.0), warm_mul, warmth);
+	float luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	// Rain drops the golden multiply. Keep the chroma so the cool tint does not go gray.
+	float sat = mix(1.14, saturation, warmth);
+	c = mix(vec3(luma), c, sat);
+	c = (c - vec3(0.5)) * contrast + vec3(0.5);
+	// Only lamps, water glints, and sun highlights. Excess above the threshold, not the midtones.
+	vec3 hi = max(c - vec3(bloom_threshold), vec3(0.0));
+	c += hi * bloom_strength;
+	// Edge and far haze. The center (the hero, under the camera) stays clear.
 	vec2 p = uv * 2.0 - 1.0;
-	float vig = smoothstep(0.28, 1.15, dot(p, p)) * vignette;
-	graded = mix(graded, graded * vec3(0.52, 0.46, 0.40), vig);
-	COLOR = vec4(graded, 1.0);
+	float radial = length(p);
+	float edge = smoothstep(0.62, 1.25, radial);
+	float far = smoothstep(0.55, 0.02, uv.y) * smoothstep(0.25, 0.7, radial);
+	float hero = smoothstep(0.48, 0.18, radial);
+	float haze_a = min(haze_max, haze_max * max(edge, far * 0.65));
+	haze_a *= (1.0 - hero);
+	c = mix(c, haze_col, haze_a);
+	COLOR = vec4(clamp(c, vec3(0.0), vec3(1.0)), 1.0);
 }

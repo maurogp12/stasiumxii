@@ -40,6 +40,12 @@ var _air := 0.0
 var _idle_t := 0.0
 var _phase := 0.0
 var _halt_after := false
+## East/west strips plant the foot on a flat line. The iso step also moves in Y.
+## Hold the sole's screen Y while it is down, and ease that hold off in the air.
+var _foot_cycle := -1
+var _foot_origin_y := 0.0
+var _foot_sole_y := 0.0
+var _foot_release := 0.0
 
 
 func _ready() -> void:
@@ -359,7 +365,7 @@ func _apply_gait() -> void:
 	_sprite.region_enabled = true
 	_sprite.region_rect = Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y)
 	_sprite.scale = Vector2(_strips.scale, _strips.scale)
-	_sprite.position = Vector2.ZERO
+	_sprite.position = _foot_offset(frame)
 	queue_redraw()
 
 
@@ -370,6 +376,7 @@ func _show_idle() -> void:
 	var breath := sin(_idle_t * TAU * 1.35) * 0.012
 	_sprite.scale = Vector2(_strips.scale * (1.0 - breath * 0.4), _strips.scale * (1.0 + breath))
 	_sprite.position = Vector2.ZERO
+	_foot_cycle = -1
 	_bob = 0.0
 	_air = 0.0
 	queue_redraw()
@@ -398,14 +405,83 @@ func _cell_pos(c: Vector2i) -> Vector2:
 	return BoardVisualSort.cell_to_local(c, float(zone.height_at(c)))
 
 
+## Sole lift in world pixels, measured from the pivot on the east strip (west matches).
+func _sole_lift(gait: String, frame: int) -> float:
+	var dy := -1.0
+	if gait == "run":
+		match frame:
+			0:
+				dy = -2.0
+			1:
+				dy = -1.0
+			2:
+				dy = -2.0
+			3:
+				dy = -7.0
+			4:
+				dy = -6.0
+			5:
+				dy = -3.0
+			6:
+				dy = -7.0
+			_:
+				dy = -5.0
+	else:
+		match frame:
+			0:
+				dy = -3.0
+			1, 2, 3:
+				dy = -1.0
+			4:
+				dy = -2.0
+			5:
+				dy = -3.0
+			_:
+				dy = -6.0
+	var s: float = _strips.scale if _strips != null else 0.33
+	return dy * s
+
+
+func _foot_in_air(gait: String, frame: int) -> bool:
+	if gait == "run":
+		return frame >= 3
+	return frame >= 6
+
+
+func _foot_offset(frame: int) -> Vector2:
+	if facing != "e" and facing != "w":
+		_foot_cycle = -1
+		return Vector2.ZERO
+	var gait := _gait_name()
+	var span := maxf(_stride, 0.001)
+	var cycle := int(_phase / span)
+	var sole_y := _sole_lift(gait, frame)
+	if cycle != _foot_cycle:
+		_foot_cycle = cycle
+		_foot_origin_y = position.y
+		_foot_sole_y = sole_y
+		_foot_release = 0.0
+	var held := _foot_origin_y - position.y + _foot_sole_y - sole_y
+	if not _foot_in_air(gait, frame):
+		_foot_release = held
+		return Vector2(0.0, held)
+	var slots := 5 if gait == "run" else 2
+	var index := frame - (3 if gait == "run" else 6)
+	var u := float(index + 1) / float(slots)
+	return Vector2(0.0, _foot_release * (1.0 - u))
+
+
 func _draw() -> void:
 	var s: float = _strips.scale if _strips != null else 0.33
 	var rx := 24.0 * s
 	var ry := 9.0 * s
+	var at := Vector2.ZERO
+	if _sprite != null:
+		at = _sprite.position
 	var pts := PackedVector2Array()
 	for i in 18:
 		var a := TAU * float(i) / 18.0
-		pts.append(Vector2(cos(a) * rx, sin(a) * ry))
+		pts.append(at + Vector2(cos(a) * rx, sin(a) * ry))
 	draw_colored_polygon(pts, Color(0, 0, 0, 0.32))
 	if _strips == null or not _strips.has_gait("walk"):
 		draw_circle(Vector2(0, -28), 10, Color("6a5344"))

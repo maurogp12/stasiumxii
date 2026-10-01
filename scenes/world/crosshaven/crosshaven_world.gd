@@ -628,27 +628,27 @@ func _mark(tag: String) -> void:
 	print("MOVIE %s %.1fs frame %d" % [tag, (Time.get_ticks_msec() - _movie_t0) / 1000.0, Engine.get_process_frames()])
 
 
-## Flat lap, then the same walk with bloom, shadows, and rain.
+## Clear and flat, then the same walk with the grade, then the same walk in rain.
 func _movie_graphics() -> void:
 	_set_zoom(1.75)
 	weather.set_weather("clear")
 	weather.settle()
 	await _stand_on_pad(2)
 	_polish(false)
-	await get_tree().create_timer(0.5).timeout
+	await get_tree().create_timer(0.35).timeout
 	_mark("before")
 	await _polish_lap()
-	_mark("mid")
 	_polish(true)
-	weather.set_weather("light_rain")
-	weather.settle()
-	await get_tree().create_timer(0.6).timeout
-	_mark("after")
-	await _polish_lap()
 	weather.set_weather("clear")
 	weather.settle()
-	await _cardinal("e", 2, "run")
-	await _cardinal("w", 2, "run")
+	await get_tree().create_timer(0.35).timeout
+	_mark("after")
+	await _polish_lap()
+	weather.set_weather("light_rain")
+	weather.settle()
+	await get_tree().create_timer(0.45).timeout
+	_mark("rain")
+	await _polish_lap()
 	_mark("end")
 
 
@@ -664,12 +664,8 @@ func _polish(on: bool) -> void:
 func _polish_lap() -> void:
 	await _cardinal("e", 2, "walk")
 	await _cardinal("w", 2, "walk")
-	await _cardinal("w", 2, "walk")
-	await _cardinal("e", 2, "walk")
 	await _cardinal("s", 1, "walk")
 	await _cardinal("n", 1, "walk")
-	await _cardinal("n", 1, "walk")
-	await _cardinal("s", 1, "walk")
 
 
 func _arrive_town(zone_id: String) -> void:
