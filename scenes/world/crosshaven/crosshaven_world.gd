@@ -55,12 +55,14 @@ var _last_click_ms := 0
 var _movie := ""
 var _bench: Array[float] = []
 var _bench_until := 0.0
+var _window_before := Vector2i.ZERO
 
 
 func _ready() -> void:
 	_read_launch_args()
-	if _movie != "":
-		DisplayServer.window_set_size(Vector2i(1280, 720))
+	# Parent process runs after the walker so cover uses this frame's feet.
+	process_priority = 1
+	_apply_world_window()
 	var bg := CanvasLayer.new()
 	bg.layer = -10
 	add_child(bg)
@@ -77,6 +79,8 @@ func _ready() -> void:
 	decor_root.name = "Decor"
 	add_child(decor_root)
 	settings.bind(self, "decor", _on_decor_flag)
+	if not settings.preset_changed.is_connected(_on_preset):
+		settings.preset_changed.connect(_on_preset)
 
 	_hover = Node2D.new()
 	_hover.name = "Hover"
@@ -179,6 +183,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 	weather.settle()
 	_show_banner(Pick.zone_name(zone))
 	_refresh_hud()
+	_apply_decor_density()
 	zone_entered.emit(zone.zone_id, cell)
 
 
@@ -302,8 +307,13 @@ func _process(delta: float) -> void:
 	if walker == null or zone == null:
 		return
 	camera.position = walker.position
+	var feet: Vector2 = walker.position
+	var wz: int = walker.z_index
 	for p in props_root.get_children():
-		p.update_cover(walker.anchor_cell(), walker.position)
+		p.update_cover(feet, wz)
+	if decor_root != null:
+		for d in decor_root.get_children():
+			d.update_cover(feet, wz)
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
 
@@ -312,33 +322,52 @@ func _build_hud() -> void:
 	var hud := CanvasLayer.new()
 	hud.layer = 10
 	add_child(hud)
+	var sheet := Control.new()
+	sheet.name = "HudSheet"
+	sheet.set_anchors_preset(Control.PRESET_FULL_RECT)
+	sheet.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(sheet)
 	var gear := Button.new()
 	gear.text = "Visuals"
-	gear.position = Vector2(820, 12)
+	gear.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	gear.offset_left = -148
+	gear.offset_top = 16
+	gear.offset_right = -36
+	gear.offset_bottom = 52
 	gear.pressed.connect(func(): visuals.toggle())
-	hud.add_child(gear)
+	sheet.add_child(gear)
 	_hud_label = Label.new()
-	_hud_label.position = Vector2(14, 10)
+	# Stretch with the viewport. A fixed left inset stays on screen at 4:3, 16:9,
+	# and any other window size; the right inset clears the Visuals button.
+	_hud_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_hud_label.offset_left = 48
+	_hud_label.offset_top = 20
+	_hud_label.offset_right = -188
+	_hud_label.offset_bottom = 156
+	_hud_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hud_label.clip_text = false
 	_hud_label.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
 	_hud_label.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.06))
-	_hud_label.add_theme_constant_override("outline_size", 5)
-	hud.add_child(_hud_label)
+	_hud_label.add_theme_constant_override("outline_size", 4)
+	sheet.add_child(_hud_label)
 	_banner = Label.new()
 	_banner.set_anchors_preset(Control.PRESET_CENTER_TOP)
 	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_banner.position = Vector2(-300, 120)
-	_banner.size = Vector2(600, 50)
+	_banner.offset_left = -320
+	_banner.offset_top = 120
+	_banner.offset_right = 320
+	_banner.offset_bottom = 176
 	_banner.add_theme_font_size_override("font_size", 34)
 	_banner.add_theme_color_override("font_color", Color(1, 0.92, 0.7))
 	_banner.add_theme_color_override("font_outline_color", Color(0.15, 0.1, 0.05))
 	_banner.add_theme_constant_override("outline_size", 8)
 	_banner.modulate.a = 0.0
-	hud.add_child(_banner)
+	sheet.add_child(_banner)
 	_fade = ColorRect.new()
 	_fade.color = Color(0, 0, 0, 0)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hud.add_child(_fade)
+	sheet.add_child(_fade)
 
 
 func _show_banner(text: String) -> void:
@@ -360,13 +389,47 @@ func _refresh_hud() -> void:
 	]
 
 
-func _on_decor_flag(on: bool) -> void:
-	if decor_root != null:
-		decor_root.visible = on
+func _on_decor_flag(_on: bool) -> void:
+	_apply_decor_density()
+
+
+func _on_preset(_preset_name: String) -> void:
+	_apply_decor_density()
+
+
+## Full shows every sprite. Reduced keeps the roadside and building ring and
+## hides open-field fill. Minimal turns the decor flag off and hides the root.
+func _apply_decor_density() -> void:
+	if decor_root == null or settings == null:
+		return
+	var show_root := settings.enabled("decor")
+	decor_root.visible = show_root
+	var rich := settings.preset != "Reduced"
+	for d in decor_root.get_children():
+		d.visible = rich or bool(d.get("core"))
+
+
+func _apply_world_window() -> void:
+	# Hub, touch, and combat keep the project viewport at 960×720. Crosshaven
+	# only widens its own window. Stretch aspect is already "expand", so the
+	# extra width is more map, not black bars. The movie writer locks its
+	# size from the project viewport at startup, so 1280×720 captures use a
+	# temporary override.cfg and are not a project setting.
+	if DisplayServer.get_name() == "headless":
+		return
+	var current := DisplayServer.window_get_size()
+	if current.x == 1280 and current.y == 720:
+		return
+	_window_before = current
+	DisplayServer.window_set_size(Vector2i(1280, 720))
 
 
 func _exit_tree() -> void:
+	if _window_before != Vector2i.ZERO and DisplayServer.get_name() != "headless":
+		DisplayServer.window_set_size(_window_before)
 	if settings != null:
+		if settings.preset_changed.is_connected(_on_preset):
+			settings.preset_changed.disconnect(_on_preset)
 		settings.detach()
 
 

@@ -25,6 +25,7 @@ var south_cell := Vector2i.ZERO
 var base_height := 0
 ## Screen rect (local) used for "player is behind me" fading.
 var cover_rect := Rect2()
+var base_z := 0
 var _tex: Texture2D
 var _fence_axis := 0  # 0: along x (NE-SW screen), 1: along y
 
@@ -44,7 +45,8 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		base_height = maxi(base_height, zone.height_at(c))
 	position = BoardVisualSort.cell_to_local(south_cell, float(base_height)) + Vector2(0, Pick.HALF_H)
 	z_as_relative = false
-	z_index = (south_cell.x + south_cell.y) * BoardVisualSort.TILE_Z_SCALE + 2
+	base_z = (south_cell.x + south_cell.y) * BoardVisualSort.TILE_Z_SCALE + 2
+	z_index = base_z
 	if prop_type == "fence":
 		var o := footprint[0]
 		var along_y := _is_fence(zone, o + Vector2i(0, 1)) or _is_fence(zone, o + Vector2i(0, -1))
@@ -160,12 +162,21 @@ func _cover_rect() -> Rect2:
 			return Rect2(-40, -180, 80, 180)
 
 
-## Fade when the walker stands behind the prop and overlaps it on screen.
-func update_cover(walker_cell: Vector2i, walker_pos: Vector2) -> void:
-	var behind := walker_cell.x + walker_cell.y < south_cell.x + south_cell.y
-	var overlap := cover_rect.grow(-4).has_point(walker_pos - position)
-	var target := 0.45 if behind and overlap and prop_type != "fence" else 1.0
-	modulate.a = lerpf(modulate.a, target, 0.25)
+## Feet north of the base, inside the sprite, are behind the prop.
+## Pull the prop in front of the character and fade it so they stay readable.
+func update_cover(walker_pos: Vector2, walker_z: int) -> void:
+	var local := walker_pos - position
+	var overlap := cover_rect.grow(6).has_point(local)
+	# The south-cell center sits 16px above the sprite foot. Fading only above
+	# that keeps a character on the front of the prop drawn over the base.
+	var behind := local.y < -20.0
+	var hide := overlap and behind and prop_type != "fence" and cover_rect.size.y > 36.0
+	if hide:
+		z_index = walker_z + 1
+		modulate.a = 0.46
+	else:
+		z_index = base_z
+		modulate.a = 1.0
 
 
 func _draw() -> void:

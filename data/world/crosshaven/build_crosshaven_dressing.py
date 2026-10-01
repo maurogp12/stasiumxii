@@ -239,9 +239,91 @@ def paint_farm(doc, maps, farm: str, rw: int, rh: int) -> bool:
     return True
 
 
+EDGE_DECOR = [
+    "flowers_a", "flowers_b", "flowers_c", "flowers_d",
+    "bush_small_a", "bush_small_b",
+    "grass_tuft_a", "grass_tuft_b", "grass_tuft_tall_a",
+    "sunflowers_tall", "sunflowers_tall_b", "tuft_a", "tuft_b",
+]
+# Extra blockers. They sit off the road so the path stays walkable.
+SCATTER = [
+    ("tree", 18, 4, (2, 3)),
+    ("hedgerow_nesw", 8, 3, (1, 1)),
+    ("hedgerow_nwse", 8, 3, (1, 1)),
+    ("lamp_post", 10, 5, (1, 1)),
+    ("farm_fence_nesw", 6, 3, (1, 2)),
+    ("farm_fence_nwse", 6, 3, (1, 2)),
+    ("cart", 3, 6, (1, 2)),
+    ("crate_apples", 4, 4, (1, 2)),
+    ("barrel", 4, 4, (1, 2)),
+]
+DECOR_CAP = 320
+
+
+def _hash(x: int, y: int) -> int:
+    return ((x * 73856093) ^ (y * 19349663) ^ (x * y * 83492791)) & 0x7FFFFFFF
+
+
+def dist_to_road(maps) -> dict:
+    dist = {}
+    q = deque()
+    for c, kind in maps["terrain"].items():
+        if kind == "dirt_road":
+            dist[c] = 0
+            q.append(c)
+    while q:
+        x, y = q.popleft()
+        for dx, dy in DIRS:
+            n = (x + dx, y + dy)
+            if n in dist or n not in maps["terrain"]:
+                continue
+            dist[n] = dist[(x, y)] + 1
+            q.append(n)
+    return dist
+
+
+def scatter_blockers(doc, maps) -> int:
+    """Trees, hedges, lamps, fences, carts and crates along roads and in fields."""
+    dist = dist_to_road(maps)
+    placed = []
+    added = 0
+    for prop_type, cap, gap, band in SCATTER:
+        got = 0
+        cells = [(x, y) for y in range(maps["h"]) for x in range(maps["w"])]
+        cells.sort(key=lambda c: (_hash(c[0], c[1]), c[1], c[0]))
+        for c in cells:
+            if got >= cap:
+                break
+            d = dist.get(c, 99)
+            if d < band[0] or d > band[1]:
+                continue
+            if any(abs(c[0] - p[0]) + abs(c[1] - p[1]) < gap for p in placed):
+                continue
+            if not place_ok(maps, [c], False, False, False):
+                continue
+            if not keeps_reach(doc, maps, [c]):
+                continue
+            added += 1
+            got += 1
+            placed.append(c)
+            maps["blocked"].add(c)
+            doc["props"].append({
+                "id": f"{doc['zone_id']}_scatter_{prop_type}_{got:02d}",
+                "type": prop_type,
+                "blocks": True,
+                "origin": {"x": c[0], "y": c[1]},
+                "footprint": [{"x": c[0], "y": c[1]}],
+            })
+    return added
+
+
 def add_decor(doc, maps) -> int:
     spawn = (doc["spawn"]["x"], doc["spawn"]["y"])
-    chosen = []
+    dist = dist_to_road(maps)
+    edge = []
+    roads = []
+    fields = []
+    water = []
     for y in range(maps["h"]):
         for x in range(maps["w"]):
             c = (x, y)
@@ -250,32 +332,59 @@ def add_decor(doc, maps) -> int:
             if abs(c[0] - spawn[0]) + abs(c[1] - spawn[1]) <= 2:
                 continue
             kind = maps["terrain"].get(c, "")
-            n = ((x * 73856093) ^ (y * 19349663) ^ (x * y * 83492791)) & 0x7FFFFFFF
+            n = _hash(x, y)
+            d = dist.get(c, 99)
             if kind == "water":
-                if n % 9 != 0:
+                if n % 6 != 0:
                     continue
-                decor_type = WATER_DECOR[n % len(WATER_DECOR)]
+                water.append((c, WATER_DECOR[n % len(WATER_DECOR)]))
             elif kind == "dirt_road":
-                if n % 14 != 0:
+                if n % 11 != 0:
                     continue
-                decor_type = ROAD_DECOR[n % len(ROAD_DECOR)]
+                roads.append((c, ROAD_DECOR[n % len(ROAD_DECOR)]))
             elif kind.startswith("farm_"):
-                if n % 16 != 0:
+                if n % 5 != 0:
                     continue
-                decor_type = FARM_DECOR[n % len(FARM_DECOR)]
+                fields.append((c, FARM_DECOR[n % len(FARM_DECOR)]))
             elif kind == "golden_plains":
-                if n % 9 != 0:
-                    continue
-                decor_type = PLAINS_DECOR[n % len(PLAINS_DECOR)]
-            else:
-                continue
-            chosen.append((c, decor_type))
-    chosen = chosen[:72]
+                if d <= 2:
+                    if n % 2 != 0:
+                        continue
+                    edge.append((c, EDGE_DECOR[n % len(EDGE_DECOR)]))
+                else:
+                    if n % 5 != 0:
+                        continue
+                    fields.append((c, PLAINS_DECOR[n % len(PLAINS_DECOR)]))
+    chosen = (edge + roads + water + fields)[:DECOR_CAP]
     doc["decor"] = [
         {"id": f"{doc['zone_id']}_decor_{i:03d}", "type": decor_type, "x": c[0], "y": c[1]}
         for i, (c, decor_type) in enumerate(chosen, start=1)
     ]
     return len(chosen)
+
+
+def strip_scatter(doc) -> None:
+    prefix = f"{doc['zone_id']}_scatter_"
+    doc["props"] = [p for p in doc["props"] if not str(p.get("id", "")).startswith(prefix)]
+
+
+def enrich() -> None:
+    """Replace decor and scatter blockers. Leaves farms and the one-of-each props."""
+    zones = load_zones()
+    for zone_id, doc in zones.items():
+        strip_scatter(doc)
+        maps = index_maps(doc)
+        n_props = scatter_blockers(doc, maps)
+        maps = index_maps(doc)
+        n = add_decor(doc, maps)
+        spawn = (doc["spawn"]["x"], doc["spawn"]["y"])
+        got = reachable(spawn, maps["walk"], maps["blocked"])
+        need = must_reach(maps["walk"], maps["blocked"])
+        if got != need:
+            raise SystemExit(f"{zone_id} reachability broke: {len(need - got)} cells")
+        path = ZONE_DIR / f"{zone_id}.json"
+        path.write_text(json.dumps(doc, indent=2) + "\n")
+        print(f"wrote {zone_id} decor={n} scatter={n_props} props={len(doc['props'])}")
 
 
 def main() -> None:
@@ -316,4 +425,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    enrich()

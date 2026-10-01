@@ -281,6 +281,291 @@
           "y": 24
         }
       ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_01",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_02",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 21,
+        "y": 24
+      },
+      "footprint": [
+        {
+          "x": 21,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_03",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 27
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_04",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 29,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 29,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_05",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 15,
+        "y": 24
+      },
+      "footprint": [
+        {
+          "x": 15,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_06",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_07",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 18,
+        "y": 23
+      },
+      "footprint": [
+        {
+          "x": 18,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_tree_08",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_01",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_02",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_03",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_04",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_05",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 28,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 28,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_06",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 17,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 17,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_07",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 29
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 29
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nesw_08",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nwse_01",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 23,
+        "y": 25
+      },
+      "footprint": [
+        {
+          "x": 23,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nwse_02",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 25,
+        "y": 31
+      },
+      "footprint": [
+        {
+          "x": 25,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_road_southwest_scatter_hedgerow_nwse_03",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 13,
+        "y": 27
+      },
+      "footprint": [
+        {
+          "x": 13,
+          "y": 27
+        }
+      ]
     }
   ],
   "tiles": [
@@ -7465,435 +7750,945 @@
   "decor": [
     {
       "id": "crosshaven_road_southwest_decor_001",
-      "type": "flowers_a",
-      "x": 0,
-      "y": 0
+      "type": "bush_small_a",
+      "x": 14,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_002",
-      "type": "bush_small_a",
-      "x": 9,
-      "y": 0
+      "type": "flowers_a",
+      "x": 16,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_003",
-      "type": "flowers_a",
+      "type": "grass_tuft_b",
       "x": 18,
-      "y": 0
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_004",
-      "type": "bush_small_a",
-      "x": 27,
-      "y": 0
+      "type": "sunflowers_tall",
+      "x": 20,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_005",
       "type": "bush_small_a",
-      "x": 31,
-      "y": 0
+      "x": 24,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_006",
-      "type": "bush_small_a",
-      "x": 9,
-      "y": 1
+      "type": "flowers_d",
+      "x": 26,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_007",
-      "type": "bush_small_a",
-      "x": 16,
-      "y": 1
+      "type": "tuft_a",
+      "x": 28,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_008",
-      "type": "bush_small_a",
-      "x": 29,
-      "y": 1
+      "type": "grass_tuft_b",
+      "x": 30,
+      "y": 24
     },
     {
       "id": "crosshaven_road_southwest_decor_009",
-      "type": "flowers_a",
-      "x": 6,
-      "y": 2
+      "type": "flowers_b",
+      "x": 12,
+      "y": 26
     },
     {
       "id": "crosshaven_road_southwest_decor_010",
-      "type": "flowers_a",
+      "type": "grass_tuft_tall_a",
       "x": 10,
-      "y": 2
+      "y": 28
     },
     {
       "id": "crosshaven_road_southwest_decor_011",
-      "type": "flowers_a",
-      "x": 12,
-      "y": 2
+      "type": "grass_tuft_a",
+      "x": 10,
+      "y": 30
     },
     {
       "id": "crosshaven_road_southwest_decor_012",
-      "type": "flowers_a",
-      "x": 24,
-      "y": 2
+      "type": "decal_path_stones_a",
+      "x": 17,
+      "y": 27
     },
     {
       "id": "crosshaven_road_southwest_decor_013",
-      "type": "bush_small_a",
-      "x": 27,
-      "y": 2
+      "type": "decal_path_stones_b",
+      "x": 13,
+      "y": 28
     },
     {
       "id": "crosshaven_road_southwest_decor_014",
-      "type": "bush_small_a",
-      "x": 29,
-      "y": 2
+      "type": "decal_road_stones",
+      "x": 15,
+      "y": 28
     },
     {
       "id": "crosshaven_road_southwest_decor_015",
-      "type": "flowers_a",
-      "x": 30,
-      "y": 2
+      "type": "decal_pebbles",
+      "x": 14,
+      "y": 29
     },
     {
       "id": "crosshaven_road_southwest_decor_016",
-      "type": "bush_small_a",
-      "x": 2,
-      "y": 3
+      "type": "decal_path_stones_b",
+      "x": 29,
+      "y": 29
     },
     {
       "id": "crosshaven_road_southwest_decor_017",
-      "type": "bush_small_a",
-      "x": 12,
-      "y": 3
+      "type": "flowers_a",
+      "x": 0,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_018",
-      "type": "bush_small_a",
-      "x": 15,
-      "y": 3
+      "type": "tuft_a",
+      "x": 5,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_019",
-      "type": "bush_small_a",
-      "x": 23,
-      "y": 3
+      "type": "rock_small_d",
+      "x": 10,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_020",
-      "type": "bush_small_a",
-      "x": 29,
-      "y": 3
+      "type": "flowers_d",
+      "x": 15,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_021",
-      "type": "flowers_a",
-      "x": 16,
-      "y": 4
+      "type": "bush_small_b",
+      "x": 20,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_022",
-      "type": "flowers_a",
-      "x": 22,
-      "y": 4
+      "type": "decal_leaves",
+      "x": 25,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_023",
       "type": "bush_small_a",
-      "x": 1,
-      "y": 5
+      "x": 31,
+      "y": 0
     },
     {
       "id": "crosshaven_road_southwest_decor_024",
-      "type": "bush_small_a",
-      "x": 2,
-      "y": 5
+      "type": "grass_tuft_b",
+      "x": 4,
+      "y": 1
     },
     {
       "id": "crosshaven_road_southwest_decor_025",
-      "type": "bush_small_a",
-      "x": 8,
-      "y": 5
+      "type": "flowers_d",
+      "x": 5,
+      "y": 1
     },
     {
       "id": "crosshaven_road_southwest_decor_026",
-      "type": "bush_small_a",
-      "x": 20,
-      "y": 5
+      "type": "mushrooms_a",
+      "x": 6,
+      "y": 1
     },
     {
       "id": "crosshaven_road_southwest_decor_027",
+      "type": "bush_small_a",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_028",
+      "type": "decal_leaves",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_029",
+      "type": "bush_small_a",
+      "x": 16,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_030",
+      "type": "flowers_b",
+      "x": 19,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_031",
+      "type": "mushrooms_a",
+      "x": 24,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_032",
+      "type": "flowers_d",
+      "x": 26,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_033",
+      "type": "tuft_a",
+      "x": 1,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_034",
+      "type": "mushrooms_a",
+      "x": 3,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_035",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_036",
+      "type": "tuft_a",
+      "x": 13,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_037",
+      "type": "decal_leaves",
+      "x": 15,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_038",
+      "type": "flowers_c",
+      "x": 16,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_039",
+      "type": "flowers_a",
+      "x": 30,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_040",
+      "type": "tuft_a",
+      "x": 31,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_041",
+      "type": "sunflowers_tall",
+      "x": 1,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_042",
+      "type": "decal_leaves",
+      "x": 3,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_043",
+      "type": "flowers_d",
+      "x": 8,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_044",
+      "type": "grass_tuft_b",
+      "x": 14,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_045",
+      "type": "grass_tuft_b",
+      "x": 17,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_046",
+      "type": "tuft_a",
+      "x": 19,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_047",
+      "type": "rock_small_c",
+      "x": 21,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_048",
+      "type": "tuft_a",
+      "x": 3,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_049",
+      "type": "rock_small_c",
+      "x": 7,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_050",
+      "type": "rock_small_c",
+      "x": 11,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_051",
+      "type": "bush_small_b",
+      "x": 18,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_052",
+      "type": "tuft_a",
+      "x": 0,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_053",
+      "type": "flowers_b",
+      "x": 6,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_054",
+      "type": "flowers_d",
+      "x": 11,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_055",
+      "type": "flowers_b",
+      "x": 12,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_056",
       "type": "bush_small_a",
       "x": 23,
       "y": 5
     },
     {
-      "id": "crosshaven_road_southwest_decor_028",
-      "type": "bush_small_a",
-      "x": 5,
+      "id": "crosshaven_road_southwest_decor_057",
+      "type": "tuft_a",
+      "x": 27,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_058",
+      "type": "tuft_a",
+      "x": 9,
       "y": 6
     },
     {
-      "id": "crosshaven_road_southwest_decor_029",
-      "type": "bush_small_a",
-      "x": 29,
+      "id": "crosshaven_road_southwest_decor_059",
+      "type": "grass_tuft_tall_a",
+      "x": 20,
       "y": 6
     },
     {
-      "id": "crosshaven_road_southwest_decor_030",
-      "type": "bush_small_a",
-      "x": 28,
+      "id": "crosshaven_road_southwest_decor_060",
+      "type": "rock_small_c",
+      "x": 21,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_061",
+      "type": "grass_tuft_a",
+      "x": 22,
+      "y": 6
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_062",
+      "type": "rock_small_c",
+      "x": 3,
       "y": 7
     },
     {
-      "id": "crosshaven_road_southwest_decor_031",
-      "type": "bush_small_a",
-      "x": 29,
+      "id": "crosshaven_road_southwest_decor_063",
+      "type": "sunflowers_tall",
+      "x": 10,
       "y": 7
     },
     {
-      "id": "crosshaven_road_southwest_decor_032",
+      "id": "crosshaven_road_southwest_decor_064",
+      "type": "rock_small_c",
+      "x": 12,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_065",
+      "type": "mushrooms_a",
+      "x": 18,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_066",
+      "type": "mushrooms_a",
+      "x": 24,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_067",
+      "type": "rock_small_c",
+      "x": 25,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_068",
+      "type": "decal_leaves",
+      "x": 30,
+      "y": 7
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_069",
       "type": "bush_small_a",
       "x": 31,
       "y": 7
     },
     {
-      "id": "crosshaven_road_southwest_decor_033",
-      "type": "bush_small_a",
-      "x": 1,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_034",
-      "type": "bush_small_a",
-      "x": 9,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_035",
-      "type": "bush_small_a",
-      "x": 13,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_036",
-      "type": "flowers_a",
-      "x": 30,
-      "y": 8
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_037",
-      "type": "bush_small_a",
-      "x": 0,
-      "y": 9
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_038",
-      "type": "bush_small_a",
-      "x": 4,
-      "y": 9
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_039",
-      "type": "bush_small_a",
-      "x": 7,
-      "y": 9
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_040",
-      "type": "bush_small_a",
-      "x": 19,
-      "y": 9
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_041",
-      "type": "bush_small_a",
-      "x": 25,
-      "y": 9
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_042",
-      "type": "bush_small_a",
-      "x": 1,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_043",
-      "type": "flowers_a",
-      "x": 20,
-      "y": 10
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_044",
-      "type": "bush_small_a",
-      "x": 7,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_045",
-      "type": "bush_small_a",
-      "x": 10,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_046",
-      "type": "bush_small_a",
-      "x": 25,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_047",
-      "type": "bush_small_a",
-      "x": 27,
-      "y": 11
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_048",
-      "type": "flowers_a",
+      "id": "crosshaven_road_southwest_decor_070",
+      "type": "mushrooms_b",
       "x": 2,
-      "y": 12
+      "y": 8
     },
     {
-      "id": "crosshaven_road_southwest_decor_049",
-      "type": "flowers_a",
+      "id": "crosshaven_road_southwest_decor_071",
+      "type": "grass_tuft_a",
       "x": 6,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_072",
+      "type": "grass_tuft_tall_a",
+      "x": 14,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_073",
+      "type": "bush_small_b",
+      "x": 24,
+      "y": 8
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_074",
+      "type": "tuft_a",
+      "x": 3,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_075",
+      "type": "decal_leaves",
+      "x": 26,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_076",
+      "type": "mushrooms_a",
+      "x": 28,
+      "y": 9
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_077",
+      "type": "rock_small_d",
+      "x": 0,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_078",
+      "type": "grass_tuft_tall_a",
+      "x": 2,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_079",
+      "type": "decal_leaves",
+      "x": 7,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_080",
+      "type": "flowers_b",
+      "x": 15,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_081",
+      "type": "grass_tuft_b",
+      "x": 17,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_082",
+      "type": "tuft_a",
+      "x": 27,
+      "y": 10
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_083",
+      "type": "tuft_a",
+      "x": 9,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_084",
+      "type": "flowers_d",
+      "x": 14,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_085",
+      "type": "flowers_b",
+      "x": 16,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_086",
+      "type": "bush_small_a",
+      "x": 25,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_087",
+      "type": "rock_small_c",
+      "x": 26,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_088",
+      "type": "grass_tuft_b",
+      "x": 29,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_089",
+      "type": "flowers_b",
+      "x": 30,
+      "y": 11
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_090",
+      "type": "decal_leaves",
+      "x": 1,
       "y": 12
     },
     {
-      "id": "crosshaven_road_southwest_decor_050",
+      "id": "crosshaven_road_southwest_decor_091",
+      "type": "flowers_c",
+      "x": 8,
+      "y": 12
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_092",
       "type": "flowers_a",
       "x": 10,
       "y": 12
     },
     {
-      "id": "crosshaven_road_southwest_decor_051",
-      "type": "bush_small_a",
-      "x": 13,
+      "id": "crosshaven_road_southwest_decor_093",
+      "type": "grass_tuft_a",
+      "x": 26,
       "y": 12
     },
     {
-      "id": "crosshaven_road_southwest_decor_052",
+      "id": "crosshaven_road_southwest_decor_094",
+      "type": "tuft_a",
+      "x": 4,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_095",
+      "type": "sunflowers_tall",
+      "x": 9,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_096",
+      "type": "sunflowers_tall",
+      "x": 15,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_097",
       "type": "bush_small_a",
       "x": 16,
       "y": 13
     },
     {
-      "id": "crosshaven_road_southwest_decor_053",
-      "type": "flowers_a",
-      "x": 16,
+      "id": "crosshaven_road_southwest_decor_098",
+      "type": "flowers_d",
+      "x": 22,
+      "y": 13
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_099",
+      "type": "sunflowers_tall",
+      "x": 5,
       "y": 14
     },
     {
-      "id": "crosshaven_road_southwest_decor_054",
-      "type": "bush_small_a",
-      "x": 17,
+      "id": "crosshaven_road_southwest_decor_100",
+      "type": "flowers_c",
+      "x": 12,
       "y": 14
     },
     {
-      "id": "crosshaven_road_southwest_decor_055",
+      "id": "crosshaven_road_southwest_decor_101",
+      "type": "tuft_a",
+      "x": 15,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_102",
+      "type": "grass_tuft_a",
+      "x": 18,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_103",
       "type": "bush_small_a",
       "x": 19,
       "y": 14
     },
     {
-      "id": "crosshaven_road_southwest_decor_056",
-      "type": "bush_small_a",
-      "x": 21,
+      "id": "crosshaven_road_southwest_decor_104",
+      "type": "decal_leaves",
+      "x": 23,
       "y": 14
     },
     {
-      "id": "crosshaven_road_southwest_decor_057",
-      "type": "flowers_a",
-      "x": 26,
-      "y": 14
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_058",
-      "type": "bush_small_a",
-      "x": 29,
-      "y": 14
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_059",
-      "type": "bush_small_a",
-      "x": 10,
-      "y": 15
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_060",
-      "type": "bush_small_a",
-      "x": 19,
-      "y": 15
-    },
-    {
-      "id": "crosshaven_road_southwest_decor_061",
-      "type": "bush_small_a",
+      "id": "crosshaven_road_southwest_decor_105",
+      "type": "rock_small_c",
       "x": 31,
+      "y": 14
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_106",
+      "type": "flowers_d",
+      "x": 0,
       "y": 15
     },
     {
-      "id": "crosshaven_road_southwest_decor_062",
-      "type": "bush_small_a",
-      "x": 21,
+      "id": "crosshaven_road_southwest_decor_107",
+      "type": "grass_tuft_b",
+      "x": 6,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_108",
+      "type": "flowers_d",
+      "x": 14,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_109",
+      "type": "flowers_b",
+      "x": 26,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_110",
+      "type": "rock_small_c",
+      "x": 27,
+      "y": 15
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_111",
+      "type": "bush_small_b",
+      "x": 6,
       "y": 16
     },
     {
-      "id": "crosshaven_road_southwest_decor_063",
-      "type": "flowers_a",
-      "x": 28,
+      "id": "crosshaven_road_southwest_decor_112",
+      "type": "decal_leaves",
+      "x": 17,
       "y": 16
     },
     {
-      "id": "crosshaven_road_southwest_decor_064",
+      "id": "crosshaven_road_southwest_decor_113",
+      "type": "mushrooms_a",
+      "x": 31,
+      "y": 16
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_114",
+      "type": "flowers_d",
+      "x": 4,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_115",
+      "type": "decal_leaves",
+      "x": 10,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_116",
       "type": "bush_small_a",
       "x": 12,
       "y": 17
     },
     {
-      "id": "crosshaven_road_southwest_decor_065",
-      "type": "bush_small_a",
-      "x": 26,
+      "id": "crosshaven_road_southwest_decor_117",
+      "type": "flowers_b",
+      "x": 13,
       "y": 17
     },
     {
-      "id": "crosshaven_road_southwest_decor_066",
-      "type": "flowers_a",
-      "x": 0,
+      "id": "crosshaven_road_southwest_decor_118",
+      "type": "flowers_b",
+      "x": 23,
+      "y": 17
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_119",
+      "type": "flowers_c",
+      "x": 16,
       "y": 18
     },
     {
-      "id": "crosshaven_road_southwest_decor_067",
-      "type": "flowers_a",
-      "x": 14,
+      "id": "crosshaven_road_southwest_decor_120",
+      "type": "grass_tuft_tall_a",
+      "x": 22,
       "y": 18
     },
     {
-      "id": "crosshaven_road_southwest_decor_068",
-      "type": "bush_small_a",
-      "x": 2,
+      "id": "crosshaven_road_southwest_decor_121",
+      "type": "tuft_a",
+      "x": 20,
       "y": 19
     },
     {
-      "id": "crosshaven_road_southwest_decor_069",
+      "id": "crosshaven_road_southwest_decor_122",
+      "type": "mushrooms_a",
+      "x": 23,
+      "y": 19
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_123",
       "type": "bush_small_a",
       "x": 27,
       "y": 19
     },
     {
-      "id": "crosshaven_road_southwest_decor_070",
+      "id": "crosshaven_road_southwest_decor_124",
       "type": "bush_small_a",
       "x": 30,
       "y": 19
     },
     {
-      "id": "crosshaven_road_southwest_decor_071",
+      "id": "crosshaven_road_southwest_decor_125",
+      "type": "bush_small_b",
+      "x": 0,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_126",
+      "type": "mushrooms_b",
+      "x": 6,
+      "y": 20
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_127",
       "type": "bush_small_a",
       "x": 11,
       "y": 20
     },
     {
-      "id": "crosshaven_road_southwest_decor_072",
+      "id": "crosshaven_road_southwest_decor_128",
+      "type": "decal_leaves",
+      "x": 2,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_129",
+      "type": "rock_small_c",
+      "x": 9,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_130",
+      "type": "flowers_d",
+      "x": 12,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_131",
+      "type": "flowers_b",
+      "x": 19,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_132",
+      "type": "flowers_b",
+      "x": 22,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_133",
+      "type": "decal_leaves",
+      "x": 28,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_134",
+      "type": "rock_small_c",
+      "x": 30,
+      "y": 21
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_135",
+      "type": "flowers_b",
+      "x": 13,
+      "y": 22
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_136",
+      "type": "grass_tuft_b",
+      "x": 17,
+      "y": 22
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_137",
+      "type": "tuft_b",
+      "x": 26,
+      "y": 22
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_138",
+      "type": "mushrooms_a",
+      "x": 6,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_139",
+      "type": "tuft_a",
+      "x": 8,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_140",
+      "type": "decal_leaves",
+      "x": 12,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_141",
+      "type": "decal_leaves",
+      "x": 16,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_142",
+      "type": "rock_small_c",
+      "x": 17,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_143",
+      "type": "sunflowers_tall",
+      "x": 30,
+      "y": 23
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_144",
+      "type": "flowers_c",
+      "x": 2,
+      "y": 24
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_145",
+      "type": "flowers_d",
+      "x": 9,
+      "y": 24
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_146",
+      "type": "mushrooms_a",
+      "x": 11,
+      "y": 24
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_147",
+      "type": "decal_leaves",
+      "x": 0,
+      "y": 25
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_148",
       "type": "bush_small_a",
-      "x": 21,
-      "y": 20
+      "x": 1,
+      "y": 25
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_149",
+      "type": "rock_small_c",
+      "x": 4,
+      "y": 25
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_150",
+      "type": "mushrooms_a",
+      "x": 6,
+      "y": 27
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_151",
+      "type": "sunflowers_tall",
+      "x": 8,
+      "y": 27
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_152",
+      "type": "rock_small_c",
+      "x": 4,
+      "y": 29
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_153",
+      "type": "bush_small_a",
+      "x": 8,
+      "y": 29
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_154",
+      "type": "grass_tuft_tall_a",
+      "x": 0,
+      "y": 30
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_155",
+      "type": "grass_tuft_a",
+      "x": 2,
+      "y": 30
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_156",
+      "type": "tuft_a",
+      "x": 3,
+      "y": 30
+    },
+    {
+      "id": "crosshaven_road_southwest_decor_157",
+      "type": "tuft_b",
+      "x": 4,
+      "y": 30
     }
   ]
 }

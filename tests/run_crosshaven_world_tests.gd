@@ -145,6 +145,20 @@ func _test_zorder(w: Node2D) -> void:
 	# Raised tile directly in front covers the player.
 	var row_front: int = w.ground.row_z(front.x + front.y + 1)
 	check(row_front > w.walker.z_index, "ground row in front sorts above player")
+	var tall: Node2D = null
+	for p in w.props_root.get_children():
+		if p.cover_rect.size.y > 70.0:
+			tall = p
+			break
+	if tall != null:
+		w.walker.place(z, tall.south_cell)
+		w.walker.position = tall.position + Vector2(0, -40)
+		tall.update_cover(w.walker.position, w.walker.z_index)
+		check(tall.z_index > w.walker.z_index, "tall prop covers a character standing in its upper half")
+		check(tall.modulate.a < 0.6, "tall prop fades while the character is hidden behind it")
+		w.walker.position = tall.position + Vector2(0, 14)
+		tall.update_cover(w.walker.position, w.walker.z_index)
+		check(tall.z_index == tall.base_z, "character in front of the prop base sorts over it")
 	w.walker.place(z, w.map.start_cell)
 
 

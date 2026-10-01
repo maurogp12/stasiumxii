@@ -46,6 +46,16 @@ func _run() -> void:
 	world.settings.apply_preset("Minimal")
 	check(not world.decor_root.visible, "minimal hides decor")
 	check(not world.weather.visuals_enabled, "minimal hides weather particles")
+	world.settings.apply_preset("Reduced")
+	var saw_core := false
+	var fill_visible := false
+	for d in world.decor_root.get_children():
+		if d.core:
+			saw_core = saw_core or d.visible
+		elif d.visible:
+			fill_visible = true
+	check(saw_core, "reduced keeps decor along roads and buildings")
+	check(not fill_visible, "reduced hides open-field decor")
 	world.settings.apply_preset("Full")
 	check(world.decor_root.visible, "full shows decor again")
 	check(world.weather.visuals_enabled, "full shows weather again")

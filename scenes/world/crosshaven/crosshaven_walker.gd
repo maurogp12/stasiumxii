@@ -357,11 +357,16 @@ func _show_idle() -> void:
 
 
 func _update_z() -> void:
-	var nxt := _pending_cell()
-	var dest := _pending_dist()
-	var span := maxf(dest - _leg_start, 0.001)
-	var along := (_traveled - _leg_start) / span
-	z_index = _z_for(nxt if along >= 0.5 else cell)
+	# Sort by ground screen-Y so the order slides across a step. Add the
+	# elevation lift back: props sort on the cell diagonal, not the raised pixels.
+	var ground_y := position.y
+	if zone != null:
+		var nxt := _pending_cell()
+		var span := maxf(_pending_dist() - _leg_start, 0.001)
+		var along := clampf((_traveled - _leg_start) / span, 0.0, 1.0)
+		var h := lerpf(float(zone.height_at(cell)), float(zone.height_at(nxt)), along)
+		ground_y += h * BoardVisualSort.ELEVATION_PIXELS
+	z_index = int(round(ground_y * float(BoardVisualSort.TILE_Z_SCALE) / 16.0)) + BoardVisualSort.UNIT_Z_BIAS
 
 
 func _z_for(c: Vector2i) -> int:

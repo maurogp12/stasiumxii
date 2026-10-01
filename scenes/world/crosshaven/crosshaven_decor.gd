@@ -7,6 +7,10 @@ const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 
 var decor_type := ""
+var core := false
+var base_z := 0
+var cover_rect := Rect2()
+var _groundish := false
 var _art: Dictionary = {}
 var _sway: AnimatedSprite2D
 
@@ -16,15 +20,49 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	var cell := Vector2i(int(record["x"]), int(record["y"]))
 	position = BoardVisualSort.cell_to_local(cell, float(zone.height_at(cell))) + Vector2(0, Pick.HALF_H)
 	z_as_relative = false
-	var groundish := decor_type.begins_with("decal_") or decor_type == "lilypads_a" or decor_type == "ford_stones"
-	z_index = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if groundish else 2)
+	_groundish = decor_type.begins_with("decal_") or decor_type == "lilypads_a" or decor_type == "ford_stones"
+	base_z = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if _groundish else 2)
+	z_index = base_z
+	core = _is_core(zone, cell)
 	_art = Art.texture("props", decor_type)
-	if not groundish:
+	if not _art.is_empty():
+		var size := Art.size_of(_art)
+		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
+	if not _groundish and core:
 		_sway = Art.make_loop(decor_type + "_sway")
 		if _sway != null:
 			_sway.visible = false
 			add_child(_sway)
 	queue_redraw()
+
+
+func _is_core(zone: WorldZone, cell: Vector2i) -> bool:
+	if zone.terrain_at(cell) == "dirt_road":
+		return true
+	for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1), Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]:
+		var n: Vector2i = cell + step
+		if zone.in_bounds(n) and zone.terrain_at(n) == "dirt_road":
+			return true
+	for prop in zone.props:
+		var origin: Dictionary = prop.get("origin", {})
+		var ox := int(origin.get("x", prop["footprint"][0]["x"]))
+		var oy := int(origin.get("y", prop["footprint"][0]["y"]))
+		if absi(ox - cell.x) + absi(oy - cell.y) <= 3:
+			return true
+	return false
+
+
+func update_cover(walker_pos: Vector2, walker_z: int) -> void:
+	if _groundish or cover_rect.size.y < 40.0:
+		return
+	var local := walker_pos - position
+	var hide := cover_rect.grow(4).has_point(local) and local.y < -20.0
+	if hide:
+		z_index = walker_z + 1
+		modulate.a = 0.5
+	else:
+		z_index = base_z
+		modulate.a = 1.0
 
 
 func _process(_delta: float) -> void:
