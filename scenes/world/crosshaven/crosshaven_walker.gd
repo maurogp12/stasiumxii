@@ -48,6 +48,8 @@ var _halt_after := false
 ## Gait actually on screen. `pace` is the request; it takes over on a plant, not mid-stride.
 var _shown_pace := "walk"
 var _fade: Sprite2D
+var _rim: Sprite2D
+var _covered := false
 var _blend_left := 0.0
 ## Path point versus the drawn pivot. The pivot locks to the sole while it is
 ## down, then returns to the path. The camera follows `position`, so that
@@ -73,6 +75,16 @@ func _ready() -> void:
 	_fade.z_index = -1
 	add_child(_fade)
 	add_child(_sprite)
+	_rim = Sprite2D.new()
+	_rim.centered = true
+	_rim.offset = _strips.pivot
+	_rim.visible = false
+	_rim.z_as_relative = true
+	_rim.z_index = 8
+	var rim_mat := ShaderMaterial.new()
+	rim_mat.shader = load("res://scenes/world/crosshaven/crosshaven_rim.gdshader")
+	_rim.material = rim_mat
+	add_child(_rim)
 	_apply_strip_speed()
 	_show_idle()
 
@@ -541,6 +553,12 @@ func _show_idle() -> void:
 	queue_redraw()
 
 
+## A building in front of the hero fades to 45%. This rim sits above that fade.
+func set_covered(on: bool) -> void:
+	_covered = on
+	_sync_rim()
+
+
 func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot: Vector2) -> void:
 	if tex != _sprite.texture and _sprite.texture != null:
 		_begin_fade()
@@ -550,6 +568,21 @@ func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot:
 		_sprite.region_rect = region
 	_sprite.scale = sc
 	_sprite.position = foot
+	_sync_rim()
+
+
+func _sync_rim() -> void:
+	if _rim == null or _sprite == null:
+		return
+	_rim.visible = _covered and _sprite.texture != null
+	if not _rim.visible:
+		return
+	_rim.texture = _sprite.texture
+	_rim.region_enabled = _sprite.region_enabled
+	_rim.region_rect = _sprite.region_rect
+	_rim.scale = _sprite.scale
+	_rim.position = _sprite.position
+	_rim.offset = _sprite.offset
 
 
 func _begin_fade() -> void:

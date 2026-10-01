@@ -83,7 +83,7 @@ func update_cover(walker_pos: Vector2, walker_z: int) -> void:
 	var hide := cover_rect.grow(4).has_point(local) and local.y < -20.0
 	if hide:
 		z_index = walker_z + 1
-		modulate.a = 0.5
+		modulate.a = 0.45
 	else:
 		z_index = base_z
 		modulate.a = 1.0

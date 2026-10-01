@@ -190,7 +190,9 @@ func update_cover(walker_pos: Vector2, walker_z: int) -> void:
 	var hide := overlap and behind and prop_type != "fence" and cover_rect.size.y > 36.0
 	if hide:
 		z_index = walker_z + 1
-		modulate.a = 0.46
+		# Flat alpha of this sprite only. Roof strokes at a partial fade read as a hatch,
+		# so the hero also gets a soft rim above this (see the walker).
+		modulate.a = 0.45
 	else:
 		z_index = base_z
 		modulate.a = 1.0

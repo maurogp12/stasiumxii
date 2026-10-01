@@ -322,11 +322,17 @@ func _process(delta: float) -> void:
 	camera.position = walker.position + walker.visual_offset()
 	var feet: Vector2 = walker.position
 	var wz: int = walker.z_index
+	var covered := false
 	for p in props_root.get_children():
 		p.update_cover(feet, wz)
+		if p.modulate.a < 0.9:
+			covered = true
 	if decor_root != null:
 		for d in decor_root.get_children():
 			d.update_cover(feet, wz)
+			if d.modulate.a < 0.9:
+				covered = true
+	walker.set_covered(covered)
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
 
@@ -633,6 +639,94 @@ func _add_v7_decal(kind: String, cell: Vector2i) -> Node2D:
 	return d
 
 
+func _open_square_cell(z: WorldZone) -> Vector2i:
+	var blocked: Array[Vector2i] = []
+	var sx := 0
+	var sy := 0
+	var n := 0
+	for prop in z.props:
+		var kind := str(prop.get("type", ""))
+		var cells: Array = prop.get("footprint", [])
+		if cells.is_empty():
+			continue
+		var mass := V7_SHADE_BUILDINGS.has(kind) or kind == "market_stall"
+		for c in cells:
+			var p := Vector2i(int(c["x"]), int(c["y"]))
+			if bool(prop.get("blocks", true)):
+				blocked.append(p)
+			if mass:
+				sx += p.x
+				sy += p.y
+				n += 1
+	if n == 0:
+		return z.spawn
+	var center := Vector2i(sx / n, sy / n)
+	var best: Vector2i = z.spawn
+	var best_score := 1000000
+	for y in range(maxi(0, center.y - 4), mini(z.height, center.y + 6)):
+		for x in range(maxi(0, center.x - 6), mini(z.width, center.x + 7)):
+			var spot := Vector2i(x, y)
+			if not z.passable_at(spot) or not z.exit_link(spot).is_empty():
+				continue
+			var ground := z.terrain_at(spot)
+			if ground != "dirt_road" and ground != "golden_plains":
+				continue
+			if _gap_to(spot, blocked) < 2:
+				continue
+			if _under_a_roof(z, spot):
+				continue
+			# Slightly south of the building centroid, so the square fills the frame
+			# and the hero stands in front of the houses.
+			var score := absi(spot.x - center.x) * 3 + absi(spot.y - center.y - 1) * 2
+			if score < best_score:
+				best_score = score
+				best = spot
+	return best
+
+
+## True when this cell sits in the screen-footprint of a building sprite.
+## Those sprites hang many cells north of their south tip.
+func _under_a_roof(z: WorldZone, spot: Vector2i) -> bool:
+	for prop in z.props:
+		var kind := str(prop.get("type", ""))
+		if not V7_SHADE_BUILDINGS.has(kind) and kind != "market_stall":
+			continue
+		var cells: Array = prop.get("footprint", [])
+		if cells.is_empty():
+			continue
+		var min_x := 999
+		var max_x := -1
+		var min_y := 999
+		var max_y := -1
+		for c in cells:
+			var px := int(c["x"])
+			var py := int(c["y"])
+			min_x = mini(min_x, px)
+			max_x = maxi(max_x, px)
+			min_y = mini(min_y, py)
+			max_y = maxi(max_y, py)
+		if spot.x < min_x - 1 or spot.x > max_x + 1:
+			continue
+		# In front of the south wall. The sprite does not cover this cell.
+		if spot.y > max_y + 1:
+			continue
+		# Far north of a cottage. A spire still reaches, so keep a wider margin.
+		var reach := 6 if kind.ends_with("spire") or kind == "crossroads_centerpiece" else 3
+		if spot.y < min_y - reach:
+			continue
+		return true
+	return false
+
+
+func _gap_to(cell: Vector2i, blocked: Array[Vector2i]) -> int:
+	var best := 99
+	for other in blocked:
+		var d := maxi(absi(other.x - cell.x), absi(other.y - cell.y))
+		if d < best:
+			best = d
+	return best
+
+
 func _near_cells(cell: Vector2i, others: Array[Vector2i], dist: int) -> bool:
 	for other in others:
 		if absi(other.x - cell.x) + absi(other.y - cell.y) < dist:
@@ -649,19 +743,16 @@ func _near_road(cell: Vector2i, dist: int) -> bool:
 	return false
 
 
-## Full preset, clear noon, hero just south of the town spawn.
+## Full preset, clear noon. The hero stands in the open square, south of the
+## building mass, so the houses sit in frame and he is not under a roof sprite.
 func _movie_v7_still(town: String) -> void:
 	settings.apply_preset("Full")
 	var zone_id := "crosshaven_" + town
 	var z: WorldZone = map.zone(zone_id)
-	var cell: Vector2i = z.spawn
-	for _i in 3:
-		var nxt: Vector2i = cell + Vector2i(0, 1)
-		if z.passable_at(nxt) and z.exit_link(nxt).is_empty():
-			cell = nxt
+	var cell := _open_square_cell(z)
 	enter_zone(zone_id, cell, false)
 	await get_tree().process_frame
-	_set_zoom(1.7)
+	_set_zoom(1.58)
 	weather.set_weather("clear")
 	weather.time_of_day = 12.0
 	weather.settle()
@@ -675,7 +766,7 @@ func _movie_v7_still(town: String) -> void:
 ## A short walk through every town. Roads are a fade, so the clip stays under a minute.
 func _movie_v7_tour() -> void:
 	settings.apply_preset("Full")
-	_set_zoom(1.65)
+	_set_zoom(1.5)
 	weather.set_weather("clear")
 	weather.time_of_day = 12.0
 	weather.auto_rotate = false
@@ -691,7 +782,7 @@ func _movie_v7_tour() -> void:
 	_mark("tour-start")
 	for id in towns:
 		var z: WorldZone = map.zone(id)
-		await enter_zone(id, z.spawn, true)
+		await enter_zone(id, _open_square_cell(z), true)
 		_mark(id)
 		await _town_stroll()
 	_mark("tour-end")
@@ -699,14 +790,13 @@ func _movie_v7_tour() -> void:
 
 func _town_stroll() -> void:
 	var start: Vector2i = walker.anchor_cell()
-	await _cardinal("e", 2, "walk")
+	await _cardinal("e", 1, "walk")
 	await _cardinal("s", 1, "walk")
-	await _cardinal("w", 2, "walk")
+	await _cardinal("w", 1, "walk")
 	if walker.anchor_cell() == start:
-		await _cardinal("n", 2, "walk")
-		await _cardinal("w", 2, "walk")
-	# The walks alone land near 34s. This dwell brings the six towns into the 45–60s clip.
-	await get_tree().create_timer(2.4).timeout
+		await _cardinal("n", 1, "walk")
+		await _cardinal("s", 1, "walk")
+	await get_tree().create_timer(0.55).timeout
 
 
 func _movie_tour() -> void:
