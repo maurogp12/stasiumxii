@@ -4,6 +4,24 @@ Mauro, 2 Oct 2026: "Another team of grok bots is going to continue working in
 the pc version, create another chat for them." Read this, then `CLAUDE.md`,
 `docs/AGENT_HANDOFF.md`, `docs/CHANGE_LOG_CLAUDE.md`, `docs/ART_HANDOFF.md`.
 
+## Only PC (Mauro, 2 Oct 2026)
+
+The PC team works **only on the PC version**:
+
+- **Branches:** only `main` (through PRs Mauro merges) and their own `pc/<topic>`
+  branches, created from `main`. Never push to, merge into or rebase `mobile`,
+  `apk/*`, `claude/stasium-xii-development-6ni8g2` or any other phone branch.
+- **Docs:** they write only PC docs: this file, `docs/CHANGE_LOG_PC.md` (their
+  change log; create it on their branch), and new files under `docs/pc/`.
+  They read the phone docs (`CHANGE_LOG_CLAUDE.md`, `AGENT_HANDOFF.md`,
+  `ART_HANDOFF.md`, `BOSS_REWORK_BRIEF.md`, `NEXT_CLAUDE_HANDOFF.md`) but
+  never edit them.
+- **Code and art:** PC and phone share the same files (one Godot project); the
+  branch is what keeps them apart. Changes happen only on `pc/*` branches.
+  Bringing phone work over to PC is a copy into a `pc/*` branch, and only what
+  Mauro approves.
+- **No APKs, no phone builds, no Actualizar releases.**
+
 ## Where the PC version is
 
 | Branch | What it is | State (2 Oct 2026) |
@@ -21,9 +39,9 @@ Whether dungeons now go to PC is **his call — ask**.
 ## Rules (same as the phone team, from `CLAUDE.md`)
 
 - Change nothing Mauro did not approve or command; propose first.
-- Only Mauro merges into `main` / `mobile`. Work on your own branch, e.g.
-  `pc/<topic>`; open PRs only when he asks.
-- Log every change in `docs/CHANGE_LOG_CLAUDE.md` in the same push.
+- Only Mauro merges into `main`. Work on `pc/<topic>`; open PRs into `main`
+  only when he asks.
+- Log every change in `docs/CHANGE_LOG_PC.md` (not the phone log) in the same push.
 - Run all `tests/run_*_tests.gd` suites (Godot 4.7.2 headless) before pushing.
 - The game stays 2D (Dofus / Waven / Wakfu look). Never invent an Open rule.
 - Bastion art is not touched unless Mauro asks.
