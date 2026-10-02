@@ -59,6 +59,11 @@ again ("Thats the goal"): `docs/media/reference/wakfu_goal_walk.mp4` and
 `docs/media/reference/wakfu_goal_walk_frames.jpg` (notes in that folder's
 README).
 
+## Art job in progress
+
+Hero walk redraw, then the five bosses, reviewed by Claude, then stop and
+wait for Mauro: `docs/ART_HANDOFF.md` (rules, checklist, status).
+
 ## Waiting on Mauro (ask, don't decide)
 
 - **Bastion's walk sheet** turns to face the camera mid-step (east / west).
