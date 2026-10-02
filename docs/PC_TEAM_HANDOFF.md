@@ -22,6 +22,42 @@ The PC team works **only on the PC version**:
   Mauro approves.
 - **No APKs, no phone builds, no Actualizar releases.**
 
+## The job: finish Crosshaven (Mauro, 2 Oct 2026)
+
+Mauro: "Don't give instructions to work on the characters, just keep building
+the map, dungeons, NPCs with a story, side-line missions etc. Focus on
+finishing only Crosshaven."
+
+**Do:** the Crosshaven open world, and only Crosshaven:
+
+1. **Map:** finish all eleven zones of `data/world/crosshaven/zones/`
+   (crossroads, northgate, stoneford, eastmarch, westwatch, southbridge, and
+   the five roads). Dressing, props, the art kit (`art/world/crosshaven/`), and
+   walkable paths that pass `backend/world_walk.gd` validation.
+2. **Dungeons:** Crosshaven's dungeon entrance(s) in the world, leading to the
+   existing Crosshaven Stasis door (Threshgate: Room A pack, Room B Sheaf
+   Sovereign / 5-star form). The rules, kits and numbers are the approved ones
+   in `backend/stasis_catalog.gd` / `backend/foe_kits.gd`; do not change them.
+3. **NPCs:** placed in the zones, with dialogue.
+4. **Story:** a main storyline for Crosshaven.
+5. **Side missions:** small quests (talk, deliver, defeat, explore) with
+   rewards.
+
+**Story, NPC names, quests and rewards are proposals until Mauro approves
+them** (CLAUDE.md: never invent an Open item). Write them in `docs/pc/` first,
+ask Mauro, and build only what he says yes to.
+
+**Don't:**
+- No character work: no hero or boss art, animation, walk, attack, size or
+  class changes. Use the characters exactly as they are on the branch.
+- No other regions (Brinewake, Slagcrown, Windmere, Stormspire) until
+  Crosshaven is finished and Mauro says so.
+- No combat rule or balance changes.
+
+**Start from:** `cursor/crosshaven-v6-world-2bb7` (built on `main`; has the
+world scene code `backend/world_map.gd`, `world_walk.gd`, `world_zone.gd`, the
+zone data and the v6 art kit). Branch from it as `pc/crosshaven-<topic>`.
+
 ## Where the PC version is
 
 | Branch | What it is | State (2 Oct 2026) |
