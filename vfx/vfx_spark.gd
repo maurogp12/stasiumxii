@@ -99,7 +99,10 @@ func _draw() -> void:
 	var hot := 16.0 + (1.0 - _flash) * 10.0
 	draw_circle(Vector2.ZERO, hot * 1.55, Color(_tint.r, _tint.g, _tint.b, _flash * 0.38))
 	draw_circle(Vector2.ZERO, hot * 0.85, Color(_tint.r, _tint.g, _tint.b, _flash * 0.82))
-	draw_circle(Vector2.ZERO, hot * 0.38, Color(1, 0.98, 0.9, _flash))
+	draw_circle(Vector2.ZERO, hot * 0.38, Color(1, 0.97, 0.86, _flash))
+	var spark := Color(1.0, 0.94, 0.72, _flash)
+	draw_line(Vector2(-hot, 0), Vector2(hot, 0), spark, 2.2, true)
+	draw_line(Vector2(0, -hot * 0.62), Vector2(0, hot * 0.62), spark, 2.2, true)
 
 
 func release() -> void:

@@ -307,6 +307,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_vanish_if_monster()
 	# Breath and sway follow alive (and class/seat) on every body material.
 	_apply_figure_read()
+	_sync_turn_glow()
 	rewrite_frozen_vitals()
 
 
@@ -1199,8 +1200,9 @@ func finish_step() -> void:
 
 func flash_hit() -> void:
 	_hit_flash = true
-	# Tuned for the fixed figure shader (was 2.8 while the art rendered squared).
-	_apply_flash(Color(1.9, 1.85, 1.8))
+	# Warm strike flash. A near-white multiply washed the silhouette out on
+	# snow. The ink edge stays in the shader; this only heats the paint.
+	_apply_flash(Color(2.2, 1.42, 0.78))
 
 
 func flash_impact() -> void:
@@ -1493,7 +1495,15 @@ static func figure_read_for(class_id: String) -> Dictionary:
 const FOE_LIGHT := Color(1.0, 1.0, 1.0, 1.0)
 const FIGURE_LIFT := 0.0
 const FIGURE_SAT := 1.06
-const FIGURE_EDGE := 0.3
+## Warm key on the upper-left silhouette. Strong enough to separate a
+## dark cloak from Stormspire, still a light and not a second outline.
+const FIGURE_EDGE := 0.48
+## One warm texel on every living body, including classes whose class rim
+## stays off (Kestrel, Gloam, Mender). Heavies keep their ochre / stone rim;
+## this ink only fills the fringe that rim did not claim. Invisible modulate
+## still hides the body. Not a team color.
+const BOARD_INK := Color(0.16, 0.07, 0.04, 1.0)
+const BOARD_INK_PX := 1.15
 const FOE_READ := {
 	"rim_ink": Color(0.38, 0.05, 0.05, 1.0),
 	"rim_px": 1.3,
@@ -1576,6 +1586,8 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 	mat.set_shader_parameter("rim_px", read["rim_px"])
 	mat.set_shader_parameter("mid_tone", read["mid_tone"])
 	mat.set_shader_parameter("mid_mix", read["mid_mix"])
+	mat.set_shader_parameter("board_ink", BOARD_INK_PX)
+	mat.set_shader_parameter("board_ink_color", BOARD_INK)
 	# Board light: the painted sheets are dark (mean ~56/255) and turn to
 	# silhouettes at board scale. Lift, a little colour, a warm key rim.
 	mat.set_shader_parameter("lift", FIGURE_LIFT)
@@ -2689,6 +2701,22 @@ func advance_target_pulse(delta: float) -> void:
 
 ## Contact shadow and seat ring. Drawn on Foot so a body rise does not lift them.
 ## The aim pulse stays on that same ground mark.
+func _enter_tree() -> void:
+	set_process(is_active and alive)
+
+
+func _sync_turn_glow() -> void:
+	set_process(is_active and alive)
+
+
+func _process(_delta: float) -> void:
+	if not is_active or not alive:
+		set_process(false)
+		return
+	if _foot != null and is_instance_valid(_foot):
+		_foot.queue_redraw()
+
+
 func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 	if not _sprite_ready():
 		return
@@ -2699,27 +2727,47 @@ func _draw_ground_mark_on(canvas: CanvasItem) -> void:
 		lift = clampf(-_sprite.position.y / maxf(crest, 0.001), 0.0, 1.0)
 	# Same disc on every class. It stays full size while the body hops.
 	# Seat color and the yellow active ring paint above it.
-	_draw_ellipse_on(canvas, foot + Vector2(0.0, 1.0), 14.0, 5.6, Color(0.18, 0.13, 0.09, 0.78))
+	# The contact disc is darker than the snow and warmer than the night
+	# floor, so the feet separate on Windmere and on Stormspire.
+	_draw_ellipse_on(canvas, foot + Vector2(0.0, 1.0), 15.0, 6.0, Color(0.14, 0.08, 0.05, 0.88))
 	var shadow := lerpf(1.0, 0.62, lift)
-	var shade := Color(0.08, 0.05, 0.04, lerpf(0.42, 0.2, lift))
-	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.0), 16.0 * shadow, 6.0 * shadow, shade)
+	var shade := Color(0.05, 0.03, 0.02, lerpf(0.62, 0.28, lift))
+	_draw_ellipse_on(canvas, foot + Vector2(0.0, 2.2), 18.0 * shadow, 7.0 * shadow, shade)
 	# Dofus team circle: a soft team disc, a bright team ring, a dark keyline
 	# outside it and a light glint on the near rim, so the fighter reads on
 	# any tile at phone zoom.
 	var ring := _seat_color()
-	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 0.38))
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.2, SEAT_RING_RY + 0.6, Color(0.05, 0.04, 0.06, 0.75), 1.4)
-	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 1.0), 2.6)
-	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 1.0, 1.0, 0.35), 1.0)
+	_draw_ellipse_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 0.52))
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX + 1.6, SEAT_RING_RY + 0.8, Color(0.05, 0.03, 0.04, 0.9), 2.2)
+	_draw_ellipse_ring_on(canvas, foot, SEAT_RING_RX, SEAT_RING_RY, Color(ring.r, ring.g, ring.b, 1.0), 3.1)
+	_draw_ellipse_ring_on(canvas, foot + Vector2(0.0, 0.8), SEAT_RING_RX - 3.0, SEAT_RING_RY - 1.6, Color(1.0, 0.96, 0.88, 0.55), 1.2)
 	if target_marked:
 		var pulse := 0.5 + 0.5 * sin(_target_pulse * TAU)
-		_draw_ellipse_ring_on(canvas, foot, 28.0 + 3.0 * pulse, 11.0 + 1.2 * pulse, Color(1.0, 0.62, 0.18, 0.9), 2.8)
+		var aim_rx := 28.0 + 3.0 * pulse
+		var aim_ry := 11.0 + 1.2 * pulse
+		_draw_ellipse_ring_on(canvas, foot, aim_rx, aim_ry, Color(0.12, 0.04, 0.02, 0.9), 4.6)
+		_draw_ellipse_ring_on(canvas, foot, aim_rx, aim_ry, Color(1.0, 0.62, 0.18, 0.98), 2.6)
 	if burning:
 		_draw_ellipse_ring_on(canvas, foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
 		_draw_ellipse_ring_on(canvas, foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
-		_draw_ellipse_ring_on(canvas, foot, 21.0, 8.2, Color(0.95, 0.78, 0.28, 0.95), 2.2)
+		var turn := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * TAU / 1.35)
+		_draw_ellipse_on(canvas, foot, 22.0, 8.6, Color(1.0, 0.82, 0.28, 0.16 + 0.10 * turn))
+		_draw_ellipse_ring_on(canvas, foot, 22.0 + 1.4 * turn, 8.6 + 0.5 * turn, Color(0.16, 0.08, 0.02, 0.9), 4.2)
+		_draw_ellipse_ring_on(canvas, foot, 21.2 + 1.4 * turn, 8.3 + 0.5 * turn, Color(1.0, 0.86, 0.34, 0.98), 2.4)
+	if not alive:
+		_draw_down_mark(canvas, foot)
+
+
+## Ground read for a fallen hero. The body may be a held death cell or fully
+## faded. The stain stays on the foot node, which does not rise with a hop.
+func _draw_down_mark(canvas: CanvasItem, foot: Vector2) -> void:
+	_draw_ellipse_on(canvas, foot, 20.0, 8.0, Color(0.28, 0.06, 0.04, 0.55))
+	canvas.draw_line(foot + Vector2(-9.0, -3.0), foot + Vector2(9.0, 3.0), Color(0.10, 0.02, 0.02, 0.95), 3.4, true)
+	canvas.draw_line(foot + Vector2(-9.0, 3.0), foot + Vector2(9.0, -3.0), Color(0.10, 0.02, 0.02, 0.95), 3.4, true)
+	canvas.draw_line(foot + Vector2(-9.0, -3.0), foot + Vector2(9.0, 3.0), Color(0.86, 0.28, 0.12, 0.95), 1.6, true)
+	canvas.draw_line(foot + Vector2(-9.0, 3.0), foot + Vector2(9.0, -3.0), Color(0.86, 0.28, 0.12, 0.95), 1.6, true)
 
 
 func _paint_status(canvas: CanvasItem) -> void:

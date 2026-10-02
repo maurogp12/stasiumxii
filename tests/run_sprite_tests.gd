@@ -61,6 +61,8 @@ func _test_texture_paths_and_imports() -> void:
 	eq(float(bastion_read["rim_px"]), 1.0, "bastion rim is one texel")
 	eq(float(kestrel_read["rim_px"]), 0.0, "kestrel stays a straight sample")
 	eq(float(kestrel_read["mid_mix"]), 0.0, "kestrel does not recolor")
+	truthy(shader.contains("board_ink"), "a shared ink edge can sit outside the class rim")
+	truthy(pawn_src.contains("BOARD_INK_PX"), "every body writes the shared ink width")
 
 
 func _test_sprite_node_setup() -> void:

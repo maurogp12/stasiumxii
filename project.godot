@@ -36,8 +36,16 @@ window/handheld/orientation=4
 [rendering]
 
 environment/defaults/default_clear_color=Color(0.008, 0.028, 0.07, 1)
+; Desktop and headless stay Forward+. Phones use the Mobile renderer.
+; Compatibility is the fallback only if a device cannot boot Vulkan; it is
+; not the project default. See docs/tech_art_audit.md.
+renderer/rendering_method="forward_plus"
+renderer/rendering_method.mobile="mobile"
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
+; Painted 2x sheets are shown at half scale. Linear is the downsample.
+; Nearest would crunch them. Mipmaps stay off on the character imports.
+textures/canvas_textures/default_texture_filter=1
 
 [stasium]
 

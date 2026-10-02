@@ -10,6 +10,12 @@ uniform vec4 rim_ink : source_color = vec4(0.0);
 uniform float rim_px = 0.0;
 uniform vec4 mid_tone : source_color = vec4(0.0);
 uniform float mid_mix = 0.0;
+// Shared phone silhouette. One warm texel outside the paint so a light
+// body reads on snow and a dark body reads on a night board. Class rim_px
+// still owns the ochre / stone edge and overwrites this where it draws.
+// 0 leaves that fringe alone. Not a team tint and not a cyan halo.
+uniform float board_ink = 0.0;
+uniform vec4 board_ink_color : source_color = vec4(0.16, 0.07, 0.04, 1.0);
 // Living idle (view only). The body stretches a little from the feet and the
 // head sways, so a standing fighter breathes. The cell's foot row is 150/160.
 // Done in the sample, not on the node, so positions and scales stay exact.
@@ -91,6 +97,17 @@ void fragment() {
 		ring = max(ring, texture(TEXTURE, luv + vec2(0.0, -px.y)).a);
 		if (ring > 0.82) {
 			rgb = rim_ink.rgb;
+			alpha = 1.0;
+		}
+	}
+	if (board_ink > 0.001 && alpha < 0.2) {
+		vec2 ink_px = TEXTURE_PIXEL_SIZE * board_ink;
+		float ink_ring = texture(TEXTURE, luv + vec2(ink_px.x, 0.0)).a;
+		ink_ring = max(ink_ring, texture(TEXTURE, luv + vec2(-ink_px.x, 0.0)).a);
+		ink_ring = max(ink_ring, texture(TEXTURE, luv + vec2(0.0, ink_px.y)).a);
+		ink_ring = max(ink_ring, texture(TEXTURE, luv + vec2(0.0, -ink_px.y)).a);
+		if (ink_ring > 0.82) {
+			rgb = board_ink_color.rgb;
 			alpha = 1.0;
 		}
 	}
