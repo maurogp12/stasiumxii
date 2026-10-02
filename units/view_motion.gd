@@ -376,6 +376,113 @@ static func facing_turn(from_facing: String, to_facing: String) -> Array:
 	return [b, b]
 
 
+## Wakfu-style glide (PC). The path flows through corners instead of stopping
+## to turn. A corner is rounded by a curve that starts and ends this share of
+## the way along its two legs, so the body never leaves the cells it walks.
+const GLIDE_CORNER_SHARE := 0.45
+const GLIDE_CURVE_SAMPLES := 8
+## Speed ramp at each end of a path, in tiles of travel time. The middle runs
+## at the full tile speed (Pawn.WALK_TILE_SEC per tile).
+const GLIDE_RAMP_TILES := 0.5
+
+
+## Rounded route through `points` (cell centres in board space). Returns
+## {"pts": PackedVector2Array, "dist": PackedFloat32Array (arc length at each
+## pt), "marks": Array of arc lengths where the body passes each point}.
+static func glide_route(points: Array) -> Dictionary:
+	var pts := PackedVector2Array()
+	var marks: Array = []
+	if points.is_empty():
+		return {"pts": pts, "dist": PackedFloat32Array(), "marks": marks}
+	pts.append(points[0])
+	var mark_idx: Array = [0]
+	for k in range(1, points.size()):
+		var at: Vector2 = points[k]
+		if k == points.size() - 1:
+			pts.append(at)
+			mark_idx.append(pts.size() - 1)
+			continue
+		var before: Vector2 = points[k - 1]
+		var after: Vector2 = points[k + 1]
+		var leg_in := at - before
+		var leg_out := after - at
+		var straight := leg_in.length_squared() < 0.0001 or leg_out.length_squared() < 0.0001 \
+			or absf(leg_in.normalized().cross(leg_out.normalized())) < 0.001
+		if straight:
+			pts.append(at)
+			mark_idx.append(pts.size() - 1)
+			continue
+		var a := at - leg_in * GLIDE_CORNER_SHARE
+		var b := at + leg_out * GLIDE_CORNER_SHARE
+		for i in range(GLIDE_CURVE_SAMPLES + 1):
+			var t := float(i) / float(GLIDE_CURVE_SAMPLES)
+			pts.append(a.lerp(at, t).lerp(at.lerp(b, t), t))
+			if i == GLIDE_CURVE_SAMPLES / 2:
+				mark_idx.append(pts.size() - 1)
+	var dist := PackedFloat32Array()
+	dist.resize(pts.size())
+	var run := 0.0
+	for i in pts.size():
+		if i > 0:
+			run += pts[i].distance_to(pts[i - 1])
+		dist[i] = run
+	for i in mark_idx:
+		marks.append(dist[int(i)])
+	return {"pts": pts, "dist": dist, "marks": marks}
+
+
+## Point on a glide route at arc length `d`.
+static func glide_point(route: Dictionary, d: float) -> Vector2:
+	var pts: PackedVector2Array = route.get("pts", PackedVector2Array())
+	var dist: PackedFloat32Array = route.get("dist", PackedFloat32Array())
+	if pts.is_empty():
+		return Vector2.ZERO
+	if d <= 0.0:
+		return pts[0]
+	var last := pts.size() - 1
+	if d >= dist[last]:
+		return pts[last]
+	var lo := 0
+	var hi := last
+	while hi - lo > 1:
+		var mid := (lo + hi) / 2
+		if dist[mid] <= d:
+			lo = mid
+		else:
+			hi = mid
+	var span := dist[hi] - dist[lo]
+	if span <= 0.0001:
+		return pts[hi]
+	return pts[lo].lerp(pts[hi], (d - dist[lo]) / span)
+
+
+## Seconds for a glide of `tiles` tiles: full speed plus half of each ramp.
+static func glide_duration(tiles: int, tile_sec: float) -> float:
+	if tiles <= 0:
+		return 0.0
+	return (float(tiles) + GLIDE_RAMP_TILES) * tile_sec
+
+
+## Share of the route covered at `time`: speed ramps up over the first
+## GLIDE_RAMP_TILES of time, holds, then ramps down to a stop at the end.
+static func glide_progress(time: float, tiles: int, tile_sec: float) -> float:
+	var total := glide_duration(tiles, tile_sec)
+	if total <= 0.0:
+		return 1.0
+	var t := clampf(time, 0.0, total)
+	var ramp := minf(GLIDE_RAMP_TILES * tile_sec, total * 0.5)
+	var speed := 1.0 / (total - ramp)
+	var covered := 0.0
+	if t < ramp:
+		covered = 0.5 * speed * t * t / ramp
+	elif t > total - ramp:
+		var left := total - t
+		covered = 1.0 - 0.5 * speed * left * left / ramp
+	else:
+		covered = 0.5 * speed * ramp + speed * (t - ramp)
+	return clampf(covered, 0.0, 1.0)
+
+
 static func attack_pose(t: float, dir: Vector2, reach: float = -1.0) -> Dictionary:
 	var rest := {"pos": Vector2.ZERO, "scale": Vector2.ONE}
 	if t <= 0.0 or t >= 1.0:

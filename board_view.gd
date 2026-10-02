@@ -877,11 +877,13 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		return
 	var committed := _seat_facing(seat)
 	var visual := pawn.facing
-	_stop_walk_tween()
-	_walk_tween = create_tween()
-	_walk_tween.set_trans(Tween.TRANS_LINEAR)
-	var walk_armed := false
-	for cell in cells:
+	# Glide (PC): only the first step may turn in place, from standing. After
+	# that the body flows through every corner on one rounded route and the
+	# facing switches as it rounds the corner, with no stop to turn.
+	var dirs: Array[String] = []
+	var points: Array = [_cell_to_local(prev)]
+	for step in path:
+		var cell := _as_cell(step)
 		var dir := COMBAT_SIM_SCRIPT.facing_from_step(prev, cell)
 		if dir == "":
 			dir = COMBAT_SIM_SCRIPT.hop_facing(prev, cell)
@@ -889,25 +891,27 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 				var along := _facing_along(_cell_to_local(cell) - _cell_to_local(prev))
 				if along != "":
 					dir = along
-		var turn: Array = VIEW_MOTION.facing_turn(visual, dir)
-		if turn.is_empty():
-			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dir))
-		else:
-			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[0])))
-		if not walk_armed:
-			_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
-			walk_armed = true
-		if not turn.is_empty():
-			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
-			for i in range(1, turn.size()):
-				_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
-				_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
-		if dir != "":
-			visual = dir
-		_walk_tween.tween_property(pawn, "position", _cell_to_local(cell), Pawn.WALK_TILE_SEC)
-		_walk_tween.parallel().tween_method(_track_step_sort.bind(pawn, prev, cell), 0.0, 1.0, Pawn.WALK_TILE_SEC)
-		_walk_tween.tween_callback(_commit_walk_cell.bind(pawn, cell))
+		dirs.append(dir)
+		points.append(_cell_to_local(cell))
 		prev = cell
+	var route := VIEW_MOTION.glide_route(points)
+	var glide := {"route": route, "cells": cells, "dirs": dirs, "next": 0, "from": pawn.grid_position}
+	_stop_walk_tween()
+	_walk_tween = create_tween()
+	_walk_tween.set_trans(Tween.TRANS_LINEAR)
+	var turn: Array = VIEW_MOTION.facing_turn(visual, dirs[0])
+	if turn.is_empty():
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, dirs[0]))
+	else:
+		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[0])))
+	_walk_tween.tween_callback(_arm_path_walk.bind(pawn))
+	if not turn.is_empty():
+		_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+		for i in range(1, turn.size()):
+			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
+			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
+	var glide_sec := VIEW_MOTION.glide_duration(cells.size(), Pawn.WALK_TILE_SEC)
+	_walk_tween.tween_method(_sample_glide.bind(pawn, glide), 0.0, glide_sec, glide_sec)
 	if committed != "":
 		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
 	await _walk_tween.finished
@@ -917,6 +921,36 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		_set_pawn_cell(pawn, last)
 		pawn.end_path_walk()
 		pawn.release_idle()
+
+
+## One glide frame: place the body on the rounded route, switch facing as it
+## rounds each corner, commit each cell as the body passes it, and keep the
+## draw order on the nearest cell.
+func _sample_glide(time: float, pawn: Pawn, glide: Dictionary) -> void:
+	if pawn == null or not is_instance_valid(pawn):
+		return
+	var cells: Array[Vector2i] = glide["cells"]
+	var dirs: Array[String] = glide["dirs"]
+	var route: Dictionary = glide["route"]
+	var marks: Array = route["marks"]
+	var total: float = marks[marks.size() - 1]
+	var d := total * VIEW_MOTION.glide_progress(time, cells.size(), Pawn.WALK_TILE_SEC)
+	pawn.position = VIEW_MOTION.glide_point(route, d)
+	# marks[k + 1] is where the body passes cells[k] (marks[0] is the start).
+	while int(glide["next"]) < cells.size() and d >= float(marks[int(glide["next"]) + 1]) - 0.01:
+		var k := int(glide["next"])
+		_commit_walk_cell(pawn, cells[k])
+		glide["from"] = cells[k]
+		if k + 1 < dirs.size() and dirs[k + 1] != "" and dirs[k + 1] != pawn.facing:
+			var turn: Array = VIEW_MOTION.facing_turn(pawn.facing, dirs[k + 1])
+			_snap_walk_facing(pawn, str(turn[turn.size() - 1]) if not turn.is_empty() else dirs[k + 1])
+		glide["next"] = k + 1
+	var k_next := int(glide["next"])
+	if k_next < cells.size():
+		var seg_start: float = marks[k_next]
+		var seg_end: float = marks[k_next + 1]
+		var seg_t := 0.0 if seg_end <= seg_start else clampf((d - seg_start) / (seg_end - seg_start), 0.0, 1.0)
+		_track_step_sort(seg_t, pawn, glide["from"], cells[k_next])
 
 
 func _arm_path_walk(pawn: Pawn) -> void:

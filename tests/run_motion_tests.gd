@@ -40,7 +40,51 @@ func _run() -> void:
 	_test_pawn_samples_then_plants()
 	_test_reduce_motion_skips()
 	_test_view_wiring()
+	_test_glide_route()
 	_test_strip_library_missing_and_slice()
+
+
+func _test_glide_route() -> void:
+	# Straight path: no curve, each cell is passed at its own centre.
+	var straight: Dictionary = MOTION.glide_route([Vector2(0, 0), Vector2(32, 16), Vector2(64, 32)])
+	eq((straight["marks"] as Array).size(), 3, "a straight route marks every cell")
+	eq(MOTION.glide_point(straight, 0.0), Vector2(0, 0), "the glide starts on the departure tile")
+	var straight_len: float = (straight["marks"] as Array)[2]
+	eq(MOTION.glide_point(straight, straight_len).is_equal_approx(Vector2(64, 32)), true, "the glide ends on the last tile")
+	# Corner: rounded, never leaves the two legs' cells, ends on the tile.
+	var corner_pts := [Vector2(0, 0), Vector2(32, 16), Vector2(0, 32)]
+	var corner: Dictionary = MOTION.glide_route(corner_pts)
+	var marks: Array = corner["marks"]
+	eq(marks.size(), 3, "a corner route marks every cell")
+	var at_corner := MOTION.glide_point(corner, float(marks[1]))
+	eq(at_corner.distance_to(Vector2(32, 16)) > 1.0, true, "the corner is rounded, not a sharp turn")
+	eq(at_corner.distance_to(Vector2(32, 16)) < 18.0, true, "the rounded corner stays inside the corner cell")
+	var corner_end := MOTION.glide_point(corner, float(marks[2]))
+	eq(corner_end.is_equal_approx(Vector2(0, 32)), true, "the rounded route still ends on the last tile")
+	eq(float(marks[2]) < Vector2(32, 16).length() * 2.0, true, "rounding makes the route shorter than the staircase")
+	# Speed: eases in and out, full tile speed in the middle, ends exactly.
+	var tile := 0.22
+	var tiles := 3
+	var total := MOTION.glide_duration(tiles, tile)
+	eq(is_equal_approx(total, (tiles + MOTION.GLIDE_RAMP_TILES) * tile), true, "glide time is the tiles plus half of each ramp")
+	eq(MOTION.glide_progress(0.0, tiles, tile), 0.0, "the glide starts at rest")
+	eq(is_equal_approx(MOTION.glide_progress(total, tiles, tile), 1.0), true, "the glide arrives exactly")
+	var early := MOTION.glide_progress(0.05, tiles, tile)
+	var mid_a := MOTION.glide_progress(total * 0.5, tiles, tile)
+	var mid_b := MOTION.glide_progress(total * 0.5 + 0.05, tiles, tile)
+	eq(early < mid_b - mid_a, true, "the glide speeds up from a stand")
+	eq(is_equal_approx(mid_b - mid_a, 0.05 / (tiles * tile)), true, "the middle runs at one tile per tile time")
+	var late := 1.0 - MOTION.glide_progress(total - 0.05, tiles, tile)
+	eq(late < mid_b - mid_a, true, "the glide slows into the stop")
+	var prev := -1.0
+	var mono := true
+	for i in 41:
+		var p := MOTION.glide_progress(total * float(i) / 40.0, tiles, tile)
+		if p < prev - 0.00001:
+			mono = false
+		prev = p
+	eq(mono, true, "the glide never steps backwards")
+	eq(is_equal_approx(MOTION.glide_progress(MOTION.glide_duration(1, tile), 1, tile), 1.0), true, "a one-tile glide arrives")
 
 
 func _test_tunables_and_budget() -> void:
@@ -576,7 +620,13 @@ func _test_view_wiring() -> void:
 	var cell_idx := view.find("func _set_pawn_cell")
 	var anim_src := view.substr(hop_idx, cell_idx - hop_idx)
 	truthy(anim_src.contains("for step in path"), "the path still visits each cell")
-	truthy(anim_src.contains("tween_property"), "the path is one chained slide")
+	truthy(anim_src.contains("tween_method(_sample_glide"), "the path is one glide, not a slide per cell")
+	truthy(anim_src.contains("glide_route"), "the glide rounds the corners of the cell path")
+	var glide_idx := view.find("func _sample_glide")
+	var glide_src := view.substr(glide_idx, view.find("func _arm_path_walk") - glide_idx)
+	eq(glide_src.contains("TURN_FRAME_SEC"), false, "a corner mid-path does not stop to turn")
+	truthy(glide_src.contains("_commit_walk_cell"), "each cell commits as the body passes it")
+	truthy(glide_src.contains("_track_step_sort"), "the glide keeps the draw order on the nearest cell")
 	eq(anim_src.contains("play_step_hop"), false, "a cell does not play its own hop")
 	truthy(anim_src.contains("begin_path_walk"), "the walk loop starts once for the path")
 	var arm_at := anim_src.find("_arm_path_walk")
