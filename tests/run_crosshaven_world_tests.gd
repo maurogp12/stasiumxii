@@ -63,15 +63,25 @@ func _run() -> void:
 
 
 func _test_strips(w: Node2D) -> void:
-	for dir in ["n", "e", "s", "w"]:
+	for dir in ["n", "s"]:
 		check(w.walker.frame_count("walk", dir) == 8, "walk %s is the 8-frame strip" % dir)
+	for dir in ["e", "w"]:
+		check(w.walker.frame_count("walk", dir) == 6, "walk %s is the 6-frame painted strip" % dir)
+	for dir in ["n", "e", "s", "w"]:
 		check(w.walker.frame_count("run", dir) == 8, "run %s is the 8-frame strip" % dir)
 	check(is_equal_approx(w.walker.fps_of("walk"), 12.0), "walk plays at 12 fps")
 	check(is_equal_approx(w.walker.fps_of("run"), 15.0), "run plays at 15 fps")
-	check(is_equal_approx(w.walker.stride_of("walk", "e"), 21.12), "east walk stride is ground 64 at scale 0.33")
+	check(is_equal_approx(w.walker.stride_of("walk", "e"), 59.6706), "east walk stride is the painted step at scale 0.33")
 	check(is_equal_approx(w.walker.stride_of("walk", "s"), 16.698), "south walk stride matches the on-screen step")
 	check(is_equal_approx(w.walker.stride_of("run", "e"), 36.96), "east run stride is ground 112 at scale 0.33")
 	check(is_equal_approx(w.walker.stride_of("run", "s"), 29.2248), "south run stride matches the on-screen step")
+	var east_fps: float = w.walker._strips.fps_of("walk", "e")
+	var east_speed: float = w.walker._strips.speed_of("walk", "e")
+	check(is_equal_approx(east_fps, 3.185488331), "east walk fps keeps 31.68 px/s on the painted stride")
+	check(is_equal_approx(east_speed, 31.68), "east walk speed stays 31.68 px/s")
+	check(is_equal_approx(w.walker._strips.fps_of("walk", "w"), east_fps), "west walk matches east fps")
+	check(w.walker._strips.pivot == Vector2(0, -104), "sole pivot sits on the ground point")
+	check(w.walker._sprite.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR, "hero filters linear")
 	var count := float(w.walker.frame_count("walk", "s"))
 	var expected: float = w.walker.stride_of("walk") * w.walker.fps_of("walk") / count
 	check(is_equal_approx(w.walker.speed_of("walk"), expected), "walk speed is stride times fps over frame count")

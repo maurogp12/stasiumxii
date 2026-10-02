@@ -17,6 +17,7 @@ const Walker := preload("res://scenes/world/crosshaven/crosshaven_walker.gd")
 const Weather := preload("res://scenes/world/crosshaven/crosshaven_weather.gd")
 const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 
@@ -541,6 +542,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_graphics()
 		"v7tour":
 			await _movie_v7_tour()
+		"ironjaw_tall":
+			await _movie_ironjaw_tall()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -786,6 +789,54 @@ func _movie_v7_tour() -> void:
 		_mark(id)
 		await _town_stroll()
 	_mark("tour-end")
+
+
+## Painted Ironjaw on the v9 roads. East and west use the new strips; north and
+## south are the placeholder cycles. Kestrel stands beside him at the end.
+func _movie_ironjaw_tall() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.85)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	_mark("crossroads")
+	await _cardinal("e", 3, "walk")
+	await _cardinal("w", 3, "walk")
+	_mark("town")
+	await enter_zone("crosshaven_northgate", Vector2i(20, 12), true)
+	await _cardinal("e", 4, "walk")
+	await _cardinal("w", 4, "walk")
+	_mark("ns")
+	await _cardinal("s", 2, "walk")
+	await _cardinal("n", 2, "walk")
+	_mark("scale")
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), true)
+	walker.facing = "e"
+	walker._show_idle()
+	_place_scale_kestrel()
+	await get_tree().create_timer(3.2).timeout
+	_mark("end")
+
+
+func _place_scale_kestrel() -> void:
+	var strips = Strips.new()
+	strips.load_class("kestrel")
+	var hero: Vector2i = walker.cell
+	var spot := hero + Vector2i(0, 1)
+	if not zone.passable_at(spot):
+		spot = hero + Vector2i(-1, 0)
+	var spr := Sprite2D.new()
+	spr.name = "ScaleKestrel"
+	spr.centered = true
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	spr.offset = strips.pivot
+	spr.texture = strips.idle("e")
+	spr.scale = Vector2(strips.scale, strips.scale)
+	spr.z_as_relative = false
+	spr.position = BoardVisualSort.cell_to_local(spot, float(zone.height_at(spot)))
+	spr.z_index = (spot.x + spot.y) * BoardVisualSort.TILE_Z_SCALE + BoardVisualSort.UNIT_Z_BIAS
+	add_child(spr)
 
 
 func _town_stroll() -> void:

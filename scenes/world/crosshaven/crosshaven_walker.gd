@@ -4,14 +4,15 @@ extends Node2D
 ## Paths still come from `WorldWalk.find_path`. This node only animates them.
 ## `advance(delta)` is public so tests can step it deterministically.
 ##
-## Art lives in `res://art/characters/world/ironjaw/` and is described by
-## `ironjaw.json` (scale, pivot, fps, stride). See `world_strips.gd`.
+## Art lives in `res://art/characters/world/ironjaw_tall/` and is described by
+## `ironjaw_tall.json` (scale, pivot, fps, stride). The previous strips stay
+## in `ironjaw/` so this id can swap back. See `world_strips.gd`.
 
 signal stepped(cell: Vector2i)
 signal arrived(cell: Vector2i)
 
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
-const CLASS_ID := "ironjaw"
+const CLASS_ID := "ironjaw_tall"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
@@ -67,9 +68,11 @@ func _ready() -> void:
 	_strips.load_class(CLASS_ID)
 	_sprite = Sprite2D.new()
 	_sprite.centered = true
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_sprite.offset = _strips.pivot
 	_fade = Sprite2D.new()
 	_fade.centered = true
+	_fade.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_fade.offset = _strips.pivot
 	_fade.visible = false
 	_fade.z_index = -1
@@ -77,6 +80,7 @@ func _ready() -> void:
 	add_child(_sprite)
 	_rim = Sprite2D.new()
 	_rim.centered = true
+	_rim.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_rim.offset = _strips.pivot
 	_rim.visible = false
 	_rim.z_as_relative = true
@@ -481,11 +485,13 @@ func _facing_ahead() -> String:
 
 
 ## Turn when a sole is down, not halfway through a stride.
+## The tall strips bake the planted foot on the pivot, so they do not use the
+## 144x160 sole table. Facing can change on any frame of those strips.
 func _sync_facing(force: bool) -> void:
 	var want := _facing_ahead()
 	if want == "" or want == facing:
 		return
-	if force or _on_contact(_gait_name(), facing, _frame_index()):
+	if force or not _locks_sole() or _on_contact(_gait_name(), facing, _frame_index()):
 		facing = want
 		_planted = false
 		_apply_strip_speed()
@@ -494,7 +500,7 @@ func _sync_facing(force: bool) -> void:
 func _sync_pace() -> void:
 	if pace == _shown_pace:
 		return
-	if _on_contact(_gait_name(), facing, _frame_index()):
+	if not _locks_sole() or _on_contact(_gait_name(), facing, _frame_index()):
 		_shown_pace = pace
 		_planted = false
 		_apply_strip_speed()
@@ -677,9 +683,21 @@ func _on_contact(gait: String, dir: String, frame: int) -> bool:
 	return (mask & (1 << frame)) != 0
 
 
+## Sole offsets above were measured on the 144x160 strips. The tall cell bakes
+## the planted foot onto the pivot, so locking those old offsets would yank him.
+func _locks_sole() -> bool:
+	if _strips == null:
+		return false
+	return _strips.frame_size("walk") == Vector2i(144, 160)
+
+
 ## Pivot while the sole is down, then a return to the path point `root`.
 ## The sole's world position is `_visual + sole`.
 func _visual_for(frame: int, root: Vector2) -> Vector2:
+	if not _locks_sole():
+		_planted = false
+		_release_u = 1.0
+		return root
 	var gait := _gait_name()
 	var sole := _sole_of(gait, facing, frame)
 	if _on_contact(gait, facing, frame):
