@@ -43,7 +43,27 @@ func _run() -> void:
 	_test_fighters_block_sight()
 	_test_foe_kits()
 	_test_foes_walk_around_walls()
+	_test_five_star_boss_forms()
 	_start_fight_scene()
+
+
+
+## Mauro 2 Oct 2026: same bosses and doors; only the 5-star run shows the
+## 5-star form (Crosshaven, Brinewake, Slagcrown). Serra and Coilspire unchanged.
+func _test_five_star_boss_forms() -> void:
+	var want := {"crosshaven": "sheaf_sovereign", "brinewake": "brineclaw_sovereign", "slagcrown": "slagheart_caldera_crown"}
+	for door_id in ["crosshaven", "brinewake", "slagcrown", "windmere", "stormspire"]:
+		var door: Dictionary = StasisCatalog.DOORS[door_id]
+		eq(StasisCatalog.boss_art_for(door, 4), str(door["boss_art"]), "%s keeps its boss below 5 stars" % door_id)
+		eq(StasisCatalog.boss_art_for(door, 5), str(want.get(door_id, door["boss_art"])), "%s 5-star boss art" % door_id)
+		truthy(FileAccess.file_exists(StasisCatalog.art_path(StasisCatalog.boss_art_for(door, 5))), "%s 5-star portrait exists" % door_id)
+	StasisCatalog.clear_run()
+	StasisCatalog.begin("brinewake")
+	StasisCatalog.set_star(5)
+	StasisCatalog.room = "b"
+	eq(str(StasisCatalog.current_foe()["art"]), "brineclaw_sovereign", "a 5-star Brinewake run meets the 5-star Brineclaw")
+	eq(str(StasisCatalog.current_foe()["name"]), "Tide-Lord Brineclaw", "the boss keeps his name")
+	StasisCatalog.clear_run()
 
 
 func _finish() -> void:

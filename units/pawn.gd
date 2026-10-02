@@ -63,6 +63,10 @@ var stasis_sprite: String = ""
 var stasis_boss: bool = false
 ## Mirror of the boss sheet cell on screen (west from an east sheet).
 var _boss_mirror: float = 0.0
+## Boss walk: tiles stepped on this path (one step per tile) and the last
+## gait clock, so a new tile is seen when the clock wraps.
+var _boss_tile: int = 0
+var _boss_last_t: float = 0.0
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -215,9 +219,16 @@ func _monster_scale() -> float:
 
 ## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
 func _stasis_res() -> float:
-	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite) or _sprite.texture == null:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
 		return 1.0
-	var h := float(_sprite.texture.get_height())
+	# The painting sets the size; a boss sheet cell (even a taller walk cell)
+	# draws at the same world scale.
+	var tex := _stasis_texture(stasis_sprite)
+	if tex == null:
+		tex = _sprite.texture
+	if tex == null:
+		return 1.0
+	var h := float(tex.get_height())
 	return 160.0 / h if h > 0.0 else 1.0
 
 
@@ -884,6 +895,8 @@ func end_path_walk() -> void:
 	_driven_step = 0
 	_driven_open = false
 	_driven_walk = false
+	_boss_tile = 0
+	_boss_last_t = 0.0
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
@@ -1455,7 +1468,7 @@ func _boss_frame(anim: String, t: float, cycle: bool = false) -> bool:
 	if info.is_empty():
 		return false
 	var frames: Array = info["frames"]
-	var index := BOSS_SHEETS.cycle_index(t, frames.size()) if cycle else BOSS_SHEETS.once_index(t, frames.size())
+	var index := BOSS_SHEETS.cycle_index(t, frames.size(), _boss_tile) if cycle else BOSS_SHEETS.once_index(t, frames.size())
 	_show_boss_cell(frames[index], bool(info["mirror"]))
 	return true
 
@@ -1469,6 +1482,7 @@ func _boss_rest(seconds: float = 0.0) -> bool:
 	if info.is_empty():
 		if _sprite.texture != _stasis_texture(stasis_sprite) and BOSS_SHEETS.has_any(stasis_sprite):
 			_sprite.texture = _stasis_texture(stasis_sprite)
+			_sprite.offset = _foe_offset(float(_sprite.texture.get_height()) if _sprite.texture != null else 320.0)
 			_apply_figure_read()
 		return false
 	var frames: Array = info["frames"]
@@ -1479,10 +1493,19 @@ func _boss_rest(seconds: float = 0.0) -> bool:
 func _show_boss_cell(cell: Texture2D, mirror: bool) -> void:
 	if _sprite.texture != cell:
 		_sprite.texture = cell
+		_sprite.offset = _foe_offset(float(cell.get_height()))
 	_boss_mirror = 1.0 if mirror else 0.0
 	var mat := _sprite.material as ShaderMaterial
 	if mat != null:
 		_write_boss_cell_read(mat)
+
+
+## Sprite offset that puts the cell's feet line (FEET_Y) on the tile, the same
+## spot as the painting's feet (painting 320 tall → SPRITE_OFFSET / res).
+func _foe_offset(cell_h: float) -> Vector2:
+	var hover := float(foe_body_for(stasis_sprite)["hover"])
+	var lift := hover / maxf(_sprite.scale.y, 0.001)
+	return Vector2(0.0, -(float(BOSS_SHEETS.FEET_Y) - cell_h * 0.5) - 4.0 - lift)
 
 
 ## The painter animates the breath on a boss sheet; the shader breath would
@@ -1590,6 +1613,10 @@ const FOE_KIND := {
 	"slagheart_the_emberbrute": ["brute", ""],
 	"serra_the_gale_sentinel": ["flyer", ""],
 	"tyrant_coilspire": ["brute", ""],
+	# 5-star bosses (Mauro 2 Oct 2026): framed sheets; the portrait is idle frame 0.
+	"sheaf_sovereign": ["brute", ""],
+	"brineclaw_sovereign": ["brute", ""],
+	"slagheart_caldera_crown": ["brute", ""],
 	# Caster stand-ins (recoloured melee paintings): they hover like spell
 	# channelers so they read as ranged on the board.
 	"caster_scribe_bolt": ["flyer", "right"],
@@ -1863,6 +1890,9 @@ func _apply_foe_gait(t: float) -> void:
 	var gait := foe_gait(str(body.get("kind", "brute")), stasis_boss, t, dir_x)
 	# A boss walk sheet steps on its own legs: keep only a little of the
 	# painting's stomp and lean on top of it.
+	if t < _boss_last_t - 0.25:
+		_boss_tile += 1
+	_boss_last_t = t
 	if _boss_frame("walk", t, true):
 		gait = {"offset": gait["offset"] * 0.25, "lean": float(gait["lean"]) * 0.3, "squash": float(gait["squash"]) * 0.3}
 	_place_body(gait["offset"])

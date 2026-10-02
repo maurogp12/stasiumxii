@@ -87,4 +87,7 @@ today's painting: `docs/media/boss_rework/<boss>_guide.png`.
 | Date | What | State |
 |---|---|---|
 | 2 Oct 2026 | Hero walk redraw started (Technical Artist) | in progress, preview only |
-| 2 Oct 2026 | Boss frame code + brief pushed (`units/boss_sheets.gd`, `docs/BOSS_REWORK_BRIEF.md`) | done; boss art not started |
+| 2 Oct 2026 | Boss frame code + brief pushed (`units/boss_sheets.gd`, `docs/BOSS_REWORK_BRIEF.md`) | done |
+| 2 Oct 2026 | Hero walk redraw rounds 1–3 (20 strips, 144×176, one step per tile) | approved by Claude; held (not in the game) until Mauro says yes |
+| 2 Oct 2026 | Bosses: Crosshaven, Brinewake, Slagcrown pairs (★1–4 + ★5 form each); boss letters s/w/e/n per Mauro's facing rule | shipped in 0.1.87 by Mauro's order; cannon shot / eruption VFX held until Mauro sets the numbers |
+| 2 Oct 2026 | Serra, Coilspire | waiting for Mauro |

@@ -65,6 +65,8 @@ const DOORS := {
 		"door": "Threshgate",
 		"boss": "Sheaf Sovereign",
 		"boss_art": "warden_of_the_sheaves",
+		# Mauro 2 Oct 2026: same boss and door; at 5 stars he takes his 5-star form.
+		"boss_art_5": "sheaf_sovereign",
 		"boss_attack": "Thresh",
 		"trash": [
 			{"name": "Plaza Guard", "role": "brute", "attack": "Hit", "art": "scarecrow_drudge"},
@@ -78,6 +80,7 @@ const DOORS := {
 		"door": "Tidehold",
 		"boss": "Tide-Lord Brineclaw",
 		"boss_art": "captain_brineclaw",
+		"boss_art_5": "brineclaw_sovereign",
 		"boss_attack": "Claw",
 		"trash": [
 			{"name": "Silt Raider", "role": "brute", "attack": "Hit", "art": "silt_raider"},
@@ -91,6 +94,7 @@ const DOORS := {
 		"door": "Ashmarch",
 		"boss": "Slagheart (Caldera Crown)",
 		"boss_art": "slagheart_the_emberbrute",
+		"boss_art_5": "slagheart_caldera_crown",
 		"boss_attack": "Slam",
 		"trash": [
 			{"name": "Cinder Imp", "role": "brute", "attack": "Hit", "art": "cinder_imp"},
@@ -568,7 +572,7 @@ static func _room_entries() -> Array:
 		return [{
 			"name": str(door.get("boss", "")),
 			"attack": str(door.get("boss_attack", "Heavy Blow")),
-			"art": str(door.get("boss_art", "")),
+			"art": boss_art_for(door, star),
 			"role": "boss",
 			"foe_kit": FoeKits.BOSS_KITS.get(biome_id, []),
 			"max_ap": FoeKits.boss_ap(star),
@@ -592,6 +596,13 @@ static func _room_entries() -> Array:
 			"attack_base": scaled_attack(PROVISIONAL_TRASH_ATTACK),
 		})
 	return out
+
+
+## The door's boss painting; a 5-star run shows the 5-star form when the door has one.
+static func boss_art_for(door: Dictionary, stars: int) -> String:
+	if stars >= 5 and str(door.get("boss_art_5", "")) != "":
+		return str(door.get("boss_art_5", ""))
+	return str(door.get("boss_art", ""))
 
 
 static func _door(map_id: String) -> Dictionary:
