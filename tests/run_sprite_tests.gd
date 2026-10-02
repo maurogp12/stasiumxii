@@ -27,6 +27,7 @@ func _run() -> void:
 	_test_view_wires_flash_without_rules()
 	_test_name_sits_above_the_sprite()
 	_test_foe_bodies()
+	_test_boss_sheets()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -527,3 +528,65 @@ func _test_foe_bodies() -> void:
 	eq(hero._vanished, false, "a fallen hero keeps the downed body")
 	hero.queue_free()
 	pawn.queue_free()
+
+
+## Mauro 2 Oct 2026: bosses get new art with legs (same looks). Sheets drop
+## into art/stasis/bosses/<art>/; until then the painting stays up. Monsters
+## also step on the glide walk instead of sliding.
+func _test_boss_sheets() -> void:
+	var Sheets: GDScript = load("res://units/boss_sheets.gd")
+	var art := "res://art/stasis/foes/warden_of_the_sheaves.png"
+	var strip := func(frames: int) -> Texture2D:
+		var img := Image.create(288 * frames, 320, false, Image.FORMAT_RGBA8)
+		img.fill(Color(1, 1, 1, 1))
+		return ImageTexture.create_from_image(img)
+	Sheets.clear_cache()
+	Sheets.overrides = {
+		Sheets.sheet_path("warden_of_the_sheaves", "walk", "e"): strip.call(8),
+		Sheets.sheet_path("warden_of_the_sheaves", "idle", "s"): strip.call(4),
+		Sheets.sheet_path("warden_of_the_sheaves", "attack", "e"): strip.call(5),
+	}
+	eq(Sheets.sheet_path("warden_of_the_sheaves", "walk", "e"), "res://art/stasis/bosses/warden_of_the_sheaves/warden_of_the_sheaves_walk_e.png", "boss sheet path")
+	var walk_e: Dictionary = Sheets.frames_for(art, "walk", "E")
+	eq((walk_e["frames"] as Array).size(), 8, "a 2304 px walk strip is 8 frames")
+	eq(bool(walk_e["mirror"]), false, "east walks on its own sheet")
+	eq(bool(Sheets.frames_for(art, "walk", "W")["mirror"]), true, "west mirrors the east sheet when it is missing")
+	eq((Sheets.frames_for(art, "cast", "E")["frames"] as Array).size(), 5, "cast falls back to the attack sheet")
+	eq(Sheets.frames_for("res://art/stasis/foes/captain_brineclaw.png", "walk", "E").is_empty(), true, "a boss without sheets has none")
+	eq(Sheets.once_index(1.0, 5), 4, "a one-shot ends on its last frame")
+	eq(Sheets.idle_index(1.0, 4), 2, "idle loops at 6 fps")
+	var boss := Pawn.new()
+	root.add_child(boss)
+	boss.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Sheaf Sovereign", "pos": Vector2i(4, 4), "facing": "S", "hp": 56, "max_hp": 56, "alive": true, "stasis_sprite": art, "stasis_boss": true}, 0)
+	truthy(boss._sprite.texture is AtlasTexture, "a boss with an idle sheet stands on its idle frames")
+	eq(float((boss._sprite.material as ShaderMaterial).get_shader_parameter("breath")), 0.0, "the sheet breathes, not the shader")
+	boss.facing = "E"
+	boss._apply_foe_gait(0.3)
+	eq((boss._sprite.texture as AtlasTexture).region.position.x, 288.0 * 2.0, "the walk frame follows the stride across the tile")
+	boss.facing = "W"
+	boss._apply_foe_gait(0.3)
+	eq(float((boss._sprite.material as ShaderMaterial).get_shader_parameter("mirror")), 1.0, "walking west mirrors the east walk")
+	boss.facing = "E"
+	boss._sample_attack(0.99, Vector2(20, 10))
+	eq((boss._sprite.texture as AtlasTexture).region.position.x, 288.0 * 4.0, "the attack sheet plays to its last frame")
+	boss.queue_free()
+	var plain := Pawn.new()
+	root.add_child(plain)
+	plain.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Tide-Lord Brineclaw", "pos": Vector2i(4, 4), "facing": "E", "hp": 56, "max_hp": 56, "alive": true, "stasis_sprite": "res://art/stasis/foes/captain_brineclaw.png", "stasis_boss": true}, 0)
+	plain._apply_foe_gait(0.3)
+	eq(plain._sprite.texture, Pawn._stasis_texture("res://art/stasis/foes/captain_brineclaw.png"), "a boss without sheets keeps its painting")
+	plain.queue_free()
+	Sheets.overrides = {}
+	Sheets.clear_cache()
+	# Glide walk: a monster takes its gait instead of sliding as a card.
+	var was_glide := ViewMotion.glide
+	ViewMotion.glide = true
+	var hound := Pawn.new()
+	root.add_child(hound)
+	hound.apply_snapshot({"seat": 1, "class_id": "ironjaw", "name": "Grain Hound", "pos": Vector2i(3, 3), "facing": "E", "hp": 22, "max_hp": 22, "alive": true, "stasis_sprite": "res://art/stasis/foes/grain_hound.png"}, 0)
+	# (Nodes are not inside the tree in _initialize, so the entry is read from source.)
+	truthy(FileAccess.get_file_as_string("res://units/pawn.gd").contains("# Monsters have no walk strip: the gait moves the painting"), "a monster walk segment is driven, not skipped")
+	hound._apply_hop_visual(0.5)
+	truthy(absf(hound.foe_body_lean()) > 0.05, "the hound leans into its stride on the glide walk (%.3f)" % hound.foe_body_lean())
+	hound.queue_free()
+	ViewMotion.glide = was_glide
