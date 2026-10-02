@@ -805,17 +805,17 @@ func _movie_ironjaw_tall() -> void:
 	await _cardinal("w", 3, "walk")
 	_mark("town")
 	await enter_zone("crosshaven_northgate", Vector2i(20, 12), true)
-	await _cardinal("e", 4, "walk")
-	await _cardinal("w", 4, "walk")
+	await _cardinal("e", 2, "walk")
+	await _cardinal("w", 2, "walk")
 	_mark("ns")
-	await _cardinal("s", 2, "walk")
-	await _cardinal("n", 2, "walk")
+	await _cardinal("s", 1, "walk")
+	await _cardinal("n", 1, "walk")
 	_mark("scale")
 	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), true)
 	walker.facing = "e"
 	walker._show_idle()
 	_place_scale_kestrel()
-	await get_tree().create_timer(3.2).timeout
+	await get_tree().create_timer(3.0).timeout
 	_mark("end")
 
 
