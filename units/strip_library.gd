@@ -11,9 +11,11 @@ class_name StripLibrary
 
 const EXPORT_ROOT := "res://art/export_2x/characters/"
 ## Walk-sheet drop. Replace the PNG at export_png_path(class, "walk", letter).
-## 864×160 RGBA, six 144×160 cells. The class *_frames.tres slices that file.
-## Classes: kestrel, ironjaw, gloam, and the same names for mender and bastion
-## when those sheets arrive. Do not add a second folder. Never load *_gen.png.
+## South, north, and west stay 864×160, six 144×160 cells. East (down-right)
+## is the locked 12-frame march; its cell is taller than 144×160 where the
+## painting needs the room, and the contact foot stays on the old plant.
+## The class *_frames.tres slices that file. Do not add a second folder.
+## Never load *_gen.png.
 const GROK_DIR := "res://art/grok_project/anims/"
 
 const KINDS: Array[String] = ["walk", "attack", "cast", "cast_mark", "hit", "death"]
@@ -22,8 +24,12 @@ const LETTERS: Array[String] = ["n", "e", "s", "w"]
 const GROK_SHEETS: Array[String] = ["se", "sw", "ne", "nw"]
 
 ## Horizontal PNG when a SpriteFrames .tres does not carry timing.
-## Walk: 6 frames @ 12 fps, loop. Attack: 6 frames @ 12, one-shot (Gloam attack is 5).
+## Back and down-left walks: 6 frames @ 12 fps, loop. East march: 12 frames
+## @ 12 fps, one cycle still fitted to the tile by the pawn. Attack: 6 frames
+## @ 12, one-shot (Gloam attack is 5).
 const WALK_FRAMES := 6
+## Locked down-right march (old letter e). Not mirrored onto south or west.
+const LOCKED_EAST_WALK_FRAMES := 12
 const WALK_FPS := 12.0
 const ACTION_FRAMES := 6
 const ACTION_FPS := 12.0
@@ -169,6 +175,13 @@ static func release_sec(class_id: String, kind: String) -> float:
 
 
 ## Locked map. Unknown tokens pass through so `e` stays `e`.
+## East is the 12-frame march. The other letters stay six frames.
+static func walk_sheet_frames(face: String) -> int:
+	if letter_for_sheet(face) == "e":
+		return LOCKED_EAST_WALK_FRAMES
+	return WALK_FRAMES
+
+
 static func letter_for_sheet(facing: String) -> String:
 	match facing.strip_edges().to_lower():
 		"se":
@@ -295,16 +308,17 @@ static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bo
 
 
 static func _walk_cell_textures(class_id: String, face: String) -> Array[Texture2D]:
+	var count := walk_sheet_frames(face)
 	var packed := image_from_walk_bytes(class_id, face)
 	if packed != null:
-		var from_bytes := textures_from_image(packed, WALK_FRAMES)
+		var from_bytes := textures_from_image(packed, count)
 		if from_bytes.size() >= 2:
 			return from_bytes
 	var res := try_load(export_png_path(class_id, "walk", face))
 	if res is Texture2D:
 		var full := (res as Texture2D).get_image()
 		if full != null and not full.is_empty():
-			return textures_from_image(full, WALK_FRAMES)
+			return textures_from_image(full, count)
 	return []
 
 
@@ -599,6 +613,10 @@ static func _stabilize_walk_feet(frames: SpriteFrames, class_id: String = "") ->
 			heights.append(metrics.y)
 		if cls != "":
 			_walk_contact["%s:%s" % [cls, face]] = contact_index_from_metrics(feet, heights)
+		# The locked march already plants frame 0 and travels the other cells.
+		# Pulling every sole back to that point would erase the step.
+		if face == "e":
+			continue
 		var base_tex := frames.get_frame_texture(anim, 0)
 		if base_tex == null:
 			continue
@@ -665,6 +683,11 @@ static func _stabilize_hit_feet(frames: SpriteFrames) -> void:
 			continue
 		var anchor_y := _walk_foot_y(frames, face)
 		if anchor_y < 0:
+			continue
+		# East hit sheets stay on their own 160px cell. The march foot is
+		# already on that same world plant (offset -72); retargeting the
+		# pixel row would sink the flinch.
+		if face == "e":
 			continue
 		for i in count:
 			var tex := frames.get_frame_texture(anim, i)
