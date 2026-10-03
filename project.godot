@@ -48,4 +48,5 @@ board_show_grid={
 [stasium]
 
 debug/show_tile_labels=false
+debug/show_terrain_legend=false
 view/reduce_shake=false

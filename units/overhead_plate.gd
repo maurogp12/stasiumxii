@@ -4,7 +4,8 @@ class_name OverheadPlate
 ## Name and life bar over a fighter. View only. The numbers come from the
 ## CombatSim snapshot the pawn already applied. This node shows them; it
 ## never decides them. The team fill is the snapshot. A lighter ghost eases
-## down from the previous amount after damage.
+## down from the previous amount after damage. At 20% life or below the fill
+## is amber. From 30% to 20% it lerps. Below 15% that amber pulses once a second.
 
 const TEAM_P1 := Color(74.0 / 255.0, 143.0 / 255.0, 224.0 / 255.0)
 const TEAM_P2 := Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0)
@@ -16,6 +17,9 @@ const NAME_PAD := 3.0
 const BAR_GAP := 2.0
 const WIDTH_SCALE := 1.2
 const LOW_LIFE := 0.30
+## Full amber at 20% or below. From 30% down to 20% is a short lerp.
+const AMBER := Color(0.95, 0.58, 0.10)
+const PULSE_HZ := 1.0
 const DRAIN_SEC := 0.85
 ## A hitch must not skip the drain or the nudge. One frame is at most a 30fps step.
 const DRAIN_STEP_CAP := 1.0 / 30.0
@@ -37,6 +41,7 @@ var _life: int = 0
 var _life_max: int = 1
 var _lift: float = 0.0
 var _lift_goal: float = 0.0
+var _pulse_clock: float = 0.0
 
 
 static func team_color(seat: int) -> Color:
@@ -146,12 +151,44 @@ func number_rect() -> Rect2:
 	return Rect2(x - 1.0, y - 1.0, glyph_w + 2.0, glyph_h + 2.0)
 
 
+## Integer percent so 16/80 is exactly 20% and 24/80 is exactly 30%.
+static func life_color(team: Color, life: int, life_max: int) -> Color:
+	var cap := maxi(life_max, 1)
+	var hp := clampi(life, 0, cap)
+	if hp * 100 >= cap * 30:
+		return team
+	if hp * 100 <= cap * 20:
+		return AMBER
+	var top := float(cap * 30) / 100.0
+	var bot := float(cap * 20) / 100.0
+	var span := maxf(top - bot, 0.001)
+	return team.lerp(AMBER, clampf((top - float(hp)) / span, 0.0, 1.0))
+
+
 func fill_color() -> Color:
 	var team := team_color(host.seat if host != null else 0)
-	if _target >= LOW_LIFE:
+	if _shown < 0.0:
 		return team
-	var warn := Color(0.96, 0.62, 0.22)
-	return team.lerp(warn, 1.0 - _target / LOW_LIFE)
+	return life_color(team, _life, _life_max)
+
+
+func pulse_clock() -> float:
+	return _pulse_clock
+
+
+func pulses() -> bool:
+	if _shown < 0.0 or _life_max <= 0:
+		return false
+	return _life * 100 < _life_max * 15
+
+
+## The swatch stays amber. Below 15% it brightens and settles once a second.
+func pulsed_fill() -> Color:
+	var ink := fill_color()
+	if not pulses():
+		return ink
+	var wave := 0.5 + 0.5 * sin(_pulse_clock * TAU * PULSE_HZ)
+	return ink.lerp(ink.lightened(0.28), wave)
 
 
 func rest_world_rect() -> Rect2:
@@ -181,15 +218,22 @@ func sync_from_unit(unit: Dictionary) -> void:
 
 
 func tick(delta: float) -> void:
+	var capped := minf(absf(delta), DRAIN_STEP_CAP)
 	if _shown < 0.0 or is_equal_approx(_shown, _target):
 		_shown = _target
-		return
-	var step := minf(absf(delta), DRAIN_STEP_CAP) / DRAIN_SEC
-	if absf(_shown - _target) <= step:
-		_shown = _target
 	else:
-		_shown += signf(_target - _shown) * step
-	queue_redraw()
+		var step := capped / DRAIN_SEC
+		if absf(_shown - _target) <= step:
+			_shown = _target
+		else:
+			_shown += signf(_target - _shown) * step
+		queue_redraw()
+	if pulses():
+		_pulse_clock += capped
+		queue_redraw()
+	elif _pulse_clock != 0.0:
+		_pulse_clock = 0.0
+		queue_redraw()
 
 
 func ease_lift(delta: float) -> void:
@@ -280,7 +324,7 @@ func _paint_bar() -> void:
 		var ghost := team_color(host.seat)
 		draw_rect(Rect2(inner.position, Vector2(ghost_w, inner.size.y)), Color(minf(ghost.r + 0.38, 1.0), minf(ghost.g + 0.38, 1.0), minf(ghost.b + 0.38, 1.0), 0.55))
 	if fill_w > 0.4:
-		var ink := fill_color()
+		var ink := pulsed_fill()
 		draw_rect(Rect2(inner.position, Vector2(fill_w, inner.size.y)), Color(ink.r, ink.g, ink.b, 0.98))
 
 

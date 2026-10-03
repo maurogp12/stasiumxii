@@ -25,8 +25,10 @@ const BOUNCE_TOAST := "Bounce"
 const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
+const TERRAIN_LEGEND_SETTING := "stasium/debug/show_terrain_legend"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const TOUCH := preload("res://ui/touch_adapter.gd")
+const PC_BAR := preload("res://ui/pc/action_bar.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -34,6 +36,9 @@ var _face_buttons: Dictionary = {}
 var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
 var _ability_cluster: Control
+var _resource_panel: Panel
+var _legacy_combat: Control
+var _pc_bar: Control
 var _bottom_box: VBoxContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
@@ -94,6 +99,28 @@ var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
+var _pc_chrome_folded := false
+var _pause_root: Control
+var _pause_new_match: Button
+var _confirm_root: Control
+## -1 follows the platform. 0 forces the phone HUD. 1 forces the PC bar.
+static var _pc_chrome_override := -1
+
+
+## Desktop and the PC look. Android and iOS keep the phone HUD.
+static func uses_pc_chrome() -> bool:
+	if _pc_chrome_override >= 0:
+		return _pc_chrome_override == 1
+	return not OS.has_feature("mobile")
+
+
+static func set_pc_chrome_override(mode: int) -> void:
+	_pc_chrome_override = mode
+
+
+static func clamp_tooltip_x(anchor_x: float, tip_w: float, view_w: float) -> float:
+	var limit := maxf(view_w - 8.0 - tip_w, 8.0)
+	return clampf(anchor_x - tip_w * 0.5, 8.0, limit)
 
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
@@ -620,12 +647,49 @@ func _input(event: InputEvent) -> void:
 	_finish_touch_tooltip()
 
 
+func takes_pc_escape() -> bool:
+	return uses_pc_chrome()
+
+
+func _mark_input_handled() -> void:
+	var view := get_viewport()
+	if view != null:
+		view.set_input_as_handled()
+
+
+func pause_open() -> bool:
+	return _pause_root != null and _pause_root.visible
+
+
+func confirm_open() -> bool:
+	return _confirm_root != null and _confirm_root.visible
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _locked:
 		return
+	if uses_pc_chrome() and event is InputEventKey and event.pressed and not event.echo and not pause_open():
+		var key_event := event as InputEventKey
+		var digit := key_event.keycode - KEY_0
+		if digit >= 1 and digit <= 9 and _pc_bar != null and _pc_bar.has_method("press_key"):
+			if _pc_bar.press_key(str(digit)):
+				_mark_input_handled()
+				return
 	if event.is_action_pressed("ui_cancel"):
+		if uses_pc_chrome() and confirm_open():
+			_confirm_root.visible = false
+			_mark_input_handled()
+			return
+		if uses_pc_chrome() and pause_open():
+			_close_pause()
+			_mark_input_handled()
+			return
 		if cancel_spell_selection():
-			get_viewport().set_input_as_handled()
+			_mark_input_handled()
+			return
+		if uses_pc_chrome():
+			open_pause_menu()
+			_mark_input_handled()
 
 
 func selected_spell() -> String:
@@ -701,8 +765,17 @@ func hide_turn_banner() -> void:
 func set_turn_clock(seconds_left: int, running: bool, fraction: float) -> void:
 	if _clock_label == null:
 		return
-	_clock_label.text = "%ds" % maxi(seconds_left, 0)
-	_clock_seconds = maxi(seconds_left, 0)
+	var seconds := maxi(seconds_left, 0)
+	if uses_pc_chrome() and _pc_chrome_folded:
+		var next := _turn_line_for(seconds)
+		if seconds == _clock_seconds and _turn_label != null and _turn_label.text == next:
+			return
+		_clock_seconds = seconds
+		_apply_turn_label_clock()
+		_present_pc_bar()
+		return
+	_clock_label.text = "%ds" % seconds
+	_clock_seconds = seconds
 	var color := Color(0.15, 0.12, 0.12)
 	if not running:
 		color = Color(0.42, 0.4, 0.42)
@@ -822,6 +895,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
 	_sync_stun_badge(chrome, units, match_over)
+	_present_pc_bar()
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -848,6 +922,7 @@ func _apply_controls(match_over: bool) -> void:
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
+	_present_pc_bar()
 
 
 func _build() -> void:
@@ -889,6 +964,7 @@ func _build() -> void:
 	root.add_child(_stun_badge)
 
 	var resource_panel := Panel.new()
+	_resource_panel = resource_panel
 	resource_panel.position = Vector2(300, 44)
 	resource_panel.size = Vector2(360, 74)
 	resource_panel.add_theme_stylebox_override("panel", _panel(Color(1, 1, 1, 0.78)))
@@ -929,6 +1005,7 @@ func _build() -> void:
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
 	var combat_row := HBoxContainer.new()
+	_legacy_combat = combat_row
 	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	combat_row.add_theme_constant_override("separation", 8)
 	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1074,7 +1151,8 @@ func _build() -> void:
 	_tooltip_label.size = Vector2(456, 232)
 	_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tooltip_label.add_theme_font_size_override("font_size", 13)
-	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	var tip_ink := Color(0.96, 0.93, 0.86) if uses_pc_chrome() else Color(0.12, 0.1, 0.12)
+	_tooltip_label.add_theme_color_override("font_color", tip_ink)
 	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.add_child(_tooltip_label)
 
@@ -1101,7 +1179,102 @@ func _build() -> void:
 	_handoff_label.text = "Kestrel's turn"
 	_handoff_panel.add_child(_handoff_label)
 
+	_pc_bar = PC_BAR.new()
+	_pc_bar.name = "PcActionBar"
+	root.add_child(_pc_bar)
+	_build_pause_menu(root)
+
 	_update_selected_label()
+
+
+func _build_pause_menu(root: Control) -> void:
+	_pause_root = Control.new()
+	_pause_root.name = "PcPauseMenu"
+	_pause_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pause_root.visible = false
+	_pause_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(_pause_root)
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.04, 0.03, 0.03, 0.55)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_root.add_child(dim)
+	var panel := Panel.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -180.0
+	panel.offset_right = 180.0
+	panel.offset_top = -90.0
+	panel.offset_bottom = 90.0
+	panel.add_theme_stylebox_override("panel", _panel(Color(0.10, 0.08, 0.07, 0.98)))
+	_pause_root.add_child(panel)
+	var title := Label.new()
+	title.text = "Paused"
+	title.position = Vector2(16, 16)
+	title.size = Vector2(328, 28)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86))
+	panel.add_child(title)
+	_pause_new_match = Button.new()
+	_pause_new_match.text = "New Match"
+	_pause_new_match.position = Vector2(70, 60)
+	_pause_new_match.size = Vector2(220, 40)
+	_pause_new_match.pressed.connect(ask_new_match)
+	panel.add_child(_pause_new_match)
+	var resume := Button.new()
+	resume.text = "Resume"
+	resume.position = Vector2(70, 112)
+	resume.size = Vector2(220, 40)
+	resume.pressed.connect(_close_pause)
+	panel.add_child(resume)
+
+	_confirm_root = Control.new()
+	_confirm_root.name = "PcNewMatchConfirm"
+	_confirm_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_confirm_root.visible = false
+	_confirm_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(_confirm_root)
+	var confirm_dim := ColorRect.new()
+	confirm_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	confirm_dim.color = Color(0.04, 0.03, 0.03, 0.35)
+	confirm_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm_root.add_child(confirm_dim)
+	var confirm_panel := Panel.new()
+	confirm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	confirm_panel.offset_left = -200.0
+	confirm_panel.offset_right = 200.0
+	confirm_panel.offset_top = -80.0
+	confirm_panel.offset_bottom = 80.0
+	confirm_panel.add_theme_stylebox_override("panel", _panel(Color(0.12, 0.08, 0.06, 0.98)))
+	_confirm_root.add_child(confirm_panel)
+	var ask := Label.new()
+	ask.text = "Start a new match?"
+	ask.position = Vector2(16, 18)
+	ask.size = Vector2(368, 28)
+	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ask.add_theme_font_size_override("font_size", 20)
+	ask.add_theme_color_override("font_color", Color(0.98, 0.9, 0.7))
+	confirm_panel.add_child(ask)
+	var note := Label.new()
+	note.text = "This ends the current match."
+	note.position = Vector2(16, 48)
+	note.size = Vector2(368, 22)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 14)
+	note.add_theme_color_override("font_color", Color(0.86, 0.8, 0.7))
+	confirm_panel.add_child(note)
+	var yes := Button.new()
+	yes.text = "Confirm"
+	yes.position = Vector2(36, 88)
+	yes.size = Vector2(150, 40)
+	yes.pressed.connect(confirm_new_match)
+	confirm_panel.add_child(yes)
+	var no := Button.new()
+	no.text = "Cancel"
+	no.position = Vector2(214, 88)
+	no.size = Vector2(150, 40)
+	no.pressed.connect(func() -> void: _confirm_root.visible = false)
+	confirm_panel.add_child(no)
 
 
 func _show_new_match(snap: Dictionary) -> bool:
@@ -1381,6 +1554,14 @@ func _panel(color: Color) -> StyleBoxFlat:
 
 
 func _card_panel() -> StyleBoxFlat:
+	if uses_pc_chrome():
+		var dark := _panel(Color(0.08, 0.07, 0.06, 0.96))
+		dark.border_color = Color(0.86, 0.72, 0.38, 0.9)
+		dark.border_width_left = 2
+		dark.border_width_top = 2
+		dark.border_width_right = 2
+		dark.border_width_bottom = 2
+		return dark
 	var box := _panel(Color(0.99, 0.97, 0.9, 0.97))
 	box.border_color = Color(0.18, 0.12, 0.1, 0.85)
 	box.border_width_left = 2
@@ -1461,7 +1642,10 @@ func _layout_ability_cluster(primary: String, arc: Array) -> void:
 		var spell_id := str(arc[i])
 		if i < arc_centers.size() and _spell_hosts.has(spell_id):
 			_place_spell_host(spell_id, arc_centers[i], false)
-	_ability_cluster.visible = primary != "" or not arc.is_empty()
+	if uses_pc_chrome():
+		_ability_cluster.visible = false
+	else:
+		_ability_cluster.visible = primary != "" or not arc.is_empty()
 
 
 func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void:
@@ -1510,6 +1694,8 @@ func _circle_style(fill: Color, diameter: float, border: Color, border_width: in
 
 func _sync_bottom_inset() -> void:
 	if _bottom_box == null:
+		return
+	if uses_pc_chrome() and _pc_chrome_folded:
 		return
 	var cluster_open := _ability_cluster != null and _ability_cluster.visible
 	_bottom_box.offset_right = -(TOUCH.CLUSTER_SIZE.x + 12.0) if cluster_open else -16.0
@@ -1689,6 +1875,7 @@ func _refresh_spell_buttons() -> void:
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
 		_set_spell_button_clickable(button, can_submit)
 		_apply_spell_modulate(str(spell_id), button, can_submit)
+	_present_pc_bar()
 
 
 ## Ambush gold / shade highlight only while the cast is in legal_intents.
@@ -1782,6 +1969,11 @@ func show_spell_tooltip(spell_id: String) -> void:
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
+	if uses_pc_chrome():
+		_fit_tooltip_panel()
+	else:
+		_tooltip_panel.size = Vector2(480, 248)
+		_tooltip_label.size = Vector2(456, 232)
 	_tooltip_panel.visible = true
 
 
@@ -1893,6 +2085,10 @@ func _on_spell_unhover() -> void:
 func claims_screen_point(point: Vector2) -> bool:
 	if not is_inside_tree():
 		return false
+	if _pause_root != null and _pause_root.visible and _pause_root.get_global_rect().has_point(point):
+		return true
+	if _pc_bar != null and _pc_bar.is_visible_in_tree() and _pc_bar.get_global_rect().has_point(point):
+		return true
 	for spell_id in _spell_hosts.keys():
 		if _control_claims(_spell_hosts[spell_id], point):
 			return true
@@ -1913,11 +2109,150 @@ func claims_screen_point(point: Vector2) -> bool:
 
 
 func _control_claims(control: Control, point: Vector2) -> bool:
-	if control == null or not is_instance_valid(control) or not control.visible:
-		return false
-	if not control.is_inside_tree():
+	if control == null or not is_instance_valid(control) or not control.is_visible_in_tree():
 		return false
 	return control.get_global_rect().has_point(point)
+
+
+## The touch cluster, the unit cards and the old button row stay in the tree
+## for the existing chrome. The painted bar is what the PC player sees.
+## Phone callers leave this chrome alone. Offsets are written once.
+func fold_legacy_chrome() -> void:
+	if not uses_pc_chrome():
+		return
+	if _pc_chrome_folded:
+		return
+	_pc_chrome_folded = true
+	for panel in _banner_panels:
+		panel.visible = false
+	if _resource_panel != null:
+		_resource_panel.visible = false
+	if _ability_cluster != null:
+		_ability_cluster.visible = false
+	if _legacy_combat != null:
+		_legacy_combat.visible = false
+	if _selected_label != null:
+		_selected_label.visible = false
+	if _turn_label != null:
+		_turn_label.visible = false
+	if _coach_label != null:
+		_coach_label.visible = false
+	if _terrain_legend != null:
+		_terrain_legend.visible = terrain_legend_debug()
+	if _bottom_box != null:
+		_bottom_box.offset_right = -16.0
+		_bottom_box.offset_bottom = -PC_BAR.BAR_H
+		_bottom_box.offset_top = -PC_BAR.BAR_H - 80.0
+	if _pc_bar != null:
+		_pc_bar.visible = true
+
+
+func terrain_legend_debug() -> bool:
+	if not ProjectSettings.has_setting(TERRAIN_LEGEND_SETTING):
+		return false
+	return bool(ProjectSettings.get_setting(TERRAIN_LEGEND_SETTING))
+
+
+func pc_coach_line() -> String:
+	if _coach_label == null:
+		return ""
+	var raw := _coach_label.text.strip_edges()
+	if raw == "":
+		return ""
+	if not uses_pc_chrome():
+		return raw
+	# The bar already shows AP and MP. That turn line stays off the board.
+	if raw.contains("'s turn.") and raw.contains(" AP / ") and raw.contains(" MP."):
+		return ""
+	return raw
+
+
+func open_pause_menu() -> void:
+	if not uses_pc_chrome() or _pause_root == null:
+		return
+	if _pause_new_match != null:
+		_pause_new_match.visible = _show_new_match(_last_snap)
+	if _confirm_root != null:
+		_confirm_root.visible = false
+	_pause_root.visible = true
+
+
+func ask_new_match() -> void:
+	if not pause_open() or _confirm_root == null:
+		return
+	if not _show_new_match(_last_snap):
+		return
+	_confirm_root.visible = true
+
+
+func confirm_new_match() -> void:
+	if not confirm_open():
+		return
+	_close_pause()
+	new_match_requested.emit()
+
+
+func _close_pause() -> void:
+	if _confirm_root != null:
+		_confirm_root.visible = false
+	if _pause_root != null:
+		_pause_root.visible = false
+
+
+func pc_status_line() -> String:
+	if _selected_label == null:
+		return ""
+	var raw := _selected_label.text.strip_edges()
+	if raw == "":
+		return ""
+	if not uses_pc_chrome():
+		return raw
+	return raw.replace("tap a destination", "Click a tile").replace("tap a cell", "Click a tile").replace("Face pad turns", "Face turns")
+
+
+func tooltip_view_width() -> float:
+	var vp := get_viewport()
+	if vp != null:
+		var width := vp.get_visible_rect().size.x
+		if width >= 64.0:
+			return width
+	return 960.0
+
+
+func place_tooltip_above(anchor: Vector2) -> void:
+	if _tooltip_panel == null:
+		return
+	if uses_pc_chrome():
+		_fit_tooltip_panel()
+	var size := _tooltip_panel.size
+	var parent := _tooltip_panel.get_parent() as Control
+	var local := anchor
+	if parent != null:
+		local = parent.get_global_transform().affine_inverse() * anchor
+	var x := clamp_tooltip_x(local.x, size.x, tooltip_view_width())
+	var y := local.y - size.y - 8.0
+	if y < 8.0:
+		y = local.y + 12.0
+	_tooltip_panel.position = Vector2(x, y)
+	if parent != null:
+		parent.move_child(_tooltip_panel, parent.get_child_count() - 1)
+
+
+func _fit_tooltip_panel() -> void:
+	if _tooltip_panel == null or _tooltip_label == null:
+		return
+	var font := ThemeDB.fallback_font
+	var measure := font.get_multiline_string_size(_tooltip_label.text, HORIZONTAL_ALIGNMENT_LEFT, 320, 13)
+	var width := clampf(measure.x + 20.0, 160.0, 360.0)
+	var height := clampf(measure.y + 16.0, 48.0, 220.0)
+	_tooltip_panel.size = Vector2(width, height)
+	_tooltip_label.size = Vector2(width - 16.0, height - 12.0)
+
+
+func _present_pc_bar() -> void:
+	if _pc_bar == null or not _pc_bar.has_method("present"):
+		return
+	_pc_bar.present(self)
 
 
 func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
@@ -2106,13 +2441,19 @@ func _net_prefix(snap: Dictionary) -> String:
 	return ""
 
 
+func _turn_line_for(seconds: int) -> String:
+	if _turn_label_base == "" or _deploying or _turn_label_base.begins_with("Match over"):
+		return _turn_label_base
+	return "%s  ·  %ds" % [_turn_label_base, seconds]
+
+
 func _apply_turn_label_clock() -> void:
 	if _turn_label == null or _turn_label_base == "":
 		return
-	if _deploying or _turn_label_base.begins_with("Match over"):
-		_turn_label.text = _turn_label_base
+	var next := _turn_line_for(_clock_seconds)
+	if _turn_label.text == next:
 		return
-	_turn_label.text = "%s  ·  %ds" % [_turn_label_base, _clock_seconds]
+	_turn_label.text = next
 
 
 func _sync_stun_badge(active: Dictionary, _units: Array, match_over: bool) -> void:

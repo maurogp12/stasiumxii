@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _finish_shade_board() -> void:
 	await _test_shade_markers_survive_rebuild()
+	await _test_tooltip_clamps_to_1280()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -104,6 +105,7 @@ func _run() -> void:
 	_test_walk_mode_cancel()
 	_test_spell_tooltip_cards()
 	_test_action_bar_wraps()
+	_test_pc_action_bar()
 	_test_face_pad_layout()
 	_test_stun_skip_chrome()
 	_test_playtest_warning_hush()
@@ -5857,6 +5859,180 @@ func _test_spell_tooltip_cards() -> void:
 	truthy(hud_src.contains("_bind_spell_hover"), "HUD binds hover on enabled spell buttons")
 	truthy(hud_src.contains("FlowContainer"), "HUD action bar wraps with FlowContainer")
 	eq(hud_src.contains("var show :="), false, "HUD no longer shadows CanvasLayer.show")
+
+
+func _test_pc_action_bar() -> void:
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_preview_source(_sim)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var bar = hud._pc_bar
+	truthy(bar != null, "the combat HUD hosts one action bar")
+	eq(hud._action_bar is FlowContainer, true, "the old row is still a FlowContainer")
+	eq(hud._face_bar.visible, true, "Face stays available to the bar")
+	eq(hud._legacy_combat.visible, false, "the old button row is not a second bar")
+	eq(hud._ability_cluster.visible, false, "spells are not a second cluster")
+	eq(hud._banner_panels[0].visible, false, "the unit card is not on screen")
+	truthy(str(hud._kestrel_body.text).contains("HP "), "the card text still follows the snapshot")
+	var ids: Array = bar.slot_ids()
+	for key in ["walk", "face:N", "face:E", "face:S", "face:W", "mark_shot", "detonate", "end"]:
+		truthy(ids.has(key), "the bar includes %s" % key)
+	eq(ids.has("new_match"), false, "New Match is not beside End Turn")
+	eq(bar.slot_key("mark_shot"), "1", "Mark Shot shows key 1")
+	eq(bar.slot_key("detonate"), "2", "Detonate shows key 2")
+	eq(bar.slot_usable("mark_shot"), true, "Mark Shot is lit when the cast is legal")
+	eq(bar.slot_usable("detonate"), false, "Detonate is dimmed when the cast is illegal")
+	eq(bar.slot_usable("walk"), true, "Walk is lit on the opening turn")
+	eq(bar.slot_usable("end"), true, "End Turn is lit on the opening turn")
+	eq(bar.slot_usable("face:N"), true, "Face is lit on the opening turn")
+	var mark_preview: Dictionary = hud.preview_for_spell(SpellKits.MARK_SHOT)
+	var detonate_preview: Dictionary = hud.preview_for_spell(SpellKits.DETONATE)
+	eq(bar.slot_ap("mark_shot"), int(mark_preview.get("ap", -1)), "the slot AP is the preview")
+	eq(bar.slot_ap("detonate"), int(detonate_preview.get("ap", -1)), "a dimmed slot still shows the preview AP")
+	eq(bar.slot_reason("detonate"), bar.phrase_reason(str(detonate_preview.get("reason", ""))), "the dim reason is the preview reason")
+	truthy(str(bar.slot_reason("detonate")) != "", "a dimmed slot has a reason")
+	truthy(bar.slot_has_icon("mark_shot"), "Mark Shot uses the painted icon")
+	truthy(bar.slot_has_icon("walk"), "Walk uses the painted icon")
+	var ids_front: Array = bar.slot_ids()
+	truthy(ids_front.find("mark_shot") < ids_front.find("walk"), "spells sit in front of Walk")
+	truthy(ids_front.find("walk") < ids_front.find("face:N"), "Walk sits in front of the Face pad")
+	truthy(bar.slot_rect("mark_shot").size.x > bar.slot_rect("walk").size.x, "spell slots are larger than Walk")
+	var face_left := minf(bar.slot_rect("face:N").position.x, bar.slot_rect("face:W").position.x)
+	var face_right := maxf(bar.slot_rect("face:E").end.x, bar.slot_rect("face:N").end.x)
+	truthy(face_right - face_left < bar.slot_rect("mark_shot").size.x, "the Face pad is narrower than a spell slot")
+	truthy(bar.slot_rect("end").size.y > bar.slot_rect("mark_shot").size.y, "End Turn stands out")
+	bar.size = Vector2(1280, 176)
+	bar.present(hud)
+	truthy(bar.slot_rect("mark_shot").size.x <= 150.0, "a spell slot stays within 150 px at 1280")
+	bar.size = Vector2(1920, 176)
+	bar.present(hud)
+	truthy(bar.slot_rect("mark_shot").size.x <= 150.0, "a spell slot stays within 150 px at 1920")
+	var content_left := 12.0 + 104.0 + 8.0 + 58.0
+	var content_right := 1920.0 - 12.0 - 104.0 - 8.0
+	var row_left: float = bar.slot_rect("mark_shot").position.x
+	var row_right := 0.0
+	for slot_id in bar.slot_ids():
+		row_right = maxf(row_right, bar.slot_rect(str(slot_id)).end.x)
+	var left_gap: float = row_left - content_left
+	var right_gap: float = content_right - row_right
+	truthy(absf(left_gap - right_gap) < 8.0, "the capped row is centred in the spare width")
+	truthy(bar.status_text().contains("Click a tile"), "the bar uses PC wording")
+	eq(hud._selected_label.visible, false, "the status line does not float over the board")
+	eq(hud._turn_label.visible, false, "the turn line is not left on the jungle")
+	truthy(bar.turn_text().contains("Turn"), "the turn line sits on the bar")
+	eq(hud._terrain_legend.visible, false, "the terrain legend is hidden on PC")
+	eq(hud._coach_label.visible, false, "the coach line does not float over the board")
+	eq(bar.coach_text(), "", "the stock AP/MP coach is not repeated on the bar")
+	var one := InputEventKey.new()
+	one.keycode = KEY_1
+	one.pressed = true
+	hud._unhandled_input(one)
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "key 1 arms Mark Shot")
+	hud.select_walk()
+	var two := InputEventKey.new()
+	two.keycode = KEY_2
+	two.pressed = true
+	hud._unhandled_input(two)
+	eq(hud.selected_spell(), "", "key 2 does not arm a dimmed spell")
+	var started: Array = []
+	hud.new_match_requested.connect(func() -> void: started.append(1))
+	hud.open_pause_menu()
+	eq(hud.pause_open(), true, "Esc-style pause opens on PC")
+	hud.ask_new_match()
+	eq(hud.confirm_open(), true, "New Match asks before it resets")
+	eq(started.is_empty(), true, "the ask does not start a match")
+	hud.confirm_new_match()
+	eq(started.size(), 1, "confirm starts the new match")
+	eq(hud.pause_open(), false, "confirm closes the pause menu")
+	var held_top: float = hud._bottom_box.offset_top
+	hud._bottom_box.offset_top = -10.0
+	bar.present(hud)
+	eq(hud._bottom_box.offset_top, -10.0, "a later render does not reset the bottom box")
+	hud._bottom_box.offset_top = held_top
+	var pc_box := hud._tooltip_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	truthy(pc_box != null and pc_box.bg_color.r < 0.2, "the PC tooltip is the dark panel")
+	eq(CombatHUD.clamp_tooltip_x(1000.0, 200.0, 1280.0) > clampf(1000.0 - 100.0, 8.0, 952.0 - 200.0), true, "a 1280 view does not use the 960 clamp")
+	eq(CombatHUD.clamp_tooltip_x(1200.0, 180.0, 1280.0) + 180.0 <= 1272.0, true, "the tooltip stays inside 1280")
+	eq(bar.banner_text(), "YOUR TURN", "hot-seat combat shows YOUR TURN")
+	eq(bar.portrait_hp(0), 80, "the hero portrait reads the snapshot HP")
+	eq(bar.portrait_name(0), "Kestrel", "the hero portrait reads the snapshot name")
+	eq(bar.turn_order(0), 1, "seat 0 is first in the turn order")
+	eq(bar.turn_order(1), 2, "seat 1 is second in the turn order")
+	eq(bar.resource_ap(), int(_unit(0)["ap"]), "AP next to the bar is the snapshot")
+	eq(bar.resource_mp(), int(_unit(0)["mp"]), "MP next to the bar is the snapshot")
+	var rev: int = bar.revision()
+	bar.present(hud)
+	eq(bar.revision(), rev, "the same state does not redraw")
+	bar.hover_slot("mark_shot")
+	eq(bar.revision(), rev, "hover is not a second state pass")
+	eq(hud.tooltip_caption(), SpellTooltip.card_text(mark_preview), "the tooltip is the Locked preview")
+	truthy(hud.tooltip_caption().contains("HIT "), "the tooltip carries the Locked hit percent")
+	truthy(hud.tooltip_caption().contains("(Locked)"), "the tooltip names the Locked band")
+	bar.hover_slot("detonate")
+	eq(bar.hover_reason(), bar.slot_reason("detonate"), "hover shows the dim reason")
+	bar.activate("mark_shot")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "a lit slot arms the spell")
+	bar.activate("detonate")
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "a dimmed slot does not arm")
+	bar.activate("walk")
+	eq(hud.selected_spell(), "", "Walk returns to the walk slot")
+	var watching: Dictionary = _sim.snapshot().duplicate(true)
+	_sim.submit({"type": "end_turn"})
+	watching = _sim.snapshot().duplicate(true)
+	watching["local_seat"] = 0
+	hud.render(watching, _sim.legal_intents(0))
+	eq(bar.banner_text(), "", "the opponent's turn has no YOUR TURN banner")
+	eq(bar.slot_usable("end"), false, "End Turn dims when it is not your turn")
+	eq(bar.slot_reason("end"), "opponent's turn", "End Turn names whose turn it is")
+	var bar_src := FileAccess.get_file_as_string("res://ui/pc/action_bar.gd")
+	eq(bar_src.contains("func _process"), false, "the bar does not tick a redraw")
+	hud.free()
+
+	CombatHUD.set_pc_chrome_override(0)
+	var phone := CombatHUD.new()
+	phone._build()
+	phone.set_preview_source(_sim)
+	phone.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(phone._legacy_combat.visible, true, "the phone HUD keeps the button row")
+	eq(phone._pc_bar.visible, false, "the phone HUD does not show the action bar")
+	eq(phone._selected_label.visible, true, "the phone status line stays on the HUD")
+	truthy(phone._selected_label.text.contains("tap a destination"), "the phone status keeps touch wording")
+	eq(phone._terrain_legend.visible, true, "the phone HUD keeps the terrain legend")
+	eq(phone._turn_label.visible, true, "the phone turn label stays put")
+	eq(phone._coach_label.visible, true, "the phone coach line stays on the HUD")
+	eq(phone.pause_open(), false, "the phone HUD has no pause menu")
+	var phone_box := phone._tooltip_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	eq(phone_box.bg_color, Color(0.99, 0.97, 0.9, 0.97), "the phone tooltip stays the cream card")
+	eq(phone._tooltip_label.get_theme_color("font_color"), Color(0.12, 0.1, 0.12), "the phone tooltip keeps dark type")
+	phone.show_spell_tooltip(SpellKits.MARK_SHOT)
+	eq(phone._tooltip_panel.size, Vector2(480, 248), "the phone tooltip keeps its card size")
+	phone.free()
+	CombatHUD.set_pc_chrome_override(-1)
+
+
+func _test_tooltip_clamps_to_1280() -> void:
+	var previous: Vector2i = root.size
+	root.size = Vector2i(1280, 720)
+	await process_frame
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	await process_frame
+	hud.set_preview_source(_sim)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var view_w := hud.tooltip_view_width()
+	truthy(view_w >= 1279.0, "the live viewport is 1280 wide")
+	hud.show_spell_tooltip(SpellKits.MARK_SHOT)
+	var anchor := Vector2(view_w - 20.0, 400.0)
+	hud.place_tooltip_above(anchor)
+	var panel := hud._tooltip_panel
+	truthy(panel.position.x >= 8.0, "tooltip x stays on screen at 1280")
+	truthy(panel.position.x + panel.size.x <= view_w - 7.5, "tooltip right edge stays inside 1280")
+	var old_x := clampf(anchor.x - panel.size.x * 0.5, 8.0, 952.0 - panel.size.x)
+	truthy(panel.position.x + 0.5 >= old_x, "the placed tooltip is not stuck on the 960 clamp")
+	hud.free()
+	root.size = previous
 
 
 func _test_action_bar_wraps() -> void:
