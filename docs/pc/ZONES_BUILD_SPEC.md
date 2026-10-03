@@ -9,7 +9,7 @@ Stormspire (and its dungeon) **south of Gloomfen at 35–40**. Everything else m
 **Proposed** is a suggestion that Mauro can change. Items marked **Open** wait on
 Mauro: do not decide them in code.
 
-> **Current phase: Crosshaven first** (Mauro, 3 Oct 2026: "We only doing
+> **Current phase: Crosshaven first** (levels and towns: section 00) (Mauro, 3 Oct 2026: "We only doing
 > Crosshaven as of now, Windmere is next phase"; "Crosshaven first until I say
 > otherwise"). Build and polish only Crosshaven: the Crossroads, the five road
 > chunks and the five towns (levels 1–10), the
@@ -28,6 +28,61 @@ Map image of the plan: Proposed zones on the regions concept
 before Stormspire was placed.
 
 ---
+
+## 00. Crosshaven phase plan: five towns, levels 1–50 (overrides section 3 for this phase)
+
+Mauro, 3 Oct 2026: "crosshaven has 5 towns, each town should have their npcs
+and missions, also its difficulty level … 1 to 10, 10 to 20, 20 to 30, 30 to
+40 and 40 to 50; above lvl 30 should be the danger zone, like the dark side or
+swamp, monsters attack players that pass too close to them." Town order chosen
+from the Crosshaven plate (`docs/pc/look_target/crosshaven_plate.jpg`). The
+level path goes **clockwise round the island**, from the safe north, west and
+east into the **dark south**.
+
+| Order | Town (plate position) | Levels | Feel | Danger | Dungeon (reused design) |
+|---|---|---|---|---|---|
+| 1 | **Stoneford** (west, river ford) | 1–10 | Farms, mill, river, gentle | Safe: monsters passive | Old Granary Cellar (the Ratking) |
+| 2 | **Northgate** (north, under the cliffs) | 10–20 | Cliff town, the only one with light snow | Safe: passive | Frostspire Archive (the Pale Archivist) |
+| 3 | **Eastmarch** (east coast) | 20–30 | Docks, coves, sea caves | Safe: passive | Saltmaw Grotto |
+| 4 | **Southbridge** (south, the bridge over the gorge) | 30–40 | **The swamp:** fen under the bridge, fog, rain, bog monsters | **Danger zone** | Drowned Abbey |
+| 5 | **Westwatch** (south-west, the walled watchtower) | 40–50 | **The dark side:** blight, violet dusk; the watch guards the island against it | **Danger zone** | Heart of the Blight |
+
+- **The Crossroads** is the start (level 1) and the safe hub: Guide, Banker,
+  Herald. No monsters ever spawn there.
+- **The roads** take their town's band: `road_west` 1–10, `road_north` 10–20,
+  `road_east` 20–30, `road_south` 30–40, `road_southwest` 40–50. Their town-side
+  half holds the band's higher levels. Each road starts at the Crossroads with
+  a level sign. Monsters on `road_south` and `road_southwest` are aggressive only
+  past the sign, and never within 6 cells of the Crossroads edge.
+- **Each town has its own NPCs and missions.**
+  - **NPCs:** its Warden, Trader, Door Keeper (next to its dungeon door), Elder
+    and 2–3 townsfolk, using the 4.5 roles.
+  - **Missions:** a story chain of about 6 steps for its band, plus repeatable
+    tasks from its givers (4.7 rules).
+  - **Targets:** missions stay inside the town's band area.
+  - **Hand-over:** the last step sends the player to the next town in the order.
+- **The danger zone (levels 30–50, Southbridge and Westwatch)** replaces the
+  4.10 "above 25" rule for this phase. Every monster group in these bands is
+  **aggressive**:
+  - **Aggro:** when a player passes within **3 cells** of a group and can reach
+    it on foot, the group walks to the player and the fight starts.
+  - **Below 30:** all groups are passive; the player clicks them to fight.
+  - **Readable danger:** aggressive groups show a red eye mark and a red aggro
+    ring on hover. The ground and light darken past each danger sign (swamp
+    fog and rain at Southbridge, violet blight at Westwatch).
+  - **Fairness:** no aggro on safe cells (within 2 of an NPC, a door or an
+    exit, and town squares); 10 s of grace after a fight, a chunk change or a
+    respawn; one aggro at a time.
+  - **Outlevelled groups:** a group ignores a player who is 15 or more levels
+    above the group (Proposed), so high levels can pass through.
+- **Room to level (Proposed, Mauro may change):** two chunks a band is too
+  little for about 150 h. Each town gets its **outskirts**: the fields, cliffs,
+  coves and marsh between the towns on the plate, built as extra chunks on the
+  island. Sizes: Stoneford 3, Northgate 4, Eastmarch 4, Southbridge 5,
+  Westwatch 6, making 22 new chunks and 33 in all. The merged region stand-ins
+  may be reused as the base for outskirts chunks, re-skinned to their town.
+- **Next phase:** Windmere and the other outer regions, with the 4.4 joins.
+  Their bands will be re-planned on top of this one.
 
 ## 0. The main goal: high graphics, great visuals
 
