@@ -9,6 +9,20 @@ Stormspire (and its dungeon) **south of Gloomfen at 35–40**. Everything else m
 **Proposed** is a suggestion that Mauro can change. Items marked **Open** wait on
 Mauro: do not decide them in code.
 
+> **Current phase: Crosshaven first** (Mauro, 3 Oct 2026: "We only doing
+> Crosshaven as of now, Windmere is next phase"; "Crosshaven first until I say
+> otherwise"). Build and polish only Crosshaven: the Crossroads, the five road
+> chunks and the five towns (levels 1–10), the
+> two Crosshaven dungeons (Old Granary Cellar, Millrace Vaults), and its NPCs,
+> missions, coins, sets and combat look. Everything for the nine outer regions
+> (WP5a/WP5b region layouts, the 4.4 region joins, region dressing and art in
+> WP10a, region dungeons) is **next phase: paused**. Keep the region stand-ins
+> already merged, but hide them: no join, gate or exit reaches them while the
+> phase flag `world.regions_enabled` is false (default false). Missions and
+> tasks only target Crosshaven. The open-world rule still holds inside
+> Crosshaven: every chunk is walked to from the Crossroads with no jumps, and
+> it matches the Crosshaven plate (LOOK_TARGET section D).
+
 Map image of the plan: Proposed zones on the regions concept
 (`pc_zone_map_proposed.png`, shared in chat 3 Oct 2026). It shows the zones
 before Stormspire was placed.
