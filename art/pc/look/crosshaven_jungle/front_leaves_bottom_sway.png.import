@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c08nwbvx6x1a1"
-path="res://.godot/imported/pad_blue@2x.png-116c1a4730159801d965a2d8fcf1477c.ctex"
+uid="uid://dmq6871f80wjw"
+path="res://.godot/imported/front_leaves_bottom_sway.png-e0bbf15681dc405eb16abba50cf7fa28.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/coilgate_floor/pad_blue@2x.png"
-dest_files=["res://.godot/imported/pad_blue@2x.png-116c1a4730159801d965a2d8fcf1477c.ctex"]
+source_file="res://art/pc/look/crosshaven_jungle/front_leaves_bottom_sway.png"
+dest_files=["res://.godot/imported/front_leaves_bottom_sway.png-e0bbf15681dc405eb16abba50cf7fa28.ctex"]
 
 [params]
 

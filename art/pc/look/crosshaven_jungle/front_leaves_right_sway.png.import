@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ddv7mi01aefgo"
-path="res://.godot/imported/glow_mask@2x.png-1a2652e408508cb91f2003efdde41f80.ctex"
+uid="uid://ctam1wrn026uv"
+path="res://.godot/imported/front_leaves_right_sway.png-c2d00505b448b4859581c332631abb36.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/coilgate_floor/glow_mask@2x.png"
-dest_files=["res://.godot/imported/glow_mask@2x.png-1a2652e408508cb91f2003efdde41f80.ctex"]
+source_file="res://art/pc/look/crosshaven_jungle/front_leaves_right_sway.png"
+dest_files=["res://.godot/imported/front_leaves_right_sway.png-c2d00505b448b4859581c332631abb36.ctex"]
 
 [params]
 
