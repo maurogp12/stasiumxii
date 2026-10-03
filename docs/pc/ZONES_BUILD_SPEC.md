@@ -861,11 +861,23 @@ Total sets in phase 1: 30 class sets + 11 dungeon sets + 2 shared world sets
 
 #### How sets are kept balanced (Proposed rules; WP15 checks them)
 
-1. **Equal budget per tier.** Every part of every set in the same tier has the
-   same stat budget (Proposed: `4 + tier level` points, priced with the
-   per-point values in 4.11; tier 1 counts as 1). A Rare part = 1.5× the
-   budget + 1 extra stat. A 2-part bonus = the budget of 1 part; a 3-part
-   bonus = 1.5 parts.
+1. **Equal budget per tier** (corrected 3 Oct 2026; the earlier `4 + tier`
+   per part made a tier-50 set worth about 405 points, 4× all level points,
+   and broke rule 2). A **full set** (5 parts + the 2-part bonus + the 3-part
+   bonus = 7.5 part-units) is worth `B(T) = round(98 × 1.3^((T − 50) / 10))`
+   points, priced with the per-point values in 4.11, so a full tier-50 set
+   equals the level-50 point budget (gear doubles your build at the cap, it
+   never dwarfs it). One part = `B(T) / 7.5`:
+
+   | Tier | 1 | 10 | 20 | 30 | 40 | 50 |
+   |---|---|---|---|---|---|---|
+   | Full set B(T) | 27 | 34 | 45 | 58 | 75 | 98 |
+   | One part | 3.6 | 4.6 | 6.0 | 7.7 | 10.0 | 13.1 |
+
+   Round per stat line to whole points; the set total stays within ±1 of
+   B(T). A Rare part = 1.5× a part + 1 extra stat. A 2-part bonus = 1 part; a
+   3-part bonus = 1.5 parts. Resist from gear counts toward the **33% total
+   Resist cap** (4.11), and AP / MP from gear toward the AP 8 / MP 5 caps.
 2. **Each tier is a clear step up** but not a wall: a full set of tier N + 10
    is about 25–35% stronger than tier N (Proposed), so upgrading tier N to +5
    is roughly halfway to the next tier.
