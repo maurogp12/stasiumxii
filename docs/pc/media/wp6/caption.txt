@@ -1,12 +1,19 @@
-WP6 grade contact sheet and the talk clip.
+WP6 grade contact sheet, placement stills, and the talk clip.
 
 Grade contact sheet: docs/pc/media/wp6/grade_contact_sheet.png
-Nine region entries, same camera and zoom as the WP5a stills (zoom 1.6, 1920×1080 source frames, noon).
-The before frames stay at docs/pc/media/wp5a/stills/. This sheet is the after.
-Windmere is cold blue and desaturated. Brinewake is sea teal with a light blue haze.
-Stormspire is darker slate grey-violet, with wind. Gloomfen is green-grey fog with a higher haze.
-Fen Edge sits halfway between Crosshaven and Gloomfen. Slagcrown and Blightwood are unchanged.
-Rowanvale and Ashen keep their previous grades.
+Nine region entries, noon, zoom 1.6. Source frames are 1920×1080. Mean hue is of the full frame.
+Windmere is cold blue (hue 199°, saturation 0.41).
+Brinewake is sea teal (hue 180°, saturation 0.55).
+Stormspire is slate grey with a little violet (hue 246°, saturation 0.07).
+Slagcrown is ember orange (hue 28°, saturation 0.85).
+Blightwood is violet (hue 304°, saturation 0.52).
+Gloomfen is green-grey fog (hue 78°, saturation 0.30).
+Fen Edge is muted olive-gold (hue 46°, saturation 0.43).
+Rowanvale is warm gold (hue 34°, saturation 0.73). Ashen is warm tan (hue 39°, saturation 0.53).
+
+Placement stills, zoom 1.0, 1920×1080:
+docs/pc/media/wp6/rowanvale_hub.png — the hub. The spawn crossroads is empty. The warden stands up the north path, the trader stands beside the road, and the farmer and woodcutter stand by the tavern.
+docs/pc/media/wp6/gloomfen_mire_entry.png — a non-town entry. The warden stands toward the west gate, the trader beside the road, and the hermit by the tavern.
 
 Talk clip: docs/pc/media/wp6/wp6_guide_elder.mp4
 960×720, 30 fps, H.264, 9.9 s. The hero walks from the Crossroads spawn to the Guide,

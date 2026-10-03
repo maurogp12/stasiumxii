@@ -15,6 +15,10 @@ uniform float haze_max : hint_range(0.0, 0.55) = 0.15;
 uniform float grade_mix : hint_range(0.0, 1.0) = 0.0;
 uniform vec3 warm_mul : source_color = vec3(1.02, 1.0, 0.96);
 uniform vec3 haze_col : source_color = vec3(0.45, 0.52, 0.62);
+// Luminance tint. 0 leaves Crosshaven alone. A region mixes toward luma * tint_col
+// so the colour reads in a thumbnail, not only as a slight multiply.
+uniform vec3 tint_col : source_color = vec3(1.0, 1.0, 1.0);
+uniform float tint_amount : hint_range(0.0, 0.55) = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -29,6 +33,10 @@ void fragment() {
 	// that rain does not go gray. A region grade can still desaturate.
 	float sat = mix(1.06, saturation, grade_amt);
 	c = mix(vec3(luma), c, sat);
+	// Recolour the luminance. A green plain stays green under a multiply;
+	// mixing toward luma * tint_col shifts the mean hue at thumbnail size.
+	luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
+	c = mix(c, luma * tint_col, tint_amount * grade_amt);
 	c = (c - vec3(0.5)) * contrast + vec3(0.5);
 	// Window glow, lamp heads, fire, and water sparkles. Excess above the threshold, not the midtones.
 	vec3 hi = max(c - vec3(bloom_threshold), vec3(0.0));

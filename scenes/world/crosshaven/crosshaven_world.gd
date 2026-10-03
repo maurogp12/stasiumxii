@@ -657,6 +657,9 @@ func _apply_region_look() -> void:
 	mat.set_shader_parameter("haze_col", Color(float(haze[0]), float(haze[1]), float(haze[2])))
 	mat.set_shader_parameter("haze_max", float(grade.get("haze_max", 0.15)))
 	mat.set_shader_parameter("saturation", float(grade.get("saturation", 1.06)))
+	var tint: Array = grade.get("tint_col", [1.0, 1.0, 1.0])
+	mat.set_shader_parameter("tint_col", Color(float(tint[0]), float(tint[1]), float(tint[2])))
+	mat.set_shader_parameter("tint_amount", float(grade.get("tint_amount", 0.0)))
 
 
 func _show_banner(text: String) -> void:
@@ -1099,6 +1102,21 @@ func _movie_wp6_grades() -> void:
 		await get_tree().process_frame
 		var image := get_viewport().get_texture().get_image()
 		image.save_png(folder.path_join(region + ".png"))
+	# Wider frames of one hub and one non-town entry, so the path spread is in view.
+	_set_zoom(1.0)
+	await get_tree().create_timer(0.45).timeout
+	var place_folder := ProjectSettings.globalize_path("res://docs/pc/media/wp6")
+	for zone_id in ["rowanvale_hub", "gloomfen_mire_entry"]:
+		await enter_zone(zone_id, Vector2i(16, 12), false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if _banner != null:
+			_banner.modulate.a = 0.0
+		walker.facing = "s"
+		walker._show_idle()
+		await get_tree().process_frame
+		var placed := get_viewport().get_texture().get_image()
+		placed.save_png(place_folder.path_join(zone_id + ".png"))
 	await get_tree().process_frame
 
 

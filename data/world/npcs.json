@@ -26,10 +26,10 @@
       "role": "warden",
       "zone_id": "crosshaven_crossroads",
       "cell": {
-        "x": 21,
-        "y": 18
+        "x": 22,
+        "y": 16
       },
-      "facing": "S",
+      "facing": "N",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Crosshaven Heart.",
@@ -43,10 +43,10 @@
       "role": "trader",
       "zone_id": "crosshaven_crossroads",
       "cell": {
-        "x": 19,
-        "y": 17
+        "x": 17,
+        "y": 16
       },
-      "facing": "S",
+      "facing": "E",
       "body": "npc_trader",
       "lines": [
         "I trade in Crosshaven Heart.",
@@ -111,10 +111,10 @@
       "role": "warden",
       "zone_id": "crosshaven_northgate",
       "cell": {
-        "x": 20,
-        "y": 15
+        "x": 2,
+        "y": 5
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Crosshaven Towns.",
@@ -128,10 +128,10 @@
       "role": "trader",
       "zone_id": "crosshaven_northgate",
       "cell": {
-        "x": 21,
-        "y": 16
+        "x": 15,
+        "y": 10
       },
-      "facing": "S",
+      "facing": "E",
       "body": "npc_trader",
       "lines": [
         "I trade in Crosshaven Towns.",
@@ -282,9 +282,9 @@
       "zone_id": "rowanvale_hub",
       "cell": {
         "x": 15,
-        "y": 12
+        "y": 4
       },
-      "facing": "S",
+      "facing": "N",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Rowanvale.",
@@ -298,10 +298,10 @@
       "role": "trader",
       "zone_id": "rowanvale_hub",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 17,
+        "y": 7
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_trader",
       "lines": [
         "I trade in Rowanvale.",
@@ -315,10 +315,10 @@
       "role": "farmer",
       "zone_id": "rowanvale_hub",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_farmer",
       "lines": [
         "I farm the Rowanvale hamlet.",
@@ -332,10 +332,10 @@
       "role": "woodcutter",
       "zone_id": "rowanvale_hub",
       "cell": {
-        "x": 17,
-        "y": 13
+        "x": 1,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "E",
       "body": "npc_woodcutter",
       "lines": [
         "I cut wood for the Rowanvale hamlet.",
@@ -349,8 +349,8 @@
       "role": "door_keeper",
       "zone_id": "rowanvale_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -367,9 +367,9 @@
       "zone_id": "windmere_hub",
       "cell": {
         "x": 15,
-        "y": 12
+        "y": 4
       },
-      "facing": "S",
+      "facing": "N",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Windmere.",
@@ -383,10 +383,10 @@
       "role": "trader",
       "zone_id": "windmere_hub",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 17,
+        "y": 7
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_trader",
       "lines": [
         "I trade in Windmere.",
@@ -400,10 +400,10 @@
       "role": "archivist",
       "zone_id": "windmere_hub",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_archivist",
       "lines": [
         "I am the Spire Archivist of Windmere.",
@@ -417,8 +417,8 @@
       "role": "door_keeper",
       "zone_id": "windmere_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -435,9 +435,9 @@
       "zone_id": "brinewake_hub",
       "cell": {
         "x": 15,
-        "y": 12
+        "y": 4
       },
-      "facing": "S",
+      "facing": "N",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Brinewake.",
@@ -451,10 +451,10 @@
       "role": "trader",
       "zone_id": "brinewake_hub",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 17,
+        "y": 7
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_trader",
       "lines": [
         "I trade in Brinewake.",
@@ -468,10 +468,10 @@
       "role": "ferry_captain",
       "zone_id": "brinewake_hub",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_ferry_captain",
       "lines": [
         "I am the Ferry Captain of Brinewake.",
@@ -485,8 +485,8 @@
       "role": "door_keeper",
       "zone_id": "brinewake_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -503,9 +503,9 @@
       "zone_id": "slagcrown_hub",
       "cell": {
         "x": 15,
-        "y": 12
+        "y": 4
       },
-      "facing": "S",
+      "facing": "N",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Slagcrown.",
@@ -519,10 +519,10 @@
       "role": "trader",
       "zone_id": "slagcrown_hub",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 17,
+        "y": 7
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_trader",
       "lines": [
         "I trade in Slagcrown.",
@@ -536,10 +536,10 @@
       "role": "forge_master",
       "zone_id": "slagcrown_hub",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_forge_master",
       "lines": [
         "I am the Forge Master of Slagcrown.",
@@ -553,8 +553,8 @@
       "role": "door_keeper",
       "zone_id": "slagcrown_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -570,10 +570,10 @@
       "role": "warden",
       "zone_id": "eastmarch_fen_edge_entry",
       "cell": {
-        "x": 15,
-        "y": 12
+        "x": 2,
+        "y": 14
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Eastmarch Fen Edge.",
@@ -587,8 +587,8 @@
       "role": "trader",
       "zone_id": "eastmarch_fen_edge_entry",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 10,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_trader",
@@ -604,10 +604,10 @@
       "role": "fen_guide",
       "zone_id": "eastmarch_fen_edge_entry",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_fen_guide",
       "lines": [
         "I am the Fen Guide.",
@@ -621,8 +621,8 @@
       "role": "door_keeper",
       "zone_id": "eastmarch_fen_edge_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -638,10 +638,10 @@
       "role": "warden",
       "zone_id": "gloomfen_mire_entry",
       "cell": {
-        "x": 15,
-        "y": 12
+        "x": 2,
+        "y": 14
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Gloomfen Mire.",
@@ -655,8 +655,8 @@
       "role": "trader",
       "zone_id": "gloomfen_mire_entry",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 10,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_trader",
@@ -672,10 +672,10 @@
       "role": "hermit",
       "zone_id": "gloomfen_mire_entry",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_hermit",
       "lines": [
         "I am the Hermit of Gloomfen Mire.",
@@ -689,8 +689,8 @@
       "role": "door_keeper",
       "zone_id": "gloomfen_mire_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -706,10 +706,10 @@
       "role": "warden",
       "zone_id": "stormspire_entry",
       "cell": {
-        "x": 15,
-        "y": 12
+        "x": 2,
+        "y": 14
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Stormspire.",
@@ -723,8 +723,8 @@
       "role": "trader",
       "zone_id": "stormspire_entry",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 10,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_trader",
@@ -740,10 +740,10 @@
       "role": "coil_engineer",
       "zone_id": "stormspire_entry",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_coil_engineer",
       "lines": [
         "I am the Coil Engineer of Stormspire.",
@@ -757,8 +757,8 @@
       "role": "door_keeper",
       "zone_id": "stormspire_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -774,10 +774,10 @@
       "role": "warden",
       "zone_id": "ashen_shardfields_entry",
       "cell": {
-        "x": 15,
-        "y": 12
+        "x": 2,
+        "y": 14
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Ashen Shardfields.",
@@ -791,8 +791,8 @@
       "role": "trader",
       "zone_id": "ashen_shardfields_entry",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 10,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_trader",
@@ -808,10 +808,10 @@
       "role": "seer",
       "zone_id": "ashen_shardfields_entry",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_seer",
       "lines": [
         "I am the Shard Seer of the Ashen Shardfields.",
@@ -825,8 +825,8 @@
       "role": "door_keeper",
       "zone_id": "ashen_shardfields_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -842,10 +842,10 @@
       "role": "warden",
       "zone_id": "blightwood_hollow_entry",
       "cell": {
-        "x": 15,
-        "y": 12
+        "x": 2,
+        "y": 14
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Blightwood Hollow.",
@@ -859,8 +859,8 @@
       "role": "trader",
       "zone_id": "blightwood_hollow_entry",
       "cell": {
-        "x": 16,
-        "y": 13
+        "x": 10,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_trader",
@@ -876,10 +876,10 @@
       "role": "last_watcher",
       "zone_id": "blightwood_hollow_entry",
       "cell": {
-        "x": 18,
-        "y": 12
+        "x": 5,
+        "y": 4
       },
-      "facing": "S",
+      "facing": "W",
       "body": "npc_last_watcher",
       "lines": [
         "I am the Last Watcher of Blightwood Hollow.",
@@ -893,8 +893,8 @@
       "role": "door_keeper",
       "zone_id": "blightwood_hollow_door",
       "cell": {
-        "x": 21,
-        "y": 12
+        "x": 20,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_door_keeper",

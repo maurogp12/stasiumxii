@@ -17,6 +17,8 @@
       1.0
     ],
     "haze_max": 0.3,
-    "saturation": 0.58
+    "saturation": 0.58,
+    "tint_col": [0.0, 0.42, 1.0],
+    "tint_amount": 0.55
   }
 }
