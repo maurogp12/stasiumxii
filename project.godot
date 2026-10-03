@@ -37,6 +37,14 @@ window/stretch/aspect="expand"
 rendering_device/driver.windows="d3d12"
 textures/vram_compression/import_etc2_astc=true
 
+[input]
+
+board_show_grid={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194328,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+]
+}
+
 [stasium]
 
 debug/show_tile_labels=false

@@ -43,6 +43,7 @@ func _run() -> void:
 	_test_board_view_wires_adapter()
 	_test_highlights_are_overlays_and_labels_are_debug()
 	_test_grid_reveal()
+	_test_l3b_grid_pulse_glyphs()
 
 
 func _test_adapter_defaults_flat_ground() -> void:
@@ -348,11 +349,138 @@ func _test_grid_reveal() -> void:
 	truthy(tile_src.contains("set_soft_hover"), "the cell under the pointer can take a soft outline")
 	truthy(tile_src.contains("func _paint_glyph"), "zones and deploy cells draw a glyph")
 	truthy(view.contains("_set_hover_cell"), "the board tracks the cell under the pointer")
-	eq(view.contains("KEY_ALT"), false, "the full-grid key is not invented here")
+	eq(view.contains("KEY_ALT"), false, "the board does not hardcode Alt; the hold is an input action")
 	var tile := TILE_SCRIPT.new() as BoardTile
 	tile.highlight = "move"
 	eq(tile.overlay_color(), Color(0.45, 0.78, 0.92, BoardTile.HIGHLIGHT_FILL_ALPHA), "overlay_color stays the flat cyan")
 	tile.free()
+
+
+func _test_l3b_grid_pulse_glyphs() -> void:
+	var view_src := FileAccess.get_file_as_string("res://board_view.gd")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	var glyph_src := FileAccess.get_file_as_string("res://board/pc/glyph_decals.gd")
+	var proj := FileAccess.get_file_as_string("res://project.godot")
+	eq(proj.count("board_show_grid"), 1, "the full grid is one input action")
+	truthy(InputMap.has_action("board_show_grid"), "the action is loaded")
+	var bindings := InputMap.action_get_events("board_show_grid")
+	eq(bindings.size(), 1, "Alt is the one proposed binding, and it can be remapped")
+	eq((bindings[0] as InputEventKey).keycode, KEY_ALT, "the proposed default is Alt")
+	eq(view_src.contains("KEY_ALT"), false, "board_view does not name the Alt key")
+	truthy(view_src.contains("GRID_ACTION"), "the board reads that one action")
+	truthy(view_src.contains("is_action_pressed(GRID_ACTION)"), "a press shows the grid")
+	truthy(view_src.contains("is_action_released(GRID_ACTION)"), "a release clears the grid")
+	truthy(tile_src.contains("GRID_LINE_ALPHA"), "the grid line has its own alpha")
+	eq(BoardTile.GRID_LINE_WIDTH <= 1.25, true, "the grid line is thin")
+	eq(BoardTile.GRID_LINE_ALPHA < 0.30 and BoardTile.GRID_LINE_ALPHA > 0.05, true, "the grid line is low alpha")
+	var view: Node2D = load("res://board_view.gd").new()
+	var first := TILE_SCRIPT.new() as BoardTile
+	var second := TILE_SCRIPT.new() as BoardTile
+	view.tiles[Vector2i(0, 0)] = first
+	view.tiles[Vector2i(1, 0)] = second
+	var down := InputEventAction.new()
+	down.action = "board_show_grid"
+	down.pressed = true
+	eq(view._grid_hold_state(down), 1, "holding the action asks for the grid")
+	view.apply_full_grid(true)
+	eq(first.shows_grid_line(), true, "every cell draws a line while the action is held")
+	eq(second.shows_grid_line(), true, "the hold covers the whole board")
+	var up := InputEventAction.new()
+	up.action = "board_show_grid"
+	up.pressed = false
+	eq(view._grid_hold_state(up), 0, "releasing the action clears the grid")
+	view.apply_full_grid(false)
+	eq(first.shows_grid_line(), false, "the lines are gone on release")
+	eq(second.shows_grid_line(), false, "release clears every cell")
+	var other := InputEventAction.new()
+	other.action = "ui_cancel"
+	other.pressed = true
+	eq(view._grid_hold_state(other), -1, "other actions do not toggle the grid")
+	view.free()
+	first.free()
+	second.free()
+
+	eq(BoardTile.MOVE_PULSE_HZ, 0.5, "the move tile breathes at about 0.5 Hz")
+	eq(is_equal_approx(BoardTile.MOVE_PULSE_AMP, 0.08), true, "the breathe is about ±8%")
+	BoardTile.set_move_pulse_frozen(false)
+	BoardTile.set_move_pulse_time(0.0)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), 1.0), true, "the pulse starts at the authored brightness")
+	BoardTile.advance_move_pulse(0.5)
+	var peak := BoardTile.move_pulse_scale()
+	eq(is_equal_approx(peak, 1.08), true, "half a beat later the tile is about 8% brighter")
+	var left := TILE_SCRIPT.new() as BoardTile
+	var right := TILE_SCRIPT.new() as BoardTile
+	eq(is_equal_approx(left.move_pulse_scale(), right.move_pulse_scale()), true, "every move tile shares one phase")
+	eq(is_equal_approx(left.move_pulse_scale(), peak), true, "the shared phase is the board clock")
+	BoardTile.set_move_pulse_frozen(true)
+	BoardTile.advance_move_pulse(1.0)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), peak), true, "the pulse stays put during a walk")
+	eq(BoardTile.move_pulse_frozen(), true, "a walk freezes the clock")
+	BoardTile.set_move_pulse_frozen(false)
+	BoardTile.set_move_pulse_time(1.5)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), 0.92), true, "the other half of the beat is about 8% dimmer")
+	BoardTile.set_move_pulse_time(0.0)
+	left.free()
+	right.free()
+	truthy(view_src.contains("set_move_pulse_frozen(_hop_seat >= 0)"), "the board freezes the pulse for the walk")
+
+	eq(tile_src.contains("draw_arc"), false, "the occupied ring is not a line arc")
+	eq(tile_src.contains("Vector2(-7, 0)"), false, "the zone mark is not a line cross")
+	for id in ["zone", "deploy", "occupied"]:
+		var master := load("res://art/pc/look/glyphs/glyph_%s@2x.png" % id) as Texture2D
+		var one := load("res://art/pc/look/glyphs/glyph_%s.png" % id) as Texture2D
+		truthy(master != null, "%s has a 2x master" % id)
+		truthy(one != null, "%s has a 1x paint" % id)
+		if master != null:
+			eq(master.get_width(), 64, "%s master is 64 wide" % id)
+			eq(master.get_height(), 40, "%s master is 40 tall" % id)
+		if one != null:
+			eq(one.get_width(), 32, "%s 1x is 32 wide" % id)
+			eq(one.get_height(), 20, "%s 1x is 20 tall" % id)
+	truthy(glyph_src.contains("return [\"zone\", \"deploy\"]"), "a zone cell draws the zone mark and the deploy cell")
+	truthy(glyph_src.contains("return [\"occupied\"]"), "an occupied cell draws the ring")
+	var zone := (load("res://art/pc/look/glyphs/glyph_zone@2x.png") as Texture2D).get_image()
+	var zone_px := zone.get_pixel(32, 20)
+	truthy(zone_px.a > 0.4, "the zone mark is painted, not empty")
+	truthy(zone_px.b > zone_px.g and zone_px.r > zone_px.g, "the zone mark is purple")
+	truthy(zone_px.a < 0.85, "the zone mark stays translucent")
+	var ring := (load("res://art/pc/look/glyphs/glyph_occupied@2x.png") as Texture2D).get_image()
+	eq(ring.get_pixel(32, 20).a < 0.08, true, "the occupied ring has a hole")
+	var ring_px := ring.get_pixel(32, 12)
+	truthy(ring_px.a > 0.3 and ring_px.b > ring_px.g, "the occupied ring is purple")
+	var glyphs := load("res://board/pc/glyph_decals.gd")
+	eq(is_equal_approx(float(glyphs.GLYPH_ALPHA), 0.65), true, "glyphs draw at about 65%")
+	eq(is_equal_approx(glyphs.modulate_for("deploy", "zone_p1").a, float(glyphs.GLYPH_ALPHA)), true, "the deploy mark uses that alpha")
+	eq(is_equal_approx(glyphs.modulate_for("zone", "zone_p1").a, float(glyphs.GLYPH_ALPHA)), true, "the zone mark uses that alpha")
+	eq(is_equal_approx(glyphs.modulate_for("zone", "zone_p2").a, glyphs.modulate_for("deploy", "zone_p2").a), true, "both marks share one alpha on P2")
+	eq(is_equal_approx(glyphs.modulate_for("occupied", "occupied").a, float(glyphs.GLYPH_ALPHA)), true, "the occupied ring uses that alpha")
+	var held_a: Texture2D = glyphs.texture("zone")
+	var held_b: Texture2D = glyphs.texture("zone")
+	eq(held_a, held_b, "the zone texture stays referenced after the draw")
+	eq(is_equal_approx(BoardTile.DEPLOY_FILL_ALPHA, 0.35), true, "open deploy cells share a 35% fill")
+	eq(is_equal_approx(BoardTile.DEPLOY_LOCKED_ALPHA, 0.15), true, "locked deploy cells use a 15% fill")
+	eq(BoardTile.DEPLOY_P1, Color(74.0 / 255.0, 143.0 / 255.0, 224.0 / 255.0), "P1 deploy fill is #4A8FE0")
+	eq(BoardTile.DEPLOY_P2, Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0), "P2 deploy fill is #E05A4A")
+	truthy(view_src.contains("locked_p1"), "a locked P1 cell keeps the P1 tint")
+	truthy(view_src.contains("locked_p2"), "a locked P2 cell keeps the P2 tint")
+	_test_deploy_zone_paint()
+	for id in ["zone", "deploy", "occupied"]:
+		var painted := (load("res://art/pc/look/glyphs/glyph_%s@2x.png" % id) as Texture2D).get_image()
+		truthy(_glyph_has_dark_rim(painted), "%s has the dark violet rim" % id)
+
+	var flat := VISUAL_SORT.cell_to_local(Vector2i(7, 6), 0.0)
+	var raised := VISUAL_SORT.cell_to_local(Vector2i(7, 6), 2.0)
+	eq(is_equal_approx(raised.y, flat.y - 20.0), true, "two height steps lift the cell by 20 px")
+	var high := TILE_SCRIPT.new() as BoardTile
+	get_root().add_child(high)
+	high.position = raised
+	high.apply_board_data("ground", 2)
+	high.set_highlight("move")
+	var overlay := high.get_node("Highlight") as Node2D
+	eq(overlay.global_position, high.global_position, "the move tile is drawn on the raised diamond")
+	eq(is_equal_approx(overlay.global_position.y, raised.y), true, "the move tile follows the terrain height")
+	eq(is_equal_approx(overlay.global_position.y, flat.y), false, "the move tile does not stay on the flat cell")
+	high.free()
 
 
 func _test_no_height_hit_facing_los() -> void:
@@ -489,6 +617,178 @@ func _face_pad(hud: Node) -> GridContainer:
 		if child is GridContainer:
 			return child
 	return null
+
+
+## Headless. The framebuffer check lives in tests/pc/capture_l3b.gd, which needs a display.
+## This one composites the tile's own paint: team tint over the cell base, glyph at 0.65.
+func _test_deploy_zone_paint() -> void:
+	var glyphs: GDScript = load("res://board/pc/glyph_decals.gd")
+	var floor_script: GDScript = load("res://board/pc/thunderwell_floor.gd")
+	var zone_tex := glyphs.texture("zone") as Texture2D
+	var deploy_tex := glyphs.texture("deploy") as Texture2D
+	truthy(zone_tex != null and deploy_tex != null, "zone and deploy glyphs load for the colour check")
+	if zone_tex == null or deploy_tex == null:
+		return
+	var zone_img := zone_tex.get_image()
+	var deploy_img := deploy_tex.get_image()
+	truthy(zone_img != null and deploy_img != null, "glyph images are readable without a viewport")
+	if zone_img == null or deploy_img == null:
+		return
+	BoardTile.set_move_pulse_time(0.0)
+	var mover := TILE_SCRIPT.new() as BoardTile
+	mover.highlight = "move"
+	var move_fill := mover.highlight_fill_color()
+	mover.free()
+	var cap := _lum(Color(move_fill.r, move_fill.g, move_fill.b, 1.0))
+	truthy(cap > 0.80 and cap < 0.98, "the move fill cap is the painted cyan, not white")
+	var floor_path := str(floor_script.resolve_slot("floor_tiles"))
+	var floor_tex := load(floor_path) as Texture2D
+	var floor_params: Dictionary = floor_script.load_params()
+	truthy(floor_tex != null, "the thunderwell plate is readable without a viewport")
+	_sim.reset_match({
+		"seed": 3,
+		"map_id": "crosshaven",
+		"classes": ["kestrel", "ironjaw"],
+	})
+	var snap: Dictionary = _sim.snapshot()
+	_assert_deploy_paint(snap, glyphs, zone_img, deploy_img, cap, false, floor_tex, floor_params, floor_script)
+	_assert_deploy_paint(snap, glyphs, zone_img, deploy_img, cap, true, floor_tex, floor_params, floor_script)
+
+
+func _assert_deploy_paint(snap: Dictionary, glyphs: GDScript, zone_img: Image, deploy_img: Image, cap: float, thunderwell: bool, floor_tex: Texture2D, floor_params: Dictionary, floor_script: GDScript) -> void:
+	var tag := "thunderwell" if thunderwell else "crosshaven"
+	var legal0: Array[Vector2i] = _sim.legal_deploy_cells(0)
+	var legal1: Array[Vector2i] = _sim.legal_deploy_cells(1)
+	var tiles: Dictionary = {}
+	var kinds: Dictionary = {}
+	for seat in [0, 1]:
+		var legal: Array[Vector2i] = legal0 if seat == 0 else legal1
+		for cell in _sim.deploy_zone_cells(seat):
+			var tile := TILE_SCRIPT.new() as BoardTile
+			tile.grid_position = cell
+			tile.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, cell), SNAPSHOT_TILES.elevation_at(snap, cell))
+			if thunderwell and floor_tex != null:
+				_wear_thunderwell(tile, cell, floor_tex, floor_params, floor_script)
+			var open_kind := "zone_p1" if seat == 0 else "zone_p2"
+			var locked_kind := "locked_p1" if seat == 0 else "locked_p2"
+			tile.highlight = open_kind if legal.has(cell) else locked_kind
+			tiles[cell] = tile
+			kinds[cell] = tile.highlight
+	_check_deploy_phase(tag, "open", tiles, kinds, glyphs, zone_img, deploy_img, cap)
+	for cell in tiles.keys():
+		var locked_tile: BoardTile = tiles[cell]
+		var locked_kind := "locked_p2" if str(kinds[cell]).ends_with("p2") else "locked_p1"
+		locked_tile.highlight = locked_kind
+		kinds[cell] = locked_kind
+	_check_deploy_phase(tag, "locked", tiles, kinds, glyphs, zone_img, deploy_img, cap)
+	for cell in tiles.keys():
+		(tiles[cell] as BoardTile).free()
+
+
+func _check_deploy_phase(tag: String, phase: String, tiles: Dictionary, kinds: Dictionary, glyphs: GDScript, zone_img: Image, deploy_img: Image, cap: float) -> void:
+	for cell in tiles.keys():
+		var tile: BoardTile = tiles[cell]
+		var kind := str(kinds[cell])
+		var fill := tile.highlight_fill_color()
+		eq(fill, _wanted_deploy_fill(kind), "%s %s %s paints %s" % [tag, phase, cell, kind])
+		truthy(_lum(Color(fill.r, fill.g, fill.b, 1.0)) < 0.75, "%s %s %s fill is not white" % [tag, phase, cell])
+		var with_glyph := kind.begins_with("zone_")
+		var peak := _deploy_peak(tile.cell_base_color(), fill, zone_img, deploy_img, glyphs, with_glyph)
+		truthy(peak < cap, "%s %s %s stays under the move fill (%.3f < %.3f)" % [tag, phase, cell, peak, cap])
+		for step in [Vector2i(1, 0), Vector2i(0, 1)]:
+			var other: Vector2i = (cell as Vector2i) + step
+			if not tiles.has(other) or str(kinds[other]) != kind:
+				continue
+			var neighbour: BoardTile = tiles[other]
+			eq(neighbour.highlight_fill_color(), fill, "%s %s %s and %s share one fill" % [tag, phase, cell, other])
+			var here := _deploy_final(tile.cell_base_color(), fill, zone_img, deploy_img, glyphs, with_glyph)
+			var swapped := _deploy_final(tile.cell_base_color(), neighbour.highlight_fill_color(), zone_img, deploy_img, glyphs, with_glyph)
+			truthy(_colors_match(here, swapped), "%s %s %s matches %s" % [tag, phase, cell, other])
+
+
+func _wanted_deploy_fill(kind: String) -> Color:
+	var base := BoardTile.DEPLOY_P1
+	if kind.ends_with("p2"):
+		base = BoardTile.DEPLOY_P2
+	if kind.begins_with("locked"):
+		return Color(base.r * BoardTile.DEPLOY_LOCKED_SCALE, base.g * BoardTile.DEPLOY_LOCKED_SCALE, base.b * BoardTile.DEPLOY_LOCKED_SCALE, BoardTile.DEPLOY_LOCKED_ALPHA)
+	return Color(base.r, base.g, base.b, BoardTile.DEPLOY_FILL_ALPHA)
+
+
+func _wear_thunderwell(tile: BoardTile, cell: Vector2i, floor_tex: Texture2D, params: Dictionary, floor_script: GDScript) -> void:
+	var count: int = floor_script.strip_slots(floor_tex.get_width(), floor_tex.get_height())
+	var routes: Array = floor_script.board_routes(params)
+	var plan: Dictionary = floor_script.tile_plan(cell, routes)
+	var index := int(plan.get("slot", 0))
+	var slice_w := float(floor_tex.get_width()) / float(maxi(count, 1))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = floor_tex
+	atlas.region = Rect2(slice_w * float(index), 0.0, slice_w, float(floor_tex.get_height()))
+	var grade_raw: Array = params.get("floor_grade", [1.0, 1.0, 1.0])
+	tile.set_look_grade(Color(float(grade_raw[0]), float(grade_raw[1]), float(grade_raw[2])))
+	tile.set_look_lift(float(params.get("floor_lift", 1.0)))
+	tile.set_look_floor(atlas)
+
+
+func _deploy_final(base: Color, tint: Color, zone_img: Image, deploy_img: Image, glyphs: GDScript, with_glyph: bool) -> Color:
+	var field := _over(Color(base.r, base.g, base.b, 1.0), tint)
+	if not with_glyph:
+		return field
+	var alpha := float(glyphs.GLYPH_ALPHA)
+	var zone_px := zone_img.get_pixel(int(zone_img.get_width() / 2), int(zone_img.get_height() / 2))
+	var deploy_px := deploy_img.get_pixel(int(deploy_img.get_width() / 2), int(deploy_img.get_height() / 2))
+	field = _over(field, Color(zone_px.r, zone_px.g, zone_px.b, zone_px.a * alpha))
+	return _over(field, Color(deploy_px.r, deploy_px.g, deploy_px.b, deploy_px.a * alpha))
+
+
+func _deploy_peak(base: Color, tint: Color, zone_img: Image, deploy_img: Image, glyphs: GDScript, with_glyph: bool) -> float:
+	var field := _over(Color(base.r, base.g, base.b, 1.0), tint)
+	var peak := _lum(field)
+	if not with_glyph:
+		return peak
+	var alpha := float(glyphs.GLYPH_ALPHA)
+	var height := mini(zone_img.get_height(), deploy_img.get_height())
+	var width := mini(zone_img.get_width(), deploy_img.get_width())
+	for y in height:
+		for x in width:
+			var zone_px := zone_img.get_pixel(x, y)
+			var deploy_px := deploy_img.get_pixel(x, y)
+			var stacked := _over(field, Color(zone_px.r, zone_px.g, zone_px.b, zone_px.a * alpha))
+			stacked = _over(stacked, Color(deploy_px.r, deploy_px.g, deploy_px.b, deploy_px.a * alpha))
+			peak = maxf(peak, _lum(stacked))
+	return peak
+
+
+func _over(dst: Color, src: Color) -> Color:
+	var out_a := src.a + dst.a * (1.0 - src.a)
+	if out_a <= 0.0001:
+		return Color(0, 0, 0, 0)
+	return Color(
+		(src.r * src.a + dst.r * dst.a * (1.0 - src.a)) / out_a,
+		(src.g * src.a + dst.g * dst.a * (1.0 - src.a)) / out_a,
+		(src.b * src.a + dst.b * dst.a * (1.0 - src.a)) / out_a,
+		out_a
+	)
+
+
+func _colors_match(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.001 and absf(a.g - b.g) < 0.001 and absf(a.b - b.b) < 0.001 and absf(a.a - b.a) < 0.001
+
+
+func _lum(color: Color) -> float:
+	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
+
+
+func _glyph_has_dark_rim(image: Image) -> bool:
+	var want := Color(58.0 / 255.0, 31.0 / 255.0, 85.0 / 255.0)
+	for y in image.get_height():
+		for x in image.get_width():
+			var px := image.get_pixel(x, y)
+			if px.a < 0.30 or px.a > 0.70:
+				continue
+			if absf(px.r - want.r) < 0.08 and absf(px.g - want.g) < 0.08 and absf(px.b - want.b) < 0.10:
+				return true
+	return false
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

@@ -69,6 +69,8 @@ const PLAY_BOTTOM: float = TOUCH.PLAY_BOTTOM
 const VIEW_W: float = TOUCH.VIEW_W
 const VIEW_H: float = TOUCH.VIEW_H
 const PAN_LIMIT := 220.0
+## Proposed full-grid hold. One remappable action; Alt is only the default binding.
+const GRID_ACTION := "board_show_grid"
 
 var tiles: Dictionary = {}
 var selected_tile: BoardTile = null
@@ -226,6 +228,7 @@ func local_to_grid(point: Vector2) -> Vector2i:
 
 
 func _process(delta: float) -> void:
+	_tick_move_pulse(delta)
 	if not _booted:
 		return
 	var snap: Dictionary = _sim().snapshot()
@@ -279,10 +282,41 @@ func _timer_expired(result: Dictionary) -> bool:
 	return false
 
 
+func _grid_hold_state(event: InputEvent) -> int:
+	if event.is_action_pressed(GRID_ACTION):
+		return 1
+	if event.is_action_released(GRID_ACTION):
+		return 0
+	return -1
+
+
+func apply_full_grid(on: bool) -> void:
+	for tile in tiles.values():
+		(tile as BoardTile).set_grid_line(on)
+
+
+func _tick_move_pulse(delta: float) -> void:
+	# The walk keeps the brightness where it was. Every other move tile shares one phase.
+	BoardTile.set_move_pulse_frozen(_hop_seat >= 0)
+	if BoardTile.move_pulse_frozen():
+		return
+	BoardTile.advance_move_pulse(delta)
+	for tile in tiles.values():
+		var board_tile := tile as BoardTile
+		if board_tile != null and board_tile.pulses_move():
+			board_tile.queue_move_pulse()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if BoardTile.consume_debug_label_key(event):
 		for tile in tiles.values():
 			(tile as BoardTile).queue_redraw()
+		return
+	var grid_hold := _grid_hold_state(event)
+	if grid_hold >= 0:
+		apply_full_grid(grid_hold == 1)
+		if is_inside_tree():
+			get_viewport().set_input_as_handled()
 		return
 	if event is InputEventMouseMotion and not _panning and not TOUCH.is_emulated_mouse(event):
 		var hovered := _cell_under_pointer(event)
@@ -1411,14 +1445,14 @@ func _paint_deploy_highlights(snap: Dictionary) -> void:
 	var legal0: Array[Vector2i] = _sim().legal_deploy_cells(0)
 	var legal1: Array[Vector2i] = _sim().legal_deploy_cells(1)
 	for cell in _sim().deploy_zone_cells(0):
-		var kind := "locked" if bool(ready.get(0, false)) else "zone_p1"
-		if not bool(ready.get(0, false)) and not legal0.has(cell):
-			kind = "locked"
+		var kind := "zone_p1"
+		if bool(ready.get(0, false)) or not legal0.has(cell):
+			kind = "locked_p1"
 		_tile_at(cell).set_highlight(kind)
 	for cell in _sim().deploy_zone_cells(1):
-		var kind := "locked" if bool(ready.get(1, false)) else "zone_p2"
-		if not bool(ready.get(1, false)) and not legal1.has(cell):
-			kind = "locked"
+		var kind := "zone_p2"
+		if bool(ready.get(1, false)) or not legal1.has(cell):
+			kind = "locked_p2"
 		_tile_at(cell).set_highlight(kind)
 	for unit in snap.get("units", []):
 		if not bool(unit.get("placed", false)):

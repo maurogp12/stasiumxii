@@ -11,12 +11,31 @@ const _KoliseoArt := preload("res://board/koliseo_art.gd")
 const OVERLAY_Z: int = 1
 const HIGHLIGHT_FILL_ALPHA: float = 0.5
 const LABEL_SETTING := "stasium/debug/show_tile_labels"
+const GLYPHS := preload("res://board/pc/glyph_decals.gd")
+## Full-grid hold. Thin, and faint enough that a move tile still reads.
+const GRID_LINE_WIDTH := 1.0
+const GRID_LINE_ALPHA := 0.18
+## One clock for every move tile. About ±8% at 0.5 Hz. Frozen while a walk plays.
+const MOVE_PULSE_HZ := 0.5
+const MOVE_PULSE_AMP := 0.08
+## Deploy zones. Same hues as the L5 hex rings. One alpha for every open cell.
+const DEPLOY_P1 := Color(74.0 / 255.0, 143.0 / 255.0, 224.0 / 255.0)
+const DEPLOY_P2 := Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0)
+const DEPLOY_FILL_ALPHA := 0.35
+const DEPLOY_LOCKED_ALPHA := 0.15
+## Locked cells keep the team hue and sit a little darker.
+const DEPLOY_LOCKED_SCALE := 0.72
+
+static var _move_pulse_time: float = 0.0
+static var _move_pulse_frozen: bool = false
 
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
 var highlight: String = ""
 ## Soft outline on the cell under the pointer. Not a grid.
 var soft_hover: bool = false
+## Alt-hold grid. One line per cell, cleared on release.
+var grid_line: bool = false
 var _reveal: float = 0.0
 var _reveal_target: float = 0.0
 var _shown_highlight: String = ""
@@ -321,6 +340,57 @@ func set_soft_hover(on: bool) -> void:
 	_request_paint()
 
 
+func set_grid_line(on: bool) -> void:
+	if grid_line == on:
+		return
+	grid_line = on
+	_request_paint()
+
+
+func shows_grid_line() -> bool:
+	return grid_line
+
+
+static func move_pulse_scale_at(time: float) -> float:
+	return 1.0 + MOVE_PULSE_AMP * sin(time * TAU * MOVE_PULSE_HZ)
+
+
+static func move_pulse_scale() -> float:
+	return move_pulse_scale_at(_move_pulse_time)
+
+
+static func move_pulse_time() -> float:
+	return _move_pulse_time
+
+
+static func set_move_pulse_time(time: float) -> void:
+	_move_pulse_time = time
+
+
+static func advance_move_pulse(delta: float) -> void:
+	if _move_pulse_frozen:
+		return
+	_move_pulse_time += delta
+
+
+static func set_move_pulse_frozen(on: bool) -> void:
+	_move_pulse_frozen = on
+
+
+static func move_pulse_frozen() -> bool:
+	return _move_pulse_frozen
+
+
+func pulses_move() -> bool:
+	var kind := highlight if highlight != "" else _shown_highlight
+	return kind == "move" and _reveal > 0.001
+
+
+func queue_move_pulse() -> void:
+	if _overlay != null and is_instance_valid(_overlay):
+		_overlay.queue_redraw()
+
+
 func _process(delta: float) -> void:
 	if is_equal_approx(_reveal, _reveal_target):
 		if _reveal_target <= 0.0:
@@ -351,6 +421,48 @@ func elevation_text() -> String:
 ## Terrain fill only. Highlights never replace this.
 func fill_color() -> Color:
 	return _terrain_color()
+
+
+## Opaque color under the highlight. A look floor uses the plate shader at the
+## slot center. Otherwise this is the terrain fill.
+func cell_base_color() -> Color:
+	if _look_floor != null:
+		var image := _look_floor.get_image()
+		if image != null and not image.is_empty():
+			var sample := image.get_pixel(int(image.get_width() / 2), int(image.get_height() / 2))
+			var lift := clampf(_look_lift, 0.05, 1.0)
+			var grade := Color(_look_grade.r * _look_pulse, _look_grade.g * _look_pulse, _look_grade.b * _look_pulse, 1.0)
+			return Color(
+				pow(maxf(sample.r, 0.0002), lift) * grade.r,
+				pow(maxf(sample.g, 0.0002), lift) * grade.g,
+				pow(maxf(sample.b, 0.0002), lift) * grade.b,
+				1.0
+			)
+	return Color(fill_color().r, fill_color().g, fill_color().b, 1.0)
+
+
+## The polygon color paint_highlight_overlay draws, before the reveal fade.
+## overlay_color() stays the flat catalog color. This is the paint that hits the cell.
+func highlight_fill_color() -> Color:
+	var kind := highlight if highlight != "" else _shown_highlight
+	if kind == "":
+		return Color(0, 0, 0, 0)
+	var saved := highlight
+	highlight = kind
+	var color := overlay_color()
+	highlight = saved
+	if color.a <= 0.0:
+		return color
+	if kind == "move":
+		color = Color(0.55, 0.93, 1.0, 0.88)
+		var breathe := move_pulse_scale()
+		color.r = minf(color.r * breathe, 1.0)
+		color.g = minf(color.g * breathe, 1.0)
+		color.b = minf(color.b * breathe, 1.0)
+	var deploy := _deploy_tint(kind)
+	if deploy.a > 0.0:
+		color = deploy
+	return color
 
 
 ## Semi-transparent copy of the flat highlight color, or alpha 0 when idle.
@@ -391,6 +503,8 @@ static func consume_debug_label_key(event: InputEvent) -> bool:
 
 
 func paint_highlight_overlay(canvas: CanvasItem) -> void:
+	if grid_line:
+		_paint_grid_line(canvas)
 	var kind := highlight if highlight != "" else _shown_highlight
 	if kind == "" and soft_hover:
 		var hover_pts := _diamond_points()
@@ -398,21 +512,26 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		hover_line.append(hover_pts[0])
 		canvas.draw_polyline(hover_line, Color(0.72, 0.90, 0.82, 0.55), 1.6, true)
 		return
-	var saved := highlight
-	highlight = kind
-	var color := overlay_color()
-	highlight = saved
+	var color := highlight_fill_color()
 	if color.a <= 0.0 or _reveal <= 0.001:
 		return
 	var points := _diamond_points()
 	# Every theme uses the Thunderwell move tile: a bright fill and a rim that
 	# sits on the overlay, above the floor. overlay_color() stays the flat cyan.
+	# The overlay is a child of the tile, so a raised cell carries the move tile.
 	var line := Color(color.r, color.g, color.b, 0.95)
 	var width := 4.2 if kind == "origin" or kind == "landing" else (3.4 if kind == "range" else 1.8)
 	if kind == "move":
-		color = Color(0.55, 0.93, 1.0, 0.88)
 		line = Color(0.75, 1.0, 1.0, 1.0)
 		width = 4.0
+		var breathe := move_pulse_scale()
+		line.r = minf(line.r * breathe, 1.0)
+		line.g = minf(line.g * breathe, 1.0)
+		line.b = minf(line.b * breathe, 1.0)
+	var deploy := _deploy_tint(kind)
+	if deploy.a > 0.0:
+		line = Color(deploy.r, deploy.g, deploy.b, minf(0.55, deploy.a + 0.20))
+		width = 1.6
 	color.a *= _reveal
 	line.a *= _reveal
 	canvas.draw_colored_polygon(points, color)
@@ -420,20 +539,45 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		canvas.draw_polyline(outline, line, width, true)
-	if kind == "zone_p1" or kind == "zone_p2" or kind == "occupied":
-		_paint_glyph(canvas, kind)
+	_paint_glyph(canvas, kind)
 	if kind == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48, _reveal), 2.0, true)
 		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48, _reveal), 2.0, true)
 
 
+func _paint_grid_line(canvas: CanvasItem) -> void:
+	var pts := _diamond_points()
+	var outline := PackedVector2Array(pts)
+	outline.append(pts[0])
+	canvas.draw_polyline(outline, Color(0.78, 0.90, 0.84, GRID_LINE_ALPHA), GRID_LINE_WIDTH, true)
+
+
 func _paint_glyph(canvas: CanvasItem, kind: String) -> void:
-	var ink := Color(0.93, 0.96, 0.90, 0.92 * _reveal)
-	if kind == "occupied":
-		canvas.draw_arc(Vector2.ZERO, 6.0, 0.0, TAU, 18, ink, 1.5, true)
+	var ids: Array[String] = GLYPHS.ids_for_highlight(kind)
+	if ids.is_empty() or _reveal <= 0.001:
 		return
-	canvas.draw_line(Vector2(-7, 0), Vector2(7, 0), ink, 1.8, true)
-	canvas.draw_line(Vector2(0, -5), Vector2(0, 5), ink, 1.8, true)
+	for id in ids:
+		var tex := GLYPHS.texture(id) as Texture2D
+		if tex == null:
+			continue
+		var mod := GLYPHS.modulate_for(id, kind)
+		var tint := Color(mod.r, mod.g, mod.b, mod.a * _reveal)
+		var size: Vector2 = GLYPHS.draw_size(tex)
+		canvas.draw_texture_rect(tex, Rect2(-size * 0.5, size), false, tint)
+
+
+## Open cells share one alpha. Locked cells use the same hue, darker and thinner.
+func _deploy_tint(kind: String) -> Color:
+	var base := DEPLOY_P1
+	if kind.ends_with("p2"):
+		base = DEPLOY_P2
+	elif not kind.ends_with("p1"):
+		return Color(0, 0, 0, 0)
+	if kind.begins_with("locked"):
+		return Color(base.r * DEPLOY_LOCKED_SCALE, base.g * DEPLOY_LOCKED_SCALE, base.b * DEPLOY_LOCKED_SCALE, DEPLOY_LOCKED_ALPHA)
+	if kind.begins_with("zone_"):
+		return Color(base.r, base.g, base.b, DEPLOY_FILL_ALPHA)
+	return Color(0, 0, 0, 0)
 
 
 func _ensure_overlay() -> void:
@@ -443,6 +587,7 @@ func _ensure_overlay() -> void:
 	_overlay.name = "Highlight"
 	_overlay.z_index = OVERLAY_Z
 	_overlay.z_as_relative = true
+	_overlay.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	_overlay.host = self
 	add_child(_overlay)
 
@@ -481,13 +626,15 @@ func _highlight_flat_color() -> Color:
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":
-			color = Color(0.36, 0.72, 0.52, 1.0)
+			color = Color(DEPLOY_P1.r, DEPLOY_P1.g, DEPLOY_P1.b, 1.0)
 		"zone_p2":
-			color = Color(0.78, 0.42, 0.42, 1.0)
+			color = Color(DEPLOY_P2.r, DEPLOY_P2.g, DEPLOY_P2.b, 1.0)
 		"occupied":
 			color = Color(0.78, 0.62, 0.22, 1.0)
-		"locked":
-			color = Color(0.42, 0.40, 0.48, 1.0)
+		"locked", "locked_p1":
+			color = Color(DEPLOY_P1.r * DEPLOY_LOCKED_SCALE, DEPLOY_P1.g * DEPLOY_LOCKED_SCALE, DEPLOY_P1.b * DEPLOY_LOCKED_SCALE, 1.0)
+		"locked_p2":
+			color = Color(DEPLOY_P2.r * DEPLOY_LOCKED_SCALE, DEPLOY_P2.g * DEPLOY_LOCKED_SCALE, DEPLOY_P2.b * DEPLOY_LOCKED_SCALE, 1.0)
 		"blocked":
 			color = Color(0.14, 0.14, 0.16, 1.0)
 	if is_selected and highlight != "blocked":
