@@ -59,15 +59,21 @@ func _test_shipped(result: Dictionary) -> void:
 	var stats: Array = result["stat_names"]
 	eq(stats.has("Resist"), true, "Resist is a stat")
 	eq(stats.has("Ward"), false, "Ward is not a stat")
-	eq(str(result["normal_mix_hours"]), "Open", "normal-mix hours stay Open")
-	eq(str(result["premium_mix_hours"]), "Open", "premium normal-mix hours stay Open")
+	var xp_bonus := float(inputs["premium"]["xp_bonus"])
+	var targets: Dictionary = inputs["targets"]
+	var mix_expect := _mix_hours(curve, inputs)
+	near(float(result["normal_mix_hours"]), mix_expect, "free normal-mix hours use the mission minutes")
+	near(float(result["premium_mix_hours"]), mix_expect / (1.0 + xp_bonus), "premium normal-mix hours apply the XP bonus")
+	eq(Balance.in_accept_band(float(result["normal_mix_hours"]), inputs), true, "free normal-mix hours are inside 130-170")
+	var prem_lo := float(targets["hours_to_cap_min"]) / (1.0 + xp_bonus)
+	var prem_hi := float(targets["hours_to_cap_max"]) / (1.0 + xp_bonus)
+	var prem_mix := float(result["premium_mix_hours"])
+	eq(prem_mix + 0.0001 >= prem_lo and prem_mix - 0.0001 <= prem_hi, true, "premium normal-mix hours sit near 120")
 	near(float(curve["pace_start"]), 1.6, "pace_start is the spec factor")
 	near(float(curve["pace_ratio"]), 0.9532, "pace_ratio is the spec factor")
 	var expect := _paced_hours(curve, inputs)
 	near(float(result["world_only_hours"]), expect, "free world-only hours use the pace factor")
-	var xp_bonus := float(inputs["premium"]["xp_bonus"])
 	near(float(result["premium_world_hours"]), expect / (1.0 + xp_bonus), "premium world-only hours apply the XP bonus")
-	var targets: Dictionary = inputs["targets"]
 	eq(float(targets["hours_to_cap"]), 150.0, "free target is 150 hours")
 	eq(float(targets["hours_to_cap_min"]), 130.0, "accept band starts at 130 hours")
 	eq(float(targets["hours_to_cap_max"]), 170.0, "accept band ends at 170 hours")
@@ -78,17 +84,35 @@ func _test_shipped(result: Dictionary) -> void:
 	near(float(targets["premium_hours"]), float(targets["hours_to_cap"]) / (1.0 + xp_bonus), "120 hours is the 150-hour clock with the XP bonus")
 	eq(Balance.in_accept_band(float(result["world_only_hours"]), inputs), false, "exact-factor world-only hours are outside the 130-170 band")
 	eq(absf(float(result["premium_world_hours"]) - float(targets["premium_hours"])) > 1.0, true, "premium world-only hours are reported beside the 120 hour target")
-	eq(_has_finding(result, "normal_mix_band", "open"), true, "the normal-mix band stays Open while mission minutes are Open")
+	eq(_has_finding(result, "normal_mix_band", "pass"), true, "the normal-mix clocks are scored")
+	eq(_has_finding(result, "mission_minutes", "pass"), true, "mission minutes are the proposed values")
+	near(float(result["world_only_slower"]), float(result["world_only_hours"]) / float(result["normal_mix_hours"]), "world-only slowdown is the ratio of the two clocks")
+	eq(float(result["world_only_slower"]) + 0.0001 >= float(targets["world_only_slower_min"]), true, "world-only is at least 1.15 times the mix")
+	eq(float(result["world_only_slower"]) - 0.0001 <= float(targets["world_only_slower_max"]), true, "world-only is at most 1.2 times the mix")
+	var shares: Dictionary = result["xp_shares"]
+	eq(float(shares["world"]) <= float(targets["max_source_share"]), true, "world XP share stays at or under half")
+	eq(float(shares["dungeon"]) <= float(targets["max_source_share"]), true, "dungeon XP share stays at or under half")
+	eq(float(shares["mission"]) <= float(targets["max_source_share"]), true, "mission XP share stays at or under half")
+	var got_marks: Dictionary = result["milestone_hours"]
+	var want_marks: Dictionary = targets["milestone_hours"]
+	for key in want_marks.keys():
+		var want := float(want_marks[key])
+		var got := float(got_marks[key])
+		eq(absf(got - want) / want <= float(targets["milestone_near"]), true, "milestone %s is near the 4.8 hour" % str(key))
+	eq(absf(float(result["last_level_hours"]) - float(targets["last_level_hours"])) / float(targets["last_level_hours"]) <= float(targets["milestone_near"]), true, "the last level step is near its hour")
 	eq(Premium.is_premium(), true, "offline premium check returns true")
 	eq(str(result["text"]).find("Premium target") >= 0, true, "the table prints the premium clock")
 	eq(str(inputs["per_point_values"]), "Open", "per-point values stay Open")
-	eq(str(inputs["minutes"]["mission"]), "Open", "mission minutes stay Open")
+	eq(int(inputs["minutes"]["mission_talk"]), 3, "talk is 3 minutes")
+	eq(int(inputs["minutes"]["mission_reach"]), 5, "reach is 5 minutes")
+	eq(int(inputs["minutes"]["mission_defeat_fights"]) * int(inputs["minutes"]["mission_defeat_per_fight"]), 12, "defeat is 3 minutes times 4 fights")
+	eq(int(inputs["minutes"]["mission_clear"]), 20, "clearing a dungeon is 20 minutes")
 	eq(str(inputs["profiles"]["dungeon_heavy"]), "Open", "dungeon-heavy mix stays Open")
 	eq(inputs["koliseo_sets_off"], true, "sets stay off in Koliseo")
 	var ratio := float(result["dungeon_vs_world"])
 	eq(ratio >= float(targets["dungeon_vs_world_min"]) and ratio <= float(targets["dungeon_vs_world_max"]), true, "normal star is inside the dungeon XP band")
 	eq(float(result["world_only_hours"]) > 0.0, true, "world-only reaches the cap")
-	eq(_has_finding(result, "mission_minutes", "open"), true, "mission time is reported Open")
+	eq(_has_finding(result, "mission_minutes", "open"), false, "mission time is no longer Open")
 	eq(_has_finding(result, "per_point_values", "open"), true, "per-point values are reported Open")
 	eq(_has_status(result, "outside"), true, "the table records checks the raw numbers miss")
 	eq(result["zone_rows"].size(), 11, "eleven zone bands are in the table")
@@ -174,6 +198,33 @@ func _test_short_curve() -> void:
 	var world_min := float(inputs["minutes"]["world_fight"])
 	near(float(result["world_only_hours"]), float(cap - 1) * world_min / world_xp / 60.0, "hours follow the short curve's length")
 	near(float(result["premium_world_hours"]), float(result["world_only_hours"]) / (1.0 + float(inputs["premium"]["xp_bonus"])), "a curve without pace still applies the premium XP bonus")
+
+
+func _mix_hours(curve: Dictionary, inputs: Dictionary) -> float:
+	var minutes: Dictionary = inputs["minutes"]
+	var shares: Dictionary = inputs["xp_share_of_step"]
+	var mix: Dictionary = inputs["profiles"]["normal_mix"]
+	var defeat := float(minutes["mission_defeat_fights"]) * float(minutes["mission_defeat_per_fight"])
+	var each := float(mix["mission"]) / 4.0
+	var star := float(inputs["normal_star"])
+	var rate := 0.0
+	rate += float(mix["world"]) * float(shares["world_fight"]) / float(minutes["world_fight"])
+	rate += float(mix["dungeon"]) * float(shares["dungeon_win"]) * star / float(minutes["dungeon_run"])
+	rate += each * float(shares["mission_talk"]) / float(minutes["mission_talk"])
+	rate += each * float(shares["mission_reach"]) / float(minutes["mission_reach"])
+	rate += each * float(shares["mission_defeat"]) / defeat
+	rate += each * float(shares["mission_clear_dungeon"]) / float(minutes["mission_clear"])
+	var start := 1.0
+	var ratio := 1.0
+	if curve.has("pace_start") and curve.has("pace_ratio"):
+		start = float(curve["pace_start"])
+		ratio = float(curve["pace_ratio"])
+	var cap := int(curve["max_level"])
+	var hours := 0.0
+	for level in range(1, cap):
+		var pace := start * pow(ratio, float(level - 1))
+		hours += 1.0 / (rate * pace) / 60.0
+	return hours
 
 
 func _paced_hours(curve: Dictionary, inputs: Dictionary) -> float:

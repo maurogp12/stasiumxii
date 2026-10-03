@@ -2,6 +2,6 @@ WP15 balance report. No clip: the spec's media for this package is the printed t
 
 Reference A remains the open-world bar. This report is the before/after for the numbers: the curve, the 4.8 rates, and the checks that are still Open.
 
-Cap is max_level from level_curve.json. The stat is Resist. Mission minutes, the dungeon-heavy mix, party time, and per-point stat values are Open because the spec does not give them.
+Cap is max_level from level_curve.json. The stat is Resist. The dungeon-heavy mix, party time, and per-point stat values stay Open.
 
-Option B pace is pace_start and pace_ratio in level_curve.json: 1.6 and 0.9532. The table prints free and premium world-only hours from that factor. The 150 h free target (accept 130-170) and the 120 h premium target are the normal-mix clocks. Mission minutes are still Open, so those two clocks are not scored.
+Option B pace is pace_start and pace_ratio in level_curve.json: 1.6 and 0.9532. That factor is not retuned. World-only hours stay on the table and are not scored against 130-170. Mission minutes are the proposed values (talk 3, reach 5, defeat 4 fights at 3 minutes, clear 20). The normal mix is 50% world / 30% dungeons / 20% missions, split evenly across those four mission types. The free normal-mix clock is scored against 130-170, and the premium clock against the same band divided by the 25% XP bonus.

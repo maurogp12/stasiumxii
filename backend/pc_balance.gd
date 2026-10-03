@@ -81,20 +81,93 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 	_star_findings(inputs, world_min, dung_min, world_xp, dung_xp, ratio_lo, ratio_hi, findings)
 	_tier_findings(inputs, findings)
 	_kit_findings(inputs, findings)
-	if str(minutes.get("mission", "")) == "Open":
-		findings.append(_finding("mission_minutes", "open", "Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open."))
 	var free_target := _num(targets.get("hours_to_cap", 0))
 	var band_lo := _num(targets.get("hours_to_cap_min", 0))
 	var band_hi := _num(targets.get("hours_to_cap_max", 0))
 	var premium_target := _num(targets.get("premium_hours", 0))
-	findings.append(_finding(
-		"normal_mix_band",
-		"open",
-		"Free normal-mix target %.0f h (accept %.0f-%.0f) and premium target %.0f h are not scored. Mission minutes are Open. Pace is pace_start %.4f and pace_ratio %.4f from the curve. World-only free is %.2f h and premium world-only is %.2f h." % [
-			free_target, band_lo, band_hi, premium_target,
-			_pace_start(curve), _pace_ratio(curve), world_hours, premium_hours,
-		],
-	))
+	var mix_rate := _mix_xp_per_minute(inputs)
+	var mix_hours: Variant = "Open"
+	var premium_mix: Variant = "Open"
+	var xp_by_source: Dictionary = {}
+	var milestones: Dictionary = {}
+	var last_step: Variant = "Open"
+	var slower: Variant = "Open"
+	if mix_rate <= 0.0:
+		findings.append(_finding("mission_minutes", "open", "Mission duration is Open, so normal-mix hours are not scored."))
+		findings.append(_finding(
+			"normal_mix_band",
+			"open",
+			"Free normal-mix target %.0f h (accept %.0f-%.0f) and premium target %.0f h are not scored. Mission minutes are Open." % [
+				free_target, band_lo, band_hi, premium_target,
+			],
+		))
+	else:
+		var free_mix := _paced_profile_hours(curve, mix_rate)
+		var prem_mix := free_mix
+		if xp_bonus > -0.999:
+			prem_mix = free_mix / (1.0 + xp_bonus)
+		mix_hours = free_mix
+		premium_mix = prem_mix
+		xp_by_source = _xp_shares(inputs, mix_rate)
+		milestones = _milestone_hours(curve, inputs, mix_rate)
+		last_step = _last_step_hours(curve, mix_rate)
+		if free_mix > 0.0:
+			slower = world_hours / free_mix
+		var mix_faults: Array = []
+		var paced := _pace_start(curve) > 0.0 and curve.has("pace_start") and curve.has("pace_ratio")
+		if paced and not in_accept_band(free_mix, inputs):
+			mix_faults.append("free normal-mix hours are outside the accept band")
+		var prem_lo := band_lo
+		var prem_hi := band_hi
+		if xp_bonus > -0.999:
+			prem_lo = band_lo / (1.0 + xp_bonus)
+			prem_hi = band_hi / (1.0 + xp_bonus)
+		if paced and (prem_mix + 0.0001 < prem_lo or prem_mix - 0.0001 > prem_hi):
+			mix_faults.append("premium normal-mix hours are outside the scaled accept band")
+		var slow_lo := _num(targets.get("world_only_slower_min", 0))
+		var slow_hi := _num(targets.get("world_only_slower_max", 0))
+		if slow_lo > 0.0 and slow_hi > 0.0 and typeof(slower) != TYPE_STRING:
+			var slow_num := float(slower)
+			if slow_num + 0.0001 < slow_lo or slow_num - 0.0001 > slow_hi:
+				mix_faults.append("world-only slowdown is outside the corrected band")
+		var share_cap := _num(targets.get("max_source_share", 0))
+		if share_cap > 0.0:
+			for group in xp_by_source.keys():
+				if float(xp_by_source[group]) > share_cap + 0.0001:
+					mix_faults.append("%s XP share is above the source cap" % str(group))
+		if paced:
+			_milestone_faults(inputs, milestones, last_step, mix_faults)
+		for fault in mix_faults:
+			errors.append(str(fault))
+		findings.append(_finding(
+			"mission_minutes",
+			"pass",
+			"Talk 3 min, reach 5 min, defeat is fights times minutes per fight, clear 20 min. Missions split the mission share evenly.",
+		))
+		findings.append(_finding(
+			"normal_mix_band",
+			"pass" if mix_faults.is_empty() else "outside",
+			"Free normal mix %.2f h (accept %.0f-%.0f). Premium normal mix %.2f h (target %.0f, scaled band %.0f-%.0f). Pace %.4f and %.4f. World-only %.2f h is not scored against that band." % [
+				free_mix, band_lo, band_hi, prem_mix, premium_target, prem_lo, prem_hi,
+				_pace_start(curve), _pace_ratio(curve), world_hours,
+			],
+		))
+		findings.append(_finding(
+			"xp_shares",
+			"pass" if mix_faults.is_empty() else "outside",
+			"XP by play time: world %.1f%%, dungeons %.1f%%, missions %.1f%%." % [
+				float(xp_by_source.get("world", 0)) * 100.0,
+				float(xp_by_source.get("dungeon", 0)) * 100.0,
+				float(xp_by_source.get("mission", 0)) * 100.0,
+			],
+		))
+		findings.append(_finding(
+			"world_only_slower",
+			"pass" if mix_faults.is_empty() else "outside",
+			"World-only is %.2f times the normal mix. The corrected band is %.2f-%.2f. The pace factor is not retuned." % [
+				float(slower) if typeof(slower) != TYPE_STRING else 0.0, slow_lo, slow_hi,
+			],
+		))
 	if str(inputs.get("profiles", {}).get("dungeon_heavy", "")) == "Open":
 		findings.append(_finding("dungeon_heavy", "open", "The dungeon-heavy mix is Open. The spec names the profile and does not give its time split."))
 	if str(inputs.get("per_point_values", "")) == "Open":
@@ -120,8 +193,12 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 		"world_only_hours": world_hours,
 		"premium_world_hours": premium_hours,
 		"dungeon_vs_world": ratio,
-		"normal_mix_hours": "Open",
-		"premium_mix_hours": "Open",
+		"normal_mix_hours": mix_hours,
+		"premium_mix_hours": premium_mix,
+		"xp_shares": xp_by_source,
+		"milestone_hours": milestones,
+		"last_level_hours": last_step,
+		"world_only_slower": slower,
 		"normal_mix_label": _mix_label(inputs),
 		"hours_to_cap": free_target,
 		"hours_to_cap_min": band_lo,
@@ -190,8 +267,8 @@ static func report_text(result: Dictionary) -> String:
 	lines.append("|---|---|")
 	lines.append("| World only, free | %.2f hours to the cap |" % float(result.get("world_only_hours", 0)))
 	lines.append("| World only, premium | %.2f hours to the cap |" % float(result.get("premium_world_hours", 0)))
-	lines.append("| Normal mix, free (%s) | Open |" % str(result.get("normal_mix_label", "Open")))
-	lines.append("| Normal mix, premium | Open |")
+	lines.append("| Normal mix, free (%s) | %s |" % [str(result.get("normal_mix_label", "Open")), _hours_cell(result.get("normal_mix_hours", "Open"))])
+	lines.append("| Normal mix, premium | %s |" % _hours_cell(result.get("premium_mix_hours", "Open")))
 	lines.append("| Free target (accept %.0f-%.0f) | %.0f hours |" % [
 		float(result.get("hours_to_cap_min", 0)),
 		float(result.get("hours_to_cap_max", 0)),
@@ -202,6 +279,29 @@ static func report_text(result: Dictionary) -> String:
 	lines.append("| Party of 4 | XP share 0.7 each. Time is Open. |")
 	lines.append("")
 	lines.append("Dungeon XP per minute is %.3f times open-world XP per minute at the normal star." % float(result.get("dungeon_vs_world", 0)))
+	var shares: Dictionary = result.get("xp_shares", {})
+	if not shares.is_empty():
+		lines.append("XP share by play time: world %.1f%%, dungeons %.1f%%, missions %.1f%%." % [
+			float(shares.get("world", 0)) * 100.0,
+			float(shares.get("dungeon", 0)) * 100.0,
+			float(shares.get("mission", 0)) * 100.0,
+		])
+	var slower: Variant = result.get("world_only_slower", "Open")
+	if typeof(slower) == TYPE_FLOAT or typeof(slower) == TYPE_INT:
+		lines.append("World-only takes %.2f times as long as the normal mix. It is not scored against the free accept band." % float(slower))
+	var milestones: Dictionary = result.get("milestone_hours", {})
+	if not milestones.is_empty():
+		lines.append("")
+		lines.append("## Normal-mix milestones, free")
+		lines.append("")
+		lines.append("| Level | Hours |")
+		lines.append("|---|---|")
+		for key in milestones.keys():
+			lines.append("| %s | %.2f |" % [str(key), float(milestones[key])])
+		var last: Variant = result.get("last_level_hours", "Open")
+		if typeof(last) == TYPE_FLOAT or typeof(last) == TYPE_INT:
+			lines.append("")
+			lines.append("Last level step: %.2f hours." % float(last))
 	lines.append("")
 	lines.append("## Coins and drops per hour at the cap, fighting at that level")
 	lines.append("")
@@ -250,6 +350,143 @@ static func report_text(result: Dictionary) -> String:
 		lines.append("Decidable checks failed: %s" % ", ".join(result.get("errors", [])))
 	lines.append("")
 	return "\n".join(lines)
+
+
+static func _hours_cell(value: Variant) -> String:
+	if typeof(value) == TYPE_FLOAT or typeof(value) == TYPE_INT:
+		return "%.2f hours to the cap" % float(value)
+	return str(value)
+
+
+static func _mix_rows(inputs: Dictionary) -> Array:
+	var minutes: Dictionary = inputs.get("minutes", {})
+	var shares: Dictionary = inputs.get("xp_share_of_step", {})
+	var profiles: Dictionary = inputs.get("profiles", {})
+	var mix: Variant = profiles.get("normal_mix", {})
+	if typeof(mix) != TYPE_DICTIONARY:
+		return []
+	var talk := _num(minutes.get("mission_talk", 0))
+	var reach := _num(minutes.get("mission_reach", 0))
+	var fights := _num(minutes.get("mission_defeat_fights", 0))
+	var per_fight := _num(minutes.get("mission_defeat_per_fight", 0))
+	var clear_min := _num(minutes.get("mission_clear", 0))
+	if talk <= 0.0 or reach <= 0.0 or fights <= 0.0 or per_fight <= 0.0 or clear_min <= 0.0:
+		return []
+	var mission_weight := _num((mix as Dictionary).get("mission", 0))
+	var kinds: Array[String] = ["talk", "reach", "defeat", "clear"]
+	var each := mission_weight / float(kinds.size())
+	var star := _num(inputs.get("normal_star", 0))
+	return [
+		{
+			"group": "world",
+			"weight": _num((mix as Dictionary).get("world", 0)),
+			"xp": _num(shares.get("world_fight", 0)),
+			"minutes": _num(minutes.get("world_fight", 0)),
+		},
+		{
+			"group": "dungeon",
+			"weight": _num((mix as Dictionary).get("dungeon", 0)),
+			"xp": _num(shares.get("dungeon_win", 0)) * star,
+			"minutes": _num(minutes.get("dungeon_run", 0)),
+		},
+		{"group": "mission", "weight": each, "xp": _num(shares.get("mission_talk", 0)), "minutes": talk},
+		{"group": "mission", "weight": each, "xp": _num(shares.get("mission_reach", 0)), "minutes": reach},
+		{"group": "mission", "weight": each, "xp": _num(shares.get("mission_defeat", 0)), "minutes": fights * per_fight},
+		{"group": "mission", "weight": each, "xp": _num(shares.get("mission_clear_dungeon", 0)), "minutes": clear_min},
+	]
+
+
+static func _mix_xp_per_minute(inputs: Dictionary) -> float:
+	var rows := _mix_rows(inputs)
+	if rows.is_empty():
+		return 0.0
+	var rate := 0.0
+	for row in rows:
+		var span := float(row["minutes"])
+		if span <= 0.0:
+			return 0.0
+		rate += float(row["weight"]) * float(row["xp"]) / span
+	return rate
+
+
+static func _xp_shares(inputs: Dictionary, rate: float) -> Dictionary:
+	var grouped := {"world": 0.0, "dungeon": 0.0, "mission": 0.0}
+	if rate <= 0.0:
+		return grouped
+	for row in _mix_rows(inputs):
+		var group := str(row["group"])
+		grouped[group] = float(grouped[group]) + float(row["weight"]) * float(row["xp"]) / float(row["minutes"]) / rate
+	return grouped
+
+
+static func _paced_profile_hours(curve: Dictionary, xp_per_minute: float) -> float:
+	if xp_per_minute <= 0.0:
+		return 0.0
+	var cap := int(curve.get("max_level", 0))
+	var hours := 0.0
+	for level in range(1, cap):
+		var pace := _pace(curve, level)
+		if pace <= 0.0:
+			return 0.0
+		hours += 1.0 / (xp_per_minute * pace) / 60.0
+	return hours
+
+
+static func _hours_until(curve: Dictionary, xp_per_minute: float, level_reached: int) -> float:
+	if xp_per_minute <= 0.0:
+		return 0.0
+	var cap := int(curve.get("max_level", 0))
+	var stop := level_reached
+	if stop > cap:
+		stop = cap
+	var hours := 0.0
+	for level in range(1, stop):
+		var pace := _pace(curve, level)
+		if pace <= 0.0:
+			return 0.0
+		hours += 1.0 / (xp_per_minute * pace) / 60.0
+	return hours
+
+
+static func _milestone_hours(curve: Dictionary, inputs: Dictionary, rate: float) -> Dictionary:
+	var expected: Dictionary = inputs.get("targets", {}).get("milestone_hours", {})
+	var cap := int(curve.get("max_level", 0))
+	var out := {}
+	for key in expected.keys():
+		var level := cap if str(key) == "cap" else int(str(key))
+		if level > cap:
+			continue
+		out[str(key)] = _hours_until(curve, rate, level)
+	return out
+
+
+static func _last_step_hours(curve: Dictionary, rate: float) -> float:
+	var cap := int(curve.get("max_level", 0))
+	if cap < 2 or rate <= 0.0:
+		return 0.0
+	var pace := _pace(curve, cap - 1)
+	if pace <= 0.0:
+		return 0.0
+	return 1.0 / (rate * pace) / 60.0
+
+
+static func _milestone_faults(inputs: Dictionary, milestones: Dictionary, last_step: Variant, faults: Array) -> void:
+	var targets: Dictionary = inputs.get("targets", {})
+	var near := _num(targets.get("milestone_near", 0))
+	if near <= 0.0:
+		return
+	var expected: Dictionary = targets.get("milestone_hours", {})
+	for key in milestones.keys():
+		var want := _num(expected.get(key, 0))
+		var got := float(milestones[key])
+		if want <= 0.0:
+			continue
+		if absf(got - want) / want > near + 0.0001:
+			faults.append("milestone %s hours are not near the target" % str(key))
+	var last_want := _num(targets.get("last_level_hours", 0))
+	if last_want > 0.0 and (typeof(last_step) == TYPE_FLOAT or typeof(last_step) == TYPE_INT):
+		if absf(float(last_step) - last_want) / last_want > near + 0.0001:
+			faults.append("the last level's hours are not near the target")
 
 
 static func world_only_hours(curve: Dictionary, world_min: float, world_xp: float) -> float:

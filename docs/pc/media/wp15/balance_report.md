@@ -9,14 +9,28 @@ Stats: Mastery, Vitality, Swift, Resist.
 |---|---|
 | World only, free | 172.23 hours to the cap |
 | World only, premium | 137.78 hours to the cap |
-| Normal mix, free (world 50% / dungeons 30% / missions 20%) | Open |
-| Normal mix, premium | Open |
+| Normal mix, free (world 50% / dungeons 30% / missions 20%) | 143.53 hours to the cap |
+| Normal mix, premium | 114.82 hours to the cap |
 | Free target (accept 130-170) | 150 hours |
 | Premium target | 120 hours |
 | Dungeon heavy | Open |
 | Party of 4 | XP share 0.7 each. Time is Open. |
 
 Dungeon XP per minute is 1.543 times open-world XP per minute at the normal star.
+XP share by play time: world 41.7%, dungeons 38.6%, missions 19.8%.
+World-only takes 1.20 times as long as the normal mix. It is not scored against the free accept band.
+
+## Normal-mix milestones, free
+
+| Level | Hours |
+|---|---|
+| 10 | 8.17 |
+| 20 | 22.52 |
+| 30 | 45.69 |
+| 40 | 83.10 |
+| cap | 143.53 |
+
+Last level step: 7.43 hours.
 
 ## Coins and drops per hour at the cap, fighting at that level
 
@@ -62,11 +76,12 @@ Mission coin amounts are a range in the spec. A single number inside each tier i
 | ap_6_kestrel | outside | Raw kit output is 12% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | ap_6_gloam | outside | Raw kit output is -19% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | ap_7_ironjaw | outside | Raw kit output is 11% from the damage-class median. Set tuning that would pull this inside the band is Open. |
-| mission_minutes | open | Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open. |
-| normal_mix_band | open | Free normal-mix target 150 h (accept 130-170) and premium target 120 h are not scored. Mission minutes are Open. Pace is pace_start 1.6000 and pace_ratio 0.9532 from the curve. World-only free is 172.23 h and premium world-only is 137.78 h. |
+| mission_minutes | pass | Talk 3 min, reach 5 min, defeat is fights times minutes per fight, clear 20 min. Missions split the mission share evenly. |
+| normal_mix_band | pass | Free normal mix 143.53 h (accept 130-170). Premium normal mix 114.82 h (target 120, scaled band 104-136). Pace 1.6000 and 0.9532. World-only 172.23 h is not scored against that band. |
+| xp_shares | pass | XP by play time: world 41.7%, dungeons 38.6%, missions 19.8%. |
+| world_only_slower | pass | World-only is 1.20 times the normal mix. The corrected band is 1.15-1.20. The pace factor is not retuned. |
 | dungeon_heavy | open | The dungeon-heavy mix is Open. The spec names the profile and does not give its time split. |
 | per_point_values | open | Per-point Mastery, Vitality, Swift and Resist values are Open, so set rules 3, 4 and 5 are not scored. |
 | zones | pass | Every zone band ends at or below the curve cap. |
 
 Decidable checks passed. Open items are not treated as a pass or a fail.
-
