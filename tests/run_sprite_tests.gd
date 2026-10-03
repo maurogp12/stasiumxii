@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_flash_kinds()
 	_test_view_wires_flash_without_rules()
 	_test_name_sits_above_the_sprite()
+	_test_l5_hex_plate_and_scale()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -222,6 +223,83 @@ func _test_name_sits_above_the_sprite() -> void:
 		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
 		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
 		pawn.free()
+
+
+func _test_l5_hex_plate_and_scale() -> void:
+	eq(OverheadPlate.team_color(0), BoardTile.DEPLOY_P1, "P1 hex matches the deploy tint")
+	eq(OverheadPlate.team_color(1), BoardTile.DEPLOY_P2, "P2 hex matches the deploy tint")
+	var pts := OverheadPlate.hex_points(Pawn.SEAT_RING_CENTER, OverheadPlate.HEX_RX, OverheadPlate.HEX_RY)
+	eq(pts.size(), 6, "the ground mark is a hex")
+	for i in pts.size():
+		var point: Vector2 = pts[i]
+		var inside := absf(point.x) / float(BoardTile.TILE_WIDTH) * 2.0 + absf(point.y) / float(BoardTile.TILE_HEIGHT) * 2.0
+		truthy(inside < 1.0, "hex vertex %d stays inside the cell (%.3f)" % [i, inside])
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	pawn.apply_snapshot(_unit_dict("kestrel", "E", 0), 0)
+	var plate := pawn.get_node("Chrome/OverheadPlate") as OverheadPlate
+	truthy(plate != null, "the plate is its own node")
+	eq(is_equal_approx(plate.shown_ratio(), 1.0), true, "a full snapshot fills the bar")
+	eq(plate.snapshot_life(), 80, "the plate shows the snapshot number")
+	var hurt := _unit_dict("kestrel", "E", 0)
+	hurt["hp"] = 32
+	plate.sync_from_unit(hurt)
+	eq(plate.snapshot_life(), 32, "the number follows the snapshot at once")
+	eq(is_equal_approx(plate.target_ratio(), 32.0 / 80.0), true, "the bar aims at the snapshot")
+	eq(is_equal_approx(plate.shown_ratio(), 1.0), true, "damage does not pop the bar")
+	plate.tick(0.08)
+	truthy(plate.shown_ratio() < 1.0 and plate.shown_ratio() > plate.target_ratio(), "the bar drains toward the snapshot")
+	for _step in 40:
+		plate.tick(0.05)
+	eq(is_equal_approx(plate.shown_ratio(), plate.target_ratio()), true, "the bar settles on the snapshot")
+	var foe := Pawn.new()
+	get_root().add_child(foe)
+	foe.apply_snapshot(_unit_dict("ironjaw", "W", 1), 1)
+	eq(OverheadPlate.team_color(foe.seat), OverheadPlate.TEAM_P2, "seat 1 uses the red ring")
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	var body := Vector2(float(sprite.texture.get_width()), float(sprite.texture.get_height())) * sprite.scale
+	var tall := body.y / float(BoardTile.TILE_HEIGHT)
+	var wide := body.x / float(BoardTile.TILE_WIDTH)
+	truthy(tall >= 2.0 and tall <= 3.0, "chibi height is two to three cells (%.2f)" % tall)
+	truthy(wide >= 0.9 and wide <= 1.4, "chibi width is about one cell (%.2f)" % wide)
+	eq(Pawn.NAME_FONT_SIZE, 7, "the name is about 60% of the old 12")
+	truthy(OverheadPlate.BAR_H >= 5.0 and OverheadPlate.BAR_H <= 6.0, "the bar is 5 to 6 px at 1x")
+	eq(OverheadPlate.BAR_RIM, 1.0, "the bar has a 1 px rim")
+	truthy(plate.plate_width() <= sprite.texture.get_width() * sprite.scale.x * 1.2 + 0.01, "the plate stays within 1.2 times the sprite")
+	var foe_sprite := foe.get_node("Sprite") as Sprite2D
+	var foe_plate := foe.get_node("Chrome/OverheadPlate") as OverheadPlate
+	truthy(foe_plate.plate_width() <= foe_sprite.texture.get_width() * foe_sprite.scale.x * 1.2 + 0.01, "Ironjaw's plate stays within 1.2 times the sprite")
+	truthy(plate.local_rect().encloses(plate.number_rect()), "the number sits inside the plate")
+	truthy(foe_plate.local_rect().encloses(foe_plate.number_rect()), "Ironjaw's number sits inside the plate")
+	var full_ink := plate.fill_color()
+	eq(full_ink, OverheadPlate.TEAM_P1, "a healthy bar uses the team colour")
+	var low := _unit_dict("kestrel", "E", 0)
+	low["hp"] = 16
+	plate.sync_from_unit(low)
+	truthy(plate.target_ratio() < OverheadPlate.LOW_LIFE, "16 of 80 is under 30%")
+	var low_ink := plate.fill_color()
+	truthy(low_ink != OverheadPlate.TEAM_P1, "low life tints the bar")
+	pawn.position = BoardVisualSort.cell_to_local(Vector2i(7, 7))
+	foe.position = BoardVisualSort.cell_to_local(Vector2i(8, 7))
+	var pair: Array[OverheadPlate] = [plate, foe_plate]
+	OverheadPlate.layout_now(pair)
+	eq(plate.world_rect().intersects(foe_plate.world_rect()), false, "adjacent plates do not overlap after layout")
+	truthy(foe_plate.z_index > plate.z_index, "the front plate draws on top")
+	plate.ease_lift(1.0)
+	truthy(plate.lift() < plate._lift_goal + 12.0, "a hitch does not throw the plate")
+	var parked := OverheadPlate.new()
+	parked._lift = 0.0
+	parked._lift_goal = 30.0
+	parked.ease_lift(1.0)
+	truthy(parked.lift() > 0.0 and parked.lift() <= OverheadPlate.LIFT_STEP_CAP, "one frame only nudges the plate")
+	parked.free()
+	truthy(Pawn.ACTIVE_RING_RY > OverheadPlate.HEX_RY + 3.0, "the yellow ring clears the hex vertically")
+	truthy(Pawn.ACTIVE_RING_RX > OverheadPlate.HEX_RX + 6.0, "the yellow ring clears the hex sideways")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains("hp"), false, "board_view still does not mention hp")
+	truthy(FileAccess.file_exists("res://units/overhead_plate.gd"), "the plate script is units/overhead_plate.gd")
+	pawn.free()
+	foe.free()
 
 
 func _unit_dict(class_id: String, facing: String, seat: int, living: bool = true) -> Dictionary:

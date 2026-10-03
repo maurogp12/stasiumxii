@@ -45,6 +45,7 @@ var _hit_flash: bool = false
 var _flashing: bool = false
 var _sprite: Sprite2D
 var _chrome: StatusChrome
+var _plate: OverheadPlate
 var _idle_tween: Tween
 var _action_tween: Tween
 var _bounce_tween: Tween
@@ -67,6 +68,7 @@ var _held_death_strip: bool = false
 
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
+const OVERHEAD := preload("res://units/overhead_plate.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -89,11 +91,15 @@ const ATTACK_STRIP_PATH := NodePath("AttackStrip")
 const BODY_STRIP_PATH := NodePath("BodyStrip")
 ## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
 const HEAD_HP_Y := -76.0
-const NAME_FONT_SIZE := 12
-## Seat ring under the feet. The name used to share this band.
+## About 60% of the old 12. Compact, like the plates in reference C.
+const NAME_FONT_SIZE := 7
+## Team hex under the feet. The name and life bar live on OverheadPlate.
 const SEAT_RING_CENTER := Vector2(0, 3)
 const SEAT_RING_RX := 18.0
 const SEAT_RING_RY := 7.0
+## Outside the team hex, so the hex stays readable inside the yellow ring.
+const ACTIVE_RING_RX := 27.0
+const ACTIVE_RING_RY := 13.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
@@ -128,6 +134,7 @@ func apply_snapshot(unit: Dictionary, active_seat: int, events: Array = []) -> v
 		_plan_died = false
 		_end_body_strip()
 	_sync_sprite()
+	_sync_plate(unit)
 	_sync_idle()
 
 
@@ -589,6 +596,11 @@ func _ensure_chrome() -> void:
 	_chrome.z_index = 2
 	_chrome.z_as_relative = true
 	add_child(_chrome)
+	if _plate == null or not is_instance_valid(_plate):
+		_plate = OVERHEAD.new() as OverheadPlate
+		_plate.name = "OverheadPlate"
+		_plate.host = self
+		_chrome.add_child(_plate)
 
 
 func _sync_sprite() -> void:
@@ -1210,22 +1222,39 @@ func _draw() -> void:
 		_draw_legacy_token()
 
 
+func _sync_plate(unit: Dictionary) -> void:
+	if _plate == null or not is_instance_valid(_plate):
+		return
+	_plate.host = self
+	_plate.visible = not debug_draw_tokens and _sprite_ready()
+	_plate.sync_from_unit(unit)
+
+
 func _draw_ground_mark() -> void:
 	var foot := SEAT_RING_CENTER
-	_draw_ellipse(foot, SEAT_RING_RX, SEAT_RING_RY, _seat_color())
-	_draw_ellipse_ring(foot, SEAT_RING_RX, SEAT_RING_RY, Color(0.1, 0.07, 0.08, 0.85), 1.3)
 	if burning:
 		_draw_ellipse_ring(foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
 		_draw_ellipse_ring(foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
-		_draw_ellipse_ring(foot, 21.0, 8.2, Color(1.0, 0.92, 0.45, 1.0), 2.6)
+		_draw_ellipse_ring(foot, ACTIVE_RING_RX, ACTIVE_RING_RY, Color(1.0, 0.92, 0.45, 1.0), 2.2)
+	var team := OVERHEAD.team_color(seat)
+	var pts := OVERHEAD.hex_points(foot, OVERHEAD.HEX_RX, OVERHEAD.HEX_RY)
+	draw_colored_polygon(pts, Color(team.r, team.g, team.b, OVERHEAD.HEX_FILL_ALPHA))
+	var rim := pts.duplicate()
+	rim.append(pts[0])
+	var edge := Color(minf(team.r + 0.28, 1.0), minf(team.g + 0.28, 1.0), minf(team.b + 0.28, 1.0), 1.0)
+	draw_polyline(rim, edge, 2.6, true)
 
 
 func _paint_status(canvas: CanvasItem) -> void:
 	if debug_draw_tokens or not _sprite_ready():
+		if _plate != null and is_instance_valid(_plate):
+			_plate.visible = false
 		return
-	_paint_unit_chrome(canvas, HEAD_HP_Y, name_baseline())
+	if _plate != null and is_instance_valid(_plate):
+		_plate.visible = true
+	_paint_badges(canvas, HEAD_HP_Y, name_baseline())
 
 
 ## Baseline of the overhead name, in chrome-local space. The chrome node
@@ -1282,6 +1311,11 @@ func _paint_unit_chrome(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
 		canvas.draw_rect(plate, Color(0.07, 0.05, 0.06, 0.84))
 		name_color = Color(0.97, 0.95, 0.90)
 	canvas.draw_string(font, Vector2(label_x, name_y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, NAME_FONT_SIZE, name_color)
+	_paint_badges(canvas, hp_y, name_y)
+
+
+func _paint_badges(canvas: CanvasItem, hp_y: float, name_y: float) -> void:
+	var font := ThemeDB.fallback_font
 	var badge_bottom := _badge_stack_bottom(font, hp_y, name_y)
 	if stunned:
 		var stun_size := font.get_string_size("STUN", HORIZONTAL_ALIGNMENT_CENTER, -1, 10)
@@ -1308,13 +1342,6 @@ func _badge_stack_bottom(font: Font, hp_y: float, name_y: float) -> float:
 	if name_y < hp_y:
 		return name_y - font.get_ascent(NAME_FONT_SIZE) - 2.0
 	return hp_y - 4.0
-
-
-func _seat_color() -> Color:
-	# Same greens / reds as the P1 / P2 deploy zone highlights.
-	if seat == 1:
-		return Color(0.78, 0.42, 0.42, 0.92)
-	return Color(0.36, 0.72, 0.52, 0.92)
 
 
 func _body_color() -> Color:
