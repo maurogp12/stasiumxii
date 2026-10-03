@@ -27,14 +27,42 @@ var _look_pulse: float = 1.0
 var _look_grade: Color = Color(1, 1, 1, 1)
 ## Exponent on the linear plate. Below 1 lifts the dark stone without clipping the traces.
 var _look_lift: float = 1.0
+var _look_flip_h: bool = false
+var _look_flip_v: bool = false
+var _look_diag: bool = false
+var _look_slot := Rect2(0, 0, 1, 1)
 var _look_sprite: Sprite2D
 var _look_mat: ShaderMaterial
 
 const LOOK_FLOOR_SHADER := """shader_type canvas_item;
 uniform vec3 floor_grade = vec3(1.0);
 uniform float floor_lift = 1.0;
+// Route-tile flips stay inside one strip slot. Zero flips leave UV alone.
+uniform vec4 slot_rect = vec4(0.0, 0.0, 1.0, 1.0);
+uniform float flip_h = 0.0;
+uniform float flip_v = 0.0;
+uniform float diag = 0.0;
+vec2 slot_uv(vec2 uv) {
+	if (flip_h < 0.5 && flip_v < 0.5 && diag < 0.5)
+		return uv;
+	vec2 local = (uv - slot_rect.xy) / slot_rect.zw;
+	float u = local.x - 0.5;
+	float v = (local.y - 0.5) * 0.5;
+	if (flip_v > 0.5)
+		v = -v;
+	if (flip_h > 0.5)
+		u = -u;
+	if (diag > 0.5) {
+		float nu = -2.0 * v;
+		float nv = -0.5 * u;
+		u = nu;
+		v = nv;
+	}
+	local = vec2(u + 0.5, v * 2.0 + 0.5);
+	return slot_rect.xy + local * slot_rect.zw;
+}
 void fragment() {
-	vec4 tex = texture(TEXTURE, UV);
+	vec4 tex = texture(TEXTURE, slot_uv(UV));
 	float lift = clamp(floor_lift, 0.05, 1.0);
 	vec3 rgb = pow(max(tex.rgb, vec3(0.0002)), vec3(lift));
 	rgb *= floor_grade;
@@ -64,7 +92,20 @@ func set_look_floor(tex: Texture2D) -> void:
 func clear_look_floor() -> void:
 	_look_grade = Color(1, 1, 1, 1)
 	_look_lift = 1.0
+	_look_flip_h = false
+	_look_flip_v = false
+	_look_diag = false
+	_look_slot = Rect2(0, 0, 1, 1)
 	set_look_floor(null)
+
+
+## Grid-axis flips for a route tile. diag mirrors east and west inside the diamond.
+func set_look_orient(flip_h: bool, flip_v: bool, diag: bool, slot_uv: Rect2) -> void:
+	_look_flip_h = flip_h
+	_look_flip_v = flip_v
+	_look_diag = diag
+	_look_slot = slot_uv
+	_sync_look_sprite()
 
 
 func look_floor() -> Texture2D:
@@ -146,6 +187,10 @@ func _sync_look_sprite() -> void:
 	var pulse := _look_pulse
 	_look_mat.set_shader_parameter("floor_grade", Vector3(_look_grade.r * pulse, _look_grade.g * pulse, _look_grade.b * pulse))
 	_look_mat.set_shader_parameter("floor_lift", _look_lift)
+	_look_mat.set_shader_parameter("flip_h", 1.0 if _look_flip_h else 0.0)
+	_look_mat.set_shader_parameter("flip_v", 1.0 if _look_flip_v else 0.0)
+	_look_mat.set_shader_parameter("diag", 1.0 if _look_diag else 0.0)
+	_look_mat.set_shader_parameter("slot_rect", Vector4(_look_slot.position.x, _look_slot.position.y, _look_slot.size.x, _look_slot.size.y))
 
 
 func _paint_label() -> void:

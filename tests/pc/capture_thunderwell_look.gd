@@ -117,10 +117,11 @@ func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, be
 	var zoom := _zoom(board)
 	var pad_sprite := pad_tile.get_node_or_null("ThunderPad") as Sprite2D
 	var pad_px := _brightest(image, _screen_rect(pad_sprite), pad_center, zoom, pad_sprite)
-	var trace_near_pad := _brightest_glow(board, image, pad_cell, pad_center, zoom)
+	var pillars := _pillar_sprites(layer)
+	var trace_near_pad := _brightest_glow(board, image, pad_cell, pad_center, zoom, pillars)
 	var pillar := _pillar_at(layer, beside)
 	var pillar_px := _brightest(image, _screen_rect(pillar), beside_center, zoom, pillar)
-	var trace_near_pillar := _brightest_glow(board, image, beside, beside_center, zoom)
+	var trace_near_pillar := _brightest_glow(board, image, beside, beside_center, zoom, pillars)
 	var brightest := pad_px
 	for sample in [trace_near_pad, pillar_px, trace_near_pillar]:
 		if float(sample["lum"]) > float(brightest["lum"]):
@@ -143,6 +144,9 @@ func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, be
 	print("GLOW_BELOW_MOVE %s" % str(glow_l < float(move_pad["lum"]) and glow_l < float(move_pillar["lum"])))
 	print("GLOW_VS_PAD_TILE glow=%s move=%s" % [glow_l, float(move_pad["lum"])])
 	print("GLOW_VS_PILLAR_TILE glow=%s move=%s" % [glow_l, float(move_pillar["lum"])])
+	var trace_under := float(trace_near_pad["lum"]) < float(move_pad["lum"]) and float(trace_near_pillar["lum"]) < float(move_pillar["lum"])
+	print("GLOW_TRACE_UNDER_MOVE %s" % str(trace_under))
+	print("GLOW_TRACE_VS_MOVE pad_trace=%s pad_move=%s pillar_trace=%s pillar_move=%s" % [float(trace_near_pad["lum"]), float(move_pad["lum"]), float(trace_near_pillar["lum"]), float(move_pillar["lum"])])
 
 
 func _print_sample(label: String, sample: Dictionary) -> void:
@@ -188,7 +192,15 @@ func _pillar_at(layer: Node, neighbor: Vector2i) -> Sprite2D:
 	return null
 
 
-func _brightest_glow(board: Node, image: Image, around: Vector2i, avoid: Vector2, zoom: float) -> Dictionary:
+func _pillar_sprites(layer: Node) -> Array:
+	var out: Array = []
+	for child in layer.get_children():
+		if str(child.name).begins_with("ThunderPillar"):
+			out.append(child)
+	return out
+
+
+func _brightest_glow(board: Node, image: Image, around: Vector2i, avoid: Vector2, zoom: float, pillars: Array) -> Dictionary:
 	var tiles: Dictionary = board.get("tiles")
 	var best := {"color": Color(0, 0, 0), "lum": 0.0, "at": Vector2i.ZERO}
 	for cell in tiles.keys():
@@ -199,10 +211,84 @@ func _brightest_glow(board: Node, image: Image, around: Vector2i, avoid: Vector2
 		var glow := (tiles[cell] as Node).get_node_or_null("ThunderGlow") as Sprite2D
 		if glow == null:
 			continue
-		var sample := _brightest(image, _screen_rect(glow), avoid, zoom, glow)
+		var sample := _brightest_trace(image, _screen_rect(glow), avoid, zoom, glow, pillars)
 		if float(sample["lum"]) > float(best["lum"]):
 			best = sample
 	return best
+
+
+func _brightest_trace(image: Image, rect: Rect2, avoid: Vector2, zoom: float, sprite: Sprite2D, pillars: Array) -> Dictionary:
+	var best := {"color": Color(0, 0, 0), "lum": -1.0, "at": Vector2i.ZERO}
+	if image == null or rect.size == Vector2.ZERO:
+		return best
+	var x0 := clampi(int(floor(minf(rect.position.x, rect.end.x))), 0, image.get_width() - 1)
+	var x1 := clampi(int(ceil(maxf(rect.position.x, rect.end.x))), 0, image.get_width())
+	var y0 := clampi(int(floor(minf(rect.position.y, rect.end.y))), 0, image.get_height() - 1)
+	var y1 := clampi(int(ceil(maxf(rect.position.y, rect.end.y))), 0, image.get_height())
+	var half_x := 32.0 * zoom
+	var half_y := 16.0 * zoom
+	var near := 96.0
+	var tex := _sprite_image(sprite)
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if avoid.x > -1000.0:
+				var dx := float(x) - avoid.x
+				var dy := float(y) - avoid.y
+				if dx * dx + dy * dy > near * near:
+					continue
+			if half_x > 1.0 and absf(float(x) - avoid.x) / half_x + absf(float(y) - avoid.y) / half_y <= 1.55:
+				continue
+			if tex != null and not _pixel_is_glow(sprite, tex, x, y):
+				continue
+			if _pixel_on_pillar(pillars, x, y) or _near_pillar_beam(pillars, x, y):
+				continue
+			var color := image.get_pixel(x, y)
+			# Pillar bloom is pale. A trace stays green, so the sample is the circuit.
+			if color.g < color.r + 0.08 or color.g < color.b:
+				continue
+			var lum := _lum(color)
+			if lum > float(best["lum"]):
+				best = {"color": color, "lum": lum, "at": Vector2i(x, y)}
+	return best
+
+
+func _near_pillar_beam(pillars: Array, x: int, y: int) -> bool:
+	for pillar in pillars:
+		var sprite := pillar as Sprite2D
+		if sprite == null:
+			continue
+		var base := _screen(sprite)
+		if absf(float(x) - base.x) > 28.0:
+			continue
+		if float(y) > base.y + 8.0 or float(y) < base.y - 180.0:
+			continue
+		return true
+	return false
+
+
+func _pixel_on_pillar(pillars: Array, x: int, y: int) -> bool:
+	for pillar in pillars:
+		var sprite := pillar as Sprite2D
+		if sprite == null or sprite.texture == null:
+			continue
+		var tex := _sprite_image(sprite)
+		if tex == null:
+			continue
+		var local := sprite.to_local(sprite.get_viewport().get_canvas_transform().affine_inverse() * Vector2(x + 0.5, y + 0.5))
+		var size := Vector2(tex.get_width(), tex.get_height())
+		var origin := sprite.offset
+		if sprite.centered:
+			origin -= size * 0.5
+		var px := local - origin
+		var tx := int(floor(px.x))
+		var ty := int(floor(px.y))
+		if tx < 0 or ty < 0 or tx >= tex.get_width() or ty >= tex.get_height():
+			continue
+		var sample := tex.get_pixel(tx, ty)
+		var ink := (0.2126 * sample.r + 0.7152 * sample.g + 0.0722 * sample.b) * sample.a
+		if ink >= 0.04:
+			return true
+	return false
 
 
 func _zoom(board: Node) -> float:
