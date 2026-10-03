@@ -944,6 +944,67 @@ class with each tier's class set, dungeon sets and the Epic / Relic choices;
 the stacking caps; fail if a class leaves the ±10% band or an item adds more
 than 15% (sets) or 20% (Epics / Relics).
 
+### 4.15 Character and inventory window (Mauro's reference + our own version)
+
+Mauro, 3 Oct 2026, with a screenshot of the Dofus character / inventory window
+(`docs/pc/look_target/inventory_reference_dofus.jpg`): **"I want an inventory
+like this, but our own version."** Same idea and layout logic, our own look
+(`docs/pc/LOOK_TARGET.md`: bold, rounded, readable, Waven-style polish, not a
+Dofus copy), filled with Stasium XII's systems. Layout and details are
+**Proposed**.
+
+One window with three panels side by side (each can also open alone):
+
+**1. Character panel (left; key C)**
+
+- Portrait, name, class, level.
+- Bars: **HP**, **XP to next level** (and, if Mauro wants it later, an energy
+  bar: Open).
+- Combat numbers: **AP, MP, Initiative, Range bonus**, with the caps shown
+  (AP 8, MP 5, 4.14).
+- **The four stats with + buttons:** Mastery, Vitality, Swift, Resist, and the
+  free points left (4.11). A **Respec** button (free once, then Crypto Coins).
+- A second tab, "Details": resistances, healing bonus, set and item effects in
+  play, titles.
+
+**2. Equipment panel (middle)**
+
+- The player's fighter in the centre (the existing class sprite, turnable;
+  player fighter art stays parked).
+- **8 slots around it** (4.13): left column head, amulet, ring, ring; right
+  column cape, belt, boots, weapon. Empty slots show a faint outline of the
+  item type.
+- **Epic and Relic markers:** a purple and a gold badge under the fighter
+  showing which Epic and which Relic are worn (only one of each, 4.13).
+- **Set bonus strip:** the sets being worn, with 2 / 3 / 5-part bonuses lit
+  when active (and the Rare tier-30 AP / MP choice).
+- **Item card** (bottom of the panel, for the selected or hovered item): name
+  in its rarity colour, tier level, upgrade level (+1 to +5), stats, its set
+  and set bonuses, conditions (level, class), and tabs **Effects /
+  Conditions / Set**. Buttons: **Equip / Unequip**, **Upgrade** (only at the
+  Smith), **Sell** (to an NPC trader) or **List** (marketplace, later),
+  **Destroy** (asks to confirm).
+
+**3. Inventory panel (right; key I)**
+
+- **Category tabs:** Equipment, Consumables (food, potions), Materials,
+  Recipes, Decorations, Mystery Boxes / special. Plus a **filter** (by
+  rarity, tier, set, class) and a **search** box.
+- **Grid** of items with **rarity borders** (white, blue, purple, gold) and
+  **stack counts**; hover shows the item card; drag onto a slot to equip;
+  right-click for actions (use, open box, equip, sell).
+- **Crypto Coins** shown at the bottom (coins on hand).
+- **Bank button:** only lit when standing at the Crypto Bank (one bank, in the
+  main city); it opens the bank panel next to the inventory so items and
+  coins move between them by drag or a button.
+- **Capacity:** Dofus uses a weight limit ("pods"). Proposed for us: a simple
+  **slot limit** (for example 60 slots, more bought with coins) instead of
+  weight; Open for Mauro (Q14).
+
+Rules: the window never changes a number itself: stats come from
+`pc_progress.gd`, items from `pc_rewards.gd`, coins from the wallet and bank.
+It opens in the open world and in towns, not during a fight (Proposed).
+
 ### 4.12 Economy: what Crypto Coins buy, marketplace, crafting, houses (Mauro's direction + Proposed plan)
 
 Mauro, 3 Oct 2026: **"the idea is to put a marketplace where players can trade
@@ -1109,8 +1170,9 @@ dependency on each other can run in parallel (marked ∥).
   `data/world/level_rewards.json` + schema, `backend/pc_progress.gd`
   (preload; `level`, `xp`, `add_xp(n) -> Array[events]`, `points_free`,
   `spend(bucket, n)`, `respec()`, save/load to `user://pc_progress.json`),
-  `scenes/world/ui/character_sheet.gd` / `.tscn` (level, XP bar, the four
-  stats and + buttons; **C** key, Proposed), `tests/run_pc_progress_tests.gd`.
+  the **character panel** of the window in 4.15
+  (`scenes/world/ui/character_window.gd` / `.tscn`, character tab; **C** key),
+  `tests/run_pc_progress_tests.gd`.
 - **Accept:** `max_level - 1` increasing entries; level never exceeds
   `max_level`; XP past the cap is kept but does not level; points = 2 ×
   (level − 1) minus spent; +1 AP flag from level 30; respec returns every
@@ -1314,8 +1376,10 @@ designated zones also monsters above lvl 25 are agressive".
   contents, mission ranks); `backend/pc_rewards.gd` (preload; `roll(source,
   context, rng)` → coins and items; `open_box(rng)`; seeded rolls for tests);
   wallet and inventory saved in `user://pc_progress.json` via `pc_progress.gd`;
-  `scenes/world/ui/inventory_panel.gd` / `.tscn` (coins, parts by set, boxes,
-  an Open button; **I** key, Proposed); a "reward" pop-up after fights,
+  the **equipment and inventory panels** of the window in 4.15
+  (`scenes/world/ui/character_window.gd` / `.tscn`; **I** key): 8 slots, Epic /
+  Relic badges, set bonus strip, item card, category tabs, filters, rarity
+  borders, stacks, coins, Bank button; a "reward" pop-up after fights,
   dungeons and missions; `tests/run_pc_rewards_tests.gd`.
 - **Accept:** every drop table sums to ≤ 100%; seeded rolls give fixed results;
   a Mystery Box always gives exactly one thing; the 10th mission always gives a
@@ -1601,3 +1665,5 @@ headless.
     4.13, the AP cap 8 / MP cap 5, and Prism Striders' push rule counted per
     fight (a blocked push counts). The fixes in 4.14 are approved; the
     numbers stay tuned by WP15.
+14. **Inventory capacity (4.15):** a simple slot limit (Proposed: 60 slots,
+    more bought with Crypto Coins), or a weight limit like Dofus "pods"?
