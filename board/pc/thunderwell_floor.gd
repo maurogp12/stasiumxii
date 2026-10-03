@@ -102,7 +102,9 @@ void fragment() {
 	COLOR = vec4(rgb, 1.0);
 }
 """
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 const ROOM_SHADER := """shader_type canvas_item;
+""" + LOOK_LIGHT.GRADE_GLSL + """
 // TEXTURE keeps source_color on the vignette. hole_mask is generated data:
 // 0 on the board, rising to 1 across the wall reach.
 uniform sampler2D hole_mask : filter_linear, repeat_disable;
@@ -119,6 +121,7 @@ void fragment() {
 	float wall = smoothstep(0.0, 0.04, d) * (1.0 - smoothstep(0.22, 0.78, d));
 	vec3 rgb = mix(grad.rgb, wall_color, clamp(wall * wall_strength, 0.0, 1.0));
 	rgb += rim_color * rim * rim_strength;
+	rgb = l7_grade(rgb);
 	float cover = smoothstep(0.0, 0.025, d);
 	COLOR = vec4(rgb, cover);
 }
@@ -1045,6 +1048,18 @@ func _floor_grade() -> Color:
 	if raw is Array and (raw as Array).size() >= 3:
 		return Color(float(raw[0]), float(raw[1]), float(raw[2]))
 	return Color(1.08, 1.32, 1.05)
+
+
+func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color) -> void:
+	if _room == null or not (_room.material is ShaderMaterial):
+		return
+	var mat := _room.material as ShaderMaterial
+	mat.set_shader_parameter("grade_on", 1.0 if on else 0.0)
+	mat.set_shader_parameter("grade_sat", sat)
+	mat.set_shader_parameter("grade_contrast", contrast)
+	mat.set_shader_parameter("grade_gain", gain)
+	mat.set_shader_parameter("grade_bias", Vector3(bias.r, bias.g, bias.b))
+	mat.set_shader_parameter("grade_shadow", Vector3(shadow.r, shadow.g, shadow.b))
 
 
 func _apply_room_uniforms(mat: ShaderMaterial) -> void:

@@ -1,12 +1,16 @@
 extends SceneTree
 
-## L7 stills. Phone frame, then the PC grade with a Strike so the number,
-## the shafts and the floor pool are in the shot.
-## godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . -s res://tests/pc/capture_l7.gd -- --out=/tmp/l7_frames --size=1280x720 --ref=/tmp/look_target_refs.jpg
+## L7 stills and the cast clip.
+## Phone path is not the before frame. Before is PC on this build with the
+## grade forced off, which matches the base branch's flat picture when the
+## pair script composites a real base-branch grab.
+## godot --display-driver x11 --rendering-driver opengl3 --audio-driver Dummy --path . -s res://tests/pc/capture_l7.gd -- --out=/tmp/l7_frames --size=1280x720
+
+const LIGHT := preload("res://board/pc/look_light.gd")
+const HUD := preload("res://ui/hud.gd")
 
 var _out := "/tmp/l7_frames"
 var _size := Vector2i(1280, 720)
-var _ref := ""
 
 
 func _initialize() -> void:
@@ -18,8 +22,6 @@ func _initialize() -> void:
 			var parts := text.trim_prefix("--size=").split("x")
 			if parts.size() == 2:
 				_size = Vector2i(int(parts[0]), int(parts[1]))
-		elif text.begins_with("--ref="):
-			_ref = text.trim_prefix("--ref=")
 	call_deferred("_go")
 
 
@@ -30,30 +32,20 @@ func _go() -> void:
 	root.content_scale_size = _size
 	root.size = _size
 	await process_frame
-	var phone := await _frame(false, "crosshaven", "")
-	var outdoor := await _frame(true, "crosshaven", "")
-	var dungeon := await _frame(true, "stormspire", "thunderwell")
-	if phone == null or outdoor == null or dungeon == null:
+	# Mark Shot is range 2–7. Ironjaw two cells east so the shot connects,
+	# and the "+1 Mark" floater stays on Kestrel instead of covering the number.
+	var number := await _still(true, "crosshaven", "", "kestrel", "ironjaw", true, Vector2i(9, 7))
+	if number == null:
 		quit(1)
 		return
-	_pair(phone, outdoor, _out.path_join("before_after.png"))
-	if _ref != "":
-		var sheet := Image.load_from_file(_ref)
-		if sheet == null or sheet.is_empty():
-			push_error("reference missing")
-			quit(1)
-			return
-		sheet.convert(Image.FORMAT_RGBA8)
-		_beside(sheet, Rect2i(0, 0, 1000, 543), outdoor, _out.path_join("beside_a.png"))
-		_beside(sheet, Rect2i(0, 543, 1000, 543), dungeon, _out.path_join("beside_b.png"))
-		_beside(sheet, Rect2i(0, 1086, 1000, 544), outdoor, _out.path_join("beside_c.png"))
+	number.save_png(_out.path_join("number.png"))
 	print("L7_SHOT %s size=%s" % [_out, str(_size)])
 	quit(0)
 
 
-func _frame(pc: bool, map_id: String, theme: String) -> Image:
-	var hud_script := load("res://ui/hud.gd")
-	hud_script.set_pc_chrome_override(1 if pc else 0)
+func _still(grade: bool, map_id: String, theme: String, a: String, b: String, strike: bool, foe: Vector2i = Vector2i(8, 7)) -> Image:
+	HUD.set_pc_chrome_override(1)
+	LIGHT.set_suppressed(not grade)
 	var main := (load("res://main.tscn") as PackedScene).instantiate()
 	root.add_child(main)
 	var board: Node2D = main.get_node("BoardView")
@@ -66,9 +58,9 @@ func _frame(pc: bool, map_id: String, theme: String) -> Image:
 		"seed": 1,
 		"map_id": map_id,
 		"skip_deploy": true,
-		"classes": ["kestrel", "ironjaw"],
+		"classes": [a, b],
 		"kestrel_pos": Vector2i(7, 7),
-		"ironjaw_pos": Vector2i(8, 7),
+		"ironjaw_pos": foe,
 		"kestrel_facing": "E",
 		"ironjaw_facing": "W",
 		"rolls": [1],
@@ -76,38 +68,37 @@ func _frame(pc: bool, map_id: String, theme: String) -> Image:
 	board._rebuild_pawns()
 	board._refresh()
 	board._fit_board_camera()
-	if theme != "":
-		board.set_board_theme(theme)
-	else:
-		board.set_board_theme("")
+	board.set_board_theme(theme)
+	var cam := board.get_node("BoardCamera") as Camera2D
+	cam.zoom = Vector2(0.72, 0.72)
 	for _i in 8:
 		await process_frame
-	var ended: Dictionary = sim.submit({"type": "end_turn"})
-	if not bool(ended.get("ok", false)):
-		push_error("end turn failed %s" % str(ended))
-		main.free()
-		return null
-	var strike: Dictionary = sim.submit({"type": "cast", "spell": "strike", "to": Vector2i(7, 7)})
-	if not bool(strike.get("ok", false)):
-		push_error("strike failed %s" % str(strike))
-		main.free()
-		return null
-	board._apply_units(sim.snapshot())
-	board._arm_vfx(strike.get("events", []))
-	var shown := false
-	for _i in 24:
-		await process_frame
-		if _number_alpha(board) > 0.85:
-			shown = true
-			break
-	if not shown:
-		push_error("damage number did not show")
-		main.free()
-		return null
+	if strike:
+		var hit: Dictionary = sim.submit({"type": "cast", "spell": "mark_shot", "to": foe})
+		if not bool(hit.get("ok", false)):
+			push_error("strike failed %s" % str(hit))
+			main.free()
+			return null
+		board._apply_units(sim.snapshot())
+		board._arm_view_motions(hit.get("events", []))
+		board._arm_vfx(hit.get("events", []))
+		var shown := false
+		for _i in 40:
+			await process_frame
+			if _number_alpha(board) > 0.85 and _number_scale(board) > 0.9 and not _impact_visible(board):
+				shown = true
+				break
+		if not shown:
+			push_error("damage number did not show")
+			main.free()
+			return null
+		print("L7_NUMBER %s" % _number_text(board))
 	await process_frame
+	RenderingServer.force_draw()
 	var image := root.get_viewport().get_texture().get_image()
 	main.free()
-	hud_script.set_pc_chrome_override(-1)
+	LIGHT.set_suppressed(false)
+	HUD.set_pc_chrome_override(-1)
 	for _i in 2:
 		await process_frame
 	return image
@@ -121,10 +112,53 @@ func _number_alpha(board: Node) -> float:
 	for child in director.get_children():
 		if child == null or not str(child.name).begins_with("number"):
 			continue
-		if str(child.get("_text")) == "":
+		var shown := str(child.get("_text"))
+		if shown == "" or shown.contains("Impact") or not shown.is_valid_int():
 			continue
 		best = maxf(best, float(child.modulate.a))
 	return best
+
+
+func _number_scale(board: Node) -> float:
+	var director := board.get_node_or_null("VfxDirector")
+	if director == null:
+		return 0.0
+	var best := 0.0
+	for child in director.get_children():
+		if child == null or not str(child.name).begins_with("number"):
+			continue
+		var shown := str(child.get("_text"))
+		if shown == "" or shown.contains("Impact") or not shown.is_valid_int():
+			continue
+		best = maxf(best, float(child.scale.x))
+	return best
+
+
+func _number_text(board: Node) -> String:
+	var director := board.get_node_or_null("VfxDirector")
+	if director == null:
+		return ""
+	var parts: PackedStringArray = []
+	for child in director.get_children():
+		if child == null or not str(child.name).begins_with("number"):
+			continue
+		var shown := str(child.get("_text"))
+		if shown == "":
+			continue
+		parts.append(shown)
+	return " ".join(parts)
+
+
+func _impact_visible(board: Node) -> bool:
+	var director := board.get_node_or_null("VfxDirector")
+	if director == null:
+		return false
+	for child in director.get_children():
+		if child == null:
+			continue
+		if str(child.get("kind")) == "impact" and float(child.modulate.a) > 0.2:
+			return true
+	return false
 
 
 func _pair(left: Image, right: Image, path: String) -> void:
@@ -136,13 +170,6 @@ func _pair(left: Image, right: Image, path: String) -> void:
 	_blit(out, left, Vector2i(0, 0))
 	_blit(out, right, Vector2i(left.get_width() + gap, 0))
 	out.save_png(path)
-
-
-func _beside(sheet: Image, crop: Rect2i, game: Image, path: String) -> void:
-	var ref := Image.create(crop.size.x, crop.size.y, false, Image.FORMAT_RGBA8)
-	ref.blit_rect(sheet, crop, Vector2i.ZERO)
-	ref.resize(int(float(crop.size.x) * float(game.get_height()) / float(crop.size.y)), game.get_height(), Image.INTERPOLATE_LANCZOS)
-	_pair(ref, game, path)
 
 
 func _blit(dst: Image, src: Image, at: Vector2i) -> void:

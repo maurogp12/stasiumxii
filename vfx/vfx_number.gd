@@ -9,6 +9,8 @@ var _text: String = ""
 var _top: Color = VfxPalette.DAMAGE_TOP
 var _bottom: Color = VfxPalette.DAMAGE_BOTTOM
 var _font_size: int = VfxBudget.NUMBER_SIZE
+var _drawn_size: int = 0
+var _drawn_spread: int = 0
 var _rise: Tween
 
 
@@ -76,6 +78,8 @@ func _draw() -> void:
 	var big := _font_size > VfxBudget.NUMBER_SIZE
 	var shadow := Vector2(3, 4) if big else Vector2(2, 3)
 	var spread := 6 if big else 4
+	_drawn_size = _font_size
+	_drawn_spread = spread
 	var lift := -4 if big else -3
 	font.draw_string(get_canvas_item(), baseline + shadow, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
 	for ox in range(-spread, spread + 1, 2):

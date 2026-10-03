@@ -64,7 +64,9 @@ var _look_sprite: Sprite2D
 var _look_mat: ShaderMaterial
 var _seam: SeamPlate
 
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 const LOOK_FLOOR_SHADER := """shader_type canvas_item;
+""" + LOOK_LIGHT.GRADE_GLSL + """
 uniform vec3 floor_grade = vec3(1.0);
 uniform float floor_lift = 1.0;
 // Screen flips stay inside one strip slot. h mirrors x, v mirrors y.
@@ -86,6 +88,7 @@ void fragment() {
 	float lift = clamp(floor_lift, 0.05, 1.0);
 	vec3 rgb = pow(max(tex.rgb, vec3(0.0002)), vec3(lift));
 	rgb *= floor_grade;
+	rgb = l7_grade(rgb);
 	COLOR = vec4(rgb, tex.a);
 }
 """
