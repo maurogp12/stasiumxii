@@ -1,18 +1,31 @@
 {
   "art_status": "placeholder",
-  "note": "Stand-in paint so the Coilgate theme runs. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png.",
+  "note": "Stand-in paint so the Thunderwell Core floor runs. LOOK_TARGET calls this Thunderwell Core; the folder and the theme id stay coilgate. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png. A 2x master is drawn at half size (scale 0.5).",
+  "display_name": "Thunderwell Core",
   "theme": "coilgate",
+  "draw_scale_2x": 0.5,
   "art_root": "res://art/pc/look/coilgate_floor/",
   "slots": {
     "floor_tile_a": {"px_1x": [64, 32], "px_2x": [128, 64]},
     "floor_tile_b": {"px_1x": [64, 32], "px_2x": [128, 64]},
     "floor_tile_c": {"px_1x": [64, 32], "px_2x": [128, 64]},
     "floor_tile_d": {"px_1x": [64, 32], "px_2x": [128, 64]},
-    "pad_blue": {"px_1x": [64, 32], "px_2x": [128, 64]},
-    "pad_red": {"px_1x": [64, 32], "px_2x": [128, 64]},
-    "light_pillar": {"px_1x": [48, 256], "px_2x": [96, 512]},
-    "room_edge_dark": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
-    "glow_mask": {"px_1x": [96, 64], "px_2x": [192, 128]}
+    "pad_blue": {"px_1x": [64, 48], "px_2x": [128, 96], "blend": "add"},
+    "pad_red": {"px_1x": [64, 48], "px_2x": [128, 96], "blend": "add"},
+    "light_pillar": {"px_1x": [64, 256], "px_2x": [128, 512], "blend": "add"},
+    "room_edge_dark": {
+      "px_1x": [2048, 1280],
+      "px_2x": [4096, 2560],
+      "layout": "one_surround",
+      "hole": "15x15 iso diamond centered in the plate",
+      "hole_diamond_px_2x": [[2048, 800], [3008, 1280], [2048, 1760], [1088, 1280]]
+    },
+    "glow_mask": {
+      "px_1x": [256, 32],
+      "px_2x": [512, 64],
+      "layout": "one_strip",
+      "slices": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"]
+    }
   },
   "floor_cycle": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
   "pad_blue": {"step_x": 4, "step_y": 3, "phase_x": 1, "phase_y": 1},
