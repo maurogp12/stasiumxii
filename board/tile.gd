@@ -38,9 +38,12 @@ var _look_lift: float = 1.0
 var _look_flip_h: bool = false
 var _look_flip_v: bool = false
 var _look_diag: bool = false
+## Thunderwell bevel: dark slate plus a green rim. Off for every other dress.
+var _look_seam: bool = false
 var _look_slot := Rect2(0, 0, 1, 1)
 var _look_sprite: Sprite2D
 var _look_mat: ShaderMaterial
+var _seam: SeamPlate
 
 const LOOK_FLOOR_SHADER := """shader_type canvas_item;
 uniform vec3 floor_grade = vec3(1.0);
@@ -91,11 +94,21 @@ func set_look_floor(tex: Texture2D) -> void:
 func clear_look_floor() -> void:
 	_look_grade = Color(1, 1, 1, 1)
 	_look_lift = 1.0
+	_look_seam = false
 	_look_flip_h = false
 	_look_flip_v = false
 	_look_diag = false
 	_look_slot = Rect2(0, 0, 1, 1)
 	set_look_floor(null)
+
+
+func set_look_seam(on: bool) -> void:
+	_look_seam = on
+	_sync_look_sprite()
+
+
+func look_seam() -> bool:
+	return _look_seam
 
 
 ## Grid-axis flips for a route tile. h mirrors x and v mirrors y inside the slot.
@@ -189,6 +202,40 @@ func _sync_look_sprite() -> void:
 	_look_mat.set_shader_parameter("flip_h", 1.0 if _look_flip_h else 0.0)
 	_look_mat.set_shader_parameter("flip_v", 1.0 if _look_flip_v else 0.0)
 	_look_mat.set_shader_parameter("slot_rect", Vector4(_look_slot.position.x, _look_slot.position.y, _look_slot.size.x, _look_slot.size.y))
+	_sync_seam()
+
+
+## The light grey V is the viewport clear showing in the cracks around a diamond.
+## Thunderwell fills that crack with dark slate and a thin green rim on the top edge.
+func _sync_seam() -> void:
+	var show := _look_seam and _look_floor != null
+	if not show:
+		if _seam != null:
+			_seam.visible = false
+		return
+	if _seam == null:
+		_seam = SeamPlate.new()
+		_seam.name = "SeamPlate"
+		# Behind every floor plate, in front of the room, so a neighbour cannot cover a cell.
+		_seam.z_as_relative = false
+		_seam.z_index = -80
+		add_child(_seam)
+	_seam.visible = true
+	_seam.queue_redraw()
+
+
+class SeamPlate extends Node2D:
+	func _draw() -> void:
+		var top := Vector2(0, -BoardTile.TILE_HEIGHT / 2.0)
+		var right := Vector2(BoardTile.TILE_WIDTH / 2.0, 0)
+		var bottom := Vector2(0, BoardTile.TILE_HEIGHT / 2.0)
+		var left := Vector2(-BoardTile.TILE_WIDTH / 2.0, 0)
+		var grow := 1.50
+		draw_colored_polygon(PackedVector2Array([top * grow, right * grow, bottom * grow, left * grow]), Color(0.035, 0.062, 0.048, 1))
+		var rim := Color(0.08, 0.42, 0.20, 1)
+		var out := 1.04
+		draw_line(top * out, left * out, rim, 1.8, true)
+		draw_line(top * out, right * out, rim, 1.8, true)
 
 
 func _paint_label() -> void:
