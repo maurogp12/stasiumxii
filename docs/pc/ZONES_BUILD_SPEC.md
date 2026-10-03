@@ -659,88 +659,151 @@ below.
 600–1,000. What coins buy: section 4.12.
 
 **Sets: option A approved** (Mauro, 3 Oct 2026). Parts give stats and sets give
-bonuses. Mauro: "in the PC game we are going to build more sets depending on
-how we develop the classes, but for now we start with a few, only for
-Crosshaven, and next phase we add more."
+bonuses. Mauro: **"you will need to create a balanced set for every single
+class"** and **"we have to create sets for lvl 1, lvl 10, lvl 20 up to 50,
+which is the max."** More sets come later as the classes develop and when the
+cap goes to 100.
 
 - **5 slots** (head, cape, belt, boots, amulet; Proposed). A full set fills all
   5, so the choice is one full set (its 5-part bonus) or a 3 + 2 mix (two
   smaller bonuses).
+- **Set tiers: level 1, 10, 20, 30, 40, 50.** A set's parts can be worn from
+  its tier level. Next phase adds tiers 60, 70, 80, 90, 100 (cap rule, 4.3).
 - **Each part gives 1–2 stats** from the four buckets in 4.11 (Mastery,
   Vitality, Swift, Ward). **Rare** = about 1.5× the Regular stats plus one
   extra stat (Proposed).
-- **Set bonuses:** 2 parts a small stat bonus, 3 parts a bigger one, 5 parts a
+- **Set bonuses:** 2 parts a stat bonus, 3 parts a bigger one, 5 parts a
   special bonus (Proposed values; tuned with WP15 and the class kits).
 - **Upgrades +1 to +5** with Crypto Coins (and spare parts at +4 / +5), each
   step about +10% of the part's stats (Proposed).
-- **Item level:** a part's stats scale with its **item level** = the level of
-  the fight, dungeon or mission that gave it (Proposed). You can wear a part
-  when your level ≥ its item level. This is how a few sets stay useful from
-  level 1 to 50.
 
-**Phase 1 sets: only Crosshaven, 3 sets** (Proposed names and themes):
+#### Class sets: every class, every tier (30 sets)
 
-| Set | Theme | Where it drops | 5-part bonus (Proposed) |
-|---|---|---|---|
-| Wayfarer | Travelling clothes of the Crossroads | Crosshaven Heart: world fights, Old Granary Cellar, Heart missions | +1 MP on the first turn of a fight |
-| Townguard | Armour of the five town watches | Crosshaven Towns: world fights, town missions | Extra Ward when standing next to an ally |
-| Millwright | Work gear from the vaults under the mill | Millrace Vaults dungeon only | Extra Mastery on the turn after you are hit |
+One set per class at each tier: 5 classes × 6 tiers = **30 class sets**
+(150 parts). A class set can be worn only by its class. Names are
+**Proposed**:
 
-**Mauro approved these three 5-part bonuses** (3 Oct 2026). They are combat
-effects, so they are built only through CombatSim, and off in Koliseo PvP
-(set stats are off there).
-
-**Class sets: one balanced set for every class** (Mauro, 3 Oct 2026: "you will
-need to create a balanced set for every single class"). Phase 1 adds **5 class
-sets**, one per class, on top of the 3 shared sets (8 sets in all). Names,
-stats and effects are **Proposed** for Mauro to approve; the numbers are tuned
-by WP15.
-
-| Class (role) | Set (Proposed) | Part stats lean to | 2 parts | 3 parts | 5 parts (effect) |
+| Tier | Kestrel (ranged, Air) | Ironjaw (bruiser, Earth) | Mender (healer, Water) | Gloam (assassin) | Bastion (tank) |
 |---|---|---|---|---|---|
-| Kestrel (ranged carry, Air) | **Skyfeather** | Mastery, Swift | + Mastery | + Swift | **+1 max range on Mark Shot** |
-| Ironjaw (melee bruiser, Earth) | **Quarrybreaker** | Mastery, Vitality | + Vitality | + Mastery | **Start every fight with +1 Impact** |
-| Mender (healer, Water) | **Tidewell** | Vitality, Ward | + Ward | + Vitality | **Mend heals 10% more** |
-| Gloam (stealth assassin) | **Duskveil** | Mastery, Swift | + Swift | + Mastery | **+1 MP on turns you start Invisible** |
-| Bastion (tank) | **Bulwark** | Vitality, Ward | + Vitality | + Ward | **The first hit you take in each fight deals half damage** |
+| **1** | Fledgling | Quarryhand | Dewdrop | Shadowstep | Watchpost |
+| **10** | Windrunner | Stonefist | Brookmender | Nightcloak | Shieldwall |
+| **20** | Skyfeather | Quarrybreaker | Tidewell | Duskveil | Bulwark |
+| **30** | Stormquill | Ironclad Ram | Riverheart | Umbral Fang | Ironbastion |
+| **40** | Galecrest | Mountainmaw | Deepspring | Voidshroud | Rampart Lord |
+| **50** | Zenith Talon | Titan's Jaw | Oceansong | Eclipse | Aegis Eternal |
 
-Class set rules (Proposed):
+Stats each class's parts lean to: Kestrel Mastery + Swift; Ironjaw Mastery +
+Vitality; Mender Vitality + Ward; Gloam Mastery + Swift; Bastion Vitality +
+Ward. The 2- and 3-part bonuses give the same two stats.
 
-- A class set part can be worn only by its class. Class set parts drop from
-  the two Crosshaven dungeons (Old Granary Cellar, Millrace Vaults) and from
-  class missions given by the town Elders; a drop picks the player's own class
-  60% of the time, so parts for alt classes and for the marketplace still
-  appear.
-- The same 5 slots: a player picks between the class set, a shared set, or a
-  3 + 2 mix.
-- Next phase adds class sets as classes develop (Mauro: "we are going to build
-  more sets depending how we develop the classes").
+5-part effects (**Proposed**): each class has one **signature effect** that
+first appears at tier 20 and grows with the tiers; tiers 1 and 10 give a
+plain stat bonus at 5 parts, so the early game stays simple.
 
-**How sets are kept balanced** (Proposed rules; WP15 checks them):
+| Class | Signature effect (tier 20) | Tiers 30 / 40 / 50 |
+|---|---|---|
+| Kestrel | +1 max range on Mark Shot | plus a small second effect, e.g. more damage on the first Mark Shot of each turn, growing with the tier |
+| Ironjaw | Start every fight with +1 Impact | plus, e.g., Shoulder costs less on the first use each fight |
+| Mender | Mend heals 10% more | plus, e.g., a small heal on allies when Cleanse lands |
+| Gloam | +1 MP on turns you start Invisible | plus, e.g., more damage on the first hit out of Invisible |
+| Bastion | The first hit you take in each fight deals half damage | plus, e.g., Snap Wall also gives an adjacent ally Ward |
 
-1. **Equal budget.** At the same item level every part of every set has the
-   same stat budget (Proposed: `4 + item level` points, priced with the
-   per-point values in 4.11). A Rare part = 1.5× the budget + 1 extra stat. A
-   2-part bonus = the budget of 1 part; a 3-part bonus = 1.5 parts.
-2. **5-part effects are worth about 2 parts.** Each effect is measured in the
-   simulator as damage, healing or damage prevented per fight, and tuned until
-   it lands near the value of 2 parts' stats.
-3. **Class sets fit, they don't dominate.** For its own class, the class set
-   beats the best shared set by at most 10% in the simulator.
-4. **Classes stay even.** With their best phase 1 set, all five classes clear
-   the same dungeon (solo, same level) within ±10% of each other's time.
-5. **No single effect above 15%.** No 5-part effect alone raises a class's
+The second effects are ideas for the team to size inside the balance rules
+below and bring to Mauro; nothing past the tier 20 signature is built before
+his yes.
+
+#### Shared sets (any class)
+
+The three Crosshaven shared sets stay, with **Mauro's approved 5-part
+bonuses** (3 Oct 2026):
+
+| Set | Tier (Proposed) | Where it drops | 5-part bonus (approved) |
+|---|---|---|---|
+| Wayfarer | 1 | Crosshaven Heart: world fights and Heart missions | +1 MP on the first turn of a fight |
+| Townguard | 5 | Crosshaven Towns: world fights, town missions | Extra Ward when standing next to an ally |
+| Millwright | 8 | Millrace Vaults only (its dungeon set, below) | Extra Mastery on the turn after you are hit |
+
+All set effects are combat effects: built only through CombatSim, and off in
+Koliseo PvP (set stats are off there).
+
+#### Where each tier drops (Proposed)
+
+| Tier | Main source | Also from |
+|---|---|---|
+| 1 | Old Granary Cellar (Crosshaven Heart) | Heart missions, Crosshaven world fights |
+| 10 | Rotting Orchard Barrow (Rowanvale) | Rowanvale and Windmere missions and world fights |
+| 20 | Saltmaw Grotto (Brinewake) | Brinewake, Slagcrown and Fen Edge missions and world fights |
+| 30 | Drowned Abbey (Gloomfen Mire) | Gloomfen and Stormspire missions and world fights; Thunderwell Core |
+| 40 | Shard Hollow (Ashen Shardfields) | Shardfields missions and world fights |
+| 50 | Heart of the Blight (Blightwood Hollow) | Blightwood missions and world fights |
+
+Dungeons are the main source (a guaranteed part per win, 4.9 drop table);
+world fights and missions drop parts at lower chances. A class-set drop picks
+the player's own class 60% of the time, so parts for alt classes and for the
+marketplace still appear. Dungeons outside this table (Millrace Vaults,
+Frostspire Archive, Cinderforge Depths, Sunken Mill) drop the tier just below
+their zone's band.
+
+#### Every dungeon has its own loot (Mauro, 3 Oct 2026)
+
+Mauro: **"every dungeon should drop different types of sets and other
+rewards."** So no two dungeons share a loot table. Each dungeon drops:
+
+1. **Its own dungeon set** (any class, found only in that dungeon), themed on
+   its boss. Tier = the dungeon's level band (Proposed).
+2. **The class sets of its tier** (the table above), for the player's class
+   60% of the time.
+3. **Its own extra rewards:** a recipe, a crafting material, a decoration and
+   a cosmetic or title that only it gives, plus its own Mystery Box chance.
+
+| Dungeon | Zone | Dungeon set (Proposed) | Tier | Unique extras (Proposed) |
+|---|---|---|---|---|
+| Old Granary Cellar | Crosshaven Heart | Ratcatcher | 1 | Recipe: Granary Bread; material: Sackcloth; decoration: Old Grain Barrel; title "Cellar Sweeper" |
+| Millrace Vaults | Crosshaven Towns | Millwright (approved bonus) | 8 | Recipe: Millstone Stew; material: Gear Cog; decoration: Water Wheel model; title "Millwright" |
+| Rotting Orchard Barrow | Rowanvale | Orchard Warden | 10 | Recipe: Blight-free Cider; material: Grave Apple; decoration: Barrow Lantern; title "Orchard Keeper" |
+| Frostspire Archive | Windmere | Pale Archivist | 15 | Recipe: Frost Tonic; material: Rime Ink; decoration: Frozen Bookshelf; title "Archivist" |
+| Saltmaw Grotto | Brinewake | Saltmaw | 20 | Recipe: Reef Chowder; material: Pearl Shell; decoration: Ship in a Bottle; title "Grotto Diver" |
+| Cinderforge Depths | Slagcrown | Ember Smith | 25 | Recipe: Cinder Draught; material: Ember Ore; decoration: Anvil; title "Forgeborn" |
+| Sunken Mill | Eastmarch Fen Edge | Millwheel Hag | 25 | Recipe: Fen Broth; material: Bog Iron; decoration: Rusted Millwheel; title "Fenwalker" |
+| Drowned Abbey | Gloomfen Mire | Mire Abbess | 30 | Recipe: Swamp Elixir; material: Abbey Candle Wax; decoration: Sunken Bell; title "Bog Pilgrim" |
+| Thunderwell Core | Stormspire | Storm Engine | 35 | Recipe: Charged Tonic; material: Storm Coil; decoration: Tesla Lamp; title "Spark Tamer" |
+| Shard Hollow | Ashen Shardfields | Ashen Prism | 40 | Recipe: Crystal Brew; material: Prism Shard; decoration: Glowing Crystal; title "Shardbreaker" |
+| Heart of the Blight | Blightwood Hollow | Rotting Elder | 50 | Recipe: Elderroot Feast; material: Blight Heartwood; decoration: Blight Seedling; title "Blightbane" |
+
+That is **11 dungeon sets** (one is Millwright, already approved). Their 5-part
+bonuses are ideas the team sizes inside the balance rules and brings to Mauro;
+none is built before his yes. Each dungeon set follows the same budget rules
+as the class sets of its tier, so a dungeon set is a side-grade (a different
+build), not a straight upgrade.
+
+Total sets in phase 1: 30 class sets + 11 dungeon sets + 2 shared world sets
+(Wayfarer, Townguard) = **43 sets**.
+
+#### How sets are kept balanced (Proposed rules; WP15 checks them)
+
+1. **Equal budget per tier.** Every part of every set in the same tier has the
+   same stat budget (Proposed: `4 + tier level` points, priced with the
+   per-point values in 4.11; tier 1 counts as 1). A Rare part = 1.5× the
+   budget + 1 extra stat. A 2-part bonus = the budget of 1 part; a 3-part
+   bonus = 1.5 parts.
+2. **Each tier is a clear step up** but not a wall: a full set of tier N + 10
+   is about 25–35% stronger than tier N (Proposed), so upgrading tier N to +5
+   is roughly halfway to the next tier.
+3. **5-part effects are worth about 2 parts.** Each effect is measured in the
+   simulator as damage, healing or damage prevented per fight.
+4. **Class sets fit, they don't dominate.** For its own class, the class set
+   of a tier beats the best shared or other option at that tier by at most 10%.
+5. **Classes stay even.** At each tier, with their own class set, all five
+   classes clear that tier's dungeon (solo, same level) within ±10% of each
+   other's time.
+6. **No single effect above 15%.** No 5-part effect alone raises a class's
    damage, healing or survival by more than 15%.
-6. **PvP is untouched.** Set stats and effects are off in Koliseo PvP (4.11),
+7. **PvP is untouched.** Set stats and effects are off in Koliseo PvP (4.11),
    so the Locked kit balance there does not change.
 
-**Zones 3–11 in phase 1** have no set of their own yet: their fights,
-dungeons and missions drop **the Crosshaven sets at a higher item level**
-(Wayfarer and Townguard from world fights and missions; Millwright from
-dungeons), plus coins and Mystery Boxes. **Next phase** adds sets per region
-and sets built around the classes; `rewards.json` lists sets as data, with an
-optional `classes` field for class sets later, so adding them needs no code
-change.
+`rewards.json` lists every set as data (`id`, `name`, `tier`, `classes`,
+`parts`, `bonuses`, `drops`), so the next phase adds tiers 60–100 and new class
+sets with no code change.
 
 **Mystery Box** (Proposed contents, one roll): 50% coins (5× the mission coins
 of the opener's tier), 35% a Regular part, 15% a Rare part, from a set at or
@@ -750,8 +813,8 @@ Drops (Proposed):
 
 | Source | Regular part | Rare part | Mystery Box |
 |---|---|---|---|
-| Open-world fight | 3% (phase 1: Wayfarer or Townguard, at the fight's item level) | — | — |
-| Dungeon win | 1 guaranteed (phase 1: Millwright from Millrace Vaults; Wayfarer / Townguard / Millwright at the dungeon's item level elsewhere) | ★1 0%, ★2 5%, ★3 10%, ★4 20%, ★5 35% | ★4+ 10% |
+| Open-world fight | 3% (a class set of the zone's tier, or the zone's shared world set in Crosshaven) | — | — |
+| Dungeon win | 1 guaranteed, from that dungeon's own table (its dungeon set or a class set of its tier), plus one of its unique extras at Proposed chances | ★1 0%, ★2 5%, ★3 10%, ★4 20%, ★5 35% | ★4+ 10% |
 | Mission, by **mission rank** (below) | rank 1 20%, 2 35%, 3 40%, 4 40%, 5 35% | rank 1–2 0%, 3 5%, 4 10%, 5 15% | rank 1 0%, 2 3%, 3 8%, 4 12%, 5 20% |
 | Every 10th mission turned in | — | — | **1 guaranteed** |
 
@@ -1134,7 +1197,7 @@ designated zones also monsters above lvl 25 are agressive".
   dungeons and missions; `tests/run_pc_rewards_tests.gd`.
 - **Accept:** every drop table sums to ≤ 100%; seeded rolls give fixed results;
   a Mystery Box always gives exactly one thing; the 10th mission always gives a
-  box; part stats and 2 / 3-part set bonuses apply through `pc_progress.gd` (stats only; 5-part effects wait on Mauro's yes); item level gates who can wear a part; save / load keeps coins and items.
+  box; part stats and 2 / 3-part set bonuses apply through `pc_progress.gd` (stats only; 5-part effects wait on Mauro's yes); the set tier gates who can wear a part; save / load keeps coins and items.
 - **Media:** a clip winning a fight, the reward pop-up, then opening a Mystery
   Box from the inventory.
 
@@ -1152,9 +1215,9 @@ designated zones also monsters above lvl 25 are agressive".
 - **Accept:** normal mix reaches 50 in 50–75 h; dungeon XP per minute is
   1.3–1.8× open world; no source above 50% of total XP; world-only still
   reaches 50; a printed table goes in the PR for Mauro.
-- **Sets:** also simulate each class with no set, each shared set and its class
-  set; fail when a 4.9 balance rule (1–6) is broken; print the per-class table
-  for Mauro.
+- **Sets:** also simulate each class at every tier with no set, the shared
+  sets and its class set; fail when a 4.9 balance rule (1–7) is broken; print
+  the per-class, per-tier table for Mauro.
 - **Media:** none (the printed table).
 
 #### WP10: Art for the new zones (Scenario, then Technical Artist)
@@ -1196,6 +1259,14 @@ Asset list per region (**Proposed** counts; 1x and 2x for every item):
 | Ashen Shardfields | ash_dune ×4, crystal_ground ×2 | crystal spires ×5 (glow strips), ruins ×4, Shard Hollow (2×2) | `art/world/ashen_shardfields/...` |
 | Blightwood Hollow | blight_soil ×4, root_ground ×3 | twisted trees ×5, roots ×6, ruined watch walls ×4, spores (animated), Heart of the Blight (3×3) | `art/world/blightwood_hollow/...` |
 | Crosshaven (zones 1–2) | none (kit is final) | Old Granary Cellar door (2×2), Millrace Vaults door (2×2); bridges and fords from `tiles/_box_only_not_in_kit/` wired in | `art/world/crosshaven/props/` |
+
+Set part icons (Scenario): one painted inventory icon per part: 43 sets × 5
+parts = **215 icons** (30 class sets, 11 dungeon sets, 2 shared), plus a Rare
+border. Also an icon for each unique extra (11 recipes, 11 materials, 11
+decorations).
+**128×128 px** at 2x, transparent background, the class's colours, the tier
+shown by material (cloth / leather at 1–10, metal at 20–30, glowing
+materials at 40–50). Path `art/items/sets/<set_id>/<slot>.png`.
 
 Landmarks (Scenario, **Soft Lock**: one per chunk): one hero prop per new
 chunk, 55 in all, in the region's style (2×2 or 3×3 footprint, sway or glow
