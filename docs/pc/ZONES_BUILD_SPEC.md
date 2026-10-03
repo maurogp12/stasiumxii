@@ -188,7 +188,7 @@ players can choose a route.
 | 4 | `windmere` | Windmere | North, past Northgate (white city on the cliffs) | 15–20 | Frostspire Archive | New, Proposed |
 | 5 | `brinewake` | Brinewake | East, past Eastmarch (coast and islands) | 20–25 | Saltmaw Grotto | New, Proposed |
 | 6 | `slagcrown` | Slagcrown | South, past Southbridge (volcanic) | 25–30 | Cinderforge Depths | New, Proposed |
-| 7 | `eastmarch_fen_edge` | Eastmarch Fen Edge | Off the east road, the way into the swamp | 25–30 | Sunken Mill | New, Proposed |
+| 7 | `eastmarch_fen_edge` | Eastmarch Fen Edge | **Off the east road** (branches off `crosshaven_road_east`, before Eastmarch town; Mauro, option 1), the way into the swamp | 25–30 | Sunken Mill | New, Proposed |
 | 8 | `gloomfen_mire` | Gloomfen Mire (swamp) | Southeast dark wilds | 30–38 | Drowned Abbey | New, Proposed |
 | 9 | `stormspire` | Stormspire | **South of Gloomfen** (Mauro, 3 Oct) | **35–40** | Thunderwell Core | New, Proposed |
 | 10 | `ashen_shardfields` | Ashen Shardfields | Southwest dark wilds | 38–45 | Shard Hollow | New, Proposed |
@@ -1905,9 +1905,10 @@ headless.
    WP9).
 7. ~~**Crosshaven walker facing fix**~~ **Handled by the other team** (Mauro,
    3 Oct 2026). The build team does not touch the walker or its facing.
-8. ~~**Where Eastmarch Fen Edge sits**~~ **Handled by the other team** (Mauro,
-   3 Oct 2026). WP5a builds Fen Edge only once that team's answer is in the
-   spec; until then it is the last region in the WP5a order.
+8. ~~**Where Eastmarch Fen Edge sits**~~ **Answered 3 Oct 2026 (Mauro):
+   option 1, off the east road.** Its entry branches off
+   `crosshaven_road_east`, before Eastmarch town; Eastmarch town stays the way
+   to Brinewake. Fen Edge leads on to Gloomfen Mire.
 
 9. ~~**Economy build order / online server?**~~ **Answered 3 Oct 2026 (Mauro):
    "online servers get pushed until we have fully developed the map".** No
