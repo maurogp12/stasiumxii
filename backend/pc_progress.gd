@@ -58,6 +58,8 @@ var bank_slots := 0
 var weight_base := 0
 var weight_per_level := 0
 var load_log: Array = []
+## Story and task state. Missing from an old save, so those loads start clear.
+var mission_blob: Dictionary = {}
 var _uid := 1
 var _equip_seq := 1
 var _catalog = null
@@ -339,6 +341,7 @@ func save() -> bool:
 		"rare_choice": rare_choice,
 		"next_uid": _uid,
 		"equip_seq": _equip_seq,
+		"missions": mission_blob.duplicate(true),
 	}))
 	return true
 
@@ -401,9 +404,18 @@ func read_save() -> bool:
 	var prev_choice := rare_choice
 	var prev_uid := _uid
 	var prev_log: Array = load_log.duplicate()
+	var prev_missions: Dictionary = mission_blob.duplicate(true)
 	level = next_level
 	xp = next_xp
-	if not _apply_saved_spend(doc) or not _apply_saved_items(doc):
+	var missions_ok := true
+	if doc.has("missions"):
+		if typeof(doc["missions"]) != TYPE_DICTIONARY:
+			missions_ok = false
+		else:
+			mission_blob = (doc["missions"] as Dictionary).duplicate(true)
+	else:
+		mission_blob = {}
+	if not missions_ok or not _apply_saved_spend(doc) or not _apply_saved_items(doc):
 		level = prev_level
 		xp = prev_xp
 		spent = prev_spent
@@ -416,6 +428,7 @@ func read_save() -> bool:
 		rare_choice = prev_choice
 		_uid = prev_uid
 		load_log = prev_log
+		mission_blob = prev_missions
 		return false
 	return true
 

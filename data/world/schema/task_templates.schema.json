@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_task_templates.v1.json",
+  "title": "Stasium PC NPC task templates",
+  "description": "Sidecar stasium.world_task_templates version 1. Section 4.7. The loader is the strict check.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "notes", "templates"],
+  "properties": {
+    "format": {"const": "stasium.world_task_templates"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "notes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "templates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "object"}
+    }
+  }
+}

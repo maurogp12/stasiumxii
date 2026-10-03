@@ -28,8 +28,11 @@ const RewardPopup := preload("res://scenes/world/ui/reward_popup.gd")
 const Rewards := preload("res://backend/pc_rewards.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
+const Missions := preload("res://backend/pc_missions.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
 const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
+const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
+const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
 
 const SEA := Color("2d4f63")
 const ZOOM_MIN := 1.0
@@ -61,6 +64,9 @@ var npcs_root: Node2D
 var npc_plates: CanvasLayer
 var npc_book = null
 var dialogue: CanvasLayer
+var missions = null
+var tracker: CanvasLayer
+var mission_log: CanvasLayer
 var _pending_talk: Dictionary = {}
 var _npc_by_cell: Dictionary = {}
 var hover_cell := Vector2i(-1, -1)
@@ -174,6 +180,24 @@ func _ready() -> void:
 	dialogue = NpcDialogue.new()
 	dialogue.name = "NpcDialogue"
 	add_child(dialogue)
+	dialogue.accept_requested.connect(_on_mission_accept)
+	dialogue.turn_in_requested.connect(_on_mission_turn_in)
+	var mission_loaded: Dictionary = Missions.load_default()
+	if bool(mission_loaded.get("ok", false)):
+		missions = mission_loaded["missions"]
+		var migrated: Array = missions.reconcile(progress)
+		if not migrated.is_empty():
+			progress.save()
+	else:
+		push_error("Missions failed to load: %s" % [mission_loaded.get("errors", [])])
+	tracker = MissionTracker.new()
+	tracker.name = "MissionTracker"
+	tracker.setup(missions, progress)
+	add_child(tracker)
+	mission_log = MissionLog.new()
+	mission_log.name = "MissionLog"
+	mission_log.setup(missions, progress)
+	add_child(mission_log)
 	var npc_loaded: Dictionary = NpcBook.load_default()
 	if bool(npc_loaded.get("ok", false)):
 		npc_book = npc_loaded["npcs"]
@@ -321,6 +345,7 @@ func _spawn_npcs() -> void:
 		node.setup(zone, record, npc_plates)
 		var at: Dictionary = record["cell"]
 		_npc_by_cell[Vector2i(int(at["x"]), int(at["y"]))] = record
+	_refresh_marks()
 
 
 func _npc_at(cell: Vector2i) -> Dictionary:
@@ -404,7 +429,84 @@ func _open_talk() -> void:
 	var record: Dictionary = npc_book.by_id(npc_id)
 	if record.is_empty() or dialogue == null:
 		return
-	dialogue.open_for(record)
+	var view := _mission_view(npc_id)
+	if missions != null and progress != null:
+		var changed: Array = missions.on_talk(npc_id, progress)
+		if not changed.is_empty():
+			progress.save()
+			_refresh_marks()
+			view = {
+				"lines": str(view.get("lines", "")),
+				"accept_id": "",
+				"turn_in_id": "",
+				"soon": false,
+				"soon_name": "",
+			}
+		else:
+			view = _mission_view(npc_id)
+	dialogue.open_for(record, view)
+
+
+func _mission_view(npc_id: String) -> Dictionary:
+	if missions == null or progress == null:
+		return {}
+	return missions.panel_for(npc_id, progress)
+
+
+func _refresh_marks() -> void:
+	if npcs_root == null:
+		return
+	for node in npcs_root.get_children():
+		var next := ""
+		if missions != null and progress != null:
+			next = missions.mark_for(str(node.npc_id), progress)
+		node.set_mark(next)
+	if tracker != null:
+		tracker.refresh()
+
+
+func _on_mission_accept(mission_id: String) -> void:
+	if missions == null or progress == null:
+		return
+	var result: Dictionary = missions.accept(mission_id, progress)
+	if not bool(result.get("ok", false)):
+		return
+	progress.save()
+	_refresh_marks()
+	_reopen_talk()
+
+
+func _on_mission_turn_in(mission_id: String) -> void:
+	if missions == null or progress == null:
+		return
+	var result: Dictionary = missions.turn_in(mission_id, progress)
+	if not bool(result.get("ok", false)):
+		return
+	var items: Array = []
+	var raw_items: Variant = result.get("items", [])
+	if typeof(raw_items) == TYPE_ARRAY:
+		items = (raw_items as Array).duplicate()
+	grant_turn_in({
+		"xp": int(result.get("xp", 0)),
+		"coins": int(result.get("coins", 0)),
+		"items": items,
+	})
+	_refresh_marks()
+	if tracker != null:
+		tracker.show_reward(result, _movie != "")
+	_reopen_talk()
+
+
+func _reopen_talk() -> void:
+	if dialogue == null or npc_book == null:
+		return
+	var npc_id := str(dialogue.npc_id)
+	if npc_id == "":
+		return
+	var record: Dictionary = npc_book.by_id(npc_id)
+	if record.is_empty():
+		return
+	dialogue.open_for(record, _mission_view(npc_id))
 
 
 func _ortho_name(step: Vector2i) -> String:
@@ -453,6 +555,11 @@ func _edge_dir(cell: Vector2i) -> Vector2i:
 
 func _on_arrived(cell: Vector2i) -> void:
 	_refresh_hud()
+	if missions != null and progress != null and zone != null:
+		var advanced: Array = missions.on_reach(zone.zone_id, cell, progress)
+		if not advanced.is_empty():
+			progress.save()
+			_refresh_marks()
 	if not _pending_gate.is_empty():
 		var gate: Dictionary = _pending_gate
 		_pending_gate = {}
@@ -517,8 +624,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				if dialogue != null and dialogue.is_open():
 					dialogue.close()
+				elif mission_log != null and mission_log.is_open():
+					mission_log.close()
 				elif visuals != null:
 					visuals.toggle()
+			KEY_J:
+				if mission_log != null:
+					mission_log.toggle()
 			KEY_C:
 				if character_window != null:
 					character_window.toggle()
@@ -876,6 +988,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp6_fix()
 		"wp6":
 			await _movie_wp6()
+		"wp6b":
+			await _movie_wp6b()
 		"wp3b":
 			await _movie_wp3b()
 		"wp14":
@@ -1243,6 +1357,77 @@ func _movie_wp6() -> void:
 	_approach_npc(npc_book.by_id("stoneford_elder"))
 	await _wait_until_stopped()
 	await get_tree().create_timer(2.4).timeout
+
+
+## Take Welcome to Crosshaven, talk to the Trader and the Door Keeper, turn it in.
+func _movie_wp6b() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.45)
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.playback = 2.4
+	if progress != null and missions != null:
+		progress.level = 1
+		progress.xp = 0
+		progress.coins = 0
+		progress.mission_blob = {}
+		var reward := 15
+		var welcome: Dictionary = missions.mission("heart_welcome")
+		if not welcome.is_empty():
+			reward = int(welcome["rewards"]["xp"])
+		var need := int(progress.xp_to_next[0])
+		if reward < need:
+			progress.xp = need - reward
+		progress.save()
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	_refresh_marks()
+	_approach_npc(npc_book.by_id("crossroads_warden"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(1.1).timeout
+	_save_wp6b("welcome_offer.png")
+	if dialogue != null:
+		dialogue.press_accept()
+	await get_tree().create_timer(1.0).timeout
+	if dialogue != null:
+		dialogue.close()
+	await get_tree().create_timer(0.35).timeout
+	_approach_npc(npc_book.by_id("crossroads_trader"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(0.9).timeout
+	if dialogue != null:
+		dialogue.close()
+	await get_tree().create_timer(0.3).timeout
+	_approach_npc(npc_book.by_id("granary_door_keeper"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(0.9).timeout
+	if dialogue != null:
+		dialogue.close()
+	await get_tree().create_timer(0.3).timeout
+	_approach_npc(npc_book.by_id("crossroads_warden"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(0.7).timeout
+	if dialogue != null:
+		dialogue.press_turn_in()
+	await get_tree().create_timer(2.2).timeout
+	_save_wp6b("turn_in.png")
+
+
+func _save_wp6b(file_name: String) -> void:
+	if OS.has_feature("movie"):
+		return
+	var texture: ViewportTexture = get_viewport().get_texture()
+	if texture == null:
+		return
+	var image: Image = texture.get_image()
+	if image == null:
+		return
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp6b")
+	DirAccess.make_dir_recursive_absolute(folder)
+	image.save_png(folder.path_join(file_name))
 
 
 func _wait_until_stopped() -> void:
