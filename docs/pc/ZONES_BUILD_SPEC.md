@@ -494,7 +494,7 @@ Extras:
 | Ashen Shardfields | Shard Seer |
 | Blightwood Hollow | Last Watcher |
 
-That is 33 core NPCs (3 × 11) plus 18 extras: **51 NPCs**.
+That is 33 core NPCs (3 × 11) plus 20 extras (3 + 7 + 2 + 8 × 1): **53 NPCs** (corrected 3 Oct 2026; the earlier "18 extras, 51" was an arithmetic slip).
 
 ### 4.6 Dungeon doors: `data/world/dungeons.json`
 
@@ -1508,7 +1508,7 @@ dependency on each other can run in parallel (marked ∥).
 
 #### WP6: NPCs (Code + Feel)
 
-- **Goal:** 51 NPCs standing in the world, clickable, with a dialogue panel.
+- **Goal:** 53 NPCs standing in the world, clickable, with a dialogue panel.
 - **Needs:** WP1 (zones), WP5a for NPCs outside Crosshaven (WP5b for NPCs in middle chunks).
 - **Add:** `data/world/npcs.json` + schema, `scenes/world/npc/world_npc.gd` /
   `.tscn` (sprite, name plate, idle loop, shadow, y-sorted with props using
