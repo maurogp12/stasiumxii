@@ -1,0 +1,89 @@
+{
+  "format": "stasium.balance_inputs",
+  "format_version": 1,
+  "status": "proposed",
+  "stat_names": ["Mastery", "Vitality", "Swift", "Resist"],
+  "per_point_values": "Open",
+  "minutes": {
+    "world_fight": 3,
+    "dungeon_run": 15,
+    "mission": "Open"
+  },
+  "xp_share_of_step": {
+    "world_fight": 0.035,
+    "dungeon_win": 0.27,
+    "mission_talk_or_reach": 0.06,
+    "mission_defeat": 0.10,
+    "mission_clear_dungeon": 0.30
+  },
+  "stars": [1.0, 1.2, 1.45, 1.7, 2.0],
+  "normal_star": 1.0,
+  "profiles": {
+    "normal_mix": {"world": 0.5, "dungeon": 0.3, "mission": 0.2},
+    "world_only": {"world": 1.0, "dungeon": 0.0, "mission": 0.0},
+    "dungeon_heavy": "Open",
+    "party_players": 4,
+    "party_xp_share": 0.7,
+    "party_time": "Open"
+  },
+  "targets": {
+    "hours_to_cap_min": 50,
+    "hours_to_cap_max": 75,
+    "dungeon_vs_world_min": 1.3,
+    "dungeon_vs_world_max": 1.8,
+    "max_source_share": 0.5,
+    "world_only_slower": 1.5,
+    "class_band": 0.1,
+    "tier_step_min": 0.25,
+    "tier_step_max": 0.35,
+    "set_effect_max": 0.15,
+    "epic_relic_max": 0.2
+  },
+  "caps": {
+    "ap": 8,
+    "mp": 5,
+    "range_bonus": 1,
+    "healing_bonus": 0.2
+  },
+  "koliseo_sets_off": true,
+  "coins": {
+    "world_base": 3,
+    "world_per_level": 1.5,
+    "dungeon_times_world": 8,
+    "mission_tiers": "Open"
+  },
+  "drops": {
+    "world_regular": 0.03,
+    "world_rare": 0,
+    "world_box": 0,
+    "dungeon_regular_guaranteed": 1,
+    "dungeon_rare_by_star": [0, 0.05, 0.10, 0.20, 0.35],
+    "dungeon_box_from_star": 4,
+    "dungeon_box_chance": 0.10
+  },
+  "set_budget": {
+    "base": 4,
+    "tier_one_counts_as": 1
+  },
+  "tiers": [1, 10, 20, 30, 40, 50],
+  "level_gap": {
+    "below_6_to_9": 0.5,
+    "below_10_or_more": 0.1,
+    "above_per_level": 0.05,
+    "above_cap": 0.25
+  },
+  "damage_classes": ["kestrel", "ironjaw", "gloam"],
+  "kit_by_ap": {
+    "6": {"kestrel": 36, "ironjaw": 32, "gloam": 26, "bastion": 22, "mender": 32},
+    "7": {"kestrel": 36, "ironjaw": 40, "gloam": 35, "bastion": 22, "mender": 36},
+    "8": {"kestrel": 44, "ironjaw": 40, "gloam": 44, "bastion": 22, "mender": 42}
+  },
+  "open_items": [
+    "mission_minutes",
+    "dungeon_heavy_mix",
+    "party_time",
+    "per_point_values",
+    "five_part_effect_sizes",
+    "rewards_json"
+  ]
+}

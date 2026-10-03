@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/balance_inputs.v1.json",
+  "title": "Stasium PC balance simulator inputs",
+  "description": "Proposed numbers from spec 4.8, 4.9 and 4.14. A value of Open means the spec does not give a number. The level cap is not stored here; the simulator reads max_level from level_curve.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "stat_names", "per_point_values", "minutes", "xp_share_of_step", "stars", "normal_star", "profiles", "targets", "caps", "koliseo_sets_off", "coins", "drops", "set_budget", "tiers", "level_gap", "damage_classes", "kit_by_ap", "open_items"],
+  "properties": {
+    "format": {"const": "stasium.balance_inputs"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "stat_names": {"type": "array", "items": {"type": "string"}},
+    "per_point_values": {},
+    "minutes": {"type": "object"},
+    "xp_share_of_step": {"type": "object"},
+    "stars": {"type": "array"},
+    "normal_star": {"type": "number"},
+    "profiles": {"type": "object"},
+    "targets": {"type": "object"},
+    "caps": {"type": "object"},
+    "koliseo_sets_off": {"type": "boolean"},
+    "coins": {"type": "object"},
+    "drops": {"type": "object"},
+    "set_budget": {"type": "object"},
+    "tiers": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+    "level_gap": {"type": "object"},
+    "damage_classes": {"type": "array", "items": {"type": "string"}},
+    "kit_by_ap": {"type": "object"},
+    "open_items": {"type": "array", "items": {"type": "string"}}
+  }
+}

@@ -1,0 +1,5 @@
+WP15 balance report. No clip: the spec's media for this package is the printed table, and the package does not change the world picture.
+
+Reference A remains the open-world bar. This report is the before/after for the numbers: the curve, the 4.8 rates, and the checks that are still Open.
+
+Cap is max_level from level_curve.json. The stat is Resist. Mission minutes, the dungeon-heavy mix, party time, and per-point stat values are Open because the spec does not give them.
