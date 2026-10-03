@@ -99,10 +99,11 @@ func _test_params_and_slots() -> void:
 		_check_import(sway_path, "lossless")
 		eq(FileAccess.get_file_as_string(sway_path + ".import").contains("source_color"), false, "%s sway mask import has no color hint" % slot)
 	eq(src.contains("sway_tex"), true, "the leaf sway reads the greyscale mask")
-	eq(src.contains("const SWAY_SHADER"), false, "leaves do not keep a per-pixel sway shader")
-	eq(src.contains("UV - off"), false, "the leaf draw does not take a dependent sample")
+	eq(src.contains("const SWAY_SHADER"), true, "each leaf samples the sway mask in a fragment shader")
+	eq(src.contains("UV - off * w"), true, "the fragment shifts the sample by the sway mask")
+	eq(src.contains("VERTEX +="), false, "the leaf quad is not displaced in the vertex shader")
 	eq(src.contains("cutout_tex"), false, "the leaf draw does not sample the cutout mask")
-	truthy(src.contains("rest_pos"), "each leaf sprite keeps a rest position to sway from")
+	eq(src.contains("rest_pos"), false, "the leaf sprite stays put while the shader sways")
 	_test_sway_pixels()
 	eq(float(params.get("shadow_opacity", 0.0)), 0.55, "leaf shadow strength starts at 0.55")
 	eq(float(params.get("top_fade_distance", 0.0)), 220.0, "the top canopy fades across the pan distance")
@@ -211,10 +212,19 @@ func _test_live_layer() -> void:
 	if leaf_art != null:
 		var speed := float(JUNGLE.load_params()["sway_speed"])
 		var phase := float((JUNGLE.load_params()["sway_phase"] as Dictionary).get("front_leaves_left", 0.0))
-		layer.preview_time(0.0)
-		var rest := leaf_art.position
-		layer.preview_time((PI * 0.5 - phase) / speed)
-		truthy(rest.distance_to(leaf_art.position) > 4.0, "the left leaf sprite travels more than 4px at full swing")
+		var mat := leaf_art.material as ShaderMaterial
+		truthy(mat != null and mat.shader != null, "the left leaf has the sway shader")
+		if mat != null and mat.shader != null:
+			truthy(mat.shader.code.contains("UV - off * w"), "the live shader offsets the sample by the mask")
+			truthy(mat.get_shader_parameter("sway_tex") != null, "the live shader has the sway mask")
+			layer.preview_time(0.0)
+			var rest := leaf_art.position
+			var swing0 := float(mat.get_shader_parameter("swing"))
+			layer.preview_time((PI * 0.5 - phase) / speed)
+			var swing1 := float(mat.get_shader_parameter("swing"))
+			truthy(absf(swing1) > 0.95, "full swing drives the sway uniform")
+			truthy(absf(swing1 - swing0) > 0.5, "the sway uniform changes between the two times")
+			truthy(rest.distance_to(leaf_art.position) < 0.5, "the sprite stays put and the fragment shader moves the pixels")
 	cam.position -= Vector2(80, 0)
 	layer.layout()
 	eq(layer.shadow_count(), 225, "every cell gets a leaf shadow")

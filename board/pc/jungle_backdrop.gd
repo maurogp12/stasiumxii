@@ -90,12 +90,31 @@ const FIGHTER_RY := 130.0
 const FIGHTER_LIFT := 42.0
 const HOVER_HX := 72.0
 const HOVER_HY := 44.0
-## The sway mask is ~0 on a sprite's four corners, so a vertex nudge never
-## shows. A per-pixel UV offset does move the leaves, and so does a
-## subdivided mesh, but on llvmpipe either one pushes still/pan/walk past
-## the +25% cap. The plates already use most of that cap. The live sway
-## slides each leaf sprite by the authored amplitude. Transparent gaps ride
-## along and stay invisible. The mask is what the pixel test measures.
+## Per-pixel sway. A Sprite2D is one quad and the mask is ~0 on those corners,
+## so moving VERTEX does not move a leaf. The fragment shifts the sample by
+## the mask. A fixed transparent pad keeps that shift inside the texture
+## while the camera pans, so the image is not rebuilt. The color read is lod 0
+## because the offset UV is discontinuous. Fighter holes stay on the cutout
+## mask the tests read; sampling it here was a second fetch the frame cap
+## cannot afford, and the leaves already stay off the play cells.
+const SWAY_PAD_PX := 12
+const SWAY_MASK_MAX := 96
+const SWAY_SHADER := """shader_type canvas_item;
+uniform sampler2D sway_tex : filter_nearest, repeat_disable;
+uniform float swing = 0.0;
+uniform vec2 sway_dir = vec2(1.0, 0.0);
+uniform float amplitude_px = 16.0;
+void fragment() {
+	vec2 off = sway_dir * swing * amplitude_px * TEXTURE_PIXEL_SIZE;
+	vec2 m = textureLod(sway_tex, UV, 0.0).rg;
+	float w = m.r;
+	// G is coverage. Empty texels that also do not sway skip the color fetch.
+	if (m.g < 0.5 && w < 0.04) {
+		discard;
+	}
+	COLOR = textureLod(TEXTURE, UV - off * w, 0.0);
+}
+"""
 
 ## Small mask. Mirrors leaf_cutout(). 1 keeps the leaf, 0 cuts a hole.
 const CUTOUT_SHADER := """shader_type canvas_item;
@@ -143,6 +162,7 @@ var _force_off: bool = false
 var _built: bool = false
 var _time: float = 0.0
 var _shader: Shader
+var _sway_shader: Shader
 var _backs: Dictionary = {}
 var _clips: Dictionary = {}
 var _pivots: Dictionary = {}
@@ -159,7 +179,6 @@ var _cutout_rect := Rect2()
 var _guard_cache := Rect2()
 var _span_cache := Rect2()
 var _layout_key: String = ""
-var _sway_peak: Dictionary = {}
 var _motion_layout: bool = false
 var _plate_sprite: Sprite2D
 var _plate_mat: ShaderMaterial
@@ -271,11 +290,12 @@ func layout() -> void:
 	_ensure_params()
 	_layout_backs()
 	_layout_leaves()
-	_layout_skirt()
-	_layout_contact()
+	if not _motion_layout:
+		_layout_skirt()
+		_layout_contact()
+		_drop_pointer(self)
 	_apply_sway()
 	_apply_top_fade()
-	_drop_pointer(self)
 	_sync_cutout()
 
 
@@ -529,7 +549,7 @@ func _ensure_nodes() -> void:
 		var path := resolve_slot(slot)
 		sprite.texture = _load_tex(path)
 		sprite.set_meta("slot_path", path)
-		sprite.set_meta("sway_dir", _sway_dir(str(LEAF_EDGES[slot])))
+		sprite.material = _sway_material(str(LEAF_EDGES[slot]))
 		pivot.add_child(sprite)
 		clip.add_child(pivot)
 		add_child(clip)
@@ -791,11 +811,15 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	pivot.rotation = 0.0
 	var frac: Rect2 = sprite.get_meta("crop_frac", Rect2(0, 0, 1, 1))
 	var shift := Vector2(frac.position.x + frac.size.x * 0.5 - 0.5, frac.position.y + frac.size.y * 0.5 - 0.5) * disp
-	var rest := local + shift
-	sprite.set_meta("rest_pos", rest)
-	sprite.set_meta("sway_amp", swing_px * _mask_peak(slot))
-	sprite.position = rest
+	sprite.position = local + shift
 	sprite.modulate = _layer_modulate("front_leaves")
+	var mat := sprite.material as ShaderMaterial
+	if mat != null and sprite.scale.x > 0.001:
+		# Cap at the pad. A squeezed leaf would ask for hundreds of texels, the sample would
+		# clamp, and the fetch would jump across the texture. On a full-size leaf this is the authored swing.
+		var amp := minf(swing_px / sprite.scale.x, float(SWAY_PAD_PX))
+		mat.set_shader_parameter("amplitude_px", amp)
+		mat.set_shader_parameter("sway_dir", _sway_dir(edge))
 
 
 func _apply_sway() -> void:
@@ -810,11 +834,11 @@ func _apply_sway() -> void:
 		pivot.rotation = 0.0
 		pivot.position = pivot.get_meta("base_pos")
 		var sprite: Sprite2D = _sprites.get(slot)
-		if sprite == null or not sprite.has_meta("rest_pos"):
+		if sprite == null:
 			continue
-		var rest: Vector2 = sprite.get_meta("rest_pos")
-		var dir: Vector2 = sprite.get_meta("sway_dir", Vector2.RIGHT)
-		sprite.position = rest + dir * wave * float(sprite.get_meta("sway_amp", 0.0))
+		var mat := sprite.material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("swing", wave)
 
 
 func _build_shadows(board: Node2D) -> void:
@@ -1066,11 +1090,16 @@ func _assign_display_tex(art: CanvasItem, source: Texture2D, px: Vector2i) -> vo
 	art.set_meta("full_px", Vector2(image.get_width(), image.get_height()))
 	if art.has_meta("crop_frac"):
 		var frac: Rect2 = art.get_meta("crop_frac")
-		var rw := maxi(int(round(float(image.get_width()) * frac.size.x)), 1)
-		var rh := maxi(int(round(float(image.get_height()) * frac.size.y)), 1)
-		var rx := clampi(int(round(float(image.get_width()) * frac.position.x)), 0, image.get_width() - rw)
-		var ry := clampi(int(round(float(image.get_height()) * frac.position.y)), 0, image.get_height() - rh)
-		image = image.get_region(Rect2i(rx, ry, rw, rh))
+		image = _crop_image(image, frac)
+		var mask := _leaf_sway_image(art, frac)
+		if mask != null:
+			mask = _crop_image(mask, frac)
+			mask = _pad_image(mask, SWAY_PAD_PX)
+		image = _pad_image(image, SWAY_PAD_PX)
+		var mat := art.material as ShaderMaterial
+		if mat != null and mask != null:
+			mask = _pack_coverage(mask, image)
+			mat.set_shader_parameter("sway_tex", ImageTexture.create_from_image(_limit_sway(mask, SWAY_MASK_MAX)))
 	_set_art_texture(art, ImageTexture.create_from_image(image))
 	art.set_meta("display_key", key)
 
@@ -1233,23 +1262,120 @@ func _controls_ignore(node: Node) -> bool:
 	return true
 
 
-func _mask_peak(slot: String) -> float:
-	if _sway_peak.has(slot):
-		return float(_sway_peak[slot])
-	var sway_tex := _load_tex(art_root() + slot + "_sway.png")
-	var peak := 0.0
-	if sway_tex != null:
-		var image := sway_tex.get_image()
-		if image != null and not image.is_empty():
-			if image.is_compressed():
-				image.decompress()
-			var step_x := maxi(int(image.get_width() / 24), 1)
-			var step_y := maxi(int(image.get_height() / 24), 1)
-			for y in range(0, image.get_height(), step_y):
-				for x in range(0, image.get_width(), step_x):
-					peak = maxf(peak, image.get_pixel(x, y).r)
-	_sway_peak[slot] = peak
-	return peak
+func _sway_material(edge: String) -> ShaderMaterial:
+	if _sway_shader == null:
+		_sway_shader = Shader.new()
+		_sway_shader.code = SWAY_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _sway_shader
+	mat.set_shader_parameter("sway_dir", _sway_dir(edge))
+	mat.set_shader_parameter("swing", 0.0)
+	mat.set_shader_parameter("amplitude_px", float(_params.get("sway_amplitude_px", 14.0)))
+	return mat
+
+
+func _crop_image(image: Image, frac: Rect2) -> Image:
+	var w := image.get_width()
+	var h := image.get_height()
+	var rx := clampi(int(round(frac.position.x * float(w))), 0, maxi(w - 1, 0))
+	var ry := clampi(int(round(frac.position.y * float(h))), 0, maxi(h - 1, 0))
+	var rw := clampi(int(round(frac.size.x * float(w))), 1, w - rx)
+	var rh := clampi(int(round(frac.size.y * float(h))), 1, h - ry)
+	return image.get_region(Rect2i(rx, ry, rw, rh))
+
+
+func _pad_image(image: Image, pad: int) -> Image:
+	if pad <= 0:
+		return image
+	var w := image.get_width()
+	var h := image.get_height()
+	var out := Image.create(w + pad * 2, h + pad * 2, false, image.get_format())
+	out.fill(Color(0, 0, 0, 0))
+	out.blit_rect(image, Rect2i(0, 0, w, h), Vector2i(pad, pad))
+	return out
+
+
+## The mask is cropped with the same fraction as the color, then padded, so UV matches.
+## It is kept small: the fragment only needs the weight, and a large second fetch misses the frame cap.
+func _leaf_sway_image(art: CanvasItem, _frac: Rect2) -> Image:
+	var slot := str(art.get_parent().get_parent().name)
+	var tex := _load_tex(art_root() + slot + "_sway.png")
+	if tex == null:
+		return null
+	var image := tex.get_image()
+	if image == null or image.is_empty():
+		return null
+	image = image.duplicate()
+	if image.is_compressed():
+		image.decompress()
+	var full: Vector2 = art.get_meta("full_px", Vector2(image.get_width(), image.get_height()))
+	var tw := maxi(int(round(full.x)), 1)
+	var th := maxi(int(round(full.y)), 1)
+	if image.get_width() != tw or image.get_height() != th:
+		image.resize(tw, th, Image.INTERPOLATE_BILINEAR)
+	return image
+
+
+func _pack_coverage(mask: Image, color: Image) -> Image:
+	if mask.get_format() != Image.FORMAT_RGBA8:
+		mask.convert(Image.FORMAT_RGBA8)
+	var src := color
+	if src.get_format() != Image.FORMAT_RGBA8:
+		src = src.duplicate()
+		src.convert(Image.FORMAT_RGBA8)
+	var w := mini(mask.get_width(), src.get_width())
+	var h := mini(mask.get_height(), src.get_height())
+	var md := mask.get_data()
+	var cd := src.get_data()
+	var count := w * h
+	for i in count:
+		var a := int(cd[i * 4 + 3])
+		md[i * 4 + 1] = 255 if a > 12 else 0
+		md[i * 4 + 2] = 0
+		md[i * 4 + 3] = 255
+	mask.set_data(mask.get_width(), mask.get_height(), false, Image.FORMAT_RGBA8, md)
+	return mask
+
+
+## Average the sway weight and keep a texel only when its whole bin is empty of leaves.
+func _limit_sway(image: Image, edge: int) -> Image:
+	var w := image.get_width()
+	var h := image.get_height()
+	var long := maxi(w, h)
+	if long <= edge or edge < 1:
+		return image
+	if image.get_format() != Image.FORMAT_RGBA8:
+		image.convert(Image.FORMAT_RGBA8)
+	var scale := float(edge) / float(long)
+	var nw := maxi(int(round(float(w) * scale)), 1)
+	var nh := maxi(int(round(float(h) * scale)), 1)
+	var src := image.get_data()
+	var out := Image.create(nw, nh, false, Image.FORMAT_RGBA8)
+	var dst := out.get_data()
+	for y in nh:
+		var y0 := int(float(y) * float(h) / float(nh))
+		var y1 := mini(maxi(int(float(y + 1) * float(h) / float(nh)), y0 + 1), h)
+		for x in nw:
+			var x0 := int(float(x) * float(w) / float(nw))
+			var x1 := mini(maxi(int(float(x + 1) * float(w) / float(nw)), x0 + 1), w)
+			var sum := 0
+			var n := 0
+			var covered := 0
+			for yy in range(y0, y1):
+				var row := yy * w
+				for xx in range(x0, x1):
+					var p := (row + xx) * 4
+					sum += int(src[p])
+					n += 1
+					if int(src[p + 1]) > 127:
+						covered = 255
+			var q := (y * nw + x) * 4
+			dst[q] = int(sum / maxi(n, 1))
+			dst[q + 1] = covered
+			dst[q + 2] = 0
+			dst[q + 3] = 255
+	out.set_data(nw, nh, false, Image.FORMAT_RGBA8, dst)
+	return out
 
 
 func _sway_dir(edge: String) -> Vector2:
