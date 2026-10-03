@@ -66,6 +66,12 @@ Mauro can judge on a phone screen.
 > (WP13 beyond the glide that is already built). Systems that need a body
 > (NPCs, dungeon foes) use the existing sprites as stand-ins.
 
+> **Focus now** (Mauro, 3 Oct 2026: "focus on map zones lvl dungs and npc with
+> missions"): **map zones, levels, dungeons, and NPCs with missions.** Build in
+> this order: WP0 → WP1 → WP3 → WP4 → WP5a → WP6 → **WP6b (missions)** → WP7 →
+> WP8 (dungeon runs; how is Open Q2) → WP5b → WP2. The combat look packages
+> (`docs/pc/LOOK_TARGET.md`) come after this track. Characters stay parked.
+
 ## 1. Rules
 
 ### 1.1 PC only
@@ -465,6 +471,74 @@ Dungeon names and one-line ideas (**Proposed**, except the existing five):
 | Shard Hollow | Ashen Shardfields | Crystal cave: shard golems, Ashen Prism |
 | Heart of the Blight | Blightwood Hollow | End-game root maze: blight horrors, the Rotting Elder |
 
+### 4.7 Missions: `data/world/missions.json` (Proposed)
+
+NPCs give missions (Mauro, 3 Oct 2026: "npc with missions"). Everything in
+this section is **Proposed** except that missions exist.
+
+```json
+{
+  "format": "stasium.world_missions",
+  "format_version": 1,
+  "status": "proposed",
+  "missions": [
+    {
+      "id": "heart_welcome",
+      "name": "Welcome to Crosshaven",
+      "level_zone": "crosshaven_heart",
+      "giver": "crossroads_warden",
+      "turn_in": "crossroads_warden",
+      "min_level": 1,
+      "requires": [],
+      "steps": [
+        {"type": "talk", "npc": "crossroads_trader"},
+        {"type": "talk", "npc": "granary_door_keeper"}
+      ],
+      "reward_xp": 40,
+      "lines": {
+        "offer": ["New face? Meet the trader and the cellar keeper."],
+        "done": ["Good. Now you know who to ask."]
+      }
+    }
+  ]
+}
+```
+
+Step types in v1:
+
+| Type | Fields | Done when |
+|---|---|---|
+| `talk` | `npc` | The player opens that NPC's dialogue |
+| `reach` | `zone_id` and either `landmark` (a chunk's landmark id) or `cell` | The walker stands on that cell, or next to that landmark |
+| `clear_dungeon` | `dungeon` | That dungeon run ends in a win (needs WP8; until then the mission shows as "coming soon" and cannot be taken) |
+
+`defeat` (world monsters, Open Q6) and `collect` / `deliver` (needs items) are
+**Open**: not in v1.
+
+Mission states, saved with the hero level in `user://pc_progress.json`:
+`locked` → `available` → `active` → `ready` (all steps done, go back to the
+turn-in NPC) → `done`. A mission is `available` when the hero level ≥
+`min_level` and every id in `requires` is `done`.
+
+Mission set (**Proposed**, about 51):
+
+- **Zone chain from each Warden (3 per zone, 33 in all):** (1) *Welcome*: talk
+  to the zone's Trader and Door Keeper; (2) *Scout*: reach the landmarks of 2–3
+  of the zone's chunks; (3) *The dungeon*: clear the zone's dungeon. Each chain
+  needs the previous zone's chain step 2, so the zones open up in level order.
+- **One side mission per extra NPC (18):** talk / reach missions that fit the
+  NPC (the Fisher sends you to the Eastmarch docks, the Fen Guide walks you to
+  the swamp gate, the Last Watcher sends you to Blightwood's deepest chunk…).
+
+XP rewards (**Proposed**, from the level curve in 4.3, using the zone's
+`level_min`): `talk`-only missions 15% of `xp_to_next(level_min)`, `reach`
+missions 25%, dungeon missions 60%. The file stores the numbers; the rule only
+fills them once.
+
+Rules: every `giver`, `turn_in` and `npc` exists in `npcs.json`; every
+`zone_id`, `landmark` and `dungeon` exists; `requires` has no cycles; every
+mission can be finished from the start of the game (a test walks the chain).
+
 ---
 
 ## 5. Work packages
@@ -617,6 +691,31 @@ dependency on each other can run in parallel (marked ∥).
   the path; the dialogue opens only after arrival; Esc / click outside closes.
 - **Media:** a clip talking to the Guide at the spawn and to a town Elder.
 
+#### WP6b: NPC missions (Code)
+
+- **Goal:** NPCs give missions; the player takes them, does the steps, turns
+  them in and gets XP.
+- **Needs:** WP3 (levels), WP6 (NPCs). `clear_dungeon` steps light up when WP8
+  lands.
+- **Add:** `data/world/missions.json` + schema; `backend/pc_missions.gd`
+  (preload; pure logic: `available_for(npc_id, progress)`, `accept`,
+  `on_talk(npc_id)`, `on_reach(zone_id, cell)`, `on_dungeon_won(id)`,
+  `turn_in` → XP through `pc_progress.gd`; no scene code, so a server can run it
+  later); `scenes/world/ui/mission_tracker.gd` / `.tscn` (the active missions
+  and their next step, top-right); `scenes/world/ui/mission_log.gd` / `.tscn`
+  (all missions by zone, opened with **J**, Proposed); `tests/run_pc_missions_tests.gd`.
+- **Change:** `npc_dialogue.gd` gets **Accept** and **Turn in** buttons and the
+  offer / done lines; `world_npc.gd` shows a mark over the NPC's head: **!** (a
+  mission to take) and **?** (a mission to turn in), Dofus / Wakfu style;
+  `crosshaven_world.gd` calls `on_reach` when the walker arrives and
+  `on_talk` when a dialogue opens.
+- **Accept:** every rule in 4.7 holds; a test plays the Crosshaven Heart chain
+  from level 1 (talk → talk → turn in → XP → level up event); missions above
+  the hero level stay `locked`; progress survives save / load; turning in twice
+  gives XP once.
+- **Media:** a clip taking *Welcome to Crosshaven* from the Warden, talking to
+  the Trader and the Door Keeper, and turning it in (XP and level up shown).
+
 #### WP7: Dungeon doors in the world (Code)
 
 - **Goal:** 11 doors, one per level zone, with a door panel.
@@ -630,6 +729,9 @@ dependency on each other can run in parallel (marked ∥).
   `DungeonLauncher.enter(dungeon_id)` that shows "Dungeon run: not built yet"
   until WP8 is approved.
 - **Media:** a clip opening Threshgate's door panel in Southbridge.
+- **Focus:** dungeons are one of Mauro's four focus items (3 Oct). WP8 (the
+  runs themselves) still waits on Open Q2 (how: port the Stasis code and the
+  team engine to PC).
 
 #### WP8: Dungeon runs on PC (Code), **blocked on Open Q2**
 
@@ -775,8 +877,9 @@ headless.
 3. **Level system to 50:** where does XP come from (monsters, dungeons,
    Koliseo, quests)? What does a level give (stat points, AP at some level,
    like the phone's 2 points per level and AP at 20)?
-4. **NPC jobs:** shops, quests, storage, travel, healing: which first, and with
-   which rules? v1 NPCs only talk.
+4. **NPC jobs:** ~~which first?~~ **Partly answered 3 Oct 2026 (Mauro): NPCs
+   with missions come first** (4.7, WP6b). Still Open: shops, storage, travel,
+   healing, and mission types that need world monsters or items.
 5. ~~**Region size:** 2 chunks per region to start, or more?~~ **Answered
    3 Oct 2026 (Mauro / Luca, yes):** 55 new chunks, 3–8 per region, with entry
    / door / hub / middle chunks, one landmark per chunk, WP5 split into WP5a and

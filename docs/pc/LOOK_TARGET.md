@@ -155,6 +155,10 @@ the matching reference frame.
 
 ## Start here (build team)
 
+> **Priority:** this look track comes **after** the world track in
+> `docs/pc/ZONES_BUILD_SPEC.md` (Mauro, 3 Oct 2026: "focus on map zones lvl
+> dungs and npc with missions"). Characters stay parked.
+
 PC combat is on `main`'s line. The look packages go on their own integration
 branch, **`pc/combat-look`**, created from **`claude/stasium-xii-pc`** (which is
 `main` plus the combat glide walk), one branch per package. Never push to
