@@ -9,7 +9,10 @@ const CURVE_PATH := "res://data/world/level_curve.json"
 const SAVE_PATH := "user://pc_progress.json"
 const FORMAT := "stasium.level_curve"
 const FORMAT_VERSION := 1
-const DOC_KEYS: Array[String] = ["format", "format_version", "status", "max_level", "xp_to_next"]
+const DOC_KEYS: Array[String] = [
+	"format", "format_version", "status", "max_level", "xp_to_next",
+	"pace_start", "pace_ratio",
+]
 
 var level: int = 1
 var xp: int = 0
@@ -129,6 +132,14 @@ static func _check_curve(doc: Dictionary, errors: Array) -> void:
 	var cap_ok := _whole(doc.get("max_level", null)) and int(doc.get("max_level", 0)) >= 2
 	if not cap_ok:
 		_err(errors, "max_level must be an integer of 2 or more")
+	var has_pace_start := doc.has("pace_start")
+	var has_pace_ratio := doc.has("pace_ratio")
+	if has_pace_start != has_pace_ratio:
+		_err(errors, "pace_start and pace_ratio are set together")
+	if has_pace_start and not _positive_number(doc.get("pace_start", null)):
+		_err(errors, "pace_start must be a positive number")
+	if has_pace_ratio and not _positive_number(doc.get("pace_ratio", null)):
+		_err(errors, "pace_ratio must be a positive number")
 	if typeof(doc.get("xp_to_next", null)) != TYPE_ARRAY:
 		_err(errors, "xp_to_next must be an array")
 		return
@@ -150,6 +161,12 @@ static func _unknown(doc: Dictionary, allowed: Array, errors: Array, label: Stri
 	for key in doc.keys():
 		if not allowed.has(str(key)):
 			_err(errors, "%s has unknown key %s" % [label, key])
+
+
+static func _positive_number(value: Variant) -> bool:
+	if typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+		return false
+	return is_finite(float(value)) and float(value) > 0.0
 
 
 static func _whole(value: Variant) -> bool:

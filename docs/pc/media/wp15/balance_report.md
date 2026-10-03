@@ -7,9 +7,12 @@ Stats: Mastery, Vitality, Swift, Resist.
 
 | Profile | Result |
 |---|---|
-| World only | 70.00 hours to the cap |
-| Normal mix (world 50% / dungeons 30% / missions 20%) | Open |
-| 150-hour pace | Open |
+| World only, free | 172.23 hours to the cap |
+| World only, premium | 137.78 hours to the cap |
+| Normal mix, free (world 50% / dungeons 30% / missions 20%) | Open |
+| Normal mix, premium | Open |
+| Free target (accept 130-170) | 150 hours |
+| Premium target | 120 hours |
 | Dungeon heavy | Open |
 | Party of 4 | XP share 0.7 each. Time is Open. |
 
@@ -19,8 +22,10 @@ Dungeon XP per minute is 1.543 times open-world XP per minute at the normal star
 
 | Source | Coins / hour | Regular parts / hour | Rare parts / hour | Boxes / hour |
 |---|---|---|---|---|
-| Open world | 1560.0 | 0.60 | 0.00 | 0.00 |
-| Dungeon, normal star | 2496.0 | 4.00 | 0.00 | 0.00 |
+| Open world, free | 1560.0 | 0.60 | 0.00 | 0.00 |
+| Open world, premium | 1794.0 | 0.66 | 0.00 | 0.00 |
+| Dungeon, normal star, free | 2496.0 | 4.00 | 0.00 | 0.00 |
+| Dungeon, normal star, premium | 2870.4 | 4.40 | 0.00 | 0.00 |
 
 Mission coin amounts are a range in the spec. A single number inside each tier is Open.
 
@@ -58,7 +63,7 @@ Mission coin amounts are a range in the spec. A single number inside each tier i
 | ap_6_gloam | outside | Raw kit output is -19% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | ap_7_ironjaw | outside | Raw kit output is 11% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | mission_minutes | open | Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open. |
-| pace_hours | open | The 150-hour pace is Open. At 46d897e, section 4.8 targets about 60 hours (accept 50-75) and does not define a pace factor, premium hours, or pace_start. Mission minutes are Open, so that clock is not scored and no factor was invented. |
+| normal_mix_band | open | Free normal-mix target 150 h (accept 130-170) and premium target 120 h are not scored. Mission minutes are Open. Pace is pace_start 1.6000 and pace_ratio 0.9532 from the curve. World-only free is 172.23 h and premium world-only is 137.78 h. |
 | dungeon_heavy | open | The dungeon-heavy mix is Open. The spec names the profile and does not give its time split. |
 | per_point_values | open | Per-point Mastery, Vitality, Swift and Resist values are Open, so set rules 3, 4 and 5 are not scored. |
 | zones | pass | Every zone band ends at or below the curve cap. |

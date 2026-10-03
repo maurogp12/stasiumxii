@@ -5,6 +5,7 @@ extends SceneTree
 ## Run: godot --headless --path . -s res://tests/run_pc_balance_tests.gd
 
 const Balance = preload("res://backend/pc_balance.gd")
+const Premium = preload("res://backend/pc_premium.gd")
 const CURVE_PATH := "res://data/world/level_curve.json"
 const INPUT_PATH := "res://data/world/balance_inputs.json"
 const ZONE_PATH := "res://data/world/level_zones.json"
@@ -58,21 +59,33 @@ func _test_shipped(result: Dictionary) -> void:
 	eq(stats.has("Resist"), true, "Resist is a stat")
 	eq(stats.has("Ward"), false, "Ward is not a stat")
 	eq(str(result["normal_mix_hours"]), "Open", "normal-mix hours stay Open")
-	eq(curve.has("pace_start"), false, "the curve does not invent pace_start")
-	eq(curve.has("pace_ratio"), false, "the curve does not invent pace_ratio")
-	eq(_has_finding(result, "pace_hours", "open"), true, "the 150-hour pace stays Open")
-	eq(str(result["text"]).find("150-hour pace") >= 0, true, "the table marks the 150-hour pace Open")
+	eq(str(result["premium_mix_hours"]), "Open", "premium normal-mix hours stay Open")
+	near(float(curve["pace_start"]), 1.6, "pace_start is the spec factor")
+	near(float(curve["pace_ratio"]), 0.9532, "pace_ratio is the spec factor")
+	var expect := _paced_hours(curve, inputs)
+	near(float(result["world_only_hours"]), expect, "free world-only hours use the pace factor")
+	var xp_bonus := float(inputs["premium"]["xp_bonus"])
+	near(float(result["premium_world_hours"]), expect / (1.0 + xp_bonus), "premium world-only hours apply the XP bonus")
+	var targets: Dictionary = inputs["targets"]
+	eq(float(targets["hours_to_cap"]), 150.0, "free target is 150 hours")
+	eq(float(targets["hours_to_cap_min"]), 130.0, "accept band starts at 130 hours")
+	eq(float(targets["hours_to_cap_max"]), 170.0, "accept band ends at 170 hours")
+	eq(float(targets["premium_hours"]), 120.0, "premium target is 120 hours")
+	eq(Balance.in_accept_band(float(targets["hours_to_cap"]), inputs), true, "150 hours is inside the accept band")
+	eq(Balance.in_accept_band(float(targets["hours_to_cap_min"]) - 1.0, inputs), false, "one hour under the band is outside")
+	eq(Balance.in_accept_band(float(targets["hours_to_cap_max"]) + 1.0, inputs), false, "one hour over the band is outside")
+	near(float(targets["premium_hours"]), float(targets["hours_to_cap"]) / (1.0 + xp_bonus), "120 hours is the 150-hour clock with the XP bonus")
+	eq(Balance.in_accept_band(float(result["world_only_hours"]), inputs), false, "exact-factor world-only hours are outside the 130-170 band")
+	eq(absf(float(result["premium_world_hours"]) - float(targets["premium_hours"])) > 1.0, true, "premium world-only hours are reported beside the 120 hour target")
+	eq(_has_finding(result, "normal_mix_band", "open"), true, "the normal-mix band stays Open while mission minutes are Open")
+	eq(Premium.is_premium(), true, "offline premium check returns true")
+	eq(str(result["text"]).find("Premium target") >= 0, true, "the table prints the premium clock")
 	eq(str(inputs["per_point_values"]), "Open", "per-point values stay Open")
 	eq(str(inputs["minutes"]["mission"]), "Open", "mission minutes stay Open")
 	eq(str(inputs["profiles"]["dungeon_heavy"]), "Open", "dungeon-heavy mix stays Open")
 	eq(inputs["koliseo_sets_off"], true, "sets stay off in Koliseo")
-	var targets: Dictionary = inputs["targets"]
 	var ratio := float(result["dungeon_vs_world"])
 	eq(ratio >= float(targets["dungeon_vs_world_min"]) and ratio <= float(targets["dungeon_vs_world_max"]), true, "normal star is inside the dungeon XP band")
-	var world_xp := float(inputs["xp_share_of_step"]["world_fight"])
-	var world_min := float(inputs["minutes"]["world_fight"])
-	var expect := float(int(curve["max_level"]) - 1) * world_min / world_xp / 60.0
-	near(float(result["world_only_hours"]), expect, "world-only hours follow the 4.8 formula")
 	eq(float(result["world_only_hours"]) > 0.0, true, "world-only reaches the cap")
 	eq(_has_finding(result, "mission_minutes", "open"), true, "mission time is reported Open")
 	eq(_has_finding(result, "per_point_values", "open"), true, "per-point values are reported Open")
@@ -159,6 +172,20 @@ func _test_short_curve() -> void:
 	var world_xp := float(inputs["xp_share_of_step"]["world_fight"])
 	var world_min := float(inputs["minutes"]["world_fight"])
 	near(float(result["world_only_hours"]), float(cap - 1) * world_min / world_xp / 60.0, "hours follow the short curve's length")
+	near(float(result["premium_world_hours"]), float(result["world_only_hours"]) / (1.0 + float(inputs["premium"]["xp_bonus"])), "a curve without pace still applies the premium XP bonus")
+
+
+func _paced_hours(curve: Dictionary, inputs: Dictionary) -> float:
+	var start := float(curve["pace_start"])
+	var ratio := float(curve["pace_ratio"])
+	var world_xp := float(inputs["xp_share_of_step"]["world_fight"])
+	var world_min := float(inputs["minutes"]["world_fight"])
+	var cap := int(curve["max_level"])
+	var hours := 0.0
+	for level in range(1, cap):
+		var pace := start * pow(ratio, float(level - 1))
+		hours += world_min / (world_xp * pace) / 60.0
+	return hours
 
 
 func _has_finding(result: Dictionary, id: String, status: String) -> bool:

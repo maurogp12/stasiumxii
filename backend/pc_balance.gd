@@ -10,8 +10,9 @@ const ZONE_PATH := "res://data/world/level_zones.json"
 const INPUT_KEYS: Array[String] = [
 	"format", "format_version", "status", "stat_names", "per_point_values",
 	"minutes", "xp_share_of_step", "stars", "normal_star", "profiles",
-	"targets", "caps", "koliseo_sets_off", "coins", "drops", "set_budget",
-	"tiers", "level_gap", "damage_classes", "kit_by_ap", "open_items",
+	"premium", "targets", "caps", "koliseo_sets_off", "coins", "drops",
+	"set_budget", "tiers", "level_gap", "damage_classes", "kit_by_ap",
+	"open_items",
 ]
 
 
@@ -53,9 +54,12 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 	var ratio_hi := _num(targets.get("dungeon_vs_world_max", 0))
 	if ratio < ratio_lo or ratio > ratio_hi:
 		errors.append("dungeon XP per minute is outside the 4.8 band")
-	var world_hours := 0.0
-	if world_xp > 0.0 and cap >= 2:
-		world_hours = float(cap - 1) * world_min / world_xp / 60.0
+	var world_hours := world_only_hours(curve, world_min, world_xp)
+	var premium: Dictionary = inputs.get("premium", {})
+	var xp_bonus := _num(premium.get("xp_bonus", 0))
+	var premium_hours := world_hours
+	if xp_bonus > -0.999:
+		premium_hours = world_hours / (1.0 + xp_bonus)
 	if world_hours <= 0.0:
 		errors.append("world-only profile does not reach the cap")
 	if inputs.get("koliseo_sets_off", false) != true:
@@ -79,11 +83,16 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 	_kit_findings(inputs, findings)
 	if str(minutes.get("mission", "")) == "Open":
 		findings.append(_finding("mission_minutes", "open", "Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open."))
+	var free_target := _num(targets.get("hours_to_cap", 0))
+	var band_lo := _num(targets.get("hours_to_cap_min", 0))
+	var band_hi := _num(targets.get("hours_to_cap_max", 0))
+	var premium_target := _num(targets.get("premium_hours", 0))
 	findings.append(_finding(
-		"pace_hours",
+		"normal_mix_band",
 		"open",
-		"The %s-hour pace is Open. At 46d897e, section 4.8 targets about %s hours (accept %s-%s) and does not define a pace factor, premium hours, or pace_start. Mission minutes are Open, so that clock is not scored and no factor was invented." % [
-			str(15 * 10), str(6 * 10), str(5 * 10), "75",
+		"Free normal-mix target %.0f h (accept %.0f-%.0f) and premium target %.0f h are not scored. Mission minutes are Open. Pace is pace_start %.4f and pace_ratio %.4f from the curve. World-only free is %.2f h and premium world-only is %.2f h." % [
+			free_target, band_lo, band_hi, premium_target,
+			_pace_start(curve), _pace_ratio(curve), world_hours, premium_hours,
 		],
 	))
 	if str(inputs.get("profiles", {}).get("dungeon_heavy", "")) == "Open":
@@ -92,6 +101,8 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 		findings.append(_finding("per_point_values", "open", "Per-point Mastery, Vitality, Swift and Resist values are Open, so set rules 3, 4 and 5 are not scored."))
 	var coins := _coins(inputs, cap)
 	var drops := _drops(inputs, star)
+	var premium_coins := _scaled(coins, 1.0 + _num(premium.get("coin_bonus", 0)))
+	var premium_drops := _scaled(drops, 1.0 + _num(premium.get("drop_bonus", 0)))
 	var zone_bad := false
 	for err in errors:
 		if str(err).find("level_max is above") >= 0:
@@ -107,13 +118,21 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 		"errors": errors,
 		"max_level": cap,
 		"world_only_hours": world_hours,
+		"premium_world_hours": premium_hours,
 		"dungeon_vs_world": ratio,
 		"normal_mix_hours": "Open",
+		"premium_mix_hours": "Open",
 		"normal_mix_label": _mix_label(inputs),
+		"hours_to_cap": free_target,
+		"hours_to_cap_min": band_lo,
+		"hours_to_cap_max": band_hi,
+		"premium_hours_target": premium_target,
 		"zone_rows": zone_rows,
 		"findings": findings,
 		"coins": coins,
 		"drops": drops,
+		"premium_coins": premium_coins,
+		"premium_drops": premium_drops,
 		"stat_names": stats,
 		"text": "",
 	}
@@ -169,9 +188,16 @@ static func report_text(result: Dictionary) -> String:
 	lines.append("")
 	lines.append("| Profile | Result |")
 	lines.append("|---|---|")
-	lines.append("| World only | %.2f hours to the cap |" % float(result.get("world_only_hours", 0)))
-	lines.append("| Normal mix (%s) | Open |" % str(result.get("normal_mix_label", "Open")))
-	lines.append("| %s-hour pace | Open |" % str(15 * 10))
+	lines.append("| World only, free | %.2f hours to the cap |" % float(result.get("world_only_hours", 0)))
+	lines.append("| World only, premium | %.2f hours to the cap |" % float(result.get("premium_world_hours", 0)))
+	lines.append("| Normal mix, free (%s) | Open |" % str(result.get("normal_mix_label", "Open")))
+	lines.append("| Normal mix, premium | Open |")
+	lines.append("| Free target (accept %.0f-%.0f) | %.0f hours |" % [
+		float(result.get("hours_to_cap_min", 0)),
+		float(result.get("hours_to_cap_max", 0)),
+		float(result.get("hours_to_cap", 0)),
+	])
+	lines.append("| Premium target | %.0f hours |" % float(result.get("premium_hours_target", 0)))
 	lines.append("| Dungeon heavy | Open |")
 	lines.append("| Party of 4 | XP share 0.7 each. Time is Open. |")
 	lines.append("")
@@ -183,13 +209,23 @@ static func report_text(result: Dictionary) -> String:
 	var drops: Dictionary = result.get("drops", {})
 	lines.append("| Source | Coins / hour | Regular parts / hour | Rare parts / hour | Boxes / hour |")
 	lines.append("|---|---|---|---|---|")
-	lines.append("| Open world | %.1f | %.2f | %.2f | %.2f |" % [
+	var premium_coins: Dictionary = result.get("premium_coins", {})
+	var premium_drops: Dictionary = result.get("premium_drops", {})
+	lines.append("| Open world, free | %.1f | %.2f | %.2f | %.2f |" % [
 		float(coins.get("world", 0)), float(drops.get("world_regular", 0)),
 		float(drops.get("world_rare", 0)), float(drops.get("world_box", 0)),
 	])
-	lines.append("| Dungeon, normal star | %.1f | %.2f | %.2f | %.2f |" % [
+	lines.append("| Open world, premium | %.1f | %.2f | %.2f | %.2f |" % [
+		float(premium_coins.get("world", 0)), float(premium_drops.get("world_regular", 0)),
+		float(premium_drops.get("world_rare", 0)), float(premium_drops.get("world_box", 0)),
+	])
+	lines.append("| Dungeon, normal star, free | %.1f | %.2f | %.2f | %.2f |" % [
 		float(coins.get("dungeon", 0)), float(drops.get("dungeon_regular", 0)),
 		float(drops.get("dungeon_rare", 0)), float(drops.get("dungeon_box", 0)),
+	])
+	lines.append("| Dungeon, normal star, premium | %.1f | %.2f | %.2f | %.2f |" % [
+		float(premium_coins.get("dungeon", 0)), float(premium_drops.get("dungeon_regular", 0)),
+		float(premium_drops.get("dungeon_rare", 0)), float(premium_drops.get("dungeon_box", 0)),
 	])
 	lines.append("")
 	lines.append("Mission coin amounts are a range in the spec. A single number inside each tier is Open.")
@@ -214,6 +250,53 @@ static func report_text(result: Dictionary) -> String:
 		lines.append("Decidable checks failed: %s" % ", ".join(result.get("errors", [])))
 	lines.append("")
 	return "\n".join(lines)
+
+
+static func world_only_hours(curve: Dictionary, world_min: float, world_xp: float) -> float:
+	if world_xp <= 0.0 or world_min <= 0.0:
+		return 0.0
+	var cap := int(curve.get("max_level", 0))
+	var hours := 0.0
+	for level in range(1, cap):
+		var pace := _pace(curve, level)
+		if pace <= 0.0:
+			return 0.0
+		hours += world_min / (world_xp * pace) / 60.0
+	return hours
+
+
+static func in_accept_band(hours: float, inputs: Dictionary) -> bool:
+	var targets: Dictionary = inputs.get("targets", {})
+	var lo := _num(targets.get("hours_to_cap_min", 0))
+	var hi := _num(targets.get("hours_to_cap_max", 0))
+	return hours + 0.0001 >= lo and hours - 0.0001 <= hi
+
+
+static func _pace(curve: Dictionary, level: int) -> float:
+	var start := _pace_start(curve)
+	var ratio := _pace_ratio(curve)
+	if start <= 0.0 or ratio <= 0.0:
+		return 1.0
+	return start * pow(ratio, float(level - 1))
+
+
+static func _pace_start(curve: Dictionary) -> float:
+	if not curve.has("pace_start") or not curve.has("pace_ratio"):
+		return 1.0
+	return _num(curve.get("pace_start", 1))
+
+
+static func _pace_ratio(curve: Dictionary) -> float:
+	if not curve.has("pace_start") or not curve.has("pace_ratio"):
+		return 1.0
+	return _num(curve.get("pace_ratio", 1))
+
+
+static func _scaled(row: Dictionary, factor: float) -> Dictionary:
+	var out := {}
+	for key in row.keys():
+		out[key] = _num(row[key]) * factor
+	return out
 
 
 static func _coins(inputs: Dictionary, cap: int) -> Dictionary:

@@ -4,4 +4,4 @@ Reference A remains the open-world bar. This report is the before/after for the 
 
 Cap is max_level from level_curve.json. The stat is Resist. Mission minutes, the dungeon-heavy mix, party time, and per-point stat values are Open because the spec does not give them.
 
-The 150-hour pace is Open. docs/pc on claude/pc-zones-spec at 46d897e targets about 60 hours (accept 50-75) and does not define a pace factor. No pace_start or pace_ratio was added.
+Option B pace is pace_start and pace_ratio in level_curve.json: 1.6 and 0.9532. The table prints free and premium world-only hours from that factor. The 150 h free target (accept 130-170) and the 120 h premium target are the normal-mix clocks. Mission minutes are still Open, so those two clocks are not scored.
