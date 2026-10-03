@@ -3,6 +3,9 @@ extends Node2D
 ## Crosshaven open world (PC, `main`). Click-to-walk around one chunk at a time;
 ## walking onto an exit tile fades into the linked chunk. A gate uses that
 ## same fade: walk to the arrow, then enter_zone on the target region.
+## world.regions_enabled defaults to false. While it is off, an exit or a gate
+## whose target is one of the nine outer regions does not leave Crosshaven,
+## and that gate arrow stays hidden. Direct enter_zone still loads a stand-in.
 ##
 ## Data and walk rules come from Backend: `WorldMap`, `WorldZone`, `WorldWalk`
 ## (data/world/crosshaven/, docs/world/crosshaven_zone_format.md). This scene
@@ -27,6 +30,7 @@ const InventoryWindow := preload("res://scenes/world/ui/inventory_window.gd")
 const RewardPopup := preload("res://scenes/world/ui/reward_popup.gd")
 const Rewards := preload("res://backend/pc_rewards.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
+const Flags := preload("res://backend/world_flags.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
@@ -46,6 +50,8 @@ var map: WorldMap
 var zone: WorldZone
 var atlas = null
 var load_errors: Array = []
+## Shipped false. Tests may turn it on after the scene is in the tree.
+var regions_enabled := false
 
 var ground: Node2D
 var props_root: Node2D
@@ -92,6 +98,8 @@ var _zoom_tween: Tween
 
 func _ready() -> void:
 	_read_launch_args()
+	var flags: Dictionary = Flags.load_default()
+	regions_enabled = bool(flags.get("regions_enabled", false))
 	# Parent process runs after the walker so cover uses this frame's feet.
 	process_priority = 1
 	_apply_world_window()
@@ -525,18 +533,42 @@ func _arm_arrival(target: Vector2i) -> void:
 	_pending_gate = {}
 	if atlas != null:
 		var found: Dictionary = atlas.gate_at(zone.zone_id, target)
-		if not found.is_empty():
+		if _gate_open(found):
 			_pending_gate = found
-	_pending_exit = _pending_gate.is_empty() and not zone.exit_link(target).is_empty()
+	var link := zone.exit_link(target)
+	var exit_target := ""
+	if not link.is_empty():
+		exit_target = str(link.get("target_zone", ""))
+	_pending_exit = _pending_gate.is_empty() and not link.is_empty() and _can_leave_to(exit_target)
 
 
 func _mark_gates() -> void:
 	if atlas == null or zone == null or ground == null:
 		return
 	for gate in atlas.gates_from_zone(zone.zone_id):
+		if not _gate_open(gate):
+			continue
 		var frm: Dictionary = gate["from"]
 		var cell := Vector2i(int(frm["x"]), int(frm["y"]))
 		ground.call("add_gate_arrow", cell, _edge_dir(cell))
+
+
+## A closed outer region is not a destination. Crosshaven chunks stay open.
+func _can_leave_to(zone_id: String) -> bool:
+	if regions_enabled or zone_id == "":
+		return true
+	if atlas != null:
+		var region := str(atlas.region_of_chunk(zone_id))
+		if region != "":
+			return region == "crosshaven"
+	return zone_id.begins_with("crosshaven_")
+
+
+func _gate_open(gate: Dictionary) -> bool:
+	if gate.is_empty():
+		return false
+	var dest: Dictionary = gate.get("to", {})
+	return _can_leave_to(str(dest.get("zone_id", "")))
 
 
 func _edge_dir(cell: Vector2i) -> Vector2i:
@@ -565,7 +597,11 @@ func _on_arrived(cell: Vector2i) -> void:
 		_pending_gate = {}
 		_pending_exit = false
 		var dest: Dictionary = gate["to"]
-		enter_zone(str(dest["zone_id"]), Vector2i(int(dest["x"]), int(dest["y"])), true)
+		var dest_id := str(dest["zone_id"])
+		if not _can_leave_to(dest_id):
+			walk_rejected.emit("region_closed")
+			return
+		enter_zone(dest_id, Vector2i(int(dest["x"]), int(dest["y"])), true)
 		return
 	if not _pending_talk.is_empty() and cell == (_pending_talk["stand"] as Vector2i):
 		_open_talk()
@@ -584,6 +620,9 @@ func _on_arrived(cell: Vector2i) -> void:
 	])
 	if not bool(check.get("ok", false)):
 		walk_rejected.emit(str(check.get("reason", "bad_exit")))
+		return
+	if not _can_leave_to(target):
+		walk_rejected.emit("region_closed")
 		return
 	enter_zone(target, to_cell, true)
 
@@ -679,7 +718,7 @@ func _draw_hover() -> void:
 	if zone == null or hover_cell.x < 0 or not zone.in_bounds(hover_cell):
 		return
 	var color := Color(0.45, 0.95, 0.5, 0.9)
-	if atlas != null and not atlas.gate_at(zone.zone_id, hover_cell).is_empty():
+	if atlas != null and _gate_open(atlas.gate_at(zone.zone_id, hover_cell)):
 		color = Color(1.0, 0.84, 0.35, 0.95)
 	elif not zone.exit_link(hover_cell).is_empty():
 		color = Color(1.0, 0.84, 0.35, 0.95)
@@ -978,6 +1017,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_ironjaw_tall()
 		"wp4gate":
 			await _movie_wp4_gate()
+		"crosshaven_walk":
+			await _movie_crosshaven_walk()
 		"wp5astills":
 			await _movie_wp5a_stills()
 		"wp10a":
@@ -1194,6 +1235,52 @@ func _near_road(cell: Vector2i, dist: int) -> bool:
 			if zone.in_bounds(n) and zone.terrain_at(n) == "dirt_road":
 				return true
 	return false
+
+
+## Flag off. Walk the real roads: Crossroads to Northgate, Stoneford, and
+## Eastmarch. The east-road gate arrow is shown first with regions on, then
+## hidden. Chunk fades stay the existing renderer. The walk test does not
+## treat those fades as a legal jump.
+func _movie_crosshaven_walk() -> void:
+	settings.apply_preset("Full")
+	_zoom = 2.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.playback = 8.0
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	regions_enabled = true
+	await enter_zone("crosshaven_road_east", Vector2i(18, 2), false)
+	walker.facing = "n"
+	walker._show_idle()
+	_mark("gate-before")
+	await get_tree().create_timer(0.7).timeout
+	regions_enabled = false
+	_load_zone("crosshaven_road_east", Vector2i(18, 2))
+	walker.facing = "n"
+	walker._show_idle()
+	_mark("gate-after")
+	await get_tree().create_timer(0.7).timeout
+	_zoom = 1.6
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await enter_zone("crosshaven_crossroads", map.zone("crosshaven_crossroads").spawn, false)
+	_mark("crossroads")
+	await _run_link("crosshaven_road_north")
+	await _run_link("crosshaven_northgate")
+	_mark("northgate")
+	await get_tree().create_timer(0.4).timeout
+	await _run_link("crosshaven_road_north")
+	await _run_link("crosshaven_crossroads")
+	await _run_link("crosshaven_road_west")
+	await _run_link("crosshaven_stoneford")
+	_mark("stoneford")
+	await get_tree().create_timer(0.5).timeout
+	_mark("end")
 
 
 ## Full preset, clear noon. The hero stands in the open square, south of the

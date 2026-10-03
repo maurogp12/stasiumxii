@@ -1,0 +1,11 @@
+Crosshaven regions flag. Reference A is the Wakfu outdoor frame, the same crop as `docs/pc/media/wp0/reference_A.png`.
+
+`world.regions_enabled` is false. While it is off, no exit or gate reaches the nine outer regions. The stand-in chunks stay on disk. The east-road gate into Fen Edge is the before/after: the gold arrow is drawn when the flag is on, and it is hidden when the flag is off. The hero does not leave the east road.
+
+The walk test (`tests/run_crosshaven_walk_tests.gd`) does not call `enter_zone`. It steps cell by cell on chunk exits from the Crossroads to every Crosshaven chunk and back, and from town to town across the Crossroads, the five road chunks, and the five towns (levels 1–10). A gate teleport fails that test. Task offers stay on Crosshaven landmarks only, the same rule as #232.
+
+Clip: crosshaven_town_walk.mp4
+1920×1080, 30 fps, H.264, 19.4 s. Recorded from `res://scenes/world/crosshaven/crosshaven_world.tscn`, `--movie crosshaven_walk`. The route is the east road (gate on, then gate off), then the Crossroads to Northgate and on to Stoneford, on the real roads.
+
+Stills: gate_before.png, gate_after.png, crossroads.png, northgate.png, stoneford.png.
+Side by side with reference A: before_after_refA.png (reference, gate on, gate off).

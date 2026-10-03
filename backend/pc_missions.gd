@@ -10,6 +10,7 @@ const Npcs = preload("res://backend/world_npcs.gd")
 const Progress = preload("res://backend/pc_progress.gd")
 const Maps = preload("res://backend/world_map.gd")
 const Walk = preload("res://backend/world_walk.gd")
+const Flags = preload("res://backend/world_flags.gd")
 
 const MISSIONS_PATH := "res://data/world/missions.json"
 const TEMPLATES_PATH := "res://data/world/task_templates.json"
@@ -62,6 +63,7 @@ var _reach_percent := 0
 var _defeat_percent := 0
 var _clear_percent := 0
 var _map = null
+var _regions_enabled := false
 var _walk_cache: Dictionary = {}
 var _migrating := false
 
@@ -623,7 +625,9 @@ func _pool_for(level_zone: String, npc_id: String) -> Array:
 		var mark: Dictionary = row
 		if str(mark["level_zone"]) != level_zone:
 			continue
-		# Outer regions stay out of the pool until they reopen. Crosshaven only.
+		# Outer regions stay out of the pool while world.regions_enabled is off.
+		if not _regions_enabled and not str(mark.get("zone_id", "")).begins_with("crosshaven_"):
+			continue
 		if _map == null or not _map.zones.has(str(mark.get("zone_id", ""))):
 			continue
 		if bool(mark.get("pending_chunk", false)):
@@ -1580,6 +1584,11 @@ func _load_walk_map(errors: Array) -> void:
 		_err(errors, "walk map")
 		return
 	_map = loaded["map"]
+	var flags: Dictionary = Flags.load_default()
+	if not bool(flags.get("ok", false)):
+		_err(errors, "world flags")
+		return
+	_regions_enabled = bool(flags.get("regions_enabled", false))
 
 
 static func _read_json(path: String) -> Variant:

@@ -143,18 +143,32 @@ func _test_gate_click() -> void:
 	eq(src.find("enter_zone") >= 0, true, "arriving on a gate calls enter_zone")
 	w.enter_zone("crosshaven_road_east", Vector2i(18, 1), false)
 	eq(w.zone.zone_id, "crosshaven_road_east", "the east road still loads")
-	var arrow: Vector2i = w.ground.call("marker_dir", Vector2i(18, 0))
-	eq(arrow, Vector2i(0, -1), "the Fen Edge gate uses the exit-arrow direction")
+	eq(w.regions_enabled, false, "world.regions_enabled defaults to false")
+	var hidden: Vector2i = w.ground.call("marker_dir", Vector2i(18, 0))
+	eq(hidden, Vector2i.ZERO, "the Fen Edge arrow is hidden while regions are off")
 	var reasons: Array = []
 	w.walk_rejected.connect(func(reason: String) -> void: reasons.append(reason))
 	var walked: Dictionary = w.walk_to(Vector2i(18, 0))
-	eq(bool(walked.get("ok", false)), true, "the walker can reach the Fen Edge gate")
+	eq(bool(walked.get("ok", false)), true, "the walker can still stand on the Fen Edge gate cell")
 	var n := 0
 	while w.walker.is_moving() and n < 400:
 		w.walker.advance(0.05)
 		n += 1
+	eq(w.zone.zone_id, "crosshaven_road_east", "a closed region gate does not leave Crosshaven")
+	eq(w.walker.anchor_cell(), Vector2i(18, 0), "the walker stops on the gate cell")
+	eq(reasons.has("region_not_built"), false, "the closed gate does not report an unbuilt region")
+	w.regions_enabled = true
+	w._load_zone("crosshaven_road_east", Vector2i(18, 1))
+	var arrow: Vector2i = w.ground.call("marker_dir", Vector2i(18, 0))
+	eq(arrow, Vector2i(0, -1), "the Fen Edge gate uses the exit-arrow direction when regions are on")
+	var opened: Dictionary = w.walk_to(Vector2i(18, 0))
+	eq(bool(opened.get("ok", false)), true, "the walker can reach the Fen Edge gate")
+	n = 0
+	while w.walker.is_moving() and n < 400:
+		w.walker.advance(0.05)
+		n += 1
 	eq(reasons.has("region_not_built"), false, "Fen Edge is built, so the gate does not reject the walk")
-	eq(w.zone.zone_id, "eastmarch_fen_edge_entry", "the Fen Edge gate lands on the entry chunk")
+	eq(w.zone.zone_id, "eastmarch_fen_edge_entry", "with regions enabled the gate still lands on the entry")
 	eq(w.walker.anchor_cell(), Vector2i(0, 16), "the landing cell is the gate cell")
 	w.queue_free()
 
