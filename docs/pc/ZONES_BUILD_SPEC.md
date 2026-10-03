@@ -427,8 +427,17 @@ not change.
 
 Gates are **only between regions** (about 12 two-way gates). Links between
 chunks inside a region are normal v1 chunk exits in the region's own zone files,
-never gates. Each gate names its exact chunk, and a gate into a region always
-lands in that region's **entry** chunk. Proposed gate list:
+never gates. Each gate names its exact chunk. A gate from the Crosshaven
+side into a region lands in that region's **entry** chunk. **The way back
+lands where you came from** (Mauro, 3 Oct 2026: you walk from town to town
+and through the zones around them): every return gate puts the player on a
+walkable cell next to its forward gate's `from` cell, in the same chunk, never
+in some other chunk of that region. Example: Blightwood → Rowanvale lands in
+`rowanvale_farmland_3` next to the Blightwood gate, not in `rowanvale_entry`.
+Where a region has two gates in (Blightwood, Ashen Shardfields), each gate
+lands at its own side of the entry chunk (Blightwood: from Rowanvale on the
+west edge, from Windmere on the east edge), so the map reads as one place.
+Proposed gate list:
 
 | Gate | From chunk | To (entry chunk of) |
 |---|---|---|
@@ -1481,8 +1490,11 @@ dependency on each other can run in parallel (marked ∥).
   target; gate arrows drawn with the existing exit-arrow look.
 - **Accept:** every gate's cells are passable; two-way gates pair up; every
   region is reachable from the Crossroads; gates only join different regions;
-  every gate into a region lands in that region's entry chunk, and each region
-  has exactly one entry chunk; every chunk in every region index is in exactly
+  every forward gate into a region lands in that region's entry chunk, each
+  region has exactly one entry chunk, and every return gate lands within 2
+  cells of its forward gate's `from` cell in the same chunk; a test walks
+  (cell by cell, exits and gates only, no `enter_zone` jumps) from the
+  Crossroads to every chunk and back, and from each town to the next town; every chunk in every region index is in exactly
   one level zone (66 chunks once WP5b is done); the Crosshaven tests still pass
   with zero changes to the 11 chunk files.
 - **Data note:** the formats do not change for the larger regions.
