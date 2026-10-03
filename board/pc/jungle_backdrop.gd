@@ -284,12 +284,12 @@ func set_enabled(on: bool) -> void:
 
 
 ## L7. grade_on 0 leaves the plate and the leaves on their old colors.
-func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color) -> void:
-	_push_look_grade(_plate_mat, on, sat, contrast, gain, bias, shadow)
+func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float = 0.5) -> void:
+	_push_look_grade(_plate_mat, on, sat, contrast, gain, bias, shadow, shade)
 	for slot in _sprites.keys():
 		var sprite: Sprite2D = _sprites[slot]
 		if sprite != null and sprite.material is ShaderMaterial:
-			_push_look_grade(sprite.material, on, sat, contrast, gain, bias, shadow)
+			_push_look_grade(sprite.material, on, sat, contrast, gain, bias, shadow, shade)
 
 
 func look_grade_enabled() -> bool:
@@ -298,7 +298,7 @@ func look_grade_enabled() -> bool:
 	return float(_plate_mat.get_shader_parameter("grade_on")) > 0.5
 
 
-func _push_look_grade(mat: ShaderMaterial, on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color) -> void:
+func _push_look_grade(mat: ShaderMaterial, on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float) -> void:
 	if mat == null:
 		return
 	mat.set_shader_parameter("grade_on", 1.0 if on else 0.0)
@@ -307,6 +307,7 @@ func _push_look_grade(mat: ShaderMaterial, on: bool, sat: float, contrast: float
 	mat.set_shader_parameter("grade_gain", gain)
 	mat.set_shader_parameter("grade_bias", Vector3(bias.r, bias.g, bias.b))
 	mat.set_shader_parameter("grade_shadow", Vector3(shadow.r, shadow.g, shadow.b))
+	mat.set_shader_parameter("grade_shade", shade)
 
 
 func preview_time(t: float) -> void:

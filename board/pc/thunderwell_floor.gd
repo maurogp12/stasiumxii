@@ -1050,7 +1050,7 @@ func _floor_grade() -> Color:
 	return Color(1.08, 1.32, 1.05)
 
 
-func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color) -> void:
+func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float = 0.5) -> void:
 	if _room == null or not (_room.material is ShaderMaterial):
 		return
 	var mat := _room.material as ShaderMaterial
@@ -1060,6 +1060,7 @@ func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Co
 	mat.set_shader_parameter("grade_gain", gain)
 	mat.set_shader_parameter("grade_bias", Vector3(bias.r, bias.g, bias.b))
 	mat.set_shader_parameter("grade_shadow", Vector3(shadow.r, shadow.g, shadow.b))
+	mat.set_shader_parameter("grade_shade", shade)
 
 
 func _apply_room_uniforms(mat: ShaderMaterial) -> void:

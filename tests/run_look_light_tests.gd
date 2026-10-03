@@ -19,8 +19,10 @@ func _initialize() -> void:
 
 
 func _go() -> void:
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
 	_test_phone_stays_flat()
 	_test_outdoor_grade_and_rim()
+	_test_outdoor_strengths()
 	_test_dungeon_grade()
 	_test_cast_light_is_warm_and_pc_only()
 	_test_damage_numbers()
@@ -29,6 +31,7 @@ func _go() -> void:
 	HUD.set_pc_chrome_override(-1)
 	LIGHT.active = false
 	LIGHT.set_suppressed(false)
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
 	print("Look light tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -91,9 +94,14 @@ func _test_outdoor_grade_and_rim() -> void:
 	HUD.set_pc_chrome_override(1)
 	light.sync(tree["board"], false)
 	eq(light.wash_visible(), true, "the outdoor grade is on")
-	truthy(light.grade_saturation() > 1.2, "the outdoor grade raises saturation")
-	truthy(light.grade_contrast() > 1.05, "the outdoor grade raises contrast")
+	eq(LIGHT.outdoor_preset, LIGHT.PRESET_MEDIUM, "medium is the interim outdoor default")
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.OUTDOOR_SAT), true, "outdoor saturation is the medium preset")
+	truthy(light.grade_saturation() >= 1.12 and light.grade_saturation() <= 1.15, "outdoor saturation is about +12 to +15 percent")
+	truthy(light.grade_contrast() > 1.02 and light.grade_contrast() < 1.12, "outdoor contrast is gentle")
+	truthy(light.grade_shade() < 0.05, "outdoor grade does not recolor dark tiles")
 	truthy(light.grade_bias().r > light.grade_bias().b, "the outdoor grade is warm")
+	truthy(light.grade_bias().r < 0.04, "the warm shift stays slight")
+	truthy(light.grade_bias().r - light.grade_bias().b < 0.05, "the warm shift is a few degrees")
 	eq(tree["board"].modulate, Color.WHITE, "the grade is not a parent multiply")
 	eq(tree["tiles"].modulate, Color.WHITE, "the tiles node is not a flat tint")
 	eq(tree["units"].modulate, Color.WHITE, "fighters are not tinted as a group")
@@ -107,6 +115,9 @@ func _test_outdoor_grade_and_rim() -> void:
 		plate_code = plate_mat.shader.code
 	truthy(plate_code.find("blend_disabled") >= 0, "the jungle plate stays blend-disabled")
 	truthy(plate_code.find("l7_grade") >= 0, "the jungle plate shader grades")
+	truthy(plate_code.find("grade_shade") >= 0, "the jungle plate can keep the shadow mix off")
+	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_sat")), LIGHT.OUTDOOR_SAT), true, "the jungle plate uses the outdoor saturation")
+	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_shade")), LIGHT.OUTDOOR_SHADE), true, "the jungle plate does not crush shadows")
 	eq(light.vignette_visible(), false, "outdoors do not vignette the room")
 	eq(light.get_node_or_null("Vignette"), null, "outdoors do not add a fullscreen wash")
 	var rim: Color = light.rim_color()
@@ -115,6 +126,35 @@ func _test_outdoor_grade_and_rim() -> void:
 	truthy(LIGHT.SHAFT_COLOR.r > LIGHT.SHAFT_COLOR.b and LIGHT.SHAFT_COLOR.a > 0.6, "shafts are warm and readable")
 	truthy(LIGHT.FLOOR_COLOR.r > LIGHT.FLOOR_COLOR.g and LIGHT.FLOOR_COLOR.a > 0.5, "the floor pool is warm and readable")
 	truthy(LIGHT.POOL_RX >= 64.0, "the pool is wider than a fighter")
+	_free_host(tree)
+
+
+func _test_outdoor_strengths() -> void:
+	var tree := _host()
+	var light = tree["light"]
+	HUD.set_pc_chrome_override(1)
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_LIGHT)
+	light.sync(tree["board"], false)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.LIGHT_SAT), true, "light saturation is +10 percent")
+	truthy(light.grade_saturation() < LIGHT.OUTDOOR_SAT, "light is softer than medium")
+	truthy(light.grade_contrast() > 1.0 and light.grade_contrast() < 1.10, "light contrast is gentle")
+	truthy(light.grade_shade() < 0.05, "light does not recolor shadows")
+	truthy(light.grade_bias().r > light.grade_bias().b, "light is still warm")
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_STRONG)
+	light.sync(tree["board"], false)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.STRONG_SAT), true, "strong keeps the rejected saturation")
+	eq(is_equal_approx(light.grade_contrast(), LIGHT.STRONG_CONTRAST), true, "strong keeps the rejected contrast")
+	truthy(light.grade_shade() > 0.4, "strong still mixes the old shadow")
+	truthy(light.grade_bias().r > 0.05, "strong keeps the heavy warm bias")
+	var plate_mat: ShaderMaterial = tree["jungle"]._plate_mat
+	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_sat")), LIGHT.STRONG_SAT), true, "the jungle plate follows the strong preset")
+	light.sync(tree["board"], true)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.DUNGEON_SAT), true, "a dungeon sync ignores the outdoor preset")
+	eq(is_equal_approx(light.grade_contrast(), LIGHT.DUNGEON_CONTRAST), true, "dungeon contrast stays the accepted grade")
+	eq(is_equal_approx(light.grade_shade(), LIGHT.DUNGEON_SHADE), true, "dungeon shadow mix stays")
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
+	light.sync(tree["board"], false)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.OUTDOOR_SAT), true, "medium restores the interim outdoor grade")
 	_free_host(tree)
 
 
