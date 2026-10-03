@@ -559,6 +559,65 @@ bridge) and one level sign per region. Order follows the art pairs: Stoneford
 island ferry (Ferry Captain) and, later, premium fast travel between hubs. A
 gate's way back lands next to where it left (within 2 cells, same chunk).
 
+### 4.5a NPC look: approved concepts (Mauro, 3 Oct 2026: "I loved it")
+
+Sheet: `docs/pc/look_target/npc_concepts_approved.png`. It holds 19 roles:
+Guide, Herald, Banker, Elder, Smith, Fisher, Warden, Trader, Door Keeper,
+Farmer, Woodcutter, Archivist, Ferry Captain, Forge Master, Fen Guide,
+Hermit, Coil Engineer, Shard Seer, Last Watcher. **These are the NPC designs.**
+Match each one's silhouette, colours and signature prop: the Guide's yellow
+coat and staff, the Trader's yellow turban, scales and pack, the Door Keeper's
+hood, key ring and lantern, the Archivist's white robes and book, and so on.
+Every NPC of a role uses that role's design. Per-town variants change only
+the palette accents and one small prop.
+
+**Where they stand in the Crosshaven phase** (section 00):
+
+- **Crossroads:** Guide, Banker, Herald.
+- **Every town:** Warden, Trader, Door Keeper and Elder.
+- **Town extras:**
+  - Stoneford: Farmer, Woodcutter, Smith.
+  - Northgate: Archivist, Forge Master.
+  - Eastmarch: Fisher, Ferry Captain.
+  - Southbridge (swamp): Fen Guide, Hermit, Coil Engineer.
+  - Westwatch (dark side): Last Watcher, Shard Seer.
+
+**In-game sprites (Scenario Art + Technical Artist):**
+
+- Painted to match the concept, at world scale on the Wakfu camera, 2x
+  masters like the Crosshaven v7 kit.
+- Directions follow the locked N/E/S/W facing rule; E/W may mirror where the
+  prop allows.
+- Animations per NPC:
+  - **idle**, 8–12 frames: breathing and one prop motion, such as the
+    lantern swinging or the Archivist turning a page;
+  - **walk**, 8 frames per direction;
+  - **talk**, 6–8 frames: a gesture when the dialogue opens.
+- The world look must not change. The concepts are darker than the world, so
+  the sprites take the world's light and grade (warm daylight in the north,
+  west and east, fog in the swamp, violet dusk on the dark side). Keep the
+  silhouettes and props readable at zoom 1.0.
+
+**Movement:**
+
+- Townsfolk (Farmer, Woodcutter, Fisher, Smith, Hermit, Coil Engineer) wander
+  or work on a short route within 4–6 cells of home, pausing at props (field,
+  woodpile, dock, anvil).
+- Wardens walk a slow patrol around their square.
+- Guide, Banker, Herald, Trader, Door Keeper, Elder, Archivist, Ferry Captain
+  and Last Watcher stay at their post and turn to face the player.
+- Every NPC stops and faces the player when clicked, and resumes after the
+  dialogue closes.
+- Walkers never block a door, an exit or a path, and keep the 4.5 spacing.
+
+**Media for Mauro**, required before merge:
+
+- One still per role in the game, at zoom 1.0 and 1.6, beside its concept
+  (19 pairs).
+- One uncut clip per town walking past its NPCs: idle, walk and the talk
+  gesture when clicked.
+- One contact sheet with all 19 walk cycles.
+
 ### 4.5 NPCs: `data/world/npcs.json`
 
 ```json
