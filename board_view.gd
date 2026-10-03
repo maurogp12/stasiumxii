@@ -54,6 +54,8 @@ const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const SHADE_MARKER := preload("res://board/shade_marker.gd")
+## Crosshaven jungle surround (view only). Grid, rules and CombatSim stay as they are.
+const JUNGLE_BACKDROP := preload("res://board/pc/jungle_backdrop.gd")
 ## Thunderwell floor theme (view only). Rules and CombatSim stay as they are.
 const THUNDERWELL_FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
@@ -1560,7 +1562,17 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+	_sync_jungle_backdrop(str(snap.get("map_id", snap.get("demo_map", ""))))
 	_sync_thunderwell_floor(snap)
+
+
+func _sync_jungle_backdrop(map_id: String) -> void:
+	var layer = get_node_or_null("JungleBackdrop")
+	if layer == null:
+		layer = JUNGLE_BACKDROP.new()
+		layer.name = "JungleBackdrop"
+		add_child(layer)
+	layer.sync_map(self, map_id)
 
 
 ## View-only. An empty id clears the theme. Does not touch the snapshot.

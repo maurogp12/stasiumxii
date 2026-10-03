@@ -1,6 +1,6 @@
 {
-  "art_status": "placeholder",
-  "note": "Stand-in paint. Scenario Art replaces the PNGs in place. Masters are named slot@2x.png; the loader tries that name first. Each back plate is scaled to the live view: scale = max((view_w + 2*drift) / layer_w, (view_h + 2*drift) / layer_h), where drift = pan_limit_px * that plate's on-screen motion, view is the visible world size at the current zoom, and layer is the texture size. This is recomputed when the viewport changes. Front leaves are screen-locked. Each leaf has an 8-bit greyscale sway mask at half size: 0 pinned, 255 full swing. leaf_shadow is greyscale, white = lit, multiply, green tint and a slow scroll in the shader. Import is linear with no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
+  "art_status": "v4",
+  "note": "Crosshaven jungle v4, approved. back_mid v4 raises the clearing so the board sits on painted ground, and front_leaves_bottom v2 replaces the soft bottom band. Masters are slot@2x.png; plain png is the half-size fallback. Each back plate is scaled to the live view plus its parallax drift, including ultrawide, then drawn from its own copy so the frame does not sample the BC7 master: far at half resolution, mid at screen resolution up to 1440p. Parallax offsets that sprite. The copy is not rebuilt when the camera pans. Front leaves stay live and screen-locked in the margins, swaying every frame. The earth lip and the contact rim live in board space. Leaf shade is a tint on the terrain draw. Leaf holes are baked into a small mask when fighters or the hover move. Controls use mouse_filter ignore. Sway masks are half-size greyscale data: lossless, linear, sampled in the vertex shader with no color hint. leaf_shadow is seamless greyscale, white = lit, multiply, repeating, one shared material, strength in shadow_opacity. layers.modulate is per plate so the board stays the brightest area: back_far about 0.75 and cooler, back_mid 0.80, front leaves about 0.68 and slightly cool. top_fade_distance fades front_leaves_top as the camera pans +y toward that canopy, instead of clamping the pan. ground_skirt is a solid earth lip (strength 1, about 2.2 cells) under and around the board edges, feathering into the painted clearing. contact_shadow is a thin rim just outside that lip, behind the tiles. Import: linear, no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
   "art_root": "res://art/pc/look/crosshaven_jungle/",
   "map_ids": ["crosshaven"],
   "slots": {
@@ -27,7 +27,15 @@
     "front_leaves_top": 0.9,
     "front_leaves_bottom": 2.3
   },
-  "shadow_opacity": 0.32,
+  "layers": {
+    "back_far": {"modulate": [0.68, 0.73, 0.82]},
+    "back_mid": {"modulate": [0.80, 0.80, 0.80]},
+    "front_leaves": {"modulate": [0.62, 0.67, 0.76]}
+  },
+  "top_fade_distance": 220,
+  "ground_skirt": {"color": [0.18, 0.15, 0.08], "strength": 1.0, "reach_cells": 2.2},
+  "contact_shadow": {"color": [0.02, 0.04, 0.03], "strength": 0.36, "width_cells": 0.9},
+  "shadow_opacity": 0.55,
   "shadow_world_repeat": 512.0,
   "shadow_scroll": "slow",
   "fighter_clear_px": 136,
@@ -35,6 +43,8 @@
   "z_order": {
     "back_far": -320,
     "back_mid": -180,
+    "ground_skirt": -40,
+    "contact_shadow": -24,
     "leaf_shadow": 0,
     "front_leaves": 720
   }
