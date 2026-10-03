@@ -510,11 +510,12 @@ func _paint_glyph(canvas: CanvasItem, kind: String) -> void:
 	var ids: Array[String] = GLYPHS.ids_for_highlight(kind)
 	if ids.is_empty() or _reveal <= 0.001:
 		return
-	var tint := Color(1, 1, 1, _reveal)
 	for id in ids:
 		var tex := GLYPHS.texture(id) as Texture2D
 		if tex == null:
 			continue
+		var mod := GLYPHS.modulate_for(id, kind)
+		var tint := Color(mod.r, mod.g, mod.b, mod.a * _reveal)
 		var size: Vector2 = GLYPHS.draw_size(tex)
 		canvas.draw_texture_rect(tex, Rect2(-size * 0.5, size), false, tint)
 

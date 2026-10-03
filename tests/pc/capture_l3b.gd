@@ -101,6 +101,12 @@ func _go() -> void:
 		await process_frame
 	await _shot(_out.path_join("glyphs.png"))
 	print("L3B_GLYPHS placed=%s" % placed)
+	board.set_board_theme("thunderwell")
+	board._refresh()
+	for _i in 20:
+		await process_frame
+	await _shot(_out.path_join("glyphs_thunderwell.png"))
+	print("L3B_GLYPHS_THUNDERWELL placed=%s" % placed)
 	quit(0 if painted > 0 and lifted > 0 else 1)
 
 

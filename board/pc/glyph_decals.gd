@@ -1,10 +1,14 @@
 extends RefCounted
 
-## Placeholder deploy glyphs. Scenario Art replaces the PNGs; names stay.
-## Zone cells draw the zone mark and the deploy cell. An occupied cell draws the ring.
+## Painted deploy glyphs. Zone cells draw the zone mark and the deploy cell.
+## An occupied cell draws the ring. Deploy is dimmed on a zone cell so the
+## two paints do not stack brighter than a move tile.
 
 const ROOT := "res://art/pc/look/glyphs/"
 const IDS: Array[String] = ["zone", "deploy", "occupied"]
+## Full-strength overlap on a plain Thunderwell plate peaks near 0.49.
+## This modulate keeps that stack under the move fill.
+const DEPLOY_ON_ZONE_ALPHA := 0.55
 
 
 static func path_for(id: String, master: bool = true) -> String:
@@ -38,3 +42,10 @@ static func ids_for_highlight(kind: String) -> Array[String]:
 	if kind == "zone_p1" or kind == "zone_p2":
 		return ["zone", "deploy"]
 	return []
+
+
+## Zone cells draw both marks. Deploy comes in softer so the overlap stays down.
+static func modulate_for(id: String, kind: String) -> Color:
+	if id == "deploy" and (kind == "zone_p1" or kind == "zone_p2"):
+		return Color(1, 1, 1, DEPLOY_ON_ZONE_ALPHA)
+	return Color(1, 1, 1, 1)

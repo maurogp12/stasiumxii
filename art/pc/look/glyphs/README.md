@@ -1,6 +1,8 @@
-# Deploy glyph decals (placeholders)
+# Deploy glyph decals
 
-Code-painted stand-ins for reference A.7. Purple and translucent. Scenario Art replaces the pixels. Keep the file names, the canvas sizes, and the straight-alpha import.
+Painted v2 marks for reference A.7. Purple and translucent, with a thin dark-violet rim (`#3A1F55` at about 0.48) so they read on sand and grass. Keep the file names, the canvas sizes, and the straight-alpha import.
+
+On a zone cell the board draws `glyph_deploy` at modulate alpha 0.55 so the overlap stays under a move tile. Occupied cells draw the ring at full strength.
 
 The board draws `glyph_zone` and `glyph_deploy` together on a `zone_p1` or `zone_p2` cell, and `glyph_occupied` alone on an occupied cell. `@2x` is drawn at half scale, centered on the diamond.
 
