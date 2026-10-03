@@ -98,6 +98,10 @@ with a clear blue sea, white breakers and a timber dock.
 - **Open-world test:** trace a walk from Westwatch to Eastmarch without leaving
   a road or field. A void, a UI circle or a floating slab fails. This is the
   art side of the WP4 cell-by-cell walk test.
+- **Snow:** Northgate is the only Crosshaven town with snow, and only a
+  little: a light dusting on roofs, walls and the north cliffs, with a few
+  patches on the ground. Stoneford, Westwatch, Southbridge, Eastmarch and the
+  Crossroads have none (Mauro, 3 Oct 2026).
 - **Outer regions** leave Crosshaven by the same roads and coast and in the
   same paint, then shift material (ash, fen, dock, stone). They never become a
   second art style.
