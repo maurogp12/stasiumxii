@@ -1030,6 +1030,56 @@ Rules: the window never changes a number itself: stats come from
 `pc_progress.gd`, items from `pc_rewards.gd`, coins from the wallet and bank.
 It opens in the open world and in towns, not during a fight (Proposed).
 
+### 4.16 Houses: rented homes (Mauro's rules + Proposed details)
+
+Mauro, 3 Oct 2026: **"a few spots per map where a player can rent a house,
+where he will be able to farm his own plants and trees, have his pets, cook,
+create potions, decorate his house; every week he will be required to pay X
+amount of Crypto Coins, and he will need to have premium."**
+
+Mauro's rules (build them as given):
+
+- **A few house spots per map.**
+- Houses are **rented**: **every week the player pays X Crypto Coins.**
+- Renting needs **premium**.
+- Inside a house the player can **farm his own plants and trees, keep his
+  pets, cook, make potions, and decorate**.
+
+Proposed details:
+
+- **Spots:** 3–4 per region map, in the hub chunk or near it; Crosshaven gets
+  4 (one at the Crossroads, three spread over the towns). Each spot is a door
+  on the world map that leads into the house interior (its own small scene).
+- **House sizes and weekly rent** (Proposed, checked by WP15 so rent is about
+  2 / 5 / 12 hours of normal play income a week at the level shown):
+
+  | Size | From level | Garden | Weekly rent |
+  |---|---|---|---|
+  | Cottage | 10 | 4 plots + 1 tree | 3,000 Crypto Coins |
+  | House | 25 | 8 plots + 2 trees | 8,000 |
+  | Manor | 40 | 12 plots + 4 trees | 20,000 |
+
+- **Paying rent:** paid automatically from the Crypto Bank each week. If the
+  bank can't cover it, a **7-day grace period** starts; after that the house
+  is locked and the spot freed, but **nothing is lost**: items, decorations
+  and pets move to bank storage.
+- **Farming:** plant seeds and saplings bought or gathered in the world;
+  they grow over real time and are harvested for crafting materials. Yields are
+  capped so a garden helps but never beats gathering in the world (Proposed:
+  a full Manor garden ≈ 30% of an hour of world gathering per day).
+- **Pets:** live in the house. **The pet system itself is not designed yet**
+  (Open): what pets do, how you get them, whether they come to fights.
+- **Cooking and potions:** a kitchen and an alchemy table inside, using the
+  crafting rules in 4.12 (recipes + materials + coins).
+- **Decorating:** place decorations on a grid in the house; layouts are saved.
+  Decorations come from shops, crafting and dungeons (each dungeon has its own,
+  4.9).
+- **Storage chest:** extra storage inside the house (Proposed 20 slots).
+- **Spots are limited**, so they are shared between all players: renting one
+  needs the online server, which waits until the map is finished (Q9). Until
+  then (offline phase 1), a house can be built and tested as a private copy
+  for the single player.
+
 ### 4.12 Economy: what Crypto Coins buy, marketplace, crafting, houses (Mauro's direction + Proposed plan)
 
 Mauro, 3 Oct 2026: **"the idea is to put a marketplace where players can trade
@@ -1043,7 +1093,7 @@ Coin uses (Mauro's list, plus the ones already proposed):
 | **Marketplace** | A market board in each hub (Crossroads first) | Players list set parts and goods for a price; other players buy them. Rare parts can be sold here (NPC shops still never sell Rare parts or Mystery Boxes). |
 | **Crafting** | Workbenches (forge, kitchen, alchemy table) | Turn resources into food, potions, decorations and gear upgrades; each craft costs coins plus materials |
 | **Recipes** | Traders and craft NPCs; some from missions and dungeons | A recipe unlocks a craft; bought once with coins |
-| **Houses** | Plots in the towns | Buy a house, then decorate it |
+| **Houses (rented)** | A few house spots on each map | Rent weekly with Crypto Coins (premium players only); farm, keep pets, cook, brew, decorate (4.16) |
 | **Decorations** | Traders, crafting | Furniture and ornaments for your house |
 | **Food and potions** | Traders, kitchen, alchemy | Heal between open-world fights; short buffs (Proposed) |
 | **Food supplies and minerals** | Traders, farms, mines | Raw materials for crafting; also gathered in the world |
@@ -1075,9 +1125,7 @@ How it fits together (**Proposed**):
   **sale tax** (Proposed 5%, a coin sink). Listings expire after a few days.
   It must run on a server (to stop duplicated items), and **online servers
   wait until the map is fully developed** (Mauro, Q9).
-- **Houses** = a plot in a town bought with coins, an interior room, and
-  placed decorations. Housing needs its own scene and saved layouts: a later
-  phase (Proposed).
+- **Houses** are **rented**, not bought (Mauro, 3 Oct 2026): see 4.16.
 - **Balance:** the WP15 simulator tracks coins in (fights, dungeons,
   missions, market sales) and coins out (crafts, recipes, houses, upgrades,
   travel, tax). Target (Proposed): over time players spend 70–90% of what they
@@ -1090,7 +1138,7 @@ Build order (**Proposed**, for Mauro to confirm in Q9):
    nodes), crafting food and potions, upgrades, respec, fast travel.
 2. **After the map is fully developed, with the online server:** the
    marketplace (Mauro, Q9).
-3. **Next:** houses and decorating, more professions and recipes.
+3. **Next:** rented houses (4.16), more professions and recipes.
 
 ### 4.10 World monsters: `data/world/monsters.json` (Mauro's rules + Proposed numbers)
 
@@ -1601,10 +1649,26 @@ Player listings and purchases in Crypto Coins with a sale tax (4.12). Needs a
 server that holds player inventories and coins. Mauro, 3 Oct 2026: online
 servers wait until the map is fully developed. Build nothing for it now.
 
-#### WP20: Houses and decorations (Code + Scenario), **later phase**
+#### WP20: Rented houses (Code + Scenario), **after the map; shared spots need the server**
 
-Plots in the towns, a house interior, placing decorations, saved layouts
-(4.12). Not in phase 1.
+Mauro's rules in 4.16: a few spots per map, weekly rent in Crypto Coins,
+premium only; farm plants and trees, keep pets, cook, make potions, decorate.
+
+- **Add (when started):** `data/world/houses.json` + schema (spots per map,
+  sizes, rent, garden plots); `backend/pc_houses.gd` (rent, grace, lock,
+  move-to-bank; garden growth by real time; pure logic for the server later);
+  `scenes/world/house/house_interior.gd` / `.tscn` (garden, kitchen, alchemy
+  table, pet corner, decoration grid, storage chest); house spot doors on the
+  world map; `tests/run_pc_houses_tests.gd`.
+- **Art (Scenario):** a cottage, house and manor exterior per region style
+  (2×2 / 3×3 / 4×4), interiors, garden plots with growth stages, kitchen and
+  alchemy props.
+- **Accept:** rent is taken weekly from the bank; grace then lock; nothing is
+  lost on lock; only premium players can rent (Q15); garden yields stay under
+  the cap; spots per map hold.
+- **Order:** after the map is finished; the shared spots need the online
+  server (Q9). A private single-player version can be prototyped earlier only
+  if Mauro asks.
 
 ### 5.2 Suites to run before every push
 
@@ -1693,3 +1757,7 @@ headless.
     numbers stay tuned by WP15.
 14. ~~**Inventory capacity**~~ **Answered 3 Oct 2026 (Mauro): "yes to both"**:
     a slot limit and a weight limit (4.15, numbers Proposed).
+15. **Premium (4.16):** what is premium? A paid membership with real money
+    (that needs a payment system and store rules), or something earned in the
+    game? What else does premium give besides renting a house? And what are
+    pets: what do they do, how do you get them, do they fight?
