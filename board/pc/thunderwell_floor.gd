@@ -1,11 +1,13 @@
 extends Node2D
 
 ## View-only Thunderwell Core floor. Theme id thunderwell.
-## Dark circuit plates, glowing pads, cyan pillars on key cells, and a dark
-## gradient around a hole generated from the cell footprint. CombatSim, the
+## Dark circuit plates, pads and pillars tinted by the theme glow colour, and a
+## dark gradient around a hole generated from the cell footprint. CombatSim, the
 ## grid and the tile records stay as they are.
 ## Art: res://art/pc/look/thunderwell_floor/. Params: thunderwell_floor.json.
-## A preview calls request_theme. 2D HDR and the glow environment stay on that preview.
+## glow_color is the hue. glow_cap is the peak channel and the preview bloom
+## intensity. A preview calls request_theme. 2D HDR and the glow environment
+## stay on that preview.
 
 const PARAMS_PATH := "res://data/pc/look/thunderwell_floor.json"
 const DEFAULT_ROOT := "res://art/pc/look/thunderwell_floor/"
@@ -17,7 +19,8 @@ render_mode blend_add;
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
 uniform float flow_speed = 0.35;
-uniform float glow_cap = 0.48;
+uniform float glow_cap = 0.12;
+uniform vec3 glow_color = vec3(1.0, 1.0, 1.0);
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	float intensity = tex.r;
@@ -26,7 +29,22 @@ void fragment() {
 	float along = fract(flow - TIME * flow_speed);
 	float energy = smoothstep(0.16, 0.0, abs(along - 0.12));
 	float glow = min(intensity * (0.55 * pulse + energy), glow_cap);
-	COLOR = vec4(vec3(0.55, 0.95, 1.0) * glow, glow);
+	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
+	vec3 hue = glow_color / peak;
+	COLOR = vec4(hue * glow, glow);
+}
+"""
+const TINT_SHADER := """shader_type canvas_item;
+render_mode blend_add;
+uniform float glow_cap = 0.12;
+uniform vec3 glow_color = vec3(1.0, 1.0, 1.0);
+void fragment() {
+	vec4 tex = texture(TEXTURE, UV);
+	float ink = dot(tex.rgb, vec3(0.2126, 0.7152, 0.0722)) * tex.a;
+	float glow = min(ink, glow_cap);
+	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
+	vec3 hue = glow_color / peak;
+	COLOR = vec4(hue * glow, glow);
 }
 """
 const ROOM_SHADER := """shader_type canvas_item;
@@ -48,6 +66,7 @@ var _time: float = 0.0
 var _room: Sprite2D
 var _pillars: Array[Node2D] = []
 var _glow_shader: Shader
+var _tint_shader: Shader
 var _room_shader: Shader
 var _hole_tex: ImageTexture
 var _mask_key: String = ""
@@ -55,6 +74,17 @@ var _mask_key: String = ""
 
 static func request_theme(theme_id: String) -> void:
 	requested_theme = theme_id.strip_edges().to_lower()
+
+
+static func glow_color() -> Color:
+	var raw: Variant = load_params().get("glow_color", [])
+	if raw is Array and (raw as Array).size() >= 3:
+		return Color(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Color(0.22, 0.90, 0.46)
+
+
+static func glow_cap() -> float:
+	return float(load_params().get("glow_cap", 0.12))
 
 
 static func load_params() -> Dictionary:
@@ -266,9 +296,9 @@ func _build(board: Node2D, snap: Dictionary) -> void:
 		if tile.has_method("set_look_floor"):
 			tile.set_look_floor(tex)
 		if _is_pad(cell, _params.get("pad_blue", {})) and not pillars.has(cell):
-			_add_pad(tile, "pad_blue", Color(0.45, 0.85, 1.0))
+			_add_pad(tile, "pad_blue")
 		elif _is_pad(cell, _params.get("pad_red", {})) and not pillars.has(cell):
-			_add_pad(tile, "pad_red", Color(1.0, 0.45, 0.4))
+			_add_pad(tile, "pad_red")
 		if use_paint and not _props_at(paint, cell).is_empty():
 			_add_glow(tile, cell)
 	_spawn_pillars(board)
@@ -310,7 +340,7 @@ func _clear_cell_dressing() -> void:
 	_built_for = -1
 
 
-func _add_pad(tile: Node, slot: String, tint: Color) -> void:
+func _add_pad(tile: Node, slot: String) -> void:
 	var path := resolve_slot(slot)
 	var tex := _load_tex(path)
 	if tex == null:
@@ -323,10 +353,7 @@ func _add_pad(tile: Node, slot: String, tint: Color) -> void:
 	var scale := _cell_scale()
 	sprite.scale = Vector2(scale, scale)
 	sprite.offset = _pad_offset(tex, slot)
-	sprite.modulate = _bloom(tint)
-	var mat := CanvasItemMaterial.new()
-	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-	sprite.material = mat
+	sprite.material = _tint_material()
 	sprite.z_as_relative = true
 	sprite.z_index = _z("pad")
 	tile.add_child(sprite)
@@ -367,10 +394,7 @@ func _spawn_pillars(board: Node2D) -> void:
 		sprite.scale = Vector2(scale, scale)
 		sprite.z_as_relative = false
 		sprite.z_index = _z("pillar")
-		var mat := CanvasItemMaterial.new()
-		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
-		sprite.material = mat
-		sprite.modulate = _bloom(Color(0.75, 1.0, 1.0))
+		sprite.material = _tint_material()
 		sprite.set_meta("cell", cell)
 		add_child(sprite)
 		_pillars.append(sprite)
@@ -507,12 +531,6 @@ func _cell_scale() -> float:
 	return float(_params.get("cell_draw_scale", 0.5))
 
 
-func _bloom(color: Color) -> Color:
-	if not preview_bloom:
-		return color
-	return Color(color.r * 2.2, color.g * 2.2, color.b * 2.2, color.a)
-
-
 func _pad_offset(tex: Texture2D, slot: String) -> Vector2:
 	var slots: Dictionary = _params.get("slots", {})
 	var spec: Dictionary = slots.get(slot, {})
@@ -555,8 +573,24 @@ func _glow_material(cell: Vector2i) -> ShaderMaterial:
 	mat.set_shader_parameter("phase", float(cell.x) * 1.7 + float(cell.y) * 2.3)
 	mat.set_shader_parameter("pulse_hz", float(_params.get("pulse_hz", 0.22)))
 	mat.set_shader_parameter("flow_speed", float(_params.get("glow_flow_speed", 0.35)))
-	mat.set_shader_parameter("glow_cap", float(_params.get("glow_cap", 0.48)))
+	_apply_glow_uniforms(mat)
 	return mat
+
+
+func _tint_material() -> ShaderMaterial:
+	if _tint_shader == null:
+		_tint_shader = Shader.new()
+		_tint_shader.code = TINT_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _tint_shader
+	_apply_glow_uniforms(mat)
+	return mat
+
+
+func _apply_glow_uniforms(mat: ShaderMaterial) -> void:
+	var color := glow_color()
+	mat.set_shader_parameter("glow_color", Vector3(color.r, color.g, color.b))
+	mat.set_shader_parameter("glow_cap", glow_cap())
 
 
 func _room_material() -> ShaderMaterial:

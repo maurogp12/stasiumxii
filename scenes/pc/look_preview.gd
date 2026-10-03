@@ -29,12 +29,13 @@ func _enable_preview_glow() -> void:
 	vp.use_hdr_2d = true
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CANVAS
+	var cap := FLOOR.glow_cap()
 	env.glow_enabled = true
-	env.glow_intensity = 0.85
-	env.glow_strength = 1.05
-	env.glow_bloom = 0.18
+	env.glow_intensity = cap
+	env.glow_strength = cap
+	env.glow_bloom = cap * 0.25
 	env.glow_hdr_threshold = 1.05
-	env.glow_hdr_scale = 2.0
+	env.glow_hdr_scale = 1.0
 	var world := WorldEnvironment.new()
 	world.name = "PreviewGlow"
 	world.environment = env

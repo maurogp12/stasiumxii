@@ -58,7 +58,19 @@ func _test_params_and_slots() -> void:
 	truthy(src.contains("float flow = tex.g;"), "the flow gradient is the green channel")
 	truthy(src.contains("float glow = min(intensity * (0.55 * pulse + energy), glow_cap);"), "the glow is capped so tiles stay readable")
 	eq(src.contains("coilgate"), false, "the floor script does not use the old phone name")
-	eq(float(params.get("glow_cap", 0.0)), 0.48, "the glow cap is in the json")
+	eq(float(params.get("glow_cap", 0.0)), FLOOR.glow_cap(), "the glow cap loads from the json")
+	var glow_raw: Array = params.get("glow_color", [])
+	eq(glow_raw.size(), 3, "the glow colour is a json rgb triple")
+	var loaded := FLOOR.glow_color()
+	truthy(is_equal_approx(loaded.r, float(glow_raw[0])), "glow colour red loads from the json")
+	truthy(is_equal_approx(loaded.g, float(glow_raw[1])), "glow colour green loads from the json")
+	truthy(is_equal_approx(loaded.b, float(glow_raw[2])), "glow colour blue loads from the json")
+	truthy(src.contains("uniform vec3 glow_color"), "the glow shader reads the theme colour")
+	eq(src.contains("vec3(0.55, 0.95, 1.0)"), false, "the floor glow is not a hardcoded sky cyan")
+	eq(src.contains("Color(0.45, 0.85, 1.0)"), false, "pads are not a hardcoded sky cyan")
+	eq(src.contains("Color(0.75, 1.0, 1.0)"), false, "pillars are not a hardcoded sky cyan")
+	eq(src.contains("Color(1.0, 0.45, 0.4)"), false, "pads are not a hardcoded orange")
+	_assert_hue_separated(loaded)
 	eq(src.contains("max(tex.r"), false, "the glow shader does not collapse the mask to greyscale")
 	truthy(src.contains("hole_mask"), "the room hole is a generated mask")
 	truthy(src.contains("blend_add"), "pillars and pads stay additive")
@@ -101,6 +113,7 @@ func _test_board_wires_the_theme() -> void:
 	truthy(preview.contains("stormspire"), "the preview loads an existing arena, not a dungeon run")
 	eq(preview.contains("dungeon"), false, "the preview does not start a dungeon")
 	truthy(preview.contains("use_hdr_2d"), "the preview can turn on 2D HDR")
+	truthy(preview.contains("FLOOR.glow_cap()"), "the preview bloom follows the json cap")
 	truthy(preview.contains("PreviewGlow"), "the preview adds a glow environment")
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	eq(project.contains("hdr_2d"), false, "2D HDR stays off for the rest of the game")
@@ -176,7 +189,19 @@ func _test_live_theme() -> void:
 		var overlay := glow_tile.get_node_or_null("Highlight") as CanvasItem
 		truthy(overlay != null and overlay.z_index > glow_sprite.z_index, "move tiles draw above the floor glow")
 		var mat := glow_sprite.material as ShaderMaterial
-		truthy(is_equal_approx(float(mat.get_shader_parameter("glow_cap")), 0.48), "the live glow uses the cap")
+		_assert_glow_uniforms(mat, "the trace glow")
+	var pad_sprite: CanvasItem = null
+	for cell in board.tiles.keys():
+		var pad := (board.tiles[cell] as Node).get_node_or_null("ThunderPad") as CanvasItem
+		if pad != null:
+			pad_sprite = pad
+			break
+	if pad_sprite != null:
+		_assert_glow_uniforms(pad_sprite.material as ShaderMaterial, "the pad glow")
+	truthy(layer.pillar_count() > 0, "a pillar is up for the colour check")
+	var pillar := layer.get_node_or_null("ThunderPillar") as CanvasItem
+	if pillar != null:
+		_assert_glow_uniforms(pillar.material as ShaderMaterial, "the pillar glow")
 	truthy(pads > 0, "the floor has glowing pads")
 	var origin: Vector2 = (board.tiles[Vector2i(7, 7)] as Node2D).position
 	layer.preview_time(0.0)
@@ -209,6 +234,52 @@ func _test_live_theme() -> void:
 	eq(layer.visible, false, "clearing the theme hides the room")
 	main.free()
 	FLOOR.request_theme("")
+
+
+func _assert_glow_uniforms(mat: ShaderMaterial, label: String) -> void:
+	truthy(mat != null, "%s has a shader" % label)
+	if mat == null:
+		return
+	var want := FLOOR.glow_color()
+	var got: Variant = mat.get_shader_parameter("glow_color")
+	truthy(got is Vector3, "%s colour is a vector" % label)
+	if got is Vector3:
+		var rgb: Vector3 = got
+		truthy(is_equal_approx(rgb.x, want.r) and is_equal_approx(rgb.y, want.g) and is_equal_approx(rgb.z, want.b), "%s loads the json colour" % label)
+	truthy(is_equal_approx(float(mat.get_shader_parameter("glow_cap")), FLOOR.glow_cap()), "%s loads the json cap" % label)
+
+
+func _assert_hue_separated(glow: Color) -> void:
+	var tile := BoardTile.new()
+	var kinds := ["move", "advance", "origin", "landing", "range", "target", "selected"]
+	for kind in kinds:
+		tile.highlight = kind
+		tile.is_selected = false
+		var flat := tile.overlay_color()
+		var gap := _hue_gap(_hue_deg(glow), _hue_deg(flat))
+		truthy(gap >= 40.0, "glow hue stays clear of the %s highlight (%s deg)" % [kind, snappedf(gap, 0.1)])
+	tile.free()
+
+
+func _hue_deg(color: Color) -> float:
+	var max_c := maxf(color.r, maxf(color.g, color.b))
+	var min_c := minf(color.r, minf(color.g, color.b))
+	var span := max_c - min_c
+	if span < 0.001:
+		return 0.0
+	var hue := 0.0
+	if max_c == color.r:
+		hue = fmod((color.g - color.b) / span, 6.0)
+	elif max_c == color.g:
+		hue = (color.b - color.r) / span + 2.0
+	else:
+		hue = (color.r - color.g) / span + 4.0
+	return fmod(hue * 60.0 + 360.0, 360.0)
+
+
+func _hue_gap(a: float, b: float) -> float:
+	var gap := absf(a - b)
+	return minf(gap, 360.0 - gap)
 
 
 func _check_import(path: String, mode: String) -> void:
