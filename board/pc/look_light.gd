@@ -3,52 +3,20 @@ extends Node2D
 ## L7 view light. PC only. The phone path stays flat: no grade shader, no rim,
 ## no cast shafts, no vignette, and the small damage number. The HUD layer
 ## is never changed.
-## The grade is saturation and contrast on the board and the jungle plates.
-## Outdoors the interim grade is a small lift, about +15% saturation, with a
-## slight warm shift. Sand, water, and stone keep their paint. The rejected
-## outdoor grade stays available as the "strong" preset for the comparison
-## sheet. Thunderwell is unchanged. Name plates and HP bars are left alone.
-## Fighters take a warm rim that follows the sprite and every animation strip.
-## A cast drops shafts and a floor pool on the target cell. Nothing here is
-## 3D, and nothing is a new paint.
+## The outdoor grade ships off (strength 0). Thunderwell takes none of it:
+## no grade, no vignette, no cast shafts, and no floor pool, so the board
+## matches the base branch. Fighters still take a warm rim that follows the
+## sprite and every animation strip, and PC damage numbers stay at 68 px.
+## An outdoor cast drops shafts and a floor pool on the target cell.
+## Name plates and HP bars are left alone. Nothing here is 3D.
 
 const SORT := preload("res://board/visual_sort.gd")
 const HUD := preload("res://ui/hud.gd")
 const PALETTE := preload("res://vfx/vfx_palette.gd")
 
-## Interim outdoor default until a strength is chosen. +15% saturation,
-## a gentle contrast, and a few degrees of warmth. The shadow mix stays off
-## so dark tiles and grid lines are not pushed toward a filter color.
-const OUTDOOR_SAT := 1.15
-const OUTDOOR_CONTRAST := 1.07
-const OUTDOOR_GAIN := 1.02
-const OUTDOOR_BIAS := Color(0.020, 0.006, -0.012, 1.0)
-const OUTDOOR_SHADOW := Color(0.0, 0.0, 0.0, 1.0)
-const OUTDOOR_SHADE := 0.0
-## Light comparison grade. About +10% saturation, even gentler than the default.
-const LIGHT_SAT := 1.10
-const LIGHT_CONTRAST := 1.04
-const LIGHT_GAIN := 1.01
-const LIGHT_BIAS := Color(0.010, 0.003, -0.006, 1.0)
-const LIGHT_SHADOW := Color(0.0, 0.0, 0.0, 1.0)
-const LIGHT_SHADE := 0.0
-## Rejected outdoor grade. Saturation 1.55 and contrast 1.22, with the orange
-## shadow mix. Shown on the strength sheet, not used as the default.
-const STRONG_SAT := 1.55
-const STRONG_CONTRAST := 1.22
-const STRONG_GAIN := 1.06
-const STRONG_BIAS := Color(0.07, 0.025, -0.06, 1.0)
-const STRONG_SHADOW := Color(0.62, 0.32, 0.12, 1.0)
-const STRONG_SHADE := 0.50
-const PRESET_LIGHT := "light"
-const PRESET_MEDIUM := "medium"
-const PRESET_STRONG := "strong"
-const DUNGEON_SAT := 1.08
-const DUNGEON_CONTRAST := 1.38
-const DUNGEON_GAIN := 0.68
-const DUNGEON_BIAS := Color(-0.04, 0.01, 0.06, 1.0)
-const DUNGEON_SHADOW := Color(0.02, 0.04, 0.09, 1.0)
-const DUNGEON_SHADE := 0.50
+## Outdoor color grade. 0 ships the base paint. Mauro picks a grade later, on
+## the new outdoor board, so this branch does not carry light, medium, or strong.
+const OUTDOOR_STRENGTH := 0.0
 const OUTDOOR_RIM := Color(1.0, 0.80, 0.46, 1)
 const DUNGEON_RIM := Color(1.0, 0.90, 0.68, 1)
 const OUTDOOR_RIM_STRENGTH := 0.92
@@ -119,12 +87,11 @@ void fragment() {
 
 static var active := false
 static var _dungeon_rim := false
-## Bench switch. The phone path is already off. This turns the grade off
+## True only when the outdoor grade strength is above 0. Thunderwell never sets it.
+static var _paint_grade := false
+## Bench switch. The phone path is already off. This turns the light off
 ## while the PC HUD and the jungle stay up.
 static var suppressed := false
-## Outdoor strength. "medium" is the interim default. "strong" is the
-## rejected grade, kept for the comparison sheet. Dungeon ignores this.
-static var outdoor_preset := PRESET_MEDIUM
 static var _shared_grade: ShaderMaterial
 static var _shared_draw_grade: ShaderMaterial
 
@@ -145,13 +112,6 @@ var _shade := 0.0
 
 static func set_suppressed(on: bool) -> void:
 	suppressed = on
-
-
-static func set_outdoor_preset(name: String) -> void:
-	if name == PRESET_LIGHT or name == PRESET_MEDIUM or name == PRESET_STRONG:
-		outdoor_preset = name
-	else:
-		outdoor_preset = PRESET_MEDIUM
 
 
 static func font_size(kind: String, base: int) -> int:
@@ -212,7 +172,7 @@ static func dress_pawn(pawn: Node) -> void:
 	tint.a = DUNGEON_RIM_STRENGTH if _dungeon_rim else OUTDOOR_RIM_STRENGTH
 	rim.modulate = tint
 	rim.visible = rim.texture != null
-	_grade_bodies(pawn, true)
+	_grade_bodies(pawn, _paint_grade)
 
 
 static func _find_rim(node: Node) -> Sprite2D:
@@ -268,17 +228,17 @@ func sync(board: Node2D, dungeon: bool) -> void:
 	active = pc
 	_dungeon = pc and dungeon
 	_apply_grade()
-	if not pc:
+	if not pc or _dungeon:
 		_casts.clear()
 		set_process(false)
 		queue_redraw()
 		_set_vignette(false)
 	_dress_units()
-	_graded = pc
+	_graded = _paint_grade
 
 
 func note_events(events: Array) -> int:
-	if not active:
+	if not active or _dungeon:
 		return 0
 	var added := 0
 	for event in events:
@@ -313,7 +273,7 @@ func note_events(events: Array) -> int:
 
 
 func wash_visible() -> bool:
-	return _graded and active
+	return _paint_grade
 
 
 func grade_saturation() -> float:
@@ -381,7 +341,7 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	if not active:
+	if not active or _dungeon:
 		return
 	for cast in _casts:
 		var life := float(cast["life"])
@@ -403,51 +363,18 @@ func _draw() -> void:
 
 func _apply_grade() -> void:
 	_dungeon_rim = active and _dungeon
-	if not active:
-		_sat = 1.0
-		_contrast = 1.0
-		_gain = 1.0
-		_bias = Color(0, 0, 0, 1)
-		_shadow = Color(0, 0, 0, 1)
-		_shade = 0.0
-		_set_vignette(false)
-	elif _dungeon:
-		_sat = DUNGEON_SAT
-		_contrast = DUNGEON_CONTRAST
-		_gain = DUNGEON_GAIN
-		_bias = DUNGEON_BIAS
-		_shadow = DUNGEON_SHADOW
-		_shade = DUNGEON_SHADE
-		_set_vignette(true)
-	else:
-		_apply_outdoor_preset()
-		_set_vignette(false)
+	# Strength 0, and never on Thunderwell. The board paint stays the base paint.
+	_paint_grade = active and not _dungeon and OUTDOOR_STRENGTH > 0.0
+	_sat = 1.0
+	_contrast = 1.0
+	_gain = 1.0
+	_bias = Color(0, 0, 0, 1)
+	_shadow = Color(0, 0, 0, 1)
+	_shade = 0.0
+	_set_vignette(false)
 	_ensure_shared()
 	_push_shared()
 	_grade_board()
-
-
-func _apply_outdoor_preset() -> void:
-	_sat = OUTDOOR_SAT
-	_contrast = OUTDOOR_CONTRAST
-	_gain = OUTDOOR_GAIN
-	_bias = OUTDOOR_BIAS
-	_shadow = OUTDOOR_SHADOW
-	_shade = OUTDOOR_SHADE
-	if outdoor_preset == PRESET_LIGHT:
-		_sat = LIGHT_SAT
-		_contrast = LIGHT_CONTRAST
-		_gain = LIGHT_GAIN
-		_bias = LIGHT_BIAS
-		_shadow = LIGHT_SHADOW
-		_shade = LIGHT_SHADE
-	elif outdoor_preset == PRESET_STRONG:
-		_sat = STRONG_SAT
-		_contrast = STRONG_CONTRAST
-		_gain = STRONG_GAIN
-		_bias = STRONG_BIAS
-		_shadow = STRONG_SHADOW
-		_shade = STRONG_SHADE
 
 
 func _ensure_shared() -> void:
@@ -471,7 +398,7 @@ func _push_shared() -> void:
 func _push_material(mat: ShaderMaterial) -> void:
 	if mat == null:
 		return
-	mat.set_shader_parameter("grade_on", 1.0 if active else 0.0)
+	mat.set_shader_parameter("grade_on", 1.0 if _paint_grade else 0.0)
 	mat.set_shader_parameter("grade_sat", _sat)
 	mat.set_shader_parameter("grade_contrast", _contrast)
 	mat.set_shader_parameter("grade_gain", _gain)
@@ -491,10 +418,7 @@ func _grade_board() -> void:
 			(tiles as CanvasItem).modulate = Color.WHITE
 		for child in tiles.get_children():
 			if child is CanvasItem:
-				_attach_grade(child, active)
-			var floor := child.get_node_or_null("LookFloor") as CanvasItem
-			if floor != null and floor.material is ShaderMaterial:
-				_push_existing(floor.material as ShaderMaterial)
+				_attach_grade(child, _paint_grade)
 	var units := _board.get_node_or_null("Units") as CanvasItem
 	if units != null:
 		units.modulate = Color.WHITE
@@ -502,22 +426,8 @@ func _grade_board() -> void:
 	if jungle != null and jungle.has_method("set_look_grade"):
 		if jungle is CanvasItem:
 			(jungle as CanvasItem).modulate = Color.WHITE
-		jungle.set_look_grade(active, _sat, _contrast, _gain, _bias, _shadow, _shade)
-	var room := _board.get_node_or_null("ThunderwellFloor")
-	if room != null and room.has_method("set_look_grade"):
-		room.set_look_grade(active, _sat, _contrast, _gain, _bias, _shadow, _shade)
-
-
-func _push_existing(mat: ShaderMaterial) -> void:
-	if mat == null:
-		return
-	mat.set_shader_parameter("grade_on", 1.0 if active else 0.0)
-	mat.set_shader_parameter("grade_sat", _sat)
-	mat.set_shader_parameter("grade_contrast", _contrast)
-	mat.set_shader_parameter("grade_gain", _gain)
-	mat.set_shader_parameter("grade_bias", Vector3(_bias.r, _bias.g, _bias.b))
-	mat.set_shader_parameter("grade_shadow", Vector3(_shadow.r, _shadow.g, _shadow.b))
-	mat.set_shader_parameter("grade_shade", _shade)
+		jungle.set_look_grade(_paint_grade, _sat, _contrast, _gain, _bias, _shadow, _shade)
+	# ThunderwellFloor keeps the base room shader. No grade, no vignette.
 
 
 func _set_vignette(on: bool) -> void:

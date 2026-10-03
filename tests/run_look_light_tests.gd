@@ -1,6 +1,7 @@
 extends SceneTree
 
-## L7 light. The phone path stays flat. PC grades, rims, and cast light are warm.
+## L7 light. The phone path stays flat. The outdoor grade ships off.
+## Thunderwell matches the base board. Rims and the 68 px number stay.
 ## Run: godot --headless --path . -s res://tests/run_look_light_tests.gd
 
 const LIGHT := preload("res://board/pc/look_light.gd")
@@ -19,19 +20,17 @@ func _initialize() -> void:
 
 
 func _go() -> void:
-	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
 	_test_phone_stays_flat()
 	_test_outdoor_grade_and_rim()
-	_test_outdoor_strengths()
-	_test_dungeon_grade()
+	_test_thunderwell_board_stays_flat()
 	_test_cast_light_is_warm_and_pc_only()
 	_test_damage_numbers()
 	_test_pawn_rim_follows_strips()
 	await _test_live_board()
+	await _test_thunderwell_board_matches_base()
 	HUD.set_pc_chrome_override(-1)
 	LIGHT.active = false
 	LIGHT.set_suppressed(false)
-	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
 	print("Look light tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -93,32 +92,27 @@ func _test_outdoor_grade_and_rim() -> void:
 	var light = tree["light"]
 	HUD.set_pc_chrome_override(1)
 	light.sync(tree["board"], false)
-	eq(light.wash_visible(), true, "the outdoor grade is on")
-	eq(LIGHT.outdoor_preset, LIGHT.PRESET_MEDIUM, "medium is the interim outdoor default")
-	eq(is_equal_approx(light.grade_saturation(), LIGHT.OUTDOOR_SAT), true, "outdoor saturation is the medium preset")
-	truthy(light.grade_saturation() >= 1.12 and light.grade_saturation() <= 1.15, "outdoor saturation is about +12 to +15 percent")
-	truthy(light.grade_contrast() > 1.02 and light.grade_contrast() < 1.12, "outdoor contrast is gentle")
-	truthy(light.grade_shade() < 0.05, "outdoor grade does not recolor dark tiles")
-	truthy(light.grade_bias().r > light.grade_bias().b, "the outdoor grade is warm")
-	truthy(light.grade_bias().r < 0.04, "the warm shift stays slight")
-	truthy(light.grade_bias().r - light.grade_bias().b < 0.05, "the warm shift is a few degrees")
-	eq(tree["board"].modulate, Color.WHITE, "the grade is not a parent multiply")
+	eq(LIGHT.OUTDOOR_STRENGTH, 0.0, "the outdoor grade ships at strength 0")
+	eq(light.wash_visible(), false, "the outdoor grade is off")
+	eq(is_equal_approx(light.grade_saturation(), 1.0), true, "outdoor saturation matches base")
+	eq(is_equal_approx(light.grade_contrast(), 1.0), true, "outdoor contrast matches base")
+	eq(is_equal_approx(light.grade_gain(), 1.0), true, "outdoor gain matches base")
+	eq(is_equal_approx(light.grade_shade(), 0.0), true, "outdoor grade does not mix a shadow")
+	eq(light.grade_bias(), Color(0, 0, 0, 1), "outdoor grade has no color bias")
+	eq(tree["board"].modulate, Color.WHITE, "the board is not a parent multiply")
 	eq(tree["tiles"].modulate, Color.WHITE, "the tiles node is not a flat tint")
 	eq(tree["units"].modulate, Color.WHITE, "fighters are not tinted as a group")
-	var mat := tree["tile"].material as ShaderMaterial
-	truthy(mat != null and mat.shader != null and mat.shader.code.find("l7_grade") >= 0, "the tile uses the grade shader")
-	truthy(mat.shader.code.find("texture(TEXTURE") < 0, "a drawn tile is graded from its own color, not sampled twice")
+	eq(tree["tile"].material, null, "outdoor tiles have no grade shader")
+	var light_src := FileAccess.get_file_as_string("res://board/pc/look_light.gd")
+	truthy(light_src.find("vec4 c = COLOR;") >= 0, "a drawn tile grade reads the painted pixel")
 	eq(tree["jungle"].modulate, Color.WHITE, "the jungle node stays white")
-	eq(tree["jungle"].look_grade_enabled(), true, "the jungle plate takes the grade")
+	eq(tree["jungle"].look_grade_enabled(), false, "the jungle plate is not graded")
 	var plate_code := ""
 	var plate_mat: ShaderMaterial = tree["jungle"]._plate_mat
 	if plate_mat != null and plate_mat.shader != null:
 		plate_code = plate_mat.shader.code
 	truthy(plate_code.find("blend_disabled") >= 0, "the jungle plate stays blend-disabled")
-	truthy(plate_code.find("l7_grade") >= 0, "the jungle plate shader grades")
-	truthy(plate_code.find("grade_shade") >= 0, "the jungle plate can keep the shadow mix off")
-	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_sat")), LIGHT.OUTDOOR_SAT), true, "the jungle plate uses the outdoor saturation")
-	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_shade")), LIGHT.OUTDOOR_SHADE), true, "the jungle plate does not crush shadows")
+	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_on")), 0.0), true, "the jungle plate grade is off")
 	eq(light.vignette_visible(), false, "outdoors do not vignette the room")
 	eq(light.get_node_or_null("Vignette"), null, "outdoors do not add a fullscreen wash")
 	var rim: Color = light.rim_color()
@@ -130,50 +124,30 @@ func _test_outdoor_grade_and_rim() -> void:
 	_free_host(tree)
 
 
-func _test_outdoor_strengths() -> void:
+func _test_thunderwell_board_stays_flat() -> void:
+	var floor_src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
+	eq(floor_src.find("l7_grade") < 0, true, "the thunderwell room shader is the base shader")
+	eq(floor_src.find("func set_look_grade") < 0, true, "the thunderwell floor does not take an L7 grade")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	eq(tile_src.find("l7_grade") < 0, true, "a thunderwell floor plate is the base shader")
 	var tree := _host()
 	var light = tree["light"]
 	HUD.set_pc_chrome_override(1)
-	LIGHT.set_outdoor_preset(LIGHT.PRESET_LIGHT)
-	light.sync(tree["board"], false)
-	eq(is_equal_approx(light.grade_saturation(), LIGHT.LIGHT_SAT), true, "light saturation is +10 percent")
-	truthy(light.grade_saturation() < LIGHT.OUTDOOR_SAT, "light is softer than medium")
-	truthy(light.grade_contrast() > 1.0 and light.grade_contrast() < 1.10, "light contrast is gentle")
-	truthy(light.grade_shade() < 0.05, "light does not recolor shadows")
-	truthy(light.grade_bias().r > light.grade_bias().b, "light is still warm")
-	LIGHT.set_outdoor_preset(LIGHT.PRESET_STRONG)
-	light.sync(tree["board"], false)
-	eq(is_equal_approx(light.grade_saturation(), LIGHT.STRONG_SAT), true, "strong keeps the rejected saturation")
-	eq(is_equal_approx(light.grade_contrast(), LIGHT.STRONG_CONTRAST), true, "strong keeps the rejected contrast")
-	truthy(light.grade_shade() > 0.4, "strong still mixes the old shadow")
-	truthy(light.grade_bias().r > 0.05, "strong keeps the heavy warm bias")
-	var plate_mat: ShaderMaterial = tree["jungle"]._plate_mat
-	eq(is_equal_approx(float(plate_mat.get_shader_parameter("grade_sat")), LIGHT.STRONG_SAT), true, "the jungle plate follows the strong preset")
 	light.sync(tree["board"], true)
-	eq(is_equal_approx(light.grade_saturation(), LIGHT.DUNGEON_SAT), true, "a dungeon sync ignores the outdoor preset")
-	eq(is_equal_approx(light.grade_contrast(), LIGHT.DUNGEON_CONTRAST), true, "dungeon contrast stays the accepted grade")
-	eq(is_equal_approx(light.grade_shade(), LIGHT.DUNGEON_SHADE), true, "dungeon shadow mix stays")
-	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
-	light.sync(tree["board"], false)
-	eq(is_equal_approx(light.grade_saturation(), LIGHT.OUTDOOR_SAT), true, "medium restores the interim outdoor grade")
-	_free_host(tree)
-
-
-func _test_dungeon_grade() -> void:
-	var tree := _host()
-	var light = tree["light"]
-	HUD.set_pc_chrome_override(1)
-	light.sync(tree["board"], false)
-	var outdoor_gain: float = light.grade_gain()
-	light.sync(tree["board"], true)
-	truthy(light.grade_contrast() > 1.2, "the dungeon grade raises contrast")
-	truthy(light.grade_gain() < outdoor_gain, "the dungeon grade is darker than outdoors")
-	truthy(light.grade_bias().b > light.grade_bias().r, "the dungeon grade is cool")
-	eq(light.wash_visible(), true, "the dungeon grade is on")
-	eq(tree["jungle"].look_grade_enabled(), true, "the dungeon still grades the jungle plate")
-	eq(light.vignette_visible(), true, "the dungeon vignettes the room")
+	eq(light.wash_visible(), false, "thunderwell does not take the grade")
+	eq(is_equal_approx(light.grade_saturation(), 1.0), true, "thunderwell saturation matches base")
+	eq(is_equal_approx(light.grade_contrast(), 1.0), true, "thunderwell contrast matches base")
+	eq(is_equal_approx(light.grade_gain(), 1.0), true, "thunderwell gain matches base")
+	eq(light.grade_bias(), Color(0, 0, 0, 1), "thunderwell grade has no color bias")
+	eq(light.vignette_visible(), false, "thunderwell has no vignette")
+	eq(light.get_node_or_null("Vignette"), null, "thunderwell does not add a vignette layer")
+	eq(tree["tile"].material, null, "thunderwell tiles have no grade shader")
+	eq(tree["jungle"].look_grade_enabled(), false, "thunderwell does not grade the jungle plate")
+	eq(light.note_events([{"type": "cast", "spell": "drop_shade", "to": Vector2i(4, 4)}]), 0, "a thunderwell cast does not add shafts or a floor pool")
+	eq(light.cast_count(), 0, "thunderwell keeps no cast light")
 	truthy(light.rim_strength() > LIGHT.OUTDOOR_RIM_STRENGTH, "the dungeon rim is stronger")
 	truthy(light.rim_color().r > light.rim_color().b, "the dungeon rim stays warm")
+	eq(LIGHT.font_size("damage", BUDGET.NUMBER_SIZE), LIGHT.PC_DAMAGE_FONT, "PC damage numbers stay 68 px on thunderwell")
 	_free_host(tree)
 
 
@@ -252,7 +226,7 @@ func _test_pawn_rim_follows_strips() -> void:
 	truthy(plate != null, "the name plate exists")
 	if plate != null:
 		eq(plate.material, null, "the name plate is not graded")
-	eq(bool(sprite.get_meta("_look_grade_mat", false)), true, "the body takes the grade shader")
+	eq(bool(sprite.get_meta("_look_grade_mat", false)), false, "the body is not graded while the outdoor grade is off")
 	pawn.bind_motion_frames(_frames(["walk_e", "cast_e"]))
 	var walked: bool = pawn._play_walk_flat()
 	eq(walked, true, "the walk strip plays")
@@ -298,12 +272,15 @@ func _test_live_board() -> void:
 	await process_frame
 	eq(hud.layer, 10, "the live HUD stays at layer 10")
 	var light = board.get_node_or_null("LookLight")
-	truthy(light != null and light.wash_visible(), "the live board wires the grade")
+	truthy(light != null and not light.wash_visible(), "the live outdoor grade is off")
 	var jungle = board.get_node_or_null("JungleBackdrop")
-	truthy(jungle != null and jungle.look_grade_enabled(), "the live jungle plate is graded")
+	truthy(jungle != null and not jungle.look_grade_enabled(), "the live jungle plate is not graded")
 	var graded_body := false
 	var plate_clean := false
+	var rim_on := false
 	for pawn in board.get_node("Units").get_children():
+		if _find_rim(pawn) != null:
+			rim_on = true
 		var plate := pawn.get_node_or_null("Chrome/OverheadPlate") as CanvasItem
 		if plate != null:
 			eq(plate.material, null, "a live name plate is not graded")
@@ -312,7 +289,8 @@ func _test_live_board() -> void:
 		if sprite != null and bool(sprite.get_meta("_look_grade_mat", false)):
 			graded_body = true
 	eq(plate_clean, true, "a live fighter has a name plate")
-	eq(graded_body, true, "a live fighter body is graded")
+	eq(graded_body, false, "a live fighter body is not graded")
+	eq(rim_on, true, "a live fighter keeps the rim")
 	HUD.set_pc_chrome_override(0)
 	board._sync_look_light()
 	eq(hud.layer, 10, "phone sync leaves the live HUD layer")
@@ -320,6 +298,113 @@ func _test_live_board() -> void:
 	eq(light.vignette_visible(), false, "phone sync clears the vignette")
 	main.free()
 	HUD.set_pc_chrome_override(-1)
+
+
+func _test_thunderwell_board_matches_base() -> void:
+	HUD.set_pc_chrome_override(1)
+	LIGHT.set_suppressed(true)
+	var main := (load("res://main.tscn") as PackedScene).instantiate()
+	root.add_child(main)
+	var board: Node = main.get_node("BoardView")
+	for _i in 50:
+		await process_frame
+		if bool(board.get("_booted")):
+			break
+	eq(bool(board.get("_booted")), true, "the thunderwell board boots")
+	var sim: Node = root.get_node("CombatSim")
+	sim.reset_match({
+		"seed": 1,
+		"map_id": "stormspire",
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	board.set_board_theme("thunderwell")
+	for _i in 8:
+		await process_frame
+	var floor = board.get_node_or_null("ThunderwellFloor")
+	truthy(floor != null and floor.visible, "the thunderwell floor is up")
+	if floor != null and floor.has_method("preview_time"):
+		floor.preview_time(0.35)
+	LIGHT.set_suppressed(true)
+	board._sync_look_light()
+	var base_sig := _board_paint_signature(board)
+	LIGHT.set_suppressed(false)
+	board._sync_look_light()
+	if floor != null and floor.has_method("preview_time"):
+		floor.preview_time(0.35)
+	var on_sig := _board_paint_signature(board)
+	_same_board(base_sig, on_sig, "the thunderwell board matches base with L7 on")
+	var graded := false
+	for row in on_sig:
+		var text := str(row)
+		if text.find("l7_grade") >= 0 or text.find("grade=true") >= 0:
+			graded = true
+	eq(graded, false, "the thunderwell board has no L7 grade")
+	var light = board.get_node_or_null("LookLight")
+	eq(light.vignette_visible(), false, "the live thunderwell has no vignette")
+	eq(light.get_node_or_null("Vignette"), null, "the live thunderwell adds no vignette")
+	eq(light.note_events([{"type": "cast", "spell": "drop_shade", "to": Vector2i(8, 7)}]), 0, "a live thunderwell cast adds no shafts or floor pool")
+	eq(light.cast_count(), 0, "the live thunderwell keeps no cast light")
+	var jungle = board.get_node_or_null("JungleBackdrop")
+	if jungle != null and jungle.has_method("look_grade_enabled"):
+		eq(jungle.look_grade_enabled(), false, "thunderwell leaves the jungle plate ungraded")
+	var rim_on := false
+	var body_clean := false
+	for pawn in board.get_node("Units").get_children():
+		if _find_rim(pawn) != null:
+			rim_on = true
+		var sprite := pawn.get_node_or_null("Sprite") as CanvasItem
+		if sprite != null:
+			eq(bool(sprite.get_meta("_look_grade_mat", false)), false, "a thunderwell fighter body is not graded")
+			body_clean = true
+	eq(rim_on, true, "a thunderwell fighter keeps the rim")
+	eq(body_clean, true, "a thunderwell fighter was checked")
+	eq(LIGHT.font_size("damage", BUDGET.NUMBER_SIZE), LIGHT.PC_DAMAGE_FONT, "thunderwell still uses the 68 px number")
+	main.free()
+	LIGHT.set_suppressed(false)
+	HUD.set_pc_chrome_override(-1)
+
+
+func _board_paint_signature(board: Node) -> PackedStringArray:
+	var rows := PackedStringArray()
+	for node_name in ["Tiles", "ThunderwellFloor"]:
+		_walk_paint(board.get_node_or_null(node_name), "", rows)
+	rows.sort()
+	return rows
+
+
+func _walk_paint(node: Node, path: String, rows: PackedStringArray) -> void:
+	if node == null:
+		return
+	var here := path + "/" + str(node.name)
+	if node is CanvasItem:
+		var item := node as CanvasItem
+		var code := ""
+		if item.material is ShaderMaterial:
+			var mat := item.material as ShaderMaterial
+			if mat.shader != null:
+				code = mat.shader.code
+		rows.append("%s modulate=%s visible=%s grade=%s code=%s" % [here, str(item.modulate), str(item.visible), str(bool(item.get_meta("_look_grade_mat", false))), code])
+	for child in node.get_children():
+		_walk_paint(child, here, rows)
+
+
+func _same_board(base_sig: PackedStringArray, on_sig: PackedStringArray, label: String) -> void:
+	if base_sig == on_sig:
+		_passed += 1
+		return
+	_failed += 1
+	print("FAIL %s" % label)
+	var n := mini(base_sig.size(), on_sig.size())
+	for i in n:
+		if base_sig[i] != on_sig[i]:
+			print("  base %s" % base_sig[i])
+			print("  on   %s" % on_sig[i])
+			break
+	if base_sig.size() != on_sig.size():
+		print("  size base=%d on=%d" % [base_sig.size(), on_sig.size()])
 
 
 func _frames(anims: Array) -> SpriteFrames:
