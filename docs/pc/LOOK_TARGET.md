@@ -83,6 +83,7 @@ screen recordings (not in the repo).
 ## D. The open-world map: the Crosshaven plate
 
 Brief: [`look_target/CROSSHAVEN_OPEN_WORLD_BRIEF.md`](look_target/CROSSHAVEN_OPEN_WORLD_BRIEF.md)
+Plate: [`look_target/crosshaven_plate.jpg`](look_target/crosshaven_plate.jpg)
 (Mauro, 3 Oct 2026; Proposed art direction, not a combat or level lock). Look
 target: the painted Crosshaven plate. It is a cliff island or peninsula with
 pale roads running out from an open centre to five towns. Each town has
