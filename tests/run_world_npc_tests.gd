@@ -32,9 +32,11 @@ func _run() -> void:
 	eq(bool(atlas_loaded.get("ok", false)), true, "atlas loads")
 	if bool(atlas_loaded.get("ok", false)):
 		_test_cells(rows, atlas_loaded["atlas"])
+		_test_two_cells_apart_fails()
 		_test_spacing(rows, atlas_loaded["atlas"])
 		_test_extra_blocked(atlas_loaded["atlas"])
 	_test_talk()
+	_test_plate_alignment()
 	_test_grades()
 	await _test_grade_hues()
 	_finish()
@@ -174,6 +176,10 @@ func _test_talk() -> void:
 	w.weather.auto_rotate = false
 	eq(w.npc_book != null, true, "the world loads the npc book")
 	eq(w.npcs_root.get_child_count() > 0, true, "the Crossroads spawns its NPCs")
+	eq(w.npc_plates is CanvasLayer and w.npc_plates.layer > 6, true, "name plates draw above the fog")
+	eq(w.npc_plates.get_child_count() == w.npcs_root.get_child_count(), true, "every NPC has a plate above the fog")
+	var plate: Variant = w.npc_plates.get_child(0)
+	eq(str(plate.plate_text) != "", true, "the plate shows the NPC name")
 	var guide_cell := Vector2i(24, 18)
 	eq(w._npc_at(guide_cell).is_empty(), false, "the Guide occupies the spec cell")
 	var blocked: Dictionary = w.walk_to(guide_cell)
@@ -203,6 +209,62 @@ func _test_talk() -> void:
 	w.dialogue.notify_outside_click()
 	eq(w.dialogue.is_open(), false, "a click outside closes the dialogue")
 	w.queue_free()
+
+
+func _test_plate_alignment() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.weather.auto_rotate = false
+	_assert_plate_geometry(w, "crossroads")
+	w.enter_zone("gloomfen_mire_entry", Vector2i(8, 8), false)
+	_assert_plate_geometry(w, "gloomfen")
+	var heads := {}
+	var names := {}
+	for node in w.npcs_root.get_children():
+		heads[str(node.npc_id)] = float(node._plate.head_y)
+		names[str(node.display_name)] = true
+	eq(names.has("Warden") and names.has("Trader") and names.has("Hermit"), true, "Gloomfen entry shows the Warden, Trader, and Hermit")
+	# Hermit idle_w starts lower in the frame than Warden idle_w, so the head
+	# (and the plate) sits lower. A shared texture-top offset would match.
+	eq(float(heads["gloomfen_hermit"]) > float(heads["gloomfen_mire_warden"]), true, "the Hermit plate follows the visible head")
+	w.queue_free()
+
+
+func _assert_plate_geometry(w: Node2D, where: String) -> void:
+	var gap0 := -1.0
+	var saw := 0
+	for node in w.npcs_root.get_children():
+		node._sync_plate()
+		var plate: Variant = node._plate
+		eq(plate != null, true, "%s has a plate (%s)" % [str(node.npc_id), where])
+		if plate == null:
+			continue
+		var box: Rect2 = plate.backing_rect()
+		var label: Rect2 = plate.label_rect()
+		eq(box.encloses(label), true, "%s label rect lies inside the backing (%s)" % [str(node.npc_id), where])
+		var pads: Array[float] = [
+			label.position.x - box.position.x,
+			label.position.y - box.position.y,
+			box.end.x - label.end.x,
+			box.end.y - label.end.y,
+		]
+		var pad_ok := true
+		for pad in pads:
+			if pad < 4.0 or pad > 6.0:
+				pad_ok = false
+		eq(pad_ok, true, "%s backing wraps the label with 4–6 px padding (%s)" % [str(node.npc_id), where])
+		var base_y: float = plate.baseline_y()
+		eq(base_y > box.position.y and base_y < box.end.y, true, "%s baseline sits inside the backing (%s)" % [str(node.npc_id), where])
+		var gap: float = float(plate.head_y) - box.end.y
+		eq(gap >= 6.0 and gap <= 8.0, true, "%s plate is 6–8 px above the head (%s)" % [str(node.npc_id), where])
+		if gap0 < 0.0:
+			gap0 = gap
+		eq(absf(gap - gap0) < 0.05, true, "%s keeps the same gap above the head (%s)" % [str(node.npc_id), where])
+		saw += 1
+	eq(saw > 0, true, "%s has plates to measure" % where)
 
 
 func _test_grades() -> void:
@@ -249,6 +311,13 @@ func _test_grades() -> void:
 	w.queue_free()
 
 
+func _test_two_cells_apart_fails() -> void:
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(2, 0)) >= 3, false, "two cells apart in a straight line fails")
+	eq(_cells_apart(Vector2i(19, 16), Vector2i(18, 18)) >= 3, false, "the old town-square diagonal of 2 fails")
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(3, 0)) >= 3, true, "three cells apart passes")
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(3, 2)) >= 3, true, "three cells apart on a diagonal passes")
+
+
 func _test_spacing(rows: Array, atlas) -> void:
 	var by_zone := {}
 	for row in rows:
@@ -276,7 +345,8 @@ func _test_spacing(rows: Array, atlas) -> void:
 				eq(_manhattan(cell, gate_cell) >= 2, true, "%s is at least 2 cells from the gate" % npc_id)
 			for j in range(i + 1, group.size()):
 				var other: Dictionary = group[j]
-				eq(_manhattan(cell, cells[j]) >= 3, true, "%s is at least 3 cells from %s" % [npc_id, str(other["id"])])
+				var apart := _cells_apart(cell, cells[j])
+				eq(apart >= 3, true, "%s is at least 3 cells from %s" % [npc_id, str(other["id"])])
 			var role := str(record["role"])
 			if role == "door_keeper" and zone_id.ends_with("_door"):
 				var door := _door_cell(zone)
@@ -423,6 +493,11 @@ func _nearest(cell: Vector2i, others: Array) -> int:
 
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
+
+
+## Column gap or row gap, whichever is larger. A diagonal of 2 is two cells apart.
+func _cells_apart(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 
 
 func _terrain_mean(zone: WorldZone) -> Color:
