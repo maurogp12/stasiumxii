@@ -127,7 +127,7 @@ func _test_sprite_node_setup() -> void:
 	for class_id in ["kestrel", "gloam", "mender"]:
 		eq(Pawn.idle_plant_texture(class_id, "E"), null, "%s has no separate idle plant" % class_id)
 	for class_id in ["ironjaw", "bastion"]:
-		_assert_west_is_east_mirror(class_id)
+		_assert_west_back_view_kept(class_id)
 		_assert_facing_is_own_sheet(class_id)
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	var dead := bastion.get_node("Sprite") as Sprite2D
@@ -318,8 +318,8 @@ func _assert_walk_identity(pawn: Pawn, class_id: String, facing: String) -> void
 
 
 ## North and south are their own three-quarter walks. A face pad must not
-## show the east body, and the helm must not bob inside the cell. West is
-## the mirror, checked separately. The v5 strips are not this contract.
+## show the east body, and the helm must not bob inside the cell. West stays
+## the previous up-left back view. The v5 strips are not this contract.
 func _assert_facing_is_own_sheet(class_id: String) -> void:
 	var east_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
 	for face in ["n", "s"]:
@@ -376,20 +376,22 @@ func _cell_metrics(cell: Image) -> Vector3:
 	return Vector3(foot, head, count)
 
 
-func _assert_west_is_east_mirror(class_id: String) -> void:
+## Up-left (west) is the back view and stays the previous six-cell sheet.
+## It is no longer a mirror of east: east is the locked 12-frame march.
+func _assert_west_back_view_kept(class_id: String) -> void:
 	var east_img := Image.new()
 	var west_img := Image.new()
 	var east_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "e"))
 	var west_bytes := FileAccess.get_file_as_bytes(StripLibrary.walk_bytes_path(class_id, "w"))
+	var east_png := FileAccess.get_file_as_bytes(StripLibrary.export_png_path(class_id, "walk", "e"))
+	eq(east_png == east_bytes, true, "%s east walk png matches the packed bytes" % class_id)
 	eq(east_img.load_png_from_buffer(east_bytes), OK, "%s east walk bytes load" % class_id)
 	eq(west_img.load_png_from_buffer(west_bytes), OK, "%s west walk bytes load" % class_id)
-	eq(east_img.get_width(), 864, "%s east walk is six cells" % class_id)
-	eq(west_img.get_width(), 864, "%s west walk is six cells" % class_id)
-	for i in 6:
-		var east := east_img.get_region(Rect2i(i * 144, 0, 144, 160))
-		var west := west_img.get_region(Rect2i(i * 144, 0, 144, 160))
-		east.flip_x()
-		eq(west.get_data() == east.get_data(), true, "%s west cell %d is the baked east mirror" % [class_id, i])
+	eq(east_img.get_width() % StripLibrary.LOCKED_EAST_WALK_FRAMES, 0, "%s east march is 12 cells" % class_id)
+	eq(east_img.get_width() > 864, true, "%s east march replaced the six-cell sheet" % class_id)
+	eq(west_img.get_width(), 864, "%s west back view is still six cells" % class_id)
+	eq(west_img.get_height(), 160, "%s west back view is still 160 tall" % class_id)
+	eq(east_bytes == west_bytes, false, "%s west back view is not the new east sheet" % class_id)
 
 
 func _visible_strip(pawn: Pawn) -> AnimatedSprite2D:
