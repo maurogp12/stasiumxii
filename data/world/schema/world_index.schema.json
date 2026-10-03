@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_index.v1.json",
+  "title": "Stasium PC world index",
+  "description": "Sidecar stasium.world_index version 1. Lists every region and the path of its zone index. Crosshaven is built. The nine new regions stay placeholder until their chunk files exist. status on each region is built or placeholder.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "start_region", "regions"],
+  "properties": {
+    "format": {"const": "stasium.world_index"},
+    "format_version": {"const": 1},
+    "start_region": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "regions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["region", "index", "status"],
+        "properties": {
+          "region": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "index": {"type": "string", "minLength": 1},
+          "status": {"enum": ["built", "placeholder"]}
+        }
+      }
+    }
+  }
+}

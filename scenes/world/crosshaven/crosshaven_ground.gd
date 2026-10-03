@@ -103,6 +103,20 @@ func uses_kit() -> bool:
 	return _use_kit
 
 
+## Same gold arrow as a chunk exit. Gates are sidecar data, so the zone file stays untouched.
+func add_gate_arrow(cell: Vector2i, dir: Vector2i) -> void:
+	_exit_dirs[cell] = dir
+	var row := get_node_or_null("Row%d" % (cell.x + cell.y))
+	if row != null:
+		row.queue_redraw()
+
+
+func marker_dir(cell: Vector2i) -> Vector2i:
+	if not _exit_dirs.has(cell):
+		return Vector2i.ZERO
+	return _exit_dirs[cell]
+
+
 func _draw_row(row: Node2D, s: int) -> void:
 	var x0 := maxi(0, s - zone.height + 1)
 	var x1 := mini(zone.width - 1, s)

@@ -1,7 +1,8 @@
 extends Node2D
 
 ## Crosshaven open world (PC, `main`). Click-to-walk around one chunk at a time;
-## walking onto an exit tile fades into the linked chunk.
+## walking onto an exit tile fades into the linked chunk. A gate uses that
+## same fade: walk to the arrow, then enter_zone on the target region.
 ##
 ## Data and walk rules come from Backend: `WorldMap`, `WorldZone`, `WorldWalk`
 ## (data/world/crosshaven/, docs/world/crosshaven_zone_format.md). This scene
@@ -22,6 +23,7 @@ const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 const Progress := preload("res://backend/pc_progress.gd")
 const CharacterWindow := preload("res://scenes/world/ui/character_window.gd")
+const Atlas := preload("res://backend/world_atlas.gd")
 
 const SEA := Color("2d4f63")
 const ZOOM_MIN := 1.0
@@ -33,6 +35,7 @@ const FADE_SECONDS := 0.35
 
 var map: WorldMap
 var zone: WorldZone
+var atlas = null
 var load_errors: Array = []
 
 var ground: Node2D
@@ -51,6 +54,7 @@ var hover_cell := Vector2i(-1, -1)
 var _hover: Node2D
 var _max_h := 0
 var _pending_exit := false
+var _pending_gate: Dictionary = {}
 var _transitioning := false
 var _hud_label: Label
 var _banner: Label
@@ -135,18 +139,35 @@ func _ready() -> void:
 	character_window.setup(progress)
 	add_child(character_window)
 
-	var loaded := WorldMap.load_default()
+	var loaded: Dictionary = Atlas.load_default()
 	if not bool(loaded.get("ok", false)):
 		load_errors = loaded.get("errors", [])
-		push_error("Crosshaven data failed to load: %s" % [load_errors])
+		push_error("World atlas failed to load: %s" % [load_errors])
 		return
-	map = loaded["map"]
+	atlas = loaded["atlas"]
+	map = atlas.map_for_chunk(atlas.entry_of(str(atlas.start_region)))
+	if map == null:
+		load_errors = ["start region is not loaded"]
+		push_error("World atlas failed to load: %s" % [load_errors])
+		return
 	enter_zone(map.start_zone, map.start_cell, false)
 	if _movie != "":
 		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
 
 
 func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
+	var next: WorldMap = map
+	if atlas != null:
+		var found: Variant = atlas.map_for_chunk(zone_id)
+		if found != null:
+			next = found as WorldMap
+		elif map == null or map.zone(zone_id) == null:
+			walk_rejected.emit("region_not_built")
+			return
+	if next == null or next.zone(zone_id) == null:
+		walk_rejected.emit("region_not_built")
+		return
+	map = next
 	if fade and not instant_transitions:
 		_transitioning = true
 		var tw := create_tween()
@@ -170,6 +191,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 	add_child(ground)
 	move_child(ground, 1)
 	ground.setup(zone)
+	_mark_gates()
 	for child in props_root.get_children():
 		child.free()
 	for record in zone.props:
@@ -209,12 +231,14 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 		return {"ok": false, "reason": "busy"}
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
-		_pending_exit = not zone.exit_link(target).is_empty()
-		if _pending_exit and not walker.is_moving():
+		_arm_arrival(target)
+		if (_pending_exit or not _pending_gate.is_empty()) and not walker.is_moving():
 			_on_arrived(target)
 		return {"ok": true, "path": [], "length": 0}
 	var result := WorldWalk.find_path(map, zone.zone_id, from, zone.zone_id, target)
 	if not bool(result.get("ok", false)):
+		_pending_exit = false
+		_pending_gate = {}
 		walk_rejected.emit(str(result.get("reason", "no_path")))
 		return result
 	var steps: Array[Vector2i] = []
@@ -226,13 +250,52 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 		if _last_click_ms > 0 and now - _last_click_ms < 280:
 			pace = "run"
 		_last_click_ms = now
-	_pending_exit = not zone.exit_link(target).is_empty()
+	_arm_arrival(target)
 	walker.walk(steps, pace)
 	return result
 
 
+func _arm_arrival(target: Vector2i) -> void:
+	_pending_gate = {}
+	if atlas != null:
+		var found: Dictionary = atlas.gate_at(zone.zone_id, target)
+		if not found.is_empty():
+			_pending_gate = found
+	_pending_exit = _pending_gate.is_empty() and not zone.exit_link(target).is_empty()
+
+
+func _mark_gates() -> void:
+	if atlas == null or zone == null or ground == null:
+		return
+	for gate in atlas.gates_from_zone(zone.zone_id):
+		var frm: Dictionary = gate["from"]
+		var cell := Vector2i(int(frm["x"]), int(frm["y"]))
+		ground.call("add_gate_arrow", cell, _edge_dir(cell))
+
+
+func _edge_dir(cell: Vector2i) -> Vector2i:
+	if zone == null:
+		return Vector2i.ZERO
+	if cell.y == 0:
+		return Vector2i(0, -1)
+	if cell.y == zone.height - 1:
+		return Vector2i(0, 1)
+	if cell.x == 0:
+		return Vector2i(-1, 0)
+	if cell.x == zone.width - 1:
+		return Vector2i(1, 0)
+	return Vector2i.ZERO
+
+
 func _on_arrived(cell: Vector2i) -> void:
 	_refresh_hud()
+	if not _pending_gate.is_empty():
+		var gate: Dictionary = _pending_gate
+		_pending_gate = {}
+		_pending_exit = false
+		var dest: Dictionary = gate["to"]
+		enter_zone(str(dest["zone_id"]), Vector2i(int(dest["x"]), int(dest["y"])), true)
+		return
 	if not _pending_exit:
 		return
 	_pending_exit = false
@@ -313,7 +376,9 @@ func _draw_hover() -> void:
 	if zone == null or hover_cell.x < 0 or not zone.in_bounds(hover_cell):
 		return
 	var color := Color(0.45, 0.95, 0.5, 0.9)
-	if not zone.exit_link(hover_cell).is_empty():
+	if atlas != null and not atlas.gate_at(zone.zone_id, hover_cell).is_empty():
+		color = Color(1.0, 0.84, 0.35, 0.95)
+	elif not zone.exit_link(hover_cell).is_empty():
 		color = Color(1.0, 0.84, 0.35, 0.95)
 	elif not zone.passable_at(hover_cell):
 		color = Color(0.95, 0.35, 0.3, 0.9)
