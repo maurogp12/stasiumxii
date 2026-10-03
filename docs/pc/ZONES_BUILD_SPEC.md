@@ -686,8 +686,53 @@ Crosshaven, and next phase we add more."
 | Townguard | Armour of the five town watches | Crosshaven Towns: world fights, town missions | Extra Ward when standing next to an ally |
 | Millwright | Work gear from the vaults under the mill | Millrace Vaults dungeon only | Extra Mastery on the turn after you are hit |
 
-The 5-part bonuses are ideas for Mauro to approve; they are effects in combat,
-so they are built only after he says yes, and only through CombatSim.
+**Mauro approved these three 5-part bonuses** (3 Oct 2026). They are combat
+effects, so they are built only through CombatSim, and off in Koliseo PvP
+(set stats are off there).
+
+**Class sets: one balanced set for every class** (Mauro, 3 Oct 2026: "you will
+need to create a balanced set for every single class"). Phase 1 adds **5 class
+sets**, one per class, on top of the 3 shared sets (8 sets in all). Names,
+stats and effects are **Proposed** for Mauro to approve; the numbers are tuned
+by WP15.
+
+| Class (role) | Set (Proposed) | Part stats lean to | 2 parts | 3 parts | 5 parts (effect) |
+|---|---|---|---|---|---|
+| Kestrel (ranged carry, Air) | **Skyfeather** | Mastery, Swift | + Mastery | + Swift | **+1 max range on Mark Shot** |
+| Ironjaw (melee bruiser, Earth) | **Quarrybreaker** | Mastery, Vitality | + Vitality | + Mastery | **Start every fight with +1 Impact** |
+| Mender (healer, Water) | **Tidewell** | Vitality, Ward | + Ward | + Vitality | **Mend heals 10% more** |
+| Gloam (stealth assassin) | **Duskveil** | Mastery, Swift | + Swift | + Mastery | **+1 MP on turns you start Invisible** |
+| Bastion (tank) | **Bulwark** | Vitality, Ward | + Vitality | + Ward | **The first hit you take in each fight deals half damage** |
+
+Class set rules (Proposed):
+
+- A class set part can be worn only by its class. Class set parts drop from
+  the two Crosshaven dungeons (Old Granary Cellar, Millrace Vaults) and from
+  class missions given by the town Elders; a drop picks the player's own class
+  60% of the time, so parts for alt classes and for the marketplace still
+  appear.
+- The same 5 slots: a player picks between the class set, a shared set, or a
+  3 + 2 mix.
+- Next phase adds class sets as classes develop (Mauro: "we are going to build
+  more sets depending how we develop the classes").
+
+**How sets are kept balanced** (Proposed rules; WP15 checks them):
+
+1. **Equal budget.** At the same item level every part of every set has the
+   same stat budget (Proposed: `4 + item level` points, priced with the
+   per-point values in 4.11). A Rare part = 1.5× the budget + 1 extra stat. A
+   2-part bonus = the budget of 1 part; a 3-part bonus = 1.5 parts.
+2. **5-part effects are worth about 2 parts.** Each effect is measured in the
+   simulator as damage, healing or damage prevented per fight, and tuned until
+   it lands near the value of 2 parts' stats.
+3. **Class sets fit, they don't dominate.** For its own class, the class set
+   beats the best shared set by at most 10% in the simulator.
+4. **Classes stay even.** With their best phase 1 set, all five classes clear
+   the same dungeon (solo, same level) within ±10% of each other's time.
+5. **No single effect above 15%.** No 5-part effect alone raises a class's
+   damage, healing or survival by more than 15%.
+6. **PvP is untouched.** Set stats and effects are off in Koliseo PvP (4.11),
+   so the Locked kit balance there does not change.
 
 **Zones 3–11 in phase 1** have no set of their own yet: their fights,
 dungeons and missions drop **the Crosshaven sets at a higher item level**
@@ -732,7 +777,7 @@ Coin uses (Mauro's list, plus the ones already proposed):
 | **Food and potions** | Traders, kitchen, alchemy | Heal between open-world fights; short buffs (Proposed) |
 | **Food supplies and minerals** | Traders, farms, mines | Raw materials for crafting; also gathered in the world |
 | **Part upgrades +1 to +5** | Smith (Stoneford), Forge Master (Slagcrown) | Already in 4.9 |
-| **Crypto Bank** | A bank building at the Crossroads, run by the Banker (a branch in each region hub later) | Mauro, 3 Oct: "we should create a Crypto bank, players can deposit their money there". Deposit and withdraw Crypto Coins, and **store any item**: set parts, materials, food, potions, recipes, decorations and other objects (Mauro: "in the bank you have the option to save parts of sets, materials, objects"). In-game only, like the coins. |
+| **Crypto Bank** | **One bank only, in the main city: the Crossroads** (Mauro, Q10), run by the Banker | Mauro, 3 Oct: "we should create a Crypto bank, players can deposit their money there". Deposit and withdraw Crypto Coins, and **store any item**: set parts, materials, food, potions, recipes, decorations and other objects (Mauro: "in the bank you have the option to save parts of sets, materials, objects"). In-game only, like the coins. |
 | **Fast travel, respec, bank space, cosmetics** | Hub posts, Elders, Banker, Traders | Already proposed |
 
 How it fits together (**Proposed**):
@@ -742,8 +787,8 @@ How it fits together (**Proposed**):
   pay from coins on hand; houses, the marketplace and big upgrades can pay
   straight from the bank. Marketplace sales are paid into the bank. Coins in
   the bank are safe: if a later rule makes players lose coins (for example on
-  defeat), only coins on hand are at risk. **Interest:** none (Proposed), since
-  interest prints coins and causes inflation; Q10 asks Mauro. **Bank item
+  defeat), only coins on hand are at risk. **No interest** and **one bank only,
+  in the main city (the Crossroads)** (Mauro, Q10). **Bank item
   storage holds every kind of item** (set parts, materials, food, potions,
   recipes, decorations, objects); stacks for materials and consumables
   (Proposed: up to 999 per slot); starts with 20 slots, more bought with coins.
@@ -1107,6 +1152,9 @@ designated zones also monsters above lvl 25 are agressive".
 - **Accept:** normal mix reaches 50 in 50–75 h; dungeon XP per minute is
   1.3–1.8× open world; no source above 50% of total XP; world-only still
   reaches 50; a printed table goes in the PR for Mauro.
+- **Sets:** also simulate each class with no set, each shared set and its class
+  set; fail when a 4.9 balance rule (1–6) is broken; print the per-class table
+  for Mauro.
 - **Media:** none (the printed table).
 
 #### WP10: Art for the new zones (Scenario, then Technical Artist)
@@ -1342,6 +1390,9 @@ headless.
    upgrades, fast travel. The marketplace (WP19) waits for the server. Keep
    game logic in pure backend scripts (no scene code) so it can move to a
    server later.
-10. **Crypto Bank (4.12, WP16b):** should money in the bank earn interest?
-    Proposed: no (interest creates coins and pushes prices up). Should the
-    bank be only at the Crossroads, or have a branch in every region hub?
+10. ~~**Crypto Bank:** interest? branches?~~ **Answered 3 Oct 2026 (Mauro): no
+    interest; one bank only, in the main city** (the Crossroads).
+11. ~~**Set bonuses**~~ **Answered 3 Oct 2026 (Mauro): yes to the three shared
+    set bonuses, and "you will need to create a balanced set for every single
+    class"** (4.9 class sets). The class set names, stats and 5-part effects
+    in 4.9 are Proposed: Mauro to approve them.
