@@ -59,6 +59,13 @@ Mauro can judge on a phone screen.
 
 ---
 
+> **Not now: characters** (Mauro, 3 Oct 2026: "dont focus on characters yet").
+> Focus on maps, boards, light, backdrops and UI. Parked until Mauro says so:
+> new character art or animation (fighters, NPC bodies, monsters), fighter
+> readability work (L5), character scale passes, and walk lean / gait feel
+> (WP13 beyond the glide that is already built). Systems that need a body
+> (NPCs, dungeon foes) use the existing sprites as stand-ins.
+
 ## 1. Rules
 
 ### 1.1 PC only
@@ -687,7 +694,7 @@ strip where it fits). Path `art/world/<region>/props/landmark_<chunk_id>.png`
 kit list does not grow with the chunk count; the landmarks are the main
 addition.
 
-NPC bodies (Scenario): one painted body per role (18 roles), 4 facings (N, E,
+NPC bodies (Scenario), **parked: not now (characters, Mauro 3 Oct)**: one painted body per role (18 roles), 4 facings (N, E,
 S, W under the locked rule), an idle loop of 8 frames at 8 fps per facing, on a
 **256×256 px** canvas at 2x with the feet on the bottom-centre pivot, drawn to
 match the world character scale (`ironjaw_tall` at 0.33, see PR #214).
@@ -722,7 +729,7 @@ the shardfields and Blightwood: only after Open Q2 and Q6.
   usable; Mauro's judgement on the clip.
 - **Media:** a 30 s clip across three zones, before vs after.
 
-#### WP13: Combat glide walk (Feel), separate track
+#### WP13: Combat glide walk (Feel), separate track, **lean / gait parked (characters not now)**
 
 - **Goal:** finish the combat walk on `claude/stasium-xii-pc` (from `main`):
   the glide through corners is done there (not merged, waiting for Mauro);

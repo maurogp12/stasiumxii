@@ -19,6 +19,13 @@ Reference board: `docs/pc/look_target/look_target_refs.jpg`. Today vs target:
 `docs/pc/look_target/grid_options.jpg` (Q3). The clips themselves are Mauro's
 screen recordings (not in the repo).
 
+> **Not now: characters** (Mauro, 3 Oct 2026: "dont focus on characters yet").
+> Focus on maps, boards, light, backdrops and UI. Parked until Mauro says so:
+> new character art or animation (fighters, NPC bodies, monsters), fighter
+> readability work (L5), character scale passes, and walk lean / gait feel
+> (WP13 beyond the glide that is already built). Systems that need a body
+> (NPCs, dungeon foes) use the existing sprites as stand-ins.
+
 ## The three references
 
 | | Clip | What it sets the bar for |
@@ -104,7 +111,7 @@ screen recordings (not in the repo).
 | L2: Backdrops (A, B) | Scenario + Code | A painted surround per map: jungle leaves in front and behind with leaf shadows (outdoor); a dark room with lit edges (dungeons). New backdrop layer behind and in front of the board in `board_view.gd`; the grid itself does not change. |
 | L3: Range, zones and glyphs (A, C) | Code + Scenario | **Grid hidden at rest** (Mauro, 3 Oct: Wakfu way, our own and better): cells fade in on Walk / spell pick and out after the action, soft hover outline on the cell under the mouse, hold Alt (Proposed) for the full grid; move range **one tile per reachable cell, Wakfu style in our own look** (Mauro, 3 Oct): our own colour, a soft glow and a gentle pulse, a thin light rim, small gaps between cells, following the terrain heights; painted glyph decals for zones, marks and deploy cells. |
 | L4: Dungeon floors (B) | Scenario + TA | One glowing floor kit per dungeon theme, glowing pads, light pillars, starting with Coilgate. |
-| L5: Fighter readability (A, C) | Code + TA | Team hex ring under the feet (blue / red); **name and HP bar over every head** (Mauro, 3 Oct), in its own script, view only, CombatSim stays authoritative; chibi scale check. |
+| L5: Fighter readability (A, C), **parked: not now (characters)** | Code + TA | Team hex ring under the feet (blue / red); **name and HP bar over every head** (Mauro, 3 Oct), in its own script, view only, CombatSim stays authoritative; chibi scale check. |
 | L6: Combat UI (C) | Code + Scenario | **One action bar, no cards** (Mauro, 3 Oct: "just a bar that shows spells, actions"): the class's few spells as large, clear slots with a painted icon each, the AP cost on the slot, and the actions (Walk, Face, End Turn) in the same bar. Since there are only a few spells, the slots are big and easy to read. A usable slot is lit; one that can't be used dims and says why on hover (no AP, out of range, needs Impact). Hover shows the attack tooltip with the Locked hit %; the picked slot stays highlighted and lights the board cells. AP and MP shown next to the bar; End Turn stands out. Plus hero and opponent portraits with HP, turn order, a "YOUR TURN" banner. Numbers come from CombatSim / `data/spell_tooltip.gd` only. |
 | L7: Light and VFX (A, B, C) | TA + Feel | Warm saturated grade outdoors, cinematic grade in dungeons; rim light; light shafts and floor glows on casts; bigger damage numbers. |
 | L8: Camera (all) | Feel | Closer default zoom that fills the screen; drift with the active fighter; whole board reachable by pan. |
@@ -161,8 +168,9 @@ First two packages (Mauro, 3 Oct: Q6 yes):
 2. **L4, Coilgate dungeon floor**: the first glowing dungeon floor kit, after
    the Stormspire / Coilgate dungeon theme (reference B).
 
-Then L3 (grid hidden at rest + Wakfu-style range our own way), L5 (name and HP
-over heads), L6 (action bar), L1 (terrace kit, height levels kept), L7, L8.
+Then L3 (grid hidden at rest + Wakfu-style range our own way), L6 (action
+bar), L1 (terrace kit, height levels kept), L7, L8. L5 (name and HP over heads)
+waits: characters are not the focus yet.
 Every package: tests green (`for f in tests/run_*_tests.gd; do godot
 --headless --path . -s res://$f; done`), a before/after pair next to the
 matching reference frame, and a line in `docs/pc/CHANGE_LOG_PC.md`.
