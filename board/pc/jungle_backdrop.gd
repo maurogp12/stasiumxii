@@ -19,10 +19,15 @@ const SHADOW_SHADER := """shader_type canvas_item;
 render_mode blend_mul;
 uniform sampler2D shadow_tex : repeat_enable, filter_linear, hint_default_white;
 uniform float opacity = 0.32;
-uniform vec2 uv_offset = vec2(0.0);
-uniform vec2 uv_scale = vec2(1.7);
+uniform vec2 origin = vec2(0.0);
+uniform float world_repeat = 512.0;
+varying vec2 local_pos;
+void vertex() {
+	local_pos = VERTEX;
+}
 void fragment() {
-	vec2 uv = fract(UV * uv_scale + uv_offset);
+	float rep = max(world_repeat, 1.0);
+	vec2 uv = fract((origin + local_pos) / rep);
 	vec4 tex = texture(shadow_tex, uv);
 	vec3 mul = mix(vec3(1.0), tex.rgb, clamp(tex.a * opacity, 0.0, 1.0));
 	COLOR = vec4(mul, 1.0);
@@ -280,7 +285,9 @@ func _ensure_nodes() -> void:
 		art.name = "Art"
 		art.centered = true
 		art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		art.texture = _texture(slot)
+		var path := resolve_slot(slot)
+		art.texture = _load_tex(path)
+		art.set_meta("slot_path", path)
 		root.add_child(art)
 		add_child(root)
 		_backs[slot] = root
@@ -314,11 +321,9 @@ func _layout_backs() -> void:
 	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
 	if cam == null:
 		return
-	var view := _view_rect()
 	var fit: Vector2 = _board.get("_fit_camera_pos")
 	var pan := cam.position - fit
 	var factors: Dictionary = _params.get("parallax", {})
-	var bleeds: Dictionary = _params.get("cover_bleed", {})
 	for slot in BACK_SLOTS:
 		var root: Node2D = _backs[slot]
 		var art := root.get_node_or_null("Art") as Sprite2D
@@ -327,10 +332,7 @@ func _layout_backs() -> void:
 			continue
 		root.visible = true
 		root.position = cam.position
-		var bleed := float(bleeds.get(slot, 1.4))
-		var tex_size := art.texture.get_size()
-		var target := view.size * bleed
-		var scale := maxf(target.x / tex_size.x, target.y / tex_size.y)
+		var scale := _master_scale(str(art.get_meta("slot_path", "")))
 		art.scale = Vector2(scale, scale)
 		var factor := float(factors.get(slot, 0.2))
 		art.position = -pan * (1.0 - factor)
@@ -437,10 +439,7 @@ func _build_shadows(board: Node2D) -> void:
 		return
 	var shader := _shadow_shader()
 	var opacity := float(_params.get("shadow_opacity", 0.32))
-	var uv_scale := Vector2(1.7, 1.7)
-	var raw: Variant = _params.get("shadow_uv_scale", [1.7, 1.7])
-	if raw is Array and raw.size() >= 2:
-		uv_scale = Vector2(float(raw[0]), float(raw[1]))
+	var world_repeat := float(_params.get("shadow_world_repeat", 512.0))
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
 		var dapple := LeafDapple.new()
@@ -451,8 +450,8 @@ func _build_shadows(board: Node2D) -> void:
 		mat.shader = shader
 		mat.set_shader_parameter("shadow_tex", tex)
 		mat.set_shader_parameter("opacity", opacity)
-		mat.set_shader_parameter("uv_scale", uv_scale)
-		mat.set_shader_parameter("uv_offset", Vector2(float(cell.x) * 0.37, float(cell.y) * 0.23))
+		mat.set_shader_parameter("world_repeat", world_repeat)
+		mat.set_shader_parameter("origin", Vector2(float(cell.x - cell.y) * 32.0, float(cell.x + cell.y) * 16.0))
 		dapple.material = mat
 		tile.add_child(dapple)
 
@@ -577,7 +576,14 @@ func _contain(native: Vector2, box: Vector2) -> Vector2:
 	if native.x < 1.0 or native.y < 1.0 or box.x < 1.0 or box.y < 1.0:
 		return Vector2.ZERO
 	var scale := minf(box.x / native.x, box.y / native.y)
+	scale = minf(scale, 1.0)
 	return native * scale
+
+
+func _master_scale(path: String) -> float:
+	if path.ends_with("@2x.png"):
+		return float(_params.get("draw_scale_2x", 0.5))
+	return 1.0
 
 
 func _z(key: String) -> int:

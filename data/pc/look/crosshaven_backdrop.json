@@ -1,19 +1,24 @@
 {
   "art_status": "placeholder",
-  "note": "Stand-in paint so the layer runs. Scenario Art replaces the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png.",
+  "note": "Stand-in paint so the layer runs. Scenario Art replaces the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png. A 2x master is drawn at half size (scale 0.5). Front leaves shrink to the screen margin and never scale above that half size. back_far is opaque. back_mid uses alpha. leaf_shadow is seamless and tiles in world space.",
   "art_root": "res://art/pc/look/crosshaven_jungle/",
+  "draw_scale_2x": 0.5,
   "map_ids": ["crosshaven"],
   "slots": {
-    "back_far": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
-    "back_mid": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
-    "front_leaves_left": {"px_1x": [280, 1200], "px_2x": [560, 2400]},
-    "front_leaves_right": {"px_1x": [280, 1200], "px_2x": [560, 2400]},
-    "front_leaves_top": {"px_1x": [1600, 220], "px_2x": [3200, 440]},
-    "front_leaves_bottom": {"px_1x": [1600, 480], "px_2x": [3200, 960]},
-    "leaf_shadow": {"px_1x": [128, 128], "px_2x": [256, 256]}
+    "back_far": {"px_1x": [2048, 1280], "px_2x": [4096, 2560], "alpha": "opaque"},
+    "back_mid": {"px_1x": [2048, 1280], "px_2x": [4096, 2560], "alpha": "yes"},
+    "front_leaves_left": {"px_1x": [512, 720], "px_2x": [1024, 1440]},
+    "front_leaves_right": {"px_1x": [512, 720], "px_2x": [1024, 1440]},
+    "front_leaves_top": {"px_1x": [1280, 240], "px_2x": [2560, 480]},
+    "front_leaves_bottom": {"px_1x": [1280, 240], "px_2x": [2560, 480]},
+    "leaf_shadow": {"px_1x": [512, 512], "px_2x": [1024, 1024], "seamless": true}
   },
   "parallax": {"back_far": 0.12, "back_mid": 0.4},
-  "cover_bleed": {"back_far": 1.5, "back_mid": 1.32},
+  "parallax_meaning": "0 sticks to the world, 1 sticks to the screen. The plate root sits on the camera; the art then slides by -pan * (1 - factor).",
+  "fitted_zoom_15": 0.64,
+  "sway_mode": "pivot_rotation",
+  "sway_mask": false,
+  "flipbook": false,
   "sway_amplitude_deg": 3.6,
   "sway_speed": 0.9,
   "sway_slide_px": 8.0,
@@ -24,7 +29,7 @@
     "front_leaves_bottom": 2.3
   },
   "shadow_opacity": 0.32,
-  "shadow_uv_scale": [1.7, 1.7],
+  "shadow_world_repeat": 512.0,
   "fighter_clear_px": 136,
   "guard_gap_px": 8,
   "z_order": {
