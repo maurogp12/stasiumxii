@@ -69,6 +69,7 @@ var _held_death_strip: bool = false
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 const OVERHEAD := preload("res://units/overhead_plate.gd")
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -616,6 +617,7 @@ func _sync_sprite() -> void:
 	else:
 		_sprite.visible = true
 		_hide_body_strips()
+	LOOK_LIGHT.dress_pawn(self)
 	_request_paint()
 
 
@@ -1076,6 +1078,7 @@ func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
+	LOOK_LIGHT.dress_pawn(self)
 
 
 ## Assign frames built in memory (tests, or a caller that already sliced a sheet).

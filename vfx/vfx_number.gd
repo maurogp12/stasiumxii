@@ -1,6 +1,9 @@
 extends "res://vfx/vfx_pooled.gd"
 
 ## Chunky outlined combat number. Pops, then floats. Does not lock input.
+## On the PC look, damage and burn use the larger L7 size. The phone size stays.
+
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 
 var _text: String = ""
 var _top: Color = VfxPalette.DAMAGE_TOP
@@ -19,7 +22,9 @@ func play(spec: Dictionary) -> void:
 	if spec.has("tint") and spec["tint"] is Color:
 		_top = spec["tint"]
 		_bottom = _top.darkened(0.28)
-	_font_size = int(colors["size"])
+	_font_size = LOOK_LIGHT.font_size(str(spec.get("kind", "damage")), int(colors["size"]))
+	if _font_size > VfxBudget.NUMBER_SIZE:
+		position.y -= 12.0
 	var pop := float(spec.get("scale", 1.0))
 	rotation = deg_to_rad(randf_range(-VfxBudget.NUMBER_TILT_DEG, VfxBudget.NUMBER_TILT_DEG))
 	scale = Vector2(0.6, 0.6) * pop
@@ -68,11 +73,15 @@ func _draw() -> void:
 		return
 	var width := font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
 	var baseline := Vector2(-width * 0.5, _font_size * 0.35)
-	font.draw_string(get_canvas_item(), baseline + Vector2(2, 3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
-	for ox in range(-4, 5, 2):
-		for oy in range(-4, 5, 2):
+	var big := _font_size > VfxBudget.NUMBER_SIZE
+	var shadow := Vector2(3, 4) if big else Vector2(2, 3)
+	var spread := 6 if big else 4
+	var lift := -4 if big else -3
+	font.draw_string(get_canvas_item(), baseline + shadow, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
+	for ox in range(-spread, spread + 1, 2):
+		for oy in range(-spread, spread + 1, 2):
 			if ox == 0 and oy == 0:
 				continue
 			font.draw_string(get_canvas_item(), baseline + Vector2(ox, oy), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_OUTLINE)
-	font.draw_string(get_canvas_item(), baseline + Vector2(0, -3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
+	font.draw_string(get_canvas_item(), baseline + Vector2(0, lift), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _top)
 	font.draw_string(get_canvas_item(), baseline, _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, _bottom)
