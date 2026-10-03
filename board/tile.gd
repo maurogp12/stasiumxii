@@ -20,6 +20,9 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _overlay: HighlightOverlay
+## Jungle canopy shade. White leaves the terrain untouched. Applied on the
+## terrain draw itself so the diamonds do not grow a second canvas command.
+var canopy_tint: Color = Color.WHITE
 
 
 class HighlightOverlay extends Node2D:
@@ -76,7 +79,7 @@ func set_paint_props(props: Array) -> void:
 
 func _draw_centered(tex: Texture2D) -> void:
 	var size := tex.get_size()
-	draw_texture(tex, Vector2(-size.x * 0.5, -size.y * 0.5))
+	draw_texture(tex, Vector2(-size.x * 0.5, -size.y * 0.5), canopy_tint)
 
 
 func _paint_terrain(tex: Texture2D) -> void:
@@ -84,7 +87,15 @@ func _paint_terrain(tex: Texture2D) -> void:
 	if placed.is_empty():
 		_draw_centered(tex)
 		return
-	draw_texture_rect_region(tex, placed["dest"], placed["source"])
+	draw_texture_rect_region(tex, placed["dest"], placed["source"], canopy_tint)
+
+
+## Flat canopy shade on the existing terrain draw. No extra polygon.
+func set_canopy_tint(tint: Color) -> void:
+	if canopy_tint.is_equal_approx(tint):
+		return
+	canopy_tint = tint
+	queue_redraw()
 
 
 ## Props stand on the south tip of the diamond. paint_only never affects pathing.

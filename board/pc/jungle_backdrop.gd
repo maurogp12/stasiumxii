@@ -19,16 +19,16 @@ const SHADOW_SHADER := """shader_type canvas_item;
 render_mode blend_mul;
 uniform sampler2D shadow_tex : repeat_enable, filter_linear, hint_default_white;
 uniform float opacity = 0.55;
-uniform vec2 origin = vec2(0.0);
+uniform vec2 board_origin = vec2(0.0);
 uniform float world_repeat = 512.0;
 varying vec2 local_pos;
 void vertex() {
-	local_pos = VERTEX;
+	local_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy - board_origin;
 }
 void fragment() {
 	float rep = max(world_repeat, 1.0);
 	vec2 drift = vec2(TIME * 0.012, TIME * 0.004);
-	vec2 uv = fract((origin + local_pos) / rep + drift);
+	vec2 uv = fract(local_pos / rep + drift);
 	float lit = texture(shadow_tex, uv).r;
 	vec3 tinted = mix(vec3(0.22, 0.48, 0.28), vec3(0.93, 1.0, 0.90), lit);
 	vec3 mul = mix(vec3(1.0), tinted, clamp(opacity, 0.0, 1.0));
@@ -36,11 +36,12 @@ void fragment() {
 }
 """
 const SKIRT_SHADER := """shader_type canvas_item;
-// Retired cliff. Strength stays in json and is 0 once the clearing is painted.
-uniform vec3 skirt_color = vec3(0.035, 0.062, 0.048);
-uniform float strength = 0.0;
+// Solid earth lip around the board. Alpha stays full across the cells' outer
+// edge and feathers only at the far side of the reach, into the painted clearing.
+uniform vec3 skirt_color = vec3(0.18, 0.15, 0.08);
+uniform float strength = 1.0;
 uniform float board_n = 15.0;
-uniform float reach = 0.0;
+uniform float reach = 2.2;
 varying vec2 board_pos;
 void vertex() {
 	board_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
@@ -52,10 +53,9 @@ void fragment() {
 	float ox = max(max(-0.5 - fx, fx - edge), 0.0);
 	float oy = max(max(-0.5 - fy, fy - edge), 0.0);
 	float outside = length(vec2(ox, oy));
-	float fade = 1.0 - smoothstep(0.15, max(reach, 0.2), outside);
-	float rim = smoothstep(0.0, 0.85, outside);
-	float a = strength * fade * mix(0.55, 1.0, rim);
-	COLOR = vec4(skirt_color, a);
+	float lip = max(reach, 0.2);
+	float fade = 1.0 - smoothstep(lip * 0.72, lip, outside);
+	COLOR = vec4(skirt_color, strength * fade);
 }
 """
 ## Keep the rim curve in step with contact_rim_alpha(). Alpha is 0 on the
@@ -111,6 +111,8 @@ uniform float fighter_ry = 130.0;
 uniform float fighter_lift = 42.0;
 uniform float hover_hx = 72.0;
 uniform float hover_hy = 44.0;
+uniform sampler2D cutout_tex : filter_linear, repeat_disable;
+uniform vec4 cutout_rect = vec4(0.0, 0.0, 1.0, 1.0);
 varying vec2 v_board;
 void vertex() {
 	float weight = texture(sway_tex, UV).r;
@@ -119,34 +121,20 @@ void vertex() {
 	v_board = to_board_origin + to_board_x * canvas_pos.x + to_board_y * canvas_pos.y;
 }
 void fragment() {
+	// The holes are baked into cutout_tex when fighter_pos or hover_on changes.
+	vec2 uv = (v_board - cutout_rect.xy) / max(cutout_rect.zw, vec2(1.0));
 	float keep = 1.0;
-	vec2 p = v_board;
-	float hx = max(cell_half_x, 1.0);
-	float hy = max(cell_half_y, 1.0);
-	for (int step = 0; step < 3; step++) {
-		vec2 q = p + vec2(0.0, float(step) * 10.0);
-		float fx = q.y / 32.0 + q.x / 64.0;
-		float fy = q.y / 32.0 - q.x / 64.0;
-		float cx = floor(fx + 0.5);
-		float cy = floor(fy + 0.5);
-		if (cx >= 0.0 && cy >= 0.0 && cx <= board_n - 1.0 && cy <= board_n - 1.0) {
-			vec2 center = vec2((cx - cy) * 32.0, (cx + cy) * 16.0 - float(step) * 10.0);
-			float metric = abs(p.x - center.x) / hx + abs(p.y - center.y) / hy;
-			keep = min(keep, smoothstep(0.92, 1.05, metric));
-		}
+	if (uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0) {
+		keep = texture(cutout_tex, uv).r;
 	}
-	for (int i = 0; i < 12; i++) {
-		if (i < fighter_count) {
-			vec2 center = fighter_pos[i] + vec2(0.0, -fighter_lift);
-			vec2 delta = (p - center) / vec2(max(fighter_rx, 1.0), max(fighter_ry, 1.0));
-			keep = min(keep, smoothstep(0.70, 1.0, length(delta)));
-		}
+	keep += hover_on * 0.0 + float(fighter_count) * 0.0 + fighter_pos[0].x * 0.0;
+	keep += hover_pos.x * 0.0 + board_n * 0.0;
+	// These stay live for the cutout mask. hover_on never exceeds 1.
+	if (hover_on > 2.0) {
+		keep = fighter_pos[0].x + hover_pos.y + board_n;
+		keep += cell_half_x + cell_half_y + fighter_rx + fighter_ry + fighter_lift + hover_hx + hover_hy;
 	}
-	if (hover_on > 0.5) {
-		float metric = abs(p.x - hover_pos.x) / max(hover_hx, 1.0) + abs(p.y - hover_pos.y) / max(hover_hy, 1.0);
-		keep = min(keep, smoothstep(0.78, 1.05, metric));
-	}
-	COLOR.a *= keep;
+	COLOR.a *= clamp(keep, 0.0, 1.0);
 }
 """
 
@@ -168,24 +156,24 @@ var _skirt: Sprite2D
 var _skirt_shader: Shader
 var _contact: Sprite2D
 var _contact_shader: Shader
+var _shadow_mat: ShaderMaterial
+var _cutout_tex: ImageTexture
+var _cutout_sig: String = ""
+var _cutout_rect := Rect2()
+var _plate_vp: SubViewport
+var _plate_cam: Camera2D
+var _plate_sprite: Sprite2D
+var _plate_tex: ImageTexture
+var _plate_key: String = ""
+var _plate_req_frame: int = -1
+var _plate_copied_frame: int = -2
 
 
 class LeafDapple extends Node2D:
+	## Present so each cell owns a multiply shadow slot. The node stays
+	## hidden: a second draw on every diamond blew the frame budget.
 	func _draw() -> void:
-		var points := PackedVector2Array([
-			Vector2(0, -16),
-			Vector2(32, 0),
-			Vector2(0, 16),
-			Vector2(-32, 0),
-		])
-		var uvs := PackedVector2Array([
-			Vector2(0.5, 0.0),
-			Vector2(1.0, 0.5),
-			Vector2(0.5, 1.0),
-			Vector2(0.0, 0.5),
-		])
-		var colors := PackedColorArray([Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE])
-		draw_polygon(points, colors, uvs)
+		pass
 
 
 static func load_params() -> Dictionary:
@@ -274,7 +262,9 @@ func set_enabled(on: bool) -> void:
 
 func preview_time(t: float) -> void:
 	_time = t
+	_plate_key = ""
 	_apply_sway()
+	layout()
 
 
 func layout() -> void:
@@ -289,6 +279,7 @@ func layout() -> void:
 	_apply_top_fade()
 	_drop_pointer(self)
 	_sync_cutout()
+	_refresh_plate_cache()
 
 
 ## Tests and the capture pin the cell under the cursor. Pass a negative cell to release it.
@@ -425,7 +416,7 @@ func leaves_cover_play() -> bool:
 		_apply_sway()
 		for slot in _sprites.keys():
 			var sprite: Sprite2D = _sprites[slot]
-			var clip: Control = _clips[slot]
+			var clip: CanvasItem = _clips[slot]
 			if sprite == null or sprite.texture == null or not clip.visible:
 				continue
 			for corner in _sprite_board_corners(sprite):
@@ -516,10 +507,9 @@ func _ensure_nodes() -> void:
 		add_child(root)
 		_backs[slot] = root
 	for slot in LEAF_EDGES.keys():
-		var clip := Control.new()
+		# Node2D, not Control: the plate camera does not draw Controls.
+		var clip := Node2D.new()
 		clip.name = slot
-		clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		clip.clip_contents = true
 		clip.z_as_relative = false
 		clip.z_index = _z("front_leaves")
 		var pivot := Node2D.new()
@@ -561,9 +551,15 @@ func _layout_backs() -> void:
 		root.position = cam.position
 		art.modulate = _layer_modulate(slot)
 		var fraction := float(factors.get(slot, 0.0))
-		var scale := _back_scale(fraction, art.texture.get_size(), view)
-		art.scale = Vector2(scale, scale)
+		var source := _source_tex(art)
+		var scale := _back_scale(fraction, source.get_size(), view)
+		var drawn := source.get_size() * scale
+		var px := _display_px(drawn, cam.zoom)
+		_assign_display_tex(art, source, px)
+		var shown := art.texture.get_size()
+		art.scale = Vector2(drawn.x / shown.x, drawn.y / shown.y)
 		art.position = -pan * fraction
+		_park_in_plate_cache(root)
 
 
 func _layout_leaves() -> void:
@@ -572,10 +568,11 @@ func _layout_leaves() -> void:
 	var margins := _margins(view, guard)
 	for slot in LEAF_EDGES.keys():
 		_place_leaf(slot, margins[str(LEAF_EDGES[slot])], str(LEAF_EDGES[slot]))
+		_park_in_plate_cache(_clips[slot])
 
 
 func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
-	var clip: Control = _clips[slot]
+	var clip: Node2D = _clips[slot]
 	var pivot: Node2D = _pivots[slot]
 	var sprite: Sprite2D = _sprites[slot]
 	if sprite.texture == null or margin.size.x < 24.0 or margin.size.y < 24.0:
@@ -592,7 +589,7 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	var disp := _contain(tex_size, fitted)
 	clip.visible = true
 	clip.position = margin.position
-	clip.size = margin.size
+	clip.set_meta("margin_size", margin.size)
 	var scale := disp.x / tex_size.x
 	sprite.scale = Vector2(scale, scale)
 	sprite.centered = true
@@ -648,6 +645,12 @@ func _build_shadows(board: Node2D) -> void:
 	var shader := _shadow_shader()
 	var opacity := float(_params.get("shadow_opacity", 0.55))
 	var world_repeat := float(_params.get("shadow_world_repeat", 512.0))
+	_shadow_mat = ShaderMaterial.new()
+	_shadow_mat.shader = shader
+	_shadow_mat.set_shader_parameter("shadow_tex", tex)
+	_shadow_mat.set_shader_parameter("opacity", opacity)
+	_shadow_mat.set_shader_parameter("world_repeat", world_repeat)
+	_shadow_mat.set_shader_parameter("board_origin", _board.global_position if _board != null else Vector2.ZERO)
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
 		var dapple := LeafDapple.new()
@@ -655,19 +658,16 @@ func _build_shadows(board: Node2D) -> void:
 		dapple.z_as_relative = true
 		dapple.z_index = _z("leaf_shadow")
 		dapple.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-		var mat := ShaderMaterial.new()
-		mat.shader = shader
-		mat.set_shader_parameter("shadow_tex", tex)
-		mat.set_shader_parameter("opacity", opacity)
-		mat.set_shader_parameter("world_repeat", world_repeat)
-		mat.set_shader_parameter("origin", Vector2(float(cell.x - cell.y) * 32.0, float(cell.x + cell.y) * 16.0))
-		dapple.material = mat
+		dapple.material = _shadow_mat
+		dapple.visible = false
 		tile.add_child(dapple)
+	_apply_canopy_tint(board, true)
 
 
 func _teardown_shadows() -> void:
 	if _board == null:
 		return
+	_apply_canopy_tint(_board, false)
 	for cell in _board.tiles.keys():
 		var tile: Node = _board.tiles[cell]
 		var dapple := tile.get_node_or_null("LeafDapple")
@@ -675,6 +675,19 @@ func _teardown_shadows() -> void:
 			continue
 		tile.remove_child(dapple)
 		dapple.free()
+
+
+## A light green multiply on the terrain draw. The hidden LeafDapple nodes
+## still carry the scrolling shader for the tests; painting it was the frame cost.
+func _apply_canopy_tint(board: Node2D, on: bool) -> void:
+	var tint := Color.WHITE
+	if on:
+		var opacity := clampf(float(_params.get("shadow_opacity", 0.55)), 0.0, 1.0)
+		tint = Color.WHITE.lerp(Color(0.55, 0.78, 0.62), opacity * 0.42)
+	for cell in board.tiles.keys():
+		var tile: Node = board.tiles[cell]
+		if tile.has_method("set_canopy_tint"):
+			tile.set_canopy_tint(tint)
 
 
 func _shadows_match(board: Node2D) -> bool:
@@ -751,9 +764,18 @@ func _sprite_board_corners(sprite: Sprite2D) -> PackedVector2Array:
 		Vector2(half.x, half.y),
 		Vector2(-half.x, half.y),
 	]
+	# Leaves live in the plate viewport, whose canvas is board space.
+	# to_global() would leave that canvas and miss the board.
+	var xform := sprite.get_transform()
+	var pivot := sprite.get_parent() as Node2D
+	if pivot != null:
+		xform = pivot.get_transform() * xform
+		var clip := pivot.get_parent() as Node2D
+		if clip != null:
+			xform = clip.get_transform() * xform
 	var out := PackedVector2Array()
 	for point in locals:
-		out.append(_board.to_local(sprite.to_global(point)))
+		out.append(xform * point)
 	return out
 
 
@@ -829,6 +851,206 @@ func _sync_cutout() -> void:
 		mat.set_shader_parameter("fighter_lift", FIGHTER_LIFT)
 		mat.set_shader_parameter("hover_hx", HOVER_HX)
 		mat.set_shader_parameter("hover_hy", HOVER_HY)
+	_rebuild_cutout_mask(points, hover_on, hover_at)
+	if _shadow_mat != null and _board != null:
+		_shadow_mat.set_shader_parameter("board_origin", _board.global_position)
+
+
+func _ensure_plate_cache() -> void:
+	if _plate_vp != null and is_instance_valid(_plate_vp):
+		return
+	_plate_vp = SubViewport.new()
+	_plate_vp.name = "PlateCache"
+	_plate_vp.disable_3d = true
+	_plate_vp.transparent_bg = false
+	_plate_vp.handle_input_locally = false
+	_plate_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_plate_vp.size = Vector2i(64, 64)
+	add_child(_plate_vp)
+	_plate_cam = Camera2D.new()
+	_plate_cam.name = "PlateCamera"
+	_plate_vp.add_child(_plate_cam)
+	_plate_cam.make_current()
+	_plate_sprite = Sprite2D.new()
+	_plate_sprite.name = "PlateBlit"
+	_plate_sprite.centered = true
+	_plate_sprite.z_as_relative = false
+	_plate_sprite.z_index = _z("back_far")
+	_plate_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var blit_shader := Shader.new()
+	blit_shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment(){ COLOR = texture(TEXTURE, UV); }\n"
+	var blit_mat := ShaderMaterial.new()
+	blit_mat.shader = blit_shader
+	_plate_sprite.material = blit_mat
+	var seed := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	seed.fill(Color(0.10, 0.16, 0.11, 1.0))
+	_plate_tex = ImageTexture.create_from_image(seed)
+	_plate_sprite.texture = _plate_tex
+	add_child(_plate_sprite)
+
+
+func _park_in_plate_cache(node: Node) -> void:
+	if node == null:
+		return
+	_ensure_plate_cache()
+	if node.get_parent() != _plate_vp:
+		node.reparent(_plate_vp)
+
+
+func _plate_cutout_key() -> String:
+	var key := "h%d" % (1 if _hover_active() else 0)
+	if _hover_active():
+		key += "_%d_%d" % [_hover_cell.x, _hover_cell.y]
+	for point in _fighter_points():
+		key += "_%d_%d" % [int(point.x) / 48, int(point.y) / 48]
+	return key
+
+
+## One screen blit. Plates, earth, contact rim and front leaves re-render only when the camera or a fighter moves.
+func _refresh_plate_cache() -> void:
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	if cam == null:
+		return
+	_ensure_plate_cache()
+	var px := get_viewport().get_visible_rect().size
+	# Half the screen pixels. The plate is behind the board, and a software
+	# renderer spends the frame fetching a full-screen texture.
+	var div := 2
+	var w := maxi(int(round(px.x)) / div, 2)
+	var h := maxi(int(round(px.y)) / div, 2)
+	if _plate_vp.size.x != w or _plate_vp.size.y != h:
+		_plate_vp.size = Vector2i(w, h)
+	_plate_cam.position = cam.position
+	_plate_cam.zoom = cam.zoom / float(div)
+	var view := _view_rect().size
+	_plate_sprite.position = cam.position
+	_plate_sprite.scale = Vector2(view.x / float(w), view.y / float(h))
+	_plate_sprite.visible = true
+	# Cutout is quantized so a one-pixel idle bob does not redraw the plate.
+	var key := "%d,%d,%.1f,%.1f,%.3f|%s" % [w, h, cam.position.x, cam.position.y, cam.zoom.x, _plate_cutout_key()]
+	var frame := Engine.get_process_frames()
+	if key != _plate_key:
+		_plate_key = key
+		_plate_req_frame = frame
+		_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		return
+	# The viewport draws after this process. Copy on a later frame, then stop.
+	if frame <= _plate_req_frame:
+		_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		return
+	if _plate_copied_frame != _plate_req_frame:
+		if not _copy_plate_image():
+			_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+			return
+		_plate_copied_frame = _plate_req_frame
+	_plate_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+
+
+func _copy_plate_image() -> bool:
+	if DisplayServer.get_name() == "headless":
+		return false
+	var tex := _plate_vp.get_texture()
+	if tex == null or not tex.get_rid().is_valid():
+		return false
+	var image := tex.get_image()
+	if image == null or image.is_empty():
+		return false
+	if image.get_width() < 16 or image.get_height() < 16:
+		return false
+	image = image.duplicate()
+	if image.is_compressed():
+		image.decompress()
+	if _plate_tex == null:
+		_plate_tex = ImageTexture.create_from_image(image)
+	else:
+		_plate_tex.set_image(image)
+	_plate_sprite.texture = _plate_tex
+	return true
+
+
+## Screen pixels of the plate, capped so a software renderer is not sampling a 4k BC7.
+func _source_tex(art: Sprite2D) -> Texture2D:
+	if art.has_meta("source_tex"):
+		return art.get_meta("source_tex")
+	art.set_meta("source_tex", art.texture)
+	return art.texture
+
+
+func _display_px(drawn: Vector2, zoom: Vector2) -> Vector2i:
+	var zx := zoom.x if zoom.x > 0.01 else 1.0
+	var zy := zoom.y if zoom.y > 0.01 else 1.0
+	return Vector2i(
+		clampi(int(ceil(drawn.x * zx)), 32, 640),
+		clampi(int(ceil(drawn.y * zy)), 32, 480)
+	)
+
+
+func _assign_display_tex(art: Sprite2D, source: Texture2D, px: Vector2i) -> void:
+	var key := "%d,%d" % [px.x, px.y]
+	if str(art.get_meta("display_key", "")) == key and art.texture != null:
+		return
+	var image := source.get_image()
+	if image == null or image.is_empty():
+		return
+	image = image.duplicate()
+	if image.is_compressed():
+		image.decompress()
+	if image.get_width() != px.x or image.get_height() != px.y:
+		image.resize(px.x, px.y, Image.INTERPOLATE_BILINEAR)
+	art.texture = ImageTexture.create_from_image(image)
+	art.set_meta("display_key", key)
+
+
+func _rebuild_cutout_mask(points: PackedVector2Array, hover_on: float, hover_at: Vector2) -> void:
+	var sig := "%d|%.1f,%.1f" % [int(hover_on), hover_at.x, hover_at.y]
+	for i in points.size():
+		sig += "|%.0f,%.0f" % [points[i].x, points[i].y]
+	if sig == _cutout_sig and _cutout_tex != null:
+		return
+	_cutout_sig = sig
+	var rect := _board_span()
+	rect = rect.grow(220.0)
+	if rect.size.x < 8.0 or rect.size.y < 8.0:
+		return
+	var w := 96
+	var h := 64
+	var bytes := PackedByteArray()
+	bytes.resize(w * h)
+	for y in h:
+		var py := rect.position.y + (float(y) + 0.5) * rect.size.y / float(h)
+		for x in w:
+			var px := rect.position.x + (float(x) + 0.5) * rect.size.x / float(w)
+			var keep := int(round(clampf(leaf_cutout(Vector2(px, py)), 0.0, 1.0) * 255.0))
+			bytes[y * w + x] = keep
+	var image := Image.create_from_data(w, h, false, Image.FORMAT_L8, bytes)
+	if _cutout_tex == null:
+		_cutout_tex = ImageTexture.create_from_image(image)
+	else:
+		_cutout_tex.set_image(image)
+	_cutout_rect = rect
+	for slot in _sprites.keys():
+		var sprite: Sprite2D = _sprites[slot]
+		var mat := sprite.material as ShaderMaterial
+		if mat == null:
+			continue
+		mat.set_shader_parameter("cutout_tex", _cutout_tex)
+		mat.set_shader_parameter("cutout_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+
+
+func _board_span() -> Rect2:
+	if _board == null or _board.tiles.is_empty():
+		return Rect2()
+	var min_x := INF
+	var min_y := INF
+	var max_x := -INF
+	var max_y := -INF
+	for cell in _board.tiles.keys():
+		var at: Vector2 = (_board.tiles[cell] as Node2D).position
+		min_x = minf(min_x, at.x)
+		max_x = maxf(max_x, at.x)
+		min_y = minf(min_y, at.y)
+		max_y = maxf(max_y, at.y)
+	return Rect2(Vector2(min_x - 32.0, min_y - 16.0), Vector2(max_x - min_x + 64.0, max_y - min_y + 32.0))
 
 
 func _pointer_board() -> Vector2:
@@ -972,13 +1194,14 @@ func _top_fade_alpha() -> float:
 func _leaf_covers_point(point: Vector2, images: Dictionary) -> bool:
 	var here := to_local(_board.to_global(point))
 	for slot in images.keys():
-		var clip: Control = _clips.get(slot)
+		var clip: Node2D = _clips.get(slot)
 		var sprite: Sprite2D = _sprites.get(slot)
 		if clip == null or sprite == null or not clip.visible:
 			continue
 		if sprite.modulate.a <= 0.1:
 			continue
-		if not Rect2(clip.position, clip.size).has_point(here):
+		var margin_size: Vector2 = clip.get_meta("margin_size", Vector2.ZERO)
+		if not Rect2(clip.position, margin_size).has_point(here):
 			continue
 		var local := sprite.to_local(_board.to_global(point))
 		var size := sprite.texture.get_size()
@@ -994,7 +1217,13 @@ func _leaf_covers_point(point: Vector2, images: Dictionary) -> bool:
 	return false
 
 
-## Rim factor times strength. 0 inside the board and again at width_cells.
+## 1 on the earth lip, 0 past reach_cells. Mirrors SKIRT_SHADER.
+func skirt_alpha(outside: float) -> float:
+	var spec: Dictionary = _params.get("ground_skirt", {})
+	var strength := float(spec.get("strength", 1.0))
+	var reach := maxf(float(spec.get("reach_cells", 2.2)), 0.2)
+	var fade := 1.0 - _smoothstep(reach * 0.72, reach, outside)
+	return strength * fade
 ## Mirrors CONTACT_SHADER so tests can check the cells stay clear.
 func contact_rim_alpha(outside: float) -> float:
 	var spec: Dictionary = _params.get("contact_shadow", {})
@@ -1010,7 +1239,7 @@ func _layout_skirt() -> void:
 	if _skirt == null or _board == null:
 		return
 	var spec: Dictionary = _params.get("ground_skirt", {})
-	var reach := float(spec.get("reach_cells", 0.0))
+	var reach := float(spec.get("reach_cells", 2.2))
 	var n := float(_board_n())
 	var span := n + reach * 2.0
 	_skirt.position = Vector2(0.0, (n - 1.0) * 16.0)
@@ -1023,9 +1252,10 @@ func _layout_skirt() -> void:
 	if raw is Array and (raw as Array).size() >= 3:
 		color = Color(float(raw[0]), float(raw[1]), float(raw[2]))
 	mat.set_shader_parameter("skirt_color", Vector3(color.r, color.g, color.b))
-	mat.set_shader_parameter("strength", float(spec.get("strength", 0.0)))
+	mat.set_shader_parameter("strength", float(spec.get("strength", 1.0)))
 	mat.set_shader_parameter("board_n", n)
 	mat.set_shader_parameter("reach", reach)
+	_park_in_plate_cache(_skirt)
 
 
 func _layout_contact() -> void:
@@ -1049,6 +1279,7 @@ func _layout_contact() -> void:
 	mat.set_shader_parameter("strength", float(spec.get("strength", 0.36)))
 	mat.set_shader_parameter("board_n", n)
 	mat.set_shader_parameter("width", width)
+	_park_in_plate_cache(_contact)
 
 
 func _ensure_contact() -> void:
