@@ -1,6 +1,6 @@
 {
-  "art_status": "placeholder",
-  "note": "Stand-in paint for Thunderwell Core. Theme id thunderwell. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. Cell art (floor strip, pads, pillar, glow) is drawn at half size. room_edge_dark is a painted gradient scaled up; the hole is generated from the cell footprint. glow_mask is an RGB PNG painted across the full 0-1 range, with no cap baked into the art: R is glow intensity, G is the flow gradient along the traces. Soft-lock palette: glow_color tints traces and glow (green, about 140 degrees), pillar_color tints pillars (pale green-white, low saturation), pad_blue_color is the deep cobalt target (about 225 degrees, darker than a move tile) and pad_red_color is the crimson target (about 350 degrees). Pad hue comes from the painted art; pad_strength only scales it. glow_strength, pad_strength and pillar_strength are the shader caps and the preview bloom level. 2D HDR and bloom are preview-only. Import: linear, no mipmaps; room_edge_dark is BC7/VRAM, the rest lossless.",
+  "art_status": "v1",
+  "note": "Thunderwell Core floor v1, approved. Theme id thunderwell. Masters are the @2x PNGs, drawn at half size; plain PNGs are the 1x fallbacks. Pixel sizes below are the masters. room_edge_dark is a darkness-only teal vignette (max 50/255) with no board shape; the hole is generated from the cell footprint. glow_mask is RGB data, lossless, linear, sampled with no source_color hint: R is trace intensity at full range, G is the flow ramp (same rate on every tile), B is 0. The shader uses glow = R * glow_strength * pulse(G). glow_color tints traces green near 140 degrees. pillar_color is pale green-white. pillar_strength 0.45 scales the additive pillar (1.0 washes its cell and the move tiles beside it); the sprite is anchored bottom-centre on the cell. pad_blue_color near 225 degrees and pad_red_color near 350 degrees are the painted hues; pad_strength only scales them. Floor, pads, pillar and the vignette keep source_color. 2D HDR and bloom are preview-only.",
   "display_name": "Thunderwell Core",
   "theme": "thunderwell",
   "cell_draw_scale": 0.5,
@@ -41,7 +41,7 @@
   "glow_color": [0.220, 0.900, 0.447],
   "glow_strength": 0.08,
   "pillar_color": [0.780, 0.920, 0.827],
-  "pillar_strength": 0.10,
+  "pillar_strength": 0.45,
   "pad_strength": 0.22,
   "pad_blue_color": [0.083, 0.199, 0.550],
   "pad_red_color": [0.620, 0.112, 0.197],

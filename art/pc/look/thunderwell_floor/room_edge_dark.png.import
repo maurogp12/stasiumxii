@@ -3,8 +3,8 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://0dxmo7gdn1my"
-path.bptc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex"
-path.astc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"
+path.bptc="res://.godot/imported/room_edge_dark.png-c0cc9e52f3e065b1b1ba66dfc7eaf4de.bptc.ctex"
+path.astc="res://.godot/imported/room_edge_dark.png-c0cc9e52f3e065b1b1ba66dfc7eaf4de.astc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
@@ -13,7 +13,7 @@ metadata={
 [deps]
 
 source_file="res://art/pc/look/thunderwell_floor/room_edge_dark.png"
-dest_files=["res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex", "res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"]
+dest_files=["res://.godot/imported/room_edge_dark.png-c0cc9e52f3e065b1b1ba66dfc7eaf4de.bptc.ctex", "res://.godot/imported/room_edge_dark.png-c0cc9e52f3e065b1b1ba66dfc7eaf4de.astc.ctex"]
 
 [params]
 

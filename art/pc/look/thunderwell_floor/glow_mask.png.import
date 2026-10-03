@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://brocbwq4wwpd2"
-path="res://.godot/imported/glow_mask.png-9a7374501ffda95ba34540eb3433f997.ctex"
+path="res://.godot/imported/glow_mask.png-68378e32300be81e0e20d03cc8b886fe.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://art/pc/look/thunderwell_floor/glow_mask.png"
-dest_files=["res://.godot/imported/glow_mask.png-9a7374501ffda95ba34540eb3433f997.ctex"]
+dest_files=["res://.godot/imported/glow_mask.png-68378e32300be81e0e20d03cc8b886fe.ctex"]
 
 [params]
 

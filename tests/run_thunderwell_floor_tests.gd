@@ -26,7 +26,8 @@ func _test_params_and_slots() -> void:
 	eq(str(params.get("theme", "")), "thunderwell", "the json names the thunderwell theme")
 	eq(str(params.get("display_name", "")), "Thunderwell Core", "the display name is Thunderwell Core")
 	eq(float(params.get("cell_draw_scale", 0.0)), 0.5, "cell art is drawn at half size")
-	eq(str(params.get("art_status", "")), "placeholder", "thunderwell art is still the stand-in set")
+	eq(str(params.get("art_status", "")), "v1", "thunderwell art is the approved v1 set")
+	truthy(FileAccess.file_exists(FLOOR.art_root() + "README.md"), "the floor folder ships the art readme")
 	truthy(params.has("pulse_hz"), "pulse speed is in the floor json")
 	truthy(params.has("pulse_amount"), "pulse amount is in the floor json")
 	truthy(params.has("z_order"), "z order is in the floor json")
@@ -41,9 +42,11 @@ func _test_params_and_slots() -> void:
 	}
 	for slot in expected.keys():
 		var path := FLOOR.resolve_slot(slot)
-		truthy(path.ends_with(slot + ".png"), "%s resolves to its slot file" % slot)
+		truthy(path.ends_with(slot + "@2x.png"), "%s resolves to its @2x master" % slot)
 		var tex := load(path) as Texture2D
 		truthy(tex != null, "%s loads" % slot)
+		var fallback := load(FLOOR.slot_path_1x(slot)) as Texture2D
+		truthy(fallback != null, "%s 1x fallback loads" % slot)
 		var spec: Dictionary = slots.get(slot, {})
 		var px: Array = spec.get("px", [])
 		var want: Array = expected[slot]
@@ -51,16 +54,26 @@ func _test_params_and_slots() -> void:
 		if tex != null:
 			eq(tex.get_width(), int(want[0]), "%s width" % slot)
 			eq(tex.get_height(), int(want[1]), "%s height" % slot)
+		if tex != null and fallback != null:
+			eq(fallback.get_width() * 2, tex.get_width(), "%s 1x is half the master width" % slot)
+			eq(fallback.get_height() * 2, tex.get_height(), "%s 1x is half the master height" % slot)
 		_check_import(path, str(spec.get("compress", "lossless")))
+		_check_import(FLOOR.slot_path_1x(slot), str(spec.get("compress", "lossless")))
 	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
 	var src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
+	var glow_src := src.substr(src.find("const GLOW_SHADER"), src.find("const PAD_SHADER") - src.find("const GLOW_SHADER"))
 	truthy(src.contains("float intensity = tex.r;"), "glow intensity is the red channel")
 	truthy(src.contains("float flow = tex.g;"), "the flow gradient is the green channel")
-	truthy(src.contains("float glow = min(intensity * (0.55 * pulse + energy), glow_strength);"), "the trace glow is capped by the json strength")
+	truthy(glow_src.contains("float glow = intensity * glow_strength * pulse;"), "trace glow is R times strength times pulse(G)")
+	truthy(glow_src.contains("uniform sampler2D mask_tex : filter_linear, repeat_disable;"), "the mask is sampled with a linear filter")
+	eq(glow_src.contains("source_color"), false, "the mask sampler has no source_color hint")
+	eq(glow_src.contains("texture(TEXTURE"), false, "the mask is not sampled through the color texture")
+	truthy(src.contains("texture(TEXTURE, UV)"), "floor pads, the pillar and the room keep the color sampler")
 	eq(src.contains("coilgate"), false, "the floor script does not use the old phone name")
 	eq(float(params.get("glow_strength", 0.0)), FLOOR.glow_strength(), "the trace strength loads from the json")
 	eq(float(params.get("pad_strength", 0.0)), FLOOR.pad_strength(), "the pad strength loads from the json")
 	eq(float(params.get("pillar_strength", 0.0)), FLOOR.pillar_strength(), "the pillar strength loads from the json")
+	eq(float(params.get("pillar_strength", 0.0)), 0.45, "the pillar strength stays at 0.45 so it does not wash the cell")
 	_assert_json_color(params, "glow_color", FLOOR.glow_color(), "glow")
 	_assert_json_color(params, "pillar_color", FLOOR.pillar_color(), "pillar")
 	_assert_json_color(params, "pad_blue_color", FLOOR.pad_blue_color(), "pad blue")
@@ -106,15 +119,15 @@ func _test_params_and_slots() -> void:
 	var fmt := glow_img.get_format()
 	eq(fmt == Image.FORMAT_L8 or fmt == Image.FORMAT_LA8, false, "glow_mask is stored as color, not greyscale")
 	var split := false
+	var blue := 0.0
 	for y in glow_img.get_height():
 		for x in glow_img.get_width():
 			var px := glow_img.get_pixel(x, y)
+			blue = maxf(blue, px.b)
 			if absf(px.r - px.g) > 0.04:
 				split = true
-				break
-		if split:
-			break
 	truthy(split, "glow_mask red and green carry different data")
+	truthy(blue <= 0.004, "glow_mask blue channel is 0")
 
 
 func _test_board_wires_the_theme() -> void:
@@ -186,6 +199,13 @@ func _test_live_theme() -> void:
 	eq(layer.get_node_or_null("RoomEdge") != null, true, "the surround is one sprite")
 	eq(layer.pillar_count(), 5, "five key cells raise a light pillar")
 	truthy(is_equal_approx(layer.pillar_display_width(), 64.0), "a pillar is one cell wide at half size")
+	var pillar_sprite := layer.get_node_or_null("ThunderPillar") as Sprite2D
+	truthy(pillar_sprite != null and pillar_sprite.centered == false, "the pillar sprite anchors from its bottom")
+	if pillar_sprite != null and pillar_sprite.texture != null:
+		var cell: Vector2i = pillar_sprite.get_meta("cell")
+		var anchor: Node2D = board.tiles[cell]
+		eq(pillar_sprite.position, anchor.position, "the pillar stands on its cell")
+		eq(pillar_sprite.offset, Vector2(-pillar_sprite.texture.get_width() * 0.5, -float(pillar_sprite.texture.get_height())), "the pillar offset is bottom-centre")
 	var atlas_size: Vector2 = layer.glow_atlas_size()
 	eq(int(atlas_size.x), 512, "glow_mask is one 512-wide strip")
 	eq(int(atlas_size.y), 64, "glow_mask is 64 tall")

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c28wysajywhhn"
-path="res://.godot/imported/floor_tiles.png-5510fadd0de2e8274867781fa8962fef.ctex"
+uid="uid://17l1yys1tyv7"
+path="res://.godot/imported/light_pillar@2x.png-f8aa0d818b6cf2a738e45d4a27f733d9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/thunderwell_floor/floor_tiles.png"
-dest_files=["res://.godot/imported/floor_tiles.png-5510fadd0de2e8274867781fa8962fef.ctex"]
+source_file="res://art/pc/look/thunderwell_floor/light_pillar@2x.png"
+dest_files=["res://.godot/imported/light_pillar@2x.png-f8aa0d818b6cf2a738e45d4a27f733d9.ctex"]
 
 [params]
 

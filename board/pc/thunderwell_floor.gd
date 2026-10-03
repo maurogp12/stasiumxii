@@ -5,9 +5,11 @@ extends Node2D
 ## left in their painted hue, and a dark gradient around a hole generated from
 ## the cell footprint. CombatSim, the grid and the tile records stay as they are.
 ## Art: res://art/pc/look/thunderwell_floor/. Params: thunderwell_floor.json.
-## glow_mask is painted across 0–1. glow_strength, pad_strength and
-## pillar_strength are the shader caps. glow_color tints the traces. A preview
-## calls request_theme. 2D HDR and the glow environment stay on that preview.
+## glow_mask is painted across 0–1. R is trace intensity, G is the flow ramp,
+## B is 0. The shader multiplies glow = R * strength * pulse(G), so G bleed
+## at the trace edges stays hidden. Floor, pads, the pillar and the room
+## sample as color (source_color). The mask is data, with no source_color.
+## A preview calls request_theme. 2D HDR and the glow environment stay there.
 
 const PARAMS_PATH := "res://data/pc/look/thunderwell_floor.json"
 const DEFAULT_ROOT := "res://art/pc/look/thunderwell_floor/"
@@ -15,20 +17,24 @@ const THEME_ID := "thunderwell"
 const GLOW_SLICES := 4
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
-// glow_mask.png is RGB. R is glow intensity. G is the flow gradient along the traces.
+// mask_tex is glow_mask, sampled as data. Do not mark it as color: under HDR 2D
+// a color hint bends R and G. R is trace intensity at full range. G is the flow
+// ramp, the same rate on every tile. B is 0. Multiplying by R hides G bleed.
+uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
 uniform float flow_speed = 0.35;
 uniform float glow_strength = 0.08;
 uniform vec3 glow_color = vec3(0.220, 0.900, 0.447);
 void fragment() {
-	vec4 tex = texture(TEXTURE, UV);
+	vec4 tex = texture(mask_tex, UV);
 	float intensity = tex.r;
 	float flow = tex.g;
-	float pulse = 0.62 + 0.38 * sin(TIME * TAU * pulse_hz + phase);
-	float along = fract(flow - TIME * flow_speed);
-	float energy = smoothstep(0.16, 0.0, abs(along - 0.12));
-	float glow = min(intensity * (0.55 * pulse + energy), glow_strength);
+	float along = fract(flow + phase * 0.013 - TIME * flow_speed);
+	float band = smoothstep(0.20, 0.0, abs(along - 0.12));
+	float breathe = 0.85 + 0.15 * sin(TIME * TAU * pulse_hz + phase);
+	float pulse = mix(0.55, 1.0, band) * breathe;
+	float glow = intensity * glow_strength * pulse;
 	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
 	vec3 hue = glow_color / peak;
 	COLOR = vec4(hue * glow, glow);
@@ -36,7 +42,7 @@ void fragment() {
 """
 const PAD_SHADER := """shader_type canvas_item;
 render_mode blend_add;
-// Pad hue stays in the painted art. pad_strength only scales that paint.
+// TEXTURE keeps source_color. Pad hue stays in the painted art.
 uniform float pad_strength = 0.22;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
@@ -45,18 +51,21 @@ void fragment() {
 """
 const PILLAR_SHADER := """shader_type canvas_item;
 render_mode blend_add;
-uniform float pillar_strength = 0.10;
+// TEXTURE keeps source_color. The paint is already pale green-white.
+// pillar_strength scales it. 1.0 washes the cell; the json default is 0.45.
+uniform float pillar_strength = 0.45;
 uniform vec3 pillar_color = vec3(0.780, 0.920, 0.827);
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	float ink = dot(tex.rgb, vec3(0.2126, 0.7152, 0.0722)) * tex.a;
-	float glow = min(ink, pillar_strength);
+	float glow = ink * pillar_strength;
 	float peak = max(max(pillar_color.r, pillar_color.g), max(pillar_color.b, 0.001));
 	vec3 hue = pillar_color / peak;
 	COLOR = vec4(hue * glow, glow);
 }
 """
 const ROOM_SHADER := """shader_type canvas_item;
+// TEXTURE keeps source_color on the vignette. hole_mask is generated data.
 uniform sampler2D hole_mask : filter_linear, repeat_disable;
 void fragment() {
 	vec4 grad = texture(TEXTURE, UV);
@@ -99,7 +108,7 @@ static func pillar_color() -> Color:
 
 
 static func pillar_strength() -> float:
-	return _json_float("pillar_strength", 0.10)
+	return _json_float("pillar_strength", 0.45)
 
 
 static func pad_strength() -> float:
@@ -412,7 +421,7 @@ func _add_glow(tile: Node, cell: Vector2i) -> void:
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var scale := _cell_scale()
 	sprite.scale = Vector2(scale, scale)
-	sprite.material = _glow_material(cell)
+	sprite.material = _glow_material(cell, tex)
 	sprite.z_as_relative = true
 	sprite.z_index = _z("glow")
 	tile.add_child(sprite)
@@ -429,8 +438,9 @@ func _spawn_pillars(board: Node2D) -> void:
 			continue
 		var sprite := Sprite2D.new()
 		sprite.name = "ThunderPillar"
-		sprite.centered = true
+		sprite.centered = false
 		sprite.texture = tex
+		sprite.offset = Vector2(-tex.get_width() * 0.5, -float(tex.get_height()))
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sprite.scale = Vector2(scale, scale)
 		sprite.z_as_relative = false
@@ -452,8 +462,10 @@ func _place_pillars() -> void:
 		if not _board.tiles.has(cell):
 			continue
 		var tile: Node2D = _board.tiles[cell]
-		var shown: float = float(sprite.texture.get_height()) * absf(sprite.scale.y)
-		sprite.position = tile.position + Vector2(0, -shown * 0.5 + 10.0)
+		sprite.centered = false
+		if sprite.texture != null:
+			sprite.offset = Vector2(-sprite.texture.get_width() * 0.5, -float(sprite.texture.get_height()))
+		sprite.position = tile.position
 
 
 func _layout_room() -> void:
@@ -605,12 +617,13 @@ func _glow_slice(tex: Texture2D, cell: Vector2i) -> AtlasTexture:
 	return _slice(tex, index, GLOW_SLICES)
 
 
-func _glow_material(cell: Vector2i) -> ShaderMaterial:
+func _glow_material(cell: Vector2i, mask: Texture2D) -> ShaderMaterial:
 	if _glow_shader == null:
 		_glow_shader = Shader.new()
 		_glow_shader.code = GLOW_SHADER
 	var mat := ShaderMaterial.new()
 	mat.shader = _glow_shader
+	mat.set_shader_parameter("mask_tex", mask)
 	mat.set_shader_parameter("phase", float(cell.x) * 1.7 + float(cell.y) * 2.3)
 	mat.set_shader_parameter("pulse_hz", float(_params.get("pulse_hz", 0.22)))
 	mat.set_shader_parameter("flow_speed", float(_params.get("glow_flow_speed", 0.35)))

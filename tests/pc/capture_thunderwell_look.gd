@@ -206,7 +206,9 @@ func _screen_rect(sprite: Sprite2D) -> Rect2:
 	if sprite == null or sprite.texture == null:
 		return Rect2()
 	var size := sprite.texture.get_size()
-	var origin := sprite.offset - size * 0.5
+	var origin := sprite.offset
+	if sprite.centered:
+		origin -= size * 0.5
 	var a := _screen_local(sprite, origin)
 	var b := _screen_local(sprite, origin + size)
 	return Rect2(a, Vector2.ZERO).expand(b)
