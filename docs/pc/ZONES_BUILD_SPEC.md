@@ -364,9 +364,14 @@ the next phase. Numbers are **Proposed**.
   | Resist | +0.4% less damage taken (total Resist capped at 25%) | 25% (cap reached at 63 points) |
   | Swift | +1 Initiative | +98 Initiative |
 
-  Points are on in Koliseo PvP (everyone is treated as `max_level` with their
-  own spend), so WP15 also checks a duel table: with any point spread, no
-  class's PvP win rate moves outside 45–55% against the no-points baseline.
+  Points are on in Koliseo PvP, and **every PvP fighter has the full point
+  budget** (everyone is treated as `max_level` with their own spend). So the
+  PvP check is **spread against spread**, not points against no points: for the
+  same class, any two point spreads stay within a 45–55% win rate against each
+  other (no dominant build), and the five classes stay balanced with their best
+  spread. Points against no points is not a PvP case and is not checked
+  (corrected 3 Oct 2026; the earlier wording was wrong). Resist points past its
+  25% cap give nothing, so a full-Resist spend has to be judged with the cap.
 - **Class HP growth per level** (a small flat HP gain, different per class,
   Proposed).
 - **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
