@@ -633,6 +633,22 @@ XP rewards (**Proposed**, from the level curve in 4.3, using the zone's
 missions 25%, dungeon missions 60%. The file stores the numbers; the rule only
 fills them once.
 
+**Story vs. repeatable (settled 3 Oct 2026, so 4.7 and 4.8 don't clash):**
+- **Story and side missions** (the 33 chain + 20 side, each done once) use the
+  one-time amounts above, of `xp_to_next(level_min)`, with no pace multiply.
+  They are a finite bonus, not a farm.
+- **Repeatable NPC tasks** use the 4.8 mission row: talk / reach 6%, defeat
+  10%, clear 30% of `xp_to_next(player level)`, **× pace(player level)**, read
+  from `level_curve.json` (never hardcoded). Coins for a task = the world-fight
+  coin rate at that level × (task minutes ÷ 3), so a task never pays more per
+  minute than fighting.
+- **Anti-farm:** tasks come only from Wardens, Traders and the region extras
+  (not Door Keepers, the Banker or the Herald); **at most 3 active tasks**; no
+  two active tasks share a landmark; one task per NPC until it is turned in.
+  At the level cap, tasks pay coins only (at the same per-minute rate).
+- WP15 re-scores the normal mix with tasks included: missions stay near 20% of
+  play time and no single source exceeds 50%.
+
 Rules: every `giver`, `turn_in` and `npc` exists in `npcs.json`; every
 `zone_id`, `landmark` and `dungeon` exists; `requires` has no cycles; every
 mission can be finished from the start of the game (a test walks the chain).
