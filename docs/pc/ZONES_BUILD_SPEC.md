@@ -656,9 +656,7 @@ below.
 **Crypto Coins** (Proposed): open-world fight `3 + 1.5 × L`; dungeon win
 `8 ×` that at the dungeon's level × star; missions by level tier: T1 (1–10)
 20–40, T2 (11–20) 60–100, T3 (21–30) 150–250, T4 (31–40) 300–500, T5 (41–50)
-600–1,000. **What coins buy is Open** (Q4: shops). Until coins can be spent,
-the simulator still reports coins per hour so prices can be set later without
-inflation.
+600–1,000. What coins buy: section 4.12.
 
 **Sets: option A approved** (Mauro, 3 Oct 2026). Parts give stats and sets give
 bonuses. Mauro: "in the PC game we are going to build more sets depending on
@@ -715,6 +713,56 @@ Drops (Proposed):
 **Mission rank** = how many missions the player has finished: rank 1 (0–9),
 2 (10–24), 3 (25–49), 4 (50–99), 5 (100+). This is how "advancing in missions
 gives better rewards" works, on top of the level tier.
+
+### 4.12 Economy: what Crypto Coins buy, marketplace, crafting, houses (Mauro's direction + Proposed plan)
+
+Mauro, 3 Oct 2026: **"the idea is to put a marketplace where players can trade
+or buy pieces; also money will be used to craft, buy houses, buy food,
+potions, decorations, buy recipes, food supplies, minerals, etc."**
+
+Coin uses (Mauro's list, plus the ones already proposed):
+
+| Use | Where | What it is |
+|---|---|---|
+| **Marketplace** | A market board in each hub (Crossroads first) | Players list set parts and goods for a price; other players buy them. Rare parts can be sold here (NPC shops still never sell Rare parts or Mystery Boxes). |
+| **Crafting** | Workbenches (forge, kitchen, alchemy table) | Turn resources into food, potions, decorations and gear upgrades; each craft costs coins plus materials |
+| **Recipes** | Traders and craft NPCs; some from missions and dungeons | A recipe unlocks a craft; bought once with coins |
+| **Houses** | Plots in the towns | Buy a house, then decorate it |
+| **Decorations** | Traders, crafting | Furniture and ornaments for your house |
+| **Food and potions** | Traders, kitchen, alchemy | Heal between open-world fights; short buffs (Proposed) |
+| **Food supplies and minerals** | Traders, farms, mines | Raw materials for crafting; also gathered in the world |
+| **Part upgrades +1 to +5** | Smith (Stoneford), Forge Master (Slagcrown) | Already in 4.9 |
+| **Fast travel, respec, bank space, cosmetics** | Hub posts, Elders, Banker, Traders | Already proposed |
+
+How it fits together (**Proposed**):
+
+- **Resources come from the world.** Crosshaven already has harvestable trees
+  (six species with stump states) and eight crop types on its farms. Add
+  **mineral nodes** (rocks and ore veins) per region. Gathering: click a node,
+  the walker goes there, a short gather action, the node turns to its spent
+  state (stump, picked field, broken rock) and respawns later.
+- **Crafting** = recipe + materials + coins → item, at the right workbench.
+  Craft categories in order: food, potions, decorations, upgrade materials.
+  Crafting levels (a gathering / crafting skill per profession) are **Open**.
+- **Marketplace** = player listings with a price in Crypto Coins and a small
+  **sale tax** (Proposed 5%, a coin sink). Listings expire after a few days.
+  It must run on a server (to stop duplicated items), so it needs the online
+  player data that PC does not have yet: **Open**, see Q9.
+- **Houses** = a plot in a town bought with coins, an interior room, and
+  placed decorations. Housing needs its own scene and saved layouts: a later
+  phase (Proposed).
+- **Balance:** the WP15 simulator tracks coins in (fights, dungeons,
+  missions, market sales) and coins out (crafts, recipes, houses, upgrades,
+  travel, tax). Target (Proposed): over time players spend 70–90% of what they
+  earn, so prices stay stable.
+
+Build order (**Proposed**, for Mauro to confirm in Q9):
+
+1. **Now (phase 1):** NPC shops (food, potions, supplies, minerals, recipes,
+   decorations as items), gathering in Crosshaven (trees, crops, a few mineral
+   nodes), crafting food and potions, upgrades, respec, fast travel.
+2. **When PC has online player data:** the marketplace.
+3. **Next:** houses and decorating, more professions and recipes.
 
 ### 4.10 World monsters: `data/world/monsters.json` (Mauro's rules + Proposed numbers)
 
@@ -1143,6 +1191,57 @@ canvas, pivot, facings and idle loop rules as NPC bodies, plus a walk loop
   line, target diamond, range outline), from Mauro's reference clip.
 - **Rule:** combat only; it does not touch the world walker.
 
+#### WP16: NPC shops (Code)
+
+- **Goal:** Traders, the Smith, the Banker and others sell and buy with Crypto
+  Coins (4.12, phase 1 list).
+- **Needs:** WP6, WP14.
+- **Add:** `data/world/shops.json` + schema (what each NPC sells, prices,
+  buy-back rate, Proposed); `backend/pc_shops.gd` (preload; buy / sell, pure
+  logic); `scenes/world/ui/shop_panel.gd` / `.tscn`; `tests/run_pc_shops_tests.gd`.
+- **Accept:** no shop sells Rare parts or Mystery Boxes; you can't buy without
+  the coins; sell-back is lower than the price (Proposed 30%); save / load.
+- **Media:** buying food and a recipe from the Crossroads Trader.
+
+#### WP17: Gathering (Code + Technical Artist)
+
+- **Goal:** trees, crops and mineral nodes in Crosshaven can be gathered for
+  materials.
+- **Needs:** WP14 (inventory).
+- **Add:** `data/world/resources.json` + schema (node types, materials,
+  respawn, Proposed); node placements as sidecar data per chunk (not in the
+  zone files); `backend/pc_gathering.gd`; gather action and spent-state swap in
+  the world scene (the kit's `tree_<species>_stump.png` art already exists);
+  `tests/run_pc_gathering_tests.gd`.
+- **Accept:** a node can't be gathered while spent; respawn time holds;
+  materials land in the inventory; nodes never sit on exits, gates, doors or
+  NPC cells.
+- **Media:** cutting a golden oak to its stump and picking a cabbage field.
+
+#### WP18: Crafting and recipes (Code)
+
+- **Goal:** workbenches craft food and potions (then decorations and upgrade
+  materials) from recipes, materials and coins.
+- **Needs:** WP16, WP17.
+- **Add:** `data/world/recipes.json` + schema; `backend/pc_crafting.gd`;
+  `scenes/world/ui/craft_panel.gd` / `.tscn`; workbench props in the town hubs;
+  `tests/run_pc_crafting_tests.gd`.
+- **Accept:** a craft needs the recipe, every material and the coins, and
+  takes them all once; food and potion effects apply only out of combat
+  (Proposed) and through `pc_progress.gd`.
+- **Media:** buying a recipe, gathering, cooking a meal, eating it.
+
+#### WP19: Marketplace (Code), **Open Q9**
+
+Player listings and purchases in Crypto Coins with a sale tax (4.12). Needs a
+server that holds player inventories and coins; PC has none yet. Build nothing
+until Mauro answers Q9.
+
+#### WP20: Houses and decorations (Code + Scenario), **later phase**
+
+Plots in the towns, a house interior, placing decorations, saved layouts
+(4.12). Not in phase 1.
+
 ### 5.2 Suites to run before every push
 
 ```bash
@@ -1187,11 +1286,13 @@ headless.
    **3b.** What a level gives: **answered 3 Oct 2026 (Mauro): option A**, with
    the cap going to 100 in the next phase (4.3 cap rule, 4.11). What set parts
    do: **answered 3 Oct 2026 (Mauro): option A**, starting with 3 Crosshaven
-   sets, more next phase (4.9). **Still Open:** what Crypto Coins buy, and
-   Mauro's yes to each 5-part bonus before it is built.
+   sets, more next phase (4.9). What Crypto Coins buy: **Mauro's direction 3
+   Oct 2026**: marketplace, crafting, houses, food, potions, decorations,
+   recipes, supplies, minerals (4.12). **Still Open:** Mauro's yes to each
+   5-part bonus before it is built.
 4. **NPC jobs:** ~~which first?~~ **Partly answered 3 Oct 2026 (Mauro): NPCs
-   with missions come first** (4.7, WP6b). Still Open: shops, storage, travel,
-   healing, and mission types that need quest items. What Crypto Coins buy.
+   with missions come first** (4.7, WP6b). Shops, crafting, market and houses
+   now follow 4.12. Still Open: mission types that need quest items.
 5. ~~**Region size:** 2 chunks per region to start, or more?~~ **Answered
    3 Oct 2026 (Mauro / Luca, yes):** 55 new chunks, 3–8 per region, with entry
    / door / hub / middle chunks, one landmark per chunk, WP5 split into WP5a and
@@ -1203,3 +1304,8 @@ headless.
    the team fix it now?
 8. **Where Eastmarch Fen Edge sits:** off the east road (concept image) or past
    Eastmarch town?
+9. **Economy build order (4.12):** phase 1 = NPC shops, gathering in
+   Crosshaven, crafting food and potions, upgrades, respec, fast travel; the
+   marketplace when PC has online player data (a server that stores
+   inventories and coins); houses in a later phase. OK? And is building that
+   online player data (accounts and a save on the server) part of this phase?
