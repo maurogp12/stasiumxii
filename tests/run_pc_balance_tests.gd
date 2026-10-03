@@ -32,6 +32,7 @@ func _run() -> void:
 	_test_over_cap_zone()
 	_test_unknown_key()
 	_test_short_curve()
+	_test_no_phone_dungeon_names()
 
 
 func _test_source() -> void:
@@ -198,6 +199,69 @@ func _has_finding(result: Dictionary, id: String, status: String) -> bool:
 func _has_status(result: Dictionary, status: String) -> bool:
 	for finding in result["findings"]:
 		if str(finding["status"]) == status:
+			return true
+	return false
+
+
+const PHONE_DUNGEON_NAMES: Array[String] = [
+	"threshgate",
+	"galevault",
+	"tidehold",
+	"ashmarch",
+	"coilgate",
+]
+const PHONE_SCAN_ROOTS: Array[String] = [
+	"res://data",
+	"res://backend",
+	"res://tests",
+	"res://scenes",
+]
+const PHONE_SCAN_EXT: Array[String] = ["gd", "json", "tscn", "tres", "cfg", "godot"]
+
+
+func _test_no_phone_dungeon_names() -> void:
+	var hits := PackedStringArray()
+	for root in PHONE_SCAN_ROOTS:
+		_scan_phone_tree(root, hits)
+	eq(hits.is_empty(), true, "no phone dungeon names in PC data, code, or tests (%s)" % ", ".join(hits))
+
+
+func _scan_phone_tree(path: String, hits: PackedStringArray) -> void:
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return
+	dir.include_navigational = false
+	dir.list_dir_begin()
+	var name := dir.get_next()
+	while name != "":
+		var child := path.path_join(name)
+		if dir.current_is_dir():
+			_scan_phone_tree(child, hits)
+		else:
+			_scan_phone_file(child, hits)
+		name = dir.get_next()
+	dir.list_dir_end()
+
+
+func _scan_phone_file(path: String, hits: PackedStringArray) -> void:
+	if not PHONE_SCAN_EXT.has(path.get_extension().to_lower()):
+		return
+	var lines := FileAccess.get_file_as_string(path).split("\n")
+	for i in lines.size():
+		var line := lines[i]
+		if _is_phone_denylist_line(line):
+			continue
+		var lower := line.to_lower()
+		for phone in PHONE_DUNGEON_NAMES:
+			if lower.find(phone) >= 0:
+				hits.append("%s:%d" % [path, i + 1])
+				break
+
+
+func _is_phone_denylist_line(line: String) -> bool:
+	var trimmed := line.strip_edges()
+	for phone in PHONE_DUNGEON_NAMES:
+		if trimmed == "\"%s\"," % phone or trimmed == "\"%s\"" % phone:
 			return true
 	return false
 
