@@ -2001,17 +2001,53 @@ canvas, pivot, facings and idle loop rules as NPC bodies, plus a walk loop
   walking behind and in front.
 - **Media:** side-by-side stills, stand-in vs painted, per region.
 
-#### WP12: Feel pass on the world (Feel)
+#### WP12: Wakfu seamless world: the map moves with you (Code + Feel) — **next**
 
-- **Goal:** walking, camera and transitions in the new zones feel like Wakfu:
-  smooth glide, camera that drifts with the walker, soft fades at gates, a
-  short settle when the walker arrives.
-- **Change:** camera and transition code in `crosshaven_world.gd` only. The
-  walker script is Locked (Open Q7); the feel agent proposes walker changes to
-  Mauro first.
-- **Accept:** no camera snap on any gate or chunk exit; zoom 1.0–2.5 stays
-  usable; Mauro's judgement on the clip.
-- **Media:** a 30 s clip across three zones, before vs after.
+Mauro, 3 Oct 2026: "make the map looking like Wakfu; on Wakfu the map moves
+with you; that map looks style Dofus." Today the world is Dofus-style. One
+chunk is loaded at a time, the camera is clamped to that chunk
+(`crosshaven_world.gd:281-284`), there is a void around it, and every chunk
+exit fades to black and reloads (`enter_zone`, `:223-246`).
+
+- **Goal:** one continuous Crosshaven you walk through. The camera follows
+  the hero everywhere, and the ground runs on past the chunk edges. Crossing
+  from one chunk into the next is just walking, with no fade, reload or snap.
+- **World plane:** every chunk gets a fixed world offset in cells. It comes
+  from the exit links: the neighbour sits where `from + edge step = to`. The
+  Crossroads is at (0,0). I checked today's data: the offsets agree for every
+  link, with two exceptions. `road_southwest` overlaps `road_west`, because
+  both leave the Crossroads' west edge, and `westwatch` overlaps the
+  Crossroads. Re-lay those so that no two chunks overlap: the south-west road
+  leaves from the Crossroads' south edge, west part, and Westwatch sits
+  south-west. The outskirts chunks (section 00) take their place on the same
+  plane. For this phase Crosshaven chunk files may change.
+- **Streaming:** draw the current chunk plus every neighbour that touches it,
+  at their world offsets. Ground, props, NPCs and monsters all show, and
+  everything further out is unloaded. Walk paths, clicks and hover work
+  across chunk edges: click a cell in the next chunk and the hero walks
+  there. The "current chunk" (zone label, weather, music, the level band,
+  danger rules) switches when the hero's cell crosses the edge, using a short
+  crossfade of grade and weather, never a black fade.
+- **Camera:** it follows the hero continuously, with smoothing like Wakfu
+  and a slight lead in the walking direction. Limits are the whole world's
+  bounds plus a sea margin, never one chunk. Zoom stays 1.0–2.5, default 1.6.
+- **No void:** past the island edge, show painted sea, breakers and cliffs
+  from the Crosshaven plate (LOOK_TARGET D). Where no chunk exists yet inside
+  the island, show the plate's fields as a backdrop, never black or dark blue.
+- **Black fades stay** only for doors into interiors: dungeons, houses and
+  the bank.
+- **Accept:**
+  - Offsets are consistent for every link, and no two chunks overlap (a test).
+  - Walking the WP4 walk-test route town to town produces no `enter_zone` call
+    and no fade.
+  - The camera never snaps on an edge: position is continuous frame to frame,
+    with a test.
+  - Frame time on Full stays within 10% of today's single-chunk bench, with
+    neighbours loaded.
+  - A save in any chunk loads to the same world position.
+- **Media:** one uncut clip from the Crossroads to Northgate and on to
+  Stoneford with the camera following and no fades, plus a before/after
+  still at a chunk edge (void vs continuous ground).
 
 #### WP13: Combat glide walk (Feel), separate track, **lean / gait parked (characters not now)**
 
