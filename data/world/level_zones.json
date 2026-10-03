@@ -1,0 +1,119 @@
+{
+  "format": "stasium.level_zones",
+  "format_version": 1,
+  "status": "proposed",
+  "zones": [
+    {
+      "id": "crosshaven_heart",
+      "name": "Crosshaven Heart",
+      "level_min": 1,
+      "level_max": 5,
+      "chunks": [
+        "crosshaven_crossroads",
+        "crosshaven_road_north",
+        "crosshaven_road_west",
+        "crosshaven_road_east",
+        "crosshaven_road_southwest",
+        "crosshaven_road_south"
+      ],
+      "color": "#3fbf4f",
+      "dungeon": "old_granary_cellar"
+    },
+    {
+      "id": "crosshaven_towns",
+      "name": "Crosshaven Towns",
+      "level_min": 5,
+      "level_max": 10,
+      "chunks": [
+        "crosshaven_northgate",
+        "crosshaven_stoneford",
+        "crosshaven_eastmarch",
+        "crosshaven_westwatch",
+        "crosshaven_southbridge"
+      ],
+      "color": "#58bd3c",
+      "dungeon": "threshgate"
+    },
+    {
+      "id": "rowanvale",
+      "name": "Rowanvale",
+      "level_min": 10,
+      "level_max": 15,
+      "chunks": [],
+      "color": "#82bb3a",
+      "dungeon": "rotting_orchard_barrow"
+    },
+    {
+      "id": "windmere",
+      "name": "Windmere",
+      "level_min": 15,
+      "level_max": 20,
+      "chunks": [],
+      "color": "#acb937",
+      "dungeon": "galevault"
+    },
+    {
+      "id": "brinewake",
+      "name": "Brinewake",
+      "level_min": 20,
+      "level_max": 25,
+      "chunks": [],
+      "color": "#b79735",
+      "dungeon": "tidehold"
+    },
+    {
+      "id": "slagcrown",
+      "name": "Slagcrown",
+      "level_min": 25,
+      "level_max": 30,
+      "chunks": [],
+      "color": "#b56832",
+      "dungeon": "ashmarch"
+    },
+    {
+      "id": "eastmarch_fen_edge",
+      "name": "Eastmarch Fen Edge",
+      "level_min": 25,
+      "level_max": 30,
+      "chunks": [],
+      "color": "#b33930",
+      "dungeon": "sunken_mill"
+    },
+    {
+      "id": "gloomfen_mire",
+      "name": "Gloomfen Mire",
+      "level_min": 30,
+      "level_max": 38,
+      "chunks": [],
+      "color": "#b02e51",
+      "dungeon": "drowned_abbey"
+    },
+    {
+      "id": "stormspire",
+      "name": "Stormspire",
+      "level_min": 35,
+      "level_max": 40,
+      "chunks": [],
+      "color": "#ae2b7c",
+      "dungeon": "coilgate"
+    },
+    {
+      "id": "ashen_shardfields",
+      "name": "Ashen Shardfields",
+      "level_min": 38,
+      "level_max": 45,
+      "chunks": [],
+      "color": "#ac29a6",
+      "dungeon": "shard_hollow"
+    },
+    {
+      "id": "blightwood_hollow",
+      "name": "Blightwood Hollow",
+      "level_min": 45,
+      "level_max": 50,
+      "chunks": [],
+      "color": "#8227a9",
+      "dungeon": "heart_of_the_blight"
+    }
+  ]
+}
