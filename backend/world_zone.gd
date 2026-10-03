@@ -156,6 +156,10 @@ var decor: Array = []
 var exits: Array = []
 var points_of_interest: Array = []
 var presentation: Dictionary = {}
+## View only. The world plane sets these so a chunk edge can see the next
+## chunk's tiles. Walk rules stay on terrain_at and height_at.
+var sample_terrain: Callable = Callable()
+var sample_height: Callable = Callable()
 
 var _terrain: PackedStringArray = PackedStringArray()
 var _walkable: PackedByteArray = PackedByteArray()

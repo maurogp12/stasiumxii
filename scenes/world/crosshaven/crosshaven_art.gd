@@ -87,10 +87,24 @@ static func h(x: int, y: int, k: int) -> int:
 	return (((x * 73856093) ^ (y * 19349663) ^ (x * y * 83492791)) & 0x7fffffff) % k
 
 
+static func terrain_seen(zone: WorldZone, cell: Vector2i) -> String:
+	if zone.in_bounds(cell):
+		return zone.terrain_at(cell)
+	if zone.sample_terrain.is_valid():
+		return str(zone.sample_terrain.call(cell))
+	return ""
+
+
+static func height_seen(zone: WorldZone, cell: Vector2i) -> int:
+	if zone.in_bounds(cell):
+		return zone.height_at(cell)
+	if zone.sample_height.is_valid():
+		return int(zone.sample_height.call(cell))
+	return 0
+
+
 static func _joins(zone: WorldZone, terrain: String, cell: Vector2i) -> bool:
-	if not zone.in_bounds(cell):
-		return false
-	return zone.terrain_at(cell) == terrain
+	return terrain_seen(zone, cell) == terrain
 
 
 ## Floor id plus corner decals for one cell, per the kit's README picker.
@@ -157,7 +171,7 @@ static func grass_lip(zone: WorldZone, cell: Vector2i) -> String:
 	var g: Array[String] = []
 	for side in SIDES:
 		var n: Vector2i = cell + SIDE_DIR[side]
-		if zone.in_bounds(n) and zone.terrain_at(n) == "dirt_road":
+		if terrain_seen(zone, n) == "dirt_road":
 			g.append(side)
 	if g.is_empty():
 		return ""
@@ -180,7 +194,7 @@ static func face_strips(zone: WorldZone, cell: Vector2i) -> Array:
 	var elev := zone.height_at(cell)
 	for face in ["left", "right"]:
 		var n_cell: Vector2i = cell + (Vector2i(0, 1) if face == "left" else Vector2i(1, 0))
-		var n_elev := zone.height_at(n_cell) if zone.in_bounds(n_cell) else 0
+		var n_elev := height_seen(zone, n_cell)
 		var steps := elev - n_elev
 		var base_x := -32.0 if face == "left" else 0.0
 		for k in range(maxi(steps, 0)):
@@ -190,7 +204,7 @@ static func face_strips(zone: WorldZone, cell: Vector2i) -> Array:
 			elif k % 2 == 0 and has("tiles", "%s_side_%s_b" % [terrain, face]):
 				variant = "b"
 			if terrain == "cliff" and k == steps - 1 and k > 0:
-				var below_water := zone.in_bounds(n_cell) and zone.terrain_at(n_cell) == "water"
+				var below_water := terrain_seen(zone, n_cell) == "water"
 				variant = "base_water" if below_water else "base_ground"
 			out.append({
 				"id": "%s_side_%s_%s" % [terrain, face, variant],

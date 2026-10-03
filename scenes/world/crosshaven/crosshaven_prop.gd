@@ -26,6 +26,8 @@ var base_height := 0
 ## Screen rect (local) used for "player is behind me" fading.
 var cover_rect := Rect2()
 var base_z := 0
+## 0 everywhere except Northgate and the town half of the north road.
+var snow_amount := 0.0
 var _tex: Texture2D
 var _fence_axis := 0  # 0: along x (NE-SW screen), 1: along y
 
@@ -199,24 +201,41 @@ func update_cover(walker_pos: Vector2, walker_z: int) -> void:
 
 
 func _draw() -> void:
-	if _sway != null and _sway.visible:
+	var swayed := _sway != null and _sway.visible
+	if not swayed:
+		if _tex != null:
+			var s := Art.size_of(_art)
+			Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
+			_draw_window_glow(s)
+		else:
+			match prop_type:
+				"tree":
+					_draw_tree()
+				"fence":
+					_draw_fence()
+				"red_roof_cottage":
+					_draw_cottage()
+				"crossroads_centerpiece":
+					_draw_centerpiece()
+				_:
+					_draw_spire(SPIRE_TINT.get(prop_type, Color("8a8a8a")))
+	_paint_snow_cap()
+
+
+func _paint_snow_cap() -> void:
+	if snow_amount <= 0.05 or cover_rect.size.y < 8.0:
 		return
-	if _tex != null:
-		var s := Art.size_of(_art)
-		Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
-		_draw_window_glow(s)
-		return
-	match prop_type:
-		"tree":
-			_draw_tree()
-		"fence":
-			_draw_fence()
-		"red_roof_cottage":
-			_draw_cottage()
-		"crossroads_centerpiece":
-			_draw_centerpiece()
-		_:
-			_draw_spire(SPIRE_TINT.get(prop_type, Color("8a8a8a")))
+	var a := clampf(snow_amount, 0.0, 1.0)
+	var y := cover_rect.position.y + minf(16.0, cover_rect.size.y * 0.2)
+	var half := maxf(4.0, minf(16.0, cover_rect.size.x * 0.28))
+	var cap := Color(0.97, 0.98, 1.0, 0.72 * a)
+	draw_colored_polygon(PackedVector2Array([
+		Vector2(-half, y + 5.0),
+		Vector2(0.0, y - 2.0),
+		Vector2(half, y + 4.0),
+		Vector2(half * 0.25, y + 8.0),
+	]), cap)
+	draw_circle(Vector2(half * 0.15, y + 2.0), 2.6, Color(1, 1, 1, 0.5 * a))
 
 
 func _draw_window_glow(s: Vector2) -> void:

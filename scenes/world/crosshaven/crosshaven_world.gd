@@ -28,6 +28,7 @@ const RewardPopup := preload("res://scenes/world/ui/reward_popup.gd")
 const Rewards := preload("res://backend/pc_rewards.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const Regions := preload("res://backend/world_regions.gd")
+const WorldPlane := preload("res://backend/world_plane.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
@@ -35,10 +36,20 @@ const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
 const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
 const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
 
-const SEA := Color("2d4f63")
+const SEA := Color("1e6e96")
+const FIELD := Color("90a91b")
+const SHALLOW := Color("3285ab")
+const FOAM := Color("d7f3f1")
+const CLIFF := Color("9c935f")
+const BREAKER := Color(0.93, 0.98, 0.97, 0.9)
 const ZOOM_MIN := 1.0
 const ZOOM_MAX := 2.5
 const FADE_SECONDS := 0.35
+const SEA_MARGIN := 720
+const LEAD_PX := 22.0
+const PRESENCE_SECONDS := 0.55
+## Danger tint starts with this level band. Below it the ground stays safe.
+const DANGER_FROM := 30
 
 ## Tests set this so exits swap chunks without waiting on the fade.
 @export var instant_transitions := false
@@ -71,6 +82,22 @@ var mission_log: CanvasLayer
 var _pending_talk: Dictionary = {}
 var _npc_by_cell: Dictionary = {}
 var hover_cell := Vector2i(-1, -1)
+var _hover_zone: WorldZone
+var neighbours: Node2D
+var plane_offsets: Dictionary = {}
+var transition_count := 0
+var seam_count := 0
+var music_id := ""
+var danger := false
+var level_band := ""
+var _route: Array = []
+var _route_pace := "walk"
+var _booting := true
+var _lead := Vector2.ZERO
+var _sea: ColorRect
+var _backdrop: Node2D
+var _snow: Node2D
+var _presence_tween: Tween
 
 var _hover: Node2D
 var _max_h := 0
@@ -99,10 +126,20 @@ func _ready() -> void:
 	var bg := CanvasLayer.new()
 	bg.layer = -10
 	add_child(bg)
-	var sea := ColorRect.new()
-	sea.color = SEA
-	sea.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.add_child(sea)
+	_sea = ColorRect.new()
+	_sea.color = SEA
+	_sea.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_sea.visible = false
+	bg.add_child(_sea)
+	_backdrop = Node2D.new()
+	_backdrop.name = "Backdrop"
+	_backdrop.z_as_relative = false
+	_backdrop.z_index = -4096
+	_backdrop.draw.connect(_draw_backdrop)
+	add_child(_backdrop)
+	neighbours = Node2D.new()
+	neighbours.name = "Neighbours"
+	add_child(neighbours)
 
 	settings = VisualSettings.new()
 	props_root = Node2D.new()
@@ -140,6 +177,13 @@ func _ready() -> void:
 	camera.position_smoothing_speed = 4.0
 	camera.zoom = Vector2.ONE * _zoom
 	add_child(camera)
+	_snow = Node2D.new()
+	_snow.name = "Snowfall"
+	_snow.z_as_relative = false
+	_snow.z_index = 4090
+	_snow.visible = false
+	_snow.draw.connect(_draw_snowfall)
+	add_child(_snow)
 
 	_screen_fx = CanvasLayer.new()
 	_screen_fx.layer = 5
@@ -217,6 +261,11 @@ func _ready() -> void:
 		push_error("World atlas failed to load: %s" % [load_errors])
 		return
 	enter_zone(map.start_zone, map.start_cell, false)
+	_booting = false
+	transition_count = 0
+	seam_count = 0
+	if _movie == "" and DisplayServer.get_name() != "headless":
+		restore_place()
 	if _movie != "":
 		get_tree().process_frame.connect(_start_movie, CONNECT_ONE_SHOT)
 
@@ -226,6 +275,7 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 		push_error("regions closed: refused %s" % zone_id)
 		walk_rejected.emit("regions_closed")
 		return
+	transition_count += 1
 	var next: WorldMap = map
 	if atlas != null:
 		var found: Variant = atlas.map_for_chunk(zone_id)
@@ -253,49 +303,69 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 	_transitioning = false
 
 
-func _load_zone(zone_id: String, cell: Vector2i) -> void:
+func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	zone = map.zone(zone_id)
+	_refresh_plane()
+	var origin := _origin_of(zone_id)
+	walker.plane_origin = origin
 	_max_h = Pick.max_height(zone)
+	var pix := BoardVisualSort.cell_to_local(origin)
 	if ground != null:
 		ground.free()
 	ground = Ground.new()
 	ground.name = "Ground"
 	add_child(ground)
 	move_child(ground, 1)
+	ground.position = pix
+	_dress_ground(ground, zone)
 	ground.setup(zone)
 	_mark_gates()
+	_raise_sort(ground, origin)
 	for child in props_root.get_children():
 		child.free()
+	props_root.position = pix
 	for record in zone.props:
 		var p := Prop.new()
 		props_root.add_child(p)
 		p.setup(zone, record)
+		p.snow_amount = Ground.snow_at(zone.zone_id, p.south_cell)
+	_raise_sort(props_root, origin)
 	for child in decor_root.get_children():
 		child.free()
+	decor_root.position = pix
 	for record in zone.decor:
 		var d := Decor.new()
 		decor_root.add_child(d)
 		d.setup(zone, record)
 	_scatter_v7_light()
+	_raise_sort(decor_root, origin)
 	if fx != null:
 		fx.restock(zone)
-	walker.place(zone, cell)
+		fx._contacts.position = pix
+		fx._critters.position = pix
+		_raise_sort(fx._contacts, origin)
+		_raise_sort(fx._critters, origin)
 	hover_cell = Vector2i(-1, -1)
+	_hover_zone = null
 	_hover.queue_redraw()
-	var rect := Pick.zone_rect(zone).grow(160)
-	camera.limit_left = int(rect.position.x)
-	camera.limit_top = int(rect.position.y)
-	camera.limit_right = int(rect.end.x)
-	camera.limit_bottom = int(rect.end.y)
-	camera.position = walker.position
-	camera.reset_smoothing()
 	_spawn_npcs()
-	_apply_region_look()
+	npcs_root.position = pix
+	_raise_sort(npcs_root, origin)
+	_mount_neighbours(zone_id)
+	if snap:
+		walker.place(zone, cell)
+		_apply_region_look()
+	else:
+		seam_count += 1
+		walker.relocate(zone, cell)
+		_blend_region_look()
+	_apply_camera_limits(snap)
 	_show_banner(Pick.zone_name(zone))
+	_refresh_presence()
 	_refresh_hud()
 	_apply_decor_density()
-	if progress != null and progress.has_method("note_zone"):
-		progress.note_zone(zone.zone_id)
+	if not _booting and progress != null and progress.has_method("note_place"):
+		progress.note_place(zone.zone_id, cell)
 	zone_entered.emit(zone.zone_id, cell)
 
 
@@ -303,6 +373,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	if zone == null or _transitioning:
 		return {"ok": false, "reason": "busy"}
+	_route.clear()
 	_pending_talk = {}
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
@@ -327,6 +398,35 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 		_last_click_ms = now
 	_arm_arrival(target)
 	walker.walk(steps, pace)
+	return result
+
+
+## Walk to a cell that may sit on another streamed chunk. Chunk edges are steps.
+func walk_to_zone(zone_id: String, target: Vector2i, pace: String = "auto") -> Dictionary:
+	if zone == null or _transitioning:
+		return {"ok": false, "reason": "busy"}
+	if zone_id == zone.zone_id:
+		return walk_to(target, pace)
+	_pending_talk = {}
+	_pending_exit = false
+	_pending_gate = {}
+	var from: Vector2i = walker.anchor_cell()
+	var result := WorldWalk.find_path(map, zone.zone_id, from, zone_id, target, null, _extra_blocked())
+	if not bool(result.get("ok", false)):
+		_route.clear()
+		walk_rejected.emit(str(result.get("reason", "no_path")))
+		return result
+	if pace == "auto":
+		var now := Time.get_ticks_msec()
+		if _last_click_ms > 0 and now - _last_click_ms < 280:
+			pace = "run"
+		else:
+			var length := int(result.get("length", 0))
+			pace = "run" if length >= 14 else "walk"
+		_last_click_ms = now
+	_route = (result["path"] as Array).duplicate()
+	_route_pace = pace
+	_kick_route(pace)
 	return result
 
 
@@ -366,6 +466,15 @@ func _extra_blocked() -> Dictionary:
 		return blocked
 	for cell in _npc_by_cell.keys():
 		blocked[WorldWalk.cell_key(zone.zone_id, cell)] = true
+	if neighbours == null or npc_book == null:
+		return blocked
+	for host in neighbours.get_children():
+		var zid := str(host.name)
+		var npcs := host.get_node_or_null("Npcs")
+		if npcs == null:
+			continue
+		for node in npcs.get_children():
+			blocked[WorldWalk.cell_key(zid, node.cell)] = true
 	return blocked
 
 
@@ -576,6 +685,12 @@ func _on_arrived(cell: Vector2i) -> void:
 		if not advanced.is_empty():
 			progress.save()
 			_refresh_marks()
+	if _follow_route(cell):
+		return
+	_finish_arrival(cell)
+
+
+func _finish_arrival(cell: Vector2i) -> void:
 	if not _pending_gate.is_empty():
 		var gate: Dictionary = _pending_gate
 		_pending_gate = {}
@@ -601,31 +716,115 @@ func _on_arrived(cell: Vector2i) -> void:
 	if not bool(check.get("ok", false)):
 		walk_rejected.emit(str(check.get("reason", "bad_exit")))
 		return
+	if _seamless() and map.zone(target) != null and not Regions.is_outer(target):
+		_load_zone(target, to_cell, false)
+		return
 	enter_zone(target, to_cell, true)
 
 
+func _kick_route(pace: String) -> void:
+	_route_pace = pace
+	while not _route.is_empty():
+		var step: Dictionary = _route[0]
+		var step_id := str(step.get("zone_id", ""))
+		var step_cell := Vector2i(int(step.get("x", 0)), int(step.get("y", 0)))
+		if zone != null and step_id == zone.zone_id and step_cell == walker.cell:
+			_route.pop_front()
+		else:
+			break
+	if _route.is_empty() or zone == null:
+		return
+	var nxt: Dictionary = _route[0]
+	if str(nxt.get("zone_id", "")) != zone.zone_id:
+		_follow_route(walker.cell)
+		return
+	var steps: Array[Vector2i] = []
+	var last := 0
+	for i in _route.size():
+		var step: Dictionary = _route[i]
+		if str(step.get("zone_id", "")) != zone.zone_id:
+			break
+		steps.append(Vector2i(int(step.get("x", 0)), int(step.get("y", 0))))
+		last = i
+	var kept: Array = []
+	for i in range(last, _route.size()):
+		kept.append(_route[i])
+	_route = kept
+	if steps.is_empty():
+		return
+	if _route.size() == 1:
+		_arm_arrival(steps[steps.size() - 1])
+	else:
+		_pending_exit = false
+		_pending_gate = {}
+	walker.walk(steps, pace)
+
+
+func _follow_route(cell: Vector2i) -> bool:
+	if _route.is_empty() or zone == null:
+		return false
+	while not _route.is_empty():
+		var step: Dictionary = _route[0]
+		var step_id := str(step.get("zone_id", ""))
+		var step_cell := Vector2i(int(step.get("x", 0)), int(step.get("y", 0)))
+		if step_id == zone.zone_id and step_cell == cell:
+			_route.pop_front()
+		else:
+			break
+	if _route.is_empty():
+		return false
+	var nxt: Dictionary = _route[0]
+	var nxt_id := str(nxt.get("zone_id", ""))
+	var nxt_cell := Vector2i(int(nxt.get("x", 0)), int(nxt.get("y", 0)))
+	if nxt_id != zone.zone_id:
+		if map.zone(nxt_id) == null or (not Regions.enabled() and Regions.is_outer(nxt_id)):
+			_route.clear()
+			walk_rejected.emit("regions_closed" if Regions.is_outer(nxt_id) else "region_closed")
+			return true
+		_load_zone(nxt_id, nxt_cell, false)
+		if _follow_route(walker.cell):
+			return true
+		_finish_arrival(walker.cell)
+		return true
+	_kick_route(_route_pace)
+	return true
+
+
 func cell_at_screen(screen_pos: Vector2) -> Vector2i:
-	if zone == null:
+	var hit := _pick_world(_world_point(screen_pos))
+	if hit.is_empty():
 		return Vector2i(-1, -1)
+	return hit["cell"]
+
+
+func _world_point(screen_pos: Vector2) -> Vector2:
 	var local := get_canvas_transform().affine_inverse() * screen_pos
-	return Pick.pick(zone, to_local(local), _max_h)
+	return to_local(local)
 
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		_set_hover(cell_at_screen(event.position))
+		var motion := _pick_world(_world_point(event.position))
+		if motion.is_empty():
+			_set_hover(null, Vector2i(-1, -1))
+		else:
+			_set_hover(motion["zone"], motion["cell"])
 	elif event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
 				if visuals != null and visuals.visible:
 					return
-				var c := cell_at_screen(event.position)
-				if c.x >= 0:
-					var record := _npc_at(c)
+				var hit := _pick_world(_world_point(event.position))
+				if not hit.is_empty():
+					var hit_zone: WorldZone = hit["zone"]
+					var c: Vector2i = hit["cell"]
+					var record := _npc_record(hit_zone.zone_id, c)
 					if not record.is_empty():
-						_approach_npc(record)
-					else:
+						_approach_npc_in(hit_zone, record)
+					elif hit_zone.zone_id == zone.zone_id:
 						walk_to(c)
+					else:
+						walk_to_zone(hit_zone.zone_id, c)
 			MOUSE_BUTTON_WHEEL_UP:
 				_set_zoom(_zoom * 1.1)
 			MOUSE_BUTTON_WHEEL_DOWN:
@@ -682,26 +881,30 @@ func _set_zoom(z: float) -> void:
 	_zoom_tween.tween_property(camera, "zoom", Vector2.ONE * _zoom, 0.32)
 
 
-func _set_hover(c: Vector2i) -> void:
-	if c == hover_cell:
+func _set_hover(z: WorldZone, c: Vector2i) -> void:
+	if z == _hover_zone and c == hover_cell:
 		return
+	_hover_zone = z
 	hover_cell = c
-	if c.x >= 0:
-		_hover.z_index = (c.x + c.y) * BoardVisualSort.TILE_Z_SCALE + 1
+	if z != null and c.x >= 0:
+		var world := _origin_of(z.zone_id) + c
+		_hover.z_index = (world.x + world.y) * BoardVisualSort.TILE_Z_SCALE + 1
 	_hover.queue_redraw()
 
 
 func _draw_hover() -> void:
-	if zone == null or hover_cell.x < 0 or not zone.in_bounds(hover_cell):
+	var shown: WorldZone = _hover_zone if _hover_zone != null else zone
+	if shown == null or hover_cell.x < 0 or not shown.in_bounds(hover_cell):
 		return
 	var color := Color(0.45, 0.95, 0.5, 0.9)
-	if atlas != null and _open_gate(atlas.gate_at(zone.zone_id, hover_cell)):
+	if atlas != null and _open_gate(atlas.gate_at(shown.zone_id, hover_cell)):
 		color = Color(1.0, 0.84, 0.35, 0.95)
-	elif not zone.exit_link(hover_cell).is_empty():
+	elif not shown.exit_link(hover_cell).is_empty():
 		color = Color(1.0, 0.84, 0.35, 0.95)
-	elif not zone.passable_at(hover_cell):
+	elif not shown.passable_at(hover_cell):
 		color = Color(0.95, 0.35, 0.3, 0.9)
-	var d := Pick.diamond(hover_cell, float(zone.height_at(hover_cell)))
+	var world := _origin_of(shown.zone_id) + hover_cell
+	var d := Pick.diamond(world, float(shown.height_at(hover_cell)))
 	var fill := color
 	fill.a = 0.22
 	_hover.draw_colored_polygon(d, fill)
@@ -716,22 +919,32 @@ func _process(delta: float) -> void:
 			return
 	if walker == null or zone == null:
 		return
-	camera.position = walker.position + walker.visual_offset()
-	var feet: Vector2 = walker.position
+	var aim: Vector2 = walker.position + walker.visual_offset()
+	if walker.is_moving():
+		var step: Vector2 = _facing_step(walker.facing)
+		if step.length() > 1.0:
+			_lead = step.normalized() * LEAD_PX
+	else:
+		_lead = _lead.move_toward(Vector2.ZERO, delta * 60.0)
+	camera.position = aim + _lead
 	var wz: int = walker.z_index
 	var covered := false
-	for p in props_root.get_children():
-		p.update_cover(feet, wz)
-		if p.modulate.a < 0.9:
-			covered = true
-	if decor_root != null:
-		for d in decor_root.get_children():
-			d.update_cover(feet, wz)
-			if d.modulate.a < 0.9:
-				covered = true
+	covered = _cover_children(props_root, walker.position, wz) or covered
+	covered = _cover_children(decor_root, walker.position, wz) or covered
+	if neighbours != null:
+		var feet: Vector2 = walker.position
+		for host in neighbours.get_children():
+			if not _host_near_hero(host, feet):
+				continue
+			var props := host.get_node_or_null("Props")
+			var decor := host.get_node_or_null("Decor")
+			covered = _cover_children(props, feet, wz) or covered
+			covered = _cover_children(decor, feet, wz) or covered
 	walker.set_covered(covered)
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
+	_cull_neighbour_hosts()
+	_sync_snowfall()
 
 
 func _build_hud() -> void:
@@ -786,6 +999,606 @@ func _build_hud() -> void:
 	sheet.add_child(_fade)
 
 
+func _dress_ground(g: Node, z: WorldZone) -> void:
+	_bind_plane_samples(z)
+	g.set("show_walk_exits", not _seamless())
+	g.set("blend_margin", 2 if _seamless() else 0)
+
+
+func _bind_plane_samples(z: WorldZone) -> void:
+	if z == null or not _seamless():
+		if z != null:
+			z.sample_terrain = Callable()
+			z.sample_height = Callable()
+		return
+	var origin := _origin_of(z.zone_id)
+	z.sample_terrain = _sample_terrain.bind(origin)
+	z.sample_height = _sample_height.bind(origin)
+
+
+func _sample_terrain(cell: Vector2i, origin: Vector2i) -> String:
+	var hit := _chunk_at(origin + cell)
+	if hit.is_empty():
+		return ""
+	return (hit["zone"] as WorldZone).terrain_at(hit["cell"])
+
+
+func _sample_height(cell: Vector2i, origin: Vector2i) -> int:
+	var hit := _chunk_at(origin + cell)
+	if hit.is_empty():
+		return 0
+	return (hit["zone"] as WorldZone).height_at(hit["cell"])
+
+
+func _chunk_at(world: Vector2i) -> Dictionary:
+	if map == null:
+		return {}
+	for id in plane_offsets.keys():
+		var z: WorldZone = map.zone(str(id))
+		if z == null:
+			continue
+		var origin: Vector2i = plane_offsets[id]
+		var local := world - origin
+		if z.in_bounds(local):
+			return {"zone": z, "cell": local}
+	return {}
+
+
+func _seamless() -> bool:
+	return map != null and map.region == "crosshaven" and not plane_offsets.is_empty()
+
+
+func _refresh_plane() -> void:
+	plane_offsets = {}
+	if map == null or map.region != "crosshaven":
+		return
+	var lay: Dictionary = WorldPlane.layout(map)
+	var found: Variant = lay.get("offsets", {})
+	if typeof(found) == TYPE_DICTIONARY:
+		plane_offsets = found
+
+
+func _origin_of(zone_id: String) -> Vector2i:
+	if plane_offsets.has(zone_id):
+		return plane_offsets[zone_id]
+	return Vector2i.ZERO
+
+
+func _raise_sort(root: Node, origin: Vector2i) -> void:
+	if root == null:
+		return
+	var add := (origin.x + origin.y) * BoardVisualSort.TILE_Z_SCALE
+	if add == 0:
+		return
+	# The contacts/critter roots live across zone loads. Set their z once
+	# per load instead of adding the bias again on every chunk.
+	if root is Node2D:
+		var top := root as Node2D
+		if not top.z_as_relative and not ("base_z" in top):
+			top.z_index = _clamp_z(add)
+	for child in root.get_children():
+		_raise_one(child, add)
+
+
+func _raise_one(node: Node, add: int) -> void:
+	if node.is_queued_for_deletion():
+		return
+	if node is Node2D:
+		var drawn := node as Node2D
+		if not drawn.z_as_relative:
+			if "base_z" in drawn:
+				drawn.base_z = int(drawn.base_z) + add
+				drawn.z_index = _clamp_z(int(drawn.base_z))
+			else:
+				drawn.z_index = _clamp_z(drawn.z_index + add)
+	for child in node.get_children():
+		if child is Node2D and (child as Node2D).z_as_relative:
+			continue
+		_raise_one(child, add)
+
+
+func _clamp_z(z: int) -> int:
+	return clampi(z, -4096, 4096)
+
+
+func _mount_neighbours(zone_id: String) -> void:
+	if neighbours == null:
+		return
+	for child in neighbours.get_children():
+		child.free()
+	if not _seamless():
+		return
+	var touch: Array = WorldPlane.touching(map, plane_offsets, zone_id)
+	for id in touch:
+		var zid := str(id)
+		if zid == zone_id:
+			continue
+		var other: WorldZone = map.zone(zid)
+		if other == null:
+			continue
+		var origin: Vector2i = _origin_of(zid)
+		var host := Node2D.new()
+		host.name = zid
+		host.position = BoardVisualSort.cell_to_local(origin)
+		neighbours.add_child(host)
+		var g := Ground.new()
+		g.name = "Ground"
+		host.add_child(g)
+		_dress_ground(g, other)
+		g.setup(other)
+		_mark_gates_on(g, other)
+		_raise_sort(g, origin)
+		var props := Node2D.new()
+		props.name = "Props"
+		host.add_child(props)
+		for record in other.props:
+			var p := Prop.new()
+			props.add_child(p)
+			p.setup(other, record)
+			p.snow_amount = Ground.snow_at(other.zone_id, p.south_cell)
+		_raise_sort(props, origin)
+		var decor := Node2D.new()
+		decor.name = "Decor"
+		host.add_child(decor)
+		for record in other.decor:
+			var d := Decor.new()
+			decor.add_child(d)
+			d.setup(other, record)
+		_raise_sort(decor, origin)
+		var npcs := Node2D.new()
+		npcs.name = "Npcs"
+		host.add_child(npcs)
+		if npc_book != null:
+			for record in npc_book.for_zone(zid):
+				var node := WorldNpc.new()
+				npcs.add_child(node)
+				node.setup(other, record, npc_plates)
+			_raise_sort(npcs, origin)
+		var rect := Pick.zone_rect(other)
+		rect.position += host.position
+		host.set_meta("bounds", rect)
+		host.set_meta("origin", origin)
+		host.set_meta("wide", other.width)
+		host.set_meta("tall", other.height)
+		# Neighbours stay in the tree. Sway stays frozen, and a host is drawn
+		# only while its diamond meets the camera, so off-screen roads do not
+		# walk the software renderer.
+		_freeze_visuals(g)
+		_freeze_visuals(props)
+		_freeze_visuals(decor)
+		host.visible = false
+
+
+func _freeze_visuals(node: Node) -> void:
+	node.set_process(false)
+	node.set_physics_process(false)
+	node.set_process_internal(false)
+	if node is AnimatedSprite2D:
+		(node as AnimatedSprite2D).stop()
+	for child in node.get_children():
+		_freeze_visuals(child)
+
+
+func _cull_neighbour_hosts() -> void:
+	if neighbours == null or camera == null or not _seamless():
+		return
+	var view := _camera_world_rect().grow(32.0)
+	for host in neighbours.get_children():
+		if not host.has_meta("origin"):
+			continue
+		var origin: Vector2i = host.get_meta("origin")
+		var wide := int(host.get_meta("wide"))
+		var tall := int(host.get_meta("tall"))
+		var show := _view_hits_chunk(view, origin, wide, tall)
+		var body := host as Node2D
+		if body != null and body.visible != show:
+			body.visible = show
+
+
+func _view_hits_chunk(view: Rect2, origin: Vector2i, wide: int, tall: int) -> bool:
+	var corners: Array[Vector2i] = [
+		origin,
+		origin + Vector2i(wide - 1, 0),
+		origin + Vector2i(0, tall - 1),
+		origin + Vector2i(wide - 1, tall - 1),
+	]
+	for cell in corners:
+		if view.has_point(BoardVisualSort.cell_to_local(cell)):
+			return true
+	for gy in 3:
+		for gx in 4:
+			var p := view.position + Vector2(view.size.x * (float(gx) + 0.5) / 4.0, view.size.y * (float(gy) + 0.5) / 3.0)
+			if _pixel_in_chunk(p, origin, wide, tall):
+				return true
+	return false
+
+
+func _pixel_in_chunk(p: Vector2, origin: Vector2i, wide: int, tall: int) -> bool:
+	var u := (p.x / 32.0 + p.y / 16.0) * 0.5
+	var v := (p.y / 16.0 - p.x / 32.0) * 0.5
+	var cell := Vector2i(int(floor(u)), int(floor(v))) - origin
+	return cell.x >= -1 and cell.y >= -1 and cell.x <= wide and cell.y <= tall
+
+
+func _camera_world_rect() -> Rect2:
+	var center := camera.get_screen_center_position()
+	var zoom := camera.zoom
+	var vp := get_viewport().get_visible_rect().size
+	var size := Vector2(vp.x / maxf(zoom.x, 0.01), vp.y / maxf(zoom.y, 0.01))
+	return Rect2(center - size * 0.5, size)
+
+
+func _host_near_hero(host: Node, feet: Vector2) -> bool:
+	if not host.has_meta("bounds"):
+		return false
+	var bounds: Rect2 = host.get_meta("bounds")
+	return bounds.grow(96.0).has_point(feet)
+
+
+func _mark_gates_on(g: Node, z: WorldZone) -> void:
+	if atlas == null or z == null or g == null:
+		return
+	for gate in atlas.gates_from_zone(z.zone_id):
+		if not _open_gate(gate):
+			continue
+		var frm: Dictionary = gate["from"]
+		var cell := Vector2i(int(frm["x"]), int(frm["y"]))
+		g.call("add_gate_arrow", cell, _edge_dir_of(z, cell))
+
+
+func _edge_dir_of(z: WorldZone, cell: Vector2i) -> Vector2i:
+	if cell.y == 0:
+		return Vector2i(0, -1)
+	if cell.y == z.height - 1:
+		return Vector2i(0, 1)
+	if cell.x == 0:
+		return Vector2i(-1, 0)
+	if cell.x == z.width - 1:
+		return Vector2i(1, 0)
+	return Vector2i.ZERO
+
+
+func _apply_camera_limits(snap: bool) -> void:
+	if camera == null or zone == null:
+		return
+	if _seamless():
+		var bounds := _world_pixel_bounds()
+		var rect := bounds.grow(SEA_MARGIN)
+		camera.limit_left = int(floor(rect.position.x))
+		camera.limit_top = int(floor(rect.position.y))
+		camera.limit_right = int(ceil(rect.end.x))
+		camera.limit_bottom = int(ceil(rect.end.y))
+		_sync_backdrop(rect, bounds)
+	else:
+		var local := Pick.zone_rect(zone).grow(160)
+		camera.limit_left = int(local.position.x)
+		camera.limit_top = int(local.position.y)
+		camera.limit_right = int(local.end.x)
+		camera.limit_bottom = int(local.end.y)
+		if _backdrop != null:
+			_backdrop.visible = false
+	if snap:
+		camera.position = walker.position
+		camera.reset_smoothing()
+		_lead = Vector2.ZERO
+
+
+func _world_pixel_bounds() -> Rect2:
+	var merged := Rect2()
+	var first := true
+	for id in plane_offsets.keys():
+		var z: WorldZone = map.zone(str(id))
+		if z == null:
+			continue
+		var rect := Pick.zone_rect(z)
+		rect.position += BoardVisualSort.cell_to_local(_origin_of(str(id)))
+		if first:
+			merged = rect
+			first = false
+		else:
+			merged = merged.merge(rect)
+	return merged
+
+
+func _sync_backdrop(sea: Rect2, fields: Rect2) -> void:
+	if _backdrop == null:
+		return
+	_backdrop.visible = true
+	_backdrop.set_meta("sea", sea)
+	_backdrop.set_meta("fields", fields.grow(96.0))
+	_backdrop.queue_redraw()
+
+
+func _sync_snowfall() -> void:
+	if _snow == null or zone == null or walker == null or camera == null:
+		return
+	var amount := Ground.snow_at(zone.zone_id, walker.cell)
+	var show := amount > 0.2
+	_snow.visible = show
+	if not show:
+		return
+	_snow.position = camera.position
+	_snow.queue_redraw()
+
+
+func _draw_snowfall() -> void:
+	if _snow == null or zone == null or walker == null:
+		return
+	var amount := Ground.snow_at(zone.zone_id, walker.cell)
+	if amount <= 0.2:
+		return
+	var t := float(Time.get_ticks_msec()) * 0.001
+	for i in 24:
+		var seed := i * 97
+		var x := fmod(float(seed * 13) + t * (18.0 + float(i % 5) * 4.0), 480.0) - 240.0
+		var y := fmod(float(seed * 29) + t * (36.0 + float(i % 7) * 6.0), 320.0) - 160.0
+		var flake := Color(1, 1, 1, 0.42 * amount)
+		_snow.draw_line(Vector2(x, y), Vector2(x - 1.4, y + 7.0), flake, 1.2)
+
+
+func _draw_backdrop() -> void:
+	if _backdrop == null or not _backdrop.has_meta("sea"):
+		return
+	var sea: Rect2 = _backdrop.get_meta("sea")
+	var fields: Rect2 = _backdrop.get_meta("fields")
+	var shallow := fields.grow(120.0)
+	var foam := fields.grow(64.0)
+	var cliff := fields.grow(28.0)
+	# Rings, not stacked full rects. Five full-screen fills blew the frame
+	# budget on the software renderer; inland the camera only touches the field.
+	_draw_ring(sea, shallow, SEA)
+	_draw_ring(shallow, foam, SHALLOW)
+	_draw_ring(foam, cliff, FOAM)
+	_draw_breakers(foam, cliff)
+	_draw_ring(cliff, fields, CLIFF)
+	_backdrop.draw_rect(fields, FIELD, true)
+
+
+func _draw_breakers(outer: Rect2, inner: Rect2) -> void:
+	if _backdrop == null:
+		return
+	var span := 0.0
+	var y := inner.position.y - 6.0
+	var x := inner.position.x
+	while x < inner.end.x:
+		span = 16.0 + float(int(x) % 22)
+		_backdrop.draw_line(Vector2(x, y), Vector2(x + span, y + 1.5), BREAKER, 2.2)
+		x += span + 12.0
+	y = inner.end.y + 6.0
+	x = inner.position.x
+	while x < inner.end.x:
+		span = 16.0 + float(int(x) % 22)
+		_backdrop.draw_line(Vector2(x, y), Vector2(x + span, y - 1.5), BREAKER, 2.2)
+		x += span + 12.0
+	var side_x := inner.position.x - 6.0
+	y = inner.position.y
+	while y < inner.end.y:
+		span = 14.0 + float(int(y) % 18)
+		_backdrop.draw_line(Vector2(side_x, y), Vector2(side_x - 1.5, y + span), BREAKER, 2.2)
+		y += span + 12.0
+	side_x = inner.end.x + 6.0
+	y = inner.position.y
+	while y < inner.end.y:
+		span = 14.0 + float(int(y) % 18)
+		_backdrop.draw_line(Vector2(side_x, y), Vector2(side_x + 1.5, y + span), BREAKER, 2.2)
+		y += span + 12.0
+	# outer is the foam ring; the strokes sit on its inner lip, against the cliff.
+	if outer.size == Vector2.ZERO:
+		return
+
+
+func _draw_ring(outer: Rect2, inner: Rect2, color: Color) -> void:
+	if _backdrop == null:
+		return
+	var top_h := inner.position.y - outer.position.y
+	if top_h > 0.0:
+		_backdrop.draw_rect(Rect2(outer.position, Vector2(outer.size.x, top_h)), color, true)
+	var bot_h := outer.end.y - inner.end.y
+	if bot_h > 0.0:
+		_backdrop.draw_rect(Rect2(outer.position.x, inner.end.y, outer.size.x, bot_h), color, true)
+	var left_w := inner.position.x - outer.position.x
+	var mid_h := inner.size.y
+	if left_w > 0.0 and mid_h > 0.0:
+		_backdrop.draw_rect(Rect2(outer.position.x, inner.position.y, left_w, mid_h), color, true)
+	var right_w := outer.end.x - inner.end.x
+	if right_w > 0.0 and mid_h > 0.0:
+		_backdrop.draw_rect(Rect2(inner.end.x, inner.position.y, right_w, mid_h), color, true)
+
+
+func _refresh_presence() -> void:
+	var band := {}
+	if atlas != null and atlas.levels != null and zone != null:
+		band = atlas.levels.zone_for_chunk(zone.zone_id)
+	if band.is_empty():
+		level_band = ""
+		music_id = zone.zone_id if zone != null else ""
+		danger = false
+		return
+	level_band = "%s %d–%d" % [str(band.get("name", "")), int(band.get("level_min", 1)), int(band.get("level_max", 1))]
+	music_id = str(band.get("id", ""))
+	danger = int(band.get("level_min", 1)) >= DANGER_FROM
+
+
+func _grade_params(grade: Dictionary) -> Dictionary:
+	var warm: Array = grade.get("warm_mul", [1.02, 1.0, 0.96])
+	var haze: Array = grade.get("haze_col", [0.45, 0.52, 0.62])
+	var tint: Array = grade.get("tint_col", [1.0, 1.0, 1.0])
+	return {
+		"grade_mix": 1.0 if not grade.is_empty() else 0.0,
+		"warm_mul": Color(float(warm[0]), float(warm[1]), float(warm[2])),
+		"haze_col": Color(float(haze[0]), float(haze[1]), float(haze[2])),
+		"haze_max": float(grade.get("haze_max", 0.15)),
+		"saturation": float(grade.get("saturation", 1.06)),
+		"tint_col": Color(float(tint[0]), float(tint[1]), float(tint[2])),
+		"tint_amount": float(grade.get("tint_amount", 0.0)),
+	}
+
+
+func _read_grade(mat: ShaderMaterial) -> Dictionary:
+	return {
+		"grade_mix": float(mat.get_shader_parameter("grade_mix")),
+		"warm_mul": mat.get_shader_parameter("warm_mul"),
+		"haze_col": mat.get_shader_parameter("haze_col"),
+		"haze_max": float(mat.get_shader_parameter("haze_max")),
+		"saturation": float(mat.get_shader_parameter("saturation")),
+		"tint_col": mat.get_shader_parameter("tint_col"),
+		"tint_amount": float(mat.get_shader_parameter("tint_amount")),
+	}
+
+
+func _write_grade(mat: ShaderMaterial, params: Dictionary) -> void:
+	mat.set_shader_parameter("grade_mix", float(params["grade_mix"]))
+	mat.set_shader_parameter("warm_mul", params["warm_mul"])
+	mat.set_shader_parameter("haze_col", params["haze_col"])
+	mat.set_shader_parameter("haze_max", float(params["haze_max"]))
+	mat.set_shader_parameter("saturation", float(params["saturation"]))
+	mat.set_shader_parameter("tint_col", params["tint_col"])
+	mat.set_shader_parameter("tint_amount", float(params["tint_amount"]))
+
+
+func _lerp_grade(from: Dictionary, to: Dictionary, u: float) -> Dictionary:
+	var warm_from: Color = from["warm_mul"]
+	var warm_to: Color = to["warm_mul"]
+	var haze_from: Color = from["haze_col"]
+	var haze_to: Color = to["haze_col"]
+	var tint_from: Color = from["tint_col"]
+	var tint_to: Color = to["tint_col"]
+	return {
+		"grade_mix": lerpf(float(from["grade_mix"]), float(to["grade_mix"]), u),
+		"warm_mul": warm_from.lerp(warm_to, u),
+		"haze_col": haze_from.lerp(haze_to, u),
+		"haze_max": lerpf(float(from["haze_max"]), float(to["haze_max"]), u),
+		"saturation": lerpf(float(from["saturation"]), float(to["saturation"]), u),
+		"tint_col": tint_from.lerp(tint_to, u),
+		"tint_amount": lerpf(float(from["tint_amount"]), float(to["tint_amount"]), u),
+	}
+
+
+func _pick_world(world_point: Vector2) -> Dictionary:
+	if zone == null:
+		return {}
+	var best := {}
+	var best_rank := -1
+	var ranked := _rank_pick(zone, world_point)
+	if int(ranked.get("rank", -1)) > best_rank:
+		best_rank = int(ranked["rank"])
+		best = ranked
+	if neighbours != null:
+		for host in neighbours.get_children():
+			var other: WorldZone = map.zone(str(host.name)) if map != null else null
+			if other == null:
+				continue
+			var hit := _rank_pick(other, world_point)
+			if int(hit.get("rank", -1)) > best_rank:
+				best_rank = int(hit["rank"])
+				best = hit
+	if best.is_empty():
+		return {}
+	return {"zone": best["zone"], "cell": best["cell"]}
+
+
+func _rank_pick(z: WorldZone, world_point: Vector2) -> Dictionary:
+	var origin := _origin_of(z.zone_id)
+	var local_pt := world_point - BoardVisualSort.cell_to_local(origin)
+	var cell := Pick.pick(z, local_pt, Pick.max_height(z))
+	if cell.x < 0:
+		return {}
+	var world := origin + cell
+	var rank := (world.x + world.y) * 64 + z.height_at(cell)
+	return {"zone": z, "cell": cell, "rank": rank}
+
+
+func _npc_record(zone_id: String, cell: Vector2i) -> Dictionary:
+	if zone != null and zone_id == zone.zone_id:
+		return _npc_at(cell)
+	if npc_book == null:
+		return {}
+	for record in npc_book.for_zone(zone_id):
+		var at: Dictionary = record.get("cell", {})
+		if Vector2i(int(at.get("x", -1)), int(at.get("y", -1))) == cell:
+			return record
+	return {}
+
+
+func _approach_npc_in(hit_zone: WorldZone, record: Dictionary) -> void:
+	if record.is_empty() or hit_zone == null:
+		return
+	if hit_zone.zone_id == zone.zone_id:
+		_approach_npc(record)
+		return
+	var at: Dictionary = record["cell"]
+	var npc_cell := Vector2i(int(at["x"]), int(at["y"]))
+	var stand := _stand_on(hit_zone, npc_cell)
+	if stand.x < 0:
+		walk_rejected.emit("no_path")
+		return
+	var result := walk_to_zone(hit_zone.zone_id, stand)
+	if not bool(result.get("ok", false)):
+		return
+	_pending_talk = {"id": str(record["id"]), "stand": stand, "npc": npc_cell}
+
+
+func _stand_on(z: WorldZone, npc_cell: Vector2i) -> Vector2i:
+	for dir in WorldWalk.ORTHO:
+		var next: Vector2i = npc_cell + dir
+		if not z.passable_at(next) or not z.exit_link(next).is_empty():
+			continue
+		if npc_book != null:
+			var busy := false
+			for record in npc_book.for_zone(z.zone_id):
+				var at: Dictionary = record.get("cell", {})
+				if Vector2i(int(at.get("x", -1)), int(at.get("y", -1))) == next:
+					busy = true
+			if busy:
+				continue
+		return next
+	return Vector2i(-1, -1)
+
+
+func _cover_children(root: Node, feet: Vector2, wz: int) -> bool:
+	if root == null:
+		return false
+	var parent := root as Node2D
+	var local_feet := feet
+	if parent != null:
+		local_feet = parent.to_local(to_global(feet))
+	var covered := false
+	for node in root.get_children():
+		node.update_cover(local_feet, wz)
+		if node.modulate.a < 0.9:
+			covered = true
+	return covered
+
+
+func _facing_step(dir: String) -> Vector2:
+	match dir:
+		"e":
+			return Vector2(32, 16)
+		"w":
+			return Vector2(-32, -16)
+		"s":
+			return Vector2(-32, 16)
+		_:
+			return Vector2(32, -16)
+
+
+func remember_place() -> void:
+	if progress == null or zone == null or walker == null:
+		return
+	progress.note_place(zone.zone_id, walker.cell)
+
+
+func restore_place() -> bool:
+	if progress == null or progress.world_zone == "":
+		return false
+	var id: String = str(progress.world_zone)
+	var cell: Vector2i = progress.world_cell
+	if map != null and map.zone(id) == null:
+		return false
+	enter_zone(id, cell, false)
+	return zone != null and zone.zone_id == id and walker.cell == cell
+
+
 func _unbuilt_label(zone_id: String) -> String:
 	var levels = null
 	if atlas != null:
@@ -808,7 +1621,15 @@ func _region_stand_in(region: String) -> Dictionary:
 	return parsed
 
 
+func _blend_region_look() -> void:
+	_push_region_look(false)
+
+
 func _apply_region_look() -> void:
+	_push_region_look(true)
+
+
+func _push_region_look(snap: bool) -> void:
 	var look := _region_stand_in(zone.region)
 	var pool: Array = ["clear"]
 	if look.has("weather") and typeof(look["weather"]) == TYPE_ARRAY:
@@ -816,23 +1637,26 @@ func _apply_region_look() -> void:
 	elif zone.presentation.has("default_weather"):
 		pool = zone.presentation["default_weather"]
 	weather.set_zone_pool(pool)
-	weather.settle()
+	if snap:
+		weather.settle()
 	if fx == null:
 		return
 	var mat: Variant = fx.get("_grade_mat")
 	if mat == null:
 		return
 	var grade: Dictionary = look.get("grade", {})
-	var warm: Array = grade.get("warm_mul", [1.02, 1.0, 0.96])
-	var haze: Array = grade.get("haze_col", [0.45, 0.52, 0.62])
-	mat.set_shader_parameter("grade_mix", 1.0 if not grade.is_empty() else 0.0)
-	mat.set_shader_parameter("warm_mul", Color(float(warm[0]), float(warm[1]), float(warm[2])))
-	mat.set_shader_parameter("haze_col", Color(float(haze[0]), float(haze[1]), float(haze[2])))
-	mat.set_shader_parameter("haze_max", float(grade.get("haze_max", 0.15)))
-	mat.set_shader_parameter("saturation", float(grade.get("saturation", 1.06)))
-	var tint: Array = grade.get("tint_col", [1.0, 1.0, 1.0])
-	mat.set_shader_parameter("tint_col", Color(float(tint[0]), float(tint[1]), float(tint[2])))
-	mat.set_shader_parameter("tint_amount", float(grade.get("tint_amount", 0.0)))
+	var shader := mat as ShaderMaterial
+	if shader == null:
+		return
+	var target := _grade_params(grade)
+	if snap:
+		_write_grade(shader, target)
+		return
+	var from := _read_grade(shader)
+	if _presence_tween != null and is_instance_valid(_presence_tween):
+		_presence_tween.kill()
+	_presence_tween = create_tween()
+	_presence_tween.tween_method(func(u: float): _write_grade(shader, _lerp_grade(from, target, u)), 0.0, 1.0, PRESENCE_SECONDS)
 
 
 func _show_banner(text: String) -> void:
@@ -848,9 +1672,12 @@ func _refresh_hud() -> void:
 		return
 	var c: Vector2i = walker.cell
 	var speed := "  (time x30)" if weather.time_scale > 1.0 else ""
-	_hud_label.text = "%s\nCell %d, %d   height %d\nWeather: %s   %s%s\nClick to walk · double-click to run · Esc visuals" % [
+	var danger_word := "danger" if danger else "safe"
+	_hud_label.text = "%s\nCell %d, %d   height %d\n%s   %s\nWeather: %s   %s%s\nMusic: %s\nClick to walk · double-click to run · Esc visuals" % [
 		Pick.zone_name(zone), c.x, c.y, zone.height_at(c),
+		level_band, danger_word,
 		str(weather.weather).replace("_", " "), weather.clock_text(), speed,
+		music_id,
 	]
 
 
@@ -874,6 +1701,17 @@ func _redraw_ground_and_props() -> void:
 		return
 	for p in props_root.get_children():
 		p.queue_redraw()
+	if neighbours == null:
+		return
+	for host in neighbours.get_children():
+		var ground_node := host.get_node_or_null("Ground")
+		if ground_node != null and ground_node.has_method("redraw_all"):
+			ground_node.redraw_all()
+		var props := host.get_node_or_null("Props")
+		if props == null:
+			continue
+		for p in props.get_children():
+			p.queue_redraw()
 
 
 ## Full shows every sprite. Reduced keeps the roadside and building ring and
@@ -886,6 +1724,15 @@ func _apply_decor_density() -> void:
 	var rich := settings.preset != "Reduced"
 	for d in decor_root.get_children():
 		d.visible = rich or bool(d.get("core"))
+	if neighbours == null:
+		return
+	for host in neighbours.get_children():
+		var decor := host.get_node_or_null("Decor")
+		if decor == null:
+			continue
+		decor.visible = show_root
+		for d in decor.get_children():
+			d.visible = rich or bool(d.get("core"))
 
 
 func _apply_world_window() -> void:
@@ -1012,6 +1859,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp14()
 		"regions_off":
 			await _movie_regions_off()
+		"wp12":
+			await _movie_wp12()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -1369,6 +2218,116 @@ func _movie_regions_off() -> void:
 	await _run_link("crosshaven_road_west")
 	await _run_link("crosshaven_crossroads")
 	await get_tree().create_timer(0.4).timeout
+
+
+## Uncut Crossroads → Northgate → Stoneford. The edge still is the same
+## camera with the neighbour hidden, then shown. Black fades stay off.
+## The debug readout stays hidden. Coast and interior plate stills are saved
+## before the walk when this is not the movie writer.
+func _movie_wp12() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp12")
+	DirAccess.make_dir_recursive_absolute(folder)
+	if not OS.has_feature("movie"):
+		await enter_zone("crosshaven_crossroads", Vector2i(20, 2), false)
+		walker.facing = "n"
+		walker._show_idle()
+		camera.position = walker.position
+		camera.reset_smoothing()
+		neighbours.visible = false
+		_backdrop.visible = false
+		if _sea != null:
+			_sea.color = Color("101820")
+			_sea.visible = true
+		await get_tree().create_timer(0.4).timeout
+		await _grab(folder.path_join("edge_before.png"))
+		neighbours.visible = true
+		_backdrop.visible = true
+		if _sea != null:
+			_sea.color = SEA
+			_sea.visible = false
+		_sync_backdrop(Rect2(camera.limit_left, camera.limit_top, camera.limit_right - camera.limit_left, camera.limit_bottom - camera.limit_top), _world_pixel_bounds())
+		await get_tree().create_timer(0.4).timeout
+		await _grab(folder.path_join("edge_after.png"))
+		await _grab_plate_stills(folder)
+		return
+	walker.playback = 2.0
+	await _travel("crosshaven_northgate", Vector2i(20, 12))
+	await get_tree().create_timer(0.6).timeout
+	await _travel("crosshaven_stoneford", Vector2i(16, 16))
+	await get_tree().create_timer(0.8).timeout
+
+
+func _hide_debug_readout() -> void:
+	if _hud_label != null:
+		_hud_label.visible = false
+
+
+## North coast (sea, breakers, cliffs) and an interior gap with no chunk yet.
+func _grab_plate_stills(folder: String) -> void:
+	_hide_debug_readout()
+	await _frame_world_cell(_field_gap_cell(), Vector2.ZERO)
+	await _grab(folder.path_join("plate_fields.png"))
+	await enter_zone("crosshaven_northgate", Vector2i(20, 4), false)
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	await _frame_world_cell(_coast_cell(), Vector2(0, -220))
+	await _grab(folder.path_join("coast.png"))
+	await enter_zone("crosshaven_northgate", Vector2i(20, 12), false)
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	walker.facing = "s"
+	walker._show_idle()
+	camera.position = walker.position
+	camera.reset_smoothing()
+	_sync_snowfall()
+	await get_tree().create_timer(0.45).timeout
+	await _grab(folder.path_join("northgate_snow.png"))
+
+
+func _frame_world_cell(world_cell: Vector2i, nudge: Vector2) -> void:
+	camera.position = BoardVisualSort.cell_to_local(world_cell) + nudge
+	camera.reset_smoothing()
+	_cull_neighbour_hosts()
+	await get_tree().create_timer(0.35).timeout
+
+
+func _coast_cell() -> Vector2i:
+	var origin := _origin_of("crosshaven_northgate")
+	return origin + Vector2i(20, -6)
+
+
+func _field_gap_cell() -> Vector2i:
+	var origin := _origin_of("crosshaven_crossroads")
+	return origin + Vector2i(-4, -8)
+
+
+func _travel(zone_id: String, cell: Vector2i) -> void:
+	walk_to_zone(zone_id, cell, "run")
+	var guard := 0
+	while (walker.is_moving() or not _route.is_empty() or _transitioning) and guard < 12000:
+		await get_tree().process_frame
+		guard += 1
+
+
+func _grab(path: String) -> void:
+	await get_tree().process_frame
+	var image := get_viewport().get_texture().get_image()
+	if image == null:
+		return
+	image.save_png(path)
 
 
 func _save_still(zone_id: String, cell: Vector2i, path: String) -> void:

@@ -24,6 +24,8 @@ const RELEASE_SEC := 0.18
 
 var zone: WorldZone
 var cell := Vector2i.ZERO
+## World cell of local (0, 0). Positions are on the shared plane.
+var plane_origin := Vector2i.ZERO
 var facing := "s"
 var pace := "walk"
 var auto_advance := true
@@ -118,6 +120,19 @@ func face(dir: String) -> void:
 	if next != "n" and next != "e" and next != "s" and next != "w":
 		return
 	facing = next
+	if not _moving:
+		_show_idle()
+
+
+## Move to a cell on the current plane without resetting the walk facing.
+func relocate(target_zone: WorldZone, at: Vector2i) -> void:
+	var keep := facing
+	zone = target_zone
+	cell = at
+	position = _cell_pos(at)
+	_visual = position
+	z_index = _z_for(at)
+	facing = keep
 	if not _moving:
 		_show_idle()
 
@@ -635,13 +650,15 @@ func _update_z() -> void:
 
 
 func _z_for(c: Vector2i) -> int:
-	return (c.x + c.y) * BoardVisualSort.TILE_Z_SCALE + BoardVisualSort.UNIT_Z_BIAS
+	var w := plane_origin + c
+	return (w.x + w.y) * BoardVisualSort.TILE_Z_SCALE + BoardVisualSort.UNIT_Z_BIAS
 
 
 func _cell_pos(c: Vector2i) -> Vector2:
-	if zone == null:
-		return BoardVisualSort.cell_to_local(c)
-	return BoardVisualSort.cell_to_local(c, float(zone.height_at(c)))
+	var h := 0.0
+	if zone != null and zone.in_bounds(c):
+		h = float(zone.height_at(c))
+	return BoardVisualSort.cell_to_local(plane_origin + c, h)
 
 
 ## Sole, in world pixels from the node, measured on each strip. Contact bits are
