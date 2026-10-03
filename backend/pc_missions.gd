@@ -292,10 +292,13 @@ func turn_in(mission_id: String, hero) -> Dictionary:
 	var rewards: Dictionary = row["rewards"]
 	var xp := int(rewards["xp"])
 	var coins := int(rewards["coins"])
+	var items: Array = []
+	var raw_items: Variant = rewards.get("items", [])
+	if typeof(raw_items) == TYPE_ARRAY:
+		items = (raw_items as Array).duplicate(true)
 	var state := _story_state(hero, mission_id)
 	state["status"] = "done"
 	_put_story(hero, mission_id, state)
-	hero.coins = int(hero.coins) + coins
 	var events: Array = hero.add_xp(xp)
 	return {
 		"ok": true,
@@ -304,6 +307,7 @@ func turn_in(mission_id: String, hero) -> Dictionary:
 		"name": str(row["name"]),
 		"xp": xp,
 		"coins": coins,
+		"items": items,
 		"events": events,
 	}
 
@@ -458,7 +462,6 @@ func _turn_in_task(mission_id: String, hero) -> Dictionary:
 		task["status"] = "done"
 		tasks[str(npc_id)] = task
 		_put_tasks(hero, tasks)
-		hero.coins = int(hero.coins) + coins
 		var events: Array = hero.add_xp(xp)
 		return {
 			"ok": true,
@@ -467,6 +470,7 @@ func _turn_in_task(mission_id: String, hero) -> Dictionary:
 			"name": str(task.get("name", "Task")),
 			"xp": xp,
 			"coins": coins,
+			"items": [],
 			"events": events,
 		}
 	return _empty_turn("missing")
@@ -1038,7 +1042,7 @@ func _no(reason: String) -> Dictionary:
 
 
 func _empty_turn(reason: String) -> Dictionary:
-	return {"ok": false, "reason": reason, "xp": 0, "coins": 0, "events": []}
+	return {"ok": false, "reason": reason, "xp": 0, "coins": 0, "items": [], "events": []}
 
 
 func _read(missions_doc: Dictionary, templates_doc: Dictionary, levels, npcs, curve: Dictionary, errors: Array) -> void:

@@ -47,6 +47,7 @@ func _run() -> void:
 	_test_rejects()
 	_test_source()
 	await _test_world(book)
+	_test_full_bag_turn_in()
 	_finish()
 
 
@@ -135,7 +136,9 @@ func _test_heart_chain(book) -> void:
 	eq((turned["events"] as Array).size(), 1, "turn-in emits one level-up")
 	eq(int(turned["events"][0]["level"]), 2, "the level-up event is level 2")
 	eq(hero.level, 2, "the hero is level 2")
-	eq(int(hero.coins), coins_before + 20, "turn-in pays the coin band once")
+	eq(int(turned["coins"]), 20, "turn-in reports the coin band")
+	hero.grant({"coins": int(turned["coins"]), "items": turned.get("items", [])})
+	eq(int(hero.coins), coins_before + 20, "grant pays the coin band once")
 	var xp_after := int(hero.xp)
 	var again: Dictionary = book.turn_in("heart_welcome", hero)
 	eq(bool(again["ok"]), false, "turning in twice does not pay again")
@@ -656,6 +659,11 @@ func _test_world(book) -> void:
 	w.dialogue.press_turn_in()
 	eq(w.progress.level, 2, "the world turn-in levels up")
 	eq(str(w.tracker._reward.text).find("Level 2") >= 0, true, "the reward line shows the level")
+	eq(w.reward_popup.is_open(), true, "turn-in opens the reward popup")
+	eq(str(w.reward_popup._body.text).find("XP +15") >= 0, true, "the popup shows the XP")
+	eq(str(w.reward_popup._body.text).find("Crypto Coins +20") >= 0, true, "the popup shows the coins")
+	eq(w.progress.coins, 20, "the world turn-in pays the wallet")
+	eq(book.status_of("heart_welcome", w.progress), "done", "the welcome is done")
 	var key := InputEventKey.new()
 	key.pressed = true
 	key.keycode = KEY_J
@@ -668,6 +676,47 @@ func _test_world(book) -> void:
 	w.dialogue.close()
 	w._unhandled_input(esc)
 	eq(w.mission_log.is_open(), false, "Esc closes the log")
+	w.queue_free()
+
+
+func _test_full_bag_turn_in() -> void:
+	_wipe_save()
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var hero = w.progress
+	var missions = w.missions
+	eq(missions != null and hero != null, true, "the full-bag world boots")
+	if missions == null or hero == null:
+		w.queue_free()
+		return
+	missions.accept("heart_welcome", hero)
+	missions.on_talk("crossroads_trader", hero)
+	missions.on_talk("granary_door_keeper", hero)
+	eq(missions.status_of("heart_welcome", hero), "ready", "the welcome is ready with a full bag coming")
+	while hero.bag.size() < hero.bag_slots:
+		hero.grant({"coins": 0, "items": [{"item_id": "plain_band", "rarity": "regular", "count": 1}]})
+	eq(hero.bag.size(), hero.bag_slots, "the bag is full before turn-in")
+	var rewards: Dictionary = missions._by_id["heart_welcome"]["rewards"]
+	rewards["items"] = [{"item_id": "sackcloth", "rarity": "regular", "count": 1}]
+	var coins_before := int(hero.coins)
+	var bag_before := int(hero.bag.size())
+	w._approach_npc(w.npc_book.by_id("crossroads_warden"))
+	_drive(w)
+	w.dialogue.press_turn_in()
+	eq(missions.status_of("heart_welcome", hero), "done", "a full bag still completes the turn-in")
+	eq(int(hero.coins), coins_before + 20, "the coins still land when the bag is full")
+	eq(hero.bag.size(), bag_before, "the full bag does not grow")
+	var banked := false
+	for entry in hero.bank:
+		if str(entry.get("item_id", "")) == "sackcloth":
+			banked = true
+	eq(banked, true, "the part overflows to the bank")
+	eq(hero.bag.size() + hero.bank.size(), bag_before + 1, "the part is not lost")
+	eq(w.reward_popup.is_open(), true, "the full bag still opens the popup")
+	eq(str(w.reward_popup._body.text).find("Sackcloth") >= 0, true, "the popup names the overflow part")
 	w.queue_free()
 
 

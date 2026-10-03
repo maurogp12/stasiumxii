@@ -48,6 +48,9 @@ func ensure_built() -> void:
 func show_drop(drop: Dictionary, hero = null) -> void:
 	ensure_built()
 	var lines: PackedStringArray = ["[b]Victory[/b]", ""]
+	var xp := int(drop.get("xp", 0))
+	if xp > 0:
+		lines.append("XP +%s" % str(xp))
 	lines.append("Crypto Coins +%s" % str(int(drop.get("coins", 0))))
 	var items: Variant = drop.get("items", [])
 	if typeof(items) == TYPE_ARRAY:

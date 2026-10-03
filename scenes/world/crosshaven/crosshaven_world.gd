@@ -479,7 +479,15 @@ func _on_mission_turn_in(mission_id: String) -> void:
 	var result: Dictionary = missions.turn_in(mission_id, progress)
 	if not bool(result.get("ok", false)):
 		return
-	progress.save()
+	var items: Array = []
+	var raw_items: Variant = result.get("items", [])
+	if typeof(raw_items) == TYPE_ARRAY:
+		items = (raw_items as Array).duplicate()
+	grant_turn_in({
+		"xp": int(result.get("xp", 0)),
+		"coins": int(result.get("coins", 0)),
+		"items": items,
+	})
 	_refresh_marks()
 	if tracker != null:
 		tracker.show_reward(result, _movie != "")
