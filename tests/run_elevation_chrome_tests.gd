@@ -43,6 +43,7 @@ func _run() -> void:
 	_test_board_view_wires_adapter()
 	_test_highlights_are_overlays_and_labels_are_debug()
 	_test_grid_reveal()
+	_test_l3b_grid_pulse_glyphs()
 
 
 func _test_adapter_defaults_flat_ground() -> void:
@@ -348,11 +349,119 @@ func _test_grid_reveal() -> void:
 	truthy(tile_src.contains("set_soft_hover"), "the cell under the pointer can take a soft outline")
 	truthy(tile_src.contains("func _paint_glyph"), "zones and deploy cells draw a glyph")
 	truthy(view.contains("_set_hover_cell"), "the board tracks the cell under the pointer")
-	eq(view.contains("KEY_ALT"), false, "the full-grid key is not invented here")
+	eq(view.contains("KEY_ALT"), false, "the board does not hardcode Alt; the hold is an input action")
 	var tile := TILE_SCRIPT.new() as BoardTile
 	tile.highlight = "move"
 	eq(tile.overlay_color(), Color(0.45, 0.78, 0.92, BoardTile.HIGHLIGHT_FILL_ALPHA), "overlay_color stays the flat cyan")
 	tile.free()
+
+
+func _test_l3b_grid_pulse_glyphs() -> void:
+	var view_src := FileAccess.get_file_as_string("res://board_view.gd")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	var glyph_src := FileAccess.get_file_as_string("res://board/pc/glyph_decals.gd")
+	var proj := FileAccess.get_file_as_string("res://project.godot")
+	eq(proj.count("board_show_grid"), 1, "the full grid is one input action")
+	truthy(InputMap.has_action("board_show_grid"), "the action is loaded")
+	var bindings := InputMap.action_get_events("board_show_grid")
+	eq(bindings.size(), 1, "Alt is the one proposed binding, and it can be remapped")
+	eq((bindings[0] as InputEventKey).keycode, KEY_ALT, "the proposed default is Alt")
+	eq(view_src.contains("KEY_ALT"), false, "board_view does not name the Alt key")
+	truthy(view_src.contains("GRID_ACTION"), "the board reads that one action")
+	truthy(view_src.contains("is_action_pressed(GRID_ACTION)"), "a press shows the grid")
+	truthy(view_src.contains("is_action_released(GRID_ACTION)"), "a release clears the grid")
+	truthy(tile_src.contains("GRID_LINE_ALPHA"), "the grid line has its own alpha")
+	eq(BoardTile.GRID_LINE_WIDTH <= 1.25, true, "the grid line is thin")
+	eq(BoardTile.GRID_LINE_ALPHA < 0.30 and BoardTile.GRID_LINE_ALPHA > 0.05, true, "the grid line is low alpha")
+	var view: Node2D = load("res://board_view.gd").new()
+	var first := TILE_SCRIPT.new() as BoardTile
+	var second := TILE_SCRIPT.new() as BoardTile
+	view.tiles[Vector2i(0, 0)] = first
+	view.tiles[Vector2i(1, 0)] = second
+	var down := InputEventAction.new()
+	down.action = "board_show_grid"
+	down.pressed = true
+	eq(view._grid_hold_state(down), 1, "holding the action asks for the grid")
+	view.apply_full_grid(true)
+	eq(first.shows_grid_line(), true, "every cell draws a line while the action is held")
+	eq(second.shows_grid_line(), true, "the hold covers the whole board")
+	var up := InputEventAction.new()
+	up.action = "board_show_grid"
+	up.pressed = false
+	eq(view._grid_hold_state(up), 0, "releasing the action clears the grid")
+	view.apply_full_grid(false)
+	eq(first.shows_grid_line(), false, "the lines are gone on release")
+	eq(second.shows_grid_line(), false, "release clears every cell")
+	var other := InputEventAction.new()
+	other.action = "ui_cancel"
+	other.pressed = true
+	eq(view._grid_hold_state(other), -1, "other actions do not toggle the grid")
+	view.free()
+	first.free()
+	second.free()
+
+	eq(BoardTile.MOVE_PULSE_HZ, 0.5, "the move tile breathes at about 0.5 Hz")
+	eq(is_equal_approx(BoardTile.MOVE_PULSE_AMP, 0.08), true, "the breathe is about ±8%")
+	BoardTile.set_move_pulse_frozen(false)
+	BoardTile.set_move_pulse_time(0.0)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), 1.0), true, "the pulse starts at the authored brightness")
+	BoardTile.advance_move_pulse(0.5)
+	var peak := BoardTile.move_pulse_scale()
+	eq(is_equal_approx(peak, 1.08), true, "half a beat later the tile is about 8% brighter")
+	var left := TILE_SCRIPT.new() as BoardTile
+	var right := TILE_SCRIPT.new() as BoardTile
+	eq(is_equal_approx(left.move_pulse_scale(), right.move_pulse_scale()), true, "every move tile shares one phase")
+	eq(is_equal_approx(left.move_pulse_scale(), peak), true, "the shared phase is the board clock")
+	BoardTile.set_move_pulse_frozen(true)
+	BoardTile.advance_move_pulse(1.0)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), peak), true, "the pulse stays put during a walk")
+	eq(BoardTile.move_pulse_frozen(), true, "a walk freezes the clock")
+	BoardTile.set_move_pulse_frozen(false)
+	BoardTile.set_move_pulse_time(1.5)
+	eq(is_equal_approx(BoardTile.move_pulse_scale(), 0.92), true, "the other half of the beat is about 8% dimmer")
+	BoardTile.set_move_pulse_time(0.0)
+	left.free()
+	right.free()
+	truthy(view_src.contains("set_move_pulse_frozen(_hop_seat >= 0)"), "the board freezes the pulse for the walk")
+
+	eq(tile_src.contains("draw_arc"), false, "the occupied ring is not a line arc")
+	eq(tile_src.contains("Vector2(-7, 0)"), false, "the zone mark is not a line cross")
+	for id in ["zone", "deploy", "occupied"]:
+		var master := load("res://art/pc/look/glyphs/glyph_%s@2x.png" % id) as Texture2D
+		var one := load("res://art/pc/look/glyphs/glyph_%s.png" % id) as Texture2D
+		truthy(master != null, "%s has a 2x master" % id)
+		truthy(one != null, "%s has a 1x paint" % id)
+		if master != null:
+			eq(master.get_width(), 64, "%s master is 64 wide" % id)
+			eq(master.get_height(), 40, "%s master is 40 tall" % id)
+		if one != null:
+			eq(one.get_width(), 32, "%s 1x is 32 wide" % id)
+			eq(one.get_height(), 20, "%s 1x is 20 tall" % id)
+	truthy(glyph_src.contains("return [\"zone\", \"deploy\"]"), "a zone cell draws the zone mark and the deploy cell")
+	truthy(glyph_src.contains("return [\"occupied\"]"), "an occupied cell draws the ring")
+	var zone := (load("res://art/pc/look/glyphs/glyph_zone@2x.png") as Texture2D).get_image()
+	var zone_px := zone.get_pixel(32, 20)
+	truthy(zone_px.a > 0.4, "the zone mark is painted, not empty")
+	truthy(zone_px.b > zone_px.g and zone_px.r > zone_px.g, "the zone mark is purple")
+	truthy(zone_px.a < 0.85, "the zone mark stays translucent")
+	var ring := (load("res://art/pc/look/glyphs/glyph_occupied@2x.png") as Texture2D).get_image()
+	eq(ring.get_pixel(32, 20).a < 0.08, true, "the occupied ring has a hole")
+	var ring_px := ring.get_pixel(32, 12)
+	truthy(ring_px.a > 0.3 and ring_px.b > ring_px.g, "the occupied ring is purple")
+
+	var flat := VISUAL_SORT.cell_to_local(Vector2i(7, 6), 0.0)
+	var raised := VISUAL_SORT.cell_to_local(Vector2i(7, 6), 2.0)
+	eq(is_equal_approx(raised.y, flat.y - 20.0), true, "two height steps lift the cell by 20 px")
+	var high := TILE_SCRIPT.new() as BoardTile
+	get_root().add_child(high)
+	high.position = raised
+	high.apply_board_data("ground", 2)
+	high.set_highlight("move")
+	var overlay := high.get_node("Highlight") as Node2D
+	eq(overlay.global_position, high.global_position, "the move tile is drawn on the raised diamond")
+	eq(is_equal_approx(overlay.global_position.y, raised.y), true, "the move tile follows the terrain height")
+	eq(is_equal_approx(overlay.global_position.y, flat.y), false, "the move tile does not stay on the flat cell")
+	high.free()
 
 
 func _test_no_height_hit_facing_los() -> void:
