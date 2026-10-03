@@ -1,0 +1,4170 @@
+{
+  "format": "stasium.world_rewards",
+  "format_version": 1,
+  "status": "proposed",
+  "notes": [
+    "A dungeon win's guaranteed part is an even split between that dungeon's own set and a class set of its tier. Section 4.9 names both and does not weight them.",
+    "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
+    "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
+    "Millrace, Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources.",
+    "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
+    "A Rare part is 1.5 times the budget, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
+    "Shared and dungeon parts split that budget across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
+    "Five-part texts are stored and not applied. The full Rare tier-30 class set's AP or MP choice is applied, because that choice is already approved.",
+    "Mystery Box weight is 1, the consumable weight. Decoration weight uses the stated floor of 20.",
+    "The first AP or MP choice on a full Rare tier-30 class set is free. Switching the choice costs Crypto Coins, and that price is Open."
+  ],
+  "coins": {
+    "world_base": 3,
+    "world_per_level": 1.5,
+    "dungeon_times_world": 8,
+    "mission_tiers": [
+      {
+        "level_min": 1,
+        "level_max": 10,
+        "min": 20,
+        "max": 40
+      },
+      {
+        "level_min": 11,
+        "level_max": 20,
+        "min": 60,
+        "max": 100
+      },
+      {
+        "level_min": 21,
+        "level_max": 30,
+        "min": 150,
+        "max": 250
+      },
+      {
+        "level_min": 31,
+        "level_max": 40,
+        "min": 300,
+        "max": 500
+      },
+      {
+        "level_min": 41,
+        "level_max": 50,
+        "min": 600,
+        "max": 1000
+      }
+    ],
+    "box_times_mission": 5
+  },
+  "carry": {
+    "bag_slots": 60,
+    "bank_slots": 20,
+    "weight_base": 1000,
+    "weight_per_level": 5
+  },
+  "weights": {
+    "recipe": 0,
+    "material": 1,
+    "consumable": 1,
+    "equipment": 10,
+    "epic": 15,
+    "relic": 15,
+    "decoration": 20,
+    "special": 1
+  },
+  "class_bias": 0.6,
+  "world_part_chance": 0.03,
+  "classes": [
+    "Kestrel",
+    "Ironjaw",
+    "Mender",
+    "Gloam",
+    "Bastion"
+  ],
+  "set_slots": [
+    "head",
+    "cape",
+    "belt",
+    "boots",
+    "amulet"
+  ],
+  "equip_slots": [
+    "head",
+    "amulet",
+    "ring",
+    "ring_b",
+    "cape",
+    "belt",
+    "boots",
+    "weapon"
+  ],
+  "rare_full": {
+    "tier": 30,
+    "ap": 1,
+    "mp": 1
+  },
+  "rarity_colors": {
+    "regular": "white",
+    "rare": "blue",
+    "epic": "purple",
+    "relic": "gold"
+  },
+  "mission_ranks": [
+    {
+      "rank": 1,
+      "finished_min": 0,
+      "finished_max": 9,
+      "regular": 0.2,
+      "rare": 0,
+      "box": 0
+    },
+    {
+      "rank": 2,
+      "finished_min": 10,
+      "finished_max": 24,
+      "regular": 0.35,
+      "rare": 0,
+      "box": 0.03
+    },
+    {
+      "rank": 3,
+      "finished_min": 25,
+      "finished_max": 49,
+      "regular": 0.4,
+      "rare": 0.05,
+      "box": 0.08
+    },
+    {
+      "rank": 4,
+      "finished_min": 50,
+      "finished_max": 99,
+      "regular": 0.4,
+      "rare": 0.1,
+      "box": 0.12
+    },
+    {
+      "rank": 5,
+      "finished_min": 100,
+      "finished_max": -1,
+      "regular": 0.35,
+      "rare": 0.15,
+      "box": 0.2
+    }
+  ],
+  "box": [
+    {
+      "kind": "coins",
+      "chance": 0.5
+    },
+    {
+      "kind": "part",
+      "rarity": "regular",
+      "chance": 0.35
+    },
+    {
+      "kind": "part",
+      "rarity": "rare",
+      "chance": 0.15
+    }
+  ],
+  "dungeon_rare_by_stars": {
+    "1": 0,
+    "2": 0.05,
+    "3": 0.1,
+    "4": 0.2,
+    "5": 0.35
+  },
+  "dungeon_box_by_stars": {
+    "1": 0,
+    "2": 0,
+    "3": 0,
+    "4": 0.1,
+    "5": 0.1
+  },
+  "guaranteed_split": {
+    "dungeon_set": 0.5,
+    "class_set": 0.5
+  },
+  "sets": [
+    {
+      "id": "kestrel_fledgling",
+      "name": "Fledgling",
+      "tier": 1,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Mastery": 3,
+          "Swift": 2
+        },
+        "rare": {
+          "Mastery": 4,
+          "Swift": 4,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 3,
+          "Swift": 2
+        },
+        "3": {
+          "Mastery": 4,
+          "Swift": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_fledgling_head",
+          "slot": "head",
+          "name": "Fledgling Head"
+        },
+        {
+          "id": "kestrel_fledgling_cape",
+          "slot": "cape",
+          "name": "Fledgling Cape"
+        },
+        {
+          "id": "kestrel_fledgling_belt",
+          "slot": "belt",
+          "name": "Fledgling Belt"
+        },
+        {
+          "id": "kestrel_fledgling_boots",
+          "slot": "boots",
+          "name": "Fledgling Boots"
+        },
+        {
+          "id": "kestrel_fledgling_amulet",
+          "slot": "amulet",
+          "name": "Fledgling Amulet"
+        }
+      ]
+    },
+    {
+      "id": "kestrel_windrunner",
+      "name": "Windrunner",
+      "tier": 10,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Mastery": 7,
+          "Swift": 7
+        },
+        "rare": {
+          "Mastery": 11,
+          "Swift": 10,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 7,
+          "Swift": 7
+        },
+        "3": {
+          "Mastery": 11,
+          "Swift": 10
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_windrunner_head",
+          "slot": "head",
+          "name": "Windrunner Head"
+        },
+        {
+          "id": "kestrel_windrunner_cape",
+          "slot": "cape",
+          "name": "Windrunner Cape"
+        },
+        {
+          "id": "kestrel_windrunner_belt",
+          "slot": "belt",
+          "name": "Windrunner Belt"
+        },
+        {
+          "id": "kestrel_windrunner_boots",
+          "slot": "boots",
+          "name": "Windrunner Boots"
+        },
+        {
+          "id": "kestrel_windrunner_amulet",
+          "slot": "amulet",
+          "name": "Windrunner Amulet"
+        }
+      ]
+    },
+    {
+      "id": "kestrel_skyfeather",
+      "name": "Skyfeather",
+      "tier": 20,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Mastery": 12,
+          "Swift": 12
+        },
+        "rare": {
+          "Mastery": 18,
+          "Swift": 18,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 12,
+          "Swift": 12
+        },
+        "3": {
+          "Mastery": 18,
+          "Swift": 18
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 max range on Mark Shot"
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_skyfeather_head",
+          "slot": "head",
+          "name": "Skyfeather Head"
+        },
+        {
+          "id": "kestrel_skyfeather_cape",
+          "slot": "cape",
+          "name": "Skyfeather Cape"
+        },
+        {
+          "id": "kestrel_skyfeather_belt",
+          "slot": "belt",
+          "name": "Skyfeather Belt"
+        },
+        {
+          "id": "kestrel_skyfeather_boots",
+          "slot": "boots",
+          "name": "Skyfeather Boots"
+        },
+        {
+          "id": "kestrel_skyfeather_amulet",
+          "slot": "amulet",
+          "name": "Skyfeather Amulet"
+        }
+      ]
+    },
+    {
+      "id": "kestrel_stormquill",
+      "name": "Stormquill",
+      "tier": 30,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Mastery": 17,
+          "Swift": 17
+        },
+        "rare": {
+          "Mastery": 26,
+          "Swift": 25,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 17,
+          "Swift": 17
+        },
+        "3": {
+          "Mastery": 26,
+          "Swift": 25
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 max range on Mark Shot The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_stormquill_head",
+          "slot": "head",
+          "name": "Stormquill Head"
+        },
+        {
+          "id": "kestrel_stormquill_cape",
+          "slot": "cape",
+          "name": "Stormquill Cape"
+        },
+        {
+          "id": "kestrel_stormquill_belt",
+          "slot": "belt",
+          "name": "Stormquill Belt"
+        },
+        {
+          "id": "kestrel_stormquill_boots",
+          "slot": "boots",
+          "name": "Stormquill Boots"
+        },
+        {
+          "id": "kestrel_stormquill_amulet",
+          "slot": "amulet",
+          "name": "Stormquill Amulet"
+        }
+      ]
+    },
+    {
+      "id": "kestrel_galecrest",
+      "name": "Galecrest",
+      "tier": 40,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Mastery": 22,
+          "Swift": 22
+        },
+        "rare": {
+          "Mastery": 33,
+          "Swift": 33,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 22,
+          "Swift": 22
+        },
+        "3": {
+          "Mastery": 33,
+          "Swift": 33
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 max range on Mark Shot The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_galecrest_head",
+          "slot": "head",
+          "name": "Galecrest Head"
+        },
+        {
+          "id": "kestrel_galecrest_cape",
+          "slot": "cape",
+          "name": "Galecrest Cape"
+        },
+        {
+          "id": "kestrel_galecrest_belt",
+          "slot": "belt",
+          "name": "Galecrest Belt"
+        },
+        {
+          "id": "kestrel_galecrest_boots",
+          "slot": "boots",
+          "name": "Galecrest Boots"
+        },
+        {
+          "id": "kestrel_galecrest_amulet",
+          "slot": "amulet",
+          "name": "Galecrest Amulet"
+        }
+      ]
+    },
+    {
+      "id": "kestrel_zenith_talon",
+      "name": "Zenith Talon",
+      "tier": 50,
+      "kind": "class",
+      "classes": [
+        "Kestrel"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Mastery": 27,
+          "Swift": 27
+        },
+        "rare": {
+          "Mastery": 41,
+          "Swift": 40,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 27,
+          "Swift": 27
+        },
+        "3": {
+          "Mastery": 41,
+          "Swift": 40
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 max range on Mark Shot The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "kestrel_zenith_talon_head",
+          "slot": "head",
+          "name": "Zenith Talon Head"
+        },
+        {
+          "id": "kestrel_zenith_talon_cape",
+          "slot": "cape",
+          "name": "Zenith Talon Cape"
+        },
+        {
+          "id": "kestrel_zenith_talon_belt",
+          "slot": "belt",
+          "name": "Zenith Talon Belt"
+        },
+        {
+          "id": "kestrel_zenith_talon_boots",
+          "slot": "boots",
+          "name": "Zenith Talon Boots"
+        },
+        {
+          "id": "kestrel_zenith_talon_amulet",
+          "slot": "amulet",
+          "name": "Zenith Talon Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_quarryhand",
+      "name": "Quarryhand",
+      "tier": 1,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Mastery": 3,
+          "Vitality": 2
+        },
+        "rare": {
+          "Mastery": 4,
+          "Vitality": 4,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 3,
+          "Vitality": 2
+        },
+        "3": {
+          "Mastery": 4,
+          "Vitality": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_quarryhand_head",
+          "slot": "head",
+          "name": "Quarryhand Head"
+        },
+        {
+          "id": "ironjaw_quarryhand_cape",
+          "slot": "cape",
+          "name": "Quarryhand Cape"
+        },
+        {
+          "id": "ironjaw_quarryhand_belt",
+          "slot": "belt",
+          "name": "Quarryhand Belt"
+        },
+        {
+          "id": "ironjaw_quarryhand_boots",
+          "slot": "boots",
+          "name": "Quarryhand Boots"
+        },
+        {
+          "id": "ironjaw_quarryhand_amulet",
+          "slot": "amulet",
+          "name": "Quarryhand Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_stonefist",
+      "name": "Stonefist",
+      "tier": 10,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Mastery": 7,
+          "Vitality": 7
+        },
+        "rare": {
+          "Mastery": 11,
+          "Vitality": 10,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 7,
+          "Vitality": 7
+        },
+        "3": {
+          "Mastery": 11,
+          "Vitality": 10
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_stonefist_head",
+          "slot": "head",
+          "name": "Stonefist Head"
+        },
+        {
+          "id": "ironjaw_stonefist_cape",
+          "slot": "cape",
+          "name": "Stonefist Cape"
+        },
+        {
+          "id": "ironjaw_stonefist_belt",
+          "slot": "belt",
+          "name": "Stonefist Belt"
+        },
+        {
+          "id": "ironjaw_stonefist_boots",
+          "slot": "boots",
+          "name": "Stonefist Boots"
+        },
+        {
+          "id": "ironjaw_stonefist_amulet",
+          "slot": "amulet",
+          "name": "Stonefist Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_quarrybreaker",
+      "name": "Quarrybreaker",
+      "tier": 20,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Mastery": 12,
+          "Vitality": 12
+        },
+        "rare": {
+          "Mastery": 18,
+          "Vitality": 18,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 12,
+          "Vitality": 12
+        },
+        "3": {
+          "Mastery": 18,
+          "Vitality": 18
+        },
+        "5": {
+          "applies": false,
+          "text": "Start every fight with +1 Impact"
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_quarrybreaker_head",
+          "slot": "head",
+          "name": "Quarrybreaker Head"
+        },
+        {
+          "id": "ironjaw_quarrybreaker_cape",
+          "slot": "cape",
+          "name": "Quarrybreaker Cape"
+        },
+        {
+          "id": "ironjaw_quarrybreaker_belt",
+          "slot": "belt",
+          "name": "Quarrybreaker Belt"
+        },
+        {
+          "id": "ironjaw_quarrybreaker_boots",
+          "slot": "boots",
+          "name": "Quarrybreaker Boots"
+        },
+        {
+          "id": "ironjaw_quarrybreaker_amulet",
+          "slot": "amulet",
+          "name": "Quarrybreaker Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_ironclad_ram",
+      "name": "Ironclad Ram",
+      "tier": 30,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Mastery": 17,
+          "Vitality": 17
+        },
+        "rare": {
+          "Mastery": 26,
+          "Vitality": 25,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 17,
+          "Vitality": 17
+        },
+        "3": {
+          "Mastery": 26,
+          "Vitality": 25
+        },
+        "5": {
+          "applies": false,
+          "text": "Start every fight with +1 Impact The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_ironclad_ram_head",
+          "slot": "head",
+          "name": "Ironclad Ram Head"
+        },
+        {
+          "id": "ironjaw_ironclad_ram_cape",
+          "slot": "cape",
+          "name": "Ironclad Ram Cape"
+        },
+        {
+          "id": "ironjaw_ironclad_ram_belt",
+          "slot": "belt",
+          "name": "Ironclad Ram Belt"
+        },
+        {
+          "id": "ironjaw_ironclad_ram_boots",
+          "slot": "boots",
+          "name": "Ironclad Ram Boots"
+        },
+        {
+          "id": "ironjaw_ironclad_ram_amulet",
+          "slot": "amulet",
+          "name": "Ironclad Ram Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_mountainmaw",
+      "name": "Mountainmaw",
+      "tier": 40,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Mastery": 22,
+          "Vitality": 22
+        },
+        "rare": {
+          "Mastery": 33,
+          "Vitality": 33,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 22,
+          "Vitality": 22
+        },
+        "3": {
+          "Mastery": 33,
+          "Vitality": 33
+        },
+        "5": {
+          "applies": false,
+          "text": "Start every fight with +1 Impact The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_mountainmaw_head",
+          "slot": "head",
+          "name": "Mountainmaw Head"
+        },
+        {
+          "id": "ironjaw_mountainmaw_cape",
+          "slot": "cape",
+          "name": "Mountainmaw Cape"
+        },
+        {
+          "id": "ironjaw_mountainmaw_belt",
+          "slot": "belt",
+          "name": "Mountainmaw Belt"
+        },
+        {
+          "id": "ironjaw_mountainmaw_boots",
+          "slot": "boots",
+          "name": "Mountainmaw Boots"
+        },
+        {
+          "id": "ironjaw_mountainmaw_amulet",
+          "slot": "amulet",
+          "name": "Mountainmaw Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ironjaw_titans_jaw",
+      "name": "Titan's Jaw",
+      "tier": 50,
+      "kind": "class",
+      "classes": [
+        "Ironjaw"
+      ],
+      "leans": [
+        "Mastery",
+        "Vitality"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Mastery": 27,
+          "Vitality": 27
+        },
+        "rare": {
+          "Mastery": 41,
+          "Vitality": 40,
+          "Swift": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 27,
+          "Vitality": 27
+        },
+        "3": {
+          "Mastery": 41,
+          "Vitality": 40
+        },
+        "5": {
+          "applies": false,
+          "text": "Start every fight with +1 Impact The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "ironjaw_titans_jaw_head",
+          "slot": "head",
+          "name": "Titan's Jaw Head"
+        },
+        {
+          "id": "ironjaw_titans_jaw_cape",
+          "slot": "cape",
+          "name": "Titan's Jaw Cape"
+        },
+        {
+          "id": "ironjaw_titans_jaw_belt",
+          "slot": "belt",
+          "name": "Titan's Jaw Belt"
+        },
+        {
+          "id": "ironjaw_titans_jaw_boots",
+          "slot": "boots",
+          "name": "Titan's Jaw Boots"
+        },
+        {
+          "id": "ironjaw_titans_jaw_amulet",
+          "slot": "amulet",
+          "name": "Titan's Jaw Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_dewdrop",
+      "name": "Dewdrop",
+      "tier": 1,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Vitality": 3,
+          "Resist": 2
+        },
+        "rare": {
+          "Vitality": 4,
+          "Resist": 4,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 3,
+          "Resist": 2
+        },
+        "3": {
+          "Vitality": 4,
+          "Resist": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_dewdrop_head",
+          "slot": "head",
+          "name": "Dewdrop Head"
+        },
+        {
+          "id": "mender_dewdrop_cape",
+          "slot": "cape",
+          "name": "Dewdrop Cape"
+        },
+        {
+          "id": "mender_dewdrop_belt",
+          "slot": "belt",
+          "name": "Dewdrop Belt"
+        },
+        {
+          "id": "mender_dewdrop_boots",
+          "slot": "boots",
+          "name": "Dewdrop Boots"
+        },
+        {
+          "id": "mender_dewdrop_amulet",
+          "slot": "amulet",
+          "name": "Dewdrop Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_brookmender",
+      "name": "Brookmender",
+      "tier": 10,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Vitality": 7,
+          "Resist": 7
+        },
+        "rare": {
+          "Vitality": 11,
+          "Resist": 10,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 7,
+          "Resist": 7
+        },
+        "3": {
+          "Vitality": 11,
+          "Resist": 10
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_brookmender_head",
+          "slot": "head",
+          "name": "Brookmender Head"
+        },
+        {
+          "id": "mender_brookmender_cape",
+          "slot": "cape",
+          "name": "Brookmender Cape"
+        },
+        {
+          "id": "mender_brookmender_belt",
+          "slot": "belt",
+          "name": "Brookmender Belt"
+        },
+        {
+          "id": "mender_brookmender_boots",
+          "slot": "boots",
+          "name": "Brookmender Boots"
+        },
+        {
+          "id": "mender_brookmender_amulet",
+          "slot": "amulet",
+          "name": "Brookmender Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_tidewell",
+      "name": "Tidewell",
+      "tier": 20,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Vitality": 12,
+          "Resist": 12
+        },
+        "rare": {
+          "Vitality": 18,
+          "Resist": 18,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 12,
+          "Resist": 12
+        },
+        "3": {
+          "Vitality": 18,
+          "Resist": 18
+        },
+        "5": {
+          "applies": false,
+          "text": "Mend heals +2 and Pulse Tap heals +1"
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_tidewell_head",
+          "slot": "head",
+          "name": "Tidewell Head"
+        },
+        {
+          "id": "mender_tidewell_cape",
+          "slot": "cape",
+          "name": "Tidewell Cape"
+        },
+        {
+          "id": "mender_tidewell_belt",
+          "slot": "belt",
+          "name": "Tidewell Belt"
+        },
+        {
+          "id": "mender_tidewell_boots",
+          "slot": "boots",
+          "name": "Tidewell Boots"
+        },
+        {
+          "id": "mender_tidewell_amulet",
+          "slot": "amulet",
+          "name": "Tidewell Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_riverheart",
+      "name": "Riverheart",
+      "tier": 30,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Vitality": 17,
+          "Resist": 17
+        },
+        "rare": {
+          "Vitality": 26,
+          "Resist": 25,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 17,
+          "Resist": 17
+        },
+        "3": {
+          "Vitality": 26,
+          "Resist": 25
+        },
+        "5": {
+          "applies": false,
+          "text": "Mend heals +2 and Pulse Tap heals +1 The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_riverheart_head",
+          "slot": "head",
+          "name": "Riverheart Head"
+        },
+        {
+          "id": "mender_riverheart_cape",
+          "slot": "cape",
+          "name": "Riverheart Cape"
+        },
+        {
+          "id": "mender_riverheart_belt",
+          "slot": "belt",
+          "name": "Riverheart Belt"
+        },
+        {
+          "id": "mender_riverheart_boots",
+          "slot": "boots",
+          "name": "Riverheart Boots"
+        },
+        {
+          "id": "mender_riverheart_amulet",
+          "slot": "amulet",
+          "name": "Riverheart Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_deepspring",
+      "name": "Deepspring",
+      "tier": 40,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Vitality": 22,
+          "Resist": 22
+        },
+        "rare": {
+          "Vitality": 33,
+          "Resist": 33,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 22,
+          "Resist": 22
+        },
+        "3": {
+          "Vitality": 33,
+          "Resist": 33
+        },
+        "5": {
+          "applies": false,
+          "text": "Mend heals +2 and Pulse Tap heals +1 The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_deepspring_head",
+          "slot": "head",
+          "name": "Deepspring Head"
+        },
+        {
+          "id": "mender_deepspring_cape",
+          "slot": "cape",
+          "name": "Deepspring Cape"
+        },
+        {
+          "id": "mender_deepspring_belt",
+          "slot": "belt",
+          "name": "Deepspring Belt"
+        },
+        {
+          "id": "mender_deepspring_boots",
+          "slot": "boots",
+          "name": "Deepspring Boots"
+        },
+        {
+          "id": "mender_deepspring_amulet",
+          "slot": "amulet",
+          "name": "Deepspring Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mender_oceansong",
+      "name": "Oceansong",
+      "tier": 50,
+      "kind": "class",
+      "classes": [
+        "Mender"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Vitality": 27,
+          "Resist": 27
+        },
+        "rare": {
+          "Vitality": 41,
+          "Resist": 40,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 27,
+          "Resist": 27
+        },
+        "3": {
+          "Vitality": 41,
+          "Resist": 40
+        },
+        "5": {
+          "applies": false,
+          "text": "Mend heals +2 and Pulse Tap heals +1 The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "mender_oceansong_head",
+          "slot": "head",
+          "name": "Oceansong Head"
+        },
+        {
+          "id": "mender_oceansong_cape",
+          "slot": "cape",
+          "name": "Oceansong Cape"
+        },
+        {
+          "id": "mender_oceansong_belt",
+          "slot": "belt",
+          "name": "Oceansong Belt"
+        },
+        {
+          "id": "mender_oceansong_boots",
+          "slot": "boots",
+          "name": "Oceansong Boots"
+        },
+        {
+          "id": "mender_oceansong_amulet",
+          "slot": "amulet",
+          "name": "Oceansong Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_shadowstep",
+      "name": "Shadowstep",
+      "tier": 1,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Mastery": 3,
+          "Swift": 2
+        },
+        "rare": {
+          "Mastery": 4,
+          "Swift": 4,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 3,
+          "Swift": 2
+        },
+        "3": {
+          "Mastery": 4,
+          "Swift": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_shadowstep_head",
+          "slot": "head",
+          "name": "Shadowstep Head"
+        },
+        {
+          "id": "gloam_shadowstep_cape",
+          "slot": "cape",
+          "name": "Shadowstep Cape"
+        },
+        {
+          "id": "gloam_shadowstep_belt",
+          "slot": "belt",
+          "name": "Shadowstep Belt"
+        },
+        {
+          "id": "gloam_shadowstep_boots",
+          "slot": "boots",
+          "name": "Shadowstep Boots"
+        },
+        {
+          "id": "gloam_shadowstep_amulet",
+          "slot": "amulet",
+          "name": "Shadowstep Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_nightcloak",
+      "name": "Nightcloak",
+      "tier": 10,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Mastery": 7,
+          "Swift": 7
+        },
+        "rare": {
+          "Mastery": 11,
+          "Swift": 10,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 7,
+          "Swift": 7
+        },
+        "3": {
+          "Mastery": 11,
+          "Swift": 10
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_nightcloak_head",
+          "slot": "head",
+          "name": "Nightcloak Head"
+        },
+        {
+          "id": "gloam_nightcloak_cape",
+          "slot": "cape",
+          "name": "Nightcloak Cape"
+        },
+        {
+          "id": "gloam_nightcloak_belt",
+          "slot": "belt",
+          "name": "Nightcloak Belt"
+        },
+        {
+          "id": "gloam_nightcloak_boots",
+          "slot": "boots",
+          "name": "Nightcloak Boots"
+        },
+        {
+          "id": "gloam_nightcloak_amulet",
+          "slot": "amulet",
+          "name": "Nightcloak Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_duskveil",
+      "name": "Duskveil",
+      "tier": 20,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Mastery",
+        "Swift"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Mastery": 12,
+          "Swift": 12
+        },
+        "rare": {
+          "Mastery": 18,
+          "Swift": 18,
+          "Vitality": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 12,
+          "Swift": 12
+        },
+        "3": {
+          "Mastery": 18,
+          "Swift": 18
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 MP on turns you start Invisible"
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_duskveil_head",
+          "slot": "head",
+          "name": "Duskveil Head"
+        },
+        {
+          "id": "gloam_duskveil_cape",
+          "slot": "cape",
+          "name": "Duskveil Cape"
+        },
+        {
+          "id": "gloam_duskveil_belt",
+          "slot": "belt",
+          "name": "Duskveil Belt"
+        },
+        {
+          "id": "gloam_duskveil_boots",
+          "slot": "boots",
+          "name": "Duskveil Boots"
+        },
+        {
+          "id": "gloam_duskveil_amulet",
+          "slot": "amulet",
+          "name": "Duskveil Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_umbral_fang",
+      "name": "Umbral Fang",
+      "tier": 30,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Swift",
+        "Resist"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Swift": 17,
+          "Resist": 17
+        },
+        "rare": {
+          "Swift": 26,
+          "Resist": 25,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Swift": 17,
+          "Resist": 17
+        },
+        "3": {
+          "Swift": 26,
+          "Resist": 25
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 MP on turns you start Invisible The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_umbral_fang_head",
+          "slot": "head",
+          "name": "Umbral Fang Head"
+        },
+        {
+          "id": "gloam_umbral_fang_cape",
+          "slot": "cape",
+          "name": "Umbral Fang Cape"
+        },
+        {
+          "id": "gloam_umbral_fang_belt",
+          "slot": "belt",
+          "name": "Umbral Fang Belt"
+        },
+        {
+          "id": "gloam_umbral_fang_boots",
+          "slot": "boots",
+          "name": "Umbral Fang Boots"
+        },
+        {
+          "id": "gloam_umbral_fang_amulet",
+          "slot": "amulet",
+          "name": "Umbral Fang Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_voidshroud",
+      "name": "Voidshroud",
+      "tier": 40,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Swift",
+        "Resist"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Swift": 22,
+          "Resist": 22
+        },
+        "rare": {
+          "Swift": 33,
+          "Resist": 33,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Swift": 22,
+          "Resist": 22
+        },
+        "3": {
+          "Swift": 33,
+          "Resist": 33
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 MP on turns you start Invisible The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_voidshroud_head",
+          "slot": "head",
+          "name": "Voidshroud Head"
+        },
+        {
+          "id": "gloam_voidshroud_cape",
+          "slot": "cape",
+          "name": "Voidshroud Cape"
+        },
+        {
+          "id": "gloam_voidshroud_belt",
+          "slot": "belt",
+          "name": "Voidshroud Belt"
+        },
+        {
+          "id": "gloam_voidshroud_boots",
+          "slot": "boots",
+          "name": "Voidshroud Boots"
+        },
+        {
+          "id": "gloam_voidshroud_amulet",
+          "slot": "amulet",
+          "name": "Voidshroud Amulet"
+        }
+      ]
+    },
+    {
+      "id": "gloam_eclipse",
+      "name": "Eclipse",
+      "tier": 50,
+      "kind": "class",
+      "classes": [
+        "Gloam"
+      ],
+      "leans": [
+        "Swift",
+        "Resist"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Swift": 27,
+          "Resist": 27
+        },
+        "rare": {
+          "Swift": 41,
+          "Resist": 40,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Swift": 27,
+          "Resist": 27
+        },
+        "3": {
+          "Swift": 41,
+          "Resist": 40
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 MP on turns you start Invisible The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "gloam_eclipse_head",
+          "slot": "head",
+          "name": "Eclipse Head"
+        },
+        {
+          "id": "gloam_eclipse_cape",
+          "slot": "cape",
+          "name": "Eclipse Cape"
+        },
+        {
+          "id": "gloam_eclipse_belt",
+          "slot": "belt",
+          "name": "Eclipse Belt"
+        },
+        {
+          "id": "gloam_eclipse_boots",
+          "slot": "boots",
+          "name": "Eclipse Boots"
+        },
+        {
+          "id": "gloam_eclipse_amulet",
+          "slot": "amulet",
+          "name": "Eclipse Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_watchpost",
+      "name": "Watchpost",
+      "tier": 1,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Vitality": 3,
+          "Resist": 2
+        },
+        "rare": {
+          "Vitality": 4,
+          "Resist": 4,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 3,
+          "Resist": 2
+        },
+        "3": {
+          "Vitality": 4,
+          "Resist": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_watchpost_head",
+          "slot": "head",
+          "name": "Watchpost Head"
+        },
+        {
+          "id": "bastion_watchpost_cape",
+          "slot": "cape",
+          "name": "Watchpost Cape"
+        },
+        {
+          "id": "bastion_watchpost_belt",
+          "slot": "belt",
+          "name": "Watchpost Belt"
+        },
+        {
+          "id": "bastion_watchpost_boots",
+          "slot": "boots",
+          "name": "Watchpost Boots"
+        },
+        {
+          "id": "bastion_watchpost_amulet",
+          "slot": "amulet",
+          "name": "Watchpost Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_shieldwall",
+      "name": "Shieldwall",
+      "tier": 10,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Vitality": 7,
+          "Resist": 7
+        },
+        "rare": {
+          "Vitality": 11,
+          "Resist": 10,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 7,
+          "Resist": 7
+        },
+        "3": {
+          "Vitality": 11,
+          "Resist": 10
+        },
+        "5": {
+          "applies": false,
+          "text": "Plain stat bonus at five parts. Not applied yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_shieldwall_head",
+          "slot": "head",
+          "name": "Shieldwall Head"
+        },
+        {
+          "id": "bastion_shieldwall_cape",
+          "slot": "cape",
+          "name": "Shieldwall Cape"
+        },
+        {
+          "id": "bastion_shieldwall_belt",
+          "slot": "belt",
+          "name": "Shieldwall Belt"
+        },
+        {
+          "id": "bastion_shieldwall_boots",
+          "slot": "boots",
+          "name": "Shieldwall Boots"
+        },
+        {
+          "id": "bastion_shieldwall_amulet",
+          "slot": "amulet",
+          "name": "Shieldwall Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_bulwark",
+      "name": "Bulwark",
+      "tier": 20,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Vitality": 12,
+          "Resist": 12
+        },
+        "rare": {
+          "Vitality": 18,
+          "Resist": 18,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 12,
+          "Resist": 12
+        },
+        "3": {
+          "Vitality": 18,
+          "Resist": 18
+        },
+        "5": {
+          "applies": false,
+          "text": "The first hit you take in each fight deals half damage"
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_bulwark_head",
+          "slot": "head",
+          "name": "Bulwark Head"
+        },
+        {
+          "id": "bastion_bulwark_cape",
+          "slot": "cape",
+          "name": "Bulwark Cape"
+        },
+        {
+          "id": "bastion_bulwark_belt",
+          "slot": "belt",
+          "name": "Bulwark Belt"
+        },
+        {
+          "id": "bastion_bulwark_boots",
+          "slot": "boots",
+          "name": "Bulwark Boots"
+        },
+        {
+          "id": "bastion_bulwark_amulet",
+          "slot": "amulet",
+          "name": "Bulwark Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_ironbastion",
+      "name": "Ironbastion",
+      "tier": 30,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Vitality": 17,
+          "Resist": 17
+        },
+        "rare": {
+          "Vitality": 26,
+          "Resist": 25,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 17,
+          "Resist": 17
+        },
+        "3": {
+          "Vitality": 26,
+          "Resist": 25
+        },
+        "5": {
+          "applies": false,
+          "text": "The first hit you take in each fight deals half damage The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_ironbastion_head",
+          "slot": "head",
+          "name": "Ironbastion Head"
+        },
+        {
+          "id": "bastion_ironbastion_cape",
+          "slot": "cape",
+          "name": "Ironbastion Cape"
+        },
+        {
+          "id": "bastion_ironbastion_belt",
+          "slot": "belt",
+          "name": "Ironbastion Belt"
+        },
+        {
+          "id": "bastion_ironbastion_boots",
+          "slot": "boots",
+          "name": "Ironbastion Boots"
+        },
+        {
+          "id": "bastion_ironbastion_amulet",
+          "slot": "amulet",
+          "name": "Ironbastion Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_rampart_lord",
+      "name": "Rampart Lord",
+      "tier": 40,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Vitality": 22,
+          "Resist": 22
+        },
+        "rare": {
+          "Vitality": 33,
+          "Resist": 33,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 22,
+          "Resist": 22
+        },
+        "3": {
+          "Vitality": 33,
+          "Resist": 33
+        },
+        "5": {
+          "applies": false,
+          "text": "The first hit you take in each fight deals half damage The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_rampart_lord_head",
+          "slot": "head",
+          "name": "Rampart Lord Head"
+        },
+        {
+          "id": "bastion_rampart_lord_cape",
+          "slot": "cape",
+          "name": "Rampart Lord Cape"
+        },
+        {
+          "id": "bastion_rampart_lord_belt",
+          "slot": "belt",
+          "name": "Rampart Lord Belt"
+        },
+        {
+          "id": "bastion_rampart_lord_boots",
+          "slot": "boots",
+          "name": "Rampart Lord Boots"
+        },
+        {
+          "id": "bastion_rampart_lord_amulet",
+          "slot": "amulet",
+          "name": "Rampart Lord Amulet"
+        }
+      ]
+    },
+    {
+      "id": "bastion_aegis_eternal",
+      "name": "Aegis Eternal",
+      "tier": 50,
+      "kind": "class",
+      "classes": [
+        "Bastion"
+      ],
+      "leans": [
+        "Vitality",
+        "Resist"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Vitality": 27,
+          "Resist": 27
+        },
+        "rare": {
+          "Vitality": 41,
+          "Resist": 40,
+          "Mastery": 1
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Vitality": 27,
+          "Resist": 27
+        },
+        "3": {
+          "Vitality": 41,
+          "Resist": 40
+        },
+        "5": {
+          "applies": false,
+          "text": "The first hit you take in each fight deals half damage The later-tier addition is not built yet."
+        }
+      },
+      "parts": [
+        {
+          "id": "bastion_aegis_eternal_head",
+          "slot": "head",
+          "name": "Aegis Eternal Head"
+        },
+        {
+          "id": "bastion_aegis_eternal_cape",
+          "slot": "cape",
+          "name": "Aegis Eternal Cape"
+        },
+        {
+          "id": "bastion_aegis_eternal_belt",
+          "slot": "belt",
+          "name": "Aegis Eternal Belt"
+        },
+        {
+          "id": "bastion_aegis_eternal_boots",
+          "slot": "boots",
+          "name": "Aegis Eternal Boots"
+        },
+        {
+          "id": "bastion_aegis_eternal_amulet",
+          "slot": "amulet",
+          "name": "Aegis Eternal Amulet"
+        }
+      ]
+    },
+    {
+      "id": "wayfarer",
+      "name": "Wayfarer",
+      "tier": 1,
+      "kind": "shared",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
+        },
+        "rare": {
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
+        },
+        "3": {
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        },
+        "5": {
+          "applies": false,
+          "text": "+1 MP on the first turn of a fight"
+        }
+      },
+      "parts": [
+        {
+          "id": "wayfarer_head",
+          "slot": "head",
+          "name": "Wayfarer Head"
+        },
+        {
+          "id": "wayfarer_cape",
+          "slot": "cape",
+          "name": "Wayfarer Cape"
+        },
+        {
+          "id": "wayfarer_belt",
+          "slot": "belt",
+          "name": "Wayfarer Belt"
+        },
+        {
+          "id": "wayfarer_boots",
+          "slot": "boots",
+          "name": "Wayfarer Boots"
+        },
+        {
+          "id": "wayfarer_amulet",
+          "slot": "amulet",
+          "name": "Wayfarer Amulet"
+        }
+      ]
+    },
+    {
+      "id": "townguard",
+      "name": "Townguard",
+      "tier": 5,
+      "kind": "shared",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 9,
+      "stats": {
+        "regular": {
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        },
+        "rare": {
+          "Mastery": 5,
+          "Vitality": 4,
+          "Swift": 3,
+          "Resist": 3
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        },
+        "3": {
+          "Mastery": 4,
+          "Vitality": 4,
+          "Swift": 3,
+          "Resist": 3
+        },
+        "5": {
+          "applies": false,
+          "text": "Extra Resist when standing next to an ally"
+        }
+      },
+      "parts": [
+        {
+          "id": "townguard_head",
+          "slot": "head",
+          "name": "Townguard Head"
+        },
+        {
+          "id": "townguard_cape",
+          "slot": "cape",
+          "name": "Townguard Cape"
+        },
+        {
+          "id": "townguard_belt",
+          "slot": "belt",
+          "name": "Townguard Belt"
+        },
+        {
+          "id": "townguard_boots",
+          "slot": "boots",
+          "name": "Townguard Boots"
+        },
+        {
+          "id": "townguard_amulet",
+          "slot": "amulet",
+          "name": "Townguard Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ratcatcher",
+      "name": "Ratcatcher",
+      "tier": 1,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 5,
+      "stats": {
+        "regular": {
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
+        },
+        "rare": {
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
+        },
+        "3": {
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "ratcatcher_head",
+          "slot": "head",
+          "name": "Ratcatcher Head"
+        },
+        {
+          "id": "ratcatcher_cape",
+          "slot": "cape",
+          "name": "Ratcatcher Cape"
+        },
+        {
+          "id": "ratcatcher_belt",
+          "slot": "belt",
+          "name": "Ratcatcher Belt"
+        },
+        {
+          "id": "ratcatcher_boots",
+          "slot": "boots",
+          "name": "Ratcatcher Boots"
+        },
+        {
+          "id": "ratcatcher_amulet",
+          "slot": "amulet",
+          "name": "Ratcatcher Amulet"
+        }
+      ]
+    },
+    {
+      "id": "millwright",
+      "name": "Millwright",
+      "tier": 8,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 12,
+      "stats": {
+        "regular": {
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
+        },
+        "rare": {
+          "Mastery": 6,
+          "Vitality": 5,
+          "Swift": 4,
+          "Resist": 4
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
+        },
+        "3": {
+          "Mastery": 5,
+          "Vitality": 5,
+          "Swift": 4,
+          "Resist": 4
+        },
+        "5": {
+          "applies": false,
+          "text": "Extra Mastery on the turn after you are hit"
+        }
+      },
+      "parts": [
+        {
+          "id": "millwright_head",
+          "slot": "head",
+          "name": "Millwright Head"
+        },
+        {
+          "id": "millwright_cape",
+          "slot": "cape",
+          "name": "Millwright Cape"
+        },
+        {
+          "id": "millwright_belt",
+          "slot": "belt",
+          "name": "Millwright Belt"
+        },
+        {
+          "id": "millwright_boots",
+          "slot": "boots",
+          "name": "Millwright Boots"
+        },
+        {
+          "id": "millwright_amulet",
+          "slot": "amulet",
+          "name": "Millwright Amulet"
+        }
+      ]
+    },
+    {
+      "id": "orchard_warden",
+      "name": "Orchard Warden",
+      "tier": 10,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 14,
+      "stats": {
+        "regular": {
+          "Mastery": 4,
+          "Vitality": 4,
+          "Swift": 3,
+          "Resist": 3
+        },
+        "rare": {
+          "Mastery": 7,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 5
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 4,
+          "Vitality": 4,
+          "Swift": 3,
+          "Resist": 3
+        },
+        "3": {
+          "Mastery": 6,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 5
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "orchard_warden_head",
+          "slot": "head",
+          "name": "Orchard Warden Head"
+        },
+        {
+          "id": "orchard_warden_cape",
+          "slot": "cape",
+          "name": "Orchard Warden Cape"
+        },
+        {
+          "id": "orchard_warden_belt",
+          "slot": "belt",
+          "name": "Orchard Warden Belt"
+        },
+        {
+          "id": "orchard_warden_boots",
+          "slot": "boots",
+          "name": "Orchard Warden Boots"
+        },
+        {
+          "id": "orchard_warden_amulet",
+          "slot": "amulet",
+          "name": "Orchard Warden Amulet"
+        }
+      ]
+    },
+    {
+      "id": "pale_archivist",
+      "name": "Pale Archivist",
+      "tier": 15,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 19,
+      "stats": {
+        "regular": {
+          "Mastery": 5,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 4
+        },
+        "rare": {
+          "Mastery": 9,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 5,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 4
+        },
+        "3": {
+          "Mastery": 8,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "pale_archivist_head",
+          "slot": "head",
+          "name": "Pale Archivist Head"
+        },
+        {
+          "id": "pale_archivist_cape",
+          "slot": "cape",
+          "name": "Pale Archivist Cape"
+        },
+        {
+          "id": "pale_archivist_belt",
+          "slot": "belt",
+          "name": "Pale Archivist Belt"
+        },
+        {
+          "id": "pale_archivist_boots",
+          "slot": "boots",
+          "name": "Pale Archivist Boots"
+        },
+        {
+          "id": "pale_archivist_amulet",
+          "slot": "amulet",
+          "name": "Pale Archivist Amulet"
+        }
+      ]
+    },
+    {
+      "id": "saltmaw",
+      "name": "Saltmaw",
+      "tier": 20,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 24,
+      "stats": {
+        "regular": {
+          "Mastery": 6,
+          "Vitality": 6,
+          "Swift": 6,
+          "Resist": 6
+        },
+        "rare": {
+          "Mastery": 10,
+          "Vitality": 9,
+          "Swift": 9,
+          "Resist": 9
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 6,
+          "Vitality": 6,
+          "Swift": 6,
+          "Resist": 6
+        },
+        "3": {
+          "Mastery": 9,
+          "Vitality": 9,
+          "Swift": 9,
+          "Resist": 9
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "saltmaw_head",
+          "slot": "head",
+          "name": "Saltmaw Head"
+        },
+        {
+          "id": "saltmaw_cape",
+          "slot": "cape",
+          "name": "Saltmaw Cape"
+        },
+        {
+          "id": "saltmaw_belt",
+          "slot": "belt",
+          "name": "Saltmaw Belt"
+        },
+        {
+          "id": "saltmaw_boots",
+          "slot": "boots",
+          "name": "Saltmaw Boots"
+        },
+        {
+          "id": "saltmaw_amulet",
+          "slot": "amulet",
+          "name": "Saltmaw Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ember_smith",
+      "name": "Ember Smith",
+      "tier": 25,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 29,
+      "stats": {
+        "regular": {
+          "Mastery": 8,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        },
+        "rare": {
+          "Mastery": 12,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 8,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        },
+        "3": {
+          "Mastery": 11,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "ember_smith_head",
+          "slot": "head",
+          "name": "Ember Smith Head"
+        },
+        {
+          "id": "ember_smith_cape",
+          "slot": "cape",
+          "name": "Ember Smith Cape"
+        },
+        {
+          "id": "ember_smith_belt",
+          "slot": "belt",
+          "name": "Ember Smith Belt"
+        },
+        {
+          "id": "ember_smith_boots",
+          "slot": "boots",
+          "name": "Ember Smith Boots"
+        },
+        {
+          "id": "ember_smith_amulet",
+          "slot": "amulet",
+          "name": "Ember Smith Amulet"
+        }
+      ]
+    },
+    {
+      "id": "millwheel_hag",
+      "name": "Millwheel Hag",
+      "tier": 25,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 29,
+      "stats": {
+        "regular": {
+          "Mastery": 8,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        },
+        "rare": {
+          "Mastery": 12,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 8,
+          "Vitality": 7,
+          "Swift": 7,
+          "Resist": 7
+        },
+        "3": {
+          "Mastery": 11,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "millwheel_hag_head",
+          "slot": "head",
+          "name": "Millwheel Hag Head"
+        },
+        {
+          "id": "millwheel_hag_cape",
+          "slot": "cape",
+          "name": "Millwheel Hag Cape"
+        },
+        {
+          "id": "millwheel_hag_belt",
+          "slot": "belt",
+          "name": "Millwheel Hag Belt"
+        },
+        {
+          "id": "millwheel_hag_boots",
+          "slot": "boots",
+          "name": "Millwheel Hag Boots"
+        },
+        {
+          "id": "millwheel_hag_amulet",
+          "slot": "amulet",
+          "name": "Millwheel Hag Amulet"
+        }
+      ]
+    },
+    {
+      "id": "mire_abbess",
+      "name": "Mire Abbess",
+      "tier": 30,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 34,
+      "stats": {
+        "regular": {
+          "Mastery": 9,
+          "Vitality": 9,
+          "Swift": 8,
+          "Resist": 8
+        },
+        "rare": {
+          "Mastery": 14,
+          "Vitality": 13,
+          "Swift": 13,
+          "Resist": 12
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 9,
+          "Vitality": 9,
+          "Swift": 8,
+          "Resist": 8
+        },
+        "3": {
+          "Mastery": 13,
+          "Vitality": 13,
+          "Swift": 13,
+          "Resist": 12
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "mire_abbess_head",
+          "slot": "head",
+          "name": "Mire Abbess Head"
+        },
+        {
+          "id": "mire_abbess_cape",
+          "slot": "cape",
+          "name": "Mire Abbess Cape"
+        },
+        {
+          "id": "mire_abbess_belt",
+          "slot": "belt",
+          "name": "Mire Abbess Belt"
+        },
+        {
+          "id": "mire_abbess_boots",
+          "slot": "boots",
+          "name": "Mire Abbess Boots"
+        },
+        {
+          "id": "mire_abbess_amulet",
+          "slot": "amulet",
+          "name": "Mire Abbess Amulet"
+        }
+      ]
+    },
+    {
+      "id": "storm_engine",
+      "name": "Storm Engine",
+      "tier": 35,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 39,
+      "stats": {
+        "regular": {
+          "Mastery": 10,
+          "Vitality": 10,
+          "Swift": 10,
+          "Resist": 9
+        },
+        "rare": {
+          "Mastery": 16,
+          "Vitality": 15,
+          "Swift": 15,
+          "Resist": 14
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 10,
+          "Vitality": 10,
+          "Swift": 10,
+          "Resist": 9
+        },
+        "3": {
+          "Mastery": 15,
+          "Vitality": 15,
+          "Swift": 15,
+          "Resist": 14
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "storm_engine_head",
+          "slot": "head",
+          "name": "Storm Engine Head"
+        },
+        {
+          "id": "storm_engine_cape",
+          "slot": "cape",
+          "name": "Storm Engine Cape"
+        },
+        {
+          "id": "storm_engine_belt",
+          "slot": "belt",
+          "name": "Storm Engine Belt"
+        },
+        {
+          "id": "storm_engine_boots",
+          "slot": "boots",
+          "name": "Storm Engine Boots"
+        },
+        {
+          "id": "storm_engine_amulet",
+          "slot": "amulet",
+          "name": "Storm Engine Amulet"
+        }
+      ]
+    },
+    {
+      "id": "ashen_prism",
+      "name": "Ashen Prism",
+      "tier": 40,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 44,
+      "stats": {
+        "regular": {
+          "Mastery": 11,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        },
+        "rare": {
+          "Mastery": 18,
+          "Vitality": 17,
+          "Swift": 16,
+          "Resist": 16
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 11,
+          "Vitality": 11,
+          "Swift": 11,
+          "Resist": 11
+        },
+        "3": {
+          "Mastery": 17,
+          "Vitality": 17,
+          "Swift": 16,
+          "Resist": 16
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "ashen_prism_head",
+          "slot": "head",
+          "name": "Ashen Prism Head"
+        },
+        {
+          "id": "ashen_prism_cape",
+          "slot": "cape",
+          "name": "Ashen Prism Cape"
+        },
+        {
+          "id": "ashen_prism_belt",
+          "slot": "belt",
+          "name": "Ashen Prism Belt"
+        },
+        {
+          "id": "ashen_prism_boots",
+          "slot": "boots",
+          "name": "Ashen Prism Boots"
+        },
+        {
+          "id": "ashen_prism_amulet",
+          "slot": "amulet",
+          "name": "Ashen Prism Amulet"
+        }
+      ]
+    },
+    {
+      "id": "rotting_elder",
+      "name": "Rotting Elder",
+      "tier": 50,
+      "kind": "dungeon",
+      "classes": [],
+      "leans": [
+        "Mastery",
+        "Vitality",
+        "Swift",
+        "Resist"
+      ],
+      "budget": 54,
+      "stats": {
+        "regular": {
+          "Mastery": 14,
+          "Vitality": 14,
+          "Swift": 13,
+          "Resist": 13
+        },
+        "rare": {
+          "Mastery": 22,
+          "Vitality": 20,
+          "Swift": 20,
+          "Resist": 20
+        }
+      },
+      "bonuses": {
+        "2": {
+          "Mastery": 14,
+          "Vitality": 14,
+          "Swift": 13,
+          "Resist": 13
+        },
+        "3": {
+          "Mastery": 21,
+          "Vitality": 20,
+          "Swift": 20,
+          "Resist": 20
+        },
+        "5": {
+          "applies": false,
+          "text": "Open"
+        }
+      },
+      "parts": [
+        {
+          "id": "rotting_elder_head",
+          "slot": "head",
+          "name": "Rotting Elder Head"
+        },
+        {
+          "id": "rotting_elder_cape",
+          "slot": "cape",
+          "name": "Rotting Elder Cape"
+        },
+        {
+          "id": "rotting_elder_belt",
+          "slot": "belt",
+          "name": "Rotting Elder Belt"
+        },
+        {
+          "id": "rotting_elder_boots",
+          "slot": "boots",
+          "name": "Rotting Elder Boots"
+        },
+        {
+          "id": "rotting_elder_amulet",
+          "slot": "amulet",
+          "name": "Rotting Elder Amulet"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "granary_bread",
+      "name": "Granary Bread",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "sackcloth",
+      "name": "Sackcloth",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "old_grain_barrel",
+      "name": "Old Grain Barrel",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "millstone_stew",
+      "name": "Millstone Stew",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "gear_cog",
+      "name": "Gear Cog",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "water_wheel_model",
+      "name": "Water Wheel model",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "blight_free_cider",
+      "name": "Blight-free Cider",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "grave_apple",
+      "name": "Grave Apple",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "barrow_lantern",
+      "name": "Barrow Lantern",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "frost_tonic",
+      "name": "Frost Tonic",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "rime_ink",
+      "name": "Rime Ink",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "frozen_bookshelf",
+      "name": "Frozen Bookshelf",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "reef_chowder",
+      "name": "Reef Chowder",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "pearl_shell",
+      "name": "Pearl Shell",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "ship_in_a_bottle",
+      "name": "Ship in a Bottle",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "cinder_draught",
+      "name": "Cinder Draught",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "ember_ore",
+      "name": "Ember Ore",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "anvil",
+      "name": "Anvil",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "fen_broth",
+      "name": "Fen Broth",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "bog_iron",
+      "name": "Bog Iron",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "rusted_millwheel",
+      "name": "Rusted Millwheel",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "swamp_elixir",
+      "name": "Swamp Elixir",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "abbey_candle_wax",
+      "name": "Abbey Candle Wax",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "sunken_bell",
+      "name": "Sunken Bell",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "charged_tonic",
+      "name": "Charged Tonic",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "storm_coil",
+      "name": "Storm Coil",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "tesla_lamp",
+      "name": "Tesla Lamp",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "crystal_brew",
+      "name": "Crystal Brew",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "prism_shard",
+      "name": "Prism Shard",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "glowing_crystal",
+      "name": "Glowing Crystal",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "elderroot_feast",
+      "name": "Elderroot Feast",
+      "category": "recipe",
+      "weight": 0,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "blight_heartwood",
+      "name": "Blight Heartwood",
+      "category": "material",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "blight_seedling",
+      "name": "Blight Seedling",
+      "category": "decoration",
+      "weight": 20,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "mystery_box",
+      "name": "Mystery Box",
+      "category": "special",
+      "weight": 1,
+      "stack": true,
+      "slot": "",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "",
+      "set_id": "",
+      "drop": "rolled",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "gale_signet",
+      "name": "Gale Signet",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "ring",
+      "min_level": 40,
+      "classes": [],
+      "rarity": "epic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+1 MP, + Swift"
+      }
+    },
+    {
+      "id": "abbess_rosary",
+      "name": "Abbess's Rosary",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "amulet",
+      "min_level": 40,
+      "classes": [],
+      "rarity": "epic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+8% healing done, + Resist"
+      }
+    },
+    {
+      "id": "ember_crown",
+      "name": "Ember Crown",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "head",
+      "min_level": 45,
+      "classes": [],
+      "rarity": "epic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+1 range on spells with range 2 or more"
+      }
+    },
+    {
+      "id": "stormheart_gauntlet",
+      "name": "Stormheart Gauntlet",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "weapon",
+      "min_level": 45,
+      "classes": [],
+      "rarity": "epic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "Your first hit each turn also deals 4 Air damage to one enemy next to the target"
+      }
+    },
+    {
+      "id": "prism_striders",
+      "name": "Prism Striders",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "boots",
+      "min_level": 50,
+      "classes": [],
+      "rarity": "epic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+1 MP. The first 3 push attempts on you in a fight work normally; after that you can't be pushed for the rest of the fight"
+      }
+    },
+    {
+      "id": "heart_of_the_elder",
+      "name": "Heart of the Elder",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "amulet",
+      "min_level": 50,
+      "classes": [],
+      "rarity": "relic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+1 AP, -10% max HP"
+      }
+    },
+    {
+      "id": "crown_of_crosshaven",
+      "name": "Crown of Crosshaven",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "head",
+      "min_level": 50,
+      "classes": [],
+      "rarity": "relic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "+1 AP and +1 MP for your first 2 turns of each fight"
+      }
+    },
+    {
+      "id": "blightroot_ring",
+      "name": "Blightroot Ring",
+      "category": "equipment",
+      "weight": 15,
+      "stack": false,
+      "slot": "ring",
+      "min_level": 50,
+      "classes": [],
+      "rarity": "relic",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": "No AP. Your hits poison: 3 damage at the start of the target's turn for 2 turns, stacking up to 3"
+      }
+    }
+  ],
+  "zones": {
+    "crosshaven_heart": {
+      "world": [
+        {
+          "kind": "shared",
+          "set_id": "wayfarer",
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "shared",
+          "set_id": "wayfarer",
+          "weight": 1
+        },
+        {
+          "kind": "class",
+          "tier": 1,
+          "weight": 1
+        }
+      ]
+    },
+    "crosshaven_towns": {
+      "world": [
+        {
+          "kind": "shared",
+          "set_id": "townguard",
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "shared",
+          "set_id": "townguard",
+          "weight": 1
+        }
+      ]
+    },
+    "rowanvale": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 10,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 10,
+          "weight": 1
+        }
+      ]
+    },
+    "windmere": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 10,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 10,
+          "weight": 1
+        }
+      ]
+    },
+    "brinewake": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ]
+    },
+    "slagcrown": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ]
+    },
+    "eastmarch_fen_edge": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 20,
+          "weight": 1
+        }
+      ]
+    },
+    "gloomfen_mire": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 30,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 30,
+          "weight": 1
+        }
+      ]
+    },
+    "stormspire": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 30,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 30,
+          "weight": 1
+        }
+      ]
+    },
+    "ashen_shardfields": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 40,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 40,
+          "weight": 1
+        }
+      ]
+    },
+    "blightwood_hollow": {
+      "world": [
+        {
+          "kind": "class",
+          "tier": 50,
+          "weight": 1
+        }
+      ],
+      "mission": [
+        {
+          "kind": "class",
+          "tier": 50,
+          "weight": 1
+        }
+      ]
+    }
+  },
+  "dungeons": [
+    {
+      "id": "old_granary_cellar",
+      "name": "Old Granary Cellar",
+      "zone_id": "crosshaven_heart",
+      "set_id": "ratcatcher",
+      "class_tier": 1,
+      "coin_level": 1,
+      "title": "Cellar Sweeper",
+      "extras": [
+        "granary_bread",
+        "sackcloth",
+        "old_grain_barrel"
+      ]
+    },
+    {
+      "id": "millrace_vaults",
+      "name": "Millrace Vaults",
+      "zone_id": "crosshaven_towns",
+      "set_id": "millwright",
+      "class_tier": 1,
+      "coin_level": 8,
+      "title": "Millwright",
+      "extras": [
+        "millstone_stew",
+        "gear_cog",
+        "water_wheel_model"
+      ]
+    },
+    {
+      "id": "rotting_orchard_barrow",
+      "name": "Rotting Orchard Barrow",
+      "zone_id": "rowanvale",
+      "set_id": "orchard_warden",
+      "class_tier": 10,
+      "coin_level": 10,
+      "title": "Orchard Keeper",
+      "extras": [
+        "blight_free_cider",
+        "grave_apple",
+        "barrow_lantern"
+      ]
+    },
+    {
+      "id": "frostspire_archive",
+      "name": "Frostspire Archive",
+      "zone_id": "windmere",
+      "set_id": "pale_archivist",
+      "class_tier": 10,
+      "coin_level": 15,
+      "title": "Archivist",
+      "extras": [
+        "frost_tonic",
+        "rime_ink",
+        "frozen_bookshelf"
+      ]
+    },
+    {
+      "id": "saltmaw_grotto",
+      "name": "Saltmaw Grotto",
+      "zone_id": "brinewake",
+      "set_id": "saltmaw",
+      "class_tier": 20,
+      "coin_level": 20,
+      "title": "Grotto Diver",
+      "extras": [
+        "reef_chowder",
+        "pearl_shell",
+        "ship_in_a_bottle"
+      ]
+    },
+    {
+      "id": "cinderforge_depths",
+      "name": "Cinderforge Depths",
+      "zone_id": "slagcrown",
+      "set_id": "ember_smith",
+      "class_tier": 20,
+      "coin_level": 25,
+      "title": "Forgeborn",
+      "extras": [
+        "cinder_draught",
+        "ember_ore",
+        "anvil"
+      ]
+    },
+    {
+      "id": "sunken_mill",
+      "name": "Sunken Mill",
+      "zone_id": "eastmarch_fen_edge",
+      "set_id": "millwheel_hag",
+      "class_tier": 20,
+      "coin_level": 25,
+      "title": "Fenwalker",
+      "extras": [
+        "fen_broth",
+        "bog_iron",
+        "rusted_millwheel"
+      ]
+    },
+    {
+      "id": "drowned_abbey",
+      "name": "Drowned Abbey",
+      "zone_id": "gloomfen_mire",
+      "set_id": "mire_abbess",
+      "class_tier": 30,
+      "coin_level": 30,
+      "title": "Bog Pilgrim",
+      "extras": [
+        "swamp_elixir",
+        "abbey_candle_wax",
+        "sunken_bell"
+      ]
+    },
+    {
+      "id": "thunderwell_core",
+      "name": "Thunderwell Core",
+      "zone_id": "stormspire",
+      "set_id": "storm_engine",
+      "class_tier": 30,
+      "coin_level": 35,
+      "title": "Spark Tamer",
+      "extras": [
+        "charged_tonic",
+        "storm_coil",
+        "tesla_lamp"
+      ]
+    },
+    {
+      "id": "shard_hollow",
+      "name": "Shard Hollow",
+      "zone_id": "ashen_shardfields",
+      "set_id": "ashen_prism",
+      "class_tier": 40,
+      "coin_level": 40,
+      "title": "Shardbreaker",
+      "extras": [
+        "crystal_brew",
+        "prism_shard",
+        "glowing_crystal"
+      ]
+    },
+    {
+      "id": "heart_of_the_blight",
+      "name": "Heart of the Blight",
+      "zone_id": "blightwood_hollow",
+      "set_id": "rotting_elder",
+      "class_tier": 50,
+      "coin_level": 50,
+      "title": "Blightbane",
+      "extras": [
+        "elderroot_feast",
+        "blight_heartwood",
+        "blight_seedling"
+      ]
+    }
+  ]
+}

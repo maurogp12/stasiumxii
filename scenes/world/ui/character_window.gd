@@ -142,6 +142,7 @@ func _fill() -> void:
 	lines.append("Range bonus %s / %s" % [str(view["range_bonus"]), str(caps.get("range_bonus", "Open"))])
 	lines.append("")
 	lines.append("[b]Free points %s[/b]" % str(view["points_free"]))
+	lines.append("Crypto Coins %s" % str(view.get("coins", 0)))
 	for row in view["stats"]:
 		lines.append("%s  %s    per point: %s" % [str(row["name"]), str(row["spent"]), _point_label(row["per_point"])])
 	var cost: Variant = view["respec_cost"]
@@ -154,7 +155,10 @@ func _fill() -> void:
 	for row in view["titles"]:
 		title_bits.append("%s %s" % [str(row["level"]), str(row["name"])])
 	var earned := "none yet" if title_bits.is_empty() else ", ".join(title_bits)
-	_details.text = "Titles: %s\nResistances: Open\nHealing bonus: Open\nSet and item effects: Open" % earned
+	var effects := "Open"
+	if view.has("gear"):
+		effects = _gear_line(view["gear"])
+	_details.text = "Titles: %s\nResistances: Open\nHealing bonus: Open\nSet and item effects: %s" % [earned, effects]
 
 
 func _spend(stat: String) -> void:
@@ -173,6 +177,21 @@ func _toggle_details() -> void:
 	_showing_details = not _showing_details
 	if _details != null:
 		_details.visible = _showing_details
+
+
+func _gear_line(gear: Dictionary) -> String:
+	var stats: Dictionary = gear.get("stats", {})
+	var bits: PackedStringArray = []
+	for stat in ["Mastery", "Vitality", "Swift", "Resist"]:
+		if int(stats.get(stat, 0)) != 0:
+			bits.append("%s +%d" % [stat, int(stats[stat])])
+	if int(gear.get("ap", 0)) != 0:
+		bits.append("AP +%d" % int(gear["ap"]))
+	if int(gear.get("mp", 0)) != 0:
+		bits.append("MP +%d" % int(gear["mp"]))
+	if bits.is_empty():
+		return "none"
+	return ", ".join(bits)
 
 
 func _point_label(value: Variant) -> String:

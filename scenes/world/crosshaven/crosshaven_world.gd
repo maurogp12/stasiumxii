@@ -23,6 +23,9 @@ const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 const Progress := preload("res://backend/pc_progress.gd")
 const CharacterWindow := preload("res://scenes/world/ui/character_window.gd")
+const InventoryWindow := preload("res://scenes/world/ui/inventory_window.gd")
+const RewardPopup := preload("res://scenes/world/ui/reward_popup.gd")
+const Rewards := preload("res://backend/pc_rewards.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
@@ -52,6 +55,8 @@ var visuals: CanvasLayer
 var fx: Node
 var progress = null
 var character_window: CanvasLayer
+var inventory_window: CanvasLayer
+var reward_popup: CanvasLayer
 var npcs_root: Node2D
 var npc_plates: CanvasLayer
 var npc_book = null
@@ -155,6 +160,13 @@ func _ready() -> void:
 	character_window.name = "CharacterWindow"
 	character_window.setup(progress)
 	add_child(character_window)
+	inventory_window = InventoryWindow.new()
+	inventory_window.name = "InventoryWindow"
+	inventory_window.setup(progress)
+	add_child(inventory_window)
+	reward_popup = RewardPopup.new()
+	reward_popup.name = "RewardPopup"
+	add_child(reward_popup)
 	dialogue = NpcDialogue.new()
 	dialogue.name = "NpcDialogue"
 	add_child(dialogue)
@@ -504,6 +516,23 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_C:
 				if character_window != null:
 					character_window.toggle()
+			KEY_I:
+				if inventory_window != null:
+					inventory_window.set_at_bank(_at_bank())
+					inventory_window.toggle()
+
+
+func _at_bank() -> bool:
+	if npc_book == null or walker == null or zone == null:
+		return false
+	var hero: Vector2i = walker.anchor_cell()
+	for record in npc_book.for_zone(zone.zone_id):
+		if str(record.get("role", "")) != "banker":
+			continue
+		var at: Dictionary = record.get("cell", {})
+		var cell := Vector2i(int(at.get("x", -99)), int(at.get("y", -99)))
+		return absi(hero.x - cell.x) + absi(hero.y - cell.y) <= 1
+	return false
 
 
 func _set_zoom(z: float) -> void:
@@ -840,6 +869,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp6()
 		"wp3b":
 			await _movie_wp3b()
+		"wp14":
+			await _movie_wp14()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -1296,6 +1327,61 @@ func _town_stroll() -> void:
 		await _cardinal("n", 1, "walk")
 		await _cardinal("s", 1, "walk")
 	await get_tree().create_timer(0.55).timeout
+
+
+## Fight reward, then a Mystery Box opened from the inventory.
+func _movie_wp14() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.35)
+	weather.auto_rotate = false
+	weather.time_of_day = 12.0
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	await get_tree().create_timer(0.45).timeout
+	var loaded: Dictionary = Rewards.load_default()
+	if not bool(loaded.get("ok", false)) or progress == null:
+		return
+	var catalog = loaded["rewards"]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 60
+	var drop: Dictionary = catalog.roll("world", {
+		"level": progress.level,
+		"class_id": progress.hero_class,
+		"zone_id": zone.zone_id,
+	}, rng)
+	progress.grant(drop)
+	reward_popup.show_drop(drop, progress)
+	await get_tree().create_timer(1.8).timeout
+	await _save_wp14("reward_popup.png")
+	reward_popup.hide_drop()
+	progress.grant({
+		"coins": 0,
+		"items": [{"item_id": "mystery_box", "rarity": "regular", "count": 1}],
+	})
+	inventory_window.show_category("special")
+	inventory_window.open()
+	await get_tree().create_timer(1.2).timeout
+	await _save_wp14("box_in_bag.png")
+	var box_rng := RandomNumberGenerator.new()
+	box_rng.seed = 3
+	inventory_window.open_first_box(box_rng)
+	await get_tree().create_timer(2.0).timeout
+	await _save_wp14("box_open.png")
+
+
+func _save_wp14(file_name: String) -> void:
+	if OS.has_feature("movie"):
+		return
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp14")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await get_tree().process_frame
+	var texture := get_viewport().get_texture()
+	if texture == null:
+		return
+	var image := texture.get_image()
+	if image == null:
+		return
+	image.save_png(folder.path_join(file_name))
 
 
 ## Before: the Crossroads with the character panel closed.
