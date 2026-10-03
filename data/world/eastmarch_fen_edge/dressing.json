@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "eastmarch_fen_edge",
+  "seed": 2531,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_soil",
+      "weight": 4
+    },
+    {
+      "terrain": "golden_plains",
+      "weight": 2
+    },
+    {
+      "terrain": "farm_plowed",
+      "weight": 2
+    }
+  ],
+  "props": [
+    {
+      "type": "tree",
+      "weight": 4,
+      "stands_for": "willow"
+    },
+    {
+      "type": "fence",
+      "weight": 2,
+      "stands_for": "broken fence"
+    },
+    {
+      "type": "cart",
+      "weight": 1,
+      "stands_for": "rotting cart"
+    },
+    {
+      "type": "hay_bale",
+      "weight": 1,
+      "stands_for": "mossy log"
+    },
+    {
+      "type": "well",
+      "weight": 1,
+      "stands_for": "cattails"
+    },
+    {
+      "type": "quarry_rocks_a",
+      "weight": 1,
+      "stands_for": "mud stone"
+    }
+  ],
+  "border": {
+    "type": "tree",
+    "stands_for": "willows and reeds",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "reeds_a",
+      "weight": 4
+    },
+    {
+      "type": "reeds_b",
+      "weight": 3
+    },
+    {
+      "type": "decal_puddle_a",
+      "weight": 2
+    },
+    {
+      "type": "grass_tuft_a",
+      "weight": 2
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "eastmarch_fen_edge_entry",
+    "type": "watchtower_2x2",
+    "stands_for": "Leaning Watchtower",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

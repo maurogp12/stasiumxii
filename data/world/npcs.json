@@ -332,10 +332,10 @@
       "role": "woodcutter",
       "zone_id": "rowanvale_hub",
       "cell": {
-        "x": 1,
-        "y": 4
+        "x": 8,
+        "y": 1
       },
-      "facing": "E",
+      "facing": "S",
       "body": "npc_woodcutter",
       "lines": [
         "I cut wood for the Rowanvale hamlet.",

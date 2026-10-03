@@ -168,10 +168,11 @@ func _role_of(line: String) -> String:
 
 
 func _one_landmark(zone: WorldZone) -> bool:
-	if zone.props.size() != 1:
-		return false
-	var prop: Dictionary = zone.props[0]
-	return str(prop.get("type", "")) == "tavern_3x2"
+	var found := 0
+	for prop in zone.props:
+		if str(prop.get("id", "")).ends_with("_landmark"):
+			found += 1
+	return found == 1
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
