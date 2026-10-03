@@ -1,6 +1,7 @@
 extends SceneTree
 
-## PC level curve to 50 and the level counter. No stat changes (Open Q3).
+## PC level curve and the level counter. The cap is max_level in the curve file.
+## Stat points (spec 4.11) are not in this package.
 ## Run: godot --headless --path . -s res://tests/run_pc_progress_tests.gd
 
 const Progress = preload("res://backend/pc_progress.gd")
@@ -24,11 +25,10 @@ func _initialize() -> void:
 func _run() -> void:
 	_clear_save()
 	_test_schema_file()
-	_test_source_stays_off_phone_code()
+	_test_source_has_no_frozen_cap()
 	_test_curve_numbers()
-	_test_counter()
-	_test_cap()
-	_test_round_trip()
+	_exercise({})
+	_test_higher_cap()
 	_test_rejects()
 
 
@@ -36,15 +36,20 @@ func _test_schema_file() -> void:
 	var schema: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(SCHEMA_PATH))
 	eq(schema["additionalProperties"], false, "schema rejects unknown keys")
 	eq(schema["properties"]["format"]["const"], "stasium.level_curve", "schema format")
-	eq(schema["properties"]["max_level"]["const"], 50, "schema cap is 50")
-	eq(schema["properties"]["xp_to_next"]["minItems"], 49, "schema has 49 steps")
+	eq(schema["properties"]["max_level"].has("const"), false, "schema does not freeze the cap")
+	eq(int(schema["properties"]["max_level"]["minimum"]), 2, "schema cap is at least 2")
+	eq(schema["properties"]["xp_to_next"].has("maxItems"), false, "schema does not freeze the step count")
 
 
-func _test_source_stays_off_phone_code() -> void:
+func _test_source_has_no_frozen_cap() -> void:
 	var src := FileAccess.get_file_as_string("res://backend/pc_progress.gd")
+	var frozen := str(5 * 10)
 	eq(src.find("class_name") < 0, true, "no global class declaration")
 	eq(src.find("stasis_catalog") < 0, true, "does not import phone stasis catalog")
 	eq(src.find("res://mobile") < 0, true, "does not import a mobile script")
+	eq(src.find(frozen) < 0, true, "code does not hardcode the phase-1 cap")
+	var schema_src := FileAccess.get_file_as_string(SCHEMA_PATH)
+	eq(schema_src.find(frozen) < 0, true, "schema does not hardcode the phase-1 cap")
 
 
 func _test_curve_numbers() -> void:
@@ -53,118 +58,119 @@ func _test_curve_numbers() -> void:
 	if not bool(loaded["ok"]):
 		return
 	var steps: Array = loaded["xp_to_next"]
-	eq(steps.size(), 49, "49 increasing entries")
-	eq(int(loaded["max_level"]), 50, "max level is 50")
+	var cap := int(loaded["max_level"])
+	eq(steps.size(), cap - 1, "one step for each level below the cap")
 	var prev := 0
 	var total := 0
 	for i in steps.size():
 		var got := int(steps[i])
-		var want := int(round(100.0 * pow(float(i + 1), 1.6) / 10.0)) * 10
+		var want := _formula(i + 1)
 		eq(got, want, "xp to leave level %d" % (i + 1))
 		eq(got > prev, true, "entry %d increases" % i)
 		prev = got
 		total += got
-	eq(int(steps[0]), 100, "level 1 to 2 is 100")
-	eq(int(steps[1]), 300, "level 2 to 3 is 300")
-	eq(int(steps[9]), 3980, "level 10 to 11 is 3980")
-	eq(int(steps[24]), 17250, "level 25 to 26 is 17250")
-	eq(int(steps[48]), 50620, "level 49 to 50 is 50620")
-	eq(total, 979430, "total XP to reach 50")
+	eq(int(steps[0]), 100, "first step is 100")
+	eq(int(steps[1]), 300, "second step is 300")
+	eq(int(steps[9]), 3980, "tenth step is 3980")
+	eq(int(steps[24]), 17250, "twenty-fifth step is 17250")
+	eq(int(steps[steps.size() - 1]), 50620, "last shipped step is 50620")
+	eq(total, 979430, "shipped curve sums to 979430")
 
 
-func _test_counter() -> void:
+func _test_higher_cap() -> void:
+	var cap := 100
+	var doc := _curve_of(cap)
+	var parsed: Dictionary = Progress.parse_curve(doc)
+	eq(parsed["ok"], true, "a higher cap curve parses (%s)" % str(parsed["errors"]))
+	eq(int(parsed["max_level"]), cap, "higher cap is kept")
+	eq((parsed["xp_to_next"] as Array).size(), cap - 1, "higher cap has one step per level below it")
+	var steps: Array = parsed["xp_to_next"]
+	var prev := 0
+	for i in steps.size():
+		var got := int(steps[i])
+		eq(got, _formula(i + 1), "higher curve step %d" % (i + 1))
+		eq(got > prev, true, "higher curve step %d increases" % i)
+		prev = got
+	_exercise(doc)
+
+
+func _exercise(doc: Dictionary) -> void:
 	_clear_save()
-	var hero = Progress.new()
-	eq(hero.level, 1, "a new hero starts at level 1")
-	eq(hero.xp, 0, "a new hero starts at 0 XP")
-	eq(hero.curve_ok, true, "the shipped curve is valid")
-	var none: Array = hero.add_xp(0)
-	eq(none.is_empty(), true, "zero XP does not level")
-	eq(hero.add_xp(-5).is_empty(), true, "negative XP is ignored")
-	eq(hero.level, 1, "ignored XP leaves the level")
-	eq(hero.xp, 0, "ignored XP leaves the counter")
-	var partial: Array = hero.add_xp(50)
-	eq(partial.is_empty(), true, "50 XP does not level")
-	eq(hero.level, 1, "still level 1")
-	eq(hero.xp, 50, "50 XP is kept")
-	var once: Array = hero.add_xp(50)
-	eq(once.size(), 1, "100 XP emits one level-up")
-	eq(str(once[0]["kind"]), "level_up", "event kind")
-	eq(int(once[0]["level"]), 2, "event level is 2")
-	eq(once[0].size(), 2, "event has no stat fields")
-	eq(hero.level, 2, "hero is level 2")
-	eq(hero.xp, 0, "threshold XP is spent")
+	var hero = _open(doc)
+	var label := "shipped" if doc.is_empty() else "higher cap"
+	eq(hero.level, 1, "%s hero starts at level 1" % label)
+	eq(hero.xp, 0, "%s hero starts at 0 XP" % label)
+	eq(hero.curve_ok, true, "%s curve is valid" % label)
+	var first := int(hero.xp_to_next[0])
+	var second := int(hero.xp_to_next[1])
+	var half := int(first / 2)
+	eq(hero.add_xp(0).is_empty(), true, "%s zero XP does not level" % label)
+	eq(hero.add_xp(-5).is_empty(), true, "%s negative XP is ignored" % label)
+	eq(hero.level, 1, "%s ignored XP leaves the level" % label)
+	eq(hero.xp, 0, "%s ignored XP leaves the counter" % label)
+	var partial: Array = hero.add_xp(half)
+	eq(partial.is_empty(), true, "%s a partial step does not level" % label)
+	eq(hero.xp, half, "%s partial XP is kept" % label)
+	var once: Array = hero.add_xp(first - half)
+	eq(once.size(), 1, "%s the first step emits one level-up" % label)
+	eq(str(once[0]["kind"]), "level_up", "%s event kind" % label)
+	eq(int(once[0]["level"]), 2, "%s event level is 2" % label)
+	eq(once[0].size(), 2, "%s event has no stat fields" % label)
+	eq(hero.level, 2, "%s hero is level 2" % label)
+	eq(hero.xp, 0, "%s threshold XP is spent" % label)
 	_clear_save()
-	hero = Progress.new()
-	var twice: Array = hero.add_xp(400)
-	eq(hero.level, 3, "400 XP reaches level 3")
-	eq(hero.xp, 0, "400 is exactly two steps")
-	eq(twice.size(), 2, "two level-up events")
-	eq(int(twice[0]["level"]), 2, "first event is level 2")
-	eq(int(twice[1]["level"]), 3, "second event is level 3")
-
-
-func _test_cap() -> void:
+	hero = _open(doc)
+	var twice: Array = hero.add_xp(first + second)
+	eq(hero.level, 3, "%s two steps reach level 3" % label)
+	eq(hero.xp, 0, "%s two steps spend exactly" % label)
+	eq(twice.size(), 2, "%s two level-up events" % label)
+	eq(int(twice[0]["level"]), 2, "%s first event is level 2" % label)
+	eq(int(twice[1]["level"]), 3, "%s second event is level 3" % label)
 	_clear_save()
-	var hero = Progress.new()
-	var total := 0
-	for step in hero.xp_to_next:
-		total += int(step)
+	hero = _open(doc)
+	var total := _sum(hero)
 	var events: Array = hero.add_xp(total)
-	eq(hero.level, 50, "the full curve reaches 50")
-	eq(hero.xp, 0, "exact XP lands on 0 past the last step")
-	eq(events.size(), 49, "49 level-ups from 1 to 50")
-	eq(int(events[48]["level"]), 50, "last event is level 50")
-	eq(hero.level <= 50, true, "level does not exceed 50")
+	eq(hero.level, hero.max_level, "%s the full curve reaches max_level" % label)
+	eq(hero.xp, 0, "%s exact XP lands on 0 past the last step" % label)
+	eq(events.size(), hero.xp_to_next.size(), "%s one level-up per step" % label)
+	eq(int(events[events.size() - 1]["level"]), hero.max_level, "%s last event is max_level" % label)
+	eq(hero.level <= hero.max_level, true, "%s level does not exceed max_level" % label)
 	var extra: Array = hero.add_xp(10)
-	eq(extra.is_empty(), true, "XP past 50 does not level")
-	eq(hero.level, 50, "level stays 50")
-	eq(hero.xp, 10, "XP past 50 is kept")
+	eq(extra.is_empty(), true, "%s XP past the cap does not level" % label)
+	eq(hero.level, hero.max_level, "%s level stays at max_level" % label)
+	eq(hero.xp, 10, "%s XP past the cap is kept" % label)
 	var more: Array = hero.add_xp(25)
-	eq(more.is_empty(), true, "further XP still does not level")
-	eq(hero.xp, 35, "kept XP accumulates")
-	eq(hero.level, 50, "still level 50")
-
-
-func _test_round_trip() -> void:
+	eq(more.is_empty(), true, "%s further XP still does not level" % label)
+	eq(hero.xp, 35, "%s kept XP accumulates" % label)
 	_clear_save()
-	var hero = Progress.new()
-	hero.add_xp(150)
-	eq(hero.level, 2, "setup level before save")
-	eq(hero.xp, 50, "setup XP before save")
-	eq(hero.save(), true, "save writes")
-	var again = Progress.new()
-	eq(again.level, 2, "load restores level")
-	eq(again.xp, 50, "load restores XP")
+	hero = _open(doc)
+	hero.add_xp(first + half)
+	eq(hero.level, 2, "%s setup level before save" % label)
+	eq(hero.xp, half, "%s setup XP before save" % label)
+	eq(hero.save(), true, "%s save writes" % label)
+	var again = _open(doc)
+	eq(again.level, 2, "%s load restores level" % label)
+	eq(again.xp, half, "%s load restores XP" % label)
 	again.level = 1
 	again.xp = 0
-	eq(again.load(), true, "load() re-reads the save")
-	eq(again.level, 2, "load() restores level")
-	eq(again.xp, 50, "load() restores XP")
-	again.add_xp(10)
-	eq(again.save(), true, "save after more XP")
-	var third = Progress.new()
-	eq(third.level, 2, "second load keeps the level")
-	eq(third.xp, 60, "second load keeps the XP")
-	_clear_save()
-	var fresh = Progress.new()
-	eq(fresh.level, 1, "missing save starts at 1")
-	eq(fresh.xp, 0, "missing save starts at 0 XP")
+	eq(again.load(), true, "%s load() re-reads the save" % label)
+	eq(again.level, 2, "%s load() restores level" % label)
+	eq(again.xp, half, "%s load() restores XP" % label)
 	var bad := FileAccess.open(Progress.SAVE_PATH, FileAccess.WRITE)
-	bad.store_string("{\"level\":51,\"xp\":0}")
+	bad.store_string("{\"level\":%d,\"xp\":0}" % (hero.max_level + 1))
 	bad.close()
-	var ignored = Progress.new()
-	eq(ignored.level, 1, "a level above 50 is not loaded")
-	eq(ignored.xp, 0, "a rejected save does not apply XP")
+	var ignored = _open(doc)
+	eq(ignored.level, 1, "%s a level above max_level is not loaded" % label)
+	eq(ignored.xp, 0, "%s a rejected save does not apply XP" % label)
 	_clear_save()
-	hero = Progress.new()
-	hero.add_xp(total_xp() + 80)
-	eq(hero.level, 50, "saved hero can be level 50")
-	eq(hero.xp, 80, "saved hero keeps XP past 50")
-	eq(hero.save(), true, "level 50 saves")
-	var capped = Progress.new()
-	eq(capped.level, 50, "level 50 round-trips")
-	eq(capped.xp, 80, "XP past 50 round-trips")
+	hero = _open(doc)
+	hero.add_xp(_sum(hero) + 80)
+	eq(hero.level, hero.max_level, "%s saved hero can sit at max_level" % label)
+	eq(hero.xp, 80, "%s saved hero keeps XP past the cap" % label)
+	eq(hero.save(), true, "%s max_level saves" % label)
+	var capped = _open(doc)
+	eq(capped.level, hero.max_level, "%s max_level round-trips" % label)
+	eq(capped.xp, 80, "%s XP past the cap round-trips" % label)
 
 
 func _test_rejects() -> void:
@@ -173,21 +179,48 @@ func _test_rejects() -> void:
 	_rejects(doc, "unknown key bonus")
 	var short := _curve_doc()
 	(short["xp_to_next"] as Array).pop_back()
-	_rejects(short, "must have 49 entries")
+	_rejects(short, "one entry for each level below max_level")
 	var flat := _curve_doc()
 	flat["xp_to_next"][5] = flat["xp_to_next"][4]
 	_rejects(flat, "not strictly increasing")
 	var cap := _curve_doc()
-	cap["max_level"] = 30
-	_rejects(cap, "max_level must be 50")
+	cap["max_level"] = int(cap["max_level"]) + 1
+	_rejects(cap, "one entry for each level below max_level")
 	eq(Progress.parse_curve([])["ok"], false, "an array is not a curve")
+	var tiny := _curve_of(3)
+	eq(Progress.parse_curve(tiny)["ok"], true, "a short curve is valid when its length matches")
 
 
-func total_xp() -> int:
+func _open(doc: Dictionary):
+	var hero = Progress.new()
+	if not doc.is_empty():
+		hero.bind_curve(doc)
+		hero.read_save()
+	return hero
+
+
+func _sum(hero) -> int:
 	var total := 0
-	for step in Progress.load_curve()["xp_to_next"]:
+	for step in hero.xp_to_next:
 		total += int(step)
 	return total
+
+
+func _formula(level: int) -> int:
+	return int(round(100.0 * pow(float(level), 1.6) / 10.0)) * 10
+
+
+func _curve_of(cap: int) -> Dictionary:
+	var steps: Array = []
+	for level in cap - 1:
+		steps.append(_formula(level + 1))
+	return {
+		"format": "stasium.level_curve",
+		"format_version": 1,
+		"status": "proposed",
+		"max_level": cap,
+		"xp_to_next": steps,
+	}
 
 
 func _curve_doc() -> Dictionary:

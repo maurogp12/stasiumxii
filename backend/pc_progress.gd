@@ -1,7 +1,7 @@
 extends RefCounted
 
-## PC hero level from 1 to 50. Curve, counter, and a level-up event only.
-## Open Q3: where XP comes from, and what a level gives, are not decided.
+## PC hero level from 1 to max_level in level_curve.json. Curve, counter, and a
+## level-up event only. Stat points (spec 4.11) are a later package.
 ## This script does not change stats and does not import phone level code.
 ## Loaded with preload. No global class.
 
@@ -13,7 +13,7 @@ const DOC_KEYS: Array[String] = ["format", "format_version", "status", "max_leve
 
 var level: int = 1
 var xp: int = 0
-var max_level: int = 50
+var max_level: int = 1
 var xp_to_next: Array = []
 var curve_ok: bool = false
 
@@ -53,7 +53,7 @@ static func parse_curve(doc: Variant) -> Dictionary:
 	}
 
 
-## XP added toward the next level. At level 50 further XP is kept and does not level.
+## XP added toward the next level. At max_level further XP is kept and does not level.
 ## Returns one {kind: level_up, level} event per level gained. No stat payload.
 func add_xp(n: int) -> Array:
 	var events: Array = []
@@ -84,6 +84,20 @@ func load() -> bool:
 	return read_save()
 
 
+## Swap in a parsed curve (tests, and the next phase's longer file).
+## Resets level and XP. Call read_save() afterwards to apply a save against this cap.
+func bind_curve(doc: Dictionary) -> bool:
+	var parsed := parse_curve(doc)
+	if not bool(parsed.get("ok", false)):
+		return false
+	max_level = int(parsed["max_level"])
+	xp_to_next = parsed["xp_to_next"]
+	curve_ok = true
+	level = 1
+	xp = 0
+	return true
+
+
 func read_save() -> bool:
 	if not FileAccess.file_exists(SAVE_PATH):
 		return false
@@ -112,14 +126,15 @@ static func _check_curve(doc: Dictionary, errors: Array) -> void:
 		_err(errors, "format_version must be %d" % FORMAT_VERSION)
 	if str(doc.get("status", "")) != "proposed":
 		_err(errors, "status must be proposed")
-	if not _whole(doc.get("max_level", null)) or int(doc.get("max_level", -1)) != 50:
-		_err(errors, "max_level must be 50")
+	var cap_ok := _whole(doc.get("max_level", null)) and int(doc.get("max_level", 0)) >= 2
+	if not cap_ok:
+		_err(errors, "max_level must be an integer of 2 or more")
 	if typeof(doc.get("xp_to_next", null)) != TYPE_ARRAY:
 		_err(errors, "xp_to_next must be an array")
 		return
 	var steps: Array = doc["xp_to_next"]
-	if steps.size() != 49:
-		_err(errors, "xp_to_next must have 49 entries")
+	if cap_ok and steps.size() != int(doc["max_level"]) - 1:
+		_err(errors, "xp_to_next must have one entry for each level below max_level")
 	var prev := 0
 	for i in steps.size():
 		var value: Variant = steps[i]
