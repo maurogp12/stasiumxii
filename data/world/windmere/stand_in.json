@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "windmere",
+  "weather": [
+    "light_cloud"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.84,
+      0.92,
+      1.14
+    ],
+    "haze_col": [
+      0.55,
+      0.7,
+      0.9
+    ],
+    "haze_max": 0.16,
+    "saturation": 0.98
+  }
+}

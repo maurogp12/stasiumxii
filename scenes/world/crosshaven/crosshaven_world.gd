@@ -153,9 +153,11 @@ func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 		if found != null:
 			next = found as WorldMap
 		elif map == null or map.zone(zone_id) == null:
+			_show_banner(_unbuilt_label(zone_id))
 			walk_rejected.emit("region_not_built")
 			return
 	if next == null or next.zone(zone_id) == null:
+		_show_banner(_unbuilt_label(zone_id))
 		walk_rejected.emit("region_not_built")
 		return
 	map = next
@@ -208,8 +210,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 	camera.limit_bottom = int(rect.end.y)
 	camera.position = walker.position
 	camera.reset_smoothing()
-	weather.set_zone_pool(zone.presentation.get("default_weather", ["clear"]))
-	weather.settle()
+	_apply_region_look()
 	_show_banner(Pick.zone_name(zone))
 	_refresh_hud()
 	_apply_decor_density()
@@ -455,6 +456,51 @@ func _build_hud() -> void:
 	sheet.add_child(_fade)
 
 
+func _unbuilt_label(zone_id: String) -> String:
+	var levels = null
+	if atlas != null:
+		levels = atlas.levels
+	if levels == null:
+		return "Region: not open yet"
+	var band: Dictionary = levels.zone_for_chunk(zone_id)
+	if band.is_empty():
+		return "Region: not open yet"
+	return "%s (%d–%d): not open yet" % [str(band["name"]), int(band["level_min"]), int(band["level_max"])]
+
+
+func _region_stand_in(region: String) -> Dictionary:
+	var path := "res://data/world/%s/stand_in.json" % region
+	if not FileAccess.file_exists(path):
+		return {}
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+	return parsed
+
+
+func _apply_region_look() -> void:
+	var look := _region_stand_in(zone.region)
+	var pool: Array = ["clear"]
+	if look.has("weather") and typeof(look["weather"]) == TYPE_ARRAY:
+		pool = look["weather"]
+	elif zone.presentation.has("default_weather"):
+		pool = zone.presentation["default_weather"]
+	weather.set_zone_pool(pool)
+	weather.settle()
+	if fx == null:
+		return
+	var mat: Variant = fx.get("_grade_mat")
+	if mat == null:
+		return
+	var grade: Dictionary = look.get("grade", {})
+	var warm: Array = grade.get("warm_mul", [1.02, 1.0, 0.96])
+	var haze: Array = grade.get("haze_col", [0.45, 0.52, 0.62])
+	mat.set_shader_parameter("warm_mul", Color(float(warm[0]), float(warm[1]), float(warm[2])))
+	mat.set_shader_parameter("haze_col", Color(float(haze[0]), float(haze[1]), float(haze[2])))
+	mat.set_shader_parameter("haze_max", float(grade.get("haze_max", 0.15)))
+	mat.set_shader_parameter("saturation", float(grade.get("saturation", 1.06)))
+
+
 func _show_banner(text: String) -> void:
 	_banner.text = text
 	_banner.modulate.a = 1.0
@@ -515,6 +561,9 @@ func _apply_world_window() -> void:
 	# size from the project viewport at startup, so 1280×720 captures use a
 	# temporary override.cfg and are not a project setting.
 	if DisplayServer.get_name() == "headless":
+		return
+	if _movie != "":
+		DisplayServer.window_set_size(Vector2i(1920, 1080))
 		return
 	var current := DisplayServer.window_get_size()
 	if current.x == 1280 and current.y == 720:
@@ -609,6 +658,10 @@ func _play_movie(mode: String) -> void:
 			await _movie_v7_tour()
 		"ironjaw_tall":
 			await _movie_ironjaw_tall()
+		"wp4gate":
+			await _movie_wp4_gate()
+		"wp5astills":
+			await _movie_wp5a_stills()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -813,6 +866,59 @@ func _near_road(cell: Vector2i, dist: int) -> bool:
 
 ## Full preset, clear noon. The hero stands in the open square, south of the
 ## building mass, so the houses sit in frame and he is not under a roof sprite.
+## Stoneford gate into Rowanvale, on to the dungeon door, and back out the gate.
+func _movie_wp4_gate() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.6)
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.playback = 3.0
+	await enter_zone("crosshaven_stoneford", Vector2i(3, 3), false)
+	await _go(Vector2i(3, 0), "walk")
+	await _cross_to("rowanvale_hub")
+	await _cross_to("rowanvale_door")
+	await _go(Vector2i(20, 12), "run")
+	await _cross_to("rowanvale_hub")
+	await _cross_to("rowanvale_entry")
+	await _go(Vector2i(0, 16), "run")
+	await get_tree().create_timer(0.8).timeout
+
+
+## One still of each region's entry, at zoom 1.6, with that region's grade.
+func _movie_wp5a_stills() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.6)
+	weather.auto_rotate = false
+	weather.time_of_day = 12.0
+	var regions: Array[String] = [
+		"rowanvale", "windmere", "brinewake", "slagcrown", "eastmarch_fen_edge",
+		"gloomfen_mire", "stormspire", "ashen_shardfields", "blightwood_hollow",
+	]
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp5a/stills")
+	DirAccess.make_dir_recursive_absolute(folder)
+	for region in regions:
+		await enter_zone(region + "_entry", Vector2i(16, 12), false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if _banner != null:
+			_banner.modulate.a = 0.0
+		walker.facing = "s"
+		walker._show_idle()
+		await get_tree().process_frame
+		var image := get_viewport().get_texture().get_image()
+		image.save_png(folder.path_join(region + ".png"))
+	await get_tree().process_frame
+
+
+func _cross_to(target_zone: String) -> void:
+	var cell := _exit_toward(target_zone)
+	if cell.x < 0:
+		return
+	await _go(cell, "run")
+
+
 func _movie_v7_still(town: String) -> void:
 	settings.apply_preset("Full")
 	var zone_id := "crosshaven_" + town

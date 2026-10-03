@@ -1,0 +1,41 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "slagcrown",
+  "start_zone": "slagcrown_entry",
+  "start": {
+    "zone_id": "slagcrown_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "slagcrown_entry",
+      "file": "zones/slagcrown_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "slagcrown_hub",
+      "file": "zones/slagcrown_hub.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "slagcrown_volcanic_3",
+      "file": "zones/slagcrown_volcanic_3.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "slagcrown_door",
+      "file": "zones/slagcrown_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

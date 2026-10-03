@@ -1,0 +1,41 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "windmere",
+  "start_zone": "windmere_entry",
+  "start": {
+    "zone_id": "windmere_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "windmere_entry",
+      "file": "zones/windmere_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "windmere_hub",
+      "file": "zones/windmere_hub.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "windmere_outer_3",
+      "file": "zones/windmere_outer_3.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "windmere_door",
+      "file": "zones/windmere_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

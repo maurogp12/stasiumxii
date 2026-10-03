@@ -1,0 +1,29 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "blightwood_hollow",
+  "start_zone": "blightwood_hollow_entry",
+  "start": {
+    "zone_id": "blightwood_hollow_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "blightwood_hollow_entry",
+      "file": "zones/blightwood_hollow_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "blightwood_hollow_door",
+      "file": "zones/blightwood_hollow_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

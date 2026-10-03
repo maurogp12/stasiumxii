@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "brinewake",
+  "weather": [
+    "clear"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.9,
+      1.02,
+      1.06
+    ],
+    "haze_col": [
+      0.4,
+      0.62,
+      0.7
+    ],
+    "haze_max": 0.1,
+    "saturation": 1.06
+  }
+}

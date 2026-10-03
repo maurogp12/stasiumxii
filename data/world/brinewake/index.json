@@ -1,0 +1,35 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "brinewake",
+  "start_zone": "brinewake_entry",
+  "start": {
+    "zone_id": "brinewake_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "brinewake_entry",
+      "file": "zones/brinewake_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "brinewake_hub",
+      "file": "zones/brinewake_hub.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "brinewake_door",
+      "file": "zones/brinewake_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}
