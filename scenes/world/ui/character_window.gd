@@ -191,6 +191,10 @@ func _point_label(value: Variant) -> String:
 		bits.append("%s less damage taken%s" % [_percent(doc["damage_taken"]), cap])
 	if doc.has("initiative"):
 		bits.append("+%s Initiative" % str(doc["initiative"]))
+	if doc.has("bonus_damage"):
+		bits.append("%s damage" % _percent(doc["bonus_damage"]))
+	if doc.has("follow_up"):
+		bits.append("%s chance of one follow-up turn" % _percent(doc["follow_up"]))
 	if bits.is_empty():
 		return str(value)
 	return ", ".join(bits)
