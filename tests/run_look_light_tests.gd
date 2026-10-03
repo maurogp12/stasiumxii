@@ -107,6 +107,7 @@ func _test_outdoor_grade_and_rim() -> void:
 	eq(tree["units"].modulate, Color.WHITE, "fighters are not tinted as a group")
 	var mat := tree["tile"].material as ShaderMaterial
 	truthy(mat != null and mat.shader != null and mat.shader.code.find("l7_grade") >= 0, "the tile uses the grade shader")
+	truthy(mat.shader.code.find("texture(TEXTURE") < 0, "a drawn tile is graded from its own color, not sampled twice")
 	eq(tree["jungle"].modulate, Color.WHITE, "the jungle node stays white")
 	eq(tree["jungle"].look_grade_enabled(), true, "the jungle plate takes the grade")
 	var plate_code := ""

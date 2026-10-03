@@ -94,6 +94,18 @@ void fragment() {
 }
 """
 
+## A tile paints its texture in _draw. On that path the fragment COLOR is
+## already the textured pixel, so sampling TEXTURE again darkens the sand
+## before the grade runs. Sprites still sample TEXTURE.
+const _DRAW_GRADE_SHADER := """shader_type canvas_item;
+""" + GRADE_GLSL + """
+void fragment() {
+	vec4 c = COLOR;
+	c.rgb = l7_grade(c.rgb);
+	COLOR = c;
+}
+"""
+
 const _VIGNETTE_CODE := """shader_type canvas_item;
 uniform float strength = 0.62;
 uniform vec3 edge : source_color = vec3(0.03, 0.04, 0.08);
@@ -114,6 +126,7 @@ static var suppressed := false
 ## rejected grade, kept for the comparison sheet. Dungeon ignores this.
 static var outdoor_preset := PRESET_MEDIUM
 static var _shared_grade: ShaderMaterial
+static var _shared_draw_grade: ShaderMaterial
 
 
 var _board: Node2D
@@ -234,9 +247,12 @@ static func _attach_grade(item: CanvasItem, on: bool) -> void:
 		return
 	if item.material != null and not tagged:
 		return
-	if _shared_grade == null:
+	var mat := _shared_grade
+	if not (item is Sprite2D) and not (item is AnimatedSprite2D):
+		mat = _shared_draw_grade
+	if mat == null:
 		return
-	item.material = _shared_grade
+	item.material = mat
 	item.set_meta("_look_grade_mat", true)
 
 
@@ -435,24 +451,33 @@ func _apply_outdoor_preset() -> void:
 
 
 func _ensure_shared() -> void:
-	if _shared_grade != null:
-		return
-	var shader := Shader.new()
-	shader.code = _GRADE_SHADER
-	_shared_grade = ShaderMaterial.new()
-	_shared_grade.shader = shader
+	if _shared_grade == null:
+		var shader := Shader.new()
+		shader.code = _GRADE_SHADER
+		_shared_grade = ShaderMaterial.new()
+		_shared_grade.shader = shader
+	if _shared_draw_grade == null:
+		var drawn := Shader.new()
+		drawn.code = _DRAW_GRADE_SHADER
+		_shared_draw_grade = ShaderMaterial.new()
+		_shared_draw_grade.shader = drawn
 
 
 func _push_shared() -> void:
-	if _shared_grade == null:
+	_push_material(_shared_grade)
+	_push_material(_shared_draw_grade)
+
+
+func _push_material(mat: ShaderMaterial) -> void:
+	if mat == null:
 		return
-	_shared_grade.set_shader_parameter("grade_on", 1.0 if active else 0.0)
-	_shared_grade.set_shader_parameter("grade_sat", _sat)
-	_shared_grade.set_shader_parameter("grade_contrast", _contrast)
-	_shared_grade.set_shader_parameter("grade_gain", _gain)
-	_shared_grade.set_shader_parameter("grade_bias", Vector3(_bias.r, _bias.g, _bias.b))
-	_shared_grade.set_shader_parameter("grade_shadow", Vector3(_shadow.r, _shadow.g, _shadow.b))
-	_shared_grade.set_shader_parameter("grade_shade", _shade)
+	mat.set_shader_parameter("grade_on", 1.0 if active else 0.0)
+	mat.set_shader_parameter("grade_sat", _sat)
+	mat.set_shader_parameter("grade_contrast", _contrast)
+	mat.set_shader_parameter("grade_gain", _gain)
+	mat.set_shader_parameter("grade_bias", Vector3(_bias.r, _bias.g, _bias.b))
+	mat.set_shader_parameter("grade_shadow", Vector3(_shadow.r, _shadow.g, _shadow.b))
+	mat.set_shader_parameter("grade_shade", _shade)
 
 
 func _grade_board() -> void:
