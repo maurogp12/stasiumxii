@@ -20,6 +20,45 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _overlay: HighlightOverlay
+## View-only floor plate (Thunderwell Core and later themes). Null keeps the Koliseo dress.
+var _look_floor: Texture2D = null
+var _look_pulse: float = 1.0
+## Per-channel tint after the shadow lift. White leaves the lifted paint unchanged.
+var _look_grade: Color = Color(1, 1, 1, 1)
+## Exponent on the linear plate. Below 1 lifts the dark stone without clipping the traces.
+var _look_lift: float = 1.0
+var _look_flip_h: bool = false
+var _look_flip_v: bool = false
+var _look_diag: bool = false
+var _look_slot := Rect2(0, 0, 1, 1)
+var _look_sprite: Sprite2D
+var _look_mat: ShaderMaterial
+
+const LOOK_FLOOR_SHADER := """shader_type canvas_item;
+uniform vec3 floor_grade = vec3(1.0);
+uniform float floor_lift = 1.0;
+// Screen flips stay inside one strip slot. h mirrors x, v mirrors y.
+uniform vec4 slot_rect = vec4(0.0, 0.0, 1.0, 1.0);
+uniform float flip_h = 0.0;
+uniform float flip_v = 0.0;
+vec2 slot_uv(vec2 uv) {
+	if (flip_h < 0.5 && flip_v < 0.5)
+		return uv;
+	vec2 local = (uv - slot_rect.xy) / slot_rect.zw;
+	if (flip_h > 0.5)
+		local.x = 1.0 - local.x;
+	if (flip_v > 0.5)
+		local.y = 1.0 - local.y;
+	return slot_rect.xy + local * slot_rect.zw;
+}
+void fragment() {
+	vec4 tex = texture(TEXTURE, slot_uv(UV));
+	float lift = clamp(floor_lift, 0.05, 1.0);
+	vec3 rgb = pow(max(tex.rgb, vec3(0.0002)), vec3(lift));
+	rgb *= floor_grade;
+	COLOR = vec4(rgb, tex.a);
+}
+"""
 
 
 class HighlightOverlay extends Node2D:
@@ -34,8 +73,67 @@ func _ready() -> void:
 	_ensure_overlay()
 
 
+func set_look_floor(tex: Texture2D) -> void:
+	_look_floor = tex
+	_sync_look_sprite()
+	_request_paint()
+
+
+func clear_look_floor() -> void:
+	_look_grade = Color(1, 1, 1, 1)
+	_look_lift = 1.0
+	_look_flip_h = false
+	_look_flip_v = false
+	_look_diag = false
+	_look_slot = Rect2(0, 0, 1, 1)
+	set_look_floor(null)
+
+
+## Grid-axis flips for a route tile. h mirrors x and v mirrors y inside the slot.
+func set_look_orient(flip_h: bool, flip_v: bool, diag: bool, slot_uv: Rect2) -> void:
+	_look_flip_h = flip_h
+	_look_flip_v = flip_v
+	_look_diag = diag
+	_look_slot = slot_uv
+	_sync_look_sprite()
+
+
+func look_floor() -> Texture2D:
+	return _look_floor
+
+
+func set_look_grade(color: Color) -> void:
+	_look_grade = Color(color.r, color.g, color.b, 1.0)
+	_sync_look_sprite()
+
+
+func look_grade() -> Color:
+	return _look_grade
+
+
+func set_look_lift(amount: float) -> void:
+	_look_lift = clampf(amount, 0.05, 1.0)
+	_sync_look_sprite()
+
+
+func look_lift() -> float:
+	return _look_lift
+
+
+func set_look_pulse(amount: float) -> void:
+	var next := clampf(amount, 0.0, 2.0)
+	if is_equal_approx(_look_pulse, next):
+		return
+	_look_pulse = next
+	if _look_floor != null:
+		_sync_look_sprite()
+
+
 func _draw() -> void:
 	var points := _diamond_points()
+	if _look_floor != null:
+		_paint_label()
+		return
 	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
 	if tex == null:
 		draw_colored_polygon(points, fill_color())
@@ -48,6 +146,43 @@ func _draw() -> void:
 		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
 		if prop_tex != null:
 			_paint_prop(prop_tex)
+	_paint_label()
+
+
+func _sync_look_sprite() -> void:
+	if _look_floor == null:
+		if _look_sprite != null:
+			_look_sprite.visible = false
+		return
+	if _look_sprite == null:
+		_look_sprite = Sprite2D.new()
+		_look_sprite.name = "LookFloor"
+		_look_sprite.centered = true
+		_look_sprite.z_as_relative = true
+		_look_sprite.z_index = -1
+		_look_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(_look_sprite)
+	if _look_mat == null:
+		var shader := Shader.new()
+		shader.code = LOOK_FLOOR_SHADER
+		_look_mat = ShaderMaterial.new()
+		_look_mat.shader = shader
+	_look_sprite.material = _look_mat
+	_look_sprite.texture = _look_floor
+	_look_sprite.visible = true
+	var width := float(_look_floor.get_width())
+	if width > 1.0:
+		var scale := 64.0 / width
+		_look_sprite.scale = Vector2(scale, scale)
+	var pulse := _look_pulse
+	_look_mat.set_shader_parameter("floor_grade", Vector3(_look_grade.r * pulse, _look_grade.g * pulse, _look_grade.b * pulse))
+	_look_mat.set_shader_parameter("floor_lift", _look_lift)
+	_look_mat.set_shader_parameter("flip_h", 1.0 if _look_flip_h else 0.0)
+	_look_mat.set_shader_parameter("flip_v", 1.0 if _look_flip_v else 0.0)
+	_look_mat.set_shader_parameter("slot_rect", Vector4(_look_slot.position.x, _look_slot.position.y, _look_slot.size.x, _look_slot.size.y))
+
+
+func _paint_label() -> void:
 	var label := drawn_label()
 	if label == "":
 		return
@@ -166,12 +301,18 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	if color.a <= 0.0:
 		return
 	var points := _diamond_points()
+	# Thunderwell move tiles need a brighter fill than #73C7EB at 0.5, or the
+	# full-pulse trace wins after bloom. Other themes keep overlay_color().
+	var line := Color(color.r, color.g, color.b, 0.95)
+	var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
+	if highlight == "move" and _look_floor != null:
+		color = Color(0.55, 0.93, 1.0, 0.88)
+		line = Color(0.75, 1.0, 1.0, 1.0)
+		width = 4.0
 	canvas.draw_colored_polygon(points, color)
 	if overlay_draws_outline():
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
-		var line := Color(color.r, color.g, color.b, 0.95)
-		var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
 		canvas.draw_polyline(outline, line, width, true)
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)

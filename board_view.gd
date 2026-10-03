@@ -54,6 +54,8 @@ const VISUAL_SORT := preload("res://board/visual_sort.gd")
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const VFX_DIRECTOR := preload("res://vfx/vfx_director.gd")
 const SHADE_MARKER := preload("res://board/shade_marker.gd")
+## Thunderwell floor theme (view only). Rules and CombatSim stay as they are.
+const THUNDERWELL_FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
@@ -1558,6 +1560,23 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.set_paint_props(_paint_props_at(paint, cell))
 		tile.position = VISUAL_SORT.cell_to_local(cell, float(rec.get("elevation", 0.0)))
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
+	_sync_thunderwell_floor(snap)
+
+
+## View-only. An empty id clears the theme. Does not touch the snapshot.
+func set_board_theme(theme_id: String) -> void:
+	THUNDERWELL_FLOOR.request_theme(theme_id)
+	if _booted:
+		_apply_board_tiles(_sim().snapshot())
+
+
+func _sync_thunderwell_floor(snap: Dictionary) -> void:
+	var layer = get_node_or_null("ThunderwellFloor")
+	if layer == null:
+		layer = THUNDERWELL_FLOOR.new()
+		layer.name = "ThunderwellFloor"
+		add_child(layer)
+	layer.sync_board(self, snap)
 
 
 func _paint_props_at(paint: Dictionary, cell: Vector2i) -> Array:
