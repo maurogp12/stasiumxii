@@ -1673,6 +1673,105 @@ designated zones also monsters above lvl 25 are agressive".
   healing); fail when a 4.14 rule is broken.
 - **Media:** none (the printed table).
 
+#### WP10a: Region dressing (Scenario Art + Technical Artist + world agent)
+
+Luca, 3 Oct 2026: the WP5a / WP6 stills have no decorations (no trees, no dead
+trees) and every region looks the same except for its colour. **WP10a runs
+before WP14's art-dependent parts and before WP5b**, region by region. It is
+the first slice of WP10.
+
+**Order and grouping** (follows the player's path; one PR per pair):
+
+1. Rowanvale + Windmere
+2. Brinewake + Slagcrown
+3. Eastmarch Fen Edge + Gloomfen Mire
+4. Stormspire + Ashen Shardfields
+5. Blightwood Hollow on its own (end-game, 8 chunks, richest set)
+
+**Who does what:** Scenario Art paints, the Technical Artist checks the import
+and the atlas, and the world agent wires the dressing into the chunks. The
+placer (step 0 below) is built first, so each art pair can be wired as soon as
+it lands.
+
+**WP14 runs in parallel.** The world agent builds the placer first, then
+works on WP14 while the art is painted. When a region pair's art lands, wiring
+that pair takes priority over WP14 (a short interrupt: data and stills only).
+
+**Step 0 (world agent, first): the dressing placer.**
+- `data/world/<region>/dressing.json` (format `stasium.region_dressing` v1):
+  the region's ground-tile mix, a weighted prop list, cluster settings and a
+  fixed seed.
+- `build_region_standins.py` (or a new `dress_region.py`) places props into
+  the chunk JSON deterministically from that file. The zone format does not
+  change: props stay in `props`, and the non-blocking small dressing goes in
+  `decor`.
+- Tests (in `run_wp5a_tests.gd` or a new `run_region_dressing_tests.gd`):
+  every placement rule below holds, and the WP5a connectivity tests still
+  pass after dressing.
+- Until a region's art lands, the placer uses existing Crosshaven prop ids as
+  stand-ins, so the rules are proved before the paint arrives.
+
+**Placement rules (all regions):**
+- **Walk lanes stay clear:** no prop on a path cell or on the cells directly
+  beside a path (path plus 1 cell each side).
+- **No prop within 2 cells** of an NPC, a gate cell, a dungeon door, the spawn
+  or a chunk exit.
+- **Sparse, clustered, not uniform:** blocking props cover at most 8% of the
+  chunk's non-path cells. They are placed in clusters of 3–5 (Poisson-disk,
+  minimum spacing 2 cells) with open glades between, never on a regular grid.
+  Non-blocking decor (grass tufts, flowers, pebbles, puddles) covers up to 25%.
+- **Edges framed:** on every chunk edge that is not an exit, a 1–2 cell border
+  band of the region's border prop (forest, rock, reeds…), like Crosshaven's
+  `border_forest_*`.
+- **One hero landmark per region**, replacing the stand-in tavern, placed in
+  the hub chunk (or the entry chunk where there is no hub), visible from the
+  entry, and never on the critical path.
+- **Connectivity unchanged:** door reachable from entry, every built chunk
+  reachable, every gate and NPC cell passable.
+
+**Sizes and anchors** (the Crosshaven kit rules: 2:1 diamond, 2x masters at 8x
+supersampling, straight alpha, linear filter, no mipmaps, top-left warm key
+light, no baked cast shadows):
+
+| Kind | Footprint | 1x canvas | 2x master | Anchor |
+|---|---|---|---|---|
+| Ground tile | 1 cell | 64×32 | 128×64 | bottom-centre on the cell's south tip |
+| Small prop (rock, bush, stump, decor) | 1×1 | 64×64 | 128×128 | bottom-centre on the south tip of the footprint's south-most cell |
+| Tree or tall prop | 1×1 | 64×112 | 128×224 | same |
+| Wide prop (boat, log, wall run) | 2×1 | 96×80 | 192×160 | same |
+| Landmark | 2×2 | 128×192 | 256×384 | same |
+| Hero landmark | 3×3 (or 2×2 tall) | 192×256 | 384×512 | same |
+
+Every asset gets an entry in `art/world/<region>/atlas_meta.json` (id, file,
+size, anchor, footprint, `blocks`, `walkable`), using the same schema as
+Crosshaven's. Trees, reeds and banners also get sway masks
+(`<prop>_sway`, `<prop>_shadow_sway`). Animated pieces (lava, bubbles, arcs,
+beacons) use 12-frame strips.
+
+**Per-region set** (6–10 props, plus ground tiles and a hero landmark):
+
+| Region | Ground tiles | Props | Border band | Hero landmark |
+|---|---|---|---|---|
+| Rowanvale (10–15) | meadow ×3, orchard soil ×2, tilled rows ×2 | apple tree ×2 (one fruiting), pear tree, stump, wooden fence (nwse / nesw), hay bale, scarecrow, beehive box, low stone wall, flower bush | orchard hedge | **Old Windmill** (2×2, 12-frame sail strip) |
+| Windmere (15–20) | snow grass ×3, white flagstone ×2, glossy ice ×2 | snowy pine ×2, frozen blue pine, ice boulder, snow drift, white pillar ruin, ice crystal cluster, warm lantern post, frozen shrub | snowy pine wall | **Frost Spire** (2×2 tall, faint ice glow) |
+| Brinewake (20–25) | sand ×3, wet sand ×2, tide pool (decal) | palm ×2, beached boat (2×1), dock posts, net-drying rack, crab pots and barrels, driftwood, shell rock, sea grass, old anchor | dune grass and rocks | **Lighthouse** (2×2 tall, 12-frame beacon) |
+| Slagcrown (25–30) | basalt ×3, ash ×2, lava crack (12-frame glow) | basalt columns ×2, charred tree ×2, lava vent (12 f), ember rock, obsidian shard, slag heap, iron chain post, cooled lava boulder | basalt cliff | **Magma Gate** (2×2, glowing cracks) |
+| Eastmarch Fen Edge (25–30) | fen grass ×3, mud ×2 | willow ×2, reed clump ×2, cattails, broken fence, mossy log (2×1), rotting cart, mud puddle (decal) | willows and reeds | **Leaning Watchtower** (2×2, old timber) |
+| Gloomfen Mire (30–38) | bog ×3, peat ×2, murk water | drowned stump ×2, dead tree with hanging moss ×2, reed bed ×2, lily pads (decal), lantern buoy (glow), fallen log (2×1), bog bubbles (12 f) | dead-tree thicket | **Sunken Bell Tower** (2×2, half-drowned spire) |
+| Stormspire (35–40) | slate ×3, wind grass ×2, rain-wet stone | wind-bent tree ×2, jagged slate rock ×2, copper conduit pipe, glowing rune stone, cracked boulder, broken pylon, storm grass | jagged rock ridge | **Lightning Pylon** (2×2 tall, 12-frame arcs; matches Thunderwell) |
+| Ashen Shardfields (38–45) | ash dune ×3, glass sand ×2 | crystal shard cluster ×3 (violet / cyan / pink), petrified tree, giant ribcage (2×2), cracked obelisk, ash rock ×2, dune ripple (decal) | crystal ridge | **Great Crystal Shard** (3×3, soft violet glow) |
+| Blightwood Hollow (45–50) | blight soil ×3, withered grass ×2, rot pool | twisted dead tree ×3, thorn bramble ×2, glowing blight fungus, gravestone, broken lantern post, bone pile, hanging cage, black rock | twisted-tree wall | **The Hollow Heart Tree** (3×3, giant dead tree, violet glow) |
+
+**Accept, per PR:**
+- Technical Artist asset check passes: sizes, anchors, alpha, atlas entries.
+- The placement rules and connectivity tests pass, and all suites are green.
+- **Media:** before/after stills of the entry, hub and door chunks of each
+  region, shown **beside the painted Crosshaven Crossroads** at the same zoom
+  as the quality bar.
+- Frame time on the region's densest chunk is no more than 15% above the
+  Crossroads.
+- Painted fantasy, never 3D. Nothing copied from another game.
+
 #### WP10: Art for the new zones (Scenario, then Technical Artist)
 
 - **Goal:** replace every stand-in with painted art at the Crosshaven v7 level
