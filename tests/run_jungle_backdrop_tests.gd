@@ -29,7 +29,9 @@ func _test_params_and_slots() -> void:
 	eq(bool(params.get("flipbook", true)), false, "leaf sway is not a flipbook")
 	eq(float(params["parallax"]["back_far"]), 0.12, "far parallax factor")
 	eq(float(params["parallax"]["back_mid"]), 0.4, "mid parallax factor")
-	eq(float(params["parallax"]["front_leaves"]), 1.0, "front leaves are screen-locked")
+	eq(float(params["parallax"]["front_leaves"]), 0.0, "front leaves are screen-locked")
+	eq(float(params.get("pan_limit_px", 0.0)), 220.0, "pan limit matches the camera")
+	truthy(str(params.get("parallax_meaning", "")).contains("on screen"), "the parallax comment is the on-screen fraction")
 	truthy(params.has("parallax"), "parallax block is in the backdrop json")
 	truthy(params.has("sway_amplitude_px"), "sway amplitude is in the backdrop json")
 	truthy(params.has("sway_speed"), "sway speed is in the backdrop json")
@@ -47,7 +49,7 @@ func _test_params_and_slots() -> void:
 	]
 	for slot in names:
 		var path := JUNGLE.resolve_slot(slot)
-		truthy(path.ends_with(slot + ".png"), "%s resolves to its slot file" % slot)
+		truthy(path.ends_with(slot + "@2x.png"), "%s resolves to the @2x master" % slot)
 		var tex := load(path) as Texture2D
 		truthy(tex != null, "%s loads" % slot)
 		var spec: Dictionary = slots.get(slot, {})
@@ -129,11 +131,8 @@ func _test_live_layer() -> void:
 	truthy(layer.visible, "the jungle layer is showing on Crosshaven")
 	var cam := board.get_node("BoardCamera") as Camera2D
 	truthy(is_equal_approx(cam.zoom.x, 0.64), "the 15x15 fit zoom is 0.64")
-	var far_art := layer.get_node("back_far/Art") as Sprite2D
-	truthy(far_art.scale.x > 1.0 and far_art.scale.x < 1.25, "the far plate is full size, scaled up slightly")
-	var mid_art := layer.get_node("back_mid/Art") as Sprite2D
-	var view_w := 960.0 / cam.zoom.x
-	truthy(mid_art.texture.get_width() * mid_art.scale.x > view_w, "the mid plate bleeds past the view")
+	cam.zoom = Vector2(0.64, 0.64)
+	await _assert_back_plates_cover(layer, cam, board)
 	var leaf := layer.get_node("front_leaves_left") as Control
 	var leaf_at := leaf.position
 	cam.position += Vector2(80, 0)
@@ -154,16 +153,19 @@ func _test_live_layer() -> void:
 	eq((board.tiles[Vector2i(7, 7)] as Node2D).position, origin, "the backdrop does not move a cell")
 	eq(layer.leaves_cover_play(), false, "front leaves do not cover the play cells")
 	var parked: Vector2 = cam.position
+	var fit: Vector2 = board.get("_fit_camera_pos")
+	cam.position = fit
 	layer.layout()
-	var far_0: Vector2 = layer.back_art_position("back_far")
-	var mid_0: Vector2 = layer.back_art_position("back_mid")
-	cam.position = parked + Vector2(80, 0)
+	var step := Vector2(80, 0)
+	cam.position = fit + step
 	layer.layout()
-	var far_d: Vector2 = layer.back_art_position("back_far") - far_0
-	var mid_d: Vector2 = layer.back_art_position("back_mid") - mid_0
-	truthy(far_d.x + 0.5 < mid_d.x, "far canopy parallax lags the mid canopy")
-	truthy(mid_d.x < 70.0, "mid canopy lags a full camera step")
-	truthy(far_d.x > 1.0, "far canopy still drifts a little")
+	var far_screen: Vector2 = layer.back_art_position("back_far") - cam.position
+	var mid_screen: Vector2 = layer.back_art_position("back_mid") - cam.position
+	var far_fraction := float(JUNGLE.load_params()["parallax"]["back_far"])
+	var mid_fraction := float(JUNGLE.load_params()["parallax"]["back_mid"])
+	truthy(is_equal_approx(far_screen.x, -step.x * far_fraction), "far on-screen slide is its parallax fraction")
+	truthy(is_equal_approx(mid_screen.x, -step.x * mid_fraction), "mid on-screen slide is its parallax fraction")
+	truthy(absf(far_screen.x) + 0.5 < absf(mid_screen.x), "far canopy moves less on screen than the mid canopy")
 	eq(layer.leaves_cover_play(), false, "a panned camera still keeps leaves off the cells")
 	cam.position = parked
 	layer.layout()
@@ -191,6 +193,58 @@ func _test_live_layer() -> void:
 	truthy(layer.visible, "the layer switches back on")
 	eq(layer.leaves_cover_play(), false, "leaves still miss the cells after a toggle")
 	main.free()
+
+
+func _assert_back_plates_cover(layer: Node, cam: Camera2D, board: Node2D) -> void:
+	var saved_size := root.size
+	var saved_pos := cam.position
+	var saved_zoom := cam.zoom
+	var fit: Vector2 = board.get("_fit_camera_pos")
+	var limit := float(JUNGLE.load_params().get("pan_limit_px", 220.0))
+	var aspects := {
+		"16:9": Vector2i(1280, 720),
+		"16:10": Vector2i(1152, 720),
+		"21:9": Vector2i(1680, 720),
+	}
+	var pans: Array[Vector2] = [
+		Vector2(limit, 0),
+		Vector2(-limit, 0),
+		Vector2(0, limit),
+		Vector2(0, -limit),
+		Vector2(limit, limit),
+		Vector2(limit, -limit),
+		Vector2(-limit, limit),
+		Vector2(-limit, -limit),
+	]
+	cam.zoom = Vector2(0.64, 0.64)
+	for aspect in aspects.keys():
+		var want: Vector2i = aspects[aspect]
+		root.size = want
+		await process_frame
+		layer.layout()
+		var view_px := board.get_viewport_rect().size
+		truthy(absf(view_px.x - float(want.x)) < 2.0 and absf(view_px.y - float(want.y)) < 2.0, "%s viewport is the window size" % aspect)
+		for pan in pans:
+			cam.position = fit + pan
+			layer.layout()
+			var world := Vector2(view_px.x / cam.zoom.x, view_px.y / cam.zoom.y)
+			var view := Rect2(cam.position - world * 0.5, world)
+			for slot in ["back_far", "back_mid"]:
+				var plate_root := layer.get_node(slot) as Node2D
+				var art := plate_root.get_node("Art") as Sprite2D
+				var drawn := art.texture.get_size() * art.scale
+				var center := plate_root.position + art.position
+				var plate := Rect2(center - drawn * 0.5, drawn)
+				var gap := 1.0
+				truthy(plate.position.x <= view.position.x + gap, "%s %s pan %s hides the left edge" % [aspect, slot, pan])
+				truthy(plate.position.y <= view.position.y + gap, "%s %s pan %s hides the top edge" % [aspect, slot, pan])
+				truthy(plate.end.x >= view.end.x - gap, "%s %s pan %s hides the right edge" % [aspect, slot, pan])
+				truthy(plate.end.y >= view.end.y - gap, "%s %s pan %s hides the bottom edge" % [aspect, slot, pan])
+	root.size = saved_size
+	cam.zoom = saved_zoom
+	cam.position = saved_pos
+	await process_frame
+	layer.layout()
 
 
 func _check_import(path: String, mode: String) -> void:

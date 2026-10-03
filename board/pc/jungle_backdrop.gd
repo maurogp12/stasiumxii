@@ -126,6 +126,19 @@ static func normalize_map_id(map_id: String) -> String:
 
 func _ready() -> void:
 	_ensure_params()
+	var vp := get_viewport()
+	if vp != null and not vp.size_changed.is_connected(_on_viewport_resized):
+		vp.size_changed.connect(_on_viewport_resized)
+
+
+func _on_viewport_resized() -> void:
+	if _board != null and visible and _built:
+		call_deferred("_layout_after_resize")
+
+
+func _layout_after_resize() -> void:
+	if _board != null and visible and _built:
+		layout()
 
 
 func sync_map(board: Node2D, map_id: String) -> void:
@@ -347,10 +360,10 @@ func _layout_backs() -> void:
 			continue
 		root.visible = true
 		root.position = cam.position
-		var scale := _back_scale(slot, art.texture.get_size(), view)
+		var fraction := float(factors.get(slot, 0.0))
+		var scale := _back_scale(fraction, art.texture.get_size(), view)
 		art.scale = Vector2(scale, scale)
-		var factor := float(factors.get(slot, 0.2))
-		art.position = -pan * (1.0 - factor)
+		art.position = -pan * fraction
 
 
 func _layout_leaves() -> void:
@@ -568,13 +581,11 @@ func _contain(native: Vector2, box: Vector2) -> Vector2:
 	return native * scale
 
 
-func _back_scale(slot: String, tex_size: Vector2, view: Vector2) -> float:
-	var cover := maxf(view.x / tex_size.x, view.y / tex_size.y)
-	var slots: Dictionary = _params.get("slots", {})
-	var spec: Dictionary = slots.get(slot, {})
-	if str(spec.get("fit", "")) == "bleed":
-		return cover * float(spec.get("bleed", 1.35))
-	return maxf(1.0, cover) * float(spec.get("extra_scale", 1.06))
+func _back_scale(fraction: float, tex_size: Vector2, view: Vector2) -> float:
+	if tex_size.x < 1.0 or tex_size.y < 1.0:
+		return 1.0
+	var drift := float(_params.get("pan_limit_px", 220.0)) * fraction
+	return maxf((view.x + drift * 2.0) / tex_size.x, (view.y + drift * 2.0) / tex_size.y)
 
 
 func _sway_material(slot: String, edge: String) -> ShaderMaterial:
