@@ -60,6 +60,8 @@ var weight_per_level := 0
 var load_log: Array = []
 ## Story and task state. Missing from an old save, so those loads start clear.
 var mission_blob: Dictionary = {}
+var world_zone := ""
+var world_cell := Vector2i.ZERO
 var _uid := 1
 var _equip_seq := 1
 var _catalog = null
@@ -342,6 +344,11 @@ func save() -> bool:
 		"next_uid": _uid,
 		"equip_seq": _equip_seq,
 		"missions": mission_blob.duplicate(true),
+		"world": {
+			"zone_id": world_zone,
+			"x": world_cell.x,
+			"y": world_cell.y,
+		},
 	}))
 	return true
 
@@ -405,6 +412,8 @@ func read_save() -> bool:
 	var prev_uid := _uid
 	var prev_log: Array = load_log.duplicate()
 	var prev_missions: Dictionary = mission_blob.duplicate(true)
+	var prev_world := world_zone
+	var prev_cell := world_cell
 	level = next_level
 	xp = next_xp
 	var missions_ok := true
@@ -415,6 +424,13 @@ func read_save() -> bool:
 			mission_blob = (doc["missions"] as Dictionary).duplicate(true)
 	else:
 		mission_blob = {}
+	world_zone = ""
+	world_cell = Vector2i.ZERO
+	if doc.has("world") and typeof(doc["world"]) == TYPE_DICTIONARY:
+		var place: Dictionary = doc["world"]
+		if _whole(place.get("x", null)) and _whole(place.get("y", null)):
+			world_zone = str(place.get("zone_id", ""))
+			world_cell = Vector2i(int(place["x"]), int(place["y"]))
 	if not missions_ok or not _apply_saved_spend(doc) or not _apply_saved_items(doc):
 		level = prev_level
 		xp = prev_xp
@@ -429,6 +445,8 @@ func read_save() -> bool:
 		_uid = prev_uid
 		load_log = prev_log
 		mission_blob = prev_missions
+		world_zone = prev_world
+		world_cell = prev_cell
 		return false
 	return true
 
@@ -1068,7 +1086,13 @@ func set_hero_class(class_id: String) -> bool:
 	return true
 
 
-func note_zone(_zone_id: String) -> void:
+func note_zone(zone_id: String) -> void:
+	note_place(zone_id, world_cell)
+
+
+func note_place(zone_id: String, cell: Vector2i) -> void:
+	world_zone = zone_id
+	world_cell = cell
 	_autosave()
 
 

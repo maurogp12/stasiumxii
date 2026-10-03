@@ -26,6 +26,10 @@ const SIDE := {
 const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
 
 var zone: WorldZone
+## Plane edges you can walk across hide the yellow exit triangles.
+var show_walk_exits := true
+## Extra cells drawn past the chunk so the neighbour's tiles cover the seam.
+var blend_margin := 0
 var _use_kit := false
 var _exit_dirs: Dictionary = {}
 var _ripple_frame := 0
@@ -48,12 +52,14 @@ func setup(target: WorldZone) -> void:
 		if not Art.has("tiles", str(terrain)):
 			_use_kit = false
 	_exit_dirs.clear()
-	for exit_rec in zone.exits:
-		var dir: Vector2i = WorldZone.EDGE_DIR.get(str(exit_rec["edge"]), Vector2i.ZERO)
-		for link in exit_rec["links"]:
-			var frm: Dictionary = link["from"]
-			_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
-	for d in range(zone.width + zone.height - 1):
+	if show_walk_exits:
+		for exit_rec in zone.exits:
+			var dir: Vector2i = WorldZone.EDGE_DIR.get(str(exit_rec["edge"]), Vector2i.ZERO)
+			for link in exit_rec["links"]:
+				var frm: Dictionary = link["from"]
+				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
+	var margin := blend_margin
+	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
 		row.name = "Row%d" % d
 		row.z_as_relative = false
@@ -118,18 +124,23 @@ func marker_dir(cell: Vector2i) -> Vector2i:
 
 
 func _draw_row(row: Node2D, s: int) -> void:
-	var x0 := maxi(0, s - zone.height + 1)
-	var x1 := mini(zone.width - 1, s)
+	var margin := blend_margin
+	var x0 := maxi(-margin, s - (zone.height - 1 + margin))
+	var x1 := mini(zone.width - 1 + margin, s + margin)
 	for x in range(x0, x1 + 1):
 		var cell := Vector2i(x, s - x)
+		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "":
+			continue
 		_draw_cell(row, cell)
 		if _exit_dirs.has(cell):
 			_draw_exit(row, cell, _exit_dirs[cell])
 
 
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
-	var terrain := zone.terrain_at(cell)
-	var steps := zone.height_at(cell)
+	var terrain := Art.terrain_seen(zone, cell)
+	if terrain == "":
+		return
+	var steps := Art.height_seen(zone, cell)
 	if _use_kit:
 		_draw_cell_kit(ci, cell, terrain, steps)
 		return
@@ -220,7 +231,7 @@ func _draw_water_polish(ci: Node2D, cell: Vector2i, steps: int) -> void:
 
 func _foam_if_shore(ci: Node2D, cell: Vector2i, d: PackedVector2Array, step: Vector2i, ia: int, ib: int) -> void:
 	var nb: Vector2i = cell + step
-	if zone.in_bounds(nb) and zone.terrain_at(nb) == "water":
+	if Art.terrain_seen(zone, nb) == "water":
 		return
 	ci.draw_line(d[ia], d[ib], Color(0.92, 0.97, 1.0, 0.55), 1.6)
 

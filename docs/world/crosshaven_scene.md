@@ -18,7 +18,7 @@ this is movement, map scrolling, weather and look only.
 | --- | --- |
 | Left click | Walk there (path from `WorldWalk.find_path`) |
 | Double-click | Run (also used automatically on long paths) |
-| Click a gold-arrow edge tile | Walk off the chunk into the linked one (short fade) |
+| Click a gold-arrow edge tile | Walk off the chunk into the linked one (no fade; the neighbour is already on the plane) |
 | Mouse wheel | Zoom 1.0–2.5 |
 | `1` | Cycle weather: clear, light cloud, light rain, wind |
 | `2` | Toggle day/night speed ×30 |
@@ -65,10 +65,12 @@ or without the kit.
 
 ## Known limits / Open
 
-- One chunk at a time with a fade at exits. The chunks can't be stitched into
-  one seamless world yet: placing them by exit-link offsets overlaps 776 cells
-  (`road_west` and `road_southwest` both hang off the crossroads' west edge).
-  Seamless scrolling needs non-overlapping global offsets in the data.
+- Crosshaven is one plane. Chunk origins come from exit links, with the
+  Crossroads at (0, 0). The south-west road leaves the Crossroads' south edge,
+  west side, and Westwatch sits south-west of that road. The current chunk and
+  the chunks that touch it stay loaded. A chunk edge is a step, not a fade.
+  Black fades stay on interior doors (dungeons, houses, the bank). Past the
+  coast the plate's sea, breakers, cliffs and fields fill the view.
 - Open in the data: climb limit (no limit now), ortho vs 8-direction walking
   (ortho now), bridge/ford art, weather authority.
 - No PC export preset yet (`export_presets.cfg` only has Android).
