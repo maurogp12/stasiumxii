@@ -350,7 +350,7 @@ the next phase. Numbers are **Proposed**.
 - **2 characteristic points per level** (98 by level 50; 198 by level 100),
   spent by the player in four stats, the same buckets as the phone game:
   **Mastery** (more damage), **Vitality** (more HP), **Swift** (more
-  Initiative, act earlier), **Ward** (more resistance). Per-point values are
+  Initiative, act earlier), **Resist** (more resistance). Per-point values are
   **Proposed** and tuned with WP15 together with the class kits; the kits
   themselves (spell numbers) never change with level.
 - **Class HP growth per level** (a small flat HP gain, different per class,
@@ -671,7 +671,7 @@ cap goes to 100.
 - **Set tiers: level 1, 10, 20, 30, 40, 50.** A set's parts can be worn from
   its tier level. Next phase adds tiers 60, 70, 80, 90, 100 (cap rule, 4.3).
 - **Each part gives 1–2 stats** from the four buckets in 4.11 (Mastery,
-  Vitality, Swift, Ward). **Rare** = about 1.5× the Regular stats plus one
+  Vitality, Swift, Resist). **Rare** = about 1.5× the Regular stats plus one
   extra stat (Proposed).
 - **Set bonuses:** 2 parts a stat bonus, 3 parts a bigger one, 5 parts a
   special bonus (Proposed values; tuned with WP15 and the class kits).
@@ -694,8 +694,8 @@ One set per class at each tier: 5 classes × 6 tiers = **30 class sets**
 | **50** | Zenith Talon | Titan's Jaw | Oceansong | Eclipse | Aegis Eternal |
 
 Stats each class's parts lean to: Kestrel Mastery + Swift; Ironjaw Mastery +
-Vitality; Mender Vitality + Ward; Gloam Mastery + Swift; Bastion Vitality +
-Ward. The 2- and 3-part bonuses give the same two stats.
+Vitality; Mender Vitality + Resist; Gloam Mastery + Swift; Bastion Vitality +
+Resist. The 2- and 3-part bonuses give the same two stats.
 
 5-part effects (**Proposed**): each class has one **signature effect** that
 first appears at tier 20 and grows with the tiers; tiers 1 and 10 give a
@@ -707,7 +707,7 @@ plain stat bonus at 5 parts, so the early game stays simple.
 | Ironjaw | Start every fight with +1 Impact | plus, e.g., Shoulder costs less on the first use each fight |
 | Mender | Mend heals +2 and Pulse Tap heals +1 (about +12%; was "Mend +10%", too small at +1.6 HP, see 4.14) | plus, e.g., a small heal on allies when Cleanse lands |
 | Gloam | +1 MP on turns you start Invisible | plus, e.g., more damage on the first hit out of Invisible |
-| Bastion | The first hit you take in each fight deals half damage | plus, e.g., Snap Wall also gives an adjacent ally Ward |
+| Bastion | The first hit you take in each fight deals half damage | plus, e.g., Snap Wall also gives an adjacent ally Resist |
 
 The second effects are ideas for the team to size inside the balance rules
 below and bring to Mauro; nothing past the tier 20 signature is built before
@@ -721,7 +721,7 @@ bonuses** (3 Oct 2026):
 | Set | Tier (Proposed) | Where it drops | 5-part bonus (approved) |
 |---|---|---|---|
 | Wayfarer | 1 | Crosshaven Heart: world fights and Heart missions | +1 MP on the first turn of a fight |
-| Townguard | 5 | Crosshaven Towns: world fights, town missions | Extra Ward when standing next to an ally |
+| Townguard | 5 | Crosshaven Towns: world fights, town missions | Extra Resist when standing next to an ally |
 | Millwright | 8 | Millrace Vaults only (its dungeon set, below) | Extra Mastery on the turn after you are hit |
 
 All set effects are combat effects: built only through CombatSim, and off in
@@ -823,7 +823,7 @@ Drops (Proposed):
 2 (10–24), 3 (25–49), 4 (50–99), 5 (100+). This is how "advancing in missions
 gives better rewards" works, on top of the level tier.
 
-### 4.13 Rarities, Epics and Relics (Mauro's direction + Proposed items)
+### 4.13 Rarities, Epics and Relics (**approved** by Mauro 3 Oct 2026; numbers tuned by WP15)
 
 Mauro, 3 Oct 2026: certain items should be **Epic** and **Relic** "like
 Wakfu: rings, weapons, helmets, etc." that you can wear **only one of**; some
@@ -858,10 +858,10 @@ tier-30 parts give only the normal bonuses.
 | Epic | Slot | Level | Effect |
 |---|---|---|---|
 | Gale Signet | Ring | 40 | +1 MP, + Swift |
-| Abbess's Rosary | Amulet | 40 | +8% healing done, + Ward |
+| Abbess's Rosary | Amulet | 40 | +8% healing done, + Resist |
 | Ember Crown | Helmet | 45 | +1 range on spells with range 2 or more (range bonuses never stack, 4.14) |
 | Stormheart Gauntlet | Weapon | 45 | Your first hit each turn also deals 4 Air damage to one enemy next to the target |
-| Prism Striders | Boots | 50 | +1 MP. **The first 3 push attempts on you in a fight work normally; after that you can't be pushed for the rest of the fight** (Mauro's change; a blocked push still counts; per fight, Proposed) |
+| Prism Striders | Boots | 50 | +1 MP. **The first 3 push attempts on you in a fight work normally; after that you can't be pushed for the rest of the fight** (Mauro's change; a blocked push still counts; counted per fight, approved) |
 
 Sources: a very rare drop from ★4–★5 runs of the level 40–50 dungeons, or
 crafted from those dungeons' unique materials plus Crypto Coins.
@@ -877,7 +877,7 @@ crafted from those dungeons' unique materials plus Crypto Coins.
 Sources: only Heart of the Blight ★5 (very rare) or the end of the Last
 Watcher's level-50 mission chain.
 
-### 4.14 Balance review of sets, Epics and Relics (Proposed fixes)
+### 4.14 Balance review of sets, Epics and Relics (fixes **approved** by Mauro 3 Oct 2026)
 
 Mauro, 3 Oct 2026: "make sure everything is balanced." This is an analytical
 pass with the real PC kit numbers (`data/kits.gd`: 6 AP, 3 MP, 80 HP; Mark
@@ -905,7 +905,7 @@ Fixes:
   Heart of the Elder or Crown of Crosshaven Relic, so a player picks which of
   them to use; the third goes to MP or is wasted.
 - **Gloam gains most from AP** (+69% at 8). Gloam's tier 30–50 class sets lean
-  **Swift and Ward** instead of Mastery, and its signature effect is sized
+  **Swift and Resist** instead of Mastery, and its signature effect is sized
   smaller, until WP15 shows all classes within ±10% at 6, 7 and 8 AP.
 - **Kestrel and Bastion gain nothing from a 7th AP.** At tier 30 they should
   take +1 MP from the Rare set; their tier 30+ signature effects carry more of
@@ -1592,8 +1592,12 @@ headless.
     set bonuses, and "you will need to create a balanced set for every single
     class"** (4.9 class sets). The class set names, stats and 5-part effects
     in 4.9 are Proposed: Mauro to approve them.
-12. **Stat name clash:** the stat "Ward" (resistance, 4.11) has the same name
-    as Mender's spell "Ward" (a shield). Rename the PC stat to **Resist**?
-13. **Epics and Relics (4.13) after the balance review (4.14):** approve the
-    8 slots, the rarities, the items, the AP cap 8 / MP cap 5, and Prism
-    Striders' push rule counted per fight?
+12. ~~**Stat name clash**~~ **Answered 3 Oct 2026 (Mauro): yes.** The PC stat
+    is **Resist** (more resistance), so it no longer clashes with Mender's
+    spell "Ward" (a shield). The four stats are Mastery, Vitality, Swift,
+    Resist.
+13. ~~**Epics and Relics after the balance review**~~ **Answered 3 Oct 2026
+    (Mauro): yes** to the 8 slots, the rarities, the 5 Epics and 3 Relics in
+    4.13, the AP cap 8 / MP cap 5, and Prism Striders' push rule counted per
+    fight (a blocked push counts). The fixes in 4.14 are approved; the
+    numbers stay tuned by WP15.
