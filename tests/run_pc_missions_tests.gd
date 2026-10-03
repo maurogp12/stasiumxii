@@ -5,6 +5,7 @@ extends SceneTree
 
 const Missions = preload("res://backend/pc_missions.gd")
 const Progress = preload("res://backend/pc_progress.gd")
+const Balance = preload("res://backend/pc_balance.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 
 const SCHEMA := "res://data/world/schema/missions.schema.json"
@@ -36,6 +37,13 @@ func _run() -> void:
 	_test_proximity(book)
 	_test_sides(book)
 	_test_tasks(book)
+	_test_anti_farm(book)
+	_test_scout_order(book)
+	_test_pending(book)
+	_test_migration(book)
+	_test_cap_task(book)
+	_test_tracker(book)
+	_test_task_mix()
 	_test_rejects()
 	_test_source()
 	await _test_world(book)
@@ -167,6 +175,7 @@ func _test_chain(book) -> void:
 	hero.level = 5
 	eq(book.status_of("towns_welcome", hero), "locked", "towns stay locked until the heart scout is done")
 	hero.level = 1
+	var played_scouts := 0
 	var index := 0
 	while index < story.size():
 		var welcome_id := story[index]
@@ -178,11 +187,17 @@ func _test_chain(book) -> void:
 		if welcome_id == "towns_welcome":
 			eq(book.status_of(welcome_id, hero), "available", "towns open once the heart scout is done and the level is met")
 		eq(book.status_of(welcome_id, hero), "available", "%s is available in chain order" % welcome_id)
+		if book.label_for(welcome_id, hero) == "coming soon":
+			eq(str(book.accept(welcome_id, hero)["reason"]), "coming soon", "%s stays closed" % welcome_id)
+			break
 		eq(bool(book.accept(welcome_id, hero)["ok"]), true, "%s accepts" % welcome_id)
 		for step in welcome["steps"]:
 			book.on_talk(str(step["npc"]), hero)
 		eq(book.status_of(welcome_id, hero), "ready", "%s is ready" % welcome_id)
 		eq(bool(book.turn_in(welcome_id, hero)["ok"]), true, "%s turns in" % welcome_id)
+		if book.label_for(scout_id, hero) == "coming soon":
+			eq(str(book.accept(scout_id, hero)["reason"]), "coming soon", "%s waits for a real landmark" % scout_id)
+			break
 		var scout: Dictionary = book.mission(scout_id)
 		eq(bool(book.accept(scout_id, hero)["ok"]), true, "%s accepts" % scout_id)
 		for step in scout["steps"]:
@@ -195,12 +210,15 @@ func _test_chain(book) -> void:
 			book.on_reach(str(step_row["zone_id"]), cell, hero)
 		eq(book.status_of(scout_id, hero), "ready", "%s is ready" % scout_id)
 		eq(bool(book.turn_in(scout_id, hero)["ok"]), true, "%s turns in" % scout_id)
+		played_scouts += 1
 		hero.level = int(book.mission(dungeon_id)["min_level"])
 		eq(book.label_for(dungeon_id, hero), "coming soon", "%s shows coming soon" % dungeon_id)
 		var blocked: Dictionary = book.accept(dungeon_id, hero)
 		eq(bool(blocked["ok"]), false, "%s cannot be taken" % dungeon_id)
 		eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
 		eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
+	eq(played_scouts >= 2, true, "heart and towns scouts are on real ground")
+	eq(book.label_for("rowanvale_scout", hero), "coming soon", "the rowanvale scout waits on the stand-in landmark")
 
 
 func _test_proximity(book) -> void:
@@ -269,10 +287,20 @@ func _test_tasks(book) -> void:
 	eq(book.on_reach(preview_zone, preview_cell + Vector2i(3, 0), hero).is_empty(), true, "the task ignores a far cell")
 	var hit: Array = book.on_reach(preview_zone, preview_cell, hero)
 	eq(hit.has(task_id), true, "standing on the mark readies the task")
+	var logged := false
+	for section_value in book.log_sections(hero):
+		var section: Dictionary = section_value
+		for row_value in section["rows"]:
+			var log_row: Dictionary = row_value
+			if str(log_row["name"]) == str(stored["name"]) and str(log_row["status"]) == "ready":
+				logged = true
+	eq(logged, true, "the J log lists the task")
 	var paid: Dictionary = book.turn_in(task_id, hero)
 	eq(bool(paid["ok"]), true, "the task turns in")
-	eq(int(paid["xp"]), 6, "reach task XP is 6% of the first step")
-	eq(int(paid["coins"]), 20, "task coins use the hero's band")
+	var expect := _reach_payout(1)
+	eq(int(paid["xp"]), int(expect["xp"]), "reach task XP is 6% of the step times pace")
+	eq(int(paid["coins"]), int(expect["coins"]), "task coins are the world-fight rate times minutes over 3")
+	eq(int(paid["xp"]) != 6, true, "pace changes the flat 6% payout")
 	eq(hero.level, 1, "the task XP stays on level 1")
 	var xp_after := int(hero.xp)
 	var second: Dictionary = book.turn_in(task_id, hero)
@@ -281,6 +309,273 @@ func _test_tasks(book) -> void:
 	var again: Dictionary = book.accept("task_offer:crossroads_guide", hero)
 	eq(bool(again["ok"]), true, "a new task appears after turn-in")
 	eq(str(again["id"]) != task_id, true, "the repeat is a new task")
+
+
+func _test_anti_farm(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 1
+	eq(book.available_for("granary_door_keeper", hero).is_empty(), true, "a door keeper does not give a task")
+	eq(book.available_for("crossroads_banker", hero)[0]["id"], "crossroads_banker_errand", "the Banker's side comes first")
+	_finish_reach(book, hero, "crossroads_herald_errand")
+	eq(book.available_for("crossroads_herald", hero).is_empty(), true, "the Herald does not give a task")
+	_finish_reach(book, hero, "crossroads_banker_errand")
+	eq(book.available_for("crossroads_banker", hero).is_empty(), true, "the Banker does not give a task")
+	var pool := _heart_marks()
+	var occupied: Dictionary = pool[( _hash_id("crossroads_trader") + 1) % pool.size()]
+	hero.mission_blob["tasks"] = {
+		"eastmarch_fisher": _seed_task("eastmarch_fisher", occupied),
+	}
+	var took: Dictionary = book.accept("task_offer:crossroads_trader", hero)
+	eq(bool(took["ok"]), true, "the Trader still has a task when one landmark is taken")
+	var given: Dictionary = hero.mission_blob["tasks"]["crossroads_trader"]
+	eq(str(given["landmark"]) != str(occupied["landmark"]), true, "no two active tasks share a landmark")
+	_wipe_save()
+	hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 1
+	var givers: Array[String] = ["crossroads_trader", "towns_trader", "eastmarch_fisher"]
+	var seen := {}
+	for npc_id in givers:
+		var offer: Array = book.available_for(npc_id, hero)
+		eq(str(offer[0]["id"]).begins_with("task_offer:"), true, "%s offers a task" % npc_id)
+		var accepted: Dictionary = book.accept(str(offer[0]["id"]), hero)
+		eq(bool(accepted["ok"]), true, "%s task accepts" % npc_id)
+		var stored: Dictionary = hero.mission_blob["tasks"][npc_id]
+		seen[str(stored["landmark"])] = true
+	eq(seen.size(), 3, "three live tasks use three landmarks")
+	eq(book.available_for("towns_warden", hero).is_empty(), true, "a fourth task is refused")
+	eq(bool(book.accept("task_offer:towns_warden", hero)["ok"]), false, "accept refuses the fourth task")
+	var tasks: Dictionary = hero.mission_blob["tasks"]
+	var first: Dictionary = tasks["crossroads_trader"]
+	var second: Dictionary = tasks["towns_trader"]
+	second["zone_id"] = first["zone_id"]
+	second["x"] = first["x"]
+	second["y"] = first["y"]
+	second["landmark"] = first["landmark"]
+	second["proximity"] = first["proximity"]
+	tasks["towns_trader"] = second
+	var walked: Array = book.on_reach(str(first["zone_id"]), Vector2i(int(first["x"]), int(first["y"])), hero)
+	var task_hits := 0
+	for id in walked:
+		if str(id).begins_with("task_"):
+			task_hits += 1
+	eq(task_hits, 1, "one walk can't complete more than one task")
+
+
+func _test_scout_order(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	book.accept("heart_welcome", hero)
+	book.on_talk("crossroads_trader", hero)
+	book.on_talk("granary_door_keeper", hero)
+	book.turn_in("heart_welcome", hero)
+	book.accept("heart_scout", hero)
+	var steps: Array = book.mission("heart_scout")["steps"]
+	var last: Dictionary = steps[steps.size() - 1]
+	var at: Dictionary = last["cell"]
+	var hit: Array = book.on_reach(str(last["zone_id"]), Vector2i(int(at["x"]), int(at["y"])), hero)
+	eq(hit.has("heart_scout"), true, "a later scout mark counts before the earlier ones")
+	eq(book.status_of("heart_scout", hero), "active", "one mark does not finish the scout")
+	var flags: Array = hero.mission_blob["story"]["heart_scout"]["done"]
+	eq(bool(flags[flags.size() - 1]), true, "the later scout step is stored")
+	eq(bool(flags[0]), false, "the first scout step is still open")
+
+
+func _test_pending(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 10
+	eq(book.label_for("rowanvale_farmer_errand", hero), "coming soon", "a stand-in side shows coming soon")
+	eq(str(book.accept("rowanvale_farmer_errand", hero)["reason"]), "coming soon", "a stand-in side cannot be accepted")
+	eq(bool(book.mission("heart_scout")["steps"][0].get("pending_chunk", false)), false, "the heart scout mark is real ground")
+	eq(bool(book.mission("rowanvale_scout")["steps"][0]["pending_chunk"]), true, "the rowanvale scout mark is pending")
+	var panel: Dictionary = book.panel_for("rowanvale_trader", hero)
+	eq(bool(panel["soon"]), true, "a task into a stand-in region is coming soon")
+	eq(book.available_for("rowanvale_trader", hero).is_empty(), true, "the stand-in task is not offered")
+
+
+func _test_migration(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	var bare := {"story": {}}
+	hero.mission_blob = bare
+	eq(book.reconcile(hero).is_empty(), true, "a save without tasks needs no migration")
+	var north: Dictionary = _heart_marks()[0]
+	hero.mission_blob = {
+		"tasks": {
+			"crossroads_trader": {
+				"id": "task_crossroads_trader_1",
+				"serial": 1,
+				"status": "active",
+				"name": "Reach North Road",
+				"landmark": str(north["landmark"]),
+				"zone_id": str(north["zone_id"]),
+				"level_zone": "crosshaven_heart",
+				"x": 1,
+				"y": 1,
+				"proximity": "landmark",
+			},
+		},
+	}
+	var moved: Array = book.reconcile(hero)
+	var task: Dictionary = hero.mission_blob["tasks"]["crossroads_trader"]
+	eq(int(task["x"]), int(north["x"]), "a moved landmark updates the saved cell")
+	eq(int(task["y"]), int(north["y"]), "a moved landmark updates the saved row")
+	eq(int(task["xp_percent"]), 6, "an old task learns xp_percent")
+	eq(float(task["minutes"]), 5.0, "an old task learns its minutes")
+	eq(str(moved).find("moved") >= 0, true, "the move is logged")
+	var pending := _pending_mark()
+	var coins := int(hero.coins)
+	hero.mission_blob["tasks"]["towns_trader"] = _seed_task("towns_trader", pending)
+	var dropped: Array = book.reconcile(hero)
+	var closed: Dictionary = hero.mission_blob["tasks"]["towns_trader"]
+	eq(str(closed["status"]), "dropped", "a pending landmark drops the saved task")
+	eq(int(hero.coins), coins, "the drop refunds 0")
+	eq(str(dropped).find("refund 0") >= 0, true, "the drop is logged")
+	hero.mission_blob["tasks"]["eastmarch_fisher"] = {
+		"id": "task_eastmarch_fisher_1",
+		"serial": 1,
+		"status": "active",
+		"name": "Gone",
+		"landmark": "no_such_mark",
+		"zone_id": "crosshaven_road_north",
+		"level_zone": "crosshaven_heart",
+		"x": 1,
+		"y": 1,
+		"proximity": "landmark",
+		"xp_percent": 6,
+		"minutes": 5,
+	}
+	var gone: Array = book.reconcile(hero)
+	eq(str(hero.mission_blob["tasks"]["eastmarch_fisher"]["status"]), "dropped", "a missing landmark drops the saved task")
+	eq(str(gone).find("landmark gone") >= 0, true, "the missing landmark is logged")
+	eq(int(hero.coins), coins, "a missing landmark refunds 0")
+
+
+func _test_cap_task(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.level = hero.max_level
+	hero.xp = 3
+	var task := _seed_task("crossroads_trader", _heart_marks()[0])
+	task["status"] = "ready"
+	hero.mission_blob = {"tasks": {"crossroads_trader": task}}
+	book.reconcile(hero)
+	var paid: Dictionary = book.turn_in(str(task["id"]), hero)
+	var expect := _reach_payout(hero.max_level)
+	eq(bool(paid["ok"]), true, "the cap task turns in")
+	eq(int(paid["xp"]), 0, "at the cap a task pays no XP")
+	eq(int(paid["coins"]), int(expect["coins"]), "at the cap a task still pays the fight-rate coins")
+	eq(int(hero.xp), 3, "the cap task does not add XP")
+
+
+func _test_tracker(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 5
+	var ids: Array[String] = [
+		"crossroads_guide_errand", "crossroads_herald_errand", "crossroads_banker_errand",
+		"northgate_elder_errand", "stoneford_elder_errand", "eastmarch_elder_errand",
+	]
+	for mission_id in ids:
+		eq(bool(book.accept(mission_id, hero)["ok"]), true, "%s is active for the tracker" % mission_id)
+	var tracker = load("res://scenes/world/ui/mission_tracker.gd").new()
+	root.add_child(tracker)
+	tracker.setup(book, hero)
+	eq(str(tracker._body.text).find("+1 more · J") >= 0, true, "the tracker caps at 5 rows")
+	eq(str(tracker._body.text).find("Eastmarch square") < 0, true, "the sixth row is the more line")
+	tracker.show_reward({"ok": true, "xp": 15, "coins": 20, "events": []}, false)
+	eq(str(tracker._body.text).find("+15 XP") >= 0, true, "the toast replaces the rows")
+	tracker.restore_rows()
+	eq(str(tracker._body.text).find("+1 more · J") >= 0, true, "the rows return after the toast")
+	eq(tracker._reward_card.visible, false, "the toast is gone")
+	tracker.queue_free()
+
+
+func _test_task_mix() -> void:
+	var result: Dictionary = Balance.run()
+	var inputs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/balance_inputs.json"))
+	eq(bool(result["ok"]), true, "the balance sim still passes with tasks in the mix")
+	eq(Balance.in_accept_band(float(result["normal_mix_hours"]), inputs), true, "free play with tasks stays inside 130-170 hours")
+	var shares: Dictionary = result["xp_shares"]
+	eq(float(shares["mission"]) <= float(inputs["targets"]["max_source_share"]), true, "mission XP stays at or under half")
+	eq(float(shares["world"]) <= float(inputs["targets"]["max_source_share"]), true, "world XP stays at or under half")
+	eq(float(shares["dungeon"]) <= float(inputs["targets"]["max_source_share"]), true, "dungeon XP stays at or under half")
+	eq(absf(float(shares["mission"]) - float(inputs["profiles"]["normal_mix"]["mission"])) <= 0.05, true, "missions stay near 20% of play time")
+	var table := FileAccess.get_file_as_string("res://docs/pc/media/wp6b/task_mix.md")
+	eq(table.find("%.2f" % float(result["normal_mix_hours"])) >= 0, true, "the task mix table records the free hours")
+	eq(table.find("130") >= 0 and table.find("170") >= 0, true, "the task mix table names the accept band")
+
+
+func _finish_reach(book, hero, mission_id: String) -> void:
+	book.accept(mission_id, hero)
+	var step: Dictionary = book.mission(mission_id)["steps"][0]
+	var at: Dictionary = step["cell"]
+	book.on_reach(str(step["zone_id"]), Vector2i(int(at["x"]), int(at["y"])), hero)
+	book.turn_in(mission_id, hero)
+
+
+func _heart_marks() -> Array:
+	var doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/missions.json"))
+	var pool: Array = []
+	for row_value in doc["reach_index"]:
+		var row: Dictionary = row_value
+		if str(row["level_zone"]) == "crosshaven_heart" and not bool(row.get("pending_chunk", false)):
+			pool.append(row)
+	return pool
+
+
+func _pending_mark() -> Dictionary:
+	var doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/missions.json"))
+	for row_value in doc["reach_index"]:
+		var row: Dictionary = row_value
+		if bool(row.get("pending_chunk", false)):
+			return row
+	return {}
+
+
+func _seed_task(npc_id: String, mark: Dictionary) -> Dictionary:
+	return {
+		"id": "task_%s_1" % npc_id,
+		"serial": 1,
+		"status": "active",
+		"name": "Seed",
+		"landmark": str(mark["landmark"]),
+		"zone_id": str(mark["zone_id"]),
+		"level_zone": str(mark["level_zone"]),
+		"x": int(mark["x"]),
+		"y": int(mark["y"]),
+		"proximity": str(mark["proximity"]),
+		"xp_percent": 6,
+		"minutes": 5,
+	}
+
+
+func _hash_id(text: String) -> int:
+	var n := 0
+	for i in text.length():
+		n = (n * 33 + text.unicode_at(i)) % 100000
+	return n
+
+
+func _reach_payout(level: int) -> Dictionary:
+	var curve: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/level_curve.json"))
+	var inputs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/balance_inputs.json"))
+	var xp := 0
+	if level < int(curve["max_level"]):
+		var pace := float(curve["pace_start"]) * pow(float(curve["pace_ratio"]), float(level - 1))
+		var need := float(curve["xp_to_next"][level - 1])
+		xp = int(round(need * 6.0 / 100.0 * pace))
+	var per_fight := float(inputs["coins"]["world_base"]) + float(inputs["coins"]["world_per_level"]) * float(level)
+	var minutes := float(inputs["minutes"]["mission_reach"])
+	var fight := float(inputs["minutes"]["world_fight"])
+	var coins := int(round(per_fight * (minutes / fight)))
+	return {"xp": xp, "coins": coins}
 
 
 func _test_rejects() -> void:
@@ -309,6 +604,10 @@ func _test_source() -> void:
 	var src := FileAccess.get_file_as_string("res://backend/pc_missions.gd")
 	eq(src.find("class_name") < 0, true, "missions have no global class")
 	eq(src.find("res://mobile") < 0, true, "missions do not import a mobile script")
+	eq(src.find("const HALF") >= 0, true, "HALF is a named constant")
+	eq(src.find("Not the level cap") >= 0, true, "HALF is commented so it is not the level cap")
+	eq(src.find("pace_start") >= 0, true, "task pace is read from the level curve")
+	eq(src.find("xp_percent") >= 0, true, "task XP reads xp_percent from the template")
 	var progress := FileAccess.get_file_as_string("res://backend/pc_progress.gd")
 	eq(progress.find(str(5 * 10)) < 0, true, "progress still does not hardcode the phase-1 cap")
 

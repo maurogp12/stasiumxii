@@ -11,6 +11,9 @@ var _body: Label
 var _reward_card: PanelContainer
 var _reward: Label
 var _hold := false
+var _rows_hidden := false
+
+const ROW_CAP := 5
 
 
 func setup(book, hero) -> void:
@@ -24,16 +27,23 @@ func refresh() -> void:
 	if missions == null or progress == null:
 		_body.text = ""
 		return
+	if _rows_hidden:
+		return
 	var rows: Array = missions.tracker_rows(progress)
 	if rows.is_empty():
 		_body.text = "No active mission"
 		return
+	var shown := rows.size()
+	if shown > ROW_CAP:
+		shown = ROW_CAP
 	var text := ""
-	for row in rows:
-		var record: Dictionary = row
+	for index in shown:
+		var record: Dictionary = rows[index]
 		if text != "":
 			text += "\n"
 		text += str(record["name"]) + "\n" + str(record["step"])
+	if rows.size() > ROW_CAP:
+		text += "\n+%d more · J" % (rows.size() - ROW_CAP)
 	_body.text = text
 
 
@@ -53,15 +63,22 @@ func show_reward(result: Dictionary, hold: bool) -> void:
 	_reward.text = text
 	_reward_card.visible = true
 	# The corner card is the one the frame always shows. Keep the payout there too.
+	_rows_hidden = true
 	_body.text = text
 	if _hold:
 		return
 	var tw := create_tween()
 	tw.tween_interval(3.2)
-	tw.tween_callback(func() -> void:
-		if not _hold:
-			_reward_card.visible = false
-	)
+	tw.tween_callback(restore_rows)
+
+
+func restore_rows() -> void:
+	if _hold:
+		return
+	_rows_hidden = false
+	if _reward_card != null:
+		_reward_card.visible = false
+	refresh()
 
 
 func ensure_built() -> void:

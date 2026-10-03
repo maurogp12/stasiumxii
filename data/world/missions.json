@@ -10,6 +10,7 @@
     "Town chunks have no landmark point of interest. Town scouts and some sides use the town-center cell.",
     "The Fisher sends you to the cell beside the Eastmarch fishing hut. The Fen Guide sends you to the Sunken Mill door. The Last Watcher sends you to the Heart of the Blight door.",
     "clear_dungeon steps cannot be accepted until dungeon runs exist. They show as coming soon.",
+    "Stand-in landmarks at cell 20,12 in placeholder regions are pending_chunk. Those steps show as coming soon until the landmark moves.",
     "Each zone welcome requires the previous zone's scout, in the level_zones.json order, so the chains open in level order. Fen Edge stays after Slagcrown in that file."
   ],
   "reach_index": [
@@ -110,7 +111,8 @@
       "name": "Rowanvale Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "rowanvale",
@@ -119,7 +121,8 @@
       "name": "Rowanvale Farmland 3",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "rowanvale",
@@ -128,7 +131,8 @@
       "name": "Rotting Orchard Barrow",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "windmere",
@@ -137,7 +141,8 @@
       "name": "Windmere Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "windmere",
@@ -146,7 +151,8 @@
       "name": "Windmere Outer 3",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "windmere",
@@ -155,7 +161,8 @@
       "name": "Frostspire Archive",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "brinewake",
@@ -164,7 +171,8 @@
       "name": "Brinewake Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "brinewake",
@@ -173,7 +181,8 @@
       "name": "Saltmaw Grotto",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "slagcrown",
@@ -182,7 +191,8 @@
       "name": "Slagcrown Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "slagcrown",
@@ -191,7 +201,8 @@
       "name": "Slagcrown Volcanic 3",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "slagcrown",
@@ -200,7 +211,8 @@
       "name": "Cinderforge Depths",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "eastmarch_fen_edge",
@@ -209,7 +221,8 @@
       "name": "Eastmarch Fen Edge Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "eastmarch_fen_edge",
@@ -218,7 +231,8 @@
       "name": "Sunken Mill",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "gloomfen_mire",
@@ -227,7 +241,8 @@
       "name": "Gloomfen Mire Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "gloomfen_mire",
@@ -236,7 +251,8 @@
       "name": "Gloomfen Mire Boardwalk 6",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "gloomfen_mire",
@@ -245,7 +261,8 @@
       "name": "Drowned Abbey",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "stormspire",
@@ -254,7 +271,8 @@
       "name": "Stormspire Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "stormspire",
@@ -263,7 +281,8 @@
       "name": "Thunderwell Core",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "ashen_shardfields",
@@ -272,7 +291,8 @@
       "name": "Ashen Shardfields Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "ashen_shardfields",
@@ -281,7 +301,8 @@
       "name": "Shard Hollow",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "blightwood_hollow",
@@ -290,7 +311,8 @@
       "name": "Blightwood Hollow Entry",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     },
     {
       "level_zone": "blightwood_hollow",
@@ -299,7 +321,8 @@
       "name": "Heart of the Blight",
       "x": 20,
       "y": 12,
-      "proximity": "landmark"
+      "proximity": "landmark",
+      "pending_chunk": true
     }
   ],
   "missions": [
@@ -657,7 +680,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Rowanvale Entry"
+          "place": "Rowanvale Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -667,7 +691,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Rowanvale Farmland 3"
+          "place": "Rowanvale Farmland 3",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -677,7 +702,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Rotting Orchard Barrow"
+          "place": "Rotting Orchard Barrow",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -804,7 +830,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Windmere Entry"
+          "place": "Windmere Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -814,7 +841,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Windmere Outer 3"
+          "place": "Windmere Outer 3",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -824,7 +852,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Frostspire Archive"
+          "place": "Frostspire Archive",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -951,7 +980,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Brinewake Entry"
+          "place": "Brinewake Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -961,7 +991,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Saltmaw Grotto"
+          "place": "Saltmaw Grotto",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1088,7 +1119,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Slagcrown Entry"
+          "place": "Slagcrown Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1098,7 +1130,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Slagcrown Volcanic 3"
+          "place": "Slagcrown Volcanic 3",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1108,7 +1141,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Cinderforge Depths"
+          "place": "Cinderforge Depths",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1235,7 +1269,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Eastmarch Fen Edge Entry"
+          "place": "Eastmarch Fen Edge Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1245,7 +1280,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Sunken Mill"
+          "place": "Sunken Mill",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1372,7 +1408,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Gloomfen Mire Entry"
+          "place": "Gloomfen Mire Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1382,7 +1419,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Gloomfen Mire Boardwalk 6"
+          "place": "Gloomfen Mire Boardwalk 6",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1392,7 +1430,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Drowned Abbey"
+          "place": "Drowned Abbey",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1519,7 +1558,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Stormspire Entry"
+          "place": "Stormspire Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1529,7 +1569,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Thunderwell Core"
+          "place": "Thunderwell Core",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1656,7 +1697,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Ashen Shardfields Entry"
+          "place": "Ashen Shardfields Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1666,7 +1708,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Shard Hollow"
+          "place": "Shard Hollow",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -1793,7 +1836,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Blightwood Hollow Entry"
+          "place": "Blightwood Hollow Entry",
+          "pending_chunk": true
         },
         {
           "type": "reach",
@@ -1803,7 +1847,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Heart of the Blight"
+          "place": "Heart of the Blight",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2293,7 +2338,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Rowanvale Farmland 3"
+          "place": "Rowanvale Farmland 3",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2335,7 +2381,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Rowanvale Entry"
+          "place": "Rowanvale Entry",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2377,7 +2424,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Windmere Outer 3"
+          "place": "Windmere Outer 3",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2419,7 +2467,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Brinewake Entry"
+          "place": "Brinewake Entry",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2461,7 +2510,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Slagcrown Volcanic 3"
+          "place": "Slagcrown Volcanic 3",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2503,7 +2553,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Sunken Mill"
+          "place": "Sunken Mill",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2545,7 +2596,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Gloomfen Mire Boardwalk 6"
+          "place": "Gloomfen Mire Boardwalk 6",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2587,7 +2639,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Thunderwell Core"
+          "place": "Thunderwell Core",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2629,7 +2682,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Shard Hollow"
+          "place": "Shard Hollow",
+          "pending_chunk": true
         }
       ],
       "rewards": {
@@ -2671,7 +2725,8 @@
             "x": 20,
             "y": 12
           },
-          "place": "Heart of the Blight"
+          "place": "Heart of the Blight",
+          "pending_chunk": true
         }
       ],
       "rewards": {

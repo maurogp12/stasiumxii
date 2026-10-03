@@ -3,7 +3,7 @@ extends RefCounted
 ## PC NPC missions (spec 4.7). Preload. No global class.
 ## Pure logic: the world scene only calls these methods.
 ## Does not import phone scripts. Story XP is the number stored in the file.
-## Task XP is the 4.8 share of xp_to_next(player level), without a second pace multiply.
+## Repeatable task XP is xp_percent of xp_to_next(player level) times pace(level).
 
 const Levels = preload("res://backend/world_levels.gd")
 const Npcs = preload("res://backend/world_npcs.gd")
@@ -11,6 +11,7 @@ const Progress = preload("res://backend/pc_progress.gd")
 
 const MISSIONS_PATH := "res://data/world/missions.json"
 const TEMPLATES_PATH := "res://data/world/task_templates.json"
+const BALANCE_PATH := "res://data/world/balance_inputs.json"
 const FORMAT := "stasium.world_missions"
 const TEMPLATES_FORMAT := "stasium.world_task_templates"
 const FORMAT_VERSION := 1
@@ -26,10 +27,14 @@ const MISSION_KEYS: Array[String] = [
 ]
 const STEP_KEYS: Array[String] = [
 	"type", "npc", "zone_id", "landmark", "cell", "dungeon", "family", "count", "place",
+	"pending_chunk",
 ]
 const CHAINS: Array[String] = ["welcome", "scout", "dungeon", "side"]
 const CORE_ROLES: Array[String] = ["warden", "trader", "door_keeper"]
-const HALF := 5 * 10
+const TASK_DENIED_ROLES: Array[String] = ["door_keeper", "banker", "herald"]
+const MAX_ACTIVE_TASKS := 3
+## Half of 100, for rounding a percent. Not the level cap.
+const HALF := 100 / 2
 
 var _rows: Array = []
 var _by_id: Dictionary = {}
@@ -39,6 +44,17 @@ var _reach: Array = []
 var _templates: Array = []
 var _npc_names: Dictionary = {}
 var _npc_cells: Dictionary = {}
+var _npc_roles: Dictionary = {}
+var _pace_start := 0.0
+var _pace_ratio := 0.0
+var _max_level := 0
+var _coin_base := 0.0
+var _coin_per_level := 0.0
+var _fight_minutes := 0.0
+var _reach_minutes := 0
+var _defeat_minutes := 0
+var _clear_minutes := 0
+var _migrating := false
 
 
 static func load_default() -> Dictionary:
@@ -82,6 +98,7 @@ func all_ids() -> Array:
 
 
 func status_of(mission_id: String, hero) -> String:
+	_reconcile(hero)
 	if not _by_id.has(mission_id):
 		return ""
 	var saved := _story_state(hero, mission_id)
@@ -103,7 +120,7 @@ func status_of(mission_id: String, hero) -> String:
 
 func label_for(mission_id: String, hero) -> String:
 	var status := status_of(mission_id, hero)
-	if status == "available" and _soon(_by_id[mission_id]):
+	if status == "available" and _blocked(_by_id[mission_id]):
 		return "coming soon"
 	return status
 
@@ -120,7 +137,7 @@ func available_for(npc_id: String, hero) -> Array:
 			continue
 		if status_of(id, hero) != "available":
 			continue
-		if _soon(row):
+		if _blocked(row):
 			continue
 		found.append({
 			"id": id,
@@ -130,7 +147,11 @@ func available_for(npc_id: String, hero) -> Array:
 		})
 	if not found.is_empty():
 		return found
+	if not _gives_tasks(npc_id):
+		return found
 	if _task_blocks_offer(npc_id, hero):
+		return found
+	if _active_task_count(hero) >= MAX_ACTIVE_TASKS:
 		return found
 	var preview := _preview_task(npc_id, hero)
 	if preview.is_empty():
@@ -153,7 +174,7 @@ func accept(mission_id: String, hero) -> Dictionary:
 	if status != "available":
 		return _no(status if status != "" else "missing")
 	var row: Dictionary = _by_id[mission_id]
-	if _soon(row):
+	if _blocked(row):
 		return _no("coming soon")
 	var done: Array = []
 	for _step in row["steps"]:
@@ -189,27 +210,53 @@ func on_reach(zone_id: String, cell: Vector2i, hero) -> Array:
 			continue
 		var row: Dictionary = _by_id[id]
 		var state := _story_state(hero, id)
+		if str(row["chain"]) == "scout":
+			var flags: Array = state.get("done", [])
+			var steps: Array = row["steps"]
+			for index in steps.size():
+				var already := false
+				if index < flags.size():
+					already = bool(flags[index])
+				if already:
+					continue
+				var step: Dictionary = steps[index]
+				if str(step.get("type", "")) != "reach":
+					continue
+				if bool(step.get("pending_chunk", false)):
+					continue
+				if _reach_hit(step, zone_id, cell):
+					_complete_story_step(hero, id, index)
+					changed.append(id)
+			continue
 		var index := _current_index(row, state)
 		if index < 0:
 			continue
 		var step: Dictionary = row["steps"][index]
 		if str(step.get("type", "")) != "reach":
 			continue
+		if bool(step.get("pending_chunk", false)):
+			continue
 		if _reach_hit(step, zone_id, cell):
 			_complete_story_step(hero, id, index)
 			changed.append(id)
 	var tasks := _tasks(hero)
+	var walked := false
 	for npc_id in tasks.keys():
+		if walked:
+			break
 		var raw: Variant = tasks[npc_id]
 		if typeof(raw) != TYPE_DICTIONARY:
 			continue
 		var one: Dictionary = raw
 		if str(one.get("status", "")) != "active":
 			continue
+		if bool(one.get("pending_chunk", false)):
+			continue
 		if _task_hit(one, zone_id, cell):
 			one["status"] = "ready"
 			tasks[str(npc_id)] = one
 			changed.append(str(one.get("id", npc_id)))
+			walked = true
 	return changed
 
 
@@ -306,6 +353,9 @@ func panel_for(npc_id: String, hero) -> Dictionary:
 		return _panel(_line(story, "offer"), offer_id, "", false, "")
 	if not soon_row.is_empty():
 		return _panel(_line(soon_row, "offer"), "", "", true, str(soon_row["name"]))
+	if _task_ground_closed(npc_id, hero):
+		var zone := _band_zone(int(hero.level))
+		return _panel("That ground is not open yet.", "", "", true, str(zone.get("name", "This region")))
 	return _panel("", "", "", false, "")
 
 
@@ -349,13 +399,32 @@ func log_sections(hero) -> Array:
 				"name": str(row["name"]),
 				"status": label_for(id, hero),
 			})
+		var tasks := _tasks(hero)
+		for npc_id in tasks.keys():
+			var raw: Variant = tasks[npc_id]
+			if typeof(raw) != TYPE_DICTIONARY:
+				continue
+			var task: Dictionary = raw
+			if str(task.get("level_zone", "")) != zone_id:
+				continue
+			var task_status := str(task.get("status", ""))
+			if task_status != "active" and task_status != "ready" and task_status != "done":
+				continue
+			rows.append({
+				"name": str(task.get("name", "Task")),
+				"status": task_status,
+			})
 		sections.append({"zone": str(zone["name"]), "rows": rows})
 	return sections
 
 
 func _accept_task(npc_id: String, hero) -> Dictionary:
+	if not _gives_tasks(npc_id):
+		return _no("role")
 	if _task_blocks_offer(npc_id, hero):
 		return _no("active")
+	if _active_task_count(hero) >= MAX_ACTIVE_TASKS:
+		return _no("cap")
 	if not available_for(npc_id, hero).is_empty() and str(available_for(npc_id, hero)[0]["id"]).begins_with("task_offer:"):
 		pass
 	else:
@@ -384,8 +453,8 @@ func _turn_in_task(mission_id: String, hero) -> Dictionary:
 			continue
 		if str(task.get("status", "")) != "ready":
 			return _empty_turn(str(task.get("status", "missing")))
-		var xp := _task_xp(hero)
-		var coins := _coin_low(int(hero.level))
+		var xp := _task_xp(hero, int(task.get("xp_percent", 0)))
+		var coins := _task_coins(int(hero.level), float(task.get("minutes", 0)))
 		task["status"] = "done"
 		tasks[str(npc_id)] = task
 		_put_tasks(hero, tasks)
@@ -410,7 +479,7 @@ func _preview_task(npc_id: String, hero) -> Dictionary:
 	var zone := _band_zone(int(hero.level))
 	if zone.is_empty():
 		return {}
-	var pool := _pool_for(str(zone["id"]), npc_id)
+	var pool := _open_marks(str(zone["id"]), npc_id, hero)
 	if pool.is_empty():
 		return {}
 	var serial := _next_serial(npc_id, hero)
@@ -435,6 +504,9 @@ func _preview_task(npc_id: String, hero) -> Dictionary:
 		"offer_line": "Walk to %s. The mark is in %s." % [place, str(zone["name"])],
 		"active_line": "The mark at %s is still ahead." % place,
 		"ready_line": "You reached %s. I can mark this done." % place,
+		"xp_percent": int(template.get("xp_percent", 0)),
+		"minutes": float(template.get("minutes", 0)),
+		"pending_chunk": false,
 	}
 
 
@@ -444,12 +516,84 @@ func _task_blocks_offer(npc_id: String, hero) -> bool:
 	return status == "active" or status == "ready"
 
 
+func _gives_tasks(npc_id: String) -> bool:
+	var role := str(_npc_roles.get(npc_id, ""))
+	if role == "":
+		return false
+	return not TASK_DENIED_ROLES.has(role)
+
+
+func _active_task_count(hero) -> int:
+	var count := 0
+	var tasks := _tasks(hero)
+	for npc_id in tasks.keys():
+		var raw: Variant = tasks[npc_id]
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var status := str((raw as Dictionary).get("status", ""))
+		if status == "active" or status == "ready":
+			count += 1
+	return count
+
+
+func _open_marks(level_zone: String, npc_id: String, hero) -> Array:
+	var open: Array = []
+	for row in _pool_for(level_zone, npc_id):
+		var mark: Dictionary = row
+		if bool(mark.get("pending_chunk", false)):
+			continue
+		if _landmark_taken(hero, mark):
+			continue
+		open.append(mark)
+	return open
+
+
+func _landmark_taken(hero, mark: Dictionary) -> bool:
+	var tasks := _tasks(hero)
+	for npc_id in tasks.keys():
+		var raw: Variant = tasks[npc_id]
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var task: Dictionary = raw
+		var status := str(task.get("status", ""))
+		if status != "active" and status != "ready":
+			continue
+		if str(task.get("zone_id", "")) != str(mark.get("zone_id", "")):
+			continue
+		if str(task.get("landmark", "")) != str(mark.get("landmark", "")):
+			continue
+		return true
+	return false
+
+
+func _task_ground_closed(npc_id: String, hero) -> bool:
+	if not _gives_tasks(npc_id) or _task_blocks_offer(npc_id, hero):
+		return false
+	if _active_task_count(hero) >= MAX_ACTIVE_TASKS:
+		return false
+	var zone := _band_zone(int(hero.level))
+	if zone.is_empty():
+		return false
+	var marks := _pool_for(str(zone["id"]), npc_id)
+	if marks.is_empty():
+		return false
+	var pending := false
+	for row in marks:
+		var mark: Dictionary = row
+		if not bool(mark.get("pending_chunk", false)) and not _landmark_taken(hero, mark):
+			return false
+		if bool(mark.get("pending_chunk", false)):
+			pending = true
+	return pending
+
+
 func _next_serial(npc_id: String, hero) -> int:
 	var task := _task_for_npc(hero, npc_id)
 	if task.is_empty():
 		return 1
 	var serial := int(task.get("serial", 1))
-	if str(task.get("status", "")) == "done":
+	var status := str(task.get("status", ""))
+	if status == "done" or status == "dropped":
 		return serial + 1
 	return serial
 
@@ -501,12 +645,28 @@ func _offer_template() -> Dictionary:
 	return {}
 
 
-func _task_xp(hero) -> int:
+func _task_xp(hero, percent: int) -> int:
 	var level := int(hero.level)
-	var steps: Array = hero.xp_to_next
-	if level < 1 or level - 1 >= steps.size():
+	if percent <= 0 or level < 1 or level >= _max_level:
 		return 0
-	return _rounded_share(int(steps[level - 1]), 6)
+	var steps: Array = hero.xp_to_next
+	if level - 1 >= steps.size():
+		return 0
+	var raw := float(steps[level - 1]) * float(percent) / 100.0 * _pace(level)
+	return int(round(raw))
+
+
+func _task_coins(level: int, minutes: float) -> int:
+	if level < 1 or minutes <= 0.0 or _fight_minutes <= 0.0:
+		return 0
+	var per_fight := _coin_base + _coin_per_level * float(level)
+	return int(round(per_fight * (minutes / _fight_minutes)))
+
+
+func _pace(level: int) -> float:
+	if _pace_start <= 0.0 or _pace_ratio <= 0.0:
+		return 1.0
+	return _pace_start * pow(_pace_ratio, float(level - 1))
 
 
 func _coin_low(level: int) -> int:
@@ -571,7 +731,7 @@ func _soon_from(npc_id: String, hero) -> Dictionary:
 		var row: Dictionary = _by_id[id]
 		if str(row["giver"]) != npc_id:
 			continue
-		if not _soon(row):
+		if not _blocked(row):
 			continue
 		if status_of(id, hero) == "available":
 			return row
@@ -605,6 +765,16 @@ func _soon(row: Dictionary) -> bool:
 	return false
 
 
+func _blocked(row: Dictionary) -> bool:
+	if _soon(row):
+		return true
+	for step_value in row["steps"]:
+		var step: Dictionary = step_value
+		if bool(step.get("pending_chunk", false)):
+			return true
+	return false
+
+
 func _line(row: Dictionary, key: String) -> String:
 	var lines: Dictionary = row["lines"]
 	var block: Array = lines[key]
@@ -626,6 +796,8 @@ func _step_line(row: Dictionary, state: Dictionary) -> String:
 	if kind == "talk":
 		return "Talk to %s" % place
 	if kind == "reach":
+		if bool(step.get("pending_chunk", false)):
+			return "coming soon"
 		return "Reach %s" % place
 	if kind == "clear_dungeon":
 		return "Clear %s" % place
@@ -740,6 +912,108 @@ func _task_for_npc(hero, npc_id: String) -> Dictionary:
 	return raw
 
 
+func reconcile(hero) -> Array:
+	return _reconcile(hero)
+
+
+func _reconcile(hero) -> Array:
+	if _migrating:
+		return []
+	_migrating = true
+	var notes: Array = []
+	_reconcile_tasks(hero, notes)
+	_reconcile_story(hero, notes)
+	if not notes.is_empty():
+		var blob := _blob(hero)
+		var log: Variant = blob.get("migration_log", [])
+		if typeof(log) != TYPE_ARRAY:
+			log = []
+		for line in notes:
+			(log as Array).append(line)
+		blob["migration_log"] = log
+		hero.mission_blob = blob
+	_migrating = false
+	return notes
+
+
+func _reconcile_tasks(hero, notes: Array) -> void:
+	var tasks := _tasks(hero)
+	var template := _offer_template()
+	for npc_id in tasks.keys():
+		var raw: Variant = tasks[npc_id]
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var task: Dictionary = raw
+		var status := str(task.get("status", ""))
+		if status != "active" and status != "ready":
+			continue
+		if int(task.get("xp_percent", 0)) <= 0 and not template.is_empty():
+			task["xp_percent"] = int(template.get("xp_percent", 0))
+			notes.append("%s filled xp_percent" % str(task.get("id", npc_id)))
+		if float(task.get("minutes", 0)) <= 0.0 and not template.is_empty():
+			task["minutes"] = float(template.get("minutes", 0))
+			notes.append("%s filled minutes" % str(task.get("id", npc_id)))
+		var mark := _mark_by_id(str(task.get("zone_id", "")), str(task.get("landmark", "")))
+		if mark.is_empty():
+			task["status"] = "dropped"
+			notes.append("%s dropped, landmark gone, refund 0" % str(task.get("id", npc_id)))
+			tasks[str(npc_id)] = task
+			continue
+		var moved := int(task.get("x", 0)) != int(mark.get("x", 0)) or int(task.get("y", 0)) != int(mark.get("y", 0))
+		if bool(mark.get("pending_chunk", false)):
+			task["status"] = "dropped"
+			task["pending_chunk"] = true
+			notes.append("%s dropped, landmark pending, refund 0" % str(task.get("id", npc_id)))
+			tasks[str(npc_id)] = task
+			continue
+		if moved:
+			task["x"] = int(mark.get("x", 0))
+			task["y"] = int(mark.get("y", 0))
+			notes.append("%s moved to %d,%d" % [str(task.get("id", npc_id)), int(task["x"]), int(task["y"])])
+		task["pending_chunk"] = false
+		tasks[str(npc_id)] = task
+
+
+func _reconcile_story(hero, notes: Array) -> void:
+	for id in _order:
+		var state := _story_state(hero, id)
+		var status := str(state.get("status", ""))
+		if status != "active" and status != "ready":
+			continue
+		var row: Dictionary = _by_id[id]
+		var steps: Array = row["steps"]
+		var flags: Array = state.get("done", [])
+		var missing := false
+		for index in steps.size():
+			var done := false
+			if index < flags.size():
+				done = bool(flags[index])
+			if done:
+				continue
+			var step: Dictionary = steps[index]
+			if str(step.get("type", "")) != "reach":
+				continue
+			var landmark := str(step.get("landmark", ""))
+			if landmark == "":
+				continue
+			if _mark_by_id(str(step.get("zone_id", "")), landmark).is_empty():
+				missing = true
+		if missing:
+			state["status"] = "dropped"
+			_put_story(hero, id, state)
+			notes.append("%s dropped, landmark gone, refund 0" % id)
+
+
+func _mark_by_id(zone_id: String, landmark: String) -> Dictionary:
+	if landmark == "":
+		return {}
+	for row_value in _reach:
+		var row: Dictionary = row_value
+		if str(row.get("zone_id", "")) == zone_id and str(row.get("landmark", "")) == landmark:
+			return row
+	return {}
+
+
 func _blob(hero) -> Dictionary:
 	var raw: Variant = hero.mission_blob
 	if typeof(raw) != TYPE_DICTIONARY:
@@ -768,6 +1042,10 @@ func _empty_turn(reason: String) -> Dictionary:
 
 
 func _read(missions_doc: Dictionary, templates_doc: Dictionary, levels, npcs, curve: Dictionary, errors: Array) -> void:
+	_load_pace(curve, errors)
+	_load_economy(errors)
+	if not errors.is_empty():
+		return
 	_check_doc(missions_doc, errors)
 	_check_templates(templates_doc, errors)
 	if not errors.is_empty():
@@ -779,6 +1057,7 @@ func _read(missions_doc: Dictionary, templates_doc: Dictionary, levels, npcs, cu
 		var record: Dictionary = row
 		var npc_id := str(record["id"])
 		_npc_names[npc_id] = str(record["name"])
+		_npc_roles[npc_id] = str(record["role"])
 		var at: Dictionary = record["cell"]
 		_npc_cells[npc_id] = {
 			"zone_id": str(record["zone_id"]),
@@ -868,6 +1147,13 @@ func _check_templates(doc: Dictionary, errors: Array) -> void:
 			_err(errors, "defeat task XP share")
 		if step == "clear_dungeon" and percent != 30:
 			_err(errors, "dungeon task XP share")
+		var minutes := int(row.get("minutes", -1))
+		if step == "reach" and minutes != _reach_minutes:
+			_err(errors, "reach task minutes")
+		if step == "defeat" and minutes != _defeat_minutes:
+			_err(errors, "defeat task minutes")
+		if step == "clear_dungeon" and minutes != _clear_minutes:
+			_err(errors, "dungeon task minutes")
 	if offered != 1:
 		_err(errors, "one offered task template")
 	if not ids.has("defeat_family") or not ids.has("clear_band_dungeon") or not ids.has("reach_landmark"):
@@ -947,6 +1233,13 @@ func _check_step(mission_id: String, step: Dictionary, levels, npcs, errors: Arr
 		var cell: Variant = step.get("cell", null)
 		if typeof(cell) != TYPE_DICTIONARY:
 			_err(errors, "%s reach cell" % mission_id)
+			return
+		if step.has("pending_chunk") and typeof(step.get("pending_chunk")) != TYPE_BOOL:
+			_err(errors, "%s pending_chunk" % mission_id)
+		var at: Dictionary = cell
+		var stand_in := str(step.get("landmark", "")) != "" and int(at.get("x", -1)) == 20 and int(at.get("y", -1)) == 12
+		if stand_in != bool(step.get("pending_chunk", false)):
+			_err(errors, "%s pending_chunk mark" % mission_id)
 		return
 	if kind == "clear_dungeon":
 		var dungeon := str(step.get("dungeon", ""))
@@ -1128,6 +1421,11 @@ func _check_reach_index(levels, errors: Array) -> void:
 		var proximity := str(row.get("proximity", ""))
 		if proximity != "landmark" and proximity != "cell":
 			_err(errors, "reach index proximity")
+		if row.has("pending_chunk") and typeof(row.get("pending_chunk")) != TYPE_BOOL:
+			_err(errors, "reach index pending_chunk")
+		var stand_in := proximity == "landmark" and int(row.get("x", -1)) == 20 and int(row.get("y", -1)) == 12
+		if stand_in != bool(row.get("pending_chunk", false)):
+			_err(errors, "reach index pending_chunk %s" % chunk)
 		var key := "%s:%s" % [chunk, str(row.get("landmark", ""))]
 		if seen.has(key):
 			_err(errors, "duplicate reach index %s" % key)
@@ -1183,6 +1481,41 @@ func _same_requires(row: Dictionary, only: String) -> bool:
 	if only == "":
 		return requires.is_empty()
 	return requires.size() == 1 and str(requires[0]) == only
+
+
+func _load_pace(curve: Dictionary, errors: Array) -> void:
+	var doc: Variant = _read_json(Progress.CURVE_PATH)
+	if typeof(doc) != TYPE_DICTIONARY:
+		_err(errors, "level curve has no pace")
+		return
+	var raw: Dictionary = doc
+	if not raw.has("pace_start") or not raw.has("pace_ratio"):
+		_err(errors, "level curve has no pace")
+		return
+	_pace_start = float(raw["pace_start"])
+	_pace_ratio = float(raw["pace_ratio"])
+	_max_level = int(curve.get("max_level", raw.get("max_level", 0)))
+	if _pace_start <= 0.0 or _pace_ratio <= 0.0 or _max_level < 2:
+		_err(errors, "level curve pace")
+
+
+func _load_economy(errors: Array) -> void:
+	var doc: Variant = _read_json(BALANCE_PATH)
+	if typeof(doc) != TYPE_DICTIONARY:
+		_err(errors, "balance inputs")
+		return
+	var coins: Dictionary = (doc as Dictionary).get("coins", {})
+	var minutes: Dictionary = (doc as Dictionary).get("minutes", {})
+	_coin_base = float(coins.get("world_base", 0))
+	_coin_per_level = float(coins.get("world_per_level", 0))
+	_fight_minutes = float(minutes.get("world_fight", 0))
+	_reach_minutes = int(minutes.get("mission_reach", 0))
+	_defeat_minutes = int(minutes.get("mission_defeat_fights", 0)) * int(minutes.get("mission_defeat_per_fight", 0))
+	_clear_minutes = int(minutes.get("mission_clear", 0))
+	if _coin_base <= 0.0 or _coin_per_level <= 0.0 or _fight_minutes <= 0.0:
+		_err(errors, "world-fight coin rate")
+	if _reach_minutes <= 0 or _defeat_minutes <= 0 or _clear_minutes <= 0:
+		_err(errors, "task minutes")
 
 
 static func _read_json(path: String) -> Variant:

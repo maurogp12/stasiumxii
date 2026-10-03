@@ -3,8 +3,10 @@
 
 Story XP is the section 4.7 share of xp_to_next(level_min), stored in the
 file: talk-only 15%, reach 25%, dungeon 60%. The example reward_xp of 40 is
-not used. Coins are the low end of the section 4.9 band for level_min.
+not used. Story coins are the low end of the section 4.9 band for level_min.
 Items stay empty because the reward catalog is not on this branch.
+Repeatable task XP and coins are not stored here: the engine reads
+xp_percent and minutes from task_templates.json and pace from level_curve.json.
 
 The section 4.5 summary says 18 extra NPCs. The shipped roster has 20, so
 this file has 20 side missions (53 with the 33 warden-chain missions).
@@ -55,6 +57,19 @@ TOWN_CENTERS = {
     "crosshaven_westwatch": (16, 10, "Westwatch square"),
     "crosshaven_southbridge": (20, 10, "Southbridge square"),
 }
+
+
+def _stand_in(x: int, y: int) -> bool:
+    return int(x) == 20 and int(y) == 12
+
+
+def _flag_pending(step: dict) -> dict:
+    if step.get("type") != "reach" or "landmark" not in step:
+        return step
+    cell = step.get("cell") or {}
+    if _stand_in(int(cell.get("x", -1)), int(cell.get("y", -1))):
+        step["pending_chunk"] = True
+    return step
 
 
 def xp_for(level_min: int, percent: int, steps: list[int]) -> int:
@@ -138,7 +153,7 @@ def main() -> None:
     for zone in zones:
         for chunk in zone["chunks"]:
             for poi in landmarks.get(chunk, []):
-                reach_index.append({
+                mark = {
                     "level_zone": zone["id"],
                     "zone_id": chunk,
                     "landmark": poi["id"],
@@ -146,7 +161,10 @@ def main() -> None:
                     "x": int(poi["x"]),
                     "y": int(poi["y"]),
                     "proximity": "landmark",
-                })
+                }
+                if _stand_in(mark["x"], mark["y"]):
+                    mark["pending_chunk"] = True
+                reach_index.append(mark)
             if chunk in TOWN_CENTERS:
                 x, y, place = TOWN_CENTERS[chunk]
                 reach_index.append({
@@ -188,7 +206,7 @@ def main() -> None:
             "You met them. I can mark this done.",
             "Good. Now you know who to ask.",
         ))
-        scout_steps = _scout_steps(zid, zone["chunks"], landmark, cell_step)
+        scout_steps = [_flag_pending(step) for step in _scout_steps(zid, zone["chunks"], landmark, cell_step)]
         missions.append(_mission(
             scout_id, f"Scout {zone_name}", "story", "scout", zid, warden["id"], band_min, [welcome_id],
             scout_steps, steps,
@@ -233,7 +251,7 @@ def main() -> None:
             row["id"],
             int(zone["level_min"]),
             [],
-            [plan["step"]],
+            [_flag_pending(plan["step"])],
             steps,
             plan["offer"],
             plan["active"],
@@ -253,6 +271,7 @@ def main() -> None:
             "Town chunks have no landmark point of interest. Town scouts and some sides use the town-center cell.",
             "The Fisher sends you to the cell beside the Eastmarch fishing hut. The Fen Guide sends you to the Sunken Mill door. The Last Watcher sends you to the Heart of the Blight door.",
             "clear_dungeon steps cannot be accepted until dungeon runs exist. They show as coming soon.",
+            "Stand-in landmarks at cell 20,12 in placeholder regions are pending_chunk. Those steps show as coming soon until the landmark moves.",
             "Each zone welcome requires the previous zone's scout, in the level_zones.json order, so the chains open in level order. Fen Edge stays after Slagcrown in that file.",
         ],
         "reach_index": reach_index,
@@ -264,16 +283,16 @@ def main() -> None:
         "format_version": 1,
         "status": "proposed",
         "notes": [
-            "Reach tasks are offered now, one at a time, scaled to the hero level.",
-            "Defeat stays offer_now false. Monster families are not listed yet, so none are invented.",
+            "Reach tasks are offered now. Defeat stays offer_now false. Monster families are not listed yet, so none are invented.",
             "clear_dungeon stays offer_now false until dungeon runs exist.",
-            "Task XP is the 4.8 share of xp_to_next(player level) at turn-in: reach 6%, defeat 10%, clear 30%. Pace is not applied.",
-            "Task coins are the low end of the 4.9 band for the hero level. Items stay empty.",
+            "Task XP is xp_percent of xp_to_next(player level) times pace(player level) from level_curve.json. Reach 6, defeat 10, clear 30.",
+            "Task coins are the world-fight coin rate at the hero level times (minutes / 3). At the level cap, coins only.",
+            "minutes are the 4.8 lengths: reach 5, defeat 12 (4 fights of 3 minutes), clear 20.",
         ],
         "templates": [
-            {"id": "reach_landmark", "step": "reach", "offer_now": True, "xp_percent": 6},
-            {"id": "defeat_family", "step": "defeat", "offer_now": False, "xp_percent": 10, "family": "Open"},
-            {"id": "clear_band_dungeon", "step": "clear_dungeon", "offer_now": False, "xp_percent": 30},
+            {"id": "reach_landmark", "step": "reach", "offer_now": True, "xp_percent": 6, "minutes": 5},
+            {"id": "defeat_family", "step": "defeat", "offer_now": False, "xp_percent": 10, "minutes": 12, "family": "Open"},
+            {"id": "clear_band_dungeon", "step": "clear_dungeon", "offer_now": False, "xp_percent": 30, "minutes": 20},
         ],
     }
     (ROOT / "task_templates.json").write_text(json.dumps(templates, indent=2) + "\n")

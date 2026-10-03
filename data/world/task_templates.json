@@ -3,31 +3,34 @@
   "format_version": 1,
   "status": "proposed",
   "notes": [
-    "Reach tasks are offered now, one at a time, scaled to the hero level.",
-    "Defeat stays offer_now false. Monster families are not listed yet, so none are invented.",
+    "Reach tasks are offered now. Defeat stays offer_now false. Monster families are not listed yet, so none are invented.",
     "clear_dungeon stays offer_now false until dungeon runs exist.",
-    "Task XP is the 4.8 share of xp_to_next(player level) at turn-in: reach 6%, defeat 10%, clear 30%. Pace is not applied.",
-    "Task coins are the low end of the 4.9 band for the hero level. Items stay empty."
+    "Task XP is xp_percent of xp_to_next(player level) times pace(player level) from level_curve.json. Reach 6, defeat 10, clear 30.",
+    "Task coins are the world-fight coin rate at the hero level times (minutes / 3). At the level cap, coins only.",
+    "minutes are the 4.8 lengths: reach 5, defeat 12 (4 fights of 3 minutes), clear 20."
   ],
   "templates": [
     {
       "id": "reach_landmark",
       "step": "reach",
       "offer_now": true,
-      "xp_percent": 6
+      "xp_percent": 6,
+      "minutes": 5
     },
     {
       "id": "defeat_family",
       "step": "defeat",
       "offer_now": false,
       "xp_percent": 10,
+      "minutes": 12,
       "family": "Open"
     },
     {
       "id": "clear_band_dungeon",
       "step": "clear_dungeon",
       "offer_now": false,
-      "xp_percent": 30
+      "xp_percent": 30,
+      "minutes": 20
     }
   ]
 }
