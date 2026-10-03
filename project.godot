@@ -41,7 +41,3 @@ textures/vram_compression/import_etc2_astc=true
 
 debug/show_tile_labels=false
 view/reduce_shake=false
-
-[world]
-
-regions_enabled=false

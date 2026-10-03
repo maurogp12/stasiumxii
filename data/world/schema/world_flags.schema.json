@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_flags.v1.json",
+  "title": "Stasium PC world flags",
+  "description": "world.regions_enabled. Default false. While it is off, no exit or gate reaches one of the nine outer regions. The stand-in chunks stay on disk.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "regions_enabled"],
+  "properties": {
+    "format": {"const": "stasium.world_flags"},
+    "format_version": {"const": 1},
+    "regions_enabled": {"type": "boolean"}
+  }
+}

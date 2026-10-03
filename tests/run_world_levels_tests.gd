@@ -7,27 +7,37 @@ const Levels = preload("res://backend/world_levels.gd")
 const PATH := "res://data/world/level_zones.json"
 const SCHEMA_PATH := "res://data/world/schema/level_zones.schema.json"
 
-const HEART_CHUNKS: Array[String] = [
+const BUILT_CHUNKS: Array[String] = [
 	"crosshaven_crossroads",
 	"crosshaven_road_north",
 	"crosshaven_road_west",
 	"crosshaven_road_east",
 	"crosshaven_road_southwest",
 	"crosshaven_road_south",
-]
-const TOWN_CHUNKS: Array[String] = [
 	"crosshaven_northgate",
 	"crosshaven_stoneford",
 	"crosshaven_eastmarch",
 	"crosshaven_westwatch",
 	"crosshaven_southbridge",
 ]
+const HOME_IDS: Array[String] = [
+	"crossroads",
+	"stoneford",
+	"northgate",
+	"eastmarch",
+	"southbridge",
+	"westwatch",
+]
 
-## Proposed bands from the zone plan. Colours start at the spec example
-## #3fbf4f and step toward purple. The map image was not in the repo.
+## Section 00 bands, then the nine outer zones. Colours start at the spec
+## example #3fbf4f and step toward purple.
 const EXPECTED := [
-	["crosshaven_heart", "Crosshaven Heart", 1, 5, "#3fbf4f", "old_granary_cellar"],
-	["crosshaven_towns", "Crosshaven Towns", 5, 10, "#58bd3c", "millrace_vaults"],
+	["crossroads", "Crossroads", 1, 1, "#3fbf4f", "millrace_vaults"],
+	["stoneford", "Stoneford", 1, 10, "#58bd3c", "old_granary_cellar"],
+	["northgate", "Northgate", 10, 20, "#82bb3a", "frostspire_archive"],
+	["eastmarch", "Eastmarch", 20, 30, "#acb937", "saltmaw_grotto"],
+	["southbridge", "Southbridge", 30, 40, "#b33930", "drowned_abbey"],
+	["westwatch", "Westwatch", 40, 50, "#8227a9", "heart_of_the_blight"],
 	["rowanvale", "Rowanvale", 10, 15, "#82bb3a", "rotting_orchard_barrow"],
 	["windmere", "Windmere", 15, 20, "#acb937", "frostspire_archive"],
 	["brinewake", "Brinewake", 20, 25, "#b79735", "saltmaw_grotto"],
@@ -105,7 +115,7 @@ func _test_no_class_name() -> void:
 
 
 func _test_plan(levels) -> void:
-	eq(levels.zones.size(), 11, "eleven level zones")
+	eq(levels.zones.size(), 15, "fifteen level zones")
 	for i in EXPECTED.size():
 		var want: Array = EXPECTED[i]
 		var zone: Dictionary = levels.zones[i]
@@ -121,37 +131,42 @@ func _test_plan(levels) -> void:
 
 
 func _test_chunks(levels) -> void:
-	eq(_ids(levels.zone_for_chunk("crosshaven_crossroads")), "crosshaven_heart", "crossroads is Heart")
-	for chunk in HEART_CHUNKS:
-		var zone: Dictionary = levels.zone_for_chunk(chunk)
-		eq(str(zone.get("id", "")), "crosshaven_heart", "%s is zone 1" % chunk)
-		var span: Dictionary = levels.band(chunk)
-		eq(int(span["level_min"]), 1, "%s band min" % chunk)
-		eq(int(span["level_max"]), 5, "%s band max" % chunk)
-	for chunk in TOWN_CHUNKS:
-		var zone: Dictionary = levels.zone_for_chunk(chunk)
-		eq(str(zone.get("id", "")), "crosshaven_towns", "%s is zone 2" % chunk)
-		var span: Dictionary = levels.band(chunk)
-		eq(int(span["level_min"]), 5, "%s band min" % chunk)
-		eq(int(span["level_max"]), 10, "%s band max" % chunk)
+	eq(_ids(levels.zone_for_chunk("crosshaven_crossroads")), "crossroads", "the Crossroads is its own zone")
+	var bands := {
+		"crosshaven_crossroads": ["crossroads", 1, 1],
+		"crosshaven_road_west": ["stoneford", 1, 10],
+		"crosshaven_stoneford": ["stoneford", 1, 10],
+		"crosshaven_road_north": ["northgate", 10, 20],
+		"crosshaven_northgate": ["northgate", 10, 20],
+		"crosshaven_road_east": ["eastmarch", 20, 30],
+		"crosshaven_eastmarch": ["eastmarch", 20, 30],
+		"crosshaven_road_south": ["southbridge", 30, 40],
+		"crosshaven_southbridge": ["southbridge", 30, 40],
+		"crosshaven_road_southwest": ["westwatch", 40, 50],
+		"crosshaven_westwatch": ["westwatch", 40, 50],
+	}
+	for chunk in bands.keys():
+		var want: Array = bands[chunk]
+		var zone: Dictionary = levels.zone_for_chunk(str(chunk))
+		eq(str(zone.get("id", "")), str(want[0]), "%s zone" % str(chunk))
+		var span: Dictionary = levels.band(str(chunk))
+		eq(int(span["level_min"]), int(want[1]), "%s band min" % str(chunk))
+		eq(int(span["level_max"]), int(want[2]), "%s band max" % str(chunk))
 	eq(levels.zone_for_chunk("not_a_chunk").is_empty(), true, "unknown chunk is an empty result")
 	eq(levels.band("not_a_zone").is_empty(), true, "unknown band is an empty result")
 	eq(levels.zone_for_chunk("").is_empty(), true, "empty chunk id does not crash")
-	for i in EXPECTED.size():
-		var zone_id := str(EXPECTED[i][0])
-		var zone: Dictionary = levels.by_id[zone_id]
-		if zone_id == "crosshaven_heart":
-			eq(zone["chunks"], HEART_CHUNKS, "Heart chunks")
-		elif zone_id == "crosshaven_towns":
-			eq(zone["chunks"], TOWN_CHUNKS, "Towns chunks")
 	_test_sixty_six(levels)
 
 
 ## Soft Lock counts from spec 3.1. Middle names are Proposed: the spec names
 ## the entry / door / hub roles and the shape, not each middle id.
 const COUNTS := {
-	"crosshaven_heart": 6,
-	"crosshaven_towns": 5,
+	"crossroads": 1,
+	"stoneford": 2,
+	"northgate": 2,
+	"eastmarch": 2,
+	"southbridge": 2,
+	"westwatch": 2,
 	"rowanvale": 6,
 	"windmere": 6,
 	"brinewake": 6,
@@ -195,7 +210,7 @@ func _test_sixty_six(levels) -> void:
 				door_depth = step
 			if chunk_id.ends_with("_hub"):
 				hubs += 1
-		if zone_id != "crosshaven_heart" and zone_id != "crosshaven_towns":
+		if not HOME_IDS.has(zone_id):
 			eq(entries, 1, "%s has one entry chunk" % zone_id)
 			eq(doors, 1, "%s has one door chunk" % zone_id)
 			eq(door_depth, max_depth, "%s door chunk is the deepest" % zone_id)
@@ -204,9 +219,7 @@ func _test_sixty_six(levels) -> void:
 	eq(owned.size(), 66, "66 chunk ids in all")
 	eq(levels.zone_for_chunk("rowanvale_entry").get("id", ""), "rowanvale", "a chunk with no file yet still resolves")
 	var built := {}
-	for chunk in HEART_CHUNKS:
-		built[chunk] = true
-	for chunk in TOWN_CHUNKS:
+	for chunk in BUILT_CHUNKS:
 		built[chunk] = true
 	var unbuilt := 0
 	for chunk_id in owned.keys():
@@ -238,14 +251,14 @@ func _test_rules(levels) -> void:
 		var chunk := str(entry["zone_id"])
 		eq(owned.has(chunk), true, "Crosshaven chunk %s is in a level zone" % chunk)
 		var zone_id := str(owned[chunk])
-		eq(zone_id == "crosshaven_heart" or zone_id == "crosshaven_towns", true, "%s resolves to zone 1 or 2" % chunk)
+		eq(HOME_IDS.has(zone_id), true, "%s resolves to a section 00 zone" % chunk)
 
 
 ## c037429 Q8 option 1: Fen Edge branches off the east road, before Eastmarch town.
 ## The gate itself is WP4. This package keeps the chunks in the right zones.
 func _test_fen_edge_placement(levels) -> void:
-	eq(str(levels.zone_for_chunk("crosshaven_road_east").get("id", "")), "crosshaven_heart", "the east road stays in Heart")
-	eq(str(levels.zone_for_chunk("crosshaven_eastmarch").get("id", "")), "crosshaven_towns", "Eastmarch town stays in the towns, not in Fen Edge")
+	eq(str(levels.zone_for_chunk("crosshaven_road_east").get("id", "")), "eastmarch", "the east road takes the Eastmarch band")
+	eq(str(levels.zone_for_chunk("crosshaven_eastmarch").get("id", "")), "eastmarch", "Eastmarch town stays out of Fen Edge")
 	var fen: Dictionary = levels.by_id["eastmarch_fen_edge"]
 	eq(int(fen["level_min"]), 25, "Fen Edge starts at 25")
 	eq(int(fen["level_max"]), 30, "Fen Edge ends at 30")
@@ -283,7 +296,7 @@ func _test_rejects() -> void:
 	dropped["zones"] = kept
 	_rejects(dropped, "missing zone blightwood_hollow")
 	var twice := _doc()
-	_zone(twice, "crosshaven_towns")["chunks"].append("crosshaven_crossroads")
+	_zone(twice, "stoneford")["chunks"].append("crosshaven_crossroads")
 	_rejects(twice, "duplicate chunk crosshaven_crossroads")
 	var spire := _doc()
 	_zone(spire, "stormspire")["level_min"] = 36
@@ -329,7 +342,7 @@ func _test_rejects() -> void:
 	var still: Dictionary = Levels.parse(optional)
 	eq(still["ok"], true, "depth may be omitted (%s)" % str(still["errors"]))
 	var gap := _doc()
-	var heart_chunks: Array = _zone(gap, "crosshaven_heart")["chunks"]
+	var heart_chunks: Array = _zone(gap, "crossroads")["chunks"]
 	heart_chunks.erase("crosshaven_crossroads")
 	_rejects(gap, "chunk crosshaven_crossroads is not in a level zone")
 

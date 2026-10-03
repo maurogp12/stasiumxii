@@ -223,6 +223,7 @@ func _ready() -> void:
 
 func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
 	if not Regions.enabled() and Regions.is_outer(zone_id):
+		push_error("regions closed: refused %s" % zone_id)
 		walk_rejected.emit("regions_closed")
 		return
 	var next: WorldMap = map
@@ -1217,6 +1218,7 @@ func _near_road(cell: Vector2i, dist: int) -> bool:
 ## building mass, so the houses sit in frame and he is not under a roof sprite.
 ## Stoneford gate into Rowanvale, on to the dungeon door, and back out the gate.
 func _movie_wp4_gate() -> void:
+	Regions.set_enabled(true)
 	settings.apply_preset("Full")
 	_set_zoom(1.6)
 	weather.auto_rotate = false
@@ -1238,6 +1240,7 @@ func _movie_wp4_gate() -> void:
 ## Rowanvale entry, hub, and door beside the Crosshaven Crossroads.
 ## Zoom is 1.0 so the border band and the scattered decor stay in frame.
 func _movie_wp10a_stills() -> void:
+	Regions.set_enabled(true)
 	settings.apply_preset("Full")
 	_zoom = 1.0
 	if camera != null:
@@ -1261,6 +1264,7 @@ func _movie_wp10a_stills() -> void:
 
 ## One still of each region's entry, at zoom 1.6, with that region's grade.
 func _movie_wp5a_stills() -> void:
+	Regions.set_enabled(true)
 	settings.apply_preset("Full")
 	_set_zoom(1.6)
 	weather.auto_rotate = false
@@ -1287,6 +1291,7 @@ func _movie_wp5a_stills() -> void:
 
 ## One still of each region entry after the grade push, for the contact sheet.
 func _movie_wp6_grades() -> void:
+	Regions.set_enabled(true)
 	settings.apply_preset("Full")
 	_set_zoom(1.6)
 	weather.auto_rotate = false
@@ -1328,6 +1333,7 @@ func _movie_wp6_grades() -> void:
 
 ## Gloomfen plates above the fog, and a Crosshaven square after the spread.
 func _movie_wp6_fix() -> void:
+	Regions.set_enabled(true)
 	settings.apply_preset("Full")
 	_set_zoom(1.45)
 	weather.auto_rotate = false

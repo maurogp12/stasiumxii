@@ -115,7 +115,7 @@ func _test_shipped(result: Dictionary) -> void:
 	eq(_has_finding(result, "mission_minutes", "open"), false, "mission time is no longer Open")
 	eq(_has_finding(result, "per_point_values", "open"), true, "per-point values are reported Open")
 	eq(_has_status(result, "outside"), true, "the table records checks the raw numbers miss")
-	eq(result["zone_rows"].size(), 11, "eleven zone bands are in the table")
+	eq(result["zone_rows"].size(), 15, "fifteen zone bands are in the table")
 	eq(str(result["text"]).find("Resist") >= 0, true, "the printed table names Resist")
 	eq(str(result["text"]).find("Open") >= 0, true, "the printed table says Open where the spec gives no number")
 

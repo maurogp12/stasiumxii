@@ -76,16 +76,16 @@ func _test_schema() -> void:
 
 func _test_roster(book) -> void:
 	var ids: Array = book.all_ids()
-	eq(ids.size(), 53, "33 chain missions plus 20 sides")
+	eq(ids.size(), 38, "18 chain missions plus 20 sides")
 	var chains := {}
 	for id in ids:
 		var row: Dictionary = book.mission(str(id))
 		chains[str(row["chain"])] = int(chains.get(str(row["chain"]), 0)) + 1
 		var rewards: Dictionary = row["rewards"]
 		eq((rewards["items"] as Array).is_empty(), true, "%s has no item reward yet" % str(id))
-	eq(int(chains["welcome"]), 11, "one welcome per zone")
-	eq(int(chains["scout"]), 11, "one scout per zone")
-	eq(int(chains["dungeon"]), 11, "one dungeon mission per zone")
+	eq(int(chains["welcome"]), 6, "one welcome per section 00 zone")
+	eq(int(chains["scout"]), 6, "one scout per section 00 zone")
+	eq(int(chains["dungeon"]), 6, "one dungeon mission per section 00 zone")
 	eq(int(chains["side"]), 20, "one side per extra NPC, not the older count of 18")
 	var welcome: Dictionary = book.mission("heart_welcome")
 	eq(str(welcome["name"]), "Welcome to Crosshaven", "heart welcome name")
@@ -101,13 +101,34 @@ func _test_roster(book) -> void:
 	eq(str(guide["steps"][0]["landmark"]).find("door") >= 0, true, "the Fen Guide walks you to the swamp gate")
 	var watcher: Dictionary = book.mission("blightwood_last_watcher_errand")
 	eq(str(watcher["steps"][0]["zone_id"]), "blightwood_hollow_door", "the Last Watcher sends you to the deepest chunk")
+	var east: Dictionary = book.mission("eastmarch_welcome")
+	eq(str(east["steps"]).find("eastmarch_elder") < 0, true, "Eastmarch welcome does not talk to the giver again")
+	var west: Dictionary = book.mission("westwatch_welcome")
+	eq(str(west["steps"]).find("southbridge_elder") < 0, true, "Westwatch welcome stays out of Southbridge")
+	eq(str(west["steps"][0]["zone_id"]), "crosshaven_westwatch", "Westwatch welcome stays in Westwatch")
+	var south: Dictionary = book.mission("southbridge_welcome")
+	var south_steps: Array = south["steps"]
+	eq(str(south["giver"]), "southbridge_elder", "the Southbridge Elder gives the welcome")
+	eq(str(south_steps[south_steps.size() - 1]["npc"]), "millrace_door_keeper", "the Door Keeper is last in Southbridge")
+	var banned: Array[String] = [
+		"rotting_orchard_barrow", "cinderforge_depths", "sunken_mill", "thunderwell_core", "shard_hollow",
+	]
+	var home_zones: Array[String] = ["crossroads", "stoneford", "northgate", "eastmarch", "southbridge", "westwatch"]
+	for id in ids:
+		var story: Dictionary = book.mission(str(id))
+		if str(story["kind"]) != "story":
+			continue
+		eq(home_zones.has(str(story["level_zone"])), true, "%s stays on section 00" % str(id))
+		for step_value in story["steps"]:
+			var story_step: Dictionary = step_value
+			eq(banned.has(str(story_step.get("dungeon", ""))), false, "%s does not use an outer dungeon" % str(id))
 
 
 func _test_heart_chain(book) -> void:
 	_wipe_save()
 	var hero = Progress.new()
 	eq(book.status_of("heart_welcome", hero), "available", "welcome is available at level 1")
-	eq(book.status_of("towns_welcome", hero), "locked", "towns stay locked at level 1")
+	eq(book.status_of("stoneford_welcome", hero), "locked", "Stoneford stays locked at level 1")
 	eq(book.status_of("heart_dungeon", hero), "locked", "the dungeon mission is locked before the scout")
 	var took: Dictionary = book.accept("heart_welcome", hero)
 	eq(bool(took["ok"]), true, "welcome can be accepted")
@@ -180,7 +201,7 @@ func _test_chain(book) -> void:
 		if str(row["kind"]) == "story":
 			story.append(str(id))
 	hero.level = 5
-	eq(book.status_of("towns_welcome", hero), "locked", "towns stay locked until the heart scout is done")
+	eq(book.status_of("stoneford_welcome", hero), "locked", "Stoneford stays locked until the heart scout is done")
 	hero.level = 1
 	var played_scouts := 0
 	var index := 0
@@ -191,15 +212,20 @@ func _test_chain(book) -> void:
 		index += 3
 		var welcome: Dictionary = book.mission(welcome_id)
 		hero.level = int(welcome["min_level"])
-		if welcome_id == "towns_welcome":
-			eq(book.status_of(welcome_id, hero), "available", "towns open once the heart scout is done and the level is met")
+		if welcome_id == "stoneford_welcome":
+			eq(book.status_of(welcome_id, hero), "available", "Stoneford opens once the heart scout is done and the level is met")
 		eq(book.status_of(welcome_id, hero), "available", "%s is available in chain order" % welcome_id)
 		if book.label_for(welcome_id, hero) == "coming soon":
 			eq(str(book.accept(welcome_id, hero)["reason"]), "coming soon", "%s stays closed" % welcome_id)
 			break
 		eq(bool(book.accept(welcome_id, hero)["ok"]), true, "%s accepts" % welcome_id)
 		for step in welcome["steps"]:
-			book.on_talk(str(step["npc"]), hero)
+			var welcome_step: Dictionary = step
+			if str(welcome_step.get("type", "")) == "reach":
+				var welcome_at: Dictionary = welcome_step["cell"]
+				book.on_reach(str(welcome_step["zone_id"]), Vector2i(int(welcome_at["x"]), int(welcome_at["y"])), hero)
+			else:
+				book.on_talk(str(welcome_step["npc"]), hero)
 		eq(book.status_of(welcome_id, hero), "ready", "%s is ready" % welcome_id)
 		eq(bool(book.turn_in(welcome_id, hero)["ok"]), true, "%s turns in" % welcome_id)
 		if book.label_for(scout_id, hero) == "coming soon":
@@ -225,8 +251,8 @@ func _test_chain(book) -> void:
 		eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
 		eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
 	eq(played_scouts >= 2, true, "heart and towns scouts are on real ground")
-	eq(book.label_for("rowanvale_scout", hero) != "coming soon", true, "the Northgate scout is not a coming-soon landmark")
-	var north: Dictionary = book.mission("rowanvale_scout")["steps"][0]
+	eq(book.label_for("northgate_scout", hero) != "coming soon", true, "the Northgate scout is not a coming-soon landmark")
+	var north: Dictionary = book.mission("northgate_scout")["steps"][0]
 	eq(str(north["zone_id"]).begins_with("crosshaven_"), true, "the Northgate scout walks Crosshaven")
 	eq(bool(north.get("pending_chunk", false)), false, "the Northgate scout mark is real ground")
 
@@ -258,9 +284,9 @@ func _test_sides(book) -> void:
 	eq(book.status_of("blightwood_last_watcher_errand", hero), "locked", "a high-zone side stays locked")
 	var watcher_offer: Array = book.available_for("blightwood_last_watcher", hero)
 	eq(watcher_offer.is_empty(), true, "an outer giver offers nothing while regions are closed")
-	hero.level = 5
+	hero.level = 20
 	var fisher: Dictionary = book.mission("eastmarch_fisher_errand")
-	eq(book.status_of("eastmarch_fisher_errand", hero), "available", "the Fisher opens with the towns")
+	eq(book.status_of("eastmarch_fisher_errand", hero), "available", "the Fisher opens with Eastmarch")
 	eq(bool(book.accept("eastmarch_fisher_errand", hero)["ok"]), true, "the Fisher errand accepts")
 	var step: Dictionary = fisher["steps"][0]
 	var at: Dictionary = step["cell"]
@@ -405,19 +431,23 @@ func _test_pending(book) -> void:
 	eq(book.label_for("rowanvale_farmer_errand", hero), "coming soon", "a stand-in side shows coming soon")
 	eq(str(book.accept("rowanvale_farmer_errand", hero)["reason"]), "coming soon", "a stand-in side cannot be accepted")
 	eq(bool(book.mission("heart_scout")["steps"][0].get("pending_chunk", false)), false, "the heart scout mark is real ground")
-	eq(bool(book.mission("rowanvale_scout")["steps"][0].get("pending_chunk", false)), false, "the Northgate scout is not a pending outer landmark")
-	var moved := 0
+	eq(bool(book.mission("northgate_scout")["steps"][0].get("pending_chunk", false)), false, "the Northgate scout is not a pending outer landmark")
+	var outer_steps := 0
 	for id in book.all_ids():
 		var story: Dictionary = book.mission(str(id))
+		if str(story["kind"]) != "story":
+			continue
+		var home_zones: Array[String] = ["crossroads", "stoneford", "northgate", "eastmarch", "southbridge", "westwatch"]
+		eq(home_zones.has(str(story["level_zone"])), true, "%s level zone is section 00" % str(id))
 		if str(story["chain"]) != "scout":
 			continue
 		for step_value in story["steps"]:
 			var step_row: Dictionary = step_value
 			eq(str(step_row["zone_id"]).begins_with("crosshaven_"), true, "%s stays in Crosshaven" % str(id))
 			eq(bool(step_row.get("pending_chunk", false)), false, "%s is not coming soon" % str(id))
-			if str(story["level_zone"]) != "crosshaven_heart" and str(story["level_zone"]) != "crosshaven_towns":
-				moved += 1
-	eq(moved >= 19, true, "the outer scout steps moved onto the town chains")
+			if not str(step_row["zone_id"]).begins_with("crosshaven_"):
+				outer_steps += 1
+	eq(outer_steps, 0, "no story scout step keeps an outer chunk")
 	var panel: Dictionary = book.panel_for("rowanvale_trader", hero)
 	eq(bool(panel["soon"]), false, "an outer landmark stays out of the task pool")
 	eq(book.available_for("rowanvale_trader", hero).is_empty(), true, "the stand-in task is not offered")
@@ -502,7 +532,7 @@ func _test_tracker(book) -> void:
 	_wipe_save()
 	var hero = Progress.new()
 	hero.mission_blob = {}
-	hero.level = 5
+	hero.level = 40
 	var ids: Array[String] = [
 		"crossroads_guide_errand", "crossroads_herald_errand", "crossroads_banker_errand",
 		"northgate_elder_errand", "stoneford_elder_errand", "eastmarch_elder_errand",
@@ -703,7 +733,7 @@ func _heart_marks() -> Array:
 	var pool: Array = []
 	for row_value in doc["reach_index"]:
 		var row: Dictionary = row_value
-		if str(row["level_zone"]) == "crosshaven_heart" and not bool(row.get("pending_chunk", false)):
+		if str(row["zone_id"]).begins_with("crosshaven_") and not bool(row.get("pending_chunk", false)):
 			pool.append(row)
 	return pool
 
@@ -844,7 +874,7 @@ func _test_world(book) -> void:
 	key.keycode = KEY_J
 	w._unhandled_input(key)
 	eq(w.mission_log.is_open(), true, "J opens the mission log")
-	eq(str(w.mission_log._body.text).find("Crosshaven Heart") >= 0, true, "the log groups by zone")
+	eq(str(w.mission_log._body.text).find("Crossroads") >= 0, true, "the log groups by zone")
 	var esc := InputEventKey.new()
 	esc.pressed = true
 	esc.keycode = KEY_ESCAPE

@@ -4,8 +4,8 @@ extends RefCounted
 ## Default off: Crosshaven is the only region a walk or a gate can enter.
 
 const Levels = preload("res://backend/world_levels.gd")
+const Flags = preload("res://backend/world_flags.gd")
 
-const KEY := "world/regions_enabled"
 const HOME := "crosshaven"
 
 static var _region_of: Dictionary = {}
@@ -16,14 +16,11 @@ static var _override: Variant = null
 static func enabled() -> bool:
 	if _override != null:
 		return bool(_override)
-	if ProjectSettings.has_setting(KEY):
-		return bool(ProjectSettings.get_setting(KEY))
-	return false
+	return Flags.regions_enabled()
 
 
 static func set_enabled(on: bool) -> void:
 	_override = on
-	ProjectSettings.set_setting(KEY, on)
 
 
 static func is_outer(zone_id: String) -> bool:

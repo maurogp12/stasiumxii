@@ -12,7 +12,7 @@ In this build a task is offered at levels 1–50, and only to a Crosshaven landm
 | Southbridge | 30–40 | South road, Southbridge square |
 | Westwatch | 40–50 | Southwest road, Westwatch square |
 
-The Crossroads is the level-1 hub. Its givers send you into the town band for your level. A task is kept only when the walking path is at least 40 cells. Outer-region givers offer nothing while `world.regions_enabled` is off, so their tasks are measured or not offered. Outer landmarks stay pending and out of the pool until those regions reopen.
+The Crossroads is the level-1 hub. Its givers send you into the town band for your level. A task is kept only when the walking path is at least 40 cells. Outer-region givers offer nothing while `regions_enabled` in `data/world/world_flags.json` is false, so their tasks are measured or not offered. Outer landmarks stay pending and out of the pool until those regions reopen.
 
 WP15 re-scores the free-play hours once WP5b fills the regions. The hours in `docs/pc/media/wp15/balance_report.md` are the unchanged simulator. They do not measure the tasks offered here.
 
