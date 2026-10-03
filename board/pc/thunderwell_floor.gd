@@ -33,7 +33,7 @@ void fragment() {
 	float along = fract(flow + phase * 0.013 - TIME * flow_speed);
 	float band = smoothstep(0.20, 0.0, abs(along - 0.12));
 	float breathe = 0.85 + 0.15 * sin(TIME * TAU * pulse_hz + phase);
-	float pulse = mix(0.55, 1.0, band) * breathe;
+	float pulse = mix(0.82, 1.0, band) * breathe;
 	float glow = intensity * glow_strength * pulse;
 	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
 	vec3 hue = glow_color / peak;
@@ -43,34 +43,55 @@ void fragment() {
 const PAD_SHADER := """shader_type canvas_item;
 render_mode blend_add;
 // TEXTURE keeps source_color. Pad hue stays in the painted art.
-uniform float pad_strength = 0.22;
+uniform float pad_strength = 1.55;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	COLOR = vec4(tex.rgb * pad_strength, tex.a * pad_strength);
+	vec3 rgb = tex.rgb * pad_strength;
+	COLOR = vec4(rgb, tex.a);
 }
 """
 const PILLAR_SHADER := """shader_type canvas_item;
 render_mode blend_add;
-// TEXTURE keeps source_color. The paint is already pale green-white.
-// pillar_strength scales it. 1.0 washes the cell; the json default is 0.45.
+// TEXTURE keeps source_color. The paint masks the shaft. A narrow core and a
+// wider halo replace the flat smear. pillar_strength stays 0.45.
 uniform float pillar_strength = 0.45;
 uniform vec3 pillar_color = vec3(0.780, 0.920, 0.827);
+uniform float core_width = 0.055;
+uniform float halo_width = 0.30;
+uniform float core_gain = 1.65;
+uniform float halo_gain = 0.20;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	float ink = dot(tex.rgb, vec3(0.2126, 0.7152, 0.0722)) * tex.a;
-	float glow = ink * pillar_strength;
+	float dx = abs(UV.x - 0.5);
+	float core = 1.0 - smoothstep(0.0, max(core_width, 0.001), dx);
+	float halo = 1.0 - smoothstep(core_width, max(halo_width, core_width + 0.001), dx);
+	float shaped = ink * (core * core_gain + halo * halo_gain);
+	float glow = shaped * pillar_strength;
 	float peak = max(max(pillar_color.r, pillar_color.g), max(pillar_color.b, 0.001));
 	vec3 hue = pillar_color / peak;
 	COLOR = vec4(hue * glow, glow);
 }
 """
 const ROOM_SHADER := """shader_type canvas_item;
-// TEXTURE keeps source_color on the vignette. hole_mask is generated data.
+// TEXTURE keeps source_color on the vignette. hole_mask is generated data:
+// 0 on the board, rising to 1 across the wall reach.
 uniform sampler2D hole_mask : filter_linear, repeat_disable;
+uniform vec3 wall_color = vec3(0.012, 0.030, 0.026);
+uniform vec3 rim_color = vec3(0.45, 0.95, 0.62);
+uniform float rim_strength = 1.15;
+uniform float wall_strength = 1.0;
+uniform float wall_rim = 0.10;
 void fragment() {
 	vec4 grad = texture(TEXTURE, UV);
-	float room = texture(hole_mask, UV).r;
-	COLOR = vec4(grad.rgb, grad.a * room);
+	float d = texture(hole_mask, UV).r;
+	float rim_w = max(wall_rim, 0.02);
+	float rim = smoothstep(0.0, rim_w * 0.28, d) * (1.0 - smoothstep(rim_w * 0.28, rim_w, d));
+	float wall = smoothstep(0.0, 0.04, d) * (1.0 - smoothstep(0.22, 0.78, d));
+	vec3 rgb = mix(grad.rgb, wall_color, clamp(wall * wall_strength, 0.0, 1.0));
+	rgb += rim_color * rim * rim_strength;
+	float cover = smoothstep(0.0, 0.025, d);
+	COLOR = vec4(rgb, cover);
 }
 """
 
@@ -334,23 +355,24 @@ func _ensure_room() -> void:
 	add_child(_room)
 
 
-func _build(board: Node2D, snap: Dictionary) -> void:
+func _build(board: Node2D, _snap: Dictionary) -> void:
 	_clear_cell_dressing()
 	var cycle: Array = _params.get("floor_cycle", [])
-	var paint: Dictionary = snap.get("paint_only", {})
-	var use_paint := bool(_params.get("special_from_paint", true))
 	var pillars := _pillar_set()
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
 		var tex := _floor_slice(cell, cycle)
 		if tile.has_method("set_look_floor"):
 			tile.set_look_floor(tex)
+			if tile.has_method("set_look_grade"):
+				tile.set_look_grade(_floor_grade())
+			if tile.has_method("set_look_lift"):
+				tile.set_look_lift(float(_params.get("floor_lift", 0.36)))
 		if _is_pad(cell, _params.get("pad_blue", {})) and not pillars.has(cell):
 			_add_pad(tile, "pad_blue")
 		elif _is_pad(cell, _params.get("pad_red", {})) and not pillars.has(cell):
 			_add_pad(tile, "pad_red")
-		if use_paint and not _props_at(paint, cell).is_empty():
-			_add_glow(tile, cell)
+		_add_glow(tile, cell)
 	_spawn_pillars(board)
 	_built_for = board.tiles.size()
 
@@ -404,6 +426,7 @@ func _add_pad(tile: Node, slot: String) -> void:
 	sprite.scale = Vector2(scale, scale)
 	sprite.offset = _pad_offset(tex, slot)
 	sprite.material = _pad_material()
+	sprite.set_meta("slot", slot)
 	sprite.z_as_relative = true
 	sprite.z_index = _z("pad")
 	tile.add_child(sprite)
@@ -548,15 +571,6 @@ func _pillar_set() -> Dictionary:
 	return found
 
 
-func _props_at(paint: Dictionary, cell: Vector2i) -> Array:
-	if paint.has(cell) and paint[cell] is Array:
-		return paint[cell]
-	var key := "%d,%d" % [cell.x, cell.y]
-	if paint.has(key) and paint[key] is Array:
-		return paint[key]
-	return []
-
-
 func _free_pillars() -> void:
 	for sprite in _pillars:
 		if sprite != null and is_instance_valid(sprite):
@@ -652,6 +666,10 @@ func _pillar_material() -> ShaderMaterial:
 	var color := pillar_color()
 	mat.set_shader_parameter("pillar_color", Vector3(color.r, color.g, color.b))
 	mat.set_shader_parameter("pillar_strength", pillar_strength())
+	mat.set_shader_parameter("core_width", float(_params.get("pillar_core", 0.055)))
+	mat.set_shader_parameter("halo_width", float(_params.get("pillar_halo", 0.30)))
+	mat.set_shader_parameter("core_gain", float(_params.get("pillar_core_gain", 1.65)))
+	mat.set_shader_parameter("halo_gain", float(_params.get("pillar_halo_gain", 0.20)))
 	return mat
 
 
@@ -667,7 +685,32 @@ func _room_material() -> ShaderMaterial:
 		_room_shader.code = ROOM_SHADER
 	var mat := ShaderMaterial.new()
 	mat.shader = _room_shader
+	_apply_room_uniforms(mat)
 	return mat
+
+
+func _floor_grade() -> Color:
+	var raw: Variant = _params.get("floor_grade", [1.08, 1.32, 1.05])
+	if raw is Array and (raw as Array).size() >= 3:
+		return Color(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Color(1.08, 1.32, 1.05)
+
+
+func _apply_room_uniforms(mat: ShaderMaterial) -> void:
+	var wall := _vec3_param("wall_color", Color(0.012, 0.030, 0.026))
+	var rim := _vec3_param("wall_rim_color", Color(0.45, 0.95, 0.62))
+	mat.set_shader_parameter("wall_color", wall)
+	mat.set_shader_parameter("rim_color", rim)
+	mat.set_shader_parameter("rim_strength", float(_params.get("wall_rim_strength", 1.15)))
+	mat.set_shader_parameter("wall_strength", float(_params.get("wall_strength", 1.0)))
+	mat.set_shader_parameter("wall_rim", float(_params.get("wall_rim", 0.10)))
+
+
+func _vec3_param(key: String, fallback: Color) -> Vector3:
+	var raw: Variant = _params.get(key, [])
+	if raw is Array and (raw as Array).size() >= 3:
+		return Vector3(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Vector3(fallback.r, fallback.g, fallback.b)
 
 
 func _room_cover_scale(tex_size: Vector2) -> float:
@@ -706,11 +749,11 @@ func _rebuild_hole(tex_size: Vector2) -> void:
 	var center := _room.position
 	var hx := 32.0 / scale
 	var hy := 16.0 / scale
-	var feather := float(_params.get("room_feather", 0.14))
+	var reach := float(_params.get("wall_reach", 3.4))
 	for cell in _board.tiles.keys():
 		var origin := Vector2(float(cell.x - cell.y) * 32.0, float(cell.x + cell.y) * 16.0)
 		var px := (origin - center) / scale + Vector2(float(w), float(h)) * 0.5
-		_stamp_hole(bytes, w, h, px, hx, hy, feather)
+		_stamp_hole(bytes, w, h, px, hx, hy, reach)
 	var image := Image.create_from_data(w, h, false, Image.FORMAT_L8, bytes)
 	if _hole_tex == null:
 		_hole_tex = ImageTexture.create_from_image(image)
@@ -721,10 +764,11 @@ func _rebuild_hole(tex_size: Vector2) -> void:
 		mat.set_shader_parameter("hole_mask", _hole_tex)
 
 
-func _stamp_hole(bytes: PackedByteArray, w: int, h: int, center: Vector2, hx: float, hy: float, feather: float) -> void:
+func _stamp_hole(bytes: PackedByteArray, w: int, h: int, center: Vector2, hx: float, hy: float, reach: float) -> void:
 	if hx < 0.5 or hy < 0.5:
 		return
-	var limit := 1.0 + feather
+	var span := maxf(reach, 0.2)
+	var limit := 1.0 + span
 	var y0 := maxi(0, int(floor(center.y - hy * limit)))
 	var y1 := mini(h - 1, int(ceil(center.y + hy * limit)))
 	var x_pad := hx * limit
@@ -736,7 +780,7 @@ func _stamp_hole(bytes: PackedByteArray, w: int, h: int, center: Vector2, hx: fl
 			var dist := absf(float(x) - center.x) / hx + absf(float(y) - center.y) / hy
 			if dist >= limit:
 				continue
-			var room := clampf((dist - 1.0) / feather, 0.0, 1.0)
+			var room := 0.0 if dist <= 1.0 else clampf((dist - 1.0) / span, 0.0, 1.0)
 			var shade := int(round(room * 255.0))
 			if shade < int(bytes[row + x]):
 				bytes[row + x] = shade

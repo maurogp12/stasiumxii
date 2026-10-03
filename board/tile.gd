@@ -23,6 +23,24 @@ var _overlay: HighlightOverlay
 ## View-only floor plate (Thunderwell Core and later themes). Null keeps the Koliseo dress.
 var _look_floor: Texture2D = null
 var _look_pulse: float = 1.0
+## Per-channel tint after the shadow lift. White leaves the lifted paint unchanged.
+var _look_grade: Color = Color(1, 1, 1, 1)
+## Exponent on the linear plate. Below 1 lifts the dark stone without clipping the traces.
+var _look_lift: float = 1.0
+var _look_sprite: Sprite2D
+var _look_mat: ShaderMaterial
+
+const LOOK_FLOOR_SHADER := """shader_type canvas_item;
+uniform vec3 floor_grade = vec3(1.0);
+uniform float floor_lift = 1.0;
+void fragment() {
+	vec4 tex = texture(TEXTURE, UV);
+	float lift = clamp(floor_lift, 0.05, 1.0);
+	vec3 rgb = pow(max(tex.rgb, vec3(0.0002)), vec3(lift));
+	rgb *= floor_grade;
+	COLOR = vec4(rgb, tex.a);
+}
+"""
 
 
 class HighlightOverlay extends Node2D:
@@ -39,15 +57,36 @@ func _ready() -> void:
 
 func set_look_floor(tex: Texture2D) -> void:
 	_look_floor = tex
+	_sync_look_sprite()
 	_request_paint()
 
 
 func clear_look_floor() -> void:
+	_look_grade = Color(1, 1, 1, 1)
+	_look_lift = 1.0
 	set_look_floor(null)
 
 
 func look_floor() -> Texture2D:
 	return _look_floor
+
+
+func set_look_grade(color: Color) -> void:
+	_look_grade = Color(color.r, color.g, color.b, 1.0)
+	_sync_look_sprite()
+
+
+func look_grade() -> Color:
+	return _look_grade
+
+
+func set_look_lift(amount: float) -> void:
+	_look_lift = clampf(amount, 0.05, 1.0)
+	_sync_look_sprite()
+
+
+func look_lift() -> float:
+	return _look_lift
 
 
 func set_look_pulse(amount: float) -> void:
@@ -56,13 +95,12 @@ func set_look_pulse(amount: float) -> void:
 		return
 	_look_pulse = next
 	if _look_floor != null:
-		queue_redraw()
+		_sync_look_sprite()
 
 
 func _draw() -> void:
 	var points := _diamond_points()
 	if _look_floor != null:
-		_paint_look_floor(_look_floor)
 		_paint_label()
 		return
 	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
@@ -80,15 +118,34 @@ func _draw() -> void:
 	_paint_label()
 
 
-func _paint_look_floor(tex: Texture2D) -> void:
-	var size := tex.get_size()
-	if size.x < 1.0:
+func _sync_look_sprite() -> void:
+	if _look_floor == null:
+		if _look_sprite != null:
+			_look_sprite.visible = false
 		return
-	var dest_w := 64.0
-	var dest_h := dest_w * size.y / size.x
-	var dest := Rect2(-dest_w * 0.5, -dest_h * 0.5, dest_w, dest_h)
-	var glow := Color(_look_pulse, _look_pulse, _look_pulse, 1.0)
-	draw_texture_rect(tex, dest, false, glow)
+	if _look_sprite == null:
+		_look_sprite = Sprite2D.new()
+		_look_sprite.name = "LookFloor"
+		_look_sprite.centered = true
+		_look_sprite.z_as_relative = true
+		_look_sprite.z_index = -1
+		_look_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		add_child(_look_sprite)
+	if _look_mat == null:
+		var shader := Shader.new()
+		shader.code = LOOK_FLOOR_SHADER
+		_look_mat = ShaderMaterial.new()
+		_look_mat.shader = shader
+	_look_sprite.material = _look_mat
+	_look_sprite.texture = _look_floor
+	_look_sprite.visible = true
+	var width := float(_look_floor.get_width())
+	if width > 1.0:
+		var scale := 64.0 / width
+		_look_sprite.scale = Vector2(scale, scale)
+	var pulse := _look_pulse
+	_look_mat.set_shader_parameter("floor_grade", Vector3(_look_grade.r * pulse, _look_grade.g * pulse, _look_grade.b * pulse))
+	_look_mat.set_shader_parameter("floor_lift", _look_lift)
 
 
 func _paint_label() -> void:

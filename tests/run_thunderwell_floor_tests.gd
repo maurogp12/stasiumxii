@@ -221,7 +221,13 @@ func _test_live_theme() -> void:
 			glow_tile = tile
 		if tile.get_node_or_null("ThunderPad") != null:
 			pads += 1
-	truthy(glow > 0, "painted cells wear a glow prop")
+	eq(glow, board.tiles.size(), "every cell wears a circuit trace")
+	var grade_raw: Array = FLOOR.load_params().get("floor_grade", [])
+	eq(grade_raw.size(), 3, "the floor grade is an rgb triple in the json")
+	if sample.has_method("look_grade") and grade_raw.size() >= 3:
+		var grade: Color = sample.look_grade()
+		truthy(is_equal_approx(grade.g, float(grade_raw[1])), "the floor grade comes from the json")
+		truthy(grade.g > grade.r, "the floor grade pushes the plates toward green")
 	var glow_sprite: CanvasItem = null
 	if glow_tile != null:
 		glow_sprite = glow_tile.get_node_or_null("ThunderGlow") as CanvasItem

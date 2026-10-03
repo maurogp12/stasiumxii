@@ -33,8 +33,8 @@ func _go() -> void:
 		"map_id": "stormspire",
 		"skip_deploy": true,
 		"classes": ["kestrel", "ironjaw"],
-		"kestrel_pos": Vector2i(1, 1),
-		"ironjaw_pos": Vector2i(13, 13),
+		"kestrel_pos": Vector2i(7, 8),
+		"ironjaw_pos": Vector2i(1, 1),
 	})
 	board._rebuild_pawns()
 	board._refresh()
@@ -48,12 +48,15 @@ func _go() -> void:
 		push_error("ThunderwellFloor missing")
 		quit(1)
 		return
+	board._paint_highlights()
+	_mark_hover(board, Vector2i(6, 9))
 	var frames := 12
 	var period := 1.0 / 0.22
 	for i in frames:
 		layer.preview_time(period * float(i) / float(frames))
 		await _settle(1)
 		await _shot(_out.path_join("after_%02d.png" % i))
+	await _shot(_out.path_join("move_range.png"))
 	_clear_highlights(board)
 	var pad_cell := _pad_cell(board)
 	var beside := _pillar_neighbor(layer, board)
@@ -73,6 +76,7 @@ func _go() -> void:
 	board._fit_board_camera()
 	board.set_board_theme("thunderwell")
 	board._paint_highlights()
+	_mark_hover(board, Vector2i(6, 9))
 	await _shot(_out.path_join("move_range.png"))
 	print("THUNDERWELL_CAPTURE %s" % _out)
 	quit(0)
@@ -84,9 +88,19 @@ func _place_for_range() -> void:
 		"map_id": "stormspire",
 		"skip_deploy": true,
 		"classes": ["kestrel", "ironjaw"],
-		"kestrel_pos": Vector2i(6, 7),
+		"kestrel_pos": Vector2i(7, 8),
 		"ironjaw_pos": Vector2i(1, 1),
 	})
+
+
+func _mark_hover(board: Node, cell: Vector2i) -> void:
+	var tiles: Dictionary = board.get("tiles")
+	if not tiles.has(cell):
+		return
+	var tile: Node = tiles[cell]
+	tile.set("is_selected", true)
+	if tile.has_method("_request_paint"):
+		tile.call("_request_paint")
 
 
 func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, beside: Vector2i) -> void:
@@ -118,6 +132,11 @@ func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, be
 	_print_sample("trace_near_pad", trace_near_pad)
 	_print_sample("pillar_near_move", pillar_px)
 	_print_sample("trace_near_pillar", trace_near_pillar)
+	var tiles: Dictionary = board.get("tiles")
+	if tiles.has(Vector2i(8, 5)):
+		_print_sample("quiet_floor", _sample_point(image, _screen(tiles[Vector2i(8, 5)])))
+	if tiles.has(Vector2i(9, 6)):
+		_print_sample("quiet_neighbor", _sample_point(image, _screen(tiles[Vector2i(9, 6)])))
 	var glow_l := float(brightest["lum"])
 	print("GLOW_ZOOM %s pad=%s beside=%s" % [zoom, pad_cell, beside])
 	print("GLOW_STRENGTH trace=%s pad=%s pillar=%s" % [FLOOR.glow_strength(), FLOOR.pad_strength(), FLOOR.pillar_strength()])
@@ -133,10 +152,17 @@ func _print_sample(label: String, sample: Dictionary) -> void:
 
 func _pad_cell(board: Node) -> Vector2i:
 	var tiles: Dictionary = board.get("tiles")
+	var best := Vector2i(-1, -1)
+	var best_d := 999
 	for cell in tiles.keys():
-		if (tiles[cell] as Node).get_node_or_null("ThunderPad") != null:
-			return cell
-	return Vector2i(-1, -1)
+		var pad := (tiles[cell] as Node).get_node_or_null("ThunderPad")
+		if pad == null:
+			continue
+		var dist := absi(cell.x - 7) + absi(cell.y - 7)
+		if dist < best_d:
+			best_d = dist
+			best = cell
+	return best
 
 
 func _pillar_neighbor(layer: Node, board: Node) -> Vector2i:
