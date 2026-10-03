@@ -504,7 +504,7 @@ Dungeon names and one-line ideas (all **Proposed**, all PC's own):
 
 | Dungeon | Zone | Idea |
 |---|---|---|
-| Old Granary Cellar | Crosshaven Heart | Tutorial cellar under the market: rats, scarecrow drudges, small boss |
+| Old Granary Cellar | Crosshaven Heart | Tutorial cellar under the market: rats, scarecrow drudges, the Ratking (boss, Proposed name) |
 | Millrace Vaults | Crosshaven Towns | Vaults under Southbridge's watermill: mill bandits and gear golems, The Millwright |
 | Rotting Orchard Barrow | Rowanvale | Barrow under an old orchard: blighted farm beasts, Orchard Warden |
 | Frostspire Archive | Windmere | Frozen library under the white spire: ice constructs and book wraiths, The Pale Archivist |
@@ -1029,6 +1029,92 @@ One window with three panels side by side (each can also open alone):
 Rules: the window never changes a number itself: stats come from
 `pc_progress.gd`, items from `pc_rewards.gd`, coins from the wallet and bank.
 It opens in the open world and in towns, not during a fight (Proposed).
+
+### 4.17 Pets and mounts (Mauro's rules + Proposed details)
+
+Mauro, 3 Oct 2026: **"pets can be obtained from every dungeon as a mini
+version of the boss, and every pet should benefit each class in some way;
+mounts should give speed and other bonuses, and also can be reproduced and
+create new mounts; you have to be premium to use mounts and pets."**
+
+Mauro's rules (build them as given):
+
+- **Every dungeon drops a pet: a mini version of its boss.**
+- **Every pet benefits every class** in some way.
+- **Mounts give speed and other bonuses.**
+- **Mounts can be bred** (reproduced), and breeding **creates new mounts**.
+- **Using pets and mounts needs premium** (what premium is: Q15).
+
+Two new slots (Proposed): **Pet** and **Mount**, outside the 8 gear slots
+and outside the one-Epic / one-Relic rule. Like all gear, pet and mount
+combat bonuses are off in Koliseo PvP.
+
+#### Pets (Proposed details)
+
+- **Drop:** the boss of each dungeon drops its mini pet, rarely (Proposed:
+  1% at ★1 up to 5% at ★5). Pets can be traded on the marketplace later.
+- **Each pet has two parts:**
+  1. **A class bonus** that works for every class, sized to the pet's
+     dungeon tier: Kestrel + damage %, Ironjaw + damage % on Earth hits,
+     Mender + healing %, Gloam + damage % on hits out of Invisible, Bastion
+     − damage taken %. Size: 2% (tier 1) rising to 6% (tier 50), Proposed;
+     a pet is worth well under one gear part, so it never decides a fight.
+  2. **A unique perk** outside combat, different for every pet, so each pet
+     is worth collecting.
+- Pets follow the player in the world and live in the player's house (4.16).
+  Feeding, pet levels and pets fighting are **not** in v1 (Open).
+
+| Pet (Proposed) | Mini of | Dungeon | Tier | Class bonus | Unique perk |
+|---|---|---|---|---|---|
+| Ratling | the Ratking | Old Granary Cellar | 1 | 2% | +5% carry weight |
+| Cogling | The Millwright | Millrace Vaults | 8 | 2% | −3% crafting coin cost |
+| Sproutwarden | Orchard Warden | Rotting Orchard Barrow | 10 | 3% | +10% garden yield in your house |
+| Little Archivist | The Pale Archivist | Frostspire Archive | 15 | 3% | Shows the next step of your active missions on the map |
+| Saltmaw Pup | Old Saltmaw | Saltmaw Grotto | 20 | 4% | +5% Crypto Coins from fights |
+| Emberkin | The Ember Smith | Cinderforge Depths | 25 | 4% | −5% part upgrade cost |
+| Hagling | Millwheel Hag | Sunken Mill | 25 | 4% | +10% potion crafting speed |
+| Abbess Wisp | Mire Abbess | Drowned Abbey | 30 | 5% | Food heals 10% more out of combat |
+| Sparkengine | The Storm Engine | Thunderwell Core | 35 | 5% | +5% gathering speed |
+| Prismlet | Ashen Prism | Shard Hollow | 40 | 6% | +3% chance of a Rare part from fights |
+| Elderling | the Rotting Elder | Heart of the Blight | 50 | 6% | +5% XP from world fights |
+
+#### Mounts (Proposed details)
+
+- **Speed:** a mount raises **walking speed in the open world** (not in
+  combat): +20% to +60% by breed and generation (cap +60%, Proposed).
+- **Other bonuses** (one or two per mount, by breed): extra carry weight,
+  faster gathering, a small stat (Mastery, Vitality, Swift or Resist, worth
+  about half a gear part; PvE only), or a little more XP or coins.
+- **First mount:** a level 20 mission from a Stable keeper at the Crossroads
+  (Proposed), then more from breeding and the marketplace (later).
+- **Base breeds, one per region** (Proposed names): Plains Strider
+  (Crosshaven), Meadow Hare (Rowanvale), Frost Ram (Windmere), Reef Ray
+  (Brinewake), Cinder Lizard (Slagcrown), Fen Heron (Fen Edge), Bog Toad
+  (Gloomfen), Storm Gecko (Stormspire), Shard Beetle (Ashen Shardfields),
+  Blight Stag (Blightwood).
+
+**Breeding (Mauro: "can be reproduced and create new mounts"):**
+
+- At a **Stable** (one at the Crossroads; Manor houses get a paddock,
+  Proposed), pair two mounts. After a real-time wait (Proposed 24 h) and a
+  coin fee, a foal is born.
+- **The foal inherits** breed, speed, bonuses and colour from its parents,
+  with a small random spread, and a **generation** number one higher than
+  its parents.
+- **New mounts:** crossing two different breeds can create a **hybrid
+  breed** (for example Plains Strider × Frost Ram → Gale Strider). Hybrids
+  are new mounts with their own look and bonus mix; deeper generations unlock
+  rarer hybrids (Proposed: 10 hybrid breeds in phase 1, listed by the team
+  for Mauro).
+- **Limits so breeding stays balanced:** each mount can breed a few times
+  (Proposed 4); speed and bonuses never pass their caps however many
+  generations; the simulator checks a long breeding run never beats the caps.
+
+Art (Scenario, unpaused for monsters, bosses and NPCs): 11 pet sprites (mini
+bosses), 10 base breeds + hybrids for mounts. **Riding a mount shows the
+player fighter on it**, and player fighter art is still parked, so mounted
+art and animation need Mauro's go on fighter art; until then a mount can walk
+next to the player or the player sprite sits on the mount as a stand-in.
 
 ### 4.16 Houses: rented homes (Mauro's rules + Proposed details)
 
@@ -1670,6 +1756,30 @@ premium only; farm plants and trees, keep pets, cook, make potions, decorate.
   server (Q9). A private single-player version can be prototyped earlier only
   if Mauro asks.
 
+#### WP21: Pets (Code + Scenario)
+
+- **Goal:** each dungeon boss drops its mini pet; a Pet slot; every pet gives
+  every class its class bonus plus its own perk (4.17). Premium only (Q15).
+- **Add:** `data/world/pets.json` + schema; `backend/pc_pets.gd` (pure logic);
+  a Pet slot in the equipment panel (4.15); the pet following the walker in
+  the world; `tests/run_pc_pets_tests.gd`.
+- **Accept:** all 11 dungeons have a pet; every pet has a bonus for all 5
+  classes; bonuses stay within 2–6% and are off in PvP; each perk works; a
+  non-premium player can collect pets but not use them.
+
+#### WP22: Mounts and breeding (Code + Scenario)
+
+- **Goal:** mounts give world speed and bonuses; breeding at the Stable makes
+  foals and new hybrid breeds (4.17). Premium only (Q15).
+- **Add:** `data/world/mounts.json` + schema (breeds, hybrids, caps);
+  `backend/pc_mounts.gd` (speed, bonuses, breeding, inheritance, generation,
+  breeding limits; pure logic); a Mount slot; a Stable panel;
+  `tests/run_pc_mounts_tests.gd`.
+- **Accept:** speed only out of combat and never above +60%; bonuses never
+  above their caps after any number of generations (simulated); each mount
+  breeds at most its limit; hybrids appear only from the right parents;
+  premium rule holds.
+
 ### 5.2 Suites to run before every push
 
 ```bash
@@ -1757,7 +1867,8 @@ headless.
     numbers stay tuned by WP15.
 14. ~~**Inventory capacity**~~ **Answered 3 Oct 2026 (Mauro): "yes to both"**:
     a slot limit and a weight limit (4.15, numbers Proposed).
-15. **Premium (4.16):** what is premium? A paid membership with real money
-    (that needs a payment system and store rules), or something earned in the
-    game? What else does premium give besides renting a house? And what are
-    pets: what do they do, how do you get them, do they fight?
+15. **Premium (4.16, 4.17):** what is premium? A paid membership with real
+    money (that needs a payment system and store rules), or something earned
+    in the game? So far premium is needed to rent a house and to use pets and
+    mounts; anything else? (Pets and mounts themselves: answered 3 Oct 2026,
+    4.17.)
