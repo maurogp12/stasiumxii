@@ -21,6 +21,8 @@ const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
 const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
+const Progress := preload("res://backend/pc_progress.gd")
+const CharacterWindow := preload("res://scenes/world/ui/character_window.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 
 const SEA := Color("2d4f63")
@@ -45,6 +47,8 @@ var weather: Node
 var settings: VisualSettings
 var visuals: CanvasLayer
 var fx: Node
+var progress = null
+var character_window: CanvasLayer
 var hover_cell := Vector2i(-1, -1)
 
 var _hover: Node2D
@@ -129,6 +133,11 @@ func _ready() -> void:
 	visuals.setup(settings)
 
 	_build_hud()
+	progress = Progress.new()
+	character_window = CharacterWindow.new()
+	character_window.name = "CharacterWindow"
+	character_window.setup(progress)
+	add_child(character_window)
 
 	var loaded: Dictionary = Atlas.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -337,6 +346,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				if visuals != null:
 					visuals.toggle()
+			KEY_C:
+				if character_window != null:
+					character_window.toggle()
 
 
 func _set_zoom(z: float) -> void:
@@ -609,6 +621,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_v7_tour()
 		"ironjaw_tall":
 			await _movie_ironjaw_tall()
+		"wp3b":
+			await _movie_wp3b()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -913,6 +927,30 @@ func _town_stroll() -> void:
 		await _cardinal("n", 1, "walk")
 		await _cardinal("s", 1, "walk")
 	await get_tree().create_timer(0.55).timeout
+
+
+## Before: the Crossroads with the character panel closed.
+## After: the same camera with the panel open.
+func _movie_wp3b() -> void:
+	_set_zoom(1.6)
+	weather.set_weather("clear")
+	weather.settle()
+	if character_window != null:
+		character_window.close()
+	await get_tree().create_timer(1.2).timeout
+	if progress != null and character_window != null:
+		var grant := 0
+		var steps: Array = progress.xp_to_next
+		var count: int = mini(11, steps.size())
+		for i in count:
+			grant += int(steps[i])
+		progress.add_xp(grant)
+		progress.spend("Mastery", 4)
+		progress.spend("Vitality", 4)
+		progress.spend("Swift", 2)
+		progress.spend("Resist", 2)
+		character_window.open()
+	await get_tree().create_timer(2.4).timeout
 
 
 func _movie_tour() -> void:
