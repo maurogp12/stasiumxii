@@ -302,14 +302,17 @@ section 3.1). Optional (**Proposed**): a `depth` object
 later; the band stays the zone's band.
 
 Rules: every chunk id in every region index belongs to exactly one level zone;
-`1 <= level_min <= level_max <= 50`; the 11 zones of section 3 are all present;
+`1 <= level_min <= level_max <= max_level` (from 4.3); the 11 zones of section 3 are all present;
 `gloomfen_mire.level_min >= 30`; `blightwood_hollow.level_min >= 45`;
 `stormspire` is 35–40. Colours are the green-to-purple ramp from the map image.
 
 ### 4.3 Level curve: `data/world/level_curve.json` (Proposed)
 
-PC gets its own level system, capped at **50** (Open Q3: the phone one stops at
-30 and must not change).
+PC gets its own level system. **Phase 1 (these zones) caps at 50. The next
+phase (all the other maps) raises the cap to 100** (Mauro, 3 Oct 2026). Build
+everything so that raising the cap is a data change, not a code change (see
+the "cap rule" below). The phone's level system (cap 30) is separate and must
+not change.
 
 ```json
 {
@@ -325,9 +328,46 @@ PC gets its own level system, capped at **50** (Open Q3: the phone one stops at
 Proposed formula: `xp_to_next(L) = round(100 * L^1.6 / 10) * 10` for `L = 1..49`
 (level 1 → 2 needs 100 XP, 2 → 3 needs 300, 10 → 11 needs 3,980, 25 → 26
 needs 17,250, 49 → 50 needs 50,620; about 979,000 XP in total). The file stores the numbers;
-the formula only fills them once. XP sources, rewards and stat points per level
-are **Open** (Q3): build only the curve, the level counter and a "level up"
-event, with no stat changes.
+the formula only fills them once.
+
+**The same formula runs to level 100** for the next phase (75 → 76 needs
+100,020; 99 → 100 needs 155,960; about 6.0 million XP from 1 to 100). Because
+every XP reward in 4.8 is a share of `xp_to_next(L)`, each level takes about
+the same play time at any level, so 50 → 100 adds roughly another 60 hours
+(Proposed; the WP15 simulator reports it).
+
+**Cap rule (for every package):** never write `50` in code. Read
+`max_level` from `level_curve.json`. Tests check against that value. Data that
+depends on the cap (zone bands, mission tiers, set levels, the Koliseo
+normalised level) must accept levels up to `max_level`, so the next phase only
+adds entries to `xp_to_next`, new zones, sets and tiers.
+
+### 4.11 What a level gives (**approved: option A**, Mauro 3 Oct 2026)
+
+Mauro picked option A ("I like it"), with the rule that the cap goes to 100 in
+the next phase. Numbers are **Proposed**.
+
+- **2 characteristic points per level** (98 by level 50; 198 by level 100),
+  spent by the player in four stats, the same buckets as the phone game:
+  **Mastery** (more damage), **Vitality** (more HP), **Swift** (more
+  Initiative, act earlier), **Ward** (more resistance). Per-point values are
+  **Proposed** and tuned with WP15 together with the class kits; the kits
+  themselves (spell numbers) never change with level.
+- **Class HP growth per level** (a small flat HP gain, different per class,
+  Proposed).
+- **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
+  second milestone between 51 and 100 (Open, decided with that phase).
+- **Titles** at 10, 20, 30, 40, 50 (and every 10 after, up to 100).
+- **Respec:** one free reset of the points, then each reset costs Crypto Coins
+  (an Elder does it; price Proposed).
+- **Koliseo stays fair:** in Koliseo PvP every fighter is treated as
+  `max_level` with their own point spend, and set stats are switched off
+  (Proposed). Levels and gear matter in the open world and dungeons.
+
+Data: `data/world/level_rewards.json` (format `stasium.level_rewards` v1):
+`points_per_level`, `stat_per_point` per bucket, `class_hp_per_level`,
+`milestones` (`[{"level": 30, "ap": 1}]`), `titles`, `respec`. Built in WP3
+(points and spending UI) and checked by WP15.
 
 ### 4.4 Gates between regions: `data/world/gates.json`
 
@@ -734,13 +774,20 @@ dependency on each other can run in parallel (marked ∥).
 
 #### WP3: Level curve and PC level counter (Code) ∥ WP2
 
-- **Goal:** a PC hero level from 1 to 50 that can be saved, with a level-up
-  event. No stats change (Open Q3).
-- **Add:** `data/world/level_curve.json` + schema, `backend/pc_progress.gd`
-  (preload; `level`, `xp`, `add_xp(n) -> Array[events]`, save/load to
-  `user://pc_progress.json`), `tests/run_pc_progress_tests.gd`.
-- **Accept:** 49 increasing entries; level never exceeds 50; XP past level 50 is
-  kept but does not level; save/load round-trips; the phone level code is not
+- **Goal:** a PC hero level from 1 to `max_level` (50 now, 100 next phase)
+  that can be saved, with a level-up event, characteristic points and their
+  spending (4.11).
+- **Add:** `data/world/level_curve.json` + schema,
+  `data/world/level_rewards.json` + schema, `backend/pc_progress.gd`
+  (preload; `level`, `xp`, `add_xp(n) -> Array[events]`, `points_free`,
+  `spend(bucket, n)`, `respec()`, save/load to `user://pc_progress.json`),
+  `scenes/world/ui/character_sheet.gd` / `.tscn` (level, XP bar, the four
+  stats and + buttons; **C** key, Proposed), `tests/run_pc_progress_tests.gd`.
+- **Accept:** `max_level - 1` increasing entries; level never exceeds
+  `max_level`; XP past the cap is kept but does not level; points = 2 ×
+  (level − 1) minus spent; +1 AP flag from level 30; respec returns every
+  point; **a test re-runs with a 100-level curve** and passes with no code
+  change (the cap rule); save/load round-trips; the phone level code is not
   imported or changed.
 - **Media:** none.
 
@@ -1099,8 +1146,9 @@ headless.
    advance) and dungeons, with dungeons giving more XP than the open world
    (4.8). Rewards: Crypto Coins, Regular set parts, then Rare parts and Mystery
    Boxes (4.9).
-   **3b. Still Open:** what a level gives (stat points, AP at some level) and
-   what set parts do (stats, set bonuses).
+   **3b.** What a level gives: **answered 3 Oct 2026 (Mauro): option A**, with
+   the cap going to 100 in the next phase (4.3 cap rule, 4.11). **Still Open:**
+   what set parts do (stats, set bonuses) and what Crypto Coins buy.
 4. **NPC jobs:** ~~which first?~~ **Partly answered 3 Oct 2026 (Mauro): NPCs
    with missions come first** (4.7, WP6b). Still Open: shops, storage, travel,
    healing, and mission types that need quest items. What Crypto Coins buy.
