@@ -7,6 +7,7 @@ const FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 
 var _out := "/tmp/l4_frames"
 var _move_trace_ok := true
+var _lit_move_lum := 0.0
 
 
 func _initialize() -> void:
@@ -87,6 +88,19 @@ func _go() -> void:
 	board._paint_highlights()
 	_mark_hover(board, Vector2i(6, 9))
 	await _shot(_out.path_join("move_range.png"))
+	await _report_prop_bloom(board, layer)
+	_clear_highlights(board)
+	board._fit_board_camera()
+	await _shot(_out.path_join("props_default.png"))
+	var cam := board.get_node("BoardCamera") as Camera2D
+	var fit: Vector2 = board.get("_fit_camera_pos")
+	cam.position = fit + Vector2(0, 220)
+	await _shot(_out.path_join("props_y.png"))
+	cam.position = fit + Vector2(220, 0)
+	await _shot(_out.path_join("props_x.png"))
+	cam.position = fit + Vector2(-220, 0)
+	await _shot(_out.path_join("props_nx.png"))
+	cam.position = fit
 	print("THUNDERWELL_CAPTURE %s" % _out)
 	print("MOVE_TRACE_OK %s" % str(_move_trace_ok))
 	quit(0 if _move_trace_ok else 1)
@@ -199,6 +213,7 @@ func _report_pair(board: Node, layer: Node, image: Image, move_cell: Vector2i, t
 	var win := move_ratio >= 1.5 and inner_ratio >= 1.5
 	if not win:
 		_move_trace_ok = false
+	_lit_move_lum = maxf(_lit_move_lum, float(move["lum"]))
 	print("GLOW_FULL_PULSE %s move_cell=%s trace_cell=%s move=%.4f inner=%.4f trace=%.4f ahead=%s" % [label, move_cell, trace_cell, float(move["lum"]), float(inner["lum"]), float(trace["lum"]), str(ahead)])
 	print("MOVE_TRACE_RATIO %s move=%.3f inner=%.3f ok=%s" % [label, move_ratio, inner_ratio, str(win)])
 
@@ -577,6 +592,134 @@ func _hex(color: Color) -> String:
 	var g := clampi(int(round(clampf(color.g, 0.0, 1.0) * 255.0)), 0, 255)
 	var b := clampi(int(round(clampf(color.b, 0.0, 1.0) * 255.0)), 0, 255)
 	return "#%02x%02x%02x" % [r, g, b]
+
+
+func _report_prop_bloom(board: Node, layer: Node) -> void:
+	var props := layer.get_node_or_null("RoomProps")
+	if props == null:
+		push_error("RoomProps missing")
+		_move_trace_ok = false
+		return
+	var cam := board.get_node("BoardCamera") as Camera2D
+	var fit: Vector2 = board.get("_fit_camera_pos")
+	for child in props.get_children():
+		var prop_id := str(child.get_meta("prop_id"))
+		var art := child.get_node_or_null("Art") as Sprite2D
+		if art == null:
+			continue
+		var anchor: Vector2i = child.get_meta("anchor")
+		var pan := BoardVisualSort.cell_to_local(anchor) - BoardVisualSort.cell_to_local(Vector2i(7, 7))
+		pan.x = clampf(pan.x, -220.0, 220.0)
+		pan.y = clampf(pan.y, -220.0, 220.0)
+		cam.position = fit + pan
+		_clear_highlights(board)
+		var image := await _grab_at(layer, layer.full_pulse_time(0.0))
+		if image == null:
+			_move_trace_ok = false
+			print("PROP_BLOOM %s missing frame" % prop_id)
+			continue
+		var prop := _brightest_prop(image, art)
+		var halo := _prop_halo(image, art, board, layer)
+		var move_l := maxf(_lit_move_lum, 0.0001)
+		var ratio := float(halo["lum"]) / move_l
+		var dimmer := float(halo["lum"]) < move_l
+		if not dimmer:
+			_move_trace_ok = false
+		_print_sample("prop_%s" % prop_id, prop)
+		_print_sample("halo_%s" % prop_id, halo)
+		print("PROP_BLOOM %s core=%.4f halo=%.4f move=%.4f ratio=%.3f dimmer=%s pan=%s" % [prop_id, float(prop["lum"]), float(halo["lum"]), move_l, ratio, str(dimmer), pan])
+	cam.position = fit
+	_clear_highlights(board)
+
+
+func _brightest_prop(image: Image, sprite: Sprite2D) -> Dictionary:
+	var best := {"color": Color(0, 0, 0), "lum": -1.0, "at": Vector2i.ZERO}
+	var rect := _screen_rect(sprite)
+	if image == null or rect.size == Vector2.ZERO:
+		return best
+	var tex := _sprite_image(sprite)
+	var x0 := clampi(int(floor(minf(rect.position.x, rect.end.x))), 0, image.get_width() - 1)
+	var x1 := clampi(int(ceil(maxf(rect.position.x, rect.end.x))), 0, image.get_width())
+	var y0 := clampi(int(floor(minf(rect.position.y, rect.end.y))), 0, image.get_height() - 1)
+	var y1 := clampi(int(ceil(maxf(rect.position.y, rect.end.y))), 0, image.get_height())
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if tex != null and not _prop_ink(sprite, tex, x, y):
+				continue
+			var color := image.get_pixel(x, y)
+			var lum := _lum(color)
+			if lum > float(best["lum"]):
+				best = {"color": color, "lum": lum, "at": Vector2i(x, y)}
+	return best
+
+
+func _prop_ink(sprite: Sprite2D, tex: Image, x: int, y: int) -> bool:
+	var local := sprite.to_local(sprite.get_viewport().get_canvas_transform().affine_inverse() * Vector2(x + 0.5, y + 0.5))
+	var size := Vector2(tex.get_width(), tex.get_height())
+	var origin := sprite.offset
+	if sprite.centered:
+		origin -= size * 0.5
+	var px := local - origin
+	var tx := int(floor(px.x))
+	var ty := int(floor(px.y))
+	if tx < 0 or ty < 0 or tx >= tex.get_width() or ty >= tex.get_height():
+		return false
+	return tex.get_pixel(tx, ty).a > 0.2
+
+
+## Bloom is the light outside the opaque prop, the same way a trace is the glow
+## and not the stone under it.
+func _prop_halo(image: Image, sprite: Sprite2D, board: Node, layer: Node) -> Dictionary:
+	var best := {"color": Color(0, 0, 0), "lum": -1.0, "at": Vector2i.ZERO}
+	var rect := _screen_rect(sprite)
+	if image == null or rect.size == Vector2.ZERO:
+		return best
+	var tex := _sprite_image(sprite)
+	var pillars := _pillar_sprites(layer)
+	var pad := 14
+	var x0 := clampi(int(floor(minf(rect.position.x, rect.end.x))) - pad, 0, image.get_width() - 1)
+	var x1 := clampi(int(ceil(maxf(rect.position.x, rect.end.x))) + pad, 0, image.get_width())
+	var y0 := clampi(int(floor(minf(rect.position.y, rect.end.y))) - pad, 0, image.get_height() - 1)
+	var y1 := clampi(int(ceil(maxf(rect.position.y, rect.end.y))) + pad, 0, image.get_height())
+	var ink: Array[Vector2i] = []
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if tex != null and _prop_ink(sprite, tex, x, y):
+				ink.append(Vector2i(x, y))
+	if ink.is_empty():
+		return best
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if tex != null and _prop_ink(sprite, tex, x, y):
+				continue
+			if _on_play_cell(board, x, y) or _near_pillar_beam(pillars, x, y) or _pixel_on_pillar(pillars, x, y):
+				continue
+			var near := false
+			for bit in ink:
+				var dx := x - bit.x
+				var dy := y - bit.y
+				if dx * dx + dy * dy <= pad * pad:
+					near = true
+					break
+			if not near:
+				continue
+			var color := image.get_pixel(x, y)
+			var lum := _lum(color)
+			if lum > float(best["lum"]):
+				best = {"color": color, "lum": lum, "at": Vector2i(x, y)}
+	return best
+
+
+func _on_play_cell(board: Node, x: int, y: int) -> bool:
+	var tiles: Dictionary = board.get("tiles")
+	var zoom := _zoom(board)
+	var half_x := 32.0 * zoom
+	var half_y := 16.0 * zoom
+	for cell in tiles.keys():
+		var center := _screen(tiles[cell])
+		if absf(float(x) - center.x) / half_x + absf(float(y) - center.y) / half_y <= 1.05:
+			return true
+	return false
 
 
 func _settle(frames: int) -> void:

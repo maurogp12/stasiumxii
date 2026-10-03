@@ -1,0 +1,305 @@
+{
+ "package": "thunderwell_props",
+ "version": 2,
+ "date": "2026-10-03",
+ "scale": "2:1 iso, cell top face 128x64 at 2x (Crosshaven kit scale); current scale approved, do not resize",
+ "anchor": "canvas px (x right, y down) of the footprint south tip; footprint diamond corners at x = anchor -64*fy .. +64*fx, y = anchor_y - 32*cells; place the anchor on the south tip of the footprint cell(s)",
+ "placement": "room-edge cells only, never on board cells; tall props (>110 px at 2x) on back-edge rows only; y-sort with fighters by anchor y",
+ "emission": "emit mask = half-size 8-bit greyscale data texture (no source_color, linear); suggested shading rgb += albedo * emit * strength; strength defaults below, the live value lives in Thunderwell's data file like the floor glow strength",
+ "contact_shadow": "added in code under each footprint: soft ellipse, multiply ~0.35",
+ "emissive_glow_hue": "125-155 (emerald ~140); cobalt/crimson pin accents only",
+ "props": [
+  {
+   "id": "coil_pylon",
+   "file_2x": "coil_pylon@2x.png",
+   "file_1x": "coil_pylon.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    60.0,
+    225.0
+   ],
+   "anchor_px_1x": [
+    30.0,
+    112.5
+   ],
+   "size_2x": [
+    120,
+    232
+   ],
+   "size_1x": [
+    60,
+    116
+   ],
+   "emissive": "yes",
+   "height_px_2x": 218,
+   "art_height_px_2x": 214,
+   "art_x_from_anchor_2x": [
+    -55.0,
+    55.0
+   ],
+   "edge_rule": "back-edge only",
+   "anchor_method": "slab 110px wide in a 128px footprint; tip = slab south vertex + 4.0px centring inset",
+   "anchor_v1_2x": [
+    59.5,
+    221
+   ],
+   "size_v1_2x": [
+    120,
+    224
+   ],
+   "file_emit": "coil_pylon_emit.png",
+   "emit_size": [
+    60,
+    116
+   ],
+   "emission_strength_default": 0.45,
+   "emit_covers": "coil glass + spark crown",
+   "emit_coverage": 0.1078
+  },
+  {
+   "id": "broken_generator",
+   "file_2x": "broken_generator@2x.png",
+   "file_1x": "broken_generator.png",
+   "footprint_cells": [
+    2,
+    2
+   ],
+   "anchor_px_2x": [
+    124.0,
+    217.0
+   ],
+   "anchor_px_1x": [
+    62.0,
+    108.5
+   ],
+   "size_2x": [
+    248,
+    224
+   ],
+   "size_1x": [
+    124,
+    112
+   ],
+   "emissive": "yes",
+   "height_px_2x": 213,
+   "art_height_px_2x": 209,
+   "art_x_from_anchor_2x": [
+    -118.0,
+    118.0
+   ],
+   "edge_rule": "back-edge only",
+   "anchor_method": "slab 236px wide in a 256px footprint; tip = slab south vertex + 4.0px centring inset",
+   "anchor_v1_2x": [
+    123.5,
+    213
+   ],
+   "size_v1_2x": [
+    248,
+    216
+   ],
+   "file_emit": "broken_generator_emit.png",
+   "emit_size": [
+    124,
+    112
+   ],
+   "emission_strength_default": 0.45,
+   "emit_covers": "housing cracks + exposed coil seams",
+   "emit_coverage": 0.0086
+  },
+  {
+   "id": "cable_bundle",
+   "file_2x": "cable_bundle@2x.png",
+   "file_1x": "cable_bundle.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    72.0,
+    118.0
+   ],
+   "anchor_px_1x": [
+    36.0,
+    59.0
+   ],
+   "size_2x": [
+    120,
+    120
+   ],
+   "size_1x": [
+    60,
+    60
+   ],
+   "emissive": "yes",
+   "height_px_2x": 109,
+   "art_height_px_2x": 92,
+   "art_x_from_anchor_2x": [
+    -68.0,
+    44.0
+   ],
+   "edge_rule": "any room edge (front/south allowed)",
+   "anchor_method": "most compact footprint diamond containing every ground contact (bottom silhouette), art within the corners +4 px",
+   "anchor_v1_2x": [
+    103.5,
+    101
+   ],
+   "size_v1_2x": [
+    120,
+    104
+   ],
+   "file_emit": "cable_bundle_emit.png",
+   "emit_size": [
+    60,
+    60
+   ],
+   "emission_strength_default": 0.35,
+   "emit_covers": "glass sleeve + two connector ends",
+   "emit_coverage": 0.0939
+  },
+  {
+   "id": "capacitor_crystal",
+   "file_2x": "capacitor_crystal@2x.png",
+   "file_1x": "capacitor_crystal.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    60.0,
+    145.0
+   ],
+   "anchor_px_1x": [
+    30.0,
+    72.5
+   ],
+   "size_2x": [
+    120,
+    152
+   ],
+   "size_1x": [
+    60,
+    76
+   ],
+   "emissive": "yes",
+   "height_px_2x": 138,
+   "art_height_px_2x": 134,
+   "art_x_from_anchor_2x": [
+    -55.0,
+    55.0
+   ],
+   "edge_rule": "back-edge only",
+   "anchor_method": "slab 110px wide in a 128px footprint; tip = slab south vertex + 4.0px centring inset",
+   "anchor_v1_2x": [
+    59.5,
+    141
+   ],
+   "size_v1_2x": [
+    120,
+    144
+   ],
+   "file_emit": "capacitor_crystal_emit.png",
+   "emit_size": [
+    60,
+    76
+   ],
+   "emission_strength_default": 0.3,
+   "emit_covers": "crystal",
+   "emit_coverage": 0.1026
+  },
+  {
+   "id": "conduit_pipe",
+   "file_2x": "conduit_pipe@2x.png",
+   "file_1x": "conduit_pipe.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    24.5,
+    106.0
+   ],
+   "anchor_px_1x": [
+    12.25,
+    53.0
+   ],
+   "size_2x": [
+    96,
+    112
+   ],
+   "size_1x": [
+    48,
+    56
+   ],
+   "emissive": "yes",
+   "height_px_2x": 100,
+   "art_height_px_2x": 95,
+   "art_x_from_anchor_2x": [
+    -22.5,
+    67.5
+   ],
+   "edge_rule": "any room edge (front/south allowed)",
+   "anchor_method": "most compact footprint diamond containing every ground contact (bottom silhouette), art within the corners +4 px",
+   "anchor_v1_2x": [
+    26.5,
+    101
+   ],
+   "size_v1_2x": [
+    96,
+    104
+   ],
+   "file_emit": "conduit_pipe_emit.png",
+   "emit_size": [
+    48,
+    56
+   ],
+   "emission_strength_default": 0.35,
+   "emit_covers": "glass joint ring",
+   "emit_coverage": 0.0231
+  },
+  {
+   "id": "slate_rubble",
+   "file_2x": "slate_rubble@2x.png",
+   "file_1x": "slate_rubble.png",
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    52.0,
+    105.0
+   ],
+   "anchor_px_1x": [
+    26.0,
+    52.5
+   ],
+   "size_2x": [
+    104,
+    112
+   ],
+   "size_1x": [
+    52,
+    56
+   ],
+   "emissive": "no",
+   "height_px_2x": 95,
+   "art_height_px_2x": 92,
+   "art_x_from_anchor_2x": [
+    -48.0,
+    48.0
+   ],
+   "edge_rule": "any room edge (front/south allowed)",
+   "anchor_method": "slab 96px wide in a 128px footprint; tip = slab south vertex + 4.0px centring inset",
+   "anchor_v1_2x": [
+    50.5,
+    101
+   ],
+   "size_v1_2x": [
+    104,
+    104
+   ]
+  }
+ ]
+}
