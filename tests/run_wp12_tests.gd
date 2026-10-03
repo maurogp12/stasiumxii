@@ -8,6 +8,7 @@ const Maps := preload("res://backend/world_map.gd")
 const Walk := preload("res://backend/world_walk.gd")
 const Progress := preload("res://backend/pc_progress.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const Ground := preload("res://scenes/world/crosshaven/crosshaven_ground.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 
 var _passed := 0
@@ -21,6 +22,8 @@ func _initialize() -> void:
 func _run() -> void:
 	_test_plane()
 	_test_walk_and_camera()
+	_test_town_ring()
+	_test_snow()
 	_test_save()
 	print("wp12 tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -123,6 +126,109 @@ func _test_walk_and_camera() -> void:
 	eq(w.zone.zone_id, "crosshaven_crossroads", "the walk returns to the Crossroads")
 	eq(w.level_band != band_town or w.music_id != music_town, true, "band or music changes between town and heart (%s / %s)" % [w.level_band, w.music_id])
 	eq(w.camera.limit_right - w.camera.limit_left > 2000, true, "camera limits cover more than one chunk")
+	w.free()
+
+
+func _test_town_ring() -> void:
+	var w := _spawn()
+	var before: int = w.transition_count
+	var fades := 0
+	var prev: Vector2 = w.camera.position
+	var hopped := false
+	var worst := 0.0
+	_ring_leg(w, "crosshaven_northgate", Vector2i(20, 12), fades, prev, hopped, worst)
+	fades = _ring_fades
+	prev = _ring_prev
+	hopped = _ring_hopped
+	worst = _ring_worst
+	_ring_leg(w, "crosshaven_stoneford", Vector2i(16, 16), fades, prev, hopped, worst)
+	fades = _ring_fades
+	prev = _ring_prev
+	hopped = _ring_hopped
+	worst = _ring_worst
+	_ring_leg(w, "crosshaven_westwatch", Vector2i(16, 10), fades, prev, hopped, worst)
+	fades = _ring_fades
+	prev = _ring_prev
+	hopped = _ring_hopped
+	worst = _ring_worst
+	_ring_leg(w, "crosshaven_southbridge", Vector2i(20, 10), fades, prev, hopped, worst)
+	fades = _ring_fades
+	prev = _ring_prev
+	hopped = _ring_hopped
+	worst = _ring_worst
+	_ring_leg(w, "crosshaven_eastmarch", Vector2i(16, 16), fades, prev, hopped, worst)
+	fades = _ring_fades
+	prev = _ring_prev
+	hopped = _ring_hopped
+	worst = _ring_worst
+	_ring_leg(w, "crosshaven_northgate", Vector2i(20, 12), fades, prev, hopped, worst)
+	eq(w.transition_count, before, "the town ring did not call enter_zone")
+	eq(_ring_fades, 0, "the town ring did not black-fade")
+	eq(_ring_hopped, false, "camera stays continuous around the ring (worst step %.1f px)" % _ring_worst)
+	eq(w.zone.zone_id, "crosshaven_northgate", "the ring ends in Northgate")
+	w.free()
+
+
+var _ring_fades := 0
+var _ring_prev := Vector2.ZERO
+var _ring_hopped := false
+var _ring_worst := 0.0
+
+
+func _ring_leg(w: Node2D, zone_id: String, cell: Vector2i, fades: int, prev: Vector2, hopped: bool, worst: float) -> void:
+	_ring_fades = fades
+	_ring_prev = prev
+	_ring_hopped = hopped
+	_ring_worst = worst
+	w.walk_to_zone(zone_id, cell, "run")
+	var guard := 0
+	while (w.walker.is_moving() or not w._route.is_empty()) and guard < 20000:
+		if float(w._fade.color.a) > 0.01:
+			_ring_fades += 1
+		w.walker.advance(0.05)
+		w._process(0.05)
+		var delta: float = w.camera.position.distance_to(_ring_prev)
+		if delta > _ring_worst:
+			_ring_worst = delta
+		if guard > 2 and delta > 96.0:
+			_ring_hopped = true
+		_ring_prev = w.camera.position
+		guard += 1
+	eq(w.zone.zone_id, zone_id, "the ring arrives at %s" % zone_id)
+	eq(w.walker.cell, cell, "the ring stops on %s" % zone_id)
+
+
+func _test_snow() -> void:
+	eq(Ground.snow_at("crosshaven_northgate", Vector2i(20, 12)) > 0.8, true, "Northgate square is snowy")
+	eq(Ground.snow_at("crosshaven_northgate_crags_west", Vector2i(4, 4)), 1.0, "a Northgate outskirts id stays lightly snowy")
+	eq(Ground.snow_at("crosshaven_road_north", Vector2i(12, 2)) > 0.7, true, "the town side of the north road is snowy")
+	eq(Ground.snow_at("crosshaven_road_north", Vector2i(12, 24)), 0.0, "the Crossroads side of the north road is clear")
+	eq(Ground.snow_at("crosshaven_stoneford", Vector2i(16, 16)), 0.0, "Stoneford has no snow")
+	eq(Ground.snow_at("crosshaven_crossroads", Vector2i(22, 18)), 0.0, "the Crossroads has no snow")
+	eq(Ground.snow_at("crosshaven_eastmarch", Vector2i(16, 16)), 0.0, "Eastmarch has no snow")
+	eq(Ground.snow_at("crosshaven_westwatch", Vector2i(16, 10)), 0.0, "Westwatch has no snow")
+	eq(Ground.snow_at("crosshaven_southbridge", Vector2i(20, 10)), 0.0, "Southbridge has no snow")
+	var w := _spawn()
+	w.enter_zone("crosshaven_northgate", Vector2i(20, 12), false)
+	eq(float(w.ground.call("snow_at_cell", Vector2i(20, 12))) > 0.8, true, "the live Northgate ground is snowy")
+	eq(w.ground.call("void_rank", Vector2i(20, 0)), 1, "Northgate's north edge feathers into the fill")
+	eq(w.ground.call("void_rank", Vector2i(20, 1)), 2, "the next Northgate row is the second feather")
+	eq(w.ground.call("void_rank", Vector2i(20, 31)), 0, "the Northgate road join is not a void edge")
+	eq(w.ground.call("void_rank", Vector2i(20, 12)), 0, "the Northgate square is not an outer edge")
+	var snowy := false
+	for child in w.props_root.get_children():
+		if float(child.get("snow_amount")) > 0.8:
+			snowy = true
+			break
+	eq(snowy, true, "a Northgate roof wears light snow")
+	w.enter_zone("crosshaven_stoneford", Vector2i(16, 16), false)
+	eq(w.ground.call("void_rank", Vector2i(0, 8)), 1, "Stoneford's outer water cell is a bank")
+	var clear := true
+	for child in w.props_root.get_children():
+		if float(child.get("snow_amount")) > 0.01:
+			clear = false
+			break
+	eq(clear, true, "Stoneford props stay clear")
 	w.free()
 
 

@@ -96,6 +96,7 @@ var _booting := true
 var _lead := Vector2.ZERO
 var _sea: ColorRect
 var _backdrop: Node2D
+var _snow: Node2D
 var _presence_tween: Tween
 
 var _hover: Node2D
@@ -176,6 +177,13 @@ func _ready() -> void:
 	camera.position_smoothing_speed = 4.0
 	camera.zoom = Vector2.ONE * _zoom
 	add_child(camera)
+	_snow = Node2D.new()
+	_snow.name = "Snowfall"
+	_snow.z_as_relative = false
+	_snow.z_index = 4090
+	_snow.visible = false
+	_snow.draw.connect(_draw_snowfall)
+	add_child(_snow)
 
 	_screen_fx = CanvasLayer.new()
 	_screen_fx.layer = 5
@@ -320,6 +328,7 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 		var p := Prop.new()
 		props_root.add_child(p)
 		p.setup(zone, record)
+		p.snow_amount = Ground.snow_at(zone.zone_id, p.south_cell)
 	_raise_sort(props_root, origin)
 	for child in decor_root.get_children():
 		child.free()
@@ -935,6 +944,7 @@ func _process(delta: float) -> void:
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
 	_cull_neighbour_hosts()
+	_sync_snowfall()
 
 
 func _build_hud() -> void:
@@ -1125,6 +1135,7 @@ func _mount_neighbours(zone_id: String) -> void:
 			var p := Prop.new()
 			props.add_child(p)
 			p.setup(other, record)
+			p.snow_amount = Ground.snow_at(other.zone_id, p.south_cell)
 		_raise_sort(props, origin)
 		var decor := Node2D.new()
 		decor.name = "Decor"
@@ -1296,6 +1307,33 @@ func _sync_backdrop(sea: Rect2, fields: Rect2) -> void:
 	_backdrop.set_meta("sea", sea)
 	_backdrop.set_meta("fields", fields.grow(96.0))
 	_backdrop.queue_redraw()
+
+
+func _sync_snowfall() -> void:
+	if _snow == null or zone == null or walker == null or camera == null:
+		return
+	var amount := Ground.snow_at(zone.zone_id, walker.cell)
+	var show := amount > 0.2
+	_snow.visible = show
+	if not show:
+		return
+	_snow.position = camera.position
+	_snow.queue_redraw()
+
+
+func _draw_snowfall() -> void:
+	if _snow == null or zone == null or walker == null:
+		return
+	var amount := Ground.snow_at(zone.zone_id, walker.cell)
+	if amount <= 0.2:
+		return
+	var t := float(Time.get_ticks_msec()) * 0.001
+	for i in 24:
+		var seed := i * 97
+		var x := fmod(float(seed * 13) + t * (18.0 + float(i % 5) * 4.0), 480.0) - 240.0
+		var y := fmod(float(seed * 29) + t * (36.0 + float(i % 7) * 6.0), 320.0) - 160.0
+		var flake := Color(1, 1, 1, 0.42 * amount)
+		_snow.draw_line(Vector2(x, y), Vector2(x - 1.4, y + 7.0), flake, 1.2)
 
 
 func _draw_backdrop() -> void:
@@ -2246,6 +2284,17 @@ func _grab_plate_stills(folder: String) -> void:
 		_banner.modulate.a = 0.0
 	await _frame_world_cell(_coast_cell(), Vector2(0, -220))
 	await _grab(folder.path_join("coast.png"))
+	await enter_zone("crosshaven_northgate", Vector2i(20, 12), false)
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	walker.facing = "s"
+	walker._show_idle()
+	camera.position = walker.position
+	camera.reset_smoothing()
+	_sync_snowfall()
+	await get_tree().create_timer(0.45).timeout
+	await _grab(folder.path_join("northgate_snow.png"))
 
 
 func _frame_world_cell(world_cell: Vector2i, nudge: Vector2) -> void:

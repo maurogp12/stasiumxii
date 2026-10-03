@@ -24,6 +24,9 @@ const SIDE := {
 	"cliff": Color("625c54"),
 }
 const EXIT_COLOR := Color(1.0, 0.84, 0.35, 0.85)
+## Same olive as the world's field fill, so an outer edge fades into it.
+const FIELD_FADE := Color("90a91b")
+const _ORTHO: Array[Vector2i] = [Vector2i(0, -1), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0)]
 
 var zone: WorldZone
 ## Plane edges you can walk across hide the yellow exit triangles.
@@ -34,6 +37,7 @@ var _use_kit := false
 var _exit_dirs: Dictionary = {}
 var _ripple_frame := 0
 var _water_rows: Dictionary = {}
+var _void_ranks: Dictionary = {}
 
 
 ## Ground is split into one canvas item per diagonal (x+y), z = diagonal * 10,
@@ -58,6 +62,7 @@ func setup(target: WorldZone) -> void:
 			for link in exit_rec["links"]:
 				var frm: Dictionary = link["from"]
 				_exit_dirs[Vector2i(int(frm["x"]), int(frm["y"]))] = dir
+	_cache_void_ranks()
 	var margin := blend_margin
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
 		var row := Node2D.new()
@@ -123,6 +128,65 @@ func marker_dir(cell: Vector2i) -> Vector2i:
 	return _exit_dirs[cell]
 
 
+## Light snow only. Northgate (and any later `crosshaven_northgate*` chunk)
+## stays dusted. The north road fades that dust out toward the Crossroads.
+static func snow_at(zone_id: String, cell: Vector2i) -> float:
+	if zone_id.begins_with("crosshaven_northgate"):
+		return 1.0
+	if zone_id == "crosshaven_road_north":
+		if cell.y >= 16:
+			return 0.0
+		return clampf(1.0 - float(cell.y) / 16.0, 0.0, 1.0)
+	return 0.0
+
+
+func snow_at_cell(cell: Vector2i) -> float:
+	if zone == null:
+		return 0.0
+	return snow_at(zone.zone_id, cell)
+
+
+## 1 = this cell meets empty world, 2 = the next cell in. 0 on a real join.
+func void_rank(cell: Vector2i) -> int:
+	return int(_void_ranks.get(cell, 0))
+
+
+func _cache_void_ranks() -> void:
+	_void_ranks.clear()
+	if zone == null or not zone.sample_terrain.is_valid():
+		return
+	var margin := blend_margin
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			var rank := _compute_void_rank(cell)
+			if rank > 0:
+				_void_ranks[cell] = rank
+
+
+func _compute_void_rank(cell: Vector2i) -> int:
+	if Art.terrain_seen(zone, cell) == "":
+		return 0
+	if _faces_void(cell):
+		return 1
+	for dir in _ORTHO:
+		var nb: Vector2i = cell + dir
+		if Art.terrain_seen(zone, nb) == "":
+			continue
+		if _faces_void(nb):
+			return 2
+	return 0
+
+
+func _faces_void(cell: Vector2i) -> bool:
+	if Art.terrain_seen(zone, cell) == "":
+		return false
+	for dir in _ORTHO:
+		if Art.terrain_seen(zone, cell + dir) == "":
+			return true
+	return false
+
+
 func _draw_row(row: Node2D, s: int) -> void:
 	var margin := blend_margin
 	var x0 := maxi(-margin, s - (zone.height - 1 + margin))
@@ -141,27 +205,33 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 	if terrain == "":
 		return
 	var steps := Art.height_seen(zone, cell)
+	var rank := void_rank(cell)
+	# The last water cell of a stream becomes a bank, not a blue rectangle.
+	var bank := terrain == "water" and rank == 1
+	var paint := "golden_plains" if bank else terrain
 	if _use_kit:
-		_draw_cell_kit(ci, cell, terrain, steps)
-		return
-	var top: Color = TOP.get(terrain, Color.MAGENTA)
-	var side: Color = SIDE.get(terrain, Color.DARK_MAGENTA)
-	var lifted := Pick.diamond(cell, float(steps))
-	if steps > 0:
-		_draw_flat_faces(ci, lifted, steps, side)
-	# Painted placeholder: soft per-cell variation so the plains read hand-made.
-	var n := _hash(cell)
-	var tint := top.lightened(0.06 * n) if terrain != "water" else top.lightened(0.04 * n)
-	ci.draw_colored_polygon(lifted, tint)
-	if terrain == "golden_plains" and n > 0.72:
-		var c := BoardVisualSort.cell_to_local(cell, float(steps))
-		ci.draw_line(c + Vector2(-4, 2), c + Vector2(-2, -4), Color("a89048"), 1.0)
-		ci.draw_line(c + Vector2(3, 3), c + Vector2(5, -3), Color("a89048"), 1.0)
-	elif terrain == "water":
-		var c := BoardVisualSort.cell_to_local(cell, float(steps))
-		ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
-	var edge := Color(0, 0, 0, 0.06)
-	ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
+		_draw_cell_kit(ci, cell, terrain, steps, bank)
+	else:
+		var top: Color = TOP.get(paint, Color.MAGENTA)
+		var side: Color = SIDE.get(paint, Color.DARK_MAGENTA)
+		var lifted := Pick.diamond(cell, float(steps))
+		if steps > 0:
+			_draw_flat_faces(ci, lifted, steps, side)
+		# Painted placeholder: soft per-cell variation so the plains read hand-made.
+		var n := _hash(cell)
+		var tint := top.lightened(0.06 * n) if paint != "water" else top.lightened(0.04 * n)
+		ci.draw_colored_polygon(lifted, tint)
+		if paint == "golden_plains" and n > 0.72:
+			var c := BoardVisualSort.cell_to_local(cell, float(steps))
+			ci.draw_line(c + Vector2(-4, 2), c + Vector2(-2, -4), Color("a89048"), 1.0)
+			ci.draw_line(c + Vector2(3, 3), c + Vector2(5, -3), Color("a89048"), 1.0)
+		elif paint == "water":
+			var c := BoardVisualSort.cell_to_local(cell, float(steps))
+			ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
+		var edge := Color(0, 0, 0, 0.06)
+		ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
+	_fade_void_edge(ci, cell, steps, rank)
+	_dust_snow(ci, cell, paint, steps)
 
 
 func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: Color) -> void:
@@ -171,9 +241,10 @@ func _draw_flat_faces(ci: Node2D, lifted: PackedVector2Array, steps: int, side: 
 
 
 ## Technical Artist kit path: height strips, autotiled floor, corner decals.
-func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, bank: bool = false) -> void:
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
+	var shown := "golden_plains" if bank else terrain
 	if steps > 0:
 		var strips := Art.face_strips(zone, cell)
 		var all_found := true
@@ -185,7 +256,10 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> 
 			for strip in strips:
 				Art.draw_at(ci, Art.texture("tiles", strip["id"]), south_tip + strip["offset"])
 		else:
-			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(terrain, Color.DARK_MAGENTA))
+			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(shown, Color.DARK_MAGENTA))
+	if bank:
+		_draw_named_floor(ci, south_tip, "golden_plains_a", "golden_plains")
+		return
 	var pick := Art.pick_tile(zone, cell)
 	var floor_id := str(pick["floor"])
 	var drew_ripple := false
@@ -231,9 +305,44 @@ func _draw_water_polish(ci: Node2D, cell: Vector2i, steps: int) -> void:
 
 func _foam_if_shore(ci: Node2D, cell: Vector2i, d: PackedVector2Array, step: Vector2i, ia: int, ib: int) -> void:
 	var nb: Vector2i = cell + step
-	if Art.terrain_seen(zone, nb) == "water":
+	# A water cell that is itself the bank still gets a foam line on this side.
+	if Art.terrain_seen(zone, nb) == "water" and void_rank(nb) != 1:
 		return
 	ci.draw_line(d[ia], d[ib], Color(0.92, 0.97, 1.0, 0.55), 1.6)
+
+
+func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallback_id: String) -> void:
+	var floor_art := Art.texture("tiles", first_id)
+	if floor_art.is_empty():
+		floor_art = Art.texture("tiles", fallback_id)
+	if floor_art.is_empty():
+		return
+	var size := Art.size_of(floor_art)
+	Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y))
+
+
+func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int) -> void:
+	if rank <= 0:
+		return
+	var fade := FIELD_FADE
+	# The outer cell matches the fill so its diamond edge disappears.
+	# The next cell is the halfway step.
+	fade.a = 1.0 if rank == 1 else 0.5
+	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), fade)
+
+
+func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+	var amount := snow_at_cell(cell)
+	if amount <= 0.2:
+		return
+	var n := _hash(cell)
+	if terrain == "cliff" or n > 0.62:
+		var dust := Color(0.96, 0.98, 1.0, 0.18 * amount)
+		ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), dust)
+	if n > 0.8:
+		var c := BoardVisualSort.cell_to_local(cell, float(steps))
+		ci.draw_circle(c + Vector2(-4, 1), 3.0, Color(1, 1, 1, 0.35 * amount))
+		ci.draw_circle(c + Vector2(5, -2), 2.0, Color(1, 1, 1, 0.28 * amount))
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2) -> bool:
