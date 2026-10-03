@@ -137,6 +137,33 @@ def split(total: int, leans: list) -> dict:
     return out
 
 
+def full_budget(tier: int) -> int:
+    # B(T) = round(98 × 1.3^((T − 50) / 10)). Half away from zero, matching Godot round().
+    return round_half_away(98 * (1.3 ** ((tier - 50) / 10.0)))
+
+
+def allocate(full: int, leans: list) -> tuple:
+    """Whole stat points whose full set (5 parts + 2-part + 3-part) equals B(T).
+
+    One part and the 2-part bonus share the same split. The 3-part line takes
+    the remainder so the total is exactly B(T), not merely near it.
+    """
+    part_target = full / 7.5
+    three_target = full / 5.0
+    best = None
+    for part_points in range(0, full + 1):
+        three_points = full - 6 * part_points
+        if three_points < 0:
+            continue
+        score = abs(part_points - part_target) + abs(three_points - three_target)
+        row = (score, part_points, three_points)
+        if best is None or row < best:
+            best = row
+    _score, part_points, three_points = best
+    part = split(part_points, leans)
+    return part, dict(part), split(three_points, leans)
+
+
 def leans_for(class_id: str, tier: int) -> list:
     if class_id == "gloam" and tier >= 30:
         return ["Swift", "Resist"]
@@ -160,7 +187,9 @@ def five_part(text: str) -> dict:
 
 
 def make_set(set_id: str, name: str, tier: int, kind: str, classes: list, leans: list, five_text: str) -> dict:
-    budget = 4 + tier
+    full = full_budget(tier)
+    regular, bonus_two, bonus_three = allocate(full, leans)
+    budget = sum(regular.values())
     parts = []
     for slot in SET_SLOTS:
         parts.append({
@@ -176,13 +205,14 @@ def make_set(set_id: str, name: str, tier: int, kind: str, classes: list, leans:
         "classes": classes,
         "leans": leans,
         "budget": budget,
+        "full_budget": full,
         "stats": {
-            "regular": split(budget, leans),
+            "regular": regular,
             "rare": rare_stats(budget, leans),
         },
         "bonuses": {
-            "2": split(budget, leans),
-            "3": split(round_half_away(1.5 * budget), leans),
+            "2": bonus_two,
+            "3": bonus_three,
             "5": five_part(five_text),
         },
         "parts": parts,
@@ -276,6 +306,10 @@ def main() -> None:
             "extras": extra_ids,
         })
 
+    items.append(loose_item(
+        "plain_band", "Plain Band", "equipment", 10, False,
+        slot="ring", min_level=1, rarity="regular",
+    ))
     items.append(loose_item("mystery_box", "Mystery Box", "special", 1, True, drop="rolled"))
     for item_id, name, slot, level, text in EPICS:
         items.append(loose_item(
@@ -313,8 +347,9 @@ def main() -> None:
             "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
             "Millrace, Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources.",
             "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
-            "A Rare part is 1.5 times the budget, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
-            "Shared and dungeon parts split that budget across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
+            "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 × 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
+            "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
+            "Shared and dungeon parts split across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
             "Five-part texts are stored and not applied. The full Rare tier-30 class set's AP or MP choice is applied, because that choice is already approved.",
             "Mystery Box weight is 1, the consumable weight. Decoration weight uses the stated floor of 20.",
             "The first AP or MP choice on a full Rare tier-30 class set is free. Switching the choice costs Crypto Coins, and that price is Open.",

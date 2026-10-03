@@ -204,6 +204,7 @@ func ensure_built() -> void:
 	_bank.name = "BankButton"
 	_bank.text = "Bank (Crossroads)"
 	_bank.disabled = true
+	_bank.pressed.connect(_deposit_selected)
 	footer.add_child(_bank)
 	var hint := Label.new()
 	hint.text = "I closes this panel"
@@ -423,15 +424,25 @@ func _destroy_selected() -> void:
 		return
 	if not _confirm:
 		_confirm = true
-		_card.text = "Destroy this item? Press Destroy again."
+		_card.text = "Destroy one of this item? Press Destroy again."
 		return
-	for i in progress.bag.size():
-		var row: Dictionary = progress.bag[i]
-		if int(row.get("uid", -1)) == _selected:
-			progress.bag.remove_at(i)
-			break
+	var result: Dictionary = progress.destroy_uid(_selected, 1)
+	if not bool(result.get("ok", false)):
+		_card.text = str(result.get("reason", ""))
 	_selected = -1
 	_confirm = false
+	refresh()
+
+
+func _deposit_selected() -> void:
+	if progress == null or _selected < 0:
+		return
+	var result: Dictionary = progress.deposit_uid(_selected)
+	_confirm = false
+	if not bool(result.get("ok", false)):
+		_card.text = str(result.get("reason", ""))
+		return
+	_selected = -1
 	refresh()
 
 

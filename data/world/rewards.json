@@ -8,8 +8,9 @@
     "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
     "Millrace, Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources.",
     "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
-    "A Rare part is 1.5 times the budget, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
-    "Shared and dungeon parts split that budget across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
+    "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 \u00d7 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
+    "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
+    "Shared and dungeon parts split across all four stats. Class parts split across the two stats that class leans to. Gloam tiers 30 and up lean Swift and Resist.",
     "Five-part texts are stored and not applied. The full Rare tier-30 class set's AP or MP choice is applied, because that choice is already approved.",
     "Mystery Box weight is 1, the consumable weight. Decoration weight uses the stated floor of 20.",
     "The first AP or MP choice on a full Rare tier-30 class set is free. Switching the choice costs Crypto Coins, and that price is Open."
@@ -194,26 +195,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Swift": 2
         },
         "rare": {
-          "Mastery": 4,
-          "Swift": 4,
+          "Mastery": 3,
+          "Swift": 3,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Swift": 2
         },
         "3": {
-          "Mastery": 4,
-          "Swift": 4
+          "Mastery": 2,
+          "Swift": 1
         },
         "5": {
           "applies": false,
@@ -260,26 +262,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Mastery": 7,
-          "Swift": 7
+          "Mastery": 3,
+          "Swift": 2
         },
         "rare": {
-          "Mastery": 11,
-          "Swift": 10,
+          "Mastery": 4,
+          "Swift": 4,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 7,
-          "Swift": 7
+          "Mastery": 3,
+          "Swift": 2
         },
         "3": {
-          "Mastery": 11,
-          "Swift": 10
+          "Mastery": 2,
+          "Swift": 2
         },
         "5": {
           "applies": false,
@@ -326,26 +329,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Mastery": 12,
-          "Swift": 12
+          "Mastery": 3,
+          "Swift": 3
         },
         "rare": {
-          "Mastery": 18,
-          "Swift": 18,
+          "Mastery": 5,
+          "Swift": 4,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 12,
-          "Swift": 12
+          "Mastery": 3,
+          "Swift": 3
         },
         "3": {
-          "Mastery": 18,
-          "Swift": 18
+          "Mastery": 5,
+          "Swift": 4
         },
         "5": {
           "applies": false,
@@ -392,26 +396,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Mastery": 17,
-          "Swift": 17
+          "Mastery": 4,
+          "Swift": 4
         },
         "rare": {
-          "Mastery": 26,
-          "Swift": 25,
+          "Mastery": 6,
+          "Swift": 6,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 17,
-          "Swift": 17
+          "Mastery": 4,
+          "Swift": 4
         },
         "3": {
-          "Mastery": 26,
-          "Swift": 25
+          "Mastery": 5,
+          "Swift": 5
         },
         "5": {
           "applies": false,
@@ -458,26 +463,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Mastery": 22,
-          "Swift": 22
+          "Mastery": 5,
+          "Swift": 5
         },
         "rare": {
-          "Mastery": 33,
-          "Swift": 33,
+          "Mastery": 8,
+          "Swift": 7,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 22,
-          "Swift": 22
+          "Mastery": 5,
+          "Swift": 5
         },
         "3": {
-          "Mastery": 33,
-          "Swift": 33
+          "Mastery": 8,
+          "Swift": 7
         },
         "5": {
           "applies": false,
@@ -524,26 +530,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Mastery": 27,
-          "Swift": 27
+          "Mastery": 7,
+          "Swift": 6
         },
         "rare": {
-          "Mastery": 41,
-          "Swift": 40,
+          "Mastery": 10,
+          "Swift": 10,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 27,
-          "Swift": 27
+          "Mastery": 7,
+          "Swift": 6
         },
         "3": {
-          "Mastery": 41,
-          "Swift": 40
+          "Mastery": 10,
+          "Swift": 10
         },
         "5": {
           "applies": false,
@@ -590,26 +597,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Vitality": 2
         },
         "rare": {
-          "Mastery": 4,
-          "Vitality": 4,
+          "Mastery": 3,
+          "Vitality": 3,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Vitality": 2
         },
         "3": {
-          "Mastery": 4,
-          "Vitality": 4
+          "Mastery": 2,
+          "Vitality": 1
         },
         "5": {
           "applies": false,
@@ -656,26 +664,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Mastery": 7,
-          "Vitality": 7
+          "Mastery": 3,
+          "Vitality": 2
         },
         "rare": {
-          "Mastery": 11,
-          "Vitality": 10,
+          "Mastery": 4,
+          "Vitality": 4,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 7,
-          "Vitality": 7
+          "Mastery": 3,
+          "Vitality": 2
         },
         "3": {
-          "Mastery": 11,
-          "Vitality": 10
+          "Mastery": 2,
+          "Vitality": 2
         },
         "5": {
           "applies": false,
@@ -722,26 +731,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Mastery": 12,
-          "Vitality": 12
+          "Mastery": 3,
+          "Vitality": 3
         },
         "rare": {
-          "Mastery": 18,
-          "Vitality": 18,
+          "Mastery": 5,
+          "Vitality": 4,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 12,
-          "Vitality": 12
+          "Mastery": 3,
+          "Vitality": 3
         },
         "3": {
-          "Mastery": 18,
-          "Vitality": 18
+          "Mastery": 5,
+          "Vitality": 4
         },
         "5": {
           "applies": false,
@@ -788,26 +798,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Mastery": 17,
-          "Vitality": 17
+          "Mastery": 4,
+          "Vitality": 4
         },
         "rare": {
-          "Mastery": 26,
-          "Vitality": 25,
+          "Mastery": 6,
+          "Vitality": 6,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 17,
-          "Vitality": 17
+          "Mastery": 4,
+          "Vitality": 4
         },
         "3": {
-          "Mastery": 26,
-          "Vitality": 25
+          "Mastery": 5,
+          "Vitality": 5
         },
         "5": {
           "applies": false,
@@ -854,26 +865,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Mastery": 22,
-          "Vitality": 22
+          "Mastery": 5,
+          "Vitality": 5
         },
         "rare": {
-          "Mastery": 33,
-          "Vitality": 33,
+          "Mastery": 8,
+          "Vitality": 7,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 22,
-          "Vitality": 22
+          "Mastery": 5,
+          "Vitality": 5
         },
         "3": {
-          "Mastery": 33,
-          "Vitality": 33
+          "Mastery": 8,
+          "Vitality": 7
         },
         "5": {
           "applies": false,
@@ -920,26 +932,27 @@
         "Mastery",
         "Vitality"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Mastery": 27,
-          "Vitality": 27
+          "Mastery": 7,
+          "Vitality": 6
         },
         "rare": {
-          "Mastery": 41,
-          "Vitality": 40,
+          "Mastery": 10,
+          "Vitality": 10,
           "Swift": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 27,
-          "Vitality": 27
+          "Mastery": 7,
+          "Vitality": 6
         },
         "3": {
-          "Mastery": 41,
-          "Vitality": 40
+          "Mastery": 10,
+          "Vitality": 10
         },
         "5": {
           "applies": false,
@@ -986,26 +999,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Vitality": 3,
+          "Vitality": 2,
           "Resist": 2
         },
         "rare": {
-          "Vitality": 4,
-          "Resist": 4,
+          "Vitality": 3,
+          "Resist": 3,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 3,
+          "Vitality": 2,
           "Resist": 2
         },
         "3": {
-          "Vitality": 4,
-          "Resist": 4
+          "Vitality": 2,
+          "Resist": 1
         },
         "5": {
           "applies": false,
@@ -1052,26 +1066,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Vitality": 7,
-          "Resist": 7
+          "Vitality": 3,
+          "Resist": 2
         },
         "rare": {
-          "Vitality": 11,
-          "Resist": 10,
+          "Vitality": 4,
+          "Resist": 4,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 7,
-          "Resist": 7
+          "Vitality": 3,
+          "Resist": 2
         },
         "3": {
-          "Vitality": 11,
-          "Resist": 10
+          "Vitality": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -1118,26 +1133,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Vitality": 12,
-          "Resist": 12
+          "Vitality": 3,
+          "Resist": 3
         },
         "rare": {
-          "Vitality": 18,
-          "Resist": 18,
+          "Vitality": 5,
+          "Resist": 4,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 12,
-          "Resist": 12
+          "Vitality": 3,
+          "Resist": 3
         },
         "3": {
-          "Vitality": 18,
-          "Resist": 18
+          "Vitality": 5,
+          "Resist": 4
         },
         "5": {
           "applies": false,
@@ -1184,26 +1200,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Vitality": 17,
-          "Resist": 17
+          "Vitality": 4,
+          "Resist": 4
         },
         "rare": {
-          "Vitality": 26,
-          "Resist": 25,
+          "Vitality": 6,
+          "Resist": 6,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 17,
-          "Resist": 17
+          "Vitality": 4,
+          "Resist": 4
         },
         "3": {
-          "Vitality": 26,
-          "Resist": 25
+          "Vitality": 5,
+          "Resist": 5
         },
         "5": {
           "applies": false,
@@ -1250,26 +1267,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Vitality": 22,
-          "Resist": 22
+          "Vitality": 5,
+          "Resist": 5
         },
         "rare": {
-          "Vitality": 33,
-          "Resist": 33,
+          "Vitality": 8,
+          "Resist": 7,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 22,
-          "Resist": 22
+          "Vitality": 5,
+          "Resist": 5
         },
         "3": {
-          "Vitality": 33,
-          "Resist": 33
+          "Vitality": 8,
+          "Resist": 7
         },
         "5": {
           "applies": false,
@@ -1316,26 +1334,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Vitality": 27,
-          "Resist": 27
+          "Vitality": 7,
+          "Resist": 6
         },
         "rare": {
-          "Vitality": 41,
-          "Resist": 40,
+          "Vitality": 10,
+          "Resist": 10,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 27,
-          "Resist": 27
+          "Vitality": 7,
+          "Resist": 6
         },
         "3": {
-          "Vitality": 41,
-          "Resist": 40
+          "Vitality": 10,
+          "Resist": 10
         },
         "5": {
           "applies": false,
@@ -1382,26 +1401,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Swift": 2
         },
         "rare": {
-          "Mastery": 4,
-          "Swift": 4,
+          "Mastery": 3,
+          "Swift": 3,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 3,
+          "Mastery": 2,
           "Swift": 2
         },
         "3": {
-          "Mastery": 4,
-          "Swift": 4
+          "Mastery": 2,
+          "Swift": 1
         },
         "5": {
           "applies": false,
@@ -1448,26 +1468,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Mastery": 7,
-          "Swift": 7
+          "Mastery": 3,
+          "Swift": 2
         },
         "rare": {
-          "Mastery": 11,
-          "Swift": 10,
+          "Mastery": 4,
+          "Swift": 4,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 7,
-          "Swift": 7
+          "Mastery": 3,
+          "Swift": 2
         },
         "3": {
-          "Mastery": 11,
-          "Swift": 10
+          "Mastery": 2,
+          "Swift": 2
         },
         "5": {
           "applies": false,
@@ -1514,26 +1535,27 @@
         "Mastery",
         "Swift"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Mastery": 12,
-          "Swift": 12
+          "Mastery": 3,
+          "Swift": 3
         },
         "rare": {
-          "Mastery": 18,
-          "Swift": 18,
+          "Mastery": 5,
+          "Swift": 4,
           "Vitality": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 12,
-          "Swift": 12
+          "Mastery": 3,
+          "Swift": 3
         },
         "3": {
-          "Mastery": 18,
-          "Swift": 18
+          "Mastery": 5,
+          "Swift": 4
         },
         "5": {
           "applies": false,
@@ -1580,26 +1602,27 @@
         "Swift",
         "Resist"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Swift": 17,
-          "Resist": 17
+          "Swift": 4,
+          "Resist": 4
         },
         "rare": {
-          "Swift": 26,
-          "Resist": 25,
+          "Swift": 6,
+          "Resist": 6,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Swift": 17,
-          "Resist": 17
+          "Swift": 4,
+          "Resist": 4
         },
         "3": {
-          "Swift": 26,
-          "Resist": 25
+          "Swift": 5,
+          "Resist": 5
         },
         "5": {
           "applies": false,
@@ -1646,26 +1669,27 @@
         "Swift",
         "Resist"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Swift": 22,
-          "Resist": 22
+          "Swift": 5,
+          "Resist": 5
         },
         "rare": {
-          "Swift": 33,
-          "Resist": 33,
+          "Swift": 8,
+          "Resist": 7,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Swift": 22,
-          "Resist": 22
+          "Swift": 5,
+          "Resist": 5
         },
         "3": {
-          "Swift": 33,
-          "Resist": 33
+          "Swift": 8,
+          "Resist": 7
         },
         "5": {
           "applies": false,
@@ -1712,26 +1736,27 @@
         "Swift",
         "Resist"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Swift": 27,
-          "Resist": 27
+          "Swift": 7,
+          "Resist": 6
         },
         "rare": {
-          "Swift": 41,
-          "Resist": 40,
+          "Swift": 10,
+          "Resist": 10,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Swift": 27,
-          "Resist": 27
+          "Swift": 7,
+          "Resist": 6
         },
         "3": {
-          "Swift": 41,
-          "Resist": 40
+          "Swift": 10,
+          "Resist": 10
         },
         "5": {
           "applies": false,
@@ -1778,26 +1803,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Vitality": 3,
+          "Vitality": 2,
           "Resist": 2
         },
         "rare": {
-          "Vitality": 4,
-          "Resist": 4,
+          "Vitality": 3,
+          "Resist": 3,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 3,
+          "Vitality": 2,
           "Resist": 2
         },
         "3": {
-          "Vitality": 4,
-          "Resist": 4
+          "Vitality": 2,
+          "Resist": 1
         },
         "5": {
           "applies": false,
@@ -1844,26 +1870,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Vitality": 7,
-          "Resist": 7
+          "Vitality": 3,
+          "Resist": 2
         },
         "rare": {
-          "Vitality": 11,
-          "Resist": 10,
+          "Vitality": 4,
+          "Resist": 4,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 7,
-          "Resist": 7
+          "Vitality": 3,
+          "Resist": 2
         },
         "3": {
-          "Vitality": 11,
-          "Resist": 10
+          "Vitality": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -1910,26 +1937,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Vitality": 12,
-          "Resist": 12
+          "Vitality": 3,
+          "Resist": 3
         },
         "rare": {
-          "Vitality": 18,
-          "Resist": 18,
+          "Vitality": 5,
+          "Resist": 4,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 12,
-          "Resist": 12
+          "Vitality": 3,
+          "Resist": 3
         },
         "3": {
-          "Vitality": 18,
-          "Resist": 18
+          "Vitality": 5,
+          "Resist": 4
         },
         "5": {
           "applies": false,
@@ -1976,26 +2004,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Vitality": 17,
-          "Resist": 17
+          "Vitality": 4,
+          "Resist": 4
         },
         "rare": {
-          "Vitality": 26,
-          "Resist": 25,
+          "Vitality": 6,
+          "Resist": 6,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 17,
-          "Resist": 17
+          "Vitality": 4,
+          "Resist": 4
         },
         "3": {
-          "Vitality": 26,
-          "Resist": 25
+          "Vitality": 5,
+          "Resist": 5
         },
         "5": {
           "applies": false,
@@ -2042,26 +2071,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Vitality": 22,
-          "Resist": 22
+          "Vitality": 5,
+          "Resist": 5
         },
         "rare": {
-          "Vitality": 33,
-          "Resist": 33,
+          "Vitality": 8,
+          "Resist": 7,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 22,
-          "Resist": 22
+          "Vitality": 5,
+          "Resist": 5
         },
         "3": {
-          "Vitality": 33,
-          "Resist": 33
+          "Vitality": 8,
+          "Resist": 7
         },
         "5": {
           "applies": false,
@@ -2108,26 +2138,27 @@
         "Vitality",
         "Resist"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Vitality": 27,
-          "Resist": 27
+          "Vitality": 7,
+          "Resist": 6
         },
         "rare": {
-          "Vitality": 41,
-          "Resist": 40,
+          "Vitality": 10,
+          "Resist": 10,
           "Mastery": 1
         }
       },
       "bonuses": {
         "2": {
-          "Vitality": 27,
-          "Resist": 27
+          "Vitality": 7,
+          "Resist": 6
         },
         "3": {
-          "Vitality": 41,
-          "Resist": 40
+          "Vitality": 10,
+          "Resist": 10
         },
         "5": {
           "applies": false,
@@ -2174,10 +2205,11 @@
         "Swift",
         "Resist"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Mastery": 2,
+          "Mastery": 1,
           "Vitality": 1,
           "Swift": 1,
           "Resist": 1
@@ -2185,22 +2217,21 @@
         "rare": {
           "Mastery": 3,
           "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Swift": 1,
+          "Resist": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 2,
+          "Mastery": 1,
           "Vitality": 1,
           "Swift": 1,
           "Resist": 1
         },
         "3": {
-          "Mastery": 2,
-          "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1
         },
         "5": {
           "applies": false,
@@ -2247,33 +2278,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 9,
+      "budget": 4,
+      "full_budget": 30,
       "stats": {
         "regular": {
-          "Mastery": 3,
-          "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 5,
-          "Vitality": 4,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 1,
+          "Resist": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 3,
-          "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 4,
-          "Vitality": 4,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 1,
+          "Resist": 1
         },
         "5": {
           "applies": false,
@@ -2320,10 +2352,11 @@
         "Swift",
         "Resist"
       ],
-      "budget": 5,
+      "budget": 4,
+      "full_budget": 27,
       "stats": {
         "regular": {
-          "Mastery": 2,
+          "Mastery": 1,
           "Vitality": 1,
           "Swift": 1,
           "Resist": 1
@@ -2331,22 +2364,21 @@
         "rare": {
           "Mastery": 3,
           "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Swift": 1,
+          "Resist": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 2,
+          "Mastery": 1,
           "Vitality": 1,
           "Swift": 1,
           "Resist": 1
         },
         "3": {
-          "Mastery": 2,
-          "Vitality": 2,
-          "Swift": 2,
-          "Resist": 2
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1
         },
         "5": {
           "applies": false,
@@ -2393,33 +2425,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 12,
+      "budget": 4,
+      "full_budget": 33,
       "stats": {
         "regular": {
-          "Mastery": 3,
-          "Vitality": 3,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 6,
-          "Vitality": 5,
-          "Swift": 4,
-          "Resist": 4
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 1,
+          "Resist": 1
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 3,
-          "Vitality": 3,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 5,
-          "Vitality": 5,
-          "Swift": 4,
-          "Resist": 4
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2466,33 +2499,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 14,
+      "budget": 5,
+      "full_budget": 34,
       "stats": {
         "regular": {
-          "Mastery": 4,
-          "Vitality": 4,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 7,
-          "Vitality": 5,
-          "Swift": 5,
-          "Resist": 5
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 4,
-          "Vitality": 4,
-          "Swift": 3,
-          "Resist": 3
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 6,
-          "Vitality": 5,
-          "Swift": 5,
-          "Resist": 5
+          "Mastery": 1,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "5": {
           "applies": false,
@@ -2539,33 +2573,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 19,
+      "budget": 5,
+      "full_budget": 39,
       "stats": {
         "regular": {
-          "Mastery": 5,
-          "Vitality": 5,
-          "Swift": 5,
-          "Resist": 4
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 9,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 5,
-          "Vitality": 5,
-          "Swift": 5,
-          "Resist": 4
+          "Mastery": 2,
+          "Vitality": 1,
+          "Swift": 1,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 8,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2612,33 +2647,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 24,
+      "budget": 6,
+      "full_budget": 45,
       "stats": {
         "regular": {
-          "Mastery": 6,
-          "Vitality": 6,
-          "Swift": 6,
-          "Resist": 6
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 1,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 10,
-          "Vitality": 9,
-          "Swift": 9,
-          "Resist": 9
+          "Mastery": 4,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 6,
-          "Vitality": 6,
-          "Swift": 6,
-          "Resist": 6
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 1,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 9,
-          "Vitality": 9,
-          "Swift": 9,
-          "Resist": 9
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2685,33 +2721,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 29,
+      "budget": 7,
+      "full_budget": 51,
       "stats": {
         "regular": {
-          "Mastery": 8,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 12,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 4,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 2
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 8,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 11,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2758,33 +2795,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 29,
+      "budget": 7,
+      "full_budget": 51,
       "stats": {
         "regular": {
-          "Mastery": 8,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 1
         },
         "rare": {
-          "Mastery": 12,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 4,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 2
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 8,
-          "Vitality": 7,
-          "Swift": 7,
-          "Resist": 7
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 1
         },
         "3": {
-          "Mastery": 11,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2831,33 +2869,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 34,
+      "budget": 8,
+      "full_budget": 58,
       "stats": {
         "regular": {
-          "Mastery": 9,
-          "Vitality": 9,
-          "Swift": 8,
-          "Resist": 8
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "rare": {
-          "Mastery": 14,
-          "Vitality": 13,
-          "Swift": 13,
-          "Resist": 12
+          "Mastery": 4,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 9,
-          "Vitality": 9,
-          "Swift": 8,
-          "Resist": 8
+          "Mastery": 2,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "3": {
-          "Mastery": 13,
-          "Vitality": 13,
-          "Swift": 13,
-          "Resist": 12
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 2,
+          "Resist": 2
         },
         "5": {
           "applies": false,
@@ -2904,33 +2943,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 39,
+      "budget": 9,
+      "full_budget": 66,
       "stats": {
         "regular": {
-          "Mastery": 10,
-          "Vitality": 10,
-          "Swift": 10,
-          "Resist": 9
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "rare": {
-          "Mastery": 16,
-          "Vitality": 15,
-          "Swift": 15,
-          "Resist": 14
+          "Mastery": 5,
+          "Vitality": 4,
+          "Swift": 3,
+          "Resist": 3
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 10,
-          "Vitality": 10,
-          "Swift": 10,
-          "Resist": 9
+          "Mastery": 3,
+          "Vitality": 2,
+          "Swift": 2,
+          "Resist": 2
         },
         "3": {
-          "Mastery": 15,
-          "Vitality": 15,
-          "Swift": 15,
-          "Resist": 14
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
         },
         "5": {
           "applies": false,
@@ -2977,33 +3017,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 44,
+      "budget": 10,
+      "full_budget": 75,
       "stats": {
         "regular": {
-          "Mastery": 11,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 2,
+          "Resist": 2
         },
         "rare": {
-          "Mastery": 18,
-          "Vitality": 17,
-          "Swift": 16,
-          "Resist": 16
+          "Mastery": 5,
+          "Vitality": 4,
+          "Swift": 4,
+          "Resist": 3
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 11,
-          "Vitality": 11,
-          "Swift": 11,
-          "Resist": 11
+          "Mastery": 3,
+          "Vitality": 3,
+          "Swift": 2,
+          "Resist": 2
         },
         "3": {
-          "Mastery": 17,
-          "Vitality": 17,
-          "Swift": 16,
-          "Resist": 16
+          "Mastery": 4,
+          "Vitality": 4,
+          "Swift": 4,
+          "Resist": 3
         },
         "5": {
           "applies": false,
@@ -3050,33 +3091,34 @@
         "Swift",
         "Resist"
       ],
-      "budget": 54,
+      "budget": 13,
+      "full_budget": 98,
       "stats": {
         "regular": {
-          "Mastery": 14,
-          "Vitality": 14,
-          "Swift": 13,
-          "Resist": 13
+          "Mastery": 4,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
         },
         "rare": {
-          "Mastery": 22,
-          "Vitality": 20,
-          "Swift": 20,
-          "Resist": 20
+          "Mastery": 6,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 5
         }
       },
       "bonuses": {
         "2": {
-          "Mastery": 14,
-          "Vitality": 14,
-          "Swift": 13,
-          "Resist": 13
+          "Mastery": 4,
+          "Vitality": 3,
+          "Swift": 3,
+          "Resist": 3
         },
         "3": {
-          "Mastery": 21,
-          "Vitality": 20,
-          "Swift": 20,
-          "Resist": 20
+          "Mastery": 5,
+          "Vitality": 5,
+          "Swift": 5,
+          "Resist": 5
         },
         "5": {
           "applies": false,
@@ -3667,6 +3709,23 @@
       "min_level": 1,
       "classes": [],
       "rarity": "",
+      "set_id": "",
+      "drop": "Open",
+      "effect": {
+        "applies": false,
+        "text": ""
+      }
+    },
+    {
+      "id": "plain_band",
+      "name": "Plain Band",
+      "category": "equipment",
+      "weight": 10,
+      "stack": false,
+      "slot": "ring",
+      "min_level": 1,
+      "classes": [],
+      "rarity": "regular",
       "set_id": "",
       "drop": "Open",
       "effect": {

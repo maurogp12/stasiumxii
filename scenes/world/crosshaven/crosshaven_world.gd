@@ -156,6 +156,10 @@ func _ready() -> void:
 
 	_build_hud()
 	progress = Progress.new()
+	if progress.hero_class == "":
+		var session := get_node_or_null("/root/NetSession")
+		if session != null:
+			progress.set_hero_class(str(session.get("selected_class_id")))
 	character_window = CharacterWindow.new()
 	character_window.name = "CharacterWindow"
 	character_window.setup(progress)
@@ -261,6 +265,8 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 	_show_banner(Pick.zone_name(zone))
 	_refresh_hud()
 	_apply_decor_density()
+	if progress != null and progress.has_method("note_zone"):
+		progress.note_zone(zone.zone_id)
 	zone_entered.emit(zone.zone_id, cell)
 
 
@@ -1327,6 +1333,15 @@ func _town_stroll() -> void:
 		await _cardinal("n", 1, "walk")
 		await _cardinal("s", 1, "walk")
 	await get_tree().create_timer(0.55).timeout
+
+
+## Mission turn-in. World fights and dungeons call this from WP9 and WP8.
+func grant_turn_in(drop: Dictionary) -> void:
+	if progress == null:
+		return
+	progress.grant(drop)
+	if reward_popup != null and reward_popup.has_method("show_drop"):
+		reward_popup.show_drop(drop, progress)
 
 
 ## Fight reward, then a Mystery Box opened from the inventory.

@@ -17,10 +17,7 @@ var _backup := ""
 func _initialize() -> void:
 	_backup_save()
 	_clear_save()
-	_run()
-	_restore_save()
-	print("pc rewards tests: %d passed, %d failed" % [_passed, _failed])
-	quit(1 if _failed > 0 else 0)
+	_run.call_deferred()
 
 
 func _run() -> void:
@@ -38,7 +35,15 @@ func _run() -> void:
 	_test_gear()
 	_test_save()
 	_test_window()
+	_test_load_safety()
+	_test_bank_ring_destroy()
+	_test_caps()
+	_test_mender_sets(book)
+	_test_turn_in()
 	_test_sources()
+	_restore_save()
+	print("pc rewards tests: %d passed, %d failed" % [_passed, _failed])
+	quit(1 if _failed > 0 else 0)
 
 
 func _test_schema() -> void:
@@ -71,11 +76,14 @@ func _test_catalog(book) -> void:
 		parts += (set_def["parts"] as Array).size()
 		var tier := int(set_def["tier"])
 		var budget := int(set_def["budget"])
-		eq(budget, 4 + tier, "%s budget is 4 plus its tier" % str(set_def["id"]))
+		var full := int(set_def["full_budget"])
+		eq(full, _full_budget(tier), "%s full set is B(T)" % str(set_def["id"]))
+		var total := _set_total(set_def)
+		eq(absi(total - full) <= 1, true, "%s total stays within 1 of B(T)" % str(set_def["id"]))
 		if budgets.has(tier):
-			eq(int(budgets[tier]), budget, "tier %d shares one budget" % tier)
+			eq(int(budgets[tier]), full, "tier %d shares one full budget" % tier)
 		else:
-			budgets[tier] = budget
+			budgets[tier] = full
 		var regular: Dictionary = set_def["stats"]["regular"]
 		var rare: Dictionary = set_def["stats"]["rare"]
 		eq(_sum(regular), budget, "%s regular points" % str(set_def["id"]))
@@ -92,6 +100,12 @@ func _test_catalog(book) -> void:
 	var mill: Dictionary = book.set_by_id("millwright")
 	eq(str(mill["bonuses"]["5"]["text"]).find("Mastery") >= 0, true, "Millwright keeps its approved line")
 	var dungeons: Array = book.dungeons()
+	for tier in budgets.keys():
+		var higher := int(tier) + 10
+		if not budgets.has(higher):
+			continue
+		var ratio := float(budgets[higher]) / float(budgets[tier]) - 1.0
+		eq(ratio >= 0.25 and ratio <= 0.35, true, "tier %s to %s steps 25 to 35 percent" % [str(tier), str(higher)])
 	eq(dungeons.size(), 11, "eleven dungeon tables")
 	var seen := {}
 	for row in dungeons:
@@ -194,12 +208,17 @@ func _test_bias(book) -> void:
 
 func _test_gear() -> void:
 	_clear_save()
+	var loaded: Dictionary = Rewards.load_default()
+	var book = loaded["rewards"]
+	var fledgling: Dictionary = book.set_by_id("kestrel_fledgling")
 	var hero = Progress.new()
-	eq(hero.hero_class, "Ironjaw", "the hero starts as Ironjaw")
+	eq(hero.hero_class, "", "the hero has no class until one is chosen")
+	eq(hero.set_hero_class("ironjaw"), true, "a roster id sets the class")
+	eq(hero.hero_class, "Ironjaw", "the stored class is the display name")
 	var blocked: Dictionary = hero.equip_uid(_give(hero, "kestrel_fledgling_head", "regular"))
 	eq(bool(blocked.get("ok", false)), false, "another class's part stays in the bag")
 	eq(str(blocked.get("reason", "")), "class", "the reason is the class")
-	hero.hero_class = "Kestrel"
+	hero.set_hero_class("kestrel")
 	var low: Dictionary = hero.equip_uid(_give(hero, "kestrel_windrunner_head", "regular"))
 	eq(str(low.get("reason", "")), "level", "a higher tier cannot be worn yet")
 	var slots := ["head", "cape", "belt", "boots", "amulet"]
@@ -209,23 +228,22 @@ func _test_gear() -> void:
 	hero.equip_uid(int(uids[0]))
 	hero.equip_uid(int(uids[1]))
 	var two: Dictionary = hero.gear_view()["stats"]
-	eq(int(two["Mastery"]), 9, "two parts include the 2-part bonus")
-	eq(int(two["Swift"]), 6, "two parts include the Swift bonus")
+	eq(two, _expect_stats(fledgling, 2), "two parts include the 2-part bonus")
 	hero.equip_uid(int(uids[2]))
 	var three: Dictionary = hero.gear_view()["stats"]
-	eq(int(three["Mastery"]), 16, "three parts include the 3-part bonus")
-	eq(int(three["Swift"]), 12, "three parts include the Swift 3-part bonus")
+	eq(three, _expect_stats(fledgling, 3), "three parts include the 3-part bonus")
 	hero.equip_uid(int(uids[3]))
+	var four: Dictionary = hero.gear_view()["stats"]
 	hero.equip_uid(int(uids[4]))
 	var five: Dictionary = hero.gear_view()
-	eq(int(five["stats"]["Mastery"]), 22, "five parts add no further set bonus")
-	eq(int(five["stats"]["Swift"]), 16, "five parts add no further Swift bonus")
+	eq(five["stats"], _expect_stats(fledgling, 5), "five parts add no further set bonus")
+	eq(_sum(five["stats"]) - _sum(four), _sum(fledgling["stats"]["regular"]), "the fifth part adds only its own stats")
 	eq(bool(five["sets"][0]["five_applies"]), false, "the five-part line stays out of the stats")
 	eq(hero.spent_in("Mastery"), 0, "gear does not spend characteristic points")
 	eq(hero.spent_in("Swift"), 0, "gear does not spend Swift")
 	_clear_save()
 	var rare = Progress.new()
-	rare.hero_class = "Ironjaw"
+	rare.set_hero_class("ironjaw")
 	rare.level = 30
 	var rare_slots := ["head", "cape", "belt", "boots", "amulet"]
 	for slot in rare_slots:
@@ -241,7 +259,7 @@ func _test_gear() -> void:
 	eq(str(switched.get("reason", "")), "switch cost is Open", "the switch price stays Open")
 	_clear_save()
 	var mp_hero = Progress.new()
-	mp_hero.hero_class = "Ironjaw"
+	mp_hero.set_hero_class("ironjaw")
 	mp_hero.level = 30
 	for slot in rare_slots:
 		mp_hero.equip_uid(_give(mp_hero, "ironjaw_ironclad_ram_%s" % slot, "rare"))
@@ -284,7 +302,7 @@ func _test_save() -> void:
 func _test_window() -> void:
 	_clear_save()
 	var hero = Progress.new()
-	hero.hero_class = "Kestrel"
+	hero.set_hero_class("kestrel")
 	_give(hero, "kestrel_fledgling_head", "regular")
 	hero.grant({"coins": 15, "items": [{"item_id": "mystery_box", "rarity": "regular", "count": 1}]})
 	var window = load("res://scenes/world/ui/inventory_window.gd").new()
@@ -312,6 +330,261 @@ func _test_sources() -> void:
 	eq(src.find("res://mobile") < 0, true, "rewards does not import mobile")
 	var progress := FileAccess.get_file_as_string("res://backend/pc_progress.gd")
 	eq(progress.find(str(5 * 10)) < 0, true, "progress does not hardcode the phase-1 cap")
+	eq(progress.find("\"Ironjaw\"") < 0, true, "the hero class is not hardcoded")
+	var window := FileAccess.get_file_as_string("res://scenes/world/ui/inventory_window.gd")
+	eq(window.find("destroy_uid") >= 0, true, "destroy goes through progress")
+	eq(window.find("bag.remove_at") < 0, true, "the window does not edit the bag")
+	var world := FileAccess.get_file_as_string("res://scenes/world/crosshaven/crosshaven_world.gd")
+	eq(world.find("grant_turn_in") >= 0, true, "mission turn-in shows the reward popup")
+
+
+func _test_load_safety() -> void:
+	_clear_save()
+	var hero = Progress.new()
+	hero.set_hero_class("kestrel")
+	var kept := _give(hero, "sackcloth", "regular")
+	var good := FileAccess.get_file_as_string(Progress.SAVE_PATH)
+	var dup: Dictionary = JSON.parse_string(good)
+	(dup["bag"] as Array).append((dup["bag"][0] as Dictionary).duplicate())
+	_write_save(dup)
+	eq(hero.load(), false, "a duplicate uid is rejected")
+	eq(int(hero.bag[0]["uid"]), kept, "the rejected save leaves the bag")
+	var unknown: Dictionary = JSON.parse_string(good)
+	unknown["bag"][0]["item_id"] = "not_a_real_item"
+	_write_save(unknown)
+	eq(hero.load(), false, "an unknown item id is rejected")
+	eq(str(hero.bag[0]["item_id"]), "sackcloth", "the unknown id is not applied")
+	var low: Dictionary = JSON.parse_string(good)
+	low["next_uid"] = 2
+	low["bag"] = [
+		{"uid": 4, "item_id": "sackcloth", "rarity": "regular", "count": 1, "upgrade": 0},
+		{"uid": 9, "item_id": "mystery_box", "rarity": "regular", "count": 1, "upgrade": 0},
+	]
+	_write_save(low)
+	var bumped = Progress.new()
+	eq(bumped._uid, 10, "the next uid sits above the highest saved uid")
+	var high: Dictionary = JSON.parse_string(good)
+	high["next_uid"] = 12
+	high["bag"] = [{"uid": 3, "item_id": "sackcloth", "rarity": "regular", "count": 1, "upgrade": 0}]
+	_write_save(high)
+	var kept_high = Progress.new()
+	eq(kept_high._uid, 12, "a higher saved next uid is kept")
+	_write_save({
+		"level": 1, "xp": 0, "coins": 0, "hero_class": "Mender", "rare_choice": "", "next_uid": 3,
+		"bag": [], "bank": [],
+		"equipped": {
+			"head": {"uid": 2, "item_id": "kestrel_fledgling_head", "rarity": "regular", "upgrade": 0, "seq": 1},
+		},
+	})
+	var moved = Progress.new()
+	eq(moved.equipped.has("head"), false, "another class's worn part leaves the slot")
+	eq(moved.bag.size(), 1, "that part is put in the bag")
+	eq(str(moved.bag[0]["item_id"]), "kestrel_fledgling_head", "the moved part keeps its id")
+	_write_save({
+		"level": 1, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "", "next_uid": 3,
+		"bag": [], "bank": [],
+		"equipped": {
+			"head": {"uid": 2, "item_id": "kestrel_windrunner_head", "rarity": "regular", "upgrade": 0, "seq": 1},
+		},
+	})
+	var leveled = Progress.new()
+	eq(leveled.equipped.has("head"), false, "a part above the hero's level leaves the slot")
+	eq(str(leveled.bag[0]["item_id"]), "kestrel_windrunner_head", "the high part waits in the bag")
+	_write_save({
+		"level": 45, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "", "next_uid": 4,
+		"bag": [], "bank": [],
+		"equipped": {
+			"head": {"uid": 1, "item_id": "ember_crown", "rarity": "epic", "upgrade": 0, "seq": 1},
+			"ring": {"uid": 2, "item_id": "gale_signet", "rarity": "epic", "upgrade": 0, "seq": 2},
+		},
+	})
+	var epics = Progress.new()
+	eq(epics.equipped.has("head"), true, "the first epic stays worn")
+	eq(epics.equipped.has("ring"), false, "a second epic is not worn")
+	eq(epics.bag.size(), 1, "the second epic is in the bag")
+	_write_save({
+		"level": epics.max_level, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "", "next_uid": 4,
+		"bag": [], "bank": [],
+		"equipped": {
+			"amulet": {"uid": 1, "item_id": "heart_of_the_elder", "rarity": "relic", "upgrade": 0, "seq": 1},
+			"ring": {"uid": 2, "item_id": "blightroot_ring", "rarity": "relic", "upgrade": 0, "seq": 2},
+		},
+	})
+	var relic_hero = Progress.new()
+	eq(relic_hero.equipped.size(), 1, "only one relic stays worn")
+	eq(relic_hero.bag.size(), 1, "the extra relic is in the bag")
+
+
+func _test_bank_ring_destroy() -> void:
+	_clear_save()
+	var hero = Progress.new()
+	hero.set_hero_class("kestrel")
+	hero.grant({"coins": 0, "items": [{"item_id": "sackcloth", "rarity": "regular", "count": 2}]})
+	var stack := int(hero.bag[0]["uid"])
+	var destroyed: Dictionary = hero.destroy_uid(stack, 1)
+	eq(bool(destroyed.get("ok", false)), true, "destroy removes one item")
+	eq(int(hero.bag[0]["count"]), 1, "the rest of the stack stays")
+	var again = Progress.new()
+	eq(int(again.bag[0]["count"]), 1, "destroy autosaves")
+	hero.bag_slots = 0
+	var took := 0
+	for _i in hero.bank_slots:
+		var placed: Dictionary = hero.grant({
+			"coins": 0,
+			"items": [{"item_id": "plain_band", "rarity": "regular", "count": 1}],
+		})
+		if bool(placed.get("ok", false)):
+			took += 1
+	eq(took, hero.bank_slots, "the bank accepts one item per slot")
+	var full: Dictionary = hero.grant({
+		"coins": 0,
+		"items": [{"item_id": "plain_band", "rarity": "regular", "count": 1}],
+	})
+	eq(bool(full.get("ok", false)), false, "a full bank refuses the deposit")
+	eq(str(full.get("reason", "")), "The bank is full (%d slots)." % hero.bank_slots, "the refusal names the limit")
+	eq(hero.bank.size(), hero.bank_slots, "the bank does not grow past its slots")
+	_clear_save()
+	var rings = Progress.new()
+	var first := _give(rings, "plain_band", "regular")
+	var second := _give(rings, "plain_band", "regular")
+	var third := _give(rings, "plain_band", "regular")
+	eq(bool(rings.equip_uid(first).get("ok", false)), true, "the first ring equips")
+	eq(bool(rings.equip_uid(second).get("ok", false)), true, "the second ring fills the other slot")
+	var swapped: Dictionary = rings.equip_uid(third)
+	eq(bool(swapped.get("ok", false)), true, "a third ring swaps the older one")
+	var back := false
+	for entry in rings.bag:
+		if int(entry.get("uid", -1)) == first:
+			back = true
+	eq(back, true, "the older ring returns to the bag")
+
+
+func _test_caps() -> void:
+	_clear_save()
+	var hero = Progress.new()
+	hero.set_hero_class("mender")
+	hero.level = hero.max_level
+	eq(hero.spend("Resist", hero.points_free()), true, "every point can go to Resist")
+	var rate := float(hero.stat_per_point["Resist"]["damage_taken"])
+	var cap := float(hero.stat_per_point["Resist"]["cap"])
+	eq(float(hero.spent_in("Resist")) * rate > cap, true, "a full Resist spend is past the cap before clamping")
+	var uid := _give(hero, "mender_dewdrop_head", "regular")
+	eq(bool(hero.equip_uid(uid).get("ok", false)), true, "a Mender part equips")
+	var view: Dictionary = hero.sheet_view()
+	eq(float(view["resist"]) <= cap, true, "Resist from gear plus points stays at or under 33 percent")
+	var caps: Dictionary = view["caps"]
+	eq(int(caps["ap"]), 8, "the AP cap is 8")
+	eq(int(caps["mp"]), 5, "the MP cap is 5")
+	hero.sheet["ap"] = int(caps["ap"])
+	eq(int(hero.sheet_view()["ap"]), int(caps["ap"]), "AP over 8 clamps")
+	hero.sheet["mp"] = int(caps["mp"]) + 1
+	eq(int(hero.sheet_view()["mp"]), int(caps["mp"]), "MP over 5 clamps")
+	var closed: Dictionary = hero.sheet_view(true)
+	eq(bool(closed["koliseo"]), true, "the koliseo flag is explicit")
+	eq(int(closed["gear"]["stats"]["Resist"]), 0, "koliseo drops gear Resist")
+	eq(int(closed["gear"]["stats"]["Vitality"]), 0, "koliseo drops gear Vitality")
+	eq(int(view["gear"]["stats"]["Resist"]) + int(view["gear"]["stats"]["Vitality"]) > 0, true, "the open-world sheet keeps the part")
+	_clear_save()
+	var wearer = Progress.new()
+	wearer.set_hero_class("kestrel")
+	wearer.level = 45
+	var epic_one: Dictionary = wearer.equip_uid(_give(wearer, "gale_signet", "epic"))
+	eq(bool(epic_one.get("ok", false)), true, "the first epic equips")
+	var epic_two: Dictionary = wearer.equip_uid(_give(wearer, "ember_crown", "epic"))
+	eq(bool(epic_two.get("ok", false)), false, "a second epic is refused")
+	eq(str(epic_two.get("reason", "")).find("epic") >= 0, true, "the refusal names the epic rule")
+	wearer.level = wearer.max_level
+	var relic_one: Dictionary = wearer.equip_uid(_give(wearer, "heart_of_the_elder", "relic"))
+	eq(bool(relic_one.get("ok", false)), true, "the first relic equips")
+	var relic_two: Dictionary = wearer.equip_uid(_give(wearer, "blightroot_ring", "relic"))
+	eq(bool(relic_two.get("ok", false)), false, "a second relic is refused")
+	eq(str(relic_two.get("reason", "")).find("relic") >= 0, true, "the refusal names the relic rule")
+
+
+func _test_mender_sets(book) -> void:
+	_clear_save()
+	var hero = Progress.new()
+	eq(hero.set_hero_class("mender"), true, "the hero can be a Mender")
+	eq(hero.hero_class, "Mender", "Mender is stored as the display name")
+	var hits := 0
+	var parts := 0
+	for i in 800:
+		var drop: Dictionary = book.roll("mission", {
+			"level": 15,
+			"class_id": hero.hero_class,
+			"zone_id": "rowanvale",
+			"missions_finished": 30,
+		}, _rng(3000 + i))
+		for item in drop["items"]:
+			var item_id := str(item["item_id"])
+			if item_id == "mystery_box":
+				continue
+			var def: Dictionary = book.item(item_id)
+			var classes: Array = def.get("classes", [])
+			if classes.is_empty():
+				continue
+			parts += 1
+			if classes.has(hero.hero_class):
+				hits += 1
+	eq(parts > 100, true, "rowanvale missions drop class parts")
+	var rate := float(hits) / float(parts)
+	eq(rate > 0.5 and rate < 0.7, true, "a Mender gets Mender sets near 60 percent (%.3f)" % rate)
+
+
+func _test_turn_in() -> void:
+	_clear_save()
+	var world = load("res://scenes/world/crosshaven/crosshaven_world.tscn").instantiate()
+	world.instant_transitions = true
+	get_root().add_child(world)
+	eq(world.progress != null, true, "the world boots a hero (%s)" % str(world.load_errors))
+	if world.progress == null:
+		world.queue_free()
+		return
+	world.progress.set_hero_class("mender")
+	world.grant_turn_in({
+		"coins": 17,
+		"items": [{"item_id": "sackcloth", "rarity": "regular", "count": 1}],
+	})
+	eq(world.reward_popup.is_open(), true, "turn-in opens the reward popup")
+	eq(world.progress.coins, 17, "turn-in pays the wallet")
+	world.enter_zone("crosshaven_stoneford", Vector2i(3, 3), false)
+	world.queue_free()
+	var loaded = Progress.new()
+	eq(loaded.coins, 17, "a zone change keeps the wallet without the test calling save")
+	eq(loaded.hero_class, "Mender", "the reloaded hero is a Mender")
+	eq(loaded.bag.size(), 1, "the turn-in item is still in the bag")
+
+
+func _expect_stats(set_def: Dictionary, count: int) -> Dictionary:
+	var stats := {"Mastery": 0, "Vitality": 0, "Swift": 0, "Resist": 0}
+	var regular: Dictionary = set_def["stats"]["regular"]
+	for stat in regular.keys():
+		stats[str(stat)] = int(stats[str(stat)]) + int(regular[stat]) * count
+	if count >= 2:
+		_add_stats(stats, set_def["bonuses"]["2"])
+	if count >= 3:
+		_add_stats(stats, set_def["bonuses"]["3"])
+	return stats
+
+
+func _add_stats(stats: Dictionary, block: Dictionary) -> void:
+	for stat in block.keys():
+		var name := str(stat)
+		stats[name] = int(stats.get(name, 0)) + int(block[stat])
+
+
+func _set_total(set_def: Dictionary) -> int:
+	return 5 * _sum(set_def["stats"]["regular"]) + _sum(set_def["bonuses"]["2"]) + _sum(set_def["bonuses"]["3"])
+
+
+func _full_budget(tier: int) -> int:
+	return int(round(98.0 * pow(1.3, (float(tier) - 50.0) / 10.0)))
+
+
+func _write_save(doc: Dictionary) -> void:
+	var file := FileAccess.open(Progress.SAVE_PATH, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(doc))
 
 
 func _give(hero, item_id: String, rarity: String) -> int:

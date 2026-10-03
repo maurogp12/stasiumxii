@@ -272,6 +272,12 @@ func _read(doc: Dictionary, errors: Array) -> void:
 		var rare_expect := int(round(1.5 * float(budget))) + 1
 		if _sum_stats(stats.get("rare", {})) != rare_expect:
 			errors.append("rare budget %s" % set_id)
+		var bonuses: Dictionary = set_def.get("bonuses", {})
+		var full := int(set_def.get("full_budget", -1))
+		var two := _sum_stats(bonuses.get("2", {}))
+		var three := _sum_stats(bonuses.get("3", {}))
+		if full < 0 or absi(5 * budget + two + three - full) > 1:
+			errors.append("full budget %s" % set_id)
 		var five: Dictionary = (set_def.get("bonuses", {}) as Dictionary).get("5", {})
 		if bool(five.get("applies", true)):
 			errors.append("five-part applies %s" % set_id)
