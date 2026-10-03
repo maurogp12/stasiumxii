@@ -362,7 +362,7 @@ the next phase. Numbers are **Proposed**.
   | Mastery | +0.5% damage and healing done | +49% |
   | Vitality | +0.5% of the class's base max HP | +49% max HP |
   | Resist | +0.4% less damage taken (total Resist capped at **33%**, Soft Lock) | 33% (cap reached at 82.5 points) |
-  | Swift | +1 Initiative and **+0.35% damage done** (Proposed) | +98 Initiative, +34.3% damage |
+  | Swift | +1 Initiative and **+0.35% damage done** (Soft Lock) | +98 Initiative, +34.3% damage |
 
   Points are on in Koliseo PvP, and **every PvP fighter has the full point
   budget** (everyone is treated as `max_level` with their own spend). So the
@@ -380,10 +380,11 @@ the next phase. Numbers are **Proposed**.
   inside 45–55%; **all Swift vs all Mastery is 63.3%**, and 16 single-class rows
   fall outside 35–65%, because 1v1 fights are short and whoever acts first often
   wins by one hit. No single per-point rate fixes both, so this goes to Mauro as
-  Q17. **Q17 answered 3 Oct 2026: option A**, first-turn −1 AP for whoever
-  acts first in a Koliseo match (Koliseo only, that turn only); Resist cap 33%
-  is now **Soft Lock**. Swift's +0.35% stays Proposed until WP3c's table is in.
-  These numbers only affect Koliseo PvP, not the open world.
+  Q17. **Q17 answered 3 Oct 2026: option C** (Mauro: Initiative is a chosen
+  advantage over damage). No first-turn rule; "all Swift vs all Mastery" may
+  sit up to 65%, every other pair stays 45–55%. Swift +0.35% damage per point
+  and the Resist cap 33% are **Soft Lock**. These numbers only affect Koliseo
+  PvP, not the open world.
 - **Class HP growth per level** (a small flat HP gain, different per class,
   Proposed).
 - **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
@@ -1645,22 +1646,6 @@ designated zones also monsters above lvl 25 are agressive".
 - **Media:** a clip winning a fight, the reward pop-up, then opening a Mystery
   Box from the inventory.
 
-#### WP3c: Koliseo first-turn rule (Code)
-
-- **Goal:** Q17 option A. In a Koliseo match, the fighter who acts first gets
-  −1 AP on their first turn only.
-- **Change:** `backend/combat_sim.gd`, behind a match flag (for example
-  `config.koliseo_first_turn_ap_penalty = 1`), set only by the PC Koliseo
-  match setup and by `pc_duel.gd`. Default 0: every existing match, test and
-  the mobile game behave exactly as today. The open world and dungeons never
-  set it.
-- **Accept:** a test that the first actor's turn 1 has AP − 1 and every
-  other turn is unchanged; the combat suite unchanged with the flag off;
-  `duel_table.md` re-run with the rule: every pooled pair inside 45–55% and
-  the per-class rows reported against 35–65%. If a pair still misses, report
-  it; Claude picks a number fix (Swift's damage rate), never another new rule.
-- **Media:** none; the table is the check.
-
 #### WP15: Balance simulator (Code)
 
 - **Goal:** prove the numbers in 4.3, 4.8 and 4.9 are balanced before anyone
@@ -1995,11 +1980,13 @@ headless.
     3 Oct 2026 (Mauro): yes.** Perks answered: XP, coins, drops, fast travel,
     premium cities later (sizes Proposed). **Still Open:** which store(s)
     (Steam, own website, other), the price, and the billing period.
-17. ~~**Swift in Koliseo PvP (4.11).**~~ **Answered 3 Oct 2026 (Mauro: "go
-    with whatever you find the best option to keep balanced everything"):
-    option A.** In Koliseo only, the fighter who acts first in the match gets
-    **−1 AP on their first turn** (that turn only). Swift keeps +1 Initiative
-    and +0.35% damage per point. Resist cap 33% moves to **Soft Lock** under
-    the same answer. Built and proved in WP3c; if the duel table still misses
-    the band with A, the build team reports it and Claude picks the number
-    fix (never a new rule) and records it here.
+17. ~~**Swift in Koliseo PvP (4.11).**~~ **Answered 3 Oct 2026 (Mauro):
+    option C, keep Swift as it is.** "The point is to have initiative to have
+    any type of advantage over the other player, that's why the player decides
+    if he wants to go first over damage." Going first is a chosen edge: all
+    Swift beats all Mastery about 63% and is even against Vitality (50%) and
+    Resist (49%), so Swift counters damage builds and tanky builds answer it.
+    No first-turn rule. The 45–55% band in 4.11 does **not** apply to
+    "all Swift vs all Mastery" (allowed up to 65%); every other pair keeps it.
+    Resist cap 33% is **Soft Lock**. (An earlier option-A note from the same
+    day is withdrawn.)
