@@ -27,10 +27,22 @@ void vertex() {
 }
 void fragment() {
 	float rep = max(world_repeat, 1.0);
-	vec2 uv = fract((origin + local_pos) / rep);
-	vec4 tex = texture(shadow_tex, uv);
-	vec3 mul = mix(vec3(1.0), tex.rgb, clamp(tex.a * opacity, 0.0, 1.0));
+	vec2 drift = vec2(TIME * 0.012, TIME * 0.004);
+	vec2 uv = fract((origin + local_pos) / rep + drift);
+	float lit = texture(shadow_tex, uv).r;
+	vec3 tinted = mix(vec3(0.22, 0.48, 0.28), vec3(0.93, 1.0, 0.90), lit);
+	vec3 mul = mix(vec3(1.0), tinted, clamp(opacity, 0.0, 1.0));
 	COLOR = vec4(mul, 1.0);
+}
+"""
+const SWAY_SHADER := """shader_type canvas_item;
+uniform sampler2D sway_tex : filter_linear, repeat_disable;
+uniform float swing = 0.0;
+uniform vec2 sway_dir = vec2(1.0, 0.0);
+uniform float amplitude_px = 16.0;
+void vertex() {
+	float weight = texture(sway_tex, UV).r;
+	VERTEX += sway_dir * swing * amplitude_px * weight;
 }
 """
 
@@ -41,6 +53,7 @@ var _force_off: bool = false
 var _built: bool = false
 var _time: float = 0.0
 var _shader: Shader
+var _sway_shader: Shader
 var _backs: Dictionary = {}
 var _clips: Dictionary = {}
 var _pivots: Dictionary = {}
@@ -308,6 +321,7 @@ func _ensure_nodes() -> void:
 		var path := resolve_slot(slot)
 		sprite.texture = _load_tex(path)
 		sprite.set_meta("slot_path", path)
+		sprite.material = _sway_material(slot, str(LEAF_EDGES[slot]))
 		pivot.add_child(sprite)
 		clip.add_child(pivot)
 		add_child(clip)
@@ -324,6 +338,7 @@ func _layout_backs() -> void:
 	var fit: Vector2 = _board.get("_fit_camera_pos")
 	var pan := cam.position - fit
 	var factors: Dictionary = _params.get("parallax", {})
+	var view := _view_rect().size
 	for slot in BACK_SLOTS:
 		var root: Node2D = _backs[slot]
 		var art := root.get_node_or_null("Art") as Sprite2D
@@ -332,7 +347,7 @@ func _layout_backs() -> void:
 			continue
 		root.visible = true
 		root.position = cam.position
-		var scale := _master_scale(str(art.get_meta("slot_path", "")))
+		var scale := _back_scale(slot, art.texture.get_size(), view)
 		art.scale = Vector2(scale, scale)
 		var factor := float(factors.get(slot, 0.2))
 		art.position = -pan * (1.0 - factor)
@@ -354,31 +369,14 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 		clip.visible = false
 		return
 	var tex_size := sprite.texture.get_size()
-	var native := tex_size
-	if str(sprite.get_meta("slot_path", "")).ends_with("@2x.png"):
-		native = tex_size * 0.5
-	var slide := float(_params.get("sway_slide_px", 6.0))
+	var swing_px := float(_params.get("sway_amplitude_px", 14.0))
 	var gap := float(_params.get("guard_gap_px", 8.0))
-	var amp := deg_to_rad(float(_params.get("sway_amplitude_deg", 2.4)))
-	var box := margin.size
-	var pad := slide + gap
-	var disp := Vector2.ZERO
-	for _i in 6:
-		var inner := _inner_box(box, edge, pad)
-		if inner.x < 8.0 or inner.y < 8.0:
-			clip.visible = false
-			return
-		disp = _contain(native, inner)
-		var need := _edge_pad(disp, edge, amp, slide, gap)
-		if need <= pad + 0.5:
-			pad = need
-			break
-		pad = need
-	var fitted := _inner_box(box, edge, pad)
+	var pad := swing_px + gap
+	var fitted := _inner_box(margin.size, edge, pad)
 	if fitted.x < 8.0 or fitted.y < 8.0:
 		clip.visible = false
 		return
-	disp = _contain(native, fitted)
+	var disp := _contain(tex_size, fitted)
 	clip.visible = true
 	clip.position = margin.position
 	clip.size = margin.size
@@ -404,12 +402,13 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	pivot.position = base
 	pivot.rotation = 0.0
 	sprite.position = local
+	var mat := sprite.material as ShaderMaterial
+	if mat != null and sprite.scale.x > 0.001:
+		mat.set_shader_parameter("amplitude_px", swing_px / sprite.scale.x)
 
 
 func _apply_sway() -> void:
-	var amp := deg_to_rad(float(_params.get("sway_amplitude_deg", 2.4)))
 	var speed := float(_params.get("sway_speed", 0.85))
-	var slide := float(_params.get("sway_slide_px", 6.0))
 	var phases: Dictionary = _params.get("sway_phase", {})
 	for slot in _pivots.keys():
 		var pivot: Node2D = _pivots[slot]
@@ -417,19 +416,14 @@ func _apply_sway() -> void:
 			continue
 		var phase := float(phases.get(slot, 0.0))
 		var wave := sin(_time * speed + phase)
-		pivot.rotation = wave * amp
-		var edge := str(pivot.get_meta("edge", "left"))
-		var nudge := Vector2.ZERO
-		if edge == "left":
-			nudge = Vector2(slide * wave, 0)
-		elif edge == "right":
-			nudge = Vector2(-slide * wave, 0)
-		elif edge == "top":
-			nudge = Vector2(0, slide * wave)
-		else:
-			nudge = Vector2(0, -slide * wave)
-		var base: Vector2 = pivot.get_meta("base_pos")
-		pivot.position = base + nudge
+		pivot.rotation = 0.0
+		pivot.position = pivot.get_meta("base_pos")
+		var sprite: Sprite2D = _sprites.get(slot)
+		if sprite == null:
+			continue
+		var mat := sprite.material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("swing", wave)
 
 
 func _build_shadows(board: Node2D) -> void:
@@ -566,12 +560,6 @@ func _inner_box(box: Vector2, edge: String, pad: float) -> Vector2:
 	return inner
 
 
-func _edge_pad(disp: Vector2, edge: String, amp: float, slide: float, gap: float) -> float:
-	if edge == "left" or edge == "right":
-		return disp.y * 0.5 * sin(amp) + slide + gap
-	return disp.x * 0.5 * sin(amp) + slide + gap
-
-
 func _contain(native: Vector2, box: Vector2) -> Vector2:
 	if native.x < 1.0 or native.y < 1.0 or box.x < 1.0 or box.y < 1.0:
 		return Vector2.ZERO
@@ -580,10 +568,34 @@ func _contain(native: Vector2, box: Vector2) -> Vector2:
 	return native * scale
 
 
-func _master_scale(path: String) -> float:
-	if path.ends_with("@2x.png"):
-		return float(_params.get("draw_scale_2x", 0.5))
-	return 1.0
+func _back_scale(slot: String, tex_size: Vector2, view: Vector2) -> float:
+	var cover := maxf(view.x / tex_size.x, view.y / tex_size.y)
+	var slots: Dictionary = _params.get("slots", {})
+	var spec: Dictionary = slots.get(slot, {})
+	if str(spec.get("fit", "")) == "bleed":
+		return cover * float(spec.get("bleed", 1.35))
+	return maxf(1.0, cover) * float(spec.get("extra_scale", 1.06))
+
+
+func _sway_material(slot: String, edge: String) -> ShaderMaterial:
+	if _sway_shader == null:
+		_sway_shader = Shader.new()
+		_sway_shader.code = SWAY_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _sway_shader
+	mat.set_shader_parameter("sway_tex", _load_tex(art_root() + slot + "_sway.png"))
+	mat.set_shader_parameter("sway_dir", _sway_dir(edge))
+	return mat
+
+
+func _sway_dir(edge: String) -> Vector2:
+	if edge == "right":
+		return Vector2(-1, 0)
+	if edge == "top":
+		return Vector2(0, 1)
+	if edge == "bottom":
+		return Vector2(0, -1)
+	return Vector2(1, 0)
 
 
 func _z(key: String) -> int:

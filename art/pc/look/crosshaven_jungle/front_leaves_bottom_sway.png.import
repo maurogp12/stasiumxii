@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b70c3n5qvoto"
-path="res://.godot/imported/back_mid@2x.png-a8480176bca67d47a348808b2a4bdded.ctex"
+uid="uid://dmq6871f80wjw"
+path="res://.godot/imported/front_leaves_bottom_sway.png-e0bbf15681dc405eb16abba50cf7fa28.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/crosshaven_jungle/back_mid@2x.png"
-dest_files=["res://.godot/imported/back_mid@2x.png-a8480176bca67d47a348808b2a4bdded.ctex"]
+source_file="res://art/pc/look/crosshaven_jungle/front_leaves_bottom_sway.png"
+dest_files=["res://.godot/imported/front_leaves_bottom_sway.png-e0bbf15681dc405eb16abba50cf7fa28.ctex"]
 
 [params]
 

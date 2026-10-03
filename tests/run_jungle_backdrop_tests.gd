@@ -24,14 +24,14 @@ func _finish_live() -> void:
 func _test_params_and_slots() -> void:
 	var params := JUNGLE.load_params()
 	eq(str(params.get("art_status", "")), "placeholder", "jungle art is still the stand-in set")
-	eq(float(params.get("draw_scale_2x", 0.0)), 0.5, "a 2x master is drawn at half size")
-	eq(str(params.get("sway_mode", "")), "pivot_rotation", "leaf sway is a pivot rotation")
-	eq(bool(params.get("sway_mask", true)), false, "leaf sway does not use a greyscale mask")
+	eq(str(params.get("sway_mode", "")), "mask_shader", "leaf sway is a mask shader")
+	eq(bool(params.get("sway_mask", false)), true, "each leaf layer has a sway mask")
 	eq(bool(params.get("flipbook", true)), false, "leaf sway is not a flipbook")
 	eq(float(params["parallax"]["back_far"]), 0.12, "far parallax factor")
 	eq(float(params["parallax"]["back_mid"]), 0.4, "mid parallax factor")
+	eq(float(params["parallax"]["front_leaves"]), 1.0, "front leaves are screen-locked")
 	truthy(params.has("parallax"), "parallax block is in the backdrop json")
-	truthy(params.has("sway_amplitude_deg"), "sway amplitude is in the backdrop json")
+	truthy(params.has("sway_amplitude_px"), "sway amplitude is in the backdrop json")
 	truthy(params.has("sway_speed"), "sway speed is in the backdrop json")
 	truthy(params.has("shadow_opacity"), "shadow opacity is in the backdrop json")
 	truthy(params.has("z_order"), "z order is in the backdrop json")
@@ -47,22 +47,15 @@ func _test_params_and_slots() -> void:
 	]
 	for slot in names:
 		var path := JUNGLE.resolve_slot(slot)
-		truthy(path.ends_with(slot + "@2x.png"), "%s resolves to the @2x plate" % slot)
+		truthy(path.ends_with(slot + ".png"), "%s resolves to its slot file" % slot)
 		var tex := load(path) as Texture2D
-		truthy(tex != null, "%s @2x loads" % slot)
+		truthy(tex != null, "%s loads" % slot)
 		var spec: Dictionary = slots.get(slot, {})
-		var px: Array = spec.get("px_2x", [])
+		var px: Array = spec.get("px", [])
 		if tex != null and px.size() >= 2:
-			eq(tex.get_width(), int(px[0]), "%s @2x width" % slot)
-			eq(tex.get_height(), int(px[1]), "%s @2x height" % slot)
-		var low := JUNGLE.slot_path_1x(slot)
-		truthy(FileAccess.file_exists(low), "%s 1x plate is on disk" % slot)
-		var low_tex := load(low) as Texture2D
-		truthy(low_tex != null, "%s 1x loads" % slot)
-		var px1: Array = spec.get("px_1x", [])
-		if low_tex != null and px1.size() >= 2:
-			eq(low_tex.get_width(), int(px1[0]), "%s 1x width" % slot)
-			eq(low_tex.get_height(), int(px1[1]), "%s 1x height" % slot)
+			eq(tex.get_width(), int(px[0]), "%s width" % slot)
+			eq(tex.get_height(), int(px[1]), "%s height" % slot)
+		_check_import(path, str(spec.get("compress", "lossless")))
 	eq(JUNGLE.choose_path(JUNGLE.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
 	var src := FileAccess.get_file_as_string("res://board/pc/jungle_backdrop.gd")
 	var hi := src.find("slot + \"@2x.png\"")
@@ -71,24 +64,33 @@ func _test_params_and_slots() -> void:
 	eq(JUNGLE.normalize_map_id("crosshaven_15"), "crosshaven", "ship suffix still means Crosshaven")
 	eq(JUNGLE.normalize_map_id(""), "crosshaven", "an empty map id is the Crosshaven arena")
 	var expected := {
-		"back_far": [[2048, 1280], [4096, 2560]],
-		"back_mid": [[2048, 1280], [4096, 2560]],
-		"front_leaves_left": [[512, 720], [1024, 1440]],
-		"front_leaves_right": [[512, 720], [1024, 1440]],
-		"front_leaves_top": [[1280, 240], [2560, 480]],
-		"front_leaves_bottom": [[1280, 240], [2560, 480]],
-		"leaf_shadow": [[512, 512], [1024, 1024]],
+		"back_far": [2048, 1280],
+		"back_mid": [4096, 2560],
+		"front_leaves_left": [1024, 1440],
+		"front_leaves_right": [1024, 1440],
+		"front_leaves_top": [2560, 480],
+		"front_leaves_bottom": [2560, 480],
+		"leaf_shadow": [1024, 1024],
 	}
 	for slot in expected.keys():
 		var spec: Dictionary = slots.get(slot, {})
-		var one: Array = spec.get("px_1x", [])
-		var two: Array = spec.get("px_2x", [])
+		var px: Array = spec.get("px", [])
 		var want: Array = expected[slot]
-		eq(one.size() >= 2 and int(one[0]) == int(want[0][0]) and int(one[1]) == int(want[0][1]), true, "%s 1x contract" % slot)
-		eq(two.size() >= 2 and int(two[0]) == int(want[1][0]) and int(two[1]) == int(want[1][1]), true, "%s 2x contract" % slot)
-	eq(ResourceLoader.exists("res://art/pc/look/crosshaven_jungle/front_leaves_left_sway.png"), false, "there is no sway mask for the left leaves")
-	eq(src.contains("pivot.rotation"), true, "the sway turns the leaf pivot")
-	eq(src.contains("_sway.png"), false, "the backdrop script does not load a sway strip")
+		eq(px.size() >= 2 and int(px[0]) == int(want[0]) and int(px[1]) == int(want[1]), true, "%s contract" % slot)
+	for slot in ["front_leaves_left", "front_leaves_right", "front_leaves_top", "front_leaves_bottom"]:
+		var spec: Dictionary = slots.get(slot, {})
+		var sway: Array = spec.get("sway", [])
+		var sway_path: String = JUNGLE.art_root() + slot + "_sway.png"
+		truthy(FileAccess.file_exists(sway_path), "%s sway mask is on disk" % slot)
+		var sway_tex := load(sway_path) as Texture2D
+		truthy(sway_tex != null, "%s sway mask loads" % slot)
+		if sway_tex != null and sway.size() >= 2:
+			eq(sway_tex.get_width(), int(sway[0]), "%s sway width" % slot)
+			eq(sway_tex.get_height(), int(sway[1]), "%s sway height" % slot)
+		_check_import(sway_path, "lossless")
+	eq(src.contains("sway_tex"), true, "the sway shader samples the greyscale mask")
+	eq(src.contains("0.22, 0.48, 0.28"), true, "leaf shadows take a green tint")
+	eq(src.contains("TIME * 0.012"), true, "leaf shadows scroll for canopy drift")
 
 
 func _test_board_wires_the_layer() -> void:
@@ -128,9 +130,17 @@ func _test_live_layer() -> void:
 	var cam := board.get_node("BoardCamera") as Camera2D
 	truthy(is_equal_approx(cam.zoom.x, 0.64), "the 15x15 fit zoom is 0.64")
 	var far_art := layer.get_node("back_far/Art") as Sprite2D
-	truthy(is_equal_approx(far_art.scale.x, 0.5), "the far plate is drawn at half the 2x master")
+	truthy(far_art.scale.x > 1.0 and far_art.scale.x < 1.25, "the far plate is full size, scaled up slightly")
 	var mid_art := layer.get_node("back_mid/Art") as Sprite2D
-	truthy(is_equal_approx(mid_art.scale.x, 0.5), "the mid plate is drawn at half the 2x master")
+	var view_w := 960.0 / cam.zoom.x
+	truthy(mid_art.texture.get_width() * mid_art.scale.x > view_w, "the mid plate bleeds past the view")
+	var leaf := layer.get_node("front_leaves_left") as Control
+	var leaf_at := leaf.position
+	cam.position += Vector2(80, 0)
+	layer.layout()
+	truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	cam.position -= Vector2(80, 0)
+	layer.layout()
 	eq(layer.shadow_count(), 225, "every cell gets a leaf shadow")
 	truthy(is_equal_approx(layer.shadow_opacity(), float(JUNGLE.load_params()["shadow_opacity"])), "shadow opacity comes from the json")
 	truthy(layer.shadow_uses_multiply(), "leaf shadows use multiply")
@@ -181,6 +191,16 @@ func _test_live_layer() -> void:
 	truthy(layer.visible, "the layer switches back on")
 	eq(layer.leaves_cover_play(), false, "leaves still miss the cells after a toggle")
 	main.free()
+
+
+func _check_import(path: String, mode: String) -> void:
+	var text := FileAccess.get_file_as_string(path + ".import")
+	truthy(text.contains("mipmaps/generate=false"), "%s has no mipmaps" % path)
+	if mode == "vram_bc7":
+		truthy(text.contains("compress/mode=2"), "%s uses VRAM compression" % path)
+		truthy(text.contains("compress/high_quality=true"), "%s asks for BC7 quality" % path)
+	else:
+		truthy(text.contains("compress/mode=0"), "%s stays lossless" % path)
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
