@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "brinewake",
+  "seed": 2025,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "golden_plains",
+      "weight": 4
+    },
+    {
+      "terrain": "farm_fallow",
+      "weight": 2
+    },
+    {
+      "terrain": "farm_soil",
+      "weight": 1
+    }
+  ],
+  "props": [
+    {
+      "type": "tree",
+      "weight": 3,
+      "stands_for": "palm"
+    },
+    {
+      "type": "rowboat",
+      "weight": 2,
+      "stands_for": "beached boat"
+    },
+    {
+      "type": "net_rack",
+      "weight": 2,
+      "stands_for": "net-drying rack"
+    },
+    {
+      "type": "barrel",
+      "weight": 2,
+      "stands_for": "crab pots and barrels"
+    },
+    {
+      "type": "quarry_rocks_a",
+      "weight": 1,
+      "stands_for": "shell rock"
+    },
+    {
+      "type": "lamp_post",
+      "weight": 1,
+      "stands_for": "dock post"
+    }
+  ],
+  "border": {
+    "type": "quarry_rocks_a",
+    "stands_for": "dune grass and rocks",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "grass_tuft_tall_a",
+      "weight": 3
+    },
+    {
+      "type": "reeds_a",
+      "weight": 2
+    },
+    {
+      "type": "decal_pebbles",
+      "weight": 2
+    },
+    {
+      "type": "bush_small_b",
+      "weight": 1
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "brinewake_hub",
+    "type": "watchtower_2x2",
+    "stands_for": "Lighthouse",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

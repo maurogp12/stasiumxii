@@ -933,6 +933,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp4_gate()
 		"wp5astills":
 			await _movie_wp5a_stills()
+		"wp10a":
+			await _movie_wp10a_stills()
 		"wp6grades":
 			await _movie_wp6_grades()
 		"wp6fix":
@@ -1165,6 +1167,30 @@ func _movie_wp4_gate() -> void:
 	await _cross_to("rowanvale_entry")
 	await _go(Vector2i(0, 16), "run")
 	await get_tree().create_timer(0.8).timeout
+
+
+## Rowanvale entry, hub, and door beside the Crosshaven Crossroads.
+## Zoom is 1.0 so the border band and the scattered decor stay in frame.
+func _movie_wp10a_stills() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.0
+	if camera != null:
+		camera.zoom = Vector2.ONE
+	weather.auto_rotate = false
+	weather.time_of_day = 12.0
+	weather.settle()
+	if _hud_label != null:
+		_hud_label.visible = false
+	var sheet := find_child("HudSheet", true, false)
+	if sheet != null and sheet.get_child_count() > 0:
+		sheet.get_child(0).visible = false
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp10a")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _save_still("rowanvale_entry", Vector2i(16, 12), folder.path_join("rowanvale_entry.png"))
+	await _save_still("rowanvale_hub", Vector2i(16, 12), folder.path_join("rowanvale_hub.png"))
+	await _save_still("rowanvale_door", Vector2i(16, 12), folder.path_join("rowanvale_door.png"))
+	await _save_still("crosshaven_crossroads", Vector2i(22, 18), folder.path_join("crosshaven_crossroads.png"))
+	await get_tree().process_frame
 
 
 ## One still of each region's entry, at zoom 1.6, with that region's grade.

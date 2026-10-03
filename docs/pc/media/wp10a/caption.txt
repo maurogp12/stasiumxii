@@ -1,0 +1,15 @@
+WP10a step 0 stills. Rowanvale entry, hub, and door beside the Crosshaven Crossroads.
+
+Each frame is the chunk at zoom 1.0, 1920×1080, so the outer border band and the scattered decor are in view. The pairs put that frame next to the Crossroads.
+
+| Still | What it shows |
+|---|---|
+| rowanvale_entry.png | North and west hedgerow band. South and east are exits, so those corridors stay open. Flowers and tufts are scattered, not one slab. |
+| rowanvale_hub.png | East and west tree band around the Old Windmill. North and south are the exits. |
+| rowanvale_door.png | West, east, and south hedgerow band. North is the exit back to the hub. |
+| crosshaven_crossroads.png | The dressed Crosshaven square, for comparison. |
+| entry_beside_crossroads.png | Entry beside the Crossroads. |
+| hub_beside_crossroads.png | Hub beside the Crossroads. |
+| door_beside_crossroads.png | Door beside the Crossroads. |
+
+Recorded from res://scenes/world/crosshaven/crosshaven_world.tscn, --movie wp10a.

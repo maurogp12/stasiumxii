@@ -458,7 +458,7 @@ func _door_cell(zone: WorldZone) -> Vector2i:
 func _landmark_cells(zone: WorldZone) -> Array:
 	var cells: Array = []
 	for prop in zone.props:
-		if str(prop["type"]) != "tavern_3x2":
+		if not str(prop.get("id", "")).ends_with("_landmark"):
 			continue
 		for foot in prop["footprint"]:
 			cells.append(Vector2i(int(foot["x"]), int(foot["y"])))
