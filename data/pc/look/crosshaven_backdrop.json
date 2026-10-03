@@ -1,0 +1,36 @@
+{
+  "art_status": "placeholder",
+  "note": "Stand-in paint so the layer runs. Scenario Art replaces the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png.",
+  "art_root": "res://art/pc/look/crosshaven_jungle/",
+  "map_ids": ["crosshaven"],
+  "slots": {
+    "back_far": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
+    "back_mid": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
+    "front_leaves_left": {"px_1x": [280, 1200], "px_2x": [560, 2400]},
+    "front_leaves_right": {"px_1x": [280, 1200], "px_2x": [560, 2400]},
+    "front_leaves_top": {"px_1x": [1600, 220], "px_2x": [3200, 440]},
+    "front_leaves_bottom": {"px_1x": [1600, 480], "px_2x": [3200, 960]},
+    "leaf_shadow": {"px_1x": [128, 128], "px_2x": [256, 256]}
+  },
+  "parallax": {"back_far": 0.12, "back_mid": 0.4},
+  "cover_bleed": {"back_far": 1.5, "back_mid": 1.32},
+  "sway_amplitude_deg": 3.6,
+  "sway_speed": 0.9,
+  "sway_slide_px": 8.0,
+  "sway_phase": {
+    "front_leaves_left": 0.2,
+    "front_leaves_right": 1.7,
+    "front_leaves_top": 0.9,
+    "front_leaves_bottom": 2.3
+  },
+  "shadow_opacity": 0.32,
+  "shadow_uv_scale": [1.7, 1.7],
+  "fighter_clear_px": 136,
+  "guard_gap_px": 8,
+  "z_order": {
+    "back_far": -320,
+    "back_mid": -180,
+    "leaf_shadow": 0,
+    "front_leaves": 720
+  }
+}
