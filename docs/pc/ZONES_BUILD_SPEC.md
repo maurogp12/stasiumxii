@@ -610,6 +610,11 @@ the palette accents and one small prop.
     lantern swinging or the Archivist turning a page;
   - **walk**, 8 frames per direction;
   - **talk**, 6–8 frames: a gesture when the dialogue opens.
+- **Approved reference** (Mauro, 3 Oct 2026: "I like how they put the NPC in
+  the game"): `docs/pc/look_target/npc_farmer_sprite_approved.png`, the
+  Farmer concept next to its in-game sprite. Every role follows this method:
+  same silhouette and props, the world's light key, shade and shadow tint, a
+  thin dark contour, and the engine grade applied.
 - The world look must not change. The concepts are darker than the world, so
   the sprites take the world's light and grade (warm daylight in the north,
   west and east, fog in the swamp, violet dusk on the dark side). Keep the
