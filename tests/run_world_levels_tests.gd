@@ -39,7 +39,7 @@ const EXPECTED := [
 	["blightwood_hollow", "Blightwood Hollow", 45, 50, "#8227a9", "heart_of_the_blight"],
 ]
 
-## Phone Stasis door ids from spec 4.6 at 46d897e. PC dungeons are PC's own.
+## Phone Stasis door ids from spec 4.6 at c037429. PC dungeons are PC's own.
 ## These strings may appear only on the denylist lines below.
 const PHONE_DUNGEON_NAMES: Array[String] = [
 	"threshgate",
@@ -77,6 +77,7 @@ func _run() -> void:
 	_test_plan(levels)
 	_test_chunks(levels)
 	_test_rules(levels)
+	_test_fen_edge_placement(levels)
 	eq(levels.validate()["ok"], true, "validate() accepts the shipped file")
 	var map_loaded: Dictionary = WorldMap.load_default()
 	eq(map_loaded["ok"], true, "Crosshaven index still loads")
@@ -238,6 +239,19 @@ func _test_rules(levels) -> void:
 		eq(owned.has(chunk), true, "Crosshaven chunk %s is in a level zone" % chunk)
 		var zone_id := str(owned[chunk])
 		eq(zone_id == "crosshaven_heart" or zone_id == "crosshaven_towns", true, "%s resolves to zone 1 or 2" % chunk)
+
+
+## c037429 Q8 option 1: Fen Edge branches off the east road, before Eastmarch town.
+## The gate itself is WP4. This package keeps the chunks in the right zones.
+func _test_fen_edge_placement(levels) -> void:
+	eq(str(levels.zone_for_chunk("crosshaven_road_east").get("id", "")), "crosshaven_heart", "the east road stays in Heart")
+	eq(str(levels.zone_for_chunk("crosshaven_eastmarch").get("id", "")), "crosshaven_towns", "Eastmarch town stays in the towns, not in Fen Edge")
+	var fen: Dictionary = levels.by_id["eastmarch_fen_edge"]
+	eq(int(fen["level_min"]), 25, "Fen Edge starts at 25")
+	eq(int(fen["level_max"]), 30, "Fen Edge ends at 30")
+	eq(str(fen["dungeon"]), "sunken_mill", "Fen Edge dungeon is Sunken Mill")
+	eq(int(fen["depth"]["eastmarch_fen_edge_entry"]), 0, "Fen Edge entry depth is 0")
+	eq(str(levels.zone_for_chunk("eastmarch_fen_edge_entry").get("id", "")), "eastmarch_fen_edge", "Fen Edge entry is its own zone")
 
 
 func _test_explicit_bands(levels) -> void:
