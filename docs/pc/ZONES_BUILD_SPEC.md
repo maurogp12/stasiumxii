@@ -681,8 +681,8 @@ cap goes to 100.
 #### Class sets: every class, every tier (30 sets)
 
 One set per class at each tier: 5 classes × 6 tiers = **30 class sets**
-(150 parts). A class set can be worn only by its class. Names are
-**Proposed**:
+(150 parts). A class set can be worn only by its class. Names **approved**
+by Mauro (3 Oct 2026):
 
 | Tier | Kestrel (ranged, Air) | Ironjaw (bruiser, Earth) | Mender (healer, Water) | Gloam (assassin) | Bastion (tank) |
 |---|---|---|---|---|---|
@@ -697,9 +697,10 @@ Stats each class's parts lean to: Kestrel Mastery + Swift; Ironjaw Mastery +
 Vitality; Mender Vitality + Resist; Gloam Mastery + Swift; Bastion Vitality +
 Resist. The 2- and 3-part bonuses give the same two stats.
 
-5-part effects (**Proposed**): each class has one **signature effect** that
-first appears at tier 20 and grows with the tiers; tiers 1 and 10 give a
-plain stat bonus at 5 parts, so the early game stays simple.
+5-part effects: each class has one **signature effect** (**approved** by
+Mauro, 3 Oct 2026, "just make sure everything ends up balanced") that first
+appears at tier 20 and grows with the tiers; tiers 1 and 10 give a plain stat
+bonus at 5 parts, so the early game stays simple.
 
 | Class | Signature effect (tier 20) | Tiers 30 / 40 / 50 |
 |---|---|---|
@@ -709,9 +710,19 @@ plain stat bonus at 5 parts, so the early game stays simple.
 | Gloam | +1 MP on turns you start Invisible | plus, e.g., more damage on the first hit out of Invisible |
 | Bastion | The first hit you take in each fight deals half damage | plus, e.g., Snap Wall also gives an adjacent ally Resist |
 
-The second effects are ideas for the team to size inside the balance rules
-below and bring to Mauro; nothing past the tier 20 signature is built before
-his yes.
+The second effects (tiers 30 / 40 / 50) are still ideas for the team to size
+inside the balance rules below and bring to Mauro; nothing past the tier 20
+signature is built before his yes.
+
+**Balance gate (Mauro: "make sure everything ends up balanced"):** no set,
+signature effect, Epic or Relic ships until the WP15 simulator passes every
+rule in 4.9 and 4.14 for every class and tier. When a check fails, the team
+changes **numbers only** (stat values, effect size, drop rates), never the
+approved names or effect types, and shows Mauro the before / after table. A
+first read of the five signatures from the kit numbers: Kestrel's (+1 range)
+is the most likely to land below "worth 2 parts" and Gloam's (+1 MP while
+Invisible) the most likely to land above, because Gloam also gains most from
+AP (4.14); WP15 sizes them first.
 
 #### Shared sets (any class)
 
@@ -771,9 +782,10 @@ rewards."** So no two dungeons share a loot table. Each dungeon drops:
 | Shard Hollow | Ashen Shardfields | Ashen Prism | 40 | Recipe: Crystal Brew; material: Prism Shard; decoration: Glowing Crystal; title "Shardbreaker" |
 | Heart of the Blight | Blightwood Hollow | Rotting Elder | 50 | Recipe: Elderroot Feast; material: Blight Heartwood; decoration: Blight Seedling; title "Blightbane" |
 
-That is **11 dungeon sets** (one is Millwright, already approved). Their 5-part
-bonuses are ideas the team sizes inside the balance rules and brings to Mauro;
-none is built before his yes. Each dungeon set follows the same budget rules
+That is **11 dungeon sets**; their names are **approved** (Mauro, 3 Oct 2026).
+Their 5-part bonuses (except Millwright's, already approved) are ideas the team
+sizes inside the balance rules and brings to Mauro; none is built before his
+yes. Each dungeon set follows the same budget rules
 as the class sets of its tier, so a dungeon set is a side-grade (a different
 build), not a straight upgrade.
 
