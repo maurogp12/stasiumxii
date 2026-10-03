@@ -403,59 +403,85 @@ Data: `data/world/level_rewards.json` (format `stasium.level_rewards` v1):
 `milestones` (`[{"level": 30, "ap": 1}]`), `titles`, `respec`. Built in WP3
 (points and spending UI) and checked by WP15.
 
-### 4.4 Gates between regions: `data/world/gates.json`
+### 4.4 Region joins: one open world, walked on foot (`data/world/joins.json`)
 
-A gate is a clickable spot (gold arrow, like the chunk exits) that moves the
-player to another region. Gates are sidecar data, so Crosshaven chunk files do
-not change.
+**Open world** (Luca, 3 Oct 2026: "make sure Crosshaven connects with every
+map that we have, it should be an open world"; Mauro: "walk from town (A) to
+town (B) and zone lvls around it"). Every region joins the world **by walking
+across a chunk edge**, exactly like a chunk exit inside Crosshaven: no
+clickable gate, no teleport, the WP13 no-snap camera and soft fade. A region
+is a place you walk into, not a separate map.
+
+**The world is one grid.** `world_index.json` gives every chunk a grid slot
+`{"col": c, "row": r}` (Crossroads = 0,0; north is row −1). Chunks only join
+grid neighbours, on opposite edges (west ↔ east, north ↔ south), so the world
+map is one picture. Each region grows **outward** from its town: Rowanvale
+west of Stoneford, Windmere north of Northgate, Brinewake east of Eastmarch,
+Slagcrown south of Southbridge, Fen Edge south of the east road, then
+Gloomfen and Stormspire further south; Ashen Shardfields south of Westwatch
+and west of Slagcrown; Blightwood in the north-west, north of Rowanvale and
+west of Windmere.
+
+**The five towns are ringed by water and cliff** (a 3-cell band on every
+outer edge). A join cuts a **4-cell-wide road** through that band in the
+middle of the edge: a ford or stone bridge over water, a pass with steps
+through cliff. The Crosshaven chunk files stay unchanged: `joins.json` is a
+sidecar that `world_atlas.gd` applies at load (it sets the corridor cells
+walkable with the corridor terrain and adds the two-way edge exit).
 
 ```json
 {
-  "format": "stasium.world_gates",
+  "format": "stasium.world_joins",
   "format_version": 1,
-  "gates": [
+  "joins": [
     {
-      "id": "stoneford_to_rowanvale",
-      "from": {"zone_id": "crosshaven_stoneford", "x": 1, "y": 16},
-      "to": {"zone_id": "rowanvale_meadow", "x": 30, "y": 16},
-      "label": "To Rowanvale (10–15)",
-      "two_way": true
+      "id": "stoneford_rowanvale",
+      "a": {"zone_id": "crosshaven_stoneford", "edge": "west", "span": [14, 17]},
+      "b": {"zone_id": "rowanvale_entry", "edge": "east", "span": [10, 13]},
+      "corridor": {"terrain": "ford_stone", "depth": 3},
+      "sign": "Rowanvale · levels 10–15"
     }
   ]
 }
 ```
 
-Gates are **only between regions** (about 12 two-way gates). Links between
-chunks inside a region are normal v1 chunk exits in the region's own zone files,
-never gates. Each gate names its exact chunk. A gate from the Crosshaven
-side into a region lands in that region's **entry** chunk. **The way back
-lands where you came from** (Mauro, 3 Oct 2026: you walk from town to town
-and through the zones around them): every return gate puts the player on a
-walkable cell next to its forward gate's `from` cell, in the same chunk, never
-in some other chunk of that region. Example: Blightwood → Rowanvale lands in
-`rowanvale_farmland_3` next to the Blightwood gate, not in `rowanvale_entry`.
-Where a region has two gates in (Blightwood, Ashen Shardfields), each gate
-lands at its own side of the entry chunk (Blightwood: from Rowanvale on the
-west edge, from Windmere on the east edge), so the map reads as one place.
-Proposed gate list:
+Joins (**Soft Lock**; spans are cell indexes along the edge, 4 wide; the
+region side's chunk is the one in that grid slot after the re-route):
 
-| Gate | From chunk | To (entry chunk of) |
-|---|---|---|
-| Stoneford ↔ Rowanvale | `crosshaven_stoneford` | Rowanvale |
-| Northgate ↔ Windmere | `crosshaven_northgate` | Windmere |
-| Eastmarch ↔ Brinewake | `crosshaven_eastmarch` | Brinewake |
-| Southbridge ↔ Slagcrown | `crosshaven_southbridge` | Slagcrown |
-| East road ↔ Fen Edge | `crosshaven_road_east` | Eastmarch Fen Edge |
-| Fen Edge ↔ Gloomfen | Fen Edge (its far chunk) | Gloomfen Mire |
-| Gloomfen south ↔ Stormspire | Gloomfen (a south chunk) | Stormspire |
-| Westwatch ↔ Ashen Shardfields | `crosshaven_westwatch` | Ashen Shardfields |
-| Slagcrown west ↔ Ashen Shardfields | Slagcrown (a west chunk) | Ashen Shardfields |
-| Rowanvale north ↔ Blightwood | Rowanvale (a north chunk) | Blightwood Hollow |
-| Windmere west ↔ Blightwood | Windmere (a west chunk) | Blightwood Hollow |
+| Join | Crosshaven / region side | Region side | Corridor |
+|---|---|---|---|
+| Stoneford ↔ Rowanvale | `crosshaven_stoneford` west, y 14–17 | Rowanvale border chunk east, y 10–13 | Stone ford over the river |
+| Northgate ↔ Windmere | `crosshaven_northgate` north, x 18–21 | Windmere border chunk south, x 14–17 | Cliff pass with steps; snow starts here |
+| Eastmarch ↔ Brinewake | `crosshaven_eastmarch` east, y 14–17 | Brinewake border chunk west, y 10–13 | Plank bridge over the harbour inlet |
+| Southbridge ↔ Slagcrown | `crosshaven_southbridge` south, x 18–21 | Slagcrown border chunk north, x 14–17 | The south bridge over the gorge |
+| East road ↔ Fen Edge | `crosshaven_road_east` south, x 16–19 (already walkable) | Fen Edge border chunk north, x 14–17 | Dirt track into reeds |
+| Westwatch ↔ Ashen | `crosshaven_westwatch` south, x 16–19 | Ashen border chunk north, x 14–17 | Cliff pass |
+| Fen Edge ↔ Gloomfen | Fen Edge far chunk south | Gloomfen border chunk north | Boardwalk |
+| Gloomfen ↔ Stormspire | Gloomfen south chunk south | Stormspire border chunk north | Rock causeway |
+| Slagcrown ↔ Ashen | Slagcrown west chunk west | Ashen east chunk east | Cooled lava flats |
+| Rowanvale ↔ Blightwood | Rowanvale north chunk north | Blightwood south chunk south | Dead hedgerow lane |
+| Windmere ↔ Blightwood | Windmere west chunk west | Blightwood east chunk east | Frozen forest path |
 
-Rules: both cells passable; `from` on a walkable cell next to the chunk edge;
-the level band in `label` matches `level_zones.json`; `two_way` gates have a
-matching reverse.
+Rules: both spans 4 cells on opposite edges; every corridor cell walkable after
+the sidecar; the 2 cells inside each end walkable (no prop or NPC); the
+region's border band (WP10a) leaves a gap of exactly the span plus 1 cell each
+side; a **level sign** prop stands beside each region-side end (name and band
+from `level_zones.json`); crossing shows a one-line toast ("Entering
+Rowanvale · levels 10–15"). Nothing blocks a low-level player: like Dofus and
+Wakfu, the sign warns, the monsters decide. The **border chunk** is the
+region's chunk that touches the join (was "entry"); Blightwood and Ashen each
+have two border chunks, one per join. The way back is the same edge, so you
+always come back where you went in.
+
+**Edge art** (Scenario Art, WP10a): blend tiles over the 3 corridor cells and
+2 cells either side (Rowanvale meadow into Stoneford grass, Windmere snow
+fading into Northgate stone, and so on), plus the corridor art (ford, pass,
+bridge) and one level sign per region. Order follows the art pairs: Stoneford
+→ Rowanvale and Northgate → Windmere first.
+
+**Gates** (`gates.json`) remain only for links you cannot walk: the Brinewake
+island ferry (Ferry Captain) and, later, premium fast travel between hubs. A
+gate's way back lands next to where it left (within 2 cells, same chunk).
 
 ### 4.5 NPCs: `data/world/npcs.json`
 
@@ -1477,30 +1503,35 @@ dependency on each other can run in parallel (marked ∥).
   imported or changed.
 - **Media:** none.
 
-#### WP4: Multi-region map and gates (Code)
+#### WP4: Multi-region map and walk-across joins (Code)
 
-- **Goal:** the world loads several regions and gates move the player between
-  them with the same fade as chunk exits.
-- **Add:** `data/world/world_index.json` + schema, `data/world/gates.json` +
-  schema, `backend/world_atlas.gd` (preload; loads every region index through
-  the existing `WorldMap.load_index`, resolves gates, `validate()`),
-  `tests/run_world_atlas_tests.gd`.
-- **Change:** `crosshaven_world.gd`: load through `world_atlas.gd`; a click on a
-  gate walks there (existing `walk_to`) and then calls `enter_zone` on the
-  target; gate arrows drawn with the existing exit-arrow look.
-- **Accept:** every gate's cells are passable; two-way gates pair up; every
-  region is reachable from the Crossroads; gates only join different regions;
-  every forward gate into a region lands in that region's entry chunk, each
-  region has exactly one entry chunk, and every return gate lands within 2
-  cells of its forward gate's `from` cell in the same chunk; a test walks
-  (cell by cell, exits and gates only, no `enter_zone` jumps) from the
-  Crossroads to every chunk and back, and from each town to the next town; every chunk in every region index is in exactly
-  one level zone (66 chunks once WP5b is done); the Crosshaven tests still pass
-  with zero changes to the 11 chunk files.
+- **Goal:** the world loads every region as one open world; the player walks
+  from Crosshaven into every region across chunk edges, with the same
+  no-snap camera and fade as chunk exits.
+- **Add:** `data/world/world_index.json` + schema (with grid slots),
+  `data/world/joins.json` + schema, `data/world/gates.json` + schema (ferry
+  and fast travel only), `backend/world_atlas.gd` (preload; loads every region
+  index through the existing `WorldMap.load_index`, applies joins, resolves
+  gates, `validate()`), `tests/run_world_atlas_tests.gd`.
+- **Change:** `crosshaven_world.gd`: load through `world_atlas.gd`; joins
+  behave as normal exits (gold arrows on the edge); the level sign and the
+  "Entering …" toast; gates walk there and then `enter_zone`.
+- **Accept:** every chunk has a grid slot, no two share one, and every exit
+  and join links grid neighbours on opposite edges; every join's spans are 4
+  cells and its corridor cells are walkable; the region-to-region joins in 4.4
+  all exist; no gate joins two places a join could (ferry and fast travel
+  only); a test walks **cell by cell, exits and joins only, no `enter_zone`
+  jumps** from the Crossroads to every chunk and back, and from each town to
+  the next (Crossroads → Stoneford → Rowanvale hub, → Northgate → Windmere
+  hub, → Eastmarch → Brinewake hub, → Southbridge → Slagcrown hub); every
+  chunk in every region index is in exactly one level zone (66 chunks once
+  WP5b is done); the Crosshaven tests still pass with zero changes to the 11
+  chunk files.
 - **Data note:** the formats do not change for the larger regions.
   `world_index.json` still lists 9 new regions; each region's `index.json`
   simply lists more chunks.
-- **Media:** a clip of Stoneford → gate → Rowanvale placeholder → back.
+- **Media:** one uncut clip walking Crossroads → Stoneford → across the ford →
+  Rowanvale hub → back, and a world-map still showing the whole grid.
 
 #### WP5a: Region layouts and the critical path (Code + Technical Artist)
 
