@@ -351,16 +351,30 @@ the next phase. Numbers are **Proposed**.
 - **2 characteristic points per level** (98 by level 50; 198 by level 100),
   spent by the player in four stats, the same buckets as the phone game:
   **Mastery** (more damage), **Vitality** (more HP), **Swift** (more
-  Initiative, act earlier), **Resist** (more resistance). Per-point values are
-  **Proposed** and tuned with WP15 together with the class kits; the kits
-  themselves (spell numbers) never change with level.
+  Initiative, act earlier), **Resist** (more resistance). The kits themselves
+  (spell numbers) never change with level.
+- **Per-point values** (Proposed, tuned by WP15). Every point is worth about
+  the same, so no stat is the obvious pick, and percentages scale with each
+  class's base HP and kit:
+
+  | Stat | Per point | 98 points (level 50) all in one stat |
+  |---|---|---|
+  | Mastery | +0.5% damage and healing done | +49% |
+  | Vitality | +0.5% of the class's base max HP | +49% max HP |
+  | Resist | +0.4% less damage taken (total Resist capped at 25%) | 25% (cap reached at 63 points) |
+  | Swift | +1 Initiative | +98 Initiative |
+
+  Points are on in Koliseo PvP (everyone is treated as `max_level` with their
+  own spend), so WP15 also checks a duel table: with any point spread, no
+  class's PvP win rate moves outside 45–55% against the no-points baseline.
 - **Class HP growth per level** (a small flat HP gain, different per class,
   Proposed).
 - **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
   second milestone between 51 and 100 (Open, decided with that phase).
 - **Titles** at 10, 20, 30, 40, 50 (and every 10 after, up to 100).
-- **Respec:** one free reset of the points, then each reset costs Crypto Coins
-  (an Elder does it; price Proposed).
+- **Respec:** one free reset of the points, then each reset costs
+  **100 × the player's level** in Crypto Coins (an Elder does it; Proposed:
+  3,000 at level 30, about 2 hours of income there; 5,000 at 50).
 - **Koliseo stays fair:** in Koliseo PvP every fighter is treated as
   `max_level` with their own point spend, and set stats are switched off
   (Proposed). Levels and gear matter in the open world and dungeons.
@@ -624,7 +638,7 @@ Balance targets (**Proposed**, checked by the WP15 simulator):
 | Milestones, free player (Proposed) | level 10 ≈ 8 h, 20 ≈ 23 h, 30 ≈ 47 h, 40 ≈ 87 h, 50 ≈ 150 h; the last level (49 → 50) ≈ 8 h |
 | Dungeon XP per minute vs open-world XP per minute | **about 1.5×** (accept 1.3–1.8×) |
 | Share of total XP by source (normal mix) | open world ~43%, dungeons ~40%, missions ~17%; no source above 50% |
-| A player who only fights in the open world | still reaches 50, about 1.5× slower |
+| A player who only fights in the open world | still reaches 50, about **1.15–1.2× slower** than the normal mix (corrected 3 Oct 2026: the earlier "1.5×" did not match the formulas below). With the option B pace this is about 172 h free / 138 h premium, which puts the normal mix near 147 h, inside 130–170 |
 | Content per level | every level band has enough missions, NPC tasks and dungeon stars to fill its hours (WP15 flags a band with too little to do) |
 
 **Pace factor** (option B): every XP reward below is multiplied by
@@ -649,7 +663,13 @@ below the player ×0.5, 10+ below ×0.1; above the player +5% per level, up to
 +25%. Party (each member's share, Proposed): 1 player ×1.0, 2 ×0.85 each,
 3 ×0.75, 4 ×0.7 (party fights are faster and safer).
 
-What a level gives (stats, points, AP) stays **Open** (Q3b).
+**Mission minutes** (Proposed, so WP15 can score the normal mix): talk 3 min;
+reach 5 min; defeat N monsters 3 min per fight (N = 4 by default, so 12 min);
+clear a dungeon 20 min (15 min run + 5 min travel). The normal mix is 50%
+world fights / 30% dungeons / 20% missions by play time, with missions split
+evenly between the four types.
+
+What a level gives: 4.11.
 
 ### 4.9 Crypto Coins, set parts and Mystery Boxes (Mauro's names + Proposed numbers)
 
