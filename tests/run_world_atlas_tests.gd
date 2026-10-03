@@ -49,7 +49,8 @@ func _test_atlas() -> void:
 	eq(str(atlas.start_region), "crosshaven", "the world starts in Crosshaven")
 	eq(atlas.regions.size(), 10, "Crosshaven plus nine new regions")
 	eq(atlas.maps["crosshaven"] != null, true, "Crosshaven loads through WorldMap.load_index")
-	eq(atlas.maps["rowanvale"] == null, true, "Rowanvale has no chunk files yet")
+	eq(atlas.maps["rowanvale"] != null, true, "Rowanvale's critical path loads")
+	eq(atlas.maps["rowanvale"].zone("rowanvale_entry") != null, true, "Rowanvale entry is a real chunk")
 	eq(atlas.gates.size(), 22, "eleven two-way links, both directions")
 	var levels_doc: Dictionary = Levels.load_default()
 	var levels = levels_doc["levels"]
@@ -152,8 +153,9 @@ func _test_gate_click() -> void:
 	while w.walker.is_moving() and n < 400:
 		w.walker.advance(0.05)
 		n += 1
-	eq(reasons.has("region_not_built"), true, "entering Fen Edge calls enter_zone and the placeholder is not built")
-	eq(w.zone.zone_id, "crosshaven_road_east", "a missing region does not drop the current chunk")
+	eq(reasons.has("region_not_built"), false, "Fen Edge is built, so the gate does not reject the walk")
+	eq(w.zone.zone_id, "eastmarch_fen_edge_entry", "the Fen Edge gate lands on the entry chunk")
+	eq(w.walker.anchor_cell(), Vector2i(0, 16), "the landing cell is the gate cell")
 	w.queue_free()
 
 

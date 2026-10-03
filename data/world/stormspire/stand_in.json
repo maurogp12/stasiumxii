@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "stormspire",
+  "weather": [
+    "wind"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.88,
+      0.94,
+      1.1
+    ],
+    "haze_col": [
+      0.5,
+      0.56,
+      0.7
+    ],
+    "haze_max": 0.12,
+    "saturation": 0.96
+  }
+}

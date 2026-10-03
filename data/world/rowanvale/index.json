@@ -1,0 +1,41 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "rowanvale",
+  "start_zone": "rowanvale_entry",
+  "start": {
+    "zone_id": "rowanvale_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "rowanvale_entry",
+      "file": "zones/rowanvale_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "rowanvale_hub",
+      "file": "zones/rowanvale_hub.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "rowanvale_farmland_3",
+      "file": "zones/rowanvale_farmland_3.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "rowanvale_door",
+      "file": "zones/rowanvale_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

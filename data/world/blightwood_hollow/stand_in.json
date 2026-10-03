@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "blightwood_hollow",
+  "weather": [
+    "light_cloud"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.74,
+      0.66,
+      1.1
+    ],
+    "haze_col": [
+      0.26,
+      0.14,
+      0.4
+    ],
+    "haze_max": 0.18,
+    "saturation": 0.84
+  }
+}

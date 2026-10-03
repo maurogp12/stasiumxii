@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "gloomfen_mire",
+  "weather": [
+    "light_rain"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.78,
+      1.06,
+      0.74
+    ],
+    "haze_col": [
+      0.22,
+      0.46,
+      0.28
+    ],
+    "haze_max": 0.18,
+    "saturation": 0.94
+  }
+}

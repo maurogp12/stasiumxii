@@ -1,0 +1,35 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "gloomfen_mire",
+  "start_zone": "gloomfen_mire_entry",
+  "start": {
+    "zone_id": "gloomfen_mire_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "gloomfen_mire_entry",
+      "file": "zones/gloomfen_mire_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "gloomfen_mire_boardwalk_6",
+      "file": "zones/gloomfen_mire_boardwalk_6.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "gloomfen_mire_door",
+      "file": "zones/gloomfen_mire_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

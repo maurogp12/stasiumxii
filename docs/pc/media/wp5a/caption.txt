@@ -1,0 +1,17 @@
+WP5a stills, one per region entry, zoom 1.6.
+
+Each still is the built entry chunk with that region's grade and weather sidecar. Recorded from res://scenes/world/crosshaven/crosshaven_world.tscn, --movie wp5astills. 1920×1080.
+
+| Region | Still | Grade |
+|---|---|---|
+| Rowanvale | stills/rowanvale.png | warm meadow |
+| Windmere | stills/windmere.png | cold blue |
+| Brinewake | stills/brinewake.png | sea |
+| Slagcrown | stills/slagcrown.png | ember orange |
+| Eastmarch Fen Edge | stills/eastmarch_fen_edge.png | fen |
+| Gloomfen Mire | stills/gloomfen_mire.png | green fog |
+| Stormspire | stills/stormspire.png | storm |
+| Ashen Shardfields | stills/ashen_shardfields.png | ash |
+| Blightwood Hollow | stills/blightwood_hollow.png | violet dark |
+
+The walk from Stoneford through the Rowanvale gate to the dungeon door, and back, is the WP4 clip that was waiting on these chunks: docs/pc/media/wp4/wp4_stoneford_rowanvale.mp4.
