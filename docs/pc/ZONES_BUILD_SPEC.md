@@ -655,11 +655,44 @@ below.
 the simulator still reports coins per hour so prices can be set later without
 inflation.
 
-**Sets** (Proposed): one set per level zone (11 sets), named after the zone,
-5 parts each (head, cape, belt, boots, amulet; Proposed slots). Each part comes
-in **Regular** and **Rare**. A set's stats and set bonuses are **Open** (they
-touch combat balance, which is Locked until Mauro sets them); v1 stores and
-shows parts and counts sets, with no stat effect.
+**Sets: option A approved** (Mauro, 3 Oct 2026). Parts give stats and sets give
+bonuses. Mauro: "in the PC game we are going to build more sets depending on
+how we develop the classes, but for now we start with a few, only for
+Crosshaven, and next phase we add more."
+
+- **5 slots** (head, cape, belt, boots, amulet; Proposed). A full set fills all
+  5, so the choice is one full set (its 5-part bonus) or a 3 + 2 mix (two
+  smaller bonuses).
+- **Each part gives 1–2 stats** from the four buckets in 4.11 (Mastery,
+  Vitality, Swift, Ward). **Rare** = about 1.5× the Regular stats plus one
+  extra stat (Proposed).
+- **Set bonuses:** 2 parts a small stat bonus, 3 parts a bigger one, 5 parts a
+  special bonus (Proposed values; tuned with WP15 and the class kits).
+- **Upgrades +1 to +5** with Crypto Coins (and spare parts at +4 / +5), each
+  step about +10% of the part's stats (Proposed).
+- **Item level:** a part's stats scale with its **item level** = the level of
+  the fight, dungeon or mission that gave it (Proposed). You can wear a part
+  when your level ≥ its item level. This is how a few sets stay useful from
+  level 1 to 50.
+
+**Phase 1 sets: only Crosshaven, 3 sets** (Proposed names and themes):
+
+| Set | Theme | Where it drops | 5-part bonus (Proposed) |
+|---|---|---|---|
+| Wayfarer | Travelling clothes of the Crossroads | Crosshaven Heart: world fights, Old Granary Cellar, Heart missions | +1 MP on the first turn of a fight |
+| Townguard | Armour of the five town watches | Crosshaven Towns: world fights, town missions | Extra Ward when standing next to an ally |
+| Millwright | Work gear from the vaults under the mill | Millrace Vaults dungeon only | Extra Mastery on the turn after you are hit |
+
+The 5-part bonuses are ideas for Mauro to approve; they are effects in combat,
+so they are built only after he says yes, and only through CombatSim.
+
+**Zones 3–11 in phase 1** have no set of their own yet: their fights,
+dungeons and missions drop **the Crosshaven sets at a higher item level**
+(Wayfarer and Townguard from world fights and missions; Millwright from
+dungeons), plus coins and Mystery Boxes. **Next phase** adds sets per region
+and sets built around the classes; `rewards.json` lists sets as data, with an
+optional `classes` field for class sets later, so adding them needs no code
+change.
 
 **Mystery Box** (Proposed contents, one roll): 50% coins (5× the mission coins
 of the opener's tier), 35% a Regular part, 15% a Rare part, from a set at or
@@ -669,8 +702,8 @@ Drops (Proposed):
 
 | Source | Regular part | Rare part | Mystery Box |
 |---|---|---|---|
-| Open-world fight | 3% (the zone's set) | — | — |
-| Dungeon win | 1 guaranteed (that zone's set) | ★1 0%, ★2 5%, ★3 10%, ★4 20%, ★5 35% | ★4+ 10% |
+| Open-world fight | 3% (phase 1: Wayfarer or Townguard, at the fight's item level) | — | — |
+| Dungeon win | 1 guaranteed (phase 1: Millwright from Millrace Vaults; Wayfarer / Townguard / Millwright at the dungeon's item level elsewhere) | ★1 0%, ★2 5%, ★3 10%, ★4 20%, ★5 35% | ★4+ 10% |
 | Mission, by **mission rank** (below) | rank 1 20%, 2 35%, 3 40%, 4 40%, 5 35% | rank 1–2 0%, 3 5%, 4 10%, 5 15% | rank 1 0%, 2 3%, 3 8%, 4 12%, 5 20% |
 | Every 10th mission turned in | — | — | **1 guaranteed** |
 
@@ -991,7 +1024,7 @@ designated zones also monsters above lvl 25 are agressive".
   dungeons and missions; `tests/run_pc_rewards_tests.gd`.
 - **Accept:** every drop table sums to ≤ 100%; seeded rolls give fixed results;
   a Mystery Box always gives exactly one thing; the 10th mission always gives a
-  box; parts have no stat effect yet (Open); save / load keeps coins and items.
+  box; part stats and 2 / 3-part set bonuses apply through `pc_progress.gd` (stats only; 5-part effects wait on Mauro's yes); item level gates who can wear a part; save / load keeps coins and items.
 - **Media:** a clip winning a fight, the reward pop-up, then opening a Mystery
   Box from the inventory.
 
@@ -1147,8 +1180,10 @@ headless.
    (4.8). Rewards: Crypto Coins, Regular set parts, then Rare parts and Mystery
    Boxes (4.9).
    **3b.** What a level gives: **answered 3 Oct 2026 (Mauro): option A**, with
-   the cap going to 100 in the next phase (4.3 cap rule, 4.11). **Still Open:**
-   what set parts do (stats, set bonuses) and what Crypto Coins buy.
+   the cap going to 100 in the next phase (4.3 cap rule, 4.11). What set parts
+   do: **answered 3 Oct 2026 (Mauro): option A**, starting with 3 Crosshaven
+   sets, more next phase (4.9). **Still Open:** what Crypto Coins buy, and
+   Mauro's yes to each 5-part bonus before it is built.
 4. **NPC jobs:** ~~which first?~~ **Partly answered 3 Oct 2026 (Mauro): NPCs
    with missions come first** (4.7, WP6b). Still Open: shops, storage, travel,
    healing, and mission types that need quest items. What Crypto Coins buy.
