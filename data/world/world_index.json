@@ -1,0 +1,17 @@
+{
+  "format": "stasium.world_index",
+  "format_version": 1,
+  "start_region": "crosshaven",
+  "regions": [
+    {"region": "crosshaven", "index": "res://data/world/crosshaven/index.json", "status": "built"},
+    {"region": "rowanvale", "index": "res://data/world/rowanvale/index.json", "status": "placeholder"},
+    {"region": "windmere", "index": "res://data/world/windmere/index.json", "status": "placeholder"},
+    {"region": "brinewake", "index": "res://data/world/brinewake/index.json", "status": "placeholder"},
+    {"region": "slagcrown", "index": "res://data/world/slagcrown/index.json", "status": "placeholder"},
+    {"region": "eastmarch_fen_edge", "index": "res://data/world/eastmarch_fen_edge/index.json", "status": "placeholder"},
+    {"region": "gloomfen_mire", "index": "res://data/world/gloomfen_mire/index.json", "status": "placeholder"},
+    {"region": "stormspire", "index": "res://data/world/stormspire/index.json", "status": "placeholder"},
+    {"region": "ashen_shardfields", "index": "res://data/world/ashen_shardfields/index.json", "status": "placeholder"},
+    {"region": "blightwood_hollow", "index": "res://data/world/blightwood_hollow/index.json", "status": "placeholder"}
+  ]
+}
