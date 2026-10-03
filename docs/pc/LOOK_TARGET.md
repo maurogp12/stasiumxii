@@ -80,6 +80,31 @@ screen recordings (not in the repo).
 6. **Turn banner** ("YOUR TURN") and short speech bubbles from characters.
 7. Bold, chunky characters that read at a glance on a small screen.
 
+## D. The open-world map: the Crosshaven plate
+
+Brief: [`look_target/CROSSHAVEN_OPEN_WORLD_BRIEF.md`](look_target/CROSSHAVEN_OPEN_WORLD_BRIEF.md)
+(Mauro, 3 Oct 2026; Proposed art direction, not a combat or level lock). Look
+target: the painted Crosshaven plate. It is a cliff island or peninsula with
+pale roads running out from an open centre to five towns. Each town has
+red-brown roofs and its own tower. Hay-gold fields lie between the towns,
+with a clear blue sea, white breakers and a timber dock.
+
+- **Where it applies:** the world-map plate and any whole-island art, plus
+  the palette and landmarks of the Crosshaven chunks and the 4.4 joins (bridges
+  and passes where roads leave the coast and cliffs). The in-game chunks keep
+  the Wakfu-outdoor camera from section A; the brief's "not iso tiles" rule is
+  for the map plate only.
+- **Open-world test:** trace a walk from Westwatch to Eastmarch without leaving
+  a road or field. A void, a UI circle or a floating slab fails. This is the
+  art side of the WP4 cell-by-cell walk test.
+- **Outer regions** leave Crosshaven by the same roads and coast and in the
+  same paint, then shift material (ash, fen, dock, stone). They never become a
+  second art style.
+- **Do not copy the v6 chunk-board sheet:** dark navy field, dashed rings,
+  floating iso slabs, or level numbers. No labels or giant title on in-game
+  ground.
+- Every art bot task pastes the brief and attaches the Crosshaven painting.
+
 ## What "better looking" means for us
 
 - Higher-resolution paint (2x masters, 8x supersampled, like the Crosshaven v7

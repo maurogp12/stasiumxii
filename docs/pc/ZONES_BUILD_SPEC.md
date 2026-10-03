@@ -423,6 +423,12 @@ Gloomfen and Stormspire further south; Ashen Shardfields south of Westwatch
 and west of Slagcrown; Blightwood in the north-west, north of Rowanvale and
 west of Windmere.
 
+**Geography follows the Crosshaven plate** (LOOK_TARGET section D,
+`look_target/CROSSHAVEN_OPEN_WORLD_BRIEF.md`). Crosshaven is a cliff-edged
+landmass with sea on its coast, and the regions continue off the same coast
+and roads. Each join corridor is where a pale road leaves the cliffs or
+crosses water, and its art matches the plate.
+
 **The five towns are ringed by water and cliff** (a 3-cell band on every
 outer edge). A join cuts a **4-cell-wide road** through that band in the
 middle of the edge: a ford or stone bridge over water, a pass with steps
