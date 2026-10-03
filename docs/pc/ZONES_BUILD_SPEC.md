@@ -1124,9 +1124,26 @@ Mauro, 3 Oct 2026: **"premium will require a real money payment."**
   a house (4.16) and to use pets and mounts (4.17).
 - **Not pay-to-win in PvP:** pet and mount combat bonuses are already off in
   Koliseo PvP, so premium never changes a PvP fight.
-- **Crypto Coins stay in-game only** (4.9): Proposed that real money buys
-  premium only, never Crypto Coins, items or Mystery Boxes, and coins can
-  never be cashed out. Mauro to confirm (Q16).
+- **Real money buys premium only** (Mauro, 3 Oct 2026): never Crypto Coins,
+  items or Mystery Boxes, and coins can never be cashed out.
+- **What premium gives** (Mauro, 3 Oct 2026: "premium is going to add bonuses
+  for XP, coins, drop and fast travel, and also travel to premium cities in
+  the future"):
+
+  | Premium perk | Proposed size |
+  |---|---|
+  | Rent a house (4.16) | Mauro's rule |
+  | Use pets and mounts (4.17) | Mauro's rule |
+  | **XP bonus** | +25% XP from all sources |
+  | **Crypto Coins bonus** | +15% coins from fights, dungeons and missions |
+  | **Drop bonus** | +10% (relative) chance on set parts, Rare parts and Mystery Boxes; **not** on Epics, Relics or pets, so the rarest items stay equal for everyone |
+  | **Fast travel** | Free and unlimited between region hubs (free players walk, or pay Crypto Coins at the hub travel posts, 4.12) |
+  | **Premium cities** (future phase) | Travel to premium-only cities, designed with the next maps |
+
+- **Balance with premium** (Proposed, WP15 checks): a free player still
+  reaches level 50 in about 60 hours; a premium player in about 48 hours
+  (+25% XP). The coin bonus is counted in the economy target (players spend
+  70–90% of income), so prices stay fair for free players.
 - **Free players** keep the whole map, all levels, missions, dungeons, sets,
   Epics, Relics, crafting and the Crypto Bank; they can collect pets and
   mounts (and trade them later) but not use them without premium.
@@ -1590,6 +1607,8 @@ designated zones also monsters above lvl 25 are agressive".
   prints hours to 50, XP share by source, coins per hour per tier, parts and
   rare parts per hour, boxes per hour; `tests/run_pc_balance_tests.gd` (suite)
   that fails when a target in 4.8 is missed.
+- **Premium:** also run every profile as premium (+25% XP, +15% coins, +10%
+  drops) and report both; free players stay at the 50–75 h target.
 - **Accept:** normal mix reaches 50 in 50–75 h; dungeon XP per minute is
   1.3–1.8× open world; no source above 50% of total XP; world-only still
   reaches 50; a printed table goes in the PR for Mauro.
@@ -1902,7 +1921,7 @@ headless.
 15. ~~**Premium**~~ **Answered 3 Oct 2026 (Mauro): premium requires a real
     money payment** (4.18). Built after the online server; every premium
     check goes through one function so it can be switched on later.
-16. **Premium details (4.18):** real money buys premium only, never Crypto
-    Coins or items, and coins can't be cashed out: yes? Which store(s)
-    (Steam, own website, other)? Price and billing period (monthly)? Anything
-    else premium gives besides houses, pets and mounts?
+16. **Premium details (4.18):** ~~real money buys premium only?~~ **Answered
+    3 Oct 2026 (Mauro): yes.** Perks answered: XP, coins, drops, fast travel,
+    premium cities later (sizes Proposed). **Still Open:** which store(s)
+    (Steam, own website, other), the price, and the billing period.
