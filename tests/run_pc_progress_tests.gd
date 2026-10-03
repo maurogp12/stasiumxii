@@ -291,7 +291,7 @@ func _test_duel() -> void:
 	_clear_save()
 	var hero = _open({})
 	var table: Dictionary = hero.koliseo_duel_table()
-	var budget := hero.points_per_level * (hero.max_level - 1)
+	var budget := int(hero.points_per_level) * (int(hero.max_level) - 1)
 	eq(int(table["budget"]), budget, "the duel uses the points earned by the curve cap")
 	eq(bool(table["inside"]), true, "every listed pair stays inside 45-55 (worst %s at %s)" % [table["worst_label"], table["worst_win"]])
 	var pairs: Array = table["pairs"]
