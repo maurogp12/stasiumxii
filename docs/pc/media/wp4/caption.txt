@@ -1,0 +1,3 @@
+Media: none.
+
+WP4 adds the world index and the gates between regions. The nine new regions are still placeholders, so there is no Rowanvale chunk to walk into. The Crosshaven picture does not change. A Stoneford to Rowanvale clip waits until those chunks exist.
