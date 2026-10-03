@@ -46,10 +46,6 @@ func _go() -> void:
 	await _shot(_out.path_join("thunderwell.png"))
 	board.set_board_theme("")
 	board._refresh()
-	_zoom_on(board, Vector2i(7, 7), Vector2i(8, 7), 2.15)
-	for _i in 8:
-		await process_frame
-	await _shot(_out.path_join("fighters.png"))
 	var before_life := _life(board, 0)
 	var turned: Dictionary = sim.submit({"type": "end_turn"})
 	print("L5_END %s" % bool(turned.get("ok", false)))
@@ -72,7 +68,26 @@ func _go() -> void:
 			break
 	if not dropped:
 		print("L5_DRAIN still moving shown=%.3f target=%.3f" % [_shown(board, 0), _target(board, 0)])
-	quit(0 if after_life < before_life and dropped else 1)
+	sim.reset_match({
+		"seed": 3,
+		"map_id": "crosshaven",
+		"skip_deploy": true,
+		"classes": ["kestrel", "ironjaw"],
+		"positions": [Vector2i(7, 7), Vector2i(8, 7)],
+		"kestrel_facing": "E",
+		"ironjaw_facing": "W",
+		"kestrel_hp": 16,
+	})
+	board._rebuild_pawns()
+	board._refresh()
+	board._fit_board_camera()
+	board.set_board_theme("")
+	_zoom_on(board, Vector2i(7, 7), Vector2i(8, 7), 1.65)
+	for _i in 20:
+		await process_frame
+	await _shot(_out.path_join("fighters.png"))
+	print("L5_LOW life=%d target=%.3f" % [_life(board, 0), _target(board, 0)])
+	quit(0 if after_life < before_life and dropped and _life(board, 0) <= 24 else 1)
 
 
 func _zoom_on(board: Node2D, a: Vector2i, b: Vector2i, zoom: float) -> void:

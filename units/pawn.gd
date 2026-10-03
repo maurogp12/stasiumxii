@@ -91,11 +91,15 @@ const ATTACK_STRIP_PATH := NodePath("AttackStrip")
 const BODY_STRIP_PATH := NodePath("BodyStrip")
 ## Clears the tallest shipped figure (Ironjaw / Bastion ~68px).
 const HEAD_HP_Y := -76.0
-const NAME_FONT_SIZE := 12
+## About 60% of the old 12. Compact, like the plates in reference C.
+const NAME_FONT_SIZE := 7
 ## Team hex under the feet. The name and life bar live on OverheadPlate.
 const SEAT_RING_CENTER := Vector2(0, 3)
 const SEAT_RING_RX := 18.0
 const SEAT_RING_RY := 7.0
+## Outside the team hex, so the hex stays readable inside the yellow ring.
+const ACTIVE_RING_RX := 27.0
+const ACTIVE_RING_RY := 13.0
 const NAME_GAP_ABOVE_HP := 2.0
 
 static var _sprite_cache: Dictionary = {}
@@ -1228,19 +1232,19 @@ func _sync_plate(unit: Dictionary) -> void:
 
 func _draw_ground_mark() -> void:
 	var foot := SEAT_RING_CENTER
-	var team := OVERHEAD.team_color(seat)
-	var pts := OVERHEAD.hex_points(foot, OVERHEAD.HEX_RX, OVERHEAD.HEX_RY)
-	draw_colored_polygon(pts, Color(team.r, team.g, team.b, OVERHEAD.HEX_FILL_ALPHA))
-	var rim := pts.duplicate()
-	rim.append(pts[0])
-	var edge := Color(minf(team.r + 0.22, 1.0), minf(team.g + 0.22, 1.0), minf(team.b + 0.22, 1.0), 0.98)
-	draw_polyline(rim, edge, 2.4, true)
 	if burning:
 		_draw_ellipse_ring(foot, 27.0, 10.5, Color(0.95, 0.32, 0.1, 0.95), 2.0)
 	if stunned:
 		_draw_ellipse_ring(foot, 24.0, 9.2, Color(0.95, 0.78, 0.2, 0.95), 2.0)
 	if is_active:
-		_draw_ellipse_ring(foot, 21.0, 8.2, Color(1.0, 0.92, 0.45, 1.0), 2.6)
+		_draw_ellipse_ring(foot, ACTIVE_RING_RX, ACTIVE_RING_RY, Color(1.0, 0.92, 0.45, 1.0), 2.2)
+	var team := OVERHEAD.team_color(seat)
+	var pts := OVERHEAD.hex_points(foot, OVERHEAD.HEX_RX, OVERHEAD.HEX_RY)
+	draw_colored_polygon(pts, Color(team.r, team.g, team.b, OVERHEAD.HEX_FILL_ALPHA))
+	var rim := pts.duplicate()
+	rim.append(pts[0])
+	var edge := Color(minf(team.r + 0.28, 1.0), minf(team.g + 0.28, 1.0), minf(team.b + 0.28, 1.0), 1.0)
+	draw_polyline(rim, edge, 2.6, true)
 
 
 func _paint_status(canvas: CanvasItem) -> void:
