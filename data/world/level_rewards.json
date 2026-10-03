@@ -5,9 +5,9 @@
   "points_per_level": 2,
   "stats": ["Mastery", "Vitality", "Swift", "Resist"],
   "stat_per_point": {
-    "Mastery": {"damage_done": 0.00215, "healing_done": 0.00215},
-    "Vitality": {"max_hp": 0.00215},
-    "Resist": {"damage_taken": 0.00172, "cap": 0.25},
+    "Mastery": {"damage_done": 0.005, "healing_done": 0.005},
+    "Vitality": {"max_hp": 0.005},
+    "Resist": {"damage_taken": 0.004, "cap": 0.25},
     "Swift": {"initiative": 1}
   },
   "koliseo_duel": {"win_min": 0.45, "win_max": 0.55},

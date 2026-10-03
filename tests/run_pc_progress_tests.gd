@@ -196,7 +196,12 @@ func _test_rewards() -> void:
 	eq(str(doc["class_hp_per_level"]), "Open", "class HP growth is Open")
 	eq(int(doc["respec"]["coin_per_level"]), 100, "respec costs 100 coins times the level")
 	eq(int(doc["respec"]["free"]), 1, "one free respec")
-	eq(float(doc["stat_per_point"]["Mastery"]["damage_done"]), float(doc["stat_per_point"]["Mastery"]["healing_done"]), "Mastery damage and healing match")
+	eq(float(doc["stat_per_point"]["Mastery"]["damage_done"]), 0.005, "Mastery is +0.5% damage")
+	eq(float(doc["stat_per_point"]["Mastery"]["healing_done"]), 0.005, "Mastery is +0.5% healing")
+	eq(float(doc["stat_per_point"]["Vitality"]["max_hp"]), 0.005, "Vitality is +0.5% of base max HP")
+	eq(float(doc["stat_per_point"]["Resist"]["damage_taken"]), 0.004, "Resist is +0.4% less damage taken")
+	eq(float(doc["stat_per_point"]["Resist"]["cap"]), 0.25, "Resist caps at 25%")
+	eq(int(doc["stat_per_point"]["Swift"]["initiative"]), 1, "Swift is +1 Initiative")
 	eq(float(doc["koliseo_duel"]["win_min"]), 0.45, "duel band starts at 45 percent")
 	eq(float(doc["koliseo_duel"]["win_max"]), 0.55, "duel band ends at 55 percent")
 	eq(int(doc["milestones"][0]["level"]), 30, "AP milestone level is data")
@@ -286,28 +291,38 @@ func _test_duel() -> void:
 	_clear_save()
 	var hero = _open({})
 	var table: Dictionary = hero.koliseo_duel_table()
-	eq(bool(table["inside"]), true, "every point spread stays inside 45-55 (worst %s at %s)" % [table["worst_win"], table["worst_spent"]])
-	eq(int(table["budget"]), hero.points_per_level * (hero.max_level - 1), "the duel uses the points earned by the curve cap")
-	for row in table["corners"]:
+	var budget := hero.points_per_level * (hero.max_level - 1)
+	eq(int(table["budget"]), budget, "the duel uses the points earned by the curve cap")
+	eq(bool(table["inside"]), true, "every listed pair stays inside 45-55 (worst %s at %s)" % [table["worst_label"], table["worst_win"]])
+	var pairs: Array = table["pairs"]
+	eq(pairs.size(), 10, "the table is the ten spread-against-spread pairs")
+	var labels: Array = []
+	for row in pairs:
 		var win := float(row["win"])
-		eq(win + 0.0000001 >= float(table["win_min"]) and win - 0.0000001 <= float(table["win_max"]), true, "%s corner stays in the band" % str(row["label"]))
-	var even := float(hero.duel_win_rate({"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}))
-	eq(absf(even - 0.5) < 0.0001, true, "no points is an even duel")
-	var saved: Dictionary = hero.stat_per_point.duplicate(true)
-	hero.stat_per_point = {
-		"Mastery": {"damage_done": 0.005, "healing_done": 0.005},
-		"Vitality": {"max_hp": 0.005},
-		"Resist": {"damage_taken": 0.004, "cap": 0.25},
-		"Swift": {"initiative": 1},
-	}
-	var proposed := float(hero.duel_win_rate({
-		"Mastery": int(table["budget"]),
-		"Vitality": 0,
-		"Resist": 0,
-		"Swift": 0,
-	}))
-	eq(proposed > float(table["win_max"]), true, "the unscaled per-point rates leave the band, so the file uses the scaled rates")
-	hero.stat_per_point = saved
+		labels.append(str(row["label"]))
+		eq(win + 0.0000001 >= float(table["win_min"]) and win - 0.0000001 <= float(table["win_max"]), true, "%s stays in the band (%s)" % [str(row["label"]), win])
+	eq(labels.has("all Mastery vs all Vitality"), true, "Mastery meets Vitality")
+	eq(labels.has("all Mastery vs all Resist"), true, "Mastery meets Resist")
+	eq(labels.has("all Vitality vs all Resist"), true, "Vitality meets Resist")
+	eq(labels.has("mix vs all Mastery"), true, "the mix meets Mastery")
+	eq(labels.has("mix vs all Vitality"), true, "the mix meets Vitality")
+	eq(labels.has("mix vs all Resist"), true, "the mix meets Resist")
+	eq(labels.has("mix vs all Swift"), true, "the mix meets Swift")
+	eq(labels.has("all Swift vs all Mastery"), true, "Swift meets Mastery")
+	eq(labels.has("all Swift vs all Vitality"), true, "Swift meets Vitality")
+	eq(labels.has("all Swift vs all Resist"), true, "Swift meets Resist")
+	var mix: Dictionary = table["mix"]
+	eq(int(mix["Mastery"]) + int(mix["Vitality"]), budget, "the mix spends the whole budget")
+	eq(int(mix["Mastery"]), int(budget / 2), "the mix puts half its points in Mastery")
+	eq(int(mix["Resist"]), 0, "the mix spends nothing on Resist")
+	eq(int(mix["Swift"]), 0, "the mix spends nothing on Swift")
+	var mirror := float(hero.duel_win_rate(mix, mix))
+	eq(absf(mirror - 0.5) < 0.0001, true, "the same spread against itself is even")
+	eq(bool(table["resist_flag"]), true, "a full Resist spend wastes points past the cap")
+	eq(float(table["resist_wasted"]) > 0.0, true, "wasted Resist points are reported")
+	eq(absf(float(table["resist_cap_points"]) - (0.25 / 0.004)) < 0.0001, true, "the cap arrives near 63 points")
+	eq(bool(table["resist_weak"]), true, "full Resist is the weaker side and is flagged")
+	eq(float(table["resist_best"]) + 0.0000001 >= float(table["win_min"]), true, "the weak Resist side still stays inside the band")
 
 
 func _test_window() -> void:

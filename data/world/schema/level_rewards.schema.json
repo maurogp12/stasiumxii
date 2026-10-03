@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://stasiumxii.local/schemas/level_rewards.v1.json",
   "title": "Stasium PC level rewards",
-  "description": "Sidecar stasium.level_rewards version 1. Points per level, the four stats, milestones, titles, and respec. Class HP growth and title names stay Open when the spec gives no number. status proposed.",
+  "description": "Sidecar stasium.level_rewards version 1. Points per level, the four stats, the proposed per-point rates, the Koliseo 45-55 band, milestones, titles, and respec. Class HP growth and title names stay Open when the spec gives no number. status proposed.",
   "type": "object",
   "additionalProperties": false,
   "required": [

@@ -168,18 +168,32 @@ func _swift_initiative() -> int:
 	return int(spent.get("Swift", 0)) * int(each)
 
 
-## Win rate of this point spread against the same class with no points.
-## An exponential race: damage, max HP, and less damage taken. Swift decides
-## who acts earlier and does not change that race. Healing uses Mastery's rate.
-func duel_win_rate(spread: Dictionary) -> float:
+func _spread(mastery: int, vitality: int, resist: int, swift: int) -> Dictionary:
+	return {
+		"Mastery": mastery,
+		"Vitality": vitality,
+		"Resist": resist,
+		"Swift": swift,
+	}
+
+
+## Damage, max HP, damage taken, and actions for one point spread.
+## Swift adds Initiative. The reference action count is one divided by the
+## Mastery damage rate, so one Swift point matches one Mastery point. That
+## reference is only for this race. The character sheet leaves Initiative Open.
+## Healing uses the Mastery rate and is not a second multiplier here.
+func _profile(spread: Dictionary) -> Dictionary:
 	var mastery: Variant = stat_per_point.get("Mastery", {})
 	var vitality: Variant = stat_per_point.get("Vitality", {})
 	var resist: Variant = stat_per_point.get("Resist", {})
+	var swift: Variant = stat_per_point.get("Swift", {})
 	var damage := 1.0
 	var hp := 1.0
 	var taken := 1.0
+	var mastery_rate := 0.0
 	if typeof(mastery) == TYPE_DICTIONARY:
-		damage += _as_float((mastery as Dictionary).get("damage_done", 0)) * float(int(spread.get("Mastery", 0)))
+		mastery_rate = _as_float((mastery as Dictionary).get("damage_done", 0))
+		damage += mastery_rate * float(int(spread.get("Mastery", 0)))
 	if typeof(vitality) == TYPE_DICTIONARY:
 		hp += _as_float((vitality as Dictionary).get("max_hp", 0)) * float(int(spread.get("Vitality", 0)))
 	if typeof(resist) == TYPE_DICTIONARY:
@@ -188,48 +202,116 @@ func duel_win_rate(spread: Dictionary) -> float:
 		if red > cap:
 			red = cap
 		taken = 1.0 - red
-	if taken <= 0.0:
-		return 1.0
-	var ratio := (hp * damage) / taken
-	return ratio / (1.0 + ratio)
+	var reference := 1.0
+	if mastery_rate > 0.0:
+		reference = 1.0 / mastery_rate
+	var each := 0
+	if typeof(swift) == TYPE_DICTIONARY and _whole((swift as Dictionary).get("initiative", 0)):
+		each = int((swift as Dictionary).get("initiative", 0))
+	var speed := reference + float(each * int(spread.get("Swift", 0)))
+	return {"damage": damage, "hp": hp, "taken": taken, "speed": speed}
 
 
-## Every spread of the points earned by max_level. The worst row is the one
-## the Koliseo band has to hold.
+## Win rate of spread A against spread B. Same class, both at the full budget.
+## Exponential race: actions × damage × the opponent's damage taken / their HP.
+func duel_win_rate(left: Dictionary, right: Dictionary) -> float:
+	var a: Dictionary = _profile(left)
+	var b: Dictionary = _profile(right)
+	var hp_a := float(a["hp"])
+	var hp_b := float(b["hp"])
+	if hp_a <= 0.0 or hp_b <= 0.0:
+		return 0.5
+	var rate_a := float(a["speed"]) * float(a["damage"]) * float(b["taken"]) / hp_b
+	var rate_b := float(b["speed"]) * float(b["damage"]) * float(a["taken"]) / hp_a
+	var total := rate_a + rate_b
+	if total <= 0.0:
+		return 0.5
+	return rate_a / total
+
+
+## Points of Resist that still do something. Past cap/rate the rest is wasted.
+func resist_cap_points() -> float:
+	var resist: Variant = stat_per_point.get("Resist", {})
+	if typeof(resist) != TYPE_DICTIONARY:
+		return 0.0
+	var rate := _as_float((resist as Dictionary).get("damage_taken", 0))
+	var cap := _as_float((resist as Dictionary).get("cap", 0))
+	if rate <= 0.0:
+		return 0.0
+	return cap / rate
+
+
+func _pair(rows: Array, label: String, left: Dictionary, right: Dictionary) -> void:
+	var win := duel_win_rate(left, right)
+	rows.append({
+		"label": label,
+		"left": left,
+		"right": right,
+		"win": win,
+	})
+
+
+## Spread against spread for the points earned by max_level. The listed pairs
+## are the Koliseo check: the three single-stat corners, a half-and-half mix
+## against each single-stat spend, and Swift against the other three.
 func koliseo_duel_table() -> Dictionary:
 	var budget := points_per_level * maxi(max_level - 1, 0)
-	var worst_win := 0.0
-	var worst_spent := {"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}
-	var corners: Array = []
-	for stat in stat_names:
-		var corner := {"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}
-		corner[stat] = budget
-		var corner_win := duel_win_rate(corner)
-		corners.append({"label": stat, "spent": corner, "win": corner_win})
-	for mastery in range(budget + 1):
-		for vitality in range(budget - mastery + 1):
-			var remain := budget - mastery - vitality
-			for resist in range(remain + 1):
-				var swift := remain - resist
-				var spread := {
-					"Mastery": mastery,
-					"Vitality": vitality,
-					"Resist": resist,
-					"Swift": swift,
-				}
-				var win := duel_win_rate(spread)
-				if win > worst_win:
-					worst_win = win
-					worst_spent = spread
-	var inside := worst_win + 0.0000001 >= duel_min and worst_win - 0.0000001 <= duel_max
+	var half := int(budget / 2)
+	var all_mastery := _spread(budget, 0, 0, 0)
+	var all_vitality := _spread(0, budget, 0, 0)
+	var all_resist := _spread(0, 0, budget, 0)
+	var all_swift := _spread(0, 0, 0, budget)
+	var mix := _spread(half, budget - half, 0, 0)
+	var pairs: Array = []
+	_pair(pairs, "all Mastery vs all Vitality", all_mastery, all_vitality)
+	_pair(pairs, "all Mastery vs all Resist", all_mastery, all_resist)
+	_pair(pairs, "all Vitality vs all Resist", all_vitality, all_resist)
+	_pair(pairs, "mix vs all Mastery", mix, all_mastery)
+	_pair(pairs, "mix vs all Vitality", mix, all_vitality)
+	_pair(pairs, "mix vs all Resist", mix, all_resist)
+	_pair(pairs, "mix vs all Swift", mix, all_swift)
+	_pair(pairs, "all Swift vs all Mastery", all_swift, all_mastery)
+	_pair(pairs, "all Swift vs all Vitality", all_swift, all_vitality)
+	_pair(pairs, "all Swift vs all Resist", all_swift, all_resist)
+	var worst_gap := -1.0
+	var worst_win := 0.5
+	var worst_label := ""
+	var inside := true
+	var resist_best := 1.0
+	for row in pairs:
+		var entry: Dictionary = row
+		var win := float(entry["win"])
+		var gap := absf(win - 0.5)
+		if gap > worst_gap:
+			worst_gap = gap
+			worst_win = win
+			worst_label = str(entry["label"])
+		if win + 0.0000001 < duel_min or win - 0.0000001 > duel_max:
+			inside = false
+		var left: Dictionary = entry["left"]
+		var right: Dictionary = entry["right"]
+		if int(left.get("Resist", 0)) == budget and int(left.get("Mastery", 0)) == 0:
+			resist_best = minf(resist_best, win)
+		if int(right.get("Resist", 0)) == budget and int(right.get("Mastery", 0)) == 0:
+			resist_best = minf(resist_best, 1.0 - win)
+	var cap_points := resist_cap_points()
+	var wasted := float(budget) - cap_points
+	if wasted < 0.0:
+		wasted = 0.0
 	return {
 		"budget": budget,
-		"corners": corners,
+		"mix": mix,
+		"pairs": pairs,
 		"worst_win": worst_win,
-		"worst_spent": worst_spent,
+		"worst_label": worst_label,
 		"win_min": duel_min,
 		"win_max": duel_max,
 		"inside": inside,
+		"resist_cap_points": cap_points,
+		"resist_wasted": wasted,
+		"resist_flag": wasted > 0.0,
+		"resist_best": resist_best,
+		"resist_weak": resist_best < 0.5,
 	}
 
 
