@@ -1,0 +1,11 @@
+WP3b before / after, next to reference A.
+
+Reference A is the Wakfu outdoor fight, the bar for the open world. The character panel is our own window (spec 4.15), not a copy of that frame.
+
+Clip: wp3b_before_after_refA.mp4
+Still: wp3b_before_after_refA.png
+1920×1080, 30 fps, H.264, 3.6 s, under 25 MB.
+
+Recorded from the game, scene res://scenes/world/crosshaven/crosshaven_world.tscn, --movie wp3b. Same Crossroads camera and zoom on both sides. The clip holds the world with the panel closed, then opens it with C's panel: level, the four stats including Resist, free points, and respec.
+
+The world picture does not change. The new piece is the character panel.
