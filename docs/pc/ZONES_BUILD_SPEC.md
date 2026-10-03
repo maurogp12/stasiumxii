@@ -59,18 +59,21 @@ Mauro can judge on a phone screen.
 
 ---
 
-> **Not now: characters** (Mauro, 3 Oct 2026: "dont focus on characters yet").
-> Focus on maps, boards, light, backdrops and UI. Parked until Mauro says so:
-> new character art or animation (fighters, NPC bodies, monsters), fighter
-> readability work (L5), character scale passes, and walk lean / gait feel
-> (WP13 beyond the glide that is already built). Systems that need a body
-> (NPCs, dungeon foes) use the existing sprites as stand-ins.
+> **Art is unpaused** (Mauro, 3 Oct 2026: "yes they can work on art for the
+> map, npcs, bosses, monsters, open world etc"): Scenario can paint the map,
+> regions, NPC bodies, bosses and monsters (WP10).
+>
+> **Still not now: the player fighters** (Mauro, 3 Oct 2026: "dont focus on
+> characters yet"): no new art or animation for the 5 playable classes, no
+> fighter readability work (L5), no character scale passes, no walk lean /
+> gait feel (WP13 beyond the glide that is already built).
 
 > **Focus now** (Mauro, 3 Oct 2026: "focus on map zones lvl dungs and npc with
 > missions"): **map zones, levels, dungeons, and NPCs with missions.** Build in
-> this order: WP0 → WP1 → WP3 → WP4 → WP5a → WP6 → **WP6b (missions)** → WP7 →
-> WP8 (dungeon runs: same concept as the phone, PC's own dungeons) → WP5b → WP2. The combat look packages
-> (`docs/pc/LOOK_TARGET.md`) come after this track. Characters stay parked.
+> this order: WP0 → WP1 → WP3 → **WP15 (balance sim)** → WP4 → WP5a → WP6 →
+> **WP14 (coins, items, boxes)** → **WP6b (missions)** → WP7 → WP8 (dungeon
+> runs) → **WP9 (world monsters)** → WP5b → WP2. Art (WP10) runs alongside.
+> The combat look packages (`docs/pc/LOOK_TARGET.md`) come after this track.
 
 ## 1. Rules
 
@@ -514,8 +517,27 @@ Step types in v1:
 | `reach` | `zone_id` and either `landmark` (a chunk's landmark id) or `cell` | The walker stands on that cell, or next to that landmark |
 | `clear_dungeon` | `dungeon` | That dungeon run ends in a win (needs WP8; until then the mission shows as "coming soon" and cannot be taken) |
 
-`defeat` (world monsters, Open Q6) and `collect` / `deliver` (needs items) are
-**Open**: not in v1.
+| `defeat` | `family` (from 4.10), `count`, optional `zone_id` | The player wins fights against that many monsters of that family |
+
+`collect` / `deliver` (needs quest items) stay **Open**.
+
+**Every NPC can give tasks from level 1 to 50** (Mauro, 3 Oct 2026: "each npc
+can assign you a task and it can start for lvl 1 and up to lvl 50"; "some
+missions are from passing X dung assigned"). So there are two kinds of
+mission:
+
+- **Story missions:** the fixed, written ones below (Warden chains and side
+  missions), in `missions.json`.
+- **NPC tasks:** generated from templates in `data/world/task_templates.json`,
+  **scaled to the player's level**, repeatable. Any NPC with a task role offers
+  one task at a time; a new one appears after the last is turned in. The target
+  is picked from the zones whose band holds the player's level: *defeat N
+  monsters of a family there*, *clear that band's dungeon* (the "pass X
+  dungeon" missions), or *reach a landmark there*. Rewards come from 4.8 (XP)
+  and 4.9 (coins by level tier, items by mission rank).
+
+Every mission (story or task) carries a `rewards` object that the game fills
+from 4.8 / 4.9: `{"xp": n, "coins": n, "items": [...]}`.
 
 Mission states, saved with the hero level in `user://pc_progress.json`:
 `locked` → `available` → `active` → `ready` (all steps done, go back to the
@@ -540,6 +562,130 @@ fills them once.
 Rules: every `giver`, `turn_in` and `npc` exists in `npcs.json`; every
 `zone_id`, `landmark` and `dungeon` exists; `requires` has no cycles; every
 mission can be finished from the start of the game (a test walks the chain).
+
+### 4.8 Progression: XP sources and balance (Mauro's rules + Proposed numbers)
+
+Mauro, 3 Oct 2026, the rules (these are **his**, build them as given):
+
+- XP comes from **levelling in the open world** (fighting world monsters),
+  from **missions**, and from **dungeons**.
+- **Dungeons give more XP than levelling in the open world.**
+- Missions run **from level 1 to 50**; as you level up and advance in missions
+  you get **better rewards**.
+- "Make all this possible and the best balanced way possible."
+
+Balance targets (**Proposed**, checked by the WP15 simulator):
+
+| Target | Value |
+|---|---|
+| Time from level 1 to 50 for a normal player mix | about **60 hours** (accept 50–75) |
+| Dungeon XP per minute vs open-world XP per minute | **about 1.5×** (accept 1.3–1.8×) |
+| Share of total XP by source (normal mix) | open world ~43%, dungeons ~40%, missions ~17%; no source above 50% |
+| A player who only fights in the open world | still reaches 50, about 1.5× slower |
+
+Formulas (**Proposed**; all read `xp_to_next(L)` from 4.3; `L` = the monster
+group's or dungeon's level):
+
+| Source | XP |
+|---|---|
+| Open-world fight (one monster group, about 3 min) | `3.5% × xp_to_next(L)` |
+| Dungeon run, win (room A + room B, about 15 min) | `27% × xp_to_next(L) × star` with star ★1 1.0, ★2 1.2, ★3 1.45, ★4 1.7, ★5 2.0 |
+| Mission | talk / reach: `6%`; defeat monsters: `10%`; clear a dungeon: `30%` of `xp_to_next(player level)` |
+
+Level gap (stops farming far below your level, Proposed): group 6–9 levels
+below the player ×0.5, 10+ below ×0.1; above the player +5% per level, up to
++25%. Party (each member's share, Proposed): 1 player ×1.0, 2 ×0.85 each,
+3 ×0.75, 4 ×0.7 (party fights are faster and safer).
+
+What a level gives (stats, points, AP) stays **Open** (Q3b).
+
+### 4.9 Crypto Coins, set parts and Mystery Boxes (Mauro's names + Proposed numbers)
+
+Mauro, 3 Oct 2026: the money is **Crypto Coins**; mission rewards include
+**parts of sets** (regular), and as you advance in missions you can get **rare
+parts** or **Mystery Boxes**.
+
+`data/world/rewards.json` (format `stasium.world_rewards` v1) holds every table
+below.
+
+**Crypto Coins** (Proposed): open-world fight `3 + 1.5 × L`; dungeon win
+`8 ×` that at the dungeon's level × star; missions by level tier: T1 (1–10)
+20–40, T2 (11–20) 60–100, T3 (21–30) 150–250, T4 (31–40) 300–500, T5 (41–50)
+600–1,000. **What coins buy is Open** (Q4: shops). Until coins can be spent,
+the simulator still reports coins per hour so prices can be set later without
+inflation.
+
+**Sets** (Proposed): one set per level zone (11 sets), named after the zone,
+5 parts each (head, cape, belt, boots, amulet; Proposed slots). Each part comes
+in **Regular** and **Rare**. A set's stats and set bonuses are **Open** (they
+touch combat balance, which is Locked until Mauro sets them); v1 stores and
+shows parts and counts sets, with no stat effect.
+
+**Mystery Box** (Proposed contents, one roll): 50% coins (5× the mission coins
+of the opener's tier), 35% a Regular part, 15% a Rare part, from a set at or
+below the opener's level.
+
+Drops (Proposed):
+
+| Source | Regular part | Rare part | Mystery Box |
+|---|---|---|---|
+| Open-world fight | 3% (the zone's set) | — | — |
+| Dungeon win | 1 guaranteed (that zone's set) | ★1 0%, ★2 5%, ★3 10%, ★4 20%, ★5 35% | ★4+ 10% |
+| Mission, by **mission rank** (below) | rank 1 20%, 2 35%, 3 40%, 4 40%, 5 35% | rank 1–2 0%, 3 5%, 4 10%, 5 15% | rank 1 0%, 2 3%, 3 8%, 4 12%, 5 20% |
+| Every 10th mission turned in | — | — | **1 guaranteed** |
+
+**Mission rank** = how many missions the player has finished: rank 1 (0–9),
+2 (10–24), 3 (25–49), 4 (50–99), 5 (100+). This is how "advancing in missions
+gives better rewards" works, on top of the level tier.
+
+### 4.10 World monsters: `data/world/monsters.json` (Mauro's rules + Proposed numbers)
+
+Mauro, 3 Oct 2026, the rules: **monsters walk around the world, but only in
+their designated zones**; **monsters above level 25 are aggressive**: they
+attack players.
+
+```json
+{
+  "format": "stasium.world_monsters",
+  "format_version": 1,
+  "families": [
+    {
+      "id": "gloomfen_bog_lurker",
+      "name": "Bog Lurker",
+      "level_zone": "gloomfen_mire",
+      "level_min": 30,
+      "level_max": 36,
+      "group_size": [2, 4],
+      "chunks": ["gloomfen_mire_entry", "gloomfen_mire_reedmaze"],
+      "art": "bog_lurker",
+      "status": "proposed"
+    }
+  ]
+}
+```
+
+Rules:
+
+- **Designated zone:** a family spawns and walks only on passable cells of the
+  `chunks` it lists, all inside its `level_zone`. It never crosses a chunk exit
+  or a gate, and never enters a hub chunk, the Crosshaven town chunks, or the
+  cells within 2 of an NPC, a gate or a dungeon door (safe cells, Proposed).
+- **Levels:** within the zone's band; deeper chunks (4.2 `depth`) get the
+  higher levels (Proposed).
+- **Aggressive above 25 (Mauro's rule):** a group whose level is **26 or more**
+  is aggressive. When a player comes within **3 cells** (Proposed) and can be
+  reached on foot, the group walks to the player and the fight starts. Groups at
+  25 or below are passive: the player clicks them to fight.
+- Fairness (Proposed): no aggro on safe cells; 10 s of grace after a fight, a
+  zone change or a respawn; one aggro at a time per player.
+- **Groups per chunk** 3–6 and **respawn** after 90 s, away from players
+  (Proposed).
+- A world fight uses the PC combat engine (with the team engine from WP8 for
+  groups and parties) on the **region's combat board** (Proposed for v1; a
+  board cut from the world chunk is a later step). Win → XP, coins and drops
+  (4.8, 4.9); loss → the player returns to the zone's entry chunk (Proposed).
+- About 3–4 families per level zone (Proposed), with names and art by
+  Scenario; each zone's dungeon boss is not a world monster.
 
 ---
 
@@ -760,17 +906,70 @@ Mauro, 3 Oct 2026: **"yes, same concept, different dungs"** (answer to Q2).
 - **Media:** a clip entering Old Granary Cellar from its door, room A, room B,
   win, mission step done.
 
-#### WP9: Visible monsters per zone (Code), **Open Q6**
+#### WP9: World monsters and aggro (Code + Feel), **approved**
 
-Dofus- and Wakfu-style worlds show monster groups walking in the zones. Not in
-Mauro's list: build nothing until he says yes.
+Mauro, 3 Oct 2026: "monster can walk around the world but only in their
+designated zones also monsters above lvl 25 are agressive".
+
+- **Goal:** monster groups walk in their zones; passive ones fight when clicked;
+  groups above level 25 hunt players who come close; a fight gives XP, coins
+  and drops.
+- **Needs:** WP3, WP5a, WP8 (combat engine with teams), WP14.
+- **Add:** `data/world/monsters.json` + schema; `backend/world_monsters.gd`
+  (preload; spawn, wander inside the allowed cells, aggro check, respawn; pure
+  logic so a server can run it later); `scenes/world/monster/world_monster_group.gd`
+  / `.tscn` (the group's sprites, level plate, an aggressive marker);
+  `tests/run_world_monsters_tests.gd`.
+- **Change:** `crosshaven_world.gd`: spawn the loaded chunk's groups, start a
+  fight on click or aggro, return to the world after it.
+- **Accept:** a group never stands on a cell outside its `chunks`, on a safe
+  cell, or across an exit (10,000-step wander test); level ≤ 25 never starts a
+  fight by itself; level ≥ 26 starts one when a player is within 3 reachable
+  cells and not on a safe cell, and not during grace; respawn waits 90 s and
+  happens away from players; win rewards match 4.8 / 4.9.
+- **Media:** a clip of a passive group in Rowanvale (clicked) and an
+  aggressive group in Gloomfen charging the player.
+
+#### WP14: Crypto Coins, set parts and Mystery Boxes (Code)
+
+- **Goal:** the rewards exist: a coin wallet, set parts (Regular / Rare) in an
+  inventory, Mystery Boxes that open, and the drop rolls from 4.9.
+- **Needs:** WP3.
+- **Add:** `data/world/rewards.json` + schema (coins, sets, drop tables, box
+  contents, mission ranks); `backend/pc_rewards.gd` (preload; `roll(source,
+  context, rng)` → coins and items; `open_box(rng)`; seeded rolls for tests);
+  wallet and inventory saved in `user://pc_progress.json` via `pc_progress.gd`;
+  `scenes/world/ui/inventory_panel.gd` / `.tscn` (coins, parts by set, boxes,
+  an Open button; **I** key, Proposed); a "reward" pop-up after fights,
+  dungeons and missions; `tests/run_pc_rewards_tests.gd`.
+- **Accept:** every drop table sums to ≤ 100%; seeded rolls give fixed results;
+  a Mystery Box always gives exactly one thing; the 10th mission always gives a
+  box; parts have no stat effect yet (Open); save / load keeps coins and items.
+- **Media:** a clip winning a fight, the reward pop-up, then opening a Mystery
+  Box from the inventory.
+
+#### WP15: Balance simulator (Code)
+
+- **Goal:** prove the numbers in 4.3, 4.8 and 4.9 are balanced before anyone
+  plays them, and re-check them on every change.
+- **Needs:** WP3; reads `level_curve.json`, `rewards.json`, `level_zones.json`.
+- **Add:** `tests/sim_pc_progression.gd` (dev tool, not a suite): simulates
+  player profiles (normal mix 50% world / 30% dungeons / 20% missions; world
+  only; dungeon heavy; party of 4) from level 1 to 50 with seeded rolls and
+  prints hours to 50, XP share by source, coins per hour per tier, parts and
+  rare parts per hour, boxes per hour; `tests/run_pc_balance_tests.gd` (suite)
+  that fails when a target in 4.8 is missed.
+- **Accept:** normal mix reaches 50 in 50–75 h; dungeon XP per minute is
+  1.3–1.8× open world; no source above 50% of total XP; world-only still
+  reaches 50; a printed table goes in the PR for Mauro.
+- **Media:** none (the printed table).
 
 #### WP10: Art for the new zones (Scenario, then Technical Artist)
 
 - **Goal:** replace every stand-in with painted art at the Crosshaven v7 level
   or better, in the Dofus / Wakfu / Waven look.
-- **Needs:** Open Q1 (PC art was paused by Mauro on 1 Oct 2026). Do not start
-  until Mauro unpauses it.
+- **Unpaused** by Mauro, 3 Oct 2026, for the map, open world, NPCs, bosses and
+  monsters. Player fighters stay parked.
 
 Style rules (from the Crosshaven kit, `kit_meta/KIT_README.md`):
 
@@ -812,14 +1011,18 @@ strip where it fits). Path `art/world/<region>/props/landmark_<chunk_id>.png`
 kit list does not grow with the chunk count; the landmarks are the main
 addition.
 
-NPC bodies (Scenario), **parked: not now (characters, Mauro 3 Oct)**: one painted body per role (18 roles), 4 facings (N, E,
+NPC bodies (Scenario, **unpaused** 3 Oct): one painted body per role (18 roles), 4 facings (N, E,
 S, W under the locked rule), an idle loop of 8 frames at 8 fps per facing, on a
 **256×256 px** canvas at 2x with the feet on the bottom-centre pivot, drawn to
 match the world character scale (`ironjaw_tall` at 0.33, see PR #214).
 Path: `art/characters/npc/<role>/idle_<facing>.png` (horizontal strip).
 
-Monster art for the six new dungeons and for Rowanvale, the fen, the swamp,
-the shardfields and Blightwood: only after characters are unparked and Q6.
+Monsters and bosses (Scenario, **unpaused** 3 Oct): 3–4 world monster
+families per level zone (4.10) and each dungeon's packs and boss (4.6), same
+canvas, pivot, facings and idle loop rules as NPC bodies, plus a walk loop
+(8 frames) for world monsters and an attack / hit pair for fights. Bosses
+1.5× the size of a normal monster. Paths:
+`art/monsters/<family>/` and `art/bosses/<dungeon_id>/`.
 
 #### WP11: Technical art pass (Technical Artist)
 
@@ -885,23 +1088,29 @@ headless.
 
 ## 7. Open questions for Mauro
 
-1. **PC art:** is the 1 Oct pause lifted so Scenario can start WP10? Until
-   then, every new zone uses stand-in art.
+1. ~~**PC art:** is the pause lifted?~~ **Answered 3 Oct 2026 (Mauro): yes,
+   for the map, open world, NPCs, bosses and monsters.** Player fighters stay
+   parked.
 2. ~~**Dungeon runs on PC**~~ **Answered 3 Oct 2026 (Mauro): "yes, same
    concept, different dungs".** Port the Stasis dungeon concept and the team
    engine into PC files; all 11 PC dungeons are PC's own (WP8).
-3. **Level system to 50:** where does XP come from (monsters, dungeons,
-   Koliseo, quests)? What does a level give (stat points, AP at some level,
-   like the phone's 2 points per level and AP at 20)?
+3. ~~**Where does XP come from?**~~ **Answered 3 Oct 2026 (Mauro):** open-world
+   levelling, missions (every NPC, levels 1–50, better rewards as you level and
+   advance) and dungeons, with dungeons giving more XP than the open world
+   (4.8). Rewards: Crypto Coins, Regular set parts, then Rare parts and Mystery
+   Boxes (4.9).
+   **3b. Still Open:** what a level gives (stat points, AP at some level) and
+   what set parts do (stats, set bonuses).
 4. **NPC jobs:** ~~which first?~~ **Partly answered 3 Oct 2026 (Mauro): NPCs
    with missions come first** (4.7, WP6b). Still Open: shops, storage, travel,
-   healing, and mission types that need world monsters or items.
+   healing, and mission types that need quest items. What Crypto Coins buy.
 5. ~~**Region size:** 2 chunks per region to start, or more?~~ **Answered
    3 Oct 2026 (Mauro / Luca, yes):** 55 new chunks, 3–8 per region, with entry
    / door / hub / middle chunks, one landmark per chunk, WP5 split into WP5a and
    WP5b, and the new connectivity tests. **Soft Lock**: see 1.4 and 3.1.
-6. **Monsters in the world:** visible monster groups in each zone (Dofus /
-   Wakfu style), or fights only inside dungeons?
+6. ~~**Monsters in the world?**~~ **Answered 3 Oct 2026 (Mauro): yes**, walking
+   only in their designated zones; above level 25 they are aggressive (4.10,
+   WP9).
 7. **Crosshaven walker facing fix** (a quarter-turn off the locked rule): may
    the team fix it now?
 8. **Where Eastmarch Fen Edge sits:** off the east road (concept image) or past
