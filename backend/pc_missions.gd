@@ -8,6 +8,8 @@ extends RefCounted
 const Levels = preload("res://backend/world_levels.gd")
 const Npcs = preload("res://backend/world_npcs.gd")
 const Progress = preload("res://backend/pc_progress.gd")
+const Maps = preload("res://backend/world_map.gd")
+const Walk = preload("res://backend/world_walk.gd")
 
 const MISSIONS_PATH := "res://data/world/missions.json"
 const TEMPLATES_PATH := "res://data/world/task_templates.json"
@@ -33,6 +35,8 @@ const CHAINS: Array[String] = ["welcome", "scout", "dungeon", "side"]
 const CORE_ROLES: Array[String] = ["warden", "trader", "door_keeper"]
 const TASK_DENIED_ROLES: Array[String] = ["door_keeper", "banker", "herald"]
 const MAX_ACTIVE_TASKS := 3
+## Shortest walk from a task giver to a landmark, in ortho steps.
+const MIN_TASK_WALK := 40
 ## Half of 100, for rounding a percent. Not the level cap.
 const HALF := 100 / 2
 
@@ -54,6 +58,11 @@ var _fight_minutes := 0.0
 var _reach_minutes := 0
 var _defeat_minutes := 0
 var _clear_minutes := 0
+var _reach_percent := 0
+var _defeat_percent := 0
+var _clear_percent := 0
+var _map = null
+var _walk_cache: Dictionary = {}
 var _migrating := false
 
 
@@ -98,7 +107,6 @@ func all_ids() -> Array:
 
 
 func status_of(mission_id: String, hero) -> String:
-	_reconcile(hero)
 	if not _by_id.has(mission_id):
 		return ""
 	var saved := _story_state(hero, mission_id)
@@ -166,6 +174,7 @@ func available_for(npc_id: String, hero) -> Array:
 
 
 func accept(mission_id: String, hero) -> Dictionary:
+	_reconcile(hero)
 	if mission_id.begins_with("task_offer:"):
 		return _accept_task(mission_id.trim_prefix("task_offer:"), hero)
 	if not _by_id.has(mission_id):
@@ -184,6 +193,7 @@ func accept(mission_id: String, hero) -> Dictionary:
 
 
 func on_talk(npc_id: String, hero) -> Array:
+	_reconcile(hero)
 	var changed: Array = []
 	for id in _order:
 		if status_of(id, hero) != "active":
@@ -204,6 +214,7 @@ func on_talk(npc_id: String, hero) -> Array:
 
 
 func on_reach(zone_id: String, cell: Vector2i, hero) -> Array:
+	_reconcile(hero)
 	var changed: Array = []
 	for id in _order:
 		if status_of(id, hero) != "active":
@@ -254,6 +265,7 @@ func on_reach(zone_id: String, cell: Vector2i, hero) -> Array:
 			continue
 		if _task_hit(one, zone_id, cell):
 			one["status"] = "ready"
+			one["ready_level"] = int(hero.level)
 			tasks[str(npc_id)] = one
 			changed.append(str(one.get("id", npc_id)))
 			walked = true
@@ -261,6 +273,7 @@ func on_reach(zone_id: String, cell: Vector2i, hero) -> Array:
 
 
 func on_dungeon_won(dungeon_id: String, hero) -> Array:
+	_reconcile(hero)
 	var changed: Array = []
 	for id in _order:
 		if status_of(id, hero) != "active":
@@ -281,6 +294,7 @@ func on_dungeon_won(dungeon_id: String, hero) -> Array:
 
 
 func turn_in(mission_id: String, hero) -> Dictionary:
+	_reconcile(hero)
 	if mission_id.begins_with("task_"):
 		return _turn_in_task(mission_id, hero)
 	if not _by_id.has(mission_id):
@@ -321,6 +335,7 @@ func mark_for(npc_id: String, hero) -> String:
 
 
 func panel_for(npc_id: String, hero) -> Dictionary:
+	_reconcile(hero)
 	var ready_id := _ready_turn_in(npc_id, hero)
 	if ready_id != "":
 		if ready_id.begins_with("task_"):
@@ -429,13 +444,9 @@ func _accept_task(npc_id: String, hero) -> Dictionary:
 		return _no("active")
 	if _active_task_count(hero) >= MAX_ACTIVE_TASKS:
 		return _no("cap")
-	if not available_for(npc_id, hero).is_empty() and str(available_for(npc_id, hero)[0]["id"]).begins_with("task_offer:"):
-		pass
-	else:
-		# A story mission is still the thing to take.
-		var offers: Array = available_for(npc_id, hero)
-		if not offers.is_empty() and not str(offers[0]["id"]).begins_with("task_offer:"):
-			return _no("story")
+	var offers: Array = available_for(npc_id, hero)
+	if not offers.is_empty() and not str(offers[0]["id"]).begins_with("task_offer:"):
+		return _no("story")
 	var preview := _preview_task(npc_id, hero)
 	if preview.is_empty():
 		return _no("no landmark")
@@ -457,8 +468,11 @@ func _turn_in_task(mission_id: String, hero) -> Dictionary:
 			continue
 		if str(task.get("status", "")) != "ready":
 			return _empty_turn(str(task.get("status", "missing")))
-		var xp := _task_xp(hero, int(task.get("xp_percent", 0)))
-		var coins := _task_coins(int(hero.level), float(task.get("minutes", 0)))
+		var pay_level := int(hero.level)
+		if task.has("ready_level"):
+			pay_level = int(task["ready_level"])
+		var xp := _task_xp(hero, int(task.get("xp_percent", 0)), pay_level)
+		var coins := _task_coins(pay_level, float(task.get("minutes", 0)))
 		task["status"] = "done"
 		tasks[str(npc_id)] = task
 		_put_tasks(hero, tasks)
@@ -605,25 +619,42 @@ func _next_serial(npc_id: String, hero) -> int:
 func _pool_for(level_zone: String, npc_id: String) -> Array:
 	var npc: Dictionary = _npc_cells.get(npc_id, {})
 	var usable: Array = []
-	var all_rows: Array = []
 	for row in _reach:
 		var mark: Dictionary = row
 		if str(mark["level_zone"]) != level_zone:
 			continue
-		all_rows.append(mark)
-		if not _standing_on(npc, mark):
+		# Outer regions stay out of the pool until they reopen. Crosshaven only.
+		if _map == null or not _map.zones.has(str(mark.get("zone_id", ""))):
+			continue
+		if bool(mark.get("pending_chunk", false)):
 			usable.append(mark)
-	if usable.is_empty():
-		return all_rows
+			continue
+		if _walk_length(npc, mark) >= MIN_TASK_WALK:
+			usable.append(mark)
 	return usable
 
 
-func _standing_on(npc: Dictionary, mark: Dictionary) -> bool:
-	if str(npc.get("zone_id", "")) != str(mark["zone_id"]):
-		return false
-	var dx := absi(int(npc.get("x", 0)) - int(mark["x"]))
-	var dy := absi(int(npc.get("y", 0)) - int(mark["y"]))
-	return maxi(dx, dy) <= 1
+func _walk_length(npc: Dictionary, mark: Dictionary) -> int:
+	if _map == null or npc.is_empty():
+		return -1
+	var from_zone := str(npc.get("zone_id", ""))
+	var to_zone := str(mark.get("zone_id", ""))
+	var from_cell := Vector2i(int(npc.get("x", 0)), int(npc.get("y", 0)))
+	var to_cell := Vector2i(int(mark.get("x", 0)), int(mark.get("y", 0)))
+	if not _map.zones.has(to_zone):
+		return -1
+	# The giver stands outside Crosshaven. The landmark is in it, so this is not the short square walk.
+	if not _map.zones.has(from_zone):
+		return MIN_TASK_WALK
+	var key := "%s#%d#%d>%s#%d#%d" % [from_zone, from_cell.x, from_cell.y, to_zone, to_cell.x, to_cell.y]
+	if _walk_cache.has(key):
+		return int(_walk_cache[key])
+	var result: Dictionary = Walk.find_path(_map, from_zone, from_cell, to_zone, to_cell)
+	var length := -1
+	if bool(result.get("ok", false)):
+		length = int(result["length"])
+	_walk_cache[key] = length
+	return length
 
 
 func _band_zone(level: int) -> Dictionary:
@@ -649,8 +680,10 @@ func _offer_template() -> Dictionary:
 	return {}
 
 
-func _task_xp(hero, percent: int) -> int:
-	var level := int(hero.level)
+func _task_xp(hero, percent: int, at_level: int = -1) -> int:
+	var level := at_level
+	if level < 1:
+		level = int(hero.level)
 	if percent <= 0 or level < 1 or level >= _max_level:
 		return 0
 	var steps: Array = hero.xp_to_next
@@ -988,6 +1021,7 @@ func _reconcile_story(hero, notes: Array) -> void:
 		var steps: Array = row["steps"]
 		var flags: Array = state.get("done", [])
 		var missing := false
+		var pending := false
 		for index in steps.size():
 			var done := false
 			if index < flags.size():
@@ -997,15 +1031,26 @@ func _reconcile_story(hero, notes: Array) -> void:
 			var step: Dictionary = steps[index]
 			if str(step.get("type", "")) != "reach":
 				continue
+			if bool(step.get("pending_chunk", false)):
+				missing = true
+				pending = true
+				continue
 			var landmark := str(step.get("landmark", ""))
 			if landmark == "":
 				continue
-			if _mark_by_id(str(step.get("zone_id", "")), landmark).is_empty():
+			var mark := _mark_by_id(str(step.get("zone_id", "")), landmark)
+			if mark.is_empty():
 				missing = true
+			elif bool(mark.get("pending_chunk", false)):
+				missing = true
+				pending = true
 		if missing:
 			state["status"] = "dropped"
 			_put_story(hero, id, state)
-			notes.append("%s dropped, landmark gone, refund 0" % id)
+			if pending:
+				notes.append("%s dropped, landmark pending, refund 0" % id)
+			else:
+				notes.append("%s dropped, landmark gone, refund 0" % id)
 
 
 func _mark_by_id(zone_id: String, landmark: String) -> Dictionary:
@@ -1048,6 +1093,7 @@ func _empty_turn(reason: String) -> Dictionary:
 func _read(missions_doc: Dictionary, templates_doc: Dictionary, levels, npcs, curve: Dictionary, errors: Array) -> void:
 	_load_pace(curve, errors)
 	_load_economy(errors)
+	_load_walk_map(errors)
 	if not errors.is_empty():
 		return
 	_check_doc(missions_doc, errors)
@@ -1145,11 +1191,11 @@ func _check_templates(doc: Dictionary, errors: Array) -> void:
 			if step == "defeat" and str(row.get("family", "")) != "Open":
 				_err(errors, "defeat families are not listed")
 		var percent := int(row.get("xp_percent", -1))
-		if step == "reach" and percent != 6:
+		if step == "reach" and percent != _reach_percent:
 			_err(errors, "reach task XP share")
-		if step == "defeat" and percent != 10:
+		if step == "defeat" and percent != _defeat_percent:
 			_err(errors, "defeat task XP share")
-		if step == "clear_dungeon" and percent != 30:
+		if step == "clear_dungeon" and percent != _clear_percent:
 			_err(errors, "dungeon task XP share")
 		var minutes := int(row.get("minutes", -1))
 		if step == "reach" and minutes != _reach_minutes:
@@ -1516,10 +1562,24 @@ func _load_economy(errors: Array) -> void:
 	_reach_minutes = int(minutes.get("mission_reach", 0))
 	_defeat_minutes = int(minutes.get("mission_defeat_fights", 0)) * int(minutes.get("mission_defeat_per_fight", 0))
 	_clear_minutes = int(minutes.get("mission_clear", 0))
+	var shares: Dictionary = (doc as Dictionary).get("xp_share_of_step", {})
+	_reach_percent = int(round(float(shares.get("mission_reach", -1)) * 100.0))
+	_defeat_percent = int(round(float(shares.get("mission_defeat", -1)) * 100.0))
+	_clear_percent = int(round(float(shares.get("mission_clear_dungeon", -1)) * 100.0))
 	if _coin_base <= 0.0 or _coin_per_level <= 0.0 or _fight_minutes <= 0.0:
 		_err(errors, "world-fight coin rate")
 	if _reach_minutes <= 0 or _defeat_minutes <= 0 or _clear_minutes <= 0:
 		_err(errors, "task minutes")
+	if _reach_percent <= 0 or _defeat_percent <= 0 or _clear_percent <= 0:
+		_err(errors, "task XP shares")
+
+
+func _load_walk_map(errors: Array) -> void:
+	var loaded: Dictionary = Maps.load_default()
+	if not bool(loaded.get("ok", false)):
+		_err(errors, "walk map")
+		return
+	_map = loaded["map"]
 
 
 static func _read_json(path: String) -> Variant:

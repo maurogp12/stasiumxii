@@ -185,6 +185,9 @@ func _ready() -> void:
 	var mission_loaded: Dictionary = Missions.load_default()
 	if bool(mission_loaded.get("ok", false)):
 		missions = mission_loaded["missions"]
+		var migrated: Array = missions.reconcile(progress)
+		if not migrated.is_empty():
+			progress.save()
 	else:
 		push_error("Missions failed to load: %s" % [mission_loaded.get("errors", [])])
 	tracker = MissionTracker.new()

@@ -5,7 +5,8 @@ extends SceneTree
 
 const Missions = preload("res://backend/pc_missions.gd")
 const Progress = preload("res://backend/pc_progress.gd")
-const Balance = preload("res://backend/pc_balance.gd")
+const Maps = preload("res://backend/world_map.gd")
+const Walk = preload("res://backend/world_walk.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 
 const SCHEMA := "res://data/world/schema/missions.schema.json"
@@ -42,8 +43,11 @@ func _run() -> void:
 	_test_pending(book)
 	_test_migration(book)
 	_test_cap_task(book)
+	_test_ready_level(book)
+	_test_story_pending(book)
+	_test_walk_distance(book)
 	_test_tracker(book)
-	_test_task_mix()
+	_test_task_mix(book)
 	_test_rejects()
 	_test_source()
 	await _test_world(book)
@@ -397,7 +401,7 @@ func _test_pending(book) -> void:
 	eq(bool(book.mission("heart_scout")["steps"][0].get("pending_chunk", false)), false, "the heart scout mark is real ground")
 	eq(bool(book.mission("rowanvale_scout")["steps"][0]["pending_chunk"]), true, "the rowanvale scout mark is pending")
 	var panel: Dictionary = book.panel_for("rowanvale_trader", hero)
-	eq(bool(panel["soon"]), true, "a task into a stand-in region is coming soon")
+	eq(bool(panel["soon"]), false, "an outer landmark stays out of the task pool")
 	eq(book.available_for("rowanvale_trader", hero).is_empty(), true, "the stand-in task is not offered")
 
 
@@ -500,19 +504,143 @@ func _test_tracker(book) -> void:
 	tracker.queue_free()
 
 
-func _test_task_mix() -> void:
-	var result: Dictionary = Balance.run()
-	var inputs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/balance_inputs.json"))
-	eq(bool(result["ok"]), true, "the balance sim still passes with tasks in the mix")
-	eq(Balance.in_accept_band(float(result["normal_mix_hours"]), inputs), true, "free play with tasks stays inside 130-170 hours")
-	var shares: Dictionary = result["xp_shares"]
-	eq(float(shares["mission"]) <= float(inputs["targets"]["max_source_share"]), true, "mission XP stays at or under half")
-	eq(float(shares["world"]) <= float(inputs["targets"]["max_source_share"]), true, "world XP stays at or under half")
-	eq(float(shares["dungeon"]) <= float(inputs["targets"]["max_source_share"]), true, "dungeon XP stays at or under half")
-	eq(absf(float(shares["mission"]) - float(inputs["profiles"]["normal_mix"]["mission"])) <= 0.05, true, "missions stay near 20% of play time")
+func _test_ready_level(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 1
+	hero.xp = 0
+	var took: Dictionary = book.accept("task_offer:crossroads_trader", hero)
+	eq(bool(took["ok"]), true, "the trader task accepts at level 1")
+	var stored: Dictionary = hero.mission_blob["tasks"]["crossroads_trader"]
+	var cell := Vector2i(int(stored["x"]), int(stored["y"]))
+	book.on_reach(str(stored["zone_id"]), cell, hero)
+	stored = hero.mission_blob["tasks"]["crossroads_trader"]
+	eq(int(stored["ready_level"]), 1, "ready stores the level when the mark is reached")
+	hero.level = 10
+	var paid: Dictionary = book.turn_in(str(took["id"]), hero)
+	var expect := _reach_payout(1)
+	var later := _reach_payout(10)
+	eq(bool(paid["ok"]), true, "the ready task turns in after a level-up")
+	eq(int(paid["xp"]), int(expect["xp"]), "task XP uses the ready level")
+	eq(int(paid["coins"]), int(expect["coins"]), "task coins use the ready level")
+	eq(int(paid["xp"]) != int(later["xp"]), true, "holding a ready task does not pay the later level")
+
+
+func _test_story_pending(book) -> void:
+	_wipe_save()
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	book.accept("heart_welcome", hero)
+	book.on_talk("crossroads_trader", hero)
+	book.on_talk("granary_door_keeper", hero)
+	book.turn_in("heart_welcome", hero)
+	eq(bool(book.accept("heart_scout", hero)["ok"]), true, "the heart scout accepts")
+	var coins := int(hero.coins)
+	var flipped := false
+	for row_value in book._reach:
+		var row: Dictionary = row_value
+		if str(row.get("landmark", "")) == "north_road":
+			row["pending_chunk"] = true
+			flipped = true
+	eq(flipped, true, "the scout landmark can be marked pending")
+	var dropped: Array = book.reconcile(hero)
+	var state: Dictionary = hero.mission_blob["story"]["heart_scout"]
+	eq(str(state["status"]), "dropped", "a pending landmark drops the story mission")
+	eq(int(hero.coins), coins, "the story drop refunds 0")
+	eq(str(dropped).find("landmark pending") >= 0 and str(dropped).find("refund 0") >= 0, true, "the story drop is logged")
+	for row_value in book._reach:
+		var row: Dictionary = row_value
+		if str(row.get("landmark", "")) == "north_road":
+			row["pending_chunk"] = false
+
+
+func _test_walk_distance(book) -> void:
+	var map_doc: Dictionary = Maps.load_default()
+	eq(bool(map_doc.get("ok", false)), true, "the walk map loads")
+	var map = map_doc["map"]
+	var npcs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/npcs.json"))
+	var denied := {"door_keeper": true, "banker": true, "herald": true}
+	var levels: Array[int] = [1, 4, 6, 9, 10, 15, 25, 40]
+	for row_value in npcs["npcs"]:
+		var npc: Dictionary = row_value
+		var npc_id := str(npc["id"])
+		if denied.has(str(npc["role"])):
+			continue
+		var at: Dictionary = npc["cell"]
+		var from_zone := str(npc["zone_id"])
+		var from_cell := Vector2i(int(at["x"]), int(at["y"]))
+		for level in levels:
+			var hero = Progress.new()
+			hero.mission_blob = {}
+			hero.level = level
+			_finish_open_stories(book, hero, npc_id)
+			var guard := 0
+			while guard < 8:
+				guard += 1
+				var offers: Array = book.available_for(npc_id, hero)
+				if offers.is_empty() or not str(offers[0]["id"]).begins_with("task_offer:"):
+					break
+				var took: Dictionary = book.accept(str(offers[0]["id"]), hero)
+				eq(bool(took["ok"]), true, "%s offers a task at level %d" % [npc_id, level])
+				if not bool(took["ok"]):
+					break
+				var stored: Dictionary = hero.mission_blob["tasks"][npc_id]
+				var to_zone := str(stored["zone_id"])
+				eq(map.zones.has(to_zone), true, "%s targets a Crosshaven landmark (%s)" % [npc_id, to_zone])
+				var band := str(stored.get("level_zone", ""))
+				eq(band == "crosshaven_heart" or band == "crosshaven_towns", true, "%s stays in the Crosshaven bands" % npc_id)
+				if map.zones.has(from_zone):
+					var result: Dictionary = Walk.find_path(
+						map, from_zone, from_cell, to_zone, Vector2i(int(stored["x"]), int(stored["y"]))
+					)
+					eq(bool(result.get("ok", false)), true, "%s can walk to %s" % [npc_id, str(stored["landmark"])])
+					eq(int(result.get("length", 0)) >= 40, true, "%s to %s is at least 40 walk cells (%s)" % [npc_id, str(stored["landmark"]), str(result.get("length", 0))])
+				stored["status"] = "done"
+				hero.mission_blob["tasks"][npc_id] = stored
+	var band_hero = Progress.new()
+	band_hero.mission_blob = {}
+	band_hero.level = 1
+	var low: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(low[0]["id"]).begins_with("task_offer:"), true, "level 1 is inside the task band")
+	band_hero.level = 9
+	var mid: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(mid[0]["id"]).begins_with("task_offer:"), true, "level 9 is inside the task band")
+	band_hero.level = 10
+	eq(book.available_for("crossroads_trader", band_hero).is_empty(), true, "level 10 uses Rowanvale and offers no task")
+	band_hero.level = 25
+	eq(book.available_for("crossroads_trader", band_hero).is_empty(), true, "a later band offers no task while its landmarks are pending")
+
+
+func _finish_open_stories(book, hero, npc_id: String) -> void:
+	var guard := 0
+	while guard < 8:
+		guard += 1
+		var offers: Array = book.available_for(npc_id, hero)
+		if offers.is_empty() or str(offers[0]["id"]).begins_with("task_offer:"):
+			return
+		var mission_id := str(offers[0]["id"])
+		book.accept(mission_id, hero)
+		var story: Dictionary = hero.mission_blob["story"]
+		var state: Dictionary = story[mission_id]
+		state["status"] = "done"
+		story[mission_id] = state
+		hero.mission_blob["story"] = story
+
+
+func _test_task_mix(book) -> void:
 	var table := FileAccess.get_file_as_string("res://docs/pc/media/wp6b/task_mix.md")
-	eq(table.find("%.2f" % float(result["normal_mix_hours"])) >= 0, true, "the task mix table records the free hours")
-	eq(table.find("130") >= 0 and table.find("170") >= 0, true, "the task mix table names the accept band")
+	eq(table.find("1–10") >= 0, true, "the task mix names the 1-10 offer band")
+	eq(table.find("pending") >= 0, true, "the task mix says later landmarks are pending")
+	eq(table.find("WP5b") >= 0, true, "the task mix says WP15 re-scores once WP5b fills the regions")
+	eq(table.find("143.53") < 0, true, "the task mix does not reprint the old free-play hours")
+	var hero = Progress.new()
+	hero.mission_blob = {}
+	hero.level = 9
+	var offered: Array = book.available_for("crossroads_trader", hero)
+	eq(str(offered[0]["id"]).begins_with("task_offer:"), true, "a towns-band level still offers a task")
+	hero.level = 11
+	eq(book.available_for("crossroads_trader", hero).is_empty(), true, "past the 1-10 band a pending region offers no task")
 
 
 func _finish_reach(book, hero, mission_id: String) -> void:
