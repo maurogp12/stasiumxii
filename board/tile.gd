@@ -15,6 +15,11 @@ const LABEL_SETTING := "stasium/debug/show_tile_labels"
 var grid_position: Vector2i = Vector2i.ZERO
 var is_selected: bool = false
 var highlight: String = ""
+## Soft outline on the cell under the pointer. Not a grid.
+var soft_hover: bool = false
+var _reveal: float = 0.0
+var _reveal_target: float = 0.0
+var _shown_highlight: String = ""
 var elevation: int = 0
 var terrain_type: String = "ground"
 var _dress: String = ""
@@ -73,6 +78,7 @@ class HighlightOverlay extends Node2D:
 
 
 func _ready() -> void:
+	set_process(false)
 	_ensure_overlay()
 
 
@@ -245,7 +251,37 @@ func set_selected(value: bool) -> void:
 
 
 func set_highlight(kind: String) -> void:
+	if highlight == kind:
+		return
+	var previous := highlight
 	highlight = kind
+	if kind != "":
+		_shown_highlight = kind
+		_reveal_target = 1.0
+		# A same-frame clear-and-repaint keeps a tile that was already shown.
+		if previous == "" and _reveal <= 0.0:
+			_reveal = 0.0
+	else:
+		_reveal_target = 0.0
+	set_process(true)
+	_request_paint()
+
+
+func set_soft_hover(on: bool) -> void:
+	if soft_hover == on:
+		return
+	soft_hover = on
+	_request_paint()
+
+
+func _process(delta: float) -> void:
+	if is_equal_approx(_reveal, _reveal_target):
+		if _reveal_target <= 0.0:
+			_shown_highlight = ""
+		set_process(false)
+		_request_paint()
+		return
+	_reveal = move_toward(_reveal, _reveal_target, delta * 6.0)
 	_request_paint()
 
 
@@ -308,26 +344,49 @@ static func consume_debug_label_key(event: InputEvent) -> bool:
 
 
 func paint_highlight_overlay(canvas: CanvasItem) -> void:
+	var kind := highlight if highlight != "" else _shown_highlight
+	if kind == "" and soft_hover:
+		var hover_pts := _diamond_points()
+		var hover_line := PackedVector2Array(hover_pts)
+		hover_line.append(hover_pts[0])
+		canvas.draw_polyline(hover_line, Color(0.72, 0.90, 0.82, 0.55), 1.6, true)
+		return
+	var saved := highlight
+	highlight = kind
 	var color := overlay_color()
-	if color.a <= 0.0:
+	highlight = saved
+	if color.a <= 0.0 or _reveal <= 0.001:
 		return
 	var points := _diamond_points()
-	# Thunderwell move tiles need a brighter fill than #73C7EB at 0.5, or the
-	# full-pulse trace wins after bloom. Other themes keep overlay_color().
+	# Every theme uses the Thunderwell move tile: a bright fill and a rim that
+	# sits on the overlay, above the floor. overlay_color() stays the flat cyan.
 	var line := Color(color.r, color.g, color.b, 0.95)
-	var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
-	if highlight == "move" and _look_floor != null:
+	var width := 4.2 if kind == "origin" or kind == "landing" else (3.4 if kind == "range" else 1.8)
+	if kind == "move":
 		color = Color(0.55, 0.93, 1.0, 0.88)
 		line = Color(0.75, 1.0, 1.0, 1.0)
 		width = 4.0
+	color.a *= _reveal
+	line.a *= _reveal
 	canvas.draw_colored_polygon(points, color)
-	if overlay_draws_outline():
+	if color.a > 0.0:
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
 		canvas.draw_polyline(outline, line, width, true)
-	if highlight == "blocked":
-		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
-		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
+	if kind == "zone_p1" or kind == "zone_p2" or kind == "occupied":
+		_paint_glyph(canvas, kind)
+	if kind == "blocked":
+		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48, _reveal), 2.0, true)
+		canvas.draw_line(Vector2(14, -6), Vector2(-14, 6), Color(0.55, 0.52, 0.48, _reveal), 2.0, true)
+
+
+func _paint_glyph(canvas: CanvasItem, kind: String) -> void:
+	var ink := Color(0.93, 0.96, 0.90, 0.92 * _reveal)
+	if kind == "occupied":
+		canvas.draw_arc(Vector2.ZERO, 6.0, 0.0, TAU, 18, ink, 1.5, true)
+		return
+	canvas.draw_line(Vector2(-7, 0), Vector2(7, 0), ink, 1.8, true)
+	canvas.draw_line(Vector2(0, -5), Vector2(0, 5), ink, 1.8, true)
 
 
 func _ensure_overlay() -> void:

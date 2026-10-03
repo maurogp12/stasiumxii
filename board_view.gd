@@ -284,6 +284,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		for tile in tiles.values():
 			(tile as BoardTile).queue_redraw()
 		return
+	if event is InputEventMouseMotion and not _panning and not TOUCH.is_emulated_mouse(event):
+		var hovered := _cell_under_pointer(event)
+		_set_hover_cell(hovered if _in_bounds(hovered) else Vector2i(-999, -999))
 	if _busy or _view_locked:
 		return
 	if event.is_action_pressed("ui_cancel"):
@@ -413,6 +416,19 @@ func _commit_cell(cell: Vector2i) -> void:
 	_touch_commit_open = false
 	select_tile(cell)
 	_handle_left_click(cell)
+
+
+var _hover_cell: Vector2i = Vector2i(-999, -999)
+
+
+func _set_hover_cell(cell: Vector2i) -> void:
+	if cell == _hover_cell:
+		return
+	if tiles.has(_hover_cell):
+		_tile_at(_hover_cell).set_soft_hover(false)
+	_hover_cell = cell
+	if tiles.has(cell):
+		_tile_at(cell).set_soft_hover(true)
 
 
 func _cell_under_pointer(event: InputEvent) -> Vector2i:
