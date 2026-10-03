@@ -14,6 +14,7 @@ const SLOT_FILL := Color(0.20, 0.16, 0.13, 0.96)
 const SLOT_DIM := Color(0.10, 0.09, 0.10, 0.92)
 const ROW_GAP := 8.0
 const SPELL_MIN_W := 92.0
+const SPELL_MAX_W := 150.0
 const WALK_W := 72.0
 const FACE_CELL := 24.0
 const FACE_GAP := 2.0
@@ -116,6 +117,25 @@ func turn_text() -> String:
 	return str(_view.get("turn", ""))
 
 
+func coach_text() -> String:
+	return str(_view.get("coach", ""))
+
+
+func slot_key(id: String) -> String:
+	return str(_find(id).get("key", ""))
+
+
+func press_key(key: String) -> bool:
+	if key == "":
+		return false
+	var slot := _find_key(key)
+	if slot.is_empty():
+		return false
+	if bool(slot.get("usable", false)):
+		_press(slot)
+	return true
+
+
 func activate(id: String) -> void:
 	_press(_find(id))
 
@@ -214,29 +234,32 @@ func _gather(hud: CombatHUD) -> Dictionary:
 	if CombatHUD.is_local_turn(snap) and not bool(snap.get("match_over", false)) and not CombatHUD.is_deployment_phase(snap):
 		banner = "YOUR TURN"
 	var slots: Array = []
+	var spell_n := 0
 	for spell_id in hud._spell_buttons.keys():
+		spell_n += 1
 		var id := str(spell_id)
 		var button: Button = hud._spell_buttons[id]
-		_add_spell_slot(slots, hud, id, button)
+		var key := str(spell_n) if spell_n <= 9 else ""
+		_add_spell_slot(slots, hud, id, button, key)
 	_add_button_slot(slots, hud, "walk", "walk", hud._walk_button, "Walk", "walk")
 	if hud._face_bar != null and hud._face_bar.visible:
 		for dir in ["N", "E", "S", "W"]:
 			var face := hud._face_buttons.get(dir) as Button
 			_add_button_slot(slots, hud, "face:%s" % dir, "face", face, dir, "")
 	_add_button_slot(slots, hud, "end", "end", hud._end_turn_button, "End Turn", "end_turn")
-	_add_button_slot(slots, hud, "new_match", "match", hud._new_match_button, "New Match", "")
 	if hud._ready_p1_button != null and hud._ready_p1_button.visible:
 		_add_button_slot(slots, hud, "ready:0", "ready", hud._ready_p1_button, hud._ready_p1_button.text, "")
 		slots[slots.size() - 1]["seat"] = 0
 	if hud._ready_p2_button != null and hud._ready_p2_button.visible:
 		_add_button_slot(slots, hud, "ready:1", "ready", hud._ready_p2_button, hud._ready_p2_button.text, "")
 		slots[slots.size() - 1]["seat"] = 1
-	_place(slots, width)
 	var status := hud.pc_status_line()
+	var coach := hud.pc_coach_line()
+	_place(slots, width, coach != "")
 	var turn := ""
 	if hud._turn_label != null:
 		turn = hud._turn_label.text
-	var stamp := _make_stamp(hero, foe, ap, mp, banner, slots, status, turn, width)
+	var stamp := _make_stamp(hero, foe, ap, mp, banner, slots, status, turn, coach, width)
 	return {
 		"stamp": stamp,
 		"slots": slots,
@@ -247,6 +270,7 @@ func _gather(hud: CombatHUD) -> Dictionary:
 		"banner": banner,
 		"status": status,
 		"turn": turn,
+		"coach": coach,
 		"width": width,
 	}
 
@@ -277,7 +301,7 @@ func _add_button_slot(slots: Array, hud: CombatHUD, id: String, kind: String, bu
 	slots.append(slot)
 
 
-func _add_spell_slot(slots: Array, hud: CombatHUD, spell_id: String, button: Button) -> void:
+func _add_spell_slot(slots: Array, hud: CombatHUD, spell_id: String, button: Button, key: String) -> void:
 	if button == null:
 		return
 	var preview := hud.preview_for_spell(spell_id)
@@ -298,6 +322,7 @@ func _add_spell_slot(slots: Array, hud: CombatHUD, spell_id: String, button: But
 		"ap": ap,
 		"icon": icon,
 		"selected": hud.selected_spell() == spell_id,
+		"key": key,
 		"rect": Rect2(),
 	})
 
@@ -312,7 +337,8 @@ func _block_reason(hud: CombatHUD) -> String:
 	return "unavailable"
 
 
-func _place(slots: Array, width: float) -> void:
+func _place(slots: Array, width: float, coach_open: bool) -> void:
+	var slot_y := SLOT_Y + (18.0 if coach_open else 0.0)
 	var left := 12.0 + 104.0 + 8.0 + 58.0
 	var right := width - 12.0 - 104.0 - 8.0
 	var room := maxf(right - left, 64.0)
@@ -353,21 +379,26 @@ func _place(slots: Array, width: float) -> void:
 	var scale := 1.0
 	if not spells.is_empty():
 		spell_w = (room - fixed - spell_gaps) / float(spells.size())
+		spell_w = minf(spell_w, SPELL_MAX_W)
 		if spell_w < SPELL_MIN_W:
 			var need := SPELL_MIN_W * float(spells.size()) + spell_gaps + fixed
 			scale = room / need if need > 0.0 else 1.0
 			spell_w = SPELL_MIN_W * scale
 			walk_w *= scale
 			face_w *= scale
-	var x := left
+	var used := 0.0
+	if not spells.is_empty():
+		used += spell_w * float(spells.size()) + spell_gaps
+	used += walk_w + face_w + tail_w * scale + between
+	var x := left + maxf(room - used, 0.0) * 0.5
 	for slot in spells:
-		slot["rect"] = Rect2(x, SLOT_Y, spell_w, SPELL_H)
+		slot["rect"] = Rect2(x, slot_y, spell_w, SPELL_H)
 		x += spell_w + ROW_GAP
 	if not walk.is_empty():
-		walk["rect"] = Rect2(x, SLOT_Y, walk_w, SPELL_H)
+		walk["rect"] = Rect2(x, slot_y, walk_w, SPELL_H)
 		x += walk_w + ROW_GAP
 	if not faces.is_empty():
-		_place_face_pad(faces, x, face_w)
+		_place_face_pad(faces, x, face_w, slot_y)
 		x += face_w + ROW_GAP
 	var tail_scale := scale
 	for i in tail.size():
@@ -375,7 +406,7 @@ func _place(slots: Array, width: float) -> void:
 		var w := _pref_width(slot) * tail_scale
 		var kind := str(slot.get("kind", ""))
 		var h := END_H if kind == "end" else SPELL_H
-		var y := SLOT_Y - (8.0 if kind == "end" else 0.0)
+		var y := slot_y - (8.0 if kind == "end" else 0.0)
 		slot["rect"] = Rect2(x, y, w, h)
 		x += w
 		if i < tail.size() - 1:
@@ -386,14 +417,14 @@ func _face_span() -> float:
 	return FACE_CELL * 3.0 + FACE_GAP * 2.0
 
 
-func _place_face_pad(faces: Array, origin_x: float, pad_w: float) -> void:
+func _place_face_pad(faces: Array, origin_x: float, pad_w: float, slot_y: float) -> void:
 	var span := _face_span()
 	var scale := pad_w / span if span > 0.0 else 1.0
 	var cell := FACE_CELL * scale
 	var gap := FACE_GAP * scale
 	var step := cell + gap
 	var pad_h := step * 2.0 + cell
-	var y0 := SLOT_Y + maxf(SPELL_H - pad_h, 0.0) * 0.5
+	var y0 := slot_y + maxf(SPELL_H - pad_h, 0.0) * 0.5
 	for slot in faces:
 		var col := 1
 		var row := 1
@@ -429,12 +460,20 @@ func _pref_width(slot: Dictionary) -> float:
 			return SPELL_MIN_W
 
 
-func _make_stamp(hero: Dictionary, foe: Dictionary, ap: int, mp: int, banner: String, slots: Array, status: String, turn: String, width: float) -> String:
+func _find_key(key: String) -> Dictionary:
+	for slot in _slots():
+		if str(slot.get("key", "")) == key:
+			return slot
+	return {}
+
+
+func _make_stamp(hero: Dictionary, foe: Dictionary, ap: int, mp: int, banner: String, slots: Array, status: String, turn: String, coach: String, width: float) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 	parts.append("%s|%s|%d|%d|%s|%s|%.0f" % [str(hero.get("name", "")), str(foe.get("name", "")), ap, mp, banner, turn, width])
 	parts.append("%s:%s:%s" % [str(hero.get("hp", 0)), str(hero.get("max_hp", 0)), str(hero.get("active", false))])
 	parts.append("%s:%s:%s" % [str(foe.get("hp", 0)), str(foe.get("max_hp", 0)), str(foe.get("active", false))])
 	parts.append(status)
+	parts.append(coach)
 	for slot in slots:
 		parts.append("%s:%s:%s:%s:%s" % [
 			str(slot.get("id", "")),
@@ -520,6 +559,7 @@ func _draw() -> void:
 	if banner != "":
 		_draw_banner(banner, width)
 	_draw_turn_plate(width)
+	_draw_coach(width)
 	_draw_portrait(_view.get("hero", {}), 12.0)
 	_draw_portrait(_view.get("foe", {}), width - 12.0 - 100.0)
 	_draw_resources(12.0 + 104.0)
@@ -551,6 +591,17 @@ func _draw_turn_plate(width: float) -> void:
 	draw_rect(box, Color(0.10, 0.08, 0.06, 0.96))
 	draw_rect(Rect2(box.position, Vector2(box.size.x, 1)), GOLD)
 	draw_string(font, Vector2(box.position.x + 12.0, box.position.y + 15.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, INK)
+
+
+func _draw_coach(width: float) -> void:
+	var text := str(_view.get("coach", ""))
+	if text == "":
+		return
+	var font := ThemeDB.fallback_font
+	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	var box := Rect2(width * 0.5 - measured.x * 0.5 - 10.0, 54.0, measured.x + 20.0, 16.0)
+	draw_rect(box, Color(0.10, 0.08, 0.06, 0.96))
+	draw_string(font, Vector2(box.position.x + 10.0, box.position.y + 13.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.98, 0.86, 0.55))
 
 
 func _draw_status(width: float) -> void:
@@ -645,12 +696,16 @@ func _draw_slot(slot: Dictionary) -> void:
 	var icon: Variant = slot.get("icon", null)
 	var modulate := Color.WHITE if usable else DIM
 	var font := ThemeDB.fallback_font
-	if icon is Texture2D and kind != "face":
+	if kind == "spell":
+		_draw_spell_slot(slot, rect, font, modulate, usable)
+	elif icon is Texture2D and kind != "face":
 		var side := minf(rect.size.x - 16.0, rect.size.y - 28.0)
 		var icon_rect := Rect2(rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + 6.0, side, side)
 		draw_texture_rect(icon as Texture2D, icon_rect, false, modulate)
 	var label := str(slot.get("label", ""))
-	if kind == "face" or kind == "ready" or kind == "match" or icon == null:
+	if kind == "spell":
+		pass
+	elif kind == "face" or kind == "ready" or kind == "match" or icon == null:
 		var label_size := 18 if kind == "face" else 13
 		var measured := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, label_size)
 		var origin := rect.position + Vector2((rect.size.x - measured.x) * 0.5, rect.size.y * 0.62)
@@ -660,11 +715,26 @@ func _draw_slot(slot: Dictionary) -> void:
 		var measured := font.get_string_size(caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 12)
 		var ink := Color(1, 0.95, 0.82) if kind == "end" else (INK if usable else DIM)
 		draw_string(font, rect.position + Vector2((rect.size.x - measured.x) * 0.5, rect.size.y - 8), caption, HORIZONTAL_ALIGNMENT_LEFT, -1, 12, ink)
-	var ap := int(slot.get("ap", -1))
-	if kind == "spell" and ap >= 0:
-		var badge := Rect2(rect.position.x + rect.size.x - 22, rect.position.y + rect.size.y - 16, 20, 14)
+
+
+func _draw_spell_slot(slot: Dictionary, rect: Rect2, font: Font, modulate: Color, usable: bool) -> void:
+	var key := str(slot.get("key", ""))
+	if key != "":
+		var badge := Rect2(rect.position.x + 4.0, rect.position.y + 4.0, 16.0, 14.0)
 		draw_rect(badge, Color(0.05, 0.04, 0.03, 0.92))
-		draw_string(font, badge.position + Vector2(4, 11), str(ap), HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GOLD if usable else DIM)
+		draw_string(font, badge.position + Vector2(4.0, 11.0), key, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, GOLD if usable else DIM)
+	var icon: Variant = slot.get("icon", null)
+	if icon is Texture2D:
+		var side := 36.0
+		var icon_rect := Rect2(rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + 16.0, side, side)
+		draw_texture_rect(icon as Texture2D, icon_rect, false, modulate)
+	var ink := INK if usable else DIM
+	var name := str(slot.get("label", ""))
+	draw_string(font, rect.position + Vector2(4.0, rect.size.y - 22.0), name, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 8.0, 12, ink)
+	var ap := int(slot.get("ap", -1))
+	if ap >= 0:
+		var cost := "%d AP" % ap
+		draw_string(font, rect.position + Vector2(4.0, rect.size.y - 6.0), cost, HORIZONTAL_ALIGNMENT_CENTER, rect.size.x - 8.0, 12, GOLD if usable else DIM)
 
 
 func _draw_reason(slot: Dictionary, reason: String) -> void:

@@ -5878,6 +5878,9 @@ func _test_pc_action_bar() -> void:
 	var ids: Array = bar.slot_ids()
 	for key in ["walk", "face:N", "face:E", "face:S", "face:W", "mark_shot", "detonate", "end"]:
 		truthy(ids.has(key), "the bar includes %s" % key)
+	eq(ids.has("new_match"), false, "New Match is not beside End Turn")
+	eq(bar.slot_key("mark_shot"), "1", "Mark Shot shows key 1")
+	eq(bar.slot_key("detonate"), "2", "Detonate shows key 2")
 	eq(bar.slot_usable("mark_shot"), true, "Mark Shot is lit when the cast is legal")
 	eq(bar.slot_usable("detonate"), false, "Detonate is dimmed when the cast is illegal")
 	eq(bar.slot_usable("walk"), true, "Walk is lit on the opening turn")
@@ -5899,22 +5902,49 @@ func _test_pc_action_bar() -> void:
 	var face_right := maxf(bar.slot_rect("face:E").end.x, bar.slot_rect("face:N").end.x)
 	truthy(face_right - face_left < bar.slot_rect("mark_shot").size.x, "the Face pad is narrower than a spell slot")
 	truthy(bar.slot_rect("end").size.y > bar.slot_rect("mark_shot").size.y, "End Turn stands out")
-	bar.size = Vector2(960, 176)
-	bar.present(hud)
-	var spell_960: float = bar.slot_rect("mark_shot").size.x
 	bar.size = Vector2(1280, 176)
 	bar.present(hud)
-	var spell_1280: float = bar.slot_rect("mark_shot").size.x
-	truthy(spell_1280 > spell_960 + 20.0, "1280 spends the extra width on spell slots")
+	truthy(bar.slot_rect("mark_shot").size.x <= 150.0, "a spell slot stays within 150 px at 1280")
+	bar.size = Vector2(1920, 176)
+	bar.present(hud)
+	truthy(bar.slot_rect("mark_shot").size.x <= 150.0, "a spell slot stays within 150 px at 1920")
+	var content_left := 12.0 + 104.0 + 8.0 + 58.0
+	var content_right := 1920.0 - 12.0 - 104.0 - 8.0
+	var row_left: float = bar.slot_rect("mark_shot").position.x
 	var row_right := 0.0
 	for slot_id in bar.slot_ids():
 		row_right = maxf(row_right, bar.slot_rect(str(slot_id)).end.x)
-	truthy(row_right > 1280.0 - 124.0 - 4.0, "the row fills the 1280 bar instead of centering in padding")
+	var left_gap: float = row_left - content_left
+	var right_gap: float = content_right - row_right
+	truthy(absf(left_gap - right_gap) < 8.0, "the capped row is centred in the spare width")
 	truthy(bar.status_text().contains("Click a tile"), "the bar uses PC wording")
 	eq(hud._selected_label.visible, false, "the status line does not float over the board")
 	eq(hud._turn_label.visible, false, "the turn line is not left on the jungle")
 	truthy(bar.turn_text().contains("Turn"), "the turn line sits on the bar")
 	eq(hud._terrain_legend.visible, false, "the terrain legend is hidden on PC")
+	eq(hud._coach_label.visible, false, "the coach line does not float over the board")
+	eq(bar.coach_text(), "", "the stock AP/MP coach is not repeated on the bar")
+	var one := InputEventKey.new()
+	one.keycode = KEY_1
+	one.pressed = true
+	hud._unhandled_input(one)
+	eq(hud.selected_spell(), SpellKits.MARK_SHOT, "key 1 arms Mark Shot")
+	hud.select_walk()
+	var two := InputEventKey.new()
+	two.keycode = KEY_2
+	two.pressed = true
+	hud._unhandled_input(two)
+	eq(hud.selected_spell(), "", "key 2 does not arm a dimmed spell")
+	var started: Array = []
+	hud.new_match_requested.connect(func() -> void: started.append(1))
+	hud.open_pause_menu()
+	eq(hud.pause_open(), true, "Esc-style pause opens on PC")
+	hud.ask_new_match()
+	eq(hud.confirm_open(), true, "New Match asks before it resets")
+	eq(started.is_empty(), true, "the ask does not start a match")
+	hud.confirm_new_match()
+	eq(started.size(), 1, "confirm starts the new match")
+	eq(hud.pause_open(), false, "confirm closes the pause menu")
 	var held_top: float = hud._bottom_box.offset_top
 	hud._bottom_box.offset_top = -10.0
 	bar.present(hud)
@@ -5970,6 +6000,8 @@ func _test_pc_action_bar() -> void:
 	truthy(phone._selected_label.text.contains("tap a destination"), "the phone status keeps touch wording")
 	eq(phone._terrain_legend.visible, true, "the phone HUD keeps the terrain legend")
 	eq(phone._turn_label.visible, true, "the phone turn label stays put")
+	eq(phone._coach_label.visible, true, "the phone coach line stays on the HUD")
+	eq(phone.pause_open(), false, "the phone HUD has no pause menu")
 	var phone_box := phone._tooltip_panel.get_theme_stylebox("panel") as StyleBoxFlat
 	eq(phone_box.bg_color, Color(0.99, 0.97, 0.9, 0.97), "the phone tooltip stays the cream card")
 	eq(phone._tooltip_label.get_theme_color("font_color"), Color(0.12, 0.1, 0.12), "the phone tooltip keeps dark type")

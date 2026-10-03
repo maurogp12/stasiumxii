@@ -100,6 +100,9 @@ var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
 var _pc_chrome_folded := false
+var _pause_root: Control
+var _pause_new_match: Button
+var _confirm_root: Control
 ## -1 follows the platform. 0 forces the phone HUD. 1 forces the PC bar.
 static var _pc_chrome_override := -1
 
@@ -644,12 +647,49 @@ func _input(event: InputEvent) -> void:
 	_finish_touch_tooltip()
 
 
+func takes_pc_escape() -> bool:
+	return uses_pc_chrome()
+
+
+func _mark_input_handled() -> void:
+	var view := get_viewport()
+	if view != null:
+		view.set_input_as_handled()
+
+
+func pause_open() -> bool:
+	return _pause_root != null and _pause_root.visible
+
+
+func confirm_open() -> bool:
+	return _confirm_root != null and _confirm_root.visible
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if _locked:
 		return
+	if uses_pc_chrome() and event is InputEventKey and event.pressed and not event.echo and not pause_open():
+		var key_event := event as InputEventKey
+		var digit := key_event.keycode - KEY_0
+		if digit >= 1 and digit <= 9 and _pc_bar != null and _pc_bar.has_method("press_key"):
+			if _pc_bar.press_key(str(digit)):
+				_mark_input_handled()
+				return
 	if event.is_action_pressed("ui_cancel"):
+		if uses_pc_chrome() and confirm_open():
+			_confirm_root.visible = false
+			_mark_input_handled()
+			return
+		if uses_pc_chrome() and pause_open():
+			_close_pause()
+			_mark_input_handled()
+			return
 		if cancel_spell_selection():
-			get_viewport().set_input_as_handled()
+			_mark_input_handled()
+			return
+		if uses_pc_chrome():
+			open_pause_menu()
+			_mark_input_handled()
 
 
 func selected_spell() -> String:
@@ -1142,8 +1182,99 @@ func _build() -> void:
 	_pc_bar = PC_BAR.new()
 	_pc_bar.name = "PcActionBar"
 	root.add_child(_pc_bar)
+	_build_pause_menu(root)
 
 	_update_selected_label()
+
+
+func _build_pause_menu(root: Control) -> void:
+	_pause_root = Control.new()
+	_pause_root.name = "PcPauseMenu"
+	_pause_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_pause_root.visible = false
+	_pause_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(_pause_root)
+	var dim := ColorRect.new()
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.04, 0.03, 0.03, 0.55)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_pause_root.add_child(dim)
+	var panel := Panel.new()
+	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.offset_left = -180.0
+	panel.offset_right = 180.0
+	panel.offset_top = -90.0
+	panel.offset_bottom = 90.0
+	panel.add_theme_stylebox_override("panel", _panel(Color(0.10, 0.08, 0.07, 0.98)))
+	_pause_root.add_child(panel)
+	var title := Label.new()
+	title.text = "Paused"
+	title.position = Vector2(16, 16)
+	title.size = Vector2(328, 28)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86))
+	panel.add_child(title)
+	_pause_new_match = Button.new()
+	_pause_new_match.text = "New Match"
+	_pause_new_match.position = Vector2(70, 60)
+	_pause_new_match.size = Vector2(220, 40)
+	_pause_new_match.pressed.connect(ask_new_match)
+	panel.add_child(_pause_new_match)
+	var resume := Button.new()
+	resume.text = "Resume"
+	resume.position = Vector2(70, 112)
+	resume.size = Vector2(220, 40)
+	resume.pressed.connect(_close_pause)
+	panel.add_child(resume)
+
+	_confirm_root = Control.new()
+	_confirm_root.name = "PcNewMatchConfirm"
+	_confirm_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_confirm_root.visible = false
+	_confirm_root.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(_confirm_root)
+	var confirm_dim := ColorRect.new()
+	confirm_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	confirm_dim.color = Color(0.04, 0.03, 0.03, 0.35)
+	confirm_dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_confirm_root.add_child(confirm_dim)
+	var confirm_panel := Panel.new()
+	confirm_panel.set_anchors_preset(Control.PRESET_CENTER)
+	confirm_panel.offset_left = -200.0
+	confirm_panel.offset_right = 200.0
+	confirm_panel.offset_top = -80.0
+	confirm_panel.offset_bottom = 80.0
+	confirm_panel.add_theme_stylebox_override("panel", _panel(Color(0.12, 0.08, 0.06, 0.98)))
+	_confirm_root.add_child(confirm_panel)
+	var ask := Label.new()
+	ask.text = "Start a new match?"
+	ask.position = Vector2(16, 18)
+	ask.size = Vector2(368, 28)
+	ask.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ask.add_theme_font_size_override("font_size", 20)
+	ask.add_theme_color_override("font_color", Color(0.98, 0.9, 0.7))
+	confirm_panel.add_child(ask)
+	var note := Label.new()
+	note.text = "This ends the current match."
+	note.position = Vector2(16, 48)
+	note.size = Vector2(368, 22)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	note.add_theme_font_size_override("font_size", 14)
+	note.add_theme_color_override("font_color", Color(0.86, 0.8, 0.7))
+	confirm_panel.add_child(note)
+	var yes := Button.new()
+	yes.text = "Confirm"
+	yes.position = Vector2(36, 88)
+	yes.size = Vector2(150, 40)
+	yes.pressed.connect(confirm_new_match)
+	confirm_panel.add_child(yes)
+	var no := Button.new()
+	no.text = "Cancel"
+	no.position = Vector2(214, 88)
+	no.size = Vector2(150, 40)
+	no.pressed.connect(func() -> void: _confirm_root.visible = false)
+	confirm_panel.add_child(no)
 
 
 func _show_new_match(snap: Dictionary) -> bool:
@@ -1954,6 +2085,8 @@ func _on_spell_unhover() -> void:
 func claims_screen_point(point: Vector2) -> bool:
 	if not is_inside_tree():
 		return false
+	if _pause_root != null and _pause_root.visible and _pause_root.get_global_rect().has_point(point):
+		return true
 	if _pc_bar != null and _pc_bar.is_visible_in_tree() and _pc_bar.get_global_rect().has_point(point):
 		return true
 	for spell_id in _spell_hosts.keys():
@@ -2002,6 +2135,8 @@ func fold_legacy_chrome() -> void:
 		_selected_label.visible = false
 	if _turn_label != null:
 		_turn_label.visible = false
+	if _coach_label != null:
+		_coach_label.visible = false
 	if _terrain_legend != null:
 		_terrain_legend.visible = terrain_legend_debug()
 	if _bottom_box != null:
@@ -2016,6 +2151,52 @@ func terrain_legend_debug() -> bool:
 	if not ProjectSettings.has_setting(TERRAIN_LEGEND_SETTING):
 		return false
 	return bool(ProjectSettings.get_setting(TERRAIN_LEGEND_SETTING))
+
+
+func pc_coach_line() -> String:
+	if _coach_label == null:
+		return ""
+	var raw := _coach_label.text.strip_edges()
+	if raw == "":
+		return ""
+	if not uses_pc_chrome():
+		return raw
+	# The bar already shows AP and MP. That turn line stays off the board.
+	if raw.contains("'s turn.") and raw.contains(" AP / ") and raw.contains(" MP."):
+		return ""
+	return raw
+
+
+func open_pause_menu() -> void:
+	if not uses_pc_chrome() or _pause_root == null:
+		return
+	if _pause_new_match != null:
+		_pause_new_match.visible = _show_new_match(_last_snap)
+	if _confirm_root != null:
+		_confirm_root.visible = false
+	_pause_root.visible = true
+
+
+func ask_new_match() -> void:
+	if not pause_open() or _confirm_root == null:
+		return
+	if not _show_new_match(_last_snap):
+		return
+	_confirm_root.visible = true
+
+
+func confirm_new_match() -> void:
+	if not confirm_open():
+		return
+	_close_pause()
+	new_match_requested.emit()
+
+
+func _close_pause() -> void:
+	if _confirm_root != null:
+		_confirm_root.visible = false
+	if _pause_root != null:
+		_pause_root.visible = false
 
 
 func pc_status_line() -> String:

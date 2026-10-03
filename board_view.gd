@@ -324,7 +324,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if _busy or _view_locked:
 		return
 	if event.is_action_pressed("ui_cancel"):
-		# Esc returns to Walk. Right-click stays face and is not a cancel.
+		# Esc returns to Walk. On PC, Walk-mode Esc opens the pause menu.
+		# Right-click stays face and is not a cancel.
+		if _hud != null and _hud.takes_pc_escape():
+			return
 		_return_to_walk()
 		return
 	# Desktop MOUSE_BUTTON_RIGHT still faces. Touch uses the Face pad.
