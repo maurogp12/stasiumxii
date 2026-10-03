@@ -664,7 +664,8 @@ class"** and **"we have to create sets for lvl 1, lvl 10, lvl 20 up to 50,
 which is the max."** More sets come later as the classes develop and when the
 cap goes to 100.
 
-- **5 slots** (head, cape, belt, boots, amulet; Proposed). A full set fills all
+- **5 set slots** (head, cape, belt, boots, amulet; Proposed), plus 3 non-set
+  slots (ring, ring, weapon) in 4.13. A full set fills all
   5, so the choice is one full set (its 5-part bonus) or a 3 + 2 mix (two
   smaller bonuses).
 - **Set tiers: level 1, 10, 20, 30, 40, 50.** A set's parts can be worn from
@@ -704,7 +705,7 @@ plain stat bonus at 5 parts, so the early game stays simple.
 |---|---|---|
 | Kestrel | +1 max range on Mark Shot | plus a small second effect, e.g. more damage on the first Mark Shot of each turn, growing with the tier |
 | Ironjaw | Start every fight with +1 Impact | plus, e.g., Shoulder costs less on the first use each fight |
-| Mender | Mend heals 10% more | plus, e.g., a small heal on allies when Cleanse lands |
+| Mender | Mend heals +2 and Pulse Tap heals +1 (about +12%; was "Mend +10%", too small at +1.6 HP, see 4.14) | plus, e.g., a small heal on allies when Cleanse lands |
 | Gloam | +1 MP on turns you start Invisible | plus, e.g., more damage on the first hit out of Invisible |
 | Bastion | The first hit you take in each fight deals half damage | plus, e.g., Snap Wall also gives an adjacent ally Ward |
 
@@ -821,6 +822,127 @@ Drops (Proposed):
 **Mission rank** = how many missions the player has finished: rank 1 (0–9),
 2 (10–24), 3 (25–49), 4 (50–99), 5 (100+). This is how "advancing in missions
 gives better rewards" works, on top of the level tier.
+
+### 4.13 Rarities, Epics and Relics (Mauro's direction + Proposed items)
+
+Mauro, 3 Oct 2026: certain items should be **Epic** and **Relic** "like
+Wakfu: rings, weapons, helmets, etc." that you can wear **only one of**; some
+at **level 50**; and **at level 30 a Rare set that gives +1 AP or +1 MP, not
+both**.
+
+Checked against Wakfu: in Wakfu a character can equip **only one Epic and
+one Relic** item at a time (Wakfu wiki, "Equipment"). Everything else below
+is **our own design, Proposed**: the item names and effects are invented for
+Stasium XII, not copied from Wakfu.
+
+**Slots: 8.** The 5 set slots (head, cape, belt, boots, amulet) plus **3
+non-set slots: Ring, Ring, Weapon** (Proposed). Rings and weapons also drop as
+Regular and Rare items with the same budget per tier as set parts.
+
+**Rarities** (colours Proposed):
+
+| Rarity | Colour | Rule |
+|---|---|---|
+| Regular | White | Normal |
+| Rare | Blue | 1.5× budget + 1 extra stat |
+| **Epic** | Purple | A single strong item with its own effect. **Only 1 Epic worn.** From level 40. Can be traded. |
+| **Relic** | Gold | The strongest items. **Only 1 Relic worn.** Level 50. Bound to the player (can't be traded). |
+
+**Rare tier-30 set: +1 AP or +1 MP (Mauro's rule).** A full Rare tier-30
+class set (all 5 parts Rare) gives the player's choice of **+1 AP or +1 MP,
+never both**; switching the choice at the Smith costs Crypto Coins. Regular
+tier-30 parts give only the normal bonuses.
+
+**Epics** (Proposed, after the 4.14 review):
+
+| Epic | Slot | Level | Effect |
+|---|---|---|---|
+| Gale Signet | Ring | 40 | +1 MP, + Swift |
+| Abbess's Rosary | Amulet | 40 | +8% healing done, + Ward |
+| Ember Crown | Helmet | 45 | +1 range on spells with range 2 or more (range bonuses never stack, 4.14) |
+| Stormheart Gauntlet | Weapon | 45 | Your first hit each turn also deals 4 Air damage to one enemy next to the target |
+| Prism Striders | Boots | 50 | +1 MP. **The first 3 push attempts on you in a fight work normally; after that you can't be pushed for the rest of the fight** (Mauro's change; a blocked push still counts; per fight, Proposed) |
+
+Sources: a very rare drop from ★4–★5 runs of the level 40–50 dungeons, or
+crafted from those dungeons' unique materials plus Crypto Coins.
+
+**Relics** (Proposed, after the 4.14 review):
+
+| Relic | Slot | Effect |
+|---|---|---|
+| Heart of the Elder | Amulet | +1 AP, −10% max HP |
+| Crown of Crosshaven | Helmet | +1 AP and +1 MP for your first 2 turns of each fight |
+| Blightroot Ring | Ring | No AP. Your hits poison: 3 damage at the start of the target's turn for 2 turns, stacking up to 3 |
+
+Sources: only Heart of the Blight ★5 (very rare) or the end of the Last
+Watcher's level-50 mission chain.
+
+### 4.14 Balance review of sets, Epics and Relics (Proposed fixes)
+
+Mauro, 3 Oct 2026: "make sure everything is balanced." This is an analytical
+pass with the real PC kit numbers (`data/kits.gd`: 6 AP, 3 MP, 80 HP; Mark
+Shot 2 AP / 8, Detonate 3 AP / 6 + 6 per mark, Strike 3 AP / 16, Crush 4 AP
+/ 24, Cut 3 AP / 13, Ambush and Nightfold 4 AP / 22, Bash 3 AP / 11, Mend 3
+AP / 16, Pulse Tap 2 AP / 10). It assumes every hit lands and every condition
+is met, so it shows **where the risks are**; the final proof is the WP15
+simulator with the real CombatSim.
+
+**Finding 1: extra AP is uneven between classes.** Spells cost 2–4 AP, so one
+extra AP helps some classes a lot and others not at all:
+
+| Best damage (healing) per turn | 6 AP | 7 AP | 8 AP | 9 AP |
+|---|---|---|---|---|
+| Kestrel | 36 | 36 (+0%) | 44 (+22%) | 54 (+50%) |
+| Ironjaw | 32 | 40 (+25%) | 40 (+25%) | 48 (+50%) |
+| Gloam | 26 | 35 (+35%) | 44 (**+69%**) | 44 (+69%) |
+| Bastion | 22 | 22 (+0%) | 22 (+0%) | 33 (+50%) |
+| Mender (healing) | 32 | 36 (+12%) | 42 (+31%) | 48 (+50%) |
+
+Fixes:
+
+- **AP cap 8, MP cap 5** in the open world and dungeons (not 9 / 5). AP
+  sources are +1 at level 30 (4.11), the Rare tier-30 set (AP or MP), and the
+  Heart of the Elder or Crown of Crosshaven Relic, so a player picks which of
+  them to use; the third goes to MP or is wasted.
+- **Gloam gains most from AP** (+69% at 8). Gloam's tier 30–50 class sets lean
+  **Swift and Ward** instead of Mastery, and its signature effect is sized
+  smaller, until WP15 shows all classes within ±10% at 6, 7 and 8 AP.
+- **Kestrel and Bastion gain nothing from a 7th AP.** At tier 30 they should
+  take +1 MP from the Rare set; their tier 30+ signature effects carry more of
+  their power. Bastion is judged on damage taken, not damage dealt.
+- **Monsters at 30+ are tuned for players at 7 AP, and at 40+ for 8 AP.**
+
+**Finding 2: bonuses that stack get out of hand.** Fixes:
+
+- **Range bonuses never stack:** at most +1 range from all items (Skyfeather
+  and Ember Crown together still give +1).
+- **Healing bonuses from items cap at +20% total** (Tidewell + Abbess's
+  Rosary).
+- **One AP source per item category** is already enforced by "one Epic, one
+  Relic".
+
+**Finding 3: some effects were too small or too big.**
+
+- **Tidewell (Mender) was too small**: "Mend +10%" is only +1.6 HP. Now Mend
+  +2 and Pulse Tap +1 (about +12%).
+- **Prism Striders were too strong** (never pushed): now immune only after 3
+  push attempts per fight (Mauro).
+- **All three Relics gave +1 AP**, so every build would pick the same thing.
+  Now Blightroot Ring gives poison instead of AP, so Relics are a real choice.
+- Gale Signet (+1 MP) and Prism Striders (+1 MP) can't stack: only one Epic.
+
+**Finding 4: slots change an item's real value.** An Epic or Relic in a set
+slot (helmet, amulet, boots) breaks that set's 5-part bonus; one in a ring or
+weapon slot does not. So **ring and weapon Epics / Relics get a smaller budget
+(about 1.5 parts)** and set-slot ones a larger one (about 2.5 parts).
+
+**Finding 5: PvP stays safe.** Set stats, effects, Epics and Relics are all off
+in Koliseo PvP (4.11), so the Locked kit balance there does not change.
+
+**WP15 checks** (added to its acceptance): every class at 6, 7 and 8 AP; every
+class with each tier's class set, dungeon sets and the Epic / Relic choices;
+the stacking caps; fail if a class leaves the ±10% band or an item adds more
+than 15% (sets) or 20% (Epics / Relics).
 
 ### 4.12 Economy: what Crypto Coins buy, marketplace, crafting, houses (Mauro's direction + Proposed plan)
 
@@ -1218,6 +1340,9 @@ designated zones also monsters above lvl 25 are agressive".
 - **Sets:** also simulate each class at every tier with no set, the shared
   sets and its class set; fail when a 4.9 balance rule (1–7) is broken; print
   the per-class, per-tier table for Mauro.
+- **AP, Epics, Relics:** run every class at 6, 7 and 8 AP and with each Epic
+  and Relic choice; check the caps in 4.14 (AP 8, MP 5, +1 range, +20%
+  healing); fail when a 4.14 rule is broken.
 - **Media:** none (the printed table).
 
 #### WP10: Art for the new zones (Scenario, then Technical Artist)
@@ -1467,3 +1592,8 @@ headless.
     set bonuses, and "you will need to create a balanced set for every single
     class"** (4.9 class sets). The class set names, stats and 5-part effects
     in 4.9 are Proposed: Mauro to approve them.
+12. **Stat name clash:** the stat "Ward" (resistance, 4.11) has the same name
+    as Mender's spell "Ward" (a shield). Rename the PC stat to **Resist**?
+13. **Epics and Relics (4.13) after the balance review (4.14):** approve the
+    8 slots, the rarities, the items, the AP cap 8 / MP cap 5, and Prism
+    Striders' push rule counted per fight?
