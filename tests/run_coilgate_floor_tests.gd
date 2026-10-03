@@ -54,7 +54,9 @@ func _test_params_and_slots() -> void:
 		_check_import(path, str(spec.get("compress", "lossless")))
 	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
 	var src := FileAccess.get_file_as_string("res://board/pc/coilgate_floor.gd")
-	truthy(src.contains("trace"), "the glow shader reads the trace gradient")
+	truthy(src.contains("float intensity = tex.r;"), "glow intensity is the red channel")
+	truthy(src.contains("float flow = tex.g;"), "the flow gradient is the green channel")
+	eq(src.contains("max(tex.r"), false, "the glow shader does not collapse the mask to greyscale")
 	truthy(src.contains("hole_mask"), "the room hole is a generated mask")
 	truthy(src.contains("blend_add"), "pillars and pads stay additive")
 	var room_spec: Dictionary = slots.get("room_edge_dark", {})
@@ -62,7 +64,24 @@ func _test_params_and_slots() -> void:
 	var floor_spec: Dictionary = slots.get("floor_tiles", {})
 	var glow_spec: Dictionary = slots.get("glow_mask", {})
 	eq(floor_spec.get("slices", []), glow_spec.get("slices", []), "floor and glow strips share slot order")
-	eq(str(glow_spec.get("green", "")), "trace_gradient", "glow green is the trace gradient")
+	eq(str(glow_spec.get("format", "")), "rgb", "glow_mask is an RGB png")
+	var channels: Dictionary = glow_spec.get("channels", {})
+	eq(str(channels.get("r", "")), "glow_intensity", "red holds the glow intensity")
+	eq(str(channels.get("g", "")), "flow_gradient", "green holds the flow gradient")
+	var glow_tex := load(FLOOR.resolve_slot("glow_mask")) as Texture2D
+	var glow_img := glow_tex.get_image()
+	var fmt := glow_img.get_format()
+	eq(fmt == Image.FORMAT_L8 or fmt == Image.FORMAT_LA8, false, "glow_mask is stored as color, not greyscale")
+	var split := false
+	for y in glow_img.get_height():
+		for x in glow_img.get_width():
+			var px := glow_img.get_pixel(x, y)
+			if absf(px.r - px.g) > 0.04:
+				split = true
+				break
+		if split:
+			break
+	truthy(split, "glow_mask red and green carry different data")
 
 
 func _test_board_wires_the_theme() -> void:

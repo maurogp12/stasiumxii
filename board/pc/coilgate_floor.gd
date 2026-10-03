@@ -13,17 +13,18 @@ const THEME_ID := "coilgate"
 const GLOW_SLICES := 4
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
+// glow_mask.png is RGB. R is glow intensity. G is the flow gradient along the traces.
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
 uniform float flow_speed = 0.35;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	float shape = tex.r;
-	float trace = tex.g;
+	float intensity = tex.r;
+	float flow = tex.g;
 	float pulse = 0.62 + 0.38 * sin(TIME * TAU * pulse_hz + phase);
-	float along = fract(trace - TIME * flow_speed);
-	float energy = smoothstep(0.16, 0.0, abs(along - 0.12)) * step(0.02, trace);
-	float glow = shape * (0.5 * pulse + energy);
+	float along = fract(flow - TIME * flow_speed);
+	float energy = smoothstep(0.16, 0.0, abs(along - 0.12));
+	float glow = intensity * (0.55 * pulse + energy);
 	COLOR = vec4(vec3(0.55, 0.95, 1.0) * glow, glow);
 }
 """
