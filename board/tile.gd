@@ -423,6 +423,48 @@ func fill_color() -> Color:
 	return _terrain_color()
 
 
+## Opaque color under the highlight. A look floor uses the plate shader at the
+## slot center. Otherwise this is the terrain fill.
+func cell_base_color() -> Color:
+	if _look_floor != null:
+		var image := _look_floor.get_image()
+		if image != null and not image.is_empty():
+			var sample := image.get_pixel(int(image.get_width() / 2), int(image.get_height() / 2))
+			var lift := clampf(_look_lift, 0.05, 1.0)
+			var grade := Color(_look_grade.r * _look_pulse, _look_grade.g * _look_pulse, _look_grade.b * _look_pulse, 1.0)
+			return Color(
+				pow(maxf(sample.r, 0.0002), lift) * grade.r,
+				pow(maxf(sample.g, 0.0002), lift) * grade.g,
+				pow(maxf(sample.b, 0.0002), lift) * grade.b,
+				1.0
+			)
+	return Color(fill_color().r, fill_color().g, fill_color().b, 1.0)
+
+
+## The polygon color paint_highlight_overlay draws, before the reveal fade.
+## overlay_color() stays the flat catalog color. This is the paint that hits the cell.
+func highlight_fill_color() -> Color:
+	var kind := highlight if highlight != "" else _shown_highlight
+	if kind == "":
+		return Color(0, 0, 0, 0)
+	var saved := highlight
+	highlight = kind
+	var color := overlay_color()
+	highlight = saved
+	if color.a <= 0.0:
+		return color
+	if kind == "move":
+		color = Color(0.55, 0.93, 1.0, 0.88)
+		var breathe := move_pulse_scale()
+		color.r = minf(color.r * breathe, 1.0)
+		color.g = minf(color.g * breathe, 1.0)
+		color.b = minf(color.b * breathe, 1.0)
+	var deploy := _deploy_tint(kind)
+	if deploy.a > 0.0:
+		color = deploy
+	return color
+
+
 ## Semi-transparent copy of the flat highlight color, or alpha 0 when idle.
 func overlay_color() -> Color:
 	var flat := _highlight_flat_color()
@@ -470,10 +512,7 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		hover_line.append(hover_pts[0])
 		canvas.draw_polyline(hover_line, Color(0.72, 0.90, 0.82, 0.55), 1.6, true)
 		return
-	var saved := highlight
-	highlight = kind
-	var color := overlay_color()
-	highlight = saved
+	var color := highlight_fill_color()
 	if color.a <= 0.0 or _reveal <= 0.001:
 		return
 	var points := _diamond_points()
@@ -483,19 +522,14 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	var line := Color(color.r, color.g, color.b, 0.95)
 	var width := 4.2 if kind == "origin" or kind == "landing" else (3.4 if kind == "range" else 1.8)
 	if kind == "move":
-		color = Color(0.55, 0.93, 1.0, 0.88)
 		line = Color(0.75, 1.0, 1.0, 1.0)
 		width = 4.0
 		var breathe := move_pulse_scale()
-		color.r = minf(color.r * breathe, 1.0)
-		color.g = minf(color.g * breathe, 1.0)
-		color.b = minf(color.b * breathe, 1.0)
 		line.r = minf(line.r * breathe, 1.0)
 		line.g = minf(line.g * breathe, 1.0)
 		line.b = minf(line.b * breathe, 1.0)
 	var deploy := _deploy_tint(kind)
 	if deploy.a > 0.0:
-		color = deploy
 		line = Color(deploy.r, deploy.g, deploy.b, minf(0.55, deploy.a + 0.20))
 		width = 1.6
 	color.a *= _reveal

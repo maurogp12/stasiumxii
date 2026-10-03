@@ -463,7 +463,7 @@ func _test_l3b_grid_pulse_glyphs() -> void:
 	eq(BoardTile.DEPLOY_P2, Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0), "P2 deploy fill is #E05A4A")
 	truthy(view_src.contains("locked_p1"), "a locked P1 cell keeps the P1 tint")
 	truthy(view_src.contains("locked_p2"), "a locked P2 cell keeps the P2 tint")
-	_test_rendered_deploy_zones()
+	_test_deploy_zone_paint()
 	for id in ["zone", "deploy", "occupied"]:
 		var painted := (load("res://art/pc/look/glyphs/glyph_%s@2x.png" % id) as Texture2D).get_image()
 		truthy(_glyph_has_dark_rim(painted), "%s has the dark violet rim" % id)
@@ -619,20 +619,164 @@ func _face_pad(hud: Node) -> GridContainer:
 	return null
 
 
-func _test_rendered_deploy_zones() -> void:
-	var output: Array = []
-	var args := PackedStringArray([
-		"--display-driver", "x11" if OS.get_environment("DISPLAY") != "" else "headless",
-		"--rendering-driver", "opengl3",
-		"--audio-driver", "Dummy",
-		"--path", ProjectSettings.globalize_path("res://"),
-		"-s", "res://tests/pc/deploy_zone_pixels.gd",
-	])
-	var code := OS.execute(OS.get_executable_path(), args, output, true)
-	var text := "\n".join(output)
-	print(text)
-	truthy(code == 0, "rendered deploy zones stay under the move fill and do not alternate")
-	truthy(text.contains("DEPLOY_PIXELS"), "the deploy render reported luminance")
+## Headless. The framebuffer check lives in tests/pc/capture_l3b.gd, which needs a display.
+## This one composites the tile's own paint: team tint over the cell base, glyph at 0.65.
+func _test_deploy_zone_paint() -> void:
+	var glyphs: GDScript = load("res://board/pc/glyph_decals.gd")
+	var floor_script: GDScript = load("res://board/pc/thunderwell_floor.gd")
+	var zone_tex := glyphs.texture("zone") as Texture2D
+	var deploy_tex := glyphs.texture("deploy") as Texture2D
+	truthy(zone_tex != null and deploy_tex != null, "zone and deploy glyphs load for the colour check")
+	if zone_tex == null or deploy_tex == null:
+		return
+	var zone_img := zone_tex.get_image()
+	var deploy_img := deploy_tex.get_image()
+	truthy(zone_img != null and deploy_img != null, "glyph images are readable without a viewport")
+	if zone_img == null or deploy_img == null:
+		return
+	BoardTile.set_move_pulse_time(0.0)
+	var mover := TILE_SCRIPT.new() as BoardTile
+	mover.highlight = "move"
+	var move_fill := mover.highlight_fill_color()
+	mover.free()
+	var cap := _lum(Color(move_fill.r, move_fill.g, move_fill.b, 1.0))
+	truthy(cap > 0.80 and cap < 0.98, "the move fill cap is the painted cyan, not white")
+	var floor_path := str(floor_script.resolve_slot("floor_tiles"))
+	var floor_tex := load(floor_path) as Texture2D
+	var floor_params: Dictionary = floor_script.load_params()
+	truthy(floor_tex != null, "the thunderwell plate is readable without a viewport")
+	_sim.reset_match({
+		"seed": 3,
+		"map_id": "crosshaven",
+		"classes": ["kestrel", "ironjaw"],
+	})
+	var snap: Dictionary = _sim.snapshot()
+	_assert_deploy_paint(snap, glyphs, zone_img, deploy_img, cap, false, floor_tex, floor_params, floor_script)
+	_assert_deploy_paint(snap, glyphs, zone_img, deploy_img, cap, true, floor_tex, floor_params, floor_script)
+
+
+func _assert_deploy_paint(snap: Dictionary, glyphs: GDScript, zone_img: Image, deploy_img: Image, cap: float, thunderwell: bool, floor_tex: Texture2D, floor_params: Dictionary, floor_script: GDScript) -> void:
+	var tag := "thunderwell" if thunderwell else "crosshaven"
+	var legal0: Array[Vector2i] = _sim.legal_deploy_cells(0)
+	var legal1: Array[Vector2i] = _sim.legal_deploy_cells(1)
+	var tiles: Dictionary = {}
+	var kinds: Dictionary = {}
+	for seat in [0, 1]:
+		var legal: Array[Vector2i] = legal0 if seat == 0 else legal1
+		for cell in _sim.deploy_zone_cells(seat):
+			var tile := TILE_SCRIPT.new() as BoardTile
+			tile.grid_position = cell
+			tile.apply_board_data(SNAPSHOT_TILES.terrain_at(snap, cell), SNAPSHOT_TILES.elevation_at(snap, cell))
+			if thunderwell and floor_tex != null:
+				_wear_thunderwell(tile, cell, floor_tex, floor_params, floor_script)
+			var open_kind := "zone_p1" if seat == 0 else "zone_p2"
+			var locked_kind := "locked_p1" if seat == 0 else "locked_p2"
+			tile.highlight = open_kind if legal.has(cell) else locked_kind
+			tiles[cell] = tile
+			kinds[cell] = tile.highlight
+	_check_deploy_phase(tag, "open", tiles, kinds, glyphs, zone_img, deploy_img, cap)
+	for cell in tiles.keys():
+		var locked_tile: BoardTile = tiles[cell]
+		var locked_kind := "locked_p2" if str(kinds[cell]).ends_with("p2") else "locked_p1"
+		locked_tile.highlight = locked_kind
+		kinds[cell] = locked_kind
+	_check_deploy_phase(tag, "locked", tiles, kinds, glyphs, zone_img, deploy_img, cap)
+	for cell in tiles.keys():
+		(tiles[cell] as BoardTile).free()
+
+
+func _check_deploy_phase(tag: String, phase: String, tiles: Dictionary, kinds: Dictionary, glyphs: GDScript, zone_img: Image, deploy_img: Image, cap: float) -> void:
+	for cell in tiles.keys():
+		var tile: BoardTile = tiles[cell]
+		var kind := str(kinds[cell])
+		var fill := tile.highlight_fill_color()
+		eq(fill, _wanted_deploy_fill(kind), "%s %s %s paints %s" % [tag, phase, cell, kind])
+		truthy(_lum(Color(fill.r, fill.g, fill.b, 1.0)) < 0.75, "%s %s %s fill is not white" % [tag, phase, cell])
+		var with_glyph := kind.begins_with("zone_")
+		var peak := _deploy_peak(tile.cell_base_color(), fill, zone_img, deploy_img, glyphs, with_glyph)
+		truthy(peak < cap, "%s %s %s stays under the move fill (%.3f < %.3f)" % [tag, phase, cell, peak, cap])
+		for step in [Vector2i(1, 0), Vector2i(0, 1)]:
+			var other: Vector2i = (cell as Vector2i) + step
+			if not tiles.has(other) or str(kinds[other]) != kind:
+				continue
+			var neighbour: BoardTile = tiles[other]
+			eq(neighbour.highlight_fill_color(), fill, "%s %s %s and %s share one fill" % [tag, phase, cell, other])
+			var here := _deploy_final(tile.cell_base_color(), fill, zone_img, deploy_img, glyphs, with_glyph)
+			var swapped := _deploy_final(tile.cell_base_color(), neighbour.highlight_fill_color(), zone_img, deploy_img, glyphs, with_glyph)
+			truthy(_colors_match(here, swapped), "%s %s %s matches %s" % [tag, phase, cell, other])
+
+
+func _wanted_deploy_fill(kind: String) -> Color:
+	var base := BoardTile.DEPLOY_P1
+	if kind.ends_with("p2"):
+		base = BoardTile.DEPLOY_P2
+	if kind.begins_with("locked"):
+		return Color(base.r * BoardTile.DEPLOY_LOCKED_SCALE, base.g * BoardTile.DEPLOY_LOCKED_SCALE, base.b * BoardTile.DEPLOY_LOCKED_SCALE, BoardTile.DEPLOY_LOCKED_ALPHA)
+	return Color(base.r, base.g, base.b, BoardTile.DEPLOY_FILL_ALPHA)
+
+
+func _wear_thunderwell(tile: BoardTile, cell: Vector2i, floor_tex: Texture2D, params: Dictionary, floor_script: GDScript) -> void:
+	var count: int = floor_script.strip_slots(floor_tex.get_width(), floor_tex.get_height())
+	var routes: Array = floor_script.board_routes(params)
+	var plan: Dictionary = floor_script.tile_plan(cell, routes)
+	var index := int(plan.get("slot", 0))
+	var slice_w := float(floor_tex.get_width()) / float(maxi(count, 1))
+	var atlas := AtlasTexture.new()
+	atlas.atlas = floor_tex
+	atlas.region = Rect2(slice_w * float(index), 0.0, slice_w, float(floor_tex.get_height()))
+	var grade_raw: Array = params.get("floor_grade", [1.0, 1.0, 1.0])
+	tile.set_look_grade(Color(float(grade_raw[0]), float(grade_raw[1]), float(grade_raw[2])))
+	tile.set_look_lift(float(params.get("floor_lift", 1.0)))
+	tile.set_look_floor(atlas)
+
+
+func _deploy_final(base: Color, tint: Color, zone_img: Image, deploy_img: Image, glyphs: GDScript, with_glyph: bool) -> Color:
+	var field := _over(Color(base.r, base.g, base.b, 1.0), tint)
+	if not with_glyph:
+		return field
+	var alpha := float(glyphs.GLYPH_ALPHA)
+	var zone_px := zone_img.get_pixel(int(zone_img.get_width() / 2), int(zone_img.get_height() / 2))
+	var deploy_px := deploy_img.get_pixel(int(deploy_img.get_width() / 2), int(deploy_img.get_height() / 2))
+	field = _over(field, Color(zone_px.r, zone_px.g, zone_px.b, zone_px.a * alpha))
+	return _over(field, Color(deploy_px.r, deploy_px.g, deploy_px.b, deploy_px.a * alpha))
+
+
+func _deploy_peak(base: Color, tint: Color, zone_img: Image, deploy_img: Image, glyphs: GDScript, with_glyph: bool) -> float:
+	var field := _over(Color(base.r, base.g, base.b, 1.0), tint)
+	var peak := _lum(field)
+	if not with_glyph:
+		return peak
+	var alpha := float(glyphs.GLYPH_ALPHA)
+	var height := mini(zone_img.get_height(), deploy_img.get_height())
+	var width := mini(zone_img.get_width(), deploy_img.get_width())
+	for y in height:
+		for x in width:
+			var zone_px := zone_img.get_pixel(x, y)
+			var deploy_px := deploy_img.get_pixel(x, y)
+			var stacked := _over(field, Color(zone_px.r, zone_px.g, zone_px.b, zone_px.a * alpha))
+			stacked = _over(stacked, Color(deploy_px.r, deploy_px.g, deploy_px.b, deploy_px.a * alpha))
+			peak = maxf(peak, _lum(stacked))
+	return peak
+
+
+func _over(dst: Color, src: Color) -> Color:
+	var out_a := src.a + dst.a * (1.0 - src.a)
+	if out_a <= 0.0001:
+		return Color(0, 0, 0, 0)
+	return Color(
+		(src.r * src.a + dst.r * dst.a * (1.0 - src.a)) / out_a,
+		(src.g * src.a + dst.g * dst.a * (1.0 - src.a)) / out_a,
+		(src.b * src.a + dst.b * dst.a * (1.0 - src.a)) / out_a,
+		out_a
+	)
+
+
+func _colors_match(a: Color, b: Color) -> bool:
+	return absf(a.r - b.r) < 0.001 and absf(a.g - b.g) < 0.001 and absf(a.b - b.b) < 0.001 and absf(a.a - b.a) < 0.001
+
+
+func _lum(color: Color) -> float:
+	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
 
 
 func _glyph_has_dark_rim(image: Image) -> bool:
