@@ -3,6 +3,8 @@
   "format_version": 1,
   "status": "proposed",
   "max_level": 50,
+  "pace_start": 1.6,
+  "pace_ratio": 0.9532,
   "xp_to_next": [
     100, 300, 580, 920, 1310, 1760, 2250,
     2790, 3360, 3980, 4640, 5330, 6060, 6820,
