@@ -29,7 +29,7 @@ func _enable_preview_glow() -> void:
 	vp.use_hdr_2d = true
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CANVAS
-	var cap := FLOOR.glow_cap()
+	var cap := maxf(FLOOR.glow_strength(), maxf(FLOOR.pad_strength(), FLOOR.pillar_strength()))
 	env.glow_enabled = true
 	env.glow_intensity = cap
 	env.glow_strength = cap

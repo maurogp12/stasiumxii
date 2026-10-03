@@ -56,21 +56,39 @@ func _test_params_and_slots() -> void:
 	var src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
 	truthy(src.contains("float intensity = tex.r;"), "glow intensity is the red channel")
 	truthy(src.contains("float flow = tex.g;"), "the flow gradient is the green channel")
-	truthy(src.contains("float glow = min(intensity * (0.55 * pulse + energy), glow_cap);"), "the glow is capped so tiles stay readable")
+	truthy(src.contains("float glow = min(intensity * (0.55 * pulse + energy), glow_strength);"), "the trace glow is capped by the json strength")
 	eq(src.contains("coilgate"), false, "the floor script does not use the old phone name")
-	eq(float(params.get("glow_cap", 0.0)), FLOOR.glow_cap(), "the glow cap loads from the json")
-	var glow_raw: Array = params.get("glow_color", [])
-	eq(glow_raw.size(), 3, "the glow colour is a json rgb triple")
-	var loaded := FLOOR.glow_color()
-	truthy(is_equal_approx(loaded.r, float(glow_raw[0])), "glow colour red loads from the json")
-	truthy(is_equal_approx(loaded.g, float(glow_raw[1])), "glow colour green loads from the json")
-	truthy(is_equal_approx(loaded.b, float(glow_raw[2])), "glow colour blue loads from the json")
+	eq(float(params.get("glow_strength", 0.0)), FLOOR.glow_strength(), "the trace strength loads from the json")
+	eq(float(params.get("pad_strength", 0.0)), FLOOR.pad_strength(), "the pad strength loads from the json")
+	eq(float(params.get("pillar_strength", 0.0)), FLOOR.pillar_strength(), "the pillar strength loads from the json")
+	_assert_json_color(params, "glow_color", FLOOR.glow_color(), "glow")
+	_assert_json_color(params, "pillar_color", FLOOR.pillar_color(), "pillar")
+	_assert_json_color(params, "pad_blue_color", FLOOR.pad_blue_color(), "pad blue")
+	_assert_json_color(params, "pad_red_color", FLOOR.pad_red_color(), "pad red")
 	truthy(src.contains("uniform vec3 glow_color"), "the glow shader reads the theme colour")
+	truthy(src.contains("uniform float glow_strength"), "the trace cap is a shader uniform")
+	truthy(src.contains("uniform float pad_strength"), "the pad cap is a shader uniform")
+	truthy(src.contains("uniform float pillar_strength"), "the pillar cap is a shader uniform")
+	truthy(src.contains("uniform vec3 pillar_color"), "the pillar tint is a shader uniform")
+	truthy(src.contains("tex.rgb * pad_strength"), "pads keep the painted hue and only scale it")
 	eq(src.contains("vec3(0.55, 0.95, 1.0)"), false, "the floor glow is not a hardcoded sky cyan")
 	eq(src.contains("Color(0.45, 0.85, 1.0)"), false, "pads are not a hardcoded sky cyan")
 	eq(src.contains("Color(0.75, 1.0, 1.0)"), false, "pillars are not a hardcoded sky cyan")
 	eq(src.contains("Color(1.0, 0.45, 0.4)"), false, "pads are not a hardcoded orange")
+	var loaded := FLOOR.glow_color()
+	truthy(absf(_hue_gap(_hue_deg(loaded), 140.0)) <= 6.0, "the trace tint is green near 140 degrees")
 	_assert_hue_separated(loaded)
+	var pillar := FLOOR.pillar_color()
+	var pillar_span := maxf(pillar.r, maxf(pillar.g, pillar.b)) - minf(pillar.r, minf(pillar.g, pillar.b))
+	truthy(pillar_span / maxf(pillar.r, maxf(pillar.g, pillar.b)) < 0.25, "the pillar tint is a pale low-saturation green-white")
+	truthy(absf(_hue_gap(_hue_deg(pillar), 140.0)) <= 8.0, "the pillar tint stays on the green side of 140 degrees")
+	_assert_hue_separated(pillar)
+	truthy(absf(_hue_gap(_hue_deg(FLOOR.pad_blue_color()), 225.0)) <= 6.0, "the pad blue target is deep cobalt near 225 degrees")
+	truthy(absf(_hue_gap(_hue_deg(FLOOR.pad_red_color()), 350.0)) <= 6.0, "the pad red target is crimson near 350 degrees")
+	var move := BoardTile.new()
+	move.highlight = "move"
+	truthy(_rel_lum(FLOOR.pad_blue_color()) < _rel_lum(move.overlay_color()), "the pad blue target is darker than a move tile")
+	move.free()
 	eq(src.contains("max(tex.r"), false, "the glow shader does not collapse the mask to greyscale")
 	truthy(src.contains("hole_mask"), "the room hole is a generated mask")
 	truthy(src.contains("blend_add"), "pillars and pads stay additive")
@@ -113,7 +131,9 @@ func _test_board_wires_the_theme() -> void:
 	truthy(preview.contains("stormspire"), "the preview loads an existing arena, not a dungeon run")
 	eq(preview.contains("dungeon"), false, "the preview does not start a dungeon")
 	truthy(preview.contains("use_hdr_2d"), "the preview can turn on 2D HDR")
-	truthy(preview.contains("FLOOR.glow_cap()"), "the preview bloom follows the json cap")
+	truthy(preview.contains("FLOOR.glow_strength()"), "the preview bloom follows the trace strength")
+	truthy(preview.contains("FLOOR.pad_strength()"), "the preview bloom follows the pad strength")
+	truthy(preview.contains("FLOOR.pillar_strength()"), "the preview bloom follows the pillar strength")
 	truthy(preview.contains("PreviewGlow"), "the preview adds a glow environment")
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	eq(project.contains("hdr_2d"), false, "2D HDR stays off for the rest of the game")
@@ -189,7 +209,7 @@ func _test_live_theme() -> void:
 		var overlay := glow_tile.get_node_or_null("Highlight") as CanvasItem
 		truthy(overlay != null and overlay.z_index > glow_sprite.z_index, "move tiles draw above the floor glow")
 		var mat := glow_sprite.material as ShaderMaterial
-		_assert_glow_uniforms(mat, "the trace glow")
+		_assert_trace_uniforms(mat)
 	var pad_sprite: CanvasItem = null
 	for cell in board.tiles.keys():
 		var pad := (board.tiles[cell] as Node).get_node_or_null("ThunderPad") as CanvasItem
@@ -197,11 +217,11 @@ func _test_live_theme() -> void:
 			pad_sprite = pad
 			break
 	if pad_sprite != null:
-		_assert_glow_uniforms(pad_sprite.material as ShaderMaterial, "the pad glow")
+		_assert_pad_uniforms(pad_sprite.material as ShaderMaterial)
 	truthy(layer.pillar_count() > 0, "a pillar is up for the colour check")
 	var pillar := layer.get_node_or_null("ThunderPillar") as CanvasItem
 	if pillar != null:
-		_assert_glow_uniforms(pillar.material as ShaderMaterial, "the pillar glow")
+		_assert_pillar_uniforms(pillar.material as ShaderMaterial)
 	truthy(pads > 0, "the floor has glowing pads")
 	var origin: Vector2 = (board.tiles[Vector2i(7, 7)] as Node2D).position
 	layer.preview_time(0.0)
@@ -236,17 +256,49 @@ func _test_live_theme() -> void:
 	FLOOR.request_theme("")
 
 
-func _assert_glow_uniforms(mat: ShaderMaterial, label: String) -> void:
-	truthy(mat != null, "%s has a shader" % label)
+func _assert_json_color(params: Dictionary, key: String, loaded: Color, label: String) -> void:
+	var raw: Array = params.get(key, [])
+	eq(raw.size(), 3, "the %s colour is a json rgb triple" % label)
+	if raw.size() < 3:
+		return
+	truthy(is_equal_approx(loaded.r, float(raw[0])) and is_equal_approx(loaded.g, float(raw[1])) and is_equal_approx(loaded.b, float(raw[2])), "the %s colour loads from the json" % label)
+
+
+func _assert_trace_uniforms(mat: ShaderMaterial) -> void:
+	truthy(mat != null, "the trace glow has a shader")
 	if mat == null:
 		return
-	var want := FLOOR.glow_color()
-	var got: Variant = mat.get_shader_parameter("glow_color")
+	_assert_vec3(mat, "glow_color", FLOOR.glow_color(), "the trace glow")
+	truthy(is_equal_approx(float(mat.get_shader_parameter("glow_strength")), FLOOR.glow_strength()), "the trace glow loads the json strength")
+
+
+func _assert_pad_uniforms(mat: ShaderMaterial) -> void:
+	truthy(mat != null, "the pad has a shader")
+	if mat == null:
+		return
+	truthy(is_equal_approx(float(mat.get_shader_parameter("pad_strength")), FLOOR.pad_strength()), "the pad loads the json strength")
+	eq(mat.get_shader_parameter("glow_color") == null, true, "the pad shader does not recolour with the glow tint")
+	eq(mat.get_shader_parameter("pillar_color") == null, true, "the pad shader does not recolour with the pillar tint")
+
+
+func _assert_pillar_uniforms(mat: ShaderMaterial) -> void:
+	truthy(mat != null, "the pillar has a shader")
+	if mat == null:
+		return
+	_assert_vec3(mat, "pillar_color", FLOOR.pillar_color(), "the pillar")
+	truthy(is_equal_approx(float(mat.get_shader_parameter("pillar_strength")), FLOOR.pillar_strength()), "the pillar loads the json strength")
+
+
+func _assert_vec3(mat: ShaderMaterial, key: String, want: Color, label: String) -> void:
+	var got: Variant = mat.get_shader_parameter(key)
 	truthy(got is Vector3, "%s colour is a vector" % label)
 	if got is Vector3:
 		var rgb: Vector3 = got
 		truthy(is_equal_approx(rgb.x, want.r) and is_equal_approx(rgb.y, want.g) and is_equal_approx(rgb.z, want.b), "%s loads the json colour" % label)
-	truthy(is_equal_approx(float(mat.get_shader_parameter("glow_cap")), FLOOR.glow_cap()), "%s loads the json cap" % label)
+
+
+func _rel_lum(color: Color) -> float:
+	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
 
 
 func _assert_hue_separated(glow: Color) -> void:

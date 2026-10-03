@@ -107,20 +107,23 @@ func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, be
 	var pillar := _pillar_at(layer, beside)
 	var pillar_px := _brightest(image, _screen_rect(pillar), beside_center, zoom, pillar)
 	var trace_near_pillar := _brightest_glow(board, image, beside, beside_center, zoom)
+	var brightest := pad_px
+	for sample in [trace_near_pad, pillar_px, trace_near_pillar]:
+		if float(sample["lum"]) > float(brightest["lum"]):
+			brightest = sample
 	_print_sample("move_over_pad", move_pad)
+	_print_sample("move_beside_pillar", move_pillar)
+	_print_sample("brightest_glow", brightest)
 	_print_sample("pad_near_move", pad_px)
 	_print_sample("trace_near_pad", trace_near_pad)
-	_print_sample("move_beside_pillar", move_pillar)
 	_print_sample("pillar_near_move", pillar_px)
 	_print_sample("trace_near_pillar", trace_near_pillar)
-	var move_l := maxf(float(move_pad["lum"]), 0.001)
-	var glow_l := maxf(float(pad_px["lum"]), maxf(float(trace_near_pad["lum"]), maxf(float(pillar_px["lum"]), float(trace_near_pillar["lum"]))))
-	var beside_l := float(move_pillar["lum"])
+	var glow_l := float(brightest["lum"])
 	print("GLOW_ZOOM %s pad=%s beside=%s" % [zoom, pad_cell, beside])
-	print("GLOW_CAP json=%s color=%s" % [FLOOR.glow_cap(), FLOOR.glow_color()])
-	print("GLOW_BELOW_PAD_TILE %s" % str(float(pad_px["lum"]) < float(move_pad["lum"]) and float(trace_near_pad["lum"]) < float(move_pad["lum"])))
-	print("GLOW_BELOW_PILLAR_TILE %s" % str(float(pillar_px["lum"]) < beside_l and float(trace_near_pillar["lum"]) < beside_l))
-	print("GLOW_PEAK_VS_MOVE peak=%s move=%s" % [glow_l, move_l])
+	print("GLOW_STRENGTH trace=%s pad=%s pillar=%s" % [FLOOR.glow_strength(), FLOOR.pad_strength(), FLOOR.pillar_strength()])
+	print("GLOW_BELOW_MOVE %s" % str(glow_l < float(move_pad["lum"]) and glow_l < float(move_pillar["lum"])))
+	print("GLOW_VS_PAD_TILE glow=%s move=%s" % [glow_l, float(move_pad["lum"])])
+	print("GLOW_VS_PILLAR_TILE glow=%s move=%s" % [glow_l, float(move_pillar["lum"])])
 
 
 func _print_sample(label: String, sample: Dictionary) -> void:
