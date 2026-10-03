@@ -2,23 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bi3uqe644reii"
-path.bptc="res://.godot/imported/back_mid.png-df2124769681032b7e0f424267e7289a.bptc.ctex"
-path.astc="res://.godot/imported/back_mid.png-df2124769681032b7e0f424267e7289a.astc.ctex"
+uid="uid://dgxannu4svk4j"
+path="res://.godot/imported/front_leaves_right@2x.png-b9aa1031955ccc978402cc0c52aa1ab2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/crosshaven_jungle/back_mid.png"
-dest_files=["res://.godot/imported/back_mid.png-df2124769681032b7e0f424267e7289a.bptc.ctex", "res://.godot/imported/back_mid.png-df2124769681032b7e0f424267e7289a.astc.ctex"]
+source_file="res://art/pc/look/crosshaven_jungle/front_leaves_right@2x.png"
+dest_files=["res://.godot/imported/front_leaves_right@2x.png-b9aa1031955ccc978402cc0c52aa1ab2.ctex"]
 
 [params]
 
-compress/mode=2
-compress/high_quality=true
+compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
