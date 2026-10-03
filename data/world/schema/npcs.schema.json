@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_npcs.v1.json",
+  "title": "Stasium PC world NPCs",
+  "description": "Sidecar stasium.world_npcs version 1. Section 4.5. Every role only talks. Shops, quests, storage, travel and healing stay Open.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "npcs"],
+  "properties": {
+    "format": {"const": "stasium.world_npcs"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "npcs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/npc"}
+    }
+  },
+  "$defs": {
+    "npc": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "role", "zone_id", "cell", "facing", "body", "lines", "status"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "name": {"type": "string", "minLength": 1},
+        "role": {
+          "enum": [
+            "warden", "trader", "door_keeper", "guide", "herald", "banker", "elder",
+            "smith", "fisher", "farmer", "woodcutter", "archivist", "ferry_captain",
+            "forge_master", "fen_guide", "hermit", "seer", "last_watcher", "coil_engineer"
+          ]
+        },
+        "zone_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "cell": {"$ref": "#/$defs/cell"},
+        "facing": {"enum": ["N", "E", "S", "W"]},
+        "body": {"type": "string", "minLength": 1},
+        "lines": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "status": {"const": "proposed"}
+      }
+    },
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

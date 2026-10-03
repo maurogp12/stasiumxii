@@ -1,0 +1,908 @@
+{
+  "format": "stasium.world_npcs",
+  "format_version": 1,
+  "status": "proposed",
+  "npcs": [
+    {
+      "id": "crossroads_guide",
+      "name": "Guide",
+      "role": "guide",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 24,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_guide",
+      "lines": [
+        "Welcome to Crosshaven.",
+        "Click the ground to walk. Gold arrows lead on."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "crossroads_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 21,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Crosshaven Heart.",
+        "This band is levels 1 to 5."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "crossroads_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 19,
+        "y": 17
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Crosshaven Heart.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "crossroads_herald",
+      "name": "Koliseo Herald",
+      "role": "herald",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 18,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_herald",
+      "lines": [
+        "I am the Koliseo Herald.",
+        "The arena list is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "crossroads_banker",
+      "name": "Banker",
+      "role": "banker",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 20,
+        "y": 20
+      },
+      "facing": "S",
+      "body": "npc_banker",
+      "lines": [
+        "I keep the Crypto Bank.",
+        "The bank is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "granary_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "crosshaven_crossroads",
+      "cell": {
+        "x": 24,
+        "y": 15
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Old Granary Cellar.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "towns_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 20,
+        "y": 15
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Crosshaven Towns.",
+        "This band is levels 5 to 10."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "towns_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 21,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Crosshaven Towns.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "northgate_elder",
+      "name": "Northgate Elder",
+      "role": "elder",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 20,
+        "y": 17
+      },
+      "facing": "S",
+      "body": "npc_elder",
+      "lines": [
+        "I am the Elder of Northgate.",
+        "A respec is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_elder",
+      "name": "Stoneford Elder",
+      "role": "elder",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 19,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_elder",
+      "lines": [
+        "I am the Elder of Stoneford.",
+        "A respec is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_elder",
+      "name": "Eastmarch Elder",
+      "role": "elder",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 19,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_elder",
+      "lines": [
+        "I am the Elder of Eastmarch.",
+        "A respec is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_elder",
+      "name": "Westwatch Elder",
+      "role": "elder",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 17,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_elder",
+      "lines": [
+        "I am the Elder of Westwatch.",
+        "A respec is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_elder",
+      "name": "Southbridge Elder",
+      "role": "elder",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 19,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_elder",
+      "lines": [
+        "I am the Elder of Southbridge.",
+        "A respec is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_smith",
+      "name": "Smith",
+      "role": "smith",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 18,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_smith",
+      "lines": [
+        "I am the Smith of Stoneford.",
+        "The forge bench is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_fisher",
+      "name": "Fisher",
+      "role": "fisher",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 18,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_fisher",
+      "lines": [
+        "I am the Fisher of Eastmarch.",
+        "The docks are this town's water."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "millrace_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 12,
+        "y": 21
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Millrace Vaults.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "rowanvale_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "rowanvale_hub",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Rowanvale.",
+        "This band is levels 10 to 15."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "rowanvale_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "rowanvale_hub",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Rowanvale.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "rowanvale_farmer",
+      "name": "Farmer",
+      "role": "farmer",
+      "zone_id": "rowanvale_hub",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_farmer",
+      "lines": [
+        "I farm the Rowanvale hamlet.",
+        "The fields beyond are still being laid."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "rowanvale_woodcutter",
+      "name": "Woodcutter",
+      "role": "woodcutter",
+      "zone_id": "rowanvale_hub",
+      "cell": {
+        "x": 17,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_woodcutter",
+      "lines": [
+        "I cut wood for the Rowanvale hamlet.",
+        "The deep stands are not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "barrow_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "rowanvale_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Rotting Orchard Barrow.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "windmere_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "windmere_hub",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Windmere.",
+        "This band is levels 15 to 20."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "windmere_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "windmere_hub",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Windmere.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "windmere_archivist",
+      "name": "Spire Archivist",
+      "role": "archivist",
+      "zone_id": "windmere_hub",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_archivist",
+      "lines": [
+        "I am the Spire Archivist of Windmere.",
+        "The archive shelves are not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "archive_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "windmere_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Frostspire Archive.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "brinewake_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "brinewake_hub",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Brinewake.",
+        "This band is levels 20 to 25."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "brinewake_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "brinewake_hub",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Brinewake.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "brinewake_ferry_captain",
+      "name": "Ferry Captain",
+      "role": "ferry_captain",
+      "zone_id": "brinewake_hub",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_ferry_captain",
+      "lines": [
+        "I am the Ferry Captain of Brinewake.",
+        "The island crossing is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "grotto_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "brinewake_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Saltmaw Grotto.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "slagcrown_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "slagcrown_hub",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Slagcrown.",
+        "This band is levels 25 to 30."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "slagcrown_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "slagcrown_hub",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Slagcrown.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "slagcrown_forge_master",
+      "name": "Forge Master",
+      "role": "forge_master",
+      "zone_id": "slagcrown_hub",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_forge_master",
+      "lines": [
+        "I am the Forge Master of Slagcrown.",
+        "The camp forge is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "cinderforge_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "slagcrown_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Cinderforge Depths.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_fen_edge_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "eastmarch_fen_edge_entry",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Eastmarch Fen Edge.",
+        "This band is levels 25 to 30."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_fen_edge_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "eastmarch_fen_edge_entry",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Eastmarch Fen Edge.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "fen_edge_guide",
+      "name": "Fen Guide",
+      "role": "fen_guide",
+      "zone_id": "eastmarch_fen_edge_entry",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_fen_guide",
+      "lines": [
+        "I am the Fen Guide.",
+        "The swamp road is levels 25 to 30."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "sunken_mill_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "eastmarch_fen_edge_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Sunken Mill.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "gloomfen_mire_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "gloomfen_mire_entry",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Gloomfen Mire.",
+        "This band is levels 30 to 38."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "gloomfen_mire_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "gloomfen_mire_entry",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Gloomfen Mire.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "gloomfen_hermit",
+      "name": "Hermit",
+      "role": "hermit",
+      "zone_id": "gloomfen_mire_entry",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_hermit",
+      "lines": [
+        "I am the Hermit of Gloomfen Mire.",
+        "The boardwalk maze is levels 30 to 38."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "abbey_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "gloomfen_mire_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Drowned Abbey.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stormspire_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "stormspire_entry",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Stormspire.",
+        "This band is levels 35 to 40."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stormspire_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "stormspire_entry",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Stormspire.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stormspire_coil_engineer",
+      "name": "Coil Engineer",
+      "role": "coil_engineer",
+      "zone_id": "stormspire_entry",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_coil_engineer",
+      "lines": [
+        "I am the Coil Engineer of Stormspire.",
+        "The plateau is levels 35 to 40."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "thunderwell_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "stormspire_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Thunderwell Core.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "ashen_shardfields_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "ashen_shardfields_entry",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Ashen Shardfields.",
+        "This band is levels 38 to 45."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "ashen_shardfields_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "ashen_shardfields_entry",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Ashen Shardfields.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "ashen_seer",
+      "name": "Shard Seer",
+      "role": "seer",
+      "zone_id": "ashen_shardfields_entry",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_seer",
+      "lines": [
+        "I am the Shard Seer of the Ashen Shardfields.",
+        "The dunes are levels 38 to 45."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "shard_hollow_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "ashen_shardfields_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Shard Hollow.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "blightwood_hollow_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "blightwood_hollow_entry",
+      "cell": {
+        "x": 15,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Blightwood Hollow.",
+        "This band is levels 45 to 50."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "blightwood_hollow_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "blightwood_hollow_entry",
+      "cell": {
+        "x": 16,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Blightwood Hollow.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "blightwood_last_watcher",
+      "name": "Last Watcher",
+      "role": "last_watcher",
+      "zone_id": "blightwood_hollow_entry",
+      "cell": {
+        "x": 18,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_last_watcher",
+      "lines": [
+        "I am the Last Watcher of Blightwood Hollow.",
+        "This is the end of the road, levels 45 to 50."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "blight_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "blightwood_hollow_door",
+      "cell": {
+        "x": 21,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Heart of the Blight.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    }
+  ]
+}

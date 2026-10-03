@@ -1,0 +1,14 @@
+WP6 grade contact sheet and the talk clip.
+
+Grade contact sheet: docs/pc/media/wp6/grade_contact_sheet.png
+Nine region entries, same camera and zoom as the WP5a stills (zoom 1.6, 1920×1080 source frames, noon).
+The before frames stay at docs/pc/media/wp5a/stills/. This sheet is the after.
+Windmere is cold blue and desaturated. Brinewake is sea teal with a light blue haze.
+Stormspire is darker slate grey-violet, with wind. Gloomfen is green-grey fog with a higher haze.
+Fen Edge sits halfway between Crosshaven and Gloomfen. Slagcrown and Blightwood are unchanged.
+Rowanvale and Ashen keep their previous grades.
+
+Talk clip: docs/pc/media/wp6/wp6_guide_elder.mp4
+960×720, 30 fps, H.264, 9.9 s. The hero walks from the Crossroads spawn to the Guide,
+they face each other, and the dialogue slides in. Then the same with the Stoneford Elder.
+Esc or a click outside closes the panel. The Coming soon button stays disabled.
