@@ -279,6 +279,31 @@ func _test_l5_hex_plate_and_scale() -> void:
 	truthy(plate.target_ratio() < OverheadPlate.LOW_LIFE, "16 of 80 is under 30%")
 	var low_ink := plate.fill_color()
 	truthy(low_ink != OverheadPlate.TEAM_P1, "low life tints the bar")
+	eq(low_ink, OverheadPlate.AMBER, "20% life is full amber")
+	eq(OverheadPlate.life_color(OverheadPlate.TEAM_P1, 16, 80), OverheadPlate.AMBER, "16 of 80 pins the amber swatch")
+	plate.tick(0.5)
+	eq(plate.pulse_clock(), 0.0, "20% life does not pulse")
+	var edge := _unit_dict("kestrel", "E", 0)
+	edge["hp"] = 24
+	plate.sync_from_unit(edge)
+	eq(plate.fill_color(), OverheadPlate.TEAM_P1, "30% life stays the team colour")
+	var mid := _unit_dict("kestrel", "E", 0)
+	mid["hp"] = 20
+	plate.sync_from_unit(mid)
+	var mid_ink := plate.fill_color()
+	eq(mid_ink, OverheadPlate.life_color(OverheadPlate.TEAM_P1, 20, 80), "30% to 20% is a short lerp")
+	truthy(mid_ink != OverheadPlate.TEAM_P1 and mid_ink != OverheadPlate.AMBER, "the lerp sits between the team colour and amber")
+	eq(plate.pulsed_fill(), mid_ink, "the lerp does not pulse")
+	var critical := _unit_dict("kestrel", "E", 0)
+	critical["hp"] = 11
+	plate.sync_from_unit(critical)
+	eq(plate.fill_color(), OverheadPlate.AMBER, "below 15% stays full amber")
+	var before_pulse := plate.pulsed_fill()
+	for _pulse_step in 8:
+		plate.tick(1.0 / 30.0)
+	truthy(plate.pulse_clock() > 0.2, "below 15% the pulse advances")
+	truthy(plate.pulsed_fill() != before_pulse, "about 1 Hz moves the amber")
+	eq(plate.fill_color(), OverheadPlate.AMBER, "the pulse keeps the amber swatch")
 	pawn.position = BoardVisualSort.cell_to_local(Vector2i(7, 7))
 	foe.position = BoardVisualSort.cell_to_local(Vector2i(8, 7))
 	var pair: Array[OverheadPlate] = [plate, foe_plate]

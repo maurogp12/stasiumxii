@@ -27,6 +27,7 @@ const TOAST_SEC := 1.4
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const TOUCH := preload("res://ui/touch_adapter.gd")
+const PC_BAR := preload("res://ui/pc/action_bar.gd")
 
 var _selected_spell: String = ""
 var _spell_buttons: Dictionary = {}
@@ -34,6 +35,9 @@ var _face_buttons: Dictionary = {}
 var _face_bar: HBoxContainer
 var _action_bar: FlowContainer
 var _ability_cluster: Control
+var _resource_panel: Panel
+var _legacy_combat: Control
+var _pc_bar: Control
 var _bottom_box: VBoxContainer
 var _kestrel_body: RichTextLabel
 var _ironjaw_body: RichTextLabel
@@ -822,6 +826,7 @@ func render(snap: Dictionary, legal: Array) -> void:
 	_apply_controls(match_over)
 	_sync_deploy_chrome(snap)
 	_sync_stun_badge(chrome, units, match_over)
+	_present_pc_bar()
 
 
 func _apply_controls(match_over: bool) -> void:
@@ -848,6 +853,7 @@ func _apply_controls(match_over: bool) -> void:
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
+	_present_pc_bar()
 
 
 func _build() -> void:
@@ -889,6 +895,7 @@ func _build() -> void:
 	root.add_child(_stun_badge)
 
 	var resource_panel := Panel.new()
+	_resource_panel = resource_panel
 	resource_panel.position = Vector2(300, 44)
 	resource_panel.size = Vector2(360, 74)
 	resource_panel.add_theme_stylebox_override("panel", _panel(Color(1, 1, 1, 0.78)))
@@ -929,6 +936,7 @@ func _build() -> void:
 
 	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
 	var combat_row := HBoxContainer.new()
+	_legacy_combat = combat_row
 	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	combat_row.add_theme_constant_override("separation", 8)
 	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -1074,7 +1082,7 @@ func _build() -> void:
 	_tooltip_label.size = Vector2(456, 232)
 	_tooltip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_tooltip_label.add_theme_font_size_override("font_size", 13)
-	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	_tooltip_label.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86))
 	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.add_child(_tooltip_label)
 
@@ -1100,6 +1108,10 @@ func _build() -> void:
 	_handoff_label.add_theme_color_override("font_color", Color(1, 1, 1))
 	_handoff_label.text = "Kestrel's turn"
 	_handoff_panel.add_child(_handoff_label)
+
+	_pc_bar = PC_BAR.new()
+	_pc_bar.name = "PcActionBar"
+	root.add_child(_pc_bar)
 
 	_update_selected_label()
 
@@ -1381,8 +1393,8 @@ func _panel(color: Color) -> StyleBoxFlat:
 
 
 func _card_panel() -> StyleBoxFlat:
-	var box := _panel(Color(0.99, 0.97, 0.9, 0.97))
-	box.border_color = Color(0.18, 0.12, 0.1, 0.85)
+	var box := _panel(Color(0.08, 0.07, 0.06, 0.96))
+	box.border_color = Color(0.86, 0.72, 0.38, 0.9)
 	box.border_width_left = 2
 	box.border_width_top = 2
 	box.border_width_right = 2
@@ -1689,6 +1701,7 @@ func _refresh_spell_buttons() -> void:
 		var can_submit: bool = legal_spells.has(spell_id) and not match_over and not _stunned and not _deploying and is_local_turn(_last_snap)
 		_set_spell_button_clickable(button, can_submit)
 		_apply_spell_modulate(str(spell_id), button, can_submit)
+	_present_pc_bar()
 
 
 ## Ambush gold / shade highlight only while the cast is in legal_intents.
@@ -1782,6 +1795,7 @@ func show_spell_tooltip(spell_id: String) -> void:
 		return
 	_tooltip_spell = spell_id
 	_tooltip_label.text = text
+	_fit_tooltip_panel()
 	_tooltip_panel.visible = true
 
 
@@ -1893,6 +1907,8 @@ func _on_spell_unhover() -> void:
 func claims_screen_point(point: Vector2) -> bool:
 	if not is_inside_tree():
 		return false
+	if _pc_bar != null and _pc_bar.is_visible_in_tree() and _pc_bar.get_global_rect().has_point(point):
+		return true
 	for spell_id in _spell_hosts.keys():
 		if _control_claims(_spell_hosts[spell_id], point):
 			return true
@@ -1913,11 +1929,62 @@ func claims_screen_point(point: Vector2) -> bool:
 
 
 func _control_claims(control: Control, point: Vector2) -> bool:
-	if control == null or not is_instance_valid(control) or not control.visible:
-		return false
-	if not control.is_inside_tree():
+	if control == null or not is_instance_valid(control) or not control.is_visible_in_tree():
 		return false
 	return control.get_global_rect().has_point(point)
+
+
+## The touch cluster, the unit cards and the old button row stay in the tree
+## for the existing chrome. The painted bar is what the player sees.
+func fold_legacy_chrome() -> void:
+	for panel in _banner_panels:
+		panel.visible = false
+	if _resource_panel != null:
+		_resource_panel.visible = false
+	if _ability_cluster != null:
+		_ability_cluster.visible = false
+	if _legacy_combat != null:
+		_legacy_combat.visible = false
+	if _bottom_box != null:
+		_bottom_box.offset_bottom = -PC_BAR.BAR_H
+		_bottom_box.offset_top = -PC_BAR.BAR_H - 80.0
+	if _pc_bar != null:
+		_pc_bar.visible = true
+
+
+func place_tooltip_above(anchor: Vector2) -> void:
+	if _tooltip_panel == null:
+		return
+	_fit_tooltip_panel()
+	var size := _tooltip_panel.size
+	var parent := _tooltip_panel.get_parent() as Control
+	var local := anchor
+	if parent != null:
+		local = parent.get_global_transform().affine_inverse() * anchor
+	var x := clampf(local.x - size.x * 0.5, 8.0, 952.0 - size.x)
+	var y := local.y - size.y - 8.0
+	if y < 8.0:
+		y = local.y + 12.0
+	_tooltip_panel.position = Vector2(x, y)
+	if parent != null:
+		parent.move_child(_tooltip_panel, parent.get_child_count() - 1)
+
+
+func _fit_tooltip_panel() -> void:
+	if _tooltip_panel == null or _tooltip_label == null:
+		return
+	var font := ThemeDB.fallback_font
+	var measure := font.get_multiline_string_size(_tooltip_label.text, HORIZONTAL_ALIGNMENT_LEFT, 320, 13)
+	var width := clampf(measure.x + 20.0, 160.0, 360.0)
+	var height := clampf(measure.y + 16.0, 48.0, 220.0)
+	_tooltip_panel.size = Vector2(width, height)
+	_tooltip_label.size = Vector2(width - 16.0, height - 12.0)
+
+
+func _present_pc_bar() -> void:
+	if _pc_bar == null or not _pc_bar.has_method("present"):
+		return
+	_pc_bar.present(self)
 
 
 func _on_spell_host_input(event: InputEvent, spell_id: String) -> void:
