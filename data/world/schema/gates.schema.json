@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_gates.v1.json",
+  "title": "Stasium PC world gates",
+  "description": "Sidecar stasium.world_gates version 1. Gates only join different regions. A gate into a new region lands on that region's entry chunk. Crosshaven chunk files are not edited.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "gates"],
+  "properties": {
+    "format": {"const": "stasium.world_gates"},
+    "format_version": {"const": 1},
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "from", "to", "label", "two_way"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "from": {"$ref": "#/$defs/cell"},
+          "to": {"$ref": "#/$defs/cell"},
+          "label": {"type": "string", "minLength": 1},
+          "two_way": {"type": "boolean"}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["zone_id", "x", "y"],
+      "properties": {
+        "zone_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "x": {"type": "integer", "minimum": 0},
+        "y": {"type": "integer", "minimum": 0}
+      }
+    }
+  }
+}

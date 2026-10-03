@@ -1,0 +1,14 @@
+WP14 clip and stills. A seeded world-fight win, then a Mystery Box opened from the inventory.
+
+Clip: docs/pc/media/wp14/wp14_reward_box.mp4
+960×720, 30 fps, H.264, 164 frames (5.5 s). The movie writer locks that size.
+
+Stills, 1920×1080, noon, zoom 1.35, Crossroads:
+docs/pc/media/wp14/reward_popup.png
+Seed 60, level 1. Victory pays 5 Crypto Coins and a Wayfarer Cape (regular).
+
+docs/pc/media/wp14/box_in_bag.png
+The inventory (I), Boxes tab, with one Mystery Box. World fights do not drop boxes.
+
+docs/pc/media/wp14/box_open.png
+Opening that box pays 130 Crypto Coins. A box gives exactly one thing.

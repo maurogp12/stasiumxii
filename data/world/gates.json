@@ -1,0 +1,160 @@
+{
+  "format": "stasium.world_gates",
+  "format_version": 1,
+  "gates": [
+    {
+      "id": "stoneford_to_rowanvale",
+      "from": {"zone_id": "crosshaven_stoneford", "x": 3, "y": 0},
+      "to": {"zone_id": "rowanvale_entry", "x": 0, "y": 16},
+      "label": "To Rowanvale (10-15)",
+      "two_way": true
+    },
+    {
+      "id": "rowanvale_to_stoneford",
+      "from": {"zone_id": "rowanvale_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_stoneford", "x": 3, "y": 0},
+      "label": "To Stoneford (1-10)",
+      "two_way": true
+    },
+    {
+      "id": "northgate_to_windmere",
+      "from": {"zone_id": "crosshaven_northgate", "x": 0, "y": 3},
+      "to": {"zone_id": "windmere_entry", "x": 0, "y": 16},
+      "label": "To Windmere (15-20)",
+      "two_way": true
+    },
+    {
+      "id": "windmere_to_northgate",
+      "from": {"zone_id": "windmere_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_northgate", "x": 0, "y": 3},
+      "label": "To Northgate (10-20)",
+      "two_way": true
+    },
+    {
+      "id": "eastmarch_to_brinewake",
+      "from": {"zone_id": "crosshaven_eastmarch", "x": 32, "y": 0},
+      "to": {"zone_id": "brinewake_entry", "x": 0, "y": 16},
+      "label": "To Brinewake (20-25)",
+      "two_way": true
+    },
+    {
+      "id": "brinewake_to_eastmarch",
+      "from": {"zone_id": "brinewake_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_eastmarch", "x": 32, "y": 0},
+      "label": "To Eastmarch (20-30)",
+      "two_way": true
+    },
+    {
+      "id": "southbridge_to_slagcrown",
+      "from": {"zone_id": "crosshaven_southbridge", "x": 39, "y": 28},
+      "to": {"zone_id": "slagcrown_entry", "x": 0, "y": 16},
+      "label": "To Slagcrown (25-30)",
+      "two_way": true
+    },
+    {
+      "id": "slagcrown_to_southbridge",
+      "from": {"zone_id": "slagcrown_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_southbridge", "x": 39, "y": 28},
+      "label": "To Southbridge (30-40)",
+      "two_way": true
+    },
+    {
+      "id": "road_east_to_fen_edge",
+      "from": {"zone_id": "crosshaven_road_east", "x": 18, "y": 0},
+      "to": {"zone_id": "eastmarch_fen_edge_entry", "x": 0, "y": 16},
+      "label": "To Eastmarch Fen Edge (25-30)",
+      "two_way": true
+    },
+    {
+      "id": "fen_edge_to_road_east",
+      "from": {"zone_id": "eastmarch_fen_edge_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_road_east", "x": 18, "y": 0},
+      "label": "To the east road (20-30)",
+      "two_way": true
+    },
+    {
+      "id": "fen_edge_to_gloomfen",
+      "from": {"zone_id": "eastmarch_fen_edge_door", "x": 0, "y": 16},
+      "to": {"zone_id": "gloomfen_mire_entry", "x": 0, "y": 16},
+      "label": "To Gloomfen Mire (30-38)",
+      "two_way": true
+    },
+    {
+      "id": "gloomfen_to_fen_edge",
+      "from": {"zone_id": "gloomfen_mire_entry", "x": 16, "y": 0},
+      "to": {"zone_id": "eastmarch_fen_edge_entry", "x": 16, "y": 0},
+      "label": "To Eastmarch Fen Edge (25-30)",
+      "two_way": true
+    },
+    {
+      "id": "gloomfen_to_stormspire",
+      "from": {"zone_id": "gloomfen_mire_boardwalk_6", "x": 16, "y": 0},
+      "to": {"zone_id": "stormspire_entry", "x": 0, "y": 16},
+      "label": "To Stormspire (35-40)",
+      "two_way": true
+    },
+    {
+      "id": "stormspire_to_gloomfen",
+      "from": {"zone_id": "stormspire_entry", "x": 16, "y": 0},
+      "to": {"zone_id": "gloomfen_mire_entry", "x": 0, "y": 17},
+      "label": "To Gloomfen Mire (30-38)",
+      "two_way": true
+    },
+    {
+      "id": "westwatch_to_ashen",
+      "from": {"zone_id": "crosshaven_westwatch", "x": 35, "y": 28},
+      "to": {"zone_id": "ashen_shardfields_entry", "x": 0, "y": 16},
+      "label": "To Ashen Shardfields (38-45)",
+      "two_way": true
+    },
+    {
+      "id": "ashen_to_westwatch",
+      "from": {"zone_id": "ashen_shardfields_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "crosshaven_westwatch", "x": 35, "y": 28},
+      "label": "To Westwatch (40-50)",
+      "two_way": true
+    },
+    {
+      "id": "slagcrown_to_ashen",
+      "from": {"zone_id": "slagcrown_volcanic_3", "x": 0, "y": 16},
+      "to": {"zone_id": "ashen_shardfields_entry", "x": 16, "y": 0},
+      "label": "To Ashen Shardfields (38-45)",
+      "two_way": true
+    },
+    {
+      "id": "ashen_to_slagcrown",
+      "from": {"zone_id": "ashen_shardfields_entry", "x": 16, "y": 0},
+      "to": {"zone_id": "slagcrown_entry", "x": 16, "y": 0},
+      "label": "To Slagcrown (25-30)",
+      "two_way": true
+    },
+    {
+      "id": "rowanvale_to_blightwood",
+      "from": {"zone_id": "rowanvale_farmland_3", "x": 0, "y": 16},
+      "to": {"zone_id": "blightwood_hollow_entry", "x": 0, "y": 16},
+      "label": "To Blightwood Hollow (45-50)",
+      "two_way": true
+    },
+    {
+      "id": "blightwood_to_rowanvale",
+      "from": {"zone_id": "blightwood_hollow_entry", "x": 0, "y": 16},
+      "to": {"zone_id": "rowanvale_entry", "x": 16, "y": 0},
+      "label": "To Rowanvale (10-15)",
+      "two_way": true
+    },
+    {
+      "id": "windmere_to_blightwood",
+      "from": {"zone_id": "windmere_outer_3", "x": 0, "y": 16},
+      "to": {"zone_id": "blightwood_hollow_entry", "x": 16, "y": 0},
+      "label": "To Blightwood Hollow (45-50)",
+      "two_way": true
+    },
+    {
+      "id": "blightwood_to_windmere",
+      "from": {"zone_id": "blightwood_hollow_entry", "x": 16, "y": 0},
+      "to": {"zone_id": "windmere_entry", "x": 16, "y": 0},
+      "label": "To Windmere (15-20)",
+      "two_way": true
+    }
+  ]
+}

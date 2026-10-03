@@ -1,0 +1,2866 @@
+{
+ "format": "crosshaven_animated_v4",
+ "status": "PROPOSED - art suggestion, nothing wired in-engine",
+ "scale_note": "1x files here, 2x masters in _2x/ (exactly 2x)",
+ "sheet_layout": "horizontal strip, frames left->right, frame_size each",
+ "animations": {
+  "_sway_masks": {
+   "files": "animated/sway_masks/<prop>_swaymask.png (+ _2x/)",
+   "note": "8-bit L mask, same size as the *_sway frames (static sprite padded); 0 = pinned, 255 = full swing. Use with a CanvasItem shader on the STATIC sprite instead of the flipbook (see README)."
+  },
+  "bird": {
+   "file": "animated/bird.png",
+   "file_2x": "animated/_2x/bird.png",
+   "frame_size": [
+    22,
+    18
+   ],
+   "frame_size_2x": [
+    44,
+    36
+   ],
+   "frames": 6,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 0.5,
+   "anchor": "centre; faces +x (flip_h for -x)",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "flight flap loop; fly across the screen at 60-90 px/s at 1x, high above the ground; pair with bird_shadow on the ground offset down-right",
+   "status": "PROPOSED"
+  },
+  "bird_shadow": {
+   "file": "animated/bird_shadow.png",
+   "file_2x": "animated/_2x/bird_shadow.png",
+   "frame_size": [
+    18,
+    8
+   ],
+   "frame_size_2x": [
+    36,
+    16
+   ],
+   "frames": 1,
+   "fps": 1,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "soft ground shadow for birds (draw on the ground layer, offset ~+40,+70 px at 1x from the bird)",
+   "status": "PROPOSED"
+  },
+  "bush_a_shadow_sway": {
+   "file": "animated/shadows/bush_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_a_shadow_sway.png",
+   "frame_size": [
+    78,
+    50
+   ],
+   "frame_size_2x": [
+    156,
+    100
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_a_sway frame (i.e. bottom-centre anchor - (26, 36) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_a_sway": {
+   "file": "animated/bush_a_sway.png",
+   "file_2x": "animated/_2x/bush_a_sway.png",
+   "frame_size": [
+    52,
+    36
+   ],
+   "frame_size_2x": [
+    104,
+    72
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_a.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_a",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "bush_autumn_shadow_sway": {
+   "file": "animated/shadows/bush_autumn_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_autumn_shadow_sway.png",
+   "frame_size": [
+    76,
+    46
+   ],
+   "frame_size_2x": [
+    152,
+    92
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_autumn_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_autumn_sway frame (i.e. bottom-centre anchor - (26, 33) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_autumn_sway": {
+   "file": "animated/bush_autumn_sway.png",
+   "file_2x": "animated/_2x/bush_autumn_sway.png",
+   "frame_size": [
+    52,
+    33
+   ],
+   "frame_size_2x": [
+    104,
+    66
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_autumn.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_autumn",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "bush_b_shadow_sway": {
+   "file": "animated/shadows/bush_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_b_shadow_sway.png",
+   "frame_size": [
+    77,
+    48
+   ],
+   "frame_size_2x": [
+    154,
+    96
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_b_sway frame (i.e. bottom-centre anchor - (26, 34) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_b_sway": {
+   "file": "animated/bush_b_sway.png",
+   "file_2x": "animated/_2x/bush_b_sway.png",
+   "frame_size": [
+    52,
+    34
+   ],
+   "frame_size_2x": [
+    104,
+    68
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_b.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_b",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "bush_flower_shadow_sway": {
+   "file": "animated/shadows/bush_flower_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_flower_shadow_sway.png",
+   "frame_size": [
+    77,
+    49
+   ],
+   "frame_size_2x": [
+    154,
+    98
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_flower_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_flower_sway frame (i.e. bottom-centre anchor - (26, 35) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_flower_sway": {
+   "file": "animated/bush_flower_sway.png",
+   "file_2x": "animated/_2x/bush_flower_sway.png",
+   "frame_size": [
+    52,
+    35
+   ],
+   "frame_size_2x": [
+    104,
+    70
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_flower.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_flower",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "bush_small_a_shadow_sway": {
+   "file": "animated/shadows/bush_small_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_small_a_shadow_sway.png",
+   "frame_size": [
+    74,
+    43
+   ],
+   "frame_size_2x": [
+    148,
+    86
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_small_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_small_a_sway frame (i.e. bottom-centre anchor - (26, 30) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_small_a_sway": {
+   "file": "animated/bush_small_a_sway.png",
+   "file_2x": "animated/_2x/bush_small_a_sway.png",
+   "frame_size": [
+    52,
+    30
+   ],
+   "frame_size_2x": [
+    104,
+    60
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_small_a.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_small_a",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "bush_small_b_shadow_sway": {
+   "file": "animated/shadows/bush_small_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/bush_small_b_shadow_sway.png",
+   "frame_size": [
+    73,
+    41
+   ],
+   "frame_size_2x": [
+    146,
+    82
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "bush_small_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching bush_small_b_sway frame (i.e. bottom-centre anchor - (26, 29) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "bush_small_b_sway": {
+   "file": "animated/bush_small_b_sway.png",
+   "file_2x": "animated/_2x/bush_small_b_sway.png",
+   "frame_size": [
+    52,
+    29
+   ],
+   "frame_size_2x": [
+    104,
+    58
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/bush_small_b.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "bush_small_b",
+   "blend": "mix",
+   "note": "bush sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "butterfly_blue": {
+   "file": "animated/butterfly_blue.png",
+   "file_2x": "animated/_2x/butterfly_blue.png",
+   "frame_size": [
+    14,
+    12
+   ],
+   "frame_size_2x": [
+    28,
+    24
+   ],
+   "frames": 4,
+   "fps": 16,
+   "loop": true,
+   "duration_s": 0.25,
+   "anchor": "centre (insect; draw a 2px soft shadow ~10px below at 1x)",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "wing flap loop; wander on smooth noise paths over flowers, 15-30 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_blue_lg": {
+   "file": "animated/butterfly_blue_lg.png",
+   "file_2x": "animated/_2x/butterfly_blue_lg.png",
+   "frame_size": [
+    30,
+    24
+   ],
+   "frame_size_2x": [
+    60,
+    48
+   ],
+   "frames": 6,
+   "fps": 18,
+   "loop": true,
+   "duration_s": 0.333,
+   "anchor": "centre (insect); draw a soft shadow 18-26 px below at 1x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v5 larger butterfly (30x24 frame, fore/hind wings, wing spots, antennae), 6-frame flap @ 18 fps; wander on smooth noise paths 20-40 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_orange_lg": {
+   "file": "animated/butterfly_orange_lg.png",
+   "file_2x": "animated/_2x/butterfly_orange_lg.png",
+   "frame_size": [
+    30,
+    24
+   ],
+   "frame_size_2x": [
+    60,
+    48
+   ],
+   "frames": 6,
+   "fps": 18,
+   "loop": true,
+   "duration_s": 0.333,
+   "anchor": "centre (insect); draw a soft shadow 18-26 px below at 1x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v5 larger butterfly (30x24 frame, fore/hind wings, wing spots, antennae), 6-frame flap @ 18 fps; wander on smooth noise paths 20-40 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_pink": {
+   "file": "animated/butterfly_pink.png",
+   "file_2x": "animated/_2x/butterfly_pink.png",
+   "frame_size": [
+    14,
+    12
+   ],
+   "frame_size_2x": [
+    28,
+    24
+   ],
+   "frames": 4,
+   "fps": 16,
+   "loop": true,
+   "duration_s": 0.25,
+   "anchor": "centre (insect; draw a 2px soft shadow ~10px below at 1x)",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "wing flap loop; wander on smooth noise paths over flowers, 15-30 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_pink_lg": {
+   "file": "animated/butterfly_pink_lg.png",
+   "file_2x": "animated/_2x/butterfly_pink_lg.png",
+   "frame_size": [
+    30,
+    24
+   ],
+   "frame_size_2x": [
+    60,
+    48
+   ],
+   "frames": 6,
+   "fps": 18,
+   "loop": true,
+   "duration_s": 0.333,
+   "anchor": "centre (insect); draw a soft shadow 18-26 px below at 1x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v5 larger butterfly (30x24 frame, fore/hind wings, wing spots, antennae), 6-frame flap @ 18 fps; wander on smooth noise paths 20-40 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_yellow": {
+   "file": "animated/butterfly_yellow.png",
+   "file_2x": "animated/_2x/butterfly_yellow.png",
+   "frame_size": [
+    14,
+    12
+   ],
+   "frame_size_2x": [
+    28,
+    24
+   ],
+   "frames": 4,
+   "fps": 16,
+   "loop": true,
+   "duration_s": 0.25,
+   "anchor": "centre (insect; draw a 2px soft shadow ~10px below at 1x)",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "wing flap loop; wander on smooth noise paths over flowers, 15-30 px/s",
+   "status": "PROPOSED"
+  },
+  "butterfly_yellow_lg": {
+   "file": "animated/butterfly_yellow_lg.png",
+   "file_2x": "animated/_2x/butterfly_yellow_lg.png",
+   "frame_size": [
+    30,
+    24
+   ],
+   "frame_size_2x": [
+    60,
+    48
+   ],
+   "frames": 6,
+   "fps": 18,
+   "loop": true,
+   "duration_s": 0.333,
+   "anchor": "centre (insect); draw a soft shadow 18-26 px below at 1x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v5 larger butterfly (30x24 frame, fore/hind wings, wing spots, antennae), 6-frame flap @ 18 fps; wander on smooth noise paths 20-40 px/s",
+   "status": "PROPOSED"
+  },
+  "cat_idle": {
+   "file": "animated/cat_idle.png",
+   "file_2x": "animated/_2x/cat_idle.png",
+   "frame_size": [
+    34,
+    26
+   ],
+   "frame_size_2x": [
+    68,
+    52
+   ],
+   "frames": 6,
+   "fps": 6,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "bottom-centre = feet; faces +x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "critter idle loop: tail swish + blink",
+   "status": "PROPOSED"
+  },
+  "cat_walk": {
+   "file": "animated/cat_walk.png",
+   "file_2x": "animated/_2x/cat_walk.png",
+   "frame_size": [
+    34,
+    26
+   ],
+   "frame_size_2x": [
+    68,
+    52
+   ],
+   "frames": 6,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 0.5,
+   "anchor": "bottom-centre = feet; faces +x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "critter walk loop, 14-20 px/s",
+   "status": "PROPOSED"
+  },
+  "chicken_peck": {
+   "file": "animated/chicken_peck.png",
+   "file_2x": "animated/_2x/chicken_peck.png",
+   "frame_size": [
+    26,
+    24
+   ],
+   "frame_size_2x": [
+    52,
+    48
+   ],
+   "frames": 6,
+   "fps": 6,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "bottom-centre = feet; faces +x",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "critter idle/peck loop",
+   "status": "PROPOSED"
+  },
+  "chicken_walk": {
+   "file": "animated/chicken_walk.png",
+   "file_2x": "animated/_2x/chicken_walk.png",
+   "frame_size": [
+    26,
+    24
+   ],
+   "frame_size_2x": [
+    52,
+    48
+   ],
+   "frames": 6,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 0.5,
+   "anchor": "bottom-centre = feet; faces +x (flip_h for -x)",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "critter walk loop, 8-12 px/s",
+   "status": "PROPOSED"
+  },
+  "cloud_shadow_a": {
+   "file": "animated/cloud_shadow_a.png",
+   "file_2x": "animated/_2x/cloud_shadow_a.png",
+   "size": [
+    256,
+    256
+   ],
+   "size_2x": [
+    512,
+    512
+   ],
+   "frames": 1,
+   "fps": 0,
+   "loop": true,
+   "anchor": "tileable texture",
+   "blend": "mix (multiply-like: dark cool colour, alpha <= 0.46)",
+   "note": "v4.1 darker drifting cloud-shadow overlay: tile in world space over the ground+props and scroll ~40-80 px/s at 1x (one tile per 10 s loops seamlessly); two layers (a,b) at different speeds/scales read best",
+   "status": "PROPOSED"
+  },
+  "cloud_shadow_b": {
+   "file": "animated/cloud_shadow_b.png",
+   "file_2x": "animated/_2x/cloud_shadow_b.png",
+   "size": [
+    256,
+    256
+   ],
+   "size_2x": [
+    512,
+    512
+   ],
+   "frames": 1,
+   "fps": 0,
+   "loop": true,
+   "anchor": "tileable texture",
+   "blend": "mix (multiply-like: dark cool colour, alpha <= 0.46)",
+   "note": "v4.1 darker drifting cloud-shadow overlay: tile in world space over the ground+props and scroll ~40-80 px/s at 1x (one tile per 10 s loops seamlessly); two layers (a,b) at different speeds/scales read best",
+   "status": "PROPOSED"
+  },
+  "ember": {
+   "file": "animated/ember.png",
+   "file_2x": "animated/_2x/ember.png",
+   "frame_size": [
+    12,
+    12
+   ],
+   "frame_size_2x": [
+    24,
+    24
+   ],
+   "frames": 6,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 0.5,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "add",
+   "note": "forge/brazier ember spark flicker; spawn at the forge mouth / bowl, rise 30-45 px/s with sideways wobble, fade out after ~1.2 s; 6-8 alive per fire",
+   "status": "PROPOSED"
+  },
+  "fire_small": {
+   "file": "animated/fire_small.png",
+   "file_2x": "animated/_2x/fire_small.png",
+   "frame_size": [
+    30,
+    44
+   ],
+   "frame_size_2x": [
+    60,
+    88
+   ],
+   "frames": 8,
+   "fps": 15.2,
+   "loop": true,
+   "duration_s": 0.526,
+   "anchor": "bottom-centre = fire base",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v4.1 flickering flame loop (frame-to-frame height jumps, detached licks, soft heat glow); ~15 fps. Add a PointLight2D/lamp_glow with energy flicker",
+   "status": "PROPOSED"
+  },
+  "firefly": {
+   "file": "animated/firefly.png",
+   "file_2x": "animated/_2x/firefly.png",
+   "frame_size": [
+    16,
+    16
+   ],
+   "frame_size_2x": [
+    32,
+    32
+   ],
+   "frames": 4,
+   "fps": 6,
+   "loop": true,
+   "duration_s": 0.667,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "add",
+   "note": "dusk/night glow pulse; hover near water/reeds/hedges on slow noise paths",
+   "status": "PROPOSED"
+  },
+  "flowers_a_sway": {
+   "file": "animated/flowers_a_sway.png",
+   "file_2x": "animated/_2x/flowers_a_sway.png",
+   "frame_size": [
+    32,
+    31
+   ],
+   "frame_size_2x": [
+    64,
+    62
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/flowers_a.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "flowers_a",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.6px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "flowers_b_sway": {
+   "file": "animated/flowers_b_sway.png",
+   "file_2x": "animated/_2x/flowers_b_sway.png",
+   "frame_size": [
+    32,
+    31
+   ],
+   "frame_size_2x": [
+    64,
+    62
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/flowers_b.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "flowers_b",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.6px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "flowers_c_sway": {
+   "file": "animated/flowers_c_sway.png",
+   "file_2x": "animated/_2x/flowers_c_sway.png",
+   "frame_size": [
+    38,
+    31
+   ],
+   "frame_size_2x": [
+    76,
+    62
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/flowers_c.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "flowers_c",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.6px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "flowers_d_sway": {
+   "file": "animated/flowers_d_sway.png",
+   "file_2x": "animated/_2x/flowers_d_sway.png",
+   "frame_size": [
+    38,
+    32
+   ],
+   "frame_size_2x": [
+    76,
+    64
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/flowers_d.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "flowers_d",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.6px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "fountain_water": {
+   "file": "animated/fountain_water.png",
+   "file_2x": "animated/_2x/fountain_water.png",
+   "frame_size": [
+    108,
+    82
+   ],
+   "frame_size_2x": [
+    216,
+    164
+   ],
+   "frames": 12,
+   "fps": 10.8,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "identical canvas + anchor to props/fountain_2x2.png (child at offset 0,0, draw above)",
+   "pairs_with": "fountain_2x2",
+   "blend": "mix",
+   "note": "v4.1: top jet, spilling curtain, splash crowns, basin rings; 12 frames @ 10.8 fps",
+   "status": "PROPOSED"
+  },
+  "grass_tuft_a_sway": {
+   "file": "animated/grass_tuft_a_sway.png",
+   "file_2x": "animated/_2x/grass_tuft_a_sway.png",
+   "frame_size": [
+    50,
+    29
+   ],
+   "frame_size_2x": [
+    100,
+    58
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/grass_tuft_a.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "grass_tuft_a",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "grass_tuft_b_sway": {
+   "file": "animated/grass_tuft_b_sway.png",
+   "file_2x": "animated/_2x/grass_tuft_b_sway.png",
+   "frame_size": [
+    46,
+    30
+   ],
+   "frame_size_2x": [
+    92,
+    60
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/grass_tuft_b.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "grass_tuft_b",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "grass_tuft_tall_a_sway": {
+   "file": "animated/grass_tuft_tall_a_sway.png",
+   "file_2x": "animated/_2x/grass_tuft_tall_a_sway.png",
+   "frame_size": [
+    54,
+    37
+   ],
+   "frame_size_2x": [
+    108,
+    74
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/grass_tuft_tall_a.png; frame is 9px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "grass_tuft_tall_a",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~3.5px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "leaf_fall_gold": {
+   "file": "animated/leaf_fall_gold.png",
+   "file_2x": "animated/_2x/leaf_fall_gold.png",
+   "frame_size": [
+    16,
+    16
+   ],
+   "frame_size_2x": [
+    32,
+    32
+   ],
+   "frames": 12,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v4.1 tumbling leaf (almond blade + midrib, spins and flips), 12 frames; spawn in canopies, fall ~20 px/s at 1x with a wide sinusoidal swing, rest briefly and fade on the ground",
+   "status": "PROPOSED"
+  },
+  "leaf_fall_green": {
+   "file": "animated/leaf_fall_green.png",
+   "file_2x": "animated/_2x/leaf_fall_green.png",
+   "frame_size": [
+    16,
+    16
+   ],
+   "frame_size_2x": [
+    32,
+    32
+   ],
+   "frames": 12,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v4.1 tumbling leaf (almond blade + midrib, spins and flips), 12 frames; spawn in canopies, fall ~20 px/s at 1x with a wide sinusoidal swing, rest briefly and fade on the ground",
+   "status": "PROPOSED"
+  },
+  "leaf_fall_red": {
+   "file": "animated/leaf_fall_red.png",
+   "file_2x": "animated/_2x/leaf_fall_red.png",
+   "frame_size": [
+    16,
+    16
+   ],
+   "frame_size_2x": [
+    32,
+    32
+   ],
+   "frames": 12,
+   "fps": 12,
+   "loop": true,
+   "duration_s": 1.0,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v4.1 tumbling leaf (almond blade + midrib, spins and flips), 12 frames; spawn in canopies, fall ~20 px/s at 1x with a wide sinusoidal swing, rest briefly and fade on the ground",
+   "status": "PROPOSED"
+  },
+  "reeds_a_sway": {
+   "file": "animated/reeds_a_sway.png",
+   "file_2x": "animated/_2x/reeds_a_sway.png",
+   "frame_size": [
+    62,
+    40
+   ],
+   "frame_size_2x": [
+    124,
+    80
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/reeds_a.png; frame is 11px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "reeds_a",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.5px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "reeds_b_sway": {
+   "file": "animated/reeds_b_sway.png",
+   "file_2x": "animated/_2x/reeds_b_sway.png",
+   "frame_size": [
+    52,
+    39
+   ],
+   "frame_size_2x": [
+    104,
+    78
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/reeds_b.png; frame is 11px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "reeds_b",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.5px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "smoke_puff": {
+   "file": "animated/smoke_puff.png",
+   "file_2x": "animated/_2x/smoke_puff.png",
+   "frame_size": [
+    44,
+    44
+   ],
+   "frame_size_2x": [
+    88,
+    88
+   ],
+   "frames": 12,
+   "fps": 3.6,
+   "loop": false,
+   "duration_s": 3.333,
+   "anchor": "centre",
+   "pairs_with": null,
+   "blend": "mix",
+   "note": "v4.1 thick puff lifecycle (spawn -> billow -> fade), 12 frames over 3.3 s. Emit one every 0.67 s per chimney (5 alive), rise ~17 px/s at 1x with +x drift ~8 px/s and a gentle sideways wobble; lit from the top-left",
+   "status": "PROPOSED"
+  },
+  "tree_apple_shadow_sway": {
+   "file": "animated/shadows/tree_apple_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_apple_shadow_sway.png",
+   "frame_size": [
+    110,
+    84
+   ],
+   "frame_size_2x": [
+    220,
+    168
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_apple_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_apple_sway frame (i.e. bottom-centre anchor - (34, 62) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_apple_sway": {
+   "file": "animated/tree_apple_sway.png",
+   "file_2x": "animated/_2x/tree_apple_sway.png",
+   "frame_size": [
+    68,
+    62
+   ],
+   "frame_size_2x": [
+    136,
+    124
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_apple.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_apple",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_autumn_a_shadow_sway": {
+   "file": "animated/shadows/tree_autumn_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_autumn_a_shadow_sway.png",
+   "frame_size": [
+    131,
+    108
+   ],
+   "frame_size_2x": [
+    262,
+    216
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_autumn_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_autumn_a_sway frame (i.e. bottom-centre anchor - (39, 80) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_autumn_a_sway": {
+   "file": "animated/tree_autumn_a_sway.png",
+   "file_2x": "animated/_2x/tree_autumn_a_sway.png",
+   "frame_size": [
+    78,
+    80
+   ],
+   "frame_size_2x": [
+    156,
+    160
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_autumn_a.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_autumn_a",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_autumn_b_shadow_sway": {
+   "file": "animated/shadows/tree_autumn_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_autumn_b_shadow_sway.png",
+   "frame_size": [
+    126,
+    97
+   ],
+   "frame_size_2x": [
+    252,
+    194
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_autumn_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_autumn_b_sway frame (i.e. bottom-centre anchor - (39, 72) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_autumn_b_sway": {
+   "file": "animated/tree_autumn_b_sway.png",
+   "file_2x": "animated/_2x/tree_autumn_b_sway.png",
+   "frame_size": [
+    78,
+    72
+   ],
+   "frame_size_2x": [
+    156,
+    144
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_autumn_b.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_autumn_b",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_birch_shadow_sway": {
+   "file": "animated/shadows/tree_birch_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_birch_shadow_sway.png",
+   "frame_size": [
+    127,
+    123
+   ],
+   "frame_size_2x": [
+    254,
+    246
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_birch_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_birch_sway frame (i.e. bottom-centre anchor - (33, 92) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_birch_sway": {
+   "file": "animated/tree_birch_sway.png",
+   "file_2x": "animated/_2x/tree_birch_sway.png",
+   "frame_size": [
+    66,
+    92
+   ],
+   "frame_size_2x": [
+    132,
+    184
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_birch.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_birch",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_chestnut_shadow_sway": {
+   "file": "animated/shadows/tree_chestnut_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_chestnut_shadow_sway.png",
+   "frame_size": [
+    154,
+    135
+   ],
+   "frame_size_2x": [
+    308,
+    270
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_chestnut_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_chestnut_sway frame (i.e. bottom-centre anchor - (44, 101) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_chestnut_sway": {
+   "file": "animated/tree_chestnut_sway.png",
+   "file_2x": "animated/_2x/tree_chestnut_sway.png",
+   "frame_size": [
+    88,
+    101
+   ],
+   "frame_size_2x": [
+    176,
+    202
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_chestnut.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_chestnut",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_cluster_2x2_a_shadow_sway": {
+   "file": "animated/shadows/tree_cluster_2x2_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_cluster_2x2_a_shadow_sway.png",
+   "frame_size": [
+    212,
+    152
+   ],
+   "frame_size_2x": [
+    424,
+    304
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_cluster_2x2_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_cluster_2x2_a_sway frame (i.e. bottom-centre anchor - (69, 114) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_cluster_2x2_a_sway": {
+   "file": "animated/tree_cluster_2x2_a_sway.png",
+   "file_2x": "animated/_2x/tree_cluster_2x2_a_sway.png",
+   "frame_size": [
+    138,
+    114
+   ],
+   "frame_size_2x": [
+    276,
+    228
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_cluster_2x2_a.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_cluster_2x2_a",
+   "blend": "mix",
+   "note": "cluster sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_cluster_2x2_b_shadow_sway": {
+   "file": "animated/shadows/tree_cluster_2x2_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_cluster_2x2_b_shadow_sway.png",
+   "frame_size": [
+    213,
+    171
+   ],
+   "frame_size_2x": [
+    426,
+    342
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_cluster_2x2_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_cluster_2x2_b_sway frame (i.e. bottom-centre anchor - (65, 129) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_cluster_2x2_b_sway": {
+   "file": "animated/tree_cluster_2x2_b_sway.png",
+   "file_2x": "animated/_2x/tree_cluster_2x2_b_sway.png",
+   "frame_size": [
+    130,
+    129
+   ],
+   "frame_size_2x": [
+    260,
+    258
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_cluster_2x2_b.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_cluster_2x2_b",
+   "blend": "mix",
+   "note": "cluster sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_cluster_2x2_c_shadow_sway": {
+   "file": "animated/shadows/tree_cluster_2x2_c_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_cluster_2x2_c_shadow_sway.png",
+   "frame_size": [
+    214,
+    176
+   ],
+   "frame_size_2x": [
+    428,
+    352
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_cluster_2x2_c_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_cluster_2x2_c_sway frame (i.e. bottom-centre anchor - (64, 133) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_cluster_2x2_c_sway": {
+   "file": "animated/tree_cluster_2x2_c_sway.png",
+   "file_2x": "animated/_2x/tree_cluster_2x2_c_sway.png",
+   "frame_size": [
+    128,
+    133
+   ],
+   "frame_size_2x": [
+    256,
+    266
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_cluster_2x2_c.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_cluster_2x2_c",
+   "blend": "mix",
+   "note": "cluster sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_cluster_2x2_d_shadow_sway": {
+   "file": "animated/shadows/tree_cluster_2x2_d_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_cluster_2x2_d_shadow_sway.png",
+   "frame_size": [
+    210,
+    144
+   ],
+   "frame_size_2x": [
+    420,
+    288
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_cluster_2x2_d_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_cluster_2x2_d_sway frame (i.e. bottom-centre anchor - (70, 108) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_cluster_2x2_d_sway": {
+   "file": "animated/tree_cluster_2x2_d_sway.png",
+   "file_2x": "animated/_2x/tree_cluster_2x2_d_sway.png",
+   "frame_size": [
+    140,
+    108
+   ],
+   "frame_size_2x": [
+    280,
+    216
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_cluster_2x2_d.png; frame is 8px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_cluster_2x2_d",
+   "blend": "mix",
+   "note": "cluster sway v4.1: 16 frames @ 8 fps (2 s loop), ~2.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_golden_oak_shadow_sway": {
+   "file": "animated/shadows/tree_golden_oak_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_golden_oak_shadow_sway.png",
+   "frame_size": [
+    147,
+    102
+   ],
+   "frame_size_2x": [
+    294,
+    204
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_golden_oak_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_golden_oak_sway frame (i.e. bottom-centre anchor - (48, 76) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_golden_oak_sway": {
+   "file": "animated/tree_golden_oak_sway.png",
+   "file_2x": "animated/_2x/tree_golden_oak_sway.png",
+   "frame_size": [
+    96,
+    76
+   ],
+   "frame_size_2x": [
+    192,
+    152
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_golden_oak.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_golden_oak",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_golden_oak_v2_shadow_sway": {
+   "file": "animated/shadows/tree_golden_oak_v2_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_golden_oak_v2_shadow_sway.png",
+   "frame_size": [
+    139,
+    95
+   ],
+   "frame_size_2x": [
+    278,
+    190
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_golden_oak_v2_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_golden_oak_v2_sway frame (i.e. bottom-centre anchor - (46, 70) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_golden_oak_v2_sway": {
+   "file": "animated/tree_golden_oak_v2_sway.png",
+   "file_2x": "animated/_2x/tree_golden_oak_v2_sway.png",
+   "frame_size": [
+    92,
+    70
+   ],
+   "frame_size_2x": [
+    184,
+    140
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_golden_oak_v2.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_golden_oak_v2",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_great_oak_shadow_sway": {
+   "file": "animated/shadows/tree_great_oak_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_great_oak_shadow_sway.png",
+   "frame_size": [
+    221,
+    195
+   ],
+   "frame_size_2x": [
+    442,
+    390
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_great_oak_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_great_oak_sway frame (i.e. bottom-centre anchor - (63, 147) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_great_oak_sway": {
+   "file": "animated/tree_great_oak_sway.png",
+   "file_2x": "animated/_2x/tree_great_oak_sway.png",
+   "frame_size": [
+    126,
+    147
+   ],
+   "frame_size_2x": [
+    252,
+    294
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_great_oak.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_great_oak",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_oak_a_shadow_sway": {
+   "file": "animated/shadows/tree_oak_a_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_oak_a_shadow_sway.png",
+   "frame_size": [
+    127,
+    108
+   ],
+   "frame_size_2x": [
+    254,
+    216
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_oak_a_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_oak_a_sway frame (i.e. bottom-centre anchor - (37, 80) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_oak_a_sway": {
+   "file": "animated/tree_oak_a_sway.png",
+   "file_2x": "animated/_2x/tree_oak_a_sway.png",
+   "frame_size": [
+    74,
+    80
+   ],
+   "frame_size_2x": [
+    148,
+    160
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_oak_a.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_oak_a",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_oak_b_shadow_sway": {
+   "file": "animated/shadows/tree_oak_b_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_oak_b_shadow_sway.png",
+   "frame_size": [
+    135,
+    98
+   ],
+   "frame_size_2x": [
+    270,
+    196
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_oak_b_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_oak_b_sway frame (i.e. bottom-centre anchor - (43, 73) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_oak_b_sway": {
+   "file": "animated/tree_oak_b_sway.png",
+   "file_2x": "animated/_2x/tree_oak_b_sway.png",
+   "frame_size": [
+    86,
+    73
+   ],
+   "frame_size_2x": [
+    172,
+    146
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_oak_b.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_oak_b",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_pine_shadow_sway": {
+   "file": "animated/shadows/tree_pine_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_pine_shadow_sway.png",
+   "frame_size": [
+    133,
+    119
+   ],
+   "frame_size_2x": [
+    266,
+    238
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_pine_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_pine_sway frame (i.e. bottom-centre anchor - (37, 89) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_pine_sway": {
+   "file": "animated/tree_pine_sway.png",
+   "file_2x": "animated/_2x/tree_pine_sway.png",
+   "frame_size": [
+    74,
+    89
+   ],
+   "frame_size_2x": [
+    148,
+    178
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_pine.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_pine",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_poplar_shadow_sway": {
+   "file": "animated/shadows/tree_poplar_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_poplar_shadow_sway.png",
+   "frame_size": [
+    128,
+    144
+   ],
+   "frame_size_2x": [
+    256,
+    288
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_poplar_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_poplar_sway frame (i.e. bottom-centre anchor - (29, 108) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_poplar_sway": {
+   "file": "animated/tree_poplar_sway.png",
+   "file_2x": "animated/_2x/tree_poplar_sway.png",
+   "frame_size": [
+    58,
+    108
+   ],
+   "frame_size_2x": [
+    116,
+    216
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_poplar.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_poplar",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_poplar_v2_shadow_sway": {
+   "file": "animated/shadows/tree_poplar_v2_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_poplar_v2_shadow_sway.png",
+   "frame_size": [
+    121,
+    128
+   ],
+   "frame_size_2x": [
+    242,
+    256
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_poplar_v2_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_poplar_v2_sway frame (i.e. bottom-centre anchor - (29, 96) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_poplar_v2_sway": {
+   "file": "animated/tree_poplar_v2_sway.png",
+   "file_2x": "animated/_2x/tree_poplar_v2_sway.png",
+   "frame_size": [
+    58,
+    96
+   ],
+   "frame_size_2x": [
+    116,
+    192
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_poplar_v2.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_poplar_v2",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_shadow_sway": {
+   "file": "animated/shadows/tree_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_shadow_sway.png",
+   "frame_size": [
+    127,
+    108
+   ],
+   "frame_size_2x": [
+    254,
+    216
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_sway frame (i.e. bottom-centre anchor - (37, 80) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_sway": {
+   "file": "animated/tree_sway.png",
+   "file_2x": "animated/_2x/tree_sway.png",
+   "frame_size": [
+    74,
+    80
+   ],
+   "frame_size_2x": [
+    148,
+    160
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree.png; frame is 10px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree",
+   "blend": "mix",
+   "note": "tree sway v4.1: 16 frames @ 8 fps (2 s loop), ~4.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tree_willow_shadow_sway": {
+   "file": "animated/shadows/tree_willow_shadow_sway.png",
+   "file_2x": "animated/shadows/_2x/tree_willow_shadow_sway.png",
+   "frame_size": [
+    158,
+    109
+   ],
+   "frame_size_2x": [
+    316,
+    218
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "pairs_with": "tree_willow_sway",
+   "blend": "mix (alpha = shadow strength, colour #1a223c)",
+   "status": "PROPOSED",
+   "anchor": "frame top-left = top-left of the matching tree_willow_sway frame (i.e. bottom-centre anchor - (52, 81) px at 1x); draw on the ground layer under all props",
+   "note": "v5 cast shadow that moves with the canopy: frame i is the projection of sway frame i (light from the top-left, shear 0.62, squash 0.30, soft 2.2 px). Play with the SAME frame index/clock as the sway flipbook. Shader route: offset the static shadow sprite with the same sway displacement field (README)"
+  },
+  "tree_willow_sway": {
+   "file": "animated/tree_willow_sway.png",
+   "file_2x": "animated/_2x/tree_willow_sway.png",
+   "frame_size": [
+    104,
+    81
+   ],
+   "frame_size_2x": [
+    208,
+    162
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tree_willow.png; frame is 12px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tree_willow",
+   "blend": "mix",
+   "note": "willow sway v4.1: 16 frames @ 8 fps (2 s loop), ~5.0px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tuft_a_sway": {
+   "file": "animated/tuft_a_sway.png",
+   "file_2x": "animated/_2x/tuft_a_sway.png",
+   "frame_size": [
+    40,
+    28
+   ],
+   "frame_size_2x": [
+    80,
+    56
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tuft_a.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tuft_a",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "tuft_b_sway": {
+   "file": "animated/tuft_b_sway.png",
+   "file_2x": "animated/_2x/tuft_b_sway.png",
+   "frame_size": [
+    32,
+    28
+   ],
+   "frame_size_2x": [
+    64,
+    56
+   ],
+   "frames": 16,
+   "fps": 8,
+   "loop": true,
+   "duration_s": 2.0,
+   "anchor": "bottom-centre (same anchor as props/tuft_b.png; frame is 6px (1x) wider on each side so the canopy never clips)",
+   "pairs_with": "tuft_b",
+   "blend": "mix",
+   "note": "grass sway v4.1: 16 frames @ 8 fps (2 s loop), ~1.8px canopy bend at 1x + leaf flutter; base/trunk pinned. Randomise start frame + speed_scale (0.85-1.15) per instance; for wind gusts use the sway mask shader (README)",
+   "status": "PROPOSED"
+  },
+  "water_a_ripple": {
+   "file": "animated/water/water_a_ripple.png",
+   "file_2x": "animated/water/_2x/water_a_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_a",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_b_ripple": {
+   "file": "animated/water/water_b_ripple.png",
+   "file_2x": "animated/water/_2x/water_b_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_b",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_corner_e_ripple": {
+   "file": "animated/water/water_bank_corner_e_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_corner_e_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_corner_e",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_corner_n_ripple": {
+   "file": "animated/water/water_bank_corner_n_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_corner_n_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_corner_n",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_corner_s_ripple": {
+   "file": "animated/water/water_bank_corner_s_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_corner_s_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_corner_s",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_corner_w_ripple": {
+   "file": "animated/water/water_bank_corner_w_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_corner_w_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_corner_w",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_ne_ripple": {
+   "file": "animated/water/water_bank_ne_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_ne_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_ne",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_ne_se_ripple": {
+   "file": "animated/water/water_bank_ne_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_ne_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_ne_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_ne_se_sw_ripple": {
+   "file": "animated/water/water_bank_ne_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_ne_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_ne_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_ne_sw_ripple": {
+   "file": "animated/water/water_bank_ne_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_ne_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_ne_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_ne_ripple": {
+   "file": "animated/water/water_bank_nw_ne_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_ne_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_ne",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_ne_se_ripple": {
+   "file": "animated/water/water_bank_nw_ne_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_ne_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_ne_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_ne_se_sw_ripple": {
+   "file": "animated/water/water_bank_nw_ne_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_ne_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_ne_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_ne_sw_ripple": {
+   "file": "animated/water/water_bank_nw_ne_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_ne_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_ne_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_ripple": {
+   "file": "animated/water/water_bank_nw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_se_ripple": {
+   "file": "animated/water/water_bank_nw_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_se_sw_ripple": {
+   "file": "animated/water/water_bank_nw_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_nw_sw_ripple": {
+   "file": "animated/water/water_bank_nw_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_nw_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_nw_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_se_ripple": {
+   "file": "animated/water/water_bank_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_se_sw_ripple": {
+   "file": "animated/water/water_bank_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_bank_sw_ripple": {
+   "file": "animated/water/water_bank_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_bank_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_bank_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_c_ripple": {
+   "file": "animated/water/water_c_ripple.png",
+   "file_2x": "animated/water/_2x/water_c_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_c",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_d_ripple": {
+   "file": "animated/water/water_d_ripple.png",
+   "file_2x": "animated/water/_2x/water_d_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_d",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_deep_a_ripple": {
+   "file": "animated/water/water_deep_a_ripple.png",
+   "file_2x": "animated/water/_2x/water_deep_a_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_deep_a",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_deep_b_ripple": {
+   "file": "animated/water/water_deep_b_ripple.png",
+   "file_2x": "animated/water/_2x/water_deep_b_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_deep_b",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_corner_e_ripple": {
+   "file": "animated/water/water_shore_corner_e_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_corner_e_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_corner_e",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_corner_n_ripple": {
+   "file": "animated/water/water_shore_corner_n_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_corner_n_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_corner_n",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_corner_s_ripple": {
+   "file": "animated/water/water_shore_corner_s_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_corner_s_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_corner_s",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_corner_w_ripple": {
+   "file": "animated/water/water_shore_corner_w_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_corner_w_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_corner_w",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_ne_ripple": {
+   "file": "animated/water/water_shore_ne_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_ne_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_ne",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_ne_se_ripple": {
+   "file": "animated/water/water_shore_ne_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_ne_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_ne_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_ne_se_sw_ripple": {
+   "file": "animated/water/water_shore_ne_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_ne_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_ne_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_ne_sw_ripple": {
+   "file": "animated/water/water_shore_ne_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_ne_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_ne_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_ne_ripple": {
+   "file": "animated/water/water_shore_nw_ne_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_ne_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_ne",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_ne_se_ripple": {
+   "file": "animated/water/water_shore_nw_ne_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_ne_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_ne_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_ne_se_sw_ripple": {
+   "file": "animated/water/water_shore_nw_ne_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_ne_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_ne_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_ne_sw_ripple": {
+   "file": "animated/water/water_shore_nw_ne_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_ne_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_ne_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_ripple": {
+   "file": "animated/water/water_shore_nw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_se_ripple": {
+   "file": "animated/water/water_shore_nw_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_se_sw_ripple": {
+   "file": "animated/water/water_shore_nw_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_nw_sw_ripple": {
+   "file": "animated/water/water_shore_nw_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_nw_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_nw_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_se_ripple": {
+   "file": "animated/water/water_shore_se_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_se_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_se",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_se_sw_ripple": {
+   "file": "animated/water/water_shore_se_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_se_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_se_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "water_shore_sw_ripple": {
+   "file": "animated/water/water_shore_sw_ripple.png",
+   "file_2x": "animated/water/_2x/water_shore_sw_ripple.png",
+   "frame_size": [
+    64,
+    32
+   ],
+   "frame_size_2x": [
+    128,
+    64
+   ],
+   "frames": 8,
+   "fps": 7.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "same as the floor tile (64x32 diamond, south tip = bottom-centre)",
+   "pairs_with": "water_shore_sw",
+   "blend": "mix",
+   "note": "v4.1: 8-frame strong ripple + glint loop and pulsing shore foam baked onto the tile; ripple field is periodic on the iso lattice so neighbouring tiles stay seamless; play all water tiles in sync (shared clock), frame = int(t*fps)%8",
+   "status": "PROPOSED"
+  },
+  "watermill_splash": {
+   "file": "animated/watermill_splash.png",
+   "file_2x": "animated/_2x/watermill_splash.png",
+   "frame_size": [
+    136,
+    111
+   ],
+   "frame_size_2x": [
+    272,
+    222
+   ],
+   "frames": 12,
+   "fps": 13.2,
+   "loop": true,
+   "duration_s": 0.909,
+   "anchor": "identical canvas + anchor to props/watermill_2x2_body.png (child at 0,0), draw ABOVE watermill_wheel_v5 so the foam hides the submerged paddles",
+   "pairs_with": "watermill_2x2_body",
+   "blend": "mix",
+   "note": "v5 churning foam band at the water line, droplets flung by the paddles, spreading ripple rings, water pouring from the trough; 12 frames @ 13.2 fps",
+   "status": "PROPOSED"
+  },
+  "watermill_splash_v6": {
+   "file": "animated/watermill_splash_v6.png",
+   "file_2x": "animated/_2x/watermill_splash_v6.png",
+   "frame_size": [
+    136,
+    111
+   ],
+   "frame_size_2x": [
+    272,
+    222
+   ],
+   "frames": 12,
+   "fps": 13.2,
+   "loop": true,
+   "duration_s": 0.909,
+   "anchor": "identical canvas + anchor to props/watermill_2x2_body.png (child at 0,0), draw ABOVE watermill_wheel_v6",
+   "pairs_with": "watermill_2x2_body",
+   "blend": "mix",
+   "note": "v6 crisp foam (discrete bubbles on a churning crescent + downstream streaks, no blurred blobs), thin ripple rings, water sheet scrolling down the trough and pouring onto the buckets; 12 frames @ 13.2 fps",
+   "status": "PROPOSED",
+   "v6": true
+  },
+  "watermill_wheel": {
+   "file": "animated/watermill_wheel.png",
+   "file_2x": "animated/_2x/watermill_wheel.png",
+   "frame_size": [
+    136,
+    111
+   ],
+   "frame_size_2x": [
+    272,
+    222
+   ],
+   "frames": 8,
+   "fps": 21.6,
+   "loop": true,
+   "duration_s": 0.37,
+   "anchor": "identical canvas + bottom-centre anchor to props/watermill_2x2_body.png: place as a child at offset (0,0) and draw above it",
+   "pairs_with": "watermill_2x2_body",
+   "blend": "mix",
+   "note": "v4.1: 8-frame seamless rotation (30 deg per loop @ 21.6 fps = one full turn every 4 s, 12 symmetric paddles)",
+   "status": "PROPOSED"
+  },
+  "watermill_wheel_v5": {
+   "file": "animated/watermill_wheel_v5.png",
+   "file_2x": "animated/_2x/watermill_wheel_v5.png",
+   "frame_size": [
+    136,
+    111
+   ],
+   "frame_size_2x": [
+    272,
+    222
+   ],
+   "frames": 16,
+   "fps": 27.2,
+   "loop": true,
+   "duration_s": 0.588,
+   "anchor": "identical canvas + bottom-centre anchor to props/watermill_2x2_body.png: child at offset (0,0), draw above the body (and below watermill_splash)",
+   "pairs_with": "watermill_2x2_body",
+   "blend": "mix",
+   "note": "v5 wheel out over the +x water cell (place the mill so its two +x neighbour cells are water), axle beam + mill-race trough; 16 frames / 30 deg @ 27.2 fps = one turn every 7 s (12 paddles)",
+   "status": "PROPOSED"
+  },
+  "watermill_wheel_v6": {
+   "file": "animated/watermill_wheel_v6.png",
+   "file_2x": "animated/_2x/watermill_wheel_v6.png",
+   "frame_size": [
+    136,
+    111
+   ],
+   "frame_size_2x": [
+    272,
+    222
+   ],
+   "frames": 16,
+   "fps": 27.2,
+   "loop": true,
+   "duration_s": 0.588,
+   "anchor": "identical canvas + bottom-centre anchor to props/watermill_2x2_body.png: child at offset (0,0), draw above the body (and below watermill_splash_v6)",
+   "pairs_with": "watermill_2x2_body",
+   "blend": "mix",
+   "note": "v6 wheel (double rim, 12 bucket paddles with depth, iron hub) over the +x water cell + plank mill-race trough on an A-frame trestle with iron bands; 16 frames / 30 deg @ 27.2 fps = one turn every 7 s",
+   "status": "PROPOSED",
+   "v6": true
+  },
+  "windmill_sails": {
+   "file": "animated/windmill_sails.png",
+   "file_2x": "animated/_2x/windmill_sails.png",
+   "frame_size": [
+    140,
+    140
+   ],
+   "frame_size_2x": [
+    280,
+    280
+   ],
+   "frames": 16,
+   "fps": 14.4,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "frame centre = sail hub; place the frame centre at (0,-104) px (1x) from the windmill_2x2_body bottom-centre anchor ((0,-208) at 2x), draw above the body",
+   "pairs_with": "windmill_2x2_body",
+   "blend": "mix",
+   "note": "v4.1: 16-frame seamless rotation, 90 deg per loop; 14.4 fps = one full turn every ~4.4 s (4 symmetric sails); rate chosen so the 10 s preview loops exactly",
+   "status": "PROPOSED"
+  },
+  "windmill_sails_flat": {
+   "file": "animated/windmill_sails_flat.png",
+   "file_2x": "animated/_2x/windmill_sails_flat.png",
+   "frame_size": [
+    140,
+    140
+   ],
+   "frame_size_2x": [
+    280,
+    280
+   ],
+   "frames": 1,
+   "fps": 0,
+   "loop": true,
+   "anchor": "frame centre = sail hub (same placement as windmill_sails_v5)",
+   "pairs_with": "windmill_2x2_body",
+   "blend": "mix",
+   "status": "PROPOSED",
+   "note": "v5 un-squashed sails at 0 deg for a rotation shader: uv -> rotate(-angle) about the centre, then divide y by 0.9 (perspective squash); angle = TAU*time/4.44"
+  },
+  "windmill_sails_v5": {
+   "file": "animated/windmill_sails_v5.png",
+   "file_2x": "animated/_2x/windmill_sails_v5.png",
+   "frame_size": [
+    140,
+    140
+   ],
+   "frame_size_2x": [
+    280,
+    280
+   ],
+   "frames": 48,
+   "fps": 43.2,
+   "loop": true,
+   "duration_s": 1.111,
+   "anchor": "frame centre = sail hub; place the frame centre at (0,-104) px (1x) from the windmill_2x2_body bottom-centre anchor ((0,-208) at 2x), draw above the body",
+   "pairs_with": "windmill_2x2_body",
+   "blend": "mix",
+   "note": "v5 smooth rotation: 48 frames over 90 deg (1.875 deg/frame, 4 symmetric sails) @ 43.2 fps = one full turn every 4.44 s. For perfectly smooth motion use windmill_sails_flat + the rotation shader in README (rotate about the hub, then scale y by 0.9)",
+   "status": "PROPOSED"
+  }
+ },
+ "v7_note": "foliage *_sway strips + windmill/watermill strips relit per frame (same profile as the static prop); water *_ripple strips = v7 tile + v6 ripple delta; creatures/fx, cast-shadow strips and sway masks unchanged"
+}

@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/level_curve.v1.json",
+  "title": "Stasium PC level curve",
+  "description": "Sidecar stasium.level_curve version 1. xp_to_next[i] is the XP to go from level i+1 to i+2. The array has one entry for each level below max_level. The cap is the max_level field, not a frozen number. status proposed. Optional pace_start and pace_ratio are the option B pace factor. Stat points per level are a later package and are not in this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "max_level", "xp_to_next"],
+  "properties": {
+    "format": {"const": "stasium.level_curve"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "max_level": {"type": "integer", "minimum": 2},
+    "pace_start": {"type": "number", "exclusiveMinimum": 0},
+    "pace_ratio": {"type": "number", "exclusiveMinimum": 0},
+    "xp_to_next": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "integer", "minimum": 1}
+    }
+  }
+}

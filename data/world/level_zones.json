@@ -1,0 +1,319 @@
+{
+  "format": "stasium.level_zones",
+  "format_version": 1,
+  "status": "proposed",
+  "zones": [
+    {
+      "id": "crossroads",
+      "name": "Crossroads",
+      "level_min": 1,
+      "level_max": 1,
+      "chunks": [
+        "crosshaven_crossroads"
+      ],
+      "depth": {
+        "crosshaven_crossroads": 0
+      },
+      "color": "#3fbf4f",
+      "dungeon": "millrace_vaults"
+    },
+    {
+      "id": "stoneford",
+      "name": "Stoneford",
+      "level_min": 1,
+      "level_max": 10,
+      "chunks": [
+        "crosshaven_road_west",
+        "crosshaven_stoneford"
+      ],
+      "depth": {
+        "crosshaven_road_west": 1,
+        "crosshaven_stoneford": 2
+      },
+      "color": "#58bd3c",
+      "dungeon": "old_granary_cellar"
+    },
+    {
+      "id": "northgate",
+      "name": "Northgate",
+      "level_min": 10,
+      "level_max": 20,
+      "chunks": [
+        "crosshaven_road_north",
+        "crosshaven_northgate"
+      ],
+      "depth": {
+        "crosshaven_road_north": 1,
+        "crosshaven_northgate": 2
+      },
+      "color": "#82bb3a",
+      "dungeon": "frostspire_archive"
+    },
+    {
+      "id": "eastmarch",
+      "name": "Eastmarch",
+      "level_min": 20,
+      "level_max": 30,
+      "chunks": [
+        "crosshaven_road_east",
+        "crosshaven_eastmarch"
+      ],
+      "depth": {
+        "crosshaven_road_east": 1,
+        "crosshaven_eastmarch": 2
+      },
+      "color": "#acb937",
+      "dungeon": "saltmaw_grotto"
+    },
+    {
+      "id": "southbridge",
+      "name": "Southbridge",
+      "level_min": 30,
+      "level_max": 40,
+      "chunks": [
+        "crosshaven_road_south",
+        "crosshaven_southbridge"
+      ],
+      "depth": {
+        "crosshaven_road_south": 1,
+        "crosshaven_southbridge": 2
+      },
+      "color": "#b33930",
+      "dungeon": "drowned_abbey"
+    },
+    {
+      "id": "westwatch",
+      "name": "Westwatch",
+      "level_min": 40,
+      "level_max": 50,
+      "chunks": [
+        "crosshaven_road_southwest",
+        "crosshaven_westwatch"
+      ],
+      "depth": {
+        "crosshaven_road_southwest": 1,
+        "crosshaven_westwatch": 2
+      },
+      "color": "#8227a9",
+      "dungeon": "heart_of_the_blight"
+    },
+    {
+      "id": "rowanvale",
+      "name": "Rowanvale",
+      "level_min": 10,
+      "level_max": 15,
+      "chunks": [
+        "rowanvale_entry",
+        "rowanvale_hub",
+        "rowanvale_farmland_1",
+        "rowanvale_farmland_2",
+        "rowanvale_farmland_3",
+        "rowanvale_door"
+      ],
+      "depth": {
+        "rowanvale_entry": 0,
+        "rowanvale_hub": 1,
+        "rowanvale_farmland_1": 2,
+        "rowanvale_farmland_2": 3,
+        "rowanvale_farmland_3": 4,
+        "rowanvale_door": 5
+      },
+      "color": "#82bb3a",
+      "dungeon": "rotting_orchard_barrow"
+    },
+    {
+      "id": "windmere",
+      "name": "Windmere",
+      "level_min": 15,
+      "level_max": 20,
+      "chunks": [
+        "windmere_entry",
+        "windmere_hub",
+        "windmere_outer_1",
+        "windmere_outer_2",
+        "windmere_outer_3",
+        "windmere_door"
+      ],
+      "depth": {
+        "windmere_entry": 0,
+        "windmere_hub": 1,
+        "windmere_outer_1": 2,
+        "windmere_outer_2": 3,
+        "windmere_outer_3": 4,
+        "windmere_door": 5
+      },
+      "color": "#acb937",
+      "dungeon": "frostspire_archive"
+    },
+    {
+      "id": "brinewake",
+      "name": "Brinewake",
+      "level_min": 20,
+      "level_max": 25,
+      "chunks": [
+        "brinewake_entry",
+        "brinewake_hub",
+        "brinewake_coast_1",
+        "brinewake_coast_2",
+        "brinewake_island",
+        "brinewake_door"
+      ],
+      "depth": {
+        "brinewake_entry": 0,
+        "brinewake_hub": 1,
+        "brinewake_coast_1": 2,
+        "brinewake_coast_2": 3,
+        "brinewake_island": 4,
+        "brinewake_door": 5
+      },
+      "color": "#b79735",
+      "dungeon": "saltmaw_grotto"
+    },
+    {
+      "id": "slagcrown",
+      "name": "Slagcrown",
+      "level_min": 25,
+      "level_max": 30,
+      "chunks": [
+        "slagcrown_entry",
+        "slagcrown_hub",
+        "slagcrown_volcanic_1",
+        "slagcrown_volcanic_2",
+        "slagcrown_volcanic_3",
+        "slagcrown_door"
+      ],
+      "depth": {
+        "slagcrown_entry": 0,
+        "slagcrown_hub": 1,
+        "slagcrown_volcanic_1": 2,
+        "slagcrown_volcanic_2": 3,
+        "slagcrown_volcanic_3": 4,
+        "slagcrown_door": 5
+      },
+      "color": "#b56832",
+      "dungeon": "cinderforge_depths"
+    },
+    {
+      "id": "eastmarch_fen_edge",
+      "name": "Eastmarch Fen Edge",
+      "level_min": 25,
+      "level_max": 30,
+      "chunks": [
+        "eastmarch_fen_edge_entry",
+        "eastmarch_fen_edge_middle",
+        "eastmarch_fen_edge_door"
+      ],
+      "depth": {
+        "eastmarch_fen_edge_entry": 0,
+        "eastmarch_fen_edge_middle": 1,
+        "eastmarch_fen_edge_door": 2
+      },
+      "color": "#b33930",
+      "dungeon": "sunken_mill"
+    },
+    {
+      "id": "gloomfen_mire",
+      "name": "Gloomfen Mire",
+      "level_min": 30,
+      "level_max": 38,
+      "chunks": [
+        "gloomfen_mire_entry",
+        "gloomfen_mire_boardwalk_1",
+        "gloomfen_mire_boardwalk_2",
+        "gloomfen_mire_boardwalk_3",
+        "gloomfen_mire_boardwalk_4",
+        "gloomfen_mire_boardwalk_5",
+        "gloomfen_mire_boardwalk_6",
+        "gloomfen_mire_door"
+      ],
+      "depth": {
+        "gloomfen_mire_entry": 0,
+        "gloomfen_mire_boardwalk_1": 1,
+        "gloomfen_mire_boardwalk_2": 2,
+        "gloomfen_mire_boardwalk_3": 3,
+        "gloomfen_mire_boardwalk_4": 4,
+        "gloomfen_mire_boardwalk_5": 5,
+        "gloomfen_mire_boardwalk_6": 6,
+        "gloomfen_mire_door": 7
+      },
+      "color": "#b02e51",
+      "dungeon": "drowned_abbey"
+    },
+    {
+      "id": "stormspire",
+      "name": "Stormspire",
+      "level_min": 35,
+      "level_max": 40,
+      "chunks": [
+        "stormspire_entry",
+        "stormspire_plateau_1",
+        "stormspire_plateau_2",
+        "stormspire_plateau_3",
+        "stormspire_door"
+      ],
+      "depth": {
+        "stormspire_entry": 0,
+        "stormspire_plateau_1": 1,
+        "stormspire_plateau_2": 2,
+        "stormspire_plateau_3": 3,
+        "stormspire_door": 4
+      },
+      "color": "#ae2b7c",
+      "dungeon": "thunderwell_core"
+    },
+    {
+      "id": "ashen_shardfields",
+      "name": "Ashen Shardfields",
+      "level_min": 38,
+      "level_max": 45,
+      "chunks": [
+        "ashen_shardfields_entry",
+        "ashen_shardfields_dune_1",
+        "ashen_shardfields_dune_2",
+        "ashen_shardfields_dune_3",
+        "ashen_shardfields_dune_4",
+        "ashen_shardfields_dune_5",
+        "ashen_shardfields_door"
+      ],
+      "depth": {
+        "ashen_shardfields_entry": 0,
+        "ashen_shardfields_dune_1": 1,
+        "ashen_shardfields_dune_2": 2,
+        "ashen_shardfields_dune_3": 3,
+        "ashen_shardfields_dune_4": 4,
+        "ashen_shardfields_dune_5": 5,
+        "ashen_shardfields_door": 6
+      },
+      "color": "#ac29a6",
+      "dungeon": "shard_hollow"
+    },
+    {
+      "id": "blightwood_hollow",
+      "name": "Blightwood Hollow",
+      "level_min": 45,
+      "level_max": 50,
+      "chunks": [
+        "blightwood_hollow_entry",
+        "blightwood_hollow_middle_1",
+        "blightwood_hollow_middle_2",
+        "blightwood_hollow_middle_3",
+        "blightwood_hollow_middle_4",
+        "blightwood_hollow_middle_5",
+        "blightwood_hollow_middle_6",
+        "blightwood_hollow_door"
+      ],
+      "depth": {
+        "blightwood_hollow_entry": 0,
+        "blightwood_hollow_middle_1": 1,
+        "blightwood_hollow_middle_2": 2,
+        "blightwood_hollow_middle_3": 3,
+        "blightwood_hollow_middle_4": 4,
+        "blightwood_hollow_middle_5": 5,
+        "blightwood_hollow_middle_6": 6,
+        "blightwood_hollow_door": 7
+      },
+      "color": "#8227a9",
+      "dungeon": "heart_of_the_blight"
+    }
+  ]
+}

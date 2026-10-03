@@ -1,0 +1,29 @@
+{
+  "format": "stasium.zone_index",
+  "format_version": 1,
+  "region": "eastmarch_fen_edge",
+  "start_zone": "eastmarch_fen_edge_entry",
+  "start": {
+    "zone_id": "eastmarch_fen_edge_entry",
+    "x": 16,
+    "y": 12
+  },
+  "max_climb_steps": -1,
+  "movement": {
+    "adjacency": "ortho"
+  },
+  "zones": [
+    {
+      "zone_id": "eastmarch_fen_edge_entry",
+      "file": "zones/eastmarch_fen_edge_entry.json",
+      "width": 32,
+      "height": 24
+    },
+    {
+      "zone_id": "eastmarch_fen_edge_door",
+      "file": "zones/eastmarch_fen_edge_door.json",
+      "width": 32,
+      "height": 24
+    }
+  ]
+}

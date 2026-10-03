@@ -78,6 +78,8 @@ var _active_seat: int = 0
 var _turn_index: int = 1
 var _match_over: bool = false
 var _winner_seat: int = -1
+## Harness flag. Live matches leave this false, so submit still returns a snapshot.
+var _quiet: bool = false
 var _seed: int = 0
 var _rng := RandomNumberGenerator.new()
 var _scripted_rolls: Array[int] = []
@@ -139,6 +141,7 @@ func reset_match(config: Dictionary = {}) -> Dictionary:
 	_seed = int(config.get("seed", Time.get_ticks_usec()))
 	_elev_seed = int(config.get("elev_seed", _seed))
 	_rng.seed = _seed
+	_quiet = bool(config.get("quiet", false))
 	_elevation_gen = "flat"
 	_seed_play_board(config)
 	_apply_tile_overrides(config)
@@ -1094,11 +1097,19 @@ func _preview_kit_lines(spell_id: String) -> Dictionary:
 			return {"on_connect": "", "on_miss": ""}
 
 
-## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1, Mastery 0.
-## WindMod omitted (not invented as 1.0). Resist 0 is Open A05.
-func _phase_a_damage(base: int, facing_mult: float) -> int:
-	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + MASTERY / 100.0) * (1.0 - RESIST / 100.0) * facing_mult
+## Locked Phase A damage sample/resolve. CritMult 1.0, Passive 1.
+## WindMod omitted (not invented as 1.0).
+## Callers that omit mastery and resist keep the locked zeros, so a live
+## match with the unit fields at 0 resolves exactly as before. The Koliseo
+## duel writes those fields from the point spend; preview cards do not.
+func _phase_a_damage(base: int, facing_mult: float, mastery: float = MASTERY, resist: float = RESIST) -> int:
+	var raw: float = float(base) * CRIT_MULT * PASSIVE * (1.0 + mastery / 100.0) * (1.0 - resist / 100.0) * facing_mult
 	return roundi(raw)
+
+
+func _dealt(base: int, facing_mult: float, actor: Dictionary, target: Dictionary) -> int:
+	var mastery := float(actor.get("mastery", MASTERY)) + float(actor.get("bonus_damage", 0.0))
+	return _phase_a_damage(base, facing_mult, mastery, float(target.get("resist", RESIST)))
 
 
 func _make_unit(seat: int, class_id: String, unit_name: String, element: String, pos: Vector2i, facing: String, placed: bool = true) -> Dictionary:
@@ -1696,7 +1707,7 @@ func _resolve_rolling_cast(intent: Dictionary, actor: Dictionary, target: Dictio
 		return _accept()
 
 	var base := _connect_base_damage(def, target)
-	var pre_mitigation := _phase_a_damage(base, facing_mult)
+	var pre_mitigation := _dealt(base, facing_mult, actor, target)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	target["hp"] = int(target["hp"]) - damage
@@ -2525,6 +2536,8 @@ func _roll_d100() -> int:
 
 func _accept() -> Dictionary:
 	_broadcast()
+	if _quiet:
+		return {"ok": true, "illegal": false, "reason": ""}
 	return {
 		"ok": true,
 		"illegal": false,
@@ -2543,6 +2556,8 @@ func _reject(intent: Dictionary, reason: String, coach: String) -> Dictionary:
 		"coach": coach,
 	}]
 	_broadcast()
+	if _quiet:
+		return {"ok": false, "illegal": true, "reason": reason}
 	return {
 		"ok": false,
 		"illegal": true,
@@ -2873,7 +2888,8 @@ func _support_heal_amount(actor: Dictionary, target: Dictionary, def: Dictionary
 	var passive := PASSIVE
 	if _triage_applied(target, def):
 		passive = SpellKits.TRIAGE_MULT
-	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + MASTERY / 100.0) * facing
+	var mastery := float(actor.get("mastery", MASTERY))
+	var raw: float = float(base) * CRIT_MULT * passive * (1.0 + mastery / 100.0) * facing
 	return roundi(raw)
 
 
@@ -3145,7 +3161,7 @@ func _resolve_aegis_break(intent: Dictionary, actor: Dictionary, def: Dictionary
 		var cell: Vector2i = target["pos"]
 		var facing_mult := _facing_multiplier(actor["pos"], target["pos"], str(target.get("facing", "E")))
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 26)), facing_mult)
+		var pre_mitigation := _dealt(int(def.get("base_damage", 26)), facing_mult, actor, target)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -3346,7 +3362,7 @@ func _resolve_hold_line(intent: Dictionary, actor: Dictionary, def: Dictionary, 
 		var is_back := facing_mult > FRONT_SIDE_FACING + 0.001
 		if str(actor.get("class_id", "")) == SpellKits.CLASS_GLOAM and is_back:
 			facing_mult = SpellKits.BACKSTAB_MULT
-		var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 7)), facing_mult)
+		var pre_mitigation := _dealt(int(def.get("base_damage", 7)), facing_mult, actor, target)
 		var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 		var damage := int(mitigation["damage"])
 		target["hp"] = maxi(0, int(target["hp"]) - damage)
@@ -3446,7 +3462,7 @@ func _resolve_ambush(intent: Dictionary, actor: Dictionary, target: Dictionary, 
 		_remove_shade_at(origin["pos"], int(actor["seat"]))
 		_sync_shade_flags()
 	var facing_mult := SpellKits.BACKSTAB_MULT if backstab else FRONT_SIDE_FACING
-	var pre_mitigation := _phase_a_damage(int(def.get("base_damage", 22)), facing_mult)
+	var pre_mitigation := _dealt(int(def.get("base_damage", 22)), facing_mult, actor, target)
 	var mitigation := _mitigate_hit(actor, target, pre_mitigation)
 	var damage := int(mitigation["damage"])
 	target["hp"] = maxi(0, int(target["hp"]) - damage)

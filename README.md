@@ -120,6 +120,7 @@ godot --headless --path . -s res://tests/run_net_session_tests.gd
 godot --headless --path . -s res://tests/run_class_select_tests.gd
 godot --headless --path . -s res://tests/run_class_picker_tests.gd
 godot --headless --path . -s res://tests/run_koliseo_maps_tests.gd
+godot --headless --path . -s res://tests/run_crosshaven_zone_tests.gd
 godot --headless --path . -s res://tests/run_matchmaking_tests.gd
 godot --headless --path . -s res://tests/run_event_hooks_tests.gd
 ```

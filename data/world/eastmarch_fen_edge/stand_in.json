@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "eastmarch_fen_edge",
+  "weather": [
+    "light_cloud"
+  ],
+  "grade": {
+    "warm_mul": [
+      0.86,
+      0.96,
+      0.84
+    ],
+    "haze_col": [
+      0.435,
+      0.535,
+      0.53
+    ],
+    "haze_max": 0.315,
+    "saturation": 0.84
+  }
+}

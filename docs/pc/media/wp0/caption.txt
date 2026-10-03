@@ -1,0 +1,11 @@
+WP0 before / after, next to reference A.
+
+Reference A is the Wakfu outdoor fight, the bar for the open world. It is the panel under the "A. Wakfu outdoor fight" caption in docs/pc/look_target/look_target_refs.jpg on claude/pc-zones-spec. Crop: x 10–700, y 136–566.
+
+Clip: wp0_before_after_refA.mp4
+Still: wp0_before_after_refA.png
+1920×1080, 30 fps, H.264, 6.0 s, under 25 MB.
+
+Recorded from the game, scene res://scenes/world/crosshaven/crosshaven_world.tscn, --movie tour. Same Crossroads free walk as the WP0 before tour, same camera and zoom on both sides.
+
+WP0 did not change the world picture, so before and after match. Reference A sits beside them.

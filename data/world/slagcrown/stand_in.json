@@ -1,0 +1,24 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "slagcrown",
+  "weather": [
+    "clear"
+  ],
+  "grade": {
+    "warm_mul": [
+      1.16,
+      0.86,
+      0.68
+    ],
+    "haze_col": [
+      0.75,
+      0.36,
+      0.16
+    ],
+    "haze_max": 0.12,
+    "saturation": 1.1,
+    "tint_col": [1.0, 0.48, 0.08],
+    "tint_amount": 0.4
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "format": "stasium.region_stand_in",
+  "format_version": 1,
+  "region": "rowanvale",
+  "weather": [
+    "clear"
+  ],
+  "grade": {
+    "warm_mul": [
+      1.06,
+      1.02,
+      0.9
+    ],
+    "haze_col": [
+      0.62,
+      0.58,
+      0.32
+    ],
+    "haze_max": 0.08,
+    "saturation": 1.08
+  }
+}

@@ -1,0 +1,8 @@
+WP4 gate clip. The chunks this walk needed are the WP5a critical path.
+
+Clip: wp4_stoneford_rowanvale.mp4
+1920×1080, 30 fps, H.264, 35.5 s, 5.0 MB.
+
+Recorded from res://scenes/world/crosshaven/crosshaven_world.tscn, --movie wp4gate, zoom 1.6. The walker playback is 3 so the crossing fits in one clip. The route is the real gate and the real chunk exits: Stoneford cell (3, 0) into Rowanvale entry (0, 16), south through the hamlet to the door chunk, onto the dungeon mark, then back through the hamlet and out the same gate to Stoneford.
+
+Before this package the gate only reported that Rowanvale was not built. The nine entry stills are under docs/pc/media/wp5a/.

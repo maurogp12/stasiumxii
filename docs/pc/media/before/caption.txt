@@ -1,0 +1,24 @@
+Before media for the PC open world (WP0).
+
+Recorded from the game, Godot 4.7.2, scene res://scenes/world/crosshaven/crosshaven_world.tscn.
+Window locked with a temporary override.cfg (not a project setting) so the movie writer captured 1920×1080.
+30 fps, H.264, each MP4 under 25 MB. This is the baseline. No level zones, zone banner, or PC level counter are in this build.
+
+before_six_town_tour.mp4
+  --movie v7tour. One pass through all six towns: Crossroads, Northgate, Stoneford, Eastmarch, Westwatch, Southbridge. 41.4 s, 1243 frames.
+
+before_town_crossroads.mp4
+before_town_northgate.mp4
+before_town_stoneford.mp4
+before_town_eastmarch.mp4
+before_town_westwatch.mp4
+before_town_southbridge.mp4
+  The same tour, split at each town's arrival mark, so each town can be watched on its own.
+
+before_freewalk_crossroads_20s.mp4
+  --movie tour, stopped at 600 frames. Free walk starting at the Crossroads. 20.0 s.
+
+stills/
+  PNG frames from those clips, 1920×1080: one at each town arrival, and one at 3 s of the free walk.
+
+Caption: nothing in the zone or level systems has changed. Later packages compare against these frames.

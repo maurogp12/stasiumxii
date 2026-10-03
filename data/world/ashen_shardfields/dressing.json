@@ -1,0 +1,93 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "ashen_shardfields",
+  "seed": 3845,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_fallow",
+      "weight": 4
+    },
+    {
+      "terrain": "golden_plains",
+      "weight": 2
+    }
+  ],
+  "props": [
+    {
+      "type": "quarry_rocks_a",
+      "weight": 4,
+      "stands_for": "crystal shard cluster"
+    },
+    {
+      "type": "tree",
+      "weight": 2,
+      "stands_for": "petrified tree"
+    },
+    {
+      "type": "waystone",
+      "weight": 2,
+      "stands_for": "cracked obelisk"
+    },
+    {
+      "type": "well",
+      "weight": 1,
+      "stands_for": "ash rock"
+    },
+    {
+      "type": "barrel",
+      "weight": 1,
+      "stands_for": "glass chunk"
+    },
+    {
+      "type": "fence",
+      "weight": 1,
+      "stands_for": "dune stake"
+    }
+  ],
+  "border": {
+    "type": "quarry_rocks_a",
+    "stands_for": "crystal ridge",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "rock_small_d",
+      "weight": 3
+    },
+    {
+      "type": "decal_pebbles",
+      "weight": 3
+    },
+    {
+      "type": "tuft_a",
+      "weight": 2
+    },
+    {
+      "type": "mushrooms_a",
+      "weight": 1
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "ashen_shardfields_entry",
+    "type": "tree_cluster_2x2_a",
+    "stands_for": "Great Crystal Shard",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

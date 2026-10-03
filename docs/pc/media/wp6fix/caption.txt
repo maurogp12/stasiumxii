@@ -1,0 +1,9 @@
+WP6 fix stills. Name plates sit on a layer above the grade, so the fog does not wash them out. Each label is centred in its backing, with about 5 px of padding, and the backing sits about 7 px above the sprite's head.
+
+Gloomfen: docs/pc/media/wp6fix/gloomfen_plates.png
+1920×1080, noon, zoom 1.45, standing at cell 8, 8 on gloomfen_mire_entry.
+The Hermit, Trader, and Warden plates stay readable over the green-grey fog.
+
+Crosshaven square: docs/pc/media/wp6fix/crosshaven_square.png
+1920×1080, noon, zoom 1.45, standing at cell 20, 17 on the Crossroads.
+Guide, Herald, Banker, and Trader are in the square. Every pair is at least 3 cells apart.
