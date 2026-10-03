@@ -18,7 +18,7 @@ const LEAF_EDGES := {
 const SHADOW_SHADER := """shader_type canvas_item;
 render_mode blend_mul;
 uniform sampler2D shadow_tex : repeat_enable, filter_linear, hint_default_white;
-uniform float opacity = 0.32;
+uniform float opacity = 0.55;
 uniform vec2 origin = vec2(0.0);
 uniform float world_repeat = 512.0;
 varying vec2 local_pos;
@@ -33,6 +33,29 @@ void fragment() {
 	vec3 tinted = mix(vec3(0.22, 0.48, 0.28), vec3(0.93, 1.0, 0.90), lit);
 	vec3 mul = mix(vec3(1.0), tinted, clamp(opacity, 0.0, 1.0));
 	COLOR = vec4(mul, 1.0);
+}
+"""
+const SKIRT_SHADER := """shader_type canvas_item;
+// Procedural cliff under the board. The oval still shows sky until L1.
+uniform vec3 skirt_color = vec3(0.035, 0.062, 0.048);
+uniform float strength = 0.62;
+uniform float board_n = 15.0;
+uniform float reach = 5.0;
+varying vec2 board_pos;
+void vertex() {
+	board_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
+}
+void fragment() {
+	float fx = board_pos.y / 32.0 + board_pos.x / 64.0;
+	float fy = board_pos.y / 32.0 - board_pos.x / 64.0;
+	float edge = max(board_n - 0.5, 0.0);
+	float ox = max(max(-0.5 - fx, fx - edge), 0.0);
+	float oy = max(max(-0.5 - fy, fy - edge), 0.0);
+	float outside = length(vec2(ox, oy));
+	float fade = 1.0 - smoothstep(0.15, max(reach, 0.2), outside);
+	float rim = smoothstep(0.0, 0.85, outside);
+	float a = strength * fade * mix(0.55, 1.0, rim);
+	COLOR = vec4(skirt_color, a);
 }
 """
 const MAX_FIGHTERS := 12
@@ -117,6 +140,8 @@ var _pivots: Dictionary = {}
 var _sprites: Dictionary = {}
 var _hover_cell: Vector2i = Vector2i(-1, -1)
 var _hover_locked: bool = false
+var _skirt: Sprite2D
+var _skirt_shader: Shader
 
 
 class LeafDapple extends Node2D:
@@ -232,7 +257,9 @@ func layout() -> void:
 	_ensure_params()
 	_layout_backs()
 	_layout_leaves()
+	_layout_skirt()
 	_apply_sway()
+	_apply_top_fade()
 	_drop_pointer(self)
 	_sync_cutout()
 
@@ -384,6 +411,41 @@ func leaves_cover_play() -> bool:
 	return false
 
 
+func top_leaf_alpha() -> float:
+	return _top_fade_alpha()
+
+
+func leaf_board_coverage() -> float:
+	if _board == null or _board.tiles.is_empty():
+		return 0.0
+	var images := {}
+	for slot in _sprites.keys():
+		var sprite: Sprite2D = _sprites[slot]
+		if sprite == null or sprite.texture == null:
+			continue
+		var image := sprite.texture.get_image()
+		if image != null and not image.is_empty():
+			images[slot] = image
+	var hit := 0
+	var total := 0
+	for cell in _board.tiles.keys():
+		var center: Vector2 = (_board.tiles[cell] as Node2D).position
+		var samples: Array[Vector2] = [
+			center,
+			center + Vector2(0, -10),
+			center + Vector2(18, 0),
+			center + Vector2(0, 10),
+			center + Vector2(-18, 0),
+		]
+		for point in samples:
+			total += 1
+			if _leaf_covers_point(point, images):
+				hit += 1
+	if total == 0:
+		return 0.0
+	return float(hit) / float(total)
+
+
 func _process(delta: float) -> void:
 	if not visible or _board == null or not _built:
 		return
@@ -470,6 +532,7 @@ func _layout_backs() -> void:
 			continue
 		root.visible = true
 		root.position = cam.position
+		art.modulate = _layer_modulate(slot)
 		var fraction := float(factors.get(slot, 0.0))
 		var scale := _back_scale(fraction, art.texture.get_size(), view)
 		art.scale = Vector2(scale, scale)
@@ -525,6 +588,7 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	pivot.position = base
 	pivot.rotation = 0.0
 	sprite.position = local
+	sprite.modulate = _layer_modulate("front_leaves")
 	var mat := sprite.material as ShaderMaterial
 	if mat != null and sprite.scale.x > 0.001:
 		mat.set_shader_parameter("amplitude_px", swing_px / sprite.scale.x)
@@ -555,7 +619,7 @@ func _build_shadows(board: Node2D) -> void:
 	if tex == null:
 		return
 	var shader := _shadow_shader()
-	var opacity := float(_params.get("shadow_opacity", 0.32))
+	var opacity := float(_params.get("shadow_opacity", 0.55))
 	var world_repeat := float(_params.get("shadow_world_repeat", 512.0))
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
@@ -563,6 +627,7 @@ func _build_shadows(board: Node2D) -> void:
 		dapple.name = "LeafDapple"
 		dapple.z_as_relative = true
 		dapple.z_index = _z("leaf_shadow")
+		dapple.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
 		var mat := ShaderMaterial.new()
 		mat.shader = shader
 		mat.set_shader_parameter("shadow_tex", tex)
@@ -845,6 +910,105 @@ func _sway_dir(edge: String) -> Vector2:
 	if edge == "bottom":
 		return Vector2(0, -1)
 	return Vector2(1, 0)
+
+
+func _layer_modulate(key: String) -> Color:
+	var layers: Dictionary = _params.get("layers", {})
+	var spec: Variant = layers.get(key, {})
+	if spec is Dictionary:
+		var raw: Variant = (spec as Dictionary).get("modulate", [])
+		if raw is Array and (raw as Array).size() >= 3:
+			return Color(float(raw[0]), float(raw[1]), float(raw[2]), 1.0)
+	return Color.WHITE
+
+
+func _apply_top_fade() -> void:
+	var sprite: Sprite2D = _sprites.get("front_leaves_top")
+	if sprite == null:
+		return
+	var tint := _layer_modulate("front_leaves")
+	sprite.modulate = Color(tint.r, tint.g, tint.b, _top_fade_alpha())
+
+
+func _top_fade_alpha() -> float:
+	var dist := float(_params.get("top_fade_distance", 220.0))
+	if dist <= 1.0 or _board == null:
+		return 1.0
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	if cam == null:
+		return 1.0
+	var fit: Vector2 = _board.get("_fit_camera_pos")
+	var pan_y := cam.position.y - fit.y
+	return clampf(1.0 - maxf(pan_y, 0.0) / dist, 0.0, 1.0)
+
+
+func _leaf_covers_point(point: Vector2, images: Dictionary) -> bool:
+	var here := to_local(_board.to_global(point))
+	for slot in images.keys():
+		var clip: Control = _clips.get(slot)
+		var sprite: Sprite2D = _sprites.get(slot)
+		if clip == null or sprite == null or not clip.visible:
+			continue
+		if sprite.modulate.a <= 0.1:
+			continue
+		if not Rect2(clip.position, clip.size).has_point(here):
+			continue
+		var local := sprite.to_local(_board.to_global(point))
+		var size := sprite.texture.get_size()
+		if absf(local.x) > size.x * 0.5 or absf(local.y) > size.y * 0.5:
+			continue
+		var image: Image = images[slot]
+		var u := clampf(local.x / size.x + 0.5, 0.0, 0.999)
+		var v := clampf(local.y / size.y + 0.5, 0.0, 0.999)
+		var px := int(u * float(image.get_width()))
+		var py := int(v * float(image.get_height()))
+		if image.get_pixel(px, py).a * sprite.modulate.a > 0.1:
+			return true
+	return false
+
+
+func _layout_skirt() -> void:
+	_ensure_skirt()
+	if _skirt == null or _board == null:
+		return
+	var spec: Dictionary = _params.get("ground_skirt", {})
+	var reach := float(spec.get("reach_cells", 5.0))
+	var n := float(_board_n())
+	var span := n + reach * 2.0
+	_skirt.position = Vector2(0.0, (n - 1.0) * 16.0)
+	_skirt.scale = Vector2(span * 64.0 / 4.0, span * 32.0 / 4.0)
+	var mat := _skirt.material as ShaderMaterial
+	if mat == null:
+		return
+	var raw: Variant = spec.get("color", [0.035, 0.062, 0.048])
+	var color := Color(0.035, 0.062, 0.048)
+	if raw is Array and (raw as Array).size() >= 3:
+		color = Color(float(raw[0]), float(raw[1]), float(raw[2]))
+	mat.set_shader_parameter("skirt_color", Vector3(color.r, color.g, color.b))
+	mat.set_shader_parameter("strength", float(spec.get("strength", 0.62)))
+	mat.set_shader_parameter("board_n", n)
+	mat.set_shader_parameter("reach", reach)
+
+
+func _ensure_skirt() -> void:
+	if _skirt != null and is_instance_valid(_skirt):
+		return
+	_skirt = Sprite2D.new()
+	_skirt.name = "GroundSkirt"
+	_skirt.centered = true
+	_skirt.z_as_relative = false
+	_skirt.z_index = _z("ground_skirt")
+	_skirt.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	_skirt.texture = ImageTexture.create_from_image(image)
+	if _skirt_shader == null:
+		_skirt_shader = Shader.new()
+		_skirt_shader.code = SKIRT_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _skirt_shader
+	_skirt.material = mat
+	add_child(_skirt)
 
 
 func _z(key: String) -> int:

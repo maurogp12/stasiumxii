@@ -1,6 +1,6 @@
 {
-  "art_status": "placeholder",
-  "note": "Stand-in paint. Scenario Art replaces the PNGs in place. Masters are named slot@2x.png; the loader tries that name first. Each back plate is scaled to the live view: scale = max((view_w + 2*drift) / layer_w, (view_h + 2*drift) / layer_h), where drift = pan_limit_px * that plate's on-screen motion, view is the visible world size at the current zoom, and layer is the texture size. This is recomputed when the viewport changes. Front leaves are screen-locked. The leaf shader fades out over every cell diamond, over each fighter, and over a wider diamond on the hovered cell, so a leaf never covers a fighter or a clickable cell. Every leaf and backdrop control uses mouse_filter ignore, so clicks pass through. Each leaf has an 8-bit greyscale sway mask at half size: 0 pinned, 255 full swing. leaf_shadow is greyscale, white = lit, multiply, green tint and a slow scroll in the shader. Import is linear with no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
+  "art_status": "v2",
+  "note": "Crosshaven jungle v2, approved. Masters are slot@2x.png; plain png is the half-size fallback. A later front_leaves_top v3 replaces only front_leaves_top@2x.png, front_leaves_top.png and front_leaves_top_sway.png. Each back plate is scaled to the live view plus its parallax drift, including ultrawide. Front leaves are screen-locked in the margins. The leaf shader fades out over every cell diamond, each fighter, and a wider diamond on the hovered cell. Controls use mouse_filter ignore. Sway masks are half-size greyscale data: lossless, linear, sampled in the vertex shader with no color hint. leaf_shadow is seamless greyscale, white = lit, multiply, repeating, strength in shadow_opacity. layers.modulate is per plate so the board stays the brightest area: back_far about 0.75 and cooler, back_mid about 0.85, front leaves about 0.68 and slightly cool. top_fade_distance fades front_leaves_top as the camera pans +y toward that canopy, instead of clamping the pan. ground_skirt is a procedural dark cliff under the board edges, because the oval currently shows sky. Import: linear, no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
   "art_root": "res://art/pc/look/crosshaven_jungle/",
   "map_ids": ["crosshaven"],
   "slots": {
@@ -27,7 +27,14 @@
     "front_leaves_top": 0.9,
     "front_leaves_bottom": 2.3
   },
-  "shadow_opacity": 0.32,
+  "layers": {
+    "back_far": {"modulate": [0.68, 0.73, 0.82]},
+    "back_mid": {"modulate": [0.85, 0.85, 0.85]},
+    "front_leaves": {"modulate": [0.62, 0.67, 0.76]}
+  },
+  "top_fade_distance": 220,
+  "ground_skirt": {"color": [0.035, 0.062, 0.048], "strength": 0.62, "reach_cells": 5.0},
+  "shadow_opacity": 0.55,
   "shadow_world_repeat": 512.0,
   "shadow_scroll": "slow",
   "fighter_clear_px": 136,
@@ -35,6 +42,7 @@
   "z_order": {
     "back_far": -320,
     "back_mid": -180,
+    "ground_skirt": -40,
     "leaf_shadow": 0,
     "front_leaves": 720
   }

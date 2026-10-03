@@ -34,12 +34,20 @@ func _go() -> void:
 		push_error("JungleBackdrop missing")
 		quit(1)
 		return
-	layer.set_enabled(true)
 	var cam := board.get_node("BoardCamera") as Camera2D
 	var fit: Vector2 = board.get("_fit_camera_pos")
 	cam.zoom = Vector2(0.64, 0.64)
 	cam.position = fit + Vector2(220, 0)
+	layer.set_enabled(false)
+	var before := await _sample()
+	layer.set_enabled(true)
 	layer.layout()
+	var after := await _sample()
+	print("JUNGLE_FRAME before_mean_ms=%.3f before_worst_ms=%.3f after_mean_ms=%.3f after_worst_ms=%.3f samples=%d" % [before.x, before.y, after.x, after.y, SAMPLES])
+	quit(0)
+
+
+func _sample() -> Vector2:
 	for _i in WARMUP:
 		await process_frame
 	var total := 0
@@ -52,6 +60,4 @@ func _go() -> void:
 		total += dt
 		if dt > worst:
 			worst = dt
-	var mean_us := float(total) / float(SAMPLES)
-	print("JUNGLE_FRAME mean_ms=%.3f worst_ms=%.3f samples=%d" % [mean_us / 1000.0, float(worst) / 1000.0, SAMPLES])
-	quit(0)
+	return Vector2(float(total) / float(SAMPLES) / 1000.0, float(worst) / 1000.0)

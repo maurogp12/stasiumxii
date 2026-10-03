@@ -23,7 +23,8 @@ func _finish_live() -> void:
 
 func _test_params_and_slots() -> void:
 	var params := JUNGLE.load_params()
-	eq(str(params.get("art_status", "")), "placeholder", "jungle art is still the stand-in set")
+	eq(str(params.get("art_status", "")), "v2", "jungle art is the approved v2 set")
+	truthy(FileAccess.file_exists(JUNGLE.art_root() + "README.md"), "the jungle folder ships the art readme")
 	eq(str(params.get("sway_mode", "")), "mask_shader", "leaf sway is a mask shader")
 	eq(bool(params.get("sway_mask", false)), true, "each leaf layer has a sway mask")
 	eq(bool(params.get("flipbook", true)), false, "leaf sway is not a flipbook")
@@ -58,6 +59,12 @@ func _test_params_and_slots() -> void:
 			eq(tex.get_width(), int(px[0]), "%s width" % slot)
 			eq(tex.get_height(), int(px[1]), "%s height" % slot)
 		_check_import(path, str(spec.get("compress", "lossless")))
+		var fallback := load(JUNGLE.slot_path_1x(slot)) as Texture2D
+		truthy(fallback != null, "%s 1x fallback loads" % slot)
+		if tex != null and fallback != null:
+			eq(fallback.get_width() * 2, tex.get_width(), "%s 1x is half the master width" % slot)
+			eq(fallback.get_height() * 2, tex.get_height(), "%s 1x is half the master height" % slot)
+		_check_import(JUNGLE.slot_path_1x(slot), str(spec.get("compress", "lossless")))
 	eq(JUNGLE.choose_path(JUNGLE.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
 	var src := FileAccess.get_file_as_string("res://board/pc/jungle_backdrop.gd")
 	var hi := src.find("slot + \"@2x.png\"")
@@ -91,6 +98,21 @@ func _test_params_and_slots() -> void:
 			eq(sway_tex.get_height(), int(sway[1]), "%s sway height" % slot)
 		_check_import(sway_path, "lossless")
 	eq(src.contains("sway_tex"), true, "the sway shader samples the greyscale mask")
+	var sway_at := src.find("const SWAY_SHADER")
+	var sway_src := src.substr(sway_at, src.find("var _params") - sway_at)
+	eq(sway_src.contains("source_color"), false, "the sway mask sampler has no color hint")
+	truthy(sway_src.contains("void vertex()"), "the sway mask is sampled in the vertex shader")
+	truthy(sway_src.contains("filter_linear"), "the sway mask uses a linear filter")
+	eq(float(params.get("shadow_opacity", 0.0)), 0.55, "leaf shadow strength starts at 0.55")
+	eq(float(params.get("top_fade_distance", 0.0)), 220.0, "the top canopy fades across the pan distance")
+	var layers: Dictionary = params.get("layers", {})
+	_assert_modulate(layers, "back_far", 0.75, "far canopy")
+	_assert_modulate(layers, "back_mid", 0.85, "mid canopy")
+	_assert_modulate(layers, "front_leaves", 0.68, "front leaves")
+	var far_mod: Array = (layers["back_far"] as Dictionary)["modulate"]
+	truthy(float(far_mod[2]) > float(far_mod[0]), "the far canopy modulate is cooler than neutral")
+	var leaf_mod: Array = (layers["front_leaves"] as Dictionary)["modulate"]
+	truthy(float(leaf_mod[2]) > float(leaf_mod[0]), "the front leaves carry a slight cool tint")
 	eq(src.contains("COLOR.a *="), true, "front leaves fade in the shader")
 	eq(src.contains("fighter_pos"), true, "the leaf shader cuts a hole per fighter")
 	eq(src.contains("hover_on"), true, "the leaf shader cuts a hole on the hovered cell")
@@ -156,6 +178,7 @@ func _test_live_layer() -> void:
 	layer.layout()
 	eq((board.tiles[Vector2i(7, 7)] as Node2D).position, origin, "the backdrop does not move a cell")
 	eq(layer.leaves_cover_play(), false, "front leaves do not cover the play cells")
+	_assert_look_tunables(layer, cam, board)
 	truthy(layer.pointer_passes(), "clicks pass through every leaf and backdrop control")
 	var edge_cell := Vector2i(0, 14)
 	var edge_tile: Node2D = board.tiles[edge_cell]
@@ -271,6 +294,67 @@ func _assert_back_plates_cover(layer: Node, cam: Camera2D, board: Node2D) -> voi
 	cam.position = saved_pos
 	await process_frame
 	layer.layout()
+
+
+func _assert_modulate(layers: Dictionary, key: String, around: float, label: String) -> void:
+	var spec: Dictionary = layers.get(key, {})
+	var raw: Array = spec.get("modulate", [])
+	eq(raw.size(), 3, "%s modulate is an rgb triple" % label)
+	if raw.size() < 3:
+		return
+	var lum := 0.2126 * float(raw[0]) + 0.7152 * float(raw[1]) + 0.0722 * float(raw[2])
+	truthy(absf(lum - around) <= 0.04, "%s modulate is about %.2f" % [label, around])
+
+
+func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
+	var params := JUNGLE.load_params()
+	var far := layer.get_node("back_far/Art") as CanvasItem
+	var mid := layer.get_node("back_mid/Art") as CanvasItem
+	var leaf := layer.get_node("front_leaves_left/Pivot/Art") as CanvasItem
+	var far_mod: Array = params["layers"]["back_far"]["modulate"]
+	var mid_mod: Array = params["layers"]["back_mid"]["modulate"]
+	var leaf_mod: Array = params["layers"]["front_leaves"]["modulate"]
+	truthy(_color_close(far.modulate, far_mod), "the far plate uses its json modulate")
+	truthy(_color_close(mid.modulate, mid_mod), "the mid plate uses its json modulate")
+	truthy(_color_close(leaf.modulate, leaf_mod), "a front leaf uses its json modulate")
+	var skirt := layer.get_node_or_null("GroundSkirt") as Sprite2D
+	truthy(skirt != null, "a procedural ground skirt sits under the board")
+	if skirt != null:
+		truthy(skirt.z_index < 0 and skirt.z_index > layer.back_z("back_mid"), "the skirt is under the board and over the mid canopy")
+		var mat := skirt.material as ShaderMaterial
+		truthy(is_equal_approx(float(mat.get_shader_parameter("strength")), float(params["ground_skirt"]["strength"])), "the skirt strength comes from the json")
+	var dapple: CanvasItem = (board.tiles[Vector2i(7, 7)] as Node).get_node_or_null("LeafDapple")
+	truthy(dapple != null and dapple.texture_repeat == CanvasItem.TEXTURE_REPEAT_ENABLED, "the leaf shadow repeats on the cell")
+	var fit: Vector2 = board.get("_fit_camera_pos")
+	var saved := cam.position
+	cam.position = fit
+	layer.layout()
+	truthy(is_equal_approx(layer.top_leaf_alpha(), 1.0), "the top canopy is fully visible at the default camera")
+	var cover_default: float = layer.leaf_board_coverage()
+	print("LEAF_COVERAGE default %.4f" % cover_default)
+	truthy(cover_default <= 0.005, "front leaves cover none of the board at the default camera")
+	var limit := float(params.get("pan_limit_px", 220.0))
+	var pans := {
+		"x+": Vector2(limit, 0),
+		"x-": Vector2(-limit, 0),
+		"y+": Vector2(0, limit),
+		"y-": Vector2(0, -limit),
+	}
+	for name in pans.keys():
+		cam.position = fit + pans[name]
+		layer.layout()
+		var cover: float = layer.leaf_board_coverage()
+		print("LEAF_COVERAGE %s %.4f alpha %.3f" % [name, cover, layer.top_leaf_alpha()])
+		truthy(cover <= 0.06, "front leaves stay off most of the board at pan %s" % name)
+	cam.position = fit + Vector2(0, limit)
+	layer.layout()
+	truthy(layer.top_leaf_alpha() <= 0.02, "a full +y pan fades the top canopy out")
+	cam.position = saved
+	layer.layout()
+
+
+func _color_close(got: Color, raw: Array) -> bool:
+	return is_equal_approx(got.r, float(raw[0])) and is_equal_approx(got.g, float(raw[1])) and is_equal_approx(got.b, float(raw[2]))
 
 
 func _check_import(path: String, mode: String) -> void:
