@@ -5,9 +5,9 @@ extends RefCounted
 ## stasium.zone files are not read or written here.
 
 const PATH := "res://data/world/level_zones.json"
+const CURVE_PATH := "res://data/world/level_curve.json"
 const FORMAT := "stasium.level_zones"
 const FORMAT_VERSION := 1
-const MAX_LEVEL := 50
 const DOC_KEYS: Array[String] = ["format", "format_version", "status", "zones"]
 const ZONE_REQUIRED: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"]
 const ZONE_KEYS: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "depth", "color", "dungeon"]
@@ -24,6 +24,19 @@ const ZONE_IDS: Array[String] = [
 	"ashen_shardfields",
 	"blightwood_hollow",
 ]
+const REGION_OF := {
+	"crosshaven_heart": "crosshaven",
+	"crosshaven_towns": "crosshaven",
+	"rowanvale": "rowanvale",
+	"windmere": "windmere",
+	"brinewake": "brinewake",
+	"slagcrown": "slagcrown",
+	"eastmarch_fen_edge": "eastmarch_fen_edge",
+	"gloomfen_mire": "gloomfen_mire",
+	"stormspire": "stormspire",
+	"ashen_shardfields": "ashen_shardfields",
+	"blightwood_hollow": "blightwood_hollow",
+}
 
 var source: Dictionary = {}
 var zones: Array = []
@@ -104,6 +117,9 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 	var seen_ids := {}
 	var seen_chunks := {}
 	var seen_dungeons := {}
+	var cap := curve_max_level()
+	if cap < 2:
+		_err(errors, "max_level could not be read from level_curve.json")
 	for zone in doc["zones"]:
 		if typeof(zone) != TYPE_DICTIONARY:
 			_err(errors, "zone must be an object")
@@ -129,9 +145,9 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 			_err(errors, "name must be a non-empty string")
 		var lo: Variant = zone["level_min"]
 		var hi: Variant = zone["level_max"]
-		if not _in_range(lo, 1, MAX_LEVEL):
+		if cap >= 2 and not _in_range(lo, 1, cap):
 			_err(errors, "%s level_min out of range" % zone_id)
-		if not _in_range(hi, 1, MAX_LEVEL):
+		if cap >= 2 and not _in_range(hi, 1, cap):
 			_err(errors, "%s level_max out of range" % zone_id)
 		if _whole(lo) and _whole(hi) and int(lo) > int(hi):
 			_err(errors, "%s level_min above level_max" % zone_id)
@@ -172,6 +188,11 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 	for chunk_id in indexed.keys():
 		if not seen_chunks.has(chunk_id):
 			_err(errors, "chunk %s is not in a level zone" % chunk_id)
+	for chunk_id in seen_chunks.keys():
+		if indexed.has(chunk_id):
+			continue
+		if not _wp5a_name(str(seen_chunks[chunk_id]), str(chunk_id)):
+			_err(errors, "unbuilt chunk %s must use a WP5a name" % chunk_id)
 
 
 ## Proposed. When present, depth covers exactly this zone's chunks, 0..7.
@@ -216,6 +237,29 @@ static func _check_depth(zone: Dictionary, zone_id: String, errors: Array) -> vo
 			door_depth = step
 	if has_door and door_depth >= 0 and door_depth != max_depth:
 		_err(errors, "%s door chunk is not the deepest" % zone_id)
+
+
+static func curve_max_level() -> int:
+	if not FileAccess.file_exists(CURVE_PATH):
+		return -1
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CURVE_PATH))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return -1
+	var value: Variant = (parsed as Dictionary).get("max_level", null)
+	if not _whole(value) or int(value) < 2:
+		return -1
+	return int(value)
+
+
+## Unbuilt ids follow WP5a: <region>_entry, <region>_door, <region>_hub, <region>_<name>.
+static func _wp5a_name(zone_id: String, chunk_id: String) -> bool:
+	var region := str(REGION_OF.get(zone_id, ""))
+	if region == "":
+		return false
+	var prefix := region + "_"
+	if not chunk_id.begins_with(prefix):
+		return false
+	return _is_id(chunk_id.substr(prefix.length()))
 
 
 static func _region_chunks(errors: Array) -> Dictionary:

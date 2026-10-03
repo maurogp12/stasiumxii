@@ -74,11 +74,15 @@ func _test_schema_file() -> void:
 	var required: Array = schema["properties"]["zones"]["items"]["required"]
 	eq(required.has("depth"), false, "depth is optional in the schema")
 	eq(schema["properties"]["zones"]["items"]["properties"].has("depth"), true, "schema allows depth")
+	var props: Dictionary = schema["properties"]["zones"]["items"]["properties"]
+	eq(props["level_min"].has("maximum"), false, "schema does not freeze level_min")
+	eq(props["level_max"].has("maximum"), false, "schema does not freeze level_max")
 
 
 func _test_no_class_name() -> void:
 	var src := FileAccess.get_file_as_string("res://backend/world_levels.gd")
 	eq(src.find("class_name") < 0, true, "loader has no class_name")
+	eq(src.find(str(5 * 10)) < 0, true, "loader does not hardcode the phase-1 cap")
 
 
 func _test_plan(levels) -> void:
@@ -180,17 +184,31 @@ func _test_sixty_six(levels) -> void:
 			eq(hubs, want_hub, "%s hub count" % zone_id)
 	eq(owned.size(), 66, "66 chunk ids in all")
 	eq(levels.zone_for_chunk("rowanvale_entry").get("id", ""), "rowanvale", "a chunk with no file yet still resolves")
+	var built := {}
+	for chunk in HEART_CHUNKS:
+		built[chunk] = true
+	for chunk in TOWN_CHUNKS:
+		built[chunk] = true
+	var unbuilt := 0
+	for chunk_id in owned.keys():
+		if built.has(chunk_id):
+			continue
+		unbuilt += 1
+		var home := str(owned[chunk_id])
+		var prefix := home + "_"
+		eq(str(chunk_id).begins_with(prefix), true, "%s uses its region prefix" % chunk_id)
+		eq(str(chunk_id).substr(prefix.length()) != "", true, "%s has a WP5a suffix" % chunk_id)
+	eq(unbuilt, 55, "55 chunks are declared before they are built")
 
 
 func _test_rules(levels) -> void:
+	var cap := Levels.curve_max_level()
+	eq(cap >= 2, true, "the curve file supplies max_level")
 	for zone in levels.zones:
 		var lo := int(zone["level_min"])
 		var hi := int(zone["level_max"])
-		eq(lo >= 1 and lo <= hi and hi <= 50, true, "%s band is inside 1-50" % zone["id"])
-	eq(int(levels.by_id["gloomfen_mire"]["level_min"]) >= 30, true, "swamp starts at 30 or above")
-	eq(int(levels.by_id["blightwood_hollow"]["level_min"]) >= 45, true, "dark zone starts at 45 or above")
-	eq(int(levels.by_id["stormspire"]["level_min"]), 35, "Stormspire starts at 35")
-	eq(int(levels.by_id["stormspire"]["level_max"]), 40, "Stormspire ends at 40")
+		eq(lo >= 1 and lo <= hi and hi <= cap, true, "%s band is inside 1..max_level" % zone["id"])
+	_test_explicit_bands(levels)
 	var owned := {}
 	for zone in levels.zones:
 		for chunk in zone["chunks"]:
@@ -204,12 +222,19 @@ func _test_rules(levels) -> void:
 		eq(zone_id == "crosshaven_heart" or zone_id == "crosshaven_towns", true, "%s resolves to zone 1 or 2" % chunk)
 
 
+func _test_explicit_bands(levels) -> void:
+	eq(int(levels.by_id["stormspire"]["level_min"]), 35, "Stormspire starts at 35")
+	eq(int(levels.by_id["stormspire"]["level_max"]), 40, "Stormspire ends at 40")
+	eq(int(levels.by_id["gloomfen_mire"]["level_min"]) >= 30, true, "Gloomfen starts at 30 or higher")
+	eq(int(levels.by_id["blightwood_hollow"]["level_min"]) >= 45, true, "Blightwood starts at 45 or higher")
+
+
 func _test_rejects() -> void:
 	var extra := _doc()
 	extra["note"] = "no"
 	_rejects(extra, "unknown key note")
 	var high := _doc()
-	_zone(high, "rowanvale")["level_max"] = 51
+	_zone(high, "rowanvale")["level_max"] = Levels.curve_max_level() + 1
 	_rejects(high, "level_max out of range")
 	var low := _doc()
 	_zone(low, "rowanvale")["level_min"] = 0
@@ -254,6 +279,10 @@ func _test_rejects() -> void:
 	_zone(ahead, "rowanvale")["depth"]["rowanvale_meadow"] = 3
 	var accepted: Dictionary = Levels.parse(ahead)
 	eq(accepted["ok"], true, "a declared chunk with no region file yet is allowed (%s)" % str(accepted["errors"]))
+	var bare := _doc()
+	_zone(bare, "rowanvale")["chunks"].append("meadow")
+	_zone(bare, "rowanvale")["depth"]["meadow"] = 3
+	_rejects(bare, "unbuilt chunk meadow must use a WP5a name")
 	var shallow := _doc()
 	_zone(shallow, "rowanvale")["depth"]["rowanvale_entry"] = 1
 	_rejects(shallow, "rowanvale_entry entry depth must be 0")
