@@ -58,6 +58,8 @@ const SHADE_MARKER := preload("res://board/shade_marker.gd")
 const JUNGLE_BACKDROP := preload("res://board/pc/jungle_backdrop.gd")
 ## Thunderwell floor theme (view only). Rules and CombatSim stay as they are.
 const THUNDERWELL_FLOOR := preload("res://board/pc/thunderwell_floor.gd")
+## L7 grade, rim, and cast light. View only. The phone path leaves it off.
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
@@ -1093,6 +1095,7 @@ func _arm_vfx(events: Array) -> void:
 		return
 	var block := float(_vfx.play(events, _sim().snapshot()))
 	_pending_motion_sec = maxf(_pending_motion_sec, minf(block, VIEW_MOTION.ACTION_LOCK_MAX))
+	_look_light().note_events(events)
 
 
 ## Spell commit plays the caster attack or cast plan on hit and on miss.
@@ -1617,6 +1620,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
 	_sync_jungle_backdrop(str(snap.get("map_id", snap.get("demo_map", ""))))
 	_sync_thunderwell_floor(snap)
+	_sync_look_light()
 
 
 func _sync_jungle_backdrop(map_id: String) -> void:
@@ -1633,6 +1637,21 @@ func set_board_theme(theme_id: String) -> void:
 	THUNDERWELL_FLOOR.request_theme(theme_id)
 	if _booted:
 		_apply_board_tiles(_sim().snapshot())
+
+
+func _sync_look_light() -> void:
+	_look_light()
+
+
+func _look_light() -> Node:
+	var layer := get_node_or_null("LookLight")
+	if layer == null:
+		layer = LOOK_LIGHT.new()
+		layer.name = "LookLight"
+		add_child(layer)
+	var dungeon := str(THUNDERWELL_FLOOR.requested_theme) == THUNDERWELL_FLOOR.THEME_ID
+	layer.sync(self, dungeon)
+	return layer
 
 
 func _sync_thunderwell_floor(snap: Dictionary) -> void:

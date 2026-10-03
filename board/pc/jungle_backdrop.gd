@@ -99,11 +99,13 @@ const HOVER_HY := 44.0
 ## cannot afford, and the leaves already stay off the play cells.
 const SWAY_PAD_PX := 12
 const SWAY_MASK_MAX := 96
+const LIGHT := preload("res://board/pc/look_light.gd")
 const SWAY_SHADER := """shader_type canvas_item;
 uniform sampler2D sway_tex : filter_nearest, repeat_disable;
 uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
+""" + LIGHT.GRADE_GLSL + """
 void fragment() {
 	vec2 off = sway_dir * swing * amplitude_px * TEXTURE_PIXEL_SIZE;
 	vec2 m = textureLod(sway_tex, UV, 0.0).rg;
@@ -112,7 +114,9 @@ void fragment() {
 	if (m.g < 0.5 && w < 0.04) {
 		discard;
 	}
-	COLOR = textureLod(TEXTURE, UV - off * w, 0.0);
+	vec4 leaf = textureLod(TEXTURE, UV - off * w, 0.0);
+	leaf.rgb = l7_grade(leaf.rgb);
+	COLOR = leaf;
 }
 """
 
@@ -277,6 +281,33 @@ func set_enabled(on: bool) -> void:
 	_force_off = not on
 	if _board != null:
 		sync_map(_board, _map_id)
+
+
+## L7. grade_on 0 leaves the plate and the leaves on their old colors.
+func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float = 0.5) -> void:
+	_push_look_grade(_plate_mat, on, sat, contrast, gain, bias, shadow, shade)
+	for slot in _sprites.keys():
+		var sprite: Sprite2D = _sprites[slot]
+		if sprite != null and sprite.material is ShaderMaterial:
+			_push_look_grade(sprite.material, on, sat, contrast, gain, bias, shadow, shade)
+
+
+func look_grade_enabled() -> bool:
+	if _plate_mat == null:
+		return false
+	return float(_plate_mat.get_shader_parameter("grade_on")) > 0.5
+
+
+func _push_look_grade(mat: ShaderMaterial, on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float) -> void:
+	if mat == null:
+		return
+	mat.set_shader_parameter("grade_on", 1.0 if on else 0.0)
+	mat.set_shader_parameter("grade_sat", sat)
+	mat.set_shader_parameter("grade_contrast", contrast)
+	mat.set_shader_parameter("grade_gain", gain)
+	mat.set_shader_parameter("grade_bias", Vector3(bias.r, bias.g, bias.b))
+	mat.set_shader_parameter("grade_shadow", Vector3(shadow.r, shadow.g, shadow.b))
+	mat.set_shader_parameter("grade_shade", shade)
 
 
 func preview_time(t: float) -> void:
@@ -714,7 +745,7 @@ func _ensure_plate() -> void:
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
 	var shader := Shader.new()
-	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment(){ COLOR = texture(TEXTURE, UV); }\n"
+	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\n" + LIGHT.GRADE_GLSL + "void fragment(){ vec4 c = texture(TEXTURE, UV); c.rgb = l7_grade(c.rgb); COLOR = c; }\n"
 	_plate_mat = ShaderMaterial.new()
 	_plate_mat.shader = shader
 	_plate_sprite = Sprite2D.new()

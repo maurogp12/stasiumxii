@@ -69,6 +69,7 @@ var _held_death_strip: bool = false
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 const OVERHEAD := preload("res://units/overhead_plate.gd")
+const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -425,6 +426,13 @@ func release_idle() -> void:
 	_start_idle()
 
 
+## The node that is drawing the body right now. The rim parents to this.
+func look_body() -> Node2D:
+	if _strip_holds_body and _active_strip != null and is_instance_valid(_active_strip) and _active_strip.visible:
+		return _active_strip
+	return _sprite
+
+
 func settle_motion() -> void:
 	var died := _plan_died
 	_plan_died = false
@@ -616,6 +624,7 @@ func _sync_sprite() -> void:
 	else:
 		_sprite.visible = true
 		_hide_body_strips()
+	LOOK_LIGHT.dress_pawn(self)
 	_request_paint()
 
 
@@ -739,6 +748,7 @@ func _freeze_strip_pose(last_pose: bool) -> void:
 		_strip_play_scale = strip.speed_scale
 	strip.speed_scale = 0.0
 	_impact_frozen = true
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func _thaw_strip_pose() -> void:
@@ -832,6 +842,7 @@ func _hold_death_strip() -> bool:
 		strip.animation = anim
 	_active_strip = strip
 	_strip_holds_body = true
+	LOOK_LIGHT.dress_pawn(self)
 	_held_death_strip = true
 	_body_kind = "death"
 	strip.position = Vector2.ZERO
@@ -863,6 +874,7 @@ func _freeze_on_frame(strip: AnimatedSprite2D, frame: int) -> void:
 	strip.frame = frame
 	strip.speed_scale = 0.0
 	_impact_frozen = true
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func _start_idle() -> void:
@@ -902,6 +914,7 @@ func _plant_sprite() -> void:
 	_sprite.rotation = 0.0
 	_sprite.flip_h = false
 	_sprite.visible = true
+	LOOK_LIGHT.dress_pawn(self)
 
 
 ## Locked letters first (SE→e, SW→s, NE→n, NW→w), then the drawn-master
@@ -958,6 +971,7 @@ func _begin_body_strip(kind: String, window_sec: float) -> void:
 		strip.modulate = _sprite.modulate
 		strip.position = _sprite.position
 		_sprite.visible = false
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func _end_body_strip() -> void:
@@ -974,6 +988,7 @@ func _end_body_strip() -> void:
 	_hide_body_strips()
 	if _sprite != null and is_instance_valid(_sprite):
 		_sprite.visible = true
+	LOOK_LIGHT.dress_pawn(self)
 
 
 func _strip_choice(kind: String) -> Dictionary:
@@ -1076,6 +1091,7 @@ func _prepare_strip_pose(strip: AnimatedSprite2D) -> void:
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.position = _sprite.position
 		strip.modulate = _sprite.modulate
+	LOOK_LIGHT.dress_pawn(self)
 
 
 ## Assign frames built in memory (tests, or a caller that already sliced a sheet).
@@ -1162,6 +1178,7 @@ func _play_walk_flat() -> bool:
 	if _sprite != null and is_instance_valid(_sprite):
 		strip.modulate = _sprite.modulate
 		_sprite.visible = false
+	LOOK_LIGHT.dress_pawn(self)
 	_flatten_body()
 	return true
 
