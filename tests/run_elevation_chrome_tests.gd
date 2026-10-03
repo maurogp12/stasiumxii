@@ -449,22 +449,21 @@ func _test_l3b_grid_pulse_glyphs() -> void:
 	var ring_px := ring.get_pixel(32, 12)
 	truthy(ring_px.a > 0.3 and ring_px.b > ring_px.g, "the occupied ring is purple")
 	var glyphs := load("res://board/pc/glyph_decals.gd")
-	eq(is_equal_approx(float(glyphs.DEPLOY_ON_ZONE_ALPHA), 0.20), true, "deploy on a zone cell is drawn under the overlap cap")
-	eq(is_equal_approx(glyphs.modulate_for("deploy", "zone_p1").a, float(glyphs.DEPLOY_ON_ZONE_ALPHA)), true, "zone cells dim the deploy mark")
-	eq(is_equal_approx(glyphs.modulate_for("deploy", "zone_p2").a, float(glyphs.DEPLOY_ON_ZONE_ALPHA)), true, "both zones dim the deploy mark")
-	eq(is_equal_approx(glyphs.modulate_for("zone", "zone_p1").a, 1.0), true, "the zone mark stays at full strength")
-	eq(is_equal_approx(glyphs.modulate_for("occupied", "occupied").a, 1.0), true, "the occupied ring stays at full strength")
-	eq(is_equal_approx(glyphs.modulate_for("deploy", "occupied").a, 1.0), true, "deploy is dimmed only on a zone cell")
-	var plate := _thunderwell_plain_plate()
-	var full_strength := _zone_deploy_peak(plate, 1.0)
-	var stacked := _zone_deploy_peak(plate, float(glyphs.DEPLOY_ON_ZONE_ALPHA))
-	var ink := _zone_deploy_ink_peak(float(glyphs.DEPLOY_ON_ZONE_ALPHA))
-	var move_fill := _move_fill_peak(plate)
-	print("L3B_GLYPH_LUMA full=%.3f plate=%.3f ink=%.3f move=%.3f" % [full_strength, stacked, ink, move_fill])
-	truthy(full_strength > 0.45 and full_strength < 0.55, "full-strength zone+deploy on Thunderwell peaks near 0.49")
-	truthy(stacked < 0.417, "zone+deploy on Thunderwell stays under the move fill at 0.417")
-	truthy(stacked < move_fill, "zone+deploy on Thunderwell stays under the painted move fill")
-	truthy(stacked < full_strength, "dimming deploy lowers the overlap")
+	eq(is_equal_approx(float(glyphs.GLYPH_ALPHA), 0.65), true, "glyphs draw at about 65%")
+	eq(is_equal_approx(glyphs.modulate_for("deploy", "zone_p1").a, float(glyphs.GLYPH_ALPHA)), true, "the deploy mark uses that alpha")
+	eq(is_equal_approx(glyphs.modulate_for("zone", "zone_p1").a, float(glyphs.GLYPH_ALPHA)), true, "the zone mark uses that alpha")
+	eq(is_equal_approx(glyphs.modulate_for("zone", "zone_p2").a, glyphs.modulate_for("deploy", "zone_p2").a), true, "both marks share one alpha on P2")
+	eq(is_equal_approx(glyphs.modulate_for("occupied", "occupied").a, float(glyphs.GLYPH_ALPHA)), true, "the occupied ring uses that alpha")
+	var held_a: Texture2D = glyphs.texture("zone")
+	var held_b: Texture2D = glyphs.texture("zone")
+	eq(held_a, held_b, "the zone texture stays referenced after the draw")
+	eq(is_equal_approx(BoardTile.DEPLOY_FILL_ALPHA, 0.35), true, "open deploy cells share a 35% fill")
+	eq(is_equal_approx(BoardTile.DEPLOY_LOCKED_ALPHA, 0.15), true, "locked deploy cells use a 15% fill")
+	eq(BoardTile.DEPLOY_P1, Color(74.0 / 255.0, 143.0 / 255.0, 224.0 / 255.0), "P1 deploy fill is #4A8FE0")
+	eq(BoardTile.DEPLOY_P2, Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0), "P2 deploy fill is #E05A4A")
+	truthy(view_src.contains("locked_p1"), "a locked P1 cell keeps the P1 tint")
+	truthy(view_src.contains("locked_p2"), "a locked P2 cell keeps the P2 tint")
+	_test_rendered_deploy_zones()
 	for id in ["zone", "deploy", "occupied"]:
 		var painted := (load("res://art/pc/look/glyphs/glyph_%s@2x.png" % id) as Texture2D).get_image()
 		truthy(_glyph_has_dark_rim(painted), "%s has the dark violet rim" % id)
@@ -620,82 +619,20 @@ func _face_pad(hud: Node) -> GridContainer:
 	return null
 
 
-func _rel_lum(color: Color) -> float:
-	return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b
-
-
-func _over(dst: Color, src: Color) -> Color:
-	var a := src.a
-	return Color(
-		src.r * a + dst.r * (1.0 - a),
-		src.g * a + dst.g * (1.0 - a),
-		src.b * a + dst.b * (1.0 - a),
-		1.0)
-
-
-## Slot a of the Thunderwell master, with the floor lift and grade applied.
-func _thunderwell_plain_plate() -> Image:
-	var tex := load("res://art/pc/look/thunderwell_floor/floor_tiles@2x.png") as Texture2D
-	var image := tex.get_image()
-	var slot := Image.create(128, 64, false, Image.FORMAT_RGBA8)
-	slot.blit_rect(image, Rect2i(0, 0, 128, 64), Vector2i.ZERO)
-	var lift := 0.85
-	var grade := Color(0.70, 1.12, 0.92, 1.0)
-	for y in slot.get_height():
-		for x in slot.get_width():
-			var px := slot.get_pixel(x, y)
-			slot.set_pixel(x, y, Color(
-				clampf(pow(maxf(px.r, 0.0002), lift) * grade.r, 0.0, 1.0),
-				clampf(pow(maxf(px.g, 0.0002), lift) * grade.g, 0.0, 1.0),
-				clampf(pow(maxf(px.b, 0.0002), lift) * grade.b, 0.0, 1.0),
-				1.0))
-	return slot
-
-
-func _zone_deploy_peak(plate: Image, deploy_alpha: float) -> float:
-	var zone := (load("res://art/pc/look/glyphs/glyph_zone@2x.png") as Texture2D).get_image()
-	var dep := (load("res://art/pc/look/glyphs/glyph_deploy@2x.png") as Texture2D).get_image()
-	var origin := Vector2i((plate.get_width() - zone.get_width()) / 2, (plate.get_height() - zone.get_height()) / 2)
-	var peak := 0.0
-	for y in zone.get_height():
-		for x in zone.get_width():
-			var zp := zone.get_pixel(x, y)
-			var dp := dep.get_pixel(x, y)
-			if zp.a <= 0.05 or dp.a <= 0.05:
-				continue
-			dp.a *= deploy_alpha
-			var out := _over(_over(plate.get_pixel(origin.x + x, origin.y + y), zp), dp)
-			peak = maxf(peak, _rel_lum(out))
-	return peak
-
-
-func _zone_deploy_ink_peak(deploy_alpha: float) -> float:
-	var zone := (load("res://art/pc/look/glyphs/glyph_zone@2x.png") as Texture2D).get_image()
-	var dep := (load("res://art/pc/look/glyphs/glyph_deploy@2x.png") as Texture2D).get_image()
-	var peak := 0.0
-	for y in zone.get_height():
-		for x in zone.get_width():
-			var zp := zone.get_pixel(x, y)
-			var dp := dep.get_pixel(x, y)
-			var covered := dp.a * deploy_alpha
-			if zp.a <= 0.05 or covered <= 0.05:
-				continue
-			var out_a := zp.a + covered * (1.0 - zp.a)
-			var rgb := Color(
-				(zp.r * zp.a + dp.r * covered * (1.0 - zp.a)) / out_a,
-				(zp.g * zp.a + dp.g * covered * (1.0 - zp.a)) / out_a,
-				(zp.b * zp.a + dp.b * covered * (1.0 - zp.a)) / out_a)
-			peak = maxf(peak, _rel_lum(rgb) * out_a)
-	return peak
-
-
-func _move_fill_peak(plate: Image) -> float:
-	var fill := Color(0.55, 0.93, 1.0, 0.88)
-	var peak := 0.0
-	for y in plate.get_height():
-		for x in plate.get_width():
-			peak = maxf(peak, _rel_lum(_over(plate.get_pixel(x, y), fill)))
-	return peak
+func _test_rendered_deploy_zones() -> void:
+	var output: Array = []
+	var args := PackedStringArray([
+		"--display-driver", "x11" if OS.get_environment("DISPLAY") != "" else "headless",
+		"--rendering-driver", "opengl3",
+		"--audio-driver", "Dummy",
+		"--path", ProjectSettings.globalize_path("res://"),
+		"-s", "res://tests/pc/deploy_zone_pixels.gd",
+	])
+	var code := OS.execute(OS.get_executable_path(), args, output, true)
+	var text := "\n".join(output)
+	print(text)
+	truthy(code == 0, "rendered deploy zones stay under the move fill and do not alternate")
+	truthy(text.contains("DEPLOY_PIXELS"), "the deploy render reported luminance")
 
 
 func _glyph_has_dark_rim(image: Image) -> bool:

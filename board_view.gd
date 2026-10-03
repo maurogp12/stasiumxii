@@ -1445,14 +1445,14 @@ func _paint_deploy_highlights(snap: Dictionary) -> void:
 	var legal0: Array[Vector2i] = _sim().legal_deploy_cells(0)
 	var legal1: Array[Vector2i] = _sim().legal_deploy_cells(1)
 	for cell in _sim().deploy_zone_cells(0):
-		var kind := "locked" if bool(ready.get(0, false)) else "zone_p1"
-		if not bool(ready.get(0, false)) and not legal0.has(cell):
-			kind = "locked"
+		var kind := "zone_p1"
+		if bool(ready.get(0, false)) or not legal0.has(cell):
+			kind = "locked_p1"
 		_tile_at(cell).set_highlight(kind)
 	for cell in _sim().deploy_zone_cells(1):
-		var kind := "locked" if bool(ready.get(1, false)) else "zone_p2"
-		if not bool(ready.get(1, false)) and not legal1.has(cell):
-			kind = "locked"
+		var kind := "zone_p2"
+		if bool(ready.get(1, false)) or not legal1.has(cell):
+			kind = "locked_p2"
 		_tile_at(cell).set_highlight(kind)
 	for unit in snap.get("units", []):
 		if not bool(unit.get("placed", false)):

@@ -1,15 +1,13 @@
 extends RefCounted
 
 ## Painted deploy glyphs. Zone cells draw the zone mark and the deploy cell.
-## An occupied cell draws the ring. Deploy is dimmed on a zone cell so the
-## two paints do not stack brighter than a move tile.
+## An occupied cell draws the ring. Both marks sit at one alpha so the purple
+## reads on the team tint without a second, brighter plate.
 
 const ROOT := "res://art/pc/look/glyphs/"
 const IDS: Array[String] = ["zone", "deploy", "occupied"]
-## Full-strength overlap on a plain Thunderwell plate peaks near 0.49.
-## 0.55 still reaches about 0.45, so deploy is softer than that until the
-## stack stays under the move fill at 0.417.
-const DEPLOY_ON_ZONE_ALPHA := 0.20
+## 60–70%. The same alpha on the zone mark and the deploy mark.
+const GLYPH_ALPHA := 0.65
 
 
 static func path_for(id: String, master: bool = true) -> String:
@@ -18,11 +16,19 @@ static func path_for(id: String, master: bool = true) -> String:
 	return ROOT + "glyph_%s.png" % id
 
 
+## The canvas item keeps the texture RID after _draw returns. A texture that
+## lived only for that call was released first, and the quad painted solid white.
+static var _cache: Dictionary = {}
+
+
 static func texture(id: String) -> Texture2D:
+	if _cache.has(id) and _cache[id] != null:
+		return _cache[id]
 	var master := load(path_for(id, true)) as Texture2D
-	if master != null:
-		return master
-	return load(path_for(id, false)) as Texture2D
+	var tex := master if master != null else load(path_for(id, false)) as Texture2D
+	if tex != null:
+		_cache[id] = tex
+	return tex
 
 
 static func uses_master(id: String) -> bool:
@@ -45,8 +51,6 @@ static func ids_for_highlight(kind: String) -> Array[String]:
 	return []
 
 
-## Zone cells draw both marks. Deploy comes in softer so the overlap stays down.
-static func modulate_for(id: String, kind: String) -> Color:
-	if id == "deploy" and (kind == "zone_p1" or kind == "zone_p2"):
-		return Color(1, 1, 1, DEPLOY_ON_ZONE_ALPHA)
-	return Color(1, 1, 1, 1)
+## Both marks, and the occupied ring, draw at the same alpha.
+static func modulate_for(_id: String, _kind: String) -> Color:
+	return Color(1, 1, 1, GLYPH_ALPHA)

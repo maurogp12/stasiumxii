@@ -18,6 +18,13 @@ const GRID_LINE_ALPHA := 0.18
 ## One clock for every move tile. About ±8% at 0.5 Hz. Frozen while a walk plays.
 const MOVE_PULSE_HZ := 0.5
 const MOVE_PULSE_AMP := 0.08
+## Deploy zones. Same hues as the L5 hex rings. One alpha for every open cell.
+const DEPLOY_P1 := Color(74.0 / 255.0, 143.0 / 255.0, 224.0 / 255.0)
+const DEPLOY_P2 := Color(224.0 / 255.0, 90.0 / 255.0, 74.0 / 255.0)
+const DEPLOY_FILL_ALPHA := 0.35
+const DEPLOY_LOCKED_ALPHA := 0.15
+## Locked cells keep the team hue and sit a little darker.
+const DEPLOY_LOCKED_SCALE := 0.72
 
 static var _move_pulse_time: float = 0.0
 static var _move_pulse_frozen: bool = false
@@ -486,6 +493,11 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 		line.r = minf(line.r * breathe, 1.0)
 		line.g = minf(line.g * breathe, 1.0)
 		line.b = minf(line.b * breathe, 1.0)
+	var deploy := _deploy_tint(kind)
+	if deploy.a > 0.0:
+		color = deploy
+		line = Color(deploy.r, deploy.g, deploy.b, minf(0.55, deploy.a + 0.20))
+		width = 1.6
 	color.a *= _reveal
 	line.a *= _reveal
 	canvas.draw_colored_polygon(points, color)
@@ -518,6 +530,20 @@ func _paint_glyph(canvas: CanvasItem, kind: String) -> void:
 		var tint := Color(mod.r, mod.g, mod.b, mod.a * _reveal)
 		var size: Vector2 = GLYPHS.draw_size(tex)
 		canvas.draw_texture_rect(tex, Rect2(-size * 0.5, size), false, tint)
+
+
+## Open cells share one alpha. Locked cells use the same hue, darker and thinner.
+func _deploy_tint(kind: String) -> Color:
+	var base := DEPLOY_P1
+	if kind.ends_with("p2"):
+		base = DEPLOY_P2
+	elif not kind.ends_with("p1"):
+		return Color(0, 0, 0, 0)
+	if kind.begins_with("locked"):
+		return Color(base.r * DEPLOY_LOCKED_SCALE, base.g * DEPLOY_LOCKED_SCALE, base.b * DEPLOY_LOCKED_SCALE, DEPLOY_LOCKED_ALPHA)
+	if kind.begins_with("zone_"):
+		return Color(base.r, base.g, base.b, DEPLOY_FILL_ALPHA)
+	return Color(0, 0, 0, 0)
 
 
 func _ensure_overlay() -> void:
@@ -566,13 +592,15 @@ func _highlight_flat_color() -> Color:
 		"selected":
 			color = Color(1.0, 0.85, 0.2, 1.0)
 		"zone_p1":
-			color = Color(0.36, 0.72, 0.52, 1.0)
+			color = Color(DEPLOY_P1.r, DEPLOY_P1.g, DEPLOY_P1.b, 1.0)
 		"zone_p2":
-			color = Color(0.78, 0.42, 0.42, 1.0)
+			color = Color(DEPLOY_P2.r, DEPLOY_P2.g, DEPLOY_P2.b, 1.0)
 		"occupied":
 			color = Color(0.78, 0.62, 0.22, 1.0)
-		"locked":
-			color = Color(0.42, 0.40, 0.48, 1.0)
+		"locked", "locked_p1":
+			color = Color(DEPLOY_P1.r * DEPLOY_LOCKED_SCALE, DEPLOY_P1.g * DEPLOY_LOCKED_SCALE, DEPLOY_P1.b * DEPLOY_LOCKED_SCALE, 1.0)
+		"locked_p2":
+			color = Color(DEPLOY_P2.r * DEPLOY_LOCKED_SCALE, DEPLOY_P2.g * DEPLOY_LOCKED_SCALE, DEPLOY_P2.b * DEPLOY_LOCKED_SCALE, 1.0)
 		"blocked":
 			color = Color(0.14, 0.14, 0.16, 1.0)
 	if is_selected and highlight != "blocked":
