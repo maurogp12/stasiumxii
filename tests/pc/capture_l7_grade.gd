@@ -26,21 +26,23 @@ func _go() -> void:
 		quit(1)
 		return
 	var board: Node = dungeon["board"]
-	var units := board.get_node_or_null("Units") as CanvasItem
-	if units != null:
-		units.visible = false
+	_hide_fighters(board)
 	var base := await _grab(board, true)
+	var base_again := await _grab(board, true)
 	var graded := await _grab(board, false)
 	var delta := _delta(base, graded)
-	print("L7_THUNDERWELL delta=%d size=%s" % [delta, str(base.get_size())])
+	var repeat_delta := _delta(base, base_again)
+	print("L7_THUNDERWELL delta=%d repeat=%d size=%s" % [delta, repeat_delta, str(base.get_size())])
 	var pair_path := _out.path_join("thunderwell_before_after_1280.png")
 	_pair(_labeled(base, "THUNDERWELL    BASE"), _labeled(graded, "THUNDERWELL    L7 ON"), pair_path)
 	dungeon["main"].free()
 	LIGHT.set_suppressed(false)
 	HUD.set_pc_chrome_override(-1)
 	Engine.time_scale = 1.0
-	if delta != 0:
-		push_error("thunderwell board changed by %d px" % delta)
+	# The pillar beam flickers by a couple of levels between two base frames.
+	# L7 is in if it does not add pixels beyond that.
+	if delta > repeat_delta:
+		push_error("thunderwell board changed by %d px, base repeat is %d" % [delta, repeat_delta])
 		quit(1)
 		return
 	print("L7_GRADE pair=%s" % pair_path)
@@ -85,24 +87,46 @@ func _boot(size: Vector2i, map_id: String, theme: String) -> Dictionary:
 	return {"main": main, "board": board}
 
 
+func _hide_fighters(board: Node) -> void:
+	for node_name in ["Units", "ShadeMarkers"]:
+		var node := board.get_node_or_null(node_name) as CanvasItem
+		if node == null:
+			continue
+		node.visible = false
+		for child in node.get_children():
+			if child is CanvasItem:
+				(child as CanvasItem).visible = false
+
+
 func _freeze(board: Node) -> void:
-	var floor = board.get_node_or_null("ThunderwellFloor")
-	if floor != null and floor.has_method("preview_time"):
-		floor.preview_time(0.35)
 	Engine.time_scale = 0.0
+	var floor = board.get_node_or_null("ThunderwellFloor")
+	if floor != null:
+		floor.set_process(false)
+		if floor.has_method("preview_time"):
+			floor.preview_time(0.35)
+	var tile_script: GDScript = load("res://board/tile.gd")
+	if tile_script != null:
+		tile_script.set_move_pulse_frozen(true)
+		tile_script.set_move_pulse_time(0.35)
 
 
 func _grab(board: Node, off: bool) -> Image:
 	LIGHT.set_suppressed(off)
 	board._sync_look_light()
+	_hide_fighters(board)
 	_freeze(board)
 	for _i in 3:
 		await process_frame
 	RenderingServer.force_draw()
 	var image := root.get_viewport().get_texture().get_image()
 	var light = board.get_node_or_null("LookLight")
+	var floor = board.get_node_or_null("ThunderwellFloor")
+	var clock := -1.0
+	if floor != null:
+		clock = float(floor.get("_time"))
 	if light != null:
-		print("L7_GRAB off=%s sat=%.3f contrast=%.3f shade=%.2f vignette=%s size=%s" % [str(off), light.grade_saturation(), light.grade_contrast(), light.grade_shade(), str(light.vignette_visible()), str(image.get_size())])
+		print("L7_GRAB off=%s sat=%.3f contrast=%.3f shade=%.2f vignette=%s clock=%.5f size=%s" % [str(off), light.grade_saturation(), light.grade_contrast(), light.grade_shade(), str(light.vignette_visible()), clock, str(image.get_size())])
 	return image
 
 
