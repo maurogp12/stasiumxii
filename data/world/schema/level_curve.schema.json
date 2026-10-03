@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/level_curve.v1.json",
+  "title": "Stasium PC level curve",
+  "description": "Sidecar stasium.level_curve version 1. xp_to_next[i] is the XP to go from level i+1 to i+2. 49 entries, cap 50. status proposed. XP sources and stat points per level are Open and are not in this file.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "max_level", "xp_to_next"],
+  "properties": {
+    "format": {"const": "stasium.level_curve"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "max_level": {"const": 50},
+    "xp_to_next": {
+      "type": "array",
+      "minItems": 49,
+      "maxItems": 49,
+      "items": {"type": "integer", "minimum": 1}
+    }
+  }
+}
