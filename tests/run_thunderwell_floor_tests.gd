@@ -1,9 +1,9 @@
 extends SceneTree
 
-## Coilgate floor theme: slots resolve, the layer loads, cells stay visible.
-## Run: godot --headless --path . -s res://tests/run_coilgate_floor_tests.gd
+## Thunderwell floor theme: slots resolve, the layer loads, cells stay visible.
+## Run: godot --headless --path . -s res://tests/run_thunderwell_floor_tests.gd
 
-const FLOOR := preload("res://board/pc/coilgate_floor.gd")
+const FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 
 var _failed: int = 0
 var _passed: int = 0
@@ -17,16 +17,16 @@ func _initialize() -> void:
 
 func _finish_live() -> void:
 	await _test_live_theme()
-	print("Coilgate floor tests: %d passed, %d failed" % [_passed, _failed])
+	print("Thunderwell floor tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
 
 func _test_params_and_slots() -> void:
 	var params := FLOOR.load_params()
-	eq(str(params.get("theme", "")), "coilgate", "the json names the coilgate theme")
+	eq(str(params.get("theme", "")), "thunderwell", "the json names the thunderwell theme")
 	eq(str(params.get("display_name", "")), "Thunderwell Core", "the display name is Thunderwell Core")
 	eq(float(params.get("cell_draw_scale", 0.0)), 0.5, "cell art is drawn at half size")
-	eq(str(params.get("art_status", "")), "placeholder", "coilgate art is still the stand-in set")
+	eq(str(params.get("art_status", "")), "placeholder", "thunderwell art is still the stand-in set")
 	truthy(params.has("pulse_hz"), "pulse speed is in the floor json")
 	truthy(params.has("pulse_amount"), "pulse amount is in the floor json")
 	truthy(params.has("z_order"), "z order is in the floor json")
@@ -53,9 +53,12 @@ func _test_params_and_slots() -> void:
 			eq(tex.get_height(), int(want[1]), "%s height" % slot)
 		_check_import(path, str(spec.get("compress", "lossless")))
 	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
-	var src := FileAccess.get_file_as_string("res://board/pc/coilgate_floor.gd")
+	var src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
 	truthy(src.contains("float intensity = tex.r;"), "glow intensity is the red channel")
 	truthy(src.contains("float flow = tex.g;"), "the flow gradient is the green channel")
+	truthy(src.contains("float glow = min(intensity * (0.55 * pulse + energy), glow_cap);"), "the glow is capped so tiles stay readable")
+	eq(src.contains("coilgate"), false, "the floor script does not use the old phone name")
+	eq(float(params.get("glow_cap", 0.0)), 0.48, "the glow cap is in the json")
 	eq(src.contains("max(tex.r"), false, "the glow shader does not collapse the mask to greyscale")
 	truthy(src.contains("hole_mask"), "the room hole is a generated mask")
 	truthy(src.contains("blend_add"), "pillars and pads stay additive")
@@ -87,13 +90,14 @@ func _test_params_and_slots() -> void:
 func _test_board_wires_the_theme() -> void:
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	eq(view.contains("hp"), false, "board_view still does not mention hp")
-	truthy(view.contains("res://board/pc/coilgate_floor.gd"), "board_view preloads the coilgate floor")
+	truthy(view.contains("res://board/pc/thunderwell_floor.gd"), "board_view preloads the thunderwell floor")
+	eq(view.contains("coilgate"), false, "board_view does not use the old phone name")
 	truthy(view.contains("set_board_theme"), "board_view can select a theme")
 	eq(view.contains("class_name"), false, "board_view does not declare a class_name")
 	var sim := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
-	eq(sim.contains("coilgate_floor"), false, "CombatSim does not know about the floor theme")
+	eq(sim.contains("thunderwell_floor"), false, "CombatSim does not know about the floor theme")
 	var preview := FileAccess.get_file_as_string("res://scenes/pc/look_preview.gd")
-	truthy(preview.contains("coilgate"), "the preview arena asks for the coilgate theme")
+	truthy(preview.contains("thunderwell"), "the preview arena asks for the thunderwell theme")
 	truthy(preview.contains("stormspire"), "the preview loads an existing arena, not a dungeon run")
 	eq(preview.contains("dungeon"), false, "the preview does not start a dungeon")
 	truthy(preview.contains("use_hdr_2d"), "the preview can turn on 2D HDR")
@@ -121,15 +125,15 @@ func _test_live_theme() -> void:
 	})
 	board._refresh()
 	var before: Dictionary = sim.snapshot()
-	var layer = board.get_node_or_null("CoilgateFloor")
+	var layer = board.get_node_or_null("ThunderwellFloor")
 	truthy(layer != null, "the floor node exists")
 	if layer == null:
 		main.free()
 		return
 	eq(layer.themed_cell_count(), 0, "the theme stays off until it is selected")
-	FLOOR.request_theme("coilgate")
-	board.set_board_theme("coilgate")
-	eq(layer.themed_cell_count(), 225, "every cell wears a coilgate floor plate")
+	FLOOR.request_theme("thunderwell")
+	board.set_board_theme("thunderwell")
+	eq(layer.themed_cell_count(), 225, "every cell wears a thunderwell floor plate")
 	var sample: Node = board.tiles[Vector2i(4, 4)]
 	var plate: Texture2D = sample.look_floor()
 	truthy(plate != null, "a cell keeps its floor texture")
@@ -154,13 +158,25 @@ func _test_live_theme() -> void:
 	eq(int(atlas_size.y), 64, "glow_mask is 64 tall")
 	var glow := 0
 	var pads := 0
+	var glow_tile: Node = null
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
-		if tile.get_node_or_null("CoilGlow") != null:
+		if tile.get_node_or_null("ThunderGlow") != null:
 			glow += 1
-		if tile.get_node_or_null("CoilPad") != null:
+			glow_tile = tile
+		if tile.get_node_or_null("ThunderPad") != null:
 			pads += 1
 	truthy(glow > 0, "painted cells wear a glow prop")
+	var glow_sprite: CanvasItem = null
+	if glow_tile != null:
+		glow_sprite = glow_tile.get_node_or_null("ThunderGlow") as CanvasItem
+	truthy(glow_sprite != null, "a painted cell has a glow sprite")
+	if glow_sprite != null:
+		glow_tile.set_highlight("move")
+		var overlay := glow_tile.get_node_or_null("Highlight") as CanvasItem
+		truthy(overlay != null and overlay.z_index > glow_sprite.z_index, "move tiles draw above the floor glow")
+		var mat := glow_sprite.material as ShaderMaterial
+		truthy(is_equal_approx(float(mat.get_shader_parameter("glow_cap")), 0.48), "the live glow uses the cap")
 	truthy(pads > 0, "the floor has glowing pads")
 	var origin: Vector2 = (board.tiles[Vector2i(7, 7)] as Node2D).position
 	layer.preview_time(0.0)

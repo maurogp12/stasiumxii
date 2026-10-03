@@ -2,23 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://0dxmo7gdn1my"
-path.bptc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex"
-path.astc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"
+uid="uid://brocbwq4wwpd2"
+path="res://.godot/imported/glow_mask.png-9a7374501ffda95ba34540eb3433f997.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc", "etc2_astc"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
-source_file="res://art/pc/look/coilgate_floor/room_edge_dark.png"
-dest_files=["res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex", "res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"]
+source_file="res://art/pc/look/thunderwell_floor/glow_mask.png"
+dest_files=["res://.godot/imported/glow_mask.png-9a7374501ffda95ba34540eb3433f997.ctex"]
 
 [params]
 
-compress/mode=2
-compress/high_quality=true
+compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0

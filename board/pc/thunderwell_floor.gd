@@ -1,15 +1,15 @@
 extends Node2D
 
-## View-only Thunderwell Core floor (theme id and art folder stay coilgate).
+## View-only Thunderwell Core floor. Theme id thunderwell.
 ## Dark circuit plates, glowing pads, cyan pillars on key cells, and a dark
 ## gradient around a hole generated from the cell footprint. CombatSim, the
 ## grid and the tile records stay as they are.
-## Art: res://art/pc/look/coilgate_floor/. Params: coilgate_floor.json.
-## A preview calls request_theme.
+## Art: res://art/pc/look/thunderwell_floor/. Params: thunderwell_floor.json.
+## A preview calls request_theme. 2D HDR and the glow environment stay on that preview.
 
-const PARAMS_PATH := "res://data/pc/look/coilgate_floor.json"
-const DEFAULT_ROOT := "res://art/pc/look/coilgate_floor/"
-const THEME_ID := "coilgate"
+const PARAMS_PATH := "res://data/pc/look/thunderwell_floor.json"
+const DEFAULT_ROOT := "res://art/pc/look/thunderwell_floor/"
+const THEME_ID := "thunderwell"
 const GLOW_SLICES := 4
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
@@ -17,6 +17,7 @@ render_mode blend_add;
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
 uniform float flow_speed = 0.35;
+uniform float glow_cap = 0.48;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
 	float intensity = tex.r;
@@ -24,7 +25,7 @@ void fragment() {
 	float pulse = 0.62 + 0.38 * sin(TIME * TAU * pulse_hz + phase);
 	float along = fract(flow - TIME * flow_speed);
 	float energy = smoothstep(0.16, 0.0, abs(along - 0.12));
-	float glow = intensity * (0.55 * pulse + energy);
+	float glow = min(intensity * (0.55 * pulse + energy), glow_cap);
 	COLOR = vec4(vec3(0.55, 0.95, 1.0) * glow, glow);
 }
 """
@@ -161,7 +162,7 @@ func pad_offset_y() -> float:
 		return 0.0
 	for cell in _board.tiles.keys():
 		var tile: Node = _board.tiles[cell]
-		var pad := tile.get_node_or_null("CoilPad") as Sprite2D
+		var pad := tile.get_node_or_null("ThunderPad") as Sprite2D
 		if pad == null:
 			continue
 		return pad.offset.y
@@ -189,7 +190,7 @@ func glow_atlas_size() -> Vector2:
 		return Vector2.ZERO
 	for cell in _board.tiles.keys():
 		var tile: Node = _board.tiles[cell]
-		var glow := tile.get_node_or_null("CoilGlow") as Sprite2D
+		var glow := tile.get_node_or_null("ThunderGlow") as Sprite2D
 		if glow == null:
 			continue
 		var atlas := glow.texture as AtlasTexture
@@ -299,7 +300,7 @@ func _clear_cell_dressing() -> void:
 		var tile: Node = _board.tiles[cell]
 		if tile.has_method("clear_look_floor"):
 			tile.clear_look_floor()
-		for child_name in ["CoilPad", "CoilGlow"]:
+		for child_name in ["ThunderPad", "ThunderGlow"]:
 			var child := tile.get_node_or_null(child_name)
 			if child == null:
 				continue
@@ -315,7 +316,7 @@ func _add_pad(tile: Node, slot: String, tint: Color) -> void:
 	if tex == null:
 		return
 	var sprite := Sprite2D.new()
-	sprite.name = "CoilPad"
+	sprite.name = "ThunderPad"
 	sprite.centered = true
 	sprite.texture = tex
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -337,7 +338,7 @@ func _add_glow(tile: Node, cell: Vector2i) -> void:
 	if tex == null:
 		return
 	var sprite := Sprite2D.new()
-	sprite.name = "CoilGlow"
+	sprite.name = "ThunderGlow"
 	sprite.centered = true
 	sprite.texture = _glow_slice(tex, cell)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -359,7 +360,7 @@ func _spawn_pillars(board: Node2D) -> void:
 		if not board.tiles.has(cell):
 			continue
 		var sprite := Sprite2D.new()
-		sprite.name = "CoilPillar"
+		sprite.name = "ThunderPillar"
 		sprite.centered = true
 		sprite.texture = tex
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -413,7 +414,7 @@ func _apply_pulse() -> void:
 		var tile: Node = _board.tiles[cell]
 		if tile.has_method("set_look_pulse"):
 			tile.set_look_pulse(glow)
-		var pad := tile.get_node_or_null("CoilPad") as CanvasItem
+		var pad := tile.get_node_or_null("ThunderPad") as CanvasItem
 		if pad != null:
 			pad.modulate.a = 0.62 + 0.38 * wave
 	for sprite in _pillars:
@@ -554,6 +555,7 @@ func _glow_material(cell: Vector2i) -> ShaderMaterial:
 	mat.set_shader_parameter("phase", float(cell.x) * 1.7 + float(cell.y) * 2.3)
 	mat.set_shader_parameter("pulse_hz", float(_params.get("pulse_hz", 0.22)))
 	mat.set_shader_parameter("flow_speed", float(_params.get("glow_flow_speed", 0.35)))
+	mat.set_shader_parameter("glow_cap", float(_params.get("glow_cap", 0.48)))
 	return mat
 
 

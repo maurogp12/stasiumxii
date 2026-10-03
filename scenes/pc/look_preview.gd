@@ -1,11 +1,11 @@
 extends Node
 
 ## View-only arena for a board theme. Loads an existing Koliseo map.
-## godot --path . res://scenes/pc/look_preview.tscn -- --theme=coilgate --map=stormspire
+## godot --path . res://scenes/pc/look_preview.tscn -- --theme=thunderwell --map=stormspire
 
-const FLOOR := preload("res://board/pc/coilgate_floor.gd")
+const FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 
-var theme_id := "coilgate"
+var theme_id := "thunderwell"
 var map_id := "stormspire"
 
 
@@ -18,8 +18,8 @@ func _ready() -> void:
 			map_id = text.trim_prefix("--map=")
 	ClassSelect.hotseat_map_id = map_id
 	FLOOR.request_theme(theme_id)
-	FLOOR.preview_bloom = theme_id == "coilgate"
-	if theme_id == "coilgate":
+	FLOOR.preview_bloom = theme_id == "thunderwell"
+	if theme_id == "thunderwell":
 		_enable_preview_glow()
 	add_child(load("res://main.tscn").instantiate())
 

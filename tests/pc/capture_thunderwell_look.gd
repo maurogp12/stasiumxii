@@ -1,7 +1,7 @@
 extends SceneTree
 
-## Saves a Stormspire before/after frame run for the Coilgate floor theme.
-## godot --path . -s res://tests/pc/capture_coilgate_look.gd -- --out=/tmp/l4_frames
+## Saves a Stormspire before/after frame run for the Thunderwell floor theme.
+## godot --path . -s res://tests/pc/capture_thunderwell_look.gd -- --out=/tmp/l4_frames
 
 var _out := "/tmp/l4_frames"
 
@@ -35,29 +35,43 @@ func _go() -> void:
 	board.set_board_theme("")
 	await _settle(4)
 	await _shot(_out.path_join("before.png"))
-	board.set_board_theme("coilgate")
-	var layer = board.get_node_or_null("CoilgateFloor")
+	board.set_board_theme("thunderwell")
+	var layer = board.get_node_or_null("ThunderwellFloor")
 	if layer == null:
-		push_error("CoilgateFloor missing")
+		push_error("ThunderwellFloor missing")
 		quit(1)
 		return
+	_paint_range(board)
 	var frames := 16
 	var period := 1.0 / 0.22
 	for i in frames:
 		layer.preview_time(period * float(i) / float(frames))
 		await _settle(1)
 		await _shot(_out.path_join("after_%02d.png" % i))
-	print("COILGATE_CAPTURE %s" % _out)
+	await _shot(_out.path_join("range_tiles.png"))
+	print("THUNDERWELL_CAPTURE %s" % _out)
 	quit(0)
+
+
+func _paint_range(board: Node) -> void:
+	var tiles: Dictionary = board.get("tiles")
+	for cell in [Vector2i(5, 6), Vector2i(6, 5), Vector2i(6, 6), Vector2i(7, 6)]:
+		(tiles[cell] as Node).set_highlight("move")
+	for cell in [Vector2i(8, 7), Vector2i(8, 8), Vector2i(9, 8), Vector2i(7, 8)]:
+		(tiles[cell] as Node).set_highlight("range")
+	(tiles[Vector2i(7, 7)] as Node).set_highlight("selected")
 
 
 func _settle(frames: int) -> void:
 	for _i in frames:
 		await process_frame
-		await RenderingServer.frame_post_draw
 
 
 func _shot(path: String) -> void:
-	await RenderingServer.frame_post_draw
+	await process_frame
+	RenderingServer.force_draw()
 	var image := root.get_texture().get_image()
+	if image == null or image.get_width() < 2:
+		push_error("empty frame %s" % path)
+		return
 	image.save_png(path)

@@ -20,7 +20,7 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _overlay: HighlightOverlay
-## View-only floor plate (Coilgate and later themes). Null keeps the Koliseo dress.
+## View-only floor plate (Thunderwell Core and later themes). Null keeps the Koliseo dress.
 var _look_floor: Texture2D = null
 var _look_pulse: float = 1.0
 

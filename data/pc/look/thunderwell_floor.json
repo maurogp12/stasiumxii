@@ -1,10 +1,10 @@
 {
   "art_status": "placeholder",
-  "note": "Stand-in paint for Thunderwell Core. The folder and theme id stay coilgate. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. Cell art (floor strip, pads, pillar, glow) is drawn at half size. room_edge_dark is a painted gradient scaled up; the hole is generated from the cell footprint. glow_mask is an RGB PNG: R is glow intensity, G is the flow gradient along the traces. Import: linear, no mipmaps; room_edge_dark is BC7/VRAM, the rest lossless.",
+  "note": "Stand-in paint for Thunderwell Core. Theme id thunderwell. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. Cell art (floor strip, pads, pillar, glow) is drawn at half size. room_edge_dark is a painted gradient scaled up; the hole is generated from the cell footprint. glow_mask is an RGB PNG: R is glow intensity, G is the flow gradient along the traces. The glow shader caps that light so range tiles, hover and fighters stay readable. 2D HDR and bloom are preview-only. Import: linear, no mipmaps; room_edge_dark is BC7/VRAM, the rest lossless.",
   "display_name": "Thunderwell Core",
-  "theme": "coilgate",
+  "theme": "thunderwell",
   "cell_draw_scale": 0.5,
-  "art_root": "res://art/pc/look/coilgate_floor/",
+  "art_root": "res://art/pc/look/thunderwell_floor/",
   "slots": {
     "floor_tiles": {
       "px": [512, 64],
@@ -38,6 +38,7 @@
   "pulse_hz": 0.22,
   "pulse_amount": 0.16,
   "glow_flow_speed": 0.35,
+  "glow_cap": 0.48,
   "pan_margin_px": 220,
   "room_extra_scale": 1.08,
   "room_feather": 0.14,
