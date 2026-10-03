@@ -35,14 +35,71 @@ void fragment() {
 	COLOR = vec4(mul, 1.0);
 }
 """
+const MAX_FIGHTERS := 12
+const CELL_HALF_X := 34.0
+const CELL_HALF_Y := 18.0
+const FIGHTER_RX := 78.0
+const FIGHTER_RY := 130.0
+const FIGHTER_LIFT := 42.0
+const HOVER_HX := 72.0
+const HOVER_HY := 44.0
+## Keep this fragment in step with leaf_cutout(). 0 cuts the leaf, 1 leaves it.
 const SWAY_SHADER := """shader_type canvas_item;
 uniform sampler2D sway_tex : filter_linear, repeat_disable;
 uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
+uniform vec2 to_board_x = vec2(1.0, 0.0);
+uniform vec2 to_board_y = vec2(0.0, 1.0);
+uniform vec2 to_board_origin = vec2(0.0);
+uniform vec2 fighter_pos[12];
+uniform int fighter_count = 0;
+uniform vec2 hover_pos = vec2(0.0);
+uniform float hover_on = 0.0;
+uniform float board_n = 0.0;
+uniform float cell_half_x = 34.0;
+uniform float cell_half_y = 18.0;
+uniform float fighter_rx = 78.0;
+uniform float fighter_ry = 130.0;
+uniform float fighter_lift = 42.0;
+uniform float hover_hx = 72.0;
+uniform float hover_hy = 44.0;
+varying vec2 v_board;
 void vertex() {
 	float weight = texture(sway_tex, UV).r;
 	VERTEX += sway_dir * swing * amplitude_px * weight;
+	vec2 canvas_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
+	v_board = to_board_origin + to_board_x * canvas_pos.x + to_board_y * canvas_pos.y;
+}
+void fragment() {
+	float keep = 1.0;
+	vec2 p = v_board;
+	float hx = max(cell_half_x, 1.0);
+	float hy = max(cell_half_y, 1.0);
+	for (int step = 0; step < 3; step++) {
+		vec2 q = p + vec2(0.0, float(step) * 10.0);
+		float fx = q.y / 32.0 + q.x / 64.0;
+		float fy = q.y / 32.0 - q.x / 64.0;
+		float cx = floor(fx + 0.5);
+		float cy = floor(fy + 0.5);
+		if (cx >= 0.0 && cy >= 0.0 && cx <= board_n - 1.0 && cy <= board_n - 1.0) {
+			vec2 center = vec2((cx - cy) * 32.0, (cx + cy) * 16.0 - float(step) * 10.0);
+			float metric = abs(p.x - center.x) / hx + abs(p.y - center.y) / hy;
+			keep = min(keep, smoothstep(0.92, 1.05, metric));
+		}
+	}
+	for (int i = 0; i < 12; i++) {
+		if (i < fighter_count) {
+			vec2 center = fighter_pos[i] + vec2(0.0, -fighter_lift);
+			vec2 delta = (p - center) / vec2(max(fighter_rx, 1.0), max(fighter_ry, 1.0));
+			keep = min(keep, smoothstep(0.70, 1.0, length(delta)));
+		}
+	}
+	if (hover_on > 0.5) {
+		float metric = abs(p.x - hover_pos.x) / max(hover_hx, 1.0) + abs(p.y - hover_pos.y) / max(hover_hy, 1.0);
+		keep = min(keep, smoothstep(0.78, 1.05, metric));
+	}
+	COLOR.a *= keep;
 }
 """
 
@@ -58,6 +115,8 @@ var _backs: Dictionary = {}
 var _clips: Dictionary = {}
 var _pivots: Dictionary = {}
 var _sprites: Dictionary = {}
+var _hover_cell: Vector2i = Vector2i(-1, -1)
+var _hover_locked: bool = false
 
 
 class LeafDapple extends Node2D:
@@ -174,6 +233,56 @@ func layout() -> void:
 	_layout_backs()
 	_layout_leaves()
 	_apply_sway()
+	_drop_pointer(self)
+	_sync_cutout()
+
+
+## Tests and the capture pin the cell under the cursor. Pass a negative cell to release it.
+func set_hover_cell(cell: Vector2i) -> void:
+	_hover_locked = cell.x >= 0 and cell.y >= 0
+	_hover_cell = cell
+	_sync_cutout()
+
+
+## 0 where a front leaf must disappear, 1 where the painted leaf stays.
+## Mirrors the sway shader so tests can check the hole without reading pixels.
+func leaf_cutout(board_pos: Vector2) -> float:
+	var keep := 1.0
+	var n := _board_n()
+	for step in 3:
+		var q := board_pos + Vector2(0.0, float(step) * 10.0)
+		var fx := q.y / 32.0 + q.x / 64.0
+		var fy := q.y / 32.0 - q.x / 64.0
+		var cx := int(floor(fx + 0.5))
+		var cy := int(floor(fy + 0.5))
+		if cx >= 0 and cy >= 0 and cx <= n - 1 and cy <= n - 1:
+			var center := Vector2(float(cx - cy) * 32.0, float(cx + cy) * 16.0 - float(step) * 10.0)
+			var metric := absf(board_pos.x - center.x) / CELL_HALF_X + absf(board_pos.y - center.y) / CELL_HALF_Y
+			keep = minf(keep, _smoothstep(0.92, 1.05, metric))
+	var counted := 0
+	for point in _fighter_points():
+		if counted >= MAX_FIGHTERS:
+			break
+		counted += 1
+		var center := point + Vector2(0.0, -FIGHTER_LIFT)
+		var delta := Vector2(
+			(board_pos.x - center.x) / FIGHTER_RX,
+			(board_pos.y - center.y) / FIGHTER_RY
+		)
+		keep = minf(keep, _smoothstep(0.70, 1.0, delta.length()))
+	if _hover_active():
+		var at: Vector2 = (_board.tiles[_hover_cell] as Node2D).position
+		var metric := absf(board_pos.x - at.x) / HOVER_HX + absf(board_pos.y - at.y) / HOVER_HY
+		keep = minf(keep, _smoothstep(0.78, 1.05, metric))
+	return keep
+
+
+func cutout_fighter_count() -> int:
+	return mini(_fighter_points().size(), MAX_FIGHTERS)
+
+
+func pointer_passes() -> bool:
+	return _controls_ignore(self)
 
 
 func shadow_count() -> int:
@@ -341,6 +450,7 @@ func _ensure_nodes() -> void:
 		_clips[slot] = clip
 		_pivots[slot] = pivot
 		_sprites[slot] = sprite
+	_drop_pointer(self)
 	_built = true
 
 
@@ -586,6 +696,134 @@ func _back_scale(fraction: float, tex_size: Vector2, view: Vector2) -> float:
 		return 1.0
 	var drift := float(_params.get("pan_limit_px", 220.0)) * fraction
 	return maxf((view.x + drift * 2.0) / tex_size.x, (view.y + drift * 2.0) / tex_size.y)
+
+
+func _sync_cutout() -> void:
+	if not _built or _sprites.is_empty():
+		return
+	if not _hover_locked:
+		_hover_cell = _cell_near(_pointer_board())
+	var points := _fighter_points()
+	var packed := PackedVector2Array()
+	packed.resize(MAX_FIGHTERS)
+	for i in mini(points.size(), MAX_FIGHTERS):
+		packed[i] = points[i]
+	var hover_on := 0.0
+	var hover_at := Vector2.ZERO
+	if _hover_active():
+		hover_on = 1.0
+		hover_at = (_board.tiles[_hover_cell] as Node2D).position
+	var xform := Transform2D.IDENTITY
+	if _board != null:
+		xform = _board.get_global_transform().affine_inverse()
+	var n := float(_board_n())
+	for slot in _sprites.keys():
+		var sprite: Sprite2D = _sprites[slot]
+		var mat := sprite.material as ShaderMaterial
+		if mat == null:
+			continue
+		mat.set_shader_parameter("to_board_x", xform.x)
+		mat.set_shader_parameter("to_board_y", xform.y)
+		mat.set_shader_parameter("to_board_origin", xform.origin)
+		mat.set_shader_parameter("fighter_pos", packed)
+		mat.set_shader_parameter("fighter_count", mini(points.size(), MAX_FIGHTERS))
+		mat.set_shader_parameter("hover_pos", hover_at)
+		mat.set_shader_parameter("hover_on", hover_on)
+		mat.set_shader_parameter("board_n", n)
+		mat.set_shader_parameter("cell_half_x", CELL_HALF_X)
+		mat.set_shader_parameter("cell_half_y", CELL_HALF_Y)
+		mat.set_shader_parameter("fighter_rx", FIGHTER_RX)
+		mat.set_shader_parameter("fighter_ry", FIGHTER_RY)
+		mat.set_shader_parameter("fighter_lift", FIGHTER_LIFT)
+		mat.set_shader_parameter("hover_hx", HOVER_HX)
+		mat.set_shader_parameter("hover_hy", HOVER_HY)
+
+
+func _pointer_board() -> Vector2:
+	if _board == null:
+		return Vector2.ZERO
+	var tiles := _board.get_node_or_null("Tiles") as Node2D
+	if tiles != null:
+		return tiles.get_local_mouse_position()
+	return _board.get_local_mouse_position()
+
+
+func _cell_near(point: Vector2) -> Vector2i:
+	if _board == null:
+		return Vector2i(-1, -1)
+	var fx := point.y / 32.0 + point.x / 64.0
+	var fy := point.y / 32.0 - point.x / 64.0
+	var guess := Vector2i(int(round(fx)), int(round(fy)))
+	var best := Vector2i(-1, -1)
+	var best_m := 2.0
+	for ox in range(-1, 2):
+		for oy in range(-1, 2):
+			var cell := guess + Vector2i(ox, oy)
+			var tile := _board.tiles.get(cell) as Node2D
+			if tile == null:
+				continue
+			var at := tile.position
+			var metric := absf(point.x - at.x) / 32.0 + absf(point.y - at.y) / 16.0
+			if metric <= 1.0 and metric < best_m:
+				best_m = metric
+				best = cell
+	return best
+
+
+func _fighter_points() -> PackedVector2Array:
+	var out := PackedVector2Array()
+	if _board == null:
+		return out
+	var pawns: Variant = _board.get("pawns_by_seat")
+	if pawns is not Dictionary:
+		return out
+	var seats: Array = (pawns as Dictionary).keys()
+	seats.sort()
+	for seat in seats:
+		var pawn := (pawns as Dictionary).get(seat) as Node2D
+		if pawn == null or not is_instance_valid(pawn):
+			continue
+		if pawn.get("alive") == false:
+			continue
+		out.append(_board.to_local(pawn.global_position))
+		if out.size() >= MAX_FIGHTERS:
+			break
+	return out
+
+
+func _hover_active() -> bool:
+	return _board != null and _board.tiles.has(_hover_cell)
+
+
+func _board_n() -> int:
+	if _board == null:
+		return 0
+	var n := int(_board.get("_board_size"))
+	if n > 0:
+		return n
+	return int(round(sqrt(float(_board.tiles.size()))))
+
+
+func _smoothstep(edge0: float, edge1: float, x: float) -> float:
+	var t := clampf((x - edge0) / maxf(edge1 - edge0, 0.0001), 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)
+
+
+func _drop_pointer(node: Node) -> void:
+	if node is Control:
+		(node as Control).mouse_filter = Control.MOUSE_FILTER_IGNORE
+		(node as Control).focus_mode = Control.FOCUS_NONE
+	for child in node.get_children():
+		_drop_pointer(child)
+
+
+func _controls_ignore(node: Node) -> bool:
+	if node is Control and (node as Control).mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		return false
+	for child in node.get_children():
+		if not _controls_ignore(child):
+			return false
+	return true
 
 
 func _sway_material(slot: String, edge: String) -> ShaderMaterial:

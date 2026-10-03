@@ -91,6 +91,10 @@ func _test_params_and_slots() -> void:
 			eq(sway_tex.get_height(), int(sway[1]), "%s sway height" % slot)
 		_check_import(sway_path, "lossless")
 	eq(src.contains("sway_tex"), true, "the sway shader samples the greyscale mask")
+	eq(src.contains("COLOR.a *="), true, "front leaves fade in the shader")
+	eq(src.contains("fighter_pos"), true, "the leaf shader cuts a hole per fighter")
+	eq(src.contains("hover_on"), true, "the leaf shader cuts a hole on the hovered cell")
+	eq(src.contains("MOUSE_FILTER_IGNORE"), true, "leaf controls do not pick the mouse")
 	eq(src.contains("0.22, 0.48, 0.28"), true, "leaf shadows take a green tint")
 	eq(src.contains("TIME * 0.012"), true, "leaf shadows scroll for canopy drift")
 
@@ -152,6 +156,28 @@ func _test_live_layer() -> void:
 	layer.layout()
 	eq((board.tiles[Vector2i(7, 7)] as Node2D).position, origin, "the backdrop does not move a cell")
 	eq(layer.leaves_cover_play(), false, "front leaves do not cover the play cells")
+	truthy(layer.pointer_passes(), "clicks pass through every leaf and backdrop control")
+	var edge_cell := Vector2i(0, 14)
+	var edge_tile: Node2D = board.tiles[edge_cell]
+	layer.set_hover_cell(edge_cell)
+	truthy(layer.leaf_cutout(edge_tile.position) < 0.02, "the hovered cell cuts the leaf")
+	var beside := edge_tile.position + Vector2(-46.0, 0.0)
+	truthy(layer.leaf_cutout(beside) < 0.55, "the hover hole reaches past the cell into the leaf")
+	layer.set_hover_cell(Vector2i(-1, -1))
+	truthy(layer.leaf_cutout(beside) > 0.9, "a point past the diamond stays painted when nothing is hovered")
+	truthy(layer.leaf_cutout(Vector2(-1800, -1800)) > 0.95, "leaves stay opaque far from the board")
+	var pawns: Dictionary = board.get("pawns_by_seat")
+	truthy(layer.cutout_fighter_count() == pawns.size(), "each fighter gets a leaf hole")
+	for pawn in pawns.values():
+		var feet: Vector2 = board.to_local((pawn as Node2D).global_position)
+		truthy(layer.leaf_cutout(feet) < 0.02, "a fighter's feet cut the leaf")
+		truthy(layer.leaf_cutout(feet + Vector2(0, -70)) < 0.02, "a fighter's head cuts the leaf")
+	var leaf_sprite := layer.get_node("front_leaves_left/Pivot/Art") as Sprite2D
+	var leaf_mat := leaf_sprite.material as ShaderMaterial
+	eq(int(leaf_mat.get_shader_parameter("fighter_count")), layer.cutout_fighter_count(), "the leaf shader receives the fighter count")
+	eq(float(leaf_mat.get_shader_parameter("hover_on")), 0.0, "clearing the hover turns that hole off")
+	layer.set_hover_cell(edge_cell)
+	eq(float(leaf_mat.get_shader_parameter("hover_on")), 1.0, "the hovered cell is pushed to the leaf shader")
 	var parked: Vector2 = cam.position
 	var fit: Vector2 = board.get("_fit_camera_pos")
 	cam.position = fit

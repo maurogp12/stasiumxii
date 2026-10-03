@@ -85,6 +85,7 @@ func _leaf_sides(board: Node, layer: Node) -> void:
 		await _settle(1)
 		fighter.global_position = tile.global_position
 		cam.position = fit + pan
+		layer.call("set_hover_cell", cell)
 		layer.call("layout")
 		_grab(_out.path_join("%s.png" % name))
 	cam.position = fit
