@@ -7,6 +7,7 @@ const Book := preload("res://backend/world_npcs.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const Levels := preload("res://backend/world_levels.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
+const Regions := preload("res://backend/world_regions.gd")
 
 const SCHEMA := "res://data/world/schema/npcs.schema.json"
 
@@ -19,6 +20,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	Regions.set_enabled(true)
 	_test_schema()
 	var loaded: Dictionary = Book.load_default()
 	eq(bool(loaded.get("ok", false)), true, "npc book loads")
@@ -91,11 +93,13 @@ func _test_roster(rows: Array) -> void:
 	if not bool(level_doc.get("ok", false)):
 		return
 	var level_rows: Array = level_doc["levels"].zones
+	var town_ids: Array[String] = ["stoneford", "northgate", "eastmarch", "southbridge", "westwatch"]
 	for zone in level_rows:
 		var chunks: Array = zone["chunks"]
 		var saw_w := false
 		var saw_t := false
 		var saw_d := false
+		var saw_elder := false
 		for row in rows:
 			var record: Dictionary = row
 			if not chunks.has(str(record["zone_id"])):
@@ -107,7 +111,12 @@ func _test_roster(rows: Array) -> void:
 				saw_t = true
 			elif role == "door_keeper":
 				saw_d = true
-		eq(saw_w and saw_t and saw_d, true, "%s has a warden, a trader, and a door keeper" % str(zone["id"]))
+			elif role == "elder":
+				saw_elder = true
+		if town_ids.has(str(zone["id"])):
+			eq(saw_elder, true, "%s has its elder" % str(zone["id"]))
+		else:
+			eq(saw_w and saw_t and saw_d, true, "%s has a warden, a trader, and a door keeper" % str(zone["id"]))
 
 
 func _home_ok(zone_id: String) -> bool:

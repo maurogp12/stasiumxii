@@ -10,6 +10,7 @@ const Npcs = preload("res://backend/world_npcs.gd")
 const Progress = preload("res://backend/pc_progress.gd")
 const Maps = preload("res://backend/world_map.gd")
 const Walk = preload("res://backend/world_walk.gd")
+const Regions = preload("res://backend/world_regions.gd")
 
 const MISSIONS_PATH := "res://data/world/missions.json"
 const TEMPLATES_PATH := "res://data/world/task_templates.json"
@@ -32,6 +33,13 @@ const STEP_KEYS: Array[String] = [
 	"pending_chunk",
 ]
 const CHAINS: Array[String] = ["welcome", "scout", "dungeon", "side"]
+const OUTER_DUNGEONS: Array[String] = [
+	"rotting_orchard_barrow",
+	"cinderforge_depths",
+	"sunken_mill",
+	"thunderwell_core",
+	"shard_hollow",
+]
 const CORE_ROLES: Array[String] = ["warden", "trader", "door_keeper"]
 const TASK_DENIED_ROLES: Array[String] = ["door_keeper", "banker", "herald"]
 const MAX_ACTIVE_TASKS := 3
@@ -135,6 +143,8 @@ func label_for(mission_id: String, hero) -> String:
 
 func available_for(npc_id: String, hero) -> Array:
 	var found: Array = []
+	if _outer_giver_closed(npc_id):
+		return found
 	if _active_from(npc_id, hero) != "":
 		return found
 	if _is_talk_target(npc_id, hero):
@@ -618,10 +628,14 @@ func _next_serial(npc_id: String, hero) -> int:
 
 func _pool_for(level_zone: String, npc_id: String) -> Array:
 	var npc: Dictionary = _npc_cells.get(npc_id, {})
+	var chunks := _chunks_for_band(level_zone)
 	var usable: Array = []
 	for row in _reach:
 		var mark: Dictionary = row
-		if str(mark["level_zone"]) != level_zone:
+		if not chunks.is_empty():
+			if not chunks.has(str(mark.get("zone_id", ""))):
+				continue
+		elif str(mark["level_zone"]) != level_zone:
 			continue
 		# Outer regions stay out of the pool until they reopen. Crosshaven only.
 		if _map == null or not _map.zones.has(str(mark.get("zone_id", ""))):
@@ -641,11 +655,9 @@ func _walk_length(npc: Dictionary, mark: Dictionary) -> int:
 	var to_zone := str(mark.get("zone_id", ""))
 	var from_cell := Vector2i(int(npc.get("x", 0)), int(npc.get("y", 0)))
 	var to_cell := Vector2i(int(mark.get("x", 0)), int(mark.get("y", 0)))
-	if not _map.zones.has(to_zone):
+	# Both ends have to be on the loaded walk map. An outer giver is not given a fake length.
+	if not _map.zones.has(to_zone) or not _map.zones.has(from_zone):
 		return -1
-	# The giver stands outside Crosshaven. The landmark is in it, so this is not the short square walk.
-	if not _map.zones.has(from_zone):
-		return MIN_TASK_WALK
 	var key := "%s#%d#%d>%s#%d#%d" % [from_zone, from_cell.x, from_cell.y, to_zone, to_cell.x, to_cell.y]
 	if _walk_cache.has(key):
 		return int(_walk_cache[key])
@@ -657,11 +669,18 @@ func _walk_length(npc: Dictionary, mark: Dictionary) -> int:
 	return length
 
 
+## Town bands come from level_zones.json. The Crossroads hub is level 1 and
+## safe, so a task at that level uses Stoneford. A shared level belongs to the
+## later band. Outer zones stay out of the pool while the flag is off.
 func _band_zone(level: int) -> Dictionary:
 	var best: Dictionary = {}
 	var best_min := -1
 	for zone_value in _zones:
 		var zone: Dictionary = zone_value
+		if str(zone["id"]) == "crossroads":
+			continue
+		if not Regions.enabled() and not _home_zone(zone):
+			continue
 		var lo := int(zone["level_min"])
 		var hi := int(zone["level_max"])
 		if level < lo or level > hi:
@@ -670,6 +689,90 @@ func _band_zone(level: int) -> Dictionary:
 			best_min = lo
 			best = zone
 	return best
+
+
+func _chunks_for_band(band_id: String) -> Array:
+	for zone_value in _zones:
+		var zone: Dictionary = zone_value
+		if str(zone["id"]) == band_id:
+			return zone["chunks"]
+	return []
+
+
+func _story_chunks(zone: Dictionary) -> Array:
+	var chunks: Array = (zone["chunks"] as Array).duplicate()
+	var nxt := _next_home(zone)
+	if nxt.is_empty():
+		return chunks
+	for chunk in nxt["chunks"]:
+		chunks.append(chunk)
+	return chunks
+
+
+func _home_zones() -> Array:
+	var rows: Array = []
+	for zone_value in _zones:
+		var zone: Dictionary = zone_value
+		if _home_zone(zone):
+			rows.append(zone)
+	return rows
+
+
+func _home_zone(zone: Dictionary) -> bool:
+	return str(Levels.REGION_OF.get(str(zone.get("id", "")), "")) == Regions.HOME
+
+
+func _next_home(zone: Dictionary) -> Dictionary:
+	var homes := _home_zones()
+	for index in homes.size():
+		var row: Dictionary = homes[index]
+		if str(row["id"]) != str(zone["id"]):
+			continue
+		if index + 1 < homes.size():
+			return homes[index + 1]
+		return {}
+	return {}
+
+
+func _town_chunk(zone: Dictionary) -> String:
+	for chunk in zone["chunks"]:
+		var chunk_id := str(chunk)
+		if chunk_id.find("road") < 0:
+			return chunk_id
+	return ""
+
+
+func _town_talks(npcs, zone: Dictionary) -> Array:
+	var talks: Array = []
+	for role in ["warden", "trader", "door_keeper"]:
+		var npc_id := _one_role(npcs, zone, role)
+		if npc_id != "":
+			talks.append(npc_id)
+	return talks
+
+
+func _one_role(npcs, zone: Dictionary, role: String) -> String:
+	var chunks: Array = zone["chunks"]
+	var found := ""
+	for row in npcs.all():
+		var record: Dictionary = row
+		if str(record["role"]) != role:
+			continue
+		if not chunks.has(str(record["zone_id"])):
+			continue
+		if found != "":
+			return ""
+		found = str(record["id"])
+	return found
+
+
+func _outer_giver_closed(npc_id: String) -> bool:
+	if Regions.enabled():
+		return false
+	var npc: Dictionary = _npc_cells.get(npc_id, {})
+	if npc.is_empty() or _map == null:
+		return false
+	return not _map.zones.has(str(npc.get("zone_id", "")))
 
 
 func _offer_template() -> Dictionary:
@@ -1332,8 +1435,23 @@ func _check_rewards(curve: Dictionary, errors: Array) -> void:
 
 
 func _check_chain(npcs, errors: Array) -> void:
+	for id in _order:
+		var row: Dictionary = _by_id[id]
+		if str(row["kind"]) != "story":
+			continue
+		var home: Dictionary = {}
+		for zone_value in _home_zones():
+			var candidate: Dictionary = zone_value
+			if str(candidate["id"]) == str(row["level_zone"]):
+				home = candidate
+		if home.is_empty():
+			_err(errors, "%s keeps an outer level zone" % id)
+		for step_value in row["steps"]:
+			var step: Dictionary = step_value
+			if OUTER_DUNGEONS.has(str(step.get("dungeon", ""))):
+				_err(errors, "%s points at an outer dungeon" % id)
 	var previous_scout := ""
-	for zone_value in _zones:
+	for zone_value in _home_zones():
 		var zone: Dictionary = zone_value
 		var zone_id := str(zone["id"])
 		var welcome := _one_chain(zone_id, "welcome", errors)
@@ -1341,41 +1459,71 @@ func _check_chain(npcs, errors: Array) -> void:
 		var dungeon := _one_chain(zone_id, "dungeon", errors)
 		if welcome.is_empty() or scout.is_empty() or dungeon.is_empty():
 			continue
-		var warden := _role_id(npcs, zone, "warden", errors)
-		var trader := _role_id(npcs, zone, "trader", errors)
-		var door := _role_id(npcs, zone, "door_keeper", errors)
-		if str(welcome["giver"]) != warden or str(welcome["turn_in"]) != warden:
-			_err(errors, "%s welcome giver" % zone_id)
-		if str(scout["giver"]) != warden or str(dungeon["giver"]) != warden:
-			_err(errors, "%s chain giver" % zone_id)
 		var welcome_steps: Array = welcome["steps"]
-		if welcome_steps.size() != 2:
-			_err(errors, "%s welcome steps" % zone_id)
-		elif str(welcome_steps[0].get("npc", "")) != trader or str(welcome_steps[1].get("npc", "")) != door:
-			_err(errors, "%s welcome talks" % zone_id)
+		var giver := ""
+		if zone_id == "crossroads":
+			giver = _role_id(npcs, zone, "warden", errors)
+			var trader := _role_id(npcs, zone, "trader", errors)
+			var door := _role_id(npcs, zone, "door_keeper", errors)
+			if welcome_steps.size() != 2:
+				_err(errors, "%s welcome steps" % zone_id)
+			elif str(welcome_steps[0].get("npc", "")) != trader or str(welcome_steps[1].get("npc", "")) != door:
+				_err(errors, "%s welcome talks" % zone_id)
+		else:
+			giver = _role_id(npcs, zone, "elder", errors)
+			var talks := _town_talks(npcs, zone)
+			if talks.is_empty():
+				var town := _town_chunk(zone)
+				if welcome_steps.size() != 1 or str(welcome_steps[0].get("type", "")) != "reach":
+					_err(errors, "%s welcome steps" % zone_id)
+				elif str(welcome_steps[0].get("zone_id", "")) != town:
+					_err(errors, "%s welcome leaves the town" % zone_id)
+			elif welcome_steps.size() != talks.size():
+				_err(errors, "%s welcome steps" % zone_id)
+			else:
+				for index in talks.size():
+					var talk_step: Dictionary = welcome_steps[index]
+					if str(talk_step.get("type", "")) != "talk" or str(talk_step.get("npc", "")) != str(talks[index]):
+						_err(errors, "%s welcome talks" % zone_id)
+					if str(talk_step.get("npc", "")) == giver:
+						_err(errors, "%s welcome repeats the giver" % zone_id)
+		if str(welcome["giver"]) != giver or str(welcome["turn_in"]) != giver:
+			_err(errors, "%s welcome giver" % zone_id)
+		if str(scout["giver"]) != giver or str(dungeon["giver"]) != giver:
+			_err(errors, "%s chain giver" % zone_id)
 		var scout_steps: Array = scout["steps"]
+		var allowed := _story_chunks(zone)
 		if scout_steps.size() < 2 or scout_steps.size() > 3:
 			_err(errors, "%s scout length" % zone_id)
 		for step_value in scout_steps:
-			var step: Dictionary = step_value
-			if str(step.get("type", "")) != "reach":
+			var scout_step: Dictionary = step_value
+			if str(scout_step.get("type", "")) != "reach":
 				_err(errors, "%s scout step" % zone_id)
-			elif not (zone["chunks"] as Array).has(str(step.get("zone_id", ""))):
+			elif not str(scout_step.get("zone_id", "")).begins_with("crosshaven_"):
+				_err(errors, "%s scout leaves Crosshaven" % zone_id)
+			elif not allowed.has(str(scout_step.get("zone_id", ""))):
 				_err(errors, "%s scout leaves the zone" % zone_id)
+		var nxt := _next_home(zone)
+		if not nxt.is_empty() and not scout_steps.is_empty():
+			var last: Dictionary = scout_steps[scout_steps.size() - 1]
+			if not (nxt["chunks"] as Array).has(str(last.get("zone_id", ""))):
+				_err(errors, "%s scout does not hand on" % zone_id)
 		var dungeon_steps: Array = dungeon["steps"]
 		if dungeon_steps.size() != 1 or str(dungeon_steps[0].get("type", "")) != "clear_dungeon":
 			_err(errors, "%s dungeon step" % zone_id)
 		elif str(dungeon_steps[0].get("dungeon", "")) != str(zone["dungeon"]):
 			_err(errors, "%s dungeon id" % zone_id)
+		elif not bool(dungeon_steps[0].get("pending_chunk", false)):
+			_err(errors, "%s dungeon is not pending" % zone_id)
 		if not _same_requires(welcome, previous_scout):
 			_err(errors, "%s welcome requires the previous scout" % zone_id)
 		if not _same_requires(scout, str(welcome["id"])):
 			_err(errors, "%s scout requires the welcome" % zone_id)
 		if not _same_requires(dungeon, str(scout["id"])):
 			_err(errors, "%s dungeon requires the scout" % zone_id)
-		if zone_id == "crosshaven_heart" and str(welcome["id"]) != "heart_welcome":
+		if zone_id == "crossroads" and str(welcome["id"]) != "heart_welcome":
 			_err(errors, "heart welcome id")
-		if zone_id == "crosshaven_heart" and str(welcome["name"]) != "Welcome to Crosshaven":
+		if zone_id == "crossroads" and str(welcome["name"]) != "Welcome to Crosshaven":
 			_err(errors, "heart welcome name")
 		previous_scout = str(scout["id"])
 

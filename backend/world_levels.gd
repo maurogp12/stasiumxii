@@ -12,8 +12,12 @@ const DOC_KEYS: Array[String] = ["format", "format_version", "status", "zones"]
 const ZONE_REQUIRED: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"]
 const ZONE_KEYS: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "depth", "color", "dungeon"]
 const ZONE_IDS: Array[String] = [
-	"crosshaven_heart",
-	"crosshaven_towns",
+	"crossroads",
+	"stoneford",
+	"northgate",
+	"eastmarch",
+	"southbridge",
+	"westwatch",
 	"rowanvale",
 	"windmere",
 	"brinewake",
@@ -25,8 +29,12 @@ const ZONE_IDS: Array[String] = [
 	"blightwood_hollow",
 ]
 const REGION_OF := {
-	"crosshaven_heart": "crosshaven",
-	"crosshaven_towns": "crosshaven",
+	"crossroads": "crosshaven",
+	"stoneford": "crosshaven",
+	"northgate": "crosshaven",
+	"eastmarch": "crosshaven",
+	"southbridge": "crosshaven",
+	"westwatch": "crosshaven",
 	"rowanvale": "rowanvale",
 	"windmere": "windmere",
 	"brinewake": "brinewake",
@@ -116,7 +124,6 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 		return
 	var seen_ids := {}
 	var seen_chunks := {}
-	var seen_dungeons := {}
 	var cap := curve_max_level()
 	if cap < 2:
 		_err(errors, "max_level could not be read from level_curve.json")
@@ -162,10 +169,8 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 		var dungeon := str(zone["dungeon"])
 		if typeof(zone["dungeon"]) != TYPE_STRING or not _is_id(dungeon):
 			_err(errors, "%s dungeon id is invalid" % zone_id)
-		elif seen_dungeons.has(dungeon):
-			_err(errors, "duplicate dungeon %s" % dungeon)
-		else:
-			seen_dungeons[dungeon] = true
+		## Section 00 reuses Old Granary, Frostspire, Saltmaw, Drowned Abbey,
+		## and Heart of the Blight. The outer zones keep those same ids.
 		if typeof(zone["chunks"]) != TYPE_ARRAY:
 			_err(errors, "%s chunks must be an array" % zone_id)
 			continue

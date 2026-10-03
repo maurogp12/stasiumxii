@@ -12,8 +12,8 @@
     "status": {"const": "proposed"},
     "zones": {
       "type": "array",
-      "minItems": 11,
-      "maxItems": 11,
+      "minItems": 15,
+      "maxItems": 15,
       "items": {
         "type": "object",
         "additionalProperties": false,

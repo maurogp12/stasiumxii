@@ -4,50 +4,98 @@
   "status": "proposed",
   "zones": [
     {
-      "id": "crosshaven_heart",
-      "name": "Crosshaven Heart",
+      "id": "crossroads",
+      "name": "Crossroads",
       "level_min": 1,
-      "level_max": 5,
+      "level_max": 1,
       "chunks": [
-        "crosshaven_crossroads",
-        "crosshaven_road_north",
-        "crosshaven_road_west",
-        "crosshaven_road_east",
-        "crosshaven_road_southwest",
-        "crosshaven_road_south"
+        "crosshaven_crossroads"
       ],
       "depth": {
-        "crosshaven_crossroads": 0,
-        "crosshaven_road_north": 1,
-        "crosshaven_road_west": 1,
-        "crosshaven_road_east": 1,
-        "crosshaven_road_southwest": 1,
-        "crosshaven_road_south": 1
+        "crosshaven_crossroads": 0
       },
       "color": "#3fbf4f",
+      "dungeon": "millrace_vaults"
+    },
+    {
+      "id": "stoneford",
+      "name": "Stoneford",
+      "level_min": 1,
+      "level_max": 10,
+      "chunks": [
+        "crosshaven_road_west",
+        "crosshaven_stoneford"
+      ],
+      "depth": {
+        "crosshaven_road_west": 1,
+        "crosshaven_stoneford": 2
+      },
+      "color": "#58bd3c",
       "dungeon": "old_granary_cellar"
     },
     {
-      "id": "crosshaven_towns",
-      "name": "Crosshaven Towns",
-      "level_min": 5,
-      "level_max": 10,
+      "id": "northgate",
+      "name": "Northgate",
+      "level_min": 10,
+      "level_max": 20,
       "chunks": [
-        "crosshaven_northgate",
-        "crosshaven_stoneford",
-        "crosshaven_eastmarch",
-        "crosshaven_westwatch",
+        "crosshaven_road_north",
+        "crosshaven_northgate"
+      ],
+      "depth": {
+        "crosshaven_road_north": 1,
+        "crosshaven_northgate": 2
+      },
+      "color": "#82bb3a",
+      "dungeon": "frostspire_archive"
+    },
+    {
+      "id": "eastmarch",
+      "name": "Eastmarch",
+      "level_min": 20,
+      "level_max": 30,
+      "chunks": [
+        "crosshaven_road_east",
+        "crosshaven_eastmarch"
+      ],
+      "depth": {
+        "crosshaven_road_east": 1,
+        "crosshaven_eastmarch": 2
+      },
+      "color": "#acb937",
+      "dungeon": "saltmaw_grotto"
+    },
+    {
+      "id": "southbridge",
+      "name": "Southbridge",
+      "level_min": 30,
+      "level_max": 40,
+      "chunks": [
+        "crosshaven_road_south",
         "crosshaven_southbridge"
       ],
       "depth": {
-        "crosshaven_northgate": 2,
-        "crosshaven_stoneford": 2,
-        "crosshaven_eastmarch": 2,
-        "crosshaven_westwatch": 2,
+        "crosshaven_road_south": 1,
         "crosshaven_southbridge": 2
       },
-      "color": "#58bd3c",
-      "dungeon": "millrace_vaults"
+      "color": "#b33930",
+      "dungeon": "drowned_abbey"
+    },
+    {
+      "id": "westwatch",
+      "name": "Westwatch",
+      "level_min": 40,
+      "level_max": 50,
+      "chunks": [
+        "crosshaven_road_southwest",
+        "crosshaven_westwatch"
+      ],
+      "depth": {
+        "crosshaven_road_southwest": 1,
+        "crosshaven_westwatch": 2
+      },
+      "color": "#8227a9",
+      "dungeon": "heart_of_the_blight"
     },
     {
       "id": "rowanvale",

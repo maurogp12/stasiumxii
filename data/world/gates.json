@@ -13,7 +13,7 @@
       "id": "rowanvale_to_stoneford",
       "from": {"zone_id": "rowanvale_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_stoneford", "x": 3, "y": 0},
-      "label": "To Stoneford (5-10)",
+      "label": "To Stoneford (1-10)",
       "two_way": true
     },
     {
@@ -27,7 +27,7 @@
       "id": "windmere_to_northgate",
       "from": {"zone_id": "windmere_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_northgate", "x": 0, "y": 3},
-      "label": "To Northgate (5-10)",
+      "label": "To Northgate (10-20)",
       "two_way": true
     },
     {
@@ -41,7 +41,7 @@
       "id": "brinewake_to_eastmarch",
       "from": {"zone_id": "brinewake_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_eastmarch", "x": 32, "y": 0},
-      "label": "To Eastmarch (5-10)",
+      "label": "To Eastmarch (20-30)",
       "two_way": true
     },
     {
@@ -55,7 +55,7 @@
       "id": "slagcrown_to_southbridge",
       "from": {"zone_id": "slagcrown_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_southbridge", "x": 39, "y": 28},
-      "label": "To Southbridge (5-10)",
+      "label": "To Southbridge (30-40)",
       "two_way": true
     },
     {
@@ -69,7 +69,7 @@
       "id": "fen_edge_to_road_east",
       "from": {"zone_id": "eastmarch_fen_edge_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_road_east", "x": 18, "y": 0},
-      "label": "To the east road (1-5)",
+      "label": "To the east road (20-30)",
       "two_way": true
     },
     {
@@ -111,7 +111,7 @@
       "id": "ashen_to_westwatch",
       "from": {"zone_id": "ashen_shardfields_entry", "x": 0, "y": 16},
       "to": {"zone_id": "crosshaven_westwatch", "x": 35, "y": 28},
-      "label": "To Westwatch (5-10)",
+      "label": "To Westwatch (40-50)",
       "two_way": true
     },
     {
