@@ -10,7 +10,7 @@
     "Town chunks have no landmark point of interest. Town scouts and some sides use the town-center cell.",
     "The Fisher sends you to the cell beside the Eastmarch fishing hut. The Fen Guide sends you to the Sunken Mill door. The Last Watcher sends you to the Heart of the Blight door.",
     "clear_dungeon steps cannot be accepted until dungeon runs exist. They show as coming soon.",
-    "Stand-in landmarks at cell 20,12 in placeholder regions are pending_chunk. Those steps show as coming soon until the landmark moves.",
+    "Outer scout steps walk the Crosshaven town for that level band (section 00): Stoneford, Northgate, Eastmarch, Southbridge, Westwatch. They are not coming soon. Side errands that still stand on a placeholder landmark at cell 20,12 stay pending_chunk.",
     "Each zone welcome requires the previous zone's scout, in the level_zones.json order, so the chains open in level order. Fen Edge stays after Slagcrown in that file."
   ],
   "reach_index": [
@@ -383,33 +383,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "crosshaven_road_north",
-          "landmark": "north_road",
-          "cell": {
-            "x": 12,
-            "y": 16
-          },
-          "place": "North Road"
-        },
-        {
-          "type": "reach",
-          "zone_id": "crosshaven_road_east",
-          "landmark": "east_road",
+          "zone_id": "crosshaven_road_west",
+          "landmark": "stone_ford",
           "cell": {
             "x": 18,
             "y": 12
           },
-          "place": "East Road"
+          "place": "Stone Ford"
         },
         {
           "type": "reach",
-          "zone_id": "crosshaven_road_south",
-          "landmark": "southbridge_crossing",
+          "zone_id": "crosshaven_stoneford",
           "cell": {
-            "x": 12,
-            "y": 22
+            "x": 16,
+            "y": 16
           },
-          "place": "Southbridge Crossing"
+          "place": "Stoneford square"
         }
       ],
       "rewards": {
@@ -419,7 +408,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the Stone Ford, then the Stoneford square."
         ],
         "active": [
           "A mark is still waiting."
@@ -530,12 +519,13 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "crosshaven_northgate",
+          "zone_id": "crosshaven_road_west",
+          "landmark": "stone_ford",
           "cell": {
-            "x": 20,
+            "x": 18,
             "y": 12
           },
-          "place": "Northgate square"
+          "place": "Stone Ford"
         },
         {
           "type": "reach",
@@ -548,12 +538,12 @@
         },
         {
           "type": "reach",
-          "zone_id": "crosshaven_eastmarch",
+          "zone_id": "crosshaven_northgate",
           "cell": {
-            "x": 16,
-            "y": 16
+            "x": 20,
+            "y": 12
           },
-          "place": "Eastmarch square"
+          "place": "Northgate square"
         }
       ],
       "rewards": {
@@ -563,7 +553,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk Stoneford, then go on to the Northgate square."
         ],
         "active": [
           "A mark is still waiting."
@@ -617,12 +607,12 @@
     },
     {
       "id": "rowanvale_welcome",
-      "name": "Welcome to Rowanvale",
+      "name": "Welcome to Northgate",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "rowanvale",
-      "giver": "rowanvale_warden",
-      "turn_in": "rowanvale_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 10,
       "requires": [
         "towns_scout"
@@ -630,13 +620,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "rowanvale_trader",
+          "npc": "towns_trader",
           "place": "Trader"
         },
         {
           "type": "talk",
-          "npc": "barrow_door_keeper",
-          "place": "Door Keeper"
+          "npc": "northgate_elder",
+          "place": "Northgate Elder"
         }
       ],
       "rewards": {
@@ -646,7 +636,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Northgate. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -661,12 +651,12 @@
     },
     {
       "id": "rowanvale_scout",
-      "name": "Scout Rowanvale",
+      "name": "Scout Northgate",
       "kind": "story",
       "chain": "scout",
       "level_zone": "rowanvale",
-      "giver": "rowanvale_warden",
-      "turn_in": "rowanvale_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 10,
       "requires": [
         "rowanvale_welcome"
@@ -674,36 +664,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "rowanvale_entry",
-          "landmark": "rowanvale_entry_mark",
+          "zone_id": "crosshaven_road_north",
+          "landmark": "north_road",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 12,
+            "y": 16
           },
-          "place": "Rowanvale Entry",
-          "pending_chunk": true
+          "place": "North Road"
         },
         {
           "type": "reach",
-          "zone_id": "rowanvale_farmland_3",
-          "landmark": "rowanvale_farmland_3_mark",
+          "zone_id": "crosshaven_northgate",
           "cell": {
             "x": 20,
             "y": 12
           },
-          "place": "Rowanvale Farmland 3",
-          "pending_chunk": true
-        },
-        {
-          "type": "reach",
-          "zone_id": "rowanvale_door",
-          "landmark": "rowanvale_door_door",
-          "cell": {
-            "x": 20,
-            "y": 12
-          },
-          "place": "Rotting Orchard Barrow",
-          "pending_chunk": true
+          "place": "Northgate square"
         }
       ],
       "rewards": {
@@ -713,7 +689,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -732,8 +708,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "rowanvale",
-      "giver": "rowanvale_warden",
-      "turn_in": "rowanvale_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 10,
       "requires": [
         "rowanvale_scout"
@@ -767,12 +743,12 @@
     },
     {
       "id": "windmere_welcome",
-      "name": "Welcome to Windmere",
+      "name": "Northgate, the high road",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "windmere",
-      "giver": "windmere_warden",
-      "turn_in": "windmere_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 15,
       "requires": [
         "rowanvale_scout"
@@ -780,13 +756,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "windmere_trader",
+          "npc": "towns_trader",
           "place": "Trader"
         },
         {
           "type": "talk",
-          "npc": "archive_door_keeper",
-          "place": "Door Keeper"
+          "npc": "northgate_elder",
+          "place": "Northgate Elder"
         }
       ],
       "rewards": {
@@ -796,7 +772,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Northgate. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -811,12 +787,12 @@
     },
     {
       "id": "windmere_scout",
-      "name": "Scout Windmere",
+      "name": "Scout the Northgate cliffs",
       "kind": "story",
       "chain": "scout",
       "level_zone": "windmere",
-      "giver": "windmere_warden",
-      "turn_in": "windmere_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 15,
       "requires": [
         "windmere_welcome"
@@ -824,36 +800,31 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "windmere_entry",
-          "landmark": "windmere_entry_mark",
+          "zone_id": "crosshaven_road_north",
+          "landmark": "north_road",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 12,
+            "y": 16
           },
-          "place": "Windmere Entry",
-          "pending_chunk": true
+          "place": "North Road"
         },
         {
           "type": "reach",
-          "zone_id": "windmere_outer_3",
-          "landmark": "windmere_outer_3_mark",
+          "zone_id": "crosshaven_northgate",
           "cell": {
             "x": 20,
             "y": 12
           },
-          "place": "Windmere Outer 3",
-          "pending_chunk": true
+          "place": "Northgate square"
         },
         {
           "type": "reach",
-          "zone_id": "windmere_door",
-          "landmark": "windmere_door_door",
+          "zone_id": "crosshaven_eastmarch",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 16,
+            "y": 16
           },
-          "place": "Frostspire Archive",
-          "pending_chunk": true
+          "place": "Eastmarch square"
         }
       ],
       "rewards": {
@@ -863,7 +834,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk this town, then go on to the Eastmarch square."
         ],
         "active": [
           "A mark is still waiting."
@@ -882,8 +853,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "windmere",
-      "giver": "windmere_warden",
-      "turn_in": "windmere_warden",
+      "giver": "towns_warden",
+      "turn_in": "towns_warden",
       "min_level": 15,
       "requires": [
         "windmere_scout"
@@ -917,12 +888,12 @@
     },
     {
       "id": "brinewake_welcome",
-      "name": "Welcome to Brinewake",
+      "name": "Welcome to Eastmarch",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "brinewake",
-      "giver": "brinewake_warden",
-      "turn_in": "brinewake_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 20,
       "requires": [
         "windmere_scout"
@@ -930,13 +901,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "brinewake_trader",
-          "place": "Trader"
+          "npc": "eastmarch_fisher",
+          "place": "Fisher"
         },
         {
           "type": "talk",
-          "npc": "grotto_door_keeper",
-          "place": "Door Keeper"
+          "npc": "eastmarch_elder",
+          "place": "Eastmarch Elder"
         }
       ],
       "rewards": {
@@ -946,7 +917,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Eastmarch. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -961,12 +932,12 @@
     },
     {
       "id": "brinewake_scout",
-      "name": "Scout Brinewake",
+      "name": "Scout Eastmarch",
       "kind": "story",
       "chain": "scout",
       "level_zone": "brinewake",
-      "giver": "brinewake_warden",
-      "turn_in": "brinewake_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 20,
       "requires": [
         "brinewake_welcome"
@@ -974,25 +945,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "brinewake_entry",
-          "landmark": "brinewake_entry_mark",
+          "zone_id": "crosshaven_road_east",
+          "landmark": "east_road",
           "cell": {
-            "x": 20,
+            "x": 18,
             "y": 12
           },
-          "place": "Brinewake Entry",
-          "pending_chunk": true
+          "place": "East Road"
         },
         {
           "type": "reach",
-          "zone_id": "brinewake_door",
-          "landmark": "brinewake_door_door",
+          "zone_id": "crosshaven_eastmarch",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 16,
+            "y": 16
           },
-          "place": "Saltmaw Grotto",
-          "pending_chunk": true
+          "place": "Eastmarch square"
         }
       ],
       "rewards": {
@@ -1002,7 +970,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -1021,8 +989,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "brinewake",
-      "giver": "brinewake_warden",
-      "turn_in": "brinewake_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 20,
       "requires": [
         "brinewake_scout"
@@ -1056,12 +1024,12 @@
     },
     {
       "id": "slagcrown_welcome",
-      "name": "Welcome to Slagcrown",
+      "name": "Eastmarch, the coves",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "slagcrown",
-      "giver": "slagcrown_warden",
-      "turn_in": "slagcrown_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "brinewake_scout"
@@ -1069,13 +1037,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "slagcrown_trader",
-          "place": "Trader"
+          "npc": "eastmarch_fisher",
+          "place": "Fisher"
         },
         {
           "type": "talk",
-          "npc": "cinderforge_door_keeper",
-          "place": "Door Keeper"
+          "npc": "eastmarch_elder",
+          "place": "Eastmarch Elder"
         }
       ],
       "rewards": {
@@ -1085,7 +1053,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Eastmarch. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1100,12 +1068,12 @@
     },
     {
       "id": "slagcrown_scout",
-      "name": "Scout Slagcrown",
+      "name": "Scout the Eastmarch coves",
       "kind": "story",
       "chain": "scout",
       "level_zone": "slagcrown",
-      "giver": "slagcrown_warden",
-      "turn_in": "slagcrown_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "slagcrown_welcome"
@@ -1113,36 +1081,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "slagcrown_entry",
-          "landmark": "slagcrown_entry_mark",
+          "zone_id": "crosshaven_road_east",
+          "landmark": "east_road",
           "cell": {
-            "x": 20,
+            "x": 18,
             "y": 12
           },
-          "place": "Slagcrown Entry",
-          "pending_chunk": true
+          "place": "East Road"
         },
         {
           "type": "reach",
-          "zone_id": "slagcrown_volcanic_3",
-          "landmark": "slagcrown_volcanic_3_mark",
+          "zone_id": "crosshaven_eastmarch",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 16,
+            "y": 16
           },
-          "place": "Slagcrown Volcanic 3",
-          "pending_chunk": true
-        },
-        {
-          "type": "reach",
-          "zone_id": "slagcrown_door",
-          "landmark": "slagcrown_door_door",
-          "cell": {
-            "x": 20,
-            "y": 12
-          },
-          "place": "Cinderforge Depths",
-          "pending_chunk": true
+          "place": "Eastmarch square"
         }
       ],
       "rewards": {
@@ -1152,7 +1106,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -1171,8 +1125,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "slagcrown",
-      "giver": "slagcrown_warden",
-      "turn_in": "slagcrown_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "slagcrown_scout"
@@ -1206,12 +1160,12 @@
     },
     {
       "id": "fen_welcome",
-      "name": "Welcome to Eastmarch Fen Edge",
+      "name": "Eastmarch, the docks",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "eastmarch_fen_edge",
-      "giver": "eastmarch_fen_edge_warden",
-      "turn_in": "eastmarch_fen_edge_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "slagcrown_scout"
@@ -1219,13 +1173,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "eastmarch_fen_edge_trader",
-          "place": "Trader"
+          "npc": "eastmarch_fisher",
+          "place": "Fisher"
         },
         {
           "type": "talk",
-          "npc": "sunken_mill_door_keeper",
-          "place": "Door Keeper"
+          "npc": "eastmarch_elder",
+          "place": "Eastmarch Elder"
         }
       ],
       "rewards": {
@@ -1235,7 +1189,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Eastmarch. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1250,12 +1204,12 @@
     },
     {
       "id": "fen_scout",
-      "name": "Scout Eastmarch Fen Edge",
+      "name": "On to Southbridge",
       "kind": "story",
       "chain": "scout",
       "level_zone": "eastmarch_fen_edge",
-      "giver": "eastmarch_fen_edge_warden",
-      "turn_in": "eastmarch_fen_edge_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "fen_welcome"
@@ -1263,25 +1217,31 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "eastmarch_fen_edge_entry",
-          "landmark": "eastmarch_fen_edge_entry_mark",
+          "zone_id": "crosshaven_road_east",
+          "landmark": "east_road",
           "cell": {
-            "x": 20,
+            "x": 18,
             "y": 12
           },
-          "place": "Eastmarch Fen Edge Entry",
-          "pending_chunk": true
+          "place": "East Road"
         },
         {
           "type": "reach",
-          "zone_id": "eastmarch_fen_edge_door",
-          "landmark": "eastmarch_fen_edge_door_door",
+          "zone_id": "crosshaven_eastmarch",
+          "cell": {
+            "x": 16,
+            "y": 16
+          },
+          "place": "Eastmarch square"
+        },
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_southbridge",
           "cell": {
             "x": 20,
-            "y": 12
+            "y": 10
           },
-          "place": "Sunken Mill",
-          "pending_chunk": true
+          "place": "Southbridge square"
         }
       ],
       "rewards": {
@@ -1291,7 +1251,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk this town, then go on to the Southbridge square."
         ],
         "active": [
           "A mark is still waiting."
@@ -1310,8 +1270,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "eastmarch_fen_edge",
-      "giver": "eastmarch_fen_edge_warden",
-      "turn_in": "eastmarch_fen_edge_warden",
+      "giver": "eastmarch_elder",
+      "turn_in": "eastmarch_elder",
       "min_level": 25,
       "requires": [
         "fen_scout"
@@ -1345,12 +1305,12 @@
     },
     {
       "id": "gloomfen_welcome",
-      "name": "Welcome to Gloomfen Mire",
+      "name": "Welcome to Southbridge",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "gloomfen_mire",
-      "giver": "gloomfen_mire_warden",
-      "turn_in": "gloomfen_mire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 30,
       "requires": [
         "fen_scout"
@@ -1358,13 +1318,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "gloomfen_mire_trader",
-          "place": "Trader"
+          "npc": "millrace_door_keeper",
+          "place": "Door Keeper"
         },
         {
           "type": "talk",
-          "npc": "abbey_door_keeper",
-          "place": "Door Keeper"
+          "npc": "southbridge_elder",
+          "place": "Southbridge Elder"
         }
       ],
       "rewards": {
@@ -1374,7 +1334,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Southbridge. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1389,12 +1349,12 @@
     },
     {
       "id": "gloomfen_scout",
-      "name": "Scout Gloomfen Mire",
+      "name": "Scout Southbridge",
       "kind": "story",
       "chain": "scout",
       "level_zone": "gloomfen_mire",
-      "giver": "gloomfen_mire_warden",
-      "turn_in": "gloomfen_mire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 30,
       "requires": [
         "gloomfen_welcome"
@@ -1402,36 +1362,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "gloomfen_mire_entry",
-          "landmark": "gloomfen_mire_entry_mark",
+          "zone_id": "crosshaven_road_south",
+          "landmark": "southbridge_crossing",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 12,
+            "y": 22
           },
-          "place": "Gloomfen Mire Entry",
-          "pending_chunk": true
+          "place": "Southbridge Crossing"
         },
         {
           "type": "reach",
-          "zone_id": "gloomfen_mire_boardwalk_6",
-          "landmark": "gloomfen_mire_boardwalk_6_mark",
+          "zone_id": "crosshaven_southbridge",
           "cell": {
             "x": 20,
-            "y": 12
+            "y": 10
           },
-          "place": "Gloomfen Mire Boardwalk 6",
-          "pending_chunk": true
-        },
-        {
-          "type": "reach",
-          "zone_id": "gloomfen_mire_door",
-          "landmark": "gloomfen_mire_door_door",
-          "cell": {
-            "x": 20,
-            "y": 12
-          },
-          "place": "Drowned Abbey",
-          "pending_chunk": true
+          "place": "Southbridge square"
         }
       ],
       "rewards": {
@@ -1441,7 +1387,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -1460,8 +1406,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "gloomfen_mire",
-      "giver": "gloomfen_mire_warden",
-      "turn_in": "gloomfen_mire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 30,
       "requires": [
         "gloomfen_scout"
@@ -1495,12 +1441,12 @@
     },
     {
       "id": "stormspire_welcome",
-      "name": "Welcome to Stormspire",
+      "name": "Southbridge, the fen",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "stormspire",
-      "giver": "stormspire_warden",
-      "turn_in": "stormspire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 35,
       "requires": [
         "gloomfen_scout"
@@ -1508,13 +1454,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "stormspire_trader",
-          "place": "Trader"
+          "npc": "millrace_door_keeper",
+          "place": "Door Keeper"
         },
         {
           "type": "talk",
-          "npc": "thunderwell_door_keeper",
-          "place": "Door Keeper"
+          "npc": "southbridge_elder",
+          "place": "Southbridge Elder"
         }
       ],
       "rewards": {
@@ -1524,7 +1470,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Southbridge. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1539,12 +1485,12 @@
     },
     {
       "id": "stormspire_scout",
-      "name": "Scout Stormspire",
+      "name": "Scout the Southbridge fen",
       "kind": "story",
       "chain": "scout",
       "level_zone": "stormspire",
-      "giver": "stormspire_warden",
-      "turn_in": "stormspire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 35,
       "requires": [
         "stormspire_welcome"
@@ -1552,25 +1498,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "stormspire_entry",
-          "landmark": "stormspire_entry_mark",
+          "zone_id": "crosshaven_road_south",
+          "landmark": "southbridge_crossing",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 12,
+            "y": 22
           },
-          "place": "Stormspire Entry",
-          "pending_chunk": true
+          "place": "Southbridge Crossing"
         },
         {
           "type": "reach",
-          "zone_id": "stormspire_door",
-          "landmark": "stormspire_door_door",
+          "zone_id": "crosshaven_southbridge",
           "cell": {
             "x": 20,
-            "y": 12
+            "y": 10
           },
-          "place": "Thunderwell Core",
-          "pending_chunk": true
+          "place": "Southbridge square"
         }
       ],
       "rewards": {
@@ -1580,7 +1523,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -1599,8 +1542,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "stormspire",
-      "giver": "stormspire_warden",
-      "turn_in": "stormspire_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 35,
       "requires": [
         "stormspire_scout"
@@ -1634,12 +1577,12 @@
     },
     {
       "id": "ashen_welcome",
-      "name": "Welcome to Ashen Shardfields",
+      "name": "Southbridge, the gorge",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "ashen_shardfields",
-      "giver": "ashen_shardfields_warden",
-      "turn_in": "ashen_shardfields_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 38,
       "requires": [
         "stormspire_scout"
@@ -1647,13 +1590,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "ashen_shardfields_trader",
-          "place": "Trader"
+          "npc": "millrace_door_keeper",
+          "place": "Door Keeper"
         },
         {
           "type": "talk",
-          "npc": "shard_hollow_door_keeper",
-          "place": "Door Keeper"
+          "npc": "southbridge_elder",
+          "place": "Southbridge Elder"
         }
       ],
       "rewards": {
@@ -1663,7 +1606,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Southbridge. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1678,12 +1621,12 @@
     },
     {
       "id": "ashen_scout",
-      "name": "Scout Ashen Shardfields",
+      "name": "On to Westwatch",
       "kind": "story",
       "chain": "scout",
       "level_zone": "ashen_shardfields",
-      "giver": "ashen_shardfields_warden",
-      "turn_in": "ashen_shardfields_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 38,
       "requires": [
         "ashen_welcome"
@@ -1691,25 +1634,31 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "ashen_shardfields_entry",
-          "landmark": "ashen_shardfields_entry_mark",
+          "zone_id": "crosshaven_road_south",
+          "landmark": "southbridge_crossing",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 12,
+            "y": 22
           },
-          "place": "Ashen Shardfields Entry",
-          "pending_chunk": true
+          "place": "Southbridge Crossing"
         },
         {
           "type": "reach",
-          "zone_id": "ashen_shardfields_door",
-          "landmark": "ashen_shardfields_door_door",
+          "zone_id": "crosshaven_southbridge",
           "cell": {
             "x": 20,
-            "y": 12
+            "y": 10
           },
-          "place": "Shard Hollow",
-          "pending_chunk": true
+          "place": "Southbridge square"
+        },
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_westwatch",
+          "cell": {
+            "x": 16,
+            "y": 10
+          },
+          "place": "Westwatch square"
         }
       ],
       "rewards": {
@@ -1719,7 +1668,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk this town, then go on to the Westwatch square."
         ],
         "active": [
           "A mark is still waiting."
@@ -1738,8 +1687,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "ashen_shardfields",
-      "giver": "ashen_shardfields_warden",
-      "turn_in": "ashen_shardfields_warden",
+      "giver": "southbridge_elder",
+      "turn_in": "southbridge_elder",
       "min_level": 38,
       "requires": [
         "ashen_scout"
@@ -1773,12 +1722,12 @@
     },
     {
       "id": "blightwood_welcome",
-      "name": "Welcome to Blightwood Hollow",
+      "name": "Welcome to Westwatch",
       "kind": "story",
       "chain": "welcome",
       "level_zone": "blightwood_hollow",
-      "giver": "blightwood_hollow_warden",
-      "turn_in": "blightwood_hollow_warden",
+      "giver": "westwatch_elder",
+      "turn_in": "westwatch_elder",
       "min_level": 45,
       "requires": [
         "ashen_scout"
@@ -1786,13 +1735,13 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "blightwood_hollow_trader",
-          "place": "Trader"
+          "npc": "southbridge_elder",
+          "place": "Southbridge Elder"
         },
         {
           "type": "talk",
-          "npc": "blight_door_keeper",
-          "place": "Door Keeper"
+          "npc": "westwatch_elder",
+          "place": "Westwatch Elder"
         }
       ],
       "rewards": {
@@ -1802,7 +1751,7 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "You have reached Westwatch. Meet the people of the town."
         ],
         "active": [
           "The trader and the door keeper are still waiting."
@@ -1817,12 +1766,12 @@
     },
     {
       "id": "blightwood_scout",
-      "name": "Scout Blightwood Hollow",
+      "name": "Scout Westwatch",
       "kind": "story",
       "chain": "scout",
       "level_zone": "blightwood_hollow",
-      "giver": "blightwood_hollow_warden",
-      "turn_in": "blightwood_hollow_warden",
+      "giver": "westwatch_elder",
+      "turn_in": "westwatch_elder",
       "min_level": 45,
       "requires": [
         "blightwood_welcome"
@@ -1830,25 +1779,22 @@
       "steps": [
         {
           "type": "reach",
-          "zone_id": "blightwood_hollow_entry",
-          "landmark": "blightwood_hollow_entry_mark",
+          "zone_id": "crosshaven_road_southwest",
+          "landmark": "westwatch_road",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 22,
+            "y": 28
           },
-          "place": "Blightwood Hollow Entry",
-          "pending_chunk": true
+          "place": "Westwatch Road"
         },
         {
           "type": "reach",
-          "zone_id": "blightwood_hollow_door",
-          "landmark": "blightwood_hollow_door_door",
+          "zone_id": "crosshaven_westwatch",
           "cell": {
-            "x": 20,
-            "y": 12
+            "x": 16,
+            "y": 10
           },
-          "place": "Heart of the Blight",
-          "pending_chunk": true
+          "place": "Westwatch square"
         }
       ],
       "rewards": {
@@ -1858,7 +1804,7 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks I named. Learn the ground before you go down."
+          "Walk the marks in this town. Stay inside its ground."
         ],
         "active": [
           "A mark is still waiting."
@@ -1877,8 +1823,8 @@
       "kind": "story",
       "chain": "dungeon",
       "level_zone": "blightwood_hollow",
-      "giver": "blightwood_hollow_warden",
-      "turn_in": "blightwood_hollow_warden",
+      "giver": "westwatch_elder",
+      "turn_in": "westwatch_elder",
       "min_level": 45,
       "requires": [
         "blightwood_scout"

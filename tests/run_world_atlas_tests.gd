@@ -6,6 +6,7 @@ extends SceneTree
 const Atlas = preload("res://backend/world_atlas.gd")
 const Levels = preload("res://backend/world_levels.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
+const Regions := preload("res://backend/world_regions.gd")
 
 const INDEX_PATH := "res://data/world/world_index.json"
 const GATES_PATH := "res://data/world/gates.json"
@@ -128,6 +129,7 @@ func _test_chunks_untouched() -> void:
 
 
 func _test_gate_click() -> void:
+	Regions.set_enabled(true)
 	var settings := VisualSettings.new()
 	settings.apply_preset("Full")
 	var w: Node2D = WORLD.instantiate()
@@ -157,6 +159,7 @@ func _test_gate_click() -> void:
 	eq(w.zone.zone_id, "eastmarch_fen_edge_entry", "the Fen Edge gate lands on the entry chunk")
 	eq(w.walker.anchor_cell(), Vector2i(0, 16), "the landing cell is the gate cell")
 	w.queue_free()
+	Regions.set_enabled(false)
 
 
 func _json(path: String) -> Dictionary:

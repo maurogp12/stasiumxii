@@ -7,6 +7,7 @@ extends RefCounted
 ## The shipped region config is index.json `max_climb_steps` (also -1).
 ## A negative limit means no limit. Drops are unlimited. This is not combat elevation.
 
+const Regions = preload("res://backend/world_regions.gd")
 const OPEN_WORLD_MAX_CLIMB_STEPS := -1
 const ORTHO: Array[Vector2i] = [
 	Vector2i(1, 0),
@@ -149,6 +150,11 @@ static func classify_step(
 		if absi(delta.x) + absi(delta.y) != 1:
 			return "not_adjacent"
 		return _enter(zone, from_cell, zone, to_cell, max_climb)
+	# Outer regions stay closed until world/regions_enabled. A step inside one
+	# region (Rowanvale to Rowanvale) still counts. A step into a different
+	# region does not, even when that chunk is not on this map.
+	if not Regions.enabled() and Regions.is_outer(to_zone) and not Regions.same_region(from_zone, to_zone):
+		return "regions_closed"
 	if not map.zones.has(to_zone):
 		return "unknown_zone"
 	var link := zone.exit_link(from_cell)

@@ -7,6 +7,7 @@ const Book := preload("res://backend/world_npcs.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
 const Levels := preload("res://backend/world_levels.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
+const Regions := preload("res://backend/world_regions.gd")
 
 const SCHEMA := "res://data/world/schema/npcs.schema.json"
 
@@ -19,6 +20,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	Regions.set_enabled(true)
 	_test_schema()
 	var loaded: Dictionary = Book.load_default()
 	eq(bool(loaded.get("ok", false)), true, "npc book loads")

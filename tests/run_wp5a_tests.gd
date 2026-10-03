@@ -6,6 +6,7 @@ const Atlas = preload("res://backend/world_atlas.gd")
 const Walk = preload("res://backend/world_walk.gd")
 const Map = preload("res://backend/world_map.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
+const Regions := preload("res://backend/world_regions.gd")
 
 const REGIONS: Array[String] = [
 	"rowanvale",
@@ -28,6 +29,7 @@ func _initialize() -> void:
 
 
 func _run() -> void:
+	Regions.set_enabled(true)
 	var loaded: Dictionary = Atlas.load_default()
 	eq(bool(loaded.get("ok", false)), true, "atlas loads with the built regions (%s)" % str(loaded.get("errors", [])))
 	if not bool(loaded.get("ok", false)):

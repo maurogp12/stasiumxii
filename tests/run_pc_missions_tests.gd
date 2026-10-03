@@ -225,7 +225,10 @@ func _test_chain(book) -> void:
 		eq(str(blocked["reason"]), "coming soon", "%s reason is coming soon" % dungeon_id)
 		eq(book.on_dungeon_won(str(book.mission(dungeon_id)["steps"][0]["dungeon"]), hero).is_empty(), true, "a win does nothing until the mission can be taken")
 	eq(played_scouts >= 2, true, "heart and towns scouts are on real ground")
-	eq(book.label_for("rowanvale_scout", hero), "coming soon", "the rowanvale scout waits on the stand-in landmark")
+	eq(book.label_for("rowanvale_scout", hero) != "coming soon", true, "the Northgate scout is not a coming-soon landmark")
+	var north: Dictionary = book.mission("rowanvale_scout")["steps"][0]
+	eq(str(north["zone_id"]).begins_with("crosshaven_"), true, "the Northgate scout walks Crosshaven")
+	eq(bool(north.get("pending_chunk", false)), false, "the Northgate scout mark is real ground")
 
 
 func _test_proximity(book) -> void:
@@ -254,8 +257,7 @@ func _test_sides(book) -> void:
 	hero.level = 1
 	eq(book.status_of("blightwood_last_watcher_errand", hero), "locked", "a high-zone side stays locked")
 	var watcher_offer: Array = book.available_for("blightwood_last_watcher", hero)
-	eq(watcher_offer.size(), 1, "a locked side still leaves the NPC a task")
-	eq(str(watcher_offer[0]["id"]).begins_with("task_offer:"), true, "the level 1 task is the offer, not the side")
+	eq(watcher_offer.is_empty(), true, "an outer giver offers nothing while regions are closed")
 	hero.level = 5
 	var fisher: Dictionary = book.mission("eastmarch_fisher_errand")
 	eq(book.status_of("eastmarch_fisher_errand", hero), "available", "the Fisher opens with the towns")
@@ -342,7 +344,7 @@ func _test_anti_farm(book) -> void:
 	hero = Progress.new()
 	hero.mission_blob = {}
 	hero.level = 1
-	var givers: Array[String] = ["crossroads_trader", "towns_trader", "eastmarch_fisher"]
+	var givers: Array[String] = ["crossroads_trader", "towns_trader"]
 	var seen := {}
 	for npc_id in givers:
 		var offer: Array = book.available_for(npc_id, hero)
@@ -351,7 +353,11 @@ func _test_anti_farm(book) -> void:
 		eq(bool(accepted["ok"]), true, "%s task accepts" % npc_id)
 		var stored: Dictionary = hero.mission_blob["tasks"][npc_id]
 		seen[str(stored["landmark"])] = true
-	eq(seen.size(), 3, "three live tasks use three landmarks")
+	eq(seen.size(), 2, "two live tasks use the two Stoneford landmarks")
+	eq(book.available_for("eastmarch_fisher", hero).is_empty(), true, "a third giver waits until a Stoneford landmark is free")
+	var filler := _seed_task("stoneford_smith", _heart_marks()[0])
+	filler["landmark"] = "cap_filler"
+	hero.mission_blob["tasks"]["stoneford_smith"] = filler
 	eq(book.available_for("towns_warden", hero).is_empty(), true, "a fourth task is refused")
 	eq(bool(book.accept("task_offer:towns_warden", hero)["ok"]), false, "accept refuses the fourth task")
 	var tasks: Dictionary = hero.mission_blob["tasks"]
@@ -399,7 +405,19 @@ func _test_pending(book) -> void:
 	eq(book.label_for("rowanvale_farmer_errand", hero), "coming soon", "a stand-in side shows coming soon")
 	eq(str(book.accept("rowanvale_farmer_errand", hero)["reason"]), "coming soon", "a stand-in side cannot be accepted")
 	eq(bool(book.mission("heart_scout")["steps"][0].get("pending_chunk", false)), false, "the heart scout mark is real ground")
-	eq(bool(book.mission("rowanvale_scout")["steps"][0]["pending_chunk"]), true, "the rowanvale scout mark is pending")
+	eq(bool(book.mission("rowanvale_scout")["steps"][0].get("pending_chunk", false)), false, "the Northgate scout is not a pending outer landmark")
+	var moved := 0
+	for id in book.all_ids():
+		var story: Dictionary = book.mission(str(id))
+		if str(story["chain"]) != "scout":
+			continue
+		for step_value in story["steps"]:
+			var step_row: Dictionary = step_value
+			eq(str(step_row["zone_id"]).begins_with("crosshaven_"), true, "%s stays in Crosshaven" % str(id))
+			eq(bool(step_row.get("pending_chunk", false)), false, "%s is not coming soon" % str(id))
+			if str(story["level_zone"]) != "crosshaven_heart" and str(story["level_zone"]) != "crosshaven_towns":
+				moved += 1
+	eq(moved >= 19, true, "the outer scout steps moved onto the town chains")
 	var panel: Dictionary = book.panel_for("rowanvale_trader", hero)
 	eq(bool(panel["soon"]), false, "an outer landmark stays out of the task pool")
 	eq(book.available_for("rowanvale_trader", hero).is_empty(), true, "the stand-in task is not offered")
@@ -540,7 +558,7 @@ func _test_story_pending(book) -> void:
 	var flipped := false
 	for row_value in book._reach:
 		var row: Dictionary = row_value
-		if str(row.get("landmark", "")) == "north_road":
+		if str(row.get("landmark", "")) == "stone_ford":
 			row["pending_chunk"] = true
 			flipped = true
 	eq(flipped, true, "the scout landmark can be marked pending")
@@ -551,7 +569,7 @@ func _test_story_pending(book) -> void:
 	eq(str(dropped).find("landmark pending") >= 0 and str(dropped).find("refund 0") >= 0, true, "the story drop is logged")
 	for row_value in book._reach:
 		var row: Dictionary = row_value
-		if str(row.get("landmark", "")) == "north_road":
+		if str(row.get("landmark", "")) == "stone_ford":
 			row["pending_chunk"] = false
 
 
@@ -570,6 +588,14 @@ func _test_walk_distance(book) -> void:
 		var at: Dictionary = npc["cell"]
 		var from_zone := str(npc["zone_id"])
 		var from_cell := Vector2i(int(at["x"]), int(at["y"]))
+		if not map.zones.has(from_zone):
+			for level in levels:
+				var closed = Progress.new()
+				closed.mission_blob = {}
+				closed.level = level
+				_finish_open_stories(book, closed, npc_id)
+				eq(book.available_for(npc_id, closed).is_empty(), true, "%s offers nothing at level %d while regions are closed" % [npc_id, level])
+			continue
 		for level in levels:
 			var hero = Progress.new()
 			hero.mission_blob = {}
@@ -589,13 +615,12 @@ func _test_walk_distance(book) -> void:
 				var to_zone := str(stored["zone_id"])
 				eq(map.zones.has(to_zone), true, "%s targets a Crosshaven landmark (%s)" % [npc_id, to_zone])
 				var band := str(stored.get("level_zone", ""))
-				eq(band == "crosshaven_heart" or band == "crosshaven_towns", true, "%s stays in the Crosshaven bands" % npc_id)
-				if map.zones.has(from_zone):
-					var result: Dictionary = Walk.find_path(
-						map, from_zone, from_cell, to_zone, Vector2i(int(stored["x"]), int(stored["y"]))
-					)
-					eq(bool(result.get("ok", false)), true, "%s can walk to %s" % [npc_id, str(stored["landmark"])])
-					eq(int(result.get("length", 0)) >= 40, true, "%s to %s is at least 40 walk cells (%s)" % [npc_id, str(stored["landmark"]), str(result.get("length", 0))])
+				eq(_town_band(level) == band, true, "%s at level %d is the %s band (got %s)" % [npc_id, level, _town_band(level), band])
+				var result: Dictionary = Walk.find_path(
+					map, from_zone, from_cell, to_zone, Vector2i(int(stored["x"]), int(stored["y"]))
+				)
+				eq(bool(result.get("ok", false)), true, "%s can walk to %s" % [npc_id, str(stored["landmark"])])
+				eq(int(result.get("length", 0)) >= 40, true, "%s to %s is at least 40 walk cells (%s)" % [npc_id, str(stored["landmark"]), str(result.get("length", 0))])
 				stored["status"] = "done"
 				hero.mission_blob["tasks"][npc_id] = stored
 	var band_hero = Progress.new()
@@ -607,14 +632,22 @@ func _test_walk_distance(book) -> void:
 	var mid: Array = book.available_for("crossroads_trader", band_hero)
 	eq(str(mid[0]["id"]).begins_with("task_offer:"), true, "level 9 is inside the task band")
 	band_hero.level = 10
-	eq(book.available_for("crossroads_trader", band_hero).is_empty(), true, "level 10 uses Rowanvale and offers no task")
+	var at_ten: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(at_ten[0]["id"]).begins_with("task_offer:"), true, "level 10 is Northgate and still offers a task")
 	band_hero.level = 25
-	eq(book.available_for("crossroads_trader", band_hero).is_empty(), true, "a later band offers no task while its landmarks are pending")
+	var at_east: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(at_east[0]["id"]).begins_with("task_offer:"), true, "level 25 is Eastmarch and still offers a task")
+	band_hero.level = 40
+	var at_west: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(at_west[0]["id"]).begins_with("task_offer:"), true, "level 40 is Westwatch and still offers a task")
+	band_hero.level = 50
+	var at_cap: Array = book.available_for("crossroads_trader", band_hero)
+	eq(str(at_cap[0]["id"]).begins_with("task_offer:"), true, "level 50 stays inside Westwatch")
 
 
 func _finish_open_stories(book, hero, npc_id: String) -> void:
 	var guard := 0
-	while guard < 8:
+	while guard < 12:
 		guard += 1
 		var offers: Array = book.available_for(npc_id, hero)
 		if offers.is_empty() or str(offers[0]["id"]).begins_with("task_offer:"):
@@ -628,19 +661,33 @@ func _finish_open_stories(book, hero, npc_id: String) -> void:
 		hero.mission_blob["story"] = story
 
 
+func _town_band(level: int) -> String:
+	if level >= 40:
+		return "westwatch"
+	if level >= 30:
+		return "southbridge"
+	if level >= 20:
+		return "eastmarch"
+	if level >= 10:
+		return "northgate"
+	return "stoneford"
+
+
 func _test_task_mix(book) -> void:
 	var table := FileAccess.get_file_as_string("res://docs/pc/media/wp6b/task_mix.md")
-	eq(table.find("1–10") >= 0, true, "the task mix names the 1-10 offer band")
-	eq(table.find("pending") >= 0, true, "the task mix says later landmarks are pending")
-	eq(table.find("WP5b") >= 0, true, "the task mix says WP15 re-scores once WP5b fills the regions")
+	eq(table.find("1–50") >= 0, true, "the task mix names the 1-50 offer band")
+	eq(table.find("Stoneford") >= 0 and table.find("Northgate") >= 0, true, "the task mix names Stoneford and Northgate")
+	eq(table.find("Eastmarch") >= 0 and table.find("Southbridge") >= 0 and table.find("Westwatch") >= 0, true, "the task mix names the southern towns")
 	eq(table.find("143.53") < 0, true, "the task mix does not reprint the old free-play hours")
 	var hero = Progress.new()
 	hero.mission_blob = {}
 	hero.level = 9
 	var offered: Array = book.available_for("crossroads_trader", hero)
-	eq(str(offered[0]["id"]).begins_with("task_offer:"), true, "a towns-band level still offers a task")
-	hero.level = 11
-	eq(book.available_for("crossroads_trader", hero).is_empty(), true, "past the 1-10 band a pending region offers no task")
+	eq(str(offered[0]["id"]).begins_with("task_offer:"), true, "Stoneford still offers a task")
+	hero.level = 10
+	eq(str(book.available_for("crossroads_trader", hero)[0]["id"]).begins_with("task_offer:"), true, "Northgate still offers a task")
+	hero.level = 50
+	eq(str(book.available_for("crossroads_trader", hero)[0]["id"]).begins_with("task_offer:"), true, "Westwatch still offers a task at the top of the band")
 
 
 func _finish_reach(book, hero, mission_id: String) -> void:

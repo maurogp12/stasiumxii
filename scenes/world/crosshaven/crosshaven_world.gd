@@ -27,6 +27,7 @@ const InventoryWindow := preload("res://scenes/world/ui/inventory_window.gd")
 const RewardPopup := preload("res://scenes/world/ui/reward_popup.gd")
 const Rewards := preload("res://backend/pc_rewards.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
+const Regions := preload("res://backend/world_regions.gd")
 const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
@@ -221,6 +222,9 @@ func _ready() -> void:
 
 
 func enter_zone(zone_id: String, cell: Vector2i, fade: bool = true) -> void:
+	if not Regions.enabled() and Regions.is_outer(zone_id):
+		walk_rejected.emit("regions_closed")
+		return
 	var next: WorldMap = map
 	if atlas != null:
 		var found: Variant = atlas.map_for_chunk(zone_id)
@@ -371,7 +375,7 @@ func _stand_free(cell: Vector2i) -> bool:
 		return false
 	if _npc_by_cell.has(cell):
 		return false
-	if atlas != null and not atlas.gate_at(zone.zone_id, cell).is_empty():
+	if _open_gate(atlas.gate_at(zone.zone_id, cell) if atlas != null else {}):
 		return false
 	return true
 
@@ -525,15 +529,26 @@ func _arm_arrival(target: Vector2i) -> void:
 	_pending_gate = {}
 	if atlas != null:
 		var found: Dictionary = atlas.gate_at(zone.zone_id, target)
-		if not found.is_empty():
+		if _open_gate(found):
 			_pending_gate = found
 	_pending_exit = _pending_gate.is_empty() and not zone.exit_link(target).is_empty()
+
+
+func _open_gate(gate: Dictionary) -> bool:
+	if gate.is_empty():
+		return false
+	if Regions.enabled():
+		return true
+	var dest: Dictionary = gate.get("to", {})
+	return not Regions.is_outer(str(dest.get("zone_id", "")))
 
 
 func _mark_gates() -> void:
 	if atlas == null or zone == null or ground == null:
 		return
 	for gate in atlas.gates_from_zone(zone.zone_id):
+		if not _open_gate(gate):
+			continue
 		var frm: Dictionary = gate["from"]
 		var cell := Vector2i(int(frm["x"]), int(frm["y"]))
 		ground.call("add_gate_arrow", cell, _edge_dir(cell))
@@ -679,7 +694,7 @@ func _draw_hover() -> void:
 	if zone == null or hover_cell.x < 0 or not zone.in_bounds(hover_cell):
 		return
 	var color := Color(0.45, 0.95, 0.5, 0.9)
-	if atlas != null and not atlas.gate_at(zone.zone_id, hover_cell).is_empty():
+	if atlas != null and _open_gate(atlas.gate_at(zone.zone_id, hover_cell)):
 		color = Color(1.0, 0.84, 0.35, 0.95)
 	elif not zone.exit_link(hover_cell).is_empty():
 		color = Color(1.0, 0.84, 0.35, 0.95)
@@ -994,6 +1009,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp3b()
 		"wp14":
 			await _movie_wp14()
+		"regions_off":
+			await _movie_regions_off()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -1319,6 +1336,33 @@ func _movie_wp6_fix() -> void:
 	DirAccess.make_dir_recursive_absolute(folder)
 	await _save_still("gloomfen_mire_entry", Vector2i(8, 8), folder.path_join("gloomfen_plates.png"))
 	await _save_still("crosshaven_crossroads", Vector2i(20, 17), folder.path_join("crosshaven_square.png"))
+
+
+## Flag off: the Stoneford gate has no arrow, then a walk to Stoneford and back.
+func _movie_regions_off() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.15)
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.playback = 2.0
+	if not OS.has_feature("movie"):
+		var folder := ProjectSettings.globalize_path("res://docs/pc/media/regions_off")
+		DirAccess.make_dir_recursive_absolute(folder)
+		Regions.set_enabled(true)
+		await _save_still("crosshaven_stoneford", Vector2i(3, 6), folder.path_join("stoneford_gate_on.png"))
+		Regions.set_enabled(false)
+		await _save_still("crosshaven_stoneford", Vector2i(3, 6), folder.path_join("stoneford_gate_off.png"))
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	await _run_link("crosshaven_road_west")
+	await _run_link("crosshaven_stoneford")
+	await get_tree().create_timer(0.6).timeout
+	await _run_link("crosshaven_road_west")
+	await _run_link("crosshaven_crossroads")
+	await get_tree().create_timer(0.4).timeout
 
 
 func _save_still(zone_id: String, cell: Vector2i, path: String) -> void:
