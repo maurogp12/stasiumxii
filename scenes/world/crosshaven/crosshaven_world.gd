@@ -537,7 +537,8 @@ func _at_bank() -> bool:
 			continue
 		var at: Dictionary = record.get("cell", {})
 		var cell := Vector2i(int(at.get("x", -99)), int(at.get("y", -99)))
-		return absi(hero.x - cell.x) + absi(hero.y - cell.y) <= 1
+		if absi(hero.x - cell.x) + absi(hero.y - cell.y) <= 1:
+			return true
 	return false
 
 

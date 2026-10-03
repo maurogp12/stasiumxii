@@ -57,6 +57,7 @@ var bag_slots := 0
 var bank_slots := 0
 var weight_base := 0
 var weight_per_level := 0
+var load_log: Array = []
 var _uid := 1
 var _equip_seq := 1
 var _catalog = null
@@ -399,6 +400,7 @@ func read_save() -> bool:
 	var prev_class := hero_class
 	var prev_choice := rare_choice
 	var prev_uid := _uid
+	var prev_log: Array = load_log.duplicate()
 	level = next_level
 	xp = next_xp
 	if not _apply_saved_spend(doc) or not _apply_saved_items(doc):
@@ -413,6 +415,7 @@ func read_save() -> bool:
 		hero_class = prev_class
 		rare_choice = prev_choice
 		_uid = prev_uid
+		load_log = prev_log
 		return false
 	return true
 
@@ -633,10 +636,25 @@ func grant(drop: Dictionary) -> Dictionary:
 func open_mystery_box(rng: RandomNumberGenerator) -> Dictionary:
 	if _catalog == null:
 		return {"ok": false, "reason": "no catalog"}
-	if not _consume_item("mystery_box", "regular"):
+	if _find_item("mystery_box", "regular").is_empty():
 		return {"ok": false, "reason": "no box"}
 	var got: Dictionary = _catalog.open_box({"level": level, "class_id": hero_class}, rng)
+	if not _reward_fits(got):
+		return {"ok": false, "reason": "bag full", "reward": got}
+	var snap_coins := coins
+	var snap_bag := bag.duplicate(true)
+	var snap_bank := bank.duplicate(true)
+	var snap_uid := _uid
+	if not _consume_item("mystery_box", "regular"):
+		return {"ok": false, "reason": "no box"}
 	var placed: Dictionary = grant(got)
+	if not bool(placed.get("ok", false)):
+		coins = snap_coins
+		bag = snap_bag
+		bank = snap_bank
+		_uid = snap_uid
+		_autosave()
+		return {"ok": false, "reason": "bag full", "reward": got, "placed": placed}
 	return {"ok": true, "reason": "", "reward": got, "placed": placed}
 
 
@@ -664,13 +682,16 @@ func equip_uid(uid: int) -> Dictionary:
 		var occupied := _worn_kind(kind)
 		if occupied != "" and occupied != slot:
 			return {"ok": false, "reason": "only one %s" % kind}
+	var incoming := int(entry.get("count", 1))
+	if equipped.has(slot) and not _displaced_fits(equipped[slot], item_id, incoming):
+		return {"ok": false, "reason": "bag full"}
+	var snapshot: Dictionary = entry.duplicate(true)
 	if not _consume_uid(uid):
 		return {"ok": false, "reason": "not in bag"}
 	if equipped.has(slot):
 		var back := unequip(slot, false)
 		if not bool(back.get("ok", false)):
-			if not _place(item_id, rarity, 1):
-				_to_bank(item_id, rarity, 1)
+			_restore_bag_row(snapshot)
 			_autosave()
 			return back
 	equipped[slot] = {
@@ -689,7 +710,6 @@ func unequip(slot: String, write: bool = true) -> Dictionary:
 	if not equipped.has(slot):
 		return {"ok": false, "reason": "empty"}
 	var inst: Dictionary = equipped[slot]
-	equipped.erase(slot)
 	var item_id := str(inst.get("item_id", ""))
 	var rarity := str(inst.get("rarity", "regular"))
 	var row := {
@@ -699,10 +719,10 @@ func unequip(slot: String, write: bool = true) -> Dictionary:
 		"count": 1,
 		"upgrade": int(inst.get("upgrade", 0)),
 	}
-	if bag.size() < bag_slots:
-		bag.append(row)
-	elif not _to_bank(item_id, rarity, 1):
-		bag.append(row)
+	if bag.size() >= bag_slots or bag_weight() + _entry_weight(row) > weight_max():
+		return {"ok": false, "reason": "bag full"}
+	equipped.erase(slot)
+	bag.append(row)
 	if write:
 		_autosave()
 	return {"ok": true, "reason": "", "slot": slot}
@@ -775,6 +795,155 @@ func _find_bag(uid: int) -> Dictionary:
 		if int(entry.get("uid", -1)) == uid:
 			return entry
 	return {}
+
+
+func _find_bank(uid: int) -> Dictionary:
+	for entry in bank:
+		if int(entry.get("uid", -1)) == uid:
+			return entry
+	return {}
+
+
+func _find_item(item_id: String, rarity: String) -> Dictionary:
+	for entry in bag:
+		if str(entry.get("item_id", "")) == item_id and str(entry.get("rarity", "")) == rarity:
+			return entry
+	return {}
+
+
+func _remove_bank_uid(uid: int) -> bool:
+	for i in bank.size():
+		var entry: Dictionary = bank[i]
+		if int(entry.get("uid", -1)) != uid:
+			continue
+		bank.remove_at(i)
+		return true
+	return false
+
+
+func _bag_has_stack(item_id: String, rarity: String) -> bool:
+	if _catalog == null or not _catalog.stacks(item_id):
+		return false
+	for entry in bag:
+		if str(entry.get("item_id", "")) == item_id and str(entry.get("rarity", "")) == rarity:
+			return true
+	return false
+
+
+func _can_place(item_id: String, rarity: String, count: int) -> bool:
+	return _room_for(item_id, rarity, count, bag.size(), bag_weight(), -1)
+
+
+func _room_for(item_id: String, rarity: String, count: int, slots_used: int, weight_used: int, ignore_uid: int) -> bool:
+	var stack: bool = _catalog != null and _catalog.stacks(item_id)
+	var one := _entry_weight({"item_id": item_id, "count": 1})
+	if stack:
+		for entry in bag:
+			if int(entry.get("uid", -1)) == ignore_uid:
+				continue
+			if str(entry.get("item_id", "")) == item_id and str(entry.get("rarity", "")) == rarity:
+				return weight_used + one * count <= weight_max()
+		if slots_used >= bag_slots or weight_used + one * count > weight_max():
+			return false
+		return true
+	if slots_used + count > bag_slots or weight_used + one * count > weight_max():
+		return false
+	return true
+
+
+func _bank_can_take(item_id: String, rarity: String, count: int) -> bool:
+	var stack: bool = _catalog != null and _catalog.stacks(item_id)
+	if stack:
+		for entry in bank:
+			if str(entry.get("item_id", "")) == item_id and str(entry.get("rarity", "")) == rarity:
+				return true
+		return _bank_has_room(1)
+	return _bank_has_room(count)
+
+
+func _reward_fits(drop: Dictionary) -> bool:
+	var items: Variant = drop.get("items", [])
+	if typeof(items) != TYPE_ARRAY or (items as Array).is_empty():
+		return true
+	var slots_used := bag.size()
+	var weight_used := bag_weight()
+	var box := _find_item("mystery_box", "regular")
+	var ignore := -1
+	if not box.is_empty():
+		weight_used -= _entry_weight({"item_id": "mystery_box", "count": 1})
+		if int(box.get("count", 1)) <= 1:
+			slots_used -= 1
+			ignore = int(box.get("uid", -1))
+	if slots_used < 0:
+		slots_used = 0
+	if weight_used < 0:
+		weight_used = 0
+	for raw in items:
+		if typeof(raw) != TYPE_DICTIONARY:
+			continue
+		var item: Dictionary = raw
+		var item_id := str(item.get("item_id", ""))
+		if item_id == "":
+			continue
+		var rarity := str(item.get("rarity", "regular"))
+		var count := int(item.get("count", 1))
+		if count < 1:
+			continue
+		if _room_for(item_id, rarity, count, slots_used, weight_used, ignore):
+			var one := _entry_weight({"item_id": item_id, "count": 1})
+			var merges := false
+			if _catalog != null and _catalog.stacks(item_id):
+				for entry in bag:
+					if int(entry.get("uid", -1)) == ignore:
+						continue
+					if str(entry.get("item_id", "")) == item_id and str(entry.get("rarity", "")) == rarity:
+						merges = true
+			if merges:
+				weight_used += one * count
+			else:
+				var stack: bool = _catalog != null and _catalog.stacks(item_id)
+				slots_used += 1 if stack else count
+				weight_used += one * count
+			continue
+		if _bank_can_take(item_id, rarity, count):
+			continue
+		return false
+	return true
+
+
+func _displaced_fits(worn: Dictionary, incoming_id: String, incoming_count: int) -> bool:
+	var free_slots := bag_slots - bag.size()
+	var free_weight := weight_max() - bag_weight()
+	if incoming_count <= 1:
+		free_slots += 1
+	if _catalog != null:
+		free_weight += _catalog.weight_of(incoming_id)
+	var worn_weight := _entry_weight({"item_id": str(worn.get("item_id", "")), "count": 1})
+	return free_slots >= 1 and free_weight >= worn_weight
+
+
+func _restore_bag_row(snapshot: Dictionary) -> void:
+	var uid := int(snapshot.get("uid", -1))
+	for entry in bag:
+		if int(entry.get("uid", -1)) != uid:
+			continue
+		entry["count"] = int(entry.get("count", 1)) + 1
+		return
+	bag.append(snapshot.duplicate(true))
+
+
+func _cap_carried() -> void:
+	load_log = []
+	if bag_slots > 0:
+		while bag.size() > bag_slots and bank.size() < bank_slots:
+			var row: Dictionary = bag[bag.size() - 1]
+			bag.remove_at(bag.size() - 1)
+			bank.append(row)
+			load_log.append("moved uid %d to the bank" % int(row.get("uid", 0)))
+	if bag_slots > 0 and bag.size() > bag_slots:
+		load_log.append("bag over cap, kept %d" % (bag.size() - bag_slots))
+	if bank_slots > 0 and bank.size() > bank_slots:
+		load_log.append("bank over cap, kept %d" % (bank.size() - bank_slots))
 
 
 func _remove_uid(uid: int) -> bool:
@@ -922,6 +1091,41 @@ func deposit_uid(uid: int) -> Dictionary:
 	return {"ok": true, "reason": ""}
 
 
+func withdraw_uid(uid: int, count: int = 1) -> Dictionary:
+	var entry := _find_bank(uid)
+	if entry.is_empty():
+		return {"ok": false, "reason": "not in bank", "count": 0}
+	var have := int(entry.get("count", 1))
+	var take := mini(maxi(count, 1), have)
+	var item_id := str(entry.get("item_id", ""))
+	var rarity := str(entry.get("rarity", "regular"))
+	if not _can_place(item_id, rarity, take):
+		return {"ok": false, "reason": "bag full", "count": 0}
+	var snap_bag := bag.duplicate(true)
+	var snap_bank := bank.duplicate(true)
+	var snap_uid := _uid
+	var whole := take == have
+	if whole and not _bag_has_stack(item_id, rarity):
+		var row: Dictionary = entry.duplicate(true)
+		row["count"] = take
+		if not _remove_bank_uid(uid):
+			return {"ok": false, "reason": "not in bank", "count": 0}
+		bag.append(row)
+	else:
+		if whole:
+			if not _remove_bank_uid(uid):
+				return {"ok": false, "reason": "not in bank", "count": 0}
+		else:
+			entry["count"] = have - take
+		if not _place(item_id, rarity, take):
+			bag = snap_bag
+			bank = snap_bank
+			_uid = snap_uid
+			return {"ok": false, "reason": "bag full", "count": 0}
+	_autosave()
+	return {"ok": true, "reason": "", "count": take}
+
+
 func _worn_kind(kind: String) -> String:
 	for slot in equipped.keys():
 		var inst: Dictionary = equipped[slot]
@@ -948,6 +1152,7 @@ func _apply_saved_items(doc: Dictionary) -> bool:
 		bank = []
 		equipped = {}
 		_assign_next_uid(doc, 0)
+		_cap_carried()
 		return true
 	var seen := {}
 	var next_bag: Array = []
@@ -1024,6 +1229,7 @@ func _apply_saved_items(doc: Dictionary) -> bool:
 	bag = next_bag
 	bank = next_bank
 	equipped = kept
+	_cap_carried()
 	return true
 
 

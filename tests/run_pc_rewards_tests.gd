@@ -40,6 +40,7 @@ func _run() -> void:
 	_test_caps()
 	_test_mender_sets(book)
 	_test_turn_in()
+	_test_carry_limits()
 	_test_sources()
 	_restore_save()
 	print("pc rewards tests: %d passed, %d failed" % [_passed, _failed])
@@ -312,8 +313,10 @@ func _test_window() -> void:
 	eq(window._coins.text.find("Crypto Coins 15") >= 0, true, "the panel shows coins")
 	eq(window._slots.get_child_count(), 8, "eight equipment slots")
 	eq(window._bank.disabled, true, "the bank stays dark away from the Crossroads")
+	eq(window._withdraw.disabled, true, "withdraw stays dark away from the banker")
 	window.set_at_bank(true)
 	eq(window._bank.disabled, false, "the bank lights at the banker")
+	eq(window._withdraw.disabled, false, "withdraw lights at the banker")
 	eq(window._filter != null and window._search != null, true, "filter and search are on the panel")
 	eq(window.get_node_or_null("InventoryPanel/Card") != null, true, "the inventory card is built")
 	window.show_category("special")
@@ -333,9 +336,11 @@ func _test_sources() -> void:
 	eq(progress.find("\"Ironjaw\"") < 0, true, "the hero class is not hardcoded")
 	var window := FileAccess.get_file_as_string("res://scenes/world/ui/inventory_window.gd")
 	eq(window.find("destroy_uid") >= 0, true, "destroy goes through progress")
+	eq(window.find("withdraw_uid") >= 0, true, "withdraw goes through progress")
 	eq(window.find("bag.remove_at") < 0, true, "the window does not edit the bag")
 	var world := FileAccess.get_file_as_string("res://scenes/world/crosshaven/crosshaven_world.gd")
-	eq(world.find("grant_turn_in") >= 0, true, "mission turn-in shows the reward popup")
+	eq(world.find("grant_turn_in") >= 0, true, "the mission turn-in hook is ready")
+	eq(world.find("return absi") < 0, true, "the banker check keeps looking until the hero is beside one")
 
 
 func _test_load_safety() -> void:
@@ -553,6 +558,137 @@ func _test_turn_in() -> void:
 	eq(loaded.coins, 17, "a zone change keeps the wallet without the test calling save")
 	eq(loaded.hero_class, "Mender", "the reloaded hero is a Mender")
 	eq(loaded.bag.size(), 1, "the turn-in item is still in the bag")
+
+
+func _test_carry_limits() -> void:
+	_clear_save()
+	var hero = Progress.new()
+	hero.set_hero_class("kestrel")
+	hero.bag_slots = 1
+	var band := _give(hero, "plain_band", "regular")
+	eq(bool(hero.deposit_uid(band).get("ok", false)), true, "a ring deposits at the bank")
+	eq(hero.bag.is_empty(), true, "the deposited ring leaves the bag")
+	eq(hero.bank.size(), 1, "the bank holds the deposited ring")
+	var bank_uid := int(hero.bank[0]["uid"])
+	_give(hero, "plain_band", "regular")
+	var blocked: Dictionary = hero.withdraw_uid(bank_uid, 1)
+	eq(bool(blocked.get("ok", false)), false, "a full bag refuses a withdrawal")
+	eq(str(blocked.get("reason", "")), "bag full", "withdraw says bag full")
+	eq(hero.bank.size(), 1, "the refused ring stays in the bank")
+	eq(int(hero.bank[0]["uid"]), bank_uid, "the bank uid is unchanged")
+	hero.bag.clear()
+	var back: Dictionary = hero.withdraw_uid(bank_uid, 1)
+	eq(bool(back.get("ok", false)), true, "withdraw returns the ring")
+	eq(int(back.get("count", 0)), 1, "withdraw moves one ring")
+	eq(hero.bank.is_empty(), true, "the bank slot is free")
+	eq(int(hero.bag[0]["uid"]), bank_uid, "withdraw keeps the same uid")
+	var window = load("res://scenes/world/ui/inventory_window.gd").new()
+	get_root().add_child(window)
+	window.setup(hero)
+	window.show_category("equipment")
+	eq(window._withdraw.disabled, true, "the withdraw button is dark away from the banker")
+	hero.deposit_uid(bank_uid)
+	window.set_at_bank(true)
+	eq(window._withdraw.disabled, false, "the withdraw button lights at the banker")
+	eq(window._grid.get_child_count() >= 1, true, "the banker shows bank rows")
+	eq(str(window._grid.get_child(0).text).find("Bank:") >= 0, true, "a bank row is labeled")
+	window._selected = int(hero.bank[0]["uid"])
+	window._withdraw_selected()
+	eq(hero.bank.is_empty(), true, "the button withdraws the selected ring")
+	eq(hero.bag.size(), 1, "the withdrawn ring is in the bag")
+	window.queue_free()
+	_clear_save()
+	var opener = Progress.new()
+	opener.set_hero_class("kestrel")
+	opener.level = 12
+	var item_seed := -1
+	for n in 80:
+		var roll: Dictionary = opener._catalog.open_box({"level": opener.level, "class_id": opener.hero_class}, _rng(n))
+		if (roll.get("items", []) as Array).size() == 1:
+			item_seed = n
+			break
+	eq(item_seed >= 0, true, "a seeded box grants a part")
+	opener.bag_slots = 1
+	opener.grant({"coins": 0, "items": [{"item_id": "mystery_box", "rarity": "regular", "count": 2}]})
+	for _i in opener.bank_slots:
+		opener.grant({"coins": 0, "items": [{"item_id": "plain_band", "rarity": "regular", "count": 1}]})
+	eq(opener.bank.size(), opener.bank_slots, "the bank is full before the box opens")
+	eq(int(opener.bag[0]["count"]), 2, "the box stack still holds two")
+	var closed: Dictionary = opener.open_mystery_box(_rng(item_seed))
+	eq(bool(closed.get("ok", false)), false, "a box with no room stays closed")
+	eq(str(closed.get("reason", "")), "bag full", "the player sees bag full")
+	eq(str(opener.bag[0]["item_id"]), "mystery_box", "the box is still in the bag")
+	eq(int(opener.bag[0]["count"]), 2, "the box was not consumed")
+	eq(opener.bank.size(), opener.bank_slots, "the full bank is unchanged")
+	_clear_save()
+	var wearer = Progress.new()
+	wearer.set_hero_class("kestrel")
+	wearer.bag_slots = 1
+	var worn := _give(wearer, "kestrel_fledgling_head", "regular")
+	eq(bool(wearer.equip_uid(worn).get("ok", false)), true, "a part equips before the bag is filled")
+	var incoming := _give(wearer, "kestrel_fledgling_head", "regular")
+	eq(wearer.bag.size(), wearer.bag_slots, "the bag is at its slot count")
+	var off: Dictionary = wearer.unequip("head")
+	eq(bool(off.get("ok", false)), false, "unequip refuses a full bag")
+	eq(str(off.get("reason", "")), "bag full", "unequip says bag full")
+	eq(wearer.equipped.has("head"), true, "the part stays worn")
+	eq(wearer.bag.size(), wearer.bag_slots, "unequip does not push the bag")
+	for entry in wearer.bag:
+		if int(entry.get("uid", -1)) == incoming:
+			entry["count"] = 2
+	var swap: Dictionary = wearer.equip_uid(incoming)
+	eq(bool(swap.get("ok", false)), false, "equip refuses when the worn part cannot return")
+	eq(str(swap.get("reason", "")), "bag full", "the failed equip says bag full")
+	eq(int(wearer.equipped["head"]["uid"]), worn, "the worn part stays")
+	eq(wearer.bag.size(), wearer.bag_slots, "the failed equip leaves the bag size")
+	var fresh = Progress.new()
+	var slots := int(fresh.bag_slots)
+	var bank_cap := int(fresh.bank_slots)
+	_write_save({
+		"level": 1, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "",
+		"bag": _rows(slots + 1, 1),
+		"bank": [],
+		"next_uid": slots + 3,
+	})
+	var moved = Progress.new()
+	eq(moved.bag.size(), slots, "load keeps the bag at its slot count")
+	eq(moved.bank.size(), 1, "the extra bag item moves to the bank")
+	eq(str(moved.load_log).find("moved") >= 0, true, "the move is in the load log")
+	eq(moved.bag.size() + moved.bank.size(), slots + 1, "the extra item is not deleted")
+	_write_save({
+		"level": 1, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "",
+		"bag": _rows(slots + 1, 1),
+		"bank": _rows(bank_cap, 1000),
+		"next_uid": 1000 + bank_cap + 2,
+	})
+	var kept = Progress.new()
+	eq(kept.bag.size(), slots + 1, "a full bank leaves the extra bag item")
+	eq(kept.bank.size(), bank_cap, "the full bank stays at its count")
+	eq(str(kept.load_log).find("kept") >= 0, true, "the leftover is reported")
+	eq(kept.bag.size() + kept.bank.size(), slots + 1 + bank_cap, "overflow is not deleted")
+	_write_save({
+		"level": 1, "xp": 0, "coins": 0, "hero_class": "Kestrel", "rare_choice": "",
+		"bag": _rows(1, 1),
+		"bank": _rows(bank_cap + 1, 1000),
+		"next_uid": 1000 + bank_cap + 3,
+	})
+	var bank_over = Progress.new()
+	eq(bank_over.bank.size(), bank_cap + 1, "a bank over its cap is kept")
+	eq(bank_over.bag.size(), 1, "the bag item stays")
+	eq(str(bank_over.load_log).find("bank over cap") >= 0, true, "the bank overflow is logged")
+
+
+func _rows(n: int, start_uid: int) -> Array:
+	var rows: Array = []
+	for i in n:
+		rows.append({
+			"uid": start_uid + i,
+			"item_id": "plain_band",
+			"rarity": "regular",
+			"count": 1,
+			"upgrade": 0,
+		})
+	return rows
 
 
 func _expect_stats(set_def: Dictionary, count: int) -> Dictionary:

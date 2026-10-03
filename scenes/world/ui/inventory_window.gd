@@ -33,6 +33,7 @@ var _coins: Label
 var _slots_label: Label
 var _weight: ProgressBar
 var _bank: Button
+var _withdraw: Button
 var _search: LineEdit
 var _filter: OptionButton
 var _category := "equipment"
@@ -67,9 +68,12 @@ func toggle() -> void:
 
 func set_at_bank(near: bool) -> void:
 	_at_bank = near
-	if _bank != null:
-		_bank.disabled = not near
-		_bank.text = "Bank" if near else "Bank (Crossroads)"
+	ensure_built()
+	_bank.disabled = not near
+	_bank.text = "Bank" if near else "Bank (Crossroads)"
+	_withdraw.disabled = not near
+	if progress != null:
+		refresh()
 
 
 func _ready() -> void:
@@ -206,6 +210,12 @@ func ensure_built() -> void:
 	_bank.disabled = true
 	_bank.pressed.connect(_deposit_selected)
 	footer.add_child(_bank)
+	_withdraw = Button.new()
+	_withdraw.name = "WithdrawButton"
+	_withdraw.text = "Withdraw"
+	_withdraw.disabled = true
+	_withdraw.pressed.connect(_withdraw_selected)
+	footer.add_child(_withdraw)
 	var hint := Label.new()
 	hint.text = "I closes this panel"
 	right.add_child(hint)
@@ -223,8 +233,7 @@ func open_first_box(rng: RandomNumberGenerator) -> Dictionary:
 	_confirm = false
 	_selected = -1
 	refresh()
-	if bool(result.get("ok", false)):
-		_card.text = "Opened a Mystery Box.\n%s" % _reward_line(result.get("reward", {}))
+	_show_open(result)
 	return result
 
 
@@ -270,6 +279,8 @@ func _fill() -> void:
 	_weight.max_value = weight_max
 	_weight.value = weight
 	_bank.disabled = not _at_bank
+	if _withdraw != null:
+		_withdraw.disabled = not _at_bank
 	_rebuild_grid()
 	if _card.text == "":
 		_card.text = "Select an item"
@@ -284,26 +295,33 @@ func _rebuild_grid() -> void:
 	if _search != null:
 		query = _search.text.to_lower()
 	for entry in progress.bag:
-		var row: Dictionary = entry
-		var def: Dictionary = progress.item_def(str(row.get("item_id", "")))
-		if str(def.get("category", "")) != _category:
-			continue
-		var rarity := str(row.get("rarity", "regular"))
-		if str(def.get("rarity", "")) != "":
-			rarity = str(def.get("rarity", ""))
-		if want != "" and rarity != want:
-			continue
-		var name := str(def.get("name", row.get("item_id", "")))
-		if query != "" and name.to_lower().find(query) < 0:
-			continue
-		var button := Button.new()
-		var count := int(row.get("count", 1))
-		button.text = name if count == 1 else "%s x%d" % [name, count]
-		button.add_theme_stylebox_override("normal", _rarity_style(rarity))
-		var uid := int(row.get("uid", -1))
-		button.pressed.connect(_select_uid.bind(uid))
-		button.gui_input.connect(_item_click.bind(uid))
-		_grid.add_child(button)
+		_add_grid_row(entry, false, want, query)
+	if _at_bank:
+		for entry in progress.bank:
+			_add_grid_row(entry, true, want, query)
+
+
+func _add_grid_row(row: Dictionary, in_bank: bool, want: String, query: String) -> void:
+	var def: Dictionary = progress.item_def(str(row.get("item_id", "")))
+	if str(def.get("category", "")) != _category:
+		return
+	var rarity := str(row.get("rarity", "regular"))
+	if str(def.get("rarity", "")) != "":
+		rarity = str(def.get("rarity", ""))
+	if want != "" and rarity != want:
+		return
+	var name := str(def.get("name", row.get("item_id", "")))
+	if query != "" and name.to_lower().find(query) < 0:
+		return
+	var button := Button.new()
+	var count := int(row.get("count", 1))
+	var label := name if count == 1 else "%s x%d" % [name, count]
+	button.text = "Bank: %s" % label if in_bank else label
+	button.add_theme_stylebox_override("normal", _rarity_style(rarity))
+	var uid := int(row.get("uid", -1))
+	button.pressed.connect(_select_uid.bind(uid))
+	button.gui_input.connect(_item_click.bind(uid))
+	_grid.add_child(button)
 
 
 func _filter_rarity() -> String:
@@ -351,9 +369,14 @@ func _show_card(uid: int) -> void:
 		if int(row.get("uid", -1)) == uid:
 			_show_card_def(str(row.get("item_id", "")), str(row.get("rarity", "regular")), int(row.get("count", 1)), false)
 			return
+	for entry in progress.bank:
+		var bank_row: Dictionary = entry
+		if int(bank_row.get("uid", -1)) == uid:
+			_show_card_def(str(bank_row.get("item_id", "")), str(bank_row.get("rarity", "regular")), int(bank_row.get("count", 1)), false, "bank")
+			return
 
 
-func _show_card_def(item_id: String, rarity: String, count: int, worn: bool) -> void:
+func _show_card_def(item_id: String, rarity: String, count: int, worn: bool, held := "bag") -> void:
 	var def: Dictionary = progress.item_def(item_id)
 	var name := str(def.get("name", item_id))
 	var lines: PackedStringArray = [name, "Rarity %s" % rarity]
@@ -376,16 +399,23 @@ func _show_card_def(item_id: String, rarity: String, count: int, worn: bool) -> 
 		lines.append("Effect: not in play")
 	if str(def.get("set_id", "")) != "":
 		lines.append("Set %s" % str(def["set_id"]))
-	lines.append("In the bag x%s" % str(count) if not worn else "Worn")
+	if worn:
+		lines.append("Worn")
+	elif held == "bank":
+		lines.append("In the bank x%s" % str(count))
+	else:
+		lines.append("In the bag x%s" % str(count))
 	_card.text = "\n".join(lines)
 
 
 func _equip_selected() -> void:
 	if progress == null or _selected < 0:
 		return
-	progress.equip_uid(_selected)
+	var result: Dictionary = progress.equip_uid(_selected)
 	_confirm = false
 	refresh()
+	if not bool(result.get("ok", false)):
+		_card.text = str(result.get("reason", ""))
 
 
 func _unequip_selected() -> void:
@@ -394,7 +424,9 @@ func _unequip_selected() -> void:
 	for slot in progress.equipped.keys():
 		var inst: Dictionary = progress.equipped[slot]
 		if int(inst.get("uid", -1)) == _selected:
-			progress.unequip(str(slot))
+			var result: Dictionary = progress.unequip(str(slot))
+			if not bool(result.get("ok", false)):
+				_card.text = str(result.get("reason", ""))
 			break
 	_confirm = false
 	refresh()
@@ -407,16 +439,21 @@ func _open_selected() -> void:
 	rng.randomize()
 	var result: Dictionary = progress.open_mystery_box(rng)
 	refresh()
-	if bool(result.get("ok", false)):
-		_card.text = "Opened a Mystery Box.\n%s" % _reward_line(result.get("reward", {}))
+	_show_open(result)
 
 
 func open_selected_with(rng: RandomNumberGenerator) -> Dictionary:
 	var result: Dictionary = progress.open_mystery_box(rng)
 	refresh()
+	_show_open(result)
+	return result
+
+
+func _show_open(result: Dictionary) -> void:
 	if bool(result.get("ok", false)):
 		_card.text = "Opened a Mystery Box.\n%s" % _reward_line(result.get("reward", {}))
-	return result
+	elif str(result.get("reason", "")) != "":
+		_card.text = str(result.get("reason", ""))
 
 
 func _destroy_selected() -> void:
@@ -438,6 +475,18 @@ func _deposit_selected() -> void:
 	if progress == null or _selected < 0:
 		return
 	var result: Dictionary = progress.deposit_uid(_selected)
+	_confirm = false
+	if not bool(result.get("ok", false)):
+		_card.text = str(result.get("reason", ""))
+		return
+	_selected = -1
+	refresh()
+
+
+func _withdraw_selected() -> void:
+	if progress == null or _selected < 0 or not _at_bank:
+		return
+	var result: Dictionary = progress.withdraw_uid(_selected, 1)
 	_confirm = false
 	if not bool(result.get("ok", false)):
 		_card.text = str(result.get("reason", ""))
