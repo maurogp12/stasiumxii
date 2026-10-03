@@ -63,6 +63,11 @@ Mauro can judge on a phone screen.
 
 ### 1.1 PC only
 
+**PC is a different game from the mobile one** (Mauro, 3 Oct 2026). PC has its
+own look, maps and rules track. The look every PC package aims at is in
+`docs/pc/LOOK_TARGET.md` (Wakfu outdoor + Wakfu dungeon + Waven UI and light,
+done our own way and better; height levels kept).
+
 - This is the **PC game**. **Never touch the `mobile` branch** (no commits, no
   merges, no APKs, no PRs into it).
 - **Never merge into `main` or `mobile`.** Only Mauro merges. Open PRs only when
