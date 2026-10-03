@@ -12,6 +12,15 @@ const DIM := Color(0.55, 0.54, 0.52, 1.0)
 const END_FILL := Color(0.62, 0.34, 0.08, 0.98)
 const SLOT_FILL := Color(0.20, 0.16, 0.13, 0.96)
 const SLOT_DIM := Color(0.10, 0.09, 0.10, 0.92)
+const ROW_GAP := 8.0
+const SPELL_MIN_W := 92.0
+const WALK_W := 72.0
+const FACE_CELL := 24.0
+const FACE_GAP := 2.0
+const END_W := 112.0
+const SPELL_H := 80.0
+const END_H := 98.0
+const SLOT_Y := 56.0
 
 var _hud: CombatHUD
 var _stamp := ""
@@ -99,12 +108,24 @@ func hover_slot(id: String) -> void:
 	_set_hover(id)
 
 
+func status_text() -> String:
+	return str(_view.get("status", ""))
+
+
+func turn_text() -> String:
+	return str(_view.get("turn", ""))
+
+
 func activate(id: String) -> void:
 	_press(_find(id))
 
 
 func present(hud: CombatHUD) -> void:
 	_hud = hud
+	if not hud.uses_pc_chrome():
+		visible = false
+		return
+	visible = true
 	hud.fold_legacy_chrome()
 	var next := _gather(hud)
 	var stamp := str(next.get("stamp", ""))
@@ -193,15 +214,15 @@ func _gather(hud: CombatHUD) -> Dictionary:
 	if CombatHUD.is_local_turn(snap) and not bool(snap.get("match_over", false)) and not CombatHUD.is_deployment_phase(snap):
 		banner = "YOUR TURN"
 	var slots: Array = []
+	for spell_id in hud._spell_buttons.keys():
+		var id := str(spell_id)
+		var button: Button = hud._spell_buttons[id]
+		_add_spell_slot(slots, hud, id, button)
 	_add_button_slot(slots, hud, "walk", "walk", hud._walk_button, "Walk", "walk")
 	if hud._face_bar != null and hud._face_bar.visible:
 		for dir in ["N", "E", "S", "W"]:
 			var face := hud._face_buttons.get(dir) as Button
 			_add_button_slot(slots, hud, "face:%s" % dir, "face", face, dir, "")
-	for spell_id in hud._spell_buttons.keys():
-		var id := str(spell_id)
-		var button: Button = hud._spell_buttons[id]
-		_add_spell_slot(slots, hud, id, button)
 	_add_button_slot(slots, hud, "end", "end", hud._end_turn_button, "End Turn", "end_turn")
 	_add_button_slot(slots, hud, "new_match", "match", hud._new_match_button, "New Match", "")
 	if hud._ready_p1_button != null and hud._ready_p1_button.visible:
@@ -211,10 +232,11 @@ func _gather(hud: CombatHUD) -> Dictionary:
 		_add_button_slot(slots, hud, "ready:1", "ready", hud._ready_p2_button, hud._ready_p2_button.text, "")
 		slots[slots.size() - 1]["seat"] = 1
 	_place(slots, width)
-	var status := ""
-	if hud._selected_label != null:
-		status = hud._selected_label.text
-	var stamp := _make_stamp(hero, foe, ap, mp, banner, slots, status, width)
+	var status := hud.pc_status_line()
+	var turn := ""
+	if hud._turn_label != null:
+		turn = hud._turn_label.text
+	var stamp := _make_stamp(hero, foe, ap, mp, banner, slots, status, turn, width)
 	return {
 		"stamp": stamp,
 		"slots": slots,
@@ -224,6 +246,7 @@ func _gather(hud: CombatHUD) -> Dictionary:
 		"mp": mp,
 		"banner": banner,
 		"status": status,
+		"turn": turn,
 		"width": width,
 	}
 
@@ -292,48 +315,123 @@ func _block_reason(hud: CombatHUD) -> String:
 func _place(slots: Array, width: float) -> void:
 	var left := 12.0 + 104.0 + 8.0 + 58.0
 	var right := width - 12.0 - 104.0 - 8.0
-	var gap := 6.0
-	var preferred := 0.0
-	for slot in slots:
-		preferred += _pref_width(slot) + gap
-	if not slots.is_empty():
-		preferred -= gap
 	var room := maxf(right - left, 64.0)
-	var scale := 1.0 if preferred <= room else room / preferred
-	var used := 0.0
+	var spells: Array = []
+	var walk: Dictionary = {}
+	var faces: Array = []
+	var tail: Array = []
 	for slot in slots:
-		used += _pref_width(slot) * scale
-	used += gap * float(maxi(slots.size() - 1, 0))
-	var x := left + maxf(room - used, 0.0) * 0.5
-	var base_y := 46.0
-	for slot in slots:
+		match str(slot.get("kind", "")):
+			"spell":
+				spells.append(slot)
+			"walk":
+				walk = slot
+			"face":
+				faces.append(slot)
+			_:
+				tail.append(slot)
+	var walk_w := 0.0 if walk.is_empty() else WALK_W
+	var face_w := 0.0 if faces.is_empty() else _face_span()
+	var tail_w := 0.0
+	for slot in tail:
+		tail_w += _pref_width(slot)
+	if tail.size() > 1:
+		tail_w += ROW_GAP * float(tail.size() - 1)
+	var groups := 0
+	if not spells.is_empty():
+		groups += 1
+	if walk_w > 0.0:
+		groups += 1
+	if face_w > 0.0:
+		groups += 1
+	if not tail.is_empty():
+		groups += 1
+	var between := ROW_GAP * float(maxi(groups - 1, 0))
+	var spell_gaps := ROW_GAP * float(maxi(spells.size() - 1, 0))
+	var fixed := walk_w + face_w + tail_w + between
+	var spell_w := SPELL_MIN_W
+	var scale := 1.0
+	if not spells.is_empty():
+		spell_w = (room - fixed - spell_gaps) / float(spells.size())
+		if spell_w < SPELL_MIN_W:
+			var need := SPELL_MIN_W * float(spells.size()) + spell_gaps + fixed
+			scale = room / need if need > 0.0 else 1.0
+			spell_w = SPELL_MIN_W * scale
+			walk_w *= scale
+			face_w *= scale
+	var x := left
+	for slot in spells:
+		slot["rect"] = Rect2(x, SLOT_Y, spell_w, SPELL_H)
+		x += spell_w + ROW_GAP
+	if not walk.is_empty():
+		walk["rect"] = Rect2(x, SLOT_Y, walk_w, SPELL_H)
+		x += walk_w + ROW_GAP
+	if not faces.is_empty():
+		_place_face_pad(faces, x, face_w)
+		x += face_w + ROW_GAP
+	var tail_scale := scale
+	for i in tail.size():
+		var slot: Dictionary = tail[i]
+		var w := _pref_width(slot) * tail_scale
 		var kind := str(slot.get("kind", ""))
-		var w := _pref_width(slot) * scale
-		var h := 92.0 if kind == "end" else 74.0
-		var y := base_y - (8.0 if kind == "end" else 0.0)
+		var h := END_H if kind == "end" else SPELL_H
+		var y := SLOT_Y - (8.0 if kind == "end" else 0.0)
 		slot["rect"] = Rect2(x, y, w, h)
-		x += w + gap
+		x += w
+		if i < tail.size() - 1:
+			x += ROW_GAP
+
+
+func _face_span() -> float:
+	return FACE_CELL * 3.0 + FACE_GAP * 2.0
+
+
+func _place_face_pad(faces: Array, origin_x: float, pad_w: float) -> void:
+	var span := _face_span()
+	var scale := pad_w / span if span > 0.0 else 1.0
+	var cell := FACE_CELL * scale
+	var gap := FACE_GAP * scale
+	var step := cell + gap
+	var pad_h := step * 2.0 + cell
+	var y0 := SLOT_Y + maxf(SPELL_H - pad_h, 0.0) * 0.5
+	for slot in faces:
+		var col := 1
+		var row := 1
+		match str(slot.get("dir", "")):
+			"N":
+				col = 1
+				row = 0
+			"W":
+				col = 0
+				row = 1
+			"E":
+				col = 2
+				row = 1
+			"S":
+				col = 1
+				row = 2
+		slot["rect"] = Rect2(origin_x + float(col) * step, y0 + float(row) * step, cell, cell)
 
 
 func _pref_width(slot: Dictionary) -> float:
 	match str(slot.get("kind", "")):
 		"end":
-			return 108.0
-		"face":
-			return 36.0
+			return END_W
 		"walk":
-			return 72.0
+			return WALK_W
 		"ready":
 			return 112.0
 		"match":
 			return 78.0
+		"face":
+			return FACE_CELL
 		_:
-			return 72.0
+			return SPELL_MIN_W
 
 
-func _make_stamp(hero: Dictionary, foe: Dictionary, ap: int, mp: int, banner: String, slots: Array, status: String, width: float) -> String:
+func _make_stamp(hero: Dictionary, foe: Dictionary, ap: int, mp: int, banner: String, slots: Array, status: String, turn: String, width: float) -> String:
 	var parts: PackedStringArray = PackedStringArray()
-	parts.append("%s|%s|%d|%d|%s|%.0f" % [str(hero.get("name", "")), str(foe.get("name", "")), ap, mp, banner, width])
+	parts.append("%s|%s|%d|%d|%s|%s|%.0f" % [str(hero.get("name", "")), str(foe.get("name", "")), ap, mp, banner, turn, width])
 	parts.append("%s:%s:%s" % [str(hero.get("hp", 0)), str(hero.get("max_hp", 0)), str(hero.get("active", false))])
 	parts.append("%s:%s:%s" % [str(foe.get("hp", 0)), str(foe.get("max_hp", 0)), str(foe.get("active", false))])
 	parts.append(status)
@@ -421,11 +519,14 @@ func _draw() -> void:
 	var banner := str(_view.get("banner", ""))
 	if banner != "":
 		_draw_banner(banner, width)
+	_draw_turn_plate(width)
 	_draw_portrait(_view.get("hero", {}), 12.0)
 	_draw_portrait(_view.get("foe", {}), width - 12.0 - 100.0)
 	_draw_resources(12.0 + 104.0)
+	_draw_face_pad()
 	for slot in _slots():
 		_draw_slot(slot)
+	_draw_status(width)
 	var reason := hover_reason()
 	if reason != "" and _hover != "":
 		_draw_reason(_find(_hover), reason)
@@ -438,6 +539,47 @@ func _draw_banner(text: String, width: float) -> void:
 	draw_rect(box, Color(0.45, 0.26, 0.05, 0.95))
 	draw_rect(Rect2(box.position, Vector2(box.size.x, 1)), GOLD)
 	draw_string(font, Vector2(box.position.x + 14.0, box.position.y + font.get_ascent(16)), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.95, 0.82))
+
+
+func _draw_turn_plate(width: float) -> void:
+	var text := str(_view.get("turn", ""))
+	if text == "":
+		return
+	var font := ThemeDB.fallback_font
+	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14)
+	var box := Rect2(width * 0.5 - measured.x * 0.5 - 12.0, 32.0, measured.x + 24.0, 20.0)
+	draw_rect(box, Color(0.10, 0.08, 0.06, 0.96))
+	draw_rect(Rect2(box.position, Vector2(box.size.x, 1)), GOLD)
+	draw_string(font, Vector2(box.position.x + 12.0, box.position.y + 15.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, INK)
+
+
+func _draw_status(width: float) -> void:
+	var text := str(_view.get("status", ""))
+	if text == "":
+		return
+	var font := ThemeDB.fallback_font
+	var measured := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13)
+	var x := clampf(width * 0.5 - measured.x * 0.5, 120.0, width - measured.x - 120.0)
+	draw_string(font, Vector2(x, BAR_H - 10.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, INK)
+
+
+func _draw_face_pad() -> void:
+	var union := Rect2()
+	var any := false
+	for slot in _slots():
+		if str(slot.get("kind", "")) != "face":
+			continue
+		var rect: Rect2 = slot.get("rect", Rect2())
+		if rect.size.x < 1.0:
+			continue
+		if not any:
+			union = rect
+			any = true
+		else:
+			union = union.merge(rect)
+	if not any:
+		return
+	draw_rect(union.grow(3.0), Color(0.08, 0.07, 0.06, 0.92))
 
 
 func _draw_portrait(who: Dictionary, x: float) -> void:
@@ -504,8 +646,8 @@ func _draw_slot(slot: Dictionary) -> void:
 	var modulate := Color.WHITE if usable else DIM
 	var font := ThemeDB.fallback_font
 	if icon is Texture2D and kind != "face":
-		var pad := 8.0 if kind != "end" else 10.0
-		var icon_rect := Rect2(rect.position + Vector2(pad, 6), Vector2(rect.size.x - pad * 2.0, rect.size.y - 28))
+		var side := minf(rect.size.x - 16.0, rect.size.y - 28.0)
+		var icon_rect := Rect2(rect.position.x + (rect.size.x - side) * 0.5, rect.position.y + 6.0, side, side)
 		draw_texture_rect(icon as Texture2D, icon_rect, false, modulate)
 	var label := str(slot.get("label", ""))
 	if kind == "face" or kind == "ready" or kind == "match" or icon == null:

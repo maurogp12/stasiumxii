@@ -17,6 +17,7 @@ func _initialize() -> void:
 
 func _finish_shade_board() -> void:
 	await _test_shade_markers_survive_rebuild()
+	await _test_tooltip_clamps_to_1280()
 	print("Combat tests: %d passed, %d failed" % [_passed, _failed])
 	_sim.free()
 	quit(1 if _failed > 0 else 0)
@@ -5890,7 +5891,39 @@ func _test_pc_action_bar() -> void:
 	truthy(str(bar.slot_reason("detonate")) != "", "a dimmed slot has a reason")
 	truthy(bar.slot_has_icon("mark_shot"), "Mark Shot uses the painted icon")
 	truthy(bar.slot_has_icon("walk"), "Walk uses the painted icon")
-	truthy(bar.slot_rect("end").size.x > bar.slot_rect("mark_shot").size.x, "End Turn stands out")
+	var ids_front: Array = bar.slot_ids()
+	truthy(ids_front.find("mark_shot") < ids_front.find("walk"), "spells sit in front of Walk")
+	truthy(ids_front.find("walk") < ids_front.find("face:N"), "Walk sits in front of the Face pad")
+	truthy(bar.slot_rect("mark_shot").size.x > bar.slot_rect("walk").size.x, "spell slots are larger than Walk")
+	var face_left := minf(bar.slot_rect("face:N").position.x, bar.slot_rect("face:W").position.x)
+	var face_right := maxf(bar.slot_rect("face:E").end.x, bar.slot_rect("face:N").end.x)
+	truthy(face_right - face_left < bar.slot_rect("mark_shot").size.x, "the Face pad is narrower than a spell slot")
+	truthy(bar.slot_rect("end").size.y > bar.slot_rect("mark_shot").size.y, "End Turn stands out")
+	bar.size = Vector2(960, 176)
+	bar.present(hud)
+	var spell_960: float = bar.slot_rect("mark_shot").size.x
+	bar.size = Vector2(1280, 176)
+	bar.present(hud)
+	var spell_1280: float = bar.slot_rect("mark_shot").size.x
+	truthy(spell_1280 > spell_960 + 20.0, "1280 spends the extra width on spell slots")
+	var row_right := 0.0
+	for slot_id in bar.slot_ids():
+		row_right = maxf(row_right, bar.slot_rect(str(slot_id)).end.x)
+	truthy(row_right > 1280.0 - 124.0 - 4.0, "the row fills the 1280 bar instead of centering in padding")
+	truthy(bar.status_text().contains("Click a tile"), "the bar uses PC wording")
+	eq(hud._selected_label.visible, false, "the status line does not float over the board")
+	eq(hud._turn_label.visible, false, "the turn line is not left on the jungle")
+	truthy(bar.turn_text().contains("Turn"), "the turn line sits on the bar")
+	eq(hud._terrain_legend.visible, false, "the terrain legend is hidden on PC")
+	var held_top: float = hud._bottom_box.offset_top
+	hud._bottom_box.offset_top = -10.0
+	bar.present(hud)
+	eq(hud._bottom_box.offset_top, -10.0, "a later render does not reset the bottom box")
+	hud._bottom_box.offset_top = held_top
+	var pc_box := hud._tooltip_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	truthy(pc_box != null and pc_box.bg_color.r < 0.2, "the PC tooltip is the dark panel")
+	eq(CombatHUD.clamp_tooltip_x(1000.0, 200.0, 1280.0) > clampf(1000.0 - 100.0, 8.0, 952.0 - 200.0), true, "a 1280 view does not use the 960 clamp")
+	eq(CombatHUD.clamp_tooltip_x(1200.0, 180.0, 1280.0) + 180.0 <= 1272.0, true, "the tooltip stays inside 1280")
 	eq(bar.banner_text(), "YOUR TURN", "hot-seat combat shows YOUR TURN")
 	eq(bar.portrait_hp(0), 80, "the hero portrait reads the snapshot HP")
 	eq(bar.portrait_name(0), "Kestrel", "the hero portrait reads the snapshot name")
@@ -5925,6 +5958,49 @@ func _test_pc_action_bar() -> void:
 	var bar_src := FileAccess.get_file_as_string("res://ui/pc/action_bar.gd")
 	eq(bar_src.contains("func _process"), false, "the bar does not tick a redraw")
 	hud.free()
+
+	CombatHUD.set_pc_chrome_override(0)
+	var phone := CombatHUD.new()
+	phone._build()
+	phone.set_preview_source(_sim)
+	phone.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(phone._legacy_combat.visible, true, "the phone HUD keeps the button row")
+	eq(phone._pc_bar.visible, false, "the phone HUD does not show the action bar")
+	eq(phone._selected_label.visible, true, "the phone status line stays on the HUD")
+	truthy(phone._selected_label.text.contains("tap a destination"), "the phone status keeps touch wording")
+	eq(phone._terrain_legend.visible, true, "the phone HUD keeps the terrain legend")
+	eq(phone._turn_label.visible, true, "the phone turn label stays put")
+	var phone_box := phone._tooltip_panel.get_theme_stylebox("panel") as StyleBoxFlat
+	eq(phone_box.bg_color, Color(0.99, 0.97, 0.9, 0.97), "the phone tooltip stays the cream card")
+	eq(phone._tooltip_label.get_theme_color("font_color"), Color(0.12, 0.1, 0.12), "the phone tooltip keeps dark type")
+	phone.show_spell_tooltip(SpellKits.MARK_SHOT)
+	eq(phone._tooltip_panel.size, Vector2(480, 248), "the phone tooltip keeps its card size")
+	phone.free()
+	CombatHUD.set_pc_chrome_override(-1)
+
+
+func _test_tooltip_clamps_to_1280() -> void:
+	var previous: Vector2i = root.size
+	root.size = Vector2i(1280, 720)
+	await process_frame
+	_sim.reset_match({"seed": 1, "skip_deploy": true})
+	var hud := CombatHUD.new()
+	root.add_child(hud)
+	await process_frame
+	hud.set_preview_source(_sim)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	var view_w := hud.tooltip_view_width()
+	truthy(view_w >= 1279.0, "the live viewport is 1280 wide")
+	hud.show_spell_tooltip(SpellKits.MARK_SHOT)
+	var anchor := Vector2(view_w - 20.0, 400.0)
+	hud.place_tooltip_above(anchor)
+	var panel := hud._tooltip_panel
+	truthy(panel.position.x >= 8.0, "tooltip x stays on screen at 1280")
+	truthy(panel.position.x + panel.size.x <= view_w - 7.5, "tooltip right edge stays inside 1280")
+	var old_x := clampf(anchor.x - panel.size.x * 0.5, 8.0, 952.0 - panel.size.x)
+	truthy(panel.position.x + 0.5 >= old_x, "the placed tooltip is not stuck on the 960 clamp")
+	hud.free()
+	root.size = previous
 
 
 func _test_action_bar_wraps() -> void:
