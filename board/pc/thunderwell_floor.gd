@@ -7,7 +7,7 @@ extends Node2D
 ## Art: res://art/pc/look/thunderwell_floor/. Params: thunderwell_floor.json.
 ## glow_mask is lossless data, with no source_color. R is emission over the full
 ## range. G is 1 along traces and is not a direction. B is 0. Glow is
-## R * strength * pulse(G), tint #47F280, strength at most 0.25. The pulse is
+## R * strength * pulse(G), tint #47F280, strength 0.35 to 0.42. The pulse is
 ## 0.7 + 0.3 * sin, shifted by the cell's index along its route. h/v flips only
 ## mirror the slot and never move the pulse. Untraced cells use slots a and b.
 ## The pillar adds the painted beam at 0.45, light pool on the cell. Floor, pads,
@@ -29,7 +29,7 @@ const SLOT_BEND := 3
 const SLOT_TEE := 4
 const SLOT_END := 5
 const SLOT_CROSS := 6
-const GLOW_STRENGTH_MAX := 0.25
+const GLOW_STRENGTH_MAX := 0.42
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
 // mask_tex is glow_mask, sampled as data. Do not mark it as color: under HDR 2D
@@ -40,7 +40,7 @@ uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
 uniform float pulse_clock = 0.0;
-uniform float glow_strength = 0.25;
+uniform float glow_strength = 0.38;
 uniform float highlight_dim = 1.0;
 uniform vec4 slot_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform float flip_h = 0.0;
@@ -67,7 +67,7 @@ void fragment() {
 	float wave = 0.7 + 0.3 * sin(pulse_clock * TAU * pulse_hz - phase * TAU);
 	float pulse = gate * wave;
 	float inside = 1.0 - step(0.5001, diamond);
-	float amount = min(tex.r * min(glow_strength, 0.25) * pulse * highlight_dim, 1.0) * inside;
+	float amount = min(tex.r * min(glow_strength, 0.42) * pulse * highlight_dim, 1.0) * inside;
 	COLOR = vec4(glow_color * amount, 1.0);
 }
 """

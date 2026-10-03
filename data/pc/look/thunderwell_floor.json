@@ -1,6 +1,6 @@
 {
   "art_status": "v3b",
-  "note": "Thunderwell Core floor v3b. Masters are the @2x PNGs, drawn at half size. floor_tiles and glow_mask are 1024x64, eight slots of 128x64: a and b plain, c straight, d top/bottom bend, e T with a node, f end node, g cross, h side bend. Untraced cells use a and b only. The slot map and ports_by_flip live in strip. Four pad-to-pad routes stay in routes. glow_mask is lossless data with no source_color: R is emission over the full range, G is 1 along traces with no direction, B is 0. Glow is R * glow_strength * pulse(G) * highlight_dim, tint #47F280. glow_strength is 0.16, under the 0.25 cap, so a full-pulse trace stays under a lit move tile. The pulse phase is the cell index over the route length; a shared cell keeps the lower index; flips do not move it. A highlight multiplies the trace by 0.4. The pillar is the painted beam, additive at 0.45, light pool anchored on the cell. room_edge_dark is the green-slate vignette. Pads keep their names and sizes. 2D HDR and bloom stay on the preview.",
+  "note": "Thunderwell Core floor v3b. Masters are the @2x PNGs, drawn at half size. floor_tiles and glow_mask are 1024x64, eight slots of 128x64: a and b plain, c straight, d top/bottom bend, e T with a node, f end node, g cross, h side bend. Untraced cells use a and b only. The slot map and ports_by_flip live in strip. Four pad-to-pad routes stay in routes. glow_mask is lossless data with no source_color: R is emission over the full range, G is 1 along traces with no direction, B is 0. Glow is R * glow_strength * pulse(G) * highlight_dim, tint #47F280. glow_strength is 0.38, inside 0.35 to 0.42. A Thunderwell move tile uses a brighter cyan fill and rim so it stays at least 1.5 times a full-pulse trace. The pulse phase is the cell index over the route length; a shared cell keeps the lower index; flips do not move it. A highlight multiplies the trace by 0.4. The pillar is the painted beam, additive at 0.45, light pool anchored on the cell. room_edge_dark is the green-slate vignette. Pads keep their names and sizes. 2D HDR and bloom stay on the preview.",
   "display_name": "Thunderwell Core",
   "theme": "thunderwell",
   "cell_draw_scale": 0.5,
@@ -386,7 +386,7 @@
   "pulse_hz": 0.22,
   "pulse_amount": 0.16,
   "glow_flow_speed": 0.35,
-  "floor_lift": 0.5,
+  "floor_lift": 0.85,
   "floor_grade": [
     0.7,
     1.12,
@@ -398,7 +398,7 @@
     0.9490196078431372,
     0.5019607843137255
   ],
-  "glow_strength": 0.16,
+  "glow_strength": 0.38,
   "pillar_color": [
     0.78,
     0.92,
@@ -444,7 +444,7 @@
     "glow": 0,
     "pillar": 0
   },
-  "glow_strength_max": 0.25,
+  "glow_strength_max": 0.42,
   "pillar_anchor": [
     64,
     441

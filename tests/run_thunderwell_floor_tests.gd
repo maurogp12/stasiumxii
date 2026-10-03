@@ -68,12 +68,15 @@ func _test_params_and_slots() -> void:
 	truthy(glow_src.contains("float pulse = gate * wave;"), "the pulse is the trace mask times the wave")
 	truthy(glow_src.contains("glow_color * amount"), "the trace tint scales the pulsed emission")
 	truthy(glow_src.contains("highlight_dim"), "trace glow dims under a highlight")
-	truthy(glow_src.contains("min(glow_strength, 0.25)"), "the shader never exceeds glow strength 0.25")
+	truthy(glow_src.contains("min(glow_strength, 0.42)"), "the shader never exceeds glow strength 0.42")
 	truthy(glow_src.contains("abs(local.x - 0.5) + abs(local.y - 0.5)"), "glow stays inside the cell diamond")
 	eq(glow_src.contains("route_pulse"), false, "the route pulse is the cell phase, not a legacy mix")
 	eq(float(params.get("trace_highlight_dim", 0.0)), 0.4, "a highlight dims the trace to 0.4")
-	eq(float(params.get("glow_strength", 0.0)), 0.16, "glow strength stays under the 0.25 cap")
-	truthy(FLOOR.glow_strength() <= 0.25, "glow strength never exceeds 0.25")
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	truthy(tile_src.contains("Color(0.55, 0.93, 1.0, 0.88)"), "a thunderwell move tile paints a brighter cyan fill")
+	truthy(tile_src.contains("Color(0.75, 1.0, 1.0, 1.0)"), "a thunderwell move tile paints a bright cyan rim")
+	eq(float(params.get("glow_strength", 0.0)), 0.38, "glow strength sits in the 0.35 to 0.42 band")
+	truthy(FLOOR.glow_strength() >= 0.35 and FLOOR.glow_strength() <= 0.42, "glow strength stays inside 0.35 to 0.42")
 	_test_routes(params)
 	_test_placeholder_strip()
 	_test_phase_ignores_flips()
@@ -336,7 +339,7 @@ func _assert_trace_uniforms(mat: ShaderMaterial) -> void:
 		return
 	_assert_vec3(mat, "glow_color", FLOOR.glow_color(), "the trace glow")
 	truthy(is_equal_approx(float(mat.get_shader_parameter("glow_strength")), FLOOR.glow_strength()), "the trace glow loads the json strength")
-	truthy(float(mat.get_shader_parameter("glow_strength")) <= 0.25, "the live trace never exceeds strength 0.25")
+	truthy(float(mat.get_shader_parameter("glow_strength")) <= 0.42, "the live trace never exceeds strength 0.42")
 	eq(mat.get_shader_parameter("route_pulse") == null, true, "the legacy route pulse uniform is gone")
 
 

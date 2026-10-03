@@ -6,6 +6,7 @@ extends SceneTree
 const FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 
 var _out := "/tmp/l4_frames"
+var _move_trace_ok := true
 
 
 func _initialize() -> void:
@@ -87,7 +88,8 @@ func _go() -> void:
 	_mark_hover(board, Vector2i(6, 9))
 	await _shot(_out.path_join("move_range.png"))
 	print("THUNDERWELL_CAPTURE %s" % _out)
-	quit(0)
+	print("MOVE_TRACE_OK %s" % str(_move_trace_ok))
+	quit(0 if _move_trace_ok else 1)
 
 
 func _place_for_range() -> void:
@@ -191,7 +193,14 @@ func _report_pair(board: Node, layer: Node, image: Image, move_cell: Vector2i, t
 	_print_sample("move_%s_inner" % label, inner)
 	_print_sample("trace_%s" % label, trace)
 	var ahead := float(move["lum"]) > float(trace["lum"]) and float(inner["lum"]) > float(trace["lum"])
+	var trace_l := maxf(float(trace["lum"]), 0.0001)
+	var move_ratio := float(move["lum"]) / trace_l
+	var inner_ratio := float(inner["lum"]) / trace_l
+	var win := move_ratio >= 1.5 and inner_ratio >= 1.5
+	if not win:
+		_move_trace_ok = false
 	print("GLOW_FULL_PULSE %s move_cell=%s trace_cell=%s move=%.4f inner=%.4f trace=%.4f ahead=%s" % [label, move_cell, trace_cell, float(move["lum"]), float(inner["lum"]), float(trace["lum"]), str(ahead)])
+	print("MOVE_TRACE_RATIO %s move=%.3f inner=%.3f ok=%s" % [label, move_ratio, inner_ratio, str(win)])
 
 
 func _dimmest_cyan(image: Image, center: Vector2, zoom: float) -> Dictionary:

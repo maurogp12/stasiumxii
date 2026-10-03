@@ -301,12 +301,18 @@ func paint_highlight_overlay(canvas: CanvasItem) -> void:
 	if color.a <= 0.0:
 		return
 	var points := _diamond_points()
+	# Thunderwell move tiles need a brighter fill than #73C7EB at 0.5, or the
+	# full-pulse trace wins after bloom. Other themes keep overlay_color().
+	var line := Color(color.r, color.g, color.b, 0.95)
+	var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
+	if highlight == "move" and _look_floor != null:
+		color = Color(0.55, 0.93, 1.0, 0.88)
+		line = Color(0.75, 1.0, 1.0, 1.0)
+		width = 4.0
 	canvas.draw_colored_polygon(points, color)
 	if overlay_draws_outline():
 		var outline := PackedVector2Array(points)
 		outline.append(points[0])
-		var line := Color(color.r, color.g, color.b, 0.95)
-		var width := 4.2 if highlight == "origin" or highlight == "landing" else (3.4 if highlight == "range" else 1.8)
 		canvas.draw_polyline(outline, line, width, true)
 	if highlight == "blocked":
 		canvas.draw_line(Vector2(-14, -6), Vector2(14, 6), Color(0.55, 0.52, 0.48), 2.0, true)
