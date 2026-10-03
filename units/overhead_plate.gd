@@ -16,6 +16,11 @@ const NAME_PAD := 3.0
 const BAR_GAP := 2.0
 const WIDTH_SCALE := 1.2
 const LOW_LIFE := 0.30
+## Full warning colour at this ratio and below. The tint eases in from LOW_LIFE.
+const AMBER_LIFE := 0.20
+## A slow brightness pulse while life is under this ratio.
+const PULSE_LIFE := 0.15
+const WARN_AMBER := Color(0.96, 0.62, 0.22)
 const DRAIN_SEC := 0.85
 ## A hitch must not skip the drain or the nudge. One frame is at most a 30fps step.
 const DRAIN_STEP_CAP := 1.0 / 30.0
@@ -37,6 +42,7 @@ var _life: int = 0
 var _life_max: int = 1
 var _lift: float = 0.0
 var _lift_goal: float = 0.0
+var _pulse: float = 0.0
 
 
 static func team_color(seat: int) -> Color:
@@ -147,11 +153,22 @@ func number_rect() -> Rect2:
 
 
 func fill_color() -> Color:
+	var ink := _life_ink()
+	if _target >= PULSE_LIFE:
+		return ink
+	var wave := 0.5 + 0.5 * sin(_pulse * TAU)
+	return ink.darkened(0.12).lerp(ink.lightened(0.28), wave)
+
+
+func _life_ink() -> Color:
 	var team := team_color(host.seat if host != null else 0)
 	if _target >= LOW_LIFE:
 		return team
-	var warn := Color(0.96, 0.62, 0.22)
-	return team.lerp(warn, 1.0 - _target / LOW_LIFE)
+	if _target <= AMBER_LIFE:
+		return WARN_AMBER
+	var span := LOW_LIFE - AMBER_LIFE
+	var mix := clampf((LOW_LIFE - _target) / span, 0.0, 1.0)
+	return team.lerp(WARN_AMBER, mix)
 
 
 func rest_world_rect() -> Rect2:
@@ -181,15 +198,25 @@ func sync_from_unit(unit: Dictionary) -> void:
 
 
 func tick(delta: float) -> void:
+	var step_delta := minf(absf(delta), DRAIN_STEP_CAP)
+	var redraw := false
 	if _shown < 0.0 or is_equal_approx(_shown, _target):
 		_shown = _target
-		return
-	var step := minf(absf(delta), DRAIN_STEP_CAP) / DRAIN_SEC
-	if absf(_shown - _target) <= step:
-		_shown = _target
 	else:
-		_shown += signf(_target - _shown) * step
-	queue_redraw()
+		var step := step_delta / DRAIN_SEC
+		if absf(_shown - _target) <= step:
+			_shown = _target
+		else:
+			_shown += signf(_target - _shown) * step
+		redraw = true
+	if _target < PULSE_LIFE:
+		_pulse = fmod(_pulse + step_delta, 1.0)
+		redraw = true
+	elif _pulse != 0.0:
+		_pulse = 0.0
+		redraw = true
+	if redraw:
+		queue_redraw()
 
 
 func ease_lift(delta: float) -> void:

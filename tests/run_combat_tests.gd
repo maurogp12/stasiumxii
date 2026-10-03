@@ -104,6 +104,7 @@ func _run() -> void:
 	_test_walk_mode_cancel()
 	_test_spell_tooltip_cards()
 	_test_action_bar_wraps()
+	_test_l6_action_bar()
 	_test_face_pad_layout()
 	_test_stun_skip_chrome()
 	_test_playtest_warning_hush()
@@ -5886,6 +5887,40 @@ func _test_action_bar_wraps() -> void:
 	truthy(hud_src.contains("FlowContainer"), "HUD source uses FlowContainer")
 	truthy(hud_src.contains("h_separation"), "wrapped bar sets horizontal separation")
 	eq(hud_src.contains("Detonate"), false, "wrap patch does not hardcode Detonate")
+
+
+func _test_l6_action_bar() -> void:
+	_sim.reset_match({
+		"seed": 1,
+		"skip_deploy": true,
+		"kestrel_pos": Vector2i(3, 3),
+		"ironjaw_pos": Vector2i(4, 3),
+		"kestrel_facing": "E",
+	})
+	var hud := CombatHUD.new()
+	hud._build()
+	hud.set_preview_source(_sim)
+	hud.render(_sim.snapshot(), _sim.legal_intents(0))
+	eq(hud._ability_cluster.get_parent(), hud._action_bar, "spell slots sit in the action bar")
+	eq(hud._walk_button.get_parent(), hud._action_bar, "Walk sits in the action bar")
+	eq(hud._face_bar.get_parent(), hud._action_bar, "Face sits in the action bar")
+	eq(hud._end_turn_button.get_parent(), hud._action_bar, "End Turn sits in the action bar")
+	eq(hud._ap_pips.get_parent().get_parent().get_parent().get_parent(), hud._bar_plate, "AP sits on the bar")
+	eq(hud._your_turn.visible, true, "hot-seat combat shows the turn banner")
+	eq(hud._your_turn.text, "YOUR TURN", "the banner reads YOUR TURN")
+	var mark_host: Control = hud._spell_hosts[SpellKits.MARK_SHOT]
+	var badge := mark_host.get_node("ApBadge") as Label
+	var preview: Dictionary = hud.preview_for_spell(SpellKits.MARK_SHOT)
+	eq(badge.text, str(int(preview["ap"])), "the slot cost is the CombatSim preview")
+	_sim.submit({"type": "end_turn"})
+	hud.render(_sim.snapshot(), _sim.legal_intents(1))
+	var crush: Button = hud._spell_buttons[SpellKits.CRUSH]
+	eq(crush.disabled, true, "Crush stays dimmed at 0 Impact")
+	hud._on_spell_hover(SpellKits.CRUSH)
+	eq(hud.slot_reason_text(), "needs Impact", "a dimmed slot says why on hover")
+	truthy(hud.tooltip_caption().contains("HIT "), "the hover card still shows the Locked hit")
+	eq(hud.tooltip_caption(), SpellTooltip.card_text(hud.preview_for_spell(SpellKits.CRUSH)), "the card text is still the preview formatter")
+	hud.free()
 
 
 func _test_face_pad_layout() -> void:

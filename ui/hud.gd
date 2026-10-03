@@ -24,6 +24,9 @@ const BOUNCE_TOAST := "Bounce"
 ## Lava forced-push lands and applies Burn. Not a Bounce toast.
 const LAVA_BURN_TOAST := "Lava - Burn"
 const TOAST_SEC := 1.4
+## One row of spell slots. Big enough to read, still on the 72px hit floor.
+const SLOT_SIZE := Vector2(88, 88)
+const SLOT_GAP := 8.0
 const TERRAIN_LEGEND := "G Ground 1    M Mud 2    W Water 2    L Lava    ·    tile labels = terrain + elevation    ·    z-sort is view-only"
 const SNAPSHOT_TILES := preload("res://board/snapshot_tiles.gd")
 const TOUCH := preload("res://ui/touch_adapter.gd")
@@ -60,7 +63,7 @@ var _handoff_panel: Panel
 var _handoff_label: Label
 var _clock_label: Label
 var _clock_bar: ColorRect
-var _clock_bar_max_width: float = 220.0
+var _clock_bar_max_width: float = 72.0
 var _clock_seconds: int = int(TurnClock.DURATION_SEC)
 var _locked: bool = false
 var _aim_hit_label: Label
@@ -94,6 +97,13 @@ var _last_legal: Array = []
 var _preview_source: Node = null
 var _terrain_legend: Label
 var _turn_label_base: String = ""
+var _your_turn: Label
+var _reason_label: Label
+var _bar_plate: PanelContainer
+var _portrait_wells: Array[Panel] = []
+var _portrait_bars: Array[ColorRect] = []
+var _portrait_marks: Array[Label] = []
+var _order_chips: Array[Panel] = []
 
 
 ## Kit chrome uses local_seat when NetSession set it; hot-seat (local_seat < 0)
@@ -741,6 +751,8 @@ func render(snap: Dictionary, legal: Array) -> void:
 	var active_seat := snap_active_seat(snap)
 	_apply_seat_banner(0, seat0)
 	_apply_seat_banner(1, seat1)
+	_paint_portraits(snap)
+	_sync_your_turn(snap)
 	_kestrel_body.text = _unit_card_text(seat0, active_seat == 0, snap)
 	_ironjaw_body.text = _unit_card_text(seat1, active_seat == 1, snap)
 
@@ -845,6 +857,7 @@ func _apply_controls(match_over: bool) -> void:
 		_end_turn_button.disabled = block or not_your_turn
 		_end_turn_button.modulate = Color.WHITE
 		_sync_ability_icon(_end_turn_button)
+		_style_end_turn()
 	if _new_match_button != null:
 		_new_match_button.disabled = _locked
 		_new_match_button.visible = _show_new_match(_last_snap)
@@ -864,8 +877,23 @@ func _build() -> void:
 	_turn_label.size = Vector2(400, 28)
 	_turn_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_turn_label.add_theme_font_size_override("font_size", 18)
-	_turn_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
+	_turn_label.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86))
+	_turn_label.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.04))
+	_turn_label.add_theme_constant_override("outline_size", 6)
 	root.add_child(_turn_label)
+
+	_your_turn = Label.new()
+	_your_turn.text = "YOUR TURN"
+	_your_turn.position = Vector2(280, 40)
+	_your_turn.size = Vector2(400, 36)
+	_your_turn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_your_turn.add_theme_font_size_override("font_size", 28)
+	_your_turn.add_theme_color_override("font_color", Color(1.0, 0.86, 0.35))
+	_your_turn.add_theme_color_override("font_outline_color", Color(0.12, 0.07, 0.03))
+	_your_turn.add_theme_constant_override("outline_size", 8)
+	_your_turn.visible = false
+	_your_turn.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_your_turn)
 
 	_terrain_legend = Label.new()
 	_terrain_legend.text = TERRAIN_LEGEND
@@ -888,20 +916,9 @@ func _build() -> void:
 	_stun_badge.visible = false
 	root.add_child(_stun_badge)
 
-	var resource_panel := Panel.new()
-	resource_panel.position = Vector2(300, 44)
-	resource_panel.size = Vector2(360, 74)
-	resource_panel.add_theme_stylebox_override("panel", _panel(Color(1, 1, 1, 0.78)))
-	root.add_child(resource_panel)
-	var res_box := VBoxContainer.new()
-	res_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	res_box.add_theme_constant_override("separation", 4)
-	resource_panel.add_child(res_box)
 	_ap_pips = _make_pip_row("AP")
 	_mp_pips = _make_pip_row("MP")
-	res_box.add_child(_ap_pips)
-	res_box.add_child(_mp_pips)
-	res_box.add_child(_make_clock_row())
+	_make_clock_row()
 
 	var bottom := VBoxContainer.new()
 	_bottom_box = bottom
@@ -910,6 +927,7 @@ func _build() -> void:
 	bottom.offset_right = -16
 	bottom.offset_bottom = -8
 	bottom.offset_top = TOUCH.HUD_BOTTOM_OFFSET
+	bottom.alignment = BoxContainer.ALIGNMENT_END
 	bottom.add_theme_constant_override("separation", 4)
 	bottom.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(bottom)
@@ -923,27 +941,59 @@ func _build() -> void:
 
 	_selected_label = Label.new()
 	_selected_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_selected_label.add_theme_font_size_override("font_size", 16)
-	_selected_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
-	bottom.add_child(_selected_label)
+	_selected_label.clip_text = true
+	_selected_label.custom_minimum_size = Vector2(0, 22)
+	_selected_label.add_theme_font_size_override("font_size", 15)
+	_selected_label.add_theme_color_override("font_color", Color(0.96, 0.92, 0.84))
+	_selected_label.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.04))
+	_selected_label.add_theme_constant_override("outline_size", 4)
 
-	# Face cross beside the action bar so 72px buttons and a 48px pad both fit.
-	var combat_row := HBoxContainer.new()
-	combat_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	combat_row.add_theme_constant_override("separation", 8)
-	combat_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bottom.add_child(combat_row)
+	# One bar: AP/MP on a strip, then spell slots, Walk, Face, End Turn.
+	_bar_plate = PanelContainer.new()
+	_bar_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_plate.size_flags_vertical = Control.SIZE_SHRINK_END
+	_bar_plate.add_theme_stylebox_override("panel", _bar_plate_style())
+	bottom.add_child(_bar_plate)
+	var column := VBoxContainer.new()
+	column.add_theme_constant_override("separation", 4)
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bar_plate.add_child(column)
+	column.add_child(_selected_label)
+	var resource_panel := PanelContainer.new()
+	resource_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	resource_panel.add_theme_stylebox_override("panel", _panel(Color(0.16, 0.12, 0.1, 0.92)))
+	column.add_child(resource_panel)
+	var resource_row := HBoxContainer.new()
+	resource_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	resource_row.add_theme_constant_override("separation", 18)
+	resource_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	resource_panel.add_child(resource_row)
+	resource_row.add_child(_ap_pips)
+	resource_row.add_child(_mp_pips)
+	resource_row.add_child(_clock_row)
+
+	_action_bar = FlowContainer.new()
+	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
+	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
+	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_action_bar.add_theme_constant_override("h_separation", 6)
+	_action_bar.add_theme_constant_override("v_separation", 6)
+	_action_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_child(_action_bar)
+
+	_ability_cluster = Control.new()
+	_ability_cluster.name = "AbilityCluster"
+	_ability_cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_ability_cluster.visible = false
+	_action_bar.add_child(_ability_cluster)
 
 	var face_bar := HBoxContainer.new()
 	_face_bar = face_bar
 	face_bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	face_bar.add_theme_constant_override("separation", 8)
 	face_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	combat_row.add_child(face_bar)
-	var face_caption := Label.new()
-	face_caption.text = "Face"
-	face_caption.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	face_bar.add_child(face_caption)
+	face_bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	var face_pad := GridContainer.new()
 	face_pad.columns = 3
 	face_pad.add_theme_constant_override("h_separation", 4)
@@ -951,12 +1001,26 @@ func _build() -> void:
 	face_pad.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	face_bar.add_child(face_pad)
 	# Cardinal pad: N top, W/E sides, S bottom. Empty cells keep the cross aligned.
+	var face_i := 0
 	for dir in ["", "N", "", "W", "", "E", "", "S", ""]:
 		if dir == "":
 			var spacer := Control.new()
 			spacer.custom_minimum_size = TOUCH.FACE_BUTTON_SIZE
 			spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			if face_i == 4:
+				var face_mark := Label.new()
+				face_mark.text = "Face"
+				face_mark.position = Vector2(0, 14)
+				face_mark.size = TOUCH.FACE_BUTTON_SIZE
+				face_mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+				face_mark.add_theme_font_size_override("font_size", 11)
+				face_mark.add_theme_color_override("font_color", Color(0.96, 0.92, 0.84))
+				face_mark.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.04))
+				face_mark.add_theme_constant_override("outline_size", 3)
+				face_mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				spacer.add_child(face_mark)
 			face_pad.add_child(spacer)
+			face_i += 1
 			continue
 		var button := Button.new()
 		button.text = dir
@@ -965,14 +1029,7 @@ func _build() -> void:
 		button.pressed.connect(_on_face_pressed.bind(dir))
 		face_pad.add_child(button)
 		_face_buttons[dir] = button
-
-	_action_bar = FlowContainer.new()
-	_action_bar.alignment = FlowContainer.ALIGNMENT_CENTER
-	_action_bar.custom_minimum_size = Vector2(0, TOUCH.ACTION_BAR_MIN_HEIGHT)
-	_action_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_action_bar.add_theme_constant_override("h_separation", 6)
-	_action_bar.add_theme_constant_override("v_separation", 6)
-	combat_row.add_child(_action_bar)
+		face_i += 1
 
 	_walk_button = Button.new()
 	_walk_button.text = "Walk"
@@ -980,8 +1037,11 @@ func _build() -> void:
 	_walk_button.clip_text = true
 	_walk_button.add_theme_font_size_override("font_size", 18)
 	_walk_button.pressed.connect(_on_walk_pressed)
+	_walk_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_action_bar.add_child(_walk_button)
 	_bind_ability_icon(_walk_button, "walk", "Walk")
+	_action_bar.add_child(face_bar)
+	_style_walk_button()
 
 	_empty_kit_label = Label.new()
 	_empty_kit_label.visible = false
@@ -1020,8 +1080,10 @@ func _build() -> void:
 	_end_turn_button.add_theme_font_size_override("font_size", 18)
 	_end_turn_button.clip_text = true
 	_end_turn_button.pressed.connect(func() -> void: end_turn_requested.emit())
+	_end_turn_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_action_bar.add_child(_end_turn_button)
 	_bind_ability_icon(_end_turn_button, "end_turn", "End Turn")
+	_style_end_turn()
 
 	_new_match_button = Button.new()
 	_new_match_button.text = "New Match"
@@ -1029,26 +1091,22 @@ func _build() -> void:
 	_new_match_button.add_theme_font_size_override("font_size", 18)
 	_new_match_button.clip_text = true
 	_new_match_button.pressed.connect(func() -> void: new_match_requested.emit())
-	_action_bar.add_child(_new_match_button)
+	_new_match_button.position = Vector2(800, 152)
+	_new_match_button.size = TOUCH.NEW_MATCH_BUTTON_SIZE
+	root.add_child(_new_match_button)
 
 	_coach_label = Label.new()
+	_coach_label.position = Vector2(80, 448)
+	_coach_label.size = Vector2(800, 36)
 	_coach_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_coach_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_coach_label.clip_text = true
 	_coach_label.add_theme_font_size_override("font_size", 15)
-	_coach_label.add_theme_color_override("font_color", Color(0.14, 0.1, 0.12))
-	bottom.add_child(_coach_label)
-
-	_ability_cluster = Control.new()
-	_ability_cluster.name = "AbilityCluster"
-	_ability_cluster.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_ability_cluster.offset_left = -(TOUCH.CLUSTER_SIZE.x + TOUCH.CLUSTER_EDGE)
-	_ability_cluster.offset_top = -(TOUCH.CLUSTER_SIZE.y + TOUCH.CLUSTER_EDGE)
-	_ability_cluster.offset_right = -TOUCH.CLUSTER_EDGE
-	_ability_cluster.offset_bottom = -TOUCH.CLUSTER_EDGE
-	_ability_cluster.custom_minimum_size = TOUCH.CLUSTER_SIZE
-	_ability_cluster.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_ability_cluster.visible = false
-	root.add_child(_ability_cluster)
+	_coach_label.add_theme_color_override("font_color", Color(0.96, 0.93, 0.86))
+	_coach_label.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.04))
+	_coach_label.add_theme_constant_override("outline_size", 5)
+	_coach_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_coach_label)
 
 	_toast_label = Label.new()
 	_toast_label.position = Vector2(220, 540)
@@ -1077,6 +1135,14 @@ func _build() -> void:
 	_tooltip_label.add_theme_color_override("font_color", Color(0.12, 0.1, 0.12))
 	_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_tooltip_panel.add_child(_tooltip_label)
+	_reason_label = Label.new()
+	_reason_label.position = Vector2(12, 214)
+	_reason_label.size = Vector2(456, 24)
+	_reason_label.add_theme_font_size_override("font_size", 16)
+	_reason_label.add_theme_color_override("font_color", Color(0.72, 0.22, 0.12))
+	_reason_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_reason_label.visible = false
+	_tooltip_panel.add_child(_reason_label)
 
 	_handoff_overlay = ColorRect.new()
 	_handoff_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1114,6 +1180,49 @@ func _show_new_match(snap: Dictionary) -> bool:
 	return bool(net.get("dedicated", false)) and seat == 0
 
 
+func _sync_your_turn(snap: Dictionary) -> void:
+	if _your_turn == null:
+		return
+	var banner_on := not bool(snap.get("match_over", false)) and not is_deployment_phase(snap)
+	if snap_local_seat(snap) >= 0:
+		banner_on = banner_on and is_local_turn(snap)
+	_your_turn.visible = banner_on
+
+
+func _paint_portraits(snap: Dictionary) -> void:
+	var units: Array = snap.get("units", [])
+	var active := snap_active_seat(snap)
+	for seat in _portrait_marks.size():
+		var unit := _unit(units, seat)
+		var class_id := str(unit.get("class_id", ""))
+		var unit_name := str(unit.get("name", ""))
+		if unit_name == "":
+			unit_name = SpellKits.display_name(class_id)
+		var initial := "?"
+		if unit_name != "":
+			initial = unit_name.substr(0, 1)
+		_portrait_marks[seat].text = initial
+		var color := banner_color(class_id) if class_id != "" else Color(0.3, 0.3, 0.3)
+		if seat < _portrait_wells.size():
+			var well := _portrait_well(color)
+			if seat != active:
+				well.border_color = Color(0.35, 0.3, 0.26, 0.7)
+			_portrait_wells[seat].add_theme_stylebox_override("panel", well)
+		var cap := maxi(int(unit.get("max_hp", 1)), 1)
+		var hp := int(unit.get("hp", 0))
+		if seat < _portrait_bars.size():
+			var width := 52.0 * clampf(float(maxi(hp, 0)) / float(cap), 0.0, 1.0)
+			_portrait_bars[seat].size = Vector2(width, 8.0)
+			_portrait_bars[seat].color = color
+		if seat < _order_chips.size():
+			var chip_fill := Color(1.0, 0.84, 0.35) if seat == active else Color(0.28, 0.22, 0.18)
+			_order_chips[seat].add_theme_stylebox_override("panel", _panel(chip_fill))
+			var order_label := _order_chips[seat].get_child(0) as Label
+			if order_label != null:
+				var ink := Color(0.12, 0.08, 0.05) if seat == active else Color(0.96, 0.92, 0.84)
+				order_label.add_theme_color_override("font_color", ink)
+
+
 func _apply_seat_banner(seat: int, unit: Dictionary) -> void:
 	if seat < 0 or seat >= _seat_titles.size():
 		return
@@ -1140,16 +1249,54 @@ func _make_banner(is_kestrel: bool) -> Panel:
 	title.text = "Kestrel" if is_kestrel else "Ironjaw"
 	_seat_panels.append(panel)
 	_seat_titles.append(title)
-	title.position = Vector2(12, 6)
-	title.size = Vector2(216, 22)
+	title.position = Vector2(72, 6)
+	title.size = Vector2(156, 22)
 	title.add_theme_font_size_override("font_size", 18)
 	title.add_theme_color_override("font_color", Color(1, 1, 1))
 	panel.add_child(title)
+	var well := Panel.new()
+	well.position = Vector2(8, 32)
+	well.size = Vector2(56, 56)
+	well.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.add_theme_stylebox_override("panel", _portrait_well(color))
+	panel.add_child(well)
+	_portrait_wells.append(well)
+	var mark := Label.new()
+	mark.position = Vector2(0, 14)
+	mark.size = Vector2(56, 28)
+	mark.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	mark.add_theme_font_size_override("font_size", 20)
+	mark.add_theme_color_override("font_color", Color(1, 1, 1))
+	mark.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	well.add_child(mark)
+	_portrait_marks.append(mark)
+	var life := ColorRect.new()
+	life.position = Vector2(6, 92)
+	life.size = Vector2(52, 8)
+	life.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	life.color = color
+	panel.add_child(life)
+	_portrait_bars.append(life)
+	var chip := Panel.new()
+	chip.position = Vector2(8, 104)
+	chip.size = Vector2(22, 18)
+	chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(chip)
+	var order := Label.new()
+	order.text = str(_order_chips.size() + 1)
+	order.position = Vector2(0, 0)
+	order.size = Vector2(22, 18)
+	order.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	order.add_theme_font_size_override("font_size", 12)
+	order.add_theme_color_override("font_color", Color(0.12, 0.08, 0.05))
+	order.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	chip.add_child(order)
+	_order_chips.append(chip)
 	_banner_panels.append(panel)
 	_banner_titles.append(title)
 	var body := RichTextLabel.new()
-	body.position = Vector2(10, 30)
-	body.size = Vector2(220, 96)
+	body.position = Vector2(70, 30)
+	body.size = Vector2(160, 96)
 	body.bbcode_enabled = true
 	body.scroll_active = false
 	body.fit_content = true
@@ -1169,7 +1316,7 @@ func _make_pip_row(label_text: String) -> HBoxContainer:
 	label.text = label_text
 	label.custom_minimum_size = Vector2(28, 18)
 	label.add_theme_font_size_override("font_size", 12)
-	label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	label.add_theme_color_override("font_color", Color(0.96, 0.92, 0.84))
 	row.add_child(label)
 	return row
 
@@ -1182,13 +1329,13 @@ func _make_clock_row() -> HBoxContainer:
 	caption.text = "TIME"
 	caption.custom_minimum_size = Vector2(36, 18)
 	caption.add_theme_font_size_override("font_size", 12)
-	caption.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	caption.add_theme_color_override("font_color", Color(0.96, 0.92, 0.84))
 	row.add_child(caption)
 	_clock_label = Label.new()
 	_clock_label.text = "%ds" % int(TurnClock.DURATION_SEC)
 	_clock_label.custom_minimum_size = Vector2(36, 18)
 	_clock_label.add_theme_font_size_override("font_size", 14)
-	_clock_label.add_theme_color_override("font_color", Color(0.15, 0.12, 0.12))
+	_clock_label.add_theme_color_override("font_color", Color(0.96, 0.92, 0.84))
 	row.add_child(_clock_label)
 	_clock_bar = ColorRect.new()
 	_clock_bar.custom_minimum_size = Vector2(_clock_bar_max_width, 8)
@@ -1452,29 +1599,40 @@ func _create_spell_button(spell_id: String, def: Dictionary) -> void:
 func _layout_ability_cluster(primary: String, arc: Array) -> void:
 	if _ability_cluster == null:
 		return
-	var centers: Dictionary = TOUCH.cluster_centers(arc.size())
-	var primary_center: Vector2 = centers.get("primary", Vector2.ZERO)
-	var arc_centers: Array = centers.get("arc", [])
-	if primary != "" and _spell_hosts.has(primary):
-		_place_spell_host(primary, primary_center, true)
-	for i in arc.size():
-		var spell_id := str(arc[i])
-		if i < arc_centers.size() and _spell_hosts.has(spell_id):
-			_place_spell_host(spell_id, arc_centers[i], false)
-	_ability_cluster.visible = primary != "" or not arc.is_empty()
+	var order: Array[String] = []
+	if primary != "":
+		order.append(primary)
+	for spell_id in arc:
+		var id := str(spell_id)
+		if id != "" and not order.has(id):
+			order.append(id)
+	var placed := 0
+	for spell_id in order:
+		if not _spell_hosts.has(spell_id):
+			continue
+		_place_spell_slot(spell_id, placed, spell_id == primary)
+		placed += 1
+	var width := 0.0
+	if placed > 0:
+		width = placed * SLOT_SIZE.x + float(placed - 1) * SLOT_GAP
+	_ability_cluster.custom_minimum_size = Vector2(width, SLOT_SIZE.y if placed > 0 else 0.0)
+	_ability_cluster.size = _ability_cluster.custom_minimum_size
+	_ability_cluster.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_ability_cluster.visible = placed > 0 and not _deploying
 
 
-func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void:
+func _place_spell_slot(spell_id: String, index: int, primary: bool) -> void:
 	var host: Control = _spell_hosts[spell_id]
-	var size := TOUCH.cluster_button_size(primary)
-	host.custom_minimum_size = size
-	host.size = size
-	host.position = center - size * 0.5
+	host.custom_minimum_size = SLOT_SIZE
+	host.size = SLOT_SIZE
+	host.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	host.position = Vector2(float(index) * (SLOT_SIZE.x + SLOT_GAP), 0.0)
 	host.set_meta("cluster_primary", primary)
 	var button: Button = _spell_buttons[spell_id]
-	button.add_theme_font_size_override("font_size", 15 if primary else 12)
+	button.add_theme_font_size_override("font_size", 13)
 	button.set_meta("ability_fallback_text", _spell_button_text(SpellKits.spell(spell_id)))
-	_apply_circle_style(button, size.x, primary)
+	_apply_slot_style(button)
+	_sync_ap_badge(host, spell_id)
 
 
 func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void:
@@ -1486,6 +1644,164 @@ func _apply_circle_style(button: Button, diameter: float, primary: bool) -> void
 	button.add_theme_stylebox_override("focus", _circle_style(fill, diameter, border, 3 if primary else 2))
 	button.add_theme_stylebox_override("disabled", _circle_style(Color(0.28, 0.28, 0.32, 0.78), diameter, Color(1, 1, 1, 0.12), 2))
 	_sync_ability_icon(button)
+
+
+func _apply_slot_style(button: Button) -> void:
+	if button == null or not is_instance_valid(button):
+		return
+	if not button.has_meta("ability_spell_id"):
+		return
+	var spell_id := str(button.get_meta("ability_spell_id"))
+	if spell_id == "walk" or spell_id == "end_turn":
+		return
+	var selected := _selected_spell == spell_id
+	var fill := Color(0.28, 0.18, 0.12, 0.96)
+	var border := Color(0.92, 0.74, 0.36, 0.95)
+	var width := 2
+	if selected:
+		fill = Color(0.46, 0.30, 0.12, 0.98)
+		border = Color(1.0, 0.88, 0.42, 1.0)
+		width = 4
+	elif button.disabled:
+		fill = Color(0.14, 0.12, 0.12, 0.9)
+		border = Color(0.32, 0.28, 0.26, 0.8)
+	var normal := _slot_box(fill, border, width)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", _slot_box(fill.lightened(0.08), border, width))
+	button.add_theme_stylebox_override("pressed", _slot_box(fill.darkened(0.08), Color(1.0, 0.9, 0.5), 4))
+	button.add_theme_stylebox_override("focus", normal)
+	button.add_theme_stylebox_override("disabled", _slot_box(Color(0.12, 0.11, 0.12, 0.88), Color(0.3, 0.26, 0.24), 2))
+
+
+func _slot_box(fill: Color, border: Color, border_width: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = fill
+	box.corner_radius_top_left = 10
+	box.corner_radius_top_right = 10
+	box.corner_radius_bottom_left = 10
+	box.corner_radius_bottom_right = 10
+	box.border_color = border
+	box.border_width_left = border_width
+	box.border_width_top = border_width
+	box.border_width_right = border_width
+	box.border_width_bottom = border_width
+	box.content_margin_left = 4
+	box.content_margin_right = 4
+	box.content_margin_top = 4
+	box.content_margin_bottom = 16
+	return box
+
+
+func _bar_plate_style() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(0.10, 0.07, 0.06, 0.92)
+	box.border_color = Color(0.78, 0.58, 0.28, 0.95)
+	box.border_width_left = 2
+	box.border_width_top = 2
+	box.border_width_right = 2
+	box.border_width_bottom = 2
+	box.corner_radius_top_left = 12
+	box.corner_radius_top_right = 12
+	box.corner_radius_bottom_left = 12
+	box.corner_radius_bottom_right = 12
+	box.content_margin_left = 8
+	box.content_margin_right = 8
+	box.content_margin_top = 6
+	box.content_margin_bottom = 6
+	return box
+
+
+func _portrait_well(color: Color) -> StyleBoxFlat:
+	var box := _panel(color.darkened(0.15))
+	box.corner_radius_top_left = 28
+	box.corner_radius_top_right = 28
+	box.corner_radius_bottom_left = 28
+	box.corner_radius_bottom_right = 28
+	box.border_color = Color(1, 0.9, 0.55, 0.9)
+	box.border_width_left = 2
+	box.border_width_top = 2
+	box.border_width_right = 2
+	box.border_width_bottom = 2
+	return box
+
+
+func _style_walk_button() -> void:
+	if _walk_button == null:
+		return
+	var fill := Color(0.18, 0.32, 0.28, 0.96)
+	var border := Color(0.55, 0.82, 0.7, 0.95)
+	var normal := _slot_box(fill, border, 2)
+	_walk_button.add_theme_stylebox_override("normal", normal)
+	_walk_button.add_theme_stylebox_override("hover", _slot_box(fill.lightened(0.08), border, 2))
+	_walk_button.add_theme_stylebox_override("pressed", _slot_box(fill.darkened(0.08), border, 3))
+	_walk_button.add_theme_stylebox_override("disabled", _slot_box(Color(0.14, 0.16, 0.16, 0.85), Color(0.3, 0.34, 0.32), 2))
+	_walk_button.add_theme_stylebox_override("focus", normal)
+
+
+func _style_end_turn() -> void:
+	if _end_turn_button == null:
+		return
+	var fill := Color(0.72, 0.38, 0.1, 0.98)
+	var border := Color(1.0, 0.84, 0.38, 1.0)
+	var normal := _slot_box(fill, border, 4)
+	_end_turn_button.add_theme_stylebox_override("normal", normal)
+	_end_turn_button.add_theme_stylebox_override("hover", _slot_box(fill.lightened(0.1), border, 4))
+	_end_turn_button.add_theme_stylebox_override("pressed", _slot_box(fill.darkened(0.08), border, 4))
+	_end_turn_button.add_theme_stylebox_override("disabled", _slot_box(Color(0.28, 0.2, 0.14, 0.85), Color(0.45, 0.36, 0.2), 2))
+	_end_turn_button.add_theme_stylebox_override("focus", normal)
+	_end_turn_button.add_theme_color_override("font_color", Color(1, 0.97, 0.88))
+	_end_turn_button.add_theme_font_size_override("font_size", 20)
+
+
+func _sync_ap_badge(host: Control, spell_id: String) -> void:
+	if host == null or spell_id == "" or spell_id == "walk" or spell_id == "end_turn":
+		return
+	var badge := host.get_node_or_null("ApBadge") as Label
+	if badge == null:
+		badge = Label.new()
+		badge.name = "ApBadge"
+		badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		badge.add_theme_font_size_override("font_size", 15)
+		badge.add_theme_color_override("font_color", Color(1.0, 0.92, 0.55))
+		badge.add_theme_color_override("font_outline_color", Color(0.08, 0.05, 0.04))
+		badge.add_theme_constant_override("outline_size", 4)
+		host.add_child(badge)
+	badge.text = str(_ap_cost(spell_id))
+	badge.position = Vector2(SLOT_SIZE.x - 36.0, SLOT_SIZE.y - 22.0)
+	badge.size = Vector2(30, 18)
+
+
+func _ap_cost(spell_id: String) -> int:
+	var preview := preview_for_spell(spell_id)
+	if preview.has("ap"):
+		return int(preview["ap"])
+	return int(SpellKits.spell(spell_id).get("ap", 0))
+
+
+## Short hover line for a slot that cannot be used. Words only; the number stays on the card.
+static func slot_block_reason(preview: Dictionary) -> String:
+	match str(preview.get("reason", "")):
+		"insufficient_ap":
+			return "no AP"
+		"insufficient_mp":
+			return "no MP"
+		"out_of_range":
+			return "out of range"
+		"insufficient_impact":
+			return "needs Impact"
+		"needs_marks":
+			return "needs Marks"
+		"stunned_cannot_act":
+			return "stunned"
+		_:
+			return ""
+
+
+func slot_reason_text() -> String:
+	if _reason_label == null or not _reason_label.visible:
+		return ""
+	return _reason_label.text
 
 
 func _circle_style(fill: Color, diameter: float, border: Color, border_width: int) -> StyleBoxFlat:
@@ -1511,8 +1827,7 @@ func _circle_style(fill: Color, diameter: float, border: Color, border_width: in
 func _sync_bottom_inset() -> void:
 	if _bottom_box == null:
 		return
-	var cluster_open := _ability_cluster != null and _ability_cluster.visible
-	_bottom_box.offset_right = -(TOUCH.CLUSTER_SIZE.x + 12.0) if cluster_open else -16.0
+	_bottom_box.offset_right = -16.0
 
 
 func _spell_button_text(def: Dictionary) -> String:
@@ -1530,6 +1845,10 @@ func _set_spell_button_clickable(button: Button, clickable: bool) -> void:
 	button.disabled = not clickable
 	button.mouse_filter = Control.MOUSE_FILTER_STOP if clickable else Control.MOUSE_FILTER_IGNORE
 	_sync_ability_icon(button)
+	_apply_slot_style(button)
+	var host: Control = button.get_parent()
+	if host != null:
+		_sync_ap_badge(host, str(button.get_meta("ability_spell_id", "")))
 
 
 ## res://art/ui/mobile/abilities/<spell_id>_icon.png and _icon_disabled.png.
@@ -1850,6 +2169,9 @@ func hide_spell_tooltip() -> void:
 		_tooltip_panel.visible = false
 	if _tooltip_label != null:
 		_tooltip_label.text = ""
+	if _reason_label != null:
+		_reason_label.text = ""
+		_reason_label.visible = false
 
 
 func tooltip_visible() -> bool:
@@ -1881,6 +2203,19 @@ func _on_spell_hover(spell_id: String) -> void:
 	if _hover_suppressed:
 		return
 	show_spell_tooltip(spell_id)
+	_show_slot_reason(spell_id)
+
+
+func _show_slot_reason(spell_id: String) -> void:
+	var reason := slot_block_reason(preview_for_spell(spell_id))
+	var button: Button = _spell_buttons.get(spell_id) as Button
+	var blocked := button != null and button.disabled and reason != ""
+	if button != null:
+		button.tooltip_text = reason if blocked else ""
+	if _reason_label == null:
+		return
+	_reason_label.text = reason if blocked else ""
+	_reason_label.visible = blocked
 
 
 func _on_spell_unhover() -> void:

@@ -278,7 +278,21 @@ func _test_l5_hex_plate_and_scale() -> void:
 	plate.sync_from_unit(low)
 	truthy(plate.target_ratio() < OverheadPlate.LOW_LIFE, "16 of 80 is under 30%")
 	var low_ink := plate.fill_color()
-	truthy(low_ink != OverheadPlate.TEAM_P1, "low life tints the bar")
+	eq(low_ink, OverheadPlate.WARN_AMBER, "20% life is full amber")
+	var mid := _unit_dict("kestrel", "E", 0)
+	mid["hp"] = 20
+	plate.sync_from_unit(mid)
+	var mid_ink := plate.fill_color()
+	truthy(mid_ink != OverheadPlate.TEAM_P1 and mid_ink != OverheadPlate.WARN_AMBER, "25% life is between the team colour and amber")
+	var critical := _unit_dict("kestrel", "E", 0)
+	critical["hp"] = 8
+	plate.sync_from_unit(critical)
+	plate._pulse = 0.0
+	var pulse_low := plate.fill_color()
+	plate._pulse = 0.25
+	var pulse_high := plate.fill_color()
+	truthy(not is_equal_approx(pulse_low.r, pulse_high.r), "life under 15% pulses the warning")
+	plate.sync_from_unit(low)
 	pawn.position = BoardVisualSort.cell_to_local(Vector2i(7, 7))
 	foe.position = BoardVisualSort.cell_to_local(Vector2i(8, 7))
 	var pair: Array[OverheadPlate] = [plate, foe_plate]
