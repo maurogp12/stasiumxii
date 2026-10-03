@@ -57,7 +57,7 @@ screen recordings (not in the repo).
 
 1. **Each dungeon has a themed floor that glows:** in the clip a green circuit
    board with glowing blue and red pads. Our 11 dungeons each get their own
-   (Coilgate / Stormspire fits this clip almost exactly).
+   (Stormspire's dungeon, Thunderwell Core, fits this clip almost exactly).
 2. **Pillars of light** rise from key cells and from fighters (cyan beams).
 3. **The room around the board is dark and quiet** (walls fading to black), so
    the lit floor and the fighters pop.
@@ -110,7 +110,7 @@ screen recordings (not in the repo).
 | L1: Terrace tile kit (A), **height levels kept** | Scenario + TA | Grass top ×4, grass overhang edges and corners, cliff side strips at 1–3 steps, sandstone slabs ×4, lilac bushes, flower tufts. 64×32 at 1x, 128×64 at 2x, the Crosshaven kit light rules. |
 | L2: Backdrops (A, B) | Scenario + Code | A painted surround per map: jungle leaves in front and behind with leaf shadows (outdoor); a dark room with lit edges (dungeons). New backdrop layer behind and in front of the board in `board_view.gd`; the grid itself does not change. |
 | L3: Range, zones and glyphs (A, C) | Code + Scenario | **Grid hidden at rest** (Mauro, 3 Oct: Wakfu way, our own and better): cells fade in on Walk / spell pick and out after the action, soft hover outline on the cell under the mouse, hold Alt (Proposed) for the full grid; move range **one tile per reachable cell, Wakfu style in our own look** (Mauro, 3 Oct): our own colour, a soft glow and a gentle pulse, a thin light rim, small gaps between cells, following the terrain heights; painted glyph decals for zones, marks and deploy cells. |
-| L4: Dungeon floors (B) | Scenario + TA | One glowing floor kit per dungeon theme, glowing pads, light pillars, starting with Coilgate. |
+| L4: Dungeon floors (B) | Scenario + TA | One glowing floor kit per dungeon theme, glowing pads, light pillars, starting with Thunderwell Core (Stormspire; called "Coilgate" before PC got its own dungeons). |
 | L5: Fighter readability (A, C), **parked: not now (characters)** | Code + TA | Team hex ring under the feet (blue / red); **name and HP bar over every head** (Mauro, 3 Oct), in its own script, view only, CombatSim stays authoritative; chibi scale check. |
 | L6: Combat UI (C) | Code + Scenario | **One action bar, no cards** (Mauro, 3 Oct: "just a bar that shows spells, actions"): the class's few spells as large, clear slots with a painted icon each, the AP cost on the slot, and the actions (Walk, Face, End Turn) in the same bar. Since there are only a few spells, the slots are big and easy to read. A usable slot is lit; one that can't be used dims and says why on hover (no AP, out of range, needs Impact). Hover shows the attack tooltip with the Locked hit %; the picked slot stays highlighted and lights the board cells. AP and MP shown next to the bar; End Turn stands out. Plus hero and opponent portraits with HP, turn order, a "YOUR TURN" banner. Numbers come from CombatSim / `data/spell_tooltip.gd` only. |
 | L7: Light and VFX (A, B, C) | TA + Feel | Warm saturated grade outdoors, cinematic grade in dungeons; rim light; light shafts and floor glows on casts; bigger damage numbers. |
@@ -151,7 +151,7 @@ the matching reference frame.
 6. ~~Start with the **Crosshaven jungle backdrop** (A) and the **Coilgate
    dungeon floor** (B)?~~ **Answered 3 Oct 2026 (Mauro): yes.** These two are
    the first look packages: the Crosshaven jungle backdrop (L2) and the
-   Coilgate dungeon floor (L4).
+   Stormspire dungeon floor (L4), now Thunderwell Core.
 
 ## Start here (build team)
 
@@ -169,8 +169,9 @@ First two packages (Mauro, 3 Oct: Q6 yes):
 1. **L2, Crosshaven jungle backdrop**: painted jungle around the Crosshaven
    arena (leaves in front and behind, leaf shadows across the board, sway),
    a new backdrop layer in `board_view.gd`, grid and rules unchanged.
-2. **L4, Coilgate dungeon floor**: the first glowing dungeon floor kit, after
-   the Stormspire / Coilgate dungeon theme (reference B).
+2. **L4, Thunderwell Core dungeon floor** (Stormspire's PC dungeon; Mauro's
+   "Coilgate floor" yes carries over): the first glowing dungeon floor kit
+   (reference B).
 
 Then L3 (grid hidden at rest + Wakfu-style range our own way), L6 (action
 bar), L1 (terrace kit, height levels kept), L7, L8. L5 (name and HP over heads)

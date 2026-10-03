@@ -5,7 +5,7 @@ the Cursor cloud coding agents, the Scenario art agent, the Technical Artist
 agent and the combat-feel agent). The writer of this spec does not build it.
 
 Status: Mauro approved the zone plan **to try** (3 Oct 2026) and placed
-Stormspire / Coilgate **south of Gloomfen at 35–40**. Everything else marked
+Stormspire (and its dungeon) **south of Gloomfen at 35–40**. Everything else marked
 **Proposed** is a suggestion that Mauro can change. Items marked **Open** wait on
 Mauro: do not decide them in code.
 
@@ -69,7 +69,7 @@ Mauro can judge on a phone screen.
 > **Focus now** (Mauro, 3 Oct 2026: "focus on map zones lvl dungs and npc with
 > missions"): **map zones, levels, dungeons, and NPCs with missions.** Build in
 > this order: WP0 → WP1 → WP3 → WP4 → WP5a → WP6 → **WP6b (missions)** → WP7 →
-> WP8 (dungeon runs; how is Open Q2) → WP5b → WP2. The combat look packages
+> WP8 (dungeon runs: same concept as the phone, PC's own dungeons) → WP5b → WP2. The combat look packages
 > (`docs/pc/LOOK_TARGET.md`) come after this track. Characters stay parked.
 
 ## 1. Rules
@@ -142,7 +142,7 @@ package finds a reason to change one, it asks first; it does not decide.
 ### 1.5 Proposed: Mauro may change
 
 Zone names (working names), level bands, dungeon names (except the four
-existing doors), door spots, NPC names and roles, the level curve, gate spots
+PC dungeons), door spots, NPC names and roles, the level curve, gate spots
 and which chunk each gate sits in, chunk sizes within the range in 3.1, which
 regions have a hub, the optional `depth` field (4.2), file and branch names in
 this spec.
@@ -180,23 +180,23 @@ players can choose a route.
 | # | Zone id | Name (working) | Where | Levels | Dungeon door | Door status |
 |---|---|---|---|---|---|---|
 | 1 | `crosshaven_heart` | Crosshaven Heart | Crossroads + 5 road chunks (`crosshaven_crossroads`, `crosshaven_road_north`, `_west`, `_east`, `_southwest`, `_south`) | 1–5 | Old Granary Cellar | New, Proposed |
-| 2 | `crosshaven_towns` | Crosshaven Towns | `crosshaven_northgate`, `_stoneford`, `_eastmarch`, `_westwatch`, `_southbridge` | 5–10 | **Threshgate** | Existing package |
+| 2 | `crosshaven_towns` | Crosshaven Towns | `crosshaven_northgate`, `_stoneford`, `_eastmarch`, `_westwatch`, `_southbridge` | 5–10 | Millrace Vaults | New, Proposed |
 | 3 | `rowanvale` | Rowanvale | West, past Stoneford (farmland) | 10–15 | Rotting Orchard Barrow | New, Proposed |
-| 4 | `windmere` | Windmere | North, past Northgate (white city on the cliffs) | 15–20 | **Galevault** | Existing package |
-| 5 | `brinewake` | Brinewake | East, past Eastmarch (coast and islands) | 20–25 | **Tidehold** | Existing package |
-| 6 | `slagcrown` | Slagcrown | South, past Southbridge (volcanic) | 25–30 | **Ashmarch** | Existing package |
+| 4 | `windmere` | Windmere | North, past Northgate (white city on the cliffs) | 15–20 | Frostspire Archive | New, Proposed |
+| 5 | `brinewake` | Brinewake | East, past Eastmarch (coast and islands) | 20–25 | Saltmaw Grotto | New, Proposed |
+| 6 | `slagcrown` | Slagcrown | South, past Southbridge (volcanic) | 25–30 | Cinderforge Depths | New, Proposed |
 | 7 | `eastmarch_fen_edge` | Eastmarch Fen Edge | Off the east road, the way into the swamp | 25–30 | Sunken Mill | New, Proposed |
 | 8 | `gloomfen_mire` | Gloomfen Mire (swamp) | Southeast dark wilds | 30–38 | Drowned Abbey | New, Proposed |
-| 9 | `stormspire` | Stormspire | **South of Gloomfen** (Mauro, 3 Oct) | **35–40** | **Coilgate** | Existing package |
+| 9 | `stormspire` | Stormspire | **South of Gloomfen** (Mauro, 3 Oct) | **35–40** | Thunderwell Core | New, Proposed |
 | 10 | `ashen_shardfields` | Ashen Shardfields | Southwest dark wilds | 38–45 | Shard Hollow | New, Proposed |
 | 11 | `blightwood_hollow` | Blightwood Hollow (dark zone) | Northwest dark wilds | 45–50 | Heart of the Blight | New, Proposed |
 
-The four "existing package" doors use the boss and pack names Mauro approved for
-the phone Stasis doors (`backend/stasis_catalog.gd` `DOORS` on the mobile line):
-Threshgate (Sheaf Sovereign), Galevault (Serra White-Spire Regent), Tidehold
-(Tide-Lord Brineclaw), Ashmarch (Slagheart, Caldera Crown), Coilgate (High
-Coilspire). Their HP and damage numbers are provisional on the phone and stay
-Open on PC.
+**PC dungeons are PC's own** (Mauro, 3 Oct 2026: "same concept, different
+dungs"). PC uses the same dungeon *concept* as the phone's Stasis doors (rooms,
+monster packs, a boss, star difficulty, solo or party), but **all 11 PC
+dungeons are new**: none of the phone's doors (Threshgate, Galevault, Tidehold,
+Ashmarch, Coilgate) or their bosses and packs are reused on PC. Names below are
+Proposed.
 
 Region links (**Proposed**): Rowanvale from Stoneford; Windmere from Northgate;
 Brinewake from Eastmarch; Slagcrown from Southbridge; Fen Edge from the east
@@ -215,9 +215,9 @@ sub-area.
 | Region | Levels | Chunks | Shape |
 |---|---|---|---|
 | Rowanvale | 10–15 | **6** | Hamlet hub, farmland middle chunks, door chunk |
-| Windmere | 15–20 | **6** | City hub on the cliffs, 4 outer chunks, Galevault chunk |
+| Windmere | 15–20 | **6** | City hub on the cliffs, 4 outer chunks, Frostspire Archive chunk |
 | Brinewake | 20–25 | **6** | Port hub, 3 coast chunks, 2 island chunks (linked by the Ferry Captain) |
-| Slagcrown | 25–30 | **6** | Forge-camp hub, 4 volcanic chunks, Ashmarch chunk |
+| Slagcrown | 25–30 | **6** | Forge-camp hub, 4 volcanic chunks, Cinderforge Depths chunk |
 | Eastmarch Fen Edge | 25–30 | **3** | Short transition into the swamp, parallel to Slagcrown |
 | Gloomfen Mire | 30–38 | **8** | Boardwalk maze; widest band |
 | Stormspire | 35–40 | **5** | Compact plateau south of Gloomfen |
@@ -431,16 +431,16 @@ That is 33 core NPCs (3 × 11) plus 18 extras: **51 NPCs**.
   "format_version": 1,
   "dungeons": [
     {
-      "id": "threshgate",
-      "name": "Threshgate",
+      "id": "millrace_vaults",
+      "name": "Millrace Vaults",
       "level_zone": "crosshaven_towns",
       "level_min": 5,
       "level_max": 10,
       "door": {"zone_id": "crosshaven_southbridge", "x": 22, "y": 24},
-      "door_art": "door_threshgate",
-      "package": "existing",
-      "biome": "crosshaven",
-      "boss": "Sheaf Sovereign",
+      "door_art": "door_millrace_vaults",
+      "theme": "watermill_vaults",
+      "boss": "The Millwright",
+      "rooms": 2,
       "party": {"min": 1, "max": 4},
       "status": "proposed"
     }
@@ -450,24 +450,26 @@ That is 33 core NPCs (3 × 11) plus 18 extras: **51 NPCs**.
 
 Rules: exactly one dungeon per level zone (11); `level_min/max` equal the zone's
 band; the door cell is passable, inside a chunk of that zone, not an NPC or gate
-cell; `package` is `existing` (one of the five approved doors) or `new`. For
-`new`, `boss` is a Proposed name. Door spots in the example are placeholders:
+cell; `theme` names the dungeon's look kit (floor, light, backdrop); `boss` is a
+Proposed name; `rooms` is the room count (Proposed: 2, room A packs then room B
+boss, like the phone concept; Open for more). No field points at the phone's
+door packages. Door spots in the example are placeholders:
 the code agent picks a clear passable cell near the zone's most important
 point of interest and lists it in the PR for Mauro.
 
-Dungeon names and one-line ideas (**Proposed**, except the existing five):
+Dungeon names and one-line ideas (all **Proposed**, all PC's own):
 
 | Dungeon | Zone | Idea |
 |---|---|---|
 | Old Granary Cellar | Crosshaven Heart | Tutorial cellar under the market: rats, scarecrow drudges, small boss |
-| **Threshgate** | Crosshaven Towns | Existing: Sheaf Sovereign, Plaza Guard pack |
+| Millrace Vaults | Crosshaven Towns | Vaults under Southbridge's watermill: mill bandits and gear golems, The Millwright |
 | Rotting Orchard Barrow | Rowanvale | Barrow under an old orchard: blighted farm beasts, Orchard Warden |
-| **Galevault** | Windmere | Existing: Serra White-Spire Regent, Ice Warden pack |
-| **Tidehold** | Brinewake | Existing: Tide-Lord Brineclaw, Silt Raider pack |
-| **Ashmarch** | Slagcrown | Existing: Slagheart, Cinder Imp pack |
+| Frostspire Archive | Windmere | Frozen library under the white spire: ice constructs and book wraiths, The Pale Archivist |
+| Saltmaw Grotto | Brinewake | Sea cave under the islands: reef crabs and drowned sailors, Old Saltmaw |
+| Cinderforge Depths | Slagcrown | Abandoned forge in the volcano: magma imps and slag hounds, The Ember Smith |
 | Sunken Mill | Eastmarch Fen Edge | Flooded watermill: fen crawlers, Millwheel Hag |
 | Drowned Abbey | Gloomfen Mire | Half-sunk abbey: bog dead, Mire Abbess |
-| **Coilgate** | Stormspire | Existing: High Coilspire, Coil Brute pack |
+| Thunderwell Core | Stormspire | A glowing circuit core (look reference B): spark constructs, The Storm Engine |
 | Shard Hollow | Ashen Shardfields | Crystal cave: shard golems, Ashen Prism |
 | Heart of the Blight | Blightwood Hollow | End-game root maze: blight horrors, the Rotting Elder |
 
@@ -728,21 +730,35 @@ dependency on each other can run in parallel (marked ∥).
   opens the panel; the panel's Enter calls a stub
   `DungeonLauncher.enter(dungeon_id)` that shows "Dungeon run: not built yet"
   until WP8 is approved.
-- **Media:** a clip opening Threshgate's door panel in Southbridge.
-- **Focus:** dungeons are one of Mauro's four focus items (3 Oct). WP8 (the
-  runs themselves) still waits on Open Q2 (how: port the Stasis code and the
-  team engine to PC).
+- **Media:** a clip opening the Millrace Vaults door panel in Southbridge.
+- **Focus:** dungeons are one of Mauro's four focus items (3 Oct). WP8 is
+  approved (same concept as the phone, PC's own dungeons).
 
-#### WP8: Dungeon runs on PC (Code), **blocked on Open Q2**
+#### WP8: Dungeon runs on PC (Code), **approved: same concept, different dungeons**
 
-- **Goal:** Enter starts the dungeon fight.
-- **Proposed approach:** port the Stasis dungeon code from the mobile line into
-  new PC files (copy, never change mobile): door packages, rooms A → B, packs,
-  bosses, stars. The PC combat engine on `main` is 1v1; party dungeons need the
-  team engine from the mobile line. Both need Mauro's yes before any code.
-- **Accept (when approved):** each existing package loads its own boss and pack
-  names; the six new dungeons have Proposed names and stand-in foes; numbers
-  marked Open stay Open.
+Mauro, 3 Oct 2026: **"yes, same concept, different dungs"** (answer to Q2).
+
+- **Goal:** Enter starts the dungeon fight: room A (monster packs) then room B
+  (boss), solo or with a party, with star difficulty.
+- **Approach:** port the **concept and engine** of the phone's Stasis dungeons
+  and its team (party) combat into **new PC files**, by copying from the mobile
+  line; never change `mobile`. Proposed PC files: `backend/pc_dungeons.gd`
+  (runs, rooms, packs, stars), `backend/pc_dungeon_catalog.gd` (the 11 PC
+  dungeons from `data/world/dungeons.json`), the team engine pieces copied into
+  PC combat, `scenes/world/dungeon/dungeon_run.gd` / `.tscn`.
+- **Different dungeons:** the PC catalog holds only the 11 PC dungeons in 4.6.
+  Do not copy the phone's door packages (names, bosses, packs, numbers).
+- **Foes:** stand-in sprites from the existing foe art until monster art is
+  approved (characters are parked). Monster HP / damage numbers and star
+  scaling for PC are **Open**: propose them in the PR, don't invent them as
+  final.
+- **Accept:** each of the 11 dungeons loads its own Proposed boss and pack
+  names; a level 1 hero can enter and finish Old Granary Cellar solo; a party
+  of up to 4 can enter a door that allows it; a win fires
+  `pc_missions.on_dungeon_won(id)`; the phone files and branch are untouched;
+  all suites green.
+- **Media:** a clip entering Old Granary Cellar from its door, room A, room B,
+  win, mission step done.
 
 #### WP9: Visible monsters per zone (Code), **Open Q6**
 
@@ -779,15 +795,15 @@ Asset list per region (**Proposed** counts; 1x and 2x for every item):
 | Region | Ground tiles (64×32 / 128×64) | Props and buildings | Paths |
 |---|---|---|---|
 | Rowanvale | meadow ×4 variants, orchard_soil ×3, autotile edges + corners | 4 tree species + stumps, 3 farmhouses (2×2), barn (3×3), windmill (2×2, sail strip 16 f), hedges ×6, barrow mound (2×2) | `art/world/rowanvale/{tiles,props,animated}/` |
-| Windmere | white_flagstone ×4, snow_grass ×3, cliff_white edges | 3 white houses, spire (2×2), walls ×6, frozen pines ×3, Galevault door (2×2) | `art/world/windmere/...` |
-| Brinewake | sand ×4, wet_sand ×2, shallow water ripple strips | docks ×6, fishing huts ×3, boats ×2, palms ×3, Tidehold door | `art/world/brinewake/...` |
-| Slagcrown | basalt ×4, ash ×3, lava (animated 12 f) | lava vents (animated), charred trees ×3, forge (2×2), Ashmarch door | `art/world/slagcrown/...` |
+| Windmere | white_flagstone ×4, snow_grass ×3, cliff_white edges | 3 white houses, spire (2×2), walls ×6, frozen pines ×3, Frostspire Archive door (2×2) | `art/world/windmere/...` |
+| Brinewake | sand ×4, wet_sand ×2, shallow water ripple strips | docks ×6, fishing huts ×3, boats ×2, palms ×3, Saltmaw Grotto door | `art/world/brinewake/...` |
+| Slagcrown | basalt ×4, ash ×3, lava (animated 12 f) | lava vents (animated), charred trees ×3, forge (2×2), Cinderforge Depths door | `art/world/slagcrown/...` |
 | Eastmarch Fen Edge | fen_grass ×3, reeds ×2, shallow bog | willows ×2, reed clumps ×4, broken fence ×4, Sunken Mill (3×3, wheel strip) | `art/world/eastmarch_fen_edge/...` |
 | Gloomfen Mire | bog ×4, peat ×3, murk water (bubbles 12 f) | dead trees ×4, boardwalk ×6, lily pads, wisps (animated), Drowned Abbey (3×3) | `art/world/gloomfen_mire/...` |
-| Stormspire | slate ×4, charged slate (pulse 12 f) | conduits ×4 (match the Koliseo map's look), towers ×2, Coilgate door | `art/world/stormspire/...` |
+| Stormspire | slate ×4, charged slate (pulse 12 f) | conduits ×4 (match the Koliseo map's look), towers ×2, Thunderwell Core door | `art/world/stormspire/...` |
 | Ashen Shardfields | ash_dune ×4, crystal_ground ×2 | crystal spires ×5 (glow strips), ruins ×4, Shard Hollow (2×2) | `art/world/ashen_shardfields/...` |
 | Blightwood Hollow | blight_soil ×4, root_ground ×3 | twisted trees ×5, roots ×6, ruined watch walls ×4, spores (animated), Heart of the Blight (3×3) | `art/world/blightwood_hollow/...` |
-| Crosshaven (zones 1–2) | none (kit is final) | Old Granary Cellar door (2×2), Threshgate door (2×2); bridges and fords from `tiles/_box_only_not_in_kit/` wired in | `art/world/crosshaven/props/` |
+| Crosshaven (zones 1–2) | none (kit is final) | Old Granary Cellar door (2×2), Millrace Vaults door (2×2); bridges and fords from `tiles/_box_only_not_in_kit/` wired in | `art/world/crosshaven/props/` |
 
 Landmarks (Scenario, **Soft Lock**: one per chunk): one hero prop per new
 chunk, 55 in all, in the region's style (2×2 or 3×3 footprint, sway or glow
@@ -803,7 +819,7 @@ match the world character scale (`ironjaw_tall` at 0.33, see PR #214).
 Path: `art/characters/npc/<role>/idle_<facing>.png` (horizontal strip).
 
 Monster art for the six new dungeons and for Rowanvale, the fen, the swamp,
-the shardfields and Blightwood: only after Open Q2 and Q6.
+the shardfields and Blightwood: only after characters are unparked and Q6.
 
 #### WP11: Technical art pass (Technical Artist)
 
@@ -871,9 +887,9 @@ headless.
 
 1. **PC art:** is the 1 Oct pause lifted so Scenario can start WP10? Until
    then, every new zone uses stand-in art.
-2. **Dungeon runs on PC:** the design doc says dungeons stay on `mobile`. May
-   the team port the Stasis dungeon code and the team (party) combat engine
-   into PC files (WP8)?
+2. ~~**Dungeon runs on PC**~~ **Answered 3 Oct 2026 (Mauro): "yes, same
+   concept, different dungs".** Port the Stasis dungeon concept and the team
+   engine into PC files; all 11 PC dungeons are PC's own (WP8).
 3. **Level system to 50:** where does XP come from (monsters, dungeons,
    Koliseo, quests)? What does a level give (stat points, AP at some level,
    like the phone's 2 points per level and AP at 20)?
