@@ -732,10 +732,19 @@ Coin uses (Mauro's list, plus the ones already proposed):
 | **Food and potions** | Traders, kitchen, alchemy | Heal between open-world fights; short buffs (Proposed) |
 | **Food supplies and minerals** | Traders, farms, mines | Raw materials for crafting; also gathered in the world |
 | **Part upgrades +1 to +5** | Smith (Stoneford), Forge Master (Slagcrown) | Already in 4.9 |
+| **Crypto Bank** | A bank building at the Crossroads, run by the Banker (a branch in each region hub later) | Mauro, 3 Oct: "we should create a Crypto bank, players can deposit their money there". Deposit and withdraw Crypto Coins; the bank also holds stored items (bank space). In-game only, like the coins. |
 | **Fast travel, respec, bank space, cosmetics** | Hub posts, Elders, Banker, Traders | Already proposed |
 
 How it fits together (**Proposed**):
 
+- **Crypto Bank** (Mauro's idea; details Proposed): two balances, **coins on
+  hand** (the wallet) and **coins in the bank**. Shops, crafting and travel
+  pay from coins on hand; houses, the marketplace and big upgrades can pay
+  straight from the bank. Marketplace sales are paid into the bank. Coins in
+  the bank are safe: if a later rule makes players lose coins (for example on
+  defeat), only coins on hand are at risk. **Interest:** none (Proposed), since
+  interest prints coins and causes inflation; Q10 asks Mauro. Bank item
+  storage starts with 20 slots, more bought with coins.
 - **Resources come from the world.** Crosshaven already has harvestable trees
   (six species with stump states) and eight crop types on its farms. Add
   **mineral nodes** (rocks and ore veins) per region. Gathering: click a node,
@@ -1203,6 +1212,23 @@ canvas, pivot, facings and idle loop rules as NPC bodies, plus a walk loop
   the coins; sell-back is lower than the price (Proposed 30%); save / load.
 - **Media:** buying food and a recipe from the Crossroads Trader.
 
+#### WP16b: Crypto Bank (Code + Scenario)
+
+- **Goal:** the Crypto Bank at the Crossroads: deposit and withdraw Crypto
+  Coins, and store items (4.12).
+- **Needs:** WP6 (the Banker NPC), WP14 (wallet and inventory).
+- **Add:** `backend/pc_bank.gd` (preload; `deposit(n)`, `withdraw(n)`,
+  `store(item)`, `take(item)`, slot limit; pure logic so a server can run it
+  later); bank and wallet balances in `user://pc_progress.json`;
+  `scenes/world/ui/bank_panel.gd` / `.tscn` (two balances, an amount field,
+  Deposit / Withdraw, item slots); the bank building as a Crosshaven landmark
+  (Scenario: a 3×3 "Crypto Bank" building in the Crossroads style, 1x + 2x,
+  kit rules); `tests/run_pc_bank_tests.gd`.
+- **Accept:** coins are never created or lost by deposit / withdraw (the total
+  stays the same); you can't withdraw more than the balance or deposit more
+  than you carry; slot limit holds; save / load keeps both balances.
+- **Media:** walking into the Crypto Bank, depositing coins, storing a part.
+
 #### WP17: Gathering (Code + Technical Artist)
 
 - **Goal:** trees, crops and mineral nodes in Crosshaven can be gathered for
@@ -1309,3 +1335,6 @@ headless.
    marketplace when PC has online player data (a server that stores
    inventories and coins); houses in a later phase. OK? And is building that
    online player data (accounts and a save on the server) part of this phase?
+10. **Crypto Bank (4.12, WP16b):** should money in the bank earn interest?
+    Proposed: no (interest creates coins and pushes prices up). Should the
+    bank be only at the Crossroads, or have a branch in every region hub?
