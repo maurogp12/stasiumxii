@@ -290,6 +290,7 @@ func _add_cell(dress: Dress, cell: Vector2i, spec: Dictionary, size: int, tint: 
 	for entry in _decor_at.get(cell, []):
 		if entry is Dictionary:
 			_add_prop(dress, str(entry.get("id", "")), "decor", cell)
+	dress.rebuild_bake()
 
 
 func _bucket(id: String, faces: Array[String], strips: Array[String], corners: Array[String]) -> void:
@@ -444,7 +445,12 @@ static func _top_left(id: String) -> Vector2:
 
 
 class Dress extends Node2D:
+	## One composited image per texture, size, and tint. Cells share these.
+	static var _stamp_cache: Dictionary = {}
+
 	var _pieces: Array = []
+	var _baked: Texture2D
+	var _baked_origin := Vector2.ZERO
 
 	func add_piece(id: String, role: String, tex: Texture2D, dest: Rect2, tint: Color, canopy: bool) -> void:
 		_pieces.append({
@@ -480,9 +486,126 @@ class Dress extends Node2D:
 				piece["tint"] = next
 				changed = true
 		if changed:
+			rebuild_bake()
+
+	## The live frame blits one image. The piece list stays for the tests.
+	func rebuild_bake() -> void:
+		_baked = null
+		if _pieces.is_empty():
 			queue_redraw()
+			return
+		var bounds: Rect2 = _pieces[0].get("dest", Rect2())
+		for piece in _pieces:
+			bounds = bounds.merge(piece.get("dest", Rect2()))
+		var origin := Vector2(floor(bounds.position.x), floor(bounds.position.y))
+		var end := Vector2(ceil(bounds.end.x), ceil(bounds.end.y))
+		var size := Vector2i(maxi(1, int(end.x - origin.x)), maxi(1, int(end.y - origin.y)))
+		var image := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
+		var painted := false
+		for piece in _pieces:
+			var tex: Texture2D = piece.get("tex")
+			if tex == null:
+				continue
+			var dest: Rect2 = piece.get("dest", Rect2())
+			var stamp := _stamp(tex, dest.size, piece.get("tint", Color.WHITE))
+			if stamp == null:
+				continue
+			var at := Vector2i(Vector2(round(dest.position.x - origin.x), round(dest.position.y - origin.y)))
+			image.blend_rect(stamp, Rect2i(Vector2i.ZERO, stamp.get_size()), at)
+			painted = true
+		if not painted:
+			queue_redraw()
+			return
+		_baked = ImageTexture.create_from_image(image)
+		_baked_origin = origin
+		queue_redraw()
+
+	static func _stamp(tex: Texture2D, dest_size: Vector2, tint: Color) -> Image:
+		var dw := maxi(1, int(round(dest_size.x)))
+		var dh := maxi(1, int(round(dest_size.y)))
+		var key := "%s|%d|%d|%d|%d|%d|%d" % [
+			tex.resource_path,
+			dw, dh,
+			int(round(tint.r * 255.0)), int(round(tint.g * 255.0)),
+			int(round(tint.b * 255.0)), int(round(tint.a * 255.0)),
+		]
+		if _stamp_cache.has(key):
+			return _stamp_cache[key]
+		var src := tex.get_image()
+		if src == null:
+			return null
+		src = src.duplicate()
+		if src.get_format() != Image.FORMAT_RGBA8:
+			src.convert(Image.FORMAT_RGBA8)
+		var sw := src.get_width()
+		var sh := src.get_height()
+		var out: Image
+		if sw == dw * 2 and sh == dh * 2:
+			out = _box_half(src, dw, dh, tint)
+		else:
+			if sw != dw or sh != dh:
+				src.resize(dw, dh, Image.INTERPOLATE_BILINEAR)
+			out = _tint_image(src, tint)
+		_stamp_cache[key] = out
+		return out
+
+	static func _box_half(src: Image, dw: int, dh: int, tint: Color) -> Image:
+		var raw := src.get_data()
+		var sw := dw * 2
+		var out := PackedByteArray()
+		out.resize(dw * dh * 4)
+		var tr := tint.r
+		var tg := tint.g
+		var tb := tint.b
+		var ta := tint.a
+		var white := tint.is_equal_approx(Color.WHITE)
+		var i := 0
+		for y in dh:
+			var row0 := (y * 2) * sw * 4
+			var row1 := row0 + sw * 4
+			for x in dw:
+				var p := (x * 2) * 4
+				var a0 := row0 + p
+				var b0 := row1 + p
+				var r := (int(raw[a0]) + int(raw[a0 + 4]) + int(raw[b0]) + int(raw[b0 + 4])) >> 2
+				var g := (int(raw[a0 + 1]) + int(raw[a0 + 5]) + int(raw[b0 + 1]) + int(raw[b0 + 5])) >> 2
+				var b := (int(raw[a0 + 2]) + int(raw[a0 + 6]) + int(raw[b0 + 2]) + int(raw[b0 + 6])) >> 2
+				var a := (int(raw[a0 + 3]) + int(raw[a0 + 7]) + int(raw[b0 + 3]) + int(raw[b0 + 7])) >> 2
+				if not white:
+					r = int(float(r) * tr)
+					g = int(float(g) * tg)
+					b = int(float(b) * tb)
+					a = int(float(a) * ta)
+				out[i] = r
+				out[i + 1] = g
+				out[i + 2] = b
+				out[i + 3] = a
+				i += 4
+		return Image.create_from_data(dw, dh, false, Image.FORMAT_RGBA8, out)
+
+	static func _tint_image(src: Image, tint: Color) -> Image:
+		if tint.is_equal_approx(Color.WHITE):
+			return src
+		var raw := src.get_data()
+		var out := PackedByteArray()
+		out.resize(raw.size())
+		var tr := tint.r
+		var tg := tint.g
+		var tb := tint.b
+		var ta := tint.a
+		var i := 0
+		while i < raw.size():
+			out[i] = int(float(raw[i]) * tr)
+			out[i + 1] = int(float(raw[i + 1]) * tg)
+			out[i + 2] = int(float(raw[i + 2]) * tb)
+			out[i + 3] = int(float(raw[i + 3]) * ta)
+			i += 4
+		return Image.create_from_data(src.get_width(), src.get_height(), false, Image.FORMAT_RGBA8, out)
 
 	func _draw() -> void:
+		if _baked != null:
+			draw_texture(_baked, _baked_origin)
+			return
 		for piece in _pieces:
 			var tex: Texture2D = piece.get("tex")
 			if tex == null:
