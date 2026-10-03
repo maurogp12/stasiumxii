@@ -1,74 +1,439 @@
 {
-  "art_status": "v1",
-  "note": "Thunderwell Core floor v1 art, second look toward reference B (dark teal floor, yellow-green traces as the light, a dozen cobalt chips and two crimson, wider pillar columns, dark walls). Masters are the @2x PNGs, drawn at half size; plain PNGs are the 1x fallbacks. Pixel sizes below are the masters. floor_lift is the exponent on the linear plate (below 1 lifts the dark stone) and floor_grade tints it, both tuned here. room_edge_dark is still a darkness-only vignette with no baked hole. The hole and the wall distance come from the cell footprint: 0 on the board, rising across wall_reach. The room shader draws a dark wall silhouette and a lit rim where the wall meets the floor, then the vignette fades to black. glow_mask is RGB data, lossless, linear, sampled with no source_color hint: R is trace intensity at full range. On this v1 strip G is still the flow ramp and B is 0. On the 8-slot route strip G is 1 on traced ports and 0 elsewhere, and it is not a direction. The shader uses glow = R * glow_strength * pulse * highlight_dim. glow_strength is 0.20 so a lit move tile stays above a trace after bloom. A highlight multiplies the trace by trace_highlight_dim (0.4). glow_color tints traces green near 140 degrees. pillar_color is pale green-white. pillar_strength stays 0.45. pillar_core and pillar_halo narrow the beam into a core plus a soft halo. The sprite is anchored bottom-centre and sorts with that cell. pad_blue_color near 225 degrees and pad_red_color near 350 degrees are the painted hues; pad_strength only scales them. preview_bloom caps the preview glow so a bright pad does not blow the grade out. Floor, pads, pillar and the vignette keep source_color. 2D HDR and bloom are preview-only. Routes are staged for the 8-slot strip (1024x64, slots a-h): plain a/b/h, straight c, bend d, T e, end f, cross g. The shipped masters stay the 4-slot v1 strip until that art lands. trace_highlight_dim scales the trace under a highlight. The route pulse uses the cell index over the route length and ignores G and flips.",
+  "art_status": "v3b",
+  "note": "Thunderwell Core floor v3b. Masters are the @2x PNGs, drawn at half size. floor_tiles and glow_mask are 1024x64, eight slots of 128x64: a and b plain, c straight, d top/bottom bend, e T with a node, f end node, g cross, h side bend. Untraced cells use a and b only. The slot map and ports_by_flip live in strip. Four pad-to-pad routes stay in routes. glow_mask is lossless data with no source_color: R is emission over the full range, G is 1 along traces with no direction, B is 0. Glow is R * glow_strength * pulse(G) * highlight_dim, tint #47F280. glow_strength is 0.16, under the 0.25 cap, so a full-pulse trace stays under a lit move tile. The pulse phase is the cell index over the route length; a shared cell keeps the lower index; flips do not move it. A highlight multiplies the trace by 0.4. The pillar is the painted beam, additive at 0.45, light pool anchored on the cell. room_edge_dark is the green-slate vignette. Pads keep their names and sizes. 2D HDR and bloom stay on the preview.",
   "display_name": "Thunderwell Core",
   "theme": "thunderwell",
   "cell_draw_scale": 0.5,
   "art_root": "res://art/pc/look/thunderwell_floor/",
   "slots": {
     "floor_tiles": {
-      "px": [512, 64],
+      "px": [
+        1024,
+        64
+      ],
       "layout": "one_strip",
-      "slices": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
+      "slices": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h"
+      ],
       "opaque_diamond": true,
       "compress": "lossless"
     },
-    "pad_blue": {"px": [128, 96], "blend": "add", "raised_px": 32, "compress": "lossless"},
-    "pad_red": {"px": [128, 96], "blend": "add", "raised_px": 32, "compress": "lossless"},
-    "light_pillar": {"px": [128, 512], "blend": "add", "plate": "opaque_black", "compress": "lossless"},
+    "pad_blue": {
+      "px": [
+        128,
+        96
+      ],
+      "blend": "add",
+      "raised_px": 32,
+      "compress": "lossless"
+    },
+    "pad_red": {
+      "px": [
+        128,
+        96
+      ],
+      "blend": "add",
+      "raised_px": 32,
+      "compress": "lossless"
+    },
+    "light_pillar": {
+      "px": [
+        128,
+        512
+      ],
+      "blend": "add",
+      "plate": "opaque_black",
+      "compress": "lossless"
+    },
     "room_edge_dark": {
-      "px": [1024, 640],
+      "px": [
+        1024,
+        640
+      ],
       "layout": "generated_footprint",
       "compress": "vram_bc7"
     },
     "glow_mask": {
-      "px": [512, 64],
+      "px": [
+        1024,
+        64
+      ],
       "format": "rgb",
-      "channels": {"r": "glow_intensity", "g": "flow_gradient"},
+      "channels": {
+        "r": "glow_intensity",
+        "g": "trace_mask",
+        "b": "zero"
+      },
       "layout": "one_strip",
-      "slices": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
+      "slices": [
+        "a",
+        "b",
+        "c",
+        "d",
+        "e",
+        "f",
+        "g",
+        "h"
+      ],
       "compress": "lossless"
     }
   },
-  "floor_cycle": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
-  "pad_blue": {"step_x": 5, "step_y": 5, "phase_x": 2, "phase_y": 2},
-  "pad_red": {"step_x": 10, "step_y": 6, "phase_x": 5, "phase_y": 4},
-  "pillar_cells": [[3, 3], [11, 3], [3, 11], [11, 11], [7, 7]],
-  "start_cells": [[1, 1], [13, 13]],
-  "spawn_cells": [[6, 6], [7, 8]],
+  "floor_cycle": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h"
+  ],
+  "pad_blue": {
+    "step_x": 5,
+    "step_y": 5,
+    "phase_x": 2,
+    "phase_y": 2
+  },
+  "pad_red": {
+    "step_x": 10,
+    "step_y": 6,
+    "phase_x": 5,
+    "phase_y": 4
+  },
+  "pillar_cells": [
+    [
+      3,
+      3
+    ],
+    [
+      11,
+      3
+    ],
+    [
+      3,
+      11
+    ],
+    [
+      11,
+      11
+    ],
+    [
+      7,
+      7
+    ]
+  ],
+  "start_cells": [
+    [
+      1,
+      1
+    ],
+    [
+      13,
+      13
+    ]
+  ],
+  "spawn_cells": [
+    [
+      6,
+      6
+    ],
+    [
+      7,
+      8
+    ]
+  ],
   "trace_highlight_dim": 0.4,
-  "route_strip_px": [1024, 64],
-  "route_slots": ["a", "b", "c", "d", "e", "f", "g", "h"],
+  "route_strip_px": [
+    1024,
+    64
+  ],
+  "route_slots": [
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h"
+  ],
   "routes": [
-    [[2, 2], [2, 3], [2, 4], [2, 5], [2, 6], [2, 7], [2, 8], [2, 9], [2, 10], [2, 11], [2, 12]],
-    [[12, 2], [12, 3], [12, 4], [12, 5], [12, 6], [12, 7], [12, 8], [12, 9], [12, 10], [12, 11], [12, 12]],
-    [[7, 2], [7, 3], [7, 4], [6, 4], [5, 4], [5, 5], [5, 6], [5, 7], [5, 8], [5, 9], [5, 10], [6, 10], [7, 10], [7, 11], [7, 12]],
-    [[2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [6, 8], [6, 9], [7, 9], [8, 9], [8, 8], [8, 7], [9, 7], [10, 7], [11, 7], [12, 7]]
+    [
+      [
+        2,
+        2
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        2,
+        4
+      ],
+      [
+        2,
+        5
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        2,
+        7
+      ],
+      [
+        2,
+        8
+      ],
+      [
+        2,
+        9
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        2,
+        11
+      ],
+      [
+        2,
+        12
+      ]
+    ],
+    [
+      [
+        12,
+        2
+      ],
+      [
+        12,
+        3
+      ],
+      [
+        12,
+        4
+      ],
+      [
+        12,
+        5
+      ],
+      [
+        12,
+        6
+      ],
+      [
+        12,
+        7
+      ],
+      [
+        12,
+        8
+      ],
+      [
+        12,
+        9
+      ],
+      [
+        12,
+        10
+      ],
+      [
+        12,
+        11
+      ],
+      [
+        12,
+        12
+      ]
+    ],
+    [
+      [
+        7,
+        2
+      ],
+      [
+        7,
+        3
+      ],
+      [
+        7,
+        4
+      ],
+      [
+        6,
+        4
+      ],
+      [
+        5,
+        4
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        5,
+        8
+      ],
+      [
+        5,
+        9
+      ],
+      [
+        5,
+        10
+      ],
+      [
+        6,
+        10
+      ],
+      [
+        7,
+        10
+      ],
+      [
+        7,
+        11
+      ],
+      [
+        7,
+        12
+      ]
+    ],
+    [
+      [
+        2,
+        7
+      ],
+      [
+        3,
+        7
+      ],
+      [
+        4,
+        7
+      ],
+      [
+        5,
+        7
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        6,
+        8
+      ],
+      [
+        6,
+        9
+      ],
+      [
+        7,
+        9
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        8,
+        8
+      ],
+      [
+        8,
+        7
+      ],
+      [
+        9,
+        7
+      ],
+      [
+        10,
+        7
+      ],
+      [
+        11,
+        7
+      ],
+      [
+        12,
+        7
+      ]
+    ]
   ],
   "special_from_paint": true,
   "pulse_hz": 0.22,
   "pulse_amount": 0.16,
   "glow_flow_speed": 0.35,
-  "floor_lift": 0.50,
-  "floor_grade": [0.70, 1.12, 0.92],
-  "preview_bloom": 0.10,
-  "glow_color": [0.220, 0.900, 0.447],
-  "glow_strength": 0.20,
-  "pillar_color": [0.780, 0.920, 0.827],
+  "floor_lift": 0.5,
+  "floor_grade": [
+    0.7,
+    1.12,
+    0.92
+  ],
+  "preview_bloom": 0.1,
+  "glow_color": [
+    0.2784313725490196,
+    0.9490196078431372,
+    0.5019607843137255
+  ],
+  "glow_strength": 0.16,
+  "pillar_color": [
+    0.78,
+    0.92,
+    0.827
+  ],
   "pillar_strength": 0.45,
-  "pillar_core": 0.20,
-  "pillar_halo": 0.70,
+  "pillar_core": 0.2,
+  "pillar_halo": 0.7,
   "pillar_core_gain": 0.22,
   "pillar_halo_gain": 0.55,
   "pad_strength": 0.72,
-  "wall_color": [0.012, 0.030, 0.026],
-  "wall_rim_color": [0.45, 0.95, 0.62],
+  "wall_color": [
+    0.012,
+    0.03,
+    0.026
+  ],
+  "wall_rim_color": [
+    0.45,
+    0.95,
+    0.62
+  ],
   "wall_rim_strength": 0.42,
   "wall_strength": 1.0,
-  "wall_rim": 0.10,
+  "wall_rim": 0.1,
   "wall_reach": 3.4,
-  "pad_blue_color": [0.083, 0.199, 0.550],
-  "pad_red_color": [0.620, 0.112, 0.197],
+  "pad_blue_color": [
+    0.083,
+    0.199,
+    0.55
+  ],
+  "pad_red_color": [
+    0.62,
+    0.112,
+    0.197
+  ],
   "pan_margin_px": 220,
   "room_extra_scale": 1.08,
   "room_feather": 0.14,
@@ -78,5 +443,282 @@
     "pad": 0,
     "glow": 0,
     "pillar": 0
+  },
+  "glow_strength_max": 0.25,
+  "pillar_anchor": [
+    64,
+    441
+  ],
+  "strip": {
+    "slot_count": 8,
+    "slot_size_2x": [
+      128,
+      64
+    ],
+    "order": "abcdefgh",
+    "slots": [
+      {
+        "slot": "a",
+        "index": 0,
+        "x0_2x": 0,
+        "x0_1x": 0,
+        "kind": "plain",
+        "port_count": 0,
+        "ports": [],
+        "ports_by_flip": {
+          "none": [],
+          "h": [],
+          "v": [],
+          "hv": []
+        },
+        "glow": false
+      },
+      {
+        "slot": "b",
+        "index": 1,
+        "x0_2x": 128,
+        "x0_1x": 64,
+        "kind": "plain",
+        "port_count": 0,
+        "ports": [],
+        "ports_by_flip": {
+          "none": [],
+          "h": [],
+          "v": [],
+          "hv": []
+        },
+        "glow": false
+      },
+      {
+        "slot": "c",
+        "index": 2,
+        "x0_2x": 256,
+        "x0_1x": 128,
+        "kind": "straight",
+        "port_count": 2,
+        "ports": [
+          "SE",
+          "NW"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "SE",
+            "NW"
+          ],
+          "h": [
+            "NE",
+            "SW"
+          ],
+          "v": [
+            "NE",
+            "SW"
+          ],
+          "hv": [
+            "SE",
+            "NW"
+          ]
+        },
+        "glow": true
+      },
+      {
+        "slot": "d",
+        "index": 3,
+        "x0_2x": 384,
+        "x0_1x": 192,
+        "kind": "bend round the top corner (rounded, r = 0.28 cell); v flip = bottom corner",
+        "port_count": 2,
+        "ports": [
+          "NE",
+          "NW"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "NE",
+            "NW"
+          ],
+          "h": [
+            "NE",
+            "NW"
+          ],
+          "v": [
+            "SE",
+            "SW"
+          ],
+          "hv": [
+            "SE",
+            "SW"
+          ]
+        },
+        "glow": true
+      },
+      {
+        "slot": "e",
+        "index": 4,
+        "x0_2x": 512,
+        "x0_1x": 256,
+        "kind": "T-junction with ball node",
+        "port_count": 3,
+        "ports": [
+          "NE",
+          "SE",
+          "NW"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "NE",
+            "SE",
+            "NW"
+          ],
+          "h": [
+            "NE",
+            "SW",
+            "NW"
+          ],
+          "v": [
+            "NE",
+            "SE",
+            "SW"
+          ],
+          "hv": [
+            "SE",
+            "SW",
+            "NW"
+          ]
+        },
+        "glow": true
+      },
+      {
+        "slot": "f",
+        "index": 5,
+        "x0_2x": 640,
+        "x0_1x": 320,
+        "kind": "end node (emissive dot)",
+        "port_count": 1,
+        "ports": [
+          "NE"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "NE"
+          ],
+          "h": [
+            "NW"
+          ],
+          "v": [
+            "SE"
+          ],
+          "hv": [
+            "SW"
+          ]
+        },
+        "glow": true
+      },
+      {
+        "slot": "g",
+        "index": 6,
+        "x0_2x": 768,
+        "x0_1x": 384,
+        "kind": "cross with ball node",
+        "port_count": 4,
+        "ports": [
+          "NE",
+          "SE",
+          "SW",
+          "NW"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "NE",
+            "SE",
+            "SW",
+            "NW"
+          ],
+          "h": [
+            "NE",
+            "SE",
+            "SW",
+            "NW"
+          ],
+          "v": [
+            "NE",
+            "SE",
+            "SW",
+            "NW"
+          ],
+          "hv": [
+            "NE",
+            "SE",
+            "SW",
+            "NW"
+          ]
+        },
+        "glow": true
+      },
+      {
+        "slot": "h",
+        "index": 7,
+        "x0_2x": 896,
+        "x0_1x": 448,
+        "kind": "side bend round the right corner (same profile, radius and treatment as d); h flip = left corner",
+        "port_count": 2,
+        "ports": [
+          "NE",
+          "SE"
+        ],
+        "ports_by_flip": {
+          "none": [
+            "NE",
+            "SE"
+          ],
+          "h": [
+            "SW",
+            "NW"
+          ],
+          "v": [
+            "NE",
+            "SE"
+          ],
+          "hv": [
+            "SW",
+            "NW"
+          ]
+        },
+        "glow": true
+      }
+    ]
+  },
+  "ports": {
+    "definition": "trace ports sit exactly on the diamond edge midpoints; every port has the same mirror-symmetric width and glow profile, so seams join under any h/v flip",
+    "midpoints_2x_px": {
+      "NE": [
+        96,
+        16
+      ],
+      "SE": [
+        96,
+        48
+      ],
+      "SW": [
+        32,
+        48
+      ],
+      "NW": [
+        32,
+        16
+      ]
+    },
+    "grid_convention": "cell (i,j) drawn at screen x = (i-j)*64, y = (i+j)*32 (2x px); neighbour across NE = (i, j-1), SE = (i+1, j), SW = (i, j+1), NW = (i-1, j)",
+    "flip_h": "mirror x (texture column c -> 127-c): NE<->NW, SE<->SW",
+    "flip_v": "mirror y (row r -> 63-r): NE<->SE, NW<->SW",
+    "orientation_coverage": {
+      "c straight": "both axes (none: NW-SE, h: NE-SW)",
+      "e T": "all four (missing SW / SE / NE / NW)",
+      "f end": "all four",
+      "g cross": "n/a",
+      "d bend": "top corner NW+NE (none/h) and bottom corner SW+SE (v/hv)",
+      "h side bend": "right corner NE+SE (none/v) and left corner NW+SW (h/hv)",
+      "turns": "every 90 deg turn is covered: d + flips for top/bottom corners, h + flips for left/right corners"
+    },
+    "route_rule": "pick the slot/flip whose ports_by_flip equals the set of neighbours the route connects to; plain cells use a and b only"
   }
 }

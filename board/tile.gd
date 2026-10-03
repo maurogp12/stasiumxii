@@ -37,28 +37,18 @@ var _look_mat: ShaderMaterial
 const LOOK_FLOOR_SHADER := """shader_type canvas_item;
 uniform vec3 floor_grade = vec3(1.0);
 uniform float floor_lift = 1.0;
-// Route-tile flips stay inside one strip slot. Zero flips leave UV alone.
+// Screen flips stay inside one strip slot. h mirrors x, v mirrors y.
 uniform vec4 slot_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform float flip_h = 0.0;
 uniform float flip_v = 0.0;
-uniform float diag = 0.0;
 vec2 slot_uv(vec2 uv) {
-	if (flip_h < 0.5 && flip_v < 0.5 && diag < 0.5)
+	if (flip_h < 0.5 && flip_v < 0.5)
 		return uv;
 	vec2 local = (uv - slot_rect.xy) / slot_rect.zw;
-	float u = local.x - 0.5;
-	float v = (local.y - 0.5) * 0.5;
-	if (flip_v > 0.5)
-		v = -v;
 	if (flip_h > 0.5)
-		u = -u;
-	if (diag > 0.5) {
-		float nu = -2.0 * v;
-		float nv = -0.5 * u;
-		u = nu;
-		v = nv;
-	}
-	local = vec2(u + 0.5, v * 2.0 + 0.5);
+		local.x = 1.0 - local.x;
+	if (flip_v > 0.5)
+		local.y = 1.0 - local.y;
 	return slot_rect.xy + local * slot_rect.zw;
 }
 void fragment() {
@@ -99,7 +89,7 @@ func clear_look_floor() -> void:
 	set_look_floor(null)
 
 
-## Grid-axis flips for a route tile. diag mirrors east and west inside the diamond.
+## Grid-axis flips for a route tile. h mirrors x and v mirrors y inside the slot.
 func set_look_orient(flip_h: bool, flip_v: bool, diag: bool, slot_uv: Rect2) -> void:
 	_look_flip_h = flip_h
 	_look_flip_v = flip_v
@@ -189,7 +179,6 @@ func _sync_look_sprite() -> void:
 	_look_mat.set_shader_parameter("floor_lift", _look_lift)
 	_look_mat.set_shader_parameter("flip_h", 1.0 if _look_flip_h else 0.0)
 	_look_mat.set_shader_parameter("flip_v", 1.0 if _look_flip_v else 0.0)
-	_look_mat.set_shader_parameter("diag", 1.0 if _look_diag else 0.0)
 	_look_mat.set_shader_parameter("slot_rect", Vector4(_look_slot.position.x, _look_slot.position.y, _look_slot.size.x, _look_slot.size.y))
 
 

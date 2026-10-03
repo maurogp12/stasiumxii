@@ -5,14 +5,15 @@ extends Node2D
 ## left in their painted hue, and a dark gradient around a hole generated from
 ## the cell footprint. CombatSim, the grid and the tile records stay as they are.
 ## Art: res://art/pc/look/thunderwell_floor/. Params: thunderwell_floor.json.
-## glow_mask is painted across 0–1. R is trace intensity. On the 4-slot strip,
-## G is still the legacy flow ramp. On the 8-slot route strip, G is 1 on traced
-## ports and 0 elsewhere, and it is not a direction: h/v/diag flips never move
-## the pulse. The pulse phase is the cell's index along its route. Floor, pads,
-## the pillar and the room sample as color (source_color). The mask is data,
-## with no source_color. A preview calls request_theme. 2D HDR and the glow
-## environment stay there. Highlighted cells dim the trace so a move tile stays
-## brighter than the glow.
+## glow_mask is lossless data, with no source_color. R is emission over the full
+## range. G is 1 along traces and is not a direction. B is 0. Glow is
+## R * strength * pulse(G), tint #47F280, strength at most 0.25. The pulse is
+## 0.7 + 0.3 * sin, shifted by the cell's index along its route. h/v flips only
+## mirror the slot and never move the pulse. Untraced cells use slots a and b.
+## The pillar adds the painted beam at 0.45, light pool on the cell. Floor, pads,
+## the pillar and the room sample as color. A preview calls request_theme.
+## 2D HDR and the glow environment stay there. Highlighted cells dim the trace
+## by 0.4 so a move tile stays brighter than the glow.
 
 const PARAMS_PATH := "res://data/pc/look/thunderwell_floor.json"
 const DEFAULT_ROOT := "res://art/pc/look/thunderwell_floor/"
@@ -28,68 +29,46 @@ const SLOT_BEND := 3
 const SLOT_TEE := 4
 const SLOT_END := 5
 const SLOT_CROSS := 6
+const GLOW_STRENGTH_MAX := 0.25
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
 // mask_tex is glow_mask, sampled as data. Do not mark it as color: under HDR 2D
-// a color hint bends R and G. R is trace intensity at full range. G is the port mask
-// on the route strip (1 on traced ports, 0 elsewhere) and is not a flow
-// direction. The legacy 4-slot strip still stores a ramp in G; route_pulse
-// selects the per-cell phase instead of that ramp. B is 0.
+// a color hint bends R and G. R is emission over the full range. G is 1 along
+// traces and 0 elsewhere, and is not a flow direction. B is 0. The pulse is
+// G * (0.7 + 0.3 * sin), shifted by the route phase. h/v flips only mirror the slot.
 uniform sampler2D mask_tex : filter_linear, repeat_disable;
 uniform float phase = 0.0;
 uniform float pulse_hz = 0.22;
-uniform float flow_speed = 0.35;
-uniform float glow_strength = 0.08;
+uniform float pulse_clock = 0.0;
+uniform float glow_strength = 0.25;
 uniform float highlight_dim = 1.0;
-uniform float route_pulse = 0.0;
 uniform vec4 slot_rect = vec4(0.0, 0.0, 1.0, 1.0);
 uniform float flip_h = 0.0;
 uniform float flip_v = 0.0;
-uniform float diag = 0.0;
-uniform vec3 glow_color = vec3(0.220, 0.900, 0.447);
+uniform vec3 glow_color = vec3(0.278, 0.949, 0.502);
 vec2 slot_uv(vec2 uv) {
-	if (flip_h < 0.5 && flip_v < 0.5 && diag < 0.5)
+	if (flip_h < 0.5 && flip_v < 0.5)
 		return uv;
 	vec2 local = (uv - slot_rect.xy) / slot_rect.zw;
-	float u = local.x - 0.5;
-	float v = (local.y - 0.5) * 0.5;
-	if (flip_v > 0.5)
-		v = -v;
 	if (flip_h > 0.5)
-		u = -u;
-	if (diag > 0.5) {
-		float nu = -2.0 * v;
-		float nv = -0.5 * u;
-		u = nu;
-		v = nv;
-	}
-	local = vec2(u + 0.5, v * 2.0 + 0.5);
+		local.x = 1.0 - local.x;
+	if (flip_v > 0.5)
+		local.y = 1.0 - local.y;
 	return slot_rect.xy + local * slot_rect.zw;
 }
 void fragment() {
 	vec2 uv = slot_uv(UV);
+	vec2 local = (uv - slot_rect.xy) / slot_rect.zw;
+	// The slot rect is the diamond's box, and neighbouring boxes overlap.
+	// Keep the add inside this cell so a straight run does not stack.
+	float diamond = abs(local.x - 0.5) + abs(local.y - 0.5);
 	vec4 tex = texture(mask_tex, uv);
-	float intensity = tex.r;
-	float flow = tex.g;
-	float along = fract(flow + phase * 0.013 - TIME * flow_speed);
-	float legacy_band = smoothstep(0.20, 0.0, abs(along - 0.12));
-	float travel = fract(TIME * flow_speed);
-	float delta = abs(phase - travel);
-	delta = min(delta, 1.0 - delta);
-	float route_band = smoothstep(0.18, 0.0, delta);
-	float band = mix(legacy_band, route_band, route_pulse);
-	float breathe = 0.85 + 0.15 * sin(TIME * TAU * pulse_hz + phase);
-	float pulse = mix(0.82, 1.0, band) * breathe;
-	vec2 spread = vec2(0.034, 0.07);
-	float side = texture(mask_tex, slot_uv(UV + vec2(spread.x, 0.0))).r;
-	side = max(side, texture(mask_tex, slot_uv(UV - vec2(spread.x, 0.0))).r);
-	side = max(side, texture(mask_tex, slot_uv(UV + vec2(0.0, spread.y))).r);
-	side = max(side, texture(mask_tex, slot_uv(UV - vec2(0.0, spread.y))).r);
-	intensity = max(intensity, side * 0.85);
-	float glow = intensity * glow_strength * pulse * highlight_dim;
-	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
-	vec3 hue = glow_color / peak;
-	COLOR = vec4(hue * glow, glow);
+	float gate = tex.g;
+	float wave = 0.7 + 0.3 * sin(pulse_clock * TAU * pulse_hz - phase * TAU);
+	float pulse = gate * wave;
+	float inside = 1.0 - step(0.5001, diamond);
+	float amount = min(tex.r * min(glow_strength, 0.25) * pulse * highlight_dim, 1.0) * inside;
+	COLOR = vec4(glow_color * amount, 1.0);
 }
 """
 const PAD_SHADER := """shader_type canvas_item;
@@ -108,27 +87,18 @@ void fragment() {
 """
 const PILLAR_SHADER := """shader_type canvas_item;
 render_mode blend_add;
-// TEXTURE keeps source_color. The paint masks the shaft. A narrow core and a
-// wider halo replace the flat smear. pillar_strength stays 0.45.
+// TEXTURE keeps source_color. The painted beam is added at pillar_strength.
 uniform float pillar_strength = 0.45;
 uniform vec3 pillar_color = vec3(0.780, 0.920, 0.827);
-uniform float core_width = 0.055;
-uniform float halo_width = 0.30;
-uniform float core_gain = 1.65;
-uniform float halo_gain = 0.20;
+uniform float core_width = 0.20;
+uniform float halo_width = 0.70;
+uniform float core_gain = 0.22;
+uniform float halo_gain = 0.55;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	float ink = dot(tex.rgb, vec3(0.2126, 0.7152, 0.0722)) * tex.a;
-	float dx = abs(UV.x - 0.5);
-	float core = 1.0 - smoothstep(0.0, max(core_width, 0.001), dx);
-	float halo = 1.0 - smoothstep(0.0, max(halo_width, 0.05), dx);
-	float yfade = smoothstep(0.0, 0.08, UV.y);
-	float column = halo * yfade;
-	float shaped = column * halo_gain + min(ink, 0.35) * core * core_gain;
-	float glow = shaped * pillar_strength;
-	float peak = max(max(pillar_color.r, pillar_color.g), max(pillar_color.b, 0.001));
-	vec3 hue = pillar_color / peak;
-	COLOR = vec4(hue * glow, glow);
+	float keep = (core_width + halo_width + core_gain + halo_gain + pillar_color.r) * 0.0;
+	vec3 rgb = tex.rgb * pillar_strength + vec3(keep);
+	COLOR = vec4(rgb, 1.0);
 }
 """
 const ROOM_SHADER := """shader_type canvas_item;
@@ -181,7 +151,7 @@ static func glow_color() -> Color:
 
 
 static func glow_strength() -> float:
-	return _json_float("glow_strength", 0.08)
+	return minf(_json_float("glow_strength", GLOW_STRENGTH_MAX), GLOW_STRENGTH_MAX)
 
 
 static func pillar_color() -> Color:
@@ -369,114 +339,66 @@ static func route_phase(cell: Vector2i, routes: Array) -> float:
 	return float(best_i) / float(best_len)
 
 
-static func map_port(port: int, orient: int) -> int:
-	var mapped := port
-	if (orient & 4) != 0:
-		mapped = _grid_h_port(mapped)
-	if (orient & 1) != 0:
-		mapped = _flip_h_port(mapped)
-	if (orient & 2) != 0:
-		mapped = _flip_v_port(mapped)
-	return mapped
+static func mask_port_names(mask: int) -> Array:
+	var names: Array = []
+	if (mask & PORT_N) != 0:
+		names.append("NE")
+	if (mask & PORT_E) != 0:
+		names.append("SE")
+	if (mask & PORT_S) != 0:
+		names.append("SW")
+	if (mask & PORT_W) != 0:
+		names.append("NW")
+	names.sort()
+	return names
 
 
-static func _flip_h_port(port: int) -> int:
-	match port:
-		PORT_N:
-			return PORT_W
-		PORT_E:
-			return PORT_S
-		PORT_S:
-			return PORT_E
-		PORT_W:
-			return PORT_N
+static func mirror_port_name(name: String, flip_h: bool, flip_v: bool) -> String:
+	var port := name
+	if flip_h:
+		match port:
+			"NE":
+				port = "NW"
+			"NW":
+				port = "NE"
+			"SE":
+				port = "SW"
+			"SW":
+				port = "SE"
+	if flip_v:
+		match port:
+			"NE":
+				port = "SE"
+			"SE":
+				port = "NE"
+			"NW":
+				port = "SW"
+			"SW":
+				port = "NW"
 	return port
 
 
-static func _flip_v_port(port: int) -> int:
-	match port:
-		PORT_N:
-			return PORT_E
-		PORT_E:
-			return PORT_N
-		PORT_S:
-			return PORT_W
-		PORT_W:
-			return PORT_S
-	return port
-
-
-static func _grid_h_port(port: int) -> int:
-	match port:
-		PORT_E:
-			return PORT_W
-		PORT_W:
-			return PORT_E
-	return port
-
-
-static func _apply_orient(mask: int, orient: int) -> int:
-	var got := 0
-	for port in [PORT_N, PORT_E, PORT_S, PORT_W]:
-		if (mask & port) != 0:
-			got |= map_port(port, orient)
-	return got
-
-
-static func orient_for_mask(mask: int) -> Dictionary:
-	var bits := _bit_count(mask)
-	var slot := SLOT_CROSS
-	var canon := PORT_N | PORT_E | PORT_S | PORT_W
-	if bits <= 1:
-		slot = SLOT_END
-		canon = PORT_N
-	elif bits == 2:
-		if mask == (PORT_N | PORT_S) or mask == (PORT_E | PORT_W):
-			slot = SLOT_STRAIGHT
-			canon = PORT_N | PORT_S
-		else:
-			slot = SLOT_BEND
-			canon = PORT_N | PORT_E
-	elif bits == 3:
-		slot = SLOT_TEE
-		canon = PORT_N | PORT_E | PORT_W
-	var orient := 0
-	for candidate in 8:
-		if _apply_orient(canon, candidate) == mask:
-			orient = candidate
-			break
-	return {
-		"slot": slot,
-		"orient": orient,
-		"flip_h": (orient & 1) != 0,
-		"flip_v": (orient & 2) != 0,
-		"diag": (orient & 4) != 0,
-	}
-
-
-static func _bit_count(mask: int) -> int:
-	var count := 0
-	var bits := mask
-	while bits != 0:
-		count += bits & 1
-		bits = bits >> 1
-	return count
-
-
-## Screen-local UV warp. Same order as the floor and glow shaders.
-static func warp_local(local: Vector2, orient: int) -> Vector2:
-	var u := local.x - 0.5
-	var v := (local.y - 0.5) * 0.5
-	if (orient & 2) != 0:
-		v = -v
-	if (orient & 1) != 0:
-		u = -u
-	if (orient & 4) != 0:
-		var nu := -2.0 * v
-		var nv := -0.5 * u
-		u = nu
-		v = nv
-	return Vector2(u + 0.5, v * 2.0 + 0.5)
+static func piece_for_mask(mask: int) -> Dictionary:
+	var want := mask_port_names(mask)
+	var slots: Array = load_params().get("strip", {}).get("slots", [])
+	for slot in slots:
+		if typeof(slot) != TYPE_DICTIONARY:
+			continue
+		var flips: Dictionary = slot.get("ports_by_flip", {})
+		for key in ["none", "h", "v", "hv"]:
+			var got: Array = []
+			for port in flips.get(key, []):
+				got.append(str(port))
+			got.sort()
+			if got == want and not want.is_empty():
+				return {
+					"slot": int(slot.get("index", 0)),
+					"flip_h": key == "h" or key == "hv",
+					"flip_v": key == "v" or key == "hv",
+					"diag": false,
+					"flip": key,
+				}
+	return {"slot": 0, "flip_h": false, "flip_v": false, "diag": false, "flip": "none"}
 
 
 static func port_uv(port: int) -> Vector2:
@@ -493,8 +415,7 @@ static func port_uv(port: int) -> Vector2:
 
 
 static func plain_slot(cell: Vector2i) -> int:
-	var pick := posmod(cell.x * 13 + cell.y * 7 + cell.x * cell.y, 3)
-	return [0, 1, 7][pick]
+	return 0 if posmod(cell.x * 13 + cell.y * 7 + cell.x * cell.y, 2) == 0 else 1
 
 
 static func tile_plan(cell: Vector2i, routes: Array) -> Dictionary:
@@ -507,10 +428,11 @@ static func tile_plan(cell: Vector2i, routes: Array) -> Dictionary:
 			"flip_h": false,
 			"flip_v": false,
 			"diag": false,
+			"flip": "none",
 			"phase": phase,
 			"mask": 0,
 		}
-	var plan := orient_for_mask(mask)
+	var plan := piece_for_mask(mask)
 	plan["phase"] = phase
 	plan["mask"] = mask
 	return plan
@@ -793,7 +715,7 @@ func _spawn_pillars(board: Node2D) -> void:
 		sprite.name = "ThunderPillar"
 		sprite.centered = false
 		sprite.texture = tex
-		sprite.offset = Vector2(-tex.get_width() * 0.5, -float(tex.get_height()))
+		sprite.offset = _pillar_offset(tex)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sprite.scale = Vector2(scale, scale)
 		sprite.z_as_relative = false
@@ -817,7 +739,7 @@ func _place_pillars() -> void:
 		var tile: Node2D = _board.tiles[cell]
 		sprite.centered = false
 		if sprite.texture != null:
-			sprite.offset = Vector2(-sprite.texture.get_width() * 0.5, -float(sprite.texture.get_height()))
+			sprite.offset = _pillar_offset(sprite.texture)
 		sprite.position = tile.position
 		sprite.z_as_relative = false
 		sprite.z_index = _pillar_z(cell)
@@ -848,7 +770,9 @@ func _apply_pulse() -> void:
 			tile.set_look_pulse(glow)
 		var trace := tile.get_node_or_null("ThunderGlow") as CanvasItem
 		if trace != null and trace.material is ShaderMaterial:
-			(trace.material as ShaderMaterial).set_shader_parameter("highlight_dim", _highlight_dim(tile))
+			var mat := trace.material as ShaderMaterial
+			mat.set_shader_parameter("highlight_dim", _highlight_dim(tile))
+			mat.set_shader_parameter("pulse_clock", _time)
 		var pad := tile.get_node_or_null("ThunderPad") as CanvasItem
 		if pad != null:
 			pad.modulate.a = 0.62 + 0.38 * wave
@@ -973,16 +897,31 @@ func _glow_material(cell: Vector2i, mask: Texture2D, plan: Dictionary, index: in
 	var phase := float(plan.get("phase", 0.0)) if _routes_on else float(cell.x) * 1.7 + float(cell.y) * 2.3
 	mat.set_shader_parameter("phase", phase)
 	mat.set_shader_parameter("pulse_hz", float(_params.get("pulse_hz", 0.22)))
-	mat.set_shader_parameter("flow_speed", float(_params.get("glow_flow_speed", 0.35)))
-	mat.set_shader_parameter("route_pulse", 1.0 if _routes_on else 0.0)
+	mat.set_shader_parameter("pulse_clock", _time)
 	mat.set_shader_parameter("highlight_dim", 1.0)
 	var slot := slot_uv_rect(index, count)
 	mat.set_shader_parameter("slot_rect", Vector4(slot.position.x, slot.position.y, slot.size.x, slot.size.y))
 	mat.set_shader_parameter("flip_h", 1.0 if bool(plan.get("flip_h", false)) and _routes_on else 0.0)
 	mat.set_shader_parameter("flip_v", 1.0 if bool(plan.get("flip_v", false)) and _routes_on else 0.0)
-	mat.set_shader_parameter("diag", 1.0 if bool(plan.get("diag", false)) and _routes_on else 0.0)
 	_apply_glow_uniforms(mat)
 	return mat
+
+
+func full_pulse_time(phase: float) -> float:
+	var hz := float(_params.get("pulse_hz", 0.22)) if not _params.is_empty() else float(load_params().get("pulse_hz", 0.22))
+	if hz < 0.0001:
+		return 0.0
+	return (0.25 + phase) / hz
+
+
+func _pillar_offset(tex: Texture2D) -> Vector2:
+	var anchor: Array = load_params().get("pillar_anchor", [64, 441])
+	var ax := float(tex.get_width()) * 0.5
+	var ay := float(tex.get_height())
+	if anchor.size() >= 2 and float(anchor[1]) > 1.0:
+		ay = float(tex.get_height()) * (float(anchor[1]) / 512.0)
+		ax = float(tex.get_width()) * (float(anchor[0]) / 128.0)
+	return Vector2(-ax, -ay)
 
 
 func _plan_for(cell: Vector2i) -> Dictionary:

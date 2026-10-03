@@ -58,16 +58,24 @@ func _go() -> void:
 		await _shot(_out.path_join("after_%02d.png" % i))
 	await _shot(_out.path_join("move_range.png"))
 	_clear_highlights(board)
-	var pad_cell := _pad_cell(board)
-	var beside := _pillar_neighbor(layer, board)
+	var pad_cell := Vector2i(7, 2)
+	var pillar_move := Vector2i(3, 4)
+	var pad_trace := _nearest_trace(board, pad_cell)
+	var pillar_trace := _nearest_trace(board, pillar_move)
 	_highlight(board, pad_cell, "move")
-	_highlight(board, beside, "move")
+	_highlight(board, pillar_move, "move")
 	var units := board.get_node_or_null("Units") as CanvasItem
 	if units != null:
 		units.visible = false
-	var image := await _grab()
-	image.save_png(_out.path_join("glow_sample.png"))
-	_report_glow(board, layer, image, pad_cell, beside)
+	var pad_image := await _grab_at(layer, _full_pulse(layer, board, pad_trace))
+	if pad_image != null:
+		pad_image.save_png(_out.path_join("glow_sample_pad.png"))
+	_report_pair(board, layer, pad_image, pad_cell, pad_trace, "pad")
+	var pillar_image := await _grab_at(layer, _full_pulse(layer, board, pillar_trace))
+	if pillar_image != null:
+		pillar_image.save_png(_out.path_join("glow_sample.png"))
+	_report_pair(board, layer, pillar_image, pillar_move, pillar_trace, "pillar")
+	await _report_pillar_peak(board, layer, pillar_move)
 	if units != null:
 		units.visible = true
 	_place_for_range()
@@ -101,6 +109,158 @@ func _mark_hover(board: Node, cell: Vector2i) -> void:
 	tile.set("is_selected", true)
 	if tile.has_method("_request_paint"):
 		tile.call("_request_paint")
+
+
+func _nearest_trace(board: Node, around: Vector2i) -> Vector2i:
+	var tiles: Dictionary = board.get("tiles")
+	var best := Vector2i(-1, -1)
+	var best_d := 999
+	for cell in tiles.keys():
+		if cell == around:
+			continue
+		var glow := (tiles[cell] as Node).get_node_or_null("ThunderGlow") as Sprite2D
+		if glow == null or not (glow.texture is AtlasTexture):
+			continue
+		var atlas := glow.texture as AtlasTexture
+		if atlas.atlas == null:
+			continue
+		var slice := float(atlas.atlas.get_width()) / 8.0
+		if slice < 1.0:
+			continue
+		var index := int(round(atlas.region.position.x / slice))
+		if index < 2:
+			continue
+		var dist := absi(cell.x - around.x) + absi(cell.y - around.y)
+		if dist < best_d:
+			best_d = dist
+			best = cell
+	return best
+
+
+func _full_pulse(layer: Node, board: Node, cell: Vector2i) -> float:
+	var tiles: Dictionary = board.get("tiles")
+	if not tiles.has(cell):
+		return 0.0
+	var glow := (tiles[cell] as Node).get_node_or_null("ThunderGlow") as CanvasItem
+	if glow == null or not (glow.material is ShaderMaterial):
+		return 0.0
+	var phase := float((glow.material as ShaderMaterial).get_shader_parameter("phase"))
+	return layer.full_pulse_time(phase)
+
+
+func _grab_at(layer: Node, t: float) -> Image:
+	await process_frame
+	layer.preview_time(t)
+	RenderingServer.force_draw()
+	return root.get_texture().get_image()
+
+
+func _move_near_pillar(board: Node, layer: Node) -> Vector2i:
+	var tiles: Dictionary = board.get("tiles")
+	var best := Vector2i(-1, -1)
+	var best_d := 999
+	for child in layer.get_children():
+		if not str(child.name).begins_with("ThunderPillar") or not child.has_meta("cell"):
+			continue
+		var cell: Vector2i = child.get_meta("cell")
+		for delta: Vector2i in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var neighbor: Vector2i = cell + delta
+			if not tiles.has(neighbor):
+				continue
+			var trace := _nearest_trace(board, neighbor)
+			var dist := absi(trace.x - neighbor.x) + absi(trace.y - neighbor.y)
+			if dist == 1 and dist < best_d:
+				best_d = dist
+				best = neighbor
+				return best
+	return best
+
+
+func _report_pair(board: Node, layer: Node, image: Image, move_cell: Vector2i, trace_cell: Vector2i, label: String) -> void:
+	if image == null:
+		push_error("no %s frame to sample" % label)
+		return
+	var tiles: Dictionary = board.get("tiles")
+	var move_tile: Node2D = tiles[move_cell]
+	var trace_tile: Node2D = tiles[trace_cell]
+	var zoom := _zoom(board)
+	var move := _sample_point(image, _screen(move_tile))
+	var inner := _dimmest_cyan(image, _screen(move_tile), zoom)
+	var trace := _brightest_green(image, _screen(trace_tile), _screen(move_tile), zoom, _pillar_sprites(layer))
+	_print_sample("move_%s" % label, move)
+	_print_sample("move_%s_inner" % label, inner)
+	_print_sample("trace_%s" % label, trace)
+	var ahead := float(move["lum"]) > float(trace["lum"]) and float(inner["lum"]) > float(trace["lum"])
+	print("GLOW_FULL_PULSE %s move_cell=%s trace_cell=%s move=%.4f inner=%.4f trace=%.4f ahead=%s" % [label, move_cell, trace_cell, float(move["lum"]), float(inner["lum"]), float(trace["lum"]), str(ahead)])
+
+
+func _dimmest_cyan(image: Image, center: Vector2, zoom: float) -> Dictionary:
+	var best := _sample_point(image, center)
+	var half_x := 32.0 * zoom * 0.55
+	var half_y := 16.0 * zoom * 0.55
+	var x0 := clampi(int(floor(center.x - half_x)), 0, image.get_width() - 1)
+	var x1 := clampi(int(ceil(center.x + half_x)), 0, image.get_width())
+	var y0 := clampi(int(floor(center.y - half_y)), 0, image.get_height() - 1)
+	var y1 := clampi(int(ceil(center.y + half_y)), 0, image.get_height())
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if absf(float(x) - center.x) / maxf(half_x, 1.0) + absf(float(y) - center.y) / maxf(half_y, 1.0) > 1.0:
+				continue
+			var color := image.get_pixel(x, y)
+			if color.b <= color.g or color.b < color.r + 0.18:
+				continue
+			var sample := {"color": color, "lum": _lum(color), "at": Vector2i(x, y)}
+			if float(sample["lum"]) < float(best["lum"]):
+				best = sample
+	return best
+
+
+func _brightest_green(image: Image, center: Vector2, avoid: Vector2, zoom: float, pillars: Array) -> Dictionary:
+	var best := {"color": Color(0, 0, 0), "lum": -1.0, "at": Vector2i.ZERO}
+	var half_x := 32.0 * zoom
+	var half_y := 16.0 * zoom
+	var x0 := clampi(int(floor(center.x - half_x)), 0, image.get_width() - 1)
+	var x1 := clampi(int(ceil(center.x + half_x)), 0, image.get_width())
+	var y0 := clampi(int(floor(center.y - half_y)), 0, image.get_height() - 1)
+	var y1 := clampi(int(ceil(center.y + half_y)), 0, image.get_height())
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			if absf(float(x) - center.x) / half_x + absf(float(y) - center.y) / half_y > 1.0:
+				continue
+			if absf(float(x) - avoid.x) / half_x + absf(float(y) - avoid.y) / half_y <= 1.0:
+				continue
+			if _pixel_on_pillar(pillars, x, y):
+				continue
+			var color := image.get_pixel(x, y)
+			if color.g < color.r + 0.18 or color.g < color.b + 0.04:
+				continue
+			var lum := _lum(color)
+			if lum > float(best["lum"]):
+				best = {"color": color, "lum": lum, "at": Vector2i(x, y)}
+	return best
+
+
+func _report_pillar_peak(board: Node, layer: Node, beside: Vector2i) -> void:
+	var pillar := _pillar_at(layer, beside)
+	if pillar == null:
+		return
+	var cell: Vector2i = pillar.get_meta("cell")
+	_highlight(board, cell, "move")
+	var image := await _grab_at(layer, layer.full_pulse_time(0.0))
+	if image == null:
+		return
+	var peak := _sample_point(image, _screen(pillar))
+	_print_sample("pillar_pool_over_move", peak)
+	_print_sample("pillar_sprite_over_move", _brightest(image, _screen_rect(pillar)))
+	_highlight(board, cell, "")
+	var plain := await _grab_at(layer, layer.full_pulse_time(0.0))
+	if plain == null:
+		return
+	_print_sample("pillar_pool_over_floor", _sample_point(plain, _screen(pillar)))
+	_print_sample("pillar_sprite_over_floor", _brightest(plain, _screen_rect(pillar)))
+	var tiles: Dictionary = board.get("tiles")
+	if tiles.has(Vector2i(8, 5)):
+		_print_sample("quiet_floor", _sample_point(plain, _screen(tiles[Vector2i(8, 5)])))
 
 
 func _report_glow(board: Node, layer: Node, image: Image, pad_cell: Vector2i, beside: Vector2i) -> void:

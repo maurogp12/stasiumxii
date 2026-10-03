@@ -26,19 +26,19 @@ func _test_params_and_slots() -> void:
 	eq(str(params.get("theme", "")), "thunderwell", "the json names the thunderwell theme")
 	eq(str(params.get("display_name", "")), "Thunderwell Core", "the display name is Thunderwell Core")
 	eq(float(params.get("cell_draw_scale", 0.0)), 0.5, "cell art is drawn at half size")
-	eq(str(params.get("art_status", "")), "v1", "thunderwell art is the approved v1 set")
+	eq(str(params.get("art_status", "")), "v3b", "thunderwell art is the approved v3b set")
 	truthy(FileAccess.file_exists(FLOOR.art_root() + "README.md"), "the floor folder ships the art readme")
 	truthy(params.has("pulse_hz"), "pulse speed is in the floor json")
 	truthy(params.has("pulse_amount"), "pulse amount is in the floor json")
 	truthy(params.has("z_order"), "z order is in the floor json")
 	var slots: Dictionary = params.get("slots", {})
 	var expected := {
-		"floor_tiles": [512, 64],
+		"floor_tiles": [1024, 64],
 		"pad_blue": [128, 96],
 		"pad_red": [128, 96],
 		"light_pillar": [128, 512],
 		"room_edge_dark": [1024, 640],
-		"glow_mask": [512, 64],
+		"glow_mask": [1024, 64],
 	}
 	for slot in expected.keys():
 		var path := FLOOR.resolve_slot(slot)
@@ -62,12 +62,18 @@ func _test_params_and_slots() -> void:
 	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
 	var src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
 	var glow_src := src.substr(src.find("const GLOW_SHADER"), src.find("const PAD_SHADER") - src.find("const GLOW_SHADER"))
-	truthy(src.contains("float intensity = tex.r;"), "glow intensity is the red channel")
-	truthy(src.contains("float flow = tex.g;"), "the green channel is still read")
-	truthy(glow_src.contains("G is the port mask"), "route-strip G is the port mask, not a direction")
-	truthy(glow_src.contains("float glow = intensity * glow_strength * pulse * highlight_dim;"), "trace glow dims under a highlight")
-	truthy(glow_src.contains("mix(legacy_band, route_band, route_pulse)"), "the route pulse replaces the legacy ramp")
+	truthy(glow_src.contains("tex.r"), "glow intensity is the red channel")
+	truthy(glow_src.contains("float gate = tex.g;"), "the green channel gates the pulse")
+	truthy(glow_src.contains("is not a flow direction"), "green is a trace mask, not a direction")
+	truthy(glow_src.contains("float pulse = gate * wave;"), "the pulse is the trace mask times the wave")
+	truthy(glow_src.contains("glow_color * amount"), "the trace tint scales the pulsed emission")
+	truthy(glow_src.contains("highlight_dim"), "trace glow dims under a highlight")
+	truthy(glow_src.contains("min(glow_strength, 0.25)"), "the shader never exceeds glow strength 0.25")
+	truthy(glow_src.contains("abs(local.x - 0.5) + abs(local.y - 0.5)"), "glow stays inside the cell diamond")
+	eq(glow_src.contains("route_pulse"), false, "the route pulse is the cell phase, not a legacy mix")
 	eq(float(params.get("trace_highlight_dim", 0.0)), 0.4, "a highlight dims the trace to 0.4")
+	eq(float(params.get("glow_strength", 0.0)), 0.16, "glow strength stays under the 0.25 cap")
+	truthy(FLOOR.glow_strength() <= 0.25, "glow strength never exceeds 0.25")
 	_test_routes(params)
 	_test_placeholder_strip()
 	_test_phase_ignores_flips()
@@ -119,21 +125,30 @@ func _test_params_and_slots() -> void:
 	eq(str(glow_spec.get("format", "")), "rgb", "glow_mask is an RGB png")
 	var channels: Dictionary = glow_spec.get("channels", {})
 	eq(str(channels.get("r", "")), "glow_intensity", "red holds the glow intensity")
-	eq(str(channels.get("g", "")), "flow_gradient", "green holds the flow gradient")
+	eq(str(channels.get("g", "")), "trace_mask", "green is the trace mask")
+	eq(str(channels.get("b", "")), "zero", "blue is unused")
 	var glow_tex := load(FLOOR.resolve_slot("glow_mask")) as Texture2D
 	var glow_img := glow_tex.get_image()
 	var fmt := glow_img.get_format()
 	eq(fmt == Image.FORMAT_L8 or fmt == Image.FORMAT_LA8, false, "glow_mask is stored as color, not greyscale")
 	var split := false
 	var blue := 0.0
+	var plain := 0.0
+	var traced := 0.0
 	for y in glow_img.get_height():
 		for x in glow_img.get_width():
 			var px := glow_img.get_pixel(x, y)
 			blue = maxf(blue, px.b)
+			if x < 256:
+				plain = maxf(plain, maxf(px.r, px.g))
+			else:
+				traced = maxf(traced, px.r)
 			if absf(px.r - px.g) > 0.04:
 				split = true
 	truthy(split, "glow_mask red and green carry different data")
 	truthy(blue <= 0.004, "glow_mask blue channel is 0")
+	truthy(plain <= 0.004, "plain slots a and b carry no glow")
+	truthy(traced > 0.9, "traced slots carry full-range emission")
 
 
 func _test_board_wires_the_theme() -> void:
@@ -198,7 +213,7 @@ func _test_live_theme() -> void:
 	truthy(layer.room_scale() > 1.0, "the room gradient is scaled up")
 	truthy(layer.hole_is_generated(), "the board hole is generated from the cells")
 	var atlas: Vector2 = layer.floor_atlas_size()
-	eq(int(atlas.x), 512, "floor tiles are one 512-wide strip")
+	eq(int(atlas.x), 1024, "floor tiles are one 1024-wide strip")
 	eq(int(atlas.y), 64, "the floor strip is 64 tall")
 	truthy(is_equal_approx(layer.pad_offset_y(), -16.0), "the pad diamond sits on the cell and the cap rises")
 	var room_at: Vector2 = layer.room_position()
@@ -213,9 +228,12 @@ func _test_live_theme() -> void:
 		eq(pillar_sprite.position, anchor.position, "the pillar stands on its cell")
 		eq(pillar_sprite.z_index, (cell.x + cell.y) * 10, "the pillar sorts with its cell, under the fighter")
 		eq(pillar_sprite.z_as_relative, false, "the pillar sort is in board space")
-		eq(pillar_sprite.offset, Vector2(-pillar_sprite.texture.get_width() * 0.5, -float(pillar_sprite.texture.get_height())), "the pillar offset is bottom-centre")
+		var pool: Array = FLOOR.load_params().get("pillar_anchor", [])
+		var ax := float(pillar_sprite.texture.get_width()) * float(pool[0]) / 128.0
+		var ay := float(pillar_sprite.texture.get_height()) * float(pool[1]) / 512.0
+		eq(pillar_sprite.offset, Vector2(-ax, -ay), "the pillar light pool sits on the cell")
 	var atlas_size: Vector2 = layer.glow_atlas_size()
-	eq(int(atlas_size.x), 512, "glow_mask is one 512-wide strip")
+	eq(int(atlas_size.x), 1024, "glow_mask is one 1024-wide strip")
 	eq(int(atlas_size.y), 64, "glow_mask is 64 tall")
 	var glow := 0
 	var pads := 0
@@ -246,6 +264,12 @@ func _test_live_theme() -> void:
 		var mat := glow_sprite.material as ShaderMaterial
 		_assert_trace_uniforms(mat)
 		_assert_highlight_dim(layer, glow_tile, mat)
+		_assert_route_piece(board, Vector2i(2, 3), 2, true, false, 1.0 / 11.0)
+		_assert_route_piece(board, Vector2i(2, 2), 5, true, true, 0.0)
+		_assert_route_piece(board, Vector2i(2, 7), 4, false, true, 0.0)
+		_assert_route_piece(board, Vector2i(5, 7), 6, false, false, 3.0 / 15.0)
+		_assert_route_piece(board, Vector2i(5, 10), 7, false, false, 10.0 / 15.0)
+		_assert_route_piece(board, Vector2i(7, 10), 7, true, false, 12.0 / 15.0)
 		var move := BoardTile.new()
 		move.highlight = "move"
 		var flat := move.overlay_color()
@@ -312,7 +336,8 @@ func _assert_trace_uniforms(mat: ShaderMaterial) -> void:
 		return
 	_assert_vec3(mat, "glow_color", FLOOR.glow_color(), "the trace glow")
 	truthy(is_equal_approx(float(mat.get_shader_parameter("glow_strength")), FLOOR.glow_strength()), "the trace glow loads the json strength")
-	truthy(is_equal_approx(float(mat.get_shader_parameter("route_pulse")), 0.0), "v1 art keeps the legacy pulse until the 8-slot strip lands")
+	truthy(float(mat.get_shader_parameter("glow_strength")) <= 0.25, "the live trace never exceeds strength 0.25")
+	eq(mat.get_shader_parameter("route_pulse") == null, true, "the legacy route pulse uniform is gone")
 
 
 func _assert_highlight_dim(layer: Node, tile: Node, mat: ShaderMaterial) -> void:
@@ -355,8 +380,10 @@ func _test_routes(params: Dictionary) -> void:
 				var prev: Vector2i = cells[i - 1]
 				eq(absi(cell.x - prev.x) + absi(cell.y - prev.y), 1, "route cells stay orthogonal at %s" % cell)
 			seen[cell] = true
-	var used := {0: 0, 1: 0, 7: 0}
+	var used := {0: 0, 1: 0}
+	var side_bends := 0
 	var traced := 0
+	var strip_slots: Array = params.get("strip", {}).get("slots", [])
 	for y in 15:
 		for x in 15:
 			var cell := Vector2i(x, y)
@@ -364,26 +391,31 @@ func _test_routes(params: Dictionary) -> void:
 			var slot := int(plan.get("slot", -1))
 			var mask := int(plan.get("mask", 0))
 			if mask == 0:
-				truthy(slot == 0 or slot == 1 or slot == 7, "an untraced cell is filled from a, b, or h")
+				truthy(slot == 0 or slot == 1, "an untraced cell is filled from a or b")
 				used[slot] = int(used[slot]) + 1
-				eq(bool(plan.get("flip_h", false)) or bool(plan.get("flip_v", false)) or bool(plan.get("diag", false)), false, "a plain cell is not flipped")
+				eq(bool(plan.get("flip_h", false)) or bool(plan.get("flip_v", false)), false, "a plain cell is not flipped")
 			else:
 				traced += 1
-				var orient: Dictionary = FLOOR.orient_for_mask(mask)
-				eq(int(orient.get("slot", -1)), slot, "the slot follows the connected edges")
-				eq(FLOOR._apply_orient(_canon_mask(slot), int(orient.get("orient", 0))), mask, "the flip puts the trace on those edges")
-	truthy(int(used[0]) > 0 and int(used[1]) > 0 and int(used[7]) > 0, "plain fill uses a, b, and h")
+				if slot == 7:
+					side_bends += 1
+				var listed := _flip_ports(strip_slots, slot, str(plan.get("flip", "none")))
+				eq(_mask_from_names(listed), mask, "the piece ports match the route at %s" % cell)
+	truthy(int(used[0]) > 0 and int(used[1]) > 0, "plain fill uses a and b")
+	eq(int(used.get(7, 0)), 0, "slot h is not a plain fill")
+	truthy(side_bends > 0, "slot h is used as a side bend")
 	eq(traced, seen.size(), "only route cells carry a trace")
+	_test_port_table(params)
 	for mask in [1, 2, 4, 8, 5, 10, 3, 9, 6, 12, 7, 11, 13, 14, 15]:
-		var plan: Dictionary = FLOOR.orient_for_mask(mask)
-		var slot := int(plan.get("slot", -1))
-		eq(FLOOR._apply_orient(_canon_mask(slot), int(plan.get("orient", 0))), mask, "slot %s covers port mask %s" % [slot, mask])
+		var plan: Dictionary = FLOOR.piece_for_mask(mask)
+		var listed := _flip_ports(strip_slots, int(plan.get("slot", -1)), str(plan.get("flip", "none")))
+		eq(_mask_from_names(listed), mask, "the port table covers mask %s" % mask)
 
 
 func _test_placeholder_strip() -> void:
 	eq(FLOOR.strip_slots(1024, 64), 8, "a 1024x64 strip has 8 slots")
-	eq(FLOOR.strip_slots(512, 64), 4, "the shipped 512x64 strip stays 4 slots")
-	eq(FLOOR.strip_slots(256, 32), 4, "the 1x fallback stays 4 slots")
+	eq(FLOOR.strip_slots(512, 64), 4, "a 512x64 image is 4 slots")
+	eq(FLOOR.strip_slots(512, 32), 8, "the half-size floor strip stays 8 slots")
+	eq(FLOOR.strip_slots(256, 32), 4, "a 256x32 image is 4 slots")
 	var slot := FLOOR.slot_uv_rect(2, 8)
 	truthy(is_equal_approx(slot.position.x, 0.25) and is_equal_approx(slot.size.x, 0.125), "slot c is the third 128px slice")
 	var image := Image.create(1024, 64, false, Image.FORMAT_RGB8)
@@ -431,32 +463,76 @@ func _test_phase_ignores_flips() -> void:
 	truthy(is_equal_approx(FLOOR.route_phase(Vector2i(5, 7), routes), 3.0 / 15.0), "a cross keeps the lower route index")
 	truthy(is_equal_approx(FLOOR.route_phase(Vector2i(2, 7), routes), 0.0), "a junction keeps the lower route index")
 	truthy(is_equal_approx(FLOOR.route_phase(Vector2i(12, 7), routes), 5.0 / 11.0), "a shared pad keeps the lower route index")
-	for mask in [1, 2, 4, 8, 5, 10, 3, 9, 6, 12, 7, 11, 13, 14, 15]:
-		var plan: Dictionary = FLOOR.orient_for_mask(mask)
-		var canon := _canon_mask(int(plan.get("slot", 0)))
-		var orient := int(plan.get("orient", 0))
-		for port in [FLOOR.PORT_N, FLOOR.PORT_E, FLOOR.PORT_S, FLOOR.PORT_W]:
-			if (canon & port) == 0:
+
+
+func _test_port_table(params: Dictionary) -> void:
+	var slots: Array = params.get("strip", {}).get("slots", [])
+	var seen := {}
+	for slot in slots:
+		var flips: Dictionary = slot.get("ports_by_flip", {})
+		var none: Array = flips.get("none", [])
+		for key in ["none", "h", "v", "hv"]:
+			var flip_h: bool = key == "h" or key == "hv"
+			var flip_v: bool = key == "v" or key == "hv"
+			var mirrored: Array = []
+			for port in none:
+				mirrored.append(FLOOR.mirror_port_name(str(port), flip_h, flip_v))
+			mirrored.sort()
+			var listed: Array = []
+			for port in flips.get(key, []):
+				listed.append(str(port))
+			listed.sort()
+			eq(mirrored, listed, "slot %s flip %s mirrors the canonical ports" % [str(slot.get("slot", "")), key])
+			if listed.is_empty() or seen.has(_mask_from_names(listed)):
 				continue
-			var screen := FLOOR.map_port(port, orient)
-			var back := FLOOR.warp_local(FLOOR.port_uv(screen), orient)
-			var want := FLOOR.port_uv(port)
-			truthy(back.distance_to(want) < 0.02, "the slot warp follows the port flip")
+			var mask := _mask_from_names(listed)
+			seen[mask] = true
+			var plan: Dictionary = FLOOR.piece_for_mask(mask)
+			eq(int(plan.get("slot", -1)), int(slot.get("index", -2)), "mask %s picks slot %s" % [mask, str(slot.get("slot", ""))])
+			eq(str(plan.get("flip", "")), key, "mask %s picks flip %s" % [mask, key])
 
 
-func _canon_mask(slot: int) -> int:
-	match slot:
-		2:
-			return FLOOR.PORT_N | FLOOR.PORT_S
-		3:
-			return FLOOR.PORT_N | FLOOR.PORT_E
-		4:
-			return FLOOR.PORT_N | FLOOR.PORT_E | FLOOR.PORT_W
-		5:
-			return FLOOR.PORT_N
-		6:
-			return FLOOR.PORT_N | FLOOR.PORT_E | FLOOR.PORT_S | FLOOR.PORT_W
-	return 0
+func _flip_ports(slots: Array, index: int, flip: String) -> Array:
+	for slot in slots:
+		if int(slot.get("index", -1)) != index:
+			continue
+		var flips: Dictionary = slot.get("ports_by_flip", {})
+		var listed: Array = []
+		for port in flips.get(flip, []):
+			listed.append(str(port))
+		return listed
+	return []
+
+
+func _mask_from_names(names: Array) -> int:
+	var mask := 0
+	for name in names:
+		match str(name):
+			"NE":
+				mask |= FLOOR.PORT_N
+			"SE":
+				mask |= FLOOR.PORT_E
+			"SW":
+				mask |= FLOOR.PORT_S
+			"NW":
+				mask |= FLOOR.PORT_W
+	return mask
+
+
+func _assert_route_piece(board: Node, cell: Vector2i, slot: int, flip_h: bool, flip_v: bool, phase: float) -> void:
+	var tile: Node = board.tiles[cell]
+	var glow := tile.get_node_or_null("ThunderGlow") as CanvasItem
+	truthy(glow != null, "route cell %s has a glow sprite" % cell)
+	if glow == null or not (glow.material is ShaderMaterial):
+		return
+	var mat := glow.material as ShaderMaterial
+	var plate := tile.look_floor() as AtlasTexture
+	truthy(plate != null, "route cell %s has a floor plate" % cell)
+	if plate != null:
+		eq(int(round(plate.region.position.x / 128.0)), slot, "route cell %s uses slot %s" % [cell, slot])
+	truthy(is_equal_approx(float(mat.get_shader_parameter("phase")), phase), "route cell %s keeps its route phase" % cell)
+	truthy(is_equal_approx(float(mat.get_shader_parameter("flip_h")), 1.0 if flip_h else 0.0), "route cell %s h flip" % cell)
+	truthy(is_equal_approx(float(mat.get_shader_parameter("flip_v")), 1.0 if flip_v else 0.0), "route cell %s v flip" % cell)
 
 
 func _assert_pad_uniforms(mat: ShaderMaterial) -> void:
