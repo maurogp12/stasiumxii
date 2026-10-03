@@ -226,16 +226,24 @@ func _paint_snow_cap() -> void:
 	if snow_amount <= 0.05 or cover_rect.size.y < 8.0:
 		return
 	var a := clampf(snow_amount, 0.0, 1.0)
-	var y := cover_rect.position.y + minf(16.0, cover_rect.size.y * 0.2)
-	var half := maxf(4.0, minf(16.0, cover_rect.size.x * 0.28))
-	var cap := Color(0.97, 0.98, 1.0, 0.72 * a)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-half, y + 5.0),
-		Vector2(0.0, y - 2.0),
-		Vector2(half, y + 4.0),
-		Vector2(half * 0.25, y + 8.0),
-	]), cap)
-	draw_circle(Vector2(half * 0.15, y + 2.0), 2.6, Color(1, 1, 1, 0.5 * a))
+	var top_h := maxf(10.0, cover_rect.size.y * 0.34)
+	var snow := Color(0.97, 0.98, 1.0, 0.9 * a)
+	# The top third of the roof slope, not a tiny ridge cap.
+	draw_rect(Rect2(cover_rect.position.x, cover_rect.position.y, cover_rect.size.x, top_h), snow)
+	draw_rect(Rect2(cover_rect.position.x + cover_rect.size.x * 0.1, cover_rect.position.y, cover_rect.size.x * 0.8, top_h * 0.45), Color(1, 1, 1, 0.55 * a))
+	if _snow_gathers_at_base():
+		var foot := Vector2(0, -3)
+		draw_circle(foot + Vector2(-12, 3), 8.0, Color(1, 1, 1, 0.88 * a))
+		draw_circle(foot + Vector2(9, 5), 6.0, Color(0.97, 0.98, 1, 0.8 * a))
+		draw_circle(foot, 4.5, Color(1, 1, 1, 0.75 * a))
+
+
+func _snow_gathers_at_base() -> bool:
+	var name := prop_type + " " + art_id
+	for token in ["tree", "fence", "wall", "hedge"]:
+		if name.find(token) >= 0:
+			return true
+	return false
 
 
 func _draw_window_glow(s: Vector2) -> void:

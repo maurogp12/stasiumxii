@@ -230,7 +230,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 			ci.draw_line(c + Vector2(-8, -1 + 3 * n), c + Vector2(6, -1 + 3 * n), Color(1, 1, 1, 0.22), 1.0)
 		var edge := Color(0, 0, 0, 0.06)
 		ci.draw_polyline(PackedVector2Array([lifted[0], lifted[1], lifted[2], lifted[3], lifted[0]]), edge, 1.0)
-	_fade_void_edge(ci, cell, steps, rank)
+	_theme_wash(ci, cell, terrain, steps)
+	_fade_void_edge(ci, cell, steps, rank, terrain)
 	_dust_snow(ci, cell, paint, steps)
 
 
@@ -321,14 +322,34 @@ func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallbac
 	Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y))
 
 
-func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int) -> void:
+func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int, terrain: String) -> void:
 	if rank <= 0:
 		return
 	var fade := FIELD_FADE
-	# The outer cell matches the fill so its diamond edge disappears.
-	# The next cell is the halfway step.
+	# The sea meets the island. A stream that runs off the land fades into that sea.
+	if terrain == "water":
+		fade = Color("1e6e96")
+	elif terrain == "cliff":
+		fade = Color("9c935f")
 	fade.a = 1.0 if rank == 1 else 0.5
 	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), fade)
+
+
+## Sand, murk, and blight are paints on the same tiles, so each town reads apart.
+func _theme_wash(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
+	if zone == null or terrain == "water" or terrain == "cliff" or terrain == "dirt_road":
+		return
+	var id := zone.zone_id
+	var wash := Color(0, 0, 0, 0)
+	if id.find("eastmarch") >= 0:
+		wash = Color(0.89, 0.78, 0.48, 0.5)
+	elif id.find("southbridge") >= 0:
+		wash = Color(0.32, 0.4, 0.26, 0.42)
+	elif id.find("westwatch") >= 0:
+		wash = Color(0.38, 0.22, 0.46, 0.48)
+	if wash.a <= 0.0:
+		return
+	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), wash)
 
 
 func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void:
@@ -336,13 +357,17 @@ func _dust_snow(ci: Node2D, cell: Vector2i, terrain: String, steps: int) -> void
 	if amount <= 0.2:
 		return
 	var n := _hash(cell)
-	if terrain == "cliff" or n > 0.62:
-		var dust := Color(0.96, 0.98, 1.0, 0.18 * amount)
-		ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), dust)
-	if n > 0.8:
+	var diamond := Pick.diamond(cell, float(steps))
+	# Pale frost on the grass, readable at a glance. Not a few ridge caps.
+	if terrain != "water" and terrain != "dirt_road":
+		var frost := Color(0.78, 0.86, 0.94, 0.42 * amount)
+		ci.draw_colored_polygon(diamond, frost)
+	if terrain == "cliff":
+		ci.draw_colored_polygon(diamond, Color(0.96, 0.98, 1.0, 0.55 * amount))
+	if n > 0.35:
 		var c := BoardVisualSort.cell_to_local(cell, float(steps))
-		ci.draw_circle(c + Vector2(-4, 1), 3.0, Color(1, 1, 1, 0.35 * amount))
-		ci.draw_circle(c + Vector2(5, -2), 2.0, Color(1, 1, 1, 0.28 * amount))
+		ci.draw_circle(c + Vector2(-6, 2), 6.5, Color(1, 1, 1, 0.82 * amount))
+		ci.draw_circle(c + Vector2(7, -1), 4.5, Color(0.96, 0.98, 1, 0.7 * amount))
 
 
 func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2) -> bool:

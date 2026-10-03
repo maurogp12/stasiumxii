@@ -58,6 +58,7 @@ func _run() -> void:
 	eq(int(counts["westwatch"]), 6, "Westwatch has 6 outskirts")
 	_test_cover(map, offsets)
 	_test_edges(map, offsets)
+	_test_coast(map, offsets)
 	_test_bands(fresh)
 	_test_walks(map, fresh)
 
@@ -82,6 +83,42 @@ func _test_cover(map: WorldMap, offsets: Dictionary) -> void:
 			if not owner.has("%d,%d" % [x, y]):
 				holes += 1
 	eq(holes, 0, "every interior cell is covered (%d holes)" % holes)
+
+
+func _test_coast(map: WorldMap, offsets: Dictionary) -> void:
+	var lo := 1000
+	var hi := 0
+	var water_edge := 0
+	for x in range(X0, X1):
+		var inset := 0
+		var y := Y0
+		while y < Y1:
+			var found := _terrain_at_world(map, offsets, Vector2i(x, y))
+			if found == "water":
+				inset += 1
+				if y == Y0:
+					water_edge += 1
+			else:
+				break
+			y += 1
+		if inset < lo:
+			lo = inset
+		if inset > hi:
+			hi = inset
+	eq(water_edge > 100, true, "the north edge is mostly sea (%d)" % water_edge)
+	eq(hi - lo >= 4, true, "the north shore is not one straight line (%d..%d)" % [lo, hi])
+
+
+func _terrain_at_world(map: WorldMap, offsets: Dictionary, world: Vector2i) -> String:
+	for id in offsets.keys():
+		var zone: WorldZone = map.zone(str(id))
+		if zone == null:
+			continue
+		var origin: Vector2i = offsets[id]
+		var local := world - origin
+		if zone.in_bounds(local):
+			return zone.terrain_at(local)
+	return ""
 
 
 func _test_edges(map: WorldMap, offsets: Dictionary) -> void:

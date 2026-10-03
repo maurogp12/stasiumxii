@@ -373,7 +373,7 @@
     {
       "x": 4,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -536,6 +536,18 @@
       "type": "reeds_a",
       "x": 2,
       "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_shore_000",
+      "type": "reeds_b",
+      "x": 1,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_shore_001",
+      "type": "mushrooms_a",
+      "x": 1,
+      "y": 1
     }
   ]
 }

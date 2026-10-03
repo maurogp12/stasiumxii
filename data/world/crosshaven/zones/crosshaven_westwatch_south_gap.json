@@ -441,7 +441,98 @@
       ]
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "id": "crosshaven_westwatch_south_gap_tree_0_0",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_fence_3_0",
+      "type": "fence",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 3,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_tree_10_0",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_quarry_rocks_a_19_0",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_tree_29_0",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 29,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 29,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_fence_34_0",
+      "type": "fence",
+      "blocks": true,
+      "origin": {
+        "x": 34,
+        "y": 0
+      },
+      "footprint": [
+        {
+          "x": 34,
+          "y": 0
+        }
+      ]
+    }
+  ],
   "tiles": [
     {
       "x": 0,
@@ -502,8 +593,8 @@
     {
       "x": 8,
       "y": 0,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -607,8 +698,8 @@
     {
       "x": 23,
       "y": 0,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -642,8 +733,8 @@
     {
       "x": 28,
       "y": 0,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -810,8 +901,8 @@
     {
       "x": 16,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -866,8 +957,8 @@
     {
       "x": 24,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -978,8 +1069,8 @@
     {
       "x": 4,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1076,7 +1167,7 @@
     {
       "x": 18,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1533,6 +1624,102 @@
       "type": "decal_moss",
       "x": 7,
       "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_000",
+      "type": "mushrooms_b",
+      "x": 1,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_001",
+      "type": "mushrooms_b",
+      "x": 6,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_002",
+      "type": "tuft_b",
+      "x": 20,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_003",
+      "type": "tuft_b",
+      "x": 21,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_004",
+      "type": "rock_small_d",
+      "x": 25,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_005",
+      "type": "mushrooms_b",
+      "x": 33,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_006",
+      "type": "rock_small_d",
+      "x": 1,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_007",
+      "type": "mushrooms_b",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_008",
+      "type": "tuft_b",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_009",
+      "type": "mushrooms_b",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_010",
+      "type": "decal_moss",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_011",
+      "type": "decal_moss",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_012",
+      "type": "tuft_b",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_013",
+      "type": "mushrooms_b",
+      "x": 15,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_014",
+      "type": "tuft_b",
+      "x": 19,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_westwatch_south_gap_shore_015",
+      "type": "rock_small_d",
+      "x": 22,
+      "y": 1
     }
   ]
 }

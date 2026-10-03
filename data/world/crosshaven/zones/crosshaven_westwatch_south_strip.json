@@ -755,7 +755,7 @@
     {
       "x": 12,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },

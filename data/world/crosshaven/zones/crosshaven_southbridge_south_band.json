@@ -955,7 +955,68 @@
       ]
     }
   ],
-  "props": [],
+  "props": [
+    {
+      "id": "crosshaven_southbridge_south_band_fence_4_1",
+      "type": "fence",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_tree_6_1",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_hedgerow_nwse_21_1",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 21,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 21,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_hedgerow_nwse_27_1",
+      "type": "hedgerow_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 27,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 27,
+          "y": 1
+        }
+      ]
+    }
+  ],
   "tiles": [
     {
       "x": 0,
@@ -1275,15 +1336,15 @@
     {
       "x": 1,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 2,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1373,15 +1434,15 @@
     {
       "x": 15,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 16,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1394,15 +1455,15 @@
     {
       "x": 18,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 19,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1520,15 +1581,15 @@
     {
       "x": 36,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 37,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1541,8 +1602,8 @@
     {
       "x": 39,
       "y": 1,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1583,8 +1644,8 @@
     {
       "x": 1,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1597,8 +1658,8 @@
     {
       "x": 3,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1618,15 +1679,15 @@
     {
       "x": 6,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 7,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1653,8 +1714,8 @@
     {
       "x": 11,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1702,15 +1763,15 @@
     {
       "x": 18,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 19,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1730,7 +1791,7 @@
     {
       "x": 22,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "dirt_road",
       "walkable": true,
       "height": 0
     },
@@ -1793,8 +1854,8 @@
     {
       "x": 31,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -1821,22 +1882,22 @@
     {
       "x": 35,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 36,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
       "x": 37,
       "y": 2,
-      "terrain": "golden_plains",
-      "walkable": true,
+      "terrain": "water",
+      "walkable": false,
       "height": 0
     },
     {
@@ -2271,6 +2332,78 @@
       "type": "decal_puddle_a",
       "x": 16,
       "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_000",
+      "type": "mushrooms_a",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_001",
+      "type": "reeds_b",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_002",
+      "type": "reeds_b",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_003",
+      "type": "lilypads_a",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_004",
+      "type": "decal_puddle_a",
+      "x": 23,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_005",
+      "type": "mushrooms_a",
+      "x": 24,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_006",
+      "type": "mushrooms_a",
+      "x": 32,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_007",
+      "type": "reeds_a",
+      "x": 33,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_008",
+      "type": "mushrooms_a",
+      "x": 41,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_009",
+      "type": "reeds_b",
+      "x": 42,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_010",
+      "type": "mushrooms_a",
+      "x": 9,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_south_band_shore_011",
+      "type": "reeds_b",
+      "x": 13,
+      "y": 2
     }
   ]
 }

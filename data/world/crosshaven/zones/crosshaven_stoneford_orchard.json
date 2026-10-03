@@ -858,6 +858,36 @@
           "y": 1
         }
       ]
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_hedgerow_nesw_4_1",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_hay_bale_19_1",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 1
+        }
+      ]
     }
   ],
   "tiles": [
@@ -1137,7 +1167,7 @@
     {
       "x": 3,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_cabbage",
       "walkable": true,
       "height": 0
     },
@@ -1221,7 +1251,7 @@
     {
       "x": 15,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1235,7 +1265,7 @@
     {
       "x": 17,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_carrot",
       "walkable": true,
       "height": 0
     },
@@ -1950,6 +1980,42 @@
       "id": "crosshaven_stoneford_orchard_decor_012",
       "type": "grass_tuft_a",
       "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_000",
+      "type": "flowers_a",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_001",
+      "type": "sunflowers_tall",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_002",
+      "type": "flowers_c",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_003",
+      "type": "flowers_c",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_004",
+      "type": "grass_tuft_a",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_orchard_shore_005",
+      "type": "flowers_a",
+      "x": 15,
       "y": 1
     }
   ]
