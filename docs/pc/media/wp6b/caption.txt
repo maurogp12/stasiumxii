@@ -1,0 +1,8 @@
+WP6b — Welcome to Crosshaven.
+
+The Warden at the Crossroads offers the mission (gold ! over the name). Accept, talk to the Trader, talk to the Door Keeper, then turn it in at the Warden.
+
+The corner card shows +15 XP, +20 Crypto Coins, and Level 2. 15 XP is 15% of the first curve step (the sample 40 is not used). The clip primes the XP bar so that payout crosses into level 2. Scout is offered next. The dungeon step stays "coming soon".
+
+Clip: wp6b_welcome.mp4 (960×720, 30 fps, H.264, about 20 s).
+Stills: welcome_offer.png (the offer), turn_in.png (the payout and level).

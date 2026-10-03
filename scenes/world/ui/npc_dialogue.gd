@@ -1,8 +1,10 @@
 extends CanvasLayer
 
 ## Talk panel. Slides in after the hero arrives. Esc or a click outside closes
-## it. Shops, quests, storage, travel and healing are Open, so the only extra
-## control is a disabled Coming soon button.
+## it. Accept and Turn in are wired by the world. Coming soon stays disabled.
+
+signal accept_requested(mission_id: String)
+signal turn_in_requested(mission_id: String)
 
 var _root: Control
 var _card: PanelContainer
@@ -11,28 +13,57 @@ var _title: Label
 var _role: Label
 var _body: RichTextLabel
 var _soon: Button
+var _accept: Button
+var _turn_in: Button
 var _open := false
 var _slide: Tween
+var _accept_id := ""
+var _turn_in_id := ""
+var npc_id := ""
 
 
 func is_open() -> bool:
 	return _open
 
 
-func open_for(record: Dictionary) -> void:
+func open_for(record: Dictionary, view: Dictionary = {}) -> void:
 	ensure_built()
+	npc_id = str(record.get("id", ""))
 	_title.text = str(record.get("name", ""))
 	_role.text = str(record.get("role", "")).capitalize()
-	var lines: Array = record.get("lines", [])
-	var text := ""
-	for line in lines:
-		if text != "":
-			text += "\n"
-		text += str(line)
-	_body.text = text
+	var mission_lines := str(view.get("lines", ""))
+	if mission_lines == "":
+		var lines: Array = record.get("lines", [])
+		var text := ""
+		for line in lines:
+			if text != "":
+				text += "\n"
+			text += str(line)
+		_body.text = text
+	else:
+		_body.text = mission_lines
+	_accept_id = str(view.get("accept_id", ""))
+	_turn_in_id = str(view.get("turn_in_id", ""))
+	_accept.visible = _accept_id != ""
+	_turn_in.visible = _turn_in_id != ""
+	var soon := bool(view.get("soon", false)) or (_accept_id == "" and _turn_in_id == "")
+	_soon.visible = soon
+	_soon.disabled = true
 	_open = true
 	_root.visible = true
 	_slide_in()
+
+
+func press_accept() -> void:
+	if _accept_id == "":
+		return
+	accept_requested.emit(_accept_id)
+
+
+func press_turn_in() -> void:
+	if _turn_in_id == "":
+		return
+	turn_in_requested.emit(_turn_in_id)
 
 
 func close() -> void:
@@ -71,7 +102,7 @@ func ensure_built() -> void:
 	_card.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	_card.offset_left = -340
 	_card.offset_right = 340
-	_card.offset_top = -250
+	_card.offset_top = -320
 	_card.offset_bottom = -36
 	_card.add_theme_stylebox_override("panel", _card_style())
 	_root.add_child(_card)
@@ -96,6 +127,23 @@ func ensure_built() -> void:
 	_body.custom_minimum_size = Vector2(640, 72)
 	_body.add_theme_color_override("default_color", Color(0.95, 0.92, 0.86))
 	box.add_child(_body)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	box.add_child(row)
+	_accept = Button.new()
+	_accept.name = "Accept"
+	_accept.text = "Accept"
+	_accept.visible = false
+	_accept.focus_mode = Control.FOCUS_NONE
+	_accept.pressed.connect(press_accept)
+	row.add_child(_accept)
+	_turn_in = Button.new()
+	_turn_in.name = "TurnIn"
+	_turn_in.text = "Turn in"
+	_turn_in.visible = false
+	_turn_in.focus_mode = Control.FOCUS_NONE
+	_turn_in.pressed.connect(press_turn_in)
+	row.add_child(_turn_in)
 	_soon = Button.new()
 	_soon.name = "ComingSoon"
 	_soon.text = "Coming soon"
@@ -105,16 +153,17 @@ func ensure_built() -> void:
 
 
 func _slide_in() -> void:
-	var rest := -250.0
+	var rest := -320.0
+	var height := 284.0
 	_card.offset_top = 40.0
-	_card.offset_bottom = 40.0 + 214.0
+	_card.offset_bottom = 40.0 + height
 	if _slide != null and is_instance_valid(_slide):
 		_slide.kill()
 	_slide = create_tween()
 	_slide.set_trans(Tween.TRANS_CUBIC)
 	_slide.set_ease(Tween.EASE_OUT)
 	_slide.tween_property(_card, "offset_top", rest, 0.28)
-	_slide.parallel().tween_property(_card, "offset_bottom", rest + 214.0, 0.28)
+	_slide.parallel().tween_property(_card, "offset_bottom", rest + height, 0.28)
 
 
 func _on_backdrop(event: InputEvent) -> void:

@@ -43,6 +43,8 @@ var sheet: Dictionary = {}
 var spent: Dictionary = {}
 var respecs_used: int = 0
 var coins: int = 0
+## Story and task state. Missing from an old save, so those loads start clear.
+var mission_blob: Dictionary = {}
 
 
 func _init() -> void:
@@ -286,6 +288,7 @@ func save() -> bool:
 		"spent": spent.duplicate(),
 		"respecs_used": respecs_used,
 		"coins": coins,
+		"missions": mission_blob.duplicate(true),
 	}))
 	return true
 
@@ -341,6 +344,7 @@ func read_save() -> bool:
 	var prev_spent: Dictionary = spent.duplicate()
 	var prev_respecs := respecs_used
 	var prev_coins := coins
+	var prev_missions: Dictionary = mission_blob.duplicate(true)
 	level = next_level
 	xp = next_xp
 	if not _apply_saved_spend(doc):
@@ -349,7 +353,20 @@ func read_save() -> bool:
 		spent = prev_spent
 		respecs_used = prev_respecs
 		coins = prev_coins
+		mission_blob = prev_missions
 		return false
+	if doc.has("missions"):
+		if typeof(doc["missions"]) != TYPE_DICTIONARY:
+			level = prev_level
+			xp = prev_xp
+			spent = prev_spent
+			respecs_used = prev_respecs
+			coins = prev_coins
+			mission_blob = prev_missions
+			return false
+		mission_blob = (doc["missions"] as Dictionary).duplicate(true)
+	else:
+		mission_blob = {}
 	return true
 
 

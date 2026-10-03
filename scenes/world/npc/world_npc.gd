@@ -61,6 +61,16 @@ var _strips = null
 var _bob := 0.0
 var _plate: Node2D
 var _opaque_top := 0
+var mark := ""
+
+
+func set_mark(next: String) -> void:
+	if next != "!" and next != "?":
+		next = ""
+	if mark == next:
+		return
+	mark = next
+	_sync_plate()
 
 
 ## Name plate drawn on a canvas layer above the grade, so fog does not wash it out.
@@ -72,6 +82,7 @@ class NamePlate extends Node2D:
 	const HEAD_GAP := 7.0
 
 	var plate_text := ""
+	var mark := ""
 	## Screen y of the sprite's visible head, relative to this plate's origin.
 	var head_y := 0.0
 
@@ -99,6 +110,15 @@ class NamePlate extends Node2D:
 		draw_rect(box, Color(0.09, 0.07, 0.05, 0.9), true)
 		draw_rect(box, Color(1.0, 0.95, 0.84, 0.95), false, 1.5)
 		draw_string(font, Vector2(label.position.x, baseline_y()), plate_text, HORIZONTAL_ALIGNMENT_LEFT, -1, FONT_SIZE, Color(1, 0.97, 0.9))
+		if mark == "":
+			return
+		var mark_size := 22
+		var mark_width := font.get_string_size(mark, HORIZONTAL_ALIGNMENT_LEFT, -1, mark_size).x
+		var center := Vector2(0, box.position.y - 16.0)
+		draw_circle(center, 13.0, Color(0.1, 0.07, 0.04, 0.92))
+		var mark_color := Color(1.0, 0.84, 0.22) if mark == "!" else Color(0.65, 0.9, 1.0)
+		var mark_base := center.y + font.get_ascent(mark_size) * 0.35
+		draw_string(font, Vector2(center.x - mark_width * 0.5, mark_base), mark, HORIZONTAL_ALIGNMENT_LEFT, -1, mark_size, mark_color)
 
 
 func setup(zone: WorldZone, record: Dictionary, plates: CanvasLayer = null) -> void:
@@ -166,6 +186,7 @@ func _sync_plate() -> void:
 	var canvas := get_global_transform_with_canvas()
 	_plate.position = canvas.origin
 	_plate.head_y = canvas.basis_xform(Vector2(0.0, _head_local_y())).y
+	_plate.mark = mark
 	_plate.queue_redraw()
 
 

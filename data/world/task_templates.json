@@ -1,0 +1,33 @@
+{
+  "format": "stasium.world_task_templates",
+  "format_version": 1,
+  "status": "proposed",
+  "notes": [
+    "Reach tasks are offered now, one at a time, scaled to the hero level.",
+    "Defeat stays offer_now false. Monster families are not listed yet, so none are invented.",
+    "clear_dungeon stays offer_now false until dungeon runs exist.",
+    "Task XP is the 4.8 share of xp_to_next(player level) at turn-in: reach 6%, defeat 10%, clear 30%. Pace is not applied.",
+    "Task coins are the low end of the 4.9 band for the hero level. Items stay empty."
+  ],
+  "templates": [
+    {
+      "id": "reach_landmark",
+      "step": "reach",
+      "offer_now": true,
+      "xp_percent": 6
+    },
+    {
+      "id": "defeat_family",
+      "step": "defeat",
+      "offer_now": false,
+      "xp_percent": 10,
+      "family": "Open"
+    },
+    {
+      "id": "clear_band_dungeon",
+      "step": "clear_dungeon",
+      "offer_now": false,
+      "xp_percent": 30
+    }
+  ]
+}
