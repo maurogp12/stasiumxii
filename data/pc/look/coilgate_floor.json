@@ -1,6 +1,6 @@
 {
   "art_status": "placeholder",
-  "note": "Stand-in paint for Thunderwell Core. The folder and theme id stay coilgate. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. Cell art (floor strip, pads, pillar, glow) is drawn at half size. room_edge_dark is a painted gradient scaled up; the hole is generated from the cell footprint. glow_mask green is a trace gradient. Import: linear, no mipmaps; room_edge_dark is BC7/VRAM, the rest lossless.",
+  "note": "Stand-in paint for Thunderwell Core. The folder and theme id stay coilgate. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. Cell art (floor strip, pads, pillar, glow) is drawn at half size. room_edge_dark is a painted gradient scaled up; the hole is generated from the cell footprint. glow_mask is an RGB PNG: R is glow intensity, G is the flow gradient along the traces. Import: linear, no mipmaps; room_edge_dark is BC7/VRAM, the rest lossless.",
   "display_name": "Thunderwell Core",
   "theme": "coilgate",
   "cell_draw_scale": 0.5,
@@ -23,9 +23,10 @@
     },
     "glow_mask": {
       "px": [512, 64],
+      "format": "rgb",
+      "channels": {"r": "glow_intensity", "g": "flow_gradient"},
       "layout": "one_strip",
       "slices": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
-      "green": "trace_gradient",
       "compress": "lossless"
     }
   },
