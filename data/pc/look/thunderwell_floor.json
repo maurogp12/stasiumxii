@@ -1,6 +1,6 @@
 {
   "art_status": "v1",
-  "note": "Thunderwell Core floor v1, approved. Theme id thunderwell. Masters are the @2x PNGs, drawn at half size; plain PNGs are the 1x fallbacks. Pixel sizes below are the masters. room_edge_dark is a darkness-only teal vignette (max 50/255) with no board shape; the hole is generated from the cell footprint. glow_mask is RGB data, lossless, linear, sampled with no source_color hint: R is trace intensity at full range, G is the flow ramp (same rate on every tile), B is 0. The shader uses glow = R * glow_strength * pulse(G). glow_color tints traces green near 140 degrees. pillar_color is pale green-white. pillar_strength 0.45 scales the additive pillar (1.0 washes its cell and the move tiles beside it); the sprite is anchored bottom-centre on the cell. pad_blue_color near 225 degrees and pad_red_color near 350 degrees are the painted hues; pad_strength only scales them. Floor, pads, pillar and the vignette keep source_color. 2D HDR and bloom are preview-only.",
+  "note": "Thunderwell Core floor v1, approved. Theme id thunderwell. Masters are the @2x PNGs, drawn at half size; plain PNGs are the 1x fallbacks. Pixel sizes below are the masters. room_edge_dark is a darkness-only teal vignette (max 50/255) with no board shape; the hole is generated from the cell footprint. glow_mask is RGB data, lossless, linear, sampled with no source_color hint: R is trace intensity at full range, G is the flow ramp (same rate on every tile), B is 0. The shader uses glow = R * glow_strength * pulse(G). glow_color tints traces green near 140 degrees. pillar_color is pale green-white. pillar_strength 0.45 scales the additive pillar (1.0 washes its cell and the move tiles beside it); the sprite is anchored bottom-centre and sorts with that cell, under the fighter and the move highlight. pad_blue_color near 225 degrees and pad_red_color near 350 degrees are the painted hues; pad_strength only scales them. Floor, pads, pillar and the vignette keep source_color. 2D HDR and bloom are preview-only.",
   "display_name": "Thunderwell Core",
   "theme": "thunderwell",
   "cell_draw_scale": 0.5,
@@ -53,6 +53,6 @@
     "floor": 0,
     "pad": 0,
     "glow": 0,
-    "pillar": 520
+    "pillar": 0
   }
 }

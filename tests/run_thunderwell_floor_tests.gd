@@ -205,6 +205,8 @@ func _test_live_theme() -> void:
 		var cell: Vector2i = pillar_sprite.get_meta("cell")
 		var anchor: Node2D = board.tiles[cell]
 		eq(pillar_sprite.position, anchor.position, "the pillar stands on its cell")
+		eq(pillar_sprite.z_index, (cell.x + cell.y) * 10, "the pillar sorts with its cell, under the fighter")
+		eq(pillar_sprite.z_as_relative, false, "the pillar sort is in board space")
 		eq(pillar_sprite.offset, Vector2(-pillar_sprite.texture.get_width() * 0.5, -float(pillar_sprite.texture.get_height())), "the pillar offset is bottom-centre")
 	var atlas_size: Vector2 = layer.glow_atlas_size()
 	eq(int(atlas_size.x), 512, "glow_mask is one 512-wide strip")

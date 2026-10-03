@@ -444,7 +444,7 @@ func _spawn_pillars(board: Node2D) -> void:
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		sprite.scale = Vector2(scale, scale)
 		sprite.z_as_relative = false
-		sprite.z_index = _z("pillar")
+		sprite.z_index = _pillar_z(cell)
 		sprite.material = _pillar_material()
 		sprite.set_meta("cell", cell)
 		add_child(sprite)
@@ -466,6 +466,8 @@ func _place_pillars() -> void:
 		if sprite.texture != null:
 			sprite.offset = Vector2(-sprite.texture.get_width() * 0.5, -float(sprite.texture.get_height()))
 		sprite.position = tile.position
+		sprite.z_as_relative = false
+		sprite.z_index = _pillar_z(cell)
 
 
 func _layout_room() -> void:
@@ -738,6 +740,13 @@ func _stamp_hole(bytes: PackedByteArray, w: int, h: int, center: Vector2, hx: fl
 			var shade := int(round(room * 255.0))
 			if shade < int(bytes[row + x]):
 				bytes[row + x] = shade
+
+
+func _pillar_z(cell: Vector2i) -> int:
+	# Sort with the cell. A fixed layer above the board paints the beam over
+	# fighters and move tiles. The highlight sits one step above the cell,
+	# and the fighter sits above that.
+	return BoardVisualSort.tile_z_index(cell)
 
 
 func _z(key: String) -> int:
