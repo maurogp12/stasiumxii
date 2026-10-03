@@ -263,7 +263,13 @@ func _ready() -> void:
 		load_errors = ["start region is not loaded"]
 		push_error("World atlas failed to load: %s" % [load_errors])
 		return
-	enter_zone(map.start_zone, map.start_cell, false)
+	if _movie == "outskirts":
+		enter_zone("crosshaven_stoneford_fields", Vector2i(10, 28), false)
+		_hide_debug_readout()
+		if _banner != null:
+			_banner.modulate.a = 0.0
+	else:
+		enter_zone(map.start_zone, map.start_cell, false)
 	_booting = false
 	transition_count = 0
 	seam_count = 0
@@ -1868,6 +1874,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_regions_off()
 		"wp12":
 			await _movie_wp12()
+		"outskirts":
+			await _movie_outskirts()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -2272,6 +2280,27 @@ func _movie_wp12() -> void:
 	await _travel("crosshaven_northgate", Vector2i(20, 12))
 	await get_tree().create_timer(0.6).timeout
 	await _travel("crosshaven_stoneford", Vector2i(16, 16))
+	await get_tree().create_timer(0.8).timeout
+
+
+## Uncut cross-country walk: Stoneford fields into the Northgate crags.
+## The hero is already standing in the fields. The debug readout stays hidden.
+func _movie_outskirts() -> void:
+	settings.apply_preset("Full")
+	_zoom = 1.15
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	walker.playback = 6.0
+	walker.facing = "n"
+	walker._show_idle()
+	await _travel("crosshaven_northgate_crags_far", Vector2i(18, 20))
 	await get_tree().create_timer(0.8).timeout
 
 

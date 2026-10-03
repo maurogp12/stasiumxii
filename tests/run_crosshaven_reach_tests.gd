@@ -46,10 +46,11 @@ func _run() -> void:
 		"crosshaven_southbridge": Vector2i(20, 10),
 	}
 	var zone_ids: Array = map.zones.keys()
-	eq(zone_ids.size(), 11, "Crosshaven has its 11 chunks")
+	eq(zone_ids.size(), 33, "Crosshaven has its 33 chunks")
 	for zone_id in zone_ids:
-		eq(goals.has(str(zone_id)), true, "%s has a walk goal" % str(zone_id))
-		var goal: Vector2i = goals[str(zone_id)]
+		var goal: Vector2i = map.zone(str(zone_id)).spawn
+		if goals.has(str(zone_id)):
+			goal = goals[str(zone_id)]
 		var there: Dictionary = Walk.find_path(map, start_zone, start, str(zone_id), goal, null, blocked)
 		_assert_walk(map, there, "Crossroads to %s" % str(zone_id))
 		var back: Dictionary = Walk.find_path(map, str(zone_id), goal, start_zone, start, null, blocked)
@@ -71,7 +72,7 @@ func _run() -> void:
 	var seen := {}
 	for key in reached.keys():
 		seen[str(key).split("#")[0]] = true
-	eq(seen.size(), 11, "every reached chunk is one of the 11")
+	eq(seen.size(), 33, "every reached chunk is one of the 33")
 	for zone_id in seen.keys():
 		eq(str(zone_id).begins_with("crosshaven_"), true, "%s is inside Crosshaven" % str(zone_id))
 		eq(Regions.is_outer(str(zone_id)), false, "%s is not an outer region" % str(zone_id))

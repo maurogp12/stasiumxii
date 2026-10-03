@@ -1,0 +1,541 @@
+{
+  "format": "stasium.zone",
+  "format_version": 1,
+  "zone_id": "crosshaven_southbridge_fen_cut",
+  "region": "crosshaven",
+  "width": 8,
+  "height": 4,
+  "spawn": {
+    "x": 4,
+    "y": 2
+  },
+  "points_of_interest": [
+    {
+      "id": "crosshaven_southbridge_fen_cut_hamlet",
+      "name": "Fen Cut",
+      "kind": "landmark",
+      "x": 4,
+      "y": 2
+    }
+  ],
+  "exits": [
+    {
+      "id": "land_to_crosshaven_road_southwest_north",
+      "edge": "north",
+      "target_zone": "crosshaven_road_southwest",
+      "links": [
+        {
+          "from": {
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "x": 24,
+            "y": 31
+          }
+        },
+        {
+          "from": {
+            "x": 2,
+            "y": 0
+          },
+          "to": {
+            "x": 26,
+            "y": 31
+          }
+        },
+        {
+          "from": {
+            "x": 3,
+            "y": 0
+          },
+          "to": {
+            "x": 27,
+            "y": 31
+          }
+        },
+        {
+          "from": {
+            "x": 5,
+            "y": 0
+          },
+          "to": {
+            "x": 29,
+            "y": 31
+          }
+        },
+        {
+          "from": {
+            "x": 6,
+            "y": 0
+          },
+          "to": {
+            "x": 30,
+            "y": 31
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_road_south_east",
+      "edge": "east",
+      "target_zone": "crosshaven_road_south",
+      "links": [
+        {
+          "from": {
+            "x": 7,
+            "y": 0
+          },
+          "to": {
+            "x": 0,
+            "y": 32
+          }
+        },
+        {
+          "from": {
+            "x": 7,
+            "y": 1
+          },
+          "to": {
+            "x": 0,
+            "y": 33
+          }
+        },
+        {
+          "from": {
+            "x": 7,
+            "y": 2
+          },
+          "to": {
+            "x": 0,
+            "y": 34
+          }
+        },
+        {
+          "from": {
+            "x": 7,
+            "y": 3
+          },
+          "to": {
+            "x": 0,
+            "y": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_southbridge_south",
+      "edge": "south",
+      "target_zone": "crosshaven_southbridge",
+      "links": [
+        {
+          "from": {
+            "x": 1,
+            "y": 3
+          },
+          "to": {
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 2,
+            "y": 3
+          },
+          "to": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 3,
+            "y": 3
+          },
+          "to": {
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 4,
+            "y": 3
+          },
+          "to": {
+            "x": 4,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 5,
+            "y": 3
+          },
+          "to": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 6,
+            "y": 3
+          },
+          "to": {
+            "x": 6,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_westwatch_dark_fields_west",
+      "edge": "west",
+      "target_zone": "crosshaven_westwatch_dark_fields",
+      "links": [
+        {
+          "from": {
+            "x": 0,
+            "y": 1
+          },
+          "to": {
+            "x": 23,
+            "y": 1
+          }
+        },
+        {
+          "from": {
+            "x": 0,
+            "y": 2
+          },
+          "to": {
+            "x": 23,
+            "y": 2
+          }
+        },
+        {
+          "from": {
+            "x": 0,
+            "y": 3
+          },
+          "to": {
+            "x": 23,
+            "y": 3
+          }
+        }
+      ]
+    }
+  ],
+  "props": [],
+  "tiles": [
+    {
+      "x": 0,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    }
+  ],
+  "presentation": {
+    "status": "proposed",
+    "authority": "client_visual",
+    "default_weather": [
+      "light_rain",
+      "light_cloud"
+    ],
+    "day_night": true
+  },
+  "decor": [
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_001",
+      "type": "decal_puddle_a",
+      "x": 2,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_002",
+      "type": "reeds_a",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_003",
+      "type": "reeds_b",
+      "x": 5,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_004",
+      "type": "mushrooms_a",
+      "x": 1,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_005",
+      "type": "decal_puddle_a",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_006",
+      "type": "reeds_a",
+      "x": 4,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_007",
+      "type": "lilypads_a",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_008",
+      "type": "reeds_b",
+      "x": 1,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_009",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_010",
+      "type": "mushrooms_a",
+      "x": 6,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_011",
+      "type": "lilypads_a",
+      "x": 0,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_southbridge_fen_cut_decor_012",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 0
+    }
+  ]
+}
