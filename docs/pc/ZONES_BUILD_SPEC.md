@@ -641,7 +641,12 @@ What a level gives (stats, points, AP) stays **Open** (Q3b).
 
 ### 4.9 Crypto Coins, set parts and Mystery Boxes (Mauro's names + Proposed numbers)
 
-Mauro, 3 Oct 2026: the money is **Crypto Coins**; mission rewards include
+Mauro, 3 Oct 2026: the money is **Crypto Coins**. **It is only the name of the
+in-game money** (Mauro: "just the name of coin, not planning on putting real
+crypto in the game"): no real cryptocurrency, blockchain, wallets or real-money
+trading. Never connect it to anything outside the game.
+
+Also from Mauro: mission rewards include
 **parts of sets** (regular), and as you advance in missions you can get **rare
 parts** or **Mystery Boxes**.
 
