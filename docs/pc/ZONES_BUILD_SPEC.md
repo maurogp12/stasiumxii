@@ -1990,3 +1990,10 @@ headless.
     "all Swift vs all Mastery" (allowed up to 65%); every other pair keeps it.
     Resist cap 33% is **Soft Lock**. (An earlier option-A note from the same
     day is withdrawn.)
+    **No cap on Swift** (Mauro, 3 Oct 2026: "that's something the player
+    decides… give the player the decision to build their own build, but at
+    the same time keep it as balanced as we can"). Every point can go
+    anywhere, 0 to 98. Swift's +0.35% damage per point is the trade: each
+    Swift point gives about 70% of a Mastery point's damage plus Initiative,
+    so going first always costs some damage. Without it, an all-Swift build
+    loses about 90% of fights.
