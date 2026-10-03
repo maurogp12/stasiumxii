@@ -62,7 +62,7 @@ func _test_roster_gate() -> void:
 	eq(SpellKits.is_roster_class("bastion"), true, "bastion is on the roster")
 	eq(SpellKits.is_roster_class("pulse"), false, "pulse is not on the roster")
 	eq(SpellKits.is_roster_class(""), false, "empty class is rejected")
-	eq(SpellKits.class_spells("mender").size(), 5, "mender kit has five spells")
+	eq(SpellKits.class_spells("mender").size(), 6, "mender kit has six spells (Rekindle, Mauro 3 Oct 2026)")
 	eq(SpellKits.class_spells("gloam").size(), 5, "gloam kit has five spells")
 	eq(SpellKits.class_spells("bastion").size(), 5, "bastion kit has five spells")
 	eq(SpellKits.element_of("gloam"), "air", "gloam primary element is air")

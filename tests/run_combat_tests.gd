@@ -90,6 +90,7 @@ func _run() -> void:
 	_test_advance_teleport_costs()
 	_test_advance_two_per_turn()
 	_test_team_match_rules()
+	_test_mender_rekindle()
 	_test_team_deploy()
 	_test_advance_then_remaining_mp_still_walks()
 	_test_advance_cardinal_range_gate()
@@ -3776,6 +3777,77 @@ func _test_team_match_rules() -> void:
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true})
 	eq(int(_sim.snapshot()["team_size"]), 1, "the default is still the 1v1 duel")
 	eq((_sim.snapshot()["units"] as Array).size(), 2, "a duel keeps two fighters")
+
+
+
+## Mauro 3 Oct 2026: Mender's sixth spell, Rekindle. 6 AP, once per match,
+## revives a fallen teammate (range 1–2) with 30% HP.
+func _test_mender_rekindle() -> void:
+	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER).size(), 6, "Mender has six spells")
+	eq(SpellKits.class_spells(SpellKits.CLASS_MENDER)[5], SpellKits.REKINDLE, "Rekindle is the sixth")
+	var def := SpellKits.spell(SpellKits.REKINDLE)
+	eq(int(def["ap"]), 6, "Rekindle costs 6 AP")
+	eq(bool(def["once_per_match"]), true, "Rekindle is once per match")
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"team_size": 2,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(4, 4), Vector2i(10, 10), Vector2i(6, 4), Vector2i(11, 11)],
+	})
+	var offered := func() -> bool:
+		for intent in _sim.legal_intents(0):
+			if str(intent.get("spell", "")) == SpellKits.REKINDLE:
+				return true
+		return false
+	eq(offered.call(), false, "nothing to revive while the team stands")
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	eq(bool(_unit(2)["alive"]), false, "Ironjaw falls")
+	_live_unit(0)["ap"] = 5
+	eq(offered.call(), false, "Rekindle needs 6 AP")
+	_live_unit(0)["ap"] = 6
+	eq(offered.call(), true, "a fallen teammate in range 2 is offered")
+	var res: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
+	eq(bool(res.get("ok", false)), true, "Rekindle resolves")
+	eq(bool(_unit(2)["alive"]), true, "Ironjaw stands up")
+	eq(int(_unit(2)["hp"]), roundi(float(_unit(2)["max_hp"]) * 0.3), "back with 30% of max HP")
+	eq(int(_unit(0)["ap"]), 0, "6 AP spent")
+	var revive_event := {}
+	for e in res.get("events", []):
+		if str(e.get("spell", "")) == SpellKits.REKINDLE:
+			revive_event = e
+	eq(bool(revive_event.get("revived", false)), true, "the view gets a revive event")
+	# Once per match: a second fall is final for this Mender.
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	_live_unit(0)["ap"] = 12
+	eq(offered.call(), false, "Rekindle is not offered twice in a match")
+	var again: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
+	eq(str(again.get("reason", "")), "once_per_match", "a second Rekindle is refused")
+	# Range 1–2 only, and not on a body someone is standing on.
+	_sim.reset_match({
+		"seed": 1,
+		"flat_board": true,
+		"team_size": 2,
+		"skip_deploy": true,
+		"classes": ["mender", "kestrel", "ironjaw", "gloam"],
+		"positions": [Vector2i(2, 4), Vector2i(10, 10), Vector2i(6, 4), Vector2i(11, 11)],
+	})
+	_live_unit(2)["hp"] = 0
+	_sim._check_death(_live_unit(2))
+	_live_unit(0)["ap"] = 6
+	eq(offered.call(), false, "a body 4 tiles away is out of reach")
+	var far: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
+	eq(str(far.get("reason", "")), "out_of_range", "out of range is refused")
+	_live_unit(0)["pos"] = Vector2i(5, 4)
+	_live_unit(1)["pos"] = Vector2i(6, 4)
+	eq(offered.call(), false, "a body under a living fighter cannot be revived")
+	# 1v1: no teammate, never offered.
+	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["mender", "kestrel"], "positions": [Vector2i(4, 4), Vector2i(5, 4)]})
+	_live_unit(0)["ap"] = 12
+	eq(offered.call(), false, "nothing to revive in a 1v1")
 
 
 func _test_team_deploy() -> void:

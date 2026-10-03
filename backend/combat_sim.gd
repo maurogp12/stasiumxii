@@ -417,6 +417,10 @@ func legal_intents(seat: int) -> Array:
 		if target_kind == "self":
 			out.append({"type": "cast", "spell": spell_id, "to": from, "seat": seat})
 			continue
+		if target_kind == "fallen_ally":
+			for body in _revivable_allies(actor, def):
+				out.append({"type": "cast", "spell": spell_id, "to": body["pos"], "target_seat": body["seat"], "seat": seat})
+			continue
 		if target_kind == "empty_tile" and str(spell_id) != SpellKits.ADVANCE:
 			_append_ranged_cells(out, actor, def, str(spell_id), true)
 			continue
@@ -1441,6 +1445,12 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 		if to_cell != actor["pos"]:
 			return "no_target"
 		return ""
+	if target_kind == "fallen_ally":
+		if bool(def.get("once_per_match", false)) and bool(actor.get("used_" + spell_id, false)):
+			return "once_per_match"
+		if _fallen_ally_at(actor, to_cell).is_empty():
+			return "no_target"
+		return ""
 	if target_kind == "empty_tile":
 		if not _is_empty(to_cell):
 			return "destination_occupied"
@@ -1481,6 +1491,8 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 
 func _preview_kit_lines(spell_id: String) -> Dictionary:
 	match spell_id:
+		SpellKits.REKINDLE:
+			return {"on_connect": "A fallen teammate stands up with 30% HP. Once per match.", "on_miss": "No roll."}
 		SpellKits.MARK_SHOT:
 			return {"on_connect": "8 Air. +1 Mark on the target.", "on_miss": "AP/MP stay spent. No Mark."}
 		SpellKits.DETONATE:
@@ -2151,6 +2163,8 @@ func _submit_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 		return _reject(intent, resource_gate, "REJECT — %s failed gate %s (refund)." % [def["name"], resource_gate])
 
 	var target_kind := str(def.get("target", "enemy"))
+	if target_kind == "fallen_ally":
+		return _resolve_revive(intent, actor, def, dest, dist, ap_cost, mp_cost)
 	if target_kind == "empty_tile":
 		return _resolve_empty_tile(intent, actor, def, dest, ap_cost, mp_cost)
 	if target_kind == "tile":
@@ -3541,7 +3555,7 @@ func _apply_electrocuted(unit: Dictionary) -> Dictionary:
 ## Melee = a range-1 spell aimed at another fighter (Frozen blocks these).
 func _is_melee(def: Dictionary) -> bool:
 	var kind := str(def.get("target", ""))
-	if kind == "self" or kind == "ally" or kind == "tile" or kind == "empty_tile":
+	if kind == "self" or kind == "ally" or kind == "tile" or kind == "empty_tile" or kind == "fallen_ally":
 		return false
 	return int(def.get("max_range", 0)) <= 1
 
@@ -4483,7 +4497,7 @@ func spell_needs_sight(def: Dictionary) -> bool:
 	var spell_id := str(def.get("id", ""))
 	if spell_id == SpellKits.ADVANCE or spell_id == SpellKits.AMBUSH:
 		return false
-	return ["enemy", "ally", "any", "tile", "empty_tile"].has(str(def.get("target", "")))
+	return ["enemy", "ally", "any", "tile", "empty_tile", "fallen_ally"].has(str(def.get("target", "")))
 
 
 func has_line_of_sight(from_cell: Vector2i, to_cell: Vector2i, bodies: bool = true) -> bool:
@@ -4907,6 +4921,76 @@ func _apply_heal(target: Dictionary, amount: int) -> int:
 	var healed := mini(amount, maxi(room, 0))
 	target["hp"] = int(target["hp"]) + healed
 	return healed
+
+
+## Fallen teammates a revive can reach: on the board, in range and sight, and
+## their cell not taken by a living body.
+func _revivable_allies(actor: Dictionary, def: Dictionary) -> Array:
+	var out: Array = []
+	if bool(def.get("once_per_match", false)) and bool(actor.get("used_" + str(def.get("id", "")), false)):
+		return out
+	for unit in _units:
+		if int(unit["seat"]) == int(actor["seat"]) or bool(unit.get("alive", false)) or not _allied(unit, actor):
+			continue
+		if not bool(unit.get("placed", true)) or not _in_bounds(unit["pos"]):
+			continue
+		if not _living_unit_at(unit["pos"]).is_empty():
+			continue
+		if _in_spell_reach(def, actor["pos"], unit["pos"]):
+			out.append(unit)
+	return out
+
+
+func _fallen_ally_at(actor: Dictionary, cell: Vector2i) -> Dictionary:
+	for unit in _units:
+		if int(unit["seat"]) == int(actor["seat"]) or bool(unit.get("alive", false)) or not _allied(unit, actor):
+			continue
+		if bool(unit.get("placed", true)) and unit["pos"] == cell:
+			return unit
+	return {}
+
+
+## Rekindle (Mauro 3 Oct 2026): a fallen teammate stands up with revive_pct of
+## max HP, statuses cleared. Once per match per caster. No roll.
+func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:
+	var spell_id := str(def.get("id", ""))
+	if bool(def.get("once_per_match", false)) and bool(actor.get("used_" + spell_id, false)):
+		return _reject(intent, "once_per_match", "REJECT — %s is once per match (refund)." % def["name"])
+	var body := _fallen_ally_at(actor, dest)
+	if body.is_empty():
+		return _reject(intent, "no_target", "REJECT — %s needs a fallen ally (refund)." % def["name"])
+	if not _living_unit_at(dest).is_empty():
+		return _reject(intent, "destination_occupied", "REJECT — someone is standing on %s's body (refund)." % body["name"])
+	actor["ap"] = int(actor["ap"]) - ap_cost
+	_spend_mp(actor, mp_cost)
+	actor["used_" + spell_id] = true
+	var max_hp := maxi(int(body.get("max_hp", 1)), 1)
+	var hp := maxi(roundi(float(max_hp) * float(def.get("revive_pct", 30)) / 100.0), 1)
+	body["alive"] = true
+	body["hp"] = hp
+	for key in ["stun_remaining", "burn_remaining", "burn_stacks", "marks", "shield", "hit_immunity"]:
+		if body.has(key):
+			body[key] = 0
+	body["stunned"] = false
+	body["invisible"] = false
+	_intent_log.append(intent)
+	_last_coach = "%s Rekindles %s (−%d AP): back on their feet with %d HP." % [actor["name"], body["name"], ap_cost, hp]
+	_last_events.append({
+		"type": "hit",
+		"seat": actor["seat"],
+		"spell": spell_id,
+		"caster_cell": actor["pos"],
+		"target_seat": body["seat"],
+		"to": dest,
+		"range": dist,
+		"ap_spent": ap_cost,
+		"mp_spent": mp_cost,
+		"damage": 0,
+		"healed": hp,
+		"revived": true,
+		"coach": _last_coach,
+	})
+	return _accept()
 
 
 func _resolve_support(intent: Dictionary, actor: Dictionary, target: Dictionary, def: Dictionary, dest: Vector2i, dist: int, ap_cost: int, mp_cost: int) -> Dictionary:

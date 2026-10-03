@@ -127,7 +127,9 @@ const DEATH_SEC := 0.55
 const DEATH_SQUASH_X := 1.28
 const DEATH_SQUASH_Y := 0.34
 const DEATH_TILT_DEG := 26.0
-const DEATH_FADE_ALPHA := 0.0
+## A fallen hero stays on the floor, greyed, so Mender's Rekindle can target
+## the body (Mauro 3 Oct 2026). Monsters still leave the board (Pawn).
+const DEATH_FADE_ALPHA := 0.8
 const DEATH_DROP_PX := 18.0
 ## Collapse finishes here, then the pose holds through the rest of the beat.
 const DEATH_COLLAPSE_AT := 0.42

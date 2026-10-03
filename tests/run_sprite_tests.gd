@@ -135,7 +135,8 @@ func _test_sprite_node_setup() -> void:
 	bastion.apply_snapshot(_unit_dict("bastion", "W", 0, false), 0)
 	var dead := bastion.get_node("Sprite") as Sprite2D
 	eq(Color(dead.modulate.r, dead.modulate.g, dead.modulate.b, 1.0), Color(0.45, 0.45, 0.45, 1.0), "dead sprite stays grey")
-	eq(dead.modulate.a < 0.05, true, "a dead snapshot dissolves instead of standing")
+	# Mauro 3 Oct 2026 (Rekindle): a fallen hero stays on the floor, greyed, so it can be revived.
+	eq(is_equal_approx(dead.modulate.a, ViewMotion.DEATH_FADE_ALPHA) and dead.modulate.a > 0.5, true, "a dead hero stays visible on the floor")
 	eq(dead.position.y > 4.0, true, "a dead snapshot stays collapsed")
 	eq(dead.scale.y < 0.35, true, "a dead snapshot stays squashed")
 	pawn.free()

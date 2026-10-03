@@ -332,7 +332,7 @@ func _test_ability_cluster_layout() -> void:
 	eq(TOUCH.primary_spell_id([SpellKits.ADVANCE, SpellKits.STRIKE, SpellKits.SHOULDER, SpellKits.CRUSH]), SpellKits.STRIKE, "Ironjaw primary is Strike")
 	eq(TOUCH.primary_spell_id([SpellKits.MEND, SpellKits.PULSE_TAP]), SpellKits.MEND, "a kit with no enemy cast uses the first spell")
 	var bounds := Rect2(Vector2.ZERO, TOUCH.CLUSTER_SIZE)
-	for count in [1, 2, 3, 4]:
+	for count in [1, 2, 3, 4, 5]:
 		var centers: Dictionary = TOUCH.cluster_centers(count)
 		var primary: Vector2 = centers["primary"]
 		var primary_rect := TOUCH.cluster_button_rect(primary, true)
@@ -342,14 +342,14 @@ func _test_ability_cluster_layout() -> void:
 		var prev := primary
 		for i in arc.size():
 			var center: Vector2 = arc[i]
-			var rect := TOUCH.cluster_button_rect(center, false)
+			var rect := TOUCH.cluster_button_rect(center, false, count)
 			truthy(bounds.encloses(rect), "ability %d stays inside the cluster" % i)
 			eq(center.x < primary.x, true, "ability %d is left of the thumb button" % i)
 			eq(center.y < primary.y, true, "ability %d is above the thumb button" % i)
 			var gap := center.distance_to(primary)
-			eq(gap + 0.5 >= TOUCH.PRIMARY_BUTTON_SIZE.x * 0.5 + TOUCH.ABILITY_BUTTON_SIZE.x * 0.5, true, "ability %d does not cover the thumb button" % i)
+			eq(gap + 0.5 >= TOUCH.PRIMARY_BUTTON_SIZE.x * 0.5 + TOUCH.cluster_button_size(false, count).x * 0.5, true, "ability %d does not cover the thumb button" % i)
 			if i > 0:
-				eq(center.distance_to(prev) + 0.5 >= TOUCH.ABILITY_BUTTON_SIZE.x, true, "ability circles do not cover each other")
+				eq(center.distance_to(prev) + 0.5 >= TOUCH.cluster_button_size(false, count).x, true, "ability circles do not cover each other")
 			prev = center
 	eq(TOUCH.cluster_centers(0)["arc"].size(), 0, "a lone primary has no arc")
 

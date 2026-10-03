@@ -856,6 +856,11 @@ static func _choreography(event: Dictionary, snapshot: Dictionary) -> Array:
 				out.append(_shot(caster_cell, to_cell, VfxPalette.MENDER_CREAM, 6.0, 0.16, 2.0))
 			elif typ == "miss":
 				out.append(_ring(to_cell, VfxPalette.MENDER_CREAM, false, 0.18, 0.0))
+		"rekindle":
+			if typ == "hit":
+				out.append(_ring(to_cell, VfxPalette.MENDER, false, 0.5, 0.6))
+				out.append(_flash("wash", target, to_cell, 0.4))
+				out.append(_number(target, to_cell, "REVIVED", "cleansed", 0.0, 1.2, "", Color(0, 0, 0, 0)))
 		"cleanse":
 			if typ == "hit":
 				out.append(_flash("wash", target, to_cell, 0.28))
