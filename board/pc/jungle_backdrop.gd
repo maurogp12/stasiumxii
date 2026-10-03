@@ -96,45 +96,54 @@ uniform sampler2D sway_tex : filter_linear, repeat_disable;
 uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
-uniform vec2 to_board_x = vec2(1.0, 0.0);
-uniform vec2 to_board_y = vec2(0.0, 1.0);
-uniform vec2 to_board_origin = vec2(0.0);
-uniform vec2 fighter_pos[12];
-uniform int fighter_count = 0;
-uniform vec2 hover_pos = vec2(0.0);
-uniform float hover_on = 0.0;
-uniform float board_n = 0.0;
-uniform float cell_half_x = 34.0;
-uniform float cell_half_y = 18.0;
-uniform float fighter_rx = 78.0;
-uniform float fighter_ry = 130.0;
-uniform float fighter_lift = 42.0;
-uniform float hover_hx = 72.0;
-uniform float hover_hy = 44.0;
 uniform sampler2D cutout_tex : filter_linear, repeat_disable;
 uniform vec4 cutout_rect = vec4(0.0, 0.0, 1.0, 1.0);
 varying vec2 v_board;
 void vertex() {
 	float weight = texture(sway_tex, UV).r;
 	VERTEX += sway_dir * swing * amplitude_px * weight;
-	vec2 canvas_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
-	v_board = to_board_origin + to_board_x * canvas_pos.x + to_board_y * canvas_pos.y;
+	v_board = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
 }
 void fragment() {
-	// The holes are baked into cutout_tex when fighter_pos or hover_on changes.
-	vec2 uv = (v_board - cutout_rect.xy) / max(cutout_rect.zw, vec2(1.0));
+	COLOR.a *= 1.0;
+}
+"""
+## Small mask. Mirrors leaf_cutout(). 1 keeps the leaf, 0 cuts a hole.
+const CUTOUT_SHADER := """shader_type canvas_item;
+uniform vec4 board_rect = vec4(0.0, 0.0, 1.0, 1.0);
+uniform vec2 fighter_pos[12];
+uniform int fighter_count = 0;
+uniform vec2 hover_pos = vec2(0.0);
+uniform float hover_on = 0.0;
+uniform float board_n = 15.0;
+void fragment() {
+	vec2 board_pos = board_rect.xy + UV * board_rect.zw;
 	float keep = 1.0;
-	if (uv.x >= 0.0 && uv.y >= 0.0 && uv.x <= 1.0 && uv.y <= 1.0) {
-		keep = texture(cutout_tex, uv).r;
+	for (int step = 0; step < 3; step++) {
+		vec2 q = board_pos + vec2(0.0, float(step) * 10.0);
+		float fx = q.y / 32.0 + q.x / 64.0;
+		float fy = q.y / 32.0 - q.x / 64.0;
+		int cx = int(floor(fx + 0.5));
+		int cy = int(floor(fy + 0.5));
+		if (cx >= 0 && cy >= 0 && float(cx) <= board_n - 1.0 && float(cy) <= board_n - 1.0) {
+			vec2 center = vec2(float(cx - cy) * 32.0, float(cx + cy) * 16.0 - float(step) * 10.0);
+			float metric = abs(board_pos.x - center.x) / 34.0 + abs(board_pos.y - center.y) / 18.0;
+			keep = min(keep, smoothstep(0.92, 1.05, metric));
+		}
 	}
-	keep += hover_on * 0.0 + float(fighter_count) * 0.0 + fighter_pos[0].x * 0.0;
-	keep += hover_pos.x * 0.0 + board_n * 0.0;
-	// These stay live for the cutout mask. hover_on never exceeds 1.
-	if (hover_on > 2.0) {
-		keep = fighter_pos[0].x + hover_pos.y + board_n;
-		keep += cell_half_x + cell_half_y + fighter_rx + fighter_ry + fighter_lift + hover_hx + hover_hy;
+	for (int i = 0; i < 12; i++) {
+		if (i >= fighter_count) {
+			break;
+		}
+		vec2 center = fighter_pos[i] + vec2(0.0, -42.0);
+		vec2 delta = vec2((board_pos.x - center.x) / 78.0, (board_pos.y - center.y) / 130.0);
+		keep = min(keep, smoothstep(0.70, 1.0, length(delta)));
 	}
-	COLOR.a *= clamp(keep, 0.0, 1.0);
+	if (hover_on > 0.5) {
+		float metric = abs(board_pos.x - hover_pos.x) / 72.0 + abs(board_pos.y - hover_pos.y) / 44.0;
+		keep = min(keep, smoothstep(0.78, 1.05, metric));
+	}
+	COLOR = vec4(keep, keep, keep, 1.0);
 }
 """
 
@@ -157,16 +166,18 @@ var _skirt_shader: Shader
 var _contact: Sprite2D
 var _contact_shader: Shader
 var _shadow_mat: ShaderMaterial
-var _cutout_tex: ImageTexture
 var _cutout_sig: String = ""
 var _cutout_rect := Rect2()
-var _plate_vp: SubViewport
-var _plate_cam: Camera2D
+var _guard_cache := Rect2()
+var _span_cache := Rect2()
+var _layout_key: String = ""
+var _motion_layout: bool = false
 var _plate_sprite: Sprite2D
-var _plate_tex: ImageTexture
-var _plate_key: String = ""
-var _plate_req_frame: int = -1
-var _plate_copied_frame: int = -2
+var _plate_mat: ShaderMaterial
+var _cutout_vp: SubViewport
+var _cutout_mat: ShaderMaterial
+var _skirt_mesh: MeshInstance2D
+var _contact_mesh: MeshInstance2D
 
 
 class LeafDapple extends Node2D:
@@ -262,9 +273,7 @@ func set_enabled(on: bool) -> void:
 
 func preview_time(t: float) -> void:
 	_time = t
-	_plate_key = ""
 	_apply_sway()
-	layout()
 
 
 func layout() -> void:
@@ -279,7 +288,6 @@ func layout() -> void:
 	_apply_top_fade()
 	_drop_pointer(self)
 	_sync_cutout()
-	_refresh_plate_cache()
 
 
 ## Tests and the capture pin the cell under the cursor. Pass a negative cell to release it.
@@ -468,7 +476,19 @@ func _process(delta: float) -> void:
 	if not visible or _board == null or not _built:
 		return
 	_time += delta
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	var key := ""
+	if cam != null:
+		var view := get_viewport().get_visible_rect().size
+		key = "%.1f,%.1f,%.3f,%d,%d" % [cam.position.x, cam.position.y, cam.zoom.x, int(view.x), int(view.y)]
+	if key == _layout_key:
+		_apply_sway()
+		_sync_cutout()
+		return
+	_layout_key = key
+	_motion_layout = true
 	layout()
+	_motion_layout = false
 
 
 func _ensure_params() -> void:
@@ -507,7 +527,6 @@ func _ensure_nodes() -> void:
 		add_child(root)
 		_backs[slot] = root
 	for slot in LEAF_EDGES.keys():
-		# Node2D, not Control: the plate camera does not draw Controls.
 		var clip := Node2D.new()
 		clip.name = slot
 		clip.z_as_relative = false
@@ -554,12 +573,178 @@ func _layout_backs() -> void:
 		var source := _source_tex(art)
 		var scale := _back_scale(fraction, source.get_size(), view)
 		var drawn := source.get_size() * scale
-		var px := _display_px(drawn, cam.zoom)
+		var px := _display_px(slot, drawn, cam.zoom)
 		_assign_display_tex(art, source, px)
 		var shown := art.texture.get_size()
 		art.scale = Vector2(drawn.x / shown.x, drawn.y / shown.y)
 		art.position = -pan * fraction
-		_park_in_plate_cache(root)
+		art.visible = false
+		art.set_meta("drawn", drawn)
+	_layout_plate(cam, pan, view)
+
+
+func _layout_plate(cam: Camera2D, pan: Vector2, view: Vector2) -> void:
+	_ensure_plate()
+	if _plate_sprite == null or view.x < 8.0 or view.y < 8.0:
+		return
+	var mid: Sprite2D = _backs["back_mid"].get_node("Art")
+	var far: Sprite2D = _backs["back_far"].get_node("Art")
+	var factors: Dictionary = _params.get("parallax", {})
+	var fraction := float(factors.get("back_mid", 0.0))
+	_plate_sprite.visible = true
+	_plate_sprite.texture = _composited_plate(far, mid, cam.position - pan * fraction)
+	_plate_sprite.scale = mid.scale
+	_plate_sprite.position = cam.position - pan * fraction
+	_plate_sprite.modulate = Color.WHITE
+
+
+var _plate_image_tex: ImageTexture
+var _plate_image_key: String = ""
+
+
+func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture2D:
+	var far_tex := far.texture
+	var mid_tex := mid.texture
+	if far_tex == null or mid_tex == null:
+		return mid_tex
+	var key := "%d,%d,%d,%d" % [far_tex.get_width(), far_tex.get_height(), mid_tex.get_width(), mid_tex.get_height()]
+	if not _motion_layout:
+		key += "@%d,%d" % [int(round(center.x)), int(round(center.y))]
+	if _motion_layout and _plate_image_tex != null:
+		return _plate_image_tex
+	if key == _plate_image_key and _plate_image_tex != null:
+		return _plate_image_tex
+	var mid_image := mid_tex.get_image()
+	var far_image := far_tex.get_image()
+	if mid_image == null or far_image == null:
+		return mid_tex
+	mid_image = mid_image.duplicate()
+	far_image = far_image.duplicate()
+	if mid_image.is_compressed():
+		mid_image.decompress()
+	if far_image.is_compressed():
+		far_image.decompress()
+	if far_image.get_width() != mid_image.get_width() or far_image.get_height() != mid_image.get_height():
+		far_image.resize(mid_image.get_width(), mid_image.get_height(), Image.INTERPOLATE_BILINEAR)
+	var mid_tint := _layer_modulate("back_mid")
+	var far_tint := _layer_modulate("back_far")
+	_tint_image(mid_image, mid_tint)
+	_tint_image(far_image, far_tint)
+	far_image.blend_rect(mid_image, Rect2i(0, 0, mid_image.get_width(), mid_image.get_height()), Vector2i.ZERO)
+	_stamp_earth(far_image, center, mid.scale)
+	_plate_image_tex = ImageTexture.create_from_image(far_image)
+	_plate_image_key = key
+	return _plate_image_tex
+
+
+func _stamp_earth(image: Image, center: Vector2, scale: Vector2) -> void:
+	var skirt_spec: Dictionary = _params.get("ground_skirt", {})
+	var contact_spec: Dictionary = _params.get("contact_shadow", {})
+	var reach := float(skirt_spec.get("reach_cells", 2.2))
+	var strength := float(skirt_spec.get("strength", 1.0))
+	var width := float(contact_spec.get("width_cells", 0.9))
+	var contact := float(contact_spec.get("strength", 0.36))
+	var earth := _rgb_param(skirt_spec.get("color", [0.18, 0.15, 0.08]), Color(0.18, 0.15, 0.08))
+	var shade := _rgb_param(contact_spec.get("color", [0.02, 0.04, 0.03]), Color(0.02, 0.04, 0.03))
+	var n := float(_board_n())
+	var edge := maxf(n - 0.5, 0.0)
+	var w := image.get_width()
+	var h := image.get_height()
+	var data := image.get_data()
+	var er := int(round(earth.x * 255.0))
+	var eg := int(round(earth.y * 255.0))
+	var eb := int(round(earth.z * 255.0))
+	var sr := int(round(shade.x * 255.0))
+	var sg := int(round(shade.y * 255.0))
+	var sb := int(round(shade.z * 255.0))
+	for y in h:
+		var wy := center.y + (float(y) + 0.5 - float(h) * 0.5) * scale.y
+		for x in w:
+			var wx := center.x + (float(x) + 0.5 - float(w) * 0.5) * scale.x
+			var fx := wy / 32.0 + wx / 64.0
+			var fy := wy / 32.0 - wx / 64.0
+			var ox := maxf(maxf(-0.5 - fx, fx - edge), 0.0)
+			var oy := maxf(maxf(-0.5 - fy, fy - edge), 0.0)
+			var outside := sqrt(ox * ox + oy * oy)
+			if outside <= 0.001 or outside >= reach:
+				continue
+			var fade := strength * (1.0 - _smoothstep(reach * 0.72, reach, outside))
+			var rim := contact * _smoothstep(0.0, width * 0.18, outside) * (1.0 - _smoothstep(width * 0.45, width, outside))
+			var i := (y * w + x) * 4
+			var keep := 1.0 - clampf(fade, 0.0, 1.0)
+			data[i] = int(round(float(data[i]) * keep + float(er) * fade))
+			data[i + 1] = int(round(float(data[i + 1]) * keep + float(eg) * fade))
+			data[i + 2] = int(round(float(data[i + 2]) * keep + float(eb) * fade))
+			if rim > 0.02:
+				var stay := 1.0 - clampf(rim, 0.0, 1.0)
+				data[i] = int(round(float(data[i]) * stay + float(sr) * rim))
+				data[i + 1] = int(round(float(data[i + 1]) * stay + float(sg) * rim))
+				data[i + 2] = int(round(float(data[i + 2]) * stay + float(sb) * rim))
+	image.set_data(w, h, false, image.get_format(), data)
+
+
+func _tint_image(image: Image, tint: Color) -> void:
+	if tint.is_equal_approx(Color.WHITE):
+		return
+	var data := image.get_data()
+	var rr := int(round(tint.r * 255.0))
+	var gg := int(round(tint.g * 255.0))
+	var bb := int(round(tint.b * 255.0))
+	var i := 0
+	var n := data.size()
+	while i + 3 < n:
+		data[i] = data[i] * rr / 255
+		data[i + 1] = data[i + 1] * gg / 255
+		data[i + 2] = data[i + 2] * bb / 255
+		i += 4
+	image.set_data(image.get_width(), image.get_height(), false, image.get_format(), data)
+
+
+func _ensure_plate() -> void:
+	if _plate_sprite != null and is_instance_valid(_plate_sprite):
+		return
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	var shader := Shader.new()
+	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment(){ COLOR = texture(TEXTURE, UV); }\n"
+	_plate_mat = ShaderMaterial.new()
+	_plate_mat.shader = shader
+	_plate_sprite = Sprite2D.new()
+	_plate_sprite.name = "PlateBlit"
+	_plate_sprite.centered = true
+	_plate_sprite.z_as_relative = false
+	_plate_sprite.z_index = _z("back_far")
+	_plate_sprite.texture = ImageTexture.create_from_image(image)
+	_plate_sprite.material = _plate_mat
+	_plate_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	add_child(_plate_sprite)
+
+
+func _leaf_crop(edge: String) -> Rect2:
+	# Opaque bounds of the leaf masters, as a fraction of the texture.
+	if edge == "left":
+		return Rect2(0.0, 0.0, 284.0 / 512.0, 1.0)
+	if edge == "right":
+		return Rect2(102.0 / 512.0, 0.0, 410.0 / 512.0, 1.0)
+	if edge == "bottom":
+		return Rect2(0.0, 52.0 / 240.0, 1.0, 188.0 / 240.0)
+	if edge == "top":
+		return Rect2(0.0, 0.0, 1.0, 235.0 / 240.0)
+	return Rect2(0, 0, 1, 1)
+
+
+func _leaf_tex_px(edge: String, source: Texture2D) -> Vector2i:
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	var zoom := cam.zoom if cam != null else Vector2(0.64, 0.64)
+	var view := _view_rect().size
+	var screen := Vector2(view.x * zoom.x, view.y * zoom.y)
+	var cap := Vector2(screen.x * 0.5, screen.y)
+	if edge == "top" or edge == "bottom":
+		cap = Vector2(screen.x, screen.y * 0.28)
+	var src := source.get_size()
+	var fit := minf(cap.x / maxf(src.x, 1.0), cap.y / maxf(src.y, 1.0))
+	fit = clampf(fit, 0.05, 1.0)
+	return Vector2i(maxi(int(round(src.x * fit)), 8), maxi(int(round(src.y * fit)), 8))
 
 
 func _layout_leaves() -> void:
@@ -568,7 +753,6 @@ func _layout_leaves() -> void:
 	var margins := _margins(view, guard)
 	for slot in LEAF_EDGES.keys():
 		_place_leaf(slot, margins[str(LEAF_EDGES[slot])], str(LEAF_EDGES[slot]))
-		_park_in_plate_cache(_clips[slot])
 
 
 func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
@@ -578,7 +762,8 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	if sprite.texture == null or margin.size.x < 24.0 or margin.size.y < 24.0:
 		clip.visible = false
 		return
-	var tex_size := sprite.texture.get_size()
+	var source := _source_tex(sprite)
+	var tex_size := source.get_size()
 	var swing_px := float(_params.get("sway_amplitude_px", 14.0))
 	var gap := float(_params.get("guard_gap_px", 8.0))
 	var pad := swing_px + gap
@@ -590,7 +775,10 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	clip.visible = true
 	clip.position = margin.position
 	clip.set_meta("margin_size", margin.size)
-	var scale := disp.x / tex_size.x
+	sprite.set_meta("crop_frac", _leaf_crop(edge))
+	_assign_display_tex(sprite, source, _leaf_tex_px(edge, source))
+	var full := sprite.get_meta("full_px", sprite.texture.get_size()) as Vector2
+	var scale := disp.x / full.x
 	sprite.scale = Vector2(scale, scale)
 	sprite.centered = true
 	sprite.offset = Vector2.ZERO
@@ -611,7 +799,9 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	pivot.set_meta("base_pos", base)
 	pivot.position = base
 	pivot.rotation = 0.0
-	sprite.position = local
+	var frac: Rect2 = sprite.get_meta("crop_frac", Rect2(0, 0, 1, 1))
+	var shift := Vector2(frac.position.x + frac.size.x * 0.5 - 0.5, frac.position.y + frac.size.y * 0.5 - 0.5) * disp
+	sprite.position = local + shift
 	sprite.modulate = _layer_modulate("front_leaves")
 	var mat := sprite.material as ShaderMaterial
 	if mat != null and sprite.scale.x > 0.001:
@@ -709,6 +899,8 @@ func _shadow_shader() -> Shader:
 
 
 func _play_guard() -> Rect2:
+	if _guard_cache.size.x > 1.0:
+		return _guard_cache
 	var clear := float(_params.get("fighter_clear_px", 136.0))
 	var min_x := INF
 	var min_y := INF
@@ -723,7 +915,8 @@ func _play_guard() -> Rect2:
 		max_y = maxf(max_y, at.y + 18.0)
 	if min_x == INF:
 		return Rect2()
-	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	_guard_cache = Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+	return _guard_cache
 
 
 func _view_rect() -> Rect2:
@@ -764,8 +957,7 @@ func _sprite_board_corners(sprite: Sprite2D) -> PackedVector2Array:
 		Vector2(half.x, half.y),
 		Vector2(-half.x, half.y),
 	]
-	# Leaves live in the plate viewport, whose canvas is board space.
-	# to_global() would leave that canvas and miss the board.
+	# Leaf clips are children of this layer, which sits on the board at the origin.
 	var xform := sprite.get_transform()
 	var pivot := sprite.get_parent() as Node2D
 	if pivot != null:
@@ -827,148 +1019,14 @@ func _sync_cutout() -> void:
 	if _hover_active():
 		hover_on = 1.0
 		hover_at = (_board.tiles[_hover_cell] as Node2D).position
-	var xform := Transform2D.IDENTITY
-	if _board != null:
-		xform = _board.get_global_transform().affine_inverse()
 	var n := float(_board_n())
-	for slot in _sprites.keys():
-		var sprite: Sprite2D = _sprites[slot]
-		var mat := sprite.material as ShaderMaterial
-		if mat == null:
-			continue
-		mat.set_shader_parameter("to_board_x", xform.x)
-		mat.set_shader_parameter("to_board_y", xform.y)
-		mat.set_shader_parameter("to_board_origin", xform.origin)
-		mat.set_shader_parameter("fighter_pos", packed)
-		mat.set_shader_parameter("fighter_count", mini(points.size(), MAX_FIGHTERS))
-		mat.set_shader_parameter("hover_pos", hover_at)
-		mat.set_shader_parameter("hover_on", hover_on)
-		mat.set_shader_parameter("board_n", n)
-		mat.set_shader_parameter("cell_half_x", CELL_HALF_X)
-		mat.set_shader_parameter("cell_half_y", CELL_HALF_Y)
-		mat.set_shader_parameter("fighter_rx", FIGHTER_RX)
-		mat.set_shader_parameter("fighter_ry", FIGHTER_RY)
-		mat.set_shader_parameter("fighter_lift", FIGHTER_LIFT)
-		mat.set_shader_parameter("hover_hx", HOVER_HX)
-		mat.set_shader_parameter("hover_hy", HOVER_HY)
-	_rebuild_cutout_mask(points, hover_on, hover_at)
+	_rebuild_cutout_mask(points, packed, hover_on, hover_at, n)
 	if _shadow_mat != null and _board != null:
 		_shadow_mat.set_shader_parameter("board_origin", _board.global_position)
 
 
-func _ensure_plate_cache() -> void:
-	if _plate_vp != null and is_instance_valid(_plate_vp):
-		return
-	_plate_vp = SubViewport.new()
-	_plate_vp.name = "PlateCache"
-	_plate_vp.disable_3d = true
-	_plate_vp.transparent_bg = false
-	_plate_vp.handle_input_locally = false
-	_plate_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
-	_plate_vp.size = Vector2i(64, 64)
-	add_child(_plate_vp)
-	_plate_cam = Camera2D.new()
-	_plate_cam.name = "PlateCamera"
-	_plate_vp.add_child(_plate_cam)
-	_plate_cam.make_current()
-	_plate_sprite = Sprite2D.new()
-	_plate_sprite.name = "PlateBlit"
-	_plate_sprite.centered = true
-	_plate_sprite.z_as_relative = false
-	_plate_sprite.z_index = _z("back_far")
-	_plate_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var blit_shader := Shader.new()
-	blit_shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\nvoid fragment(){ COLOR = texture(TEXTURE, UV); }\n"
-	var blit_mat := ShaderMaterial.new()
-	blit_mat.shader = blit_shader
-	_plate_sprite.material = blit_mat
-	var seed := Image.create(4, 4, false, Image.FORMAT_RGBA8)
-	seed.fill(Color(0.10, 0.16, 0.11, 1.0))
-	_plate_tex = ImageTexture.create_from_image(seed)
-	_plate_sprite.texture = _plate_tex
-	add_child(_plate_sprite)
-
-
-func _park_in_plate_cache(node: Node) -> void:
-	if node == null:
-		return
-	_ensure_plate_cache()
-	if node.get_parent() != _plate_vp:
-		node.reparent(_plate_vp)
-
-
-func _plate_cutout_key() -> String:
-	var key := "h%d" % (1 if _hover_active() else 0)
-	if _hover_active():
-		key += "_%d_%d" % [_hover_cell.x, _hover_cell.y]
-	for point in _fighter_points():
-		key += "_%d_%d" % [int(point.x) / 48, int(point.y) / 48]
-	return key
-
-
-## One screen blit. Plates, earth, contact rim and front leaves re-render only when the camera or a fighter moves.
-func _refresh_plate_cache() -> void:
-	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
-	if cam == null:
-		return
-	_ensure_plate_cache()
-	var px := get_viewport().get_visible_rect().size
-	# Half the screen pixels. The plate is behind the board, and a software
-	# renderer spends the frame fetching a full-screen texture.
-	var div := 2
-	var w := maxi(int(round(px.x)) / div, 2)
-	var h := maxi(int(round(px.y)) / div, 2)
-	if _plate_vp.size.x != w or _plate_vp.size.y != h:
-		_plate_vp.size = Vector2i(w, h)
-	_plate_cam.position = cam.position
-	_plate_cam.zoom = cam.zoom / float(div)
-	var view := _view_rect().size
-	_plate_sprite.position = cam.position
-	_plate_sprite.scale = Vector2(view.x / float(w), view.y / float(h))
-	_plate_sprite.visible = true
-	# Cutout is quantized so a one-pixel idle bob does not redraw the plate.
-	var key := "%d,%d,%.1f,%.1f,%.3f|%s" % [w, h, cam.position.x, cam.position.y, cam.zoom.x, _plate_cutout_key()]
-	var frame := Engine.get_process_frames()
-	if key != _plate_key:
-		_plate_key = key
-		_plate_req_frame = frame
-		_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-		return
-	# The viewport draws after this process. Copy on a later frame, then stop.
-	if frame <= _plate_req_frame:
-		_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-		return
-	if _plate_copied_frame != _plate_req_frame:
-		if not _copy_plate_image():
-			_plate_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
-			return
-		_plate_copied_frame = _plate_req_frame
-	_plate_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
-
-
-func _copy_plate_image() -> bool:
-	if DisplayServer.get_name() == "headless":
-		return false
-	var tex := _plate_vp.get_texture()
-	if tex == null or not tex.get_rid().is_valid():
-		return false
-	var image := tex.get_image()
-	if image == null or image.is_empty():
-		return false
-	if image.get_width() < 16 or image.get_height() < 16:
-		return false
-	image = image.duplicate()
-	if image.is_compressed():
-		image.decompress()
-	if _plate_tex == null:
-		_plate_tex = ImageTexture.create_from_image(image)
-	else:
-		_plate_tex.set_image(image)
-	_plate_sprite.texture = _plate_tex
-	return true
-
-
-## Screen pixels of the plate, capped so a software renderer is not sampling a 4k BC7.
+## Screen pixels of one back plate. Far may be half resolution. Mid stays at
+## the screen size, up to a 1440p bar, and is never rebuilt just because the camera moved.
 func _source_tex(art: Sprite2D) -> Texture2D:
 	if art.has_meta("source_tex"):
 		return art.get_meta("source_tex")
@@ -976,12 +1034,17 @@ func _source_tex(art: Sprite2D) -> Texture2D:
 	return art.texture
 
 
-func _display_px(drawn: Vector2, zoom: Vector2) -> Vector2i:
+func _display_px(slot: String, drawn: Vector2, zoom: Vector2) -> Vector2i:
 	var zx := zoom.x if zoom.x > 0.01 else 1.0
 	var zy := zoom.y if zoom.y > 0.01 else 1.0
+	var px := Vector2(drawn.x * zx, drawn.y * zy)
+	var cap := Vector2i(2560, 1440)
+	if slot == "back_far":
+		px *= 0.5
+		cap = Vector2i(1280, 720)
 	return Vector2i(
-		clampi(int(ceil(drawn.x * zx)), 32, 640),
-		clampi(int(ceil(drawn.y * zy)), 32, 480)
+		clampi(int(ceil(px.x)), 32, cap.x),
+		clampi(int(ceil(px.y)), 32, cap.y)
 	)
 
 
@@ -997,47 +1060,79 @@ func _assign_display_tex(art: Sprite2D, source: Texture2D, px: Vector2i) -> void
 		image.decompress()
 	if image.get_width() != px.x or image.get_height() != px.y:
 		image.resize(px.x, px.y, Image.INTERPOLATE_BILINEAR)
+	art.set_meta("full_px", Vector2(image.get_width(), image.get_height()))
+	if art.has_meta("crop_frac"):
+		var frac: Rect2 = art.get_meta("crop_frac")
+		var rw := maxi(int(round(float(image.get_width()) * frac.size.x)), 1)
+		var rh := maxi(int(round(float(image.get_height()) * frac.size.y)), 1)
+		var rx := clampi(int(round(float(image.get_width()) * frac.position.x)), 0, image.get_width() - rw)
+		var ry := clampi(int(round(float(image.get_height()) * frac.position.y)), 0, image.get_height() - rh)
+		image = image.get_region(Rect2i(rx, ry, rw, rh))
 	art.texture = ImageTexture.create_from_image(image)
 	art.set_meta("display_key", key)
 
 
-func _rebuild_cutout_mask(points: PackedVector2Array, hover_on: float, hover_at: Vector2) -> void:
-	var sig := "%d|%.1f,%.1f" % [int(hover_on), hover_at.x, hover_at.y]
+func _rebuild_cutout_mask(points: PackedVector2Array, packed: PackedVector2Array, hover_on: float, hover_at: Vector2, board_n: float) -> void:
+	var sig := "%d|%.0f,%.0f|%.0f" % [int(hover_on), hover_at.x / 48.0, hover_at.y / 48.0, board_n]
 	for i in points.size():
-		sig += "|%.0f,%.0f" % [points[i].x, points[i].y]
-	if sig == _cutout_sig and _cutout_tex != null:
+		sig += "|%.0f,%.0f" % [points[i].x / 48.0, points[i].y / 48.0]
+	_ensure_cutout()
+	if _cutout_vp == null:
 		return
-	_cutout_sig = sig
 	var rect := _board_span()
 	rect = rect.grow(220.0)
 	if rect.size.x < 8.0 or rect.size.y < 8.0:
 		return
-	var w := 96
-	var h := 64
-	var bytes := PackedByteArray()
-	bytes.resize(w * h)
-	for y in h:
-		var py := rect.position.y + (float(y) + 0.5) * rect.size.y / float(h)
-		for x in w:
-			var px := rect.position.x + (float(x) + 0.5) * rect.size.x / float(w)
-			var keep := int(round(clampf(leaf_cutout(Vector2(px, py)), 0.0, 1.0) * 255.0))
-			bytes[y * w + x] = keep
-	var image := Image.create_from_data(w, h, false, Image.FORMAT_L8, bytes)
-	if _cutout_tex == null:
-		_cutout_tex = ImageTexture.create_from_image(image)
-	else:
-		_cutout_tex.set_image(image)
+	var changed := sig != _cutout_sig or _cutout_rect != rect
+	_cutout_sig = sig
 	_cutout_rect = rect
+	if changed:
+		_cutout_mat.set_shader_parameter("board_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
+		_cutout_mat.set_shader_parameter("fighter_pos", packed)
+		_cutout_mat.set_shader_parameter("fighter_count", mini(points.size(), MAX_FIGHTERS))
+		_cutout_mat.set_shader_parameter("hover_pos", hover_at)
+		_cutout_mat.set_shader_parameter("hover_on", hover_on)
+		_cutout_mat.set_shader_parameter("board_n", board_n)
+		_cutout_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	else:
+		_cutout_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	var tex := _cutout_vp.get_texture()
 	for slot in _sprites.keys():
 		var sprite: Sprite2D = _sprites[slot]
 		var mat := sprite.material as ShaderMaterial
 		if mat == null:
 			continue
-		mat.set_shader_parameter("cutout_tex", _cutout_tex)
+		mat.set_shader_parameter("cutout_tex", tex)
 		mat.set_shader_parameter("cutout_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
 
 
+func _ensure_cutout() -> void:
+	if _cutout_vp != null and is_instance_valid(_cutout_vp):
+		return
+	_cutout_vp = SubViewport.new()
+	_cutout_vp.name = "CutoutMask"
+	_cutout_vp.disable_3d = true
+	_cutout_vp.transparent_bg = false
+	_cutout_vp.handle_input_locally = false
+	_cutout_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_cutout_vp.size = Vector2i(24, 16)
+	add_child(_cutout_vp)
+	var shader := Shader.new()
+	shader.code = CUTOUT_SHADER
+	_cutout_mat = ShaderMaterial.new()
+	_cutout_mat.shader = shader
+	var rect := ColorRect.new()
+	rect.name = "Mask"
+	rect.position = Vector2.ZERO
+	rect.size = Vector2(24, 16)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.material = _cutout_mat
+	_cutout_vp.add_child(rect)
+
+
 func _board_span() -> Rect2:
+	if _span_cache.size.x > 1.0:
+		return _span_cache
 	if _board == null or _board.tiles.is_empty():
 		return Rect2()
 	var min_x := INF
@@ -1050,7 +1145,8 @@ func _board_span() -> Rect2:
 		max_x = maxf(max_x, at.x)
 		min_y = minf(min_y, at.y)
 		max_y = maxf(max_y, at.y)
-	return Rect2(Vector2(min_x - 32.0, min_y - 16.0), Vector2(max_x - min_x + 64.0, max_y - min_y + 32.0))
+	_span_cache = Rect2(Vector2(min_x - 32.0, min_y - 16.0), Vector2(max_x - min_x + 64.0, max_y - min_y + 32.0))
+	return _span_cache
 
 
 func _pointer_board() -> Vector2:
@@ -1161,6 +1257,12 @@ func _sway_dir(edge: String) -> Vector2:
 	return Vector2(1, 0)
 
 
+func _rgb_param(raw: Variant, fallback: Color) -> Vector3:
+	if raw is Array and (raw as Array).size() >= 3:
+		return Vector3(float(raw[0]), float(raw[1]), float(raw[2]))
+	return Vector3(fallback.r, fallback.g, fallback.b)
+
+
 func _layer_modulate(key: String) -> Color:
 	var layers: Dictionary = _params.get("layers", {})
 	var spec: Variant = layers.get(key, {})
@@ -1255,7 +1357,8 @@ func _layout_skirt() -> void:
 	mat.set_shader_parameter("strength", float(spec.get("strength", 1.0)))
 	mat.set_shader_parameter("board_n", n)
 	mat.set_shader_parameter("reach", reach)
-	_park_in_plate_cache(_skirt)
+	_skirt.visible = false
+	_skirt_mesh = _ensure_rim(_skirt_mesh, "GroundSkirtMesh", _skirt, reach)
 
 
 func _layout_contact() -> void:
@@ -1279,7 +1382,75 @@ func _layout_contact() -> void:
 	mat.set_shader_parameter("strength", float(spec.get("strength", 0.36)))
 	mat.set_shader_parameter("board_n", n)
 	mat.set_shader_parameter("width", width)
-	_park_in_plate_cache(_contact)
+	_contact.visible = false
+	_contact_mesh = _ensure_rim(_contact_mesh, "ContactShadowMesh", _contact, width)
+
+
+func _ensure_rim(existing: MeshInstance2D, node_name: String, source: Sprite2D, pad: float) -> MeshInstance2D:
+	var mesh_node := existing
+	if mesh_node == null or not is_instance_valid(mesh_node):
+		mesh_node = MeshInstance2D.new()
+		mesh_node.name = node_name
+		mesh_node.z_as_relative = false
+		mesh_node.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+		image.fill(Color.WHITE)
+		mesh_node.texture = ImageTexture.create_from_image(image)
+		add_child(mesh_node)
+	mesh_node.z_index = source.z_index
+	mesh_node.material = source.material
+	mesh_node.visible = false
+	var key := "%s|%.3f|%d" % [node_name, pad, _board_n()]
+	if str(mesh_node.get_meta("rim_key", "")) != key:
+		mesh_node.mesh = _rim_mesh(pad)
+		mesh_node.set_meta("rim_key", key)
+	return mesh_node
+
+
+func _rim_mesh(pad: float) -> ArrayMesh:
+	var n := float(_board_n())
+	var outer_lo := -0.5 - pad
+	var outer_hi := n - 0.5 + pad
+	var inner_lo := -0.5
+	var inner_hi := n - 0.5
+	var outer := _iso_corners(outer_lo, outer_hi)
+	var inner := _iso_corners(inner_lo, inner_hi)
+	var verts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	for i in 4:
+		var j := (i + 1) % 4
+		var base := verts.size()
+		verts.append(outer[i])
+		verts.append(outer[j])
+		verts.append(inner[j])
+		verts.append(inner[i])
+		uvs.append(Vector2(0, 0))
+		uvs.append(Vector2(1, 0))
+		uvs.append(Vector2(1, 1))
+		uvs.append(Vector2(0, 1))
+		indices.append_array(PackedInt32Array([base, base + 1, base + 2, base, base + 2, base + 3]))
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+func _iso_corners(lo: float, hi: float) -> Array:
+	return [
+		_iso_cell(lo, lo),
+		_iso_cell(hi, lo),
+		_iso_cell(hi, hi),
+		_iso_cell(lo, hi),
+	]
+
+
+func _iso_cell(fx: float, fy: float) -> Vector2:
+	return Vector2((fx - fy) * 32.0, (fx + fy) * 16.0)
 
 
 func _ensure_contact() -> void:

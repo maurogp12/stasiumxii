@@ -159,7 +159,7 @@ func _test_live_layer() -> void:
 	truthy(is_equal_approx(cam.zoom.x, 0.64), "the 15x15 fit zoom is 0.64")
 	cam.zoom = Vector2(0.64, 0.64)
 	await _assert_back_plates_cover(layer, cam, board)
-	var leaf := layer.get_node("PlateCache/front_leaves_left") as Node2D
+	var leaf := layer.get_node("front_leaves_left") as Node2D
 	var leaf_at := leaf.position
 	cam.position += Vector2(80, 0)
 	layer.layout()
@@ -195,12 +195,12 @@ func _test_live_layer() -> void:
 		var feet: Vector2 = board.to_local((pawn as Node2D).global_position)
 		truthy(layer.leaf_cutout(feet) < 0.02, "a fighter's feet cut the leaf")
 		truthy(layer.leaf_cutout(feet + Vector2(0, -70)) < 0.02, "a fighter's head cuts the leaf")
-	var leaf_sprite := layer.get_node("PlateCache/front_leaves_left/Pivot/Art") as Sprite2D
-	var leaf_mat := leaf_sprite.material as ShaderMaterial
-	eq(int(leaf_mat.get_shader_parameter("fighter_count")), layer.cutout_fighter_count(), "the leaf shader receives the fighter count")
-	eq(float(leaf_mat.get_shader_parameter("hover_on")), 0.0, "clearing the hover turns that hole off")
+	var mask := layer.get_node("CutoutMask/Mask") as ColorRect
+	var mask_mat := mask.material as ShaderMaterial
+	eq(int(mask_mat.get_shader_parameter("fighter_count")), layer.cutout_fighter_count(), "the cutout mask receives the fighter count")
+	eq(float(mask_mat.get_shader_parameter("hover_on")), 0.0, "clearing the hover turns that hole off")
 	layer.set_hover_cell(edge_cell)
-	eq(float(leaf_mat.get_shader_parameter("hover_on")), 1.0, "the hovered cell is pushed to the leaf shader")
+	eq(float(mask_mat.get_shader_parameter("hover_on")), 1.0, "the hovered cell is pushed to the cutout mask")
 	var parked: Vector2 = cam.position
 	var fit: Vector2 = board.get("_fit_camera_pos")
 	cam.position = fit
@@ -279,7 +279,7 @@ func _assert_back_plates_cover(layer: Node, cam: Camera2D, board: Node2D) -> voi
 			var world := Vector2(view_px.x / cam.zoom.x, view_px.y / cam.zoom.y)
 			var view := Rect2(cam.position - world * 0.5, world)
 			for slot in ["back_far", "back_mid"]:
-				var plate_root := layer.get_node("PlateCache/" + slot) as Node2D
+				var plate_root := layer.get_node(slot) as Node2D
 				var art := plate_root.get_node("Art") as Sprite2D
 				var drawn := art.texture.get_size() * art.scale
 				var center := plate_root.position + art.position
@@ -308,19 +308,21 @@ func _assert_modulate(layers: Dictionary, key: String, around: float, label: Str
 
 func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	var params := JUNGLE.load_params()
-	var far := layer.get_node("PlateCache/back_far/Art") as CanvasItem
-	var mid := layer.get_node("PlateCache/back_mid/Art") as CanvasItem
-	var leaf := layer.get_node("PlateCache/front_leaves_left/Pivot/Art") as CanvasItem
+	var far := layer.get_node("back_far/Art") as CanvasItem
+	var mid := layer.get_node("back_mid/Art") as CanvasItem
+	var leaf := layer.get_node("front_leaves_left/Pivot/Art") as CanvasItem
 	var far_mod: Array = params["layers"]["back_far"]["modulate"]
 	var mid_mod: Array = params["layers"]["back_mid"]["modulate"]
 	var leaf_mod: Array = params["layers"]["front_leaves"]["modulate"]
 	truthy(_color_close(far.modulate, far_mod), "the far plate uses its json modulate")
 	truthy(_color_close(mid.modulate, mid_mod), "the mid plate uses its json modulate")
 	truthy(_color_close(leaf.modulate, leaf_mod), "a front leaf uses its json modulate")
-	var mid_art := layer.get_node("PlateCache/back_mid/Art") as Sprite2D
-	var far_art := layer.get_node("PlateCache/back_far/Art") as Sprite2D
-	truthy(mid_art.texture.get_width() <= 640 and far_art.texture.get_width() <= 640, "back plates draw a viewport-sized copy, not the BC7 master")
-	var skirt := layer.get_node_or_null("PlateCache/GroundSkirt") as Sprite2D
+	var mid_art := layer.get_node("back_mid/Art") as Sprite2D
+	var far_art := layer.get_node("back_far/Art") as Sprite2D
+	truthy(far_art.texture.get_width() < mid_art.texture.get_width(), "the far canopy is the smaller plate")
+	truthy(mid_art.texture.get_width() >= 700, "the mid clearing stays at screen resolution")
+	truthy(mid_art.texture.get_width() <= 2560, "the mid clearing stays within a 1440p bar")
+	var skirt := layer.get_node_or_null("GroundSkirt") as Sprite2D
 	truthy(skirt != null, "a procedural ground skirt sits under the board")
 	if skirt != null:
 		truthy(skirt.z_index < 0 and skirt.z_index > layer.back_z("back_mid"), "the skirt is under the board and over the mid canopy")
@@ -330,7 +332,7 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	truthy(float(params["ground_skirt"]["reach_cells"]) >= 1.2 and float(params["ground_skirt"]["reach_cells"]) <= 3.0, "the earth lip stays around the board")
 	truthy(layer.skirt_alpha(0.2) >= 0.85, "earth is solid just outside the board edge")
 	truthy(layer.skirt_alpha(float(params["ground_skirt"]["reach_cells"])) <= 0.05, "the earth lip feathers out at its reach")
-	var contact := layer.get_node_or_null("PlateCache/ContactShadow") as Sprite2D
+	var contact := layer.get_node_or_null("ContactShadow") as Sprite2D
 	truthy(contact != null, "a contact shadow rims the board where it meets the clearing")
 	if contact != null:
 		truthy(contact.z_index < 0 and contact.z_index > layer.back_z("back_mid"), "the contact shadow is under the board and over the mid canopy")
