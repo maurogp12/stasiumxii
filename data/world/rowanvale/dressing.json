@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "rowanvale",
+  "seed": 11015,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_soil",
+      "weight": 4
+    },
+    {
+      "terrain": "golden_plains",
+      "weight": 3
+    },
+    {
+      "terrain": "farm_plowed",
+      "weight": 2
+    }
+  ],
+  "props": [
+    {
+      "type": "tree_apple",
+      "weight": 4,
+      "stands_for": "apple tree"
+    },
+    {
+      "type": "tree",
+      "weight": 2,
+      "stands_for": "pear tree"
+    },
+    {
+      "type": "hay_bale",
+      "weight": 2,
+      "stands_for": "hay bale"
+    },
+    {
+      "type": "scarecrow",
+      "weight": 1,
+      "stands_for": "scarecrow"
+    },
+    {
+      "type": "farm_fence_nwse",
+      "weight": 2,
+      "stands_for": "wooden fence"
+    },
+    {
+      "type": "crate_apples",
+      "weight": 1,
+      "stands_for": "beehive box"
+    }
+  ],
+  "border": {
+    "type": "hedgerow_nwse",
+    "stands_for": "orchard hedge",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "flowers_a",
+      "weight": 3
+    },
+    {
+      "type": "grass_tuft_a",
+      "weight": 3
+    },
+    {
+      "type": "bush_small_a",
+      "weight": 2
+    },
+    {
+      "type": "tuft_a",
+      "weight": 2
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "rowanvale_hub",
+    "type": "windmill_2x2_body",
+    "stands_for": "Old Windmill",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

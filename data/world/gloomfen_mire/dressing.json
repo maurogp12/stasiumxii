@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "gloomfen_mire",
+  "seed": 3038,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_soil",
+      "weight": 4
+    },
+    {
+      "terrain": "farm_plowed",
+      "weight": 3
+    },
+    {
+      "terrain": "farm_fallow",
+      "weight": 1
+    }
+  ],
+  "props": [
+    {
+      "type": "tree",
+      "weight": 4,
+      "stands_for": "drowned stump"
+    },
+    {
+      "type": "fence",
+      "weight": 2,
+      "stands_for": "dead tree"
+    },
+    {
+      "type": "lamp_post",
+      "weight": 1,
+      "stands_for": "lantern buoy"
+    },
+    {
+      "type": "cart",
+      "weight": 1,
+      "stands_for": "fallen log"
+    },
+    {
+      "type": "well",
+      "weight": 1,
+      "stands_for": "bog pool"
+    },
+    {
+      "type": "barrel",
+      "weight": 1,
+      "stands_for": "peat stack"
+    }
+  ],
+  "border": {
+    "type": "tree",
+    "stands_for": "dead-tree thicket",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "reeds_b",
+      "weight": 3
+    },
+    {
+      "type": "lilypads_a",
+      "weight": 3
+    },
+    {
+      "type": "mushrooms_b",
+      "weight": 2
+    },
+    {
+      "type": "decal_moss",
+      "weight": 2
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "gloomfen_mire_entry",
+    "type": "southbridge_spire",
+    "stands_for": "Sunken Bell Tower",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

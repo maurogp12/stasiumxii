@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "slagcrown",
+  "seed": 2530,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_fallow",
+      "weight": 4
+    },
+    {
+      "terrain": "farm_plowed",
+      "weight": 2
+    },
+    {
+      "terrain": "farm_soil",
+      "weight": 1
+    }
+  ],
+  "props": [
+    {
+      "type": "quarry_rocks_a",
+      "weight": 4,
+      "stands_for": "basalt columns"
+    },
+    {
+      "type": "tree",
+      "weight": 2,
+      "stands_for": "charred tree"
+    },
+    {
+      "type": "brazier",
+      "weight": 2,
+      "stands_for": "lava vent"
+    },
+    {
+      "type": "barrel",
+      "weight": 1,
+      "stands_for": "slag heap"
+    },
+    {
+      "type": "well",
+      "weight": 1,
+      "stands_for": "obsidian shard"
+    },
+    {
+      "type": "waystone",
+      "weight": 1,
+      "stands_for": "cooled lava boulder"
+    }
+  ],
+  "border": {
+    "type": "stone_wall_high_nwse",
+    "stands_for": "basalt cliff",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "rock_small_d",
+      "weight": 3
+    },
+    {
+      "type": "decal_pebbles",
+      "weight": 2
+    },
+    {
+      "type": "mushrooms_a",
+      "weight": 1
+    },
+    {
+      "type": "tuft_a",
+      "weight": 2
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "slagcrown_hub",
+    "type": "smithy_2x2",
+    "stands_for": "Magma Gate",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "blightwood_hollow",
+  "seed": 4548,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "farm_plowed",
+      "weight": 4
+    },
+    {
+      "terrain": "farm_soil",
+      "weight": 3
+    },
+    {
+      "terrain": "farm_fallow",
+      "weight": 1
+    }
+  ],
+  "props": [
+    {
+      "type": "tree",
+      "weight": 4,
+      "stands_for": "twisted dead tree"
+    },
+    {
+      "type": "fence",
+      "weight": 2,
+      "stands_for": "thorn bramble"
+    },
+    {
+      "type": "well",
+      "weight": 1,
+      "stands_for": "gravestone"
+    },
+    {
+      "type": "lamp_post",
+      "weight": 1,
+      "stands_for": "broken lantern post"
+    },
+    {
+      "type": "barrel",
+      "weight": 1,
+      "stands_for": "bone pile"
+    },
+    {
+      "type": "quarry_rocks_a",
+      "weight": 2,
+      "stands_for": "black rock"
+    }
+  ],
+  "border": {
+    "type": "tree",
+    "stands_for": "twisted-tree wall",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "mushrooms_a",
+      "weight": 4
+    },
+    {
+      "type": "mushrooms_b",
+      "weight": 2
+    },
+    {
+      "type": "bush_small_a",
+      "weight": 2
+    },
+    {
+      "type": "decal_moss",
+      "weight": 2
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "blightwood_hollow_entry",
+    "type": "tree_cluster_2x2_a",
+    "stands_for": "The Hollow Heart Tree",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}
