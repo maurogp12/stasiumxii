@@ -75,8 +75,8 @@ east into the **dark south**.
     respawn; one aggro at a time.
   - **Outlevelled groups:** a group ignores a player who is 15 or more levels
     above the group (Proposed), so high levels can pass through.
-- **Room to level (Proposed, Mauro may change):** two chunks a band is too
-  little for about 150 h. Each town gets its **outskirts**: the fields, cliffs,
+- **Room to level (approved, Mauro 3 Oct 2026: "Yes add the outskirts"):** two
+  chunks a band is too little for about 150 h. Each town gets its **outskirts**: the fields, cliffs,
   coves and marsh between the towns on the plate, built as extra chunks on the
   island. Sizes: Stoneford 3, Northgate 4, Eastmarch 4, Southbridge 5,
   Westwatch 6, making 22 new chunks and 33 in all. The merged region stand-ins
