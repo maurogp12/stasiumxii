@@ -24,6 +24,7 @@ func _run() -> void:
 	_test_flash_kinds()
 	_test_view_wires_flash_without_rules()
 	_test_name_sits_above_the_sprite()
+	_test_l5_hex_plate_and_scale()
 
 
 func _test_texture_paths_and_imports() -> void:
@@ -222,6 +223,50 @@ func _test_name_sits_above_the_sprite() -> void:
 		var stun_bottom: float = pawn._badge_stack_bottom(font, Pawn.HEAD_HP_Y, pawn.name_baseline())
 		eq(stun_bottom <= name_top, true, "%s stun badge stays above the name" % class_id)
 		pawn.free()
+
+
+func _test_l5_hex_plate_and_scale() -> void:
+	eq(OverheadPlate.team_color(0), BoardTile.DEPLOY_P1, "P1 hex matches the deploy tint")
+	eq(OverheadPlate.team_color(1), BoardTile.DEPLOY_P2, "P2 hex matches the deploy tint")
+	var pts := OverheadPlate.hex_points(Pawn.SEAT_RING_CENTER, OverheadPlate.HEX_RX, OverheadPlate.HEX_RY)
+	eq(pts.size(), 6, "the ground mark is a hex")
+	for i in pts.size():
+		var point: Vector2 = pts[i]
+		var inside := absf(point.x) / float(BoardTile.TILE_WIDTH) * 2.0 + absf(point.y) / float(BoardTile.TILE_HEIGHT) * 2.0
+		truthy(inside < 1.0, "hex vertex %d stays inside the cell (%.3f)" % [i, inside])
+	var pawn := Pawn.new()
+	get_root().add_child(pawn)
+	pawn.apply_snapshot(_unit_dict("kestrel", "E", 0), 0)
+	var plate := pawn.get_node("Chrome/OverheadPlate") as OverheadPlate
+	truthy(plate != null, "the plate is its own node")
+	eq(is_equal_approx(plate.shown_ratio(), 1.0), true, "a full snapshot fills the bar")
+	eq(plate.snapshot_life(), 80, "the plate shows the snapshot number")
+	var hurt := _unit_dict("kestrel", "E", 0)
+	hurt["hp"] = 32
+	plate.sync_from_unit(hurt)
+	eq(plate.snapshot_life(), 32, "the number follows the snapshot at once")
+	eq(is_equal_approx(plate.target_ratio(), 32.0 / 80.0), true, "the bar aims at the snapshot")
+	eq(is_equal_approx(plate.shown_ratio(), 1.0), true, "damage does not pop the bar")
+	plate.tick(0.08)
+	truthy(plate.shown_ratio() < 1.0 and plate.shown_ratio() > plate.target_ratio(), "the bar drains toward the snapshot")
+	for _step in 40:
+		plate.tick(0.05)
+	eq(is_equal_approx(plate.shown_ratio(), plate.target_ratio()), true, "the bar settles on the snapshot")
+	var foe := Pawn.new()
+	get_root().add_child(foe)
+	foe.apply_snapshot(_unit_dict("ironjaw", "W", 1), 1)
+	eq(OverheadPlate.team_color(foe.seat), OverheadPlate.TEAM_P2, "seat 1 uses the red ring")
+	var sprite := pawn.get_node("Sprite") as Sprite2D
+	var body := Vector2(float(sprite.texture.get_width()), float(sprite.texture.get_height())) * sprite.scale
+	var tall := body.y / float(BoardTile.TILE_HEIGHT)
+	var wide := body.x / float(BoardTile.TILE_WIDTH)
+	truthy(tall >= 2.0 and tall <= 3.0, "chibi height is two to three cells (%.2f)" % tall)
+	truthy(wide >= 0.9 and wide <= 1.4, "chibi width is about one cell (%.2f)" % wide)
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	eq(view.contains("hp"), false, "board_view still does not mention hp")
+	truthy(FileAccess.file_exists("res://units/overhead_plate.gd"), "the plate script is units/overhead_plate.gd")
+	pawn.free()
+	foe.free()
 
 
 func _unit_dict(class_id: String, facing: String, seat: int, living: bool = true) -> Dictionary:
