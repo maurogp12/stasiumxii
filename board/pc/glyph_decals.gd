@@ -7,8 +7,9 @@ extends RefCounted
 const ROOT := "res://art/pc/look/glyphs/"
 const IDS: Array[String] = ["zone", "deploy", "occupied"]
 ## Full-strength overlap on a plain Thunderwell plate peaks near 0.49.
-## This modulate keeps that stack under the move fill.
-const DEPLOY_ON_ZONE_ALPHA := 0.55
+## 0.55 still reaches about 0.45, so deploy is softer than that until the
+## stack stays under the move fill at 0.417.
+const DEPLOY_ON_ZONE_ALPHA := 0.20
 
 
 static func path_for(id: String, master: bool = true) -> String:
