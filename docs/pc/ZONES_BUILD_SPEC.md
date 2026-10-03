@@ -1009,9 +1009,22 @@ One window with three panels side by side (each can also open alone):
 - **Bank button:** only lit when standing at the Crypto Bank (one bank, in the
   main city); it opens the bank panel next to the inventory so items and
   coins move between them by drag or a button.
-- **Capacity:** Dofus uses a weight limit ("pods"). Proposed for us: a simple
-  **slot limit** (for example 60 slots, more bought with coins) instead of
-  weight; Open for Mauro (Q14).
+- **Capacity: both a slot limit and a weight limit** (Mauro, Q14: "yes to
+  both"). Numbers **Proposed**:
+  - **Slots:** 60 to start; more slots bought with Crypto Coins (bags).
+    Stackable items (materials, food, potions) share one slot per stack.
+  - **Weight:** every item has a weight; a **weight bar** sits under the grid
+    (like Dofus "pods", our own look). Proposed weights: recipes 0, materials
+    1, food and potions 1, set parts / rings / weapons 10, Epics and Relics
+    15, decorations 20–50. Crypto Coins weigh nothing.
+  - **Carry limit:** 1,000 + 5 per level (1,245 at level 50; 1,495 at 100,
+    cap rule 4.3), plus bags bought with coins.
+  - **When full** (slots or weight): you can't gather, buy or pick up more;
+    fight, dungeon and mission rewards that don't fit go **straight to the
+    Crypto Bank** with a message, so nothing is lost and you never get stuck
+    unable to walk.
+  - The bank has its own slot limit (20 to start, 4.12) and **no weight
+    limit**.
 
 Rules: the window never changes a number itself: stats come from
 `pc_progress.gd`, items from `pc_rewards.gd`, coins from the wallet and bank.
@@ -1391,7 +1404,8 @@ designated zones also monsters above lvl 25 are agressive".
   the **equipment and inventory panels** of the window in 4.15
   (`scenes/world/ui/character_window.gd` / `.tscn`; **I** key): 8 slots, Epic /
   Relic badges, set bonus strip, item card, category tabs, filters, rarity
-  borders, stacks, coins, Bank button; a "reward" pop-up after fights,
+  borders, stacks, coins, Bank button, **slot count and weight bar**
+  (4.15; overflow rewards go to the bank); a "reward" pop-up after fights,
   dungeons and missions; `tests/run_pc_rewards_tests.gd`.
 - **Accept:** every drop table sums to ≤ 100%; seeded rolls give fixed results;
   a Mystery Box always gives exactly one thing; the 10th mission always gives a
@@ -1677,5 +1691,5 @@ headless.
     4.13, the AP cap 8 / MP cap 5, and Prism Striders' push rule counted per
     fight (a blocked push counts). The fixes in 4.14 are approved; the
     numbers stay tuned by WP15.
-14. **Inventory capacity (4.15):** a simple slot limit (Proposed: 60 slots,
-    more bought with Crypto Coins), or a weight limit like Dofus "pods"?
+14. ~~**Inventory capacity**~~ **Answered 3 Oct 2026 (Mauro): "yes to both"**:
+    a slot limit and a weight limit (4.15, numbers Proposed).
