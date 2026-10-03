@@ -81,6 +81,23 @@ east into the **dark south**.
   island. Sizes: Stoneford 3, Northgate 4, Eastmarch 4, Southbridge 5,
   Westwatch 6, making 22 new chunks and 33 in all. The merged region stand-ins
   may be reused as the base for outskirts chunks, re-skinned to their town.
+- **Outskirts fill the island** (Mauro, 3 Oct 2026, after the WP12 clip: "it
+  looks better but is also missing a lot of zones"). On the WP12 plane, the 22
+  outskirts chunks fill every gap inside the coast between the roads and
+  towns, following the plate:
+  - fields, orchards and the mill around Stoneford;
+  - cliffs and snowy crags under Northgate;
+  - coves, beach and sea caves at Eastmarch;
+  - the swamp around Southbridge;
+  - the blighted dark side around Westwatch.
+
+  Walking off a road in any direction leads into land, never into a void or
+  the edge of the world, until you reach the coast. Each outskirts chunk
+  joins its neighbours on every shared edge, not only the road, so the
+  island can be crossed cross-country. Order: right after WP12, before the
+  danger-zone aggro (the aggro needs the swamp and dark-side chunks). The
+  smaller towns on the plate (the roof clusters without a tower) sit in the
+  outskirts as hamlets.
 - **Next phase:** Windmere and the other outer regions, with the 4.4 joins.
   Their bands will be re-planned on top of this one.
 
