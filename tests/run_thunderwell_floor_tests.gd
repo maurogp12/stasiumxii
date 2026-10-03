@@ -14,6 +14,7 @@ func _initialize() -> void:
 	_test_params_and_slots()
 	_test_room_props()
 	_test_board_wires_the_theme()
+	_test_bevel_and_emitter()
 	call_deferred("_finish_live")
 
 
@@ -154,6 +155,33 @@ func _test_params_and_slots() -> void:
 	truthy(blue <= 0.004, "glow_mask blue channel is 0")
 	truthy(plain <= 0.004, "plain slots a and b carry no glow")
 	truthy(traced > 0.9, "traced slots carry full-range emission")
+
+
+func _test_bevel_and_emitter() -> void:
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	truthy(tile_src.contains("SeamPlate"), "thunderwell covers the diamond crack with its own plate")
+	truthy(tile_src.contains("Color(0.035, 0.062, 0.048, 1)"), "the crack is dark slate, not neutral grey")
+	truthy(tile_src.contains("Color(0.08, 0.42, 0.20, 1)"), "the top edge of the crack gets a green rim")
+	truthy(tile_src.contains("terrain_texture"), "other themes still paint their own terrain")
+	var floor_src := FileAccess.get_file_as_string("res://board/pc/thunderwell_floor.gd")
+	truthy(floor_src.contains("set_look_seam(true)"), "only thunderwell turns the slate seam on")
+	var bare := BoardTile.new()
+	eq(bare.look_seam(), false, "a tile outside this theme does not restyle its bevel")
+	bare.free()
+	var pil := (load(FLOOR.resolve_slot("light_pillar")) as Texture2D).get_image()
+	var pool := _rel_lum(pil.get_pixel(64, 441))
+	var ring := _rel_lum(pil.get_pixel(64, 417))
+	var gap := _rel_lum(pil.get_pixel(64, 400))
+	truthy(ring > pool, "the emitter ring is brighter than the pool")
+	truthy(pool > 0.45, "the pool is filled, not a fade into the floor")
+	truthy(gap > 0.35, "the beam meets the emitter plate")
+	var one := (load(FLOOR.slot_path_1x("light_pillar")) as Texture2D).get_image()
+	var pool1 := _rel_lum(one.get_pixel(32, 220))
+	var ring1 := 0.0
+	for y in range(200, 216):
+		ring1 = maxf(ring1, _rel_lum(one.get_pixel(32, y)))
+	truthy(ring1 > pool1, "the emitter ring still reads at 1x")
+	truthy(pool1 > 0.40, "the pool still reads at 1x")
 
 
 func _test_board_wires_the_theme() -> void:
@@ -308,6 +336,9 @@ func _test_live_theme() -> void:
 	var sample: Node = board.tiles[Vector2i(4, 4)]
 	var plate: Texture2D = sample.look_floor()
 	truthy(plate != null, "a cell keeps its floor texture")
+	truthy(sample.look_seam(), "a thunderwell cell restyles its bevel")
+	var seam := sample.get_node_or_null("SeamPlate") as CanvasItem
+	truthy(seam != null and seam.visible and seam.z_index < 0, "the slate plate sits behind the floor art")
 	if plate != null:
 		eq(plate.get_width(), 128, "the live floor plate is the @2x master")
 		eq(plate.get_height(), 64, "the live floor plate is 64 tall at 2x")

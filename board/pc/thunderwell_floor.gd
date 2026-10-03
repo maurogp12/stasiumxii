@@ -618,6 +618,8 @@ func _build(board: Node2D, _snap: Dictionary) -> void:
 				tile.set_look_grade(_floor_grade())
 			if tile.has_method("set_look_lift"):
 				tile.set_look_lift(float(_params.get("floor_lift", 0.36)))
+			if tile.has_method("set_look_seam"):
+				tile.set_look_seam(true)
 			if _routes_on and tile.has_method("set_look_orient"):
 				var count := _floor_slot_count()
 				tile.set_look_orient(bool(plan.get("flip_h", false)), bool(plan.get("flip_v", false)), bool(plan.get("diag", false)), slot_uv_rect(int(plan.get("slot", 0)), count))
