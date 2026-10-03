@@ -257,8 +257,8 @@ func _check_chunks(errors: Array) -> void:
 	if levels == null:
 		return
 	var count := int(levels.by_chunk.size())
-	if count != 66:
-		_err(errors, "expected 66 chunks in exactly one level zone, found %d" % count)
+	if count != 88:
+		_err(errors, "expected 88 chunks in exactly one level zone, found %d" % count)
 	var seen := {}
 	for chunk_id in levels.by_chunk.keys():
 		if seen.has(chunk_id):

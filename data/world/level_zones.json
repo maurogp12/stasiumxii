@@ -24,11 +24,17 @@
       "level_max": 10,
       "chunks": [
         "crosshaven_road_west",
-        "crosshaven_stoneford"
+        "crosshaven_stoneford",
+        "crosshaven_stoneford_fields",
+        "crosshaven_stoneford_orchard",
+        "crosshaven_stoneford_mill"
       ],
       "depth": {
         "crosshaven_road_west": 1,
-        "crosshaven_stoneford": 2
+        "crosshaven_stoneford": 2,
+        "crosshaven_stoneford_fields": 5,
+        "crosshaven_stoneford_orchard": 3,
+        "crosshaven_stoneford_mill": 4
       },
       "color": "#58bd3c",
       "dungeon": "old_granary_cellar"
@@ -40,11 +46,19 @@
       "level_max": 20,
       "chunks": [
         "crosshaven_road_north",
-        "crosshaven_northgate"
+        "crosshaven_northgate",
+        "crosshaven_northgate_crags_west",
+        "crosshaven_northgate_crags_east",
+        "crosshaven_northgate_crags_far",
+        "crosshaven_northgate_pass"
       ],
       "depth": {
         "crosshaven_road_north": 1,
-        "crosshaven_northgate": 2
+        "crosshaven_northgate": 2,
+        "crosshaven_northgate_crags_west": 5,
+        "crosshaven_northgate_crags_east": 4,
+        "crosshaven_northgate_crags_far": 6,
+        "crosshaven_northgate_pass": 3
       },
       "color": "#82bb3a",
       "dungeon": "frostspire_archive"
@@ -56,11 +70,19 @@
       "level_max": 30,
       "chunks": [
         "crosshaven_road_east",
-        "crosshaven_eastmarch"
+        "crosshaven_eastmarch",
+        "crosshaven_eastmarch_north_shore",
+        "crosshaven_eastmarch_sea_caves",
+        "crosshaven_eastmarch_beach",
+        "crosshaven_eastmarch_coves"
       ],
       "depth": {
         "crosshaven_road_east": 1,
-        "crosshaven_eastmarch": 2
+        "crosshaven_eastmarch": 2,
+        "crosshaven_eastmarch_north_shore": 4,
+        "crosshaven_eastmarch_sea_caves": 5,
+        "crosshaven_eastmarch_beach": 3,
+        "crosshaven_eastmarch_coves": 6
       },
       "color": "#acb937",
       "dungeon": "saltmaw_grotto"
@@ -72,11 +94,21 @@
       "level_max": 40,
       "chunks": [
         "crosshaven_road_south",
-        "crosshaven_southbridge"
+        "crosshaven_southbridge",
+        "crosshaven_southbridge_east_verge",
+        "crosshaven_southbridge_swamp",
+        "crosshaven_southbridge_fen_cut",
+        "crosshaven_southbridge_south_band",
+        "crosshaven_southbridge_southeast"
       ],
       "depth": {
         "crosshaven_road_south": 1,
-        "crosshaven_southbridge": 2
+        "crosshaven_southbridge": 2,
+        "crosshaven_southbridge_east_verge": 4,
+        "crosshaven_southbridge_swamp": 6,
+        "crosshaven_southbridge_fen_cut": 3,
+        "crosshaven_southbridge_south_band": 5,
+        "crosshaven_southbridge_southeast": 7
       },
       "color": "#b33930",
       "dungeon": "drowned_abbey"
@@ -88,11 +120,23 @@
       "level_max": 50,
       "chunks": [
         "crosshaven_road_southwest",
-        "crosshaven_westwatch"
+        "crosshaven_westwatch",
+        "crosshaven_westwatch_west_flank",
+        "crosshaven_westwatch_south_strip",
+        "crosshaven_westwatch_southwest",
+        "crosshaven_westwatch_south_gap",
+        "crosshaven_westwatch_south_blight",
+        "crosshaven_westwatch_dark_fields"
       ],
       "depth": {
         "crosshaven_road_southwest": 1,
-        "crosshaven_westwatch": 2
+        "crosshaven_westwatch": 2,
+        "crosshaven_westwatch_west_flank": 7,
+        "crosshaven_westwatch_south_strip": 3,
+        "crosshaven_westwatch_southwest": 7,
+        "crosshaven_westwatch_south_gap": 5,
+        "crosshaven_westwatch_south_blight": 6,
+        "crosshaven_westwatch_dark_fields": 4
       },
       "color": "#8227a9",
       "dungeon": "heart_of_the_blight"

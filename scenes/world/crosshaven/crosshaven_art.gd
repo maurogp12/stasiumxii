@@ -235,7 +235,14 @@ static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zo
 			var id: String = variants[h(origin.x, origin.y, variants.size())]
 			return id if has("props", id) else "tree"
 		"red_roof_cottage":
-			var skin := str(COTTAGE_SKIN.get(zone_id, ""))
+			var skin := ""
+			if COTTAGE_SKIN.has(zone_id):
+				skin = str(COTTAGE_SKIN[zone_id])
+			else:
+				for key in COTTAGE_SKIN.keys():
+					if zone_id.begins_with(str(key)):
+						skin = str(COTTAGE_SKIN[key])
+						break
 			if skin != "" and has("props", skin):
 				return skin
 			if h(origin.x, origin.y, 2) == 1 and has("props", "red_roof_cottage_b"):

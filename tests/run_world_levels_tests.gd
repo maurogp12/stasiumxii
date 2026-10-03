@@ -19,6 +19,28 @@ const BUILT_CHUNKS: Array[String] = [
 	"crosshaven_eastmarch",
 	"crosshaven_westwatch",
 	"crosshaven_southbridge",
+	"crosshaven_northgate_crags_west",
+	"crosshaven_northgate_crags_east",
+	"crosshaven_northgate_crags_far",
+	"crosshaven_northgate_pass",
+	"crosshaven_stoneford_fields",
+	"crosshaven_stoneford_orchard",
+	"crosshaven_stoneford_mill",
+	"crosshaven_eastmarch_north_shore",
+	"crosshaven_eastmarch_sea_caves",
+	"crosshaven_eastmarch_beach",
+	"crosshaven_eastmarch_coves",
+	"crosshaven_westwatch_west_flank",
+	"crosshaven_westwatch_south_strip",
+	"crosshaven_westwatch_southwest",
+	"crosshaven_westwatch_south_gap",
+	"crosshaven_westwatch_south_blight",
+	"crosshaven_westwatch_dark_fields",
+	"crosshaven_southbridge_east_verge",
+	"crosshaven_southbridge_swamp",
+	"crosshaven_southbridge_fen_cut",
+	"crosshaven_southbridge_south_band",
+	"crosshaven_southbridge_southeast",
 ]
 const HOME_IDS: Array[String] = [
 	"crossroads",
@@ -162,11 +184,11 @@ func _test_chunks(levels) -> void:
 ## the entry / door / hub roles and the shape, not each middle id.
 const COUNTS := {
 	"crossroads": 1,
-	"stoneford": 2,
-	"northgate": 2,
-	"eastmarch": 2,
-	"southbridge": 2,
-	"westwatch": 2,
+	"stoneford": 5,
+	"northgate": 6,
+	"eastmarch": 6,
+	"southbridge": 7,
+	"westwatch": 8,
 	"rowanvale": 6,
 	"windmere": 6,
 	"brinewake": 6,
@@ -216,7 +238,7 @@ func _test_sixty_six(levels) -> void:
 			eq(door_depth, max_depth, "%s door chunk is the deepest" % zone_id)
 			var want_hub := 1 if HUB_ZONES.has(zone_id) else 0
 			eq(hubs, want_hub, "%s hub count" % zone_id)
-	eq(owned.size(), 66, "66 chunk ids in all")
+	eq(owned.size(), 88, "88 chunk ids in all")
 	eq(levels.zone_for_chunk("rowanvale_entry").get("id", ""), "rowanvale", "a chunk with no file yet still resolves")
 	var built := {}
 	for chunk in BUILT_CHUNKS:

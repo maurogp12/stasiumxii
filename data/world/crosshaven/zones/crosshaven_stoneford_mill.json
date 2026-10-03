@@ -1,0 +1,2722 @@
+{
+  "format": "stasium.zone",
+  "format_version": 1,
+  "zone_id": "crosshaven_stoneford_mill",
+  "region": "crosshaven",
+  "width": 36,
+  "height": 6,
+  "spawn": {
+    "x": 18,
+    "y": 3
+  },
+  "points_of_interest": [
+    {
+      "id": "crosshaven_stoneford_mill_hamlet",
+      "name": "Stoneford Mill",
+      "kind": "landmark",
+      "x": 18,
+      "y": 3
+    }
+  ],
+  "exits": [
+    {
+      "id": "land_to_crosshaven_crossroads_east",
+      "edge": "east",
+      "target_zone": "crosshaven_crossroads",
+      "links": [
+        {
+          "from": {
+            "x": 35,
+            "y": 0
+          },
+          "to": {
+            "x": 0,
+            "y": 30
+          }
+        },
+        {
+          "from": {
+            "x": 35,
+            "y": 1
+          },
+          "to": {
+            "x": 0,
+            "y": 31
+          }
+        },
+        {
+          "from": {
+            "x": 35,
+            "y": 2
+          },
+          "to": {
+            "x": 0,
+            "y": 32
+          }
+        },
+        {
+          "from": {
+            "x": 35,
+            "y": 3
+          },
+          "to": {
+            "x": 0,
+            "y": 33
+          }
+        },
+        {
+          "from": {
+            "x": 35,
+            "y": 4
+          },
+          "to": {
+            "x": 0,
+            "y": 34
+          }
+        },
+        {
+          "from": {
+            "x": 35,
+            "y": 5
+          },
+          "to": {
+            "x": 0,
+            "y": 35
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_stoneford_west",
+      "edge": "west",
+      "target_zone": "crosshaven_stoneford",
+      "links": [
+        {
+          "from": {
+            "x": 0,
+            "y": 0
+          },
+          "to": {
+            "x": 35,
+            "y": 28
+          }
+        },
+        {
+          "from": {
+            "x": 0,
+            "y": 1
+          },
+          "to": {
+            "x": 35,
+            "y": 29
+          }
+        },
+        {
+          "from": {
+            "x": 0,
+            "y": 2
+          },
+          "to": {
+            "x": 35,
+            "y": 30
+          }
+        },
+        {
+          "from": {
+            "x": 0,
+            "y": 3
+          },
+          "to": {
+            "x": 35,
+            "y": 31
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_road_west_north",
+      "edge": "north",
+      "target_zone": "crosshaven_road_west",
+      "links": [
+        {
+          "from": {
+            "x": 1,
+            "y": 0
+          },
+          "to": {
+            "x": 1,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 2,
+            "y": 0
+          },
+          "to": {
+            "x": 2,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 3,
+            "y": 0
+          },
+          "to": {
+            "x": 3,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 4,
+            "y": 0
+          },
+          "to": {
+            "x": 4,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 5,
+            "y": 0
+          },
+          "to": {
+            "x": 5,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 6,
+            "y": 0
+          },
+          "to": {
+            "x": 6,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 7,
+            "y": 0
+          },
+          "to": {
+            "x": 7,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 8,
+            "y": 0
+          },
+          "to": {
+            "x": 8,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 9,
+            "y": 0
+          },
+          "to": {
+            "x": 9,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 10,
+            "y": 0
+          },
+          "to": {
+            "x": 10,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 11,
+            "y": 0
+          },
+          "to": {
+            "x": 11,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 12,
+            "y": 0
+          },
+          "to": {
+            "x": 12,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 13,
+            "y": 0
+          },
+          "to": {
+            "x": 13,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 14,
+            "y": 0
+          },
+          "to": {
+            "x": 14,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 15,
+            "y": 0
+          },
+          "to": {
+            "x": 15,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 16,
+            "y": 0
+          },
+          "to": {
+            "x": 16,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 17,
+            "y": 0
+          },
+          "to": {
+            "x": 17,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 19,
+            "y": 0
+          },
+          "to": {
+            "x": 19,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 20,
+            "y": 0
+          },
+          "to": {
+            "x": 20,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 21,
+            "y": 0
+          },
+          "to": {
+            "x": 21,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 22,
+            "y": 0
+          },
+          "to": {
+            "x": 22,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 23,
+            "y": 0
+          },
+          "to": {
+            "x": 23,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 24,
+            "y": 0
+          },
+          "to": {
+            "x": 24,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 25,
+            "y": 0
+          },
+          "to": {
+            "x": 25,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 26,
+            "y": 0
+          },
+          "to": {
+            "x": 26,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 27,
+            "y": 0
+          },
+          "to": {
+            "x": 27,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 28,
+            "y": 0
+          },
+          "to": {
+            "x": 28,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 29,
+            "y": 0
+          },
+          "to": {
+            "x": 29,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 30,
+            "y": 0
+          },
+          "to": {
+            "x": 30,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 31,
+            "y": 0
+          },
+          "to": {
+            "x": 31,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 32,
+            "y": 0
+          },
+          "to": {
+            "x": 32,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 33,
+            "y": 0
+          },
+          "to": {
+            "x": 33,
+            "y": 23
+          }
+        },
+        {
+          "from": {
+            "x": 34,
+            "y": 0
+          },
+          "to": {
+            "x": 34,
+            "y": 23
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_westwatch_south",
+      "edge": "south",
+      "target_zone": "crosshaven_westwatch",
+      "links": [
+        {
+          "from": {
+            "x": 0,
+            "y": 5
+          },
+          "to": {
+            "x": 24,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 1,
+            "y": 5
+          },
+          "to": {
+            "x": 25,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 2,
+            "y": 5
+          },
+          "to": {
+            "x": 26,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 3,
+            "y": 5
+          },
+          "to": {
+            "x": 27,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 4,
+            "y": 5
+          },
+          "to": {
+            "x": 28,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 5,
+            "y": 5
+          },
+          "to": {
+            "x": 29,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 6,
+            "y": 5
+          },
+          "to": {
+            "x": 30,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 7,
+            "y": 5
+          },
+          "to": {
+            "x": 31,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 8,
+            "y": 5
+          },
+          "to": {
+            "x": 32,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 9,
+            "y": 5
+          },
+          "to": {
+            "x": 33,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 10,
+            "y": 5
+          },
+          "to": {
+            "x": 34,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_road_southwest_south",
+      "edge": "south",
+      "target_zone": "crosshaven_road_southwest",
+      "links": [
+        {
+          "from": {
+            "x": 13,
+            "y": 5
+          },
+          "to": {
+            "x": 1,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 14,
+            "y": 5
+          },
+          "to": {
+            "x": 2,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 15,
+            "y": 5
+          },
+          "to": {
+            "x": 3,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 16,
+            "y": 5
+          },
+          "to": {
+            "x": 4,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 17,
+            "y": 5
+          },
+          "to": {
+            "x": 5,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 18,
+            "y": 5
+          },
+          "to": {
+            "x": 6,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 19,
+            "y": 5
+          },
+          "to": {
+            "x": 7,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 20,
+            "y": 5
+          },
+          "to": {
+            "x": 8,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 21,
+            "y": 5
+          },
+          "to": {
+            "x": 9,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 22,
+            "y": 5
+          },
+          "to": {
+            "x": 10,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 23,
+            "y": 5
+          },
+          "to": {
+            "x": 11,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 24,
+            "y": 5
+          },
+          "to": {
+            "x": 12,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 25,
+            "y": 5
+          },
+          "to": {
+            "x": 13,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 26,
+            "y": 5
+          },
+          "to": {
+            "x": 14,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 27,
+            "y": 5
+          },
+          "to": {
+            "x": 15,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 28,
+            "y": 5
+          },
+          "to": {
+            "x": 16,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 29,
+            "y": 5
+          },
+          "to": {
+            "x": 17,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 30,
+            "y": 5
+          },
+          "to": {
+            "x": 18,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 31,
+            "y": 5
+          },
+          "to": {
+            "x": 19,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 32,
+            "y": 5
+          },
+          "to": {
+            "x": 20,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 33,
+            "y": 5
+          },
+          "to": {
+            "x": 21,
+            "y": 0
+          }
+        },
+        {
+          "from": {
+            "x": 34,
+            "y": 5
+          },
+          "to": {
+            "x": 22,
+            "y": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "land_to_crosshaven_westwatch_south_strip_west",
+      "edge": "west",
+      "target_zone": "crosshaven_westwatch_south_strip",
+      "links": [
+        {
+          "from": {
+            "x": 0,
+            "y": 4
+          },
+          "to": {
+            "x": 23,
+            "y": 0
+          }
+        }
+      ]
+    }
+  ],
+  "props": [
+    {
+      "id": "crosshaven_stoneford_mill_watermill_2x2_body_1",
+      "type": "watermill_2x2_body",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 2
+        },
+        {
+          "x": 11,
+          "y": 2
+        },
+        {
+          "x": 10,
+          "y": 3
+        },
+        {
+          "x": 11,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_red_roof_cottage_2",
+      "type": "red_roof_cottage",
+      "blocks": true,
+      "origin": {
+        "x": 16,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 16,
+          "y": 2
+        },
+        {
+          "x": 17,
+          "y": 2
+        },
+        {
+          "x": 16,
+          "y": 3
+        },
+        {
+          "x": 17,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_hay_bale_3",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_hay_bale_1_1",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 1,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 1,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_hedgerow_nesw_4_1",
+      "type": "hedgerow_nesw",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_fence_6_1",
+      "type": "fence",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_hay_bale_19_1",
+      "type": "hay_bale",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_scarecrow_21_1",
+      "type": "scarecrow",
+      "blocks": true,
+      "origin": {
+        "x": 21,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 21,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_scarecrow_27_1",
+      "type": "scarecrow",
+      "blocks": true,
+      "origin": {
+        "x": 27,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 27,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_stoneford_mill_farm_fence_nwse_34_1",
+      "type": "farm_fence_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 34,
+        "y": 1
+      },
+      "footprint": [
+        {
+          "x": 34,
+          "y": 1
+        }
+      ]
+    }
+  ],
+  "tiles": [
+    {
+      "x": 0,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 0,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "terrain": "farm_pumpkin",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "terrain": "farm_carrot",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 1,
+      "terrain": "farm_plowed",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 1,
+      "terrain": "farm_pumpkin",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 1,
+      "terrain": "farm_sunflower",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 1,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "terrain": "farm_lavender",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 2,
+      "terrain": "farm_pumpkin",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 2,
+      "terrain": "farm_cabbage",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 2,
+      "terrain": "farm_lavender",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 2,
+      "terrain": "farm_lavender",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 2,
+      "terrain": "farm_fallow",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 2,
+      "terrain": "farm_plowed",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 2,
+      "terrain": "farm_sunflower",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 2,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 3,
+      "terrain": "dirt_road",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 3,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "terrain": "farm_soil",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "terrain": "farm_fallow",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 4,
+      "terrain": "farm_cabbage",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 4,
+      "terrain": "farm_carrot",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 4,
+      "terrain": "farm_pumpkin",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 4,
+      "terrain": "farm_fallow",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 4,
+      "terrain": "farm_sunflower",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 4,
+      "terrain": "farm_lavender",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 4,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 7,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 8,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 9,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 10,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 11,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 12,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 13,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 14,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 15,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 16,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 17,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 18,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 19,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 20,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 21,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 22,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 23,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 24,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 25,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 26,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 27,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 28,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 29,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 30,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 31,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 32,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 33,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 34,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    },
+    {
+      "x": 35,
+      "y": 5,
+      "terrain": "golden_plains",
+      "walkable": true,
+      "height": 0
+    }
+  ],
+  "presentation": {
+    "status": "proposed",
+    "authority": "client_visual",
+    "default_weather": [
+      "clear",
+      "light_cloud"
+    ],
+    "day_night": true
+  },
+  "decor": [
+    {
+      "id": "crosshaven_stoneford_mill_decor_001",
+      "type": "flowers_a",
+      "x": 7,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_002",
+      "type": "sunflowers_tall",
+      "x": 33,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_003",
+      "type": "flowers_a",
+      "x": 16,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_004",
+      "type": "flowers_c",
+      "x": 3,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_005",
+      "type": "flowers_a",
+      "x": 6,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_006",
+      "type": "flowers_c",
+      "x": 34,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_007",
+      "type": "flowers_c",
+      "x": 29,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_008",
+      "type": "grass_tuft_a",
+      "x": 19,
+      "y": 0
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_009",
+      "type": "tuft_a",
+      "x": 32,
+      "y": 3
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_010",
+      "type": "flowers_a",
+      "x": 2,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_011",
+      "type": "flowers_a",
+      "x": 12,
+      "y": 4
+    },
+    {
+      "id": "crosshaven_stoneford_mill_decor_012",
+      "type": "tuft_a",
+      "x": 6,
+      "y": 5
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_000",
+      "type": "flowers_a",
+      "x": 2,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_001",
+      "type": "sunflowers_tall",
+      "x": 3,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_002",
+      "type": "flowers_c",
+      "x": 9,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_003",
+      "type": "flowers_c",
+      "x": 10,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_004",
+      "type": "grass_tuft_a",
+      "x": 14,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_005",
+      "type": "flowers_a",
+      "x": 15,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_006",
+      "type": "decal_path_stones_a",
+      "x": 22,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_007",
+      "type": "decal_path_stones_a",
+      "x": 23,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_008",
+      "type": "sunflowers_tall",
+      "x": 24,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_009",
+      "type": "flowers_c",
+      "x": 26,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_010",
+      "type": "sunflowers_tall",
+      "x": 32,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_011",
+      "type": "flowers_a",
+      "x": 33,
+      "y": 1
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_012",
+      "type": "flowers_a",
+      "x": 1,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_013",
+      "type": "sunflowers_tall",
+      "x": 9,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_014",
+      "type": "decal_path_stones_a",
+      "x": 23,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_015",
+      "type": "flowers_c",
+      "x": 24,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_016",
+      "type": "sunflowers_tall",
+      "x": 25,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_017",
+      "type": "flowers_c",
+      "x": 29,
+      "y": 2
+    },
+    {
+      "id": "crosshaven_stoneford_mill_shore_018",
+      "type": "flowers_a",
+      "x": 31,
+      "y": 2
+    }
+  ]
+}

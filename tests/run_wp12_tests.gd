@@ -68,7 +68,9 @@ func _test_walk_and_camera() -> void:
 	eq(w.ground.call("marker_dir", Vector2i(18, 0)), Vector2i.ZERO, "a walkable edge hides its exit arrow")
 	var floor_id := str(Art.pick_tile(w.zone, Vector2i(20, 0))["floor"])
 	eq(floor_id.begins_with("dirt_road_edge"), false, "the north road does not grow a grass edge (%s)" % floor_id)
-	eq(w._chunk_at(Vector2i(-4, -8)).is_empty(), true, "the plate-field still sits where no chunk exists")
+	var gap: Dictionary = w._chunk_at(Vector2i(-4, -8))
+	eq(gap.is_empty(), false, "the old plate-field gap is covered")
+	eq(str(gap["zone"].zone_id), "crosshaven_stoneford_fields", "that gap is Stoneford fields")
 	var before: int = w.transition_count
 	var fades := 0
 	var prev: Vector2 = w.camera.position

@@ -56,7 +56,13 @@ func _tour(w: Node2D) -> void:
 		w._load_zone(id, zone.spawn)
 		chunks += 1
 		for exit_rec in zone.exits:
-			for link in exit_rec["links"]:
+			var links: Array = exit_rec["links"]
+			# A full shared edge is dozens of links. Walk one cell of each exit.
+			# The zone suite still checks every link is reciprocal and passable.
+			var sample: Array = links
+			if links.size() > 6:
+				sample = [links[int(links.size() / 2)]]
+			for link in sample:
 				w._load_zone(id, zone.spawn)
 				var gate := Vector2i(int(link["from"]["x"]), int(link["from"]["y"]))
 				var visited: Array[Vector2i] = [zone.spawn]
@@ -84,7 +90,7 @@ func _tour(w: Node2D) -> void:
 				check(bool(back.get("ok", false)), "%s path back from %s" % [id, gate])
 				_drive(w, [])
 				check(w.walker.cell == zone.spawn, "%s returns to spawn" % id)
-	check(chunks == 11, "tour covered 11 chunks")
+	check(chunks == 33, "tour covered 33 chunks")
 
 
 func _decor_does_not_block(w: Node2D) -> void:

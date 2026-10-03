@@ -55,7 +55,7 @@ func _test_atlas() -> void:
 	eq(atlas.gates.size(), 22, "eleven two-way links, both directions")
 	var levels_doc: Dictionary = Levels.load_default()
 	var levels = levels_doc["levels"]
-	eq(int(levels.by_chunk.size()), 66, "all 66 chunks are in the level zones")
+	eq(int(levels.by_chunk.size()), 88, "all 88 chunks are in the level zones")
 	var fen: Dictionary = atlas.gate_at("crosshaven_road_east", Vector2i(18, 0))
 	eq(fen.is_empty(), false, "Fen Edge's gate stands on the east road")
 	eq(str(fen["to"]["zone_id"]), "eastmarch_fen_edge_entry", "Fen Edge's gate lands on the entry chunk")

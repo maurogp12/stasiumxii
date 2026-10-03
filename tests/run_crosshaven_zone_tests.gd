@@ -135,7 +135,7 @@ func _test_index(map: WorldMap) -> void:
 	eq(map.adjacency, "ortho", "v1 movement is ortho")
 	eq(map.max_climb_steps, -1, "shipped climb limit is no limit")
 	eq(WorldWalk.OPEN_WORLD_MAX_CLIMB_STEPS, -1, "code default climb limit is no limit")
-	eq(map.zones.size(), 11, "Crosshaven has 11 chunks")
+	eq(map.zones.size(), 33, "Crosshaven has 33 chunks")
 	var files: PackedStringArray = DirAccess.get_files_at("res://data/world/crosshaven/zones")
 	var json_count := 0
 	for file_name in files:
@@ -174,7 +174,7 @@ func _test_reciprocal_exits(map: WorldMap) -> void:
 				var target := str(exit_rec["target_zone"])
 				var other: WorldZone = map.zone(target)
 				truthy(zone.passable_at(frm), "%s exit %s is passable" % [zone_id, frm])
-				eq(zone.terrain_at(frm), "dirt_road", "%s exit %s is dirt road" % [zone_id, frm])
+				eq(zone.walkable_at(frm), true, "%s exit %s is walkable land" % [zone_id, frm])
 				var outward: Vector2i = frm + WorldZone.EDGE_DIR[edge]
 				eq(zone.in_bounds(outward), false, "%s exit %s steps off the %s edge" % [zone_id, frm, edge])
 				var back := other.exit_link(dest)

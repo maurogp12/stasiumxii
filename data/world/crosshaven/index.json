@@ -78,6 +78,138 @@
       "file": "zones/crosshaven_southbridge.json",
       "width": 40,
       "height": 32
+    },
+    {
+      "zone_id": "crosshaven_northgate_crags_west",
+      "file": "zones/crosshaven_northgate_crags_west.json",
+      "width": 72,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_northgate_crags_east",
+      "file": "zones/crosshaven_northgate_crags_east.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_northgate_crags_far",
+      "file": "zones/crosshaven_northgate_crags_far.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_northgate_pass",
+      "file": "zones/crosshaven_northgate_pass.json",
+      "width": 8,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_stoneford_fields",
+      "file": "zones/crosshaven_stoneford_fields.json",
+      "width": 72,
+      "height": 34
+    },
+    {
+      "zone_id": "crosshaven_stoneford_orchard",
+      "file": "zones/crosshaven_stoneford_orchard.json",
+      "width": 36,
+      "height": 4
+    },
+    {
+      "zone_id": "crosshaven_stoneford_mill",
+      "file": "zones/crosshaven_stoneford_mill.json",
+      "width": 36,
+      "height": 6
+    },
+    {
+      "zone_id": "crosshaven_eastmarch_north_shore",
+      "file": "zones/crosshaven_eastmarch_north_shore.json",
+      "width": 44,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_eastmarch_sea_caves",
+      "file": "zones/crosshaven_eastmarch_sea_caves.json",
+      "width": 36,
+      "height": 34
+    },
+    {
+      "zone_id": "crosshaven_eastmarch_beach",
+      "file": "zones/crosshaven_eastmarch_beach.json",
+      "width": 36,
+      "height": 6
+    },
+    {
+      "zone_id": "crosshaven_eastmarch_coves",
+      "file": "zones/crosshaven_eastmarch_coves.json",
+      "width": 36,
+      "height": 70
+    },
+    {
+      "zone_id": "crosshaven_westwatch_west_flank",
+      "file": "zones/crosshaven_westwatch_west_flank.json",
+      "width": 12,
+      "height": 34
+    },
+    {
+      "zone_id": "crosshaven_westwatch_south_strip",
+      "file": "zones/crosshaven_westwatch_south_strip.json",
+      "width": 24,
+      "height": 2
+    },
+    {
+      "zone_id": "crosshaven_westwatch_southwest",
+      "file": "zones/crosshaven_westwatch_southwest.json",
+      "width": 12,
+      "height": 36
+    },
+    {
+      "zone_id": "crosshaven_westwatch_south_gap",
+      "file": "zones/crosshaven_westwatch_south_gap.json",
+      "width": 36,
+      "height": 4
+    },
+    {
+      "zone_id": "crosshaven_westwatch_south_blight",
+      "file": "zones/crosshaven_westwatch_south_blight.json",
+      "width": 36,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_westwatch_dark_fields",
+      "file": "zones/crosshaven_westwatch_dark_fields.json",
+      "width": 24,
+      "height": 36
+    },
+    {
+      "zone_id": "crosshaven_southbridge_east_verge",
+      "file": "zones/crosshaven_southbridge_east_verge.json",
+      "width": 36,
+      "height": 6
+    },
+    {
+      "zone_id": "crosshaven_southbridge_swamp",
+      "file": "zones/crosshaven_southbridge_swamp.json",
+      "width": 44,
+      "height": 32
+    },
+    {
+      "zone_id": "crosshaven_southbridge_fen_cut",
+      "file": "zones/crosshaven_southbridge_fen_cut.json",
+      "width": 8,
+      "height": 4
+    },
+    {
+      "zone_id": "crosshaven_southbridge_south_band",
+      "file": "zones/crosshaven_southbridge_south_band.json",
+      "width": 44,
+      "height": 4
+    },
+    {
+      "zone_id": "crosshaven_southbridge_southeast",
+      "file": "zones/crosshaven_southbridge_southeast.json",
+      "width": 36,
+      "height": 32
     }
   ]
 }
