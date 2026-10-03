@@ -33,6 +33,7 @@ func _run() -> void:
 	_test_rewards()
 	_test_points()
 	_test_respec_and_ap()
+	_test_duel()
 	_test_window()
 	_test_higher_cap()
 	_test_rejects()
@@ -193,8 +194,11 @@ func _test_rewards() -> void:
 	eq(int(doc["points_per_level"]), 2, "two points per level")
 	eq(doc["stats"], ["Mastery", "Vitality", "Swift", "Resist"], "four stats, Resist last")
 	eq(str(doc["class_hp_per_level"]), "Open", "class HP growth is Open")
-	eq(str(doc["respec"]["coin_cost"]), "Open", "respec coin price is Open")
+	eq(int(doc["respec"]["coin_per_level"]), 100, "respec costs 100 coins times the level")
 	eq(int(doc["respec"]["free"]), 1, "one free respec")
+	eq(float(doc["stat_per_point"]["Mastery"]["damage_done"]), float(doc["stat_per_point"]["Mastery"]["healing_done"]), "Mastery damage and healing match")
+	eq(float(doc["koliseo_duel"]["win_min"]), 0.45, "duel band starts at 45 percent")
+	eq(float(doc["koliseo_duel"]["win_max"]), 0.55, "duel band ends at 55 percent")
 	eq(int(doc["milestones"][0]["level"]), 30, "AP milestone level is data")
 	eq(int(doc["milestones"][0]["ap"]), 1, "AP milestone grants 1")
 	var text := FileAccess.get_file_as_string(REWARDS_PATH)
@@ -250,9 +254,20 @@ func _test_respec_and_ap() -> void:
 	eq(hero.spent_in("Resist"), 0, "Resist is cleared")
 	hero.spend("Vitality", 3)
 	var blocked: Dictionary = hero.respec()
-	eq(bool(blocked["ok"]), false, "a second respec does not invent a price")
-	eq(str(blocked["reason"]).find("Open") >= 0, true, "the block says the price is Open")
+	eq(bool(blocked["ok"]), false, "a paid respec without coins does not run")
+	eq(int(blocked["cost"]), 100 * hero.level, "the price is 100 times the level")
 	eq(hero.spent_in("Vitality"), 3, "the blocked respec leaves the points")
+	hero.coins = int(blocked["cost"])
+	var paid: Dictionary = hero.respec()
+	eq(bool(paid["ok"]), true, "coins pay for the next respec")
+	eq(int(paid["cost"]), 100 * 30, "the milestone level pays 100 times 30")
+	eq(hero.coins, 0, "the price is spent")
+	eq(hero.spent_in("Vitality"), 0, "the paid respec returns the points")
+	eq(hero.save(), true, "coins and respecs save")
+	var loaded = _open({})
+	eq(loaded.respecs_used, hero.respecs_used, "load restores respecs used")
+	eq(loaded.coins, 0, "load restores the coin count")
+	_clear_save()
 	var early = _open({})
 	early.add_xp(int(early.xp_to_next[0]))
 	eq(early.level, 2, "below the milestone")
@@ -265,6 +280,34 @@ func _test_respec_and_ap() -> void:
 	early.add_xp(int(early.xp_to_next[1]))
 	eq(early.level, 3, "custom milestone level")
 	eq(early.milestone_ap(), 1, "AP flag follows the swapped milestone")
+
+
+func _test_duel() -> void:
+	_clear_save()
+	var hero = _open({})
+	var table: Dictionary = hero.koliseo_duel_table()
+	eq(bool(table["inside"]), true, "every point spread stays inside 45-55 (worst %s at %s)" % [table["worst_win"], table["worst_spent"]])
+	eq(int(table["budget"]), hero.points_per_level * (hero.max_level - 1), "the duel uses the points earned by the curve cap")
+	for row in table["corners"]:
+		var win := float(row["win"])
+		eq(win + 0.0000001 >= float(table["win_min"]) and win - 0.0000001 <= float(table["win_max"]), true, "%s corner stays in the band" % str(row["label"]))
+	var even := float(hero.duel_win_rate({"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}))
+	eq(absf(even - 0.5) < 0.0001, true, "no points is an even duel")
+	var saved: Dictionary = hero.stat_per_point.duplicate(true)
+	hero.stat_per_point = {
+		"Mastery": {"damage_done": 0.005, "healing_done": 0.005},
+		"Vitality": {"max_hp": 0.005},
+		"Resist": {"damage_taken": 0.004, "cap": 0.25},
+		"Swift": {"initiative": 1},
+	}
+	var proposed := float(hero.duel_win_rate({
+		"Mastery": int(table["budget"]),
+		"Vitality": 0,
+		"Resist": 0,
+		"Swift": 0,
+	}))
+	eq(proposed > float(table["win_max"]), true, "the unscaled per-point rates leave the band, so the file uses the scaled rates")
+	hero.stat_per_point = saved
 
 
 func _test_window() -> void:

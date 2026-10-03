@@ -2,12 +2,13 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://stasiumxii.local/schemas/level_rewards.v1.json",
   "title": "Stasium PC level rewards",
-  "description": "Sidecar stasium.level_rewards version 1. Points per level, the four stats, milestones, titles, and respec. Per-point values, class HP growth, title names, and the respec coin price stay Open when the spec gives no number. status proposed.",
+  "description": "Sidecar stasium.level_rewards version 1. Points per level, the four stats, milestones, titles, and respec. Class HP growth and title names stay Open when the spec gives no number. status proposed.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "format", "format_version", "status", "points_per_level", "stats",
-    "stat_per_point", "class_hp_per_level", "milestones", "titles", "respec", "sheet"
+    "stat_per_point", "class_hp_per_level", "milestones", "titles", "respec", "sheet",
+    "koliseo_duel"
   ],
   "properties": {
     "format": {"const": "stasium.level_rewards"},
@@ -19,6 +20,7 @@
       "items": {"type": "string", "minLength": 1}
     },
     "stat_per_point": {"type": "object"},
+    "koliseo_duel": {"type": "object"},
     "class_hp_per_level": {},
     "milestones": {"type": "array"},
     "titles": {"type": "array"},

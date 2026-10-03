@@ -138,12 +138,12 @@ func _fill() -> void:
 		str(view["ap"]), str(caps.get("ap", "Open")), str(view["ap_from_milestones"]),
 	])
 	lines.append("MP %s / %s" % [str(view["mp"]), str(caps.get("mp", "Open"))])
-	lines.append("Initiative %s" % str(view["initiative"]))
+	lines.append("Initiative %s    Swift +%s" % [str(view["initiative"]), str(view.get("initiative_from_swift", 0))])
 	lines.append("Range bonus %s / %s" % [str(view["range_bonus"]), str(caps.get("range_bonus", "Open"))])
 	lines.append("")
 	lines.append("[b]Free points %s[/b]" % str(view["points_free"]))
 	for row in view["stats"]:
-		lines.append("%s  %s    per point: %s" % [str(row["name"]), str(row["spent"]), str(row["per_point"])])
+		lines.append("%s  %s    per point: %s" % [str(row["name"]), str(row["spent"]), _point_label(row["per_point"])])
 	var cost: Variant = view["respec_cost"]
 	if int(view["respecs_used"]) < int(view["free_respecs"]):
 		lines.append("Respec: free (%s left)" % str(int(view["free_respecs"]) - int(view["respecs_used"])))
@@ -173,6 +173,31 @@ func _toggle_details() -> void:
 	_showing_details = not _showing_details
 	if _details != null:
 		_details.visible = _showing_details
+
+
+func _point_label(value: Variant) -> String:
+	if typeof(value) != TYPE_DICTIONARY:
+		return str(value)
+	var doc: Dictionary = value
+	var bits: PackedStringArray = []
+	if doc.has("damage_done"):
+		bits.append("%s damage and healing" % _percent(doc["damage_done"]))
+	if doc.has("max_hp"):
+		bits.append("%s of base max HP" % _percent(doc["max_hp"]))
+	if doc.has("damage_taken"):
+		var cap := ""
+		if doc.has("cap"):
+			cap = ", cap %s" % _percent(doc["cap"]).trim_prefix("+")
+		bits.append("%s less damage taken%s" % [_percent(doc["damage_taken"]), cap])
+	if doc.has("initiative"):
+		bits.append("+%s Initiative" % str(doc["initiative"]))
+	if bits.is_empty():
+		return str(value)
+	return ", ".join(bits)
+
+
+func _percent(value: Variant) -> String:
+	return "+%.3f%%" % (float(value) * 100.0)
 
 
 func _card_style() -> StyleBoxFlat:

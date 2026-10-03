@@ -18,6 +18,7 @@ const DOC_KEYS: Array[String] = [
 const REWARD_KEYS: Array[String] = [
 	"format", "format_version", "status", "points_per_level", "stats",
 	"stat_per_point", "class_hp_per_level", "milestones", "titles", "respec", "sheet",
+	"koliseo_duel",
 ]
 const STAT_NAMES: Array[String] = ["Mastery", "Vitality", "Swift", "Resist"]
 
@@ -34,10 +35,13 @@ var class_hp_per_level: Variant = "Open"
 var milestones: Array = []
 var title_rows: Array = []
 var free_respecs: int = 0
-var respec_cost: Variant = "Open"
+var coin_per_level: Variant = "Open"
+var duel_min: float = 0.0
+var duel_max: float = 1.0
 var sheet: Dictionary = {}
 var spent: Dictionary = {}
 var respecs_used: int = 0
+var coins: int = 0
 
 
 func _init() -> void:
@@ -127,19 +131,112 @@ func spend(bucket: String, n: int) -> bool:
 	return true
 
 
-## The first respecs are free and return every point. A later respec does not
-## run while the coin price is Open, so this package does not invent a price.
+## The first respecs are free. The next ones cost coin_per_level times the
+## current level in Crypto Coins, taken from the hero's coin count.
+func next_respec_cost() -> Variant:
+	if respecs_used < free_respecs:
+		return 0
+	if not _whole(coin_per_level):
+		return coin_per_level
+	return int(coin_per_level) * level
+
+
 func respec() -> Dictionary:
 	if not rewards_ok:
 		return {"ok": false, "reason": "rewards are missing", "cost": 0}
-	if respecs_used >= free_respecs:
-		if typeof(respec_cost) != TYPE_INT:
-			return {"ok": false, "reason": "respec cost is Open", "cost": respec_cost}
-		return {"ok": false, "reason": "respec coin wallet is not in this package", "cost": respec_cost}
+	var cost: Variant = next_respec_cost()
+	if not _whole(cost):
+		return {"ok": false, "reason": "respec cost is Open", "cost": cost}
+	var price := int(cost)
+	if price > 0 and coins < price:
+		return {"ok": false, "reason": "not enough Crypto Coins", "cost": price}
+	if price > 0:
+		coins -= price
 	for stat in stat_names:
 		spent[stat] = 0
 	respecs_used += 1
-	return {"ok": true, "reason": "", "cost": 0}
+	return {"ok": true, "reason": "", "cost": price}
+
+
+func _swift_initiative() -> int:
+	var swift: Variant = stat_per_point.get("Swift", {})
+	if typeof(swift) != TYPE_DICTIONARY:
+		return 0
+	var each: Variant = (swift as Dictionary).get("initiative", 0)
+	if not _whole(each):
+		return 0
+	return int(spent.get("Swift", 0)) * int(each)
+
+
+## Win rate of this point spread against the same class with no points.
+## An exponential race: damage, max HP, and less damage taken. Swift decides
+## who acts earlier and does not change that race. Healing uses Mastery's rate.
+func duel_win_rate(spread: Dictionary) -> float:
+	var mastery: Variant = stat_per_point.get("Mastery", {})
+	var vitality: Variant = stat_per_point.get("Vitality", {})
+	var resist: Variant = stat_per_point.get("Resist", {})
+	var damage := 1.0
+	var hp := 1.0
+	var taken := 1.0
+	if typeof(mastery) == TYPE_DICTIONARY:
+		damage += _as_float((mastery as Dictionary).get("damage_done", 0)) * float(int(spread.get("Mastery", 0)))
+	if typeof(vitality) == TYPE_DICTIONARY:
+		hp += _as_float((vitality as Dictionary).get("max_hp", 0)) * float(int(spread.get("Vitality", 0)))
+	if typeof(resist) == TYPE_DICTIONARY:
+		var red := _as_float((resist as Dictionary).get("damage_taken", 0)) * float(int(spread.get("Resist", 0)))
+		var cap := _as_float((resist as Dictionary).get("cap", 1))
+		if red > cap:
+			red = cap
+		taken = 1.0 - red
+	if taken <= 0.0:
+		return 1.0
+	var ratio := (hp * damage) / taken
+	return ratio / (1.0 + ratio)
+
+
+## Every spread of the points earned by max_level. The worst row is the one
+## the Koliseo band has to hold.
+func koliseo_duel_table() -> Dictionary:
+	var budget := points_per_level * maxi(max_level - 1, 0)
+	var worst_win := 0.0
+	var worst_spent := {"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}
+	var corners: Array = []
+	for stat in stat_names:
+		var corner := {"Mastery": 0, "Vitality": 0, "Resist": 0, "Swift": 0}
+		corner[stat] = budget
+		var corner_win := duel_win_rate(corner)
+		corners.append({"label": stat, "spent": corner, "win": corner_win})
+	for mastery in range(budget + 1):
+		for vitality in range(budget - mastery + 1):
+			var remain := budget - mastery - vitality
+			for resist in range(remain + 1):
+				var swift := remain - resist
+				var spread := {
+					"Mastery": mastery,
+					"Vitality": vitality,
+					"Resist": resist,
+					"Swift": swift,
+				}
+				var win := duel_win_rate(spread)
+				if win > worst_win:
+					worst_win = win
+					worst_spent = spread
+	var inside := worst_win + 0.0000001 >= duel_min and worst_win - 0.0000001 <= duel_max
+	return {
+		"budget": budget,
+		"corners": corners,
+		"worst_win": worst_win,
+		"worst_spent": worst_spent,
+		"win_min": duel_min,
+		"win_max": duel_max,
+		"inside": inside,
+	}
+
+
+static func _as_float(value: Variant) -> float:
+	if typeof(value) == TYPE_INT or typeof(value) == TYPE_FLOAT:
+		return float(value)
+	return 0.0
 
 
 ## Sum of milestone AP the hero has reached. The levels live in the rewards file.
@@ -194,7 +291,9 @@ func sheet_view() -> Dictionary:
 		"titles": titles(),
 		"respecs_used": respecs_used,
 		"free_respecs": free_respecs,
-		"respec_cost": respec_cost,
+		"respec_cost": next_respec_cost(),
+		"initiative_from_swift": _swift_initiative(),
+		"coins": coins,
 	}
 
 
@@ -224,6 +323,7 @@ func save() -> bool:
 		"xp": xp,
 		"spent": spent.duplicate(),
 		"respecs_used": respecs_used,
+		"coins": coins,
 	}))
 	return true
 
@@ -278,6 +378,7 @@ func read_save() -> bool:
 	var prev_xp := xp
 	var prev_spent: Dictionary = spent.duplicate()
 	var prev_respecs := respecs_used
+	var prev_coins := coins
 	level = next_level
 	xp = next_xp
 	if not _apply_saved_spend(doc):
@@ -285,6 +386,7 @@ func read_save() -> bool:
 		xp = prev_xp
 		spent = prev_spent
 		respecs_used = prev_respecs
+		coins = prev_coins
 		return false
 	return true
 
@@ -360,7 +462,9 @@ func _apply_rewards(parsed: Dictionary) -> void:
 		milestones = []
 		title_rows = []
 		free_respecs = 0
-		respec_cost = "Open"
+		coin_per_level = "Open"
+		duel_min = 0.0
+		duel_max = 1.0
 		sheet = {}
 		return
 	var doc: Dictionary = parsed["doc"]
@@ -374,7 +478,10 @@ func _apply_rewards(parsed: Dictionary) -> void:
 	title_rows = (doc["titles"] as Array).duplicate(true)
 	var respec_doc: Dictionary = doc["respec"]
 	free_respecs = int(respec_doc["free"])
-	respec_cost = respec_doc["coin_cost"]
+	coin_per_level = respec_doc.get("coin_per_level", "Open")
+	var duel: Dictionary = doc.get("koliseo_duel", {})
+	duel_min = float(duel.get("win_min", 0))
+	duel_max = float(duel.get("win_max", 1))
 	sheet = (doc["sheet"] as Dictionary).duplicate(true)
 	_reset_spend()
 
@@ -408,8 +515,14 @@ func _apply_saved_spend(doc: Dictionary) -> bool:
 		total += int(next[stat])
 	if total > points_per_level * maxi(level - 1, 0):
 		return false
+	var saved_coins := 0
+	if doc.has("coins"):
+		if not _whole(doc["coins"]) or int(doc["coins"]) < 0:
+			return false
+		saved_coins = int(doc["coins"])
 	spent = next
 	respecs_used = used
+	coins = saved_coins
 	return true
 
 
@@ -434,18 +547,15 @@ static func _check_rewards(doc: Dictionary, errors: Array) -> void:
 	var per: Variant = doc.get("stat_per_point", null)
 	if typeof(per) != TYPE_DICTIONARY:
 		_err(errors, "stat_per_point must be an object")
-	elif typeof(stats) == TYPE_ARRAY:
-		for stat in STAT_NAMES:
-			if not (per as Dictionary).has(stat):
-				_err(errors, "stat_per_point is missing %s" % stat)
-			elif not _open_or_number((per as Dictionary)[stat]):
-				_err(errors, "stat_per_point %s must be Open or a number" % stat)
+	else:
+		_check_per_point(per, errors)
 	if not _open_or_map(doc.get("class_hp_per_level", null)):
 		_err(errors, "class_hp_per_level must be Open or an object")
 	_check_milestones(doc.get("milestones", null), errors)
 	_check_titles(doc.get("titles", null), errors)
 	_check_respec(doc.get("respec", null), errors)
 	_check_sheet(doc.get("sheet", null), errors)
+	_check_duel(doc.get("koliseo_duel", null), errors)
 
 
 static func _check_milestones(value: Variant, errors: Array) -> void:
@@ -478,15 +588,45 @@ static func _check_titles(value: Variant, errors: Array) -> void:
 			_err(errors, "title name must be a non-empty string")
 
 
+static func _check_per_point(per: Dictionary, errors: Array) -> void:
+	for stat in STAT_NAMES:
+		if not per.has(stat) or typeof(per[stat]) != TYPE_DICTIONARY:
+			_err(errors, "stat_per_point %s must be an object" % stat)
+	var mastery := _stat_row(per, "Mastery")
+	var vitality := _stat_row(per, "Vitality")
+	var resist := _stat_row(per, "Resist")
+	var swift := _stat_row(per, "Swift")
+	if not _rate(mastery.get("damage_done", null)) or not _rate(mastery.get("healing_done", null)):
+		_err(errors, "Mastery needs damage_done and healing_done rates")
+	if not _rate(vitality.get("max_hp", null)):
+		_err(errors, "Vitality needs a max_hp rate")
+	if not _rate(resist.get("damage_taken", null)) or not _rate(resist.get("cap", null)):
+		_err(errors, "Resist needs a damage_taken rate and a cap")
+	if not _whole(swift.get("initiative", null)) or int(swift.get("initiative", -1)) < 0:
+		_err(errors, "Swift initiative must be a non-negative integer")
+
+
+static func _check_duel(value: Variant, errors: Array) -> void:
+	if typeof(value) != TYPE_DICTIONARY:
+		_err(errors, "koliseo_duel must be an object")
+		return
+	_unknown(value, ["win_min", "win_max"], errors, "koliseo_duel")
+	if not _rate(value.get("win_min", null)) or not _rate(value.get("win_max", null)):
+		_err(errors, "koliseo win band must be two rates")
+		return
+	if float(value["win_min"]) >= float(value["win_max"]):
+		_err(errors, "koliseo win_min must be below win_max")
+
+
 static func _check_respec(value: Variant, errors: Array) -> void:
 	if typeof(value) != TYPE_DICTIONARY:
 		_err(errors, "respec must be an object")
 		return
-	_unknown(value, ["free", "coin_cost"], errors, "respec")
+	_unknown(value, ["free", "coin_per_level"], errors, "respec")
 	if not _whole(value.get("free", null)) or int(value.get("free", -1)) < 0:
 		_err(errors, "respec free must be a non-negative integer")
-	if not _open_or_number(value.get("coin_cost", null)):
-		_err(errors, "respec coin_cost must be Open or a number")
+	if not _whole(value.get("coin_per_level", null)) or int(value.get("coin_per_level", -1)) < 0:
+		_err(errors, "respec coin_per_level must be a non-negative integer")
 
 
 static func _check_sheet(value: Variant, errors: Array) -> void:
@@ -507,6 +647,19 @@ static func _check_sheet(value: Variant, errors: Array) -> void:
 	for key in ["ap", "mp", "range_bonus"]:
 		if not _whole(caps.get(key, null)) or int(caps.get(key, -1)) < 0:
 			_err(errors, "sheet cap %s must be a non-negative integer" % key)
+
+
+static func _stat_row(per: Dictionary, stat: String) -> Dictionary:
+	var value: Variant = per.get(stat, {})
+	if typeof(value) != TYPE_DICTIONARY:
+		return {}
+	return value
+
+
+static func _rate(value: Variant) -> bool:
+	if typeof(value) != TYPE_INT and typeof(value) != TYPE_FLOAT:
+		return false
+	return is_finite(float(value)) and float(value) >= 0.0
 
 
 static func _open_or_number(value: Variant) -> bool:

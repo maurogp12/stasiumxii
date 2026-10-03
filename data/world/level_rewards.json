@@ -5,11 +5,12 @@
   "points_per_level": 2,
   "stats": ["Mastery", "Vitality", "Swift", "Resist"],
   "stat_per_point": {
-    "Mastery": "Open",
-    "Vitality": "Open",
-    "Swift": "Open",
-    "Resist": "Open"
+    "Mastery": {"damage_done": 0.00215, "healing_done": 0.00215},
+    "Vitality": {"max_hp": 0.00215},
+    "Resist": {"damage_taken": 0.00172, "cap": 0.25},
+    "Swift": {"initiative": 1}
   },
+  "koliseo_duel": {"win_min": 0.45, "win_max": 0.55},
   "class_hp_per_level": "Open",
   "milestones": [
     {"level": 30, "ap": 1}
@@ -28,7 +29,7 @@
   ],
   "respec": {
     "free": 1,
-    "coin_cost": "Open"
+    "coin_per_level": 100
   },
   "sheet": {
     "hp": 80,
