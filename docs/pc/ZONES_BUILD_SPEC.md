@@ -1889,10 +1889,12 @@ headless.
 6. ~~**Monsters in the world?**~~ **Answered 3 Oct 2026 (Mauro): yes**, walking
    only in their designated zones; above level 25 they are aggressive (4.10,
    WP9).
-7. **Crosshaven walker facing fix** (a quarter-turn off the locked rule): may
-   the team fix it now?
-8. **Where Eastmarch Fen Edge sits:** off the east road (concept image) or past
-   Eastmarch town?
+7. ~~**Crosshaven walker facing fix**~~ **Handled by the other team** (Mauro,
+   3 Oct 2026). The build team does not touch the walker or its facing.
+8. ~~**Where Eastmarch Fen Edge sits**~~ **Handled by the other team** (Mauro,
+   3 Oct 2026). WP5a builds Fen Edge only once that team's answer is in the
+   spec; until then it is the last region in the WP5a order.
+
 9. ~~**Economy build order / online server?**~~ **Answered 3 Oct 2026 (Mauro):
    "online servers get pushed until we have fully developed the map".** No
    online server work (accounts, server saves, marketplace) until the map is
