@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/world_rewards.v1.json",
+  "title": "Stasium PC world rewards",
+  "description": "Sidecar stasium.world_rewards version 1. Section 4.9. Crypto Coins, set parts, and Mystery Boxes.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format", "format_version", "status", "coins", "carry", "sets", "items",
+    "zones", "dungeons", "box", "mission_ranks"
+  ],
+  "properties": {
+    "format": {"const": "stasium.world_rewards"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "notes": {"type": "array", "items": {"type": "string"}},
+    "coins": {"type": "object"},
+    "carry": {"type": "object"},
+    "weights": {"type": "object"},
+    "class_bias": {"type": "number", "minimum": 0, "maximum": 1},
+    "world_part_chance": {"type": "number", "minimum": 0, "maximum": 1},
+    "classes": {"type": "array", "items": {"type": "string"}},
+    "set_slots": {"type": "array", "items": {"type": "string"}},
+    "equip_slots": {"type": "array", "items": {"type": "string"}},
+    "rare_full": {"type": "object"},
+    "rarity_colors": {"type": "object"},
+    "mission_ranks": {"type": "array"},
+    "box": {"type": "array"},
+    "dungeon_rare_by_stars": {"type": "object"},
+    "dungeon_box_by_stars": {"type": "object"},
+    "guaranteed_split": {"type": "object"},
+    "sets": {"type": "array"},
+    "items": {"type": "array"},
+    "zones": {"type": "object"},
+    "dungeons": {"type": "array"}
+  }
+}
