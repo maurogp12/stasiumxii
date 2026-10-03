@@ -1,0 +1,31 @@
+{
+  "art_status": "placeholder",
+  "note": "Stand-in paint so the Coilgate theme runs. Scenario Art and the Technical Artist replace the PNGs in place. Keep these pixel sizes. The loader tries slot@2x.png first, then slot.png.",
+  "theme": "coilgate",
+  "art_root": "res://art/pc/look/coilgate_floor/",
+  "slots": {
+    "floor_tile_a": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "floor_tile_b": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "floor_tile_c": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "floor_tile_d": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "pad_blue": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "pad_red": {"px_1x": [64, 32], "px_2x": [128, 64]},
+    "light_pillar": {"px_1x": [48, 256], "px_2x": [96, 512]},
+    "room_edge_dark": {"px_1x": [960, 720], "px_2x": [1920, 1440]},
+    "glow_mask": {"px_1x": [96, 64], "px_2x": [192, 128]}
+  },
+  "floor_cycle": ["floor_tile_a", "floor_tile_b", "floor_tile_c", "floor_tile_d"],
+  "pad_blue": {"step_x": 4, "step_y": 3, "phase_x": 1, "phase_y": 1},
+  "pad_red": {"step_x": 5, "step_y": 4, "phase_x": 2, "phase_y": 0},
+  "pillar_cells": [[3, 3], [11, 3], [3, 11], [11, 11], [7, 7]],
+  "special_from_paint": true,
+  "pulse_hz": 0.22,
+  "pulse_amount": 0.16,
+  "z_order": {
+    "room": -400,
+    "floor": 0,
+    "pad": 0,
+    "glow": 0,
+    "pillar": 520
+  }
+}

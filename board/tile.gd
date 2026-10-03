@@ -20,6 +20,9 @@ var terrain_type: String = "ground"
 var _dress: String = ""
 var _paint_props: Array = []
 var _overlay: HighlightOverlay
+## View-only floor plate (Coilgate and later themes). Null keeps the Koliseo dress.
+var _look_floor: Texture2D = null
+var _look_pulse: float = 1.0
 
 
 class HighlightOverlay extends Node2D:
@@ -34,8 +37,34 @@ func _ready() -> void:
 	_ensure_overlay()
 
 
+func set_look_floor(tex: Texture2D) -> void:
+	_look_floor = tex
+	_request_paint()
+
+
+func clear_look_floor() -> void:
+	set_look_floor(null)
+
+
+func look_floor() -> Texture2D:
+	return _look_floor
+
+
+func set_look_pulse(amount: float) -> void:
+	var next := clampf(amount, 0.0, 2.0)
+	if is_equal_approx(_look_pulse, next):
+		return
+	_look_pulse = next
+	if _look_floor != null:
+		queue_redraw()
+
+
 func _draw() -> void:
 	var points := _diamond_points()
+	if _look_floor != null:
+		_paint_look_floor(_look_floor)
+		_paint_label()
+		return
 	var tex := _KoliseoArt.terrain_texture(terrain_type, elevation, _dress)
 	if tex == null:
 		draw_colored_polygon(points, fill_color())
@@ -48,6 +77,21 @@ func _draw() -> void:
 		var prop_tex := _KoliseoArt.prop_texture(str(prop_name))
 		if prop_tex != null:
 			_paint_prop(prop_tex)
+	_paint_label()
+
+
+func _paint_look_floor(tex: Texture2D) -> void:
+	var size := tex.get_size()
+	if size.x < 1.0:
+		return
+	var dest_w := 64.0
+	var dest_h := dest_w * size.y / size.x
+	var dest := Rect2(-dest_w * 0.5, -dest_h * 0.5, dest_w, dest_h)
+	var glow := Color(_look_pulse, _look_pulse, _look_pulse, 1.0)
+	draw_texture_rect(tex, dest, false, glow)
+
+
+func _paint_label() -> void:
 	var label := drawn_label()
 	if label == "":
 		return
