@@ -23,7 +23,7 @@ func _finish_live() -> void:
 
 func _test_params_and_slots() -> void:
 	var params := JUNGLE.load_params()
-	eq(str(params.get("art_status", "")), "v3", "jungle art is the approved v3 set")
+	eq(str(params.get("art_status", "")), "v4", "jungle art is the approved v4 set")
 	truthy(FileAccess.file_exists(JUNGLE.art_root() + "README.md"), "the jungle folder ships the art readme")
 	eq(str(params.get("sway_mode", "")), "mask_shader", "leaf sway is a mask shader")
 	eq(bool(params.get("sway_mask", false)), true, "each leaf layer has a sway mask")
@@ -107,7 +107,7 @@ func _test_params_and_slots() -> void:
 	eq(float(params.get("top_fade_distance", 0.0)), 220.0, "the top canopy fades across the pan distance")
 	var layers: Dictionary = params.get("layers", {})
 	_assert_modulate(layers, "back_far", 0.75, "far canopy")
-	_assert_modulate(layers, "back_mid", 0.85, "mid canopy")
+	_assert_modulate(layers, "back_mid", 0.80, "mid canopy")
 	_assert_modulate(layers, "front_leaves", 0.68, "front leaves")
 	var far_mod: Array = (layers["back_far"] as Dictionary)["modulate"]
 	truthy(float(far_mod[2]) > float(far_mod[0]), "the far canopy modulate is cooler than neutral")
@@ -323,6 +323,20 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 		truthy(skirt.z_index < 0 and skirt.z_index > layer.back_z("back_mid"), "the skirt is under the board and over the mid canopy")
 		var mat := skirt.material as ShaderMaterial
 		truthy(is_equal_approx(float(mat.get_shader_parameter("strength")), float(params["ground_skirt"]["strength"])), "the skirt strength comes from the json")
+	truthy(float(params["ground_skirt"]["strength"]) <= 0.2, "the cliff skirt no longer covers the clearing")
+	truthy(float(params["ground_skirt"]["reach_cells"]) <= 1.5, "the cliff skirt stays shorter than a cell and a half")
+	var contact := layer.get_node_or_null("ContactShadow") as Sprite2D
+	truthy(contact != null, "a contact shadow rims the board where it meets the clearing")
+	if contact != null:
+		truthy(contact.z_index < 0 and contact.z_index > layer.back_z("back_mid"), "the contact shadow is under the board and over the mid canopy")
+		var cmat := contact.material as ShaderMaterial
+		truthy(is_equal_approx(float(cmat.get_shader_parameter("strength")), float(params["contact_shadow"]["strength"])), "the contact strength comes from the json")
+		truthy(is_equal_approx(float(cmat.get_shader_parameter("width")), float(params["contact_shadow"]["width_cells"])), "the contact width comes from the json")
+	truthy(is_equal_approx(layer.contact_rim_alpha(0.0), 0.0), "the contact rim is clear across cell interiors")
+	var rim_width := float(params["contact_shadow"]["width_cells"])
+	truthy(layer.contact_rim_alpha(rim_width) <= 0.02, "the contact rim ends at its json width")
+	var rim_peak: float = layer.contact_rim_alpha(rim_width * 0.3)
+	truthy(rim_peak > 0.2 and rim_peak < 0.55, "the contact rim is visible and stays subtle")
 	var dapple: CanvasItem = (board.tiles[Vector2i(7, 7)] as Node).get_node_or_null("LeafDapple")
 	truthy(dapple != null and dapple.texture_repeat == CanvasItem.TEXTURE_REPEAT_ENABLED, "the leaf shadow repeats on the cell")
 	var fit: Vector2 = board.get("_fit_camera_pos")

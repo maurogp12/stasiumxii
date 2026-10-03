@@ -1,11 +1,50 @@
 # STASIUM XII PC: Crosshaven jungle backdrop (L2), ship PNGs
 
-v1 built Fri 2 Oct 2026, ~21:50 ET; v2 update ~22:30 ET; **v3 update ~23:55 ET** (front_leaves_top v3 + back_mid v3, see below), on the box with Python 3 + Pillow 12.3 / numpy 2.2 / OpenCV 5.0 / SciPy 1.18.
+v1 built Fri 2 Oct 2026, ~21:50 ET; v2 update ~22:30 ET; v3 update ~23:55 ET; **v4 update Sat 3 Oct ~00:27 ET** (back_mid v4 + front_leaves_bottom v2, see below), on the box with Python 3 + Pillow 12.3 / numpy 2.2 / OpenCV 5.0 / SciPy 1.18.
 Sources: `raw/crosshaven_jungle/*_raw.png` (Scenario, Seedream 4.5 High 4K; IDs from raw README.txt).
 Spec: `SPEC_v1.md` (with the "Code answers" section from 21:39). Build scripts: `/workspace/scratch/build/` (box only, not in the repo).
 
 **Naming (per code update):** each 2x master is `<name>@2x.png` (the spec size). Plain `<name>.png` is the half-size fallback (Lanczos, same mode, straight alpha). Sway masks are `<layer>_sway.png` at half the master size and have no @2x version.
 Straight (non-premultiplied) alpha throughout. RGB under alpha=0 is filled with the neighbouring foliage colour (not black), so linear filtering can't pull in magenta or dark fringes.
+
+## v4 update (Oct 3, ~00:27 ET)
+
+| Layer | Shipped | Source asset | Previous version archived in |
+|---|---|---|---|
+| back_mid | **v4** | asset_4Qhxvq84T1GBVL4RBFe5AghG (`back_mid_raw_v4.png`, job_v7traiQD3z6Verrpv16stDvw) | `ship_archive/crosshaven_jungle_v3/` (v3 back_mid@2x, back_mid, back_mid_sway + README_v3.md) |
+| front_leaves_bottom | **v2** | asset_G4mFLw2QgAfFTKMEBrPTM9dh (`front_leaves_bottom_raw_v2.png`, job_Far1zBaKZku96KRAQgSqDwQB) | `ship_archive/crosshaven_jungle_v1/` (v1 bottom; byte-identical copies were already there) |
+| front_leaves_top | v3 (unchanged) | | |
+| front_leaves_left / right | v2 (unchanged) | | |
+| back_far, leaf_shadow | v1 (unchanged) | | |
+
+Build scripts (box only): `/workspace/scratch/build/back_mid_v4.py` (run with `{"top_pad":0}`), `bottom_v2.py` (run with `{"stem_r":16,"stem_w":20,"stem_min_h":40}`), `export_v4.py`, `preview_v4.py`, `preview_v4_final.py`. Intermediates: `/workspace/scratch/v4/`.
+
+### back_mid v4: judged better than v3, shipped. It FAILS the checker's centre-box rule by design (grounding favoured, see Checker)
+- **Raw:** 5376x3024. A very flat magenta oval at x 385..5063 and y 454..1198 (87% of the width x 25% of the height), with a mossy clearing, roots and rocks below it across the whole lower 60%.
+- **Frame, no stretch:** the full raw width at uniform x0.7619 (a downscale, so it stays crisp). The 16:10 frame needs 3360 raw rows, so 336 rows were added under the raw by mirror-reflecting the bottom (seam blended over ±24 rows). Those rows map to canvas y 2304..2560. Only the bottom ~100 canvas rows are on screen at the default camera, and the opaque front_leaves_bottom covers them. No top padding, so the hole sits as high as possible.
+- **Hole:** the largest magenta component (closing r=25, filled). **Stair-steps:** the steps are in the magenta boundary itself (blocky 15-30 px treads/risers at 2x). The painted ring around the oval is smooth sandy ground with no painted moss ledges this time. The contour was redrawn as a smooth curve: polar radius in ellipse-normalised coordinates, averaged per angle and Gaussian-smoothed (2.2 deg), then given a ~1 px AA edge. The stepped edge deviates from the curve by a mean of 2.4 px (p95 6.4, max 9.5 px at 2x). Step corners left outside the curve are filled with the surrounding sand colour (push-pull, despilled). Two dangling vines that hang into the hole from the canopy were kept opaque (6.9k px), with alpha from their magenta mix and despilled.
+- **Placement vs the board (default camera):** the corner line is at canvas y ≈1092, and the side corners at x ≈1088 / 3008. The hole spans canvas x 293..3858 and y 346..913, so its bottom is 179 canvas px (86 screen px) above the corner line. The ground runs under the whole lower half of the board and out to both canvas edges.
+- **Edges / bleed:** all four edges are 100% opaque. Solid painting runs at least 293 px (left) / 237 px (right) at 2x on every row (requirement ≥230). 15.5% of the canvas is fully transparent. Semi-transparent texels only on the hole edge (8.2k).
+- **Sway** `back_mid_sway.png` 2048x1280 L: only the canopy leaf masses above the hole sway (plus the two dangling vines). Bark/trunks are pinned (opening r=8 of smooth non-leaf), and **all ground is 0**: everything below a ground line (the hole's lower boundary in its span, the oval centre row elsewhere, ramped over 40 px) is exactly 0. 11.9% of texels are non-zero.
+- **Ground coverage (composite; back_mid alpha≥0.5):**
+
+| Camera | 30 px band under the lower edges + round the side corners: v4 / v3 | Hole below the corner line (board span ±60 px): v4 / v3 | Board's lower half backed by ground: v4 / v3 |
+|---|---|---|---|
+| default | **100% / 8%** | **0.0% / 33.0%** | 100% / 0% |
+| pan x +220 | 100% / 8% | 0.0% / 32.6% | 100% / 0% |
+| pan x -220 | 100% / 9% | 0.0% / 32.4% | 100% / 0% |
+| pan y +220 (camera down, board moves up) | 89% / 0% | 5.4% / 41.0% | 68.5% / 0% |
+| pan y -220 (camera up, board moves down) | 100% / 67% | 0.0% / 19.3% | 100% / 35% |
+
+### front_leaves_bottom v2: judged better than v1, shipped
+- **Raw:** 6048x2592. The plants fill almost the whole height and leaves run off the top edge. The bottom is a zigzag "ground" strip that was normalised to magenta, so the leaf bases end on zigzag cuts from raw row ~2119 to ~2495.
+- **Band, no stretch:** raw rows 1162..2296 at full width, uniform x0.4233 to 2560x480, processed at 2x. The band bottom (2296) sits above nearly all of the zigzag, so the leaves are cut by the band's bottom edge, not by the zigzag.
+- **Dropping foliage that touches the top:** the leaves overlap without closed outlines, and the dark monsteras are too dark to split by brightness. So the leaves were split with a marker watershed on the Lab colour gradient (black outlines weighted heavily). Drop seeds are the foliage in the band's top 8 rows. Keep seeds are thick foliage on the bottom edge. Stems are not seeds, so a tall leaf's stalk floods from its blade and is dropped with it. Kept: 56% of the attached foliage. 4 bare stalks whose upper end was left free were removed. In one hand-directed box (x 1755..2045, y 90..262), the leaflets of the dropped palm frond that crossed the right fern were removed, and the fern pieces they left hanging went with them. Everything left is one piece per plant attached to the bottom edge: 0 islands, top 4 rows alpha 0.
+- **Edges:** silhouette smoothed (sigma 4 px at 2x, bias 0.55) for crisp 1-2 px AA like top v3: 0 texels with alpha 1-63, 0 pink edge texels.
+- **Tone:** the dark painted interiors were lifted with a luminance gamma of 0.62, then a x1.26 gain. Mean luminance of opaque texels is **0.300** (top v3 0.31, v1 bottom 0.43).
+- **Coverage:** 37.5% of the band is opaque (v1 71.6%). Tallest leaf at row 107 (78% of the band height). The bottom row is 68% opaque, so there are gaps between plants at the screen bottom. The leftmost monstera and the rightmost leaves are also cut by the side edges (screen edges, under the side layers).
+- **Fallback** `front_leaves_bottom.png` 1280x240: alpha-weighted Lanczos, straight alpha. **Sway** `front_leaves_bottom_sway.png` 1280x240 L: 0 at the bottom edge (bottom row max 1), smoothstep to 255 at each column's leaf tip, 0 outside the leaves.
+- **Why v2 beats v1:** v1 had the soft wavy fake fade (35.8k faint texels, alpha 1-63) and was brighter than the other front layers. v2 has crisp painted leaves at the same darkness as top v3, and nothing floats or touches the top. Board clearance: 0% at the default camera, 0.48% at pan y -220 (v1 0%; one fern tip).
 
 ## v3 update (Oct 2, ~23:55 ET)
 
@@ -71,42 +110,52 @@ The locally normalised v2 PNGs were the input (exact #FF00FF field). The `.scena
 |---|---|---|---|---|
 | `back_far@2x.png` | 2048x1280 | RGB (opaque) | asset_dtbE3duKhryB5GEu4nSG9DHR (job_kTr9rY3887D1RVWeUt5nzD5C) | Cover-fit from 6048x2592: scaled to 1280 tall (x0.494), centre crop x=950..5097 raw. Area downsample, then a gentle 0.8 px Gaussian blur so it reads as the far plane. No letterbox. |
 | `back_far.png` | 1024x640 | RGB | same | Half-size Lanczos fallback. |
-| `back_mid@2x.png` | 4096x2560 | RGBA | **v3: asset_VboyPVLNJsJjxvbojQThy4rW** (see v3 notes). v2 (archived in ship_archive/crosshaven_jungle_v2): asset_9VhMvWtzAgiaB4WVe27DwuxK. v1 (archived in ship_archive/crosshaven_jungle_v1): asset_oL3WsfvcfFnykBzPMEymPgF9 | v3: crop x 1142..4342, y 426..2426 raw, uniform x1.28. Oval keyed and edge smoothed. Centre box 68.4% transparent. All edges opaque. Older v1/v2 processing notes are in the v2 section and the archived README. |
+| `back_mid@2x.png` | 4096x2560 | RGBA | **v4: asset_4Qhxvq84T1GBVL4RBFe5AghG** (see v4 notes). v3 (archived in ship_archive/crosshaven_jungle_v3): asset_VboyPVLNJsJjxvbojQThy4rW. v2 (archived in ship_archive/crosshaven_jungle_v2): asset_9VhMvWtzAgiaB4WVe27DwuxK. v1 (archived in ship_archive/crosshaven_jungle_v1): asset_oL3WsfvcfFnykBzPMEymPgF9 | v4: full raw width, uniform x0.7619, 336 mirrored rows added under the raw. Smooth redrawn oval contour. Hole only above the board's corner line. Centre box 20.4% transparent (**checker FAIL, by design**). All edges opaque, side solid ≥237 px. |
 | `back_mid.png` | 2048x1280 | RGBA | same | Half-size fallback. |
-| `back_mid_sway.png` | 2048x1280 | L | derived (v3) | v3: leaf masses sway. Bark/rock/roots, sky and the terrace/cliff block below the hole are pinned at 0. 0 in the hole. |
+| `back_mid_sway.png` | 2048x1280 | L | derived (v4) | v4: canopy leaf masses and the two dangling vines sway. Bark is pinned, and all ground below the hole line is exactly 0. 0 in the hole. |
 | `front_leaves_left@2x.png` | 1024x1440 | RGBA | **v2: asset_QJUivbS1ywVBVZPJzfLeE3XH** (see v2 notes above). v1 (archived): asset_ZG4xdJjAYeci9sXtEYwJ7Kpx (job_hKtmFcjEnfMUvbx7u1bWUvaN), v1 notes follow: | Cover-fit width (x0.339), top-anchored crop (drops the round topiary bush at the raw's bottom). Leaves attached to the left edge, about 300 px deep. Mauve backdrop pockets keyed. The raw's hard vertical paste cut was replaced by a soft, noise-wavy fade inside the painted band. The dark backing dissolves before lit leaves near the free edge. |
 | `front_leaves_left.png` | 512x720 | RGBA | same | Half-size fallback. |
 | `front_leaves_right@2x.png` | 1024x1440 | RGBA | **v2: asset_5h9Hew1YyKdYzj4qLGfV4129** (see v2 notes above). v1 (archived): asset_bBjApU7mSi1ggKqqHv5FGC93 (job_rc7vxbxjQZ886MvFpJPZBUrq), v1 notes follow: | Cover-fit width, bottom-anchored. Vines on a mauve backdrop: mauve and its cast shadows hue-keyed. Frond tips clipped by the raw's paste cut were removed as floating bits. Attached to the right edge. |
 | `front_leaves_right.png` | 512x720 | RGBA | same | Half-size fallback. |
 | `front_leaves_top@2x.png` | 2560x480 | RGBA | **v3: asset_6q9bBdY9xwGxvog8UgkiinHJ** (see v3 notes). v1 (archived): asset_pCwvxEtkQ3T3KdHLZz2AhNRM (job_rxc35HduQJGocUgRGcSsZPpD) | v3: top 1134-row band of the 21:9 raw, uniform x0.4233. Whole top-attached leaves plus dark navy canopy, crisp 1-2 px edges, no haze. Nothing touches the bottom edge, and nothing sits in the board keep-out. |
 | `front_leaves_top.png` | 1280x240 | RGBA | same | Half-size fallback. |
-| `front_leaves_bottom@2x.png` | 2560x480 | RGBA | asset_PNzHoosrz3AiLHqNURoaxY1Z (job_D9u5BpGdyi3SrCAvzxCV19Yf) | Width-fit, bottom-anchored (the raw's paste cut falls outside the crop). Valley-shaped soft upper edge (~45% depth at the centre) to keep the action-bar area lighter. Attached to the bottom edge. |
+| `front_leaves_bottom@2x.png` | 2560x480 | RGBA | **v2: asset_G4mFLw2QgAfFTKMEBrPTM9dh** (see v4 notes). v1 (archived): asset_PNzHoosrz3AiLHqNURoaxY1Z (job_D9u5BpGdyi3SrCAvzxCV19Yf) | v2: raw rows 1162..2296, uniform x0.4233. Whole bottom-attached plants only (watershed leaf split). Crisp 1-2 px edges, mean luminance 0.30. Top rows empty. |
 | `front_leaves_bottom.png` | 1280x240 | RGBA | same | Half-size fallback. |
 | `front_leaves_*_sway.png` | 512x720 (L/R), 1280x240 (T/B) | L | derived | Half size. 0 at the attachment edge, smooth ramp to 255 at the free leaf tips (normalised per row/column to the local tip distance, smoothed). Extends a few px past the silhouette, then 0. |
 | `leaf_shadow@2x.png` | 1024x1024 | L | asset_c9pPjGgkms5w2GYbywZGETCK (job_dYwk4R4xrhWdkMY5MR6mArmq) | Luminance, area-downsampled from 4096, 5 px Gaussian blur for soft dapples. Made seamless with two separable, variance-preserving offset blends that use rotated copies (no half-period repeat and no contrast loss in the blend zones). Local density normalised with wrap-mode filters. Tone: white = lit, darkest ~71, mean 196. Edge diffs (L/R 1.6, T/B 1.3) are below the average neighbour-pixel diff. |
 | `leaf_shadow.png` | 512x512 | L | same | Half-size fallback, downscaled wrap-aware (3x3 tile, Lanczos, centre crop), still seamless. |
-| `../../previews/crosshaven_jungle/_preview_composite.png` | 1920x1080 | RGB | preview | Current package (top v3, back_mid v3, sides v2) at the default camera (same setup as v1: 16:9 canvas at 1.5x, back_far x1.06 @0.12, back_mid half size @0.40, 15x15 board at zoom 0.64, leaf_shadow x50%, screen-locked fronts). Coverage numbers are printed on the image. |
-| `../../previews/crosshaven_jungle/_preview_pan220.png` | 1920x1080 | RGB | preview | 2x2 grid: pan x -220 / +220 / y -220 / +220 world px, with coverage. |
+| `../../previews/crosshaven_jungle/_preview_composite.png` | 1920x1080 | RGB | preview | **v4 package** (back_mid v4, bottom v2, top v3, sides v2) at the default camera (same setup as v1: 16:9 canvas at 1.5x, back_far x1.06 @0.12, back_mid half size @0.40, 15x15 board at zoom 0.64, leaf_shadow x50%, screen-locked fronts). Coverage and ground numbers are printed on the image. |
+| `../../previews/crosshaven_jungle/_preview_pan_y220.png` | 1920x1080 | RGB | preview | v4 package at pan y +220 (camera down), with the numbers printed on it. |
+| `../../previews/crosshaven_jungle/_preview_back_mid_v3_vs_v4.png` | 3860x1080 | RGB | preview | Default camera: OLD (back_mid v3 + bottom v1, archived) on the left, NEW (v4 package) on the right. |
+| `../../previews/crosshaven_jungle/_preview_pan220.png` | 1920x1080 | RGB | preview | **v3-era (stale, not rebuilt):** 2x2 grid: pan x -220 / +220 / y -220 / +220 world px, with coverage. |
 | `../../previews/crosshaven_jungle/_preview_back_mid_v2_vs_v3.png` | 3860x1080 | RGB | preview | Default-camera composite with back_mid v2 (left, archived) vs v3 (right). Everything else is the current ship. |
 | `../../previews/crosshaven_jungle/_preview_v1_vs_v2.png` | 3856x1080 | RGB | preview | v1 (archived files) and v2 composites side by side at the default camera. |
 | `../../previews/crosshaven_jungle/_preview_tiles.png` | 2632x3118 | RGB | preview | leaf_shadow tiled 2x2, and each leaf layer next to its sway mask. **Not rebuilt for v3** (it still shows v1 top / v2 back_mid). |
 | `../../previews/crosshaven_jungle/v1/` | | | preview | The v1 composite/tiles previews as they were before the update. |
 
 ## Checker (`tools/check_assets.py --package jungle`)
+- **v4 run (Oct 3, 00:25 ET): Overall FAIL, on one file only.** `back_mid@2x.png` FAIL: "centre is not mostly transparent (20.4% alpha<32)". It also has a WARN: "alpha halo: edge is 75.0 luminance brighter than opaque interior". That's the painted pale-sand ring around the hole, which is brighter than the average of the mossy painting, not a fringe (0 pink edge texels). The other 11 entries PASS, including `front_leaves_bottom@2x.png` and both new sway masks.
+  - **Why the conflict can't be avoided:** the checker's centre box is rows 640..1920 x cols 1024..3072. The board's corner line sits at canvas row ≈1092 at the default camera. With the hole only above that line, even a hole spanning the full box width could clear at most rows 640..1092, which is 35.3% of the box. Making the hole under the board's lower half transparent too (hidden by the board at the default camera, exposed when panning) would still give only about 53%. So no grounded back_mid can reach 60%. As instructed, grounding was favoured. To get back to PASS: either waive or relax the centre-box rule for back_mid (e.g. measure only above the corner line), or restore v3 with `cp ship_archive/crosshaven_jungle_v3/back_mid* ship/crosshaven_jungle/`.
 - v3 run (Oct 2, ~23:53 ET, after both v3 layers were exported): all 12 expected entries **PASS** (7 @2x masters + 5 sway masks). INFO only: non-black RGB under alpha=0 (intentional), and back_mid centre transparency 68.4%. 1x fallbacks ignored. Overall: **PASS**.
 - v2 run (Oct 2, 22:28 ET): all 12 expected entries **PASS** (7 @2x masters + 5 sway masks). INFO only: transparent RGB is non-black (intentional colour bleed), and back_mid centre transparency is 70.6%. The 1x fallbacks are recognised and ignored. Overall: **PASS**. No previews in this folder.
 
-## Front-leaf clearance (v3, measured in the composite; % of board diamond covered by any front-leaf alpha)
+## Front-leaf clearance (v4 package, measured in the composite; % of board diamond covered by any front-leaf alpha)
 
 | Camera | Total (any alpha) | alpha>0.5 | top | bottom | left | right | (v2 package, v1 top) |
 |---|---|---|---|---|---|---|---|
 | default | **0.00%** | 0.00% | 0 | 0 | 0 | 0 | 0.00% |
 | pan x +220 | 0.27% | 0.23% | 0.27 | 0 | 0 | 0 | 2.71% |
 | pan x -220 | 1.36% | 1.29% | 0 | 0 | 0 | 1.36 | 4.61% |
-| pan y -220 (camera up, board moves down) | 0.00% | 0.00% | 0 | 0 | 0 | 0 | 0.00% |
+| pan y -220 (camera up, board moves down) | 0.48% | 0.41% | 0 | 0.48 (bottom v2; v1 was 0) | 0 | 0 | 0.00% |
 | pan y +220 (camera down, board moves up under the top margin) | 20.35% | 19.46% | 20.35 | 0 | 0 | 0 | 52.2% |
 
-## Art concerns / regenerate candidates (current state, v3)
+## Art concerns / regenerate candidates (current state, v4)
+- **back_mid v4 vs the checker:** see Checker. It needs a rule waiver, or a revert to v3.
+- **back_mid v4 hole is very wide and flat** (87% of the raw width). The side bleed is just above spec on the right (237 px vs 230). The hole shows back_far over the board's upper half and out to near the screen edges. At pan y +220 the hole dips below the corner line (5.4% of the area under the line, ground band 89%).
+- **back_mid v4 bottom 256 canvas rows are mirrored raw.** They're hidden by front_leaves_bottom at the default camera, but they can show a symmetric seam if code pans the camera far down.
+- **back_mid v4 stair-steps:** the painted ring is smooth sand, so no ledges remain. The only stepping was the magenta boundary, and the redrawn curve replaces it. Faint residues are possible where a step corner's sand fill meets the painted texture (step deviation max 9.5 px at 2x). Nothing else remains to report.
+- **front_leaves_bottom v2 is sparse:** 37.5% opaque vs 71.6% for v1, with gaps at the bottom edge where the ground shows through. The left monstera is still very dark even after the lift. The watershed split cuts a few leaves along colour edges rather than outlines (e.g. a fern at the right lost its upper half with the palm frond). A regen with shorter plants that fit in the lower 45% of a 21:9 frame (no top contact, no zigzag ground strip) would allow whole leaves and a denser base.
+(Older v3-era notes follow; items 1, 2 and 6 are superseded by v4.)
 1. **back_mid v3 painted stair-steps:** the moss ring around the oval is painted as blocky ~40-60 px (2x) stair ledges with dark outlines, against the sky above and the terrace below. The keyed hole edge is smoothed, but these painted ledges are inside the painting and can't be fixed without repainting. They're visible at game scale on the ring's left and right shoulders. This is the main reason to regenerate back_mid.
 2. **back_mid v3 oval is too flat:** 53% x 24% of the frame instead of the prompt's ~60% x 55%. To meet the 60% centre rule it had to be zoomed (x1.28 upscale, mildly softer). The hole is also ~1.9x wider than the board, so back_far still shows beside the board's lower-left/right edges. For a regen, ask for a taller oval (~50-55% width x 45-50% height) with no stepped rim, so the ground can hug the board on all sides.
 3. **front_leaves_top v3 centre-right opening:** the big banana/fern fronds over the centre-right reached down into the board keep-out and the band bottom, so they were dropped whole rather than cut. That leaves a canopy opening at about 50-75% of the width, open to the top edge, where back_mid/back_far show through. The canopy-notch fill is synthetic dark foliage with a jittered, somewhat scalloped lower boundary. It reads as deep canopy at game scale but is flatter than painted leaves up close.

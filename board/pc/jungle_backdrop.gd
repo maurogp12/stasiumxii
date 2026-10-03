@@ -36,11 +36,11 @@ void fragment() {
 }
 """
 const SKIRT_SHADER := """shader_type canvas_item;
-// Procedural cliff under the board. The oval still shows sky until L1.
+// Retired cliff. Strength stays in json and is 0 once the clearing is painted.
 uniform vec3 skirt_color = vec3(0.035, 0.062, 0.048);
-uniform float strength = 0.62;
+uniform float strength = 0.0;
 uniform float board_n = 15.0;
-uniform float reach = 5.0;
+uniform float reach = 0.0;
 varying vec2 board_pos;
 void vertex() {
 	board_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
@@ -56,6 +56,30 @@ void fragment() {
 	float rim = smoothstep(0.0, 0.85, outside);
 	float a = strength * fade * mix(0.55, 1.0, rim);
 	COLOR = vec4(skirt_color, a);
+}
+"""
+## Keep the rim curve in step with contact_rim_alpha(). Alpha is 0 on the
+## board square, which is the cell diamonds, and it dies by width_cells.
+const CONTACT_SHADER := """shader_type canvas_item;
+uniform vec3 shadow_color = vec3(0.02, 0.04, 0.03);
+uniform float strength = 0.36;
+uniform float board_n = 15.0;
+uniform float width = 0.9;
+varying vec2 board_pos;
+void vertex() {
+	board_pos = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
+}
+void fragment() {
+	float fx = board_pos.y / 32.0 + board_pos.x / 64.0;
+	float fy = board_pos.y / 32.0 - board_pos.x / 64.0;
+	float edge = max(board_n - 0.5, 0.0);
+	float ox = max(max(-0.5 - fx, fx - edge), 0.0);
+	float oy = max(max(-0.5 - fy, fy - edge), 0.0);
+	float outside = length(vec2(ox, oy));
+	float w = max(width, 0.05);
+	float rise = smoothstep(0.0, w * 0.18, outside);
+	float fall = 1.0 - smoothstep(w * 0.45, w, outside);
+	COLOR = vec4(shadow_color, strength * rise * fall);
 }
 """
 const MAX_FIGHTERS := 12
@@ -142,6 +166,8 @@ var _hover_cell: Vector2i = Vector2i(-1, -1)
 var _hover_locked: bool = false
 var _skirt: Sprite2D
 var _skirt_shader: Shader
+var _contact: Sprite2D
+var _contact_shader: Shader
 
 
 class LeafDapple extends Node2D:
@@ -258,6 +284,7 @@ func layout() -> void:
 	_layout_backs()
 	_layout_leaves()
 	_layout_skirt()
+	_layout_contact()
 	_apply_sway()
 	_apply_top_fade()
 	_drop_pointer(self)
@@ -967,12 +994,23 @@ func _leaf_covers_point(point: Vector2, images: Dictionary) -> bool:
 	return false
 
 
+## Rim factor times strength. 0 inside the board and again at width_cells.
+## Mirrors CONTACT_SHADER so tests can check the cells stay clear.
+func contact_rim_alpha(outside: float) -> float:
+	var spec: Dictionary = _params.get("contact_shadow", {})
+	var strength := float(spec.get("strength", 0.36))
+	var width := maxf(float(spec.get("width_cells", 0.9)), 0.05)
+	var rise := _smoothstep(0.0, width * 0.18, outside)
+	var fall := 1.0 - _smoothstep(width * 0.45, width, outside)
+	return strength * rise * fall
+
+
 func _layout_skirt() -> void:
 	_ensure_skirt()
 	if _skirt == null or _board == null:
 		return
 	var spec: Dictionary = _params.get("ground_skirt", {})
-	var reach := float(spec.get("reach_cells", 5.0))
+	var reach := float(spec.get("reach_cells", 0.0))
 	var n := float(_board_n())
 	var span := n + reach * 2.0
 	_skirt.position = Vector2(0.0, (n - 1.0) * 16.0)
@@ -985,9 +1023,53 @@ func _layout_skirt() -> void:
 	if raw is Array and (raw as Array).size() >= 3:
 		color = Color(float(raw[0]), float(raw[1]), float(raw[2]))
 	mat.set_shader_parameter("skirt_color", Vector3(color.r, color.g, color.b))
-	mat.set_shader_parameter("strength", float(spec.get("strength", 0.62)))
+	mat.set_shader_parameter("strength", float(spec.get("strength", 0.0)))
 	mat.set_shader_parameter("board_n", n)
 	mat.set_shader_parameter("reach", reach)
+
+
+func _layout_contact() -> void:
+	_ensure_contact()
+	if _contact == null or _board == null:
+		return
+	var spec: Dictionary = _params.get("contact_shadow", {})
+	var width := maxf(float(spec.get("width_cells", 0.9)), 0.05)
+	var n := float(_board_n())
+	var span := n + width * 2.0
+	_contact.position = Vector2(0.0, (n - 1.0) * 16.0)
+	_contact.scale = Vector2(span * 64.0 / 4.0, span * 32.0 / 4.0)
+	var mat := _contact.material as ShaderMaterial
+	if mat == null:
+		return
+	var raw: Variant = spec.get("color", [0.02, 0.04, 0.03])
+	var color := Color(0.02, 0.04, 0.03)
+	if raw is Array and (raw as Array).size() >= 3:
+		color = Color(float(raw[0]), float(raw[1]), float(raw[2]))
+	mat.set_shader_parameter("shadow_color", Vector3(color.r, color.g, color.b))
+	mat.set_shader_parameter("strength", float(spec.get("strength", 0.36)))
+	mat.set_shader_parameter("board_n", n)
+	mat.set_shader_parameter("width", width)
+
+
+func _ensure_contact() -> void:
+	if _contact != null and is_instance_valid(_contact):
+		return
+	_contact = Sprite2D.new()
+	_contact.name = "ContactShadow"
+	_contact.centered = true
+	_contact.z_as_relative = false
+	_contact.z_index = _z("contact_shadow")
+	_contact.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
+	image.fill(Color.WHITE)
+	_contact.texture = ImageTexture.create_from_image(image)
+	if _contact_shader == null:
+		_contact_shader = Shader.new()
+		_contact_shader.code = CONTACT_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _contact_shader
+	_contact.material = mat
+	add_child(_contact)
 
 
 func _ensure_skirt() -> void:

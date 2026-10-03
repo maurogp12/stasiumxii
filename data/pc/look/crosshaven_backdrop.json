@@ -1,6 +1,6 @@
 {
-  "art_status": "v3",
-  "note": "Crosshaven jungle v3, approved. front_leaves_top v3 and back_mid v3 replace those files under the same names. Masters are slot@2x.png; plain png is the half-size fallback. A later swap is back_mid v4 and front_leaves_bottom v2. Each back plate is scaled to the live view plus its parallax drift, including ultrawide. Front leaves are screen-locked in the margins. The leaf shader fades out over every cell diamond, each fighter, and a wider diamond on the hovered cell. Controls use mouse_filter ignore. Sway masks are half-size greyscale data: lossless, linear, sampled in the vertex shader with no color hint. leaf_shadow is seamless greyscale, white = lit, multiply, repeating, strength in shadow_opacity. layers.modulate is per plate so the board stays the brightest area: back_far about 0.75 and cooler, back_mid about 0.85, front leaves about 0.68 and slightly cool. top_fade_distance fades front_leaves_top as the camera pans +y toward that canopy, instead of clamping the pan. ground_skirt is a procedural dark cliff under the board edges until a later back_mid fills the clearing. Import: linear, no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
+  "art_status": "v4",
+  "note": "Crosshaven jungle v4, approved. back_mid v4 raises the clearing so the board sits on painted ground, and front_leaves_bottom v2 replaces the soft bottom band. Masters are slot@2x.png; plain png is the half-size fallback. Each back plate is scaled to the live view plus its parallax drift, including ultrawide. Front leaves are screen-locked in the margins. The leaf shader fades out over every cell diamond, each fighter, and a wider diamond on the hovered cell. Controls use mouse_filter ignore. Sway masks are half-size greyscale data: lossless, linear, sampled in the vertex shader with no color hint. leaf_shadow is seamless greyscale, white = lit, multiply, repeating, strength in shadow_opacity. layers.modulate is per plate so the board stays the brightest area: back_far about 0.75 and cooler, back_mid 0.80 (was 0.85; the lit sand path lost the move overlay at the higher value), front leaves about 0.68 and slightly cool. top_fade_distance fades front_leaves_top as the camera pans +y toward that canopy, instead of clamping the pan. ground_skirt strength is 0 because the painted clearing replaced the cliff. contact_shadow is a thin rim just outside the board edge, strength and width in cells, drawn behind the tiles so cell pixels stay undarkened. Import: linear, no mipmaps. back_far and back_mid are BC7/VRAM. Leaves, sway masks and the shadow are lossless.",
   "art_root": "res://art/pc/look/crosshaven_jungle/",
   "map_ids": ["crosshaven"],
   "slots": {
@@ -29,11 +29,12 @@
   },
   "layers": {
     "back_far": {"modulate": [0.68, 0.73, 0.82]},
-    "back_mid": {"modulate": [0.85, 0.85, 0.85]},
+    "back_mid": {"modulate": [0.80, 0.80, 0.80]},
     "front_leaves": {"modulate": [0.62, 0.67, 0.76]}
   },
   "top_fade_distance": 220,
-  "ground_skirt": {"color": [0.035, 0.062, 0.048], "strength": 0.62, "reach_cells": 5.0},
+  "ground_skirt": {"color": [0.035, 0.062, 0.048], "strength": 0.0, "reach_cells": 0.0},
+  "contact_shadow": {"color": [0.02, 0.04, 0.03], "strength": 0.36, "width_cells": 0.9},
   "shadow_opacity": 0.55,
   "shadow_world_repeat": 512.0,
   "shadow_scroll": "slow",
@@ -43,6 +44,7 @@
     "back_far": -320,
     "back_mid": -180,
     "ground_skirt": -40,
+    "contact_shadow": -24,
     "leaf_shadow": 0,
     "front_leaves": 720
   }
