@@ -25,71 +25,44 @@ func _test_params_and_slots() -> void:
 	var params := FLOOR.load_params()
 	eq(str(params.get("theme", "")), "coilgate", "the json names the coilgate theme")
 	eq(str(params.get("display_name", "")), "Thunderwell Core", "the display name is Thunderwell Core")
-	eq(float(params.get("draw_scale_2x", 0.0)), 0.5, "a 2x master is drawn at half size")
+	eq(float(params.get("cell_draw_scale", 0.0)), 0.5, "cell art is drawn at half size")
 	eq(str(params.get("art_status", "")), "placeholder", "coilgate art is still the stand-in set")
 	truthy(params.has("pulse_hz"), "pulse speed is in the floor json")
 	truthy(params.has("pulse_amount"), "pulse amount is in the floor json")
 	truthy(params.has("z_order"), "z order is in the floor json")
 	var slots: Dictionary = params.get("slots", {})
-	var names: Array[String] = [
-		"floor_tile_a",
-		"floor_tile_b",
-		"floor_tile_c",
-		"floor_tile_d",
-		"pad_blue",
-		"pad_red",
-		"light_pillar",
-		"room_edge_dark",
-		"glow_mask",
-	]
-	for slot in names:
-		var path := FLOOR.resolve_slot(slot)
-		truthy(path.ends_with(slot + "@2x.png"), "%s resolves to the @2x plate" % slot)
-		var tex := load(path) as Texture2D
-		truthy(tex != null, "%s @2x loads" % slot)
-		var spec: Dictionary = slots.get(slot, {})
-		var px: Array = spec.get("px_2x", [])
-		if tex != null and px.size() >= 2:
-			eq(tex.get_width(), int(px[0]), "%s @2x width" % slot)
-			eq(tex.get_height(), int(px[1]), "%s @2x height" % slot)
-		var low := FLOOR.slot_path_1x(slot)
-		truthy(FileAccess.file_exists(low), "%s 1x plate is on disk" % slot)
-		var low_tex := load(low) as Texture2D
-		var px1: Array = spec.get("px_1x", [])
-		if low_tex != null and px1.size() >= 2:
-			eq(low_tex.get_width(), int(px1[0]), "%s 1x width" % slot)
-			eq(low_tex.get_height(), int(px1[1]), "%s 1x height" % slot)
-	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
-	var src := FileAccess.get_file_as_string("res://board/pc/coilgate_floor.gd")
-	var hi := src.find("slot + \"@2x.png\"")
-	var lo := src.find("slot + \".png\"")
-	truthy(hi >= 0 and lo > hi, "@2x is checked before the 1x png")
 	var expected := {
-		"floor_tile_a": [[64, 32], [128, 64]],
-		"floor_tile_b": [[64, 32], [128, 64]],
-		"floor_tile_c": [[64, 32], [128, 64]],
-		"floor_tile_d": [[64, 32], [128, 64]],
-		"pad_blue": [[64, 48], [128, 96]],
-		"pad_red": [[64, 48], [128, 96]],
-		"light_pillar": [[64, 256], [128, 512]],
-		"room_edge_dark": [[2048, 1280], [4096, 2560]],
-		"glow_mask": [[256, 32], [512, 64]],
+		"floor_tiles": [512, 64],
+		"pad_blue": [128, 96],
+		"pad_red": [128, 96],
+		"light_pillar": [128, 512],
+		"room_edge_dark": [1024, 640],
+		"glow_mask": [512, 64],
 	}
 	for slot in expected.keys():
+		var path := FLOOR.resolve_slot(slot)
+		truthy(path.ends_with(slot + ".png"), "%s resolves to its slot file" % slot)
+		var tex := load(path) as Texture2D
+		truthy(tex != null, "%s loads" % slot)
 		var spec: Dictionary = slots.get(slot, {})
-		var one: Array = spec.get("px_1x", [])
-		var two: Array = spec.get("px_2x", [])
+		var px: Array = spec.get("px", [])
 		var want: Array = expected[slot]
-		eq(one.size() >= 2 and int(one[0]) == int(want[0][0]) and int(one[1]) == int(want[0][1]), true, "%s 1x contract" % slot)
-		eq(two.size() >= 2 and int(two[0]) == int(want[1][0]) and int(two[1]) == int(want[1][1]), true, "%s 2x contract" % slot)
+		eq(px.size() >= 2 and int(px[0]) == int(want[0]) and int(px[1]) == int(want[1]), true, "%s json size" % slot)
+		if tex != null:
+			eq(tex.get_width(), int(want[0]), "%s width" % slot)
+			eq(tex.get_height(), int(want[1]), "%s height" % slot)
+		_check_import(path, str(spec.get("compress", "lossless")))
+	eq(FLOOR.choose_path(FLOOR.art_root(), "missing_slot"), "", "a missing slot resolves to empty")
+	var src := FileAccess.get_file_as_string("res://board/pc/coilgate_floor.gd")
+	truthy(src.contains("trace"), "the glow shader reads the trace gradient")
+	truthy(src.contains("hole_mask"), "the room hole is a generated mask")
+	truthy(src.contains("blend_add"), "pillars and pads stay additive")
 	var room_spec: Dictionary = slots.get("room_edge_dark", {})
-	eq(str(room_spec.get("layout", "")), "one_surround", "room_edge_dark is one surround")
-	var hole: Array = room_spec.get("hole_diamond_px_2x", [])
-	eq(hole.size(), 4, "the surround hole is one diamond")
+	eq(str(room_spec.get("layout", "")), "generated_footprint", "the surround hole comes from the cell footprint")
+	var floor_spec: Dictionary = slots.get("floor_tiles", {})
 	var glow_spec: Dictionary = slots.get("glow_mask", {})
-	eq(str(glow_spec.get("layout", "")), "one_strip", "glow_mask is one strip")
-	var slices: Array = glow_spec.get("slices", [])
-	eq(slices.size(), 4, "the glow strip covers tiles a through d")
+	eq(floor_spec.get("slices", []), glow_spec.get("slices", []), "floor and glow strips share slot order")
+	eq(str(glow_spec.get("green", "")), "trace_gradient", "glow green is the trace gradient")
 
 
 func _test_board_wires_the_theme() -> void:
@@ -104,6 +77,11 @@ func _test_board_wires_the_theme() -> void:
 	truthy(preview.contains("coilgate"), "the preview arena asks for the coilgate theme")
 	truthy(preview.contains("stormspire"), "the preview loads an existing arena, not a dungeon run")
 	eq(preview.contains("dungeon"), false, "the preview does not start a dungeon")
+	truthy(preview.contains("use_hdr_2d"), "the preview can turn on 2D HDR")
+	truthy(preview.contains("PreviewGlow"), "the preview adds a glow environment")
+	var project := FileAccess.get_file_as_string("res://project.godot")
+	eq(project.contains("hdr_2d"), false, "2D HDR stays off for the rest of the game")
+	eq(FileAccess.get_file_as_string("res://main.tscn").contains("WorldEnvironment"), false, "the main scene has no glow environment")
 
 
 func _test_live_theme() -> void:
@@ -140,7 +118,14 @@ func _test_live_theme() -> void:
 		eq(plate.get_width(), 128, "the live floor plate is the @2x master")
 		eq(plate.get_height(), 64, "the live floor plate is 64 tall at 2x")
 	truthy(layer.room_is_behind(), "the dark room sits behind the cells")
-	truthy(is_equal_approx(layer.room_scale(), 0.5), "the surround is drawn at half the 2x master")
+	eq(int(layer.room_texture_size().x), 1024, "the room gradient is 1024 wide")
+	eq(int(layer.room_texture_size().y), 640, "the room gradient is 640 tall")
+	truthy(layer.room_scale() > 1.0, "the room gradient is scaled up")
+	truthy(layer.hole_is_generated(), "the board hole is generated from the cells")
+	var atlas: Vector2 = layer.floor_atlas_size()
+	eq(int(atlas.x), 512, "floor tiles are one 512-wide strip")
+	eq(int(atlas.y), 64, "the floor strip is 64 tall")
+	truthy(is_equal_approx(layer.pad_offset_y(), -16.0), "the pad diamond sits on the cell and the cap rises")
 	var room_at: Vector2 = layer.room_position()
 	eq(layer.get_node_or_null("RoomEdge") != null, true, "the surround is one sprite")
 	eq(layer.pillar_count(), 5, "five key cells raise a light pillar")
@@ -189,6 +174,16 @@ func _test_live_theme() -> void:
 	eq(layer.visible, false, "clearing the theme hides the room")
 	main.free()
 	FLOOR.request_theme("")
+
+
+func _check_import(path: String, mode: String) -> void:
+	var text := FileAccess.get_file_as_string(path + ".import")
+	truthy(text.contains("mipmaps/generate=false"), "%s has no mipmaps" % path)
+	if mode == "vram_bc7":
+		truthy(text.contains("compress/mode=2"), "%s uses VRAM compression" % path)
+		truthy(text.contains("compress/high_quality=true"), "%s asks for BC7 quality" % path)
+	else:
+		truthy(text.contains("compress/mode=0"), "%s stays lossless" % path)
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:

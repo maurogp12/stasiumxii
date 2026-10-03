@@ -1,10 +1,11 @@
 extends Node2D
 
 ## View-only Thunderwell Core floor (theme id and art folder stay coilgate).
-## Dark circuit plates, glowing pads, cyan pillars on key cells, and one dark
-## surround with a board-shaped hole. CombatSim, the grid and the tile records
-## stay as they are. Art: res://art/pc/look/coilgate_floor/ (@2x first, drawn
-## at half size). Params: coilgate_floor.json. A preview calls request_theme.
+## Dark circuit plates, glowing pads, cyan pillars on key cells, and a dark
+## gradient around a hole generated from the cell footprint. CombatSim, the
+## grid and the tile records stay as they are.
+## Art: res://art/pc/look/coilgate_floor/. Params: coilgate_floor.json.
+## A preview calls request_theme.
 
 const PARAMS_PATH := "res://data/pc/look/coilgate_floor.json"
 const DEFAULT_ROOT := "res://art/pc/look/coilgate_floor/"
@@ -12,14 +13,31 @@ const THEME_ID := "coilgate"
 const GLOW_SLICES := 4
 const GLOW_SHADER := """shader_type canvas_item;
 render_mode blend_add;
+uniform float phase = 0.0;
+uniform float pulse_hz = 0.22;
+uniform float flow_speed = 0.35;
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	float mask = max(tex.r, max(tex.g, tex.b));
-	COLOR = vec4(vec3(mask), mask);
+	float shape = tex.r;
+	float trace = tex.g;
+	float pulse = 0.62 + 0.38 * sin(TIME * TAU * pulse_hz + phase);
+	float along = fract(trace - TIME * flow_speed);
+	float energy = smoothstep(0.16, 0.0, abs(along - 0.12)) * step(0.02, trace);
+	float glow = shape * (0.5 * pulse + energy);
+	COLOR = vec4(vec3(0.55, 0.95, 1.0) * glow, glow);
+}
+"""
+const ROOM_SHADER := """shader_type canvas_item;
+uniform sampler2D hole_mask : filter_linear, repeat_disable;
+void fragment() {
+	vec4 grad = texture(TEXTURE, UV);
+	float room = texture(hole_mask, UV).r;
+	COLOR = vec4(grad.rgb, grad.a * room);
 }
 """
 
 static var requested_theme: String = ""
+static var preview_bloom: bool = false
 
 var _params: Dictionary = {}
 var _board: Node2D
@@ -28,6 +46,9 @@ var _time: float = 0.0
 var _room: Sprite2D
 var _pillars: Array[Node2D] = []
 var _glow_shader: Shader
+var _room_shader: Shader
+var _hole_tex: ImageTexture
+var _mask_key: String = ""
 
 
 static func request_theme(theme_id: String) -> void:
@@ -108,6 +129,42 @@ func room_z() -> int:
 
 func room_is_behind() -> bool:
 	return _room != null and not _room.z_as_relative and _room.z_index < 0
+
+
+func room_texture_size() -> Vector2:
+	if _room == null or _room.texture == null:
+		return Vector2.ZERO
+	return _room.texture.get_size()
+
+
+func hole_is_generated() -> bool:
+	return _hole_tex != null
+
+
+func floor_atlas_size() -> Vector2:
+	if _board == null:
+		return Vector2.ZERO
+	for cell in _board.tiles.keys():
+		var tile: Node = _board.tiles[cell]
+		if not tile.has_method("look_floor"):
+			continue
+		var plate := tile.look_floor() as AtlasTexture
+		if plate == null or plate.atlas == null:
+			continue
+		return plate.atlas.get_size()
+	return Vector2.ZERO
+
+
+func pad_offset_y() -> float:
+	if _board == null:
+		return 0.0
+	for cell in _board.tiles.keys():
+		var tile: Node = _board.tiles[cell]
+		var pad := tile.get_node_or_null("CoilPad") as Sprite2D
+		if pad == null:
+			continue
+		return pad.offset.y
+	return 0.0
 
 
 func room_scale() -> float:
@@ -191,6 +248,7 @@ func _ensure_room() -> void:
 	var path := resolve_slot("room_edge_dark")
 	_room.set_meta("slot_path", path)
 	_room.texture = _load_tex(path)
+	_room.material = _room_material()
 	add_child(_room)
 
 
@@ -202,8 +260,7 @@ func _build(board: Node2D, snap: Dictionary) -> void:
 	var pillars := _pillar_set()
 	for cell in board.tiles.keys():
 		var tile: Node = board.tiles[cell]
-		var slot := _floor_slot(cell, cycle)
-		var tex := _texture(slot)
+		var tex := _floor_slice(cell, cycle)
 		if tile.has_method("set_look_floor"):
 			tile.set_look_floor(tex)
 		if _is_pad(cell, _params.get("pad_blue", {})) and not pillars.has(cell):
@@ -261,9 +318,10 @@ func _add_pad(tile: Node, slot: String, tint: Color) -> void:
 	sprite.centered = true
 	sprite.texture = tex
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var scale := _master_scale(path)
+	var scale := _cell_scale()
 	sprite.scale = Vector2(scale, scale)
-	sprite.modulate = tint
+	sprite.offset = _pad_offset(tex, slot)
+	sprite.modulate = _bloom(tint)
 	var mat := CanvasItemMaterial.new()
 	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	sprite.material = mat
@@ -282,9 +340,9 @@ func _add_glow(tile: Node, cell: Vector2i) -> void:
 	sprite.centered = true
 	sprite.texture = _glow_slice(tex, cell)
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	var scale := _master_scale(path)
+	var scale := _cell_scale()
 	sprite.scale = Vector2(scale, scale)
-	sprite.material = _glow_material()
+	sprite.material = _glow_material(cell)
 	sprite.z_as_relative = true
 	sprite.z_index = _z("glow")
 	tile.add_child(sprite)
@@ -295,8 +353,7 @@ func _spawn_pillars(board: Node2D) -> void:
 	var tex := _texture("light_pillar")
 	if tex == null:
 		return
-	var path := resolve_slot("light_pillar")
-	var scale := _master_scale(path)
+	var scale := _cell_scale()
 	for cell in _pillar_list():
 		if not board.tiles.has(cell):
 			continue
@@ -311,6 +368,7 @@ func _spawn_pillars(board: Node2D) -> void:
 		var mat := CanvasItemMaterial.new()
 		mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 		sprite.material = mat
+		sprite.modulate = _bloom(Color(0.75, 1.0, 1.0))
 		sprite.set_meta("cell", cell)
 		add_child(sprite)
 		_pillars.append(sprite)
@@ -336,8 +394,13 @@ func _layout_room() -> void:
 		return
 	_room.visible = visible
 	_room.position = _footprint_center()
-	var scale := _master_scale(str(_room.get_meta("slot_path", "")))
+	var tex_size := _room.texture.get_size()
+	var scale := _room_cover_scale(tex_size)
 	_room.scale = Vector2(scale, scale)
+	var key := "%.3f|%.1f|%.1f|%d" % [scale, _room.position.x, _room.position.y, _board.tiles.size()]
+	if key != _mask_key:
+		_rebuild_hole(tex_size)
+		_mask_key = key
 
 
 func _apply_pulse() -> void:
@@ -352,9 +415,6 @@ func _apply_pulse() -> void:
 		var pad := tile.get_node_or_null("CoilPad") as CanvasItem
 		if pad != null:
 			pad.modulate.a = 0.62 + 0.38 * wave
-		var mask := tile.get_node_or_null("CoilGlow") as CanvasItem
-		if mask != null:
-			mask.modulate.a = 0.55 + 0.45 * wave
 	for sprite in _pillars:
 		if sprite == null or not is_instance_valid(sprite):
 			continue
@@ -441,28 +501,140 @@ func _footprint_center() -> Vector2:
 	return Vector2((min_x + max_x) * 0.5, (min_y + max_y) * 0.5)
 
 
-func _master_scale(path: String) -> float:
-	if path.ends_with("@2x.png"):
-		return float(_params.get("draw_scale_2x", 0.5))
-	return 1.0
+func _cell_scale() -> float:
+	return float(_params.get("cell_draw_scale", 0.5))
 
 
-func _glow_slice(tex: Texture2D, cell: Vector2i) -> AtlasTexture:
-	var slice_w := float(tex.get_width()) / float(GLOW_SLICES)
-	var index := posmod(cell.x + cell.y * 2, GLOW_SLICES)
+func _bloom(color: Color) -> Color:
+	if not preview_bloom:
+		return color
+	return Color(color.r * 2.2, color.g * 2.2, color.b * 2.2, color.a)
+
+
+func _pad_offset(tex: Texture2D, slot: String) -> Vector2:
+	var slots: Dictionary = _params.get("slots", {})
+	var spec: Dictionary = slots.get(slot, {})
+	var raised := float(spec.get("raised_px", 0))
+	var height := float(tex.get_height())
+	var diamond_center := raised + (height - raised) * 0.5
+	return Vector2(0, height * 0.5 - diamond_center)
+
+
+func _floor_slice(cell: Vector2i, cycle: Array) -> Texture2D:
+	var tex := _texture("floor_tiles")
+	if tex == null:
+		return null
+	var count := cycle.size()
+	if count < 1:
+		count = GLOW_SLICES
+	var index := posmod(cell.x + cell.y * 2, count)
+	return _slice(tex, index, count)
+
+
+func _slice(tex: Texture2D, index: int, count: int) -> AtlasTexture:
+	var slice_w := float(tex.get_width()) / float(count)
 	var atlas := AtlasTexture.new()
 	atlas.atlas = tex
 	atlas.region = Rect2(slice_w * float(index), 0.0, slice_w, float(tex.get_height()))
 	return atlas
 
 
-func _glow_material() -> ShaderMaterial:
+func _glow_slice(tex: Texture2D, cell: Vector2i) -> AtlasTexture:
+	var index := posmod(cell.x + cell.y * 2, GLOW_SLICES)
+	return _slice(tex, index, GLOW_SLICES)
+
+
+func _glow_material(cell: Vector2i) -> ShaderMaterial:
 	if _glow_shader == null:
 		_glow_shader = Shader.new()
 		_glow_shader.code = GLOW_SHADER
 	var mat := ShaderMaterial.new()
 	mat.shader = _glow_shader
+	mat.set_shader_parameter("phase", float(cell.x) * 1.7 + float(cell.y) * 2.3)
+	mat.set_shader_parameter("pulse_hz", float(_params.get("pulse_hz", 0.22)))
+	mat.set_shader_parameter("flow_speed", float(_params.get("glow_flow_speed", 0.35)))
 	return mat
+
+
+func _room_material() -> ShaderMaterial:
+	if _room_shader == null:
+		_room_shader = Shader.new()
+		_room_shader.code = ROOM_SHADER
+	var mat := ShaderMaterial.new()
+	mat.shader = _room_shader
+	return mat
+
+
+func _room_cover_scale(tex_size: Vector2) -> float:
+	var view := _view_world()
+	var margin := float(_params.get("pan_margin_px", 220.0))
+	var need := view + Vector2(margin, margin) * 2.0
+	var cover := maxf(need.x / tex_size.x, need.y / tex_size.y)
+	return cover * float(_params.get("room_extra_scale", 1.08))
+
+
+func _view_world() -> Vector2:
+	var view := Vector2(960, 720)
+	if _board != null:
+		var live := _board.get_viewport_rect().size
+		if live.x >= 32.0 and live.y >= 32.0:
+			view = live
+	var zoom := Vector2(0.64, 0.64)
+	if _board != null:
+		var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+		if cam != null and cam.zoom.x > 0.01:
+			zoom = cam.zoom
+	return Vector2(view.x / zoom.x, view.y / zoom.y)
+
+
+func _rebuild_hole(tex_size: Vector2) -> void:
+	var w := int(tex_size.x)
+	var h := int(tex_size.y)
+	if w < 2 or h < 2 or _room == null:
+		return
+	var bytes := PackedByteArray()
+	bytes.resize(w * h)
+	bytes.fill(255)
+	var scale := _room.scale.x
+	if scale < 0.001:
+		return
+	var center := _room.position
+	var hx := 32.0 / scale
+	var hy := 16.0 / scale
+	var feather := float(_params.get("room_feather", 0.14))
+	for cell in _board.tiles.keys():
+		var origin := Vector2(float(cell.x - cell.y) * 32.0, float(cell.x + cell.y) * 16.0)
+		var px := (origin - center) / scale + Vector2(float(w), float(h)) * 0.5
+		_stamp_hole(bytes, w, h, px, hx, hy, feather)
+	var image := Image.create_from_data(w, h, false, Image.FORMAT_L8, bytes)
+	if _hole_tex == null:
+		_hole_tex = ImageTexture.create_from_image(image)
+	else:
+		_hole_tex.set_image(image)
+	var mat := _room.material as ShaderMaterial
+	if mat != null:
+		mat.set_shader_parameter("hole_mask", _hole_tex)
+
+
+func _stamp_hole(bytes: PackedByteArray, w: int, h: int, center: Vector2, hx: float, hy: float, feather: float) -> void:
+	if hx < 0.5 or hy < 0.5:
+		return
+	var limit := 1.0 + feather
+	var y0 := maxi(0, int(floor(center.y - hy * limit)))
+	var y1 := mini(h - 1, int(ceil(center.y + hy * limit)))
+	var x_pad := hx * limit
+	for y in range(y0, y1 + 1):
+		var row := y * w
+		var x0 := maxi(0, int(floor(center.x - x_pad)))
+		var x1 := mini(w - 1, int(ceil(center.x + x_pad)))
+		for x in range(x0, x1 + 1):
+			var dist := absf(float(x) - center.x) / hx + absf(float(y) - center.y) / hy
+			if dist >= limit:
+				continue
+			var room := clampf((dist - 1.0) / feather, 0.0, 1.0)
+			var shade := int(round(room * 255.0))
+			if shade < int(bytes[row + x]):
+				bytes[row + x] = shade
 
 
 func _z(key: String) -> int:

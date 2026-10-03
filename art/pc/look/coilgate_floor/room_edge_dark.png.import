@@ -2,21 +2,23 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ck1blhx1ashrq"
-path="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.ctex"
+uid="uid://0dxmo7gdn1my"
+path.bptc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex"
+path.astc="res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://art/pc/look/coilgate_floor/room_edge_dark.png"
-dest_files=["res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.ctex"]
+dest_files=["res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.bptc.ctex", "res://.godot/imported/room_edge_dark.png-10bd40a561d773f7a3fe4cb5c911b7b6.astc.ctex"]
 
 [params]
 
-compress/mode=0
-compress/high_quality=false
+compress/mode=2
+compress/high_quality=true
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
