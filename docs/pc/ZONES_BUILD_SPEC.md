@@ -49,6 +49,10 @@ game"**. What each package borrows:
 | Dofus | Clean, clickable cells; warm detailed props; every walkable cell reads as walkable | WP5, WP10 |
 - Reference frames: `overview/reference_vs_wakfu/` in the Crosshaven handoff
   package, and Mauro's Wakfu clips.
+- Quality examples from Mauro (3 Oct 2026, "these are just examples of quality
+  of the game"): the level of quality to reach, not designs to copy.
+  - https://www.youtube.com/watch?v=AYvoduE4x7k
+  - https://www.youtube.com/watch?v=2S_DDtfYd7s (from minute 6)
 
 Every package ends with a before/after video or screenshot set (section 6) that
 Mauro can judge on a phone screen.
