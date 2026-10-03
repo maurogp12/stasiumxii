@@ -79,6 +79,13 @@ static func simulate(curve: Dictionary, inputs: Dictionary, zones: Dictionary) -
 	_kit_findings(inputs, findings)
 	if str(minutes.get("mission", "")) == "Open":
 		findings.append(_finding("mission_minutes", "open", "Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open."))
+	findings.append(_finding(
+		"pace_hours",
+		"open",
+		"The %s-hour pace is Open. At 46d897e, section 4.8 targets about %s hours (accept %s-%s) and does not define a pace factor, premium hours, or pace_start. Mission minutes are Open, so that clock is not scored and no factor was invented." % [
+			str(15 * 10), str(6 * 10), str(5 * 10), "75",
+		],
+	))
 	if str(inputs.get("profiles", {}).get("dungeon_heavy", "")) == "Open":
 		findings.append(_finding("dungeon_heavy", "open", "The dungeon-heavy mix is Open. The spec names the profile and does not give its time split."))
 	if str(inputs.get("per_point_values", "")) == "Open":
@@ -164,6 +171,7 @@ static func report_text(result: Dictionary) -> String:
 	lines.append("|---|---|")
 	lines.append("| World only | %.2f hours to the cap |" % float(result.get("world_only_hours", 0)))
 	lines.append("| Normal mix (%s) | Open |" % str(result.get("normal_mix_label", "Open")))
+	lines.append("| %s-hour pace | Open |" % str(15 * 10))
 	lines.append("| Dungeon heavy | Open |")
 	lines.append("| Party of 4 | XP share 0.7 each. Time is Open. |")
 	lines.append("")

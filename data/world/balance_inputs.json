@@ -83,6 +83,7 @@
     "dungeon_heavy_mix",
     "party_time",
     "per_point_values",
+    "pace_hours",
     "five_part_effect_sizes",
     "rewards_json"
   ]

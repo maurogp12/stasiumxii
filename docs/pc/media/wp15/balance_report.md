@@ -9,6 +9,7 @@ Stats: Mastery, Vitality, Swift, Resist.
 |---|---|
 | World only | 70.00 hours to the cap |
 | Normal mix (world 50% / dungeons 30% / missions 20%) | Open |
+| 150-hour pace | Open |
 | Dungeon heavy | Open |
 | Party of 4 | XP share 0.7 each. Time is Open. |
 
@@ -57,6 +58,7 @@ Mission coin amounts are a range in the spec. A single number inside each tier i
 | ap_6_gloam | outside | Raw kit output is -19% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | ap_7_ironjaw | outside | Raw kit output is 11% from the damage-class median. Set tuning that would pull this inside the band is Open. |
 | mission_minutes | open | Mission duration is Open, so normal-mix hours, XP shares, and the world-only slowdown are Open. |
+| pace_hours | open | The 150-hour pace is Open. At 46d897e, section 4.8 targets about 60 hours (accept 50-75) and does not define a pace factor, premium hours, or pace_start. Mission minutes are Open, so that clock is not scored and no factor was invented. |
 | dungeon_heavy | open | The dungeon-heavy mix is Open. The spec names the profile and does not give its time split. |
 | per_point_values | open | Per-point Mastery, Vitality, Swift and Resist values are Open, so set rules 3, 4 and 5 are not scored. |
 | zones | pass | Every zone band ends at or below the curve cap. |

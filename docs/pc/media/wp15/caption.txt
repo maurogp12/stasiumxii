@@ -3,3 +3,5 @@ WP15 balance report. No clip: the spec's media for this package is the printed t
 Reference A remains the open-world bar. This report is the before/after for the numbers: the curve, the 4.8 rates, and the checks that are still Open.
 
 Cap is max_level from level_curve.json. The stat is Resist. Mission minutes, the dungeon-heavy mix, party time, and per-point stat values are Open because the spec does not give them.
+
+The 150-hour pace is Open. docs/pc on claude/pc-zones-spec at 46d897e targets about 60 hours (accept 50-75) and does not define a pace factor. No pace_start or pace_ratio was added.
