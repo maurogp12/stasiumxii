@@ -16,6 +16,7 @@ extends Node2D
 ## by 0.4 so a move tile stays brighter than the glow.
 
 const PARAMS_PATH := "res://data/pc/look/thunderwell_floor.json"
+const PROPS := preload("res://board/pc/thunderwell_props.gd")
 const DEFAULT_ROOT := "res://art/pc/look/thunderwell_floor/"
 const THEME_ID := "thunderwell"
 const GLOW_SLICES := 4
@@ -140,6 +141,7 @@ var _hole_tex: ImageTexture
 var _mask_key: String = ""
 var _routes: Array = []
 var _routes_on: bool = false
+var _props
 
 
 static func request_theme(theme_id: String) -> void:
@@ -456,6 +458,7 @@ func sync_board(board: Node2D, snap: Dictionary) -> void:
 	else:
 		_place_pillars()
 	_layout_room()
+	_sync_props()
 	_apply_pulse()
 
 
@@ -641,6 +644,8 @@ func _clear() -> void:
 	_clear_cell_dressing()
 	_free_pillars()
 	_built_for = -1
+	if _props != null and is_instance_valid(_props):
+		_props.clear_props()
 	if _room != null:
 		_room.visible = false
 
@@ -727,6 +732,28 @@ func _spawn_pillars(board: Node2D) -> void:
 	_place_pillars()
 
 
+func prop_count() -> int:
+	if _props == null or not is_instance_valid(_props):
+		return 0
+	return _props.prop_count()
+
+
+func prop_records() -> Array:
+	if _props == null or not is_instance_valid(_props):
+		return []
+	return _props.records()
+
+
+func _sync_props() -> void:
+	if _props == null or not is_instance_valid(_props):
+		_props = PROPS.new()
+		_props.name = "RoomProps"
+		add_child(_props)
+	if _board == null:
+		return
+	_props.sync_board(_board)
+
+
 func _place_pillars() -> void:
 	if _board == null:
 		return
@@ -780,6 +807,8 @@ func _apply_pulse() -> void:
 		if sprite == null or not is_instance_valid(sprite):
 			continue
 		sprite.modulate.a = 0.55 + 0.45 * wave
+	if _props != null and is_instance_valid(_props):
+		_props.apply_time(_time)
 
 
 func _pulse_wave() -> float:

@@ -687,6 +687,45 @@
       }
     ]
   },
+  "room_props": {
+    "glow_gain": 1.0,
+    "contact_shadow": 0.35,
+    "tall_height_px": 110,
+    "note": "Room-edge cells only. Tall props sit above the board's left-right corner line. The front ring would sort in front of the south cells, so rubble, conduit and cable sit one cell further out. The coil shares the floor pulse clock; its peak stays the authored strength.",
+    "emission": {
+      "coil_pylon": 0.45,
+      "broken_generator": 0.45,
+      "cable_bundle": 0.35,
+      "capacitor_crystal": 0.3,
+      "conduit_pipe": 0.35
+    },
+    "placements": [
+      {
+        "id": "coil_pylon",
+        "origin": [2, -2]
+      },
+      {
+        "id": "broken_generator",
+        "origin": [12, -3]
+      },
+      {
+        "id": "capacitor_crystal",
+        "origin": [-1, 5]
+      },
+      {
+        "id": "cable_bundle",
+        "origin": [5, 16]
+      },
+      {
+        "id": "conduit_pipe",
+        "origin": [16, 8]
+      },
+      {
+        "id": "slate_rubble",
+        "origin": [12, 16]
+      }
+    ]
+  },
   "ports": {
     "definition": "trace ports sit exactly on the diamond edge midpoints; every port has the same mirror-symmetric width and glow profile, so seams join under any h/v flip",
     "midpoints_2x_px": {

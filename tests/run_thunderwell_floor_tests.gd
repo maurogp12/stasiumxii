@@ -4,6 +4,7 @@ extends SceneTree
 ## Run: godot --headless --path . -s res://tests/run_thunderwell_floor_tests.gd
 
 const FLOOR := preload("res://board/pc/thunderwell_floor.gd")
+const PROPS := preload("res://board/pc/thunderwell_props.gd")
 
 var _failed: int = 0
 var _passed: int = 0
@@ -11,6 +12,7 @@ var _passed: int = 0
 
 func _initialize() -> void:
 	_test_params_and_slots()
+	_test_room_props()
 	_test_board_wires_the_theme()
 	call_deferred("_finish_live")
 
@@ -163,6 +165,7 @@ func _test_board_wires_the_theme() -> void:
 	eq(view.contains("class_name"), false, "board_view does not declare a class_name")
 	var sim := FileAccess.get_file_as_string("res://backend/combat_sim.gd")
 	eq(sim.contains("thunderwell_floor"), false, "CombatSim does not know about the floor theme")
+	eq(sim.contains("thunderwell_props"), false, "CombatSim does not know about the room props")
 	var preview := FileAccess.get_file_as_string("res://scenes/pc/look_preview.gd")
 	truthy(preview.contains("thunderwell"), "the preview arena asks for the thunderwell theme")
 	truthy(preview.contains("stormspire"), "the preview loads an existing arena, not a dungeon run")
@@ -175,6 +178,103 @@ func _test_board_wires_the_theme() -> void:
 	var project := FileAccess.get_file_as_string("res://project.godot")
 	eq(project.contains("hdr_2d"), false, "2D HDR stays off for the rest of the game")
 	eq(FileAccess.get_file_as_string("res://main.tscn").contains("WorldEnvironment"), false, "the main scene has no glow environment")
+
+
+func _test_room_props() -> void:
+	var params := FLOOR.load_params()
+	var room: Dictionary = params.get("room_props", {})
+	eq(float(room.get("glow_gain", 0.0)), PROPS.glow_gain(), "the zone glow gain loads from the floor json")
+	eq(float(room.get("contact_shadow", 0.0)), 0.35, "the contact shadow multiplies at about 0.35")
+	eq(float(room.get("tall_height_px", 0.0)), 110.0, "tall props are the ones over about 110 px at 2x")
+	var emission: Dictionary = room.get("emission", {})
+	eq(float(emission.get("coil_pylon", 0.0)), 0.45, "the coil strength starts at 0.45")
+	eq(float(emission.get("broken_generator", 0.0)), 0.45, "the generator strength starts at 0.45")
+	eq(float(emission.get("cable_bundle", 0.0)), 0.35, "the cable strength starts at 0.35")
+	eq(is_equal_approx(float(emission.get("capacitor_crystal", 0.0)), 0.30), true, "the capacitor strength starts at 0.30")
+	eq(float(emission.get("conduit_pipe", 0.0)), 0.35, "the conduit strength starts at 0.35")
+	eq(PROPS.emission_strength("coil_pylon"), 0.45, "the live coil strength is the floor json value")
+	eq(PROPS.glow_gain(), 1.0, "Thunderwell glow gain starts at 1")
+	var catalog := PROPS.catalog_by_id()
+	eq(catalog.size(), 6, "the catalog has six props")
+	var src := FileAccess.get_file_as_string("res://board/pc/thunderwell_props.gd")
+	var emit_src := src.substr(src.find("const EMIT_SHADER"), src.find("const SHADOW_SHADER") - src.find("const EMIT_SHADER"))
+	truthy(emit_src.contains("COLOR.rgb += COLOR.rgb * emit * strength * glow_gain"), "emission adds albedo times the mask, the strength and the zone gain")
+	eq(emit_src.contains("blend_add"), false, "prop emission is not an additive blend")
+	eq(emit_src.contains("source_color"), false, "the emit sampler has no color hint")
+	truthy(emit_src.contains("filter_linear"), "the emit mask is sampled with a linear filter")
+	truthy(src.contains("render_mode blend_mul"), "the contact shadow multiplies")
+	var placed := 0
+	for item in PROPS.placements():
+		var prop_id := str(item.get("id", ""))
+		var spec: Dictionary = catalog.get(prop_id, {})
+		truthy(not spec.is_empty(), "%s is in the catalog" % prop_id)
+		var master := PROPS.master_path(spec)
+		truthy(master.ends_with("@2x.png"), "%s loads the 2x master" % prop_id)
+		var tex := load(master) as Texture2D
+		truthy(tex != null, "%s master loads" % prop_id)
+		if tex != null:
+			var size: Array = spec.get("size_2x", [])
+			eq(tex.get_width(), int(size[0]), "%s master width" % prop_id)
+			eq(tex.get_height(), int(size[1]), "%s master height" % prop_id)
+		var fallback := load(PROPS.ART_ROOT + str(spec.get("file_1x", ""))) as Texture2D
+		truthy(fallback != null, "%s 1x fallback loads" % prop_id)
+		_check_import(master, "lossless")
+		_check_import(PROPS.ART_ROOT + str(spec.get("file_1x", "")), "lossless")
+		var emit_name := str(spec.get("file_emit", ""))
+		if emit_name != "":
+			var emit_path := PROPS.ART_ROOT + emit_name
+			var emit := load(emit_path) as Texture2D
+			truthy(emit != null, "%s emit mask loads" % prop_id)
+			_check_import(emit_path, "lossless")
+			eq(FileAccess.get_file_as_string(emit_path + ".import").contains("source_color"), false, "%s emit import has no color hint" % prop_id)
+			if emit != null and fallback != null:
+				eq(emit.get_width(), fallback.get_width(), "%s emit mask matches the 1x width" % prop_id)
+				eq(emit.get_height(), fallback.get_height(), "%s emit mask matches the 1x height" % prop_id)
+		placed += 1
+	eq(placed, 6, "six props are placed")
+	var board_cells: Array = []
+	for y in 15:
+		for x in 15:
+			board_cells.append(Vector2i(x, y))
+	# Orthographic: a pan does not move props relative to cells or fighters.
+	# The same hit list is what default, +y 220, and x ±220 all show.
+	var hits: Array = PROPS.coverage_hits(board_cells)
+	var detail := ""
+	for hit in hits:
+		detail += str(hit) + "; "
+	var pans: Array[Vector2] = [Vector2.ZERO, Vector2(0, 220), Vector2(220, 0), Vector2(-220, 0)]
+	for pan in pans:
+		eq(hits.is_empty(), true, "at pan %s nothing covers a board cell or a fighter (%s)" % [pan, detail])
+
+
+func _assert_live_props(layer, board: Node2D) -> void:
+	eq(layer.prop_count(), 6, "six room-edge props stand around the board")
+	var props = layer.get_node_or_null("RoomProps")
+	truthy(props != null, "the prop node hangs off the floor")
+	if props == null:
+		return
+	var seen := {}
+	for child in props.get_children():
+		var prop_id := str(child.get_meta("prop_id"))
+		seen[prop_id] = true
+		var anchor: Vector2i = child.get_meta("anchor")
+		var cells: Array = child.get_meta("cells")
+		for cell in cells:
+			eq(board.tiles.has(cell), false, "%s cell %s is outside the board" % [prop_id, str(cell)])
+		eq(child.z_as_relative, false, "%s sorts in board space" % prop_id)
+		eq(child.z_index, BoardVisualSort.unit_z_index(anchor), "%s sorts with fighters by its south tip" % prop_id)
+		eq(child.position, PROPS.south_tip(anchor), "%s stands on the footprint south tip" % prop_id)
+		var art := child.get_node_or_null("Art") as Sprite2D
+		truthy(art != null and art.centered == false, "%s art anchors from the south tip" % prop_id)
+		if art != null:
+			eq(art.scale, Vector2(0.5, 0.5), "%s is drawn at half the 2x master" % prop_id)
+			eq(art.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "%s uses a linear filter" % prop_id)
+		var shadow := child.get_node_or_null("Shadow") as Sprite2D
+		truthy(shadow != null and shadow.material is ShaderMaterial, "%s has a contact shadow" % prop_id)
+		if shadow != null and shadow.material is ShaderMaterial:
+			eq(is_equal_approx(float((shadow.material as ShaderMaterial).get_shader_parameter("strength")), 0.35), true, "%s shadow strength is 0.35" % prop_id)
+	for prop_id in ["coil_pylon", "broken_generator", "capacitor_crystal", "cable_bundle", "conduit_pipe", "slate_rubble"]:
+		eq(seen.has(prop_id), true, "the board places %s" % prop_id)
 
 
 func _test_live_theme() -> void:
@@ -201,6 +301,7 @@ func _test_live_theme() -> void:
 		main.free()
 		return
 	eq(layer.themed_cell_count(), 0, "the theme stays off until it is selected")
+	eq(layer.prop_count(), 0, "room props stay off until the theme is selected")
 	FLOOR.request_theme("thunderwell")
 	board.set_board_theme("thunderwell")
 	eq(layer.themed_cell_count(), 225, "every cell wears a thunderwell floor plate")
@@ -222,6 +323,7 @@ func _test_live_theme() -> void:
 	var room_at: Vector2 = layer.room_position()
 	eq(layer.get_node_or_null("RoomEdge") != null, true, "the surround is one sprite")
 	eq(layer.pillar_count(), 5, "five key cells raise a light pillar")
+	_assert_live_props(layer, board)
 	truthy(is_equal_approx(layer.pillar_display_width(), 64.0), "a pillar is one cell wide at half size")
 	var pillar_sprite := layer.get_node_or_null("ThunderPillar") as Sprite2D
 	truthy(pillar_sprite != null and pillar_sprite.centered == false, "the pillar sprite anchors from its bottom")
