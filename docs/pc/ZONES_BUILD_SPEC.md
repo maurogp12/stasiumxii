@@ -40,15 +40,19 @@ game"**. What each package borrows:
 
 | From | What to bring into Stasium XII | Where in this spec |
 |---|---|---|
-| Wakfu | Living painted world: sway loops, critters, water ripples, cloud shadows, day/night and weather | WP5, WP11 |
+| Wakfu | Living painted world: sway loops, critters, water ripples, cloud shadows, day/night and weather | WP5a, WP5b, WP11 |
 | Wakfu | Click-to-walk glide, smooth corners, camera that drifts with the walker, soft fades between zones | WP4, WP12, WP13 |
 | Wakfu | Zone title card on entry; NPCs that turn to face you | WP2, WP6 |
 | Waven | Bold saturated colour, strong key light and rim light, chunky readable silhouettes | WP10, WP11 |
 | Waven | Punchy UI: banners, panels and buttons with weight, short pop-in motion | WP2, WP6, WP7 |
 | Waven | Big readable landmarks: each dungeon door is a hero prop with glow on hover | WP7, WP10 |
-| Dofus | Clean, clickable cells; warm detailed props; every walkable cell reads as walkable | WP5, WP10 |
+| Dofus | Clean, clickable cells; warm detailed props; every walkable cell reads as walkable | WP5a, WP5b, WP10 |
 - Reference frames: `overview/reference_vs_wakfu/` in the Crosshaven handoff
   package, and Mauro's Wakfu clips.
+- Quality examples from Mauro (3 Oct 2026, "these are just examples of quality
+  of the game"): the level of quality to reach, not designs to copy.
+  - https://www.youtube.com/watch?v=AYvoduE4x7k
+  - https://www.youtube.com/watch?v=2S_DDtfYd7s (from minute 6)
 
 Every package ends with a before/after video or screenshot set (section 6) that
 Mauro can judge on a phone screen.
@@ -102,13 +106,30 @@ by the code agent, on Mauro's word.
 - Character art comes from the character handoff and is read-only.
 - 2D only. Never 3D.
 
-### 1.4 Proposed: Mauro may change
+### 1.4 Soft Lock: approved, change only with Mauro's or Luca's word
+
+Approved by Mauro / Luca on 3 Oct 2026 (answer to Q5). Build to these. If a
+package finds a reason to change one, it asks first; it does not decide.
+
+- **Region sizes** (chunk count per region, section 3.1): Rowanvale 6,
+  Windmere 6, Brinewake 6, Slagcrown 6, Eastmarch Fen Edge 3, Gloomfen Mire 8,
+  Stormspire 5, Ashen Shardfields 7, Blightwood Hollow 8. That's 55 new chunks;
+  Crosshaven stays 11, so the world has 66.
+- **Chunk roles:** every region has one **entry** chunk, one **door** chunk,
+  a **hub** chunk where the region has a town, and **middle** chunks.
+- **One landmark prop per chunk.**
+- **WP5 split** into WP5a (critical path first) and WP5b (fill).
+- **The connectivity tests** in WP4 and WP5a.
+
+### 1.5 Proposed: Mauro may change
 
 Zone names (working names), level bands, dungeon names (except the four
-existing doors), door spots, NPC names and roles, the level curve, gate spots,
-placeholder chunk sizes, file and branch names in this spec.
+existing doors), door spots, NPC names and roles, the level curve, gate spots
+and which chunk each gate sits in, chunk sizes within the range in 3.1, which
+regions have a hub, the optional `depth` field (4.2), file and branch names in
+this spec.
 
-### 1.5 House rules for every agent
+### 1.6 House rules for every agent
 
 - Each package: its own branch, its tests green, the full suite list in 5.2
   green, the before/after media attached to the PR.
@@ -165,6 +186,42 @@ road; Gloomfen from Fen Edge; Stormspire from Gloomfen's south edge; Ashen
 Shardfields from Westwatch and from Slagcrown; Blightwood from Rowanvale and
 from Windmere.
 
+### 3.1 Region sizes (**Soft Lock**, Mauro / Luca 3 Oct 2026)
+
+Rule behind the numbers: about one chunk per level of band, at least 3 and at
+most 8, plus a hub where the region has a town. A side route gets fewer
+chunks; the end-game zone gets more. One of our chunks (about 36×32 cells) is
+about 3–4 Dofus screens, so 6 chunks is roughly a 20-map Dofus / Wakfu
+sub-area.
+
+| Region | Levels | Chunks | Shape |
+|---|---|---|---|
+| Rowanvale | 10–15 | **6** | Hamlet hub, farmland middle chunks, door chunk |
+| Windmere | 15–20 | **6** | City hub on the cliffs, 4 outer chunks, Galevault chunk |
+| Brinewake | 20–25 | **6** | Port hub, 3 coast chunks, 2 island chunks (linked by the Ferry Captain) |
+| Slagcrown | 25–30 | **6** | Forge-camp hub, 4 volcanic chunks, Ashmarch chunk |
+| Eastmarch Fen Edge | 25–30 | **3** | Short transition into the swamp, parallel to Slagcrown |
+| Gloomfen Mire | 30–38 | **8** | Boardwalk maze; widest band |
+| Stormspire | 35–40 | **5** | Compact plateau south of Gloomfen |
+| Ashen Shardfields | 38–45 | **7** | Open dunes split by crystal ridges |
+| Blightwood Hollow | 45–50 | **8** | End-game; where players stay longest at the cap |
+| **Total new** | | **55** | Crosshaven 11 → 66 chunks, about 63,000 new cells (≈5× Crosshaven) |
+
+Chunk roles (**Soft Lock**):
+
+- **Entry:** the chunk the region gate lands in. Exactly one per region.
+- **Door:** holds the dungeon door and its Door Keeper. Exactly one per region.
+  Proposed: the door chunk is the deepest chunk from the entry.
+- **Hub:** where the region has a town (Rowanvale, Windmere, Brinewake,
+  Slagcrown): Warden, Trader and the zone's extra NPCs. The hub can be the
+  entry chunk.
+- **Middle:** the chunks to explore between them.
+- **One landmark prop per chunk** (a ruin, a giant tree, a wreck…), so every
+  chunk is memorable, Dofus / Wakfu style.
+
+Chunk size (**Proposed**): stay in Crosshaven's range, 24–40 cells wide by
+24–36 high (`WorldZone.MAX_CHUNK` is 128).
+
 ---
 
 ## 4. Data formats
@@ -218,6 +275,11 @@ region has its own `data/world/<region>/index.json` and
 }
 ```
 
+Each zone's `chunks` list names every chunk of its region (66 chunks in all,
+section 3.1). Optional (**Proposed**): a `depth` object
+(`{"<chunk_id>": 0..7}`, entry = 0) so monster levels can rise inside a region
+later; the band stays the zone's band.
+
 Rules: every chunk id in every region index belongs to exactly one level zone;
 `1 <= level_min <= level_max <= 50`; the 11 zones of section 3 are all present;
 `gloomfen_mire.level_min >= 30`; `blightwood_hollow.level_min >= 45`;
@@ -267,6 +329,25 @@ not change.
   ]
 }
 ```
+
+Gates are **only between regions** (about 12 two-way gates). Links between
+chunks inside a region are normal v1 chunk exits in the region's own zone files,
+never gates. Each gate names its exact chunk, and a gate into a region always
+lands in that region's **entry** chunk. Proposed gate list:
+
+| Gate | From chunk | To (entry chunk of) |
+|---|---|---|
+| Stoneford ↔ Rowanvale | `crosshaven_stoneford` | Rowanvale |
+| Northgate ↔ Windmere | `crosshaven_northgate` | Windmere |
+| Eastmarch ↔ Brinewake | `crosshaven_eastmarch` | Brinewake |
+| Southbridge ↔ Slagcrown | `crosshaven_southbridge` | Slagcrown |
+| East road ↔ Fen Edge | `crosshaven_road_east` | Eastmarch Fen Edge |
+| Fen Edge ↔ Gloomfen | Fen Edge (its far chunk) | Gloomfen Mire |
+| Gloomfen south ↔ Stormspire | Gloomfen (a south chunk) | Stormspire |
+| Westwatch ↔ Ashen Shardfields | `crosshaven_westwatch` | Ashen Shardfields |
+| Slagcrown west ↔ Ashen Shardfields | Slagcrown (a west chunk) | Ashen Shardfields |
+| Rowanvale north ↔ Blightwood | Rowanvale (a north chunk) | Blightwood Hollow |
+| Windmere west ↔ Blightwood | Windmere (a west chunk) | Blightwood Hollow |
 
 Rules: both cells passable; `from` on a walkable cell next to the chunk edge;
 the level band in `label` matches `level_zones.json`; `two_way` gates have a
@@ -441,34 +522,68 @@ dependency on each other can run in parallel (marked ∥).
   gate walks there (existing `walk_to`) and then calls `enter_zone` on the
   target; gate arrows drawn with the existing exit-arrow look.
 - **Accept:** every gate's cells are passable; two-way gates pair up; every
-  region is reachable from the Crossroads; the Crosshaven tests still pass with
-  zero changes to the 11 chunk files.
+  region is reachable from the Crossroads; gates only join different regions;
+  every gate into a region lands in that region's entry chunk, and each region
+  has exactly one entry chunk; every chunk in every region index is in exactly
+  one level zone (66 chunks once WP5b is done); the Crosshaven tests still pass
+  with zero changes to the 11 chunk files.
+- **Data note:** the formats do not change for the larger regions.
+  `world_index.json` still lists 9 new regions; each region's `index.json`
+  simply lists more chunks.
 - **Media:** a clip of Stoneford → gate → Rowanvale placeholder → back.
 
-#### WP5: Placeholder region chunks (Code + Technical Artist)
+#### WP5a: Region layouts and the critical path (Code + Technical Artist)
 
-- **Goal:** every region exists as walkable, good-looking stand-in chunks,
-  ready for Scenario art.
+- **Goal:** every region's full chunk graph is designed now, and its critical
+  path is built and walkable first: **entry → (hub) → door**. The whole world
+  can be crossed early, and the links never get redrawn later.
 - **Needs:** WP4.
-- **Add:** per region `data/world/<region>/index.json` and
-  `data/world/<region>/zones/<region>_<part>.json` (v1 format), and a builder
-  `data/world/<region>/build_<region>_zones.py` modelled on the Crosshaven one.
-  Proposed sizes: **2 chunks per region** (an entry chunk 36×32 and a deep
-  chunk 40×32 with the dungeon door), 9 regions → 18 chunks.
+- **Add, per region:**
+  - `data/world/<region>/build_<region>_zones.py`, modelled on the Crosshaven
+    builder. At its top, a small text map of the region's **full** chunk graph
+    (all chunks of section 3.1, their roles, sizes and the edge exits between
+    them), so WP5b only fills chunks in.
+  - `data/world/<region>/index.json` listing the critical-path chunks.
+  - `data/world/<region>/zones/<region>_<part>.json` (v1 format) for the entry
+    chunk, the door chunk and the hub where there is one. Chunk ids:
+    `<region>_entry`, `<region>_door`, `<region>_hub`, `<region>_<name>` for
+    middle chunks.
+- **Landmark:** each built chunk gets its one landmark prop (stand-in: the
+  biggest existing prop that fits, until WP10 art).
 - **Look rules for stand-ins (Technical Artist):** only existing tile and prop
   ids; a per-region grade (`crosshaven_grade.gdshader` parameters per region,
   e.g. cold blue for Windmere, ember orange for Slagcrown, green fog for
   Gloomfen, violet dark for Blightwood) and per-region weather defaults in the
   sidecar, not in the zone file.
-- **Accept:** the zone validator passes every new chunk; connectivity check
-  passes; every POI, NPC, gate and door cell is passable; frame time on Full
-  stays within 10% of the Crosshaven bench.
-- **Media:** a still per region at zoom 1.6 + a 10 s walk.
+- **Accept:**
+  - The zone validator passes every new chunk.
+  - Every POI, NPC, gate and door cell is passable.
+  - **Connectivity:** each region's door chunk is reachable on foot from its
+    entry chunk; every built chunk is reachable from the region's entry; each
+    region has exactly one entry chunk and one door chunk.
+  - The builder's text map has the section 3.1 chunk count for its region.
+  - Frame time on Full stays within 10% of the Crosshaven bench (the game loads
+    one chunk at a time, so chunk count does not change frame time; bench once
+    per region).
+- **Media:** a still per region at zoom 1.6 and a walk from the region gate to
+  the dungeon door.
+
+#### WP5b: Fill the regions (Code + Technical Artist)
+
+- **Goal:** build the remaining middle chunks so every region has its full
+  section 3.1 count (55 new chunks in all).
+- **Needs:** WP5a for that region. Regions can be filled in parallel.
+- **Add:** the middle chunk files from the WP5a text map, added to the region's
+  `index.json` and to its level zone's `chunks` list.
+- **Accept:** everything in WP5a, plus: the region has exactly its section 3.1
+  chunk count; every chunk is reachable from the entry; every chunk has one
+  landmark; `level_zones.json` covers all 66 chunks.
+- **Media:** a 30 s walk through each region's middle chunks.
 
 #### WP6: NPCs (Code + Feel)
 
 - **Goal:** 51 NPCs standing in the world, clickable, with a dialogue panel.
-- **Needs:** WP1 (zones), WP5 for NPCs outside Crosshaven.
+- **Needs:** WP1 (zones), WP5a for NPCs outside Crosshaven (WP5b for NPCs in middle chunks).
 - **Add:** `data/world/npcs.json` + schema, `scenes/world/npc/world_npc.gd` /
   `.tscn` (sprite, name plate, idle loop, shadow, y-sorted with props using
   `UNIT_Z_BIAS`), `scenes/world/ui/npc_dialogue.gd` / `.tscn`,
@@ -493,7 +608,7 @@ dependency on each other can run in parallel (marked ∥).
 #### WP7: Dungeon doors in the world (Code)
 
 - **Goal:** 11 doors, one per level zone, with a door panel.
-- **Needs:** WP1, WP5.
+- **Needs:** WP1, WP5a (door chunks).
 - **Add:** `data/world/dungeons.json` + schema, `scenes/world/dungeon/dungeon_door.gd`
   / `.tscn` (door prop drawn like a 2×2 landmark, glow when hovered, name and
   band on hover), `scenes/world/ui/door_panel.gd` / `.tscn` (name, level band,
@@ -559,6 +674,13 @@ Asset list per region (**Proposed** counts; 1x and 2x for every item):
 | Ashen Shardfields | ash_dune ×4, crystal_ground ×2 | crystal spires ×5 (glow strips), ruins ×4, Shard Hollow (2×2) | `art/world/ashen_shardfields/...` |
 | Blightwood Hollow | blight_soil ×4, root_ground ×3 | twisted trees ×5, roots ×6, ruined watch walls ×4, spores (animated), Heart of the Blight (3×3) | `art/world/blightwood_hollow/...` |
 | Crosshaven (zones 1–2) | none (kit is final) | Old Granary Cellar door (2×2), Threshgate door (2×2); bridges and fords from `tiles/_box_only_not_in_kit/` wired in | `art/world/crosshaven/props/` |
+
+Landmarks (Scenario, **Soft Lock**: one per chunk): one hero prop per new
+chunk, 55 in all, in the region's style (2×2 or 3×3 footprint, sway or glow
+strip where it fits). Path `art/world/<region>/props/landmark_<chunk_id>.png`
+(+ `_2x/`). The region kits above are shared by all chunks of a region, so the
+kit list does not grow with the chunk count; the landmarks are the main
+addition.
 
 NPC bodies (Scenario): one painted body per role (18 roles), 4 facings (N, E,
 S, W under the locked rule), an idle loop of 8 frames at 8 fps per facing, on a
@@ -643,7 +765,10 @@ headless.
    like the phone's 2 points per level and AP at 20)?
 4. **NPC jobs:** shops, quests, storage, travel, healing: which first, and with
    which rules? v1 NPCs only talk.
-5. **Region size:** 2 chunks per region to start (Proposed), or more?
+5. ~~**Region size:** 2 chunks per region to start, or more?~~ **Answered
+   3 Oct 2026 (Mauro / Luca, yes):** 55 new chunks, 3–8 per region, with entry
+   / door / hub / middle chunks, one landmark per chunk, WP5 split into WP5a and
+   WP5b, and the new connectivity tests. **Soft Lock**: see 1.4 and 3.1.
 6. **Monsters in the world:** visible monster groups in each zone (Dofus /
    Wakfu style), or fights only inside dungeons?
 7. **Crosshaven walker facing fix** (a quarter-turn off the locked rule): may
