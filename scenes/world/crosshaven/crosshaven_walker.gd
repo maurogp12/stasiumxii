@@ -7,12 +7,14 @@ extends Node2D
 ## Art lives in `res://art/characters/world/ironjaw_tall/` and is described by
 ## `ironjaw_tall.json` (scale, pivot, fps, stride). The previous strips stay
 ## in `ironjaw/` so this id can swap back. See `world_strips.gd`.
+## `--class` loads ironjaw, gloam, kestrel, bastion, or mender. Their east
+## walk is the locked down-right sheet. Other facings stay on the old strips.
 
 signal stepped(cell: Vector2i)
 signal arrived(cell: Vector2i)
 
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
-const CLASS_ID := "ironjaw_tall"
+var class_id := "ironjaw_tall"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
@@ -67,7 +69,7 @@ var _release_u := 1.0
 func _ready() -> void:
 	z_as_relative = false
 	_strips = Strips.new()
-	_strips.load_class(CLASS_ID)
+	_strips.load_class(class_id)
 	_sprite = Sprite2D.new()
 	_sprite.centered = true
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -97,6 +99,21 @@ func _ready() -> void:
 
 func base_scale() -> float:
 	return _strips.scale
+
+
+## Swap the loaded strips. The default hero stays ironjaw_tall until this is called.
+func use_class(id: String) -> void:
+	var next := id.strip_edges().to_lower()
+	if next == "":
+		return
+	class_id = next
+	if _strips == null:
+		return
+	_strips.load_class(class_id)
+	_apply_pivot(_strips.pivot)
+	_apply_strip_speed()
+	if not _moving:
+		_show_idle()
 
 
 func frame_count(gait: String, dir: String) -> int:
@@ -561,20 +578,32 @@ func _apply_gait(root: Vector2) -> void:
 	if phase < 0.0:
 		phase += 1.0
 	var frame := int(phase * float(count)) % count
-	var cell_size: Vector2i = _strips.frame_size(gait)
+	var cell_size: Vector2i = _strips.frame_size_of(gait, facing)
 	_bob = 0.0
 	_air = 0.0
 	_visual = _visual_for(frame, root)
 	position = _visual
-	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(_strips.scale, _strips.scale), Vector2.ZERO)
+	var sc: float = _strips.draw_scale(gait, facing)
+	_apply_pivot(_strips.draw_pivot(gait, facing))
+	_present(tex, true, Rect2(frame * cell_size.x, 0, cell_size.x, cell_size.y), Vector2(sc, sc), Vector2.ZERO)
 	queue_redraw()
 
 
 func _show_idle() -> void:
-	var tex: Texture2D = _strips.idle(facing)
 	var breath := sin(_idle_t * TAU * 1.35) * 0.012
-	var sc := Vector2(_strips.scale * (1.0 - breath * 0.4), _strips.scale * (1.0 + breath))
-	_present(tex, false, Rect2(), sc, Vector2.ZERO)
+	if _strips != null and facing == "e" and _strips.has_locked_walk("e"):
+		var locked: Texture2D = _strips.texture("walk", "e")
+		var cell: Vector2i = _strips.frame_size_of("walk", "e")
+		var locked_scale: float = _strips.draw_scale("walk", "e")
+		_apply_pivot(_strips.draw_pivot("walk", "e"))
+		var locked_sc := Vector2(locked_scale * (1.0 - breath * 0.4), locked_scale * (1.0 + breath))
+		_present(locked, true, Rect2(0, 0, cell.x, cell.y), locked_sc, Vector2.ZERO)
+	else:
+		var tex: Texture2D = _strips.idle(facing) if _strips != null else null
+		var sc: float = _strips.scale if _strips != null else 0.33
+		_apply_pivot(_strips.pivot if _strips != null else Vector2(0, -72))
+		var drawn := Vector2(sc * (1.0 - breath * 0.4), sc * (1.0 + breath))
+		_present(tex, false, Rect2(), drawn, Vector2.ZERO)
 	_visual = position
 	_planted = false
 	_release_u = 1.0
@@ -587,6 +616,15 @@ func _show_idle() -> void:
 func set_covered(on: bool) -> void:
 	_covered = on
 	_sync_rim()
+
+
+func _apply_pivot(piv: Vector2) -> void:
+	if _sprite != null:
+		_sprite.offset = piv
+	if _fade != null:
+		_fade.offset = piv
+	if _rim != null:
+		_rim.offset = piv
 
 
 func _present(tex: Texture2D, region_on: bool, region: Rect2, sc: Vector2, foot: Vector2) -> void:
@@ -621,6 +659,7 @@ func _begin_fade() -> void:
 	_fade.region_rect = _sprite.region_rect
 	_fade.scale = _sprite.scale
 	_fade.position = _sprite.position
+	_fade.offset = _sprite.offset
 	_fade.modulate.a = 1.0
 	_fade.visible = true
 	_blend_left = BLEND_SEC
@@ -714,6 +753,10 @@ func _on_contact(gait: String, dir: String, frame: int) -> bool:
 func _locks_sole() -> bool:
 	if _strips == null:
 		return false
+	# Sole table is the old 144×160 strips. Locked east cells are a different
+	# size, so that facing keeps the painted boot instead of the old offsets.
+	if _strips.frame_size_of(_gait_name(), facing) != Vector2i(144, 160):
+		return false
 	return _strips.frame_size("walk") == Vector2i(144, 160)
 
 
@@ -744,7 +787,9 @@ func _visual_for(frame: int, root: Vector2) -> Vector2:
 
 
 func _draw() -> void:
-	var s: float = _strips.scale if _strips != null else 0.33
+	var s := 0.33
+	if _strips != null:
+		s = float(_strips.draw_scale("walk", facing))
 	var rx := 24.0 * s
 	var ry := 9.0 * s
 	var at := Vector2.ZERO

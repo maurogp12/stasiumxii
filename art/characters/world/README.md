@@ -22,3 +22,9 @@ The world walker does not play these strips on a clock. It picks the frame from 
 Combat pawns still use `art/characters/<class>/` static facings. These files are only for the open-world walker.
 
 `bake_world_strips.py` rebuilds the strips from an extract of that mobile commit.
+
+## Locked S walks (down-right)
+
+`locked_s/<class>_walk_S_f00.png` … `f11.png` are the painted front walk, used exactly as delivered. Art-team "S" is screen down-right, which this walker calls east (`+x` on the grid, iso step `(32, 16)`). They replace walk east only. South (down-left), north (up-right), and west (up-left) stay on the strips above. The walker does not mirror facings.
+
+Twelve frames at `12 / 0.70` fps, so each frame is `0.70 / 12` s (58.33 ms) and the loop is 0.70 s. East `stride` is set so cruise speed stays the speed that class already had: Ironjaw 31.68 px/s, and Gloam, Kestrel, Bastion, and Mender 16 px/s. Scale and pivot in each class json put the bottom-centre of the planted boot (frame 0) on that class's previous ground line, at the previous on-screen body height.

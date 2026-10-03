@@ -111,6 +111,7 @@ var _screen_fx: CanvasLayer
 var _zoom := 1.6
 var _last_click_ms := 0
 var _movie := ""
+var _launch_class := ""
 var _movie_t0 := 0
 var _bench: Array[float] = []
 var _bench_until := 0.0
@@ -168,6 +169,8 @@ func _ready() -> void:
 
 	walker = Walker.new()
 	walker.name = "Player"
+	if _launch_class != "":
+		walker.class_id = _launch_class
 	walker.arrived.connect(_on_arrived)
 	walker.stepped.connect(func(_c): _refresh_hud())
 	add_child(walker)
@@ -1769,6 +1772,8 @@ func _read_launch_args() -> void:
 			_movie = str(args[i + 1])
 		elif args[i] == "--bench" and i + 1 < args.size():
 			_movie = "bench:" + str(args[i + 1])
+		elif args[i] == "--class" and i + 1 < args.size():
+			_launch_class = str(args[i + 1])
 
 
 func _start_movie() -> void:
@@ -1839,6 +1844,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_v7_tour()
 		"ironjaw_tall":
 			await _movie_ironjaw_tall()
+		"locked_s":
+			await _movie_locked_s()
 		"wp4gate":
 			await _movie_wp4_gate()
 		"wp5astills":
@@ -2522,6 +2529,29 @@ func _movie_ironjaw_tall() -> void:
 	walker._show_idle()
 	_place_scale_kestrel()
 	await get_tree().create_timer(3.0).timeout
+	_mark("end")
+
+
+## Each class walks down-right (east) on the crossroads with the locked S sheet.
+func _movie_locked_s() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(2.3)
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.auto_rotate = false
+	weather.settle()
+	var classes: Array[String] = ["ironjaw", "gloam", "kestrel", "bastion", "mender"]
+	for id in classes:
+		_mark(id)
+		walker.use_class(id)
+		await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+		walker.face("e")
+		if _banner != null:
+			_banner.text = "%s  ·  down-right" % id.capitalize()
+			_banner.modulate.a = 1.0
+		await get_tree().create_timer(0.45).timeout
+		await _cardinal("e", 4, "walk")
+		await get_tree().create_timer(0.4).timeout
 	_mark("end")
 
 
