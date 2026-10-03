@@ -23,7 +23,7 @@ func _finish_live() -> void:
 
 func _test_params_and_slots() -> void:
 	var params := JUNGLE.load_params()
-	eq(str(params.get("art_status", "")), "v2", "jungle art is the approved v2 set")
+	eq(str(params.get("art_status", "")), "v3", "jungle art is the approved v3 set")
 	truthy(FileAccess.file_exists(JUNGLE.art_root() + "README.md"), "the jungle folder ships the art readme")
 	eq(str(params.get("sway_mode", "")), "mask_shader", "leaf sway is a mask shader")
 	eq(bool(params.get("sway_mask", false)), true, "each leaf layer has a sway mask")
