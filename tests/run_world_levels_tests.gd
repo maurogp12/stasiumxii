@@ -71,6 +71,9 @@ func _test_schema_file() -> void:
 	eq(schema["additionalProperties"], false, "schema rejects unknown keys")
 	eq(schema["properties"]["format"]["const"], "stasium.level_zones", "schema format")
 	eq(schema["properties"]["zones"]["items"]["additionalProperties"], false, "zone schema rejects unknown keys")
+	var required: Array = schema["properties"]["zones"]["items"]["required"]
+	eq(required.has("depth"), false, "depth is optional in the schema")
+	eq(schema["properties"]["zones"]["items"]["properties"].has("depth"), true, "schema allows depth")
 
 
 func _test_no_class_name() -> void:
@@ -118,8 +121,65 @@ func _test_chunks(levels) -> void:
 			eq(zone["chunks"], HEART_CHUNKS, "Heart chunks")
 		elif zone_id == "crosshaven_towns":
 			eq(zone["chunks"], TOWN_CHUNKS, "Towns chunks")
-		else:
-			eq((zone["chunks"] as Array).is_empty(), true, "%s has no chunks until its region exists" % zone_id)
+	_test_sixty_six(levels)
+
+
+## Soft Lock counts from spec 3.1. Middle names are Proposed: the spec names
+## the entry / door / hub roles and the shape, not each middle id.
+const COUNTS := {
+	"crosshaven_heart": 6,
+	"crosshaven_towns": 5,
+	"rowanvale": 6,
+	"windmere": 6,
+	"brinewake": 6,
+	"slagcrown": 6,
+	"eastmarch_fen_edge": 3,
+	"gloomfen_mire": 8,
+	"stormspire": 5,
+	"ashen_shardfields": 7,
+	"blightwood_hollow": 8,
+}
+const HUB_ZONES: Array[String] = ["rowanvale", "windmere", "brinewake", "slagcrown"]
+
+
+func _test_sixty_six(levels) -> void:
+	var owned := {}
+	for zone in levels.zones:
+		var zone_id := str(zone["id"])
+		var chunks: Array = zone["chunks"]
+		eq(chunks.size(), int(COUNTS[zone_id]), "%s chunk count" % zone_id)
+		var depth: Dictionary = zone["depth"]
+		eq(depth.size(), chunks.size(), "%s depth covers its chunks" % zone_id)
+		var entries := 0
+		var doors := 0
+		var hubs := 0
+		var door_depth := -1
+		var max_depth := -1
+		for chunk in chunks:
+			var chunk_id := str(chunk)
+			eq(owned.has(chunk_id), false, "%s sits in one zone" % chunk_id)
+			owned[chunk_id] = zone_id
+			eq(str(levels.zone_for_chunk(chunk_id).get("id", "")), zone_id, "%s resolves" % chunk_id)
+			var step := int(depth[chunk_id])
+			eq(step >= 0 and step <= 7, true, "%s depth is 0-7" % chunk_id)
+			if step > max_depth:
+				max_depth = step
+			if chunk_id.ends_with("_entry") or chunk_id == "crosshaven_crossroads":
+				entries += 1
+				eq(step, 0, "%s entry depth is 0" % chunk_id)
+			if chunk_id.ends_with("_door"):
+				doors += 1
+				door_depth = step
+			if chunk_id.ends_with("_hub"):
+				hubs += 1
+		if zone_id != "crosshaven_heart" and zone_id != "crosshaven_towns":
+			eq(entries, 1, "%s has one entry chunk" % zone_id)
+			eq(doors, 1, "%s has one door chunk" % zone_id)
+			eq(door_depth, max_depth, "%s door chunk is the deepest" % zone_id)
+			var want_hub := 1 if HUB_ZONES.has(zone_id) else 0
+			eq(hubs, want_hub, "%s hub count" % zone_id)
+	eq(owned.size(), 66, "66 chunk ids in all")
+	eq(levels.zone_for_chunk("rowanvale_entry").get("id", ""), "rowanvale", "a chunk with no file yet still resolves")
 
 
 func _test_rules(levels) -> void:
@@ -189,9 +249,24 @@ func _test_rejects() -> void:
 	})
 	_rejects(stranger, "unexpected zone extra_zone")
 	eq(Levels.parse([])["ok"], false, "an array is not a level-zone document")
-	var dangling := _doc()
-	_zone(dangling, "rowanvale")["chunks"] = ["rowanvale_meadow"]
-	_rejects(dangling, "chunk rowanvale_meadow is not in a region index")
+	var ahead := _doc()
+	_zone(ahead, "rowanvale")["chunks"].append("rowanvale_meadow")
+	_zone(ahead, "rowanvale")["depth"]["rowanvale_meadow"] = 3
+	var accepted: Dictionary = Levels.parse(ahead)
+	eq(accepted["ok"], true, "a declared chunk with no region file yet is allowed (%s)" % str(accepted["errors"]))
+	var shallow := _doc()
+	_zone(shallow, "rowanvale")["depth"]["rowanvale_entry"] = 1
+	_rejects(shallow, "rowanvale_entry entry depth must be 0")
+	var buried := _doc()
+	_zone(buried, "rowanvale")["depth"]["rowanvale_door"] = 1
+	_rejects(buried, "rowanvale door chunk is not the deepest")
+	var deep := _doc()
+	_zone(deep, "gloomfen_mire")["depth"]["gloomfen_mire_door"] = 8
+	_rejects(deep, "depth gloomfen_mire_door is outside 0-7")
+	var optional := _doc()
+	_zone(optional, "stormspire").erase("depth")
+	var still: Dictionary = Levels.parse(optional)
+	eq(still["ok"], true, "depth may be omitted (%s)" % str(still["errors"]))
 	var gap := _doc()
 	var heart_chunks: Array = _zone(gap, "crosshaven_heart")["chunks"]
 	heart_chunks.erase("crosshaven_crossroads")

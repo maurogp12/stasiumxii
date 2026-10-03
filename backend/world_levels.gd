@@ -9,7 +9,8 @@ const FORMAT := "stasium.level_zones"
 const FORMAT_VERSION := 1
 const MAX_LEVEL := 50
 const DOC_KEYS: Array[String] = ["format", "format_version", "status", "zones"]
-const ZONE_KEYS: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"]
+const ZONE_REQUIRED: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"]
+const ZONE_KEYS: Array[String] = ["id", "name", "level_min", "level_max", "chunks", "depth", "color", "dungeon"]
 const ZONE_IDS: Array[String] = [
 	"crosshaven_heart",
 	"crosshaven_towns",
@@ -109,7 +110,7 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 			continue
 		_unknown(zone, ZONE_KEYS, errors, "zone")
 		var complete := true
-		for key in ZONE_KEYS:
+		for key in ZONE_REQUIRED:
 			if not (zone as Dictionary).has(key):
 				_err(errors, "zone misses %s" % key)
 				complete = false
@@ -161,16 +162,60 @@ static func _check(doc: Dictionary, errors: Array) -> void:
 				_err(errors, "duplicate chunk %s" % chunk_id)
 			else:
 				seen_chunks[chunk_id] = zone_id
+		_check_depth(zone, zone_id, errors)
 	for zone_id in ZONE_IDS:
 		if not seen_ids.has(zone_id):
 			_err(errors, "missing zone %s" % zone_id)
+	## Chunks may be declared before their region index exists (WP5).
+	## Every chunk that does exist in a region index must belong to one zone.
 	var indexed := _region_chunks(errors)
-	for chunk_id in seen_chunks.keys():
-		if not indexed.has(chunk_id):
-			_err(errors, "chunk %s is not in a region index" % chunk_id)
 	for chunk_id in indexed.keys():
 		if not seen_chunks.has(chunk_id):
 			_err(errors, "chunk %s is not in a level zone" % chunk_id)
+
+
+## Proposed. When present, depth covers exactly this zone's chunks, 0..7.
+## An `_entry` chunk, and the Crossroads, are 0. An `_door` chunk is the deepest.
+static func _check_depth(zone: Dictionary, zone_id: String, errors: Array) -> void:
+	if not zone.has("depth"):
+		return
+	if typeof(zone["depth"]) != TYPE_DICTIONARY:
+		_err(errors, "%s depth must be an object" % zone_id)
+		return
+	if typeof(zone.get("chunks", null)) != TYPE_ARRAY:
+		return
+	var depth: Dictionary = zone["depth"]
+	var chunks: Array = zone["chunks"]
+	var known := {}
+	for chunk in chunks:
+		known[str(chunk)] = true
+	var max_depth := -1
+	var door_depth := -1
+	var has_door := false
+	for key in depth.keys():
+		var chunk_id := str(key)
+		if not known.has(chunk_id):
+			_err(errors, "%s depth has unknown chunk %s" % [zone_id, chunk_id])
+		if not _in_range(depth[key], 0, 7):
+			_err(errors, "%s depth %s is outside 0-7" % [zone_id, chunk_id])
+	for chunk in chunks:
+		var chunk_id := str(chunk)
+		if not depth.has(chunk_id):
+			_err(errors, "%s depth misses %s" % [zone_id, chunk_id])
+			continue
+		if not _whole(depth[chunk_id]):
+			continue
+		var step := int(depth[chunk_id])
+		if step > max_depth:
+			max_depth = step
+		if chunk_id.ends_with("_entry") or chunk_id == "crosshaven_crossroads":
+			if step != 0:
+				_err(errors, "%s entry depth must be 0" % chunk_id)
+		if chunk_id.ends_with("_door"):
+			has_door = true
+			door_depth = step
+	if has_door and door_depth >= 0 and door_depth != max_depth:
+		_err(errors, "%s door chunk is not the deepest" % zone_id)
 
 
 static func _region_chunks(errors: Array) -> Dictionary:

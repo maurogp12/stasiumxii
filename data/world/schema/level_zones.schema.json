@@ -27,6 +27,12 @@
             "type": "array",
             "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
           },
+          "depth": {
+            "description": "Proposed. Maps each chunk id in this zone to a depth from 0 to 7. The entry chunk is 0. The door chunk is the deepest. Monster levels inside a region are not decided yet.",
+            "type": "object",
+            "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+            "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 7}
+          },
           "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
           "dungeon": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
         }
