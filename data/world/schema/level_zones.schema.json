@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/level_zones.v1.json",
+  "title": "Stasium PC level zones",
+  "description": "Sidecar stasium.level_zones version 1. Maps chunk ids to a level band. Does not change stasium.zone files. status proposed means Mauro may still change names, bands, and colours.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "format_version", "status", "zones"],
+  "properties": {
+    "format": {"const": "stasium.level_zones"},
+    "format_version": {"const": 1},
+    "status": {"const": "proposed"},
+    "zones": {
+      "type": "array",
+      "minItems": 11,
+      "maxItems": 11,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"],
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "name": {"type": "string", "minLength": 1},
+          "level_min": {"type": "integer", "minimum": 1},
+          "level_max": {"type": "integer", "minimum": 1},
+          "chunks": {
+            "type": "array",
+            "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+          },
+          "depth": {
+            "description": "Proposed. Maps each chunk id in this zone to a depth from 0 to 7. The entry chunk is 0. The door chunk is the deepest. Monster levels inside a region are not decided yet.",
+            "type": "object",
+            "propertyNames": {"pattern": "^[a-z][a-z0-9_]*$"},
+            "additionalProperties": {"type": "integer", "minimum": 0, "maximum": 7}
+          },
+          "color": {"type": "string", "pattern": "^#[0-9a-fA-F]{6}$"},
+          "dungeon": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+        }
+      }
+    }
+  }
+}
