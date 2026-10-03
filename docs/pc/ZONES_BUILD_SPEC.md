@@ -361,8 +361,8 @@ the next phase. Numbers are **Proposed**.
   |---|---|---|
   | Mastery | +0.5% damage and healing done | +49% |
   | Vitality | +0.5% of the class's base max HP | +49% max HP |
-  | Resist | +0.4% less damage taken (total Resist capped at 25%) | 25% (cap reached at 63 points) |
-  | Swift | +1 Initiative | +98 Initiative |
+  | Resist | +0.4% less damage taken (total Resist capped at **33%**, Proposed) | 33% (cap reached at 82.5 points) |
+  | Swift | +1 Initiative and **+0.35% damage done** (Proposed) | +98 Initiative, +34.3% damage |
 
   Points are on in Koliseo PvP, and **every PvP fighter has the full point
   budget** (everyone is treated as `max_level` with their own spend). So the
@@ -371,7 +371,17 @@ the next phase. Numbers are **Proposed**.
   other (no dominant build), and the five classes stay balanced with their best
   spread. Points against no points is not a PvP case and is not checked
   (corrected 3 Oct 2026; the earlier wording was wrong). Resist points past its
-  25% cap give nothing, so a full-Resist spend has to be judged with the cap.
+  33% cap give nothing, so a full-Resist spend has to be judged with the cap.
+
+  **Measured (WP3b, 3 Oct 2026, 200 seeded CombatSim duels per class):** the
+  Resist cap went from 25% to 33% and Swift gained +0.35% damage per point, both
+  numbers on existing effect types (a proposed "extra turn" for Swift was
+  rejected: it is a new turn rule and needs Mauro). Nine of ten pooled pairs are
+  inside 45–55%; **all Swift vs all Mastery is 63.3%**, and 16 single-class rows
+  fall outside 35–65%, because 1v1 fights are short and whoever acts first often
+  wins by one hit. No single per-point rate fixes both, so this goes to Mauro as
+  Q17. These numbers stay Proposed; they only affect Koliseo PvP, not the open
+  world.
 - **Class HP growth per level** (a small flat HP gain, different per class,
   Proposed).
 - **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
@@ -1967,3 +1977,15 @@ headless.
     3 Oct 2026 (Mauro): yes.** Perks answered: XP, coins, drops, fast travel,
     premium cities later (sizes Proposed). **Still Open:** which store(s)
     (Steam, own website, other), the price, and the billing period.
+17. **Swift in Koliseo PvP (4.11).** With every fighter at the full point
+    budget, going first decides many short 1v1 fights. Swift (+1 Initiative,
+    +0.35% damage per point) wins 63% against all-Mastery; every other spread
+    pair is 45–55%. Options:
+    - **A (recommended):** in Koliseo only, the first turn of the match gets
+      −1 AP for whoever acts first (a common tactics-game rule), so Initiative
+      still matters but no longer decides the fight. A new rule: needs your yes.
+    - **B:** Swift is Initiative only (no damage), and Koliseo ignores
+      Initiative points (turn order by coin flip). Swift then helps only in
+      the open world and dungeons.
+    - **C:** keep it as it is (Swift a little strong in 1v1 PvP) and re-check
+      when party PvP arrives.
