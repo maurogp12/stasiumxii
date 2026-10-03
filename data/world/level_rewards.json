@@ -1,0 +1,45 @@
+{
+  "format": "stasium.level_rewards",
+  "format_version": 1,
+  "status": "proposed",
+  "points_per_level": 2,
+  "stats": ["Mastery", "Vitality", "Swift", "Resist"],
+  "stat_per_point": {
+    "Mastery": "Open",
+    "Vitality": "Open",
+    "Swift": "Open",
+    "Resist": "Open"
+  },
+  "class_hp_per_level": "Open",
+  "milestones": [
+    {"level": 30, "ap": 1}
+  ],
+  "titles": [
+    {"level": 10, "name": "Open"},
+    {"level": 20, "name": "Open"},
+    {"level": 30, "name": "Open"},
+    {"level": 40, "name": "Open"},
+    {"level": 50, "name": "Open"},
+    {"level": 60, "name": "Open"},
+    {"level": 70, "name": "Open"},
+    {"level": 80, "name": "Open"},
+    {"level": 90, "name": "Open"},
+    {"level": 100, "name": "Open"}
+  ],
+  "respec": {
+    "free": 1,
+    "coin_cost": "Open"
+  },
+  "sheet": {
+    "hp": 80,
+    "ap": 6,
+    "mp": 3,
+    "initiative": "Open",
+    "range_bonus": 0,
+    "caps": {
+      "ap": 8,
+      "mp": 5,
+      "range_bonus": 1
+    }
+  }
+}

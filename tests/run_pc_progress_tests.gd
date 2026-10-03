@@ -1,12 +1,14 @@
 extends SceneTree
 
-## PC level curve and the level counter. The cap is max_level in the curve file.
-## Stat points (spec 4.11) are not in this package.
+## PC level curve, the level counter, and spec 4.11 points.
+## The cap is max_level in the curve file. Points come from level_rewards.json.
 ## Run: godot --headless --path . -s res://tests/run_pc_progress_tests.gd
 
 const Progress = preload("res://backend/pc_progress.gd")
 const CURVE_PATH := "res://data/world/level_curve.json"
+const REWARDS_PATH := "res://data/world/level_rewards.json"
 const SCHEMA_PATH := "res://data/world/schema/level_curve.schema.json"
+const REWARDS_SCHEMA_PATH := "res://data/world/schema/level_rewards.schema.json"
 
 var _failed: int = 0
 var _passed: int = 0
@@ -28,6 +30,10 @@ func _run() -> void:
 	_test_source_has_no_frozen_cap()
 	_test_curve_numbers()
 	_exercise({})
+	_test_rewards()
+	_test_points()
+	_test_respec_and_ap()
+	_test_window()
 	_test_higher_cap()
 	_test_rejects()
 
@@ -171,6 +177,116 @@ func _exercise(doc: Dictionary) -> void:
 	var capped = _open(doc)
 	eq(capped.level, hero.max_level, "%s max_level round-trips" % label)
 	eq(capped.xp, 80, "%s XP past the cap round-trips" % label)
+	eq(capped.points_earned(), capped.points_per_level * (capped.max_level - 1), "%s points follow points_per_level" % label)
+	eq(capped.points_free(), capped.points_earned(), "%s an unspent hero keeps every point" % label)
+	var expect_ap := 0
+	for row in capped.milestones:
+		if capped.level >= int(row["level"]):
+			expect_ap += int(row["ap"])
+	eq(capped.milestone_ap(), expect_ap, "%s milestone AP follows the rewards file" % label)
+
+
+func _test_rewards() -> void:
+	var loaded: Dictionary = Progress.load_rewards()
+	eq(loaded["ok"], true, "rewards load (%s)" % str(loaded["errors"]))
+	var doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(REWARDS_PATH))
+	eq(int(doc["points_per_level"]), 2, "two points per level")
+	eq(doc["stats"], ["Mastery", "Vitality", "Swift", "Resist"], "four stats, Resist last")
+	eq(str(doc["class_hp_per_level"]), "Open", "class HP growth is Open")
+	eq(str(doc["respec"]["coin_cost"]), "Open", "respec coin price is Open")
+	eq(int(doc["respec"]["free"]), 1, "one free respec")
+	eq(int(doc["milestones"][0]["level"]), 30, "AP milestone level is data")
+	eq(int(doc["milestones"][0]["ap"]), 1, "AP milestone grants 1")
+	var text := FileAccess.get_file_as_string(REWARDS_PATH)
+	eq(text.find("Ward") < 0, true, "rewards file does not name Ward")
+	var schema: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(REWARDS_SCHEMA_PATH))
+	eq(schema["additionalProperties"], false, "rewards schema rejects unknown keys")
+	eq(schema["properties"]["format"]["const"], "stasium.level_rewards", "rewards schema format")
+	var extra := doc.duplicate(true)
+	extra["bonus"] = 1
+	var rejected: Dictionary = Progress.parse_rewards(extra)
+	eq(rejected["ok"], false, "unknown rewards key is rejected")
+
+
+func _test_points() -> void:
+	_clear_save()
+	var hero = _open({})
+	eq(hero.rewards_ok, true, "shipped rewards are valid")
+	eq(hero.points_free(), 0, "level 1 has no free points")
+	eq(hero.spend("Resist", 1), false, "level 1 cannot spend")
+	eq(hero.spend("Ward", 1), false, "Ward is not a bucket")
+	hero.add_xp(int(hero.xp_to_next[0]))
+	eq(hero.level, 2, "one step reaches level 2")
+	eq(hero.points_earned(), 2, "level 2 has earned two points")
+	eq(hero.spend("Resist", 1), true, "Resist takes a point")
+	eq(hero.spent_in("Resist"), 1, "Resist records the point")
+	eq(hero.points_free(), 1, "one point remains")
+	eq(hero.spend("Mastery", 2), false, "cannot spend more than free points")
+	eq(hero.spent_in("Mastery"), 0, "a rejected spend does not change Mastery")
+	eq(hero.save(), true, "points save")
+	var again = _open({})
+	eq(again.spent_in("Resist"), 1, "load restores Resist")
+	eq(again.points_free(), 1, "load restores free points")
+	eq(again.level, 2, "load still restores level")
+
+
+func _test_respec_and_ap() -> void:
+	_clear_save()
+	var hero = _open({})
+	var grant := 0
+	for i in 29:
+		grant += int(hero.xp_to_next[i])
+	hero.add_xp(grant)
+	eq(hero.level, 30, "twenty-nine steps reach the milestone level")
+	eq(hero.milestone_ap(), 1, "+1 AP once the data milestone is reached")
+	eq(hero.points_earned(), 2 * 29, "points at the milestone level")
+	hero.spend("Swift", 4)
+	hero.spend("Resist", 4)
+	var cleared: Dictionary = hero.respec()
+	eq(bool(cleared["ok"]), true, "the free respec runs")
+	eq(int(cleared["cost"]), 0, "the free respec costs nothing")
+	eq(hero.points_free(), hero.points_earned(), "respec returns every point")
+	eq(hero.spent_in("Swift"), 0, "Swift is cleared")
+	eq(hero.spent_in("Resist"), 0, "Resist is cleared")
+	hero.spend("Vitality", 3)
+	var blocked: Dictionary = hero.respec()
+	eq(bool(blocked["ok"]), false, "a second respec does not invent a price")
+	eq(str(blocked["reason"]).find("Open") >= 0, true, "the block says the price is Open")
+	eq(hero.spent_in("Vitality"), 3, "the blocked respec leaves the points")
+	var early = _open({})
+	early.add_xp(int(early.xp_to_next[0]))
+	eq(early.level, 2, "below the milestone")
+	eq(early.milestone_ap(), 0, "no AP flag before the data milestone")
+	var custom: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(REWARDS_PATH))
+	custom["milestones"] = [{"level": 3, "ap": 1}]
+	eq(early.bind_rewards(custom), true, "a test can move the milestone")
+	eq(early.level, 2, "rebinding rewards keeps the current level")
+	eq(early.milestone_ap(), 0, "level 2 is still below the swapped milestone")
+	early.add_xp(int(early.xp_to_next[1]))
+	eq(early.level, 3, "custom milestone level")
+	eq(early.milestone_ap(), 1, "AP flag follows the swapped milestone")
+
+
+func _test_window() -> void:
+	var src := FileAccess.get_file_as_string("res://scenes/world/ui/character_window.gd")
+	var world := FileAccess.get_file_as_string("res://scenes/world/crosshaven/crosshaven_world.gd")
+	eq(src.find("class_name") < 0, true, "character window has no global class")
+	eq(src.find("Ward") < 0, true, "character window does not name Ward")
+	eq(src.find("Resist") >= 0, true, "character window names Resist")
+	eq(src.find("spend") >= 0, true, "character window spends through progress")
+	eq(src.find("respec") >= 0, true, "character window can respec")
+	eq(world.find("KEY_C") >= 0, true, "C opens the character window")
+	var window = load("res://scenes/world/ui/character_window.tscn").instantiate()
+	get_root().add_child(window)
+	var hero = _open({})
+	hero.add_xp(int(hero.xp_to_next[0]))
+	window.setup(hero)
+	window.refresh()
+	eq(window._body.text.find("Resist") >= 0, true, "the panel lists Resist")
+	eq(window._body.text.find("Free points 2") >= 0, true, "the panel shows the free points")
+	window._spend("Resist")
+	eq(hero.spent_in("Resist"), 1, "the panel's plus button spends a point")
+	window.queue_free()
 
 
 func _test_rejects() -> void:
