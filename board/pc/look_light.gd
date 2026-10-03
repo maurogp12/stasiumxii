@@ -3,8 +3,9 @@ extends Node2D
 ## L7 view light. PC only. The phone path stays flat: no grade shader, no rim,
 ## no cast shafts, no vignette, and the small damage number. The HUD layer
 ## is never changed.
-## The outdoor grade ships off (strength 0). Thunderwell takes none of it:
-## no grade, no vignette, no cast shafts, and no floor pool, so the board
+## The outdoor grade ships off (strength 0). Light and medium stay in code
+## for L9 and are not applied. Thunderwell takes none of the grade: no
+## grade, no vignette, no cast shafts, and no floor pool, so the board
 ## matches the base branch. Fighters still take a warm rim that follows the
 ## sprite and every animation strip, and PC damage numbers stay at 68 px.
 ## An outdoor cast drops shafts and a floor pool on the target cell.
@@ -14,9 +15,23 @@ const SORT := preload("res://board/visual_sort.gd")
 const HUD := preload("res://ui/hud.gd")
 const PALETTE := preload("res://vfx/vfx_palette.gd")
 
-## Outdoor color grade. 0 ships the base paint. Mauro picks a grade later, on
-## the new outdoor board, so this branch does not carry light, medium, or strong.
+## Shipped outdoor grade. 0 leaves the base paint. L9 chooses light or medium.
 const OUTDOOR_STRENGTH := 0.0
+const PRESET_OFF := "off"
+const PRESET_LIGHT := "light"
+const PRESET_MEDIUM := "medium"
+## Light grade for L9. About +10% saturation. Not applied.
+const LIGHT_SAT := 1.10
+const LIGHT_CONTRAST := 1.04
+const LIGHT_GAIN := 1.01
+const LIGHT_BIAS := Color(0.010, 0.003, -0.006, 1.0)
+const LIGHT_SHADE := 0.0
+## Medium grade for L9. About +15% saturation. Not applied.
+const MEDIUM_SAT := 1.15
+const MEDIUM_CONTRAST := 1.07
+const MEDIUM_GAIN := 1.02
+const MEDIUM_BIAS := Color(0.020, 0.006, -0.012, 1.0)
+const MEDIUM_SHADE := 0.0
 const OUTDOOR_RIM := Color(1.0, 0.80, 0.46, 1)
 const DUNGEON_RIM := Color(1.0, 0.90, 0.68, 1)
 const OUTDOOR_RIM_STRENGTH := 0.92
@@ -87,7 +102,9 @@ void fragment() {
 
 static var active := false
 static var _dungeon_rim := false
-## True only when the outdoor grade strength is above 0. Thunderwell never sets it.
+## True only when a named outdoor preset is on. Thunderwell never sets it.
+## The shipped preset is off, which is strength 0.
+static var outdoor_preset := PRESET_OFF
 static var _paint_grade := false
 ## Bench switch. The phone path is already off. This turns the light off
 ## while the PC HUD and the jungle stay up.
@@ -112,6 +129,13 @@ var _shade := 0.0
 
 static func set_suppressed(on: bool) -> void:
 	suppressed = on
+
+
+static func set_outdoor_preset(name: String) -> void:
+	if name == PRESET_OFF or name == PRESET_LIGHT or name == PRESET_MEDIUM:
+		outdoor_preset = name
+	else:
+		outdoor_preset = PRESET_OFF
 
 
 static func font_size(kind: String, base: int) -> int:
@@ -363,18 +387,39 @@ func _draw() -> void:
 
 func _apply_grade() -> void:
 	_dungeon_rim = active and _dungeon
-	# Strength 0, and never on Thunderwell. The board paint stays the base paint.
-	_paint_grade = active and not _dungeon and OUTDOOR_STRENGTH > 0.0
 	_sat = 1.0
 	_contrast = 1.0
 	_gain = 1.0
 	_bias = Color(0, 0, 0, 1)
 	_shadow = Color(0, 0, 0, 1)
 	_shade = 0.0
+	# Strength 0 unless L9 turns a named preset on. Never on Thunderwell.
+	_paint_grade = false
+	if active and not _dungeon:
+		_apply_outdoor_preset()
 	_set_vignette(false)
 	_ensure_shared()
 	_push_shared()
 	_grade_board()
+
+
+func _apply_outdoor_preset() -> void:
+	if outdoor_preset == PRESET_LIGHT:
+		_paint_grade = true
+		_sat = LIGHT_SAT
+		_contrast = LIGHT_CONTRAST
+		_gain = LIGHT_GAIN
+		_bias = LIGHT_BIAS
+		_shadow = Color(0, 0, 0, 1)
+		_shade = LIGHT_SHADE
+	elif outdoor_preset == PRESET_MEDIUM:
+		_paint_grade = true
+		_sat = MEDIUM_SAT
+		_contrast = MEDIUM_CONTRAST
+		_gain = MEDIUM_GAIN
+		_bias = MEDIUM_BIAS
+		_shadow = Color(0, 0, 0, 1)
+		_shade = MEDIUM_SHADE
 
 
 func _ensure_shared() -> void:

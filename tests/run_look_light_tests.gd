@@ -22,6 +22,7 @@ func _initialize() -> void:
 func _go() -> void:
 	_test_phone_stays_flat()
 	_test_outdoor_grade_and_rim()
+	_test_l9_grades_stay_off()
 	_test_thunderwell_board_stays_flat()
 	_test_cast_light_is_warm_and_pc_only()
 	_test_damage_numbers()
@@ -31,6 +32,7 @@ func _go() -> void:
 	HUD.set_pc_chrome_override(-1)
 	LIGHT.active = false
 	LIGHT.set_suppressed(false)
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_OFF)
 	print("Look light tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -121,6 +123,30 @@ func _test_outdoor_grade_and_rim() -> void:
 	truthy(LIGHT.SHAFT_COLOR.r > LIGHT.SHAFT_COLOR.b and LIGHT.SHAFT_COLOR.a > 0.6, "shafts are warm and readable")
 	truthy(LIGHT.FLOOR_COLOR.r > LIGHT.FLOOR_COLOR.g and LIGHT.FLOOR_COLOR.a > 0.5, "the floor pool is warm and readable")
 	truthy(LIGHT.POOL_RX >= 64.0, "the pool is wider than a fighter")
+	_free_host(tree)
+
+
+func _test_l9_grades_stay_off() -> void:
+	var tree := _host()
+	var light = tree["light"]
+	HUD.set_pc_chrome_override(1)
+	eq(LIGHT.outdoor_preset, LIGHT.PRESET_OFF, "no outdoor preset is selected")
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_LIGHT)
+	light.sync(tree["board"], false)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.LIGHT_SAT), true, "the light grade is still saturation 1.10")
+	eq(is_equal_approx(light.grade_contrast(), LIGHT.LIGHT_CONTRAST), true, "the light grade is still contrast 1.04")
+	eq(light.wash_visible(), true, "the light grade can be turned on for L9")
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_MEDIUM)
+	light.sync(tree["board"], false)
+	eq(is_equal_approx(light.grade_saturation(), LIGHT.MEDIUM_SAT), true, "the medium grade is still saturation 1.15")
+	eq(is_equal_approx(light.grade_contrast(), LIGHT.MEDIUM_CONTRAST), true, "the medium grade is still contrast 1.07")
+	light.sync(tree["board"], true)
+	eq(light.wash_visible(), false, "Thunderwell ignores the medium grade")
+	eq(is_equal_approx(light.grade_saturation(), 1.0), true, "Thunderwell stays at strength 0")
+	LIGHT.set_outdoor_preset(LIGHT.PRESET_OFF)
+	light.sync(tree["board"], false)
+	eq(light.wash_visible(), false, "clearing the preset returns to strength 0")
+	eq(tree["tile"].material, null, "strength 0 removes the tile grade")
 	_free_host(tree)
 
 
