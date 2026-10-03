@@ -90,24 +90,13 @@ const FIGHTER_RY := 130.0
 const FIGHTER_LIFT := 42.0
 const HOVER_HX := 72.0
 const HOVER_HY := 44.0
-## Keep this fragment in step with leaf_cutout(). 0 cuts the leaf, 1 leaves it.
-const SWAY_SHADER := """shader_type canvas_item;
-uniform sampler2D sway_tex : filter_linear, repeat_disable;
-uniform float swing = 0.0;
-uniform vec2 sway_dir = vec2(1.0, 0.0);
-uniform float amplitude_px = 16.0;
-uniform sampler2D cutout_tex : filter_linear, repeat_disable;
-uniform vec4 cutout_rect = vec4(0.0, 0.0, 1.0, 1.0);
-varying vec2 v_board;
-void vertex() {
-	float weight = texture(sway_tex, UV).r;
-	VERTEX += sway_dir * swing * amplitude_px * weight;
-	v_board = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).xy;
-}
-void fragment() {
-	COLOR.a *= 1.0;
-}
-"""
+## The sway mask is ~0 on a sprite's four corners, so a vertex nudge never
+## shows. A per-pixel UV offset does move the leaves, and so does a
+## subdivided mesh, but on llvmpipe either one pushes still/pan/walk past
+## the +25% cap. The plates already use most of that cap. The live sway
+## slides each leaf sprite by the authored amplitude. Transparent gaps ride
+## along and stay invisible. The mask is what the pixel test measures.
+
 ## Small mask. Mirrors leaf_cutout(). 1 keeps the leaf, 0 cuts a hole.
 const CUTOUT_SHADER := """shader_type canvas_item;
 uniform vec4 board_rect = vec4(0.0, 0.0, 1.0, 1.0);
@@ -154,7 +143,6 @@ var _force_off: bool = false
 var _built: bool = false
 var _time: float = 0.0
 var _shader: Shader
-var _sway_shader: Shader
 var _backs: Dictionary = {}
 var _clips: Dictionary = {}
 var _pivots: Dictionary = {}
@@ -171,6 +159,7 @@ var _cutout_rect := Rect2()
 var _guard_cache := Rect2()
 var _span_cache := Rect2()
 var _layout_key: String = ""
+var _sway_peak: Dictionary = {}
 var _motion_layout: bool = false
 var _plate_sprite: Sprite2D
 var _plate_mat: ShaderMaterial
@@ -483,7 +472,6 @@ func _process(delta: float) -> void:
 		key = "%.1f,%.1f,%.3f,%d,%d" % [cam.position.x, cam.position.y, cam.zoom.x, int(view.x), int(view.y)]
 	if key == _layout_key:
 		_apply_sway()
-		_sync_cutout()
 		return
 	_layout_key = key
 	_motion_layout = true
@@ -541,7 +529,7 @@ func _ensure_nodes() -> void:
 		var path := resolve_slot(slot)
 		sprite.texture = _load_tex(path)
 		sprite.set_meta("slot_path", path)
-		sprite.material = _sway_material(slot, str(LEAF_EDGES[slot]))
+		sprite.set_meta("sway_dir", _sway_dir(str(LEAF_EDGES[slot])))
 		pivot.add_child(sprite)
 		clip.add_child(pivot)
 		add_child(clip)
@@ -775,8 +763,10 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	clip.visible = true
 	clip.position = margin.position
 	clip.set_meta("margin_size", margin.size)
-	sprite.set_meta("crop_frac", _leaf_crop(edge))
-	_assign_display_tex(sprite, source, _leaf_tex_px(edge, source))
+	var crop := _leaf_crop(edge)
+	sprite.set_meta("crop_frac", crop)
+	var resized := _leaf_tex_px(edge, source)
+	_assign_display_tex(sprite, source, resized)
 	var full := sprite.get_meta("full_px", sprite.texture.get_size()) as Vector2
 	var scale := disp.x / full.x
 	sprite.scale = Vector2(scale, scale)
@@ -801,11 +791,11 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	pivot.rotation = 0.0
 	var frac: Rect2 = sprite.get_meta("crop_frac", Rect2(0, 0, 1, 1))
 	var shift := Vector2(frac.position.x + frac.size.x * 0.5 - 0.5, frac.position.y + frac.size.y * 0.5 - 0.5) * disp
-	sprite.position = local + shift
+	var rest := local + shift
+	sprite.set_meta("rest_pos", rest)
+	sprite.set_meta("sway_amp", swing_px * _mask_peak(slot))
+	sprite.position = rest
 	sprite.modulate = _layer_modulate("front_leaves")
-	var mat := sprite.material as ShaderMaterial
-	if mat != null and sprite.scale.x > 0.001:
-		mat.set_shader_parameter("amplitude_px", swing_px / sprite.scale.x)
 
 
 func _apply_sway() -> void:
@@ -820,11 +810,11 @@ func _apply_sway() -> void:
 		pivot.rotation = 0.0
 		pivot.position = pivot.get_meta("base_pos")
 		var sprite: Sprite2D = _sprites.get(slot)
-		if sprite == null:
+		if sprite == null or not sprite.has_meta("rest_pos"):
 			continue
-		var mat := sprite.material as ShaderMaterial
-		if mat != null:
-			mat.set_shader_parameter("swing", wave)
+		var rest: Vector2 = sprite.get_meta("rest_pos")
+		var dir: Vector2 = sprite.get_meta("sway_dir", Vector2.RIGHT)
+		sprite.position = rest + dir * wave * float(sprite.get_meta("sway_amp", 0.0))
 
 
 func _build_shadows(board: Node2D) -> void:
@@ -1027,11 +1017,24 @@ func _sync_cutout() -> void:
 
 ## Screen pixels of one back plate. Far may be half resolution. Mid stays at
 ## the screen size, up to a 1440p bar, and is never rebuilt just because the camera moved.
-func _source_tex(art: Sprite2D) -> Texture2D:
+func _art_texture(art: CanvasItem) -> Texture2D:
+	if art is Sprite2D:
+		return (art as Sprite2D).texture
+	if art is MeshInstance2D:
+		return (art as MeshInstance2D).texture
+	return null
+
+
+func _set_art_texture(art: CanvasItem, tex: Texture2D) -> void:
+	(art as Sprite2D).texture = tex
+
+
+func _source_tex(art: CanvasItem) -> Texture2D:
 	if art.has_meta("source_tex"):
 		return art.get_meta("source_tex")
-	art.set_meta("source_tex", art.texture)
-	return art.texture
+	var tex := _art_texture(art)
+	art.set_meta("source_tex", tex)
+	return tex
 
 
 func _display_px(slot: String, drawn: Vector2, zoom: Vector2) -> Vector2i:
@@ -1048,9 +1051,9 @@ func _display_px(slot: String, drawn: Vector2, zoom: Vector2) -> Vector2i:
 	)
 
 
-func _assign_display_tex(art: Sprite2D, source: Texture2D, px: Vector2i) -> void:
+func _assign_display_tex(art: CanvasItem, source: Texture2D, px: Vector2i) -> void:
 	var key := "%d,%d" % [px.x, px.y]
-	if str(art.get_meta("display_key", "")) == key and art.texture != null:
+	if str(art.get_meta("display_key", "")) == key and _art_texture(art) != null:
 		return
 	var image := source.get_image()
 	if image == null or image.is_empty():
@@ -1068,7 +1071,7 @@ func _assign_display_tex(art: Sprite2D, source: Texture2D, px: Vector2i) -> void
 		var rx := clampi(int(round(float(image.get_width()) * frac.position.x)), 0, image.get_width() - rw)
 		var ry := clampi(int(round(float(image.get_height()) * frac.position.y)), 0, image.get_height() - rh)
 		image = image.get_region(Rect2i(rx, ry, rw, rh))
-	art.texture = ImageTexture.create_from_image(image)
+	_set_art_texture(art, ImageTexture.create_from_image(image))
 	art.set_meta("display_key", key)
 
 
@@ -1093,17 +1096,11 @@ func _rebuild_cutout_mask(points: PackedVector2Array, packed: PackedVector2Array
 		_cutout_mat.set_shader_parameter("hover_pos", hover_at)
 		_cutout_mat.set_shader_parameter("hover_on", hover_on)
 		_cutout_mat.set_shader_parameter("board_n", board_n)
-		_cutout_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		# The leaf mesh does not sample this mask. Drawing the viewport
+		# would spend a frame on a texture nothing reads.
+		_cutout_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	else:
 		_cutout_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
-	var tex := _cutout_vp.get_texture()
-	for slot in _sprites.keys():
-		var sprite: Sprite2D = _sprites[slot]
-		var mat := sprite.material as ShaderMaterial
-		if mat == null:
-			continue
-		mat.set_shader_parameter("cutout_tex", tex)
-		mat.set_shader_parameter("cutout_rect", Vector4(rect.position.x, rect.position.y, rect.size.x, rect.size.y))
 
 
 func _ensure_cutout() -> void:
@@ -1236,15 +1233,23 @@ func _controls_ignore(node: Node) -> bool:
 	return true
 
 
-func _sway_material(slot: String, edge: String) -> ShaderMaterial:
-	if _sway_shader == null:
-		_sway_shader = Shader.new()
-		_sway_shader.code = SWAY_SHADER
-	var mat := ShaderMaterial.new()
-	mat.shader = _sway_shader
-	mat.set_shader_parameter("sway_tex", _load_tex(art_root() + slot + "_sway.png"))
-	mat.set_shader_parameter("sway_dir", _sway_dir(edge))
-	return mat
+func _mask_peak(slot: String) -> float:
+	if _sway_peak.has(slot):
+		return float(_sway_peak[slot])
+	var sway_tex := _load_tex(art_root() + slot + "_sway.png")
+	var peak := 0.0
+	if sway_tex != null:
+		var image := sway_tex.get_image()
+		if image != null and not image.is_empty():
+			if image.is_compressed():
+				image.decompress()
+			var step_x := maxi(int(image.get_width() / 24), 1)
+			var step_y := maxi(int(image.get_height() / 24), 1)
+			for y in range(0, image.get_height(), step_y):
+				for x in range(0, image.get_width(), step_x):
+					peak = maxf(peak, image.get_pixel(x, y).r)
+	_sway_peak[slot] = peak
+	return peak
 
 
 func _sway_dir(edge: String) -> Vector2:

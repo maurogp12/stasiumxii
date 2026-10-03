@@ -97,12 +97,13 @@ func _test_params_and_slots() -> void:
 			eq(sway_tex.get_width(), int(sway[0]), "%s sway width" % slot)
 			eq(sway_tex.get_height(), int(sway[1]), "%s sway height" % slot)
 		_check_import(sway_path, "lossless")
-	eq(src.contains("sway_tex"), true, "the sway shader samples the greyscale mask")
-	var sway_at := src.find("const SWAY_SHADER")
-	var sway_src := src.substr(sway_at, src.find("var _params") - sway_at)
-	eq(sway_src.contains("source_color"), false, "the sway mask sampler has no color hint")
-	truthy(sway_src.contains("void vertex()"), "the sway mask is sampled in the vertex shader")
-	truthy(sway_src.contains("filter_linear"), "the sway mask uses a linear filter")
+		eq(FileAccess.get_file_as_string(sway_path + ".import").contains("source_color"), false, "%s sway mask import has no color hint" % slot)
+	eq(src.contains("sway_tex"), true, "the leaf sway reads the greyscale mask")
+	eq(src.contains("const SWAY_SHADER"), false, "leaves do not keep a per-pixel sway shader")
+	eq(src.contains("UV - off"), false, "the leaf draw does not take a dependent sample")
+	eq(src.contains("cutout_tex"), false, "the leaf draw does not sample the cutout mask")
+	truthy(src.contains("rest_pos"), "each leaf sprite keeps a rest position to sway from")
+	_test_sway_pixels()
 	eq(float(params.get("shadow_opacity", 0.0)), 0.55, "leaf shadow strength starts at 0.55")
 	eq(float(params.get("top_fade_distance", 0.0)), 220.0, "the top canopy fades across the pan distance")
 	var layers: Dictionary = params.get("layers", {})
@@ -113,12 +114,53 @@ func _test_params_and_slots() -> void:
 	truthy(float(far_mod[2]) > float(far_mod[0]), "the far canopy modulate is cooler than neutral")
 	var leaf_mod: Array = (layers["front_leaves"] as Dictionary)["modulate"]
 	truthy(float(leaf_mod[2]) > float(leaf_mod[0]), "the front leaves carry a slight cool tint")
-	eq(src.contains("COLOR.a *="), true, "front leaves fade in the shader")
+	eq(src.contains("_top_fade_alpha()"), true, "the top canopy fades as the camera pans up")
 	eq(src.contains("fighter_pos"), true, "the leaf shader cuts a hole per fighter")
 	eq(src.contains("hover_on"), true, "the leaf shader cuts a hole on the hovered cell")
 	eq(src.contains("MOUSE_FILTER_IGNORE"), true, "leaf controls do not pick the mouse")
 	eq(src.contains("0.22, 0.48, 0.28"), true, "leaf shadows take a green tint")
 	eq(src.contains("TIME * 0.012"), true, "leaf shadows scroll for canopy drift")
+
+
+func _test_sway_pixels() -> void:
+	var color_tex := load(JUNGLE.resolve_slot("front_leaves_left")) as Texture2D
+	var mask_tex := load(JUNGLE.art_root() + "front_leaves_left_sway.png") as Texture2D
+	truthy(color_tex != null and mask_tex != null, "the left leaf and its sway mask both load")
+	if color_tex == null or mask_tex == null:
+		return
+	var color := color_tex.get_image()
+	var mask := mask_tex.get_image()
+	color.resize(mask.get_width(), mask.get_height(), Image.INTERPOLATE_BILINEAR)
+	var crop := Rect2(0.0, 0.0, 284.0 / 512.0, 1.0)
+	var rw := maxi(int(round(float(color.get_width()) * crop.size.x)), 1)
+	var rh := color.get_height()
+	color = color.get_region(Rect2i(0, 0, rw, rh))
+	mask = mask.get_region(Rect2i(0, 0, rw, rh))
+	var amp := 16.0
+	var changed := 0
+	var opaque := 0
+	for y in color.get_height():
+		for x in color.get_width():
+			var src := color.get_pixel(x, y)
+			if src.a <= 0.2:
+				continue
+			opaque += 1
+			var w := mask.get_pixel(x, y).r
+			var shift := int(round(amp * w))
+			var neg := _sway_pixel(color, x + shift, y)
+			var pos := _sway_pixel(color, x - shift, y)
+			if neg != pos:
+				changed += 1
+	truthy(opaque > 1000, "the left leaf has opaque pixels to sway")
+	var frac := float(changed) / float(maxi(opaque, 1))
+	print("SWAY_OPAQUE_CHANGE changed=%d opaque=%d frac=%.4f" % [changed, opaque, frac])
+	truthy(frac > 0.02, "swinging the left leaf from -1 to +1 changes more than 2 percent of its opaque pixels")
+
+
+func _sway_pixel(image: Image, x: int, y: int) -> Color:
+	if x < 0 or y < 0 or x >= image.get_width() or y >= image.get_height():
+		return Color(0, 0, 0, 0)
+	return image.get_pixel(x, y)
 
 
 func _test_board_wires_the_layer() -> void:
@@ -164,6 +206,15 @@ func _test_live_layer() -> void:
 	cam.position += Vector2(80, 0)
 	layer.layout()
 	truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	var leaf_art := layer.get_node("front_leaves_left/Pivot/Art") as Sprite2D
+	truthy(leaf_art != null, "the left leaf sprite is on the pivot")
+	if leaf_art != null:
+		var speed := float(JUNGLE.load_params()["sway_speed"])
+		var phase := float((JUNGLE.load_params()["sway_phase"] as Dictionary).get("front_leaves_left", 0.0))
+		layer.preview_time(0.0)
+		var rest := leaf_art.position
+		layer.preview_time((PI * 0.5 - phase) / speed)
+		truthy(rest.distance_to(leaf_art.position) > 4.0, "the left leaf sprite travels more than 4px at full swing")
 	cam.position -= Vector2(80, 0)
 	layer.layout()
 	eq(layer.shadow_count(), 225, "every cell gets a leaf shadow")

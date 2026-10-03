@@ -57,8 +57,13 @@ func _go() -> void:
 	cam.position = fit + Vector2(220, 0)
 	layer.set_enabled(true)
 	layer.layout()
-	var changed := await _sway_margin_diff()
+	var units := board.get_node_or_null("Units") as CanvasItem
+	if units != null:
+		units.visible = false
+	var changed := await _sway_margin_diff(layer)
 	print("JUNGLE_SWAY margin_pixels_changed=%d" % changed)
+	if units != null:
+		units.visible = true
 	quit(0)
 
 
@@ -98,14 +103,13 @@ func _sample(move: Callable) -> Vector2:
 	return Vector2(float(total) / float(SAMPLES) / 1000.0, float(worst) / 1000.0)
 
 
-func _sway_margin_diff() -> int:
-	for _i in 8:
-		await process_frame
+func _sway_margin_diff(layer: Node) -> int:
+	await process_frame
+	layer.preview_time(0.0)
 	RenderingServer.force_draw()
 	var first := root.get_viewport().get_texture().get_image()
-	var t0 := Time.get_ticks_msec()
-	while Time.get_ticks_msec() - t0 < 1000:
-		await process_frame
+	await process_frame
+	layer.preview_time(1.0)
 	RenderingServer.force_draw()
 	var second := root.get_viewport().get_texture().get_image()
 	if first == null or second == null or first.is_empty() or second.is_empty():
