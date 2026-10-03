@@ -136,7 +136,7 @@ package finds a reason to change one, it asks first; it does not decide.
   Windmere 6, Brinewake 6, Slagcrown 6, Eastmarch Fen Edge 3, Gloomfen Mire 8,
   Stormspire 5, Ashen Shardfields 7, Blightwood Hollow 8. That's 55 new chunks;
   Crosshaven stays 11, so the world has 66.
-- **Chunk roles:** every region has one **entry** chunk, one **door** chunk,
+- **Chunk roles:** every region has a **border** chunk per join (4.4), one **door** chunk,
   a **hub** chunk where the region has a town, and **middle** chunks.
 - **One landmark prop per chunk.**
 - **WP5 split** into WP5a (critical path first) and WP5b (fill).
@@ -230,12 +230,13 @@ sub-area.
 
 Chunk roles (**Soft Lock**):
 
-- **Entry:** the chunk the region gate lands in. Exactly one per region.
+- **Border (was Entry):** the chunk that touches a walk-across join (4.4).
+  One per join; Blightwood and Ashen have two. The zone ids may keep the
+  `_entry` suffix for the first one.
 - **Door:** holds the dungeon door and its Door Keeper. Exactly one per region.
-  Proposed: the door chunk is the deepest chunk from the entry.
+  Proposed: the door chunk is the deepest chunk from the Crosshaven-side border.
 - **Hub:** where the region has a town (Rowanvale, Windmere, Brinewake,
-  Slagcrown): Warden, Trader and the zone's extra NPCs. The hub can be the
-  entry chunk.
+  Slagcrown): Warden, Trader and the zone's extra NPCs. The hub can be the border chunk.
 - **Middle:** the chunks to explore between them.
 - **One landmark prop per chunk** (a ruin, a giant tree, a wreck…), so every
   chunk is memorable, Dofus / Wakfu style.
@@ -1560,8 +1561,8 @@ dependency on each other can run in parallel (marked ∥).
   - The zone validator passes every new chunk.
   - Every POI, NPC, gate and door cell is passable.
   - **Connectivity:** each region's door chunk is reachable on foot from its
-    entry chunk; every built chunk is reachable from the region's entry; each
-    region has exactly one entry chunk and one door chunk.
+    border chunk; every built chunk is reachable from every border chunk; each
+    region has one border chunk per join (4.4) and exactly one door chunk.
   - The builder's text map has the section 3.1 chunk count for its region.
   - Frame time on Full stays within 10% of the Crosshaven bench (the game loads
     one chunk at a time, so chunk count does not change frame time; bench once
