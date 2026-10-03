@@ -52,6 +52,7 @@ static func find_path(
 	to_zone: String,
 	to_cell: Vector2i,
 	max_climb_steps: Variant = null,
+	extra_blocked: Dictionary = {},
 ) -> Dictionary:
 	var limit := _limit(map, max_climb_steps)
 	if map == null or not map.zones.has(from_zone) or not map.zones.has(to_zone):
@@ -66,6 +67,8 @@ static func find_path(
 		return _fail(goal_reason)
 	var start_key := cell_key(from_zone, from_cell)
 	var goal_key := cell_key(to_zone, to_cell)
+	if extra_blocked.has(goal_key):
+		return _fail("blocked")
 	var prev := {}
 	var queue: Array = [start_key]
 	var seen := {start_key: true}
@@ -87,6 +90,8 @@ static func find_path(
 			if classify_step(map, str(parts["zone_id"]), cell, next_zone, next_cell, limit) != "":
 				continue
 			var key := cell_key(next_zone, next_cell)
+			if extra_blocked.has(key):
+				continue
 			if seen.has(key):
 				continue
 			seen[key] = true

@@ -24,6 +24,9 @@ const SettingsPanel := preload("res://ui/visual_settings_panel.gd")
 const Progress := preload("res://backend/pc_progress.gd")
 const CharacterWindow := preload("res://scenes/world/ui/character_window.gd")
 const Atlas := preload("res://backend/world_atlas.gd")
+const NpcBook := preload("res://backend/world_npcs.gd")
+const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
+const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
 
 const SEA := Color("2d4f63")
 const ZOOM_MIN := 1.0
@@ -49,6 +52,11 @@ var visuals: CanvasLayer
 var fx: Node
 var progress = null
 var character_window: CanvasLayer
+var npcs_root: Node2D
+var npc_book = null
+var dialogue: CanvasLayer
+var _pending_talk: Dictionary = {}
+var _npc_by_cell: Dictionary = {}
 var hover_cell := Vector2i(-1, -1)
 
 var _hover: Node2D
@@ -87,6 +95,9 @@ func _ready() -> void:
 	props_root = Node2D.new()
 	props_root.name = "Props"
 	add_child(props_root)
+	npcs_root = Node2D.new()
+	npcs_root.name = "Npcs"
+	add_child(npcs_root)
 	decor_root = Node2D.new()
 	decor_root.name = "Decor"
 	add_child(decor_root)
@@ -138,6 +149,14 @@ func _ready() -> void:
 	character_window.name = "CharacterWindow"
 	character_window.setup(progress)
 	add_child(character_window)
+	dialogue = NpcDialogue.new()
+	dialogue.name = "NpcDialogue"
+	add_child(dialogue)
+	var npc_loaded: Dictionary = NpcBook.load_default()
+	if bool(npc_loaded.get("ok", false)):
+		npc_book = npc_loaded["npcs"]
+	else:
+		push_error("NPC book failed to load: %s" % [npc_loaded.get("errors", [])])
 
 	var loaded: Dictionary = Atlas.load_default()
 	if not bool(loaded.get("ok", false)):
@@ -219,6 +238,7 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 	camera.limit_bottom = int(rect.end.y)
 	camera.position = walker.position
 	camera.reset_smoothing()
+	_spawn_npcs()
 	_apply_region_look()
 	_show_banner(Pick.zone_name(zone))
 	_refresh_hud()
@@ -230,13 +250,14 @@ func _load_zone(zone_id: String, cell: Vector2i) -> void:
 func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	if zone == null or _transitioning:
 		return {"ok": false, "reason": "busy"}
+	_pending_talk = {}
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
 		_arm_arrival(target)
 		if (_pending_exit or not _pending_gate.is_empty()) and not walker.is_moving():
 			_on_arrived(target)
 		return {"ok": true, "path": [], "length": 0}
-	var result := WorldWalk.find_path(map, zone.zone_id, from, zone.zone_id, target)
+	var result := WorldWalk.find_path(map, zone.zone_id, from, zone.zone_id, target, null, _extra_blocked())
 	if not bool(result.get("ok", false)):
 		_pending_exit = false
 		_pending_gate = {}
@@ -254,6 +275,121 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 	_arm_arrival(target)
 	walker.walk(steps, pace)
 	return result
+
+
+func _spawn_npcs() -> void:
+	_npc_by_cell.clear()
+	_pending_talk = {}
+	if dialogue != null and dialogue.is_open():
+		dialogue.close()
+	if npcs_root == null:
+		return
+	for child in npcs_root.get_children():
+		child.free()
+	if npc_book == null or zone == null:
+		return
+	for record in npc_book.for_zone(zone.zone_id):
+		var node := WorldNpc.new()
+		npcs_root.add_child(node)
+		node.setup(zone, record)
+		var at: Dictionary = record["cell"]
+		_npc_by_cell[Vector2i(int(at["x"]), int(at["y"]))] = record
+
+
+func _npc_at(cell: Vector2i) -> Dictionary:
+	var found: Variant = _npc_by_cell.get(cell, {})
+	if typeof(found) != TYPE_DICTIONARY:
+		return {}
+	return found
+
+
+func _extra_blocked() -> Dictionary:
+	var blocked := {}
+	if zone == null:
+		return blocked
+	for cell in _npc_by_cell.keys():
+		blocked[WorldWalk.cell_key(zone.zone_id, cell)] = true
+	return blocked
+
+
+func _stand_free(cell: Vector2i) -> bool:
+	if zone == null or not zone.passable_at(cell):
+		return false
+	if not zone.exit_link(cell).is_empty():
+		return false
+	if _npc_by_cell.has(cell):
+		return false
+	if atlas != null and not atlas.gate_at(zone.zone_id, cell).is_empty():
+		return false
+	return true
+
+
+func _talk_stand(npc_cell: Vector2i) -> Vector2i:
+	var here: Vector2i = walker.anchor_cell() if walker.is_moving() else walker.cell
+	var best := Vector2i(-1, -1)
+	var best_len := 1000000
+	for dir in WorldWalk.ORTHO:
+		var next: Vector2i = npc_cell + dir
+		if not _stand_free(next):
+			continue
+		if next == here:
+			return next
+		var path := WorldWalk.find_path(map, zone.zone_id, here, zone.zone_id, next, null, _extra_blocked())
+		if not bool(path.get("ok", false)):
+			continue
+		var length := int(path.get("length", best_len))
+		if length < best_len:
+			best_len = length
+			best = next
+	return best
+
+
+func _approach_npc(record: Dictionary) -> void:
+	if record.is_empty() or zone == null:
+		return
+	var at: Dictionary = record["cell"]
+	var npc_cell := Vector2i(int(at["x"]), int(at["y"]))
+	var stand := _talk_stand(npc_cell)
+	if stand.x < 0:
+		walk_rejected.emit("no_path")
+		return
+	var result := walk_to(stand)
+	if not bool(result.get("ok", false)):
+		return
+	_pending_talk = {"id": str(record["id"]), "stand": stand, "npc": npc_cell}
+	if walker.cell == stand and not walker.is_moving():
+		_open_talk()
+
+
+func _open_talk() -> void:
+	if _pending_talk.is_empty() or npc_book == null:
+		return
+	var npc_id := str(_pending_talk["id"])
+	var stand: Vector2i = _pending_talk["stand"]
+	var npc_cell: Vector2i = _pending_talk["npc"]
+	_pending_talk = {}
+	var toward := npc_cell - stand
+	walker.face(_ortho_name(toward))
+	for node in npcs_root.get_children():
+		if str(node.npc_id) == npc_id:
+			node.face(_ortho_name(-toward))
+			break
+	var record: Dictionary = npc_book.by_id(npc_id)
+	if record.is_empty() or dialogue == null:
+		return
+	dialogue.open_for(record)
+
+
+func _ortho_name(step: Vector2i) -> String:
+	if step.x > 0:
+		return "e"
+	if step.x < 0:
+		return "w"
+	if step.y > 0:
+		return "s"
+	if step.y < 0:
+		return "n"
+	return "s"
 
 
 func _arm_arrival(target: Vector2i) -> void:
@@ -297,6 +433,9 @@ func _on_arrived(cell: Vector2i) -> void:
 		var dest: Dictionary = gate["to"]
 		enter_zone(str(dest["zone_id"]), Vector2i(int(dest["x"]), int(dest["y"])), true)
 		return
+	if not _pending_talk.is_empty() and cell == (_pending_talk["stand"] as Vector2i):
+		_open_talk()
+		return
 	if not _pending_exit:
 		return
 	_pending_exit = false
@@ -332,7 +471,11 @@ func _unhandled_input(event: InputEvent) -> void:
 					return
 				var c := cell_at_screen(event.position)
 				if c.x >= 0:
-					walk_to(c)
+					var record := _npc_at(c)
+					if not record.is_empty():
+						_approach_npc(record)
+					else:
+						walk_to(c)
 			MOUSE_BUTTON_WHEEL_UP:
 				_set_zoom(_zoom * 1.1)
 			MOUSE_BUTTON_WHEEL_DOWN:
@@ -345,7 +488,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				weather.time_scale = 1.0 if weather.time_scale > 1.0 else 30.0
 				_refresh_hud()
 			KEY_ESCAPE:
-				if visuals != null:
+				if dialogue != null and dialogue.is_open():
+					dialogue.close()
+				elif visuals != null:
 					visuals.toggle()
 			KEY_C:
 				if character_window != null:
@@ -507,10 +652,14 @@ func _apply_region_look() -> void:
 	var grade: Dictionary = look.get("grade", {})
 	var warm: Array = grade.get("warm_mul", [1.02, 1.0, 0.96])
 	var haze: Array = grade.get("haze_col", [0.45, 0.52, 0.62])
+	mat.set_shader_parameter("grade_mix", 1.0 if not grade.is_empty() else 0.0)
 	mat.set_shader_parameter("warm_mul", Color(float(warm[0]), float(warm[1]), float(warm[2])))
 	mat.set_shader_parameter("haze_col", Color(float(haze[0]), float(haze[1]), float(haze[2])))
 	mat.set_shader_parameter("haze_max", float(grade.get("haze_max", 0.15)))
 	mat.set_shader_parameter("saturation", float(grade.get("saturation", 1.06)))
+	var tint: Array = grade.get("tint_col", [1.0, 1.0, 1.0])
+	mat.set_shader_parameter("tint_col", Color(float(tint[0]), float(tint[1]), float(tint[2])))
+	mat.set_shader_parameter("tint_amount", float(grade.get("tint_amount", 0.0)))
 
 
 func _show_banner(text: String) -> void:
@@ -674,6 +823,10 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp4_gate()
 		"wp5astills":
 			await _movie_wp5a_stills()
+		"wp6grades":
+			await _movie_wp6_grades()
+		"wp6":
+			await _movie_wp6()
 		"wp3b":
 			await _movie_wp3b()
 		_:
@@ -923,6 +1076,81 @@ func _movie_wp5a_stills() -> void:
 		await get_tree().process_frame
 		var image := get_viewport().get_texture().get_image()
 		image.save_png(folder.path_join(region + ".png"))
+	await get_tree().process_frame
+
+
+## One still of each region entry after the grade push, for the contact sheet.
+func _movie_wp6_grades() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.6)
+	weather.auto_rotate = false
+	weather.time_of_day = 12.0
+	var regions: Array[String] = [
+		"rowanvale", "windmere", "brinewake", "slagcrown", "eastmarch_fen_edge",
+		"gloomfen_mire", "stormspire", "ashen_shardfields", "blightwood_hollow",
+	]
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp6/stills")
+	DirAccess.make_dir_recursive_absolute(folder)
+	for region in regions:
+		await enter_zone(region + "_entry", Vector2i(16, 12), false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if _banner != null:
+			_banner.modulate.a = 0.0
+		walker.facing = "s"
+		walker._show_idle()
+		await get_tree().process_frame
+		var image := get_viewport().get_texture().get_image()
+		image.save_png(folder.path_join(region + ".png"))
+	# Wider frames of one hub and one non-town entry, so the path spread is in view.
+	_set_zoom(1.0)
+	await get_tree().create_timer(0.45).timeout
+	var place_folder := ProjectSettings.globalize_path("res://docs/pc/media/wp6")
+	for zone_id in ["rowanvale_hub", "gloomfen_mire_entry"]:
+		await enter_zone(zone_id, Vector2i(16, 12), false)
+		await get_tree().process_frame
+		await get_tree().process_frame
+		if _banner != null:
+			_banner.modulate.a = 0.0
+		walker.facing = "s"
+		walker._show_idle()
+		await get_tree().process_frame
+		var placed := get_viewport().get_texture().get_image()
+		placed.save_png(place_folder.path_join(zone_id + ".png"))
+	await get_tree().process_frame
+
+
+## Talk to the Guide at the spawn, then to the Stoneford Elder.
+func _movie_wp6() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.6)
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	walker.playback = 2.0
+	await enter_zone("crosshaven_crossroads", Vector2i(22, 18), false)
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	_approach_npc(npc_book.by_id("crossroads_guide"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(2.4).timeout
+	if dialogue != null:
+		dialogue.close()
+	await get_tree().create_timer(0.6).timeout
+	await enter_zone("crosshaven_stoneford", Vector2i(16, 12), false)
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	_approach_npc(npc_book.by_id("stoneford_elder"))
+	await _wait_until_stopped()
+	await get_tree().create_timer(2.4).timeout
+
+
+func _wait_until_stopped() -> void:
+	var guard := 0
+	while walker.is_moving() and guard < 4000:
+		await get_tree().process_frame
+		guard += 1
 	await get_tree().process_frame
 
 

@@ -113,6 +113,15 @@ func speed_of(gait: String) -> float:
 	return _strips.speed_of(gait, "s")
 
 
+func face(dir: String) -> void:
+	var next := dir.to_lower()
+	if next != "n" and next != "e" and next != "s" and next != "w":
+		return
+	facing = next
+	if not _moving:
+		_show_idle()
+
+
 func place(target_zone: WorldZone, at: Vector2i) -> void:
 	zone = target_zone
 	cell = at
