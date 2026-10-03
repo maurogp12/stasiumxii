@@ -32,6 +32,7 @@ func _run() -> void:
 	eq(bool(atlas_loaded.get("ok", false)), true, "atlas loads")
 	if bool(atlas_loaded.get("ok", false)):
 		_test_cells(rows, atlas_loaded["atlas"])
+		_test_two_cells_apart_fails()
 		_test_spacing(rows, atlas_loaded["atlas"])
 		_test_extra_blocked(atlas_loaded["atlas"])
 	_test_talk()
@@ -174,6 +175,10 @@ func _test_talk() -> void:
 	w.weather.auto_rotate = false
 	eq(w.npc_book != null, true, "the world loads the npc book")
 	eq(w.npcs_root.get_child_count() > 0, true, "the Crossroads spawns its NPCs")
+	eq(w.npc_plates is CanvasLayer and w.npc_plates.layer > 6, true, "name plates draw above the fog")
+	eq(w.npc_plates.get_child_count() == w.npcs_root.get_child_count(), true, "every NPC has a plate above the fog")
+	var plate: Variant = w.npc_plates.get_child(0)
+	eq(str(plate.plate_text) != "", true, "the plate shows the NPC name")
 	var guide_cell := Vector2i(24, 18)
 	eq(w._npc_at(guide_cell).is_empty(), false, "the Guide occupies the spec cell")
 	var blocked: Dictionary = w.walk_to(guide_cell)
@@ -249,6 +254,13 @@ func _test_grades() -> void:
 	w.queue_free()
 
 
+func _test_two_cells_apart_fails() -> void:
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(2, 0)) >= 3, false, "two cells apart in a straight line fails")
+	eq(_cells_apart(Vector2i(19, 16), Vector2i(18, 18)) >= 3, false, "the old town-square diagonal of 2 fails")
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(3, 0)) >= 3, true, "three cells apart passes")
+	eq(_cells_apart(Vector2i(0, 0), Vector2i(3, 2)) >= 3, true, "three cells apart on a diagonal passes")
+
+
 func _test_spacing(rows: Array, atlas) -> void:
 	var by_zone := {}
 	for row in rows:
@@ -276,7 +288,8 @@ func _test_spacing(rows: Array, atlas) -> void:
 				eq(_manhattan(cell, gate_cell) >= 2, true, "%s is at least 2 cells from the gate" % npc_id)
 			for j in range(i + 1, group.size()):
 				var other: Dictionary = group[j]
-				eq(_manhattan(cell, cells[j]) >= 3, true, "%s is at least 3 cells from %s" % [npc_id, str(other["id"])])
+				var apart := _cells_apart(cell, cells[j])
+				eq(apart >= 3, true, "%s is at least 3 cells from %s" % [npc_id, str(other["id"])])
 			var role := str(record["role"])
 			if role == "door_keeper" and zone_id.ends_with("_door"):
 				var door := _door_cell(zone)
@@ -423,6 +436,11 @@ func _nearest(cell: Vector2i, others: Array) -> int:
 
 func _manhattan(a: Vector2i, b: Vector2i) -> int:
 	return absi(a.x - b.x) + absi(a.y - b.y)
+
+
+## Column gap or row gap, whichever is larger. A diagonal of 2 is two cells apart.
+func _cells_apart(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 
 
 func _terrain_mean(zone: WorldZone) -> Color:

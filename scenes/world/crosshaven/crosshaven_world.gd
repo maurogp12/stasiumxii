@@ -53,6 +53,7 @@ var fx: Node
 var progress = null
 var character_window: CanvasLayer
 var npcs_root: Node2D
+var npc_plates: CanvasLayer
 var npc_book = null
 var dialogue: CanvasLayer
 var _pending_talk: Dictionary = {}
@@ -98,6 +99,11 @@ func _ready() -> void:
 	npcs_root = Node2D.new()
 	npcs_root.name = "Npcs"
 	add_child(npcs_root)
+	# Above the grade (layer 6), so Gloomfen fog does not wash the names out.
+	npc_plates = CanvasLayer.new()
+	npc_plates.name = "NpcPlates"
+	npc_plates.layer = 7
+	add_child(npc_plates)
 	decor_root = Node2D.new()
 	decor_root.name = "Decor"
 	add_child(decor_root)
@@ -286,12 +292,15 @@ func _spawn_npcs() -> void:
 		return
 	for child in npcs_root.get_children():
 		child.free()
+	if npc_plates != null:
+		for plate in npc_plates.get_children():
+			plate.free()
 	if npc_book == null or zone == null:
 		return
 	for record in npc_book.for_zone(zone.zone_id):
 		var node := WorldNpc.new()
 		npcs_root.add_child(node)
-		node.setup(zone, record)
+		node.setup(zone, record, npc_plates)
 		var at: Dictionary = record["cell"]
 		_npc_by_cell[Vector2i(int(at["x"]), int(at["y"]))] = record
 
@@ -825,6 +834,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_wp5a_stills()
 		"wp6grades":
 			await _movie_wp6_grades()
+		"wp6fix":
+			await _movie_wp6_fix()
 		"wp6":
 			await _movie_wp6()
 		"wp3b":
@@ -1118,6 +1129,30 @@ func _movie_wp6_grades() -> void:
 		var placed := get_viewport().get_texture().get_image()
 		placed.save_png(place_folder.path_join(zone_id + ".png"))
 	await get_tree().process_frame
+
+
+## Gloomfen plates above the fog, and a Crosshaven square after the spread.
+func _movie_wp6_fix() -> void:
+	settings.apply_preset("Full")
+	_set_zoom(1.45)
+	weather.auto_rotate = false
+	weather.time_of_day = 12.0
+	var folder := ProjectSettings.globalize_path("res://docs/pc/media/wp6fix")
+	DirAccess.make_dir_recursive_absolute(folder)
+	await _save_still("gloomfen_mire_entry", Vector2i(8, 8), folder.path_join("gloomfen_plates.png"))
+	await _save_still("crosshaven_crossroads", Vector2i(20, 17), folder.path_join("crosshaven_square.png"))
+
+
+func _save_still(zone_id: String, cell: Vector2i, path: String) -> void:
+	await enter_zone(zone_id, cell, false)
+	await get_tree().create_timer(0.5).timeout
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	walker.facing = "s"
+	walker._show_idle()
+	await get_tree().process_frame
+	var image := get_viewport().get_texture().get_image()
+	image.save_png(path)
 
 
 ## Talk to the Guide at the spawn, then to the Stoneford Elder.

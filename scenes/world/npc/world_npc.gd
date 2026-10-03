@@ -59,9 +59,24 @@ var facing := "s"
 var _sprite: Sprite2D
 var _strips = null
 var _bob := 0.0
+var _plate: Node2D
 
 
-func setup(zone: WorldZone, record: Dictionary) -> void:
+## Name plate drawn on a canvas layer above the grade, so fog does not wash it out.
+class NamePlate extends Node2D:
+	var plate_text := ""
+
+	func _draw() -> void:
+		var font := ThemeDB.fallback_font
+		var size := font.get_string_size(plate_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16)
+		var origin := Vector2(-size.x * 0.5, -112.0)
+		var box := Rect2(origin + Vector2(-8, -4), Vector2(size.x + 16, size.y + 8))
+		draw_rect(box, Color(0.09, 0.07, 0.05, 0.9), true)
+		draw_rect(box, Color(1.0, 0.95, 0.84, 0.95), false, 1.5)
+		draw_string(font, origin, plate_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(1, 0.97, 0.9))
+
+
+func setup(zone: WorldZone, record: Dictionary, plates: CanvasLayer = null) -> void:
 	npc_id = str(record.get("id", ""))
 	role = str(record.get("role", ""))
 	display_name = str(record.get("name", ""))
@@ -84,6 +99,7 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	add_child(_sprite)
 	_apply_idle()
 	queue_redraw()
+	_mount_plate(plates)
 
 
 func face(dir: String) -> void:
@@ -99,6 +115,26 @@ func _process(delta: float) -> void:
 		return
 	_bob += delta
 	_sprite.position = Vector2(0, sin(_bob * 2.2) * 1.5)
+	if _plate != null:
+		_plate.position = get_global_transform_with_canvas().origin
+
+
+func _exit_tree() -> void:
+	if _plate != null and is_instance_valid(_plate):
+		_plate.queue_free()
+		_plate = null
+
+
+func _mount_plate(plates: CanvasLayer) -> void:
+	if plates == null:
+		return
+	var plate := NamePlate.new()
+	plate.plate_text = display_name
+	plate.name = "Plate_%s" % npc_id
+	plates.add_child(plate)
+	_plate = plate
+	if is_inside_tree():
+		_plate.position = get_global_transform_with_canvas().origin
 
 
 func _apply_idle() -> void:
@@ -123,10 +159,3 @@ func _draw() -> void:
 		var a := float(i) / float(steps) * TAU
 		shadow.append(Vector2(cos(a) * 14.0, sin(a) * 5.0 + 4.0))
 	draw_colored_polygon(shadow, Color(0, 0, 0, 0.35))
-	var font := ThemeDB.fallback_font
-	var plate := display_name
-	var width := font.get_string_size(plate, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
-	var origin := Vector2(-width * 0.5, -108)
-	for nudge in [Vector2(-1, 0), Vector2(1, 0), Vector2(0, -1), Vector2(0, 1)]:
-		draw_string(font, origin + nudge, plate, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(0.12, 0.08, 0.05))
-	draw_string(font, origin, plate, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color(1, 0.96, 0.88))

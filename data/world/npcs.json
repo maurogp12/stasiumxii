@@ -26,10 +26,10 @@
       "role": "warden",
       "zone_id": "crosshaven_crossroads",
       "cell": {
-        "x": 22,
-        "y": 16
+        "x": 21,
+        "y": 13
       },
-      "facing": "N",
+      "facing": "S",
       "body": "npc_warden",
       "lines": [
         "I am the Warden of Crosshaven Heart.",
@@ -60,10 +60,10 @@
       "role": "herald",
       "zone_id": "crosshaven_crossroads",
       "cell": {
-        "x": 18,
-        "y": 18
+        "x": 17,
+        "y": 19
       },
-      "facing": "S",
+      "facing": "E",
       "body": "npc_herald",
       "lines": [
         "I am the Koliseo Herald.",
@@ -230,8 +230,8 @@
       "role": "smith",
       "zone_id": "crosshaven_stoneford",
       "cell": {
-        "x": 18,
-        "y": 18
+        "x": 26,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_smith",
@@ -247,8 +247,8 @@
       "role": "fisher",
       "zone_id": "crosshaven_eastmarch",
       "cell": {
-        "x": 18,
-        "y": 18
+        "x": 24,
+        "y": 11
       },
       "facing": "S",
       "body": "npc_fisher",
