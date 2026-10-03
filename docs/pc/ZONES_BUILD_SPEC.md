@@ -332,9 +332,10 @@ the formula only fills them once.
 
 **The same formula runs to level 100** for the next phase (75 → 76 needs
 100,020; 99 → 100 needs 155,960; about 6.0 million XP from 1 to 100). Because
-every XP reward in 4.8 is a share of `xp_to_next(L)`, each level takes about
-the same play time at any level, so 50 → 100 adds roughly another 60 hours
-(Proposed; the WP15 simulator reports it).
+XP rewards in 4.8 are a share of `xp_to_next(L)` times a **pace factor** that
+slows the later levels (Mauro, option B: about 150 hours to level 50 for a
+free player). The pace for levels 51–100 is set with the next phase; the
+WP15 simulator reports it.
 
 **Cap rule (for every package):** never write `50` in code. Read
 `max_level` from `level_curve.json`. Tests check against that value. Data that
@@ -618,13 +619,24 @@ Balance targets (**Proposed**, checked by the WP15 simulator):
 
 | Target | Value |
 |---|---|
-| Time from level 1 to 50 for a normal player mix | about **60 hours** (accept 50–75) |
+| Time from level 1 to 50, free player, normal mix | about **150 hours** (accept 130–170) (**Mauro, option B**, 3 Oct 2026: "should take longer, we don't want our game to die too soon") |
+| Time from level 1 to 50, premium player (+25% XP) | about **120 hours** |
+| Milestones, free player (Proposed) | level 10 ≈ 8 h, 20 ≈ 23 h, 30 ≈ 47 h, 40 ≈ 87 h, 50 ≈ 150 h; the last level (49 → 50) ≈ 8 h |
 | Dungeon XP per minute vs open-world XP per minute | **about 1.5×** (accept 1.3–1.8×) |
 | Share of total XP by source (normal mix) | open world ~43%, dungeons ~40%, missions ~17%; no source above 50% |
 | A player who only fights in the open world | still reaches 50, about 1.5× slower |
+| Content per level | every level band has enough missions, NPC tasks and dungeon stars to fill its hours (WP15 flags a band with too little to do) |
 
-Formulas (**Proposed**; all read `xp_to_next(L)` from 4.3; `L` = the monster
-group's or dungeon's level):
+**Pace factor** (option B): every XP reward below is multiplied by
+`pace(L) = 1.6 × 0.9532^(L − 1)` (×1.6 at level 1, ×0.16 at level 49), so the
+first levels are quick and each later level takes longer. `L` is the
+player's level. The exact factor is tuned by WP15 to hit the targets above;
+it is stored in `level_curve.json` (`pace_start`, `pace_ratio`) so it can be
+changed without code.
+
+Formulas (**Proposed**; all read `xp_to_next(L)` from 4.3 and are then
+multiplied by `pace(player level)`; `L` = the monster group's or dungeon's
+level):
 
 | Source | XP |
 |---|---|
@@ -1141,8 +1153,8 @@ Mauro, 3 Oct 2026: **"premium will require a real money payment."**
   | **Premium cities** (future phase) | Travel to premium-only cities, designed with the next maps |
 
 - **Balance with premium** (Proposed, WP15 checks): a free player still
-  reaches level 50 in about 60 hours; a premium player in about 48 hours
-  (+25% XP). The coin bonus is counted in the economy target (players spend
+  reaches level 50 in about 150 hours; a premium player in about 120 hours
+  (+25% XP) (option B). The coin bonus is counted in the economy target (players spend
   70–90% of income), so prices stay fair for free players.
 - **Free players** keep the whole map, all levels, missions, dungeons, sets,
   Epics, Relics, crafting and the Crypto Bank; they can collect pets and
@@ -1608,8 +1620,10 @@ designated zones also monsters above lvl 25 are agressive".
   rare parts per hour, boxes per hour; `tests/run_pc_balance_tests.gd` (suite)
   that fails when a target in 4.8 is missed.
 - **Premium:** also run every profile as premium (+25% XP, +15% coins, +10%
-  drops) and report both; free players stay at the 50–75 h target.
-- **Accept:** normal mix reaches 50 in 50–75 h; dungeon XP per minute is
+  drops) and report both; free players stay at the 130–170 h target and
+  premium players near 120 h.
+- **Accept:** normal mix (free) reaches 50 in 130–170 h, with the level 10 / 20
+  / 30 / 40 milestones near 4.8's; no level band is short of content; dungeon XP per minute is
   1.3–1.8× open world; no source above 50% of total XP; world-only still
   reaches 50; a printed table goes in the PR for Mauro.
 - **Sets:** also simulate each class at every tier with no set, the shared
