@@ -42,6 +42,7 @@ func _run() -> void:
 	_test_no_height_hit_facing_los()
 	_test_board_view_wires_adapter()
 	_test_highlights_are_overlays_and_labels_are_debug()
+	_test_grid_reveal()
 
 
 func _test_adapter_defaults_flat_ground() -> void:
@@ -336,6 +337,22 @@ func _test_deploy_chrome_untouched() -> void:
 	truthy(view.contains("legal_deploy_cells"), "deploy highlights still bind legal_deploy_cells")
 	truthy(view.contains("deploy_zone_cells"), "deploy highlights still bind deploy_zone_cells")
 	eq(view.contains("DeploymentManager"), false, "live path still ignores proto DeploymentManager")
+
+
+func _test_grid_reveal() -> void:
+	var tile_src := FileAccess.get_file_as_string("res://board/tile.gd")
+	var view := FileAccess.get_file_as_string("res://board_view.gd")
+	truthy(tile_src.contains("Color(0.55, 0.93, 1.0, 0.88)"), "move tiles use the bright fill on every theme")
+	truthy(tile_src.contains("Color(0.75, 1.0, 1.0, 1.0)"), "move tiles use the bright rim on every theme")
+	eq(tile_src.contains("highlight == \"move\" and _look_floor"), false, "the bright move tile is not limited to one floor")
+	truthy(tile_src.contains("set_soft_hover"), "the cell under the pointer can take a soft outline")
+	truthy(tile_src.contains("func _paint_glyph"), "zones and deploy cells draw a glyph")
+	truthy(view.contains("_set_hover_cell"), "the board tracks the cell under the pointer")
+	eq(view.contains("KEY_ALT"), false, "the full-grid key is not invented here")
+	var tile := TILE_SCRIPT.new() as BoardTile
+	tile.highlight = "move"
+	eq(tile.overlay_color(), Color(0.45, 0.78, 0.92, BoardTile.HIGHLIGHT_FILL_ALPHA), "overlay_color stays the flat cyan")
+	tile.free()
 
 
 func _test_no_height_hit_facing_los() -> void:
