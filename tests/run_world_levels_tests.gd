@@ -27,17 +27,34 @@ const TOWN_CHUNKS: Array[String] = [
 ## #3fbf4f and step toward purple. The map image was not in the repo.
 const EXPECTED := [
 	["crosshaven_heart", "Crosshaven Heart", 1, 5, "#3fbf4f", "old_granary_cellar"],
-	["crosshaven_towns", "Crosshaven Towns", 5, 10, "#58bd3c", "threshgate"],
+	["crosshaven_towns", "Crosshaven Towns", 5, 10, "#58bd3c", "millrace_vaults"],
 	["rowanvale", "Rowanvale", 10, 15, "#82bb3a", "rotting_orchard_barrow"],
-	["windmere", "Windmere", 15, 20, "#acb937", "galevault"],
-	["brinewake", "Brinewake", 20, 25, "#b79735", "tidehold"],
-	["slagcrown", "Slagcrown", 25, 30, "#b56832", "ashmarch"],
+	["windmere", "Windmere", 15, 20, "#acb937", "frostspire_archive"],
+	["brinewake", "Brinewake", 20, 25, "#b79735", "saltmaw_grotto"],
+	["slagcrown", "Slagcrown", 25, 30, "#b56832", "cinderforge_depths"],
 	["eastmarch_fen_edge", "Eastmarch Fen Edge", 25, 30, "#b33930", "sunken_mill"],
 	["gloomfen_mire", "Gloomfen Mire", 30, 38, "#b02e51", "drowned_abbey"],
-	["stormspire", "Stormspire", 35, 40, "#ae2b7c", "coilgate"],
+	["stormspire", "Stormspire", 35, 40, "#ae2b7c", "thunderwell_core"],
 	["ashen_shardfields", "Ashen Shardfields", 38, 45, "#ac29a6", "shard_hollow"],
 	["blightwood_hollow", "Blightwood Hollow", 45, 50, "#8227a9", "heart_of_the_blight"],
 ]
+
+## Phone Stasis door ids from spec 4.6 at 46d897e. PC dungeons are PC's own.
+## These strings may appear only on the denylist lines below.
+const PHONE_DUNGEON_NAMES: Array[String] = [
+	"threshgate",
+	"galevault",
+	"tidehold",
+	"ashmarch",
+	"coilgate",
+]
+const PHONE_SCAN_ROOTS: Array[String] = [
+	"res://data",
+	"res://backend",
+	"res://tests",
+	"res://scenes",
+]
+const PHONE_SCAN_EXT: Array[String] = ["gd", "json", "tscn", "tres", "cfg", "godot"]
 
 var _failed: int = 0
 var _passed: int = 0
@@ -64,6 +81,7 @@ func _run() -> void:
 	var map_loaded: Dictionary = WorldMap.load_default()
 	eq(map_loaded["ok"], true, "Crosshaven index still loads")
 	_test_rejects()
+	_test_no_phone_dungeon_names()
 
 
 func _test_schema_file() -> void:
@@ -300,6 +318,53 @@ func _test_rejects() -> void:
 	var heart_chunks: Array = _zone(gap, "crosshaven_heart")["chunks"]
 	heart_chunks.erase("crosshaven_crossroads")
 	_rejects(gap, "chunk crosshaven_crossroads is not in a level zone")
+
+
+func _test_no_phone_dungeon_names() -> void:
+	var hits := PackedStringArray()
+	for root in PHONE_SCAN_ROOTS:
+		_scan_phone_tree(root, hits)
+	eq(hits.is_empty(), true, "no phone dungeon names in PC data, code, or tests (%s)" % ", ".join(hits))
+
+
+func _scan_phone_tree(path: String, hits: PackedStringArray) -> void:
+	var dir := DirAccess.open(path)
+	if dir == null:
+		return
+	dir.include_navigational = false
+	dir.list_dir_begin()
+	var name := dir.get_next()
+	while name != "":
+		var child := path.path_join(name)
+		if dir.current_is_dir():
+			_scan_phone_tree(child, hits)
+		else:
+			_scan_phone_file(child, hits)
+		name = dir.get_next()
+	dir.list_dir_end()
+
+
+func _scan_phone_file(path: String, hits: PackedStringArray) -> void:
+	if not PHONE_SCAN_EXT.has(path.get_extension().to_lower()):
+		return
+	var lines := FileAccess.get_file_as_string(path).split("\n")
+	for i in lines.size():
+		var line := lines[i]
+		if _is_phone_denylist_line(line):
+			continue
+		var lower := line.to_lower()
+		for phone in PHONE_DUNGEON_NAMES:
+			if lower.find(phone) >= 0:
+				hits.append("%s:%d" % [path, i + 1])
+				break
+
+
+func _is_phone_denylist_line(line: String) -> bool:
+	var trimmed := line.strip_edges()
+	for phone in PHONE_DUNGEON_NAMES:
+		if trimmed == "\"%s\"," % phone or trimmed == "\"%s\"" % phone:
+			return true
+	return false
 
 
 func _doc() -> Dictionary:

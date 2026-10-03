@@ -47,7 +47,7 @@
         "crosshaven_southbridge": 2
       },
       "color": "#58bd3c",
-      "dungeon": "threshgate"
+      "dungeon": "millrace_vaults"
     },
     {
       "id": "rowanvale",
@@ -95,7 +95,7 @@
         "windmere_door": 5
       },
       "color": "#acb937",
-      "dungeon": "galevault"
+      "dungeon": "frostspire_archive"
     },
     {
       "id": "brinewake",
@@ -119,7 +119,7 @@
         "brinewake_door": 5
       },
       "color": "#b79735",
-      "dungeon": "tidehold"
+      "dungeon": "saltmaw_grotto"
     },
     {
       "id": "slagcrown",
@@ -143,7 +143,7 @@
         "slagcrown_door": 5
       },
       "color": "#b56832",
-      "dungeon": "ashmarch"
+      "dungeon": "cinderforge_depths"
     },
     {
       "id": "eastmarch_fen_edge",
@@ -211,7 +211,7 @@
         "stormspire_door": 4
       },
       "color": "#ae2b7c",
-      "dungeon": "coilgate"
+      "dungeon": "thunderwell_core"
     },
     {
       "id": "ashen_shardfields",
