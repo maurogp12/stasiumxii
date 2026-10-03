@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stasiumxii.local/schemas/region_dressing.v1.json",
+  "title": "Stasium PC region dressing",
+  "description": "Sidecar stasium.region_dressing version 1. WP10a step 0. The placer reads this file and writes props and decor into the zone chunks. Prop ids are Crosshaven stand-ins until the region's art lands.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format", "format_version", "region", "seed", "notes",
+    "ground_mix", "props", "border", "decor", "cluster", "limits",
+    "clearance", "lane_margin", "hero"
+  ],
+  "properties": {
+    "format": {"const": "stasium.region_dressing"},
+    "format_version": {"const": 1},
+    "region": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+    "seed": {"type": "integer", "minimum": 1},
+    "notes": {"type": "string", "minLength": 1},
+    "ground_mix": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"$ref": "#/$defs/ground"}
+    },
+    "props": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 10,
+      "items": {"$ref": "#/$defs/stand_in"}
+    },
+    "border": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "stands_for", "depth"],
+      "properties": {
+        "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "stands_for": {"type": "string", "minLength": 1},
+        "depth": {"type": "integer", "minimum": 1, "maximum": 2}
+      }
+    },
+    "decor": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/decor"}
+    },
+    "cluster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_size", "max_size", "spacing", "glade"],
+      "properties": {
+        "min_size": {"type": "integer", "minimum": 3, "maximum": 5},
+        "max_size": {"type": "integer", "minimum": 3, "maximum": 5},
+        "spacing": {"type": "integer", "minimum": 2},
+        "glade": {"type": "integer", "minimum": 3}
+      }
+    },
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blocking", "decor"],
+      "properties": {
+        "blocking": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.08},
+        "decor": {"type": "number", "exclusiveMinimum": 0, "maximum": 0.25}
+      }
+    },
+    "clearance": {"type": "integer", "minimum": 2},
+    "lane_margin": {"type": "integer", "minimum": 1},
+    "hero": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["chunk_id", "type", "stands_for", "origin"],
+      "properties": {
+        "chunk_id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "stands_for": {"type": "string", "minLength": 1},
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["x", "y"],
+          "properties": {
+            "x": {"type": "integer", "minimum": 0},
+            "y": {"type": "integer", "minimum": 0}
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ground": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["terrain", "weight"],
+      "properties": {
+        "terrain": {"type": "string", "minLength": 1},
+        "weight": {"type": "integer", "minimum": 1}
+      }
+    },
+    "decor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "weight"],
+      "properties": {
+        "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "weight": {"type": "integer", "minimum": 1}
+      }
+    },
+    "stand_in": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "weight", "stands_for"],
+      "properties": {
+        "type": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "weight": {"type": "integer", "minimum": 1},
+        "stands_for": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

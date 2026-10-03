@@ -1,0 +1,97 @@
+{
+  "format": "stasium.region_dressing",
+  "format_version": 1,
+  "region": "stormspire",
+  "seed": 3540,
+  "notes": "Crosshaven prop ids stand in until this region's art lands. stands_for is the WP10a painted name.",
+  "ground_mix": [
+    {
+      "terrain": "golden_plains",
+      "weight": 4
+    },
+    {
+      "terrain": "farm_fallow",
+      "weight": 2
+    },
+    {
+      "terrain": "farm_soil",
+      "weight": 1
+    }
+  ],
+  "props": [
+    {
+      "type": "tree",
+      "weight": 3,
+      "stands_for": "wind-bent tree"
+    },
+    {
+      "type": "quarry_rocks_a",
+      "weight": 3,
+      "stands_for": "jagged slate rock"
+    },
+    {
+      "type": "waystone",
+      "weight": 2,
+      "stands_for": "glowing rune stone"
+    },
+    {
+      "type": "lamp_post",
+      "weight": 1,
+      "stands_for": "broken pylon"
+    },
+    {
+      "type": "fence",
+      "weight": 1,
+      "stands_for": "copper conduit"
+    },
+    {
+      "type": "brazier",
+      "weight": 1,
+      "stands_for": "storm brazier"
+    }
+  ],
+  "border": {
+    "type": "quarry_rocks_a",
+    "stands_for": "jagged rock ridge",
+    "depth": 2
+  },
+  "decor": [
+    {
+      "type": "grass_tuft_b",
+      "weight": 3
+    },
+    {
+      "type": "rock_small_c",
+      "weight": 3
+    },
+    {
+      "type": "tuft_b",
+      "weight": 2
+    },
+    {
+      "type": "decal_pebbles",
+      "weight": 1
+    }
+  ],
+  "cluster": {
+    "min_size": 3,
+    "max_size": 5,
+    "spacing": 2,
+    "glade": 4
+  },
+  "limits": {
+    "blocking": 0.08,
+    "decor": 0.25
+  },
+  "clearance": 2,
+  "lane_margin": 1,
+  "hero": {
+    "chunk_id": "stormspire_entry",
+    "type": "westwatch_spire",
+    "stands_for": "Lightning Pylon",
+    "origin": {
+      "x": 8,
+      "y": 4
+    }
+  }
+}

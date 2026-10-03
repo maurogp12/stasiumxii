@@ -32,6 +32,8 @@ DUNGEON_NAMES = {
 }
 
 # Grade parameters for crosshaven_grade.gdshader. Weather stays in this sidecar.
+# Grade numbers are the shipped sidecar values (WP6 rework). Regenerating a
+# region must not put the earlier placeholder grades back.
 LOOKS = {
     "rowanvale": {
         "ground": "farm_soil",
@@ -41,32 +43,44 @@ LOOKS = {
     "windmere": {
         "ground": "golden_plains",
         "weather": ["light_cloud"],
-        "grade": {"warm_mul": [0.84, 0.92, 1.14], "haze_col": [0.55, 0.7, 0.9], "haze_max": 0.16, "saturation": 0.98},
+        "grade": {
+            "warm_mul": [0.78, 0.88, 1.22], "haze_col": [0.82, 0.9, 1.0],
+            "haze_max": 0.3, "saturation": 0.58, "tint_col": [0.0, 0.42, 1.0], "tint_amount": 0.55,
+        },
     },
     "brinewake": {
         "ground": "golden_plains",
         "weather": ["clear"],
-        "grade": {"warm_mul": [0.9, 1.02, 1.06], "haze_col": [0.4, 0.62, 0.7], "haze_max": 0.1, "saturation": 1.06},
+        "grade": {
+            "warm_mul": [0.62, 1.02, 1.08], "haze_col": [0.55, 0.78, 0.92],
+            "haze_max": 0.22, "saturation": 0.72, "tint_col": [0.0, 0.5, 1.0], "tint_amount": 0.55,
+        },
     },
     "slagcrown": {
         "ground": "farm_fallow",
         "weather": ["clear"],
-        "grade": {"warm_mul": [1.16, 0.86, 0.68], "haze_col": [0.75, 0.36, 0.16], "haze_max": 0.12, "saturation": 1.1},
+        "grade": {
+            "warm_mul": [1.16, 0.86, 0.68], "haze_col": [0.75, 0.36, 0.16],
+            "haze_max": 0.12, "saturation": 1.1, "tint_col": [1.0, 0.48, 0.08], "tint_amount": 0.4,
+        },
     },
     "eastmarch_fen_edge": {
         "ground": "farm_soil",
         "weather": ["light_cloud"],
-        "grade": {"warm_mul": [0.94, 1.02, 0.8], "haze_col": [0.42, 0.52, 0.26], "haze_max": 0.14, "saturation": 1.0},
+        "grade": {"warm_mul": [0.86, 0.96, 0.84], "haze_col": [0.435, 0.535, 0.53], "haze_max": 0.315, "saturation": 0.84},
     },
     "gloomfen_mire": {
         "ground": "farm_soil",
         "weather": ["light_rain"],
-        "grade": {"warm_mul": [0.78, 1.06, 0.74], "haze_col": [0.22, 0.46, 0.28], "haze_max": 0.18, "saturation": 0.94},
+        "grade": {"warm_mul": [0.7, 0.92, 0.72], "haze_col": [0.42, 0.55, 0.44], "haze_max": 0.48, "saturation": 0.62},
     },
     "stormspire": {
         "ground": "golden_plains",
         "weather": ["wind"],
-        "grade": {"warm_mul": [0.88, 0.94, 1.1], "haze_col": [0.5, 0.56, 0.7], "haze_max": 0.12, "saturation": 0.96},
+        "grade": {
+            "warm_mul": [0.52, 0.54, 0.7], "haze_col": [0.28, 0.28, 0.4],
+            "haze_max": 0.28, "saturation": 0.42, "tint_col": [0.7, 0.62, 0.98], "tint_amount": 0.5,
+        },
     },
     "ashen_shardfields": {
         "ground": "farm_fallow",
@@ -76,7 +90,10 @@ LOOKS = {
     "blightwood_hollow": {
         "ground": "farm_plowed",
         "weather": ["light_cloud"],
-        "grade": {"warm_mul": [0.74, 0.66, 1.1], "haze_col": [0.26, 0.14, 0.4], "haze_max": 0.18, "saturation": 0.84},
+        "grade": {
+            "warm_mul": [0.74, 0.66, 1.1], "haze_col": [0.26, 0.14, 0.4],
+            "haze_max": 0.18, "saturation": 0.7, "tint_col": [0.7, 0.08, 1.0], "tint_amount": 0.5,
+        },
     },
 }
 
@@ -263,7 +280,7 @@ def stand_in_doc(region: str) -> dict:
     }
 
 
-def write_region(region: str) -> None:
+def write_region(region: str, dress: bool = True) -> None:
     chunks = load_region(region)
     built = [chunk for chunk in chunks if chunk["built"]]
     built_ids = {chunk["id"] for chunk in built}
@@ -277,8 +294,23 @@ def write_region(region: str) -> None:
         path = zone_dir / f"{chunk['id']}.json"
         path.write_text(json.dumps(zone_doc(region, chunk, built_ids), indent=2) + "\n")
     (folder / "index.json").write_text(json.dumps(index_doc(region, built), indent=2) + "\n")
-    (folder / "stand_in.json").write_text(json.dumps(stand_in_doc(region), indent=2) + "\n")
+    side_path = folder / "stand_in.json"
+    side_doc = stand_in_doc(region)
+    # Keep the shipped sidecar bytes when the grade values already match.
+    # json.dumps wraps tint_col differently from the checked-in files.
+    if not side_path.exists() or json.loads(side_path.read_text()) != side_doc:
+        side_path.write_text(json.dumps(side_doc, indent=2) + "\n")
     print(f"{region}: {len(built)} built / {len(chunks)} mapped")
+    if dress and (folder / "dressing.json").exists():
+        import dress_region
+        dress_region.apply_region(
+            region,
+            built,
+            built_ids,
+            dress_region.load_footprints(),
+            dress_region.load_npcs(),
+            dress_region.load_gates(),
+        )
 
 
 def write_all() -> None:

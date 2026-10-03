@@ -102,6 +102,441 @@
           "y": 3
         }
       ]
+    },
+    {
+      "id": "slagcrown_door_border_0_0",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 30,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 30,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_0_1",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 30,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 30,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_0_2",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 4
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_1_0",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 2,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 2,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_1_1",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 4,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 4,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_1_2",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 22
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_2_0",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 6
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 6
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_2_1",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_border_2_2",
+      "type": "stone_wall_high_nwse",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 10
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_0_0",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 3,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_0_1",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 17
+      },
+      "footprint": [
+        {
+          "x": 3,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_0_2",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 5,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 5,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_0_3",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 7,
+        "y": 16
+      },
+      "footprint": [
+        {
+          "x": 7,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_0_4",
+      "type": "waystone",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_1_0",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 18
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_1_1",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 14
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_1_2",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 16
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_1_3",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 14,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_1_4",
+      "type": "brazier",
+      "blocks": true,
+      "origin": {
+        "x": 14,
+        "y": 18
+      },
+      "footprint": [
+        {
+          "x": 14,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_2_0",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 21,
+        "y": 17
+      },
+      "footprint": [
+        {
+          "x": 21,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_2_1",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_2_2",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 23,
+        "y": 17
+      },
+      "footprint": [
+        {
+          "x": 23,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_2_3",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 24,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 24,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_2_4",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 15
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_3_0",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 5,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 5,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_3_1",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 6,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_3_2",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 8,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_3_3",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "slagcrown_door_cluster_3_4",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 10,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 10,
+          "y": 8
+        }
+      ]
     }
   ],
   "tiles": [
@@ -115,7 +550,7 @@
     {
       "x": 1,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -157,7 +592,7 @@
     {
       "x": 7,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -178,7 +613,7 @@
     {
       "x": 10,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -213,7 +648,7 @@
     {
       "x": 15,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -255,14 +690,14 @@
     {
       "x": 21,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -276,7 +711,7 @@
     {
       "x": 24,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -297,35 +732,35 @@
     {
       "x": 27,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 0,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -346,14 +781,14 @@
     {
       "x": 2,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -374,7 +809,7 @@
     {
       "x": 6,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -402,21 +837,21 @@
     {
       "x": 10,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -451,7 +886,7 @@
     {
       "x": 17,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -479,7 +914,7 @@
     {
       "x": 21,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -493,14 +928,14 @@
     {
       "x": 23,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -514,7 +949,7 @@
     {
       "x": 26,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -528,7 +963,7 @@
     {
       "x": 28,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -542,7 +977,7 @@
     {
       "x": 30,
       "y": 1,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -556,7 +991,7 @@
     {
       "x": 0,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -570,7 +1005,7 @@
     {
       "x": 2,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -584,14 +1019,14 @@
     {
       "x": 4,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -626,7 +1061,7 @@
     {
       "x": 10,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -661,7 +1096,7 @@
     {
       "x": 15,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -710,7 +1145,7 @@
     {
       "x": 22,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -724,7 +1159,7 @@
     {
       "x": 24,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -738,7 +1173,7 @@
     {
       "x": 26,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -752,7 +1187,7 @@
     {
       "x": 28,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -773,7 +1208,7 @@
     {
       "x": 31,
       "y": 2,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -794,14 +1229,14 @@
     {
       "x": 2,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -822,7 +1257,7 @@
     {
       "x": 6,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -843,7 +1278,7 @@
     {
       "x": 9,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -857,7 +1292,7 @@
     {
       "x": 11,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -871,7 +1306,7 @@
     {
       "x": 13,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -913,7 +1348,7 @@
     {
       "x": 19,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -927,7 +1362,7 @@
     {
       "x": 21,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -941,21 +1376,21 @@
     {
       "x": 23,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -969,14 +1404,14 @@
     {
       "x": 27,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 3,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1025,21 +1460,21 @@
     {
       "x": 3,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1053,14 +1488,14 @@
     {
       "x": 7,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1095,7 +1530,7 @@
     {
       "x": 13,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1123,14 +1558,14 @@
     {
       "x": 17,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1158,14 +1593,14 @@
     {
       "x": 22,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1179,7 +1614,7 @@
     {
       "x": 25,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1193,7 +1628,7 @@
     {
       "x": 27,
       "y": 4,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1235,14 +1670,14 @@
     {
       "x": 1,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1263,7 +1698,7 @@
     {
       "x": 5,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1284,14 +1719,14 @@
     {
       "x": 8,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1305,14 +1740,14 @@
     {
       "x": 11,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1326,7 +1761,7 @@
     {
       "x": 14,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1361,14 +1796,14 @@
     {
       "x": 19,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1382,14 +1817,14 @@
     {
       "x": 22,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1403,7 +1838,7 @@
     {
       "x": 25,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1424,7 +1859,7 @@
     {
       "x": 28,
       "y": 5,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1452,7 +1887,7 @@
     {
       "x": 0,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1466,7 +1901,7 @@
     {
       "x": 2,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1501,28 +1936,28 @@
     {
       "x": 7,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1550,7 +1985,7 @@
     {
       "x": 14,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1578,7 +2013,7 @@
     {
       "x": 18,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1634,14 +2069,14 @@
     {
       "x": 26,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1655,7 +2090,7 @@
     {
       "x": 29,
       "y": 6,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1697,14 +2132,14 @@
     {
       "x": 3,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1746,21 +2181,21 @@
     {
       "x": 10,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1774,14 +2209,14 @@
     {
       "x": 14,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1802,7 +2237,7 @@
     {
       "x": 18,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1837,7 +2272,7 @@
     {
       "x": 23,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1872,14 +2307,14 @@
     {
       "x": 28,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 7,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -1907,7 +2342,7 @@
     {
       "x": 1,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1956,35 +2391,35 @@
     {
       "x": 8,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2019,7 +2454,7 @@
     {
       "x": 17,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2047,7 +2482,7 @@
     {
       "x": 21,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2061,21 +2496,21 @@
     {
       "x": 23,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2089,35 +2524,35 @@
     {
       "x": 27,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 8,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2145,7 +2580,7 @@
     {
       "x": 3,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2180,14 +2615,14 @@
     {
       "x": 8,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2201,7 +2636,7 @@
     {
       "x": 11,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2215,21 +2650,21 @@
     {
       "x": 13,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2271,14 +2706,14 @@
     {
       "x": 21,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2306,7 +2741,7 @@
     {
       "x": 26,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2320,7 +2755,7 @@
     {
       "x": 28,
       "y": 9,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2355,14 +2790,14 @@
     {
       "x": 1,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2383,7 +2818,7 @@
     {
       "x": 5,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2397,35 +2832,35 @@
     {
       "x": 7,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2446,14 +2881,14 @@
     {
       "x": 14,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2481,7 +2916,7 @@
     {
       "x": 19,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2502,7 +2937,7 @@
     {
       "x": 22,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2530,7 +2965,7 @@
     {
       "x": 26,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2544,7 +2979,7 @@
     {
       "x": 28,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2558,28 +2993,28 @@
     {
       "x": 30,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 10,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 0,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2593,7 +3028,7 @@
     {
       "x": 3,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2607,7 +3042,7 @@
     {
       "x": 5,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2628,7 +3063,7 @@
     {
       "x": 8,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2656,14 +3091,14 @@
     {
       "x": 12,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2677,7 +3112,7 @@
     {
       "x": 15,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2691,7 +3126,7 @@
     {
       "x": 17,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2733,21 +3168,21 @@
     {
       "x": 23,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2775,7 +3210,7 @@
     {
       "x": 29,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -2789,7 +3224,7 @@
     {
       "x": 31,
       "y": 11,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3020,7 +3455,7 @@
     {
       "x": 0,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3034,7 +3469,7 @@
     {
       "x": 2,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3069,7 +3504,7 @@
     {
       "x": 7,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3090,21 +3525,21 @@
     {
       "x": 10,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3139,7 +3574,7 @@
     {
       "x": 17,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3160,28 +3595,28 @@
     {
       "x": 20,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3202,7 +3637,7 @@
     {
       "x": 26,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3230,7 +3665,7 @@
     {
       "x": 30,
       "y": 13,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3244,7 +3679,7 @@
     {
       "x": 0,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3258,21 +3693,21 @@
     {
       "x": 2,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3286,7 +3721,7 @@
     {
       "x": 6,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3307,21 +3742,21 @@
     {
       "x": 9,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3349,7 +3784,7 @@
     {
       "x": 15,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3384,7 +3819,7 @@
     {
       "x": 20,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3405,7 +3840,7 @@
     {
       "x": 23,
       "y": 14,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3496,7 +3931,7 @@
     {
       "x": 4,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3517,7 +3952,7 @@
     {
       "x": 7,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3559,7 +3994,7 @@
     {
       "x": 13,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3587,14 +4022,14 @@
     {
       "x": 17,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3657,7 +4092,7 @@
     {
       "x": 27,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3678,7 +4113,7 @@
     {
       "x": 30,
       "y": 15,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3692,14 +4127,14 @@
     {
       "x": 0,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3713,7 +4148,7 @@
     {
       "x": 3,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3727,14 +4162,14 @@
     {
       "x": 5,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3748,14 +4183,14 @@
     {
       "x": 8,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3776,28 +4211,28 @@
     {
       "x": 12,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3846,21 +4281,21 @@
     {
       "x": 22,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -3895,7 +4330,7 @@
     {
       "x": 29,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3909,28 +4344,28 @@
     {
       "x": 31,
       "y": 16,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 0,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3951,14 +4386,14 @@
     {
       "x": 5,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4021,7 +4456,7 @@
     {
       "x": 15,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4035,21 +4470,21 @@
     {
       "x": 17,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4077,7 +4512,7 @@
     {
       "x": 23,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4098,7 +4533,7 @@
     {
       "x": 26,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4126,7 +4561,7 @@
     {
       "x": 30,
       "y": 17,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4147,14 +4582,14 @@
     {
       "x": 1,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4175,14 +4610,14 @@
     {
       "x": 5,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4196,14 +4631,14 @@
     {
       "x": 8,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4217,35 +4652,35 @@
     {
       "x": 11,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4259,7 +4694,7 @@
     {
       "x": 17,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4273,7 +4708,7 @@
     {
       "x": 19,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4294,14 +4729,14 @@
     {
       "x": 22,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4315,7 +4750,7 @@
     {
       "x": 25,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4350,14 +4785,14 @@
     {
       "x": 30,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 18,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4385,7 +4820,7 @@
     {
       "x": 3,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4420,14 +4855,14 @@
     {
       "x": 8,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4455,21 +4890,21 @@
     {
       "x": 13,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4490,7 +4925,7 @@
     {
       "x": 18,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4511,14 +4946,14 @@
     {
       "x": 21,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4532,7 +4967,7 @@
     {
       "x": 24,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4553,7 +4988,7 @@
     {
       "x": 27,
       "y": 19,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4602,7 +5037,7 @@
     {
       "x": 2,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4616,28 +5051,28 @@
     {
       "x": 4,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4658,7 +5093,7 @@
     {
       "x": 10,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4672,21 +5107,21 @@
     {
       "x": 12,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4742,35 +5177,35 @@
     {
       "x": 22,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4798,7 +5233,7 @@
     {
       "x": 30,
       "y": 20,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4812,7 +5247,7 @@
     {
       "x": 0,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4833,14 +5268,14 @@
     {
       "x": 3,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4854,21 +5289,21 @@
     {
       "x": 6,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -4952,49 +5387,49 @@
     {
       "x": 20,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5029,7 +5464,7 @@
     {
       "x": 31,
       "y": 21,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5057,7 +5492,7 @@
     {
       "x": 3,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5078,7 +5513,7 @@
     {
       "x": 6,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5099,7 +5534,7 @@
     {
       "x": 9,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5113,14 +5548,14 @@
     {
       "x": 11,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5134,7 +5569,7 @@
     {
       "x": 14,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5162,7 +5597,7 @@
     {
       "x": 18,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5176,7 +5611,7 @@
     {
       "x": 20,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5239,7 +5674,7 @@
     {
       "x": 29,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5253,7 +5688,7 @@
     {
       "x": 31,
       "y": 22,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5281,14 +5716,14 @@
     {
       "x": 3,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5323,7 +5758,7 @@
     {
       "x": 9,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5337,21 +5772,21 @@
     {
       "x": 11,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5407,7 +5842,7 @@
     {
       "x": 21,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5428,14 +5863,14 @@
     {
       "x": 24,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
     },
@@ -5449,7 +5884,7 @@
     {
       "x": 27,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5477,9 +5912,521 @@
     {
       "x": 31,
       "y": 23,
-      "terrain": "farm_fallow",
+      "terrain": "farm_plowed",
       "walkable": true,
       "height": 0
+    }
+  ],
+  "decor": [
+    {
+      "id": "slagcrown_door_decor_0",
+      "type": "decal_pebbles",
+      "x": 19,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_1",
+      "type": "decal_pebbles",
+      "x": 20,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_2",
+      "type": "tuft_a",
+      "x": 21,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_3",
+      "type": "mushrooms_a",
+      "x": 22,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_4",
+      "type": "rock_small_d",
+      "x": 23,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_5",
+      "type": "tuft_a",
+      "x": 24,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_6",
+      "type": "rock_small_d",
+      "x": 25,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_7",
+      "type": "rock_small_d",
+      "x": 26,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_8",
+      "type": "decal_pebbles",
+      "x": 27,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_9",
+      "type": "decal_pebbles",
+      "x": 28,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_10",
+      "type": "tuft_a",
+      "x": 29,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_11",
+      "type": "mushrooms_a",
+      "x": 30,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_12",
+      "type": "rock_small_d",
+      "x": 31,
+      "y": 5
+    },
+    {
+      "id": "slagcrown_door_decor_13",
+      "type": "tuft_a",
+      "x": 1,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_14",
+      "type": "rock_small_d",
+      "x": 2,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_15",
+      "type": "rock_small_d",
+      "x": 3,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_16",
+      "type": "decal_pebbles",
+      "x": 4,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_17",
+      "type": "decal_pebbles",
+      "x": 5,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_18",
+      "type": "tuft_a",
+      "x": 6,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_19",
+      "type": "mushrooms_a",
+      "x": 7,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_20",
+      "type": "rock_small_d",
+      "x": 8,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_21",
+      "type": "tuft_a",
+      "x": 9,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_22",
+      "type": "rock_small_d",
+      "x": 10,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_23",
+      "type": "rock_small_d",
+      "x": 11,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_24",
+      "type": "decal_pebbles",
+      "x": 12,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_25",
+      "type": "decal_pebbles",
+      "x": 13,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_26",
+      "type": "tuft_a",
+      "x": 14,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_27",
+      "type": "mushrooms_a",
+      "x": 18,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_28",
+      "type": "rock_small_d",
+      "x": 19,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_29",
+      "type": "tuft_a",
+      "x": 20,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_30",
+      "type": "rock_small_d",
+      "x": 21,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_31",
+      "type": "rock_small_d",
+      "x": 22,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_32",
+      "type": "decal_pebbles",
+      "x": 23,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_33",
+      "type": "decal_pebbles",
+      "x": 24,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_34",
+      "type": "tuft_a",
+      "x": 25,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_35",
+      "type": "mushrooms_a",
+      "x": 26,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_36",
+      "type": "rock_small_d",
+      "x": 27,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_37",
+      "type": "tuft_a",
+      "x": 28,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_38",
+      "type": "rock_small_d",
+      "x": 29,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_39",
+      "type": "rock_small_d",
+      "x": 30,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_40",
+      "type": "decal_pebbles",
+      "x": 31,
+      "y": 6
+    },
+    {
+      "id": "slagcrown_door_decor_41",
+      "type": "decal_pebbles",
+      "x": 0,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_42",
+      "type": "tuft_a",
+      "x": 1,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_43",
+      "type": "mushrooms_a",
+      "x": 2,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_44",
+      "type": "rock_small_d",
+      "x": 3,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_45",
+      "type": "tuft_a",
+      "x": 4,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_46",
+      "type": "rock_small_d",
+      "x": 5,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_47",
+      "type": "rock_small_d",
+      "x": 6,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_48",
+      "type": "decal_pebbles",
+      "x": 7,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_49",
+      "type": "decal_pebbles",
+      "x": 8,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_50",
+      "type": "tuft_a",
+      "x": 9,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_51",
+      "type": "mushrooms_a",
+      "x": 10,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_52",
+      "type": "rock_small_d",
+      "x": 11,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_53",
+      "type": "tuft_a",
+      "x": 12,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_54",
+      "type": "rock_small_d",
+      "x": 13,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_55",
+      "type": "rock_small_d",
+      "x": 14,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_56",
+      "type": "decal_pebbles",
+      "x": 18,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_57",
+      "type": "decal_pebbles",
+      "x": 19,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_58",
+      "type": "tuft_a",
+      "x": 20,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_59",
+      "type": "mushrooms_a",
+      "x": 21,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_60",
+      "type": "rock_small_d",
+      "x": 22,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_61",
+      "type": "tuft_a",
+      "x": 23,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_62",
+      "type": "rock_small_d",
+      "x": 24,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_63",
+      "type": "rock_small_d",
+      "x": 25,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_64",
+      "type": "decal_pebbles",
+      "x": 26,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_65",
+      "type": "decal_pebbles",
+      "x": 27,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_66",
+      "type": "tuft_a",
+      "x": 28,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_67",
+      "type": "mushrooms_a",
+      "x": 29,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_68",
+      "type": "rock_small_d",
+      "x": 31,
+      "y": 7
+    },
+    {
+      "id": "slagcrown_door_decor_69",
+      "type": "tuft_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_70",
+      "type": "rock_small_d",
+      "x": 2,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_71",
+      "type": "rock_small_d",
+      "x": 3,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_72",
+      "type": "decal_pebbles",
+      "x": 4,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_73",
+      "type": "decal_pebbles",
+      "x": 5,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_74",
+      "type": "tuft_a",
+      "x": 6,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_75",
+      "type": "mushrooms_a",
+      "x": 7,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_76",
+      "type": "rock_small_d",
+      "x": 8,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_77",
+      "type": "tuft_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_78",
+      "type": "rock_small_d",
+      "x": 11,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_79",
+      "type": "rock_small_d",
+      "x": 12,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_80",
+      "type": "decal_pebbles",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_81",
+      "type": "decal_pebbles",
+      "x": 14,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_82",
+      "type": "tuft_a",
+      "x": 18,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_83",
+      "type": "mushrooms_a",
+      "x": 19,
+      "y": 8
+    },
+    {
+      "id": "slagcrown_door_decor_84",
+      "type": "rock_small_d",
+      "x": 20,
+      "y": 8
     }
   ]
 }

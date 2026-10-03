@@ -117,36 +117,388 @@
   "props": [
     {
       "id": "brinewake_hub_landmark",
-      "type": "tavern_3x2",
+      "type": "watchtower_2x2",
       "blocks": true,
       "origin": {
-        "x": 2,
-        "y": 2
+        "x": 8,
+        "y": 4
       },
       "footprint": [
         {
-          "x": 2,
-          "y": 2
+          "x": 8,
+          "y": 4
         },
+        {
+          "x": 9,
+          "y": 4
+        },
+        {
+          "x": 8,
+          "y": 5
+        },
+        {
+          "x": 9,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_0_0",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_0_1",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_0_2",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 31,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 31,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_1_0",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_1_1",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 0,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 0,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_border_1_2",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 1,
+        "y": 4
+      },
+      "footprint": [
+        {
+          "x": 1,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_0_0",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 19,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 19,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_0_1",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 20,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 20,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_0_2",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 20,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 20,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_0_3",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 21,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 21,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_0_4",
+      "type": "quarry_rocks_a",
+      "blocks": true,
+      "origin": {
+        "x": 22,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 22,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_1_0",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 3
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_1_1",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 26,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 26,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_1_2",
+      "type": "tree",
+      "blocks": true,
+      "origin": {
+        "x": 27,
+        "y": 8
+      },
+      "footprint": [
+        {
+          "x": 27,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_2_0",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 7,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 7,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_2_1",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 7,
+        "y": 9
+      },
+      "footprint": [
+        {
+          "x": 7,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_2_2",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 9,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 9,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_2_3",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 11,
+        "y": 5
+      },
+      "footprint": [
+        {
+          "x": 11,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_2_4",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 7
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_3_0",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 3,
+        "y": 16
+      },
+      "footprint": [
         {
           "x": 3,
-          "y": 2
-        },
+          "y": 16
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_3_1",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 5,
+        "y": 17
+      },
+      "footprint": [
         {
-          "x": 4,
-          "y": 2
-        },
+          "x": 5,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_3_2",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 6,
+        "y": 15
+      },
+      "footprint": [
         {
-          "x": 2,
-          "y": 3
-        },
+          "x": 6,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_3_3",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 7,
+        "y": 17
+      },
+      "footprint": [
         {
-          "x": 3,
-          "y": 3
-        },
+          "x": 7,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "id": "brinewake_hub_cluster_3_4",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 8,
+        "y": 15
+      },
+      "footprint": [
         {
-          "x": 4,
-          "y": 3
+          "x": 8,
+          "y": 15
         }
       ]
     }
@@ -162,7 +514,7 @@
     {
       "x": 1,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -176,7 +528,7 @@
     {
       "x": 3,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -190,35 +542,35 @@
     {
       "x": 5,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -239,7 +591,7 @@
     {
       "x": 12,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -253,7 +605,7 @@
     {
       "x": 14,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -295,14 +647,14 @@
     {
       "x": 20,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -337,7 +689,7 @@
     {
       "x": 26,
       "y": 0,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -407,7 +759,7 @@
     {
       "x": 4,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -428,7 +780,7 @@
     {
       "x": 7,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -484,7 +836,7 @@
     {
       "x": 15,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -498,21 +850,21 @@
     {
       "x": 17,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -547,7 +899,7 @@
     {
       "x": 24,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -561,7 +913,7 @@
     {
       "x": 26,
       "y": 1,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -603,14 +955,14 @@
     {
       "x": 0,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -624,7 +976,7 @@
     {
       "x": 3,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -638,7 +990,7 @@
     {
       "x": 5,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -659,7 +1011,7 @@
     {
       "x": 8,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -680,14 +1032,14 @@
     {
       "x": 11,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -701,7 +1053,7 @@
     {
       "x": 14,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -722,14 +1074,14 @@
     {
       "x": 17,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -743,7 +1095,7 @@
     {
       "x": 20,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -757,21 +1109,21 @@
     {
       "x": 22,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -806,7 +1158,7 @@
     {
       "x": 29,
       "y": 2,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -841,7 +1193,7 @@
     {
       "x": 2,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -869,7 +1221,7 @@
     {
       "x": 6,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -883,14 +1235,14 @@
     {
       "x": 8,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -911,7 +1263,7 @@
     {
       "x": 12,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -946,7 +1298,7 @@
     {
       "x": 17,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -960,7 +1312,7 @@
     {
       "x": 19,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -974,7 +1326,7 @@
     {
       "x": 21,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -995,14 +1347,14 @@
     {
       "x": 24,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1016,7 +1368,7 @@
     {
       "x": 27,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1037,7 +1389,7 @@
     {
       "x": 30,
       "y": 3,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1051,7 +1403,7 @@
     {
       "x": 0,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1086,14 +1438,14 @@
     {
       "x": 5,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1107,14 +1459,14 @@
     {
       "x": 8,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1128,28 +1480,28 @@
     {
       "x": 11,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 12,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1219,14 +1571,14 @@
     {
       "x": 24,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1247,7 +1599,7 @@
     {
       "x": 28,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1268,42 +1620,42 @@
     {
       "x": 31,
       "y": 4,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 0,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1338,14 +1690,14 @@
     {
       "x": 9,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1366,14 +1718,14 @@
     {
       "x": 13,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1422,7 +1774,7 @@
     {
       "x": 21,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1443,7 +1795,7 @@
     {
       "x": 24,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1464,7 +1816,7 @@
     {
       "x": 27,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1485,14 +1837,14 @@
     {
       "x": 30,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 5,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1513,14 +1865,14 @@
     {
       "x": 2,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1548,14 +1900,14 @@
     {
       "x": 7,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1569,7 +1921,7 @@
     {
       "x": 10,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1604,7 +1956,7 @@
     {
       "x": 15,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1625,21 +1977,21 @@
     {
       "x": 18,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1653,7 +2005,7 @@
     {
       "x": 22,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1681,7 +2033,7 @@
     {
       "x": 26,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1695,7 +2047,7 @@
     {
       "x": 28,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1709,7 +2061,7 @@
     {
       "x": 30,
       "y": 6,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1737,7 +2089,7 @@
     {
       "x": 2,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1751,14 +2103,14 @@
     {
       "x": 4,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1772,21 +2124,21 @@
     {
       "x": 7,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1856,7 +2208,7 @@
     {
       "x": 19,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -1884,7 +2236,7 @@
     {
       "x": 23,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1898,7 +2250,7 @@
     {
       "x": 25,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1912,14 +2264,14 @@
     {
       "x": 27,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 28,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1933,7 +2285,7 @@
     {
       "x": 30,
       "y": 7,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -1947,35 +2299,35 @@
     {
       "x": 0,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 1,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2017,7 +2369,7 @@
     {
       "x": 10,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2045,7 +2397,7 @@
     {
       "x": 14,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2066,14 +2418,14 @@
     {
       "x": 17,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2087,7 +2439,7 @@
     {
       "x": 20,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2108,7 +2460,7 @@
     {
       "x": 23,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2122,14 +2474,14 @@
     {
       "x": 25,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2143,7 +2495,7 @@
     {
       "x": 28,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2164,7 +2516,7 @@
     {
       "x": 31,
       "y": 8,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2178,14 +2530,14 @@
     {
       "x": 1,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2206,7 +2558,7 @@
     {
       "x": 5,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2220,14 +2572,14 @@
     {
       "x": 7,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2290,28 +2642,28 @@
     {
       "x": 17,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2325,14 +2677,14 @@
     {
       "x": 22,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2360,7 +2712,7 @@
     {
       "x": 27,
       "y": 9,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2402,14 +2754,14 @@
     {
       "x": 1,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2423,14 +2775,14 @@
     {
       "x": 4,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2472,7 +2824,7 @@
     {
       "x": 11,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2493,7 +2845,7 @@
     {
       "x": 14,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2514,7 +2866,7 @@
     {
       "x": 17,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2528,14 +2880,14 @@
     {
       "x": 19,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2556,14 +2908,14 @@
     {
       "x": 23,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2591,28 +2943,28 @@
     {
       "x": 28,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 31,
       "y": 10,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2633,7 +2985,7 @@
     {
       "x": 2,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2647,21 +2999,21 @@
     {
       "x": 4,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2724,7 +3076,7 @@
     {
       "x": 15,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -2745,7 +3097,7 @@
     {
       "x": 18,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2773,7 +3125,7 @@
     {
       "x": 22,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2787,21 +3139,21 @@
     {
       "x": 24,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -2822,14 +3174,14 @@
     {
       "x": 29,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 11,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3088,7 +3440,7 @@
     {
       "x": 3,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3116,7 +3468,7 @@
     {
       "x": 7,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3130,14 +3482,14 @@
     {
       "x": 9,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3151,21 +3503,21 @@
     {
       "x": 12,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 13,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3186,21 +3538,21 @@
     {
       "x": 17,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3221,21 +3573,21 @@
     {
       "x": 22,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3249,14 +3601,14 @@
     {
       "x": 26,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3277,7 +3629,7 @@
     {
       "x": 30,
       "y": 13,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3298,7 +3650,7 @@
     {
       "x": 1,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3312,14 +3664,14 @@
     {
       "x": 3,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3333,14 +3685,14 @@
     {
       "x": 6,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3410,7 +3762,7 @@
     {
       "x": 17,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3424,14 +3776,14 @@
     {
       "x": 19,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 20,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3452,7 +3804,7 @@
     {
       "x": 23,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3480,7 +3832,7 @@
     {
       "x": 27,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3494,14 +3846,14 @@
     {
       "x": 29,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 14,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3522,14 +3874,14 @@
     {
       "x": 1,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 2,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3557,7 +3909,7 @@
     {
       "x": 6,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3571,7 +3923,7 @@
     {
       "x": 8,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3585,7 +3937,7 @@
     {
       "x": 10,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3599,7 +3951,7 @@
     {
       "x": 12,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3669,7 +4021,7 @@
     {
       "x": 22,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3711,21 +4063,21 @@
     {
       "x": 28,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 15,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3753,28 +4105,28 @@
     {
       "x": 2,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3802,7 +4154,7 @@
     {
       "x": 9,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3830,7 +4182,7 @@
     {
       "x": 13,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3844,7 +4196,7 @@
     {
       "x": 15,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3858,7 +4210,7 @@
     {
       "x": 17,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3872,7 +4224,7 @@
     {
       "x": 19,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3886,7 +4238,7 @@
     {
       "x": 21,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3900,7 +4252,7 @@
     {
       "x": 23,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -3956,7 +4308,7 @@
     {
       "x": 31,
       "y": 16,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -3984,14 +4336,14 @@
     {
       "x": 3,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4019,28 +4371,28 @@
     {
       "x": 8,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4054,14 +4406,14 @@
     {
       "x": 13,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4096,7 +4448,7 @@
     {
       "x": 19,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4110,28 +4462,28 @@
     {
       "x": 21,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 23,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4145,14 +4497,14 @@
     {
       "x": 26,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 17,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4201,7 +4553,7 @@
     {
       "x": 2,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4215,21 +4567,21 @@
     {
       "x": 4,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 5,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4243,21 +4595,21 @@
     {
       "x": 8,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 9,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4271,7 +4623,7 @@
     {
       "x": 12,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4292,7 +4644,7 @@
     {
       "x": 15,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4313,14 +4665,14 @@
     {
       "x": 18,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4348,14 +4700,14 @@
     {
       "x": 23,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4369,14 +4721,14 @@
     {
       "x": 26,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 18,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4425,14 +4777,14 @@
     {
       "x": 2,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4488,7 +4840,7 @@
     {
       "x": 11,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4502,21 +4854,21 @@
     {
       "x": 13,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 14,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 15,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4530,7 +4882,7 @@
     {
       "x": 17,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4558,14 +4910,14 @@
     {
       "x": 21,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 22,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4579,28 +4931,28 @@
     {
       "x": 24,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 25,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 26,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 27,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4621,7 +4973,7 @@
     {
       "x": 30,
       "y": 19,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4635,7 +4987,7 @@
     {
       "x": 0,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4649,21 +5001,21 @@
     {
       "x": 2,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 3,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4677,7 +5029,7 @@
     {
       "x": 6,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4691,7 +5043,7 @@
     {
       "x": 8,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4754,21 +5106,21 @@
     {
       "x": 17,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 19,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4796,7 +5148,7 @@
     {
       "x": 23,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4824,7 +5176,7 @@
     {
       "x": 27,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4838,14 +5190,14 @@
     {
       "x": 29,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 20,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4866,7 +5218,7 @@
     {
       "x": 1,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4880,14 +5232,14 @@
     {
       "x": 3,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 4,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4901,21 +5253,21 @@
     {
       "x": 6,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 7,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 8,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4929,7 +5281,7 @@
     {
       "x": 10,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -4950,7 +5302,7 @@
     {
       "x": 13,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4964,7 +5316,7 @@
     {
       "x": 15,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -4978,14 +5330,14 @@
     {
       "x": 17,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 18,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5013,7 +5365,7 @@
     {
       "x": 22,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5027,7 +5379,7 @@
     {
       "x": 24,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5055,7 +5407,7 @@
     {
       "x": 28,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5076,14 +5428,14 @@
     {
       "x": 31,
       "y": 21,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 0,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5097,7 +5449,7 @@
     {
       "x": 2,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5118,14 +5470,14 @@
     {
       "x": 5,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 6,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5146,7 +5498,7 @@
     {
       "x": 9,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5160,7 +5512,7 @@
     {
       "x": 11,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5209,7 +5561,7 @@
     {
       "x": 18,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5223,14 +5575,14 @@
     {
       "x": 20,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 21,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5279,21 +5631,21 @@
     {
       "x": 28,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 22,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5335,7 +5687,7 @@
     {
       "x": 4,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5370,21 +5722,21 @@
     {
       "x": 9,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 10,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 11,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5405,7 +5757,7 @@
     {
       "x": 14,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5426,7 +5778,7 @@
     {
       "x": 17,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5447,7 +5799,7 @@
     {
       "x": 20,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5468,14 +5820,14 @@
     {
       "x": 23,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
     {
       "x": 24,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_fallow",
       "walkable": true,
       "height": 0
     },
@@ -5489,7 +5841,7 @@
     {
       "x": 26,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5503,21 +5855,21 @@
     {
       "x": 28,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 29,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
     {
       "x": 30,
       "y": 23,
-      "terrain": "golden_plains",
+      "terrain": "farm_soil",
       "walkable": true,
       "height": 0
     },
@@ -5527,6 +5879,518 @@
       "terrain": "golden_plains",
       "walkable": true,
       "height": 0
+    }
+  ],
+  "decor": [
+    {
+      "id": "brinewake_hub_decor_0",
+      "type": "reeds_a",
+      "x": 31,
+      "y": 6
+    },
+    {
+      "id": "brinewake_hub_decor_1",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_2",
+      "type": "decal_pebbles",
+      "x": 2,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_3",
+      "type": "decal_pebbles",
+      "x": 3,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_4",
+      "type": "grass_tuft_tall_a",
+      "x": 4,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_5",
+      "type": "bush_small_b",
+      "x": 5,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_6",
+      "type": "grass_tuft_tall_a",
+      "x": 6,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_7",
+      "type": "grass_tuft_tall_a",
+      "x": 8,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_8",
+      "type": "reeds_a",
+      "x": 10,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_9",
+      "type": "reeds_a",
+      "x": 11,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_10",
+      "type": "decal_pebbles",
+      "x": 13,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_11",
+      "type": "decal_pebbles",
+      "x": 14,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_12",
+      "type": "grass_tuft_tall_a",
+      "x": 21,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_13",
+      "type": "bush_small_b",
+      "x": 22,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_14",
+      "type": "grass_tuft_tall_a",
+      "x": 23,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_15",
+      "type": "grass_tuft_tall_a",
+      "x": 24,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_16",
+      "type": "reeds_a",
+      "x": 25,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_17",
+      "type": "reeds_a",
+      "x": 26,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_18",
+      "type": "decal_pebbles",
+      "x": 27,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_19",
+      "type": "decal_pebbles",
+      "x": 28,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_20",
+      "type": "grass_tuft_tall_a",
+      "x": 29,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_21",
+      "type": "bush_small_b",
+      "x": 30,
+      "y": 7
+    },
+    {
+      "id": "brinewake_hub_decor_22",
+      "type": "grass_tuft_tall_a",
+      "x": 0,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_23",
+      "type": "grass_tuft_tall_a",
+      "x": 1,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_24",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_25",
+      "type": "reeds_a",
+      "x": 3,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_26",
+      "type": "decal_pebbles",
+      "x": 4,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_27",
+      "type": "decal_pebbles",
+      "x": 5,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_28",
+      "type": "grass_tuft_tall_a",
+      "x": 6,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_29",
+      "type": "bush_small_b",
+      "x": 7,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_30",
+      "type": "grass_tuft_tall_a",
+      "x": 8,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_31",
+      "type": "grass_tuft_tall_a",
+      "x": 9,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_32",
+      "type": "reeds_a",
+      "x": 10,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_33",
+      "type": "reeds_a",
+      "x": 11,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_34",
+      "type": "decal_pebbles",
+      "x": 12,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_35",
+      "type": "decal_pebbles",
+      "x": 13,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_36",
+      "type": "grass_tuft_tall_a",
+      "x": 14,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_37",
+      "type": "bush_small_b",
+      "x": 20,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_38",
+      "type": "grass_tuft_tall_a",
+      "x": 21,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_39",
+      "type": "grass_tuft_tall_a",
+      "x": 22,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_40",
+      "type": "reeds_a",
+      "x": 23,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_41",
+      "type": "reeds_a",
+      "x": 24,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_42",
+      "type": "decal_pebbles",
+      "x": 25,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_43",
+      "type": "decal_pebbles",
+      "x": 26,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_44",
+      "type": "grass_tuft_tall_a",
+      "x": 28,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_45",
+      "type": "bush_small_b",
+      "x": 29,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_46",
+      "type": "grass_tuft_tall_a",
+      "x": 30,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_47",
+      "type": "grass_tuft_tall_a",
+      "x": 31,
+      "y": 8
+    },
+    {
+      "id": "brinewake_hub_decor_48",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_49",
+      "type": "reeds_a",
+      "x": 2,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_50",
+      "type": "decal_pebbles",
+      "x": 3,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_51",
+      "type": "decal_pebbles",
+      "x": 4,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_52",
+      "type": "grass_tuft_tall_a",
+      "x": 5,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_53",
+      "type": "bush_small_b",
+      "x": 6,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_54",
+      "type": "grass_tuft_tall_a",
+      "x": 8,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_55",
+      "type": "grass_tuft_tall_a",
+      "x": 9,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_56",
+      "type": "reeds_a",
+      "x": 10,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_57",
+      "type": "reeds_a",
+      "x": 11,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_58",
+      "type": "decal_pebbles",
+      "x": 12,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_59",
+      "type": "decal_pebbles",
+      "x": 13,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_60",
+      "type": "grass_tuft_tall_a",
+      "x": 14,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_61",
+      "type": "bush_small_b",
+      "x": 20,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_62",
+      "type": "grass_tuft_tall_a",
+      "x": 21,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_63",
+      "type": "grass_tuft_tall_a",
+      "x": 22,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_64",
+      "type": "reeds_a",
+      "x": 23,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_65",
+      "type": "reeds_a",
+      "x": 24,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_66",
+      "type": "decal_pebbles",
+      "x": 25,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_67",
+      "type": "decal_pebbles",
+      "x": 26,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_68",
+      "type": "grass_tuft_tall_a",
+      "x": 27,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_69",
+      "type": "bush_small_b",
+      "x": 28,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_70",
+      "type": "grass_tuft_tall_a",
+      "x": 29,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_71",
+      "type": "grass_tuft_tall_a",
+      "x": 30,
+      "y": 9
+    },
+    {
+      "id": "brinewake_hub_decor_72",
+      "type": "reeds_a",
+      "x": 0,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_73",
+      "type": "reeds_a",
+      "x": 1,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_74",
+      "type": "decal_pebbles",
+      "x": 2,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_75",
+      "type": "decal_pebbles",
+      "x": 3,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_76",
+      "type": "grass_tuft_tall_a",
+      "x": 4,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_77",
+      "type": "bush_small_b",
+      "x": 5,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_78",
+      "type": "grass_tuft_tall_a",
+      "x": 6,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_79",
+      "type": "grass_tuft_tall_a",
+      "x": 7,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_80",
+      "type": "reeds_a",
+      "x": 8,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_81",
+      "type": "reeds_a",
+      "x": 9,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_82",
+      "type": "decal_pebbles",
+      "x": 10,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_83",
+      "type": "decal_pebbles",
+      "x": 11,
+      "y": 10
+    },
+    {
+      "id": "brinewake_hub_decor_84",
+      "type": "grass_tuft_tall_a",
+      "x": 12,
+      "y": 10
     }
   ]
 }
