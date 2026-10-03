@@ -12,6 +12,7 @@ build_region_standins.write_region calls this after the stand-in skeleton.
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 
@@ -35,7 +36,7 @@ CLUSTER_MAX = 5
 CATALOG = {
     "rowanvale": {
         "seed": 11015,
-        "ground": [("farm_soil", 4), ("golden_plains", 3), ("farm_cabbage", 2), ("farm_carrot", 1)],
+        "ground": [("farm_soil", 4), ("golden_plains", 3), ("farm_plowed", 2)],
         "props": [
             ("tree_apple", 4, "apple tree"),
             ("tree", 2, "pear tree"),
@@ -52,7 +53,7 @@ CATALOG = {
     },
     "windmere": {
         "seed": 1520,
-        "ground": [("golden_plains", 5), ("farm_fallow", 2), ("farm_lavender", 1)],
+        "ground": [("golden_plains", 5), ("farm_fallow", 2)],
         "props": [
             ("tree", 4, "snowy pine"),
             ("quarry_rocks_a", 2, "ice boulder"),
@@ -154,7 +155,7 @@ CATALOG = {
     },
     "ashen_shardfields": {
         "seed": 3845,
-        "ground": [("farm_fallow", 4), ("golden_plains", 2), ("farm_lavender", 2)],
+        "ground": [("farm_fallow", 4), ("golden_plains", 2)],
         "props": [
             ("quarry_rocks_a", 4, "crystal shard cluster"),
             ("tree", 2, "petrified tree"),
@@ -297,9 +298,15 @@ def dressing_doc(region: str, spec: dict) -> dict:
     }
 
 
-def write_dressing_files() -> None:
+def seed_dressing_files() -> None:
+    """Write dressing.json only when a region does not have one yet.
+
+    An existing file is the source of truth. CATALOG does not refresh it.
+    """
     for region, spec in CATALOG.items():
         path = ROOT / region / "dressing.json"
+        if path.exists():
+            continue
         path.write_text(json.dumps(dressing_doc(region, spec), indent=2) + "\n")
 
 
@@ -336,13 +343,28 @@ class ChunkDress:
         self.footprints = footprints
         self.zone_id = chunk["id"]
         self.rng = Rng(stable_seed(int(dressing["seed"]), self.zone_id))
+        cluster = dressing["cluster"]
+        self.cluster_min = int(cluster["min_size"])
+        self.cluster_max = int(cluster["max_size"])
+        self.spacing = int(cluster["spacing"])
+        self.glade = int(cluster["glade"])
+        limits = dressing["limits"]
+        self.block_limit = float(limits["blocking"])
+        self.decor_limit = float(limits["decor"])
+        self.border_depth = int(dressing["border"]["depth"])
+        self.lane_margin = int(dressing["lane_margin"])
         self.path = {(int(tile["x"]), int(tile["y"])) for tile in doc["tiles"] if tile["terrain"] == "dirt_road"}
         self.lane = set(self.path)
-        for cell in self.path:
-            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                nxt = (cell[0] + dx, cell[1] + dy)
-                if in_bounds(nxt):
-                    self.lane.add(nxt)
+        frontier = set(self.path)
+        for _step in range(self.lane_margin):
+            grown = set()
+            for cell in frontier:
+                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nxt = (cell[0] + dx, cell[1] + dy)
+                    if in_bounds(nxt) and nxt not in self.lane:
+                        grown.add(nxt)
+            self.lane.update(grown)
+            frontier = grown
         self.exit_edges = {exit_rec["edge"] for exit_rec in doc["exits"]}
         self.exit_cells = []
         for exit_rec in doc["exits"]:
@@ -370,31 +392,33 @@ class ChunkDress:
                             self.protected.add(nxt)
         self.non_path = WIDTH * HEIGHT - len(self.path)
         self.occupied: set[tuple[int, int]] = set()
+        self.blocking = 0
         self.sight: set[tuple[int, int]] = set()
         self.clusters: list[list[tuple[int, int]]] = []
         self.props: list[dict] = []
         self.decor: list[dict] = []
+        self._border_n = 0
 
     def ratio(self, extra: int = 0) -> float:
-        return (len(self.occupied) + extra) / float(self.non_path)
+        return (self.blocking + extra) / float(self.non_path)
 
     def can_block(self, cell: tuple[int, int], group: list[tuple[int, int]]) -> bool:
         if not in_bounds(cell) or cell in self.lane or cell in self.protected or cell in self.sight or cell in self.occupied:
             return False
         for other in self.occupied:
-            if chebyshev(cell, other) < SPACING:
+            if chebyshev(cell, other) < self.spacing:
                 return False
         for cluster in self.clusters:
             for other in cluster:
-                if chebyshev(cell, other) < GLADE:
+                if chebyshev(cell, other) < self.glade:
                     return False
         for other in group:
-            if chebyshev(cell, other) < SPACING:
+            if chebyshev(cell, other) < self.spacing:
                 return False
         return True
 
     def commit(self, group: list[tuple[int, int]], kind: str, index: int, prop_type: str) -> None:
-        if self.ratio(len(group)) > BLOCK_LIMIT + 1e-9:
+        if self.ratio(len(group)) > self.block_limit + 1e-9:
             raise SystemExit(f"{self.zone_id} {kind} {index} would pass the blocking cap")
         shape = self.footprints[prop_type]
         if shape != [(0, 0)]:
@@ -402,10 +426,11 @@ class ChunkDress:
         for i, origin in enumerate(sorted(group)):
             self.props.append(make_prop(f"{self.zone_id}_{kind}_{index}_{i}", prop_type, origin, shape))
             self.occupied.add(origin)
+            self.blocking += 1
         self.clusters.append(list(group))
 
     def grow(self, cands: list[tuple[int, int]]) -> list[tuple[int, int]]:
-        if len(cands) < CLUSTER_MIN:
+        if len(cands) < self.cluster_min:
             return []
         order = list(cands)
         start = self.rng.rand(len(order))
@@ -421,10 +446,10 @@ class ChunkDress:
                 if any(chebyshev(other, member) > span for member in group):
                     continue
                 group.append(other)
-                if len(group) >= CLUSTER_MAX:
+                if len(group) >= self.cluster_max:
                     break
-            if len(group) >= CLUSTER_MIN:
-                return group[:CLUSTER_MAX]
+            if len(group) >= self.cluster_min:
+                return group[:self.cluster_max]
         return []
 
     def owner_edge(self, cell: tuple[int, int]) -> str:
@@ -465,34 +490,134 @@ class ChunkDress:
                 self.sight.discard(cell)
             prop = make_prop(f"{self.zone_id}_landmark", prop_type, origin, shape)
         else:
-            origin = (2, 2)
             prop_type = "tavern_3x2"
             shape = self.footprints[prop_type]
-            prop = make_prop(f"{self.zone_id}_landmark", prop_type, origin, shape)
+            origin = self._tavern_origin(shape)
+            if origin is None:
+                raise SystemExit(f"{self.zone_id} tavern stand-in hits the lane or the clearance")
             cells = footprint_cells(origin, shape)
+            prop = make_prop(f"{self.zone_id}_landmark", prop_type, origin, shape)
         self.props.append(prop)
         self.occupied.update(cells)
+        self.blocking += len(cells)
+
+    def _clear_of_lane(self, cells: list[tuple[int, int]]) -> bool:
+        for cell in cells:
+            if not in_bounds(cell) or cell in self.lane or cell in self.protected or cell in self.sight or cell in self.occupied:
+                return False
+        return True
+
+    def _tavern_origin(self, shape: list[tuple[int, int]]) -> tuple[int, int] | None:
+        preferred = (2, 2)
+        if self._clear_of_lane(footprint_cells(preferred, shape)):
+            return preferred
+        for y in range(2, HEIGHT - 3):
+            for x in range(2, WIDTH - 4):
+                origin = (x, y)
+                if self.edge_depth(origin) < 2:
+                    continue
+                if self._clear_of_lane(footprint_cells(origin, shape)):
+                    return origin
+        return None
+
+    def in_exit_corridor(self, cell: tuple[int, int]) -> bool:
+        x, y = cell
+        depth = self.border_depth
+        if "north" in self.exit_edges and y < depth:
+            return True
+        if "south" in self.exit_edges and y >= HEIGHT - depth:
+            return True
+        if "west" in self.exit_edges and x < depth:
+            return True
+        if "east" in self.exit_edges and x >= WIDTH - depth:
+            return True
+        return False
+
+    def _hash(self, x: int, y: int, salt: int) -> int:
+        n = (self.rng.state ^ (x * 374761393) ^ (y * 668265263) ^ (salt * 1442695041)) & 0xFFFFFFFF
+        n = ((n ^ (n >> 13)) * 1274126177) & 0xFFFFFFFF
+        return n
+
+    def _band_ok(self, cell: tuple[int, int]) -> bool:
+        if not in_bounds(cell) or cell in self.lane or cell in self.protected or cell in self.occupied:
+            return False
+        if cell in self.sight or self.in_exit_corridor(cell):
+            return False
+        return True
+
+    def _band_cells(self, edge: str, depth: int) -> list[tuple[int, int]]:
+        if edge == "north":
+            coords = [(x, depth) for x in range(WIDTH)]
+        elif edge == "south":
+            coords = [(x, HEIGHT - 1 - depth) for x in range(WIDTH)]
+        elif edge == "west":
+            coords = [(depth, y) for y in range(HEIGHT)]
+        else:
+            coords = [(WIDTH - 1 - depth, y) for y in range(HEIGHT)]
+        cells = []
+        for cell in coords:
+            if not self._band_ok(cell):
+                continue
+            if self.owner_edge(cell) != edge:
+                continue
+            cells.append(cell)
+        return cells
+
+    def _add_border(self, origin: tuple[int, int], edge: str) -> None:
+        prop_type = self.dressing["border"]["type"]
+        shape = self.footprints[prop_type]
+        if shape != [(0, 0)]:
+            raise SystemExit(f"{prop_type} is not a 1x1 stand-in")
+        prop = make_prop(f"{self.zone_id}_border_{edge}_{self._border_n}", prop_type, origin, shape)
+        # The band frames the edge. It does not count toward the 8% blocking cap:
+        # a 1–2 cell frame on every non-exit edge is larger than that cap.
+        prop["blocks"] = False
+        self.props.append(prop)
+        self.occupied.add(origin)
+        self._border_n += 1
+
+    def _paint_band(self, cells: list[tuple[int, int]], edge: str, depth: int, cover: float, skip_chance: float, max_gap: int) -> None:
+        if not cells:
+            return
+        flags: list[bool] = []
+        gap = 0
+        for cell in cells:
+            # A corner sits on two outer rows. Skipping it opens a hole in both.
+            if cell[0] in (0, WIDTH - 1) and cell[1] in (0, HEIGHT - 1):
+                flags.append(True)
+                gap = 0
+                continue
+            roll = (self._hash(cell[0], cell[1], depth + 1) % 1000) / 1000.0
+            if roll < skip_chance and gap + 1 <= max_gap:
+                flags.append(False)
+                gap += 1
+            else:
+                flags.append(True)
+                gap = 0
+        need = int(math.ceil(cover * len(cells) - 1e-9))
+        filled = sum(1 for flag in flags if flag)
+        if filled < need:
+            for i, flag in enumerate(flags):
+                if filled >= need:
+                    break
+                if not flag:
+                    flags[i] = True
+                    filled += 1
+        for cell, flag in zip(cells, flags):
+            if flag:
+                self._add_border(cell, edge)
 
     def place_border(self) -> None:
-        prop_type = self.dressing["border"]["type"]
-        index = 0
         for edge in ("north", "east", "south", "west"):
             if edge in self.exit_edges:
                 continue
-            cands = []
-            for y in range(HEIGHT):
-                for x in range(WIDTH):
-                    cell = (x, y)
-                    if self.owner_edge(cell) != edge:
-                        continue
-                    if self.can_block(cell, []):
-                        cands.append(cell)
-            cands.sort()
-            group = self.grow(cands)
-            if len(group) < CLUSTER_MIN:
-                raise SystemExit(f"{self.zone_id} has no border cluster on {edge} ({len(cands)} free)")
-            self.commit(group, "border", index, prop_type)
-            index += 1
+            outer = self._band_cells(edge, 0)
+            if len(outer) < 4:
+                raise SystemExit(f"{self.zone_id} {edge} border has only {len(outer)} open cells")
+            self._paint_band(outer, edge, 0, 0.70, 0.18, 3)
+            if self.border_depth >= 2:
+                inner = self._band_cells(edge, 1)
+                self._paint_band(inner, edge, 1, 0.35, 0.55, 3)
 
     def place_interior(self) -> None:
         weighted = [(row["type"], int(row["weight"])) for row in self.dressing["props"]]
@@ -512,9 +637,9 @@ class ChunkDress:
                     if self.edge_depth(cell) >= 3 and self.can_block(cell, []):
                         neighborhood.append(cell)
             group = self.grow(neighborhood)
-            if len(group) < CLUSTER_MIN:
+            if len(group) < self.cluster_min:
                 continue
-            if self.ratio(len(group)) > BLOCK_LIMIT:
+            if self.ratio(len(group)) > self.block_limit:
                 continue
             prop_type = self.rng.pick(weighted)
             self.commit(group, "cluster", placed, prop_type)
@@ -528,25 +653,79 @@ class ChunkDress:
         x, y = cell
         return min(x, y, WIDTH - 1 - x, HEIGHT - 1 - y)
 
-    def place_decor(self) -> None:
-        weighted = [(row["type"], int(row["weight"])) for row in self.dressing["decor"]]
-        cands = []
-        for y in range(HEIGHT):
-            for x in range(WIDTH):
-                cell = (x, y)
-                if cell in self.lane or cell in self.protected or cell in self.occupied:
-                    continue
-                cands.append(cell)
-        start = self.rng.rand(max(len(cands), 1))
-        cands = cands[start:] + cands[:start]
-        target = min(int(self.non_path * DECOR_TARGET), int(self.non_path * DECOR_LIMIT))
-        for i, cell in enumerate(cands[:target]):
+    def _take_decor(self, cells: list[tuple[int, int]], size: int, row_count: list[int], row_cap: int, room: int) -> list[tuple[int, int]]:
+        if room < 1 or size < 1:
+            return []
+        ranked = sorted(cells, key=lambda c: (row_count[c[1]], self._hash(c[0], c[1], 9)))
+        chosen = []
+        for cell in ranked:
+            if len(chosen) >= size or len(chosen) >= room:
+                break
+            if cell in self.occupied or row_count[cell[1]] >= row_cap:
+                continue
+            chosen.append(cell)
+        return chosen
+
+    def _commit_decor(self, chosen: list[tuple[int, int]], weighted: list[tuple], row_count: list[int]) -> None:
+        for cell in chosen:
             self.decor.append({
-                "id": f"{self.zone_id}_decor_{i}",
+                "id": f"{self.zone_id}_decor_{len(self.decor)}",
                 "type": self.rng.pick(weighted),
                 "x": cell[0],
                 "y": cell[1],
             })
+            row_count[cell[1]] += 1
+            self.occupied.add(cell)
+
+    def place_decor(self) -> None:
+        weighted = [(row["type"], int(row["weight"])) for row in self.dressing["decor"]]
+        fill = min(DECOR_TARGET, self.decor_limit)
+        target = int(self.non_path * fill)
+        if target < 1 or not weighted:
+            return
+        row_cap = WIDTH // 2
+        row_count = [0] * HEIGHT
+        blocks: list[list[tuple[int, int]]] = []
+        for by in range(0, HEIGHT, 4):
+            for bx in range(0, WIDTH, 4):
+                cells = []
+                for y in range(by, min(by + 4, HEIGHT)):
+                    for x in range(bx, min(bx + 4, WIDTH)):
+                        cell = (x, y)
+                        if cell in self.lane or cell in self.protected or cell in self.occupied:
+                            continue
+                        cells.append(cell)
+                if cells:
+                    blocks.append(cells)
+        order = list(range(len(blocks)))
+        for i in range(len(order) - 1, 0, -1):
+            j = self.rng.rand(i + 1)
+            order[i], order[j] = order[j], order[i]
+        placed = 0
+        # Spread first: two cells in a block before any block grows, so decor
+        # reaches most of the chunk instead of filling one slab of rows.
+        want_blocks = max(1, int(math.ceil(0.60 * (WIDTH // 4) * (HEIGHT // 4))))
+        seeded: list[list[tuple[int, int]]] = []
+        for bi in order:
+            if placed >= target or len(seeded) >= want_blocks:
+                break
+            chosen = self._take_decor(blocks[bi], 2, row_count, row_cap, target - placed)
+            if len(chosen) < 2 and len(blocks[bi]) >= 2:
+                continue
+            if not chosen:
+                continue
+            self._commit_decor(chosen, weighted, row_count)
+            placed += len(chosen)
+            seeded.append(blocks[bi])
+        for cells in seeded:
+            if placed >= target:
+                break
+            grow = 2 + self.rng.rand(3)
+            chosen = self._take_decor(cells, grow, row_count, row_cap, target - placed)
+            if not chosen:
+                continue
+            self._commit_decor(chosen, weighted, row_count)
+            placed += len(chosen)
 
     def paint_ground(self) -> None:
         weighted = [(row["terrain"], int(row["weight"])) for row in self.dressing["ground_mix"]]
@@ -601,7 +780,7 @@ def main() -> None:
             raise SystemExit(f"unknown hero {spec['hero_type']}")
         if spec["border"][0] not in footprints:
             raise SystemExit(f"unknown border {spec['border'][0]}")
-    write_dressing_files()
+    seed_dressing_files()
     for region in CATALOG:
         stand.write_region(region, dress=True)
 

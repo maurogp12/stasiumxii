@@ -12,10 +12,6 @@
     {
       "terrain": "golden_plains",
       "weight": 2
-    },
-    {
-      "terrain": "farm_lavender",
-      "weight": 2
     }
   ],
   "props": [

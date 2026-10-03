@@ -14,12 +14,8 @@
       "weight": 3
     },
     {
-      "terrain": "farm_cabbage",
+      "terrain": "farm_plowed",
       "weight": 2
-    },
-    {
-      "terrain": "farm_carrot",
-      "weight": 1
     }
   ],
   "props": [

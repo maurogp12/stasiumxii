@@ -12,10 +12,6 @@
     {
       "terrain": "farm_fallow",
       "weight": 2
-    },
-    {
-      "terrain": "farm_lavender",
-      "weight": 1
     }
   ],
   "props": [

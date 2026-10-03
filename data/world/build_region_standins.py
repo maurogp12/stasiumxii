@@ -9,6 +9,7 @@ Chunks that are not marked built stay in the text map for WP5b.
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -302,6 +303,9 @@ def write_region(region: str, dress: bool = True) -> None:
         side_path.write_text(json.dumps(side_doc, indent=2) + "\n")
     print(f"{region}: {len(built)} built / {len(chunks)} mapped")
     if dress and (folder / "dressing.json").exists():
+        world_dir = str(Path(__file__).resolve().parent)
+        if world_dir not in sys.path:
+            sys.path.insert(0, world_dir)
         import dress_region
         dress_region.apply_region(
             region,

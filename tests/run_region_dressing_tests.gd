@@ -39,6 +39,7 @@ func _run() -> void:
 	var gate_doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/world/gates.json"))
 	for region in REGIONS:
 		_test_region(atlas, region, npc_doc, gate_doc)
+	_test_builders()
 	_finish()
 
 
@@ -63,6 +64,16 @@ func _test_region(atlas, region: String, npc_doc: Dictionary, gate_doc: Dictiona
 	var spacing := int(cluster_rule["spacing"])
 	var glade := int(cluster_rule["glade"])
 	var clearance := int(dressing["clearance"])
+	var lane_margin := int(dressing["lane_margin"])
+	var crops := {
+		"farm_cabbage": true,
+		"farm_carrot": true,
+		"farm_lavender": true,
+		"farm_pumpkin": true,
+		"farm_sunflower": true,
+	}
+	for row in dressing["ground_mix"]:
+		eq(crops.has(str(row["terrain"])), false, "%s ground mix stays in its own family" % region)
 	var hero: Dictionary = dressing["hero"]
 	var hero_chunk := str(hero["chunk_id"])
 	var map: WorldMap = atlas.maps[region]
@@ -85,7 +96,7 @@ func _test_region(atlas, region: String, npc_doc: Dictionary, gate_doc: Dictiona
 		if zone.zone_id != entry_id:
 			var reached: Dictionary = Walk.find_path(map, entry_id, entry_zone.spawn, zone.zone_id, zone.spawn)
 			eq(bool(reached.get("ok", false)), true, "%s still reaches %s" % [region, zone.zone_id])
-		_test_chunk(zone, dressing, npc_doc, gate_doc, block_limit, decor_limit, spacing, glade, clearance, on_path)
+		_test_chunk(zone, dressing, npc_doc, gate_doc, block_limit, decor_limit, spacing, glade, clearance, lane_margin, on_path)
 		if zone.zone_id == hero_chunk:
 			hero_count += 1
 			_test_hero(zone, hero, on_path)
@@ -94,8 +105,8 @@ func _test_region(atlas, region: String, npc_doc: Dictionary, gate_doc: Dictiona
 	eq(hero_count, 1, "%s has one hero landmark" % region)
 
 
-func _test_chunk(zone: WorldZone, dressing: Dictionary, npc_doc: Dictionary, gate_doc: Dictionary, block_limit: float, decor_limit: float, spacing: int, glade: int, clearance: int, on_path: Dictionary) -> void:
-	var lane := _lane(zone)
+func _test_chunk(zone: WorldZone, dressing: Dictionary, npc_doc: Dictionary, gate_doc: Dictionary, block_limit: float, decor_limit: float, spacing: int, glade: int, clearance: int, lane_margin: int, on_path: Dictionary) -> void:
+	var lane := _lane(zone, lane_margin)
 	var protected := _protected(zone, npc_doc, gate_doc, clearance)
 	var path_n := 0
 	var terrains := {}
@@ -138,17 +149,19 @@ func _test_chunk(zone: WorldZone, dressing: Dictionary, npc_doc: Dictionary, gat
 		eq(kind != "", true, "%s dressing prop %s is a border or a cluster" % [zone.zone_id, prop_id])
 		if kind == "":
 			continue
+		var origin := Vector2i(int(prop["origin"]["x"]), int(prop["origin"]["y"]))
+		residues["%d,%d" % [posmod(origin.x, 3), posmod(origin.y, 3)]] = true
+		if kind == "border":
+			var depth := mini(mini(origin.x, origin.y), mini(zone.width - 1 - origin.x, zone.height - 1 - origin.y))
+			var band := int(dressing["border"]["depth"])
+			eq(depth < band, true, "%s border prop sits in the 1–2 cell band" % zone.zone_id)
+			continue
 		var tail := prop_id.split("_")
 		var group := "%s_%s" % [kind, tail[tail.size() - 2]]
 		if not clusters.has(group):
 			clusters[group] = []
 		for cell in cells:
 			(clusters[group] as Array).append(cell)
-		var origin := Vector2i(int(prop["origin"]["x"]), int(prop["origin"]["y"]))
-		residues["%d,%d" % [posmod(origin.x, 3), posmod(origin.y, 3)]] = true
-		if kind == "border":
-			var depth := mini(mini(origin.x, origin.y), mini(zone.width - 1 - origin.x, zone.height - 1 - origin.y))
-			eq(depth <= 1, true, "%s border prop sits in the 1–2 cell band" % zone.zone_id)
 	eq(landmarks, 1, "%s has one landmark prop" % zone.zone_id)
 	eq(float(blocked) / float(non_path) <= block_limit, true, "%s blocking props stay within the cap" % zone.zone_id)
 	eq(float(zone.decor.size()) / float(non_path) <= decor_limit, true, "%s decor stays within the cap" % zone.zone_id)
@@ -160,7 +173,9 @@ func _test_chunk(zone: WorldZone, dressing: Dictionary, npc_doc: Dictionary, gat
 	var names: Array = clusters.keys()
 	for name in names:
 		var cells: Array = clusters[name]
-		eq(cells.size() >= 3 and cells.size() <= 5, true, "%s %s is a cluster of 3 to 5" % [zone.zone_id, str(name)])
+		var min_size := int(dressing["cluster"]["min_size"])
+		var max_size := int(dressing["cluster"]["max_size"])
+		eq(cells.size() >= min_size and cells.size() <= max_size, true, "%s %s is a cluster of %d to %d" % [zone.zone_id, str(name), min_size, max_size])
 		for i in cells.size():
 			for j in range(i + 1, cells.size()):
 				eq(_apart(cells[i], cells[j]) >= spacing, true, "%s %s keeps the cluster spacing" % [zone.zone_id, str(name)])
@@ -168,28 +183,93 @@ func _test_chunk(zone: WorldZone, dressing: Dictionary, npc_doc: Dictionary, gat
 		for j in range(i + 1, names.size()):
 			var gap := _group_gap(clusters[names[i]], clusters[names[j]])
 			eq(gap >= glade, true, "%s clusters leave an open glade" % zone.zone_id)
-	_test_border(zone, clusters)
+	_test_border(zone, dressing, lane, protected)
+	_test_decor_scatter(zone)
 	for npc_cell in _npc_cells(zone.zone_id, npc_doc):
 		eq(zone.passable_at(npc_cell), true, "%s npc cell stays passable" % zone.zone_id)
 	for gate_cell in _gate_cells(zone.zone_id, gate_doc):
 		eq(zone.passable_at(gate_cell), true, "%s gate cell stays passable" % zone.zone_id)
 
 
-func _test_border(zone: WorldZone, clusters: Dictionary) -> void:
+func _test_border(zone: WorldZone, dressing: Dictionary, lane: Dictionary, protected: Dictionary) -> void:
 	var exit_edges := {}
 	for exit_rec in zone.exits:
 		exit_edges[str(exit_rec["edge"])] = true
-	for edge in ["north", "east", "south", "west"]:
-		if exit_edges.has(edge):
+	var depth := int(dressing["border"]["depth"])
+	var border_at := {}
+	for prop in zone.props:
+		if str(prop.get("id", "")).find("_border_") < 0:
 			continue
-		var framed := false
-		for prop in zone.props:
-			if str(prop.get("id", "")).find("_border_") < 0:
+		var origin := Vector2i(int(prop["origin"]["x"]), int(prop["origin"]["y"]))
+		border_at[_key(origin)] = true
+		eq(_exit_corridor(zone, origin, exit_edges, depth), false, "%s border stays out of the exit corridor" % zone.zone_id)
+	for edge in ["north", "east", "south", "west"]:
+		var row := _outer_row(zone, edge)
+		if exit_edges.has(edge):
+			for cell in row:
+				eq(border_at.has(_key(cell)), false, "%s leaves the %s exit clear" % [zone.zone_id, edge])
+			continue
+		var eligible := 0
+		var filled := 0
+		var gap := 0
+		var max_gap := 0
+		for cell in row:
+			if _exit_corridor(zone, cell, exit_edges, depth) or lane.has(_key(cell)) or protected.has(_key(cell)):
+				gap = 0
 				continue
-			var origin := Vector2i(int(prop["origin"]["x"]), int(prop["origin"]["y"]))
-			if _owner_edge(zone, origin, exit_edges) == edge:
-				framed = true
-		eq(framed, true, "%s frames the %s edge" % [zone.zone_id, edge])
+			eligible += 1
+			if border_at.has(_key(cell)):
+				filled += 1
+				gap = 0
+			else:
+				gap += 1
+				max_gap = maxi(max_gap, gap)
+		eq(eligible > 0, true, "%s %s outer row can hold a border" % [zone.zone_id, edge])
+		var cover := float(filled) / float(maxi(eligible, 1))
+		eq(cover >= 0.70, true, "%s %s outer row is at least 70%% border (%d/%d)" % [zone.zone_id, edge, filled, eligible])
+		eq(max_gap <= 3, true, "%s %s border gap stays within 3 cells" % [zone.zone_id, edge])
+
+
+func _test_decor_scatter(zone: WorldZone) -> void:
+	var at := {}
+	var per_row: Array[int] = []
+	per_row.resize(zone.height)
+	for y in zone.height:
+		per_row[y] = 0
+	for dec in zone.decor:
+		var x := int(dec["x"])
+		var y := int(dec["y"])
+		at["%d#%d" % [x, y]] = true
+		per_row[y] += 1
+	for y in zone.height:
+		eq(float(per_row[y]) / float(zone.width) <= 0.50, true, "%s row %d is at most half decor" % [zone.zone_id, y])
+	var blocks := 0
+	var hit := 0
+	var y0 := 0
+	while y0 < zone.height:
+		var x0 := 0
+		while x0 < zone.width:
+			blocks += 1
+			var found := false
+			for y in range(y0, mini(y0 + 4, zone.height)):
+				for x in range(x0, mini(x0 + 4, zone.width)):
+					if at.has("%d#%d" % [x, y]):
+						found = true
+			if found:
+				hit += 1
+			x0 += 4
+		y0 += 4
+	eq(float(hit) / float(maxi(blocks, 1)) >= 0.60, true, "%s decor reaches 60%% of the 4×4 blocks (%d/%d)" % [zone.zone_id, hit, blocks])
+
+
+func _test_builders() -> void:
+	var script := ProjectSettings.globalize_path("res://tests/check_region_builders.py")
+	var output: Array = []
+	var code := OS.execute("python3", [script], output, true)
+	var text := ""
+	for line in output:
+		text += str(line)
+	eq(code, 0, "region builders dress a temp copy (%s)" % text.strip_edges())
 
 
 func _test_hero(zone: WorldZone, hero: Dictionary, on_path: Dictionary) -> void:
@@ -221,19 +301,57 @@ func _landmark_type(zone: WorldZone) -> String:
 	return ""
 
 
-func _lane(zone: WorldZone) -> Dictionary:
+func _lane(zone: WorldZone, margin: int) -> Dictionary:
 	var lane := {}
+	var frontier: Array[Vector2i] = []
 	for y in zone.height:
 		for x in zone.width:
 			var at := Vector2i(x, y)
 			if zone.terrain_at(at) != "dirt_road":
 				continue
 			lane[_key(at)] = true
+			frontier.append(at)
+	var step := 0
+	while step < margin:
+		var grown: Array[Vector2i] = []
+		for cell in frontier:
 			for dir in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-				var side: Vector2i = at + dir
-				if zone.in_bounds(side):
+				var side: Vector2i = cell + dir
+				if zone.in_bounds(side) and not lane.has(_key(side)):
 					lane[_key(side)] = true
+					grown.append(side)
+		frontier = grown
+		step += 1
 	return lane
+
+
+func _outer_row(zone: WorldZone, edge: String) -> Array[Vector2i]:
+	var row: Array[Vector2i] = []
+	if edge == "north":
+		for x in zone.width:
+			row.append(Vector2i(x, 0))
+	elif edge == "south":
+		for x in zone.width:
+			row.append(Vector2i(x, zone.height - 1))
+	elif edge == "west":
+		for y in zone.height:
+			row.append(Vector2i(0, y))
+	else:
+		for y in zone.height:
+			row.append(Vector2i(zone.width - 1, y))
+	return row
+
+
+func _exit_corridor(zone: WorldZone, cell: Vector2i, exit_edges: Dictionary, depth: int) -> bool:
+	if exit_edges.has("north") and cell.y < depth:
+		return true
+	if exit_edges.has("south") and cell.y >= zone.height - depth:
+		return true
+	if exit_edges.has("west") and cell.x < depth:
+		return true
+	if exit_edges.has("east") and cell.x >= zone.width - depth:
+		return true
+	return false
 
 
 func _protected(zone: WorldZone, npc_doc: Dictionary, gate_doc: Dictionary, clearance: int) -> Dictionary:
