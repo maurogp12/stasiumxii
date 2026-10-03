@@ -165,8 +165,9 @@ const CLASS_PRESENTATION_SCALE := {
 ## Glide walk (Mauro 2 Oct 2026): a calmer, Wakfu-like pace per tile.
 const WALK_TILE_SEC := 0.34
 const WALK_HOP_SEC := WALK_TILE_SEC
-## Authored walk sheet: 6 frames at 12 fps (864×160). Playback is
-## walk_playback_fps(), about 20 fps, so one cycle matches one tile.
+## Authored back/down-left walk: 6 frames at 12 fps (864×160). East march
+## is 12 frames at 12 fps. Playback is walk_playback_fps(count), so one
+## cycle still matches one tile (6 → 20 fps, 12 → 40 fps).
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 12.0
 const WALK_STRIP_PATH := NodePath("WalkStrip")
@@ -918,8 +919,10 @@ static func walk_playback_fps(frame_count: int = -1) -> float:
 
 ## Authored cycle length divided by the tile, so a running clock matches the
 ## driven sampler. One integer cycle per tile. Not a half-cycle skate.
-static func walk_strip_speed_scale() -> float:
-	var authored := float(WALK_STRIP_FRAMES) / WALK_STRIP_FPS
+## Pass the clip's frame count. The 6-frame default keeps the back walks.
+static func walk_strip_speed_scale(frame_count: int = -1) -> float:
+	var count := WALK_STRIP_FRAMES if frame_count < 1 else frame_count
+	var authored := float(count) / WALK_STRIP_FPS
 	if WALK_TILE_SEC <= 0.0:
 		return 1.0
 	return authored / WALK_TILE_SEC
@@ -2504,7 +2507,10 @@ func _prepare_walk_loop(strip: AnimatedSprite2D, anim: StringName) -> void:
 		frames = _editable_strip_frames(strip)
 		if frames != null and frames.has_animation(anim):
 			frames.set_animation_loop(anim, true)
-	strip.speed_scale = walk_strip_speed_scale()
+	var count := 0
+	if frames != null and frames.has_animation(anim):
+		count = frames.get_frame_count(anim)
+	strip.speed_scale = walk_strip_speed_scale(count)
 
 
 func _prepare_play_once(strip: AnimatedSprite2D, anim: StringName) -> void:
