@@ -163,6 +163,9 @@ var _params: Dictionary = {}
 var _board: Node2D
 var _map_id: String = ""
 var _force_off: bool = false
+## L9 draws the kit's earth edge. The jungle lip stays in the json for the
+## tests, and it is left out of the plate while the kit edge is up.
+var _kit_edge: bool = false
 var _built: bool = false
 var _time: float = 0.0
 var _shader: Shader
@@ -281,6 +284,21 @@ func set_enabled(on: bool) -> void:
 	_force_off = not on
 	if _board != null:
 		sync_map(_board, _map_id)
+
+
+## The kit's 2-step edge replaces the jungle earth lip. Contact rim stays.
+func set_kit_edge(on: bool) -> void:
+	if _kit_edge == on:
+		return
+	_kit_edge = on
+	_plate_image_key = ""
+	_plate_image_tex = null
+	if _board != null and visible and _built:
+		layout()
+
+
+func kit_edge() -> bool:
+	return _kit_edge
 
 
 ## L7. grade_on 0 leaves the plate and the leaves on their old colors.
@@ -646,7 +664,7 @@ func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture
 	var mid_tex := mid.texture
 	if far_tex == null or mid_tex == null:
 		return mid_tex
-	var key := "%d,%d,%d,%d" % [far_tex.get_width(), far_tex.get_height(), mid_tex.get_width(), mid_tex.get_height()]
+	var key := "%d,%d,%d,%d|k%d" % [far_tex.get_width(), far_tex.get_height(), mid_tex.get_width(), mid_tex.get_height(), 1 if _kit_edge else 0]
 	if not _motion_layout:
 		key += "@%d,%d" % [int(round(center.x)), int(round(center.y))]
 	if _motion_layout and _plate_image_tex != null:
@@ -681,6 +699,8 @@ func _stamp_earth(image: Image, center: Vector2, scale: Vector2) -> void:
 	var contact_spec: Dictionary = _params.get("contact_shadow", {})
 	var reach := float(skirt_spec.get("reach_cells", 2.2))
 	var strength := float(skirt_spec.get("strength", 1.0))
+	if _kit_edge:
+		strength = 0.0
 	var width := float(contact_spec.get("width_cells", 0.9))
 	var contact := float(contact_spec.get("strength", 0.36))
 	var earth := _rgb_param(skirt_spec.get("color", [0.18, 0.15, 0.08]), Color(0.18, 0.15, 0.08))
