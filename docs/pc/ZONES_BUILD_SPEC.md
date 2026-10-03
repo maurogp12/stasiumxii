@@ -1116,6 +1116,38 @@ player fighter on it**, and player fighter art is still parked, so mounted
 art and animation need Mauro's go on fighter art; until then a mount can walk
 next to the player or the player sprite sits on the mount as a stand-in.
 
+### 4.18 Premium (Mauro's rule + Proposed details)
+
+Mauro, 3 Oct 2026: **"premium will require a real money payment."**
+
+- **Premium is a paid membership with real money.** Today it is needed to rent
+  a house (4.16) and to use pets and mounts (4.17).
+- **Not pay-to-win in PvP:** pet and mount combat bonuses are already off in
+  Koliseo PvP, so premium never changes a PvP fight.
+- **Crypto Coins stay in-game only** (4.9): Proposed that real money buys
+  premium only, never Crypto Coins, items or Mystery Boxes, and coins can
+  never be cashed out. Mauro to confirm (Q16).
+- **Free players** keep the whole map, all levels, missions, dungeons, sets,
+  Epics, Relics, crafting and the Crypto Bank; they can collect pets and
+  mounts (and trade them later) but not use them without premium.
+
+**What a real-money membership needs (Proposed; outside the build team's
+current scope):**
+
+1. **Online accounts and a server** that knows who is premium. Online servers
+   wait until the map is finished (Q9), so premium is built after that.
+2. **A payment provider and the store's rules.** On Steam, in-game purchases
+   must go through Steam's own payment system; other stores have their own
+   rules. Mauro picks the store(s).
+3. **Business and legal setup:** prices, billing period (monthly, Proposed),
+   taxes, refunds, terms of service and consumer law in each country where it
+   is sold. This needs Mauro (and likely professional advice), not the build
+   team.
+4. **Code rule from now on:** every premium check goes through one function
+   (`pc_premium.is_premium()`, Proposed) that returns true for everyone in
+   offline testing, so houses, pets and mounts can be built and tested before
+   payments exist, and switched on later in one place.
+
 ### 4.16 Houses: rented homes (Mauro's rules + Proposed details)
 
 Mauro, 3 Oct 2026: **"a few spots per map where a player can rent a house,
@@ -1867,8 +1899,10 @@ headless.
     numbers stay tuned by WP15.
 14. ~~**Inventory capacity**~~ **Answered 3 Oct 2026 (Mauro): "yes to both"**:
     a slot limit and a weight limit (4.15, numbers Proposed).
-15. **Premium (4.16, 4.17):** what is premium? A paid membership with real
-    money (that needs a payment system and store rules), or something earned
-    in the game? So far premium is needed to rent a house and to use pets and
-    mounts; anything else? (Pets and mounts themselves: answered 3 Oct 2026,
-    4.17.)
+15. ~~**Premium**~~ **Answered 3 Oct 2026 (Mauro): premium requires a real
+    money payment** (4.18). Built after the online server; every premium
+    check goes through one function so it can be switched on later.
+16. **Premium details (4.18):** real money buys premium only, never Crypto
+    Coins or items, and coins can't be cashed out: yes? Which store(s)
+    (Steam, own website, other)? Price and billing period (monthly)? Anything
+    else premium gives besides houses, pets and mounts?
