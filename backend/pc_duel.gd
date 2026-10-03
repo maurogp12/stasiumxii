@@ -2,8 +2,8 @@ extends RefCounted
 
 ## Koliseo spread-against-spread, scored by seeded fights in CombatSim.
 ## Same class, both fighters at the full point budget. Swift's Initiative
-## only decides who acts first. A follow_up rate, when the rewards file has
-## one, is a chance to take one extra turn. It is not damage, HP, or Resist.
+## only decides who acts first. Its damage bonus is the rewards-file
+## bonus_damage rate, applied as extra damage done. No extra turns.
 ## No global class. Loaded with preload.
 
 const CombatSim = preload("res://backend/combat_sim.gd")
@@ -13,10 +13,9 @@ const TURN_CAP := 96
 const ACTION_CAP := 8
 
 static var _sim: Node = null
-static var _haste: RandomNumberGenerator = null
 
 
-static func table(hero, seeds: int = SEEDS, follow_override: float = -1.0, damage_override: float = -1.0) -> Dictionary:
+static func table(hero, seeds: int = SEEDS, damage_override: float = -1.0) -> Dictionary:
 	var budget := int(hero.points_per_level) * maxi(int(hero.max_level) - 1, 0)
 	var half := int(budget / 2)
 	var all_mastery := _spread(budget, 0, 0, 0)
@@ -49,7 +48,7 @@ static func table(hero, seeds: int = SEEDS, follow_override: float = -1.0, damag
 		var label := str(row[0])
 		var left: Dictionary = row[1]
 		var right: Dictionary = row[2]
-		var scored: Dictionary = win_rate(hero, left, right, seeds, follow_override, damage_override)
+		var scored: Dictionary = win_rate(hero, left, right, seeds, damage_override)
 		var win := float(scored["win"])
 		pairs.append({
 			"label": label,
@@ -80,6 +79,14 @@ static func table(hero, seeds: int = SEEDS, follow_override: float = -1.0, damag
 		var left_spend: Dictionary = pair["left"]
 		if int(left_spend.get("Swift", 0)) == budget and float(pair["win"]) + 0.0000001 < win_min:
 			swift_losses += 1
+	var none := _spread(0, 0, 0, 0)
+	var sanity: Array = [
+		_sanity_row(hero, "all Mastery vs no points", all_mastery, none, seeds, damage_override),
+		_sanity_row(hero, "all Vitality vs no points", all_vitality, none, seeds, damage_override),
+		_sanity_row(hero, "all Resist vs no points", all_resist, none, seeds, damage_override),
+		_sanity_row(hero, "all Swift vs no points", all_swift, none, seeds, damage_override),
+		_sanity_row(hero, "all Mastery mirror", all_mastery, all_mastery, seeds, damage_override),
+	]
 	return {
 		"budget": budget,
 		"mix": mix,
@@ -98,12 +105,18 @@ static func table(hero, seeds: int = SEEDS, follow_override: float = -1.0, damag
 		"seeds": seeds,
 		"classes": CLASSES,
 		"model": "combat_sim",
-		"follow_up": _follow_rate(hero, follow_override),
 		"swift_damage": _swift_damage_rate(hero, damage_override),
+		"class_fails": _class_fails(pairs),
+		"sanity": sanity,
 	}
 
 
-static func win_rate(hero, left: Dictionary, right: Dictionary, seeds: int = SEEDS, follow_override: float = -1.0, damage_override: float = -1.0) -> Dictionary:
+static func _sanity_row(hero, label: String, left: Dictionary, right: Dictionary, seeds: int, damage_override: float) -> Dictionary:
+	var scored: Dictionary = win_rate(hero, left, right, seeds, damage_override)
+	return {"label": label, "win": float(scored["win"]), "by_class": scored["by_class"]}
+
+
+static func win_rate(hero, left: Dictionary, right: Dictionary, seeds: int = SEEDS, damage_override: float = -1.0) -> Dictionary:
 	var wins := 0.0
 	var draws := 0.0
 	var total := 0
@@ -114,7 +127,7 @@ static func win_rate(hero, left: Dictionary, right: Dictionary, seeds: int = SEE
 		var class_n := 0
 		for n in seeds:
 			var seed := class_index * 10007 + n + 1
-			var result := _fight(hero, class_id, left, right, seed, follow_override, damage_override)
+			var result := _fight(hero, class_id, left, right, seed, damage_override)
 			class_n += 1
 			total += 1
 			if result < 0:
@@ -132,11 +145,9 @@ static func win_rate(hero, left: Dictionary, right: Dictionary, seeds: int = SEE
 	return {"win": rate, "draws": draws / float(maxi(total, 1)), "by_class": by_class}
 
 
-static func _fight(hero, class_id: String, left: Dictionary, right: Dictionary, seed: int, follow_override: float, damage_override: float) -> int:
+static func _fight(hero, class_id: String, left: Dictionary, right: Dictionary, seed: int, damage_override: float) -> int:
 	if _sim == null:
 		_sim = CombatSim.new()
-	if _haste == null:
-		_haste = RandomNumberGenerator.new()
 	var left_init := _initiative(hero, left)
 	var right_init := _initiative(hero, right)
 	var left_seat := 0
@@ -151,12 +162,10 @@ static func _fight(hero, class_id: String, left: Dictionary, right: Dictionary, 
 		"flat_board": true,
 		"quiet": true,
 	})
-	_apply_spread(_sim._units[0], hero, left if left_seat == 0 else right, follow_override, damage_override)
-	_apply_spread(_sim._units[1], hero, right if left_seat == 0 else left, follow_override, damage_override)
+	_apply_spread(_sim._units[0], hero, left if left_seat == 0 else right, damage_override)
+	_apply_spread(_sim._units[1], hero, right if left_seat == 0 else left, damage_override)
 	_sim._units[0]["facing"] = "E"
 	_sim._units[1]["facing"] = "W"
-	_haste.seed = seed
-	var bonus := false
 	var guard := 0
 	while not _sim._match_over and int(_sim._turn_index) < TURN_CAP and guard < 800:
 		guard += 1
@@ -166,19 +175,6 @@ static func _fight(hero, class_id: String, left: Dictionary, right: Dictionary, 
 			break
 		if int(_sim._active_seat) == seat and int(_sim._turn_index) < TURN_CAP:
 			_sim.submit({"type": "end_turn", "seat": seat})
-		if _sim._match_over:
-			break
-		if int(_sim._active_seat) == seat:
-			bonus = false
-			continue
-		var acted: Dictionary = _sim._unit_by_seat(seat)
-		var chance := float(acted.get("follow_up_chance", 0.0))
-		if not bonus and chance > 0.0 and _haste.randf() < chance:
-			var skipped := int(_sim._active_seat)
-			_sim.submit({"type": "end_turn", "seat": skipped})
-			bonus = true
-		else:
-			bonus = false
 	if not _sim._match_over:
 		return -1
 	if int(_sim._winner_seat) == left_seat:
@@ -301,7 +297,7 @@ static func _step_away(actor: Dictionary, threat: Vector2i) -> bool:
 	return bool(result.get("ok", false))
 
 
-static func _apply_spread(unit: Dictionary, hero, spread: Dictionary, follow_override: float, damage_override: float) -> void:
+static func _apply_spread(unit: Dictionary, hero, spread: Dictionary, damage_override: float) -> void:
 	var mastery_pts := int(spread.get("Mastery", 0))
 	var vitality_pts := int(spread.get("Vitality", 0))
 	var resist_pts := int(spread.get("Resist", 0))
@@ -323,12 +319,6 @@ static func _apply_spread(unit: Dictionary, hero, spread: Dictionary, follow_ove
 	var hp := roundi(float(CombatSim.START_HP) * (1.0 + hp_rate * float(vitality_pts)))
 	unit["hp"] = hp
 	unit["max_hp"] = hp
-	var chance := _follow_rate(hero, follow_override) * float(swift_pts)
-	if chance > 1.0:
-		chance = 1.0
-	if chance < 0.0:
-		chance = 0.0
-	unit["follow_up_chance"] = chance
 
 
 static func _initiative(hero, spread: Dictionary) -> int:
@@ -344,11 +334,20 @@ static func _swift_damage_rate(hero, damage_override: float) -> float:
 	return float(swift.get("bonus_damage", 0.0))
 
 
-static func _follow_rate(hero, follow_override: float) -> float:
-	if follow_override >= 0.0:
-		return follow_override
-	var swift: Dictionary = hero.stat_per_point.get("Swift", {})
-	return float(swift.get("follow_up", 0.0))
+static func _class_fails(pairs: Array) -> Array:
+	var fails: Array = []
+	for entry in pairs:
+		var pair: Dictionary = entry
+		var by: Dictionary = pair["by_class"]
+		for class_id in by.keys():
+			var win := float(by[class_id])
+			if win + 0.0000001 < 0.35 or win - 0.0000001 > 0.65:
+				fails.append({
+					"label": str(pair["label"]),
+					"class": str(class_id),
+					"win": win,
+				})
+	return fails
 
 
 static func _spread(mastery: int, vitality: int, resist: int, swift: int) -> Dictionary:

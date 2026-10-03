@@ -8,7 +8,7 @@
     "Mastery": {"damage_done": 0.005, "healing_done": 0.005},
     "Vitality": {"max_hp": 0.005},
     "Resist": {"damage_taken": 0.004, "cap": 0.33},
-    "Swift": {"initiative": 1, "bonus_damage": 0.0011, "follow_up": 0.0025}
+    "Swift": {"initiative": 1, "bonus_damage": 0.0035}
   },
   "koliseo_duel": {"win_min": 0.45, "win_max": 0.55},
   "class_hp_per_level": "Open",

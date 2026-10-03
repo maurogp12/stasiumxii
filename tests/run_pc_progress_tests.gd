@@ -202,14 +202,19 @@ func _test_rewards() -> void:
 	eq(float(doc["stat_per_point"]["Resist"]["damage_taken"]), 0.004, "Resist is +0.4% less damage taken")
 	eq(float(doc["stat_per_point"]["Resist"]["cap"]), 0.33, "Resist caps at 33%")
 	eq(int(doc["stat_per_point"]["Swift"]["initiative"]), 1, "Swift is +1 Initiative")
-	eq(float(doc["stat_per_point"]["Swift"]["bonus_damage"]), 0.0011, "Swift side bonus is +0.11% damage")
-	eq(float(doc["stat_per_point"]["Swift"]["follow_up"]), 0.0025, "Swift side bonus is a 0.25% follow-up chance")
+	eq(float(doc["stat_per_point"]["Swift"]["bonus_damage"]), 0.0035, "Swift damage is +0.35% per point")
+	eq(doc["stat_per_point"]["Swift"].has("follow_up"), false, "Swift has no follow-up turn")
 	eq(float(doc["koliseo_duel"]["win_min"]), 0.45, "duel band starts at 45 percent")
 	eq(float(doc["koliseo_duel"]["win_max"]), 0.55, "duel band ends at 55 percent")
 	eq(int(doc["milestones"][0]["level"]), 30, "AP milestone level is data")
 	eq(int(doc["milestones"][0]["ap"]), 1, "AP milestone grants 1")
 	var text := FileAccess.get_file_as_string(REWARDS_PATH)
 	eq(text.find("Ward") < 0, true, "rewards file does not name Ward")
+	eq(text.find("follow_up") < 0, true, "rewards file has no follow-up turn")
+	var stolen := doc.duplicate(true)
+	stolen["stat_per_point"]["Swift"]["follow_up"] = 0.0025
+	var banned: Dictionary = Progress.parse_rewards(stolen)
+	eq(banned["ok"], false, "a follow-up rate is rejected")
 	var schema: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(REWARDS_SCHEMA_PATH))
 	eq(schema["additionalProperties"], false, "rewards schema rejects unknown keys")
 	eq(schema["properties"]["format"]["const"], "stasium.level_rewards", "rewards schema format")
@@ -295,14 +300,49 @@ func _test_duel() -> void:
 	var table: Dictionary = hero.koliseo_duel_table()
 	var budget := int(hero.points_per_level) * (int(hero.max_level) - 1)
 	eq(int(table["budget"]), budget, "the duel uses the points earned by the curve cap")
-	eq(bool(table["inside"]), true, "every listed pair stays inside 45-55 (worst %s at %s)" % [table["worst_label"], table["worst_win"]])
+	eq(float(table["swift_damage"]), 0.0035, "the table uses +0.35% Swift damage")
+	eq(bool(table["inside"]), false, "one pooled pair is outside 45-55 and is reported")
+	eq(str(table["worst_label"]), "all Swift vs all Mastery", "the pooled miss is all Swift vs all Mastery")
+	var expect: Dictionary = {
+		"all Mastery vs all Vitality": 0.52,
+		"all Mastery vs all Resist": 0.52,
+		"all Vitality vs all Resist": 0.524,
+		"mix vs all Mastery": 0.544,
+		"mix vs all Vitality": 0.528,
+		"mix vs all Resist": 0.542,
+		"mix vs all Swift": 0.521,
+		"all Swift vs all Mastery": 0.633,
+		"all Swift vs all Vitality": 0.5,
+		"all Swift vs all Resist": 0.492,
+	}
 	var pairs: Array = table["pairs"]
 	eq(pairs.size(), 10, "the table is the ten spread-against-spread pairs")
 	var labels: Array = []
+	var mastery_vitality: Dictionary = {}
+	var mastery_resist: Dictionary = {}
+	var outside := 0
 	for row in pairs:
 		var win := float(row["win"])
-		labels.append(str(row["label"]))
-		eq(win + 0.0000001 >= float(table["win_min"]) and win - 0.0000001 <= float(table["win_max"]), true, "%s stays in the band (%s)" % [str(row["label"]), win])
+		var label := str(row["label"])
+		labels.append(label)
+		eq(expect.has(label), true, "the table still lists %s" % label)
+		eq(absf(win - float(expect[label])) < 0.0000001, true, "%s is the measured rate (%s)" % [label, win])
+		eq(float(row["draws"]), 0.0, "%s had no draws" % label)
+		var in_band := win + 0.0000001 >= float(table["win_min"]) and win - 0.0000001 <= float(table["win_max"])
+		if label == "all Swift vs all Mastery":
+			eq(in_band, false, "all Swift vs all Mastery is the pooled miss")
+			eq(win > float(table["win_max"]), true, "that miss is above 55 percent")
+		else:
+			eq(in_band, true, "%s stays in the band" % label)
+		if not in_band:
+			outside += 1
+		if label == "all Mastery vs all Vitality":
+			mastery_vitality = row["by_class"]
+		if label == "all Mastery vs all Resist":
+			mastery_resist = row["by_class"]
+	eq(outside, 1, "one pooled pair is outside the band")
+	for class_id in mastery_vitality.keys():
+		eq(float(mastery_vitality[class_id]), float(mastery_resist[class_id]), "Mastery vs Vitality matches Mastery vs Resist for %s" % str(class_id))
 	eq(labels.has("all Mastery vs all Vitality"), true, "Mastery meets Vitality")
 	eq(labels.has("all Mastery vs all Resist"), true, "Mastery meets Resist")
 	eq(labels.has("all Vitality vs all Resist"), true, "Vitality meets Resist")
@@ -318,15 +358,62 @@ func _test_duel() -> void:
 	eq(int(mix["Mastery"]), int(budget / 2), "the mix puts half its points in Mastery")
 	eq(int(mix["Resist"]), 0, "the mix spends nothing on Resist")
 	eq(int(mix["Swift"]), 0, "the mix spends nothing on Swift")
-	var mirror := float(hero.duel_win_rate(mix, mix))
-	eq(mirror + 0.0000001 >= float(table["win_min"]) and mirror - 0.0000001 <= float(table["win_max"]), true, "the same spread against itself stays in the band (%s)" % mirror)
+	var sanity_expect: Dictionary = {
+		"all Mastery vs no points": 0.949,
+		"all Vitality vs no points": 0.966,
+		"all Resist vs no points": 0.958,
+		"all Swift vs no points": 0.974,
+		"all Mastery mirror": 0.522,
+	}
+	var sanity: Array = table["sanity"]
+	eq(sanity.size(), sanity_expect.size(), "the sanity rows are the four full spends and the mirror")
+	for check in sanity:
+		var sample: Dictionary = check
+		var sanity_label := str(sample["label"])
+		var sanity_win := float(sample["win"])
+		eq(sanity_expect.has(sanity_label), true, "sanity lists %s" % sanity_label)
+		eq(absf(sanity_win - float(sanity_expect[sanity_label])) < 0.0000001, true, "%s is the measured sanity rate" % sanity_label)
+		if sanity_label.ends_with("vs no points"):
+			eq(sanity_win > 0.8, true, "%s beats an unspent fighter" % sanity_label)
+		else:
+			eq(sanity_win + 0.0000001 >= float(table["win_min"]) and sanity_win - 0.0000001 <= float(table["win_max"]), true, "the mirror stays in the band")
+	var wanted: Array[String] = [
+		"gloam|all Vitality vs all Resist",
+		"gloam|mix vs all Mastery",
+		"ironjaw|mix vs all Swift",
+		"mender|mix vs all Swift",
+		"bastion|mix vs all Swift",
+		"ironjaw|all Swift vs all Mastery",
+		"mender|all Swift vs all Mastery",
+		"gloam|all Swift vs all Mastery",
+		"bastion|all Swift vs all Mastery",
+		"ironjaw|all Swift vs all Vitality",
+		"mender|all Swift vs all Vitality",
+		"gloam|all Swift vs all Vitality",
+		"kestrel|all Swift vs all Resist",
+		"ironjaw|all Swift vs all Resist",
+		"mender|all Swift vs all Resist",
+		"gloam|all Swift vs all Resist",
+	]
+	var fail_keys: Array = []
+	for fail in table["class_fails"]:
+		var item: Dictionary = fail
+		var class_win := float(item["win"])
+		fail_keys.append("%s|%s" % [str(item["class"]), str(item["label"])])
+		eq(class_win + 0.0000001 < 0.35 or class_win - 0.0000001 > 0.65, true, "%s leaves the 35-65 guard" % str(item["class"]))
+	eq(fail_keys.size(), wanted.size(), "the class guard records every row outside 35-65")
+	for key in wanted:
+		eq(fail_keys.has(key), true, "class guard records %s" % key)
+	var duel_src := FileAccess.get_file_as_string("res://backend/pc_duel.gd")
+	eq(duel_src.find("follow_up") < 0, true, "the duel does not roll a follow-up turn")
 	eq(str(table["model"]), "combat_sim", "the table is scored in CombatSim")
 	eq(int(table["seeds"]), 200, "each class fights a few hundred seeds")
 	eq(bool(table["swift_dead"]), false, "Swift is not a dead stat after the side bonus")
 	eq(bool(table["resist_flag"]), true, "a full Resist spend wastes points past the cap")
-	eq(float(table["resist_wasted"]) > 0.0, true, "wasted Resist points are reported")
+	eq(absf(float(table["resist_wasted"]) - 15.5) < 0.0001, true, "a full Resist spend wastes 15.5 points")
 	eq(absf(float(table["resist_cap_points"]) - (0.33 / 0.004)) < 0.0001, true, "the cap arrives at 82.5 points")
 	eq(bool(table["resist_weak"]), true, "full Resist is still the weaker side and is flagged")
+	eq(absf(float(table["resist_best"]) - 0.458) < 0.0000001, true, "Resist's best listed result is 45.80%")
 	eq(float(table["resist_best"]) + 0.0000001 >= float(table["win_min"]), true, "the weak Resist side still stays inside the band")
 
 
@@ -335,6 +422,7 @@ func _test_window() -> void:
 	var world := FileAccess.get_file_as_string("res://scenes/world/crosshaven/crosshaven_world.gd")
 	eq(src.find("class_name") < 0, true, "character window has no global class")
 	eq(src.find("Ward") < 0, true, "character window does not name Ward")
+	eq(src.find("follow_up") < 0, true, "character window has no follow-up turn")
 	eq(src.find("Resist") >= 0, true, "character window names Resist")
 	eq(src.find("spend") >= 0, true, "character window spends through progress")
 	eq(src.find("respec") >= 0, true, "character window can respec")

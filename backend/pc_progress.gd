@@ -568,8 +568,8 @@ static func _check_per_point(per: Dictionary, errors: Array) -> void:
 		_err(errors, "Swift initiative must be a non-negative integer")
 	if swift.has("bonus_damage") and not _rate(swift.get("bonus_damage", null)):
 		_err(errors, "Swift bonus_damage must be a rate")
-	if swift.has("follow_up") and not _rate(swift.get("follow_up", null)):
-		_err(errors, "Swift follow_up must be a rate")
+	if swift.has("follow_up"):
+		_err(errors, "Swift follow_up is not a shipped effect")
 
 
 static func _check_duel(value: Variant, errors: Array) -> void:
