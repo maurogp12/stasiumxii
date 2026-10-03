@@ -34,6 +34,12 @@ void fragment() {
 	float band = smoothstep(0.20, 0.0, abs(along - 0.12));
 	float breathe = 0.85 + 0.15 * sin(TIME * TAU * pulse_hz + phase);
 	float pulse = mix(0.82, 1.0, band) * breathe;
+	vec2 spread = vec2(0.034, 0.07);
+	float side = texture(mask_tex, UV + vec2(spread.x, 0.0)).r;
+	side = max(side, texture(mask_tex, UV - vec2(spread.x, 0.0)).r);
+	side = max(side, texture(mask_tex, UV + vec2(0.0, spread.y)).r);
+	side = max(side, texture(mask_tex, UV - vec2(0.0, spread.y)).r);
+	intensity = max(intensity, side * 0.85);
 	float glow = intensity * glow_strength * pulse;
 	float peak = max(max(glow_color.r, glow_color.g), max(glow_color.b, 0.001));
 	vec3 hue = glow_color / peak;
@@ -44,10 +50,14 @@ const PAD_SHADER := """shader_type canvas_item;
 render_mode blend_add;
 // TEXTURE keeps source_color. Pad hue stays in the painted art.
 uniform float pad_strength = 1.55;
+uniform vec3 chip_color = vec3(0.083, 0.199, 0.550);
 void fragment() {
 	vec4 tex = texture(TEXTURE, UV);
-	vec3 rgb = tex.rgb * pad_strength;
-	COLOR = vec4(rgb, tex.a);
+	vec3 scaled = tex.rgb * pad_strength;
+	float ink = max(tex.a, max(scaled.r, max(scaled.g, scaled.b)));
+	float rim = smoothstep(0.20, 0.48, ink) * (1.0 - smoothstep(0.62, 0.90, ink));
+	vec3 rgb = chip_color * ink * 0.55 + chip_color * rim * 0.40;
+	COLOR = vec4(rgb, clamp(ink, 0.0, 1.0));
 }
 """
 const PILLAR_SHADER := """shader_type canvas_item;
@@ -65,8 +75,10 @@ void fragment() {
 	float ink = dot(tex.rgb, vec3(0.2126, 0.7152, 0.0722)) * tex.a;
 	float dx = abs(UV.x - 0.5);
 	float core = 1.0 - smoothstep(0.0, max(core_width, 0.001), dx);
-	float halo = 1.0 - smoothstep(core_width, max(halo_width, core_width + 0.001), dx);
-	float shaped = ink * (core * core_gain + halo * halo_gain);
+	float halo = 1.0 - smoothstep(0.0, max(halo_width, 0.05), dx);
+	float yfade = smoothstep(0.0, 0.08, UV.y);
+	float column = halo * yfade;
+	float shaped = column * halo_gain + min(ink, 0.35) * core * core_gain;
 	float glow = shaped * pillar_strength;
 	float peak = max(max(pillar_color.r, pillar_color.g), max(pillar_color.b, 0.001));
 	vec3 hue = pillar_color / peak;
@@ -425,7 +437,7 @@ func _add_pad(tile: Node, slot: String) -> void:
 	var scale := _cell_scale()
 	sprite.scale = Vector2(scale, scale)
 	sprite.offset = _pad_offset(tex, slot)
-	sprite.material = _pad_material()
+	sprite.material = _pad_material(slot)
 	sprite.set_meta("slot", slot)
 	sprite.z_as_relative = true
 	sprite.z_index = _z("pad")
@@ -647,13 +659,15 @@ func _glow_material(cell: Vector2i, mask: Texture2D) -> ShaderMaterial:
 	return mat
 
 
-func _pad_material() -> ShaderMaterial:
+func _pad_material(slot: String) -> ShaderMaterial:
 	if _pad_shader == null:
 		_pad_shader = Shader.new()
 		_pad_shader.code = PAD_SHADER
 	var mat := ShaderMaterial.new()
 	mat.shader = _pad_shader
 	mat.set_shader_parameter("pad_strength", pad_strength())
+	var color := pad_blue_color() if slot == "pad_blue" else pad_red_color()
+	mat.set_shader_parameter("chip_color", Vector3(color.r, color.g, color.b))
 	return mat
 
 
