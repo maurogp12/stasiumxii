@@ -757,8 +757,8 @@ How it fits together (**Proposed**):
   Crafting levels (a gathering / crafting skill per profession) are **Open**.
 - **Marketplace** = player listings with a price in Crypto Coins and a small
   **sale tax** (Proposed 5%, a coin sink). Listings expire after a few days.
-  It must run on a server (to stop duplicated items), so it needs the online
-  player data that PC does not have yet: **Open**, see Q9.
+  It must run on a server (to stop duplicated items), and **online servers
+  wait until the map is fully developed** (Mauro, Q9).
 - **Houses** = a plot in a town bought with coins, an interior room, and
   placed decorations. Housing needs its own scene and saved layouts: a later
   phase (Proposed).
@@ -772,7 +772,8 @@ Build order (**Proposed**, for Mauro to confirm in Q9):
 1. **Now (phase 1):** NPC shops (food, potions, supplies, minerals, recipes,
    decorations as items), gathering in Crosshaven (trees, crops, a few mineral
    nodes), crafting food and potions, upgrades, respec, fast travel.
-2. **When PC has online player data:** the marketplace.
+2. **After the map is fully developed, with the online server:** the
+   marketplace (Mauro, Q9).
 3. **Next:** houses and decorating, more professions and recipes.
 
 ### 4.10 World monsters: `data/world/monsters.json` (Mauro's rules + Proposed numbers)
@@ -1260,11 +1261,11 @@ canvas, pivot, facings and idle loop rules as NPC bodies, plus a walk loop
   (Proposed) and through `pc_progress.gd`.
 - **Media:** buying a recipe, gathering, cooking a meal, eating it.
 
-#### WP19: Marketplace (Code), **Open Q9**
+#### WP19: Marketplace (Code), **after the map is finished** (Q9)
 
 Player listings and purchases in Crypto Coins with a sale tax (4.12). Needs a
-server that holds player inventories and coins; PC has none yet. Build nothing
-until Mauro answers Q9.
+server that holds player inventories and coins. Mauro, 3 Oct 2026: online
+servers wait until the map is fully developed. Build nothing for it now.
 
 #### WP20: Houses and decorations (Code + Scenario), **later phase**
 
@@ -1333,11 +1334,14 @@ headless.
    the team fix it now?
 8. **Where Eastmarch Fen Edge sits:** off the east road (concept image) or past
    Eastmarch town?
-9. **Economy build order (4.12):** phase 1 = NPC shops, gathering in
-   Crosshaven, crafting food and potions, upgrades, respec, fast travel; the
-   marketplace when PC has online player data (a server that stores
-   inventories and coins); houses in a later phase. OK? And is building that
-   online player data (accounts and a save on the server) part of this phase?
+9. ~~**Economy build order / online server?**~~ **Answered 3 Oct 2026 (Mauro):
+   "online servers get pushed until we have fully developed the map".** No
+   online server work (accounts, server saves, marketplace) until the map is
+   fully built. Phase 1 builds everything offline / single-player with local
+   saves: NPC shops, the Crypto Bank, gathering, crafting food and potions,
+   upgrades, fast travel. The marketplace (WP19) waits for the server. Keep
+   game logic in pure backend scripts (no scene code) so it can move to a
+   server later.
 10. **Crypto Bank (4.12, WP16b):** should money in the bank earn interest?
     Proposed: no (interest creates coins and pushes prices up). Should the
     bank be only at the Crossroads, or have a branch in every region hub?
