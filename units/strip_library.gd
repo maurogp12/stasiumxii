@@ -12,8 +12,8 @@ class_name StripLibrary
 const EXPORT_ROOT := "res://art/export_2x/characters/"
 ## Walk-sheet drop. Replace the PNG at export_png_path(class, "walk", letter).
 ## South, north, and west stay 864×160, six 144×160 cells. East (down-right)
-## is the locked 12-frame march; its cell is taller than 144×160 where the
-## painting needs the room, and the contact foot stays on the old plant.
+## is the locked 12-frame march in the same 144×160 cell, mirrored to face
+## the old east diagonal, with the contact foot on the old plant.
 ## The class *_frames.tres slices that file. Do not add a second folder.
 ## Never load *_gen.png.
 const GROK_DIR := "res://art/grok_project/anims/"
@@ -269,6 +269,12 @@ static func textures_from_image(image: Image, frame_count: int) -> Array[Texture
 		cells = frame_count
 	elif width % CELL_W == 0:
 		cells = width / CELL_W
+	# A 12-frame march is also divisible by 6. Slicing it as six cells
+	# glues two poses into one sprite, about twice as wide as the old 144.
+	if cells >= 2 and width % LOCKED_EAST_WALK_FRAMES == 0:
+		var wide := width / cells
+		if wide > CELL_W and width / LOCKED_EAST_WALK_FRAMES <= CELL_W:
+			cells = LOCKED_EAST_WALK_FRAMES
 	if cells < 2:
 		return out
 	var frame_w := width / cells

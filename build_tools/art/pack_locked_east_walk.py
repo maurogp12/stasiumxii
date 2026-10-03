@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Pack the locked down-right (east) march into the mobile walk sheets.
 
-Source frames are the painted 12-frame S walks (old letter e = down-right).
-Each class is scaled so the contact frame's opaque height matches the
-previous east walk, then pasted so that foot sits on the same cell row the
-pawn already uses (offset (0, -72), cell height 160 when the pose fits).
-The contact foot is the horizontal pivot (cell center). South, north, and
-west sheets are not touched: south is its own down-left walk, and north/west
-are the back views.
+Source frames are the painted 12-frame walks. They lean the opposite way
+from the old east sheet, so each frame is mirrored to face the same
+diagonal as that sheet (head to the right of the feet). Every frame is
+then scaled into the old 144×160 cell with the contact foot on the old
+foot point, so the pawn's 0.5 scale and (0, -72) offset draw it at the
+same height and plant as the previous sprite. South, north, and west
+sheets are not touched.
 
 Writes:
   art/export_2x/characters/<class>/anims/<class>_walk_e.png
@@ -35,13 +35,16 @@ ALPHA_FIT = 8
 OLD_CELL_H = 160
 OFFSET_Y = -72
 # Previous east contact, measured the same way StripLibrary._foot_point does.
-OLD_FOOT_Y = {
-    "ironjaw": 150,
-    "gloam": 151,
-    "kestrel": 150,
-    "bastion": 149,
-    "mender": 150,
+OLD_CELL_W = 144
+# Previous east contact, measured with foot_point on the pre-march sheet.
+OLD_FOOT = {
+    "ironjaw": (94.94871794871794, 150),
+    "gloam": (81.14207650273224, 151),
+    "kestrel": (85.8623188405797, 150),
+    "bastion": (93.28846153846153, 149),
+    "mender": (56.93382352941177, 150),
 }
+OLD_FOOT_Y = {cls: int(pt[1]) for cls, pt in OLD_FOOT.items()}
 OLD_FIG_H = {
     "ironjaw": 146,
     "gloam": 146,
@@ -143,63 +146,99 @@ def _resize(im: Image.Image, scale: float) -> Image.Image:
     return im.convert("RGBA").resize((nw, nh), Image.Resampling.LANCZOS)
 
 
-def pack_class(cls: str) -> dict:
-    raw = [
-        Image.open(SRC / cls / f"{cls}_walk_S_f{i:02d}.png").convert("RGBA")
-        for i in range(FRAMES)
-    ]
-    target_h = OLD_FIG_H[cls]
-    target_foot_y = OLD_FOOT_Y[cls]
-    scaled, scale = scale_to_height(raw, target_h)
-    boxes = [opaque_bounds(im, ALPHA_FIT) for im in scaled]
-    fp0 = foot_point(scaled[0])
-    if fp0 is None or any(b is None for b in boxes):
-        raise SystemExit("missing foot or pixels for %s" % cls)
-    minx = min(b[0] for b in boxes)
-    miny = min(b[1] for b in boxes)
-    maxx = max(b[2] for b in boxes)
-    maxy = max(b[3] for b in boxes)
-    left = fp0[0] - minx
-    right = maxx - fp0[0]
-    above = fp0[1] - miny
-    below = maxy - fp0[1]
-    pad = 2
-    half = int(math.ceil(max(left, right) + pad))
-    cell_w = max(half * 2, 2)
-    # local_y = foot_y - cell_h/2 + OFFSET_Y. Keep the previous plant.
-    old_local_y = target_foot_y - (OLD_CELL_H / 2.0) + OFFSET_Y
-    # foot_y = old_local_y + cell_h/2 - OFFSET_Y, and the pose must fit.
-    half_need = max(
-        pad + above - old_local_y + OFFSET_Y,
-        old_local_y - OFFSET_Y + below + 1 + pad,
-    )
-    cell_h = max(OLD_CELL_H, int(math.ceil(half_need * 2.0)))
-    if cell_h % 2:
-        cell_h += 1
-    foot_y = int(round(old_local_y + cell_h / 2.0 - OFFSET_Y))
-    if cell_h == OLD_CELL_H:
-        foot_y = target_foot_y
-    foot_x = cell_w / 2.0
+def head_versus_foot(im: Image.Image) -> float:
+    """Head centroid x minus foot x. Positive faces screen-right, like old east."""
+    fp = foot_point(im)
+    if fp is None:
+        return 0.0
+    bb = opaque_bounds(im, ALPHA_FOOT)
+    if bb is None:
+        return 0.0
+    head_cut = bb[1] + (bb[3] - bb[1]) * 0.35
+    im = im.convert("RGBA")
+    px = im.load()
+    sx = 0
+    count = 0
+    for y in range(bb[1], int(head_cut) + 1):
+        for x in range(im.size[0]):
+            if px[x, y][3] > ALPHA_FOOT:
+                sx += x
+                count += 1
+    if count <= 0:
+        return 0.0
+    return (sx / count) - fp[0]
+
+
+def place_cells(frames: list[Image.Image], foot_x: float, foot_y: int) -> list[Image.Image] | None:
+    fp0 = foot_point(frames[0])
+    if fp0 is None:
+        return None
     dx = int(round(foot_x - fp0[0]))
     dy = int(round(foot_y - fp0[1]))
-    # paste() with the image as its own mask drops the last opaque row.
-    # alpha_composite keeps the scaled pixels intact.
     cells = []
-    for im in scaled:
-        canvas = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
+    for im in frames:
+        canvas = Image.new("RGBA", (OLD_CELL_W, OLD_CELL_H), (0, 0, 0, 0))
         canvas.alpha_composite(im, (dx, dy))
+        bb = opaque_bounds(canvas, ALPHA_FOOT)
+        if bb is None:
+            return None
+        if bb[0] < 0 or bb[1] < 0 or bb[2] >= OLD_CELL_W or bb[3] >= OLD_CELL_H:
+            return None
         cells.append(canvas)
     placed = foot_point(cells[0])
+    if placed is None:
+        return None
     nudge_x = int(round(foot_x - placed[0]))
     nudge_y = int(round(foot_y - placed[1]))
     if nudge_x or nudge_y:
         dx += nudge_x
         dy += nudge_y
         cells = []
-        for im in scaled:
-            canvas = Image.new("RGBA", (cell_w, cell_h), (0, 0, 0, 0))
+        for im in frames:
+            canvas = Image.new("RGBA", (OLD_CELL_W, OLD_CELL_H), (0, 0, 0, 0))
             canvas.alpha_composite(im, (dx, dy))
+            bb = opaque_bounds(canvas, ALPHA_FOOT)
+            if bb is None or bb[0] < 0 or bb[1] < 0 or bb[2] >= OLD_CELL_W or bb[3] >= OLD_CELL_H:
+                return None
             cells.append(canvas)
+    return cells
+
+
+def pack_class(cls: str) -> dict:
+    raw = [
+        Image.open(SRC / cls / f"{cls}_walk_S_f{i:02d}.png").convert("RGBA")
+        for i in range(FRAMES)
+    ]
+    # Old east faces screen-right. These paintings face the other way.
+    mirrored = head_versus_foot(raw[0]) < 0.0
+    if mirrored:
+        raw = [im.transpose(Image.Transpose.FLIP_LEFT_RIGHT) for im in raw]
+    if head_versus_foot(raw[0]) < -1.0:
+        raise SystemExit("%s still faces left after the mirror" % cls)
+    target_h = OLD_FIG_H[cls]
+    foot_x, target_foot_y = OLD_FOOT[cls]
+    target_foot_y = int(target_foot_y)
+    scaled, scale = scale_to_height(raw, target_h)
+    cells = place_cells(scaled, foot_x, target_foot_y)
+    # A stride wider than 144 is scaled down until every frame fits the old cell.
+    if cells is None:
+        lo, hi = 0.2, scale
+        cells = None
+        for _ in range(16):
+            mid = (lo + hi) * 0.5
+            trial = [_resize(fr, mid) for fr in raw]
+            placed = place_cells(trial, foot_x, target_foot_y)
+            if placed is None:
+                hi = mid
+            else:
+                cells = placed
+                scaled = trial
+                scale = mid
+                lo = mid
+        if cells is None:
+            raise SystemExit("%s does not fit the old 144x160 cell" % cls)
+    cell_w, cell_h = OLD_CELL_W, OLD_CELL_H
+    foot_y = target_foot_y
     sheet = Image.new("RGBA", (cell_w * FRAMES, cell_h), (0, 0, 0, 0))
     for i, cell in enumerate(cells):
         sheet.paste(cell, (i * cell_w, 0))
@@ -261,8 +300,25 @@ def patch_tres(cls: str, cell_w: int, cell_h: int) -> None:
         r'region = Rect2\([^)]+\)\n\n'
     )
     found = block.findall(text)
+    if len(found) == FRAMES:
+        # Regions already exist. Point each one at the refit 144×160 cell.
+        index = {"n": 0}
+
+        def _retarget(match: re.Match[str]) -> str:
+            i = index["n"]
+            index["n"] += 1
+            return (
+                '[sub_resource type="AtlasTexture" id="AtlasTexture_walk_e_%d"]\n'
+                'atlas = ExtResource("%s")\n'
+                "region = Rect2(%d, 0, %d, %d)\n\n"
+                % (i, ext_id, i * cell_w, cell_w, cell_h)
+            )
+
+        text = block.sub(_retarget, text)
+        path.write_text(text)
+        return
     if len(found) != 6:
-        raise SystemExit("%s expected 6 walk_e atlas blocks, found %s" % (cls, len(found)))
+        raise SystemExit("%s expected 6 or 12 walk_e atlas blocks, found %s" % (cls, len(found)))
     text = block.sub("", text, count=6)
     inserts = []
     for i in range(FRAMES):
