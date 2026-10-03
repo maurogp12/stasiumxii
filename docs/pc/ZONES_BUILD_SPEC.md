@@ -362,7 +362,7 @@ the next phase. Numbers are **Proposed**.
   | Mastery | +0.5% damage and healing done | +49% |
   | Vitality | +0.5% of the class's base max HP | +49% max HP |
   | Resist | +0.4% less damage taken (total Resist capped at **33%**, Soft Lock) | 33% (cap reached at 82.5 points) |
-  | Swift | +1 Initiative and **+0.35% damage done** (Soft Lock) | +98 Initiative, +34.3% damage |
+  | Swift | +1 Initiative only (Mauro, 3 Oct 2026: no damage) | +98 Initiative |
 
   Points are on in Koliseo PvP, and **every PvP fighter has the full point
   budget** (everyone is treated as `max_level` with their own spend). So the
@@ -381,10 +381,11 @@ the next phase. Numbers are **Proposed**.
   fall outside 35–65%, because 1v1 fights are short and whoever acts first often
   wins by one hit. No single per-point rate fixes both, so this goes to Mauro as
   Q17. **Q17 answered 3 Oct 2026: option C** (Mauro: Initiative is a chosen
-  advantage over damage). No first-turn rule; "all Swift vs all Mastery" may
-  sit up to 65%, every other pair stays 45–55%. Swift +0.35% damage per point
-  and the Resist cap 33% are **Soft Lock**. These numbers only affect Koliseo
-  PvP, not the open world.
+  advantage over damage). No first-turn rule. **Later the same day Mauro
+  removed Swift's damage** ("just take away damage from swift"): Swift is
+  Initiative only, pairs with an all-Swift spread are reported, not banded,
+  and every other pair stays 45–55%. The Resist cap 33% is **Soft Lock**.
+  These numbers only affect Koliseo PvP, not the open world.
 - **Class HP growth per level** (a small flat HP gain, different per class,
   Proposed).
 - **Milestones:** **+1 AP at level 30** (Proposed). The next phase may add a
@@ -1990,6 +1991,12 @@ headless.
     "all Swift vs all Mastery" (allowed up to 65%); every other pair keeps it.
     Resist cap 33% is **Soft Lock**. (An earlier option-A note from the same
     day is withdrawn.)
+    **Swift gives no damage** (Mauro, 3 Oct 2026: "just take away damage from
+    swift"): Swift is +1 Initiative per point and nothing else; the earlier
+    +0.35% damage is removed. Pairs that include an all-Swift spread are
+    **reported, not banded** (all Swift is expected to lose most 1v1 fights,
+    about 10% against all Mastery); every pair without Swift keeps 45–55%.
+    The note below about the +0.35% trade is superseded.
     **No cap on Swift** (Mauro, 3 Oct 2026: "that's something the player
     decides… give the player the decision to build their own build, but at
     the same time keep it as balanced as we can"). Every point can go
