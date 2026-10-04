@@ -121,6 +121,10 @@ func _test_params_and_slots() -> void:
 	eq(src.contains("MOUSE_FILTER_IGNORE"), true, "leaf controls do not pick the mouse")
 	eq(src.contains("0.22, 0.48, 0.28"), true, "leaf shadows take a green tint")
 	eq(src.contains("TIME * 0.012"), true, "leaf shadows scroll for canopy drift")
+	eq(src.contains("leaf_tint = COLOR"), true, "the leaf tint is the vertex modulate, before the texture multiply")
+	eq(src.contains("COLOR = leaf * leaf_tint"), true, "the sway shader keeps modulate and the top-leaf fade")
+	eq(src.contains("leaf * COLOR"), false, "the fragment does not multiply the painted leaf by itself")
+	_test_v1_contract()
 
 
 func _test_sway_pixels() -> void:
@@ -206,7 +210,10 @@ func _test_live_layer() -> void:
 	var leaf_at := leaf.position
 	cam.position += Vector2(80, 0)
 	layer.layout()
-	truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	if JUNGLE.v1_placement().is_empty():
+		truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	else:
+		truthy(absf(leaf.position.x - leaf_at.x) < 1.0, "v1 leaves stay pinned to the board")
 	var leaf_art := layer.get_node("front_leaves_left/Pivot/Art") as Sprite2D
 	truthy(leaf_art != null, "the left leaf sprite is on the pivot")
 	if leaf_art != null:
@@ -238,7 +245,7 @@ func _test_live_layer() -> void:
 	var origin: Vector2 = (board.tiles[Vector2i(7, 7)] as Node2D).position
 	layer.layout()
 	eq((board.tiles[Vector2i(7, 7)] as Node2D).position, origin, "the backdrop does not move a cell")
-	eq(layer.leaves_cover_play(), false, "front leaves do not cover the play cells")
+	_assert_leaves_miss_cells(layer, "front leaves do not cover the play cells")
 	_assert_look_tunables(layer, cam, board)
 	truthy(layer.pointer_passes(), "clicks pass through every leaf and backdrop control")
 	var edge_cell := Vector2i(0, 14)
@@ -271,12 +278,27 @@ func _test_live_layer() -> void:
 	layer.layout()
 	var far_screen: Vector2 = layer.back_art_position("back_far") - cam.position
 	var mid_screen: Vector2 = layer.back_art_position("back_mid") - cam.position
-	var far_fraction := float(JUNGLE.load_params()["parallax"]["back_far"])
-	var mid_fraction := float(JUNGLE.load_params()["parallax"]["back_mid"])
-	truthy(is_equal_approx(far_screen.x, -step.x * far_fraction), "far on-screen slide is its parallax fraction")
-	truthy(is_equal_approx(mid_screen.x, -step.x * mid_fraction), "mid on-screen slide is its parallax fraction")
-	truthy(absf(far_screen.x) + 0.5 < absf(mid_screen.x), "far canopy moves less on screen than the mid canopy")
-	eq(layer.leaves_cover_play(), false, "a panned camera still keeps leaves off the cells")
+	if JUNGLE.v1_ready():
+		var spec := JUNGLE.v1_decor()
+		var sky_fraction := float(_decor_block(spec, "sky").get("parallax", 0.0))
+		var clearing_fraction := float(_decor_block(spec, "clearing").get("parallax", 0.0))
+		var sky_art := layer.get_node("back_far/Art") as Sprite2D
+		var clearing_art := layer.get_node("back_mid/Art") as Sprite2D
+		var plate := layer.get_node("PlateBlit") as Sprite2D
+		truthy(sky_art.visible, "the v1 sky is the drawn far layer")
+		eq(clearing_art.visible, false, "the clearing sprite is hidden inside the plate")
+		truthy(plate.visible, "the clearing plate is drawn")
+		var plate_screen := plate.position - cam.position
+		truthy(is_equal_approx(far_screen.x, -step.x * sky_fraction), "the drawn sky slides at 0.08")
+		truthy(is_equal_approx(plate_screen.x, -step.x * clearing_fraction), "the drawn clearing slides at 0.40")
+		truthy(absf(far_screen.x) + 0.5 < absf(plate_screen.x), "the sky moves less on screen than the clearing")
+	else:
+		var far_fraction := float(JUNGLE.load_params()["parallax"]["back_far"])
+		var mid_fraction := float(JUNGLE.load_params()["parallax"]["back_mid"])
+		truthy(is_equal_approx(far_screen.x, -step.x * far_fraction), "far on-screen slide is its parallax fraction")
+		truthy(is_equal_approx(mid_screen.x, -step.x * mid_fraction), "mid on-screen slide is its parallax fraction")
+		truthy(absf(far_screen.x) + 0.5 < absf(mid_screen.x), "far canopy moves less on screen than the mid canopy")
+	_assert_leaves_miss_cells(layer, "a panned camera still keeps leaves off the cells")
 	cam.position = parked
 	layer.layout()
 	sim.reset_match({
@@ -295,13 +317,13 @@ func _test_live_layer() -> void:
 	board._refresh()
 	truthy(layer.visible, "Crosshaven brings the jungle layer back")
 	eq(layer.shadow_count(), 225, "Crosshaven restores a shadow on every cell")
-	eq(layer.leaves_cover_play(), false, "restored leaves still miss the cells")
+	_assert_leaves_miss_cells(layer, "restored leaves still miss the cells")
 	layer.set_enabled(false)
 	eq(layer.visible, false, "the layer can be switched off for a before shot")
 	eq(layer.shadow_count(), 0, "switching the layer off clears the shadows")
 	layer.set_enabled(true)
 	truthy(layer.visible, "the layer switches back on")
-	eq(layer.leaves_cover_play(), false, "leaves still miss the cells after a toggle")
+	_assert_leaves_miss_cells(layer, "leaves still miss the cells after a toggle")
 	main.free()
 
 
@@ -372,12 +394,21 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	var far := layer.get_node("back_far/Art") as CanvasItem
 	var mid := layer.get_node("back_mid/Art") as CanvasItem
 	var leaf := layer.get_node("front_leaves_left/Pivot/Art") as CanvasItem
-	var far_mod: Array = params["layers"]["back_far"]["modulate"]
-	var mid_mod: Array = params["layers"]["back_mid"]["modulate"]
-	var leaf_mod: Array = params["layers"]["front_leaves"]["modulate"]
-	truthy(_color_close(far.modulate, far_mod), "the far plate uses its json modulate")
-	truthy(_color_close(mid.modulate, mid_mod), "the mid plate uses its json modulate")
-	truthy(_color_close(leaf.modulate, leaf_mod), "a front leaf uses its json modulate")
+	if JUNGLE.v1_ready():
+		var spec := JUNGLE.v1_decor()
+		var sky_mod: Array = _decor_block(spec, "sky").get("modulate", [])
+		var clearing_mod: Array = _decor_block(spec, "clearing").get("modulate", [])
+		var frame_mod: Array = _decor_block(spec, "leaf_frame").get("modulate", [])
+		truthy(_color_close(far.modulate, sky_mod), "the drawn sky uses the v1 modulate")
+		truthy(_color_close(mid.modulate, clearing_mod), "the clearing uses the v1 modulate")
+		truthy(_color_close(leaf.modulate, frame_mod), "a v1 leaf uses the leaf-frame modulate")
+	else:
+		var far_mod: Array = params["layers"]["back_far"]["modulate"]
+		var mid_mod: Array = params["layers"]["back_mid"]["modulate"]
+		var leaf_mod: Array = params["layers"]["front_leaves"]["modulate"]
+		truthy(_color_close(far.modulate, far_mod), "the far plate uses its json modulate")
+		truthy(_color_close(mid.modulate, mid_mod), "the mid plate uses its json modulate")
+		truthy(_color_close(leaf.modulate, leaf_mod), "a front leaf uses its json modulate")
 	var mid_art := layer.get_node("back_mid/Art") as Sprite2D
 	var far_art := layer.get_node("back_far/Art") as Sprite2D
 	truthy(far_art.texture.get_width() < mid_art.texture.get_width(), "the far canopy is the smaller plate")
@@ -411,6 +442,7 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	var saved := cam.position
 	cam.position = fit
 	layer.layout()
+	_assert_drawn_backdrop(layer)
 	truthy(is_equal_approx(layer.top_leaf_alpha(), 1.0), "the top canopy is fully visible at the default camera")
 	var cover_default: float = layer.leaf_board_coverage()
 	print("LEAF_COVERAGE default %.4f" % cover_default)
@@ -433,6 +465,166 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	truthy(layer.top_leaf_alpha() <= 0.02, "a full +y pan fades the top canopy out")
 	cam.position = saved
 	layer.layout()
+
+
+func _assert_drawn_backdrop(layer: Node) -> void:
+	var far := layer.get_node("back_far/Art") as Sprite2D
+	var mid := layer.get_node("back_mid/Art") as Sprite2D
+	var plate := layer.get_node_or_null("PlateBlit") as Sprite2D
+	truthy(far != null and far.texture != null and far.texture.get_width() > 32, "the far plate has a texture")
+	truthy(mid != null and mid.texture != null and mid.texture.get_width() > 32, "the mid plate has a texture")
+	truthy(plate != null and plate.texture != null and plate.texture.get_width() > 32, "the drawn plate has a texture")
+	for edge in ["left", "right", "top", "bottom"]:
+		var art := layer.get_node("front_leaves_%s/Pivot/Art" % edge) as Sprite2D
+		truthy(art != null and art.texture != null and art.texture.get_width() > 8, "the %s leaf has a texture" % edge)
+		eq(art.texture_repeat, CanvasItem.TEXTURE_REPEAT_DISABLED, "the %s leaf does not repeat or mirror" % edge)
+		_assert_not_flat_white(art.texture, "the %s leaf" % edge)
+	if far == null or plate == null or far.texture == null or plate.texture == null:
+		return
+	eq(far.texture_repeat, CanvasItem.TEXTURE_REPEAT_DISABLED, "the sky does not repeat or mirror")
+	_assert_not_flat_white(far.texture, "the sky")
+	if not JUNGLE.v1_ready():
+		return
+	truthy(far.visible, "the sky layer is visible behind the clearing")
+	var plate_mat := plate.material as ShaderMaterial
+	var plate_code := ""
+	if plate_mat != null and plate_mat.shader != null:
+		plate_code = plate_mat.shader.code
+	var plate_img := plate.texture.get_image()
+	var sky_img := far.texture.get_image()
+	if plate_img == null or sky_img == null:
+		truthy(false, "backdrop images can be read")
+		return
+	if plate_img.is_compressed():
+		plate_img.decompress()
+	if sky_img.is_compressed():
+		sky_img.decompress()
+	var stamps := plate_code.contains("blend_disabled")
+	eq(stamps, false, "the clearing plate blends, so the sky hole is not stamped white")
+	var pw := plate_img.get_width()
+	var ph := plate_img.get_height()
+	var sw := sky_img.get_width()
+	var sh := sky_img.get_height()
+	var hole := 0
+	var bad := 0
+	var y := 0
+	while y < int(float(ph) * 0.55):
+		var x := 0
+		while x < pw:
+			var c := plate_img.get_pixel(x, y)
+			if c.a < 0.08:
+				hole += 1
+				var sx := clampi(int(float(x) / float(maxi(pw, 1)) * float(sw)), 0, sw - 1)
+				var sy := clampi(int(float(y) / float(maxi(ph, 1)) * float(sh)), 0, sh - 1)
+				var sky := sky_img.get_pixel(sx, sy)
+				var white := sky.r > 0.94 and sky.g > 0.94 and sky.b > 0.94
+				if sky.a < 0.9 or white:
+					bad += 1
+			x += 12
+		y += 12
+	truthy(hole > 30, "the clearing keeps a sky opening")
+	truthy(float(bad) <= float(hole) * 0.08, "the sky opening is painted sky, not a white plate")
+
+
+func _assert_not_flat_white(tex: Texture2D, label: String) -> void:
+	var image := tex.get_image()
+	if image == null:
+		truthy(false, "%s image can be read" % label)
+		return
+	if image.is_compressed():
+		image.decompress()
+	var w := image.get_width()
+	var h := image.get_height()
+	var opaque := 0
+	var white := 0
+	var y := 0
+	while y < h:
+		var x := 0
+		while x < w:
+			var c := image.get_pixel(x, y)
+			if c.a > 0.5:
+				opaque += 1
+				if c.r > 0.94 and c.g > 0.94 and c.b > 0.94:
+					white += 1
+			x += 16
+		y += 16
+	truthy(opaque > 8, "%s has painted pixels" % label)
+	truthy(float(white) <= float(opaque) * 0.5, "%s is not a solid white plate" % label)
+
+
+func _assert_leaves_miss_cells(layer: Node, msg: String) -> void:
+	# v1 frames are large quads pinned on the board. Their corners cross the
+	# play guard; the painted pixels stay off the cells.
+	if JUNGLE.v1_placement().is_empty():
+		eq(layer.leaves_cover_play(), false, msg)
+	else:
+		truthy(layer.leaf_board_coverage() <= 0.005, msg)
+
+
+func _test_v1_contract() -> void:
+	var decor := JUNGLE.v1_decor()
+	eq(float(decor.get("hud_clear_px", 0.0)), 175.0, "the leaf frame clears the action bar")
+	eq(bool(decor.get("props_live", true)), true, "v1 props are live")
+	eq(float(_decor_block(decor, "sky").get("parallax", 0.0)), 0.08, "v1 sky parallax is 0.08")
+	eq(float(_decor_block(decor, "clearing").get("parallax", 0.0)), 0.4, "v1 clearing parallax is 0.40")
+	var masters: Dictionary = decor.get("masters_px", {})
+	var sway: Dictionary = decor.get("sway_px", {})
+	var want_master := {
+		"sky": [2848, 1440],
+		"clearing": [5696, 2880],
+		"leaf_frame_left": [1484, 1936],
+		"leaf_frame_right": [1484, 1936],
+		"leaf_frame_top": [3480, 960],
+		"leaf_frame_bottom": [3480, 496],
+	}
+	var want_sway := {
+		"leaf_frame_left": [742, 968],
+		"leaf_frame_right": [742, 968],
+		"leaf_frame_top": [1740, 480],
+		"leaf_frame_bottom": [1740, 248],
+	}
+	for slot in want_master.keys():
+		var got: Array = masters.get(slot, [])
+		var want: Array = want_master[slot]
+		eq(got.size() >= 2 and int(got[0]) == int(want[0]) and int(got[1]) == int(want[1]), true, "%s v1 master is %dx%d" % [slot, int(want[0]), int(want[1])])
+		var path := JUNGLE.choose_path(JUNGLE.v1_root(), slot)
+		if path == "":
+			continue
+		var tex := load(path) as Texture2D
+		truthy(tex != null, "%s v1 master loads" % slot)
+		if tex != null:
+			eq(tex.get_width(), int(want[0]), "%s v1 width" % slot)
+			eq(tex.get_height(), int(want[1]), "%s v1 height" % slot)
+		if slot == "sky" or slot == "clearing":
+			_check_import(path, "vram_bc7")
+			var fallback := load(JUNGLE.v1_root() + slot + ".png") as Texture2D
+			truthy(fallback != null, "%s v1 1x loads" % slot)
+			if tex != null and fallback != null:
+				eq(fallback.get_width() * 2, tex.get_width(), "%s v1 1x is half the master width" % slot)
+				eq(fallback.get_height() * 2, tex.get_height(), "%s v1 1x is half the master height" % slot)
+			_check_import(JUNGLE.v1_root() + slot + ".png", "vram_bc7")
+	for slot in want_sway.keys():
+		var got: Array = sway.get(slot, [])
+		var want: Array = want_sway[slot]
+		eq(got.size() >= 2 and int(got[0]) == int(want[0]) and int(got[1]) == int(want[1]), true, "%s v1 sway is %dx%d" % [slot, int(want[0]), int(want[1])])
+		var sway_path: String = JUNGLE.v1_root() + slot + "_sway.png"
+		if not FileAccess.file_exists(sway_path):
+			continue
+		var sway_tex := load(sway_path) as Texture2D
+		truthy(sway_tex != null, "%s v1 sway loads" % slot)
+		if sway_tex != null:
+			eq(sway_tex.get_width(), int(want[0]), "%s v1 sway width" % slot)
+			eq(sway_tex.get_height(), int(want[1]), "%s v1 sway height" % slot)
+	eq(JUNGLE.sway_mask_path("front_leaves_left").ends_with("front_leaves_left_sway.png"), not JUNGLE.v1_ready(), "sway masks follow the live art set")
+	if JUNGLE.v1_ready():
+		eq(JUNGLE.sway_mask_path("front_leaves_left"), JUNGLE.v1_root() + "leaf_frame_left_sway.png", "v1 sway reads the leaf-frame mask")
+
+
+func _decor_block(decor: Dictionary, key: String) -> Dictionary:
+	var raw: Variant = decor.get(key, {})
+	if raw is Dictionary:
+		return raw
+	return {}
 
 
 func _color_close(got: Color, raw: Array) -> bool:

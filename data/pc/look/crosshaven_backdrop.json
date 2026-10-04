@@ -47,5 +47,84 @@
     "contact_shadow": -24,
     "leaf_shadow": 0,
     "front_leaves": 720
+  },
+  "v1_decor": {
+    "art_root": "res://art/pc/look/crosshaven_decor/",
+    "note": "Luca's v1 mock. Not drawn until sky, clearing, and the four leaf-frame files exist under art_root. The v4 plates stay up until then. Tiles are not part of this kit.",
+    "sky": {
+      "slot": "sky",
+      "replaces": "back_far",
+      "parallax": 0.08,
+      "modulate": [1.0, 1.0, 1.0],
+      "role": "warm sky gap"
+    },
+    "clearing": {
+      "slot": "clearing",
+      "replaces": "back_mid",
+      "parallax": 0.4,
+      "modulate": [1.0, 1.0, 1.0],
+      "role": "sunlit mossy clearing, roots and tree shadows"
+    },
+    "leaf_frame": {
+      "replaces": "front_leaves",
+      "parallax": 0.0,
+      "z": 720,
+      "modulate": [1.08, 1.08, 1.08],
+      "slots": {
+        "leaf_frame_left": "left",
+        "leaf_frame_right": "right",
+        "leaf_frame_top": "top",
+        "leaf_frame_bottom": "bottom"
+      },
+      "over": "the screen frame and the board edge",
+      "never_covers": ["walkable_cells", "hud"]
+    },
+    "placement": {
+      "space": "board local px; cell (x,y) centre = ((x-y)*32, (x+y)*16). Mock v1 positions, mapped into the game camera",
+      "sky": {
+        "center": [0.0, 308.5],
+        "world_size": [2847.843, 1440.023]
+      },
+      "clearing": {
+        "center": [0.0, 308.5],
+        "world_size": [2847.843, 1440.023]
+      },
+      "leaf_frame_left": {
+        "center": [-702.817, 144.449],
+        "world_size": [1045.07, 1363.102],
+        "z": 722
+      },
+      "leaf_frame_right": {
+        "center": [702.817, 144.449],
+        "world_size": [1045.07, 1363.102],
+        "z": 723
+      },
+      "leaf_frame_top": {
+        "center": [0.0, -199.143],
+        "world_size": [2450.704, 675.918],
+        "z": 720
+      },
+      "leaf_frame_bottom": {
+        "center": [0.0, 651.388],
+        "world_size": [2450.704, 349.224],
+        "z": 721
+      }
+    },
+    "masters_px": {
+      "sky": [2848, 1440],
+      "clearing": [5696, 2880],
+      "leaf_frame_left": [1484, 1936],
+      "leaf_frame_right": [1484, 1936],
+      "leaf_frame_top": [3480, 960],
+      "leaf_frame_bottom": [3480, 496]
+    },
+    "sway_px": {
+      "leaf_frame_left": [742, 968],
+      "leaf_frame_right": [742, 968],
+      "leaf_frame_top": [1740, 480],
+      "leaf_frame_bottom": [1740, 248]
+    },
+    "hud_clear_px": 175,
+    "props_live": true
   }
 }

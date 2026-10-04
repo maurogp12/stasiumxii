@@ -11,6 +11,8 @@ class_name CrosshavenBoard
 ## no decor on raised cells, and the 2-cell wall and log art (not the old
 ## fence cells). Tall props sit off the walkable grid, on the rim. Walkable
 ## cells get low decor in clusters. Props do not block.
+## Luca's v1 mock is looks.json v1_frame and v1_plants. It stays off until
+## v1_decor.props_live is true. The live props and decor are unchanged.
 
 const ART_ROOT := "res://art/pc/look/crosshaven_board/"
 const LOOKS_PATH := ART_ROOT + "looks.json"
@@ -89,6 +91,12 @@ static func load_json(path: String) -> Dictionary:
 
 static func load_looks() -> Dictionary:
 	return load_json(LOOKS_PATH)
+
+
+## The v1 rim is data only until the decoration kit is in and this flag is set.
+static func v1_props_live() -> bool:
+	var decor: Variant = load_json("res://data/pc/look/crosshaven_backdrop.json").get("v1_decor", {})
+	return decor is Dictionary and bool((decor as Dictionary).get("props_live", false))
 
 
 static func load_catalog() -> Array:
@@ -291,6 +299,12 @@ static func unresolved_ids() -> PackedStringArray:
 	for entry in looks.get("decor", []):
 		if entry is Dictionary:
 			_note_id(seen, missing, "props", str(entry.get("id", "")))
+	for entry in looks.get("v1_frame", []):
+		if entry is Dictionary:
+			_note_id(seen, missing, _folder_for_prop(str(entry.get("new_id", ""))), str(entry.get("new_id", "")))
+	for entry in looks.get("v1_plants", []):
+		if entry is Dictionary:
+			_note_id(seen, missing, "props", str(entry.get("id", "")))
 	for entry in terrace_entries():
 		if entry is Dictionary:
 			_note_id(seen, missing, "terrace", str(entry.get("id", "")))
@@ -402,8 +416,24 @@ func _ensure_data() -> void:
 	for cell in looks.get("cells", []):
 		if cell is Dictionary:
 			_by_cell[Vector2i(int(cell.get("x", 0)), int(cell.get("y", 0)))] = cell
+	var prop_rows: Array = looks.get("props", [])
+	var decor_rows: Array = looks.get("decor", [])
+	# Seal slabs stay. The mock v1 frame replaces the prop layer, and the
+	# mock plants replace decor, including plants that sit on raised cells.
+	if v1_props_live():
+		var kept: Array = []
+		for entry in prop_rows:
+			if entry is Dictionary and str(entry.get("layer", "")) == "tile_overlay":
+				kept.append(entry)
+		var frame: Variant = looks.get("v1_frame", [])
+		if frame is Array:
+			kept.append_array(frame)
+		prop_rows = kept
+		var plants: Variant = looks.get("v1_plants", [])
+		if plants is Array:
+			decor_rows = plants
 	_frame = []
-	for entry in looks.get("props", []):
+	for entry in prop_rows:
 		if not (entry is Dictionary):
 			continue
 		if str(entry.get("layer", "")) != "prop":
@@ -415,10 +445,12 @@ func _ensure_data() -> void:
 		if not _props_at.has(at):
 			_props_at[at] = []
 		(_props_at[at] as Array).append(entry)
-	for entry in looks.get("decor", []):
+	# Mock v1 draws its plants on raised cells too (same places as the mock).
+	var plants_on_raised := DECOR_ON_RAISED or v1_props_live()
+	for entry in decor_rows:
 		if not (entry is Dictionary):
 			continue
-		if not DECOR_ON_RAISED and int(entry.get("height", 0)) > 0:
+		if not plants_on_raised and int(entry.get("height", 0)) > 0:
 			continue
 		var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		if not _decor_at.has(at):
