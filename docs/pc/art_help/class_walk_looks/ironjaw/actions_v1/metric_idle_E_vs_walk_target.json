@@ -1,0 +1,87 @@
+{
+ "facing": "E",
+ "fit": {
+  "scale": 0.4178,
+  "tx": 1.1,
+  "ty": 57.7,
+  "iou_upper": 0.964
+ },
+ "ssim_upper": 0.985,
+ "ssim_lower": 0.572,
+ "ssim_full": 0.773,
+ "iou": 0.825,
+ "palette_detail": {
+  "steel": {
+   "dE": 0.36,
+   "share_cand": 0.863,
+   "share_tgt": 0.873
+  },
+  "cape": {
+   "dE": 0.07,
+   "share_cand": 0.135,
+   "share_tgt": 0.125
+  },
+  "bone": {
+   "dE": 1.02,
+   "share_cand": 0.002,
+   "share_tgt": 0.003
+  }
+ },
+ "palette": 0.968,
+ "leg_ratio_vs_repaint": 0.838,
+ "height_vs_idle": 1.0,
+ "look_hold_upper": [
+  0.985,
+  0.978,
+  0.926,
+  0.823,
+  0.719,
+  0.637,
+  0.603,
+  0.627,
+  0.703,
+  0.808,
+  0.916,
+  0.974
+ ],
+ "look_score": 88.9,
+ "bob_err_per_frame": [
+  0.2,
+  0.2,
+  -0.8,
+  0.2,
+  0.2,
+  0.2,
+  0.2,
+  0.2,
+  0.2,
+  0.2,
+  -0.8,
+  0.2
+ ],
+ "bob_err": 0.83,
+ "bob_amp": {
+  "cand": 1,
+  "v2": 1
+ },
+ "sole_err": [
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31,
+  24.31
+ ],
+ "motion_score": 0.0,
+ "PASS": {
+  "look": true,
+  "motion": false
+ },
+ "target": "v7/targets/rp_E_stride_t2.jpg"
+}
