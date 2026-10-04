@@ -48,6 +48,7 @@ func _run() -> void:
 	# The checks below pin the old hop / plant walk, kept as the GLIDE-off
 	# fallback. The glide walk (Mauro 2 Oct 2026) has its own test at the end.
 	MOTION.glide = false
+	StripLibrary.set_painted_looks(false)
 	_test_tunables_and_budget()
 	_test_curves_return_to_origin()
 	_test_idle_phase()
@@ -645,7 +646,8 @@ func _test_pawn_samples_then_plants() -> void:
 	eq(sprite.position, Vector2.ZERO, "plant puts feet back on the origin")
 	eq(sprite.scale, Pawn.sprite_scale_for("kestrel"), "plant restores the roster read scale")
 	eq(sprite.rotation, 0.0, "plant clears the tilt")
-	eq(sprite.offset, Vector2(0, -72), "foot offset stays shipped")
+	# The static is the painted f00 cell now (not 160 tall): the sole stays on row 152.
+	eq(sprite.offset, Pawn.pivot_offset_for(float(sprite.texture.get_height())), "foot offset keeps the sole line on the tile")
 	pawn._sample_idle(0.0)
 	var bob: float = sprite.position.y
 	eq(absf(bob) <= MOTION.IDLE_BOB_PX + 0.001, true, "idle bob stays inside the tuned amplitude")
