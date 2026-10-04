@@ -1,5 +1,7 @@
 # Gloam walk v1 (Claude): painted legs on blockout v3
 
+> **LOCKED, 4 Oct 2026.** Mauro: "Lock in." Walk S/E/W/N at commit `8119c9e` is final: S is on Gloam blockout v3.1 (`42d8d7c`, foot_w 1.5, Mauro's pick), E is on v3. Don't change these frames without his sign-off.
+
 The Gloam walk for S and E, 12 frames each. W and N are mirrors of these two. This is a first pass for review. It is not locked.
 
 The method is the one used for the locked Kestrel walk (`kestrel/v3_claude/`). The scripts were copied and adapted here, and Kestrel was not changed:
