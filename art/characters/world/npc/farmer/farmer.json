@@ -1,0 +1,43 @@
+{
+ "frame_size_2x": [
+  256,
+  256
+ ],
+ "pivot_px_2x": [
+  128,
+  240
+ ],
+ "mirror": {
+  "W": {
+   "src": "S",
+   "flip_h": true
+  },
+  "E": {
+   "src": "N",
+   "flip_h": true
+  }
+ },
+ "anims": {
+  "idle": {
+   "frames": 10,
+   "fps": 8,
+   "loop": true
+  },
+  "walk": {
+   "frames": 8,
+   "fps": 10,
+   "loop": true,
+   "stride_px": 54
+  },
+  "talk": {
+   "frames": 6,
+   "fps": 8,
+   "loop": false
+  },
+  "work": {
+   "frames": 12,
+   "fps": 10,
+   "loop": true
+  }
+ }
+}

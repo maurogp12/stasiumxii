@@ -1,12 +1,18 @@
 extends Node2D
 
-## One standing NPC. Stand-in art is a class world sprite with a role tint
-## and a name plate. The character strips are not edited.
+## One open-world NPC. Painted role art from `art/characters/world/npc/<role>/`
+## (see npc_sprites.gd): idle loop by default, talk once when the hero opens
+## the dialogue, walk and work for the NPCs that move (spec 4.5a Movement,
+## npc_roam.gd). A role with no painted folder falls back to the old stand-in:
+## a class world sprite with a role tint. The art strips are not edited.
 ## Y-sorted with props using BoardVisualSort.UNIT_Z_BIAS.
 
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
+const Art := preload("res://scenes/world/npc/npc_sprites.gd")
+const Roam := preload("res://scenes/world/npc/npc_roam.gd")
 
+## Stand-in only, for a role with no painted folder.
 const ROLE_CLASS := {
 	"warden": "bastion",
 	"trader": "mender",
@@ -28,6 +34,7 @@ const ROLE_CLASS := {
 	"last_watcher": "bastion",
 	"coil_engineer": "kestrel",
 }
+## Stand-in only, for a role with no painted folder.
 const ROLE_TINT := {
 	"warden": Color("d7c4a1"),
 	"trader": Color("e2b15a"),
@@ -50,18 +57,58 @@ const ROLE_TINT := {
 	"coil_engineer": Color("9ec4e6"),
 }
 
+## A post NPC turns to the hero inside this many cells (Manhattan).
+const NOTICE_CELLS := 4
+## Seconds a mover waits before it tries a blocked step again.
+const RETRY_SEC := 0.6
+## Blocked tries before a mover drops its target and picks another.
+const RETRY_LIMIT := 3
+
 var npc_id := ""
 var role := ""
 var display_name := ""
+## Logical cell. A mover takes the next cell at the half-way point of a step.
 var cell := Vector2i.ZERO
+## Post cell from npcs.json.
+var home := Vector2i.ZERO
+## World step letter (n, e, s, w). See npc_sprites.gd for the art letters.
 var facing := "s"
+var home_facing := "s"
+## post, patrol or wander (npc_roam.gd).
+var behaviour := "post"
+## Painted art, or empty when this role uses the tinted stand-in.
+var art: Dictionary = {}
+## Anim on screen: idle, walk, talk, or the role's work anim.
+var anim := "idle"
+var mark := ""
+## False keeps a mover at its post (tests and captures may set this).
+var roam_enabled := true
 
+var _zone: WorldZone
 var _sprite: Sprite2D
 var _strips = null
 var _bob := 0.0
 var _plate: Node2D
 var _opaque_top := 0
-var mark := ""
+var _frame := 0
+var _anim_t := 0.0
+var _rng := RandomNumberGenerator.new()
+## The world. Answers npc_cell_free(npc, cell) and npc_hero_cell(npc).
+var _host: Object = null
+var _allowed: Dictionary = {}
+var _spots: Array = []
+var _stops: Array[Vector2i] = []
+var _stop_i := 0
+var _path: Array[Vector2i] = []
+var _step_from := Vector2i.ZERO
+var _step_to := Vector2i.ZERO
+var _step_t := 0.0
+var _stepping := false
+var _wait := 0.0
+var _retries := 0
+var _held := false
+var _arrive_face := ""
+var _notice_t := 0.0
 
 
 func set_mark(next: String) -> void:
@@ -127,24 +174,128 @@ func setup(zone: WorldZone, record: Dictionary, plates: CanvasLayer = null) -> v
 	display_name = str(record.get("name", ""))
 	var at: Dictionary = record.get("cell", {})
 	cell = Vector2i(int(at.get("x", 0)), int(at.get("y", 0)))
+	home = cell
 	facing = str(record.get("facing", "S")).to_lower()
+	home_facing = facing
 	name = "Npc_%s" % npc_id
+	_zone = zone
+	_rng.seed = hash(npc_id)
 	z_as_relative = false
-	z_index = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + BoardVisualSort.UNIT_Z_BIAS
+	z_index = _base_z(cell)
 	position = Pick.cell_center(zone, cell)
-	_strips = Strips.new()
-	_strips.load_class(str(ROLE_CLASS.get(role, "kestrel")))
+	art = Art.load_role(role)
+	behaviour = Roam.behaviour_for(role) if not art.is_empty() else Roam.POST
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
 	_sprite.centered = true
 	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	_sprite.offset = _strips.pivot
-	_sprite.scale = Vector2.ONE * _strips.scale
-	_sprite.modulate = ROLE_TINT.get(role, Color.WHITE)
+	if art.is_empty():
+		_strips = Strips.new()
+		_strips.load_class(str(ROLE_CLASS.get(role, "kestrel")))
+		_sprite.offset = _strips.pivot
+		_sprite.scale = Vector2.ONE * _strips.scale
+		_sprite.modulate = ROLE_TINT.get(role, Color.WHITE)
+	else:
+		var frame: Vector2i = art["frame"]
+		var pivot: Vector2 = art["pivot"]
+		_sprite.offset = Vector2(float(frame.x) * 0.5 - pivot.x, float(frame.y) * 0.5 - pivot.y)
+		_sprite.scale = Vector2.ONE * Art.DRAW_SCALE_1X
+		_opaque_top = int(art.get("head_top", 0))
 	add_child(_sprite)
+	# Stagger first moves so a town does not set off in step.
+	_wait = _rng.randf_range(2.0, 5.0)
 	_apply_idle()
 	queue_redraw()
 	_mount_plate(plates)
+
+
+func is_painted() -> bool:
+	return not art.is_empty()
+
+
+## Let this NPC move. `host` is the world: it answers npc_cell_free(npc, cell)
+## and npc_hero_cell(npc). `forbidden` holds cells a mover never enters;
+## `no_dwell` holds cells it may cross but never pauses on.
+func attach_host(host: Object, forbidden: Dictionary, no_dwell: Dictionary = {}) -> void:
+	_host = host
+	var radius := Roam.radius_for(behaviour)
+	_allowed = Roam.area(_zone, home, radius, forbidden)
+	_spots = []
+	_stops = []
+	if behaviour == Roam.WANDER:
+		_spots = Roam.pause_spots(_zone, home, _allowed, no_dwell)
+	elif behaviour == Roam.PATROL:
+		_stops = Roam.patrol_stops(_zone, home, _allowed, no_dwell)
+		_stop_i = 0
+
+
+## Cells a mover may stand on (empty for a post NPC with no host).
+func allowed_cells() -> Dictionary:
+	return _allowed
+
+
+func pause_spots() -> Array:
+	return _spots
+
+
+func patrol_stops() -> Array[Vector2i]:
+	return _stops
+
+
+func is_walking() -> bool:
+	return _stepping
+
+
+## Standing still at home, a pause spot or a patrol stop (not mid-route).
+func is_dwelling() -> bool:
+	return not _stepping and _path.is_empty()
+
+
+func is_held() -> bool:
+	return _held
+
+
+## The cells this NPC blocks: its cell, plus the far cell of a step.
+func occupied_cells() -> Array[Vector2i]:
+	var out: Array[Vector2i] = [cell]
+	if _stepping:
+		if not out.has(_step_from):
+			out.append(_step_from)
+		if not out.has(_step_to):
+			out.append(_step_to)
+	return out
+
+
+## The cell this NPC will stand on once its current step ends.
+func stop_cell() -> Vector2i:
+	return _step_to if _stepping else cell
+
+
+## The hero is coming to talk. Finish the current step, then stand still.
+func hold() -> void:
+	_held = true
+	_path.clear()
+
+
+## Face the hero and play the talk gesture once. Stays held until release().
+func talk_to(dir: String) -> void:
+	_held = true
+	_path.clear()
+	if _stepping:
+		_finish_step()
+	face(dir)
+	if not art.is_empty() and (art["anims"] as Dictionary).has("talk"):
+		_set_anim("talk")
+
+
+## The dialogue closed. Pause a moment, then go back to the routine.
+func release() -> void:
+	if not _held:
+		return
+	_held = false
+	_wait = _rng.randf_range(1.0, 2.0)
+	if anim != "idle" and not _stepping:
+		_set_anim("idle")
 
 
 func face(dir: String) -> void:
@@ -152,15 +303,243 @@ func face(dir: String) -> void:
 	if next != "n" and next != "e" and next != "s" and next != "w":
 		return
 	facing = next
-	_apply_idle()
+	if art.is_empty():
+		_apply_idle()
+	else:
+		_show_frame()
+
+
+## Advance this NPC by `delta` seconds. _process calls it; tests call it directly.
+func tick(delta: float) -> void:
+	if art.is_empty():
+		_bob += delta
+		_sprite.position = Vector2(0, sin(_bob * 2.2) * 1.5)
+		return
+	_tick_anim(delta)
+	if _stepping:
+		_tick_step(delta)
+		return
+	if _held:
+		return
+	if behaviour == Roam.POST or _host == null or not roam_enabled:
+		_notice_hero(delta)
+		return
+	if not _path.is_empty():
+		_try_step(delta)
+		return
+	_wait -= delta
+	if _wait > 0.0:
+		return
+	_pick_target()
 
 
 func _process(delta: float) -> void:
 	if _sprite == null:
 		return
-	_bob += delta
-	_sprite.position = Vector2(0, sin(_bob * 2.2) * 1.5)
+	tick(delta)
 	_sync_plate()
+
+
+func _tick_anim(delta: float) -> void:
+	var spec: Dictionary = (art["anims"] as Dictionary).get(anim, {})
+	if spec.is_empty():
+		return
+	_anim_t += delta
+	var per := 1.0 / float(spec["fps"])
+	var frames := int(spec["frames"])
+	var moved := false
+	while _anim_t >= per:
+		_anim_t -= per
+		_frame += 1
+		moved = true
+		if _frame >= frames:
+			if bool(spec["loop"]):
+				_frame = 0
+			else:
+				# A one-shot (talk) ends on idle.
+				_set_anim("idle")
+				return
+	if moved:
+		_show_frame()
+
+
+func _set_anim(next: String) -> void:
+	if art.is_empty() or not (art["anims"] as Dictionary).has(next):
+		next = "idle"
+	anim = next
+	_frame = 0
+	_anim_t = 0.0
+	_show_frame()
+
+
+func _show_frame() -> void:
+	if _sprite == null or art.is_empty():
+		return
+	var anims: Dictionary = art["anims"]
+	var spec: Dictionary = anims.get(anim, anims["idle"])
+	var source := Art.source_for(art, facing)
+	var tex: Texture2D = (spec["tex"] as Dictionary).get(str(source["src"]), null)
+	if tex == null:
+		return
+	var count := int(spec["frames"])
+	_sprite.texture = tex
+	_sprite.region_enabled = true
+	_sprite.region_rect = Art.frame_rect(art, clampi(_frame, 0, count - 1))
+	_sprite.flip_h = bool(source["flip"])
+
+
+## A post NPC turns to the hero when the hero is close, and back to its
+## post facing when the hero leaves.
+func _notice_hero(delta: float) -> void:
+	if _host == null or not _host.has_method("npc_hero_cell"):
+		return
+	_notice_t -= delta
+	if _notice_t > 0.0:
+		return
+	_notice_t = 0.25
+	var hero: Vector2i = _host.npc_hero_cell(self)
+	var want := home_facing
+	if hero.x >= 0 and Roam.manhattan(hero, cell) <= NOTICE_CELLS and hero != cell:
+		want = Roam.face_toward(cell, hero)
+	if want != "" and want != facing:
+		face(want)
+
+
+func _pick_target() -> void:
+	_retries = 0
+	_arrive_face = ""
+	var target := home
+	if behaviour == Roam.WANDER:
+		var choices: Array = []
+		for spot in _spots:
+			if (spot["cell"] as Vector2i) != cell:
+				choices.append(spot)
+		if choices.is_empty():
+			_wait = 3.0
+			return
+		var pick: Dictionary = choices[_rng.randi_range(0, choices.size() - 1)]
+		target = pick["cell"]
+		_arrive_face = str(pick["face"])
+	elif behaviour == Roam.PATROL:
+		if _stops.size() < 2:
+			# No room for a loop (a post on a ledge or a jetty): look around
+			# in place now and then.
+			var look := str(art.get("work", ""))
+			if look != "" and anim != look:
+				_set_anim(look)
+				var spec: Dictionary = (art["anims"] as Dictionary)[look]
+				_wait = float(spec["frames"]) / float(spec["fps"])
+			else:
+				_set_anim("idle")
+				_wait = _rng.randf_range(4.0, 7.0)
+			return
+		_stop_i = (_stop_i + 1) % _stops.size()
+		target = _stops[_stop_i]
+		if target == cell:
+			_wait = 1.0
+			return
+	_path = Roam.path(_allowed, cell, target)
+	if _path.is_empty():
+		_wait = 2.0
+
+
+func _try_step(delta: float) -> void:
+	_wait -= delta
+	if _wait > 0.0:
+		return
+	var next: Vector2i = _path[0]
+	var free := true
+	if _host != null and _host.has_method("npc_cell_free"):
+		free = bool(_host.npc_cell_free(self, next))
+	if not free:
+		_retries += 1
+		_wait = RETRY_SEC
+		if anim != "idle":
+			_set_anim("idle")
+		if _retries >= RETRY_LIMIT:
+			# Try another spot. Keep the old route if nothing else is open,
+			# so a walker never settles on a lane cell.
+			var keep := _path.duplicate()
+			var keep_face := _arrive_face
+			_pick_target()
+			if _path.is_empty():
+				_path = keep
+				_arrive_face = keep_face
+				_wait = RETRY_SEC
+		return
+	_retries = 0
+	_path.pop_front()
+	_step_from = cell
+	_step_to = next
+	_step_t = 0.0
+	_stepping = true
+	facing = Roam.step_letter(next - cell)
+	if anim != "walk":
+		_set_anim("walk")
+	else:
+		_show_frame()
+
+
+func _tick_step(delta: float) -> void:
+	var a: Vector2 = Pick.cell_center(_zone, _step_from)
+	var b: Vector2 = Pick.cell_center(_zone, _step_to)
+	var span := maxf(a.distance_to(b), 1.0)
+	var speed := maxf(Art.walk_speed(art), 8.0)
+	_step_t = minf(1.0, _step_t + delta * speed / span)
+	position = a.lerp(b, _step_t)
+	if _step_t >= 0.5 and cell != _step_to:
+		_move_cell(_step_to)
+	if _step_t >= 1.0:
+		_finish_step()
+
+
+func _finish_step() -> void:
+	_move_cell(_step_to)
+	position = Pick.cell_center(_zone, _step_to)
+	_stepping = false
+	if _held:
+		_set_anim("idle")
+		return
+	if not _path.is_empty():
+		return
+	_arrive()
+
+
+func _arrive() -> void:
+	var work := str(art.get("work", ""))
+	if behaviour == Roam.WANDER:
+		if _arrive_face != "" and work != "":
+			face(_arrive_face)
+			_set_anim(work)
+			_wait = _rng.randf_range(4.0, 7.0)
+		else:
+			face(home_facing if cell == home else facing)
+			_set_anim("idle")
+			_wait = _rng.randf_range(2.5, 4.5)
+	elif behaviour == Roam.PATROL:
+		if cell == home:
+			face(home_facing)
+		if work != "":
+			_set_anim(work)
+			var spec: Dictionary = (art["anims"] as Dictionary)[work]
+			_wait = float(spec["frames"]) / float(spec["fps"]) + _rng.randf_range(0.5, 1.5)
+		else:
+			_set_anim("idle")
+			_wait = _rng.randf_range(1.5, 3.0)
+	else:
+		_set_anim("idle")
+
+
+func _move_cell(next: Vector2i) -> void:
+	if next == cell:
+		return
+	var raise := z_index - _base_z(cell)
+	cell = next
+	z_index = clampi(_base_z(cell) + raise, -4096, 4096)
+
+
+func _base_z(c: Vector2i) -> int:
+	return (c.x + c.y) * BoardVisualSort.TILE_Z_SCALE + BoardVisualSort.UNIT_Z_BIAS
 
 
 func _exit_tree() -> void:
@@ -190,7 +569,8 @@ func _sync_plate() -> void:
 	_plate.queue_redraw()
 
 
-## Visible head in this NPC's local space, including the idle bob.
+## Visible head in this NPC's local space. Painted art uses the highest idle
+## row of the role, so the plate does not bob with each frame.
 func _head_local_y() -> float:
 	if _sprite == null:
 		return 0.0
@@ -229,7 +609,13 @@ func _measure_opaque_top() -> void:
 
 
 func _apply_idle() -> void:
-	if _sprite == null or _strips == null:
+	if _sprite == null:
+		return
+	if not art.is_empty():
+		_set_anim("idle")
+		_sync_plate()
+		return
+	if _strips == null:
 		return
 	var tex: Texture2D = _strips.idle(facing)
 	if tex == null:
@@ -245,7 +631,11 @@ func _apply_idle() -> void:
 	_sync_plate()
 
 
+## The painted strips carry their own contact shadow. The stand-in keeps the
+## drawn ellipse.
 func _draw() -> void:
+	if not art.is_empty():
+		return
 	var shadow := PackedVector2Array()
 	var steps := 10
 	for i in steps:
