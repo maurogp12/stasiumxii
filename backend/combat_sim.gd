@@ -3917,6 +3917,14 @@ func _foe_casts(actor: Dictionary) -> Array:
 			"radius", "pads":
 				if not _foe_area_victims(actor, def, Vector2i.ZERO).is_empty():
 					out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
+			"blast":
+				for v in victims:
+					var d := chebyshev(from, v["pos"])
+					if d < int(def.get("min", 2)) or d > int(def.get("max", 6)):
+						continue
+					if not has_line_of_sight(from, v["pos"]):
+						continue
+					out.append({"type": "cast", "spell": id, "to": v["pos"], "target_seat": v["seat"], "seat": seat})
 			"self":
 				out.append({"type": "cast", "spell": id, "to": from, "seat": seat})
 			"step":
@@ -3951,7 +3959,7 @@ func _foe_dash_cell(from: Vector2i, target: Vector2i) -> Vector2i:
 
 
 ## Tiles an area spell covers. `dir` is the cardinal facing (cone / line).
-func _foe_area_cells(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array:
+func _foe_area_cells(actor: Dictionary, def: Dictionary, dir: Vector2i, center: Vector2i = UNPLACED) -> Array:
 	var from: Vector2i = actor["pos"]
 	var out: Array = []
 	match str(def.get("shape", "")):
@@ -3967,7 +3975,14 @@ func _foe_area_cells(actor: Dictionary, def: Dictionary, dir: Vector2i) -> Array
 					break
 				out.append(cell)
 		"radius":
-			for cell in FoeKits.radius_cells(from):
+			for cell in FoeKits.radius_cells(from, int(def.get("size", 1))):
+				if _in_bounds(cell):
+					out.append(cell)
+		"blast":
+			var at := from if center == UNPLACED else center
+			if _in_bounds(at):
+				out.append(at)
+			for cell in FoeKits.radius_cells(at, int(def.get("size", 1))):
 				if _in_bounds(cell):
 					out.append(cell)
 		"pads":
@@ -4053,6 +4068,14 @@ func _submit_foe_cast(intent: Dictionary, actor: Dictionary) -> Dictionary:
 	if shape in ["cone", "line", "radius", "pads"]:
 		area = _foe_area_cells(actor, def, dir)
 		victims = _foe_area_victims(actor, def, dir)
+	elif shape == "blast":
+		area = _foe_area_cells(actor, def, dir, dest)
+		for v in _foe_victims(actor):
+			if area.has(v["pos"]):
+				victims.append(v)
+		var face_blast := _dir_name(_sign_step(dest - caster_cell))
+		if face_blast != "":
+			actor["facing"] = face_blast
 	else:
 		var target := _living_unit_at(dest)
 		if not target.is_empty():

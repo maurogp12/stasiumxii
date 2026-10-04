@@ -13,7 +13,9 @@ extends RefCounted
 ##   dash    target at exactly 2: step 1 onto a free tile beside it, then hit
 ##   cone    `size` rows toward a cardinal facing, row k is 2k-1 wide (AOE)
 ##   line    1..size tiles along a cardinal facing, stops at walls (AOE)
-##   radius  every tile at Chebyshev 1 around the caster (AOE)
+##   radius  every tile at Chebyshev 1 (or `size`) around the caster (AOE)
+##   blast   aimed at a target at min..max with sight; hits every tile at
+##           Chebyshev `size` around the impact (AOE)
 ##   pads    every Charged pad and every ground tile next to one (AOE)
 ##   self    the caster (Ward)
 ##   step    walk 1 tile (AP, not MP), voluntary walk gates
@@ -40,6 +42,12 @@ const SPELLS := {
 	"slag.cleave": {"name": "Magma Cleave", "ap": 4, "shape": "cone", "size": 2, "damage": 12, "element": "Fire", "aoe": true},
 	"slag.shoulder": {"name": "Shoulder", "ap": 3, "shape": "dash", "min": 1, "max": 2, "damage": 8, "element": "Fire", "push": 1},
 	"slag.burst": {"name": "Cinder Burst", "ap": 4, "shape": "radius", "damage": 12, "element": "Fire", "aoe": true},
+	# 5-star forms only (Mauro 4 Oct 2026: "put the damage on the bosses").
+	# Brineclaw Sovereign: ghost-fire cannon, lands on a hero and blasts the
+	# 3x3 around the impact. Slagheart Caldera Crown: heavy punch into the
+	# floor, every tile within 2. Base damage scales with the star like the rest.
+	"brine.cannon": {"name": "Ghostfire Cannon", "ap": 4, "shape": "blast", "min": 2, "max": 6, "size": 1, "damage": 14, "element": "Water", "aoe": true},
+	"slag.caldera": {"name": "Caldera Punch", "ap": 5, "shape": "radius", "size": 2, "damage": 14, "element": "Fire", "aoe": true},
 	# Serra White-Spire Regent (Windmere): ranged body, range spells.
 	"serra.shard": {"name": "Shard", "ap": 3, "shape": "shot", "min": 3, "max": 8, "damage": 14, "element": "Air", "bolt": true},
 	"serra.fan": {"name": "White Fan", "ap": 4, "shape": "line", "size": 5, "damage": 10, "element": "Air", "aoe": true},
@@ -59,6 +67,11 @@ const BOSS_KITS := {
 	"slagcrown": ["slag.slam", "slag.cleave", "slag.shoulder", "slag.burst"],
 	"windmere": ["serra.shard", "serra.fan", "serra.pin", "serra.step"],
 	"stormspire": ["coil.arc", "coil.pulse", "coil.lash", "coil.step"],
+}
+## Extra spells of a door's 5-star boss form (StasisCatalog.boss_art_5).
+const BOSS_KITS_STAR5_EXTRA := {
+	"brinewake": ["brine.cannon"],
+	"slagcrown": ["slag.caldera"],
 }
 ## Ranged bodies never walk into 0–1 when a shot is legal; they keep 3+.
 const RANGED_BOSS := {"windmere": true, "stormspire": true}
@@ -102,6 +115,13 @@ static func cooldown(id: String) -> int:
 	return AOE_CD if bool(def.get("aoe", false)) else 0
 
 
+static func boss_kit(door: String, star: int) -> Array:
+	var kit: Array = (BOSS_KITS.get(door, []) as Array).duplicate()
+	if star >= 5:
+		kit.append_array(BOSS_KITS_STAR5_EXTRA.get(door, []))
+	return kit
+
+
 static func boss_ap(star: int) -> int:
 	return BOSS_AP_STAR5 if star >= 5 else BOSS_AP
 
@@ -117,10 +137,11 @@ static func cone_cells(origin: Vector2i, dir: Vector2i, size: int) -> Array[Vect
 	return out
 
 
-static func radius_cells(origin: Vector2i) -> Array[Vector2i]:
+static func radius_cells(origin: Vector2i, size: int = 1) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	for dy in range(-1, 2):
-		for dx in range(-1, 2):
+	var r := maxi(size, 1)
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
 			if dx != 0 or dy != 0:
 				out.append(origin + Vector2i(dx, dy))
 	return out

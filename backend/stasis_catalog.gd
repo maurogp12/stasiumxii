@@ -574,7 +574,7 @@ static func _room_entries() -> Array:
 			"attack": str(door.get("boss_attack", "Heavy Blow")),
 			"art": boss_art_for(door, star),
 			"role": "boss",
-			"foe_kit": FoeKits.BOSS_KITS.get(biome_id, []),
+			"foe_kit": FoeKits.boss_kit(biome_id, star),
 			"max_ap": FoeKits.boss_ap(star),
 			"hp": scaled_hp(PROVISIONAL_BOSS_HP),
 			"attack_base": scaled_attack(PROVISIONAL_BOSS_ATTACK),
