@@ -1109,8 +1109,14 @@ func _test_batch1_disk_strips() -> void:
 	eq(dur > 0.45 and dur <= 0.6, true, "disk attack plays the 12 fps cycle inside the lock")
 	eq(is_equal_approx(strip.speed_scale, 1.0), true, "disk attack stays at authored 12 fps")
 	_assert_attack_impact(strip, "kestrel attack")
-	await create_timer(0.12).timeout
-	eq(sprite.position.length() > 2.0, true, "disk attack keeps the lunge")
+	# Sample the lunge over the first 0.35 s of frames instead of one wall-clock instant, so a loaded
+	# machine that drops frames cannot land the single sample before or after the lunge peak.
+	var lunge_peak := 0.0
+	var lunge_t0 := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - lunge_t0 < 350:
+		await process_frame
+		lunge_peak = maxf(lunge_peak, sprite.position.length())
+	eq(lunge_peak > 2.0, true, "disk attack keeps the lunge")
 	pawn.settle_motion()
 	var mark_plans: Dictionary = MOTION.chrome_plans([{
 		"type": "hit",
