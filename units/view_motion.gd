@@ -52,6 +52,8 @@ const HOP_PLANT_AT := 0.82
 ## on the first and last tile. The hop / plant curves below stay for GLIDE off.
 ## A static var so the old hop / plant walk (GLIDE off) stays testable.
 static var glide: bool = true
+## One step per tile (Mauro 2 Oct 2026: "one step per tile"): the stride cycle spans two tiles.
+static var step_per_tile: bool = true
 ## Footfall bob height as a share of the class hop crest.
 const GLIDE_BOB_SHARE := 0.45
 ## One hop per tile. Matches Pawn.WALK_TILE_SEC. Driven steps sample the
@@ -552,6 +554,16 @@ static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0, c
 	if count <= 1:
 		return 0
 	var plant := clampi(contact, 0, count - 1)
+	if glide and step_per_tile and count % 2 == 0:
+		# One step per tile: half the stride cycle per tile, odd tiles lead
+		# with the other foot, so the cycle spans two tiles.
+		var half := count / 2
+		var base := plant + (posmod(_step_index, 2)) * half
+		if t <= 0.0:
+			return base % count
+		if t >= 1.0:
+			return (base + half) % count
+		return (base + clampi(int(floor(t * float(half))), 0, half - 1)) % count
 	if glide:
 		# Continuous stride: every cell in turn across the tile, then the next
 		# tile starts on the contact again, so the seam never repeats a cell.
@@ -685,9 +697,10 @@ static func hop_offset(t: float, crest: float = -1.0) -> Vector2:
 	var amp := HOP_PX if crest < 0.0 else clampf(crest, 0.0, 4.0)
 	if glide:
 		# Two footfalls per tile (t = 0, 0.5, 1): a soft rise between them.
+		# One step per tile: one footfall, one rise.
 		if t <= 0.0 or t >= 1.0:
 			return Vector2.ZERO
-		var s := sin(t * TAU)
+		var s := sin(t * (PI if step_per_tile else TAU))
 		return Vector2(0.0, -amp * GLIDE_BOB_SHARE * s * s)
 	if t <= 0.0 or t >= 1.0 or t >= HOP_PLANT_AT:
 		return Vector2.ZERO

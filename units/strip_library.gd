@@ -30,6 +30,8 @@ const GROK_SHEETS: Array[String] = ["se", "sw", "ne", "nw"]
 const WALK_FRAMES := 6
 ## Locked down-right march (old letter e). Not mirrored onto south or west.
 const LOCKED_EAST_WALK_FRAMES := 12
+## Look 1 painted walks (Technical Artist): 8 frames, 144x176 cells.
+const LOOK1_WALK_FRAMES := 8
 const WALK_FPS := 12.0
 const ACTION_FRAMES := 6
 const ACTION_FPS := 12.0
@@ -42,6 +44,8 @@ static var _cache: Dictionary = {}
 static var _idle_cache: Dictionary = {}
 ## Foot-down cell per class facing. 0 when that cell is already frame 0.
 static var _walk_contact: Dictionary = {}
+## Foot row of the old 144x160 standing cell (walk frame 0 before Look 1).
+const LEGACY_STAND_ROW := 150
 
 
 static func clear_cache() -> void:
@@ -176,10 +180,10 @@ static func release_sec(class_id: String, kind: String) -> float:
 
 ## Locked map. Unknown tokens pass through so `e` stays `e`.
 ## East is the 12-frame march. The other letters stay six frames.
-static func walk_sheet_frames(face: String) -> int:
-	if letter_for_sheet(face) == "e":
-		return LOCKED_EAST_WALK_FRAMES
-	return WALK_FRAMES
+## Look 1 (Mauro 4 Oct 2026): every facing is an 8-frame painted walk; the
+## cell count comes from the sheet width (144 px cells), this is the fallback.
+static func walk_sheet_frames(_face: String) -> int:
+	return LOOK1_WALK_FRAMES
 
 
 static func letter_for_sheet(facing: String) -> String:
@@ -265,16 +269,10 @@ static func textures_from_image(image: Image, frame_count: int) -> Array[Texture
 	if width <= 0 or height <= 0:
 		return out
 	var cells := 1
-	if width % frame_count == 0:
-		cells = frame_count
-	elif width % CELL_W == 0:
+	if width % CELL_W == 0:
 		cells = width / CELL_W
-	# A 12-frame march is also divisible by 6. Slicing it as six cells
-	# glues two poses into one sprite, about twice as wide as the old 144.
-	if cells >= 2 and width % LOCKED_EAST_WALK_FRAMES == 0:
-		var wide := width / cells
-		if wide > CELL_W and width / LOCKED_EAST_WALK_FRAMES <= CELL_W:
-			cells = LOCKED_EAST_WALK_FRAMES
+	elif width % frame_count == 0:
+		cells = frame_count
 	if cells < 2:
 		return out
 	var frame_w := width / cells
@@ -619,8 +617,14 @@ static func _stabilize_walk_feet(frames: SpriteFrames, class_id: String = "") ->
 			heights.append(metrics.y)
 		if cls != "":
 			_walk_contact["%s:%s" % [cls, face]] = contact_index_from_metrics(feet, heights)
-		# The locked march already plants frame 0 and travels the other cells.
-		# Pulling every sole back to that point would erase the step.
+		# Painted walks (Look 1, 144x176) plant every frame on the sole line
+		# themselves. Pulling every sole back to frame 0 would erase the step.
+		var probe := frames.get_frame_texture(anim, 0)
+		if probe != null and probe.get_height() != 160:
+			# Painted 8-frame walk: frame 0 is the right-foot contact.
+			if cls != "":
+				_walk_contact["%s:%s" % [cls, face]] = 0
+			continue
 		if face == "e":
 			continue
 		var base_tex := frames.get_frame_texture(anim, 0)
@@ -690,11 +694,15 @@ static func _stabilize_hit_feet(frames: SpriteFrames) -> void:
 		var anchor_y := _walk_foot_y(frames, face)
 		if anchor_y < 0:
 			continue
-		# East hit sheets stay on their own 160px cell. The march foot is
-		# already on that same world plant (offset -72); retargeting the
-		# pixel row would sink the flinch.
-		if face == "e":
+		# Painted hit sheets (Look 1, 144x176) already stand on the sole line.
+		var hit_probe := frames.get_frame_texture(anim, 0)
+		if hit_probe != null and hit_probe.get_height() != 160:
 			continue
+		# Old 160 hit cell beside a painted walk: frame 0 of the painted walk
+		# is a stride, so pin to the old standing row instead.
+		var walk_probe := frames.get_frame_texture("walk_%s" % face, 0)
+		if walk_probe != null and walk_probe.get_height() != 160:
+			anchor_y = LEGACY_STAND_ROW
 		for i in count:
 			var tex := frames.get_frame_texture(anim, i)
 			if tex == null:
