@@ -52,7 +52,13 @@ var _skirt_dist: Dictionary = {}
 var _edge_fade: Dictionary = {}
 ## River cells within 3 of sea water or the map edge, 0..1 toward the sea tint.
 var _mouth_mix: Dictionary = {}
-const WATER_OVERLAP := 1.0
+## Water connected to the map edge. Inland pools stay out of this set.
+var _sea_body: Dictionary = {}
+## Empty cells past the sea, painted as the same fill so the backdrop does not show.
+var _void_sea: Dictionary = {}
+var _void_margin := 0
+## Sample inside the tile and overlap the neighbours so the fringe is not a seam.
+const WATER_OVERLAP := 4.0
 const BEACH_REACH := 4
 ## Painted sea past the last water cell, so the view edge is not a flat fill.
 const SEA_SKIRT := 22
@@ -83,6 +89,8 @@ func setup(target: WorldZone) -> void:
 	_cache_void_ranks()
 	_cache_beach()
 	_cache_sea_skirt()
+	_cache_sea_body()
+	_cache_void_sea()
 	_cache_water_edge()
 	var margin := _view_margin()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
@@ -240,7 +248,7 @@ func _beach_at(cell: Vector2i) -> String:
 func _view_margin() -> int:
 	if zone != null and zone.zone_id.begins_with("crosshaven_eastmarch"):
 		return maxi(blend_margin, SEA_SKIRT)
-	return blend_margin
+	return maxi(blend_margin, _void_margin)
 
 
 ## Void cells beyond the Eastmarch shore keep the kit sea and a breaker band.
@@ -349,11 +357,6 @@ func _kit_sea(cell: Vector2i) -> bool:
 	return family == "sea_shallow" or family == "sea_deep"
 
 
-## Kit sea is already deep blue. The repo tiles are graded to the same hue.
-func _kit_sea_modulate(_cell: Vector2i) -> Color:
-	return Color.WHITE
-
-
 ## Open water_a..d are the lighter river blue. These multiplies make sea and swamp.
 const SEA_TINT := Color(36.0 / 94.0, 110.0 / 173.0, 158.0 / 224.0)
 const SWAMP_TINT := Color(92.0 / 94.0, 96.0 / 173.0, 52.0 / 224.0)
@@ -376,9 +379,111 @@ func _water_grade(cell: Vector2i) -> String:
 	# Stoneford's channel is the river. Inland pools are the same lighter blue.
 	if zone_id.begins_with("crosshaven_stoneford"):
 		return "river"
+	# The whole body that meets the map edge is sea, not only the outer 8 cells.
+	if _sea_body.has(cell):
+		return "sea"
 	if _rim_depth(cell) > 8 and not _faces_void(cell):
 		return "river"
 	return "sea"
+
+
+## Flood sea from the rim through connected water. Swamp and the Stoneford
+## river stay out, so a bay more than 8 cells in still counts as sea.
+func _cache_sea_body() -> void:
+	_sea_body.clear()
+	if zone == null:
+		return
+	var can_sample := zone.sample_terrain.is_valid()
+	var margin := 4
+	if can_sample:
+		margin = maxi(_view_margin(), 4)
+	var queue: Array[Vector2i] = []
+	var seen := {}
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			if not _sea_candidate(cell):
+				continue
+			var seed := _rim_depth(cell) <= 8
+			if not seed and can_sample:
+				seed = _faces_void(cell)
+			if not seed:
+				continue
+			seen[cell] = true
+			queue.append(cell)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		_sea_body[at] = true
+		for dir in _ORTHO:
+			var nb: Vector2i = at + dir
+			if seen.has(nb):
+				continue
+			if not _sea_candidate(nb):
+				continue
+			seen[nb] = true
+			queue.append(nb)
+
+
+func _sea_candidate(cell: Vector2i) -> bool:
+	if Art.terrain_seen(zone, cell) != "water":
+		return false
+	var zone_id := _zone_id_at(cell)
+	if zone_id.contains("swamp"):
+		return false
+	if zone_id.begins_with("crosshaven_stoneford"):
+		return false
+	return true
+
+
+## Paint empty cells beyond the coast with the same sea fill as the tiles.
+## Eastmarch already extends kit sea into that void.
+func _cache_void_sea() -> void:
+	_void_sea.clear()
+	_void_margin = 0
+	if zone == null or not zone.sample_terrain.is_valid():
+		return
+	if zone.zone_id.begins_with("crosshaven_eastmarch"):
+		return
+	var reach := 16
+	var queue: Array[Vector2i] = []
+	var dist := {}
+	for y in range(-1, zone.height + 1):
+		for x in range(-1, zone.width + 1):
+			var cell := Vector2i(x, y)
+			if not _sea_candidate(cell):
+				continue
+			if _water_grade(cell) != "sea":
+				continue
+			if not _faces_void(cell):
+				continue
+			for dir in _ORTHO:
+				var nb: Vector2i = cell + dir
+				if dist.has(nb):
+					continue
+				if Art.terrain_seen(zone, nb) != "":
+					continue
+				dist[nb] = 1
+				queue.append(nb)
+	var head := 0
+	while head < queue.size():
+		var at: Vector2i = queue[head]
+		head += 1
+		_void_sea[at] = true
+		var here := int(dist[at])
+		if here >= reach:
+			continue
+		for dir in _ORTHO:
+			var next: Vector2i = at + dir
+			if dist.has(next):
+				continue
+			if Art.terrain_seen(zone, next) != "":
+				continue
+			dist[next] = here + 1
+			queue.append(next)
+	if not _void_sea.is_empty():
+		_void_margin = reach
 
 
 ## Outer water dissolves into the sea fill. River cells next to that sea
@@ -459,10 +564,13 @@ func _open_water_tile(id: String) -> bool:
 
 
 func _touches_sea_water(cell: Vector2i) -> bool:
-	for dir in _ORTHO:
-		var nb: Vector2i = cell + dir
-		if Art.terrain_seen(zone, nb) == "water" and _water_grade(nb) == "sea":
-			return true
+	for dy in range(-1, 2):
+		for dx in range(-1, 2):
+			if dx == 0 and dy == 0:
+				continue
+			var nb: Vector2i = cell + Vector2i(dx, dy)
+			if Art.terrain_seen(zone, nb) == "water" and _water_grade(nb) == "sea":
+				return true
 	return false
 
 
@@ -475,17 +583,6 @@ func _shore_land(cell: Vector2i) -> bool:
 	if seen == "" or seen == "water" or seen == "cliff":
 		return false
 	return _touches_sea_water(cell)
-
-
-func _sea_meets_land(cell: Vector2i) -> bool:
-	if _water_grade(cell) != "sea":
-		return false
-	for dir in _ORTHO:
-		var seen := Art.terrain_seen(zone, cell + dir)
-		# Cliff tops read as grass. The shore piece is the sand edge there too.
-		if seen != "" and seen != "water":
-			return true
-	return false
 
 
 func _sand_pick(cell: Vector2i) -> Dictionary:
@@ -547,16 +644,25 @@ func _draw_beach(ci: Node2D, cell: Vector2i, family: String, steps: int) -> void
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var south_tip := center + Vector2(0, Pick.HALF_H)
 	var modulate := Color.WHITE
-	# Skirt cells sit past the plane edge. Keep the kit blue; the rim lerp
-	# is only for in-chunk sea meeting the old shelf.
-	if (family == "sea_shallow" or family == "sea_deep") and not _skirt_dist.has(cell):
-		modulate = _kit_sea_modulate(cell)
+	var sea := family == "sea_shallow" or family == "sea_deep"
+	# One sea surface. The kit tiles are regraded to the same blue as the fill.
+	if sea:
+		ci.draw_colored_polygon(_sea_diamond(cell, steps), Color("246e9e"))
+		modulate = Color.WHITE
 	var pick: Dictionary = Kit.pick("eastmarch", family, cell, Callable(self, "_family_seen"))
 	var floor := str(pick.get("floor", ""))
 	if floor != "":
-		Kit.draw(ci, Kit.texture("eastmarch", floor), south_tip, modulate, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
+		var floor_art := Kit.texture("eastmarch", floor)
+		if sea:
+			_paint_clamped(ci, floor_art, south_tip, modulate, WATER_OVERLAP, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
+		else:
+			Kit.draw(ci, floor_art, south_tip, modulate, bool(pick.get("flip_h", false)), bool(pick.get("flip_v", false)))
 	for corner_id in pick.get("corners", []):
-		Kit.draw(ci, Kit.texture("eastmarch", str(corner_id)), south_tip, modulate, false, false)
+		var corner_art := Kit.texture("eastmarch", str(corner_id))
+		if sea:
+			_paint_clamped(ci, corner_art, south_tip, modulate, WATER_OVERLAP, false, false)
+		else:
+			Kit.draw(ci, corner_art, south_tip, modulate, false, false)
 	var prop := _shore_prop(cell, family)
 	if prop != "":
 		Kit.draw(ci, Kit.texture("eastmarch", prop), south_tip, Color.WHITE, false, false)
@@ -589,7 +695,7 @@ func _draw_row(row: Node2D, s: int) -> void:
 	var x1 := mini(zone.width - 1 + margin, s + margin)
 	for x in range(x0, x1 + 1):
 		var cell := Vector2i(x, s - x)
-		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "":
+		if not zone.in_bounds(cell) and Art.terrain_seen(zone, cell) == "" and _beach_at(cell) == "" and not _void_sea.has(cell):
 			continue
 		_draw_cell(row, cell)
 		if _exit_dirs.has(cell):
@@ -602,6 +708,8 @@ func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
 		var skirt := _beach_at(cell)
 		if skirt == "sea_deep" or skirt == "sea_shallow":
 			_draw_beach(ci, cell, skirt, 0)
+		elif _void_sea.has(cell):
+			_draw_void_sea(ci, cell, 0)
 		return
 	var steps := Art.height_seen(zone, cell)
 	if _north_crag(cell):
@@ -728,16 +836,13 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	var pick := Art.pick_tile(zone, cell)
 	var floor_id := str(pick["floor"])
 	var corner_ids: Array = pick["corners"]
-	if terrain == "water" and _sea_meets_land(cell) and floor_id.begins_with("water_bank"):
-		var shore_id := floor_id.replace("water_bank", "water_shore")
-		if Art.has("tiles", shore_id):
-			floor_id = shore_id
-			var shore_corners: Array = []
-			for raw_corner in corner_ids:
-				var cid := str(raw_corner).replace("water_bank", "water_shore")
-				if Art.has("tiles", cid):
-					shore_corners.append(cid)
-			corner_ids = shore_corners
+	# One sea surface. Bank and shore pieces carry a grass fringe, so the sea
+	# uses the open water tile on the same fill the void skirt paints.
+	if terrain == "water" and _water_grade(cell) == "sea":
+		var pieces: Array[String] = ["water_a", "water_b", "water_c", "water_d"]
+		floor_id = pieces[Art.h(cell.x, cell.y, pieces.size())]
+		corner_ids = []
+		ci.draw_colored_polygon(_sea_diamond(cell, steps), Color("246e9e"))
 	var water_overlap := 0.0
 	if terrain == "water":
 		water_overlap = WATER_OVERLAP
@@ -826,6 +931,9 @@ func _draw_named_floor(ci: Node2D, south_tip: Vector2, first_id: String, fallbac
 func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, _rank: int, terrain: String) -> void:
 	if terrain != "water":
 		return
+	# Sea already matches the fill. A translucent diamond on top drew the grid.
+	if _water_grade(cell) == "sea":
+		return
 	var dist := int(_edge_fade.get(cell, 0))
 	if dist <= 0:
 		return
@@ -846,13 +954,71 @@ func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, _rank: int, terrain
 func _paint_art(ci: Node2D, art: Dictionary, south_tip: Vector2, tint: Color, overlap: float) -> void:
 	if art.is_empty():
 		return
+	if overlap > 0.0:
+		_paint_clamped(ci, art, south_tip, tint, overlap, false, false)
+		return
 	var tex: Texture2D = art["tex"]
 	var size := Art.size_of(art)
 	var top_left := south_tip + Vector2(-size.x * 0.5, -size.y)
-	if overlap > 0.0:
-		top_left -= Vector2(overlap, overlap)
-		size += Vector2(overlap * 2.0, overlap * 2.0)
 	ci.draw_texture_rect(tex, Rect2(top_left, size), false, tint)
+
+
+## Sample inside the tile so the transparent fringe is not the seam.
+## Mipmaps stay off. The dest grows by `overlap` so neighbours share pixels.
+func _paint_clamped(ci: Node2D, art: Dictionary, south_tip: Vector2, tint: Color, overlap: float, flip_h: bool, flip_v: bool) -> void:
+	if art.is_empty():
+		return
+	var tex: Texture2D = art["tex"]
+	var scale := float(art["scale"])
+	var tex_size := tex.get_size()
+	var size := tex_size * scale
+	var inset := 4.0 if scale < 0.99 else 3.0
+	if tex_size.x <= inset * 2.0 + 2.0 or tex_size.y <= inset * 2.0 + 2.0:
+		var plain := south_tip + Vector2(-size.x * 0.5, -size.y)
+		ci.draw_texture_rect(tex, Rect2(plain, size), false, tint)
+		return
+	var src := Rect2(inset, inset, tex_size.x - inset * 2.0, tex_size.y - inset * 2.0)
+	var top_left := south_tip + Vector2(-size.x * 0.5, -size.y)
+	var dest := Rect2(top_left - Vector2(overlap, overlap), size + Vector2(overlap * 2.0, overlap * 2.0))
+	if flip_h or flip_v:
+		var center := dest.get_center()
+		var sx := -1.0 if flip_h else 1.0
+		var sy := -1.0 if flip_v else 1.0
+		ci.draw_set_transform(center, 0.0, Vector2(sx, sy))
+		ci.draw_texture_rect_region(tex, Rect2(-dest.size * 0.5, dest.size), src, tint)
+		ci.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+		return
+	ci.draw_texture_rect_region(tex, dest, src, tint)
+
+
+## Grow the diamond so neighbouring fills share an edge and the cell grid stays hidden.
+func _sea_diamond(cell: Vector2i, steps: int) -> PackedVector2Array:
+	var d := Pick.diamond(cell, float(steps))
+	var center := Vector2.ZERO
+	for i in 4:
+		center += d[i]
+	center *= 0.25
+	var grown := PackedVector2Array()
+	var pad := 3.0
+	for i in 4:
+		var point: Vector2 = d[i]
+		var away := point - center
+		var length := away.length()
+		if length < 0.01:
+			grown.append(point)
+		else:
+			grown.append(point + away * (pad / length))
+	return grown
+
+
+## Flat sea past the last tile. The snow wash matches Northgate water so the
+## fill is not a darker rectangle.
+func _draw_void_sea(ci: Node2D, cell: Vector2i, steps: int) -> void:
+	var diamond := _sea_diamond(cell, steps)
+	ci.draw_colored_polygon(diamond, Color("246e9e"))
+	var amount := snow_at_cell(cell)
+	if amount > 0.2:
+		ci.draw_colored_polygon(diamond, Color(0.62, 0.78, 0.90, 0.22 * amount))
 
 
 ## A short white band on the water, inset from the land edge so the next
@@ -875,10 +1041,11 @@ func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
 		if seen == "" or seen == "water":
 			continue
 		# Wide enough to read at the Northgate shore still. Inset so the land tile does not cover it.
-		var outer_a := d[ia - 1].lerp(center, 0.08)
-		var outer_b := d[ib].lerp(center, 0.08)
-		var inner_a := d[ia - 1].lerp(center, 0.58)
-		var inner_b := d[ib].lerp(center, 0.58)
+		# Far enough onto the water that the land diamond does not cover the band.
+		var outer_a := d[ia - 1].lerp(center, 0.22)
+		var outer_b := d[ib].lerp(center, 0.22)
+		var inner_a := d[ia - 1].lerp(center, 0.62)
+		var inner_b := d[ib].lerp(center, 0.62)
 		ci.draw_colored_polygon(PackedVector2Array([outer_a, outer_b, inner_b, inner_a]), Color(0.93, 0.98, 1.0, 0.9))
 
 
@@ -1053,7 +1220,8 @@ func _draw_ripple(ci: Node2D, anim_id: String, south_tip: Vector2, modulate: Col
 	var fh := float(size[1])
 	var region := Rect2(_ripple_frame * fw, 0, fw, fh)
 	var dest := Rect2(south_tip + Vector2(-fw * 0.5, -fh), Vector2(fw, fh))
-	if overlap > 0.0:
+	if overlap > 0.0 and fw > 8.0 and fh > 8.0:
+		region = Rect2(region.position + Vector2(3, 3), region.size - Vector2(6, 6))
 		dest = Rect2(dest.position - Vector2(overlap, overlap), dest.size + Vector2(overlap * 2.0, overlap * 2.0))
 	ci.draw_texture_rect_region(tex, dest, region, modulate)
 	return true
