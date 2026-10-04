@@ -5,6 +5,8 @@ extends CanvasLayer
 
 signal accept_requested(mission_id: String)
 signal turn_in_requested(mission_id: String)
+## The panel closed (Esc, outside click, or the world). The NPC goes back to its routine.
+signal closed(npc_id: String)
 
 var _root: Control
 var _card: PanelContainer
@@ -67,11 +69,14 @@ func press_turn_in() -> void:
 
 
 func close() -> void:
+	var was_open := _open
 	_open = false
 	if _slide != null and is_instance_valid(_slide):
 		_slide.kill()
 	if _root != null:
 		_root.visible = false
+	if was_open:
+		closed.emit(npc_id)
 
 
 func notify_outside_click() -> void:
