@@ -12,7 +12,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
    - Team branches merge into `pc/world-zones` or `pc/combat-look` only after Claude's approval.
    - Log every decision in `docs/pc/CHANGE_LOG_PC.md`.
 
-**Base branches:** `pc/world-zones` @ `280487b` (34 suites green). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
+**Base branches:** `pc/world-zones` @ `1cf6d46` (#249 merged 11:12; 34-suite re-check running). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
 
 ---
 
@@ -21,7 +21,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 | Work | PR / branch | Head (last push) | Where it stopped | Next step |
 |---|---|---|---|---|
 | Water regrade + sea shoreline | #251 `cursor/water-regrade-a156` | `bb2d056` (10:20) | Rework 2: 34/34 green. **Re-review posted (11:20): visual rework.** Still to fix: From its own stills: lone fence panels still stand on Eastmarch grass; three water styles meet in straight lines at the Eastmarch beach (regraded blue, a gridded fade band, the kit's teal); the map edge still shows a yellow-green rim line, a dark rectangle and diamond seams; Northgate's north edge has no sand lip | Fix those, then one combined still per issue, all 34 suites |
-| Town NPCs + missions | #253 `cursor/town-npcs-a156` | `a1e3da8` (10:28) | **Items 1–2 approved** (town lines and the hand-over chain; missions, NPC and levels suites green) | After #249 merges, bring `pc/world-zones` in and drop Millrace from `rewards.json`, `build_rewards.py`, `build_missions.py` and the Crossroads mission |
+| Town NPCs + missions | #253 `cursor/town-npcs-a156` | `4dc3b7d` (11:18) | Items 1–2 approved. Item 3 pushed: rebased onto `1cf6d46`, Millrace drops moved to the Old Granary. **My 34-suite re-check is running** | After #249 merges, bring `pc/world-zones` in and drop Millrace from `rewards.json`, `build_rewards.py`, `build_missions.py` and the Crossroads mission |
 | Drop Millrace dungeon | #249 `cursor/drop-millrace-dungeon-a156` | `ccb7c56` (10:22) | **Approved to merge (34/34 green, 11:15)** | The bot merges into `pc/world-zones`; then #253 brings it in |
 | Old NPC stand-ins | #250 `cursor/town-npc-standins-a156` | `808d3d8` | Superseded by #253 | Close #250 once #253 merges |
 | **Queue after these** | | | | (1) L10 world walker: new bodies and world light. (2) Painted NPC sprites: 19 roles, idle/walk/talk, wardens patrol, townsfolk wander, everyone turns to the player; media = one still per role beside its concept and a walk clip per town. (3) **Northgate snow town** (`docs/pc/look_target/northgate_snow/`). (4) WP7 dungeon doors. (5) WP8 dungeon runs. (6) WP9 world monsters, with the danger zone at level 30+ and aggro within 3 cells. (7) Crag/coast passes when kits land. (8) WP2 zone banner. Regions stay paused (`world.regions_enabled`) |
@@ -32,7 +32,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 |---|---|---|---|---|---|
 | `ae16` | L9 Crosshaven board, light grade | #242 (merged 10:19) | `c15941b` | **Done.** Media sent to Mauro | none |
 | `ae16` | L9b Crosshaven v1 decoration | `cursor/l9b-v1-decor-ae16` (no PR yet) | `af040d7` (10:39) | Code ready for the leaf frame, clearing and sky swap; it draws nothing until the art files exist. Rim props stay off until `props_live` | Wait for the art, open a PR with media, I review |
-| `1dff` | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell | #248 draft `cursor/l10-pc-characters-1dff` | `714e6ed` (01:32, **no push since**) | In rework. Owes the 0.22 vs 0.42 walk clip for Mauro | If still silent at the next check-in, treat as stopped: take over from `714e6ed`, finish the rework, make the clip. Kestrel/Bastion/Gloam now have new designs and blockouts (§3), so L10 Kestrel should follow the new Kestrel |
+| `1dff` → **Claude (took over 11:40)** | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell | #248 draft `cursor/l10-pc-characters-1dff` | `714e6ed` (bot stopped 01:32) | **Taken over by Claude 11:40**: merging the base, bench, portrait aspect fix, edge-pixel test, sole/pivot consistency, and re-shooting the 0.22 vs 0.42 clip | When green: post the suites, bench and clip on #248 and send Mauro the clip. Kestrel v3 is a stand-in until the new Kestrel parts land |
 
 ## 3. Scenario Art (Luca's art bot) and Technical Artist
 
