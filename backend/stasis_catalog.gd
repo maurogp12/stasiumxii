@@ -32,6 +32,9 @@ const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [2.6, 1.8], 4: [5.9, 3.45]
 const PARTY_FOR_STAR := {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}
 const PARTY_SCALE := {1: [1.0, 1.0], 2: [4.0, 2.8], 4: [3.2, 1.6]}
 const MAX_PARTY := 4
+## Dev balance tool only (tests/sim_dungeons.gd): star → [hp, damage] used
+## instead of STAR_SCALE. Empty in the game.
+static var star_scale_override: Dictionary = {}
 const PLAYER_SEAT := 0
 const ENEMY_SEAT := 1
 ## Strike card owner. Not the portrait. See the note above.
@@ -196,12 +199,16 @@ static func set_star(value: int) -> void:
 
 static func hp_mult(for_star: int = -1) -> float:
 	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
-	return float(STAR_SCALE[s][0]) * float(PARTY_SCALE[party_for_star(s)][0])
+	return float(_star_scale(s)[0]) * float(PARTY_SCALE[party_for_star(s)][0])
 
 
 static func dmg_mult(for_star: int = -1) -> float:
 	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
-	return float(STAR_SCALE[s][1]) * float(PARTY_SCALE[party_for_star(s)][1])
+	return float(_star_scale(s)[1]) * float(PARTY_SCALE[party_for_star(s)][1])
+
+
+static func _star_scale(s: int) -> Array:
+	return star_scale_override.get(s, STAR_SCALE[s])
 
 
 ## Heroes a star is tuned for (1, 2 or 4).
