@@ -2,6 +2,7 @@ extends SceneTree
 
 ## L10 stills. The same script runs on pc/combat-look (before) and on this branch.
 ## World shots and the 0.22 / 0.42 walk need the new files, so a before tree skips them.
+## PC combat defaults to the 0.42 trial. The clip still shows 0.22 beside 0.42.
 ## Ironjaw v2 has no cast folder. Its stills are idle, walk, and attack (Strike).
 ## Kestrel stills are idle, walk, and cast (Detonate). Mark Shot is wired to
 ## cast_mark, so Kestrel also gets a cast_mark still.
@@ -211,7 +212,7 @@ func _speed_pass() -> void:
 		print("L10_SPEED %s frames=%d" % [tag, index])
 		main.free()
 		await _frames(2)
-	Pawn.set_pc_walk_tile_sec(-1.0)
+	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
 
 
 func _boot(map_id: String, theme: String) -> Dictionary:

@@ -23,7 +23,7 @@ func _initialize() -> void:
 func _finish_live() -> void:
 	await _test_pawn_pivots_and_distance_walk()
 	await _test_phone_path_unchanged()
-	Pawn.set_pc_walk_tile_sec(-1.0)
+	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
 	CombatHUD.set_pc_chrome_override(-1)
 	LOOK.active = false
 	print("PC character tests: %d passed, %d failed" % [_passed, _failed])
@@ -130,10 +130,12 @@ func _test_action_stills() -> void:
 
 func _test_walk_setting_and_sources() -> void:
 	eq(Pawn.WALK_TILE_SEC, 0.22, "the shipped tile time stays 0.22")
-	Pawn.set_pc_walk_tile_sec(-1.0)
-	eq(is_equal_approx(Pawn.walk_tile_sec(), 0.22), true, "PC walk defaults to 0.22")
-	Pawn.set_pc_walk_tile_sec(0.42)
-	eq(is_equal_approx(Pawn.walk_tile_sec(), 0.42), true, "the PC setting slows the combat walk")
+	eq(is_equal_approx(Pawn.PC_WALK_TILE_SEC, 0.42), true, "the PC trial is 0.42")
+	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
+	eq(is_equal_approx(Pawn.walk_tile_sec(), 0.42), true, "PC combat walk uses the 0.42 trial")
+	Pawn.set_pc_walk_tile_sec(0.22)
+	eq(is_equal_approx(Pawn.walk_tile_sec(), 0.22), true, "the comparison clip can still show 0.22")
+	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
 	var view := FileAccess.get_file_as_string("res://board_view.gd")
 	truthy(view.contains("Pawn.WALK_TILE_SEC"), "the board still names the shipped tile time")
 	truthy(view.contains("walk_tile_sec()"), "the board reads the PC tile time")
@@ -303,7 +305,7 @@ func _test_phone_path_unchanged() -> void:
 	eq(is_equal_approx(pawn.head_hp_y(), -76.0), true, "phone plate stays at -76")
 	pawn.free()
 	CombatHUD.set_pc_chrome_override(-1)
-	Pawn.set_pc_walk_tile_sec(-1.0)
+	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
 
 
 func _pawn(class_id: String, facing: String, seat: int) -> Pawn:

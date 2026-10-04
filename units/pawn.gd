@@ -87,8 +87,10 @@ const SPRITE_SCALE := Vector2(0.5, 0.5)
 ## The step bounce does not use this. It loops on ViewMotion.WALK_STEP_SEC.
 const WALK_TILE_SEC := 0.22
 const WALK_HOP_SEC := WALK_TILE_SEC
-## PC-only glide time per cell. <= 0 keeps WALK_TILE_SEC. The phone path ignores it.
-static var _pc_walk_tile_sec: float = -1.0
+## Trial PC combat glide. Mauro, 4 Oct: "0.42, let's try it". One constant.
+## <= 0 falls back to WALK_TILE_SEC. The phone path ignores it.
+const PC_WALK_TILE_SEC := 0.42
+static var _pc_walk_tile_sec: float = PC_WALK_TILE_SEC
 ## Handoff walk cycle: 6 frames at 12 fps (~0.50s), looped, not one cycle per tile.
 const WALK_STRIP_FRAMES := 6
 const WALK_STRIP_FPS := 12.0
@@ -159,7 +161,7 @@ func facing_screen() -> Vector2:
 	return FACING_ISO.get(facing, Vector2(20, 10))
 
 
-## Phone and classes without a PC set stay at 0.22. A PC set can be shown slower.
+## Phone stays at 0.22. PC combat uses the 0.42 trial unless a clip overrides it.
 static func set_pc_walk_tile_sec(seconds: float) -> void:
 	_pc_walk_tile_sec = seconds
 
