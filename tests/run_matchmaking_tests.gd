@@ -673,7 +673,7 @@ func _test_mender_heals_and_ward() -> void:
 	})
 	var mend: Dictionary = _sim.submit({"type": "cast", "spell": "mend", "to": Vector2i(1, 1), "seat": 0})
 	eq(bool(mend.get("ok", false)), true, "Mend hits an ally")
-	eq(int(_sim.snapshot()["units"][0]["hp"]), 51, "Triage heals 16 × 1.25 below 40% HP")
+	eq(int(_sim.snapshot()["units"][0]["hp"]), 56, "Triage heals (16 + Water 4) × 1.25 below 40% HP")
 	eq(int(_sim.snapshot()["units"][0]["pulse"]), 1, "Mend gains 1 Pulse")
 	eq(int(_sim.snapshot()["units"][0]["ap"]), 3, "Mend costs 3 AP")
 	_sim.reset_match({

@@ -29,7 +29,13 @@ const MAX_STAR := 5
 ## ★5 lowered the same day (Mauro: "5 stars dungeon are way too powerful, can we
 ## lower them a little bit"): [8.9, 5.05] → [8.0, 4.75], party of 4: 67% (30
 ## runs). Same base as ★4; the ★5 boss specials still make it harder.
-const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [6.9, 4.75], 4: [7.95, 4.75], 5: [8.0, 4.75]}
+## Retuned with elements on (Mauro 4 Oct 2026: "keep it around 70 up to 80% of
+## win rate"; "at 3 stars people are going to be 15 with not even a full set";
+## "at least 20–25 with a full rare set ... to pass 4 star"). Sim party of 4 AI
+## heroes, 30 runs: ★3 level 15 with 3 set pieces +0 → 80%; ★4 level 22 with a
+## full +4 set → 77%; ★5 level 30 full +5 → 77%. (tests/sim_dungeons.gd with
+## DUNGEON_HERO.)
+const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [4.0, 2.8], 4: [6.8, 4.2], 5: [8.8, 5.2]}
 ## Dungeon party (Mauro 1 Oct 2026): ★1 is for 1 player, ★2 for 2, ★3–★5
 ## for a full party of 4. Monsters are tuned for that party whoever enters
 ## ("allowed but brutal"). PARTY_SCALE = [hp, damage] on top of STAR_SCALE.
