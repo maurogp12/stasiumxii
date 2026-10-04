@@ -116,12 +116,12 @@ def pose(C, t, idle=False):
         fx = sg * f('hip_w') * 0.9
         # foot frame: heel-to-toe along +Y, pitched; ankle above the heel third
         Rf = rot(X, pitch)
-        oh = np.array([0, -0.25 * f('foot'), -f('ankle')]); ot = np.array([0, 0.75 * f('foot'), -f('ankle') * 0.85])
+        oh = np.array([0, -0.25 * f('foot'), -f('ankle')]); ot = np.array([0, 0.75 * f('foot'), -f('ankle')])   # v3: toe joint on the sole
         ank = np.array([fx, fy, fz + f('ankle')])
         if fz == 0 and not idle and pitch > 0:           # heel strike: the heel is the planted point (no skate)
             heel = np.array([fx, fy - 0.25 * f('foot'), 0.0]); ank = heel - Rf @ oh
         elif fz == 0 and not idle and pitch < 0:         # heel off: roll over the planted toe
-            toe = np.array([fx, fy + 0.75 * f('foot'), f('ankle') * 0.15]); ank = toe - Rf @ ot
+            toe = np.array([fx, fy + 0.75 * f('foot'), 0.0]); ank = toe - Rf @ ot
         heel = ank + Rf @ oh; toe = ank + Rf @ ot
         J[f'{side}_ankle'], J[f'{side}_heel'], J[f'{side}_toe'] = ank, heel, toe
         J[f'{side}_knee'] = ik(hip, ank, f('thigh'), f('shin'), Rp @ Y)
@@ -144,7 +144,29 @@ def pose(C, t, idle=False):
     J['cape_mid'] = J['cape_top'] + np.array([0.012 * Hh * lag, -0.05 * Hh - (0 if idle else 0.015 * Hh), -0.28 * Hh])
     J['cape_hem'] = J['cape_mid'] + np.array([0.025 * Hh * lag, -0.03 * Hh - (0 if idle else 0.03 * Hh), -0.22 * Hh])
     J['_Rc'], J['_Rp'] = Rc, Rp
+    if not idle:
+        _straighten(C, J, 0.976 - 0.012 * math.cos(4 * math.pi * t))
     return J
+
+STANCE_EXT = 0.985     # v3: planted leg nearly straight (hip-ankle / leg length), as in the painted targets
+
+def _straighten(C, J, ext=STANCE_EXT):
+    """v3: raise the body so the most-bent planted leg is `ext` straight (0.964 at contact, 0.988 mid-stance), then re-solve the knees.
+    v2 kept the pelvis drop and left planted knees bent about 30 deg, which read as a crouch once painted."""
+    Hh = C['H']; L = (C['thigh'] + C['shin']) * Hh; need = []
+    for s in 'RL':
+        a, h = J[f'{s}_ankle'], J[f'{s}_hip']
+        if J[f'{s}_heel'][2] <= 0.5 or J[f'{s}_toe'][2] <= 0.5:        # planted
+            dxy = np.hypot(*(h[:2] - a[:2])); z_ok = np.sqrt(max(0.0, (ext * L) ** 2 - dxy ** 2))
+            need.append(a[2] + z_ok - h[2])
+    if not need: return
+    dz = min(need)
+    feet = {f'{s}_{k}' for s in 'RL' for k in ('ankle', 'heel', 'toe')}
+    for k in list(J):
+        if k.startswith('_') or k in feet or k.endswith('knee'): continue
+        J[k] = J[k] + np.array([0, 0, dz])
+    for s in 'RL':
+        J[f'{s}_knee'] = ik(J[f'{s}_hip'], J[f'{s}_ankle'], C['thigh'] * Hh, C['shin'] * Hh, J['_Rp'] @ Y)
 
 # ---------------------------------------------------------------- scene
 def mk_box(name, sx, sy, z0, z1, col, coll):

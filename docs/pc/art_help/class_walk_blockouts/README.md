@@ -9,6 +9,8 @@
 > | Gloam | 0.61 | | |
 > | Mender | 0.60 | 0.28 H | |
 >
+> **v3 legs (4 Oct, Kestrel, Gloam, Mender; Bastion stays on v2 because Luca locked v3).** Planted legs are now nearly straight: hip-to-ankle ÷ leg is 0.964 at contact and 0.988 mid-stance (v2 was 0.93–0.97, so the knees were always bent). Bob comes from the straight-leg arc, about 5.5–6.8 px. The E/S toe joint sits on the sole, so `toe_pin: full` holds. See `kestrel_v2_v3_legs.png`.
+>
 > Every folder, `joints_512.json`, clay, ID and action video here is v2. `proportions_v2.png` shows painting | old | new. **Rig all painted parts on these v2 joints.**
 
 These are walk guides in the same format as Technical Artist's Ironjaw guide (`docs/pc/art_help/ironjaw_walk/ta_joints/`). Each class has a clay pass, a part-ID pass and a joints file. They are built from Mauro's new designs in `refs/`, not the current sprites (Mauro, 4 Oct 2026: "Don't use current designs, use these ones").
