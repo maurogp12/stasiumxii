@@ -2,6 +2,13 @@
 
 Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everything the other bots are working on and where they stop, in case they run out of usage, so you can take over"). It's updated at every check-in and review. Newest state first. Times are UTC.
 
+**HAND-OVER IN PROGRESS (4 Oct 14:50 UTC).** Mauro: the team bots are about to run out of usage. All bots have been asked to push their WIP and write hand-off files:
+- Scenario Art / TA → `art/ironjaw-walk-help` `docs/pc/art_help/HANDOFF_SCENARIO.md` (asked on #252)
+- World bot → `docs/pc/HANDOFF_WORLD.md` on its WIP branch (asked on #251)
+- Combat bots → `docs/pc/HANDOFF_COMBAT.md` if anything is in progress
+
+When those land, Claude reads them, copies the key facts into this file, and continues each open item from its last commit.
+
 **How to take over a stopped bot's work**
 1. Find its row below: the branch, the head commit it stopped on, and the next step.
 2. `git fetch origin <branch> && git worktree add /home/user/wt/<name> origin/<branch>`, then continue on that branch with a merge commit, never a rebase or force-push. Keep the bot's commit style and add a change-log row naming the take-over.
