@@ -76,7 +76,7 @@ func _test_schema() -> void:
 
 func _test_roster(book) -> void:
 	var ids: Array = book.all_ids()
-	eq(ids.size(), 37, "17 chain missions plus 20 sides")
+	eq(ids.size(), 47, "17 chain missions plus 30 sides")
 	var chains := {}
 	for id in ids:
 		var row: Dictionary = book.mission(str(id))
@@ -86,7 +86,7 @@ func _test_roster(book) -> void:
 	eq(int(chains["welcome"]), 6, "one welcome per section 00 zone")
 	eq(int(chains["scout"]), 6, "one scout per section 00 zone")
 	eq(int(chains["dungeon"]), 5, "one dungeon mission per town, and none at the Crossroads")
-	eq(int(chains["side"]), 20, "one side per extra NPC, not the older count of 18")
+	eq(int(chains["side"]), 30, "one side per extra NPC, not the older count of 18")
 	var welcome: Dictionary = book.mission("heart_welcome")
 	eq(str(welcome["name"]), "Welcome to Crosshaven", "heart welcome name")
 	eq(int(welcome["rewards"]["xp"]), 15, "talk-only XP is 15% of the first step, not the sample 40")
@@ -105,11 +105,13 @@ func _test_roster(book) -> void:
 	eq(str(east["steps"]).find("eastmarch_elder") < 0, true, "Eastmarch welcome does not talk to the giver again")
 	var west: Dictionary = book.mission("westwatch_welcome")
 	eq(str(west["steps"]).find("southbridge_elder") < 0, true, "Westwatch welcome stays out of Southbridge")
-	eq(str(west["steps"][0]["zone_id"]), "crosshaven_westwatch", "Westwatch welcome stays in Westwatch")
+	eq(str(west["steps"][0]["npc"]), "westwatch_warden", "Westwatch welcome starts with the Warden")
+	eq(str(west["steps"][1]["npc"]), "westwatch_trader", "Westwatch welcome meets the Trader")
+	eq(str(west["steps"][2]["npc"]), "westwatch_door_keeper", "Westwatch welcome ends with the Door Keeper")
 	var south: Dictionary = book.mission("southbridge_welcome")
 	var south_steps: Array = south["steps"]
 	eq(str(south["giver"]), "southbridge_elder", "the Southbridge Elder gives the welcome")
-	eq(str(south_steps[south_steps.size() - 1]["npc"]), "millrace_door_keeper", "the Door Keeper is last in Southbridge")
+	eq(str(south_steps[south_steps.size() - 1]["npc"]), "drowned_abbey_door_keeper", "the Door Keeper is last in Southbridge")
 	var banned: Array[String] = [
 		"rotting_orchard_barrow", "cinderforge_depths", "sunken_mill", "thunderwell_core", "shard_hollow",
 	]
@@ -139,7 +141,7 @@ func _test_heart_chain(book) -> void:
 	eq(book.status_of("heart_welcome", hero), "active", "one talk does not finish two steps")
 	var early: Dictionary = book.turn_in("heart_welcome", hero)
 	eq(bool(early["ok"]), false, "turn-in waits until every step is done")
-	var second: Array = book.on_talk("granary_door_keeper", hero)
+	var second: Array = book.on_talk("crossroads_guide", hero)
 	eq(second.has("heart_welcome"), true, "talking to the door keeper finishes the steps")
 	eq(book.status_of("heart_welcome", hero), "ready", "welcome is ready to turn in")
 	eq(book.mark_for("crossroads_warden", hero), "?", "the Warden shows ?")
@@ -147,7 +149,7 @@ func _test_heart_chain(book) -> void:
 	quiet.mission_blob = {}
 	book.accept("heart_welcome", quiet)
 	book.on_talk("crossroads_trader", quiet)
-	book.on_talk("granary_door_keeper", quiet)
+	book.on_talk("crossroads_guide", quiet)
 	var raw: Dictionary = book.turn_in("heart_welcome", quiet)
 	eq(bool(raw["ok"]), true, "turn-in pays the stored XP")
 	eq(int(raw["xp"]), 15, "the payout is 15 XP")
@@ -180,7 +182,7 @@ func _test_save(book) -> void:
 	var again = Progress.new()
 	eq(book.status_of("heart_welcome", again), "active", "save and load keep the active mission")
 	eq(book.on_talk("crossroads_trader", again).is_empty(), true, "the trader step stays done")
-	eq(book.on_talk("granary_door_keeper", again).has("heart_welcome"), true, "the remaining step is still open")
+	eq(book.on_talk("crossroads_guide", again).has("heart_welcome"), true, "the remaining step is still open")
 	var old := FileAccess.open(Progress.SAVE_PATH, FileAccess.WRITE)
 	old.store_string("{\"level\":1,\"xp\":4}")
 	old.close()
@@ -268,7 +270,7 @@ func _test_proximity(book) -> void:
 	hero.level = 1
 	book.accept("heart_welcome", hero)
 	book.on_talk("crossroads_trader", hero)
-	book.on_talk("granary_door_keeper", hero)
+	book.on_talk("crossroads_guide", hero)
 	book.turn_in("heart_welcome", hero)
 	book.accept("heart_scout", hero)
 	var step: Dictionary = book.mission("heart_scout")["steps"][0]
@@ -413,7 +415,7 @@ func _test_scout_order(book) -> void:
 	hero.mission_blob = {}
 	book.accept("heart_welcome", hero)
 	book.on_talk("crossroads_trader", hero)
-	book.on_talk("granary_door_keeper", hero)
+	book.on_talk("crossroads_guide", hero)
 	book.turn_in("heart_welcome", hero)
 	book.accept("heart_scout", hero)
 	var steps: Array = book.mission("heart_scout")["steps"]
@@ -585,7 +587,7 @@ func _test_story_pending(book) -> void:
 	hero.mission_blob = {}
 	book.accept("heart_welcome", hero)
 	book.on_talk("crossroads_trader", hero)
-	book.on_talk("granary_door_keeper", hero)
+	book.on_talk("crossroads_guide", hero)
 	book.turn_in("heart_welcome", hero)
 	eq(bool(book.accept("heart_scout", hero)["ok"]), true, "the heart scout accepts")
 	var coins := int(hero.coins)
@@ -851,7 +853,7 @@ func _test_world(book) -> void:
 	eq(w.dialogue.is_open(), true, "the Trader dialogue opens")
 	eq(str(w.dialogue._body.text).find("Warden") >= 0, true, "the Trader answers the welcome")
 	w.dialogue.close()
-	w._approach_npc(w.npc_book.by_id("granary_door_keeper"))
+	w._approach_npc(w.npc_book.by_id("crossroads_guide"))
 	_drive(w)
 	w.dialogue.close()
 	eq(book.status_of("heart_welcome", w.progress), "ready", "the world chain reaches ready")
@@ -903,7 +905,7 @@ func _test_full_bag_turn_in() -> void:
 		return
 	missions.accept("heart_welcome", hero)
 	missions.on_talk("crossroads_trader", hero)
-	missions.on_talk("granary_door_keeper", hero)
+	missions.on_talk("crossroads_guide", hero)
 	eq(missions.status_of("heart_welcome", hero), "ready", "the welcome is ready with a full bag coming")
 	while hero.bag.size() < hero.bag_slots:
 		hero.grant({"coins": 0, "items": [{"item_id": "plain_band", "rarity": "regular", "count": 1}]})

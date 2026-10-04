@@ -21,7 +21,6 @@ ROOT = Path(__file__).resolve().parent
 
 DUNGEON_NAMES = {
     "old_granary_cellar": "Old Granary Cellar",
-    "millrace_vaults": "Millrace Vaults",
     "rotting_orchard_barrow": "Rotting Orchard Barrow",
     "frostspire_archive": "Frostspire Archive",
     "saltmaw_grotto": "Saltmaw Grotto",

@@ -1472,10 +1472,10 @@ func _check_chain(npcs, errors: Array) -> void:
 		if zone_id == "crossroads":
 			giver = _role_id(npcs, zone, "warden", errors)
 			var trader := _role_id(npcs, zone, "trader", errors)
-			var door := _role_id(npcs, zone, "door_keeper", errors)
+			var guide := _role_id(npcs, zone, "guide", errors)
 			if welcome_steps.size() != 2:
 				_err(errors, "%s welcome steps" % zone_id)
-			elif str(welcome_steps[0].get("npc", "")) != trader or str(welcome_steps[1].get("npc", "")) != door:
+			elif str(welcome_steps[0].get("npc", "")) != trader or str(welcome_steps[1].get("npc", "")) != guide:
 				_err(errors, "%s welcome talks" % zone_id)
 		else:
 			giver = _role_id(npcs, zone, "elder", errors)

@@ -54,10 +54,9 @@ SIGNATURE = {
 DUNGEONS = [
     ("old_granary_cellar", "Old Granary Cellar", "crosshaven_heart", "Ratcatcher", 1, 1,
      [("granary_bread", "Granary Bread", "recipe"), ("sackcloth", "Sackcloth", "material"),
-      ("old_grain_barrel", "Old Grain Barrel", "decoration")], "Cellar Sweeper"),
-    ("millrace_vaults", "Millrace Vaults", "crosshaven_towns", "Millwright", 1, 8,
-     [("millstone_stew", "Millstone Stew", "recipe"), ("gear_cog", "Gear Cog", "material"),
-      ("water_wheel_model", "Water Wheel model", "decoration")], "Millwright"),
+      ("old_grain_barrel", "Old Grain Barrel", "decoration"),
+      ("millstone_stew", "Millstone Stew", "recipe"), ("gear_cog", "Gear Cog", "material"),
+      ("water_wheel_model", "Water Wheel model", "decoration")], "Cellar Sweeper"),
     ("rotting_orchard_barrow", "Rotting Orchard Barrow", "rowanvale", "Orchard Warden", 10, 10,
      [("blight_free_cider", "Blight-free Cider", "recipe"), ("grave_apple", "Grave Apple", "material"),
       ("barrow_lantern", "Barrow Lantern", "decoration")], "Orchard Keeper"),
@@ -285,17 +284,14 @@ def main() -> None:
     dungeons = []
     for dung_id, dung_name, zone_id, set_name, class_tier, coin_level, extras, title in DUNGEONS:
         set_id = slug(set_name)
-        if set_id == "millwright":
-            five = "Extra Mastery on the turn after you are hit"
-        else:
-            five = "Open"
+        five = "Open"
         sets.append(make_set(set_id, set_name, coin_level, "dungeon", [], list(STATS), five))
         extra_ids = []
         for item_id, item_name, category in extras:
             weight = 20 if category == "decoration" else (0 if category == "recipe" else 1)
             items.append(loose_item(item_id, item_name, category, weight, True))
             extra_ids.append(item_id)
-        dungeons.append({
+        row = {
             "id": dung_id,
             "name": dung_name,
             "zone_id": zone_id,
@@ -304,7 +300,15 @@ def main() -> None:
             "coin_level": coin_level,
             "title": title,
             "extras": extra_ids,
-        })
+        }
+        if dung_id == "old_granary_cellar":
+            # Millrace Vaults is dropped. Its tier-1 set still drops here.
+            sets.append(make_set(
+                "millwright", "Millwright", 8, "dungeon", [], list(STATS),
+                "Extra Mastery on the turn after you are hit",
+            ))
+            row["also_set_id"] = "millwright"
+        dungeons.append(row)
 
     items.append(loose_item(
         "plain_band", "Plain Band", "equipment", 10, False,
@@ -345,7 +349,7 @@ def main() -> None:
             "A dungeon win's guaranteed part is an even split between that dungeon's own set and a class set of its tier. Section 4.9 names both and does not weight them.",
             "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
             "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
-            "Millrace, Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources.",
+            "Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources. Millrace Vaults is dropped. Its Millwright set and its stew, cog, and water-wheel extras drop from Old Granary Cellar.",
             "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
             "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 × 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
             "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
