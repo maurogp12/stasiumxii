@@ -1,5 +1,9 @@
 # Ironjaw actions v1: idle, attack (Strike), skill (Shoulder), hit and death
 
+> **LOCKED, 4 Oct 2026, at `73cdaab1`.** Mauro: "Lock all three". These frames ship as they are. Every rough spot and every change from the approved poses is listed in this README's open-issues section for a future pass. To change anything, re-run `scripts/` from the same pipeline; don't hand-edit frames.
+
+> These poses were built in our own `act_blockout.py`, because no Ironjaw action blockout existed. Mauro never approved them as poses; he locked the result. The look is the dark-steel HD walk (`ironjaw_walk/v7`). Mauro chose that look for the phone game too ("Dark-steel for all"), so mobile's Ironjaw walk moves from the older red set to v7.
+
 These are Ironjaw's combat actions for S and E, painted with the method of the LOCKED Kestrel and Bastion actions (`../../kestrel/actions_v1`, `../../bastion/actions_v1`), with their lessons applied from the start. W and N are game-side mirrors.
 
 > **The poses were never approved by Mauro.** `claude/class-walk-blockouts` has no Ironjaw class and no Ironjaw actions, so the blockout here is our own (`scripts/act_blockout.py`), built for his kit. Please review the poses before these go to the game.
