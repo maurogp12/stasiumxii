@@ -60,6 +60,8 @@ const JUNGLE_BACKDROP := preload("res://board/pc/jungle_backdrop.gd")
 const THUNDERWELL_FLOOR := preload("res://board/pc/thunderwell_floor.gd")
 ## L7 grade, rim, and cast light. View only. The phone path leaves it off.
 const LOOK_LIGHT := preload("res://board/pc/look_light.gd")
+## L9 Crosshaven board. View only. Phone and the other ship maps stay on the shared tiles.
+const CROSSHAVEN_BOARD := preload("res://board/pc/crosshaven_board.gd")
 ## Marker z is this plus the cell, above every tile and pawn, under combat
 ## numbers (z 900) so the "Shade" floater still reads.
 const SHADE_LAYER_Z := 640
@@ -1627,6 +1629,7 @@ func _apply_board_tiles(snap: Dictionary) -> void:
 		tile.z_index = VISUAL_SORT.tile_z_index(cell, float(rec.get("elevation", 0.0)))
 	_sync_jungle_backdrop(str(snap.get("map_id", snap.get("demo_map", ""))))
 	_sync_thunderwell_floor(snap)
+	_sync_crosshaven_board(snap)
 	_sync_look_light()
 
 
@@ -1644,6 +1647,15 @@ func set_board_theme(theme_id: String) -> void:
 	THUNDERWELL_FLOOR.request_theme(theme_id)
 	if _booted:
 		_apply_board_tiles(_sim().snapshot())
+
+
+func _sync_crosshaven_board(snap: Dictionary) -> void:
+	var layer = get_node_or_null("CrosshavenBoard")
+	if layer == null:
+		layer = CROSSHAVEN_BOARD.new()
+		layer.name = "CrosshavenBoard"
+		add_child(layer)
+	layer.sync_board(self, snap)
 
 
 func _sync_look_light() -> void:

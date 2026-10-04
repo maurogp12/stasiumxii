@@ -3,8 +3,9 @@ extends Node2D
 ## L7 view light. PC only. The phone path stays flat: no grade shader, no rim,
 ## no cast shafts, no vignette, and the small damage number. The HUD layer
 ## is never changed.
-## The outdoor grade ships off (strength 0). Light and medium stay in code
-## for L9 and are not applied. Thunderwell takes none of the grade: no
+## The outdoor grade ships as light (saturation 1.10, contrast 1.04).
+## Mauro, 4 Oct 2026. Off and medium stay in code, unshipped.
+## Thunderwell takes none of the grade: no
 ## grade, no vignette, no cast shafts, and no floor pool, so the board
 ## matches the base branch. Fighters still take a warm rim that follows the
 ## sprite and every animation strip, and PC damage numbers stay at 68 px.
@@ -15,18 +16,20 @@ const SORT := preload("res://board/visual_sort.gd")
 const HUD := preload("res://ui/hud.gd")
 const PALETTE := preload("res://vfx/vfx_palette.gd")
 
-## Shipped outdoor grade. 0 leaves the base paint. L9 chooses light or medium.
+## Shipped outdoor grade. 0 leaves the base paint.
 const OUTDOOR_STRENGTH := 0.0
 const PRESET_OFF := "off"
 const PRESET_LIGHT := "light"
 const PRESET_MEDIUM := "medium"
-## Light grade for L9. About +10% saturation. Not applied.
+## One line. Mauro shipped light. Off and medium stay in code.
+const SHIPPED_OUTDOOR_PRESET := PRESET_LIGHT
+## Light grade for L9. About +10% saturation. Applied only when the preset is light.
 const LIGHT_SAT := 1.10
 const LIGHT_CONTRAST := 1.04
 const LIGHT_GAIN := 1.01
 const LIGHT_BIAS := Color(0.010, 0.003, -0.006, 1.0)
 const LIGHT_SHADE := 0.0
-## Medium grade for L9. About +15% saturation. Not applied.
+## Medium grade for L9. About +15% saturation. Stays in code. Not shipped.
 const MEDIUM_SAT := 1.15
 const MEDIUM_CONTRAST := 1.07
 const MEDIUM_GAIN := 1.02
@@ -103,8 +106,8 @@ void fragment() {
 static var active := false
 static var _dungeon_rim := false
 ## True only when a named outdoor preset is on. Thunderwell never sets it.
-## The shipped preset is off, which is strength 0.
-static var outdoor_preset := PRESET_OFF
+## The shipped preset is SHIPPED_OUTDOOR_PRESET (light).
+static var outdoor_preset := SHIPPED_OUTDOOR_PRESET
 static var _paint_grade := false
 ## Bench switch. The phone path is already off. This turns the light off
 ## while the PC HUD and the jungle stay up.
@@ -135,7 +138,40 @@ static func set_outdoor_preset(name: String) -> void:
 	if name == PRESET_OFF or name == PRESET_LIGHT or name == PRESET_MEDIUM:
 		outdoor_preset = name
 	else:
-		outdoor_preset = PRESET_OFF
+		outdoor_preset = SHIPPED_OUTDOOR_PRESET
+
+
+## The same curve as l7_grade, so a test can measure water against a move tile
+## after the shipped light grade. Off returns the color unchanged.
+static func grade_color(src: Color, preset: String) -> Color:
+	var sat := 1.0
+	var contrast := 1.0
+	var gain := 1.0
+	var bias := Color(0, 0, 0, 1)
+	var shade := 0.0
+	if preset == PRESET_LIGHT:
+		sat = LIGHT_SAT
+		contrast = LIGHT_CONTRAST
+		gain = LIGHT_GAIN
+		bias = LIGHT_BIAS
+		shade = LIGHT_SHADE
+	elif preset == PRESET_MEDIUM:
+		sat = MEDIUM_SAT
+		contrast = MEDIUM_CONTRAST
+		gain = MEDIUM_GAIN
+		bias = MEDIUM_BIAS
+		shade = MEDIUM_SHADE
+	else:
+		return src
+	var rgb := Vector3(src.r, src.g, src.b)
+	var luma := rgb.dot(Vector3(0.2126, 0.7152, 0.0722))
+	var graded := Vector3(luma, luma, luma).lerp(rgb, sat)
+	graded = (graded - Vector3(0.5, 0.5, 0.5)) * contrast + Vector3(0.5, 0.5, 0.5)
+	var shade_t := smoothstep(0.55, 0.0, luma)
+	graded = graded.lerp(Vector3.ZERO, shade_t * shade)
+	graded = graded * gain + Vector3(bias.r, bias.g, bias.b)
+	graded = graded.clamp(Vector3.ZERO, Vector3.ONE)
+	return Color(graded.x, graded.y, graded.z, src.a)
 
 
 static func font_size(kind: String, base: int) -> int:
@@ -465,6 +501,11 @@ func _grade_board() -> void:
 		for child in tiles.get_children():
 			if child is CanvasItem:
 				_attach_grade(child, _paint_grade)
+				# The Crosshaven dress paints in _draw, like a tile. The grade
+				# follows the outdoor preset. Light is the shipped one.
+				var dress := child.get_node_or_null("CrosshavenDress") as CanvasItem
+				if dress != null:
+					_attach_grade(dress, _paint_grade)
 	var units := _board.get_node_or_null("Units") as CanvasItem
 	if units != null:
 		units.modulate = Color.WHITE
