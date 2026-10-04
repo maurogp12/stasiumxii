@@ -44,7 +44,7 @@ east into the **dark south**.
 | Order | Town (plate position) | Levels | Feel | Danger | Dungeon (reused design) |
 |---|---|---|---|---|---|
 | 1 | **Stoneford** (west, river ford) | 1–10 | Farms, mill, river, gentle | Safe: monsters passive | Old Granary Cellar (the Ratking) |
-| 2 | **Northgate** (north, under the cliffs) | 10–20 | Cliff town, the only one with light snow | Safe: passive | Frostspire Archive (the Pale Archivist) |
+| 2 | **Northgate** (north, under the cliffs) | 10–20 | Snow town, the only one with snow. Look target: `docs/pc/look_target/northgate_snow/` (Mauro, 4 Oct 2026), in daylight | Safe: passive | Frostspire Archive (the Pale Archivist) |
 | 3 | **Eastmarch** (east coast) | 20–30 | Docks, coves, sea caves | Safe: passive | Saltmaw Grotto |
 | 4 | **Southbridge** (south, the bridge over the gorge) | 30–40 | **The swamp:** fen under the bridge, fog, rain, bog monsters | **Danger zone** | Drowned Abbey |
 | 5 | **Westwatch** (south-west, the walled watchtower) | 40–50 | **The dark side:** blight, violet dusk; the watch guards the island against it | **Danger zone** | Heart of the Blight |
