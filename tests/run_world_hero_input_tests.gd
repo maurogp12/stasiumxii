@@ -55,6 +55,7 @@ func _run() -> void:
 	_test_drain_and_threshold(w)
 	_test_regen(w)
 	_test_bar(w)
+	await _test_north_road_pace(w)
 	await _test_click_sweep(w)
 	w.queue_free()
 	print("world hero input tests: %d passed, %d failed" % [passed, failed])
@@ -283,6 +284,8 @@ func _test_bar(w: Node2D) -> void:
 	check(not bar.visible, "bar hides when full and not running")
 	check(bar.mouse_filter == Control.MOUSE_FILTER_IGNORE, "bar never eats clicks")
 	check(bar.position.x <= 60.0 and bar.position.y <= 200.0, "bar sits by the top-left info block")
+	var text_bottom: float = w._hud_label.position.y + w._hud_label.get_minimum_size().y
+	check(bar.position.y >= text_bottom, "bar clears the info text (%.0f vs text bottom %.0f)" % [bar.position.y, text_bottom])
 	var box := bar.get_theme_stylebox("panel") as StyleBoxFlat
 	check(box != null and box.border_color.is_equal_approx(Color(0.72, 0.58, 0.32)), "bar uses the HUD card border")
 	w.set_run_mode(true)
@@ -299,6 +302,69 @@ func _test_bar(w: Node2D) -> void:
 	w.walker.place(w.zone, w.zone.spawn)
 	_step(w, 4.0)
 	check(not bar.visible and w.stamina.is_full(), "bar hides again once full and idle")
+	_home(w)
+
+
+## Mauro's clip: North Road (15,11) to (20,11) took about 13 s. Re-clicks
+## restarted the ease-in from 20% speed, and the cells near Northgate did not
+## take a click at all. Now a single walk is under 4 s and a re-click keeps pace.
+func _test_north_road_pace(w: Node2D) -> void:
+	w.enter_zone("crosshaven_road_north", Vector2i(15, 11), false)
+	await process_frame
+	_home(w)
+	w.walker.place(w.zone, Vector2i(15, 11))
+	w._last_click_ms = 0
+	var res: Dictionary = w.walk_to(Vector2i(20, 11))
+	check(bool(res.get("ok", false)), "North Road (15,11) to (20,11) has a path")
+	var t := 0.0
+	while w.walker.is_moving() and t < 30.0:
+		_step(w, 0.05)
+		t += 0.05
+	check(w.walker.cell == Vector2i(20, 11), "hero reaches (20,11)")
+	check(t < 4.0, "five North Road cells take under 4 s at walk (%.2f s)" % t)
+	# Start-up: at cruise within 0.7 s, any facing (was over 2 s east/west).
+	var started := 0
+	for goal in [Vector2i(20, 11), Vector2i(15, 16), Vector2i(10, 11), Vector2i(15, 6)]:
+		w.walker.place(w.zone, Vector2i(15, 11))
+		w._last_click_ms = 0
+		var go: Dictionary = w.walk_to(goal)
+		if not bool(go.get("ok", false)) or int(go.get("length", 0)) < 4:
+			continue
+		started += 1
+		_step(w, 0.7)
+		var t0: float = w.walker._traveled
+		_step(w, 0.1)
+		var v: float = (w.walker._traveled - t0) / 0.1
+		check(w.walker.shown_pace() == "walk", "a single click toward %s walks" % str(goal))
+		check(v > w.walker._cruise * 0.95, "at cruise 0.7 s after a start toward %s (%.1f of %.1f px/s)" % [str(goal), v, w.walker._cruise])
+	check(started >= 2, "start-up checked in %d directions" % started)
+	# Re-click while moving (slow, so not a double-click): speed stays at cruise.
+	w.walker.place(w.zone, Vector2i(15, 11))
+	w._last_click_ms = 0
+	w.walk_to(Vector2i(20, 11))
+	_step(w, 1.0)
+	w._last_click_ms = 0
+	w.walk_to(Vector2i(21, 11))
+	check(w.walker.pace == "walk", "a slow re-click keeps walking")
+	_step(w, 0.05)
+	var moved: float = w.walker._traveled
+	check(moved > w.walker.speed_of("walk") * 0.05 * 0.9, "a re-click keeps cruise speed, no fresh ease-in (%.2f px in 0.05 s)" % moved)
+	# stop() ends on the cell he is on, not with a snap to the path end.
+	w.walker.place(w.zone, Vector2i(15, 11))
+	w._last_click_ms = 0
+	w.walk_to(Vector2i(20, 11))
+	_step(w, 0.4)
+	w.walker.stop()
+	_step(w, 3.0)
+	var at: Vector2 = w.walker._cell_pos(w.walker.cell)
+	check(not w.walker.is_moving() and w.walker.cell.x < 20, "stop halts short of the goal (%s)" % str(w.walker.cell))
+	check(w.walker.position.distance_to(at) < 0.5, "stop leaves the sprite on its cell")
+	# The old pick bug: these cells sit at world x + y < 0 and ranked below -1.
+	var origin: Vector2i = w._origin_of("crosshaven_road_north")
+	var c := Vector2i(5, 1)
+	check(origin.x + origin.y + c.x + c.y < 0, "test cell is on a negative diagonal")
+	var hit: Dictionary = w._pick_world(Vector2(BoardVisualSort.cell_to_local(origin + c, 0.0)))
+	check(not hit.is_empty() and hit["cell"] == c, "negative-diagonal cell picks")
 	_home(w)
 
 

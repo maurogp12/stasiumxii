@@ -18,6 +18,10 @@ var class_id := "ironjaw_tall"
 const CORNER_CUT := 10.0
 ## Ease distance, in strides, so a shorter hero still eases over about one step.
 const EASE_STRIDES := 1.3
+## Ease distance is also capped in time at cruise speed. The east/west walk
+## cycle is one 73 px stride, so 1.3 strides was about 95 px of start-up from
+## 20% speed: over 2 s of crawling before the hero reached pace.
+const EASE_MAX_SEC := 0.25
 ## Idle/walk/run and facing swaps crossfade. Short enough that a step still reads.
 const BLEND_SEC := 0.10
 ## How fast a finished plant returns to the root. The camera follows the offset,
@@ -524,7 +528,12 @@ func _consume() -> void:
 			_queue.pop_front()
 		stepped.emit(arrived_cell)
 		if _halt_after:
+			# End the path on this cell. Jumping `_traveled` to the old
+			# `_total` would snap the sprite to the far end of the path
+			# while `cell` and the z order stay here.
+			_total = float(sample["dist"])
 			_traveled = _total
+			_samples.resize(_cursor)
 			_queue.clear()
 			return
 
@@ -548,7 +557,7 @@ func _pending_dist() -> float:
 
 
 func _speed_at(traveled: float, total: float, cruise: float) -> float:
-	var ease := minf(_stride * EASE_STRIDES, total * 0.22)
+	var ease := minf(minf(_stride * EASE_STRIDES, total * 0.22), cruise * EASE_MAX_SEC)
 	if ease < 1.0:
 		return cruise
 	var gate := 1.0

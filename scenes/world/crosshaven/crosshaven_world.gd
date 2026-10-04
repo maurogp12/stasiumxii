@@ -128,6 +128,8 @@ var bad_click_cell := Vector2i(-1, -1)
 var _bad_click_zone: WorldZone
 var _bad_click_until := 0
 const BAD_CLICK_MS := 700
+var _reach_key := ""
+var _reach_cache := {}
 var _movie := ""
 var _launch_class := ""
 var _movie_t0 := 0
@@ -977,6 +979,10 @@ func reachable_here() -> Dictionary:
 	var start: Vector2i = walker.anchor_cell()
 	if not zone.in_bounds(start):
 		return reached
+	# Hover asks on every cell change; one flood per stand cell and frame.
+	var key := "%s#%d#%d#%d" % [zone.zone_id, start.x, start.y, Engine.get_process_frames()]
+	if key == _reach_key:
+		return _reach_cache
 	var limit := WorldWalk._limit(map, null)
 	var blocked := _extra_blocked()
 	var zid := zone.zone_id
@@ -996,6 +1002,8 @@ func reachable_here() -> Dictionary:
 				continue
 			reached[nxt] = true
 			queue.append(nxt)
+	_reach_key = key
+	_reach_cache = reached
 	return reached
 
 
@@ -1186,7 +1194,8 @@ func _build_stamina_bar(sheet: Control) -> void:
 	stamina_bar = Panel.new()
 	stamina_bar.name = "StaminaBar"
 	stamina_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stamina_bar.position = Vector2(48, 160)
+	# Below the six-line info block, clear of its last line.
+	stamina_bar.position = Vector2(48, 178)
 	stamina_bar.size = Vector2(168, 16)
 	var box := StyleBoxFlat.new()
 	box.bg_color = Color(0.1, 0.08, 0.06, 0.82)
