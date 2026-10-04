@@ -1,0 +1,1811 @@
+{
+ "frames": {
+  "S_f00": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 128,
+    "right": 195,
+    "top": 102,
+    "bottom": 5
+   },
+   "bottom_min": 4,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 3008,
+    "L": 1583
+   },
+   "hem_clearance": 33,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 3.56,
+     "visible_contact_dxdy": [
+      -2.84,
+      2.14
+     ]
+    },
+    "L": {
+     "pivot": "toe",
+     "slide_px": 2.11,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f01": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 127,
+    "right": 196,
+    "top": 100,
+    "bottom": 3
+   },
+   "bottom_min": 1,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2978,
+    "L": 1641
+   },
+   "hem_clearance": 38,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.43,
+     "sole_dx": -0.36,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.43,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f02": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 126,
+    "right": 197,
+    "top": 97,
+    "bottom": 7
+   },
+   "bottom_min": 4,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2897,
+    "L": 1439
+   },
+   "hem_clearance": 38,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f03": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 126,
+    "right": 197,
+    "top": 96,
+    "bottom": 11
+   },
+   "bottom_min": 8,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2771,
+    "L": 2061
+   },
+   "hem_clearance": 35,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.04,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f04": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 126,
+    "right": 196,
+    "top": 97,
+    "bottom": 15
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2630,
+    "L": 2706
+   },
+   "hem_clearance": 29,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.05,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f05": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 127,
+    "right": 189,
+    "top": 100,
+    "bottom": 19
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2457,
+    "L": 2840
+   },
+   "hem_clearance": 22,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 2.48,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f06": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 128,
+    "right": 189,
+    "top": 101,
+    "bottom": 16
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2422,
+    "L": 2954
+   },
+   "hem_clearance": 23,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 2.11,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    },
+    "L": {
+     "pivot": "heel",
+     "slide_px": 0.35,
+     "visible_contact_slide_px": 3.04,
+     "visible_contact_dxdy": [
+      -2.31,
+      1.97
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f07": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 129,
+    "right": 192,
+    "top": 99,
+    "bottom": 14
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2417,
+    "L": 2943
+   },
+   "hem_clearance": 28,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.38,
+     "sole_dx": 0.13,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.38,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f08": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 130,
+    "right": 193,
+    "top": 95,
+    "bottom": 18
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2322,
+    "L": 2927
+   },
+   "hem_clearance": 28,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": -0.16,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.16,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f09": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 130,
+    "right": 193,
+    "top": 93,
+    "bottom": 22
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2492,
+    "L": 2871
+   },
+   "hem_clearance": 26,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": -0.1,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.1,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f10": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 130,
+    "right": 193,
+    "top": 95,
+    "bottom": 24
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2772,
+    "L": 1937
+   },
+   "hem_clearance": 23,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.03,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f11": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 129,
+    "right": 194,
+    "top": 99,
+    "bottom": 12
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2920,
+    "L": 1223
+   },
+   "hem_clearance": 30,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "L": {
+     "pivot": "toe",
+     "slide_px": 2.48,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f00": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 148,
+    "right": 193,
+    "top": 96,
+    "bottom": 19
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2080,
+    "L": 952
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.41,
+     "sole_dx": -0.37,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.41,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f01": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 148,
+    "right": 193,
+    "top": 92,
+    "bottom": 15
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2170,
+    "L": 1369
+   },
+   "hem_clearance": 46,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f02": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 147,
+    "right": 194,
+    "top": 91,
+    "bottom": 28
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1917,
+    "L": 1018
+   },
+   "hem_clearance": 34,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.03,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f03": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 148,
+    "right": 193,
+    "top": 93,
+    "bottom": 29
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1696,
+    "L": 2012
+   },
+   "hem_clearance": 32,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.24,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.24,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f04": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 148,
+    "right": 193,
+    "top": 96,
+    "bottom": 25
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1654,
+    "L": 2001
+   },
+   "hem_clearance": 33,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "L": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 4.36,
+     "visible_contact_dxdy": [
+      -3.5,
+      -2.6
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f05": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 150,
+    "right": 191,
+    "top": 99,
+    "bottom": 28
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1634,
+    "L": 1986
+   },
+   "hem_clearance": 27,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 2.04,
+     "visible_contact_dxdy": [
+      -0.25,
+      2.03
+     ]
+    },
+    "L": {
+     "pivot": "toe",
+     "slide_px": 0.01,
+     "visible_contact_slide_px": 2.93,
+     "visible_contact_dxdy": [
+      -1.72,
+      -2.37
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f06": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 151,
+    "right": 190,
+    "top": 98,
+    "bottom": 29
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1708,
+    "L": 1994
+   },
+   "hem_clearance": 26,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.41,
+     "sole_dx": -0.19,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.41,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f07": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 151,
+    "right": 190,
+    "top": 94,
+    "bottom": 24
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1804,
+    "L": 1892
+   },
+   "hem_clearance": 34,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": -0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f08": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 152,
+    "right": 189,
+    "top": 93,
+    "bottom": 22
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1959,
+    "L": 1397
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.05,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f09": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 151,
+    "right": 190,
+    "top": 94,
+    "bottom": 18
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2073,
+    "L": 770
+   },
+   "hem_clearance": 42,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.07,
+     "sole_dy": 0.93
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.93,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f10": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 151,
+    "right": 190,
+    "top": 97,
+    "bottom": 13
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2102,
+    "L": 973
+   },
+   "hem_clearance": 43,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 4.36,
+     "visible_contact_dxdy": [
+      -3.5,
+      -2.6
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f11": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 150,
+    "right": 191,
+    "top": 98,
+    "bottom": 17
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2076,
+    "L": 890
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 5.79,
+     "visible_contact_dxdy": [
+      -2.79,
+      -5.07
+     ]
+    },
+    "L": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 2.04,
+     "visible_contact_dxdy": [
+      -0.26,
+      2.03
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f00": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 195,
+    "right": 128,
+    "top": 102,
+    "bottom": 5
+   },
+   "bottom_min": 4,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 3008,
+    "L": 1583
+   },
+   "hem_clearance": 33,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 3.56,
+     "visible_contact_dxdy": [
+      -2.84,
+      2.14
+     ]
+    },
+    "L": {
+     "pivot": "toe",
+     "slide_px": 2.11,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f01": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 196,
+    "right": 127,
+    "top": 100,
+    "bottom": 3
+   },
+   "bottom_min": 1,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2978,
+    "L": 1641
+   },
+   "hem_clearance": 38,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.43,
+     "sole_dx": -0.36,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.43,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f02": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 197,
+    "right": 126,
+    "top": 97,
+    "bottom": 7
+   },
+   "bottom_min": 4,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2897,
+    "L": 1439
+   },
+   "hem_clearance": 38,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f03": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 197,
+    "right": 126,
+    "top": 96,
+    "bottom": 11
+   },
+   "bottom_min": 8,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2771,
+    "L": 2061
+   },
+   "hem_clearance": 35,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.04,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f04": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 196,
+    "right": 126,
+    "top": 97,
+    "bottom": 15
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2630,
+    "L": 2706
+   },
+   "hem_clearance": 29,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.05,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f05": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 189,
+    "right": 127,
+    "top": 100,
+    "bottom": 19
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2457,
+    "L": 2840
+   },
+   "hem_clearance": 22,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 2.48,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f06": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 189,
+    "right": 128,
+    "top": 101,
+    "bottom": 16
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2422,
+    "L": 2954
+   },
+   "hem_clearance": 23,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 2.11,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    },
+    "L": {
+     "pivot": "heel",
+     "slide_px": 0.35,
+     "visible_contact_slide_px": 3.04,
+     "visible_contact_dxdy": [
+      -2.31,
+      1.97
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f07": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 192,
+    "right": 129,
+    "top": 99,
+    "bottom": 14
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2417,
+    "L": 2943
+   },
+   "hem_clearance": 28,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.38,
+     "sole_dx": 0.13,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.38,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f08": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 130,
+    "top": 95,
+    "bottom": 18
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2322,
+    "L": 2927
+   },
+   "hem_clearance": 28,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": -0.16,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.16,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f09": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 130,
+    "top": 93,
+    "bottom": 22
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2492,
+    "L": 2871
+   },
+   "hem_clearance": 26,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": -0.1,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.1,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f10": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 130,
+    "top": 95,
+    "bottom": 24
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2772,
+    "L": 1937
+   },
+   "hem_clearance": 23,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.03,
+     "sole_dy": 0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f11": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 194,
+    "right": 129,
+    "top": 99,
+    "bottom": 12
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2920,
+    "L": 1223
+   },
+   "hem_clearance": 30,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "L": {
+     "pivot": "toe",
+     "slide_px": 2.48,
+     "visible_contact_slide_px": 0.0,
+     "visible_contact_dxdy": [
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f00": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 148,
+    "top": 96,
+    "bottom": 19
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2080,
+    "L": 952
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.41,
+     "sole_dx": -0.37,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.41,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f01": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 148,
+    "top": 92,
+    "bottom": 15
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2170,
+    "L": 1369
+   },
+   "hem_clearance": 46,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f02": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 194,
+    "right": 147,
+    "top": 91,
+    "bottom": 28
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1917,
+    "L": 1018
+   },
+   "hem_clearance": 34,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.03,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f03": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 148,
+    "top": 93,
+    "bottom": 29
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1696,
+    "L": 2012
+   },
+   "hem_clearance": 32,
+   "skate_full_planted": {
+    "L": {
+     "rig_err": 0.0,
+     "sole_dx": 0.24,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.24,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f04": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 193,
+    "right": 148,
+    "top": 96,
+    "bottom": 25
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1654,
+    "L": 2001
+   },
+   "hem_clearance": 33,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "L": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 4.36,
+     "visible_contact_dxdy": [
+      -3.5,
+      -2.6
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": -0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f05": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 191,
+    "right": 150,
+    "top": 99,
+    "bottom": 28
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1634,
+    "L": 1986
+   },
+   "hem_clearance": 27,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 2.04,
+     "visible_contact_dxdy": [
+      -0.25,
+      2.03
+     ]
+    },
+    "L": {
+     "pivot": "toe",
+     "slide_px": 0.01,
+     "visible_contact_slide_px": 2.93,
+     "visible_contact_dxdy": [
+      -1.72,
+      -2.37
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f06": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 190,
+    "right": 151,
+    "top": 98,
+    "bottom": 29
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1708,
+    "L": 1994
+   },
+   "hem_clearance": 26,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.41,
+     "sole_dx": -0.19,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.41,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f07": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 190,
+    "right": 151,
+    "top": 94,
+    "bottom": 24
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1804,
+    "L": 1892
+   },
+   "hem_clearance": 34,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": 0.13,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.13,
+   "bob_err": -0.83,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f08": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 189,
+    "right": 152,
+    "top": 93,
+    "bottom": 22
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 1959,
+    "L": 1397
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.05,
+     "sole_dy": -0.07
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.07,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f09": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 190,
+    "right": 151,
+    "top": 94,
+    "bottom": 18
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2073,
+    "L": 770
+   },
+   "hem_clearance": 42,
+   "skate_full_planted": {
+    "R": {
+     "rig_err": 0.0,
+     "sole_dx": -0.07,
+     "sole_dy": 0.93
+    }
+   },
+   "pivot_slides": {},
+   "skate_max": 0.93,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f10": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 190,
+    "right": 151,
+    "top": 97,
+    "bottom": 13
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2102,
+    "L": 973
+   },
+   "hem_clearance": 43,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 4.36,
+     "visible_contact_dxdy": [
+      -3.5,
+      -2.6
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f11": {
+   "rgba": true,
+   "alpha_binary": true,
+   "black_under_alpha0": true,
+   "matches_rig_render": true,
+   "margins": {
+    "left": 191,
+    "right": 150,
+    "top": 98,
+    "bottom": 17
+   },
+   "bottom_min": 10,
+   "components": 1,
+   "edge_near_white": 0,
+   "edge_green_px": 0,
+   "legs_visible_px": {
+    "R": 2076,
+    "L": 890
+   },
+   "hem_clearance": 39,
+   "skate_full_planted": {},
+   "pivot_slides": {
+    "R": {
+     "pivot": "toe",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 5.79,
+     "visible_contact_dxdy": [
+      -2.79,
+      -5.07
+     ]
+    },
+    "L": {
+     "pivot": "heel",
+     "slide_px": 0.0,
+     "visible_contact_slide_px": 2.04,
+     "visible_contact_dxdy": [
+      -0.26,
+      2.03
+     ]
+    }
+   },
+   "skate_max": 0,
+   "bob_err": 0.17,
+   "verdict": "PASS",
+   "fails": []
+  }
+ },
+ "summary": {
+  "S": {
+   "passed": 12,
+   "skate_max": 0.43,
+   "bob_err_max": 0.83,
+   "hem_min": 22,
+   "pivot_slide_max": 0.35,
+   "bottom_margins": [
+    5,
+    3,
+    7,
+    11,
+    15,
+    19,
+    16,
+    14,
+    18,
+    22,
+    24,
+    12
+   ]
+  },
+  "E": {
+   "passed": 12,
+   "skate_max": 0.93,
+   "bob_err_max": 0.83,
+   "hem_min": 26,
+   "pivot_slide_max": 0.01,
+   "bottom_margins": [
+    19,
+    15,
+    28,
+    29,
+    25,
+    28,
+    29,
+    24,
+    22,
+    18,
+    13,
+    17
+   ]
+  },
+  "W": {
+   "passed": 12,
+   "skate_max": 0.43,
+   "bob_err_max": 0.83,
+   "hem_min": 22,
+   "pivot_slide_max": 0.35,
+   "bottom_margins": [
+    5,
+    3,
+    7,
+    11,
+    15,
+    19,
+    16,
+    14,
+    18,
+    22,
+    24,
+    12
+   ]
+  },
+  "N": {
+   "passed": 12,
+   "skate_max": 0.93,
+   "bob_err_max": 0.83,
+   "hem_min": 26,
+   "pivot_slide_max": 0.01,
+   "bottom_margins": [
+    19,
+    15,
+    28,
+    29,
+    25,
+    28,
+    29,
+    24,
+    22,
+    18,
+    13,
+    17
+   ]
+  }
+ },
+ "total": "48/48"
+}

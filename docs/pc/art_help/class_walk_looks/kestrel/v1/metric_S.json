@@ -1,0 +1,86 @@
+{
+ "facing": "S",
+ "fit": {
+  "scale": 0.371,
+  "tx": 28.1,
+  "ty": 97.5,
+  "iou_upper": 0.973
+ },
+ "ssim_upper": 0.99,
+ "ssim_lower": 0.679,
+ "ssim_full": 0.771,
+ "iou": 0.896,
+ "palette_detail": {
+  "cloak": {
+   "dE": 1.19,
+   "share_cand": 0.297,
+   "share_tgt": 0.265
+  },
+  "leather": {
+   "dE": 0.5,
+   "share_cand": 0.203,
+   "share_tgt": 0.166
+  },
+  "dark": {
+   "dE": 1.27,
+   "share_cand": 0.5,
+   "share_tgt": 0.569
+  }
+ },
+ "palette": 0.934,
+ "leg_ratio_vs_repaint": 0.987,
+ "height_vs_idle": 1.013,
+ "look_hold_upper": [
+  0.99,
+  0.948,
+  0.947,
+  0.976,
+  0.947,
+  0.948,
+  0.938,
+  0.957,
+  0.937,
+  0.922,
+  0.937,
+  0.957
+ ],
+ "look_score": 90.1,
+ "bob_err_per_frame": [
+  0.8,
+  -0.2,
+  -0.2,
+  0.8,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2,
+  -0.2
+ ],
+ "bob_err": 0.83,
+ "bob_amp": {
+  "cand": 9,
+  "v2": 8
+ },
+ "sole_err": [
+  1.26,
+  0.03,
+  1.09,
+  1.09,
+  0.07,
+  0.15,
+  1.09,
+  0.1,
+  0.06,
+  0.23,
+  1.1,
+  0.2
+ ],
+ "motion_score": 100.0,
+ "PASS": {
+  "look": true,
+  "motion": true
+ }
+}
