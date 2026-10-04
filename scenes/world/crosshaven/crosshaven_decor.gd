@@ -20,6 +20,8 @@ var core := false
 var night_only := false
 var base_z := 0
 var cover_rect := Rect2()
+## True while an NPC (not the hero) stands behind this decor and it is faded.
+var covering_npc := false
 var _groundish := false
 var _art: Dictionary = {}
 var _sway: AnimatedSprite2D
@@ -97,17 +99,35 @@ func _is_core(zone: WorldZone, cell: Vector2i) -> bool:
 	return false
 
 
-func update_cover(walker_pos: Vector2, walker_z: int) -> void:
+## Same as the prop: fade over the hero, or over an NPC of the current chunk
+## (`npc_feet` holds [feet, z] pairs). Returns true when the hero is behind.
+func update_cover(walker_pos: Vector2, walker_z: int, npc_feet: Array = []) -> bool:
+	covering_npc = false
 	if _groundish or cover_rect.size.y < 40.0:
-		return
-	var local := walker_pos - position
-	var hide := cover_rect.grow(4).has_point(local) and local.y < -20.0
-	if hide:
-		z_index = walker_z + 1
+		return false
+	var hero := hides_feet(walker_pos)
+	# Over the hero the prop drops to just above it (the hero rule). Over an
+	# NPC alone it keeps its own depth, which already sorts over the NPC
+	# behind it, so ground and props in between keep their order.
+	var top := walker_z + 1 if hero else base_z
+	for pair in npc_feet:
+		if hides_feet(pair[0]):
+			covering_npc = true
+			top = maxi(top, int(pair[1]) + 1)
+	if hero or covering_npc:
+		z_index = top
 		modulate.a = 0.45
 	else:
 		z_index = base_z
 		modulate.a = 1.0
+	return hero
+
+
+func hides_feet(feet: Vector2) -> bool:
+	if _groundish or cover_rect.size.y < 40.0:
+		return false
+	var local := feet - position
+	return cover_rect.grow(4).has_point(local) and local.y < -20.0
 
 
 func _process(_delta: float) -> void:

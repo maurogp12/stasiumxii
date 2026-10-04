@@ -26,6 +26,8 @@ var south_cell := Vector2i.ZERO
 var base_height := 0
 ## Screen rect (local) used for "player is behind me" fading.
 var cover_rect := Rect2()
+## True while an NPC (not the hero) stands behind this prop and it is faded.
+var covering_npc := false
 var base_z := 0
 ## 0 everywhere except Northgate and the town half of the north road.
 var snow_amount := 0.0:
@@ -243,21 +245,39 @@ func _cover_rect() -> Rect2:
 
 ## Feet north of the base, inside the sprite, are behind the prop.
 ## Pull the prop in front of the character and fade it so they stay readable.
-func update_cover(walker_pos: Vector2, walker_z: int) -> void:
-	var local := walker_pos - position
-	var overlap := cover_rect.grow(6).has_point(local)
-	# The south-cell center sits 16px above the sprite foot. Fading only above
-	# that keeps a character on the front of the prop drawn over the base.
-	var behind := local.y < -20.0
-	var hide := overlap and behind and prop_type != "fence" and cover_rect.size.y > 36.0
-	if hide:
-		z_index = walker_z + 1
+## `npc_feet` holds [feet, z] pairs (this prop's parent space) for the NPCs of
+## the current chunk: the prop fades the same way when one stands behind it.
+## Returns true when the hero is the one behind it.
+func update_cover(walker_pos: Vector2, walker_z: int, npc_feet: Array = []) -> bool:
+	var hero := hides_feet(walker_pos)
+	# Over the hero the prop drops to just above it (the hero rule). Over an
+	# NPC alone it keeps its own depth, which already sorts over the NPC
+	# behind it, so ground and props in between keep their order.
+	var top := walker_z + 1 if hero else base_z
+	covering_npc = false
+	for pair in npc_feet:
+		if hides_feet(pair[0]):
+			covering_npc = true
+			top = maxi(top, int(pair[1]) + 1)
+	if hero or covering_npc:
+		z_index = top
 		# Flat alpha of this sprite only. Roof strokes at a partial fade read as a hatch,
 		# so the hero also gets a soft rim above this (see the walker).
 		modulate.a = 0.45
 	else:
 		z_index = base_z
 		modulate.a = 1.0
+	return hero
+
+
+## True when feet at `feet` (parent space) stand behind this prop's art.
+func hides_feet(feet: Vector2) -> bool:
+	var local := feet - position
+	var overlap := cover_rect.grow(6).has_point(local)
+	# The south-cell center sits 16px above the sprite foot. Fading only above
+	# that keeps a character on the front of the prop drawn over the base.
+	var behind := local.y < -20.0
+	return overlap and behind and prop_type != "fence" and cover_rect.size.y > 36.0
 
 
 func _draw() -> void:

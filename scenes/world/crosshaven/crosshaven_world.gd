@@ -35,6 +35,7 @@ const NpcBook := preload("res://backend/world_npcs.gd")
 const Missions := preload("res://backend/pc_missions.gd")
 const WorldNpc := preload("res://scenes/world/npc/world_npc.gd")
 const NpcDialogue := preload("res://scenes/world/ui/npc_dialogue.gd")
+const NpcRoam := preload("res://scenes/world/npc/npc_roam.gd")
 const MissionTracker := preload("res://scenes/world/ui/mission_tracker.gd")
 const MissionLog := preload("res://scenes/world/ui/mission_log.gd")
 
@@ -78,7 +79,8 @@ var missions = null
 var tracker: CanvasLayer
 var mission_log: CanvasLayer
 var _pending_talk: Dictionary = {}
-var _npc_by_cell: Dictionary = {}
+## False keeps every NPC at its post (spec 4.5a movement off).
+var npc_roam := true
 var hover_cell := Vector2i(-1, -1)
 var _hover_zone: WorldZone
 var neighbours: Node2D
@@ -250,6 +252,7 @@ func _ready() -> void:
 	add_child(dialogue)
 	dialogue.accept_requested.connect(_on_mission_accept)
 	dialogue.turn_in_requested.connect(_on_mission_turn_in)
+	dialogue.closed.connect(_on_dialogue_closed)
 	var mission_loaded: Dictionary = Missions.load_default()
 	if bool(mission_loaded.get("ok", false)):
 		missions = mission_loaded["missions"]
@@ -411,6 +414,7 @@ func walk_to(target: Vector2i, pace: String = "auto") -> Dictionary:
 		return {"ok": false, "reason": "busy"}
 	_route.clear()
 	_pending_talk = {}
+	_release_held()
 	var from: Vector2i = walker.anchor_cell()
 	if from == target:
 		_arm_arrival(target)
@@ -489,6 +493,7 @@ func walk_to_zone(zone_id: String, target: Vector2i, pace: String = "auto") -> D
 	if zone_id == zone.zone_id:
 		return walk_to(target, pace)
 	_pending_talk = {}
+	_release_held()
 	_pending_exit = false
 	_pending_gate = {}
 	var from: Vector2i = walker.anchor_cell()
@@ -505,7 +510,6 @@ func walk_to_zone(zone_id: String, target: Vector2i, pace: String = "auto") -> D
 
 
 func _spawn_npcs() -> void:
-	_npc_by_cell.clear()
 	_pending_talk = {}
 	if dialogue != null and dialogue.is_open():
 		dialogue.close()
@@ -522,24 +526,151 @@ func _spawn_npcs() -> void:
 		var node := WorldNpc.new()
 		npcs_root.add_child(node)
 		node.setup(zone, record, npc_plates)
-		var at: Dictionary = record["cell"]
-		_npc_by_cell[Vector2i(int(at["x"]), int(at["y"]))] = record
+		node.roam_enabled = npc_roam
+		node.attach_host(self, _roam_forbidden(zone, record, false), _roam_forbidden(zone, record, true))
 	_refresh_marks()
 
 
+## The NPC record whose body is on `cell` in the current chunk. A walking NPC
+## covers both cells of its step.
 func _npc_at(cell: Vector2i) -> Dictionary:
-	var found: Variant = _npc_by_cell.get(cell, {})
-	if typeof(found) != TYPE_DICTIONARY:
+	var node := _npc_node_at(cell)
+	if node == null or npc_book == null:
 		return {}
-	return found
+	return npc_book.by_id(str(node.npc_id))
+
+
+func _npc_node_at(cell: Vector2i) -> Node2D:
+	if npcs_root == null:
+		return null
+	for node in npcs_root.get_children():
+		if node.is_queued_for_deletion():
+			continue
+		if (node.occupied_cells() as Array).has(cell):
+			return node
+	return null
+
+
+func _npc_node(npc_id: String) -> Node2D:
+	if npcs_root == null:
+		return null
+	for node in npcs_root.get_children():
+		if str(node.npc_id) == npc_id and not node.is_queued_for_deletion():
+			return node
+	return null
+
+
+## Cells a moving NPC of this chunk keeps off (spec 4.5a, 4.5 spacing).
+## Walk set (`dwell` false): exits, gates, doors and other points of
+## interest, the spawn, and the cells touching a standing NPC's post (so its
+## talk cells stay free). Pause set (`dwell` true) adds one ring around exits
+## and those marks (2 cells clear, as 4.5), keeps 3 cells from every standing
+## post and off the cells touching another walker's home.
+func _roam_forbidden(z: WorldZone, record: Dictionary, dwell: bool) -> Dictionary:
+	var out := {}
+	if z == null:
+		return out
+	var ring := 1 if dwell else 0
+	# Snow-town pines stand on cliff cells nobody walks, but keep walkers off
+	# them outright in case a pine cell is ever passable.
+	for pine in _snow_pines_for(z):
+		out[pine] = true
+	var anchors: Array[Vector2i] = [z.spawn]
+	for poi in z.points_of_interest:
+		anchors.append(Vector2i(int(poi["x"]), int(poi["y"])))
+	if atlas != null:
+		for gate in atlas.gates:
+			for side in [gate["from"], gate["to"]]:
+				if str(side["zone_id"]) == z.zone_id:
+					anchors.append(Vector2i(int(side["x"]), int(side["y"])))
+	for y in z.height:
+		for x in z.width:
+			var c := Vector2i(x, y)
+			if not z.exit_link(c).is_empty():
+				anchors.append(c)
+	for anchor in anchors:
+		for dy in range(-ring, ring + 1):
+			for dx in range(-ring, ring + 1):
+				if absi(dx) + absi(dy) <= ring:
+					out[anchor + Vector2i(dx, dy)] = true
+	var me := str(record.get("id", ""))
+	if npc_book != null:
+		for other in npc_book.for_zone(z.zone_id):
+			if str(other.get("id", "")) == me:
+				continue
+			# A walker's home is often empty, and walkers keep apart as they
+			# move (npc_cell_free), so only a post that never moves gets the
+			# walk ring.
+			var still := NpcRoam.behaviour_for(str(other.get("role", ""))) == NpcRoam.POST
+			var post_ring := (2 if dwell else 1) if still else (1 if dwell else -1)
+			if post_ring < 0:
+				continue
+			var at: Dictionary = other.get("cell", {})
+			var post := Vector2i(int(at.get("x", -99)), int(at.get("y", -99)))
+			for dy in range(-post_ring, post_ring + 1):
+				for dx in range(-post_ring, post_ring + 1):
+					out[post + Vector2i(dx, dy)] = true
+	return out
+
+
+## Asked by a moving NPC before each step. No step onto the hero, the hero's
+## route or talk stand, or next to another NPC's body.
+func npc_cell_free(npc: Node2D, cell: Vector2i) -> bool:
+	if zone == null or walker == null:
+		return false
+	if cell == walker.cell or cell == walker.anchor_cell():
+		return false
+	if walker.is_moving():
+		for step in walker._queue:
+			if step == cell:
+				return false
+	for step in _route:
+		var rec: Dictionary = step
+		if str(rec.get("zone_id", "")) == zone.zone_id and int(rec.get("x", -1)) == cell.x and int(rec.get("y", -1)) == cell.y:
+			return false
+	if not _pending_talk.is_empty() and _pending_talk.get("stand", Vector2i(-1, -1)) == cell:
+		return false
+	for node in npcs_root.get_children():
+		if node == npc or node.is_queued_for_deletion():
+			continue
+		for at in node.occupied_cells():
+			if NpcRoam.cells_apart(at, cell) < 2:
+				return false
+	return true
+
+
+## The hero's cell for an NPC of the current chunk, else (-1, -1).
+func npc_hero_cell(npc: Node2D) -> Vector2i:
+	if walker == null or npcs_root == null or npc.get_parent() != npcs_root:
+		return Vector2i(-1, -1)
+	return walker.anchor_cell()
+
+
+func _release_held() -> void:
+	if npcs_root == null:
+		return
+	var talking := ""
+	if dialogue != null and dialogue.is_open():
+		talking = str(dialogue.npc_id)
+	for node in npcs_root.get_children():
+		if node.is_held() and str(node.npc_id) != talking:
+			node.release()
+
+
+func _on_dialogue_closed(_npc_id: String) -> void:
+	_release_held()
 
 
 func _extra_blocked() -> Dictionary:
 	var blocked := {}
 	if zone == null:
 		return blocked
-	for cell in _npc_by_cell.keys():
-		blocked[WorldWalk.cell_key(zone.zone_id, cell)] = true
+	if npcs_root != null:
+		for node in npcs_root.get_children():
+			if node.is_queued_for_deletion():
+				continue
+			for at in node.occupied_cells():
+				blocked[WorldWalk.cell_key(zone.zone_id, at)] = true
 	if neighbours == null or npc_book == null:
 		return blocked
 	for host in neighbours.get_children():
@@ -557,7 +688,7 @@ func _stand_free(cell: Vector2i) -> bool:
 		return false
 	if not zone.exit_link(cell).is_empty():
 		return false
-	if _npc_by_cell.has(cell):
+	if _npc_node_at(cell) != null:
 		return false
 	if _open_gate(atlas.gate_at(zone.zone_id, cell) if atlas != null else {}):
 		return false
@@ -589,6 +720,9 @@ func _approach_npc(record: Dictionary) -> void:
 		return
 	var at: Dictionary = record["cell"]
 	var npc_cell := Vector2i(int(at["x"]), int(at["y"]))
+	var body := _npc_node(str(record["id"]))
+	if body != null:
+		npc_cell = body.stop_cell()
 	var stand := _talk_stand(npc_cell)
 	if stand.x < 0:
 		walk_rejected.emit("no_path")
@@ -596,6 +730,9 @@ func _approach_npc(record: Dictionary) -> void:
 	var result := walk_to(stand)
 	if not bool(result.get("ok", false)):
 		return
+	# Clicked: the NPC stops where it is and waits for the hero.
+	if body != null:
+		body.hold()
 	_pending_talk = {"id": str(record["id"]), "stand": stand, "npc": npc_cell}
 	if walker.cell == stand and not walker.is_moving():
 		_open_talk()
@@ -608,12 +745,14 @@ func _open_talk() -> void:
 	var stand: Vector2i = _pending_talk["stand"]
 	var npc_cell: Vector2i = _pending_talk["npc"]
 	_pending_talk = {}
+	var body := _npc_node(npc_id)
+	if body != null:
+		npc_cell = body.stop_cell()
 	var toward := npc_cell - stand
 	walker.face(_ortho_name(toward))
-	for node in npcs_root.get_children():
-		if str(node.npc_id) == npc_id:
-			node.face(_ortho_name(-toward))
-			break
+	if body != null:
+		# Stop, face the hero and play the talk gesture once.
+		body.talk_to(_ortho_name(-toward))
 	var record: Dictionary = npc_book.by_id(npc_id)
 	if record.is_empty() or dialogue == null:
 		return
@@ -1118,8 +1257,9 @@ func _process(delta: float) -> void:
 	camera.position = aim + _lead
 	var wz: int = walker.z_index
 	var covered := false
-	covered = _cover_children(props_root, walker.position, wz) or covered
-	covered = _cover_children(decor_root, walker.position, wz) or covered
+	var npc_feet := _npc_cover_feet()
+	covered = _cover_children(props_root, walker.position, wz, npc_feet) or covered
+	covered = _cover_children(decor_root, walker.position, wz, npc_feet) or covered
 	if neighbours != null:
 		var feet: Vector2 = walker.position
 		for host in neighbours.get_children():
@@ -1127,8 +1267,8 @@ func _process(delta: float) -> void:
 				continue
 			var props := host.get_node_or_null("Props")
 			var decor := host.get_node_or_null("Decor")
-			covered = _cover_children(props, feet, wz) or covered
-			covered = _cover_children(decor, feet, wz) or covered
+			covered = _cover_children(props, feet, wz, npc_feet) or covered
+			covered = _cover_children(decor, feet, wz, npc_feet) or covered
 	walker.set_covered(covered)
 	if weather.time_scale > 1.0 or Engine.get_process_frames() % 30 == 0:
 		_refresh_hud()
@@ -1573,11 +1713,13 @@ const SNOW_PINE_TOWN := "crosshaven_northgate"
 const SNOW_PINE_IDS: Array[String] = ["tree_pine_snow_a", "tree_pine_snow_b", "tree_pine_snow_c"]
 
 
-static func snow_pine_cells(z: WorldZone) -> Array[Vector2i]:
+## `keep_clear` cells never take a pine (NPC posts, their talk ring and the
+## cells their walkers may use: see npc_keep_clear).
+static func snow_pine_cells(z: WorldZone, keep_clear: Dictionary = {}) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	if z == null or z.zone_id != SNOW_PINE_TOWN or not Ground.snow_kit:
 		return out
-	var near_prop := {}
+	var near_prop := keep_clear.duplicate()
 	for record in z.props:
 		for c in record.get("footprint", []):
 			var at := Vector2i(int(c["x"]), int(c["y"]))
@@ -1613,8 +1755,45 @@ static func snow_pine_cells(z: WorldZone) -> Array[Vector2i]:
 	return out
 
 
+## Cells of `z` a pine must leave free for its NPCs: every post and the ring
+## around it, and every cell a walker of that chunk could reach from home.
+static func npc_keep_clear(z: WorldZone, records: Array) -> Dictionary:
+	var out := {}
+	if z == null:
+		return out
+	for record in records:
+		var at: Dictionary = record.get("cell", {})
+		var home := Vector2i(int(at.get("x", -99)), int(at.get("y", -99)))
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				out[home + Vector2i(dx, dy)] = true
+		var radius := NpcRoam.radius_for(NpcRoam.behaviour_for(str(record.get("role", ""))))
+		for cell in NpcRoam.area(z, home, radius, {}).keys():
+			out[cell] = true
+	return out
+
+
+## Pine cells of `z` with its NPCs kept clear (cached per chunk).
+var _pine_cache := {}
+
+
+func _snow_pines_for(z: WorldZone) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if z == null:
+		return out
+	var key := "%s|%s" % [z.zone_id, Ground.snow_kit]
+	if _pine_cache.has(key):
+		out.assign(_pine_cache[key])
+		return out
+	var records: Array = npc_book.for_zone(z.zone_id) if npc_book != null else []
+	out = snow_pine_cells(z, npc_keep_clear(z, records))
+	if npc_book != null:
+		_pine_cache[key] = out
+	return out
+
+
 func _plant_snow_pines(host: Node2D, z: WorldZone) -> void:
-	for cell in snow_pine_cells(z):
+	for cell in _snow_pines_for(z):
 		var d := Decor.new()
 		host.add_child(d)
 		d.snow_cover = 1.0
@@ -1796,19 +1975,40 @@ func _stand_on(z: WorldZone, npc_cell: Vector2i) -> Vector2i:
 	return Vector2i(-1, -1)
 
 
-func _cover_children(root: Node, feet: Vector2, wz: int) -> bool:
+## Fade every prop or decor under `root` that covers the hero or one of the
+## NPCs in `npc_feet` ([feet, z] pairs in this node's space). True when the
+## hero is behind one of them.
+func _cover_children(root: Node, feet: Vector2, wz: int, npc_feet: Array = []) -> bool:
 	if root == null:
 		return false
 	var parent := root as Node2D
 	var local_feet := feet
+	var local_npcs: Array = npc_feet
 	if parent != null:
 		local_feet = parent.to_local(to_global(feet))
+		if not npc_feet.is_empty():
+			local_npcs = []
+			for pair in npc_feet:
+				local_npcs.append([parent.to_local(to_global(pair[0])), pair[1]])
 	var covered := false
 	for node in root.get_children():
-		node.update_cover(local_feet, wz)
-		if node.modulate.a < 0.9:
+		if node.update_cover(local_feet, wz, local_npcs):
 			covered = true
 	return covered
+
+
+## Feet and z of each NPC body of the current chunk only (neighbour chunks'
+## NPCs are not checked), so the per-frame cost stays at one chunk's NPCs.
+func _npc_cover_feet() -> Array:
+	var out: Array = []
+	if npcs_root == null:
+		return out
+	for node in npcs_root.get_children():
+		var body := node as Node2D
+		if body == null or not body.visible or body.is_queued_for_deletion():
+			continue
+		out.append([to_local(body.global_position), body.z_index])
+	return out
 
 
 func _facing_step(dir: String) -> Vector2:

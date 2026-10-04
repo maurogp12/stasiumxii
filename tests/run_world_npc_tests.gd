@@ -8,6 +8,8 @@ const Atlas := preload("res://backend/world_atlas.gd")
 const Levels := preload("res://backend/world_levels.gd")
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Regions := preload("res://backend/world_regions.gd")
+const Art := preload("res://scenes/world/npc/npc_sprites.gd")
+const Roam := preload("res://scenes/world/npc/npc_roam.gd")
 
 const SCHEMA := "res://data/world/schema/npcs.schema.json"
 
@@ -37,8 +39,15 @@ func _run() -> void:
 		_test_two_cells_apart_fails()
 		_test_spacing(rows, atlas_loaded["atlas"])
 		_test_extra_blocked(atlas_loaded["atlas"])
+	_test_painted_art(rows)
 	_test_talk()
 	_test_plate_alignment()
+	_test_painted_in_world()
+	_test_roam_rules(atlas_loaded["atlas"] if bool(atlas_loaded.get("ok", false)) else null)
+	_test_walkers()
+	_test_click_stops_walker()
+	_test_npc_cover()
+	_test_northgate_snow_npcs()
 	_test_grades()
 	await _test_grade_hues()
 	_finish()
@@ -212,6 +221,13 @@ func _test_talk() -> void:
 		if str(node.npc_id) == "crossroads_guide":
 			npc_facing = str(node.facing)
 	eq(npc_facing != "" and npc_facing != w.walker.facing, true, "the Guide turns to face the hero")
+	var guide_node: Node2D = w._npc_node("crossroads_guide")
+	eq(str(guide_node.facing), _opposite(str(w.walker.facing)), "the Guide faces straight back at the hero")
+	eq(str(guide_node.anim), "talk", "the Guide plays the talk gesture when the dialogue opens")
+	eq(guide_node.is_held(), true, "the Guide holds still while the dialogue is open")
+	for _i in 20:
+		guide_node.tick(0.05)
+	eq(str(guide_node.anim), "idle", "talk plays once, then the Guide idles")
 	var soon: Button = w.dialogue.find_child("ComingSoon", true, false)
 	eq(soon != null and soon.disabled, true, "Coming soon is disabled")
 	var esc := InputEventKey.new()
@@ -219,6 +235,7 @@ func _test_talk() -> void:
 	esc.keycode = KEY_ESCAPE
 	w._unhandled_input(esc)
 	eq(w.dialogue.is_open(), false, "Esc closes the dialogue")
+	eq(guide_node.is_held(), false, "closing the dialogue lets the Guide go back to the post routine")
 	w._approach_npc(w.npc_book.by_id("crossroads_guide"))
 	eq(w.dialogue.is_open(), true, "already beside the Guide, the dialogue opens")
 	w.dialogue.notify_outside_click()
@@ -242,9 +259,23 @@ func _test_plate_alignment() -> void:
 		heads[str(node.npc_id)] = float(node._plate.head_y)
 		names[str(node.display_name)] = true
 	eq(names.has("Warden") and names.has("Trader") and names.has("Hermit"), true, "Gloomfen entry shows the Warden, Trader, and Hermit")
-	# Hermit idle_w starts lower in the frame than Warden idle_w, so the head
-	# (and the plate) sits lower. A shared texture-top offset would match.
-	eq(float(heads["gloomfen_hermit"]) > float(heads["gloomfen_mire_warden"]), true, "the Hermit plate follows the visible head")
+	# Painted NPCs: the plate sits on the role's highest idle row, so it does
+	# not bob per frame. This replaces the stand-in check that compared the
+	# texture tops of two tinted class sprites (Hermit vs Warden).
+	for node in w.npcs_root.get_children():
+		var art: Dictionary = node.art
+		var expect := -(float(art["pivot"].y) - float(art["head_top"])) * Art.DRAW_SCALE_1X
+		eq(absf(float(node._head_local_y()) - expect) < 0.01, true, "%s plate rides the painted head line" % str(node.npc_id))
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	w.enter_zone("crosshaven_eastmarch", crosshaven.zone("crosshaven_eastmarch").spawn, false)
+	var tall := 0.0
+	var plain := 0.0
+	for node in w.npcs_root.get_children():
+		if str(node.role) == "ferry_captain":
+			tall = float(node._head_local_y())
+		elif str(node.role) == "trader":
+			plain = float(node._head_local_y())
+	eq(tall < plain, true, "the Ferry Captain's hat lifts the plate above the Trader's")
 	w.queue_free()
 
 
@@ -624,6 +655,462 @@ func _hsv(c: Color) -> Vector2:
 			hue = (c.r - c.g) / d + 4.0
 		hue *= 60.0
 	return Vector2(hue, sat)
+
+
+## Every role in npcs.json has a painted folder that matches its json.
+func _test_painted_art(rows: Array) -> void:
+	var roles := {}
+	for row in rows:
+		roles[str((row as Dictionary)["role"])] = true
+	eq(Art.folder_for("seer"), "shard_seer", "the seer role uses the Shard Seer art")
+	for role in roles.keys():
+		var folder := Art.folder_for(str(role))
+		var root := "res://art/characters/world/npc/%s/" % folder
+		var meta_path := root + folder + ".json"
+		eq(FileAccess.file_exists(meta_path), true, "%s has a painted folder and json" % str(role))
+		if not FileAccess.file_exists(meta_path):
+			continue
+		var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(meta_path))
+		var art: Dictionary = Art.load_role(str(role))
+		eq(art.is_empty(), false, "%s painted art loads" % str(role))
+		if art.is_empty():
+			continue
+		var size_2x: Array = meta["frame_size_2x"]
+		var pivot_2x: Array = meta["pivot_px_2x"]
+		eq(art["frame"], Vector2i(int(size_2x[0]) / 2, int(size_2x[1]) / 2), "%s 1x frame is half the json 2x frame" % str(role))
+		eq(art["pivot"], Vector2(float(pivot_2x[0]) * 0.5, float(pivot_2x[1]) * 0.5), "%s 1x pivot is half the json 2x pivot" % str(role))
+		var mirror: Dictionary = meta["mirror"]
+		eq(str(mirror["W"]["src"]) == "S" and bool(mirror["W"]["flip_h"]), true, "%s mirror: W is S flipped" % str(role))
+		eq(str(mirror["E"]["src"]) == "N" and bool(mirror["E"]["flip_h"]), true, "%s mirror: E is N flipped" % str(role))
+		var anims: Dictionary = meta["anims"]
+		for need in ["idle", "walk", "talk"]:
+			eq(anims.has(need), true, "%s ships %s" % [str(role), need])
+		eq(int(anims["walk"]["frames"]), 8, "%s walk is 8 frames" % str(role))
+		eq(bool(anims["talk"]["loop"]), false, "%s talk is one-shot" % str(role))
+		eq(str(art["work"]) != "", true, "%s has a work or patrol_look anim for pauses" % str(role))
+		for anim_name in anims.keys():
+			var spec: Dictionary = anims[anim_name]
+			var frames := int(spec["frames"])
+			for src in ["s", "n"]:
+				var one: Texture2D = load("%s%s_%s.png" % [root, str(anim_name), src])
+				var two: Texture2D = load("%s_2x/%s_%s.png" % [root, str(anim_name), src])
+				eq(one != null and two != null, true, "%s %s_%s has 1x and 2x strips" % [str(role), str(anim_name), src])
+				if one == null or two == null:
+					continue
+				eq(Vector2i(one.get_width(), one.get_height()), Vector2i(frames * int(size_2x[0]) / 2, int(size_2x[1]) / 2), "%s %s_%s 1x strip is frames x half frame" % [str(role), str(anim_name), src])
+				eq(Vector2i(two.get_width(), two.get_height()), Vector2i(frames * int(size_2x[0]), int(size_2x[1])), "%s %s_%s 2x strip is frames x json frame" % [str(role), str(anim_name), src])
+		# Locked rule: S front down-right (+x), W front down-left (+y),
+		# N back up-left (-x), E back up-right (-y).
+		eq(Art.source_for(art, "e"), {"src": "s", "flip": false}, "%s step e draws S as painted" % str(role))
+		eq(Art.source_for(art, "s"), {"src": "s", "flip": true}, "%s step s draws W = S flipped" % str(role))
+		eq(Art.source_for(art, "w"), {"src": "n", "flip": false}, "%s step w draws N as painted" % str(role))
+		eq(Art.source_for(art, "n"), {"src": "n", "flip": true}, "%s step n draws E = N flipped" % str(role))
+	eq(Art.load_role("no_such_role").is_empty(), true, "a role with no folder has no painted art (stand-in fallback)")
+
+
+## NPCs in the world draw the painted art, not the tinted stand-in.
+func _test_painted_in_world() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var hero_h := _hero_height(w)
+	eq(hero_h > 40.0, true, "the hero has a measurable height")
+	var heights: Array[float] = []
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	for zid in ["crosshaven_crossroads", "crosshaven_stoneford", "crosshaven_eastmarch", "crosshaven_westwatch"]:
+		w.enter_zone(zid, crosshaven.zone(zid).spawn, false)
+		for node in w.npcs_root.get_children():
+			var sprite: Sprite2D = node.get_node("Sprite")
+			eq(node.is_painted(), true, "%s draws painted art" % str(node.npc_id))
+			eq(sprite.modulate, Color.WHITE, "%s has no role tint" % str(node.npc_id))
+			eq(sprite.region_enabled and sprite.region_rect.size == Vector2(128, 128), true, "%s draws one 1x frame" % str(node.npc_id))
+			eq(is_equal_approx(sprite.scale.x, Art.DRAW_SCALE_1X), true, "%s uses the shared NPC draw scale" % str(node.npc_id))
+			eq(str(node.anim), "idle", "%s idles by default" % str(node.npc_id))
+			var src := Art.source_for(node.art, str(node.facing))
+			eq(sprite.flip_h, bool(src["flip"]), "%s mirror follows its facing" % str(node.npc_id))
+			heights.append(-float(node._head_local_y()))
+	heights.sort()
+	var median: float = heights[heights.size() / 2]
+	print("npc height median %.1f px, hero %.1f px" % [median, hero_h])
+	eq(median <= hero_h, true, "NPCs read no taller than the hero (median)")
+	eq(median >= hero_h * 0.8, true, "NPCs are not tiny next to the hero")
+	for h in heights:
+		eq(h <= hero_h * 1.05, true, "no NPC towers over the hero")
+	w.queue_free()
+
+
+func _hero_height(w: Node2D) -> float:
+	var sprite: Sprite2D = null
+	for child in w.walker.get_children():
+		if child is Sprite2D and (child as Sprite2D).visible and (child as Sprite2D).texture != null:
+			sprite = child
+			break
+	if sprite == null:
+		return 0.0
+	var image := sprite.texture.get_image()
+	if image == null or image.is_empty():
+		return 0.0
+	var top := -1
+	var bottom := -1
+	var x0 := 0
+	var y0 := 0
+	var wide := image.get_width()
+	var tall := image.get_height()
+	if sprite.region_enabled:
+		x0 = int(sprite.region_rect.position.x)
+		y0 = int(sprite.region_rect.position.y)
+		wide = int(sprite.region_rect.size.x)
+		tall = int(sprite.region_rect.size.y)
+	for y in tall:
+		for x in wide:
+			if image.get_pixel(x0 + x, y0 + y).a > 0.2:
+				if top < 0:
+					top = y
+				bottom = y
+				break
+	if top < 0:
+		return 0.0
+	return float(bottom - top) * absf(sprite.scale.y)
+
+
+## Behaviour per spec 4.5a, from role.
+func _test_roam_rules(atlas) -> void:
+	for role in ["farmer", "woodcutter", "fisher", "smith", "hermit", "coil_engineer"]:
+		eq(Roam.behaviour_for(role), Roam.WANDER, "%s wanders near home" % role)
+	eq(Roam.behaviour_for("warden"), Roam.PATROL, "wardens patrol")
+	for role in ["guide", "banker", "herald", "trader", "door_keeper", "elder", "archivist", "ferry_captain", "last_watcher"]:
+		eq(Roam.behaviour_for(role), Roam.POST, "%s stays at the post" % role)
+	eq(Roam.WANDER_RADIUS >= 4 and Roam.WANDER_RADIUS <= 6, true, "wander radius is 4–6 cells")
+	eq(Roam.path({Vector2i(0, 0): true, Vector2i(1, 0): true, Vector2i(2, 0): true}, Vector2i(0, 0), Vector2i(2, 0)), [Vector2i(1, 0), Vector2i(2, 0)] as Array[Vector2i], "roam path walks the allowed cells")
+	eq(Roam.path({Vector2i(0, 0): true, Vector2i(2, 0): true}, Vector2i(0, 0), Vector2i(2, 0)).is_empty(), true, "roam path never crosses a cell outside the area")
+	if atlas == null:
+		return
+	var map: WorldMap = atlas.maps["crosshaven"]
+	var zone: WorldZone = map.zone("crosshaven_stoneford")
+	var home := Vector2i(16, 18)
+	var allowed := Roam.area(zone, home, 5, {})
+	for c in allowed.keys():
+		eq(zone.passable_at(c) and Roam.manhattan(c, home) <= 5, true, "roam area cell %s is passable and within 5" % str(c))
+
+
+## Movers stay on passable cells, inside their radius, off doors and exits,
+## and keep the spacing. Post NPCs never leave their cell.
+func _test_walkers() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	for zid in ["crosshaven_stoneford", "crosshaven_southbridge", "crosshaven_eastmarch"]:
+		var z: WorldZone = crosshaven.zone(zid)
+		w.enter_zone(zid, z.spawn, false)
+		var hero: Vector2i = w.walker.cell
+		var moved := {}
+		var worked := {}
+		var walked := {}
+		var bad := 0
+		var nodes: Array = w.npcs_root.get_children()
+		var reach_at_start := {}
+		for node in nodes:
+			if w._talk_stand(node.cell).x >= 0:
+				reach_at_start[node.npc_id] = true
+		for t in 2400:
+			for node in nodes:
+				node.tick(0.05)
+			for node in nodes:
+				var c: Vector2i = node.cell
+				if c != node.home:
+					moved[node.npc_id] = true
+				if str(node.anim) == "walk":
+					walked[node.npc_id] = true
+				if str(node.anim) == str(node.art.get("work", "-")):
+					worked[node.npc_id] = true
+				if node.behaviour == Roam.POST:
+					if c != node.home:
+						bad += 1
+						print("FAIL detail: post %s left home" % node.npc_id)
+					continue
+				var paused: bool = node.is_dwelling()
+				if paused:
+					var spot_ok: bool = c == node.home or node.patrol_stops().has(c)
+					for spot in node.pause_spots():
+						spot_ok = spot_ok or spot["cell"] == c
+					if not spot_ok:
+						bad += 1
+						print("FAIL detail: %s dwells on %s, not a spot" % [node.npc_id, str(c)])
+				for at in node.occupied_cells():
+					var ok: bool = z.passable_at(at) and z.exit_link(at).is_empty() and (node.allowed_cells() as Dictionary).has(at)
+					ok = ok and Roam.manhattan(at, node.home) <= Roam.radius_for(node.behaviour)
+					ok = ok and at != hero and at != z.spawn
+					var clear := 2 if paused else 1
+					for poi in z.points_of_interest:
+						ok = ok and Roam.manhattan(at, Vector2i(int(poi["x"]), int(poi["y"]))) >= clear
+					if paused:
+						ok = ok and Roam.manhattan(at, z.spawn) >= 2
+					if not ok:
+						bad += 1
+						if bad < 5:
+							print("FAIL detail: %s at %s" % [node.npc_id, str(at)])
+					for other in nodes:
+						if other == node:
+							continue
+						# Bodies never touch; a paused walker keeps 3 cells
+						# from every NPC that stands at a post (4.5).
+						var need := 3 if paused and other.behaviour == Roam.POST else 2
+						for oc in other.occupied_cells():
+							if Roam.cells_apart(at, oc) < need:
+								bad += 1
+								if bad < 5:
+									print("FAIL detail: %s %s too close to %s %s" % [node.npc_id, str(at), other.npc_id, str(oc)])
+		eq(bad, 0, "%s movers stay on allowed cells, in radius, off doors/exits/spawn/hero, 3+ cells apart" % zid)
+		var movers := 0
+		for node in nodes:
+			if node.behaviour == Roam.POST:
+				continue
+			movers += 1
+			var roomy: bool = node.pause_spots().size() > 1 or node.patrol_stops().size() > 1
+			if roomy:
+				eq(moved.has(node.npc_id), true, "%s moves in two minutes" % str(node.npc_id))
+				eq(walked.has(node.npc_id), true, "%s plays walk while moving" % str(node.npc_id))
+			else:
+				# A warden on a one-cell ledge has no loop; it looks around in place.
+				eq(moved.has(node.npc_id), false, "%s has no room and stays on its cell" % str(node.npc_id))
+			eq(worked.has(node.npc_id), true, "%s plays %s when it pauses" % [str(node.npc_id), str(node.art["work"])])
+		eq(movers > 0, true, "%s has moving NPCs" % zid)
+		# Every mover's area keeps its pause cells clear of lanes.
+		for node in nodes:
+			for spot in node.pause_spots():
+				var sc: Vector2i = spot["cell"]
+				if sc != node.home:
+					eq(Roam.dwell_ok(z, sc), true, "%s pause spot %s does not cut a lane" % [str(node.npc_id), str(sc)])
+		# Whoever the hero could reach at the start can still be reached.
+		var blocked: Dictionary = w._extra_blocked()
+		for node in nodes:
+			if not reach_at_start.has(node.npc_id):
+				continue
+			var target: Vector2i = w._talk_stand(node.cell)
+			eq(target.x >= 0, true, "%s can still be reached by the hero" % str(node.npc_id))
+		eq(blocked.size() >= nodes.size(), true, "every NPC body blocks walking")
+	w.queue_free()
+
+
+## Clicking a walking NPC stops it; the dialogue opens with the talk gesture;
+## it resumes after the dialogue closes.
+func _test_click_stops_walker() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	var z: WorldZone = crosshaven.zone("crosshaven_stoneford")
+	w.enter_zone("crosshaven_stoneford", z.spawn, false)
+	var farmer: Node2D = w._npc_node("stoneford_farmer")
+	eq(farmer != null, true, "the Stoneford Farmer spawns")
+	if farmer == null:
+		w.queue_free()
+		return
+	var n := 0
+	while not farmer.is_walking() and n < 4000:
+		farmer.tick(0.05)
+		n += 1
+	eq(farmer.is_walking(), true, "the Farmer sets off on the wander route")
+	var record: Dictionary = w.npc_book.by_id("stoneford_farmer")
+	w._approach_npc(record)
+	eq(farmer.is_held(), true, "a click holds the Farmer")
+	var stop: Vector2i = farmer.stop_cell()
+	for _i in 200:
+		farmer.tick(0.05)
+	eq(farmer.cell, stop, "the Farmer finishes the step and stands still")
+	eq(farmer.is_walking(), false, "the Farmer is not walking while the hero comes")
+	_drive(w)
+	if not w.dialogue.is_open():
+		w._approach_npc(record)
+		_drive(w)
+	eq(w.dialogue.is_open(), true, "the Farmer dialogue opens")
+	eq(str(farmer.anim), "talk", "the Farmer plays talk once")
+	eq(str(farmer.facing), _opposite(str(w.walker.facing)), "the Farmer faces the hero")
+	for _i in 200:
+		farmer.tick(0.05)
+	eq(farmer.cell, stop, "the Farmer stays put while the dialogue is open")
+	w.dialogue.close()
+	eq(farmer.is_held(), false, "closing the dialogue releases the Farmer")
+	var resumed := false
+	for _i in 4000:
+		farmer.tick(0.05)
+		if farmer.is_walking():
+			resumed = true
+			break
+	eq(resumed, true, "the Farmer resumes the route after the dialogue")
+	w.queue_free()
+
+
+## A building or tall prop over an NPC fades like it does over the hero, and
+## lets go once nothing stands behind it. The Eastmarch Ferry Captain stands
+## right behind a house.
+func _test_npc_cover() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	w.npc_roam = false
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	w.enter_zone("crosshaven_eastmarch", crosshaven.zone("crosshaven_eastmarch").spawn, false)
+	var captain: Node2D = w._npc_node("eastmarch_ferry_captain")
+	eq(captain != null, true, "the Eastmarch Ferry Captain spawns")
+	if captain == null:
+		w.queue_free()
+		return
+	# Park the hero on an open cell no prop or decor covers, so every fade
+	# seen below comes from the NPC.
+	var open_cell := Vector2i(-1, -1)
+	for y in w.zone.height:
+		for x in w.zone.width:
+			var c := Vector2i(x, y)
+			if open_cell.x >= 0 or not w.zone.passable_at(c) or not w.zone.exit_link(c).is_empty():
+				continue
+			if not w._npc_at(c).is_empty() or Roam.cells_apart(c, captain.cell) < 6:
+				continue
+			var spot: Vector2 = w.Pick.cell_center(w.zone, c)
+			var hidden := false
+			for root_node in [w.props_root, w.decor_root]:
+				for child in root_node.get_children():
+					if child.hides_feet(spot):
+						hidden = true
+			if not hidden:
+				open_cell = c
+	eq(open_cell.x >= 0, true, "Eastmarch has an open cell for the hero")
+	w.enter_zone("crosshaven_eastmarch", open_cell, false)
+	captain = w._npc_node("eastmarch_ferry_captain")
+	var feet: Vector2 = w.props_root.to_local(captain.global_position)
+	var hero_feet: Vector2 = w.props_root.to_local(w.to_global(w.walker.position))
+	var cover: Node2D = null
+	for prop in w.props_root.get_children():
+		if prop.hides_feet(feet) and not prop.hides_feet(hero_feet):
+			cover = prop
+			break
+	eq(cover != null, true, "a building stands in front of the Ferry Captain")
+	if cover == null:
+		w.queue_free()
+		return
+	print("ferry captain cover: %s" % str(cover.prop_type))
+	eq(cover.cover_rect.size.y > 36.0, true, "the Ferry Captain's cover is a tall prop")
+	eq(int(cover.z_index) > int(captain.z_index), true, "unfaded, the building draws over the Ferry Captain")
+	eq(w._npc_cover_feet().size(), w.npcs_root.get_child_count(), "cover checks only this chunk's NPCs")
+	w._process(0.016)
+	eq(bool(cover.covering_npc), true, "the building knows an NPC is behind it")
+	eq(cover.modulate.a < 0.9, true, "the building over the Ferry Captain fades")
+	eq(int(cover.z_index) > int(captain.z_index), true, "the faded building still sorts over the Ferry Captain")
+	eq(int(cover.z_index), maxi(int(cover.base_z), int(captain.z_index) + 1), "an NPC-only fade keeps the building's own depth")
+	eq(bool(w.walker._covered), false, "an NPC behind a building does not give the hero the cover rim")
+	var faded := 0
+	for root_node in [w.props_root, w.decor_root]:
+		for prop in root_node.get_children():
+			if prop.modulate.a < 0.9 and not prop.covering_npc and not bool(prop.get("night_only")):
+				faded += 1
+	eq(faded, 0, "no prop fades with nothing behind it")
+	# Step the captain out in front of the house: the fade lets go.
+	var at := captain.position
+	captain.position = at + Vector2(0, 400)
+	w._process(0.016)
+	eq(bool(cover.covering_npc), false, "the building lets go once the Ferry Captain is out")
+	eq(is_equal_approx(cover.modulate.a, 1.0), true, "the building is opaque again with nothing behind it")
+	eq(int(cover.z_index), int(cover.base_z), "the building sorts back to its own depth")
+	captain.position = at
+	w._process(0.016)
+	eq(cover.modulate.a < 0.9, true, "the fade comes back with the Ferry Captain")
+	captain.visible = false
+	w._process(0.016)
+	eq(is_equal_approx(cover.modulate.a, 1.0), true, "a hidden NPC holds no fade")
+	w.queue_free()
+
+
+## Northgate snow with NPCs: the snowfall sits under the name plates and the
+## HUD, and no ring pine lands on an NPC post or a walker's cells.
+func _test_northgate_snow_npcs() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	w.enter_zone("crosshaven_northgate", Vector2i(20, 14), false)
+	var snow_layer: CanvasLayer = w.get_node("SnowfallLayer")
+	var hud_layer := 0
+	for child in w.get_children():
+		if child is CanvasLayer and child.find_child("HudSheet", false, false) != null:
+			hud_layer = child.layer
+	eq(snow_layer.layer < w.npc_plates.layer, true, "snowfall draws under the NPC name plates")
+	eq(hud_layer > 0 and snow_layer.layer < hud_layer, true, "snowfall draws under the HUD")
+	eq(w.npcs_root.get_child_count() > 0, true, "Northgate spawns its NPCs")
+	var pines: Array = w._snow_pines_for(w.zone)
+	eq(pines.size() > 4, true, "pines still ring Northgate")
+	var pine_set := {}
+	for c in pines:
+		pine_set[c] = true
+	var on_npc := 0
+	var on_route := 0
+	for node in w.npcs_root.get_children():
+		var home: Vector2i = node.home
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if pine_set.has(home + Vector2i(dx, dy)):
+					on_npc += 1
+		for c in node.allowed_cells().keys():
+			if pine_set.has(c):
+				on_route += 1
+		for spot in node.pause_spots():
+			if pine_set.has(spot["cell"]):
+				on_route += 1
+		for stop in node.patrol_stops():
+			if pine_set.has(stop):
+				on_route += 1
+	eq(on_npc, 0, "no Northgate pine stands on or beside an NPC post")
+	eq(on_route, 0, "no Northgate pine stands on a walker's cells")
+	var keep: Dictionary = w.npc_keep_clear(w.zone, w.npc_book.for_zone(w.zone.zone_id))
+	var clash := 0
+	for c in w.snow_pine_cells(w.zone, keep):
+		if keep.has(c):
+			clash += 1
+	eq(clash, 0, "snow_pine_cells honours the NPC keep-clear set")
+	var forbid: Dictionary = w._roam_forbidden(w.zone, w.npc_book.for_zone(w.zone.zone_id)[0], false)
+	var open := 0
+	for c in pines:
+		if not forbid.has(c):
+			open += 1
+	eq(open, 0, "pine cells are forbidden to NPC walkers")
+	var decor_pines := 0
+	for d in w.decor_root.get_children():
+		if str(d.decor_type).begins_with("tree_pine_snow"):
+			decor_pines += 1
+	eq(decor_pines, pines.size(), "every kept pine is planted in Northgate")
+	w.queue_free()
+
+
+func _opposite(dir: String) -> String:
+	match dir:
+		"n":
+			return "s"
+		"s":
+			return "n"
+		"e":
+			return "w"
+		"w":
+			return "e"
+	return ""
 
 
 func _drive(w: Node2D) -> void:
