@@ -12,6 +12,10 @@ const TALL_PLANT_SCALE := 0.58
 const LOW_PLANT_SCALE := 0.50
 
 var decor_type := ""
+## Kit sprite drawn for this decor. Same as decor_type except in the snow.
+var art_id := ""
+## Town snow on this cell (Northgate is 1). Set before setup.
+var snow_cover := 0.0
 var core := false
 var night_only := false
 var base_z := 0
@@ -30,14 +34,18 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 	base_z = (cell.x + cell.y) * BoardVisualSort.TILE_Z_SCALE + (1 if _groundish else 2)
 	z_index = base_z
 	core = _is_core(zone, cell)
-	_art = Art.texture("props", decor_type)
+	art_id = decor_type
+	if snow_cover >= 0.5:
+		art_id = Art.snow_decor_id(decor_type, cell)
+	_art = Art.texture("props", art_id) if art_id != "" else {}
+	# Snow swaps keep the plant's scale; the snow kit art is painted for it.
 	var plant := _plant_scale(decor_type)
 	scale = Vector2(plant, plant)
 	if not _art.is_empty():
 		var size := Art.size_of(_art) * plant
 		cover_rect = Rect2(-size.x * 0.5, -size.y, size.x, size.y)
 	_apply_theme_tint(zone.zone_id)
-	if not _groundish and core:
+	if not _groundish and core and art_id == decor_type:
 		_sway = Art.make_loop(decor_type + "_sway")
 		if _sway != null:
 			_sway.visible = false

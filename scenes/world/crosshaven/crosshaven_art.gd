@@ -252,6 +252,39 @@ static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zo
 	return prop_type
 
 
+## Northgate snow kit id for a placement, or "" when the kit has none.
+## Trees turn into snow-loaded pines, hedges into small firs, and any other
+## prop takes its `<art id>_snow` repaint when that file exists.
+static func snow_art_id(prop_type: String, art_id: String, origin: Vector2i) -> String:
+	var id := art_id + "_snow"
+	if prop_type == "tree" or art_id.begins_with("tree_pine") or art_id.begins_with("tree_oak"):
+		var pines := ["tree_pine_snow_a", "tree_pine_snow_b", "tree_pine_snow_c"]
+		id = pines[h(origin.x, origin.y, pines.size())]
+	elif prop_type.begins_with("hedgerow"):
+		id = "fir_snow_small" if h(origin.x, origin.y, 2) == 0 else "fir_snow_small_b"
+	elif art_id == "cottage_slate" and h(origin.x, origin.y, 2) == 1:
+		id = "cottage_slate_b_snow"
+	return id if has("props", id) else ""
+
+
+## Walk-through decor in the snow: shrubs become small firs, flowers and
+## grass become a few snow mounds (or nothing), rocks take a snow cap.
+static func snow_decor_id(decor_type: String, cell: Vector2i) -> String:
+	if decor_type.begins_with("bush") or decor_type.begins_with("sunflowers") or decor_type == "grass_tuft_tall_a":
+		return "fir_snow_small" if h(cell.x, cell.y, 2) == 0 else "fir_snow_small_b"
+	if decor_type.begins_with("rock_small"):
+		return decor_type + "_snow" if has("props", decor_type + "_snow") else decor_type
+	for token in ["flower", "tuft", "mushroom", "leaves", "road_grass", "moss", "reeds"]:
+		if decor_type.find(token) >= 0:
+			var k := h(cell.x, cell.y, 6)
+			if k == 0:
+				return "snow_mound_a"
+			if k == 1:
+				return "snow_mound_b"
+			return ""
+	return decor_type
+
+
 static func _tree_variants(zone_id: String) -> Array:
 	if zone_id.find("northgate") >= 0:
 		return ["tree_pine", "tree_pine", "tree_oak_a"]

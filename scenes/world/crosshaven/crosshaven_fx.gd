@@ -321,6 +321,8 @@ func _sync_grade() -> void:
 			rain_amt = float((amounts as Dictionary).get("light_rain", 0.0))
 	# Clear stays warm. Rain drops the golden multiply so the tint can cool it.
 	_grade_mat.set_shader_parameter("warmth", clampf(1.0 - rain_amt, 0.0, 1.0))
+	var snow_level: Variant = _world.get("snow_level")
+	_grade_mat.set_shader_parameter("snow_grade", clampf(float(snow_level), 0.0, 1.0) if snow_level != null else 0.0)
 
 
 ## Keep the cloud sheet around the camera. Its edge used to show past the

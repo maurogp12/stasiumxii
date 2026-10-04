@@ -33,6 +33,14 @@ var snow_amount := 0.0:
 		snow_amount = value
 		_sync_snow_shader()
 		queue_redraw()
+## Town snow on this cell (Northgate is 1). Set before setup: at 0.5 or more
+## the prop takes the Northgate snow kit art when the kit has it.
+var snow_cover := 0.0
+## True when the art itself is a snow repaint (caps painted in, no shader cap).
+var snowy_art := false
+## World px the glow maps reach past the sprite on each side.
+const GLOW_PAD := 12.0
+var _glow: Sprite2D
 var _tex: Texture2D
 var _fence_axis := 0  # 0: along x (NE-SW screen), 1: along y
 
@@ -65,6 +73,7 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		scale = Vector2(clutter, clutter)
 		cover_rect = Rect2(cover_rect.position * clutter, cover_rect.size * clutter)
 	_attach_loops()
+	_attach_glow()
 	_apply_theme_tint()
 	queue_redraw()
 
@@ -77,6 +86,9 @@ var _loops_ready := false
 
 
 func _attach_loops() -> void:
+	if snowy_art:
+		_attach_overlay()
+		return
 	var sway_id := art_id + "_sway"
 	if Art.anim_meta(sway_id).is_empty() and prop_type == "tree":
 		sway_id = "tree_sway"
@@ -90,6 +102,10 @@ func _attach_loops() -> void:
 		_shadow_sway.visible = false
 		_shadow_sway.z_index = 0
 		add_child(_shadow_sway)
+	_attach_overlay()
+
+
+func _attach_overlay() -> void:
 	var overlay_id := ""
 	if prop_type == "windmill_2x2_body":
 		overlay_id = "windmill_sails_v5"
@@ -155,7 +171,43 @@ func _load_art() -> Texture2D:
 	if _art.is_empty() and art_id != prop_type:
 		art_id = prop_type
 		_art = Art.texture("props", prop_type)
+	snowy_art = false
+	if snow_cover >= 0.5:
+		var snow_id := Art.snow_art_id(prop_type, art_id, footprint[0])
+		if snow_id != "":
+			art_id = snow_id
+			_art = Art.texture("props", snow_id)
+			snowy_art = true
 	return _art.get("tex", null)
+
+
+## Warm window and lamp light for the snow kit: an additive map grown by
+## GLOW_PAD past the sprite, so the light spills onto the snow around it.
+func _attach_glow() -> void:
+	if not snowy_art or _tex == null:
+		return
+	var glow_art := Art.texture("props", art_id + "_glow")
+	if glow_art.is_empty():
+		return
+	_glow = Sprite2D.new()
+	_glow.name = "Glow"
+	_glow.centered = false
+	_glow.texture = glow_art["tex"]
+	var sc := float(glow_art["scale"])
+	_glow.scale = Vector2(sc, sc)
+	var s := Art.size_of(_art)
+	_glow.position = Vector2(-s.x * 0.5 - GLOW_PAD, -s.y - GLOW_PAD)
+	_glow.z_as_relative = true
+	_glow.z_index = 2
+	var mat := CanvasItemMaterial.new()
+	mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	_glow.material = mat
+	_glow.modulate = Color(1, 1, 1, 0.55)
+	add_child(_glow)
+
+
+func has_glow() -> bool:
+	return _glow != null
 
 
 func has_art() -> bool:
@@ -214,7 +266,8 @@ func _draw() -> void:
 		if _tex != null:
 			var s := Art.size_of(_art)
 			Art.draw_at(self, _art, Vector2(-s.x * 0.5, -s.y))
-			_draw_window_glow(s)
+			if not snowy_art:
+				_draw_window_glow(s)
 		else:
 			match prop_type:
 				"tree":
@@ -243,6 +296,8 @@ func _paint_snow_cap() -> void:
 
 ## Roof, foliage, or rail. Barrels, stalls, crates and carts stay bare.
 func _snow_kind() -> String:
+	if snowy_art:
+		return ""
 	var name := prop_type + " " + art_id
 	for token in ["barrel", "stall", "crate", "cart", "sign", "lamp", "well", "brazier", "hay", "scarecrow", "rowboat", "net_rack", "waystone"]:
 		if name.find(token) >= 0:
@@ -331,6 +386,9 @@ func _sync_snow_plate(kind: String) -> void:
 func _paint_drifts() -> void:
 	var amount := clampf(snow_amount, 0.0, 1.0)
 	var salt := _hash_prop()
+	if snowy_art and _is_building():
+		_paint_wall_drifts(amount, salt)
+		return
 	var frost := Color(0.96, 0.98, 1.0, 0.62 * amount)
 	var soft := Color(0.93, 0.96, 1.0, 0.4 * amount)
 	_snow_blob(Vector2(-14.0 + salt * 8.0, 7.0), 13.0 + salt * 5.0, 4.2, frost, salt)
@@ -353,7 +411,40 @@ func _hash_prop() -> float:
 	return float(absi(h) % 1000) / 1000.0
 
 
+func _is_building() -> bool:
+	for token in ["cottage", "house", "farmhouse", "tavern", "bakery", "smithy", "mill", "spire", "watchtower", "hut", "barn", "tower"]:
+		if prop_type.find(token) >= 0:
+			return true
+	return false
+
+
+## Snow banked against the two front walls, from the south tip toward the
+## west and east corners of the footprint.
+func _paint_wall_drifts(amount: float, salt: float) -> void:
+	var min_c := footprint[0]
+	for c in footprint:
+		min_c = Vector2i(mini(min_c.x, c.x), mini(min_c.y, c.y))
+	var fw := float(south_cell.x - min_c.x + 1)
+	var fh := float(south_cell.y - min_c.y + 1)
+	var west := Vector2(-Pick.HALF_W, -Pick.HALF_H) * fw
+	var east := Vector2(Pick.HALF_W, -Pick.HALF_H) * fh
+	var frost := Color(0.97, 0.98, 1.0, 0.95 * amount)
+	var shade := Color(0.74, 0.78, 0.92, 0.6 * amount)
+	for wall in [west, east]:
+		var steps := 4 + int(fw + fh)
+		for i in steps:
+			var t := (float(i) + 0.5) / float(steps)
+			var wob := absf(sin(float(i) * 2.3 + salt * 7.0))
+			var at: Vector2 = (wall as Vector2) * (0.06 + 0.86 * t) + Vector2(0, -1.0)
+			var rx := 7.0 + 5.0 * wob
+			var ry := 3.0 + 1.6 * wob
+			_snow_blob(at + Vector2(0, 1.5), rx, ry, shade, salt + float(i))
+			_snow_blob(at, rx * 0.92, ry, frost, salt + float(i) * 1.3)
+
+
 func _snow_gathers_at_base() -> bool:
+	if snowy_art:
+		return true
 	var name := prop_type + " " + art_id
 	for token in ["tree", "fence", "wall", "hedge"]:
 		if name.find(token) >= 0:

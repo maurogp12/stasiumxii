@@ -17,6 +17,7 @@ const Prop := preload("res://scenes/world/crosshaven/crosshaven_prop.gd")
 const Walker := preload("res://scenes/world/crosshaven/crosshaven_walker.gd")
 const Weather := preload("res://scenes/world/crosshaven/crosshaven_weather.gd")
 const Decor := preload("res://scenes/world/crosshaven/crosshaven_decor.gd")
+const Snowfall := preload("res://scenes/world/crosshaven/crosshaven_snowfall.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
 const Strips := preload("res://scenes/world/crosshaven/world_strips.gd")
 const Fx := preload("res://scenes/world/crosshaven/crosshaven_fx.gd")
@@ -92,7 +93,10 @@ var _booting := true
 var _lead := Vector2.ZERO
 var _sea: ColorRect
 var _backdrop: Node2D
-var _snow: Node2D
+## Screen-space snowfall over Northgate (view only, fades at the town edge).
+var _snow: Control
+## Shown snowfall amount, 0..1. The grade cools and brightens with it.
+var snow_level := 0.0
 var _presence_tween: Tween
 
 var _hover: Node2D
@@ -176,13 +180,13 @@ func _ready() -> void:
 	camera.position_smoothing_speed = 4.0
 	camera.zoom = Vector2.ONE * _zoom
 	add_child(camera)
-	_snow = Node2D.new()
+	var snow_layer := CanvasLayer.new()
+	snow_layer.name = "SnowfallLayer"
+	snow_layer.layer = 5
+	add_child(snow_layer)
+	_snow = Snowfall.new()
 	_snow.name = "Snowfall"
-	_snow.z_as_relative = false
-	_snow.z_index = 4090
-	_snow.visible = false
-	_snow.draw.connect(_draw_snowfall)
-	add_child(_snow)
+	snow_layer.add_child(_snow)
 
 	_screen_fx = CanvasLayer.new()
 	_screen_fx.layer = 5
@@ -333,8 +337,9 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	for record in zone.props:
 		var p := Prop.new()
 		props_root.add_child(p)
+		p.snow_cover = ground.cover_at(_record_cell(record))
 		p.setup(zone, record)
-		p.snow_amount = Ground.snow_at(zone.zone_id, p.south_cell)
+		p.snow_amount = maxf(Ground.snow_at(zone.zone_id, p.south_cell), ground.cover_at(p.south_cell))
 	_raise_sort(props_root, origin)
 	for child in decor_root.get_children():
 		child.free()
@@ -342,7 +347,9 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 	for record in zone.decor:
 		var d := Decor.new()
 		decor_root.add_child(d)
+		d.snow_cover = ground.cover_at(Vector2i(int(record["x"]), int(record["y"])))
 		d.setup(zone, record)
+	_plant_snow_pines(decor_root, zone)
 	_scatter_v7_light()
 	_raise_sort(decor_root, origin)
 	if fx != null:
@@ -366,6 +373,9 @@ func _load_zone(zone_id: String, cell: Vector2i, snap: bool = true) -> void:
 		walker.relocate(zone, cell)
 		_blend_region_look()
 	_apply_camera_limits(snap)
+	# A jump in snaps the snowfall; walking over a seam lets it fade.
+	if snap:
+		_sync_snowfall(true)
 	_show_banner(Pick.zone_name(zone))
 	_refresh_presence()
 	_refresh_hud()
@@ -1007,6 +1017,7 @@ func _build_hud() -> void:
 
 func _dress_ground(g: Node, z: WorldZone) -> void:
 	_bind_plane_samples(z)
+	g.set("snow_rects", _snow_town_rects())
 	g.set("show_walk_exits", not _seamless())
 	g.set("blend_margin", 2 if _seamless() else 0)
 
@@ -1022,6 +1033,20 @@ func _bind_plane_samples(z: WorldZone) -> void:
 	z.sample_terrain = _sample_terrain.bind(origin)
 	z.sample_height = _sample_height.bind(origin)
 	z.sample_zone_id = _sample_zone_id.bind(origin)
+
+
+## World-cell rects of the snow-town chunks, for the frost blend around them.
+func _snow_town_rects() -> Array[Rect2i]:
+	var out: Array[Rect2i] = []
+	if map == null or not _seamless():
+		return out
+	for id in plane_offsets.keys():
+		if not Ground.snow_town(str(id)):
+			continue
+		var z: WorldZone = map.zone(str(id))
+		if z != null:
+			out.append(Rect2i(plane_offsets[id], Vector2i(z.width, z.height)))
+	return out
 
 
 func _sample_terrain(cell: Vector2i, origin: Vector2i) -> String:
@@ -1155,8 +1180,9 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		for record in other.props:
 			var p := Prop.new()
 			props.add_child(p)
+			p.snow_cover = g.cover_at(_record_cell(record))
 			p.setup(other, record)
-			p.snow_amount = Ground.snow_at(other.zone_id, p.south_cell)
+			p.snow_amount = maxf(Ground.snow_at(other.zone_id, p.south_cell), g.cover_at(p.south_cell))
 		_raise_sort(props, origin)
 		var decor := Node2D.new()
 		decor.name = "Decor"
@@ -1164,7 +1190,9 @@ func _mount_neighbours(zone_id: String, everything: bool = false) -> void:
 		for record in other.decor:
 			var d := Decor.new()
 			decor.add_child(d)
+			d.snow_cover = g.cover_at(Vector2i(int(record["x"]), int(record["y"])))
 			d.setup(other, record)
+		_plant_snow_pines(decor, other)
 		_raise_sort(decor, origin)
 		var npcs := Node2D.new()
 		npcs.name = "Npcs"
@@ -1330,35 +1358,85 @@ func _sync_backdrop(sea: Rect2, fields: Rect2) -> void:
 	_backdrop.queue_redraw()
 
 
-func _sync_snowfall() -> void:
-	if _snow == null or zone == null or walker == null or camera == null:
-		return
-	var amount := Ground.snow_at(zone.zone_id, walker.cell)
-	var show := amount > 0.2
-	_snow.visible = show
-	if not show:
-		return
-	_snow.position = camera.position
-	_snow.queue_redraw()
+func _record_cell(record: Dictionary) -> Vector2i:
+	var origin: Variant = record.get("origin", null)
+	if typeof(origin) == TYPE_DICTIONARY:
+		return Vector2i(int(origin["x"]), int(origin["y"]))
+	var cells: Array = record.get("footprint", [])
+	if cells.is_empty():
+		return Vector2i.ZERO
+	return Vector2i(int(cells[0]["x"]), int(cells[0]["y"]))
 
 
-func _draw_snowfall() -> void:
-	if _snow == null or zone == null or walker == null:
+## Snowy pines ringing Northgate. View only, on cliff cells nobody can walk:
+## never a path, door, exit or NPC cell, and never next to a building.
+const SNOW_PINE_TOWN := "crosshaven_northgate"
+const SNOW_PINE_IDS: Array[String] = ["tree_pine_snow_a", "tree_pine_snow_b", "tree_pine_snow_c"]
+
+
+static func snow_pine_cells(z: WorldZone) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if z == null or z.zone_id != SNOW_PINE_TOWN or not Ground.snow_kit:
+		return out
+	var near_prop := {}
+	for record in z.props:
+		for c in record.get("footprint", []):
+			var at := Vector2i(int(c["x"]), int(c["y"]))
+			for dy in range(-1, 2):
+				for dx in range(-1, 2):
+					near_prop[at + Vector2i(dx, dy)] = true
+	var taken := {}
+	for y in z.height:
+		for x in z.width:
+			var cell := Vector2i(x, y)
+			if z.terrain_at(cell) != "cliff" or z.passable_at(cell) or near_prop.has(cell):
+				continue
+			# Keep the crown off the town: a cliff cell beside a walkable
+			# cell takes a pine only half as often.
+			var edge := false
+			for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+				var n: Vector2i = cell + step
+				if z.in_bounds(n) and (z.passable_at(n) or z.terrain_at(n) == "water"):
+					edge = true
+			var roll := CrosshavenArt.h(x * 7 + 3, y * 5 + 1, 100)
+			if roll >= (22 if edge else 48):
+				continue
+			var crowded := false
+			for t in taken.keys():
+				var o: Vector2i = t
+				if maxi(absi(o.x - x), absi(o.y - y)) <= 1:
+					crowded = true
+					break
+			if crowded:
+				continue
+			taken[cell] = true
+			out.append(cell)
+	return out
+
+
+func _plant_snow_pines(host: Node2D, z: WorldZone) -> void:
+	for cell in snow_pine_cells(z):
+		var d := Decor.new()
+		host.add_child(d)
+		d.snow_cover = 1.0
+		d.setup(z, {"type": SNOW_PINE_IDS[CrosshavenArt.h(cell.x, cell.y, SNOW_PINE_IDS.size())], "x": cell.x, "y": cell.y})
+
+
+func _sync_snowfall(snap: bool = false) -> void:
+	if _snow == null:
 		return
-	var amount := Ground.snow_at(zone.zone_id, walker.cell)
-	if amount <= 0.2:
-		return
-	var t := float(Time.get_ticks_msec()) * 0.001
-	var zoom := 1.0
+	var target := 0.0
+	if zone != null and walker != null and ground != null:
+		target = ground.cover_at(walker.cell)
+	_snow.target = target
 	if camera != null:
-		zoom = maxf(camera.zoom.x, 0.01)
-	var span := get_viewport().get_visible_rect().size / zoom
-	for i in 22:
-		var seed := i * 97
-		var x := fmod(float(seed * 13) + t * (14.0 + float(i % 5) * 3.0), span.x) - span.x * 0.5
-		var y := fmod(float(seed * 29) + t * (28.0 + float(i % 7) * 4.0), span.y) - span.y * 0.5
-		var flake := Color(1, 1, 1, 0.38 * amount)
-		_snow.draw_line(Vector2(x, y), Vector2(x - 0.5, y + 4.5), flake, 1.0)
+		_snow.camera_pos = camera.position
+		_snow.camera_zoom = camera.zoom.x
+	if snap:
+		_snow.snap()
+	else:
+		_snow.step(get_process_delta_time())
+	snow_level = _snow.level
 
 
 func _draw_backdrop() -> void:
@@ -1840,6 +1918,8 @@ func _play_movie(mode: String) -> void:
 			await _movie_crag_still()
 		"water_stills":
 			await _movie_water_stills()
+		"northgate_snow":
+			await _movie_northgate_snow()
 		_:
 			push_error("unknown movie %s" % mode)
 	get_tree().quit()
@@ -1916,6 +1996,9 @@ func _scatter_v7_light() -> void:
 			if zone.terrain_at(spot) != "golden_plains" or not zone.passable_at(spot):
 				continue
 			if _near_road(spot, 2) or _near_cells(spot, prop_cells, 5) or _near_cells(spot, shade_at, 4):
+				continue
+			# A warm grass dapple reads as a yellow stain on snow.
+			if ground != null and ground.cover_at(spot) >= 0.5:
 				continue
 			anchor = Vector2i(mini(spot.x + 1, zone.width - 1), mini(spot.y + 1, zone.height - 1))
 			var dapple := _add_v7_decal("decal_v7_sun_dapple_a", anchor)
@@ -2401,6 +2484,57 @@ func _movie_water_stills() -> void:
 	await _grab_theme_still("crosshaven_northgate", Vector2i(34, 2), folder.path_join("map_edge_zoom_1_6.png"))
 
 
+## Northgate square in the snow: stills at zoom 1.0 and 1.6, or (movie writer)
+## a short walk through the square with the snowfall on. SNOW_STILLS_DIR and
+## SNOW_STILLS_PREFIX pick where the stills go and how they are named.
+func _movie_northgate_snow() -> void:
+	settings.apply_preset("Full")
+	weather.auto_rotate = false
+	weather.set_weather("clear")
+	weather.time_of_day = 12.0
+	weather.settle()
+	_hide_debug_readout()
+	if tracker != null:
+		tracker.visible = false
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	var folder := OS.get_environment("SNOW_STILLS_DIR")
+	if folder == "":
+		folder = ProjectSettings.globalize_path("res://docs/pc/media/northgate_snow")
+	var prefix := OS.get_environment("SNOW_STILLS_PREFIX")
+	if prefix == "":
+		prefix = "after"
+	DirAccess.make_dir_recursive_absolute(folder)
+	if not OS.has_feature("movie"):
+		for z in [1.0, 1.6]:
+			_zoom = z
+			if camera != null:
+				camera.zoom = Vector2.ONE * _zoom
+			var tag := "zoom_1" if z == 1.0 else "zoom_1_6"
+			await _grab_theme_still("crosshaven_northgate", Vector2i(20, 14), folder.path_join("%s_square_%s.png" % [prefix, tag]))
+		# The town edge on the north road, where the snow thins out.
+		_zoom = 1.0
+		if camera != null:
+			camera.zoom = Vector2.ONE * _zoom
+		await _grab_theme_still("crosshaven_road_north", Vector2i(12, 2), folder.path_join("%s_town_edge.png" % prefix))
+		return
+	_zoom = 1.3
+	if camera != null:
+		camera.zoom = Vector2.ONE * _zoom
+	await enter_zone("crosshaven_northgate", Vector2i(20, 24), false)
+	_hide_debug_readout()
+	if _banner != null:
+		_banner.modulate.a = 0.0
+	camera.position = walker.position
+	camera.reset_smoothing()
+	_sync_snowfall(true)
+	await get_tree().create_timer(1.0).timeout
+	walker.playback = 1.0
+	await _go(Vector2i(20, 13), "walk")
+	await _go(Vector2i(14, 12), "walk")
+	await get_tree().create_timer(1.0).timeout
+
+
 func _movie_eastmarch_still() -> void:
 	settings.apply_preset("Full")
 	_zoom = 1.15
@@ -2431,7 +2565,7 @@ func _grab_theme_still(zone_id: String, cell: Vector2i, path: String) -> void:
 	walker._show_idle()
 	camera.position = walker.position
 	camera.reset_smoothing()
-	_sync_snowfall()
+	_sync_snowfall(true)
 	await get_tree().create_timer(0.45).timeout
 	await _grab(path)
 
@@ -2460,7 +2594,7 @@ func _grab_plate_stills(folder: String) -> void:
 	walker._show_idle()
 	camera.position = walker.position
 	camera.reset_smoothing()
-	_sync_snowfall()
+	_sync_snowfall(true)
 	await get_tree().create_timer(0.45).timeout
 	await _grab(folder.path_join("northgate_snow.png"))
 

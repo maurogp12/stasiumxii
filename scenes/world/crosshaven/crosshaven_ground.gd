@@ -61,6 +61,11 @@ var _void_dist: Dictionary = {}
 var _void_margin := 0
 ## Northgate's shore lip: 1 on a Northgate cell, less where the coast leaves the town.
 var _snow_shore: Dictionary = {}
+## Snow-town cover per cell, 0..1, margin included. 1 on every Northgate cell,
+## thinning over SNOW_BLEND cells into the chunks around it.
+var _cover: Dictionary = {}
+## World-cell rects of the snow-town chunks (set by the world before setup).
+var snow_rects: Array[Rect2i] = []
 ## Diagonal -> the foam canvas item hung under that row.
 var _foam_rows: Dictionary = {}
 ## Sample inside the tile and overlap the neighbours so the fringe is not a seam.
@@ -77,6 +82,17 @@ const GLINT_PERIOD := Vector2(192.0, 96.0)
 const SEA_FADE_CELLS := 4
 ## Cells along the coast where the Northgate snow lip thins into sand.
 const SNOW_SHORE_BLEND := 3
+## Cells over which the town snow thins into a neighbouring chunk.
+const SNOW_BLEND := 3
+const SNOW_FIELD_PATH := "res://art/world/crosshaven/tiles/_2x/snow_field.png"
+const SNOW_COBBLE_PATH := "res://art/world/crosshaven/tiles/_2x/snow_cobble_field.png"
+## World pixels per repeat of the snow textures (2x masters, four cells a side).
+const SNOW_PERIOD := Vector2(256.0, 128.0)
+## Off draws Northgate as it was before the snow kit (bench and A/B stills).
+static var snow_kit := true
+static var _snow_field_tex: CanvasTexture
+static var _snow_cobble_tex: CanvasTexture
+static var _snow_tex_loaded := false
 static var _sea_surface_tex: CanvasTexture
 static var _sea_glint_tex: CanvasTexture
 static var _sea_tex_loaded := false
@@ -113,6 +129,7 @@ func setup(target: WorldZone) -> void:
 	_cache_void_sea()
 	_cache_water_edge()
 	_cache_snow_shore()
+	_cache_cover()
 	var margin := _view_margin()
 	_foam_rows.clear()
 	for d in range(-margin * 2, zone.width + zone.height - 1 + margin * 2):
@@ -889,9 +906,9 @@ func _draw_crag_faces(ci: Node2D, cell: Vector2i, south_tip: Vector2) -> void:
 			if k == diff - 1 and k > 0:
 				var below_water := Art.terrain_seen(zone, ncell) == "water"
 				variant = "base_water" if below_water else "base_ground"
-			var tid := "cliff_side_%s_%s" % [face, variant]
+			var tid := _face_id("cliff_side_%s_%s" % [face, variant], cover_at(cell) >= 0.5)
 			if Art.has("tiles", tid):
-				Art.draw_at(ci, Art.texture("tiles", tid), south_tip + Vector2(base_x, -16.0 + 10.0 * float(k)), tint)
+				Art.draw_at(ci, Art.texture("tiles", tid), south_tip + Vector2(base_x, -16.0 + 10.0 * float(k)), Color.WHITE if tid.begins_with("snow_") else tint)
 
 
 ## Technical Artist kit path: height strips, autotiled floor, corner decals.
@@ -909,13 +926,24 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 				all_found = false
 				break
 		var face_tint := _floor_modulate(cell, shown)
+		var snowy_face := cover_at(cell) >= 0.5
+		if snowy_face:
+			face_tint = Color.WHITE
 		if all_found:
 			for strip in strips:
-				Art.draw_at(ci, Art.texture("tiles", strip["id"]), south_tip + strip["offset"], face_tint)
+				Art.draw_at(ci, Art.texture("tiles", _face_id(str(strip["id"]), snowy_face)), south_tip + strip["offset"], face_tint)
 		else:
 			_draw_flat_faces(ci, Pick.diamond(cell, float(steps)), steps, SIDE.get(shown, Color.DARK_MAGENTA))
 	if bank:
 		_draw_named_floor(ci, south_tip, "golden_plains_a", "golden_plains", _floor_modulate(cell, "golden_plains"))
+		return
+	var cover := cover_at(cell)
+	if cover >= 0.999 and terrain != "water":
+		# Snow town: the painted snow replaces the floor art outright.
+		_draw_snow_floor(ci, cell, steps, terrain, true)
+		var lip_amount := snow_shore_at(cell)
+		if lip_amount > 0.0:
+			_draw_snow_lip(ci, cell, steps, lip_amount)
 		return
 	var floor_tint := _floor_modulate(cell, terrain)
 	var pick := Art.pick_tile(zone, cell)
@@ -954,7 +982,15 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		var floor_art := Art.texture("tiles", floor_id)
 		if floor_art.is_empty():
 			floor_art = Art.texture("tiles", terrain)
-		_paint_art(ci, floor_art, south_tip, floor_tint, water_overlap)
+		if cover > 0.0 and terrain != "water":
+			_paint_exact(ci, floor_art, cell, steps, floor_tint)
+		else:
+			_paint_art(ci, floor_art, south_tip, floor_tint, water_overlap)
+	if cover > 0.0 and terrain != "water":
+		# Under thinning snow the floor stays inside its own diamond: the
+		# kit's edge bleed drew dark seams over the neighbour's snow.
+		corner_ids = []
+		pick["lip"] = ""
 	for raw_corner in corner_ids:
 		var corner_id := str(raw_corner)
 		var corner_art := Art.texture("tiles", corner_id)
@@ -967,6 +1003,8 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		if not lip_art.is_empty():
 			var lsize := Art.size_of(lip_art)
 			Art.draw_at(ci, lip_art, south_tip + Vector2(-lsize.x * 0.5, -lsize.y), floor_tint)
+	if cover > 0.0 and terrain != "water":
+		_draw_snow_floor(ci, cell, steps, terrain, false)
 	var snow_lip := snow_shore_at(cell)
 	if terrain != "water" and snow_lip > 0.0:
 		_draw_snow_lip(ci, cell, steps, snow_lip)
@@ -1378,6 +1416,202 @@ func _draw_snow_lip(ci: Node2D, cell: Vector2i, steps: int, amount: float) -> vo
 			_soft_blob(ci, p + Vector2(-rx * 0.2, -ry * 0.3), rx * 0.45, ry * 0.35, Color(0.86, 0.89, 0.93, 0.8 * amount), _hash(salt) + 0.9)
 
 
+## Under snow, every height face is the snowy stone strip: snow over the lip,
+## grey rock below, no grass rim.
+func _face_id(id: String, snowy: bool) -> String:
+	if not snowy:
+		return id
+	var at := id.find("_side_")
+	if at < 0:
+		return id
+	var snow_id := "snow" + id.substr(at)
+	return snow_id if Art.has("tiles", snow_id) else id
+
+
+static func snow_town(zone_id: String) -> bool:
+	return zone_id.begins_with("crosshaven_northgate")
+
+
+## Every cell of a Northgate chunk is under snow. Cells of other chunks within
+## SNOW_BLEND of one thin out, with a little jitter so the edge is not a line.
+func _cache_cover() -> void:
+	_cover.clear()
+	if zone == null or not snow_kit:
+		return
+	var full := snow_town(zone.zone_id)
+	if not full and snow_rects.is_empty():
+		return
+	var margin := _view_margin()
+	var reach := Rect2i(world_origin - Vector2i(margin + SNOW_BLEND, margin + SNOW_BLEND), Vector2i(zone.width, zone.height) + Vector2i(2, 2) * (margin + SNOW_BLEND))
+	var near: Array[Rect2i] = []
+	for r in snow_rects:
+		if r.intersects(reach):
+			near.append(r)
+	if not full and near.is_empty():
+		return
+	for y in range(-margin, zone.height + margin):
+		for x in range(-margin, zone.width + margin):
+			var cell := Vector2i(x, y)
+			if full and zone.in_bounds(cell):
+				_cover[cell] = 1.0
+				continue
+			var world := world_origin + cell
+			var best := 99
+			for r in near:
+				var dx := maxi(maxi(r.position.x - world.x, world.x - (r.end.x - 1)), 0)
+				var dy := maxi(maxi(r.position.y - world.y, world.y - (r.end.y - 1)), 0)
+				best = mini(best, maxi(dx, dy))
+			if full and best > 0:
+				# Outside the chunk without a plane: measure to the chunk itself.
+				var dx2 := maxi(maxi(-x, x - (zone.width - 1)), 0)
+				var dy2 := maxi(maxi(-y, y - (zone.height - 1)), 0)
+				best = mini(best, maxi(dx2, dy2))
+			if best == 0:
+				_cover[cell] = 1.0
+				continue
+			if best > SNOW_BLEND:
+				continue
+			var c := 1.0 - float(best) / float(SNOW_BLEND + 1)
+			c += (_hash(world) - 0.5) * 0.24
+			_cover[cell] = clampf(c, 0.05, 0.95)
+
+
+## How much town snow lies on this cell: 1 in Northgate, 0 far from it.
+func cover_at(cell: Vector2i) -> float:
+	return float(_cover.get(cell, 0.0))
+
+
+static func _load_snow_textures() -> void:
+	if _snow_tex_loaded:
+		return
+	_snow_tex_loaded = true
+	_snow_field_tex = _repeat_texture(SNOW_FIELD_PATH)
+	_snow_cobble_tex = _repeat_texture(SNOW_COBBLE_PATH)
+
+
+## Cover at the diamond corner `i` (N, E, S, W): the mean of the four cells sharing it.
+func _cover_corner(cell: Vector2i, i: int) -> float:
+	var base := cell
+	match i:
+		0:
+			base = cell + Vector2i(-1, -1)
+		1:
+			base = cell + Vector2i(0, -1)
+		3:
+			base = cell + Vector2i(-1, 0)
+	var sum := 0.0
+	for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+		sum += cover_at(base + (o as Vector2i))
+	return sum * 0.25
+
+
+## Thin cover breaks into patches, not an even fade: each corner holds its
+## snow until a world-space noise threshold, so the town edge is ragged.
+func _patchy(cover: float, cell: Vector2i, i: int) -> float:
+	if cover >= 0.999 or cover <= 0.0:
+		return cover
+	var corner := cell
+	match i:
+		1:
+			corner = cell + Vector2i(1, 0)
+		2:
+			corner = cell + Vector2i(1, 1)
+		3:
+			corner = cell + Vector2i(0, 1)
+	var n := _hash(world_origin + corner + Vector2i(911, 37))
+	return clampf(cover * 1.6 - 0.6 * n, 0.0, 1.0)
+
+
+## Share of the four cells around corner `i` that are not road.
+func _off_road_corner(cell: Vector2i, i: int) -> float:
+	var base := cell
+	match i:
+		0:
+			base = cell + Vector2i(-1, -1)
+		1:
+			base = cell + Vector2i(0, -1)
+		3:
+			base = cell + Vector2i(-1, 0)
+	var off := 0
+	for o in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+		var seen := Art.terrain_seen(zone, base + (o as Vector2i))
+		if seen != "dirt_road":
+			off += 1
+	return float(off) * 0.25
+
+
+## World-space snow over a cell. Roads are snowy cobble: the stones show,
+## snow lies in the joints and banks up along the edges, the middle is swept.
+func _draw_snow_floor(ci: Node2D, cell: Vector2i, steps: int, terrain: String, full: bool) -> void:
+	_load_snow_textures()
+	if _snow_field_tex == null:
+		return
+	var d := Pick.diamond(cell, float(steps))
+	var shift := BoardVisualSort.cell_to_local(world_origin) + Vector2(0, float(steps) * BoardVisualSort.ELEVATION_PIXELS)
+	var uvs := PackedVector2Array()
+	var amount := PackedFloat32Array()
+	for i in 4:
+		uvs.append((d[i] + shift) / SNOW_PERIOD)
+		amount.append(1.0 if full else _patchy(_cover_corner(cell, i), cell, i))
+	if terrain != "dirt_road" or _snow_cobble_tex == null:
+		ci.draw_polygon(d, _alpha_colors(amount, 1.0), uvs, _snow_field_tex)
+		return
+	ci.draw_polygon(d, _alpha_colors(amount, 1.0), uvs, _snow_cobble_tex)
+	var banked := PackedFloat32Array()
+	for i in 4:
+		var off := _off_road_corner(cell, i)
+		var bank := 0.10
+		if off >= 0.74:
+			bank = 0.95
+		elif off >= 0.49:
+			bank = 0.70
+		elif off > 0.0:
+			bank = 0.38
+		banked.append(amount[i] * bank)
+	ci.draw_polygon(d, _alpha_colors(banked, 1.0), uvs, _snow_field_tex)
+	_draw_road_drifts(ci, cell, d, amount)
+
+
+## A floor tile mapped onto exactly its diamond, with no edge bleed.
+func _paint_exact(ci: Node2D, art: Dictionary, cell: Vector2i, steps: int, tint: Color) -> void:
+	if art.is_empty():
+		return
+	var d := Pick.diamond(cell, float(steps))
+	var uvs := PackedVector2Array([Vector2(0.5, 0.03), Vector2(0.97, 0.5), Vector2(0.5, 0.97), Vector2(0.03, 0.5)])
+	var cols := PackedColorArray([tint, tint, tint, tint])
+	ci.draw_polygon(d, cols, uvs, art["tex"])
+
+
+func _alpha_colors(alphas: PackedFloat32Array, scale: float) -> PackedColorArray:
+	var out := PackedColorArray()
+	for a in alphas:
+		out.append(Color(1, 1, 1, clampf(a * scale, 0.0, 1.0)))
+	return out
+
+
+## Soft lumps of snow along each road side that meets snowy ground.
+func _draw_road_drifts(ci: Node2D, cell: Vector2i, d: PackedVector2Array, amount: PackedFloat32Array) -> void:
+	var sides: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+	var center := (d[0] + d[2]) * 0.5
+	for k in 4:
+		var seen := Art.terrain_seen(zone, cell + sides[k])
+		if seen == "dirt_road" or seen == "" or seen == "water":
+			continue
+		var a: Vector2 = d[k]
+		var b: Vector2 = d[(k + 1) % 4]
+		var strength := (amount[k] + amount[(k + 1) % 4]) * 0.5
+		if strength <= 0.05:
+			continue
+		for j in 4:
+			var salt := world_origin + cell * 4 + Vector2i(k, j)
+			var t := (float(j) + 0.1 + 0.8 * _hash(salt)) / 4.0
+			var p := a.lerp(b, t).lerp(center, 0.06 + 0.16 * _hash(salt + Vector2i(3, 1)))
+			var rx := 8.0 + 6.0 * _hash(salt + Vector2i(5, 2))
+			var ry := rx * 0.42
+			_soft_blob(ci, p + Vector2(0, 1.4), rx, ry, Color(0.70, 0.74, 0.90, 0.55 * strength), _hash(salt))
+			_soft_blob(ci, p, rx * 0.92, ry * 0.9, Color(0.96, 0.97, 1.0, 0.95 * strength), _hash(salt) + 0.4)
+
+
 ## Hook for the painted theme kits. Weights fall off over tens of cells,
 ## so a border is a mix, not a straight seam between chunk ids.
 func theme_weights(cell: Vector2i) -> Dictionary:
@@ -1466,6 +1700,9 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 func _with_frost(tint: Color, cell: Vector2i, terrain: String) -> Color:
 	var amount := snow_at_cell(cell)
 	if amount <= 0.2 or terrain == "water":
+		return tint
+	# Town snow is painted on top here; a frost tint under it drew a grid.
+	if cover_at(cell) > 0.0:
 		return tint
 	var mix := 0.62 * amount
 	if terrain == "dirt_road":
