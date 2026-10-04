@@ -225,7 +225,8 @@ def foot_pose(F, act, i, sd):
     sole = pt(F, sd, 'boot', 'sole')
     Mb = np.hstack([R2(th) * s, (g - R2(th) * s @ sole)[:, None]])
     if act == 'death':        # a boot lying on the ground flattens with him
-        phi = torso_M(F, act, i)[1]['phi']; Mb = squash_about(Mb, g, np.array([0.0, 1.0]), 1 - LIE_FLAT * lie_w(math.radians(phi)) * 0.6)
+        phi = abs(torso_M(F, act, i)[1]['phi']); wb = float(ss((phi - 30.0) / 30.0))      # only once he is going down
+        Mb = squash_about(Mb, g, np.array([0.0, 1.0]), 1 - LIE_FLAT * wb * 0.6)
     return Mb, dict(heel=he.tolist(), toe=to.tolist(), ground=g.tolist(), turn=math.degrees(th))
 
 _LEGL = {}
@@ -255,7 +256,7 @@ def leg_pose(F, act, i, sd, Mt):
     kn = ik_knee(hip, an, L1 * k, L2 * k, sg)
     th0, th1 = pt(F, sd, 'thigh', 'P0'), pt(F, sd, 'thigh', 'P1'); sh0, sh1 = pt(F, sd, 'shin', 'P0'), pt(F, sd, 'shin', 'P1')
     Mth = sim(th0, th1, hip, kn, s); Msh = sim(sh0, sh1, kn, an, s)
-    return dict(Mth=Mth, Msh=Msh, Mb=Mb, hip=hip.tolist(), knee=kn.tolist(), ankle=an.tolist(), k=k,
+    return dict(Mth=Mth, Msh=Msh, Mb=Mb, hip=hip.tolist(), knee=kn.tolist(), ankle=an.tolist(), k=k, k_eff=max(1.0, d / (L1 + L2)),
                 short=max(0.0, d - (L1 + L2) * k), heel=finfo['heel'], toe=finfo['toe'])
 
 # ------------------------------------------------------------------ arms
@@ -268,7 +269,7 @@ def turn(a_paint, a_b0, a_bi, w):
     rel = wrap(a_bi - a_b0); absl = wrap(a_bi - a_paint)
     return wrap(rel + w * wrap(absl - rel))
 
-def arm_pose(F, act, i, sd, Mt):
+def arm_pose(F, act, i, sd, Mt, _sign=None):
     c = CFG[F]; s = c['s']; Jt = PJ[F]['arms'][sd]
     sh = apm(Mt, Jt['shoulder']); w = key_w(F, act, i, sd); b = lambda a, ii, k: jt(F, a, ii, f'{sd}_{k}')
     out = dict(sh=sh, w=w); prev = sh; ks = []
@@ -290,13 +291,55 @@ def arm_pose(F, act, i, sd, Mt):
     hull = piece_hull(f'fore_{sd}_{F}'); corr = 0.0
     def bad(M_): P = np.array([apm(M_, p) for p in hull]); return (P[:, 0].min() < 2) or (P[:, 0].max() > CW - 3) or (P[:, 1].min() < 2) or (P[:, 1].max() > CH - 3)
     if bad(out['Mf']):
-        for dd in np.radians(np.arange(1, 121, 1)):
-            ok = [a_ for a_ in (dd, -dd) if not bad(rot_about(out['Mf'], out['elbow'], a_))]
-            if ok: corr = ok[0]; break
+        # one turning direction per action and arm (the one that needs the least turn over the whole action), so the
+        # corrected axe never flips from one side to the other between frames
+        def need(sg):
+            for dd in np.radians(np.arange(1, 121, 1)):
+                if not bad(rot_about(out['Mf'], out['elbow'], sg * dd)): return sg * dd
+            return None
+        if _sign: corr = need(_sign) or 0.0
+        else:
+            pref = edge_sign(F, act, sd); a_p, a_o = need(pref), need(-pref)
+            # the action's own direction unless the other way is much smaller (< 1/3 of it, or the own way fails)
+            if a_p is None or (a_o is not None and abs(a_o) * 3 < abs(a_p)): corr = a_o or 0.0
+            else:
+                # eased over time: at least the turn its neighbours need (the held wind-up does not wobble)
+                env = edge_env(F, act, sd)[i]; corr = a_p
+                if abs(env) > abs(a_p) and not bad(rot_about(out['Mf'], out['elbow'], env)): corr = env
         if corr:
             out['Mf'] = rot_about(out['Mf'], out['elbow'], corr); out['grip'] = apm(out['Mf'], Jt['grip'])
     out['edge_turn_deg'] = round(math.degrees(corr), 1)
     return out
+
+_EENV = {}
+def edge_env(F, act, sd):
+    if (F, act, sd) not in _EENV:
+        sg = edge_sign(F, act, sd); n = ACTS[act]; raw = []
+        for i in range(n):
+            Mt = torso_M(F, act, i)[0]; a_p = arm_pose(F, act, i, sd, Mt, _sign=sg)['edge_turn_deg']; a_o = arm_pose(F, act, i, sd, Mt, _sign=-sg)['edge_turn_deg']
+            other = (a_p == 0 and a_o != 0) or (a_o and abs(a_o) * 3 < abs(a_p))      # this frame turns the other way: not an envelope source
+            raw.append(None if other else math.radians(a_p))
+        env = []
+        for i in range(n):
+            nb = [raw[j] for j in range(max(0, i - 1), min(n, i + 2)) if raw[j]] if raw[i] else []
+            env.append(max(nb, key=abs) if nb else 0.0)
+        _EENV[(F, act, sd)] = env
+    return _EENV[(F, act, sd)]
+
+_ESIGN = {}
+def edge_sign(F, act, sd):
+    if (F, act, sd) not in _ESIGN:
+        _ESIGN[(F, act, sd)] = 1.0
+        tot = {}
+        for sg in (1.0, -1.0):
+            t = 0.0
+            for i in range(ACTS[act]):
+                a = arm_pose(F, act, i, sd, torso_M(F, act, i)[0], _sign=sg); e = abs(a['edge_turn_deg'])
+                t += e if e else 0.0
+                if a['edge_turn_deg'] == 0 and a.get('_failed'): t += 999
+            tot[sg] = t
+        _ESIGN[(F, act, sd)] = 1.0 if tot[1.0] <= tot[-1.0] else -1.0
+    return _ESIGN[(F, act, sd)]
 
 _HULL = {}
 def piece_hull(name):

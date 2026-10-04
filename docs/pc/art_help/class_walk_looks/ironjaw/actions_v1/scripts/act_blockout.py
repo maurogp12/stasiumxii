@@ -91,9 +91,10 @@ def keys(C, anim, F='S'):
         # lying arms lie ON the ground plane: S lies on his back (ground = his side-to-side x head-to-foot plane, so the arms
         # spread sideways); E lies on his left side (ground = his front-to-back x head-to-foot plane, arms forward)
         lie = out_(5, 18, 22) if F == 'S' else {'R': (12, 14, 20), 'L': (22, 6, 15)}
-        mid = out_(-25, 30, 25) if F == 'S' else {'R': (5, 30, 25), 'L': (20, 22, 15)}
+        mid = {'R': (-12, 20, 40), 'L': (-25, 30, 25)} if F == 'S' else {'R': (5, 30, 25), 'L': (20, 22, 15)}
+        f3 = {'R': (-15, 22, 40), 'L': (-25, 32, 30)} if F == 'S' else out_(-25, 32, 30)
         return [(0, k()),
-                (3, k(drop=0.08 * Hh, lean=-12, head=-10, arms=out_(-25, 32, 30))),
+                (3, k(drop=0.08 * Hh, lean=-12, head=-10, arms=f3)),
                 (8, k(drop=0.20 * Hh, tilt=62, lean=-10, head=-6, arms=mid, feet={'R': (0.14 * Hh, 0.0, 30.0)})),
                 (11, k(drop=0.24 * Hh, tilt=88, lean=0, head=0, roll=25, arms=lie, feet={'R': (0.10 * Hh, 0.0, 0.0)})),
                 (12, k(drop=0.24 * Hh, tilt=90, lean=0, head=0, roll=30, arms=lie, feet={'R': (0.10 * Hh, 0.0, 0.0)}))]
