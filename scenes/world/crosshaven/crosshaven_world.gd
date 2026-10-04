@@ -1196,7 +1196,8 @@ func _set_hover(z: WorldZone, c: Vector2i) -> void:
 	_hover_zone = z
 	hover_cell = c
 	_hover_unreachable = false
-	if z != null and zone != null and z == zone and c.x >= 0 and z.passable_at(c) and walker != null and c != walker.anchor_cell():
+	# NPC cells open talk on click, so they never read as unreachable.
+	if z != null and zone != null and z == zone and c.x >= 0 and z.passable_at(c) and walker != null and c != walker.anchor_cell() and _npc_node_at(c) == null:
 		_hover_unreachable = not reachable_here().has(c)
 	if z != null and c.x >= 0:
 		var world := _origin_of(z.zone_id) + c

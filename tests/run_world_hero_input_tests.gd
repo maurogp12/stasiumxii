@@ -55,6 +55,7 @@ func _run() -> void:
 	_test_drain_and_threshold(w)
 	_test_regen(w)
 	_test_bar(w)
+	_test_npc_speed(w)
 	await _test_north_road_pace(w)
 	await _test_click_sweep(w)
 	w.queue_free()
@@ -302,6 +303,27 @@ func _test_bar(w: Node2D) -> void:
 	w.walker.place(w.zone, w.zone.spawn)
 	_step(w, 4.0)
 	check(not bar.visible and w.stamina.is_full(), "bar hides again once full and idle")
+	_home(w)
+
+
+## NPC walkers keep their own art speed; the hero pace and run mode never reach them.
+func _test_npc_speed(w: Node2D) -> void:
+	_home(w)
+	var npcs: Array = []
+	for node in w.npcs_root.get_children():
+		if not node.is_queued_for_deletion() and node.get("art") != null:
+			npcs.append(node)
+	check(npcs.size() > 0, "Crossroads has NPC nodes (%d)" % npcs.size())
+	var before := {}
+	for node in npcs:
+		before[node] = node.Art.walk_speed(node.art)
+		check(node.get_script() != w.walker.get_script(), "%s is not driven by the hero walker" % str(node.npc_id))
+	w.set_run_mode(true)
+	w.walk_to(_far_goal(w))
+	_step(w, 1.0)
+	for node in npcs:
+		check(is_equal_approx(node.Art.walk_speed(node.art), before[node]), "%s walk speed unchanged by hero run (%.1f)" % [str(node.npc_id), before[node]])
+	w.set_run_mode(false)
 	_home(w)
 
 
