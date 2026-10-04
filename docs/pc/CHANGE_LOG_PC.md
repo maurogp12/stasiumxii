@@ -4,6 +4,7 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 
 | Date | What | Why / who asked | Branch | Commit |
 |---|---|---|---|---|
+| 4 Oct 2026 | **Mender blockout approved.** All four class blockouts are approved: Bastion, Kestrel, Gloam, Mender. Scenario paints the Mender look targets next | Mauro, 4 Oct: "Mender good" | `claude/class-walk-blockouts` | decision |
 | 4 Oct 2026 | **Mender design: concept B** (calm cleric: ivory robe with a gold-embroidered hem, sage sash, crook staff with a caged jade lantern). Saved as `class_walk_blockouts/refs/ref_mender.jpg` | Mauro, 4 Oct: "B" | `claude/class-walk-blockouts` | decision |
 | 4 Oct 2026 | **PC combat walk locked at 0.42 s per cell** (`PC_WALK_TILE_SEC`). The phone stays at 0.22. Decided from the 13.5 s side-by-side clip `docs/pc/media/l10/walk_022_vs_042.mp4` (#248 @ `526b015`) | Mauro, 4 Oct: "0.42 is good keep it" | `cursor/l10-pc-characters-1dff` (#248) | decision |
 | 4 Oct 2026 | **Ironjaw v8 verified** (`9b2e7ee`: S look 88.6, v7 was 87.5; E 85.1; motion locked; box clips gone; 3 thigh keys) and shown to Mauro. He moved on: the Bastion → Kestrel → Gloam painted parts start now; the Ironjaw E legs and the f09 gap are parked | Mauro, 4 Oct: "Move to the next 3" | `art/ironjaw-walk-help` (#252) | decision |
