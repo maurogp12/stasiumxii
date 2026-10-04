@@ -12,6 +12,7 @@ extends Node2D
 
 const ART_ROOT := "res://art/pc/look/crosshaven_board/"
 const LOOKS_PATH := ART_ROOT + "looks.json"
+const ATLAS_PATH := ART_ROOT + "atlas_meta.json"
 const CATALOG_PATH := ART_ROOT + "props/props.json"
 const DRAW_SCALE := 0.5
 const MAP_ID := "crosshaven_15"
@@ -37,6 +38,8 @@ var _by_cell: Dictionary = {}
 var _props_at: Dictionary = {}
 var _decor_at: Dictionary = {}
 var _catalog: Dictionary = {}
+var _terrace: Dictionary = {}
+var _terrace_list: Array = []
 var _tex: Dictionary = {}
 var _built_for := -1
 
@@ -87,6 +90,182 @@ static func load_catalog() -> Array:
 	return []
 
 
+## Props never block movement or line of sight. A missing field is the same
+## as "none", which is what kit v1.3 writes on every prop.
+static func prop_blocks(spec: Dictionary) -> String:
+	var raw := str(spec.get("blocks", "none")).strip_edges().to_lower()
+	if raw == "":
+		return "none"
+	return raw
+
+
+static func load_atlas() -> Dictionary:
+	return load_json(ATLAS_PATH)
+
+
+## One terrace step, in @2x pixels. The kit keeps this global (20).
+static func step_px_2x() -> float:
+	var atlas := load_atlas()
+	if atlas.has("step_px_2x"):
+		return float(atlas.get("step_px_2x"))
+	var terrace: Variant = atlas.get("terrace", [])
+	if terrace is Dictionary and (terrace as Dictionary).has("step_px_2x"):
+		return float((terrace as Dictionary).get("step_px_2x"))
+	var grid: Dictionary = atlas.get("grid", {})
+	return float(grid.get("step_px_2x", 20))
+
+
+static func terrace_entries() -> Array:
+	var terrace: Variant = load_atlas().get("terrace", [])
+	if terrace is Dictionary:
+		var pieces: Variant = (terrace as Dictionary).get("pieces", [])
+		if pieces is Array:
+			return pieces
+		return []
+	if terrace is Array:
+		return terrace
+	return []
+
+
+## Canvas top-left relative to the lifted cell centre, in 1x pixels.
+## v1.3 stores that as offset_2x. v1.2 still writes it in the anchor sentence.
+static func terrace_origin(entry: Dictionary) -> Vector2:
+	var offset: Variant = entry.get("offset_2x", null)
+	if offset is Array and (offset as Array).size() >= 2:
+		return Vector2(float(offset[0]), float(offset[1])) * DRAW_SCALE
+	var anchor := str(entry.get("anchor", ""))
+	if anchor.contains("top-left"):
+		var top: Variant = _vec_before(anchor, "at 1x")
+		if top is Vector2:
+			return top
+	var canvas: Variant = _vec_before(anchor, "at 1x")
+	var centre: Variant = _centre_2x(anchor)
+	if canvas is Vector2 and centre is Vector2:
+		return (centre as Vector2) * DRAW_SCALE - (canvas as Vector2)
+	return Vector2(-32, -16)
+
+
+## "face" draws under the top, "strip" after the overlays, "corner" last.
+static func terrace_role(entry: Dictionary) -> String:
+	var kind := str(entry.get("kind", "")).to_lower()
+	var draw := str(entry.get("draw", "")).to_lower()
+	var vertex := str(entry.get("vertex", "")).strip_edges()
+	if kind.contains("corner") or vertex != "" or draw == "corner" or draw == "vertex":
+		return "corner"
+	if kind == "overhang" or kind == "lip" or kind == "strip" or draw == "overhang" or draw == "after" or draw == "after_tile":
+		return "strip"
+	return "face"
+
+
+## The cell the face drops onto. tile_axis is the v1.3 field; the v1.2
+## "use" sentence names the same neighbour.
+static func drop_step(entry: Dictionary) -> Vector2i:
+	var axis: Variant = entry.get("tile_axis", null)
+	if axis is Array and (axis as Array).size() >= 2:
+		return Vector2i(int(axis[0]), int(axis[1]))
+	var text := str(axis).strip_edges().to_lower().replace(" ", "")
+	var from_text := _step_named(text)
+	if from_text != Vector2i.ZERO or text in ["0", "none", ""]:
+		if text != "":
+			return from_text
+	var edge := str(entry.get("edge", "")).strip_edges().to_lower()
+	var from_edge := _step_named(edge)
+	if edge != "" and (from_edge != Vector2i.ZERO or edge in ["left", "right", "sw", "se", "west", "east"]):
+		return from_edge
+	var use := str(entry.get("use", "")).replace(" ", "")
+	if use.contains("(x+1,y)"):
+		return Vector2i(1, 0)
+	if use.contains("(x,y+1)"):
+		return Vector2i(0, 1)
+	var face := str(entry.get("face", "")).to_lower()
+	if face.begins_with("se"):
+		return Vector2i(1, 0)
+	if face.begins_with("sw"):
+		return Vector2i(0, 1)
+	return Vector2i.ZERO
+
+
+static func edge_side(entry: Dictionary) -> String:
+	var step := drop_step(entry)
+	if step == Vector2i(0, 1):
+		return "left"
+	if step == Vector2i(1, 0):
+		return "right"
+	var use := str(entry.get("use", "")).to_lower()
+	if use.contains("left"):
+		return "left"
+	if use.contains("right"):
+		return "right"
+	return ""
+
+
+static func vertex_where(entry: Dictionary) -> String:
+	var named := _step_named(str(entry.get("vertex", "")).strip_edges().to_lower())
+	var vertex := str(entry.get("vertex", "")).strip_edges().to_lower()
+	if vertex in ["front", "south", "s"]:
+		return "front"
+	if named == Vector2i(0, 1) or vertex in ["left", "west", "sw"]:
+		return "left"
+	if named == Vector2i(1, 0) or vertex in ["right", "east", "se"]:
+		return "right"
+	var use := str(entry.get("use", "")).to_lower()
+	if use.contains("both"):
+		return "front"
+	if use.contains("left"):
+		return "left"
+	if use.contains("right"):
+		return "right"
+	return ""
+
+
+static func _step_named(text: String) -> Vector2i:
+	match text:
+		"x", "+x", "se", "right", "east", "(x+1,y)", "x+1":
+			return Vector2i(1, 0)
+		"y", "+y", "sw", "left", "west", "(x,y+1)", "y+1":
+			return Vector2i(0, 1)
+		"-x", "nw":
+			return Vector2i(-1, 0)
+		"-y", "ne":
+			return Vector2i(0, -1)
+	return Vector2i.ZERO
+
+
+static func _vec_before(text: String, marker: String) -> Variant:
+	var at := text.find(marker)
+	if at < 0:
+		return null
+	var open := text.rfind("(", at)
+	if open < 0:
+		return null
+	var close := text.find(")", open)
+	if close < 0 or close > at:
+		return null
+	return _parse_pair(text.substr(open + 1, close - open - 1))
+
+
+static func _centre_2x(text: String) -> Variant:
+	var at := text.find("centre+")
+	if at < 0:
+		at = text.find("center+")
+	if at < 0:
+		return null
+	var open := text.find("(", at)
+	if open < 0:
+		return null
+	var close := text.find(")", open)
+	if close < 0:
+		return null
+	return _parse_pair(text.substr(open + 1, close - open - 1))
+
+
+static func _parse_pair(body: String) -> Variant:
+	var bits := body.split(",")
+	if bits.size() < 2:
+		return null
+	return Vector2(float(bits[0].strip_edges()), float(bits[1].strip_edges()))
+
+
 static func piece_path(folder: String, id: String) -> String:
 	var root := ART_ROOT + folder + "/"
 	var hi := root + id + "@2x.png"
@@ -134,8 +313,9 @@ static func unresolved_ids() -> PackedStringArray:
 	for entry in looks.get("decor", []):
 		if entry is Dictionary:
 			_note_id(seen, missing, "props", str(entry.get("id", "")))
-	for edge_id in ["cliff_left_h2", "cliff_right_h2", "grass_overhang_left", "grass_overhang_right", "grass_overhang_corner_left", "grass_overhang_corner_right", "grass_overhang_corner_front"]:
-		_note_id(seen, missing, "terrace", edge_id)
+	for entry in terrace_entries():
+		if entry is Dictionary:
+			_note_id(seen, missing, "terrace", str(entry.get("id", "")))
 	return missing
 
 
@@ -264,6 +444,11 @@ func _ensure_data() -> void:
 	for item in load_catalog():
 		if item is Dictionary:
 			_catalog[str(item.get("id", ""))] = item
+	_terrace.clear()
+	_terrace_list = terrace_entries()
+	for entry in _terrace_list:
+		if entry is Dictionary:
+			_terrace[str(entry.get("id", ""))] = entry
 
 
 func _add_cell(dress: Dress, cell: Vector2i, spec: Dictionary, size: int, tint: Color) -> void:
@@ -272,10 +457,10 @@ func _add_cell(dress: Dress, cell: Vector2i, spec: Dictionary, size: int, tint: 
 	var strips: Array[String] = []
 	var corners: Array[String] = []
 	for raw in spec.get("terrace", []):
-		_bucket(str(raw), faces, strips, corners)
+		_bucket(_resolve_face(str(raw), cell), faces, strips, corners)
 	if BOARD_EDGE == "earth_h2":
 		for raw in _edge_ids(cell, look, size):
-			_bucket(raw, faces, strips, corners)
+			_bucket(_resolve_face(raw, cell), faces, strips, corners)
 	for id in faces:
 		_add_terrace(dress, id, tint)
 	_add_floor(dress, str(spec.get("tile", "")), tint)
@@ -296,34 +481,110 @@ func _add_cell(dress: Dress, cell: Vector2i, spec: Dictionary, size: int, tint: 
 func _bucket(id: String, faces: Array[String], strips: Array[String], corners: Array[String]) -> void:
 	if id == "":
 		return
-	if id.begins_with("grass_overhang_corner"):
-		if not corners.has(id):
-			corners.append(id)
-	elif id.begins_with("grass_overhang"):
-		if not strips.has(id):
-			strips.append(id)
-	elif id.begins_with("cliff_"):
-		if not faces.has(id):
-			faces.append(id)
+	match _role_for(id):
+		"corner":
+			if not corners.has(id):
+				corners.append(id)
+		"strip":
+			if not strips.has(id):
+				strips.append(id)
+		_:
+			if not faces.has(id):
+				faces.append(id)
 
 
+## The front column and row take the 2-step face from the atlas, plus the
+## grass lip on grass cells. The skirt variants from the mock are not ids.
 func _edge_ids(cell: Vector2i, look: String, size: int) -> Array[String]:
 	var out: Array[String] = []
 	var front_y := cell.y == size - 1
 	var front_x := cell.x == size - 1
 	if front_y:
-		out.append("cliff_left_h2")
+		out.append(_face_for_edge("left", 2))
 		if look == "grass":
-			out.append("grass_overhang_left")
-			out.append("grass_overhang_corner_left")
+			_append_lip(out, "left")
 	if front_x:
-		out.append("cliff_right_h2")
+		out.append(_face_for_edge("right", 2))
 		if look == "grass":
-			out.append("grass_overhang_right")
-			out.append("grass_overhang_corner_right")
+			_append_lip(out, "right")
 	if front_x and front_y and look == "grass":
-		out.append("grass_overhang_corner_front")
+		var front := _corner_id("front")
+		if front != "":
+			out.append(front)
 	return out
+
+
+func _face_for_edge(side: String, steps: int) -> String:
+	for entry in _terrace_list:
+		if not (entry is Dictionary):
+			continue
+		var id := str(entry.get("id", ""))
+		if id.ends_with("_water") or terrace_role(entry) != "face":
+			continue
+		var height := int(entry.get("height_steps", entry.get("steps", -1)))
+		if height == steps and edge_side(entry) == side:
+			return id
+	return "cliff_%s_h%d" % [side, steps]
+
+
+func _append_lip(out: Array[String], side: String) -> void:
+	for entry in _terrace_list:
+		if not (entry is Dictionary):
+			continue
+		var id := str(entry.get("id", ""))
+		var role := terrace_role(entry)
+		if role == "strip" and edge_side(entry) == side:
+			out.append(id)
+		elif role == "corner" and vertex_where(entry) == side:
+			out.append(id)
+
+
+func _corner_id(where: String) -> String:
+	for entry in _terrace_list:
+		if entry is Dictionary and terrace_role(entry) == "corner" and vertex_where(entry) == where:
+			return str(entry.get("id", ""))
+	return ""
+
+
+## A face that drops onto water uses the `<id>_water` piece when the kit has it.
+func _resolve_face(id: String, cell: Vector2i) -> String:
+	if id == "" or _role_for(id) != "face":
+		return id
+	var entry := _entry_for(id)
+	var step := drop_step(entry)
+	if step == Vector2i.ZERO or not _is_water(cell + step):
+		return id
+	var wet := id + "_water"
+	if piece_path("terrace", wet) == "":
+		return id
+	return wet
+
+
+func _is_water(cell: Vector2i) -> bool:
+	var spec: Dictionary = _by_cell.get(cell, {})
+	if spec.is_empty():
+		return false
+	var look := str(spec.get("look", "")).to_lower()
+	var terrain := str(spec.get("terrain", "")).to_lower()
+	var tile := str(spec.get("tile", "")).to_lower()
+	return look == "water" or terrain == "water" or tile.begins_with("water_")
+
+
+func _role_for(id: String) -> String:
+	var entry := _entry_for(id)
+	if entry.is_empty():
+		return "face"
+	return terrace_role(entry)
+
+
+func _entry_for(id: String) -> Dictionary:
+	if _terrace.has(id):
+		return _terrace[id]
+	if id.ends_with("_water"):
+		var dry := id.trim_suffix("_water")
+		if _terrace.has(dry):
+			return _terrace[dry]
+	return {}
 
 
 func _prop_id(entry: Dictionary) -> String:
@@ -362,8 +623,9 @@ func _add_terrace(dress: Dress, id: String, tint: Color) -> void:
 	if tex == null:
 		return
 	var scale := draw_scale_for(path)
-	var origin := _top_left(id)
-	dress.add_piece(id, _terrace_role(id), tex, Rect2(origin, tex.get_size() * scale), tint, true)
+	var entry := _entry_for(id)
+	var origin := terrace_origin(entry) if not entry.is_empty() else Vector2(-32, -16)
+	dress.add_piece(id, _role_for(id), tex, Rect2(origin, tex.get_size() * scale), tint, true)
 
 
 func _add_prop(dress: Dress, id: String, role: String, cell: Vector2i) -> void:
@@ -416,32 +678,6 @@ func _texture(path: String) -> Texture2D:
 	var tex := load(path) as Texture2D
 	_tex[path] = tex
 	return tex
-
-
-static func _terrace_role(id: String) -> String:
-	if id.begins_with("grass_overhang_corner"):
-		return "corner"
-	if id.begins_with("grass_overhang"):
-		return "strip"
-	return "face"
-
-
-static func _top_left(id: String) -> Vector2:
-	if id.begins_with("cliff_left"):
-		return Vector2(-32, 0)
-	if id.begins_with("cliff_right"):
-		return Vector2(0, 0)
-	if id == "grass_overhang_left":
-		return Vector2(-32, -4)
-	if id == "grass_overhang_right":
-		return Vector2(0, -4)
-	if id == "grass_overhang_corner_left":
-		return Vector2(-42, -6)
-	if id == "grass_overhang_corner_right":
-		return Vector2(22, -6)
-	if id == "grass_overhang_corner_front":
-		return Vector2(-10, 10)
-	return Vector2(-32, -16)
 
 
 class Dress extends Node2D:

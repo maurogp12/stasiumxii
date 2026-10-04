@@ -16,6 +16,7 @@ var _passed := 0
 
 func _initialize() -> void:
 	_test_ids_and_files()
+	_test_terrace_schema()
 	_test_data_stays()
 	_test_locked_calls()
 	_test_phone_gate()
@@ -45,6 +46,9 @@ func _test_ids_and_files() -> void:
 		eq(capture.contains("\"seed\":"), false, "%s does not pick a second match seed" % capture_path)
 	var missing := BOARD.unresolved_ids()
 	eq(missing.size(), 0, "every looks.json id resolves to a file (%s)" % " ".join(missing))
+	for spec in BOARD.load_catalog():
+		if spec is Dictionary:
+			eq(BOARD.prop_blocks(spec), "none", "prop %s does not block" % str(spec.get("id", "")))
 	var sample := BOARD.piece_path("tiles", "grass_top_a")
 	truthy(sample.ends_with("grass_top_a@2x.png"), "the loader prefers the @2x master")
 	eq(BOARD.draw_scale_for(sample), BOARD.DRAW_SCALE, "an @2x master draws at half scale")
@@ -73,6 +77,45 @@ func _test_ids_and_files() -> void:
 				truthy(text.contains("mipmaps/generate=false"), "%s has no mipmaps" % name)
 			name = dir.get_next()
 	eq(pngs, 126, "the kit is 126 pngs")
+
+
+func _test_terrace_schema() -> void:
+	eq(BOARD.step_px_2x(), 20.0, "one terrace step is 20 px at 2x")
+	var by_id := {}
+	for entry in BOARD.terrace_entries():
+		if entry is Dictionary:
+			by_id[str(entry.get("id", ""))] = entry
+	eq(BOARD.terrace_origin(by_id["cliff_left_h1"]), Vector2(-32, 0), "the left face hangs from the west edge")
+	eq(BOARD.terrace_origin(by_id["cliff_right_h2"]), Vector2(0, 0), "the right face hangs from the east edge")
+	eq(BOARD.terrace_origin(by_id["grass_overhang_left"]), Vector2(-32, -4), "the left lip sits on the atlas anchor")
+	eq(BOARD.terrace_origin(by_id["grass_overhang_corner_front"]), Vector2(-10, 10), "the front corner sits on the south vertex")
+	eq(BOARD.terrace_role(by_id["cliff_left_h2"]), "face", "a cliff is a face")
+	eq(BOARD.terrace_role(by_id["grass_overhang_right"]), "strip", "an overhang is a strip")
+	eq(BOARD.terrace_role(by_id["grass_overhang_corner_left"]), "corner", "a corner piece stays a corner")
+	eq(BOARD.drop_step(by_id["cliff_left_h1"]), Vector2i(0, 1), "the left face drops toward +y")
+	eq(BOARD.drop_step(by_id["cliff_right_h1"]), Vector2i(1, 0), "the right face drops toward +x")
+	eq(BOARD.edge_side(by_id["cliff_left_h2"]), "left", "the 2-step left face is the front-row edge")
+	eq(BOARD.edge_side(by_id["cliff_right_h2"]), "right", "the 2-step right face is the front-column edge")
+	var sample := {
+		"id": "cliff_left_h1",
+		"kind": "face",
+		"edge": "left",
+		"height_steps": 1,
+		"offset_2x": [-64, 0],
+		"tile_axis": "y",
+		"size_2x": [64, 52],
+	}
+	eq(BOARD.terrace_origin(sample), Vector2(-32, 0), "offset_2x is the canvas top-left at half scale")
+	eq(BOARD.drop_step(sample), Vector2i(0, 1), "tile_axis y is the +y neighbour")
+	eq(BOARD.terrace_role(sample), "face", "kind face draws under the top")
+	var wet := {
+		"kind": "face",
+		"edge": "right",
+		"tile_axis": [1, 0],
+		"offset_2x": [0, 0],
+	}
+	eq(BOARD.drop_step(wet), Vector2i(1, 0), "a tile_axis pair is the neighbour step")
+	eq(BOARD.terrace_origin(wet), Vector2(0, 0), "a zero offset_2x stays on the cell centre")
 
 
 func _test_data_stays() -> void:
@@ -219,6 +262,17 @@ func _test_live() -> void:
 	])
 	eq(raised.piece_ids(), raised_ids, "a raised cell draws faces, then the top, then overlays, then the lip")
 	eq(raised.piece("cliff_left_h1").get("dest", Rect2()).position, Vector2(-32, 0), "the left cliff hangs from the west edge")
+	eq(raised.piece("grass_overhang_left").get("dest", Rect2()).position, Vector2(-32, -4), "the left lip uses the atlas anchor")
+	eq(raised.piece("grass_overhang_corner_front").get("dest", Rect2()).position, Vector2(-10, 10), "the front corner uses the atlas anchor")
+	for drop in [[Vector2i(10, 3), "cliff_left_h1"], [Vector2i(9, 5), "cliff_right_h1"], [Vector2i(3, 7), "cliff_right_h1"], [Vector2i(11, 7), "cliff_right_h1"]]:
+		var at: Vector2i = drop[0]
+		var dry := str(drop[1])
+		var wet_id := dry + "_water"
+		var want := wet_id if BOARD.piece_path("terrace", wet_id) != "" else dry
+		var got: PackedStringArray = board.tiles[at].get_node("CrosshavenDress").piece_ids()
+		truthy(got.has(want), "%s drops onto water with %s" % [str(at), want])
+		if want != dry:
+			eq(got.has(dry), false, "%s does not also draw the dry face" % str(at))
 	var corner = board.tiles[Vector2i(14, 14)].get_node("CrosshavenDress")
 	var corner_ids: PackedStringArray = corner.piece_ids()
 	truthy(corner_ids.has("cliff_left_h2") and corner_ids.has("cliff_right_h2"), "the south corner gets the 2-step earth edge")
