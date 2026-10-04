@@ -1,0 +1,818 @@
+{
+ "S_near_fwd": {
+  "facing": "S",
+  "role": "near",
+  "side": "R",
+  "phase": "fwd",
+  "frame": "f00",
+  "size": [
+   339,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    120.3,
+    -22.8
+   ],
+   "knee": [
+    199.0,
+    391.0
+   ],
+   "ankle": [
+    222.1,
+    633.9
+   ],
+   "heel": [
+    171.1,
+    695.8
+   ],
+   "toe": [
+    288.5,
+    718.7
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    249.10291545189511,
+    192.19789212827988
+   ],
+   "knee": [
+    266.82329483607,
+    285.41140774132725
+   ],
+   "ankle": [
+    272.03967242083803,
+    340.12272728163686
+   ],
+   "heel": [
+    260.5421570536851,
+    354.07950777129463
+   ],
+   "toe": [
+    286.9987355850991,
+    359.22883902345615
+   ]
+  },
+  "cell_to_img": {
+   "scale": 4.43931,
+   "offset": [
+    -985.53,
+    -876.02
+   ]
+  },
+  "stretch_k": 1.095,
+  "knee_bend_deg": 5.3,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_near_fwd_alpha.png; joints in this image px (x right, y down)"
+ },
+ "S_near_under": {
+  "facing": "S",
+  "role": "near",
+  "side": "R",
+  "phase": "under",
+  "frame": "f04",
+  "size": [
+   270,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    165.5,
+    -25.6
+   ],
+   "knee": [
+    169.3,
+    381.3
+   ],
+   "ankle": [
+    149.6,
+    616.2
+   ],
+   "heel": [
+    81.7,
+    663.7
+   ],
+   "toe": [
+    192.1,
+    718.9
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    245.13891545189512,
+    187.2373921282799
+   ],
+   "knee": [
+    245.9523969706244,
+    276.0759900701926
+   ],
+   "ankle": [
+    241.6527126323865,
+    327.35655194590316
+   ],
+   "heel": [
+    226.83432358540512,
+    337.7199455651146
+   ],
+   "toe": [
+    250.94185203497256,
+    349.7737097898975
+   ]
+  },
+  "cell_to_img": {
+   "scale": 4.58052,
+   "offset": [
+    -957.33,
+    -883.28
+   ]
+  },
+  "stretch_k": 1.025,
+  "knee_bend_deg": 5.3,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_near_under_alpha.png; joints in this image px (x right, y down)"
+ },
+ "S_near_back": {
+  "facing": "S",
+  "role": "near",
+  "side": "R",
+  "phase": "back",
+  "frame": "f07",
+  "size": [
+   374,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    245.1,
+    -25.7
+   ],
+   "knee": [
+    264.2,
+    385.9
+   ],
+   "ankle": [
+    137.1,
+    600.4
+   ],
+   "heel": [
+    49.8,
+    618.7
+   ],
+   "toe": [
+    135.7,
+    720.2
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    247.68441545189512,
+    189.2973921282799
+   ],
+   "knee": [
+    251.5567890644253,
+    272.7176633464562
+   ],
+   "ankle": [
+    225.7875072381393,
+    316.20419788270044
+   ],
+   "heel": [
+    208.08783671825876,
+    319.90639246727875
+   ],
+   "toe": [
+    225.51418871051231,
+    340.4682118462987
+   ]
+  },
+  "cell_to_img": {
+   "scale": 4.93362,
+   "offset": [
+    -976.86,
+    -959.59
+   ]
+  },
+  "stretch_k": 1.0,
+  "knee_bend_deg": 33.3,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_near_back_alpha.png; joints in this image px (x right, y down)"
+ },
+ "S_far_fwd": {
+  "facing": "S",
+  "role": "far",
+  "side": "L",
+  "phase": "fwd",
+  "frame": "f06",
+  "size": [
+   390,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    114.1,
+    -19.1
+   ],
+   "knee": [
+    227.7,
+    386.9
+   ],
+   "ankle": [
+    271.5,
+    627.2
+   ],
+   "heel": [
+    219.2,
+    690.7
+   ],
+   "toe": [
+    339.5,
+    714.1
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    274.58091545189507,
+    179.4588921282799
+   ],
+   "knee": [
+    299.56693069597895,
+    268.72495778018737
+   ],
+   "ankle": [
+    309.1855999957305,
+    321.5496387174349
+   ],
+   "heel": [
+    297.6881899193162,
+    335.5065059443299
+   ],
+   "toe": [
+    324.14480729670174,
+    340.6556376070456
+   ]
+  },
+  "cell_to_img": {
+   "scale": 4.54886,
+   "offset": [
+    -1134.94,
+    -835.47
+   ]
+  },
+  "stretch_k": 1.07,
+  "knee_bend_deg": 5.3,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_far_fwd_alpha.png; joints in this image px (x right, y down)"
+ },
+ "S_far_under": {
+  "facing": "S",
+  "role": "far",
+  "side": "L",
+  "phase": "under",
+  "frame": "f09",
+  "size": [
+   293,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    141.7,
+    -23.2
+   ],
+   "knee": [
+    188.4,
+    381.0
+   ],
+   "ankle": [
+    193.6,
+    616.6
+   ],
+   "heel": [
+    126.2,
+    663.7
+   ],
+   "toe": [
+    235.8,
+    718.5
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    275.5079154518951,
+    172.0593921282799
+   ],
+   "knee": [
+    285.7811324203851,
+    261.00149578202297
+   ],
+   "ankle": [
+    286.9317126323865,
+    312.84955194590316
+   ],
+   "heel": [
+    272.1133235854051,
+    323.2129455651146
+   ],
+   "toe": [
+    296.22085203497255,
+    335.2667097898975
+   ]
+  },
+  "cell_to_img": {
+   "scale": 4.54438,
+   "offset": [
+    -1110.34,
+    -805.11
+   ]
+  },
+  "stretch_k": 1.033,
+  "knee_bend_deg": 5.3,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_far_under_alpha.png; joints in this image px (x right, y down)"
+ },
+ "S_far_back": {
+  "facing": "S",
+  "role": "far",
+  "side": "L",
+  "phase": "back",
+  "frame": "f01",
+  "size": [
+   368,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    182.6,
+    -21.6
+   ],
+   "knee": [
+    248.7,
+    375.4
+   ],
+   "ankle": [
+    141.1,
+    595.5
+   ],
+   "heel": [
+    50.1,
+    614.6
+   ],
+   "toe": [
+    139.7,
+    720.3
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    271.0009154518951,
+    177.63839212827992
+   ],
+   "knee": [
+    283.85273632712165,
+    254.8271597453768
+   ],
+   "ankle": [
+    262.93474520930425,
+    297.63095472187916
+   ],
+   "heel": [
+    245.2350746894237,
+    301.33314930645747
+   ],
+   "toe": [
+    262.66142668167726,
+    321.8949686854774
+   ]
+  },
+  "cell_to_img": {
+   "scale": 5.14286,
+   "offset": [
+    -1211.14,
+    -935.14
+   ]
+  },
+  "stretch_k": 1.0,
+  "knee_bend_deg": 35.5,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: S_far_back_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_near_fwd": {
+  "facing": "E",
+  "role": "near",
+  "side": "R",
+  "phase": "fwd",
+  "frame": "f05",
+  "size": [
+   380,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    27.8,
+    -83.3
+   ],
+   "knee": [
+    123.6,
+    341.9
+   ],
+   "ankle": [
+    160.8,
+    626.0
+   ],
+   "heel": [
+    195.7,
+    730.4
+   ],
+   "toe": [
+    338.4,
+    615.5
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    274.53187142857143,
+    207.44071428571428
+   ],
+   "knee": [
+    288.9812575612073,
+    271.5686513296236
+   ],
+   "ankle": [
+    294.59063912491837,
+    314.4102400110014
+   ],
+   "heel": [
+    299.847794355874,
+    330.16716503540175
+   ],
+   "toe": [
+    321.3794473599843,
+    312.8269863609588
+   ]
+  },
+  "cell_to_img": {
+   "scale": 6.63022,
+   "offset": [
+    -1792.37,
+    -1458.65
+   ]
+  },
+  "stretch_k": 0.926,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_near_fwd_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_near_under": {
+  "facing": "E",
+  "role": "near",
+  "side": "R",
+  "phase": "under",
+  "frame": "f08",
+  "size": [
+   311,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    121.4,
+    -111.9
+   ],
+   "knee": [
+    129.9,
+    332.8
+   ],
+   "ankle": [
+    108.7,
+    624.3
+   ],
+   "heel": [
+    119.4,
+    723.7
+   ],
+   "toe": [
+    268.2,
+    649.3
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    275.0147214285715,
+    203.8927892857143
+   ],
+   "knee": [
+    276.4201760118031,
+    277.81619230378044
+   ],
+   "ankle": [
+    272.9039154987677,
+    326.28655689660695
+   ],
+   "heel": [
+    274.6892738954848,
+    342.80112206624466
+   ],
+   "toe": [
+    299.41648769002364,
+    330.437515168976
+   ]
+  },
+  "cell_to_img": {
+   "scale": 6.01567,
+   "offset": [
+    -1532.99,
+    -1338.49
+   ]
+  },
+  "stretch_k": 1.042,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_near_under_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_near_back": {
+  "facing": "E",
+  "role": "near",
+  "side": "R",
+  "phase": "back",
+  "frame": "f00",
+  "size": [
+   336,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    231.1,
+    -114.9
+   ],
+   "knee": [
+    181.4,
+    320.6
+   ],
+   "ankle": [
+    122.7,
+    602.6
+   ],
+   "heel": [
+    75.0,
+    683.4
+   ],
+   "toe": [
+    228.7,
+    711.0
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    270.0831714285714,
+    207.4796892857143
+   ],
+   "knee": [
+    261.28729037359824,
+    284.5978156916778
+   ],
+   "ankle": [
+    250.90210290025922,
+    334.54707444194486
+   ],
+   "heel": [
+    242.448441958395,
+    348.8458150867338
+   ],
+   "toe": [
+    269.65760071054694,
+    353.74025658206443
+   ]
+  },
+  "cell_to_img": {
+   "scale": 5.64706,
+   "offset": [
+    -1294.12,
+    -1286.59
+   ]
+  },
+  "stretch_k": 1.094,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "near",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_near_back_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_far_fwd": {
+  "facing": "E",
+  "role": "far",
+  "side": "L",
+  "phase": "fwd",
+  "frame": "f11",
+  "size": [
+   373,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    34.5,
+    -84.6
+   ],
+   "knee": [
+    120.2,
+    341.0
+   ],
+   "ankle": [
+    150.8,
+    624.7
+   ],
+   "heel": [
+    186.1,
+    730.6
+   ],
+   "toe": [
+    330.7,
+    614.1
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    240.13657142857147,
+    190.2430642857143
+   ],
+   "knee": [
+    252.89537139833422,
+    253.60109630089414
+   ],
+   "ankle": [
+    257.4443946546808,
+    295.83729612801716
+   ],
+   "heel": [
+    262.7018595455711,
+    311.5941178338053
+   ],
+   "toe": [
+    284.23317176988417,
+    294.25351601465934
+   ]
+  },
+  "cell_to_img": {
+   "scale": 6.7172,
+   "offset": [
+    -1578.54,
+    -1362.47
+   ]
+  },
+  "stretch_k": 0.911,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_far_fwd_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_far_under": {
+  "facing": "E",
+  "role": "far",
+  "side": "L",
+  "phase": "under",
+  "frame": "f02",
+  "size": [
+   310,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    109.8,
+    -111.1
+   ],
+   "knee": [
+    124.9,
+    333.7
+   ],
+   "ankle": [
+    108.1,
+    625.8
+   ],
+   "heel": [
+    118.8,
+    724.5
+   ],
+   "toe": [
+    266.6,
+    650.6
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    236.03842142857147,
+    184.4046392857143
+   ],
+   "knee": [
+    238.56868497615082,
+    258.8403587929321
+   ],
+   "ankle": [
+    235.75791549876772,
+    307.713556896607
+   ],
+   "heel": [
+    237.54327389548484,
+    324.2281220662447
+   ],
+   "toe": [
+    262.2704876900237,
+    311.864515168976
+   ]
+  },
+  "cell_to_img": {
+   "scale": 5.97665,
+   "offset": [
+    -1300.92,
+    -1213.26
+   ]
+  },
+  "stretch_k": 1.05,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_far_under_alpha.png; joints in this image px (x right, y down)"
+ },
+ "E_far_back": {
+  "facing": "E",
+  "role": "far",
+  "side": "L",
+  "phase": "back",
+  "frame": "f06",
+  "size": [
+   350,
+   768
+  ],
+  "grey": 172,
+  "joints": {
+   "hip": [
+    261.8,
+    -112.6
+   ],
+   "knee": [
+    194.1,
+    321.5
+   ],
+   "ankle": [
+    123.7,
+    601.6
+   ],
+   "heel": [
+    75.3,
+    683.6
+   ],
+   "toe": [
+    231.2,
+    711.6
+   ]
+  },
+  "joints_cell": {
+   "hip": [
+    237.83729642857148,
+    191.3557392857143
+   ],
+   "knee": [
+    226.0299933713016,
+    267.1028775845019
+   ],
+   "ankle": [
+    213.75597553826262,
+    315.9740487506717
+   ],
+   "heel": [
+    205.30169622489714,
+    330.2724237855678
+   ],
+   "toe": [
+    232.510643281087,
+    335.1680419941782
+   ]
+  },
+  "cell_to_img": {
+   "scale": 5.73134,
+   "offset": [
+    -1101.37,
+    -1209.31
+   ]
+  },
+  "stretch_k": 1.08,
+  "knee_bend_deg": 5.2,
+  "drawn_in_frame_as": "far",
+  "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+  "note": "alpha version: E_far_back_alpha.png; joints in this image px (x right, y down)"
+ }
+}

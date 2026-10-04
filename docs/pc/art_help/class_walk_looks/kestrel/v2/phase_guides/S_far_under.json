@@ -1,0 +1,68 @@
+{
+ "facing": "S",
+ "role": "far",
+ "side": "L",
+ "phase": "under",
+ "frame": "f09",
+ "size": [
+  293,
+  768
+ ],
+ "grey": 172,
+ "joints": {
+  "hip": [
+   141.7,
+   -23.2
+  ],
+  "knee": [
+   188.4,
+   381.0
+  ],
+  "ankle": [
+   193.6,
+   616.6
+  ],
+  "heel": [
+   126.2,
+   663.7
+  ],
+  "toe": [
+   235.8,
+   718.5
+  ]
+ },
+ "joints_cell": {
+  "hip": [
+   275.5079154518951,
+   172.0593921282799
+  ],
+  "knee": [
+   285.7811324203851,
+   261.00149578202297
+  ],
+  "ankle": [
+   286.9317126323865,
+   312.84955194590316
+  ],
+  "heel": [
+   272.1133235854051,
+   323.2129455651146
+  ],
+  "toe": [
+   296.22085203497255,
+   335.2667097898975
+  ]
+ },
+ "cell_to_img": {
+  "scale": 4.54438,
+  "offset": [
+   -1110.34,
+   -805.11
+  ]
+ },
+ "stretch_k": 1.033,
+ "knee_bend_deg": 5.3,
+ "drawn_in_frame_as": "far",
+ "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+ "note": "alpha version: S_far_under_alpha.png; joints in this image px (x right, y down)"
+}

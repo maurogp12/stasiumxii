@@ -1,0 +1,68 @@
+{
+ "facing": "S",
+ "role": "near",
+ "side": "R",
+ "phase": "fwd",
+ "frame": "f00",
+ "size": [
+  339,
+  768
+ ],
+ "grey": 172,
+ "joints": {
+  "hip": [
+   120.3,
+   -22.8
+  ],
+  "knee": [
+   199.0,
+   391.0
+  ],
+  "ankle": [
+   222.1,
+   633.9
+  ],
+  "heel": [
+   171.1,
+   695.8
+  ],
+  "toe": [
+   288.5,
+   718.7
+  ]
+ },
+ "joints_cell": {
+  "hip": [
+   249.10291545189511,
+   192.19789212827988
+  ],
+  "knee": [
+   266.82329483607,
+   285.41140774132725
+  ],
+  "ankle": [
+   272.03967242083803,
+   340.12272728163686
+  ],
+  "heel": [
+   260.5421570536851,
+   354.07950777129463
+  ],
+  "toe": [
+   286.9987355850991,
+   359.22883902345615
+  ]
+ },
+ "cell_to_img": {
+  "scale": 4.43931,
+  "offset": [
+   -985.53,
+   -876.02
+  ]
+ },
+ "stretch_k": 1.095,
+ "knee_bend_deg": 5.3,
+ "drawn_in_frame_as": "near",
+ "shading": "volume only; far-leg 12 % darkening NOT baked (rig applies it)",
+ "note": "alpha version: S_near_fwd_alpha.png; joints in this image px (x right, y down)"
+}

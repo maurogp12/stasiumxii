@@ -1,13 +1,19 @@
 # Stasium art handoff: scenario and state (written 2026-10-04, 11:0x ET, by Grok Bot for Claude)
 
 > **Fallback only.** Written before Luca's override. Scenario Art keeps Kestrel and is still finishing it. Claude does not take Kestrel over. [5981373327](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981373327).
+>
+> **Later the same day, Luca (owner) stopped Scenario Art and handed Kestrel to Claude (4 Oct 2026).** Scenario Art has stopped. Nothing more is coming from it on Kestrel. See the Kestrel section.
 
 All times are ET. A path written as a repo path below is on `art/ironjaw-walk-help`. Any path still written as `/workspace/...` is **box-only** (Luca's agent box) and is not in this repo.
 
 Class-walk paint that has landed is under `docs/pc/art_help/class_walk_looks/`. It is not under `docs/pc/art_help/class_walk_blockouts/` on this branch. Blockout v3 stays on `claude/class-walk-blockouts` at `ffbfe3a` (`docs/pc/art_help/class_walk_blockouts/` on that branch). The box tree `/workspace/handoff/class_walk_blockouts/` is box-only. Box copies that were brought across sit at `docs/pc/art_help/handoff_wip/` (was `/workspace/handoff/wip_extra/`). `wip_extra/blockout_v3` was not included. The Technical Artist handoff is [`docs/pc/art_help/HANDOFF_TA.md`](HANDOFF_TA.md), with copies under `docs/pc/art_help/handoff_wip/technical_artist/`.
 
 ---------------------------------------------------------------------------------------------------------------------------
-## Kestrel walk v2 (ACTIVE, legs only, not accepted)
+## Kestrel walk v2 (handed to Claude, 4 Oct 2026)
+
+> **Luca (owner) handed Kestrel to Claude and stopped Scenario Art (4 Oct 2026).** Scenario Art has stopped. Nothing more is coming from it on Kestrel. Legs sheet B was rejected by Luca. Known flaws: a grey box at the crotch and under the hem, a light seam between the S legs, E thigh tops cut flat with grey gaps, and E belt-to-sole +6.1% at f00 (`legs_sheet_b.json` `E.frames.f00.belt_vs_target_pct` 6.099957). An image-model repaint test drifted the pose and the character, so it is not usable as keys. A `legs_sheet_b2/` cleanup may exist partly or not at all; ignore it. The package is built on blockout v3.1 (`ec4beff918ad691be293d7f22de3689b1516e67e`). Gloam and Mender walks are not started.
+
+## Kestrel walk v2 (record below is the state when Scenario Art stopped)
 
 **Item:** Kestrel (archer) 8-dir walk. S and E are built; W and N are mirrors (approved). 12 frames per facing, 512x360 cells. It's a hybrid: the approved target
 painting cut into layers and re-posed on Claude's blockout joints.
@@ -33,15 +39,14 @@ painting cut into layers and re-posed on Claude's blockout joints.
   5. Jagged silhouette at the cut edges.
   6. (Luca, 11:00, TOP PRIORITY) The S legs LEAN sideways: both thighs tilt to screen-right. The hip→ankle axis must stay within about 8° of the target's
      leg axis at contact and mid-stance, with the stride shown as depth (near foot lower and bigger), not a sideways swing. Same check on E.
-- **Legs sheet B (requested 10:56): code written, sheet NOT produced.** The render was interrupted when Luca stopped the work at 11:01.
-  - `kestrel/v2/legs_sheet_b/` and `kestrel/v2/paint_guides/` do **not exist yet**.
+- **Legs sheet B was produced and Luca rejected it.** It is at `docs/pc/art_help/class_walk_looks/kestrel/v2/legs_sheet_b/` (`kestrel_v2_legs_sheet_b.png`, `side_by_side_S.png`, `side_by_side_E.png`, `legs_sheet_b.json`), with `kestrel/v2/paint_guides/` and `kestrel/v2/phase_guides/`. Scripts, including `phase_keys.py` and `kcfg_sheetB_v31.json`, are at `kestrel/v2/scripts/`. Built on blockout v3.1 (`ec4beff9`). Known flaws: a grey box at the crotch and under the hem, a light seam between the S legs, E thigh tops cut flat with grey gaps, and E belt-to-sole +6.1% at f00 (`E.frames.f00.belt_vs_target_pct` 6.099957). An image-model repaint test drifted the pose and the character, so it is not usable as keys.
 - Cape, arms and brief points 4 / 6 / 7 (cape lag and hem ripple, left-arm swing ±20°, bow swing ±8°) are **not started**.
   - Neither are the full-body frames, GIFs, `mauro_checks.json`, `v2_brief_check.md` or the scores.
 
 **Last commit SHA:** v1 is at b522f23. v2 is not committed by me; Stasium Bot is committing `kestrel/v2` (scripts + legs_sheet). Blockout v3 is at ffbfe3a.
 
 **Where**
-- Scripts: `docs/pc/art_help/class_walk_looks/kestrel/wip/v2/scripts/` (box-only original: `/workspace/handoff/class_walk_blockouts/kestrel/v2/scripts/`)
+- Scripts: `docs/pc/art_help/class_walk_looks/kestrel/v2/scripts/` (sheet B package, including `phase_keys.py` and `kcfg_sheetB_v31.json`). Earlier safety copy: `docs/pc/art_help/class_walk_looks/kestrel/wip/v2/scripts/` (box-only original: `/workspace/handoff/class_walk_blockouts/kestrel/v2/scripts/`)
 - Legs sheet: `docs/pc/art_help/class_walk_looks/kestrel/v2/legs_sheet/`
   - `kestrel_v2_legs_sheet.png` (target | f00 f03 f06 f09 for S, E and E-ALT)
   - `kestrel_v2_legs_cycle.png` (12 frames)
@@ -62,8 +67,8 @@ painting cut into layers and re-posed on Claude's blockout joints.
   - `RS` render scale, for the hi-res paint guides.
   - `depth_bend` / `lat_max 3`: a bent knee stays on the hip→ankle axis and foreshortens instead of swinging sideways. This is Luca's upright-legs fix.
     **It knowingly breaks Mauro's 1 ≤ k ≤ 1.10 rule** for bent swing / toe-off legs only (k ≈ 0.85–0.97).
-- `legs_sheet_b.py` is written (sheet B, `side_by_side_{S,E}.png`, S knee-gap check, leg-axis annotation vs target) but **never ran to completion; its output is untested.**
-- Paint guides (Track B: full-figure composites at about 1024 px tall on grey 172, plus a transfer note) are **not written**.
+- `legs_sheet_b.py` output is the rejected sheet at `kestrel/v2/legs_sheet_b/` (`side_by_side_{S,E}.png`, `legs_sheet_b.json`).
+- Paint guides are at `kestrel/v2/paint_guides/` (full-figure composites on grey 172, plus `TRANSFER_NOTE.md`). Phase guides are at `kestrel/v2/phase_guides/`. An image-model repaint test over those guides drifted the pose and the character, so it is not usable as keys.
   - Plan: `KB.RS = 4`, render, `to_rgba_aa`, composite on (172,172,172), crop.
 - Leg-axis numbers with depth_bend on (geometry only, not yet rendered):
   - **S:** stance legs 11.5° (f00 contact) / 4.2° (f03) / 10.4° (f06) / 1.3° (f09) vs the target's forward leg at 4.2° and back leg at −6.0°. That's within 8°.
@@ -86,7 +91,7 @@ PY=/workspace/.venv/bin/python        # box-only
 $PY cut_target.py            # body/front/back + thigh/shin/foot/boot layers + target_legs.json
 $PY cut_legs_b.py            # sheet B: T{S,E}_leg.png (one continuous leg) + pelvis_{S,E}.png + leg_b.json
 # sheet A exactly as delivered: use kcfg_sheetA.json (leg_one / depth_bend off, E src R)
-# kcfg_sheetA.json is not in the committed scripts folder
+# kcfg_sheetA.json and kcfg_sheetB_v31.json are in kestrel/v2/scripts/ (the sheet B package). The earlier wip copy does not have them.
 cp kcfg.json kcfg_B.json; cp kcfg_sheetA.json kcfg.json
 $PY legs_sheet.py ../legs_sheet --alt --cycle && $PY keys_strip.py ../legs_sheet/thigh_keys_v1_vs_v2.png
 cp kcfg_B.json kcfg.json     # back to the sheet-B config
@@ -144,7 +149,7 @@ $PY docs/pc/art_help/class_walk_looks/kestrel/wip/v2/scripts/kestrel_metric.py -
 - Thigh keys change shape (the thigh bends toward the travel side for fwd, toward the trailing side for back) and are keyed by the rendered thigh angle:
   S `key_deg 3`, E `key_deg 6`.
 - Body height: drop S 21, E 20, chosen so the stance legs are straight within the 1.10 stretch.
-- **Planned next step (Luca), approved** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): repaint keys f00/f03/f06/f09 for S and E with an image model, over the paint guides, with the target as the style reference. Keep the leg-axis check within 8°. Send legs sheet B side by side with the target before the full body.
+- **Planned next step (Luca), approved** by [5981423472](https://github.com/maurogp12/stasiumxii/pull/252#issuecomment-5981423472): repaint keys f00/f03/f06/f09 for S and E with an image model, over the paint guides, with the target as the style reference. Keep the leg-axis check within 8°. Legs sheet B was sent side by side with the target, and Luca rejected it. An image-model repaint test drifted the pose and the character, so that test is not usable as keys. Luca then handed Kestrel to Claude. Scenario Art has stopped.
   Then transfer them back:
   - mask the legs
   - align by the hip / knee / ankle joints (the rig meta in `_build_info.json` has hip, knee, ankle per leg per frame)
