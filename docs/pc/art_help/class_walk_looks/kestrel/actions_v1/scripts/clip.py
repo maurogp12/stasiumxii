@@ -26,7 +26,7 @@ def ground(S):
     return im
 def title(im, t, sub='Kestrel actions v1 · 17 fps'):
     dr = ImageDraw.Draw(im); dr.rectangle([0, 0, W, 50], fill=(25, 30, 28)); dr.text((16, 9), t, fill=(240, 220, 150), font=FONT)
-    dr.text((W - 330, 15), sub, fill=(200, 200, 200), font=F2)
+    dr.text((W - 260, H - 30), sub, fill=(60, 60, 60), font=F2)
 frames = []
 def seq(act, n):
     idx = list(range(n)) * (2 if act in ('hit',) else 1) if act != 'death' else list(range(n)) + [n - 1] * 14
