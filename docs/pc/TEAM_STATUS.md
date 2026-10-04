@@ -12,7 +12,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
    - Team branches merge into `pc/world-zones` or `pc/combat-look` only after Claude's approval.
    - Log every decision in `docs/pc/CHANGE_LOG_PC.md`.
 
-**Base branches:** `pc/world-zones` @ `ef3bcc9` (#253 merged 12:54; 34-suite check running). `pc/combat-look` @ `a69f7c3` (#254 merged; 20/20 green). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
+**Base branches:** `pc/world-zones` @ `ef3bcc9` (#253 merged 12:54; 34-suite check running). `pc/combat-look` @ `a0aec2e` (#254 L9b and #248 L10 merged; 21/21 green on the L10 merge head). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
 
 ---
 
@@ -32,7 +32,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 |---|---|---|---|---|---|
 | `ae16` | L9 Crosshaven board, light grade | #242 (merged 10:19) | `c15941b` | **Done.** Media sent to Mauro | none |
 | `ae16` | L9b Crosshaven v1 decoration | #254 (**merged 14:07**) | `347d7ad` | **Done.** `pc/combat-look` @ `a69f7c3`, 20/20 green after the merge | none |
-| `1dff` → **Claude (took over 11:40)** | L10 new PC characters, PC walk 0.42 s/cell locked | #248 | `2910f5b`, with local merge `81cbc6a` (`pc/combat-look` a69f7c3 merged in, change-log conflict resolved, no rows lost) | **Mauro: "merge L10" (14:15).** 21-suite run on the merged result in progress | When green: push `81cbc6a`, merge #248 into `pc/combat-look` (not main/mobile), re-verify the base |
+| `1dff` → **Claude (took over 11:40)** | L10 new PC characters, PC walk 0.42 s/cell locked | #248 (**merged 14:30** at Mauro's request) | `81cbc6a` → `pc/combat-look` `a0aec2e` | **Done.** 21/21 green on the merged head | none |
 
 ## 3. Scenario Art (Luca's art bot) and Technical Artist
 
@@ -40,7 +40,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 |---|---|---|---|---|
 | Ironjaw HD walk | #252 draft `art/ironjaw-walk-help` (do not merge) | `ef6b8ab`: v7 frames and targets. **v7 verified by me** (S look 87.5, E 85.1, motion passes). **v8 `9b2e7ee` verified (S look 88.6, E 85.1) and shown to Mauro. Mauro: "Move to the next 3"**, so Ironjaw stops at v8 (E legs and the f09 gap parked) | Mauro: "the only thing I'm not liking is the legs." My fix list is on #252: matte dark leg paint like the idle, knee cops, shorter thighs and longer greaves, bigger boots, tassets from the belt, the f11 boot. Their v7 leg test landed after it | Re-check v7 against the idle legs with `docs/pc/art_help/ironjaw_walk/claude/scripts/match_metric.py` (and qa_walk 48/48), then send Mauro the GIF and f00/f06 stills |
 | 19 NPC role sheets | tarball not delivered | none | Painted, waiting to hand over | When it lands: the world bot puts them in game (§1 queue 2) |
-| **Class looks on the approved blockouts** (Bastion → Kestrel → Gloam) | brief: `claude/class-walk-blockouts` `PAINT_BRIEF.md`; targets in `art/ironjaw-walk-help` `class_walk_looks/targets/` | `c9a8556` | Step 1 targets **approved by Mauro (11:30)**. **Step 2 painted parts STARTED (12:00)**: Bastion → Kestrel → Gloam. Frames go in `class_walk_looks/<class>/v1/frames/`; I score them before Mauro | Step 2: painted parts on the blockout joints. Step 3: match_metric look ≥ 85 and motion ≥ 95, qa_walk 48/48. I re-run before Mauro sees anything |
+| **Class looks on the approved blockouts** (Bastion → Kestrel → Gloam → Mender) | `art/ironjaw-walk-help` `class_walk_looks/` | `7f65035` | **Bastion v3 LOCKED by Luca** (look S 87.0 / E 88.7, motion 100, legs at target scale and under the belt; verified by me and sent to Mauro). The E mace stays low. **Kestrel v2 next** | Kestrel, Gloam, Mender: verify each before Mauro |
 | **Mender** | concepts in `art/ironjaw-walk-help` `class_walk_looks/mender_concepts/`; blockout `claude/class-walk-blockouts` `ff1c649` | `ff1c649` | **Mauro picked B; blockout approved (12:20).** Scenario to paint the Mender S/E look targets | Mauro approves the targets; parts come after Gloam |
 | Northgate snow kit | not started | none | New ask, 4 Oct: see `docs/pc/look_target/northgate_snow/README.md` | Paint the kit in the v7 style (2x masters) |
 | Class blockouts to paint from | `claude/class-walk-blockouts` | `503c37f` | Built from Mauro's new designs (walk S/E + idle, joints in the TA format), with action videos. **Mauro approved Gloam, Bastion and Kestrel** (after the shield and bow fixes) | **Mender: waiting on Mauro's design.** Scenario and TA can start painting/rigging Gloam, Bastion and Kestrel |
