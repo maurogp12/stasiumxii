@@ -1,0 +1,4610 @@
+{
+ "meta": {
+  "cell": [
+   512,
+   360
+  ],
+  "pivot": [
+   256,
+   329
+  ],
+  "camera": {
+   "type": "orthographic",
+   "azimuth_deg": 45.0,
+   "elevation_deg_below_horizontal": 30.0,
+   "ortho_scale": 494.6236559139785,
+   "world_origin_pixel": [
+    256.5,
+    297.899252470384
+   ]
+  },
+  "offsets": {
+   "x": 26,
+   "y_S": 15,
+   "y_E": 31
+  },
+  "notes": "Joint coordinates are camera projections in the padded 512x360 cells. S/E use y offsets 15/31; draw_order is nearest-camera first (part-centre depth, corrected from the rendered id pass wherever an arm or axe overlaps another part). Part rotation: 0 = straight down, positive = clockwise on screen. visible_length_scale is projected 2D axis length divided by the corresponding idle-frame projected length for that facing. Axe blade facing angle is the screen angle of the blade flat-face normal. wrist = end of the forearm bone (inside the fist block); axe_grip = handle axis at the fist centre (the fist encloses both)."
+ },
+ "facings": {
+  "walk_S": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      256.5,
+      230.346
+     ],
+     "chest": [
+      256.5,
+      199.741
+     ],
+     "neck": [
+      254.937,
+      129.516
+     ],
+     "head_top": [
+      255.652,
+      85.272
+     ],
+     "R_shoulder": [
+      201.965,
+      140.589
+     ],
+     "R_elbow": [
+      146.871,
+      152.219
+     ],
+     "R_wrist": [
+      171.34,
+      193.549
+     ],
+     "R_axe_grip": [
+      167.361,
+      200.612
+     ],
+     "R_axe_head_centre": [
+      182.201,
+      241.465
+     ],
+     "R_hip": [
+      234.179,
+      237.052
+     ],
+     "R_knee": [
+      250.74,
+      271.773
+     ],
+     "R_ankle": [
+      263.843,
+      306.473
+     ],
+     "R_toe": [
+      286.246,
+      338.579
+     ],
+     "R_heel": [
+      250.507,
+      313.058
+     ],
+     "L_shoulder": [
+      305.131,
+      124.818
+     ],
+     "L_elbow": [
+      337.924,
+      151.61
+     ],
+     "L_wrist": [
+      373.181,
+      177.282
+     ],
+     "L_axe_grip": [
+      374.099,
+      185.634
+     ],
+     "L_axe_head_centre": [
+      410.878,
+      240.531
+     ],
+     "L_hip": [
+      278.821,
+      223.64
+     ],
+     "L_knee": [
+      270.701,
+      256.588
+     ],
+     "L_ankle": [
+      249.157,
+      257.11
+     ],
+     "L_toe": [
+      271.561,
+      289.216
+     ],
+     "L_heel": [
+      235.822,
+      263.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "L_axe",
+     "R_shin",
+     "R_thigh",
+     "R_boot",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "cape",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.407,
+      "visible_length_scale": 1.019272
+     },
+     "R_upperarm": {
+      "rotation_deg": -78.08,
+      "visible_length_scale": 0.997972
+     },
+     "R_forearm": {
+      "rotation_deg": 30.627,
+      "visible_length_scale": 1.111329
+     },
+     "R_axe": {
+      "rotation_deg": 19.964,
+      "visible_length_scale": 1.049705,
+      "blade_facing_angle_deg": -145.8
+     },
+     "R_thigh": {
+      "rotation_deg": 25.5,
+      "visible_length_scale": 0.932432
+     },
+     "R_shin": {
+      "rotation_deg": 20.687,
+      "visible_length_scale": 1.063831
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 50.751,
+      "visible_length_scale": 1.319604
+     },
+     "L_forearm": {
+      "rotation_deg": 53.94,
+      "visible_length_scale": 0.846024
+     },
+     "L_axe": {
+      "rotation_deg": 33.821,
+      "visible_length_scale": 1.007296,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": -13.845,
+      "visible_length_scale": 0.906971
+     },
+     "L_shin": {
+      "rotation_deg": -88.612,
+      "visible_length_scale": 0.730518
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f01": {
+    "joints": {
+     "pelvis": [
+      255.185,
+      236.943
+     ],
+     "chest": [
+      255.185,
+      206.338
+     ],
+     "neck": [
+      253.526,
+      136.129
+     ],
+     "head_top": [
+      254.251,
+      91.883
+     ],
+     "R_shoulder": [
+      200.774,
+      147.696
+     ],
+     "R_elbow": [
+      144.849,
+      157.725
+     ],
+     "R_wrist": [
+      171.911,
+      199.775
+     ],
+     "R_axe_grip": [
+      167.932,
+      206.837
+     ],
+     "R_axe_head_centre": [
+      182.772,
+      247.691
+     ],
+     "R_hip": [
+      232.678,
+      243.492
+     ],
+     "R_knee": [
+      247.201,
+      274.873
+     ],
+     "R_ankle": [
+      251.843,
+      300.473
+     ],
+     "R_toe": [
+      274.246,
+      332.579
+     ],
+     "R_heel": [
+      238.507,
+      307.058
+     ],
+     "L_shoulder": [
+      303.332,
+      130.963
+     ],
+     "L_elbow": [
+      336.146,
+      156.621
+     ],
+     "L_wrist": [
+      372.111,
+      182.332
+     ],
+     "L_axe_grip": [
+      373.028,
+      190.685
+     ],
+     "L_axe_head_centre": [
+      409.807,
+      245.582
+     ],
+     "L_hip": [
+      277.691,
+      230.395
+     ],
+     "L_knee": [
+      262.798,
+      258.167
+     ],
+     "L_ankle": [
+      241.31,
+      235.632
+     ],
+     "L_toe": [
+      258.145,
+      275.178
+     ],
+     "L_heel": [
+      224.965,
+      231.434
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "L_axe",
+     "R_thigh",
+     "R_shin",
+     "torso",
+     "L_upperarm",
+     "R_boot",
+     "L_forearm",
+     "cape",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.492,
+      "visible_length_scale": 1.019547
+     },
+     "R_upperarm": {
+      "rotation_deg": -79.833,
+      "visible_length_scale": 1.006993
+     },
+     "R_forearm": {
+      "rotation_deg": 32.764,
+      "visible_length_scale": 1.157035
+     },
+     "R_axe": {
+      "rotation_deg": 19.963,
+      "visible_length_scale": 1.049727,
+      "blade_facing_angle_deg": -145.866
+     },
+     "R_thigh": {
+      "rotation_deg": 24.835,
+      "visible_length_scale": 0.83815
+     },
+     "R_shin": {
+      "rotation_deg": 10.278,
+      "visible_length_scale": 0.746214
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 51.977,
+      "visible_length_scale": 1.29805
+     },
+     "L_forearm": {
+      "rotation_deg": 54.439,
+      "visible_length_scale": 0.857604
+     },
+     "L_axe": {
+      "rotation_deg": 33.821,
+      "visible_length_scale": 1.007296,
+      "blade_facing_angle_deg": -63.505
+     },
+     "L_thigh": {
+      "rotation_deg": -28.203,
+      "visible_length_scale": 0.842275
+     },
+     "L_shin": {
+      "rotation_deg": -136.362,
+      "visible_length_scale": 1.055515
+     },
+     "L_boot": {
+      "rotation_deg": 37.18,
+      "visible_length_scale": 1.250188
+     }
+    }
+   },
+   "f02": {
+    "joints": {
+     "pelvis": [
+      254.222,
+      231.485
+     ],
+     "chest": [
+      254.222,
+      200.88
+     ],
+     "neck": [
+      252.306,
+      130.716
+     ],
+     "head_top": [
+      253.057,
+      86.464
+     ],
+     "R_shoulder": [
+      200.247,
+      143.622
+     ],
+     "R_elbow": [
+      144.566,
+      156.256
+     ],
+     "R_wrist": [
+      175.753,
+      195.565
+     ],
+     "R_axe_grip": [
+      171.811,
+      202.619
+     ],
+     "R_axe_head_centre": [
+      186.743,
+      242.859
+     ],
+     "R_hip": [
+      231.23,
+      237.598
+     ],
+     "R_knee": [
+      243.151,
+      275.517
+     ],
+     "R_ankle": [
+      239.843,
+      294.473
+     ],
+     "R_toe": [
+      262.246,
+      326.579
+     ],
+     "R_heel": [
+      226.507,
+      301.058
+     ],
+     "L_shoulder": [
+      300.961,
+      124.292
+     ],
+     "L_elbow": [
+      331.417,
+      148.111
+     ],
+     "L_wrist": [
+      367.643,
+      177.565
+     ],
+     "L_axe_grip": [
+      368.648,
+      185.945
+     ],
+     "L_axe_head_centre": [
+      405.827,
+      240.429
+     ],
+     "L_hip": [
+      277.214,
+      225.373
+     ],
+     "L_knee": [
+      274.784,
+      261.024
+     ],
+     "L_ankle": [
+      253.31,
+      234.321
+     ],
+     "L_toe": [
+      274.062,
+      269.682
+     ],
+     "L_heel": [
+      238.652,
+      237.086
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "L_axe",
+     "R_thigh",
+     "torso",
+     "R_shin",
+     "L_upperarm",
+     "L_forearm",
+     "R_boot",
+     "cape",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.722,
+      "visible_length_scale": 1.020389
+     },
+     "R_upperarm": {
+      "rotation_deg": -77.216,
+      "visible_length_scale": 1.011941
+     },
+     "R_forearm": {
+      "rotation_deg": 38.428,
+      "visible_length_scale": 1.161024
+     },
+     "R_axe": {
+      "rotation_deg": 20.359,
+      "visible_length_scale": 1.036573,
+      "blade_facing_angle_deg": -145.43
+     },
+     "R_thigh": {
+      "rotation_deg": 17.452,
+      "visible_length_scale": 0.963466
+     },
+     "R_shin": {
+      "rotation_deg": -9.899,
+      "visible_length_scale": 0.551899
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 51.972,
+      "visible_length_scale": 1.204865
+     },
+     "L_forearm": {
+      "rotation_deg": 50.887,
+      "visible_length_scale": 0.90569
+     },
+     "L_axe": {
+      "rotation_deg": 34.309,
+      "visible_length_scale": 1.005496,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": -3.899,
+      "visible_length_scale": 0.955078
+     },
+     "L_shin": {
+      "rotation_deg": -141.194,
+      "visible_length_scale": 1.161568
+     },
+     "L_boot": {
+      "rotation_deg": 47.369,
+      "visible_length_scale": 1.09591
+     }
+    }
+   },
+   "f03": {
+    "joints": {
+     "pelvis": [
+      253.87,
+      219.782
+     ],
+     "chest": [
+      253.87,
+      189.176
+     ],
+     "neck": [
+      251.61,
+      119.085
+     ],
+     "head_top": [
+      252.396,
+      74.826
+     ],
+     "R_shoulder": [
+      200.717,
+      133.789
+     ],
+     "R_elbow": [
+      146.635,
+      152.623
+     ],
+     "R_wrist": [
+      181.865,
+      185.97
+     ],
+     "R_axe_grip": [
+      177.988,
+      193.006
+     ],
+     "R_axe_head_centre": [
+      193.061,
+      232.17
+     ],
+     "R_hip": [
+      230.269,
+      225.284
+     ],
+     "R_knee": [
+      234.774,
+      267.77
+     ],
+     "R_ankle": [
+      227.843,
+      288.473
+     ],
+     "R_toe": [
+      250.246,
+      320.579
+     ],
+     "R_heel": [
+      214.507,
+      295.058
+     ],
+     "L_shoulder": [
+      298.489,
+      110.993
+     ],
+     "L_elbow": [
+      324.887,
+      132.2
+     ],
+     "L_wrist": [
+      360.458,
+      167.831
+     ],
+     "L_axe_grip": [
+      361.613,
+      176.255
+     ],
+     "L_axe_head_centre": [
+      399.47,
+      229.999
+     ],
+     "L_hip": [
+      277.47,
+      214.279
+     ],
+     "L_knee": [
+      301.052,
+      248.151
+     ],
+     "L_ankle": [
+      285.157,
+      250.037
+     ],
+     "L_toe": [
+      307.641,
+      281.945
+     ],
+     "L_heel": [
+      271.902,
+      256.83
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "L_axe",
+     "torso",
+     "R_thigh",
+     "L_thigh",
+     "L_upperarm",
+     "R_shin",
+     "L_forearm",
+     "L_shin",
+     "cape",
+     "R_boot",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 1.0
+     },
+     "cape": {
+      "rotation_deg": -2.029,
+      "visible_length_scale": 1.021742
+     },
+     "R_upperarm": {
+      "rotation_deg": -70.799,
+      "visible_length_scale": 1.014977
+     },
+     "R_forearm": {
+      "rotation_deg": 46.573,
+      "visible_length_scale": 1.12242
+     },
+     "R_axe": {
+      "rotation_deg": 21.05,
+      "visible_length_scale": 1.013469,
+      "blade_facing_angle_deg": -144.771
+     },
+     "R_thigh": {
+      "rotation_deg": 6.053,
+      "visible_length_scale": 1.035588
+     },
+     "R_shin": {
+      "rotation_deg": -18.51,
+      "visible_length_scale": 0.62618
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 51.223,
+      "visible_length_scale": 1.0552
+     },
+     "L_forearm": {
+      "rotation_deg": 44.952,
+      "visible_length_scale": 0.976657
+     },
+     "L_axe": {
+      "rotation_deg": 35.161,
+      "visible_length_scale": 1.002114,
+      "blade_facing_angle_deg": -63.4
+     },
+     "L_thigh": {
+      "rotation_deg": 34.846,
+      "visible_length_scale": 1.103118
+     },
+     "L_shin": {
+      "rotation_deg": -83.233,
+      "visible_length_scale": 0.542592
+     },
+     "L_boot": {
+      "rotation_deg": 54.903,
+      "visible_length_scale": 0.994637
+     }
+    }
+   },
+   "f04": {
+    "joints": {
+     "pelvis": [
+      254.222,
+      213.665
+     ],
+     "chest": [
+      254.222,
+      183.06
+     ],
+     "neck": [
+      251.63,
+      113.054
+     ],
+     "head_top": [
+      252.451,
+      68.786
+     ],
+     "R_shoulder": [
+      202.151,
+      129.51
+     ],
+     "R_elbow": [
+      151.189,
+      156.237
+     ],
+     "R_wrist": [
+      188.534,
+      181.788
+     ],
+     "R_axe_grip": [
+      184.729,
+      188.8
+     ],
+     "R_axe_head_centre": [
+      199.938,
+      226.706
+     ],
+     "R_hip": [
+      230.078,
+      218.543
+     ],
+     "R_knee": [
+      224.994,
+      256.591
+     ],
+     "R_ankle": [
+      215.843,
+      282.473
+     ],
+     "R_toe": [
+      238.246,
+      314.579
+     ],
+     "R_heel": [
+      202.507,
+      289.058
+     ],
+     "L_shoulder": [
+      296.505,
+      103.36
+     ],
+     "L_elbow": [
+      318.231,
+      121.445
+     ],
+     "L_wrist": [
+      352.011,
+      163.658
+     ],
+     "L_axe_grip": [
+      353.34,
+      172.128
+     ],
+     "L_axe_head_centre": [
+      391.953,
+      224.98
+     ],
+     "L_hip": [
+      278.366,
+      208.788
+     ],
+     "L_knee": [
+      304.25,
+      239.076
+     ],
+     "L_ankle": [
+      317.005,
+      271.33
+     ],
+     "L_toe": [
+      340.548,
+      299.98
+     ],
+     "L_heel": [
+      305.079,
+      281.269
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "torso",
+     "L_axe",
+     "L_thigh",
+     "R_thigh",
+     "L_shin",
+     "L_upperarm",
+     "L_boot",
+     "cape",
+     "L_forearm",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.324,
+      "visible_length_scale": 1.023288
+     },
+     "R_upperarm": {
+      "rotation_deg": -62.325,
+      "visible_length_scale": 1.019898
+     },
+     "R_forearm": {
+      "rotation_deg": 55.621,
+      "visible_length_scale": 1.046985
+     },
+     "R_axe": {
+      "rotation_deg": 21.862,
+      "visible_length_scale": 0.986394,
+      "blade_facing_angle_deg": -143.961
+     },
+     "R_thigh": {
+      "rotation_deg": -7.611,
+      "visible_length_scale": 0.930439
+     },
+     "R_shin": {
+      "rotation_deg": -19.472,
+      "visible_length_scale": 0.787362
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 50.226,
+      "visible_length_scale": 0.880901
+     },
+     "L_forearm": {
+      "rotation_deg": 38.668,
+      "visible_length_scale": 1.048772
+     },
+     "L_axe": {
+      "rotation_deg": 36.151,
+      "visible_length_scale": 0.997783,
+      "blade_facing_angle_deg": -63.505
+     },
+     "L_thigh": {
+      "rotation_deg": 40.517,
+      "visible_length_scale": 1.064869
+     },
+     "L_shin": {
+      "rotation_deg": 21.577,
+      "visible_length_scale": 1.175741
+     },
+     "L_boot": {
+      "rotation_deg": 62.187,
+      "visible_length_scale": 0.913134
+     }
+    }
+   },
+   "f05": {
+    "joints": {
+     "pelvis": [
+      255.185,
+      219.124
+     ],
+     "chest": [
+      255.185,
+      188.519
+     ],
+     "neck": [
+      252.357,
+      118.582
+     ],
+     "head_top": [
+      253.204,
+      74.307
+     ],
+     "R_shoulder": [
+      204.066,
+      136.288
+     ],
+     "R_elbow": [
+      157.057,
+      170.163
+     ],
+     "R_wrist": [
+      193.87,
+      188.461
+     ],
+     "R_axe_grip": [
+      190.128,
+      195.45
+     ],
+     "R_axe_head_centre": [
+      205.43,
+      232.249
+     ],
+     "R_hip": [
+      230.685,
+      223.535
+     ],
+     "R_knee": [
+      218.975,
+      259.065
+     ],
+     "R_ankle": [
+      203.843,
+      276.473
+     ],
+     "R_toe": [
+      226.246,
+      308.579
+     ],
+     "R_heel": [
+      190.507,
+      283.058
+     ],
+     "L_shoulder": [
+      295.625,
+      107.761
+     ],
+     "L_elbow": [
+      313.245,
+      123.165
+     ],
+     "L_wrist": [
+      344.61,
+      170.507
+     ],
+     "L_axe_grip": [
+      346.088,
+      179.011
+     ],
+     "L_axe_head_centre": [
+      385.333,
+      231.06
+     ],
+     "L_hip": [
+      279.685,
+      214.713
+     ],
+     "L_knee": [
+      304.22,
+      249.669
+     ],
+     "L_ankle": [
+      327.095,
+      283.598
+     ],
+     "L_toe": [
+      350.27,
+      313.539
+     ],
+     "L_heel": [
+      314.641,
+      292.351
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "torso",
+     "R_thigh",
+     "L_shin",
+     "L_thigh",
+     "L_axe",
+     "L_boot",
+     "cape",
+     "L_forearm",
+     "L_upperarm",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.531,
+      "visible_length_scale": 1.024568
+     },
+     "R_upperarm": {
+      "rotation_deg": -54.223,
+      "visible_length_scale": 1.026943
+     },
+     "R_forearm": {
+      "rotation_deg": 63.57,
+      "visible_length_scale": 0.951204
+     },
+     "R_axe": {
+      "rotation_deg": 22.579,
+      "visible_length_scale": 0.962493,
+      "blade_facing_angle_deg": -143.236
+     },
+     "R_thigh": {
+      "rotation_deg": -18.241,
+      "visible_length_scale": 0.906777
+     },
+     "R_shin": {
+      "rotation_deg": -40.999,
+      "visible_length_scale": 0.661547
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 48.839,
+      "visible_length_scale": 0.729324
+     },
+     "L_forearm": {
+      "rotation_deg": 33.525,
+      "visible_length_scale": 1.10162
+     },
+     "L_axe": {
+      "rotation_deg": 37.016,
+      "visible_length_scale": 0.993696,
+      "blade_facing_angle_deg": -63.505
+     },
+     "L_thigh": {
+      "rotation_deg": 35.064,
+      "visible_length_scale": 1.141458
+     },
+     "L_shin": {
+      "rotation_deg": 33.988,
+      "visible_length_scale": 1.387114
+     },
+     "L_boot": {
+      "rotation_deg": 59.261,
+      "visible_length_scale": 0.943904
+     }
+    }
+   },
+   "f06": {
+    "joints": {
+     "pelvis": [
+      256.5,
+      230.346
+     ],
+     "chest": [
+      256.5,
+      199.741
+     ],
+     "neck": [
+      253.588,
+      129.831
+     ],
+     "head_top": [
+      254.444,
+      85.554
+     ],
+     "R_shoulder": [
+      205.764,
+      147.986
+     ],
+     "R_elbow": [
+      162.079,
+      186.393
+     ],
+     "R_wrist": [
+      196.488,
+      200.301
+     ],
+     "R_axe_grip": [
+      192.781,
+      207.277
+     ],
+     "R_axe_head_centre": [
+      208.127,
+      243.431
+     ],
+     "R_hip": [
+      231.879,
+      234.585
+     ],
+     "R_knee": [
+      211.583,
+      265.768
+     ],
+     "R_ankle": [
+      191.843,
+      270.473
+     ],
+     "R_toe": [
+      214.246,
+      302.579
+     ],
+     "R_heel": [
+      178.507,
+      277.058
+     ],
+     "L_shoulder": [
+      296.239,
+      118.608
+     ],
+     "L_elbow": [
+      311.26,
+      133.005
+     ],
+     "L_wrist": [
+      340.647,
+      183.01
+     ],
+     "L_axe_grip": [
+      342.211,
+      191.531
+     ],
+     "L_axe_head_centre": [
+      381.812,
+      243.104
+     ],
+     "L_hip": [
+      281.121,
+      226.107
+     ],
+     "L_knee": [
+      306.173,
+      258.345
+     ],
+     "L_ankle": [
+      321.157,
+      293.11
+     ],
+     "L_toe": [
+      343.561,
+      325.216
+     ],
+     "L_heel": [
+      307.822,
+      299.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "torso",
+     "L_thigh",
+     "L_shin",
+     "R_thigh",
+     "L_axe",
+     "L_boot",
+     "cape",
+     "L_forearm",
+     "L_upperarm",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.606,
+      "visible_length_scale": 1.025051
+     },
+     "R_upperarm": {
+      "rotation_deg": -48.679,
+      "visible_length_scale": 1.030929
+     },
+     "R_forearm": {
+      "rotation_deg": 67.992,
+      "visible_length_scale": 0.858737
+     },
+     "R_axe": {
+      "rotation_deg": 22.999,
+      "visible_length_scale": 0.948543,
+      "blade_facing_angle_deg": -142.904
+     },
+     "R_thigh": {
+      "rotation_deg": -33.059,
+      "visible_length_scale": 0.90184
+     },
+     "R_shin": {
+      "rotation_deg": -76.594,
+      "visible_length_scale": 0.582028
+     },
+     "R_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 1.0
+     },
+     "L_upperarm": {
+      "rotation_deg": 46.215,
+      "visible_length_scale": 0.648375
+     },
+     "L_forearm": {
+      "rotation_deg": 30.442,
+      "visible_length_scale": 1.125121
+     },
+     "L_axe": {
+      "rotation_deg": 37.519,
+      "visible_length_scale": 0.991208,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": 37.851,
+      "visible_length_scale": 1.091225
+     },
+     "L_shin": {
+      "rotation_deg": 23.316,
+      "visible_length_scale": 1.283273
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f07": {
+    "joints": {
+     "pelvis": [
+      257.815,
+      235.628
+     ],
+     "chest": [
+      257.815,
+      205.023
+     ],
+     "neck": [
+      254.988,
+      135.086
+     ],
+     "head_top": [
+      255.834,
+      90.812
+     ],
+     "R_shoulder": [
+      206.697,
+      152.792
+     ],
+     "R_elbow": [
+      164.347,
+      192.243
+     ],
+     "R_wrist": [
+      195.82,
+      205.908
+     ],
+     "R_axe_grip": [
+      192.114,
+      212.883
+     ],
+     "R_axe_head_centre": [
+      207.459,
+      249.037
+     ],
+     "R_hip": [
+      233.315,
+      240.039
+     ],
+     "R_knee": [
+      200.575,
+      263.431
+     ],
+     "R_ankle": [
+      183.995,
+      248.995
+     ],
+     "R_toe": [
+      200.831,
+      288.541
+     ],
+     "R_heel": [
+      167.65,
+      244.797
+     ],
+     "L_shoulder": [
+      298.256,
+      124.265
+     ],
+     "L_elbow": [
+      312.81,
+      140.026
+     ],
+     "L_wrist": [
+      341.563,
+      189.941
+     ],
+     "L_axe_grip": [
+      343.126,
+      198.463
+     ],
+     "L_axe_head_centre": [
+      382.727,
+      250.036
+     ],
+     "L_hip": [
+      282.315,
+      231.217
+     ],
+     "L_knee": [
+      307.023,
+      258.903
+     ],
+     "L_ankle": [
+      309.157,
+      287.11
+     ],
+     "L_toe": [
+      331.561,
+      319.216
+     ],
+     "L_heel": [
+      295.822,
+      293.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "torso",
+     "L_thigh",
+     "R_thigh",
+     "L_shin",
+     "L_axe",
+     "cape",
+     "L_boot",
+     "R_shin",
+     "L_forearm",
+     "L_upperarm",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.532,
+      "visible_length_scale": 1.024555
+     },
+     "R_upperarm": {
+      "rotation_deg": -47.03,
+      "visible_length_scale": 1.025801
+     },
+     "R_forearm": {
+      "rotation_deg": 66.53,
+      "visible_length_scale": 0.793905
+     },
+     "R_axe": {
+      "rotation_deg": 22.998,
+      "visible_length_scale": 0.948534,
+      "blade_facing_angle_deg": -142.844
+     },
+     "R_thigh": {
+      "rotation_deg": -54.455,
+      "visible_length_scale": 0.975325
+     },
+     "R_shin": {
+      "rotation_deg": -131.046,
+      "visible_length_scale": 0.630528
+     },
+     "R_boot": {
+      "rotation_deg": 37.181,
+      "visible_length_scale": 1.250225
+     },
+     "L_upperarm": {
+      "rotation_deg": 42.72,
+      "visible_length_scale": 0.668524
+     },
+     "L_forearm": {
+      "rotation_deg": 29.944,
+      "visible_length_scale": 1.117426
+     },
+     "L_axe": {
+      "rotation_deg": 37.519,
+      "visible_length_scale": 0.991208,
+      "blade_facing_angle_deg": -63.4
+     },
+     "L_thigh": {
+      "rotation_deg": 41.747,
+      "visible_length_scale": 0.991808
+     },
+     "L_shin": {
+      "rotation_deg": 4.326,
+      "visible_length_scale": 0.9589
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f08": {
+    "joints": {
+     "pelvis": [
+      258.778,
+      229.207
+     ],
+     "chest": [
+      258.778,
+      198.602
+     ],
+     "neck": [
+      256.186,
+      128.596
+     ],
+     "head_top": [
+      257.007,
+      84.327
+     ],
+     "R_shoulder": [
+      206.707,
+      145.052
+     ],
+     "R_elbow": [
+      163.232,
+      181.981
+     ],
+     "R_wrist": [
+      192.075,
+      199.443
+     ],
+     "R_axe_grip": [
+      188.333,
+      206.432
+     ],
+     "R_axe_head_centre": [
+      203.635,
+      243.231
+     ],
+     "R_hip": [
+      234.634,
+      234.084
+     ],
+     "R_knee": [
+      207.747,
+      267.141
+     ],
+     "R_ankle": [
+      195.995,
+      247.684
+     ],
+     "R_toe": [
+      216.747,
+      283.045
+     ],
+     "R_heel": [
+      181.337,
+      250.449
+     ],
+     "L_shoulder": [
+      301.061,
+      118.901
+     ],
+     "L_elbow": [
+      317.588,
+      137.986
+     ],
+     "L_wrist": [
+      347.183,
+      185.078
+     ],
+     "L_axe_grip": [
+      348.661,
+      193.582
+     ],
+     "L_axe_head_centre": [
+      387.906,
+      245.632
+     ],
+     "L_hip": [
+      282.922,
+      224.33
+     ],
+     "L_knee": [
+      304.637,
+      258.811
+     ],
+     "L_ankle": [
+      297.157,
+      281.11
+     ],
+     "L_toe": [
+      319.561,
+      313.216
+     ],
+     "L_heel": [
+      283.822,
+      287.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "torso",
+     "R_thigh",
+     "L_thigh",
+     "L_axe",
+     "L_upperarm",
+     "L_shin",
+     "R_shin",
+     "cape",
+     "L_forearm",
+     "L_boot",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.324,
+      "visible_length_scale": 1.023302
+     },
+     "R_upperarm": {
+      "rotation_deg": -49.654,
+      "visible_length_scale": 1.010984
+     },
+     "R_forearm": {
+      "rotation_deg": 58.809,
+      "visible_length_scale": 0.78015
+     },
+     "R_axe": {
+      "rotation_deg": 22.579,
+      "visible_length_scale": 0.962493,
+      "blade_facing_angle_deg": -143.236
+     },
+     "R_thigh": {
+      "rotation_deg": -39.123,
+      "visible_length_scale": 1.032839
+     },
+     "R_shin": {
+      "rotation_deg": -148.868,
+      "visible_length_scale": 0.651945
+     },
+     "R_boot": {
+      "rotation_deg": 47.369,
+      "visible_length_scale": 1.09593
+     },
+     "L_upperarm": {
+      "rotation_deg": 40.892,
+      "visible_length_scale": 0.786736
+     },
+     "L_forearm": {
+      "rotation_deg": 32.147,
+      "visible_length_scale": 1.078925
+     },
+     "L_axe": {
+      "rotation_deg": 37.016,
+      "visible_length_scale": 0.993708,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": 32.201,
+      "visible_length_scale": 1.089125
+     },
+     "L_shin": {
+      "rotation_deg": -18.544,
+      "visible_length_scale": 0.79729
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f09": {
+    "joints": {
+     "pelvis": [
+      259.13,
+      217.151
+     ],
+     "chest": [
+      259.13,
+      186.546
+     ],
+     "neck": [
+      256.871,
+      116.455
+     ],
+     "head_top": [
+      257.657,
+      72.195
+     ],
+     "R_shoulder": [
+      205.978,
+      131.159
+     ],
+     "R_elbow": [
+      159.511,
+      162.54
+     ],
+     "R_wrist": [
+      186.156,
+      186.539
+     ],
+     "R_axe_grip": [
+      182.351,
+      193.551
+     ],
+     "R_axe_head_centre": [
+      197.56,
+      231.457
+     ],
+     "R_hip": [
+      235.53,
+      222.654
+     ],
+     "R_knee": [
+      241.742,
+      259.662
+     ],
+     "R_ankle": [
+      227.843,
+      263.4
+     ],
+     "R_toe": [
+      250.326,
+      295.309
+     ],
+     "R_heel": [
+      214.587,
+      270.193
+     ],
+     "L_shoulder": [
+      303.75,
+      108.363
+     ],
+     "L_elbow": [
+      324.396,
+      131.328
+     ],
+     "L_wrist": [
+      355.682,
+      173.213
+     ],
+     "L_axe_grip": [
+      357.011,
+      181.683
+     ],
+     "L_axe_head_centre": [
+      395.624,
+      234.536
+     ],
+     "L_hip": [
+      282.731,
+      211.649
+     ],
+     "L_knee": [
+      295.193,
+      252.396
+     ],
+     "L_ankle": [
+      285.157,
+      275.11
+     ],
+     "L_toe": [
+      307.561,
+      307.216
+     ],
+     "L_heel": [
+      271.822,
+      281.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "R_thigh",
+     "R_shin",
+     "torso",
+     "L_axe",
+     "L_upperarm",
+     "L_thigh",
+     "R_boot",
+     "L_forearm",
+     "cape",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -2.029,
+      "visible_length_scale": 1.021729
+     },
+     "R_upperarm": {
+      "rotation_deg": -55.967,
+      "visible_length_scale": 0.993768
+     },
+     "R_forearm": {
+      "rotation_deg": 47.991,
+      "visible_length_scale": 0.829723
+     },
+     "R_axe": {
+      "rotation_deg": 21.862,
+      "visible_length_scale": 0.986394,
+      "blade_facing_angle_deg": -143.961
+     },
+     "R_thigh": {
+      "rotation_deg": 9.529,
+      "visible_length_scale": 0.909584
+     },
+     "R_shin": {
+      "rotation_deg": -74.947,
+      "visible_length_scale": 0.412806
+     },
+     "R_boot": {
+      "rotation_deg": 54.902,
+      "visible_length_scale": 0.994669
+     },
+     "L_upperarm": {
+      "rotation_deg": 41.956,
+      "visible_length_scale": 0.962331
+     },
+     "L_forearm": {
+      "rotation_deg": 36.758,
+      "visible_length_scale": 1.01414
+     },
+     "L_axe": {
+      "rotation_deg": 36.151,
+      "visible_length_scale": 0.997796,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": 17.006,
+      "visible_length_scale": 1.138867
+     },
+     "L_shin": {
+      "rotation_deg": -23.838,
+      "visible_length_scale": 0.841773
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f10": {
+    "joints": {
+     "pelvis": [
+      258.778,
+      211.387
+     ],
+     "chest": [
+      258.778,
+      180.782
+     ],
+     "neck": [
+      256.862,
+      110.618
+     ],
+     "head_top": [
+      257.613,
+      66.367
+     ],
+     "R_shoulder": [
+      204.803,
+      123.525
+     ],
+     "R_elbow": [
+      154.72,
+      147.578
+     ],
+     "R_wrist": [
+      179.584,
+      178.889
+     ],
+     "R_axe_grip": [
+      175.706,
+      185.925
+     ],
+     "R_axe_head_centre": [
+      190.779,
+      225.09
+     ],
+     "R_hip": [
+      235.786,
+      217.5
+     ],
+     "R_knee": [
+      250.574,
+      250.624
+     ],
+     "R_ankle": [
+      259.69,
+      284.693
+     ],
+     "R_toe": [
+      283.234,
+      313.343
+     ],
+     "R_heel": [
+      247.764,
+      294.632
+     ],
+     "L_shoulder": [
+      305.517,
+      104.194
+     ],
+     "L_elbow": [
+      331.283,
+      130.049
+     ],
+     "L_wrist": [
+      364.284,
+      165.404
+     ],
+     "L_axe_grip": [
+      365.44,
+      173.829
+     ],
+     "L_axe_head_centre": [
+      403.297,
+      227.573
+     ],
+     "L_hip": [
+      281.77,
+      205.275
+     ],
+     "L_knee": [
+      282.895,
+      243.648
+     ],
+     "L_ankle": [
+      273.157,
+      269.11
+     ],
+     "L_toe": [
+      295.561,
+      301.216
+     ],
+     "L_heel": [
+      259.822,
+      275.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "R_shin",
+     "R_thigh",
+     "L_axe",
+     "R_boot",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "cape",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.722,
+      "visible_length_scale": 1.020375
+     },
+     "R_upperarm": {
+      "rotation_deg": -64.347,
+      "visible_length_scale": 0.984703
+     },
+     "R_forearm": {
+      "rotation_deg": 38.453,
+      "visible_length_scale": 0.92512
+     },
+     "R_axe": {
+      "rotation_deg": 21.05,
+      "visible_length_scale": 1.013491,
+      "blade_facing_angle_deg": -144.771
+     },
+     "R_thigh": {
+      "rotation_deg": 24.058,
+      "visible_length_scale": 0.87927
+     },
+     "R_shin": {
+      "rotation_deg": 14.98,
+      "visible_length_scale": 1.011517
+     },
+     "R_boot": {
+      "rotation_deg": 62.188,
+      "visible_length_scale": 0.913171
+     },
+     "L_upperarm": {
+      "rotation_deg": 44.901,
+      "visible_length_scale": 1.137476
+     },
+     "L_forearm": {
+      "rotation_deg": 43.028,
+      "visible_length_scale": 0.938175
+     },
+     "L_axe": {
+      "rotation_deg": 35.161,
+      "visible_length_scale": 1.002114,
+      "blade_facing_angle_deg": -63.435
+     },
+     "L_thigh": {
+      "rotation_deg": 1.679,
+      "visible_length_scale": 1.026061
+     },
+     "L_shin": {
+      "rotation_deg": -20.929,
+      "visible_length_scale": 0.924087
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   },
+   "f11": {
+    "joints": {
+     "pelvis": [
+      257.815,
+      217.809
+     ],
+     "chest": [
+      257.815,
+      187.203
+     ],
+     "neck": [
+      256.157,
+      116.994
+     ],
+     "head_top": [
+      256.881,
+      72.748
+     ],
+     "R_shoulder": [
+      203.404,
+      128.561
+     ],
+     "R_elbow": [
+      150.257,
+      145.37
+     ],
+     "R_wrist": [
+      174.15,
+      182.884
+     ],
+     "R_axe_grip": [
+      170.208,
+      189.938
+     ],
+     "R_axe_head_centre": [
+      185.14,
+      230.177
+     ],
+     "R_hip": [
+      235.309,
+      224.357
+     ],
+     "R_knee": [
+      253.801,
+      262.487
+     ],
+     "R_ankle": [
+      271.466,
+      299.273
+     ],
+     "R_toe": [
+      294.641,
+      329.214
+     ],
+     "R_heel": [
+      259.013,
+      308.026
+     ],
+     "L_shoulder": [
+      305.963,
+      111.828
+     ],
+     "L_elbow": [
+      336.217,
+      138.868
+     ],
+     "L_wrist": [
+      370.528,
+      168.172
+     ],
+     "L_axe_grip": [
+      371.532,
+      176.552
+     ],
+     "L_axe_head_centre": [
+      408.712,
+      231.036
+     ],
+     "L_hip": [
+      280.322,
+      211.26
+     ],
+     "L_knee": [
+      277.381,
+      247.735
+     ],
+     "L_ankle": [
+      261.157,
+      263.11
+     ],
+     "L_toe": [
+      283.561,
+      295.216
+     ],
+     "L_heel": [
+      247.822,
+      269.695
+     ]
+    },
+    "draw_order": [
+     "R_axe",
+     "R_forearm",
+     "R_upperarm",
+     "L_axe",
+     "R_shin",
+     "R_boot",
+     "R_thigh",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "cape",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 1.0
+     },
+     "cape": {
+      "rotation_deg": -1.492,
+      "visible_length_scale": 1.019535
+     },
+     "R_upperarm": {
+      "rotation_deg": -72.449,
+      "visible_length_scale": 0.987934
+     },
+     "R_forearm": {
+      "rotation_deg": 32.493,
+      "visible_length_scale": 1.029108
+     },
+     "R_axe": {
+      "rotation_deg": 20.359,
+      "visible_length_scale": 1.036551,
+      "blade_facing_angle_deg": -145.475
+     },
+     "R_thigh": {
+      "rotation_deg": 25.872,
+      "visible_length_scale": 1.027185
+     },
+     "R_shin": {
+      "rotation_deg": 25.651,
+      "visible_length_scale": 1.170414
+     },
+     "R_boot": {
+      "rotation_deg": 59.26,
+      "visible_length_scale": 0.943902
+     },
+     "L_upperarm": {
+      "rotation_deg": 48.211,
+      "visible_length_scale": 1.264465
+     },
+     "L_forearm": {
+      "rotation_deg": 49.5,
+      "visible_length_scale": 0.875287
+     },
+     "L_axe": {
+      "rotation_deg": 34.31,
+      "visible_length_scale": 1.005504,
+      "blade_facing_angle_deg": -63.4
+     },
+     "L_thigh": {
+      "rotation_deg": -4.61,
+      "visible_length_scale": 0.978055
+     },
+     "L_shin": {
+      "rotation_deg": -46.539,
+      "visible_length_scale": 0.757691
+     },
+     "L_boot": {
+      "rotation_deg": 54.47,
+      "visible_length_scale": 0.999981
+     }
+    }
+   }
+  },
+  "idle_S": {
+   "joints": {
+    "pelvis": [
+     256.5,
+     210.916
+    ],
+    "chest": [
+     256.5,
+     180.31
+    ],
+    "neck": [
+     255.394,
+     111.336
+    ],
+    "head_top": [
+     256.18,
+     67.077
+    ],
+    "R_shoulder": [
+     204.409,
+     125.795
+    ],
+    "R_elbow": [
+     153.634,
+     150.4
+    ],
+    "R_wrist": [
+     185.703,
+     179.373
+    ],
+    "R_axe_grip": [
+     181.862,
+     186.397
+    ],
+    "R_axe_head_centre": [
+     197.006,
+     224.935
+    ],
+    "R_hip": [
+     232.9,
+     216.418
+    ],
+    "R_knee": [
+     230.714,
+     257.616
+    ],
+    "R_ankle": [
+     225.045,
+     292.018
+    ],
+    "R_toe": [
+     247.449,
+     324.124
+    ],
+    "R_heel": [
+     211.71,
+     298.603
+    ],
+    "L_shoulder": [
+     302.182,
+     102.999
+    ],
+    "L_elbow": [
+     325.973,
+     124.534
+    ],
+    "L_wrist": [
+     359.769,
+     163.461
+    ],
+    "L_axe_grip": [
+     361.012,
+     171.909
+    ],
+    "L_axe_head_centre": [
+     399.25,
+     225.212
+    ],
+    "L_hip": [
+     280.1,
+     205.413
+    ],
+    "L_knee": [
+     287.605,
+     242.067
+    ],
+    "L_ankle": [
+     287.955,
+     271.565
+    ],
+    "L_toe": [
+     310.359,
+     303.671
+    ],
+    "L_heel": [
+     274.619,
+     278.15
+    ]
+   },
+   "draw_order": [
+    "R_axe",
+    "R_forearm",
+    "R_upperarm",
+    "L_axe",
+    "torso",
+    "R_thigh",
+    "L_upperarm",
+    "R_shin",
+    "L_forearm",
+    "cape",
+    "L_thigh",
+    "R_boot",
+    "L_shin",
+    "L_boot"
+   ],
+   "parts": {
+    "torso": {
+     "rotation_deg": 180.0,
+     "visible_length_scale": 1.0
+    },
+    "cape": {
+     "rotation_deg": -3.106,
+     "visible_length_scale": 1.0
+    },
+    "R_upperarm": {
+     "rotation_deg": -64.146,
+     "visible_length_scale": 1.0
+    },
+    "R_forearm": {
+     "rotation_deg": 47.904,
+     "visible_length_scale": 1.0
+    },
+    "R_axe": {
+     "rotation_deg": 21.453,
+     "visible_length_scale": 1.0,
+     "blade_facing_angle_deg": -144.309
+    },
+    "R_thigh": {
+     "rotation_deg": -3.037,
+     "visible_length_scale": 1.0
+    },
+    "R_shin": {
+     "rotation_deg": -9.358,
+     "visible_length_scale": 1.0
+    },
+    "R_boot": {
+     "rotation_deg": 54.47,
+     "visible_length_scale": 1.0
+    },
+    "L_upperarm": {
+     "rotation_deg": 47.849,
+     "visible_length_scale": 1.0
+    },
+    "L_forearm": {
+     "rotation_deg": 40.964,
+     "visible_length_scale": 1.0
+    },
+    "L_axe": {
+     "rotation_deg": 35.655,
+     "visible_length_scale": 1.0,
+     "blade_facing_angle_deg": -63.435
+    },
+    "L_thigh": {
+     "rotation_deg": 11.572,
+     "visible_length_scale": 1.0
+    },
+    "L_shin": {
+     "rotation_deg": 0.68,
+     "visible_length_scale": 1.0
+    },
+    "L_boot": {
+     "rotation_deg": 54.47,
+     "visible_length_scale": 1.0
+    }
+   }
+  },
+  "walk_E": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      257.815,
+      252.943
+     ],
+     "chest": [
+      257.815,
+      222.338
+     ],
+     "neck": [
+      256.258,
+      157.228
+     ],
+     "head_top": [
+      256.648,
+      111.215
+     ],
+     "R_shoulder": [
+      306.478,
+      172.81
+     ],
+     "R_elbow": [
+      303.534,
+      237.755
+     ],
+     "R_wrist": [
+      341.125,
+      212.081
+     ],
+     "R_axe_grip": [
+      343.13,
+      218.775
+     ],
+     "R_axe_head_centre": [
+      391.631,
+      232.182
+     ],
+     "R_hip": [
+      283.764,
+      254.034
+     ],
+     "R_knee": [
+      301.697,
+      249.424
+     ],
+     "R_ankle": [
+      311.64,
+      288.537
+     ],
+     "R_toe": [
+      329.676,
+      287.321
+     ],
+     "R_heel": [
+      300.904,
+      314.956
+     ],
+     "L_shoulder": [
+      203.273,
+      157.104
+     ],
+     "L_elbow": [
+      214.351,
+      223.411
+     ],
+     "L_wrist": [
+      208.169,
+      178.306
+     ],
+     "L_axe_grip": [
+      205.809,
+      186.989
+     ],
+     "L_axe_head_centre": [
+      218.406,
+      231.593
+     ],
+     "L_hip": [
+      231.867,
+      251.853
+     ],
+     "L_knee": [
+      196.089,
+      273.108
+     ],
+     "L_ankle": [
+      181.513,
+      299.416
+     ],
+     "L_toe": [
+      195.066,
+      313.922
+     ],
+     "L_heel": [
+      168.354,
+      319.528
+     ]
+    },
+    "draw_order": [
+     "R_upperarm",
+     "cape",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "R_thigh",
+     "L_axe",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.297,
+      "visible_length_scale": 0.983105
+     },
+     "R_upperarm": {
+      "rotation_deg": -2.595,
+      "visible_length_scale": 0.950841
+     },
+     "R_forearm": {
+      "rotation_deg": 124.332,
+      "visible_length_scale": 0.811128
+     },
+     "R_axe": {
+      "rotation_deg": 74.548,
+      "visible_length_scale": 1.004925,
+      "blade_facing_angle_deg": 46.796
+     },
+     "R_thigh": {
+      "rotation_deg": 104.417,
+      "visible_length_scale": 0.518667
+     },
+     "R_shin": {
+      "rotation_deg": 14.263,
+      "visible_length_scale": 1.110465
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": 9.485,
+      "visible_length_scale": 0.976992
+     },
+     "L_forearm": {
+      "rotation_deg": -172.196,
+      "visible_length_scale": 1.187851
+     },
+     "L_axe": {
+      "rotation_deg": 15.771,
+      "visible_length_scale": 1.142385,
+      "blade_facing_angle_deg": 67.413
+     },
+     "L_thigh": {
+      "rotation_deg": -59.286,
+      "visible_length_scale": 1.140222
+     },
+     "L_shin": {
+      "rotation_deg": -28.989,
+      "visible_length_scale": 0.809459
+     },
+     "L_boot": {
+      "rotation_deg": 101.853,
+      "visible_length_scale": 0.684163
+     }
+    }
+   },
+   "f01": {
+    "joints": {
+     "pelvis": [
+      258.778,
+      247.485
+     ],
+     "chest": [
+      258.778,
+      216.88
+     ],
+     "neck": [
+      257.485,
+      151.805
+     ],
+     "head_top": [
+      257.846,
+      105.791
+     ],
+     "R_shoulder": [
+      308.673,
+      166.092
+     ],
+     "R_elbow": [
+      309.15,
+      232.425
+     ],
+     "R_wrist": [
+      346.004,
+      201.809
+     ],
+     "R_axe_grip": [
+      347.583,
+      208.857
+     ],
+     "R_axe_head_centre": [
+      394.379,
+      226.369
+     ],
+     "R_hip": [
+      284.624,
+      249.072
+     ],
+     "R_knee": [
+      299.807,
+      253.618
+     ],
+     "R_ankle": [
+      299.64,
+      294.537
+     ],
+     "R_toe": [
+      317.676,
+      293.321
+     ],
+     "R_heel": [
+      288.904,
+      320.956
+     ],
+     "L_shoulder": [
+      203.998,
+      153.043
+     ],
+     "L_elbow": [
+      211.674,
+      220.011
+     ],
+     "L_wrist": [
+      203.482,
+      176.177
+     ],
+     "L_axe_grip": [
+      201.493,
+      184.848
+     ],
+     "L_axe_head_centre": [
+      216.766,
+      226.815
+     ],
+     "L_hip": [
+      232.932,
+      245.898
+     ],
+     "L_knee": [
+      201.029,
+      261.701
+     ],
+     "L_ankle": [
+      193.513,
+      286.105
+     ],
+     "L_toe": [
+      210.219,
+      290.601
+     ],
+     "L_heel": [
+      181.712,
+      310.671
+     ]
+    },
+    "draw_order": [
+     "R_upperarm",
+     "cape",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "R_thigh",
+     "R_shin",
+     "L_axe",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.077,
+      "visible_length_scale": 0.983546
+     },
+     "R_upperarm": {
+      "rotation_deg": 0.412,
+      "visible_length_scale": 0.970191
+     },
+     "R_forearm": {
+      "rotation_deg": 129.718,
+      "visible_length_scale": 0.853716
+     },
+     "R_axe": {
+      "rotation_deg": 69.483,
+      "visible_length_scale": 0.997844,
+      "blade_facing_angle_deg": 47.451
+     },
+     "R_thigh": {
+      "rotation_deg": 73.332,
+      "visible_length_scale": 0.443957
+     },
+     "R_shin": {
+      "rotation_deg": -0.234,
+      "visible_length_scale": 1.125937
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": 6.539,
+      "visible_length_scale": 0.979614
+     },
+     "L_forearm": {
+      "rotation_deg": -169.414,
+      "visible_length_scale": 1.163488
+     },
+     "L_axe": {
+      "rotation_deg": 19.998,
+      "visible_length_scale": 1.100756,
+      "blade_facing_angle_deg": 67.811
+     },
+     "L_thigh": {
+      "rotation_deg": -63.649,
+      "visible_length_scale": 0.975474
+     },
+     "L_shin": {
+      "rotation_deg": -17.118,
+      "visible_length_scale": 0.687246
+     },
+     "L_boot": {
+      "rotation_deg": 125.147,
+      "visible_length_scale": 0.873903
+     }
+    }
+   },
+   "f02": {
+    "joints": {
+     "pelvis": [
+      259.13,
+      235.782
+     ],
+     "chest": [
+      259.13,
+      205.176
+     ],
+     "neck": [
+      258.202,
+      140.141
+     ],
+     "head_top": [
+      258.525,
+      94.122
+     ],
+     "R_shoulder": [
+      310.498,
+      152.62
+     ],
+     "R_elbow": [
+      317.044,
+      220.194
+     ],
+     "R_wrist": [
+      353.475,
+      182.508
+     ],
+     "R_axe_grip": [
+      354.302,
+      190.093
+     ],
+     "R_axe_head_centre": [
+      397.734,
+      214.559
+     ],
+     "R_hip": [
+      284.775,
+      238.042
+     ],
+     "R_knee": [
+      292.674,
+      259.984
+     ],
+     "R_ankle": [
+      287.64,
+      300.537
+     ],
+     "R_toe": [
+      305.676,
+      299.321
+     ],
+     "R_heel": [
+      276.904,
+      326.956
+     ],
+     "L_shoulder": [
+      204.257,
+      143.254
+     ],
+     "L_elbow": [
+      206.027,
+      211.312
+     ],
+     "L_wrist": [
+      195.818,
+      170.176
+     ],
+     "L_axe_grip": [
+      194.488,
+      178.751
+     ],
+     "L_axe_head_centre": [
+      214.226,
+      215.769
+     ],
+     "L_hip": [
+      233.486,
+      233.521
+     ],
+     "L_knee": [
+      230.497,
+      233.329
+     ],
+     "L_ankle": [
+      225.36,
+      269.973
+     ],
+     "L_toe": [
+      243.46,
+      268.442
+     ],
+     "L_heel": [
+      214.689,
+      296.481
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "R_thigh",
+     "L_thigh",
+     "R_shin",
+     "L_axe",
+     "L_shin",
+     "L_boot",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 1.0
+     },
+     "cape": {
+      "rotation_deg": -0.772,
+      "visible_length_scale": 0.984027
+     },
+     "R_upperarm": {
+      "rotation_deg": 5.533,
+      "visible_length_scale": 0.992943
+     },
+     "R_forearm": {
+      "rotation_deg": 135.97,
+      "visible_length_scale": 0.933974
+     },
+     "R_axe": {
+      "rotation_deg": 60.607,
+      "visible_length_scale": 0.99552,
+      "blade_facing_angle_deg": 48.677
+     },
+     "R_thigh": {
+      "rotation_deg": 19.799,
+      "visible_length_scale": 0.653247
+     },
+     "R_shin": {
+      "rotation_deg": -7.076,
+      "visible_length_scale": 1.124421
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": 1.49,
+      "visible_length_scale": 0.989417
+     },
+     "L_forearm": {
+      "rotation_deg": -166.062,
+      "visible_length_scale": 1.105851
+     },
+     "L_axe": {
+      "rotation_deg": 28.067,
+      "visible_length_scale": 1.034002,
+      "blade_facing_angle_deg": 68.735
+     },
+     "L_thigh": {
+      "rotation_deg": -93.675,
+      "visible_length_scale": 0.082065
+     },
+     "L_shin": {
+      "rotation_deg": -7.98,
+      "visible_length_scale": 0.995869
+     },
+     "L_boot": {
+      "rotation_deg": 134.262,
+      "visible_length_scale": 1.007024
+     }
+    }
+   },
+   "f03": {
+    "joints": {
+     "pelvis": [
+      258.778,
+      229.665
+     ],
+     "chest": [
+      258.778,
+      199.06
+     ],
+     "neck": [
+      258.219,
+      134.051
+     ],
+     "head_top": [
+      258.504,
+      88.029
+     ],
+     "R_shoulder": [
+      311.367,
+      144.689
+     ],
+     "R_elbow": [
+      325.214,
+      211.995
+     ],
+     "R_wrist": [
+      361.189,
+      167.872
+     ],
+     "R_axe_grip": [
+      361.136,
+      175.949
+     ],
+     "R_axe_head_centre": [
+      400.088,
+      208.092
+     ],
+     "R_hip": [
+      284.151,
+      232.594
+     ],
+     "R_knee": [
+      283.034,
+      266.767
+     ],
+     "R_ankle": [
+      275.64,
+      306.537
+     ],
+     "R_toe": [
+      293.676,
+      305.321
+     ],
+     "R_heel": [
+      264.904,
+      332.956
+     ],
+     "L_shoulder": [
+      204.078,
+      139.051
+     ],
+     "L_elbow": [
+      199.297,
+      207.586
+     ],
+     "L_wrist": [
+      187.163,
+      170.114
+     ],
+     "L_axe_grip": [
+      186.616,
+      178.46
+     ],
+     "L_axe_head_centre": [
+      211.183,
+      209.231
+     ],
+     "L_hip": [
+      233.405,
+      226.737
+     ],
+     "L_knee": [
+      242.112,
+      224.916
+     ],
+     "L_ankle": [
+      257.208,
+      259.418
+     ],
+     "L_toe": [
+      276.161,
+      253.052
+     ],
+     "L_heel": [
+      247.607,
+      287.096
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "R_thigh",
+     "R_shin",
+     "L_thigh",
+     "L_axe",
+     "R_boot",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.465,
+      "visible_length_scale": 0.984346
+     },
+     "R_upperarm": {
+      "rotation_deg": 11.625,
+      "visible_length_scale": 1.005013
+     },
+     "R_forearm": {
+      "rotation_deg": 140.808,
+      "visible_length_scale": 1.014406
+     },
+     "R_axe": {
+      "rotation_deg": 50.471,
+      "visible_length_scale": 1.008557,
+      "blade_facing_angle_deg": 50.651
+     },
+     "R_thigh": {
+      "rotation_deg": -1.872,
+      "visible_length_scale": 0.957756
+     },
+     "R_shin": {
+      "rotation_deg": -10.532,
+      "visible_length_scale": 1.113064
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": -3.99,
+      "visible_length_scale": 0.998436
+     },
+     "L_forearm": {
+      "rotation_deg": -162.057,
+      "visible_length_scale": 1.027675
+     },
+     "L_axe": {
+      "rotation_deg": 38.603,
+      "visible_length_scale": 0.9705,
+      "blade_facing_angle_deg": 69.589
+     },
+     "L_thigh": {
+      "rotation_deg": 101.813,
+      "visible_length_scale": 0.243725
+     },
+     "L_shin": {
+      "rotation_deg": 23.631,
+      "visible_length_scale": 1.01357
+     },
+     "L_boot": {
+      "rotation_deg": 140.012,
+      "visible_length_scale": 1.113789
+     }
+    }
+   },
+   "f04": {
+    "joints": {
+     "pelvis": [
+      257.815,
+      235.124
+     ],
+     "chest": [
+      257.815,
+      204.519
+     ],
+     "neck": [
+      257.529,
+      139.52
+     ],
+     "head_top": [
+      257.785,
+      93.496
+     ],
+     "R_shoulder": [
+      311.137,
+      148.794
+     ],
+     "R_elbow": [
+      331.316,
+      214.562
+     ],
+     "R_wrist": [
+      367.03,
+      166.261
+     ],
+     "R_axe_grip": [
+      366.216,
+      174.645
+     ],
+     "R_axe_head_centre": [
+      400.834,
+      213.029
+     ],
+     "R_hip": [
+      282.945,
+      238.537
+     ],
+     "R_knee": [
+      276.648,
+      274.054
+     ],
+     "R_ankle": [
+      263.64,
+      312.537
+     ],
+     "R_toe": [
+      281.676,
+      311.321
+     ],
+     "R_heel": [
+      252.904,
+      338.956
+     ],
+     "L_shoulder": [
+      203.412,
+      145.904
+     ],
+     "L_elbow": [
+      193.588,
+      213.973
+     ],
+     "L_wrist": [
+      179.882,
+      180.311
+     ],
+     "L_axe_grip": [
+      180.021,
+      188.359
+     ],
+     "L_axe_head_centre": [
+      208.437,
+      213.326
+     ],
+     "L_hip": [
+      232.686,
+      231.711
+     ],
+     "L_knee": [
+      250.456,
+      244.432
+     ],
+     "L_ankle": [
+      269.208,
+      262.463
+     ],
+     "L_toe": [
+      287.865,
+      257.935
+     ],
+     "L_heel": [
+      259.183,
+      289.737
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "L_upperarm",
+     "R_forearm",
+     "L_forearm",
+     "R_axe",
+     "torso",
+     "R_thigh",
+     "R_shin",
+     "L_axe",
+     "L_thigh",
+     "R_boot",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.239,
+      "visible_length_scale": 0.984476
+     },
+     "R_upperarm": {
+      "rotation_deg": 17.057,
+      "visible_length_scale": 1.00616
+     },
+     "R_forearm": {
+      "rotation_deg": 143.521,
+      "visible_length_scale": 1.070364
+     },
+     "R_axe": {
+      "rotation_deg": 42.047,
+      "visible_length_scale": 1.032263,
+      "blade_facing_angle_deg": 52.689
+     },
+     "R_thigh": {
+      "rotation_deg": -10.054,
+      "visible_length_scale": 1.010408
+     },
+     "R_shin": {
+      "rotation_deg": -18.676,
+      "visible_length_scale": 1.117756
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": -8.212,
+      "visible_length_scale": 0.999492
+     },
+     "L_forearm": {
+      "rotation_deg": -157.846,
+      "visible_length_scale": 0.948298
+     },
+     "L_axe": {
+      "rotation_deg": 48.697,
+      "visible_length_scale": 0.932325,
+      "blade_facing_angle_deg": 70.273
+     },
+     "L_thigh": {
+      "rotation_deg": 54.402,
+      "visible_length_scale": 0.598778
+     },
+     "L_shin": {
+      "rotation_deg": 46.123,
+      "visible_length_scale": 0.700147
+     },
+     "L_boot": {
+      "rotation_deg": 137.953,
+      "visible_length_scale": 1.073486
+     }
+    }
+   },
+   "f05": {
+    "joints": {
+     "pelvis": [
+      256.5,
+      246.346
+     ],
+     "chest": [
+      256.5,
+      215.741
+     ],
+     "neck": [
+      256.313,
+      150.744
+     ],
+     "head_top": [
+      256.559,
+      104.72
+     ],
+     "R_shoulder": [
+      310.055,
+      159.517
+     ],
+     "R_elbow": [
+      333.803,
+      223.933
+     ],
+     "R_wrist": [
+      369.809,
+      173.919
+     ],
+     "R_axe_grip": [
+      368.56,
+      182.427
+     ],
+     "R_axe_head_centre": [
+      400.508,
+      224.205
+     ],
+     "R_hip": [
+      281.531,
+      249.935
+     ],
+     "R_knee": [
+      268.287,
+      286.115
+     ],
+     "R_ankle": [
+      251.64,
+      318.537
+     ],
+     "R_toe": [
+      269.676,
+      317.321
+     ],
+     "R_heel": [
+      240.904,
+      344.956
+     ],
+     "L_shoulder": [
+      202.241,
+      157.634
+     ],
+     "L_elbow": [
+      190.3,
+      224.974
+     ],
+     "L_wrist": [
+      175.945,
+      194.205
+     ],
+     "L_axe_grip": [
+      176.48,
+      202.041
+     ],
+     "L_axe_head_centre": [
+      206.959,
+      223.517
+     ],
+     "L_hip": [
+      231.469,
+      242.757
+     ],
+     "L_knee": [
+      243.402,
+      245.218
+     ],
+     "L_ankle": [
+      261.36,
+      277.046
+     ],
+     "L_toe": [
+      279.396,
+      275.831
+     ],
+     "L_heel": [
+      250.625,
+      303.465
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "L_upperarm",
+     "R_upperarm",
+     "R_forearm",
+     "L_forearm",
+     "R_axe",
+     "torso",
+     "R_shin",
+     "R_thigh",
+     "R_boot",
+     "L_axe",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.156,
+      "visible_length_scale": 0.984494
+     },
+     "R_upperarm": {
+      "rotation_deg": 20.237,
+      "visible_length_scale": 1.004114
+     },
+     "R_forearm": {
+      "rotation_deg": 144.249,
+      "visible_length_scale": 1.098089
+     },
+     "R_axe": {
+      "rotation_deg": 37.405,
+      "visible_length_scale": 1.05033,
+      "blade_facing_angle_deg": 53.887
+     },
+     "R_thigh": {
+      "rotation_deg": -20.106,
+      "visible_length_scale": 1.079231
+     },
+     "R_shin": {
+      "rotation_deg": -27.178,
+      "visible_length_scale": 1.002848
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": -10.055,
+      "visible_length_scale": 0.993915
+     },
+     "L_forearm": {
+      "rotation_deg": -154.989,
+      "visible_length_scale": 0.885875
+     },
+     "L_axe": {
+      "rotation_deg": 54.831,
+      "visible_length_scale": 0.918992,
+      "blade_facing_angle_deg": 70.731
+     },
+     "L_thigh": {
+      "rotation_deg": 78.347,
+      "visible_length_scale": 0.333833
+     },
+     "L_shin": {
+      "rotation_deg": 29.433,
+      "visible_length_scale": 0.983552
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f06": {
+    "joints": {
+     "pelvis": [
+      255.185,
+      251.628
+     ],
+     "chest": [
+      255.185,
+      221.023
+     ],
+     "neck": [
+      254.898,
+      156.024
+     ],
+     "head_top": [
+      255.155,
+      110.001
+     ],
+     "R_shoulder": [
+      308.506,
+      165.299
+     ],
+     "R_elbow": [
+      332.2,
+      229.744
+     ],
+     "R_wrist": [
+      369.193,
+      180.167
+     ],
+     "R_axe_grip": [
+      367.943,
+      188.676
+     ],
+     "R_axe_head_centre": [
+      399.892,
+      230.454
+     ],
+     "R_hip": [
+      280.314,
+      255.041
+     ],
+     "R_knee": [
+      255.428,
+      287.234
+     ],
+     "R_ankle": [
+      243.792,
+      304.907
+     ],
+     "R_toe": [
+      257.345,
+      319.413
+     ],
+     "R_heel": [
+      230.634,
+      325.018
+     ],
+     "L_shoulder": [
+      200.781,
+      162.408
+     ],
+     "L_elbow": [
+      189.874,
+      229.599
+     ],
+     "L_wrist": [
+      176.381,
+      199.927
+     ],
+     "L_axe_grip": [
+      176.917,
+      207.762
+     ],
+     "L_axe_head_centre": [
+      207.395,
+      229.238
+     ],
+     "L_hip": [
+      230.055,
+      248.215
+     ],
+     "L_knee": [
+      237.247,
+      244.06
+     ],
+     "L_ankle": [
+      249.36,
+      283.046
+     ],
+     "L_toe": [
+      267.396,
+      281.831
+     ],
+     "L_heel": [
+      238.625,
+      309.465
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "L_upperarm",
+     "R_upperarm",
+     "R_forearm",
+     "L_forearm",
+     "R_boot",
+     "R_axe",
+     "R_shin",
+     "torso",
+     "R_thigh",
+     "L_axe",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.238,
+      "visible_length_scale": 0.984464
+     },
+     "R_upperarm": {
+      "rotation_deg": 20.187,
+      "visible_length_scale": 1.004239
+     },
+     "R_forearm": {
+      "rotation_deg": 143.271,
+      "visible_length_scale": 1.102205
+     },
+     "R_axe": {
+      "rotation_deg": 37.406,
+      "visible_length_scale": 1.050342,
+      "blade_facing_angle_deg": 54.023
+     },
+     "R_thigh": {
+      "rotation_deg": -37.705,
+      "visible_length_scale": 1.139806
+     },
+     "R_shin": {
+      "rotation_deg": -33.361,
+      "visible_length_scale": 0.58223
+     },
+     "R_boot": {
+      "rotation_deg": 101.851,
+      "visible_length_scale": 0.684146
+     },
+     "L_upperarm": {
+      "rotation_deg": -9.22,
+      "visible_length_scale": 0.989264
+     },
+     "L_forearm": {
+      "rotation_deg": -155.547,
+      "visible_length_scale": 0.850468
+     },
+     "L_axe": {
+      "rotation_deg": 54.83,
+      "visible_length_scale": 0.918972,
+      "blade_facing_angle_deg": 70.637
+     },
+     "L_thigh": {
+      "rotation_deg": 120.016,
+      "visible_length_scale": 0.227575
+     },
+     "L_shin": {
+      "rotation_deg": 17.26,
+      "visible_length_scale": 1.098736
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f07": {
+    "joints": {
+     "pelvis": [
+      254.222,
+      245.207
+     ],
+     "chest": [
+      254.222,
+      214.602
+     ],
+     "neck": [
+      253.663,
+      149.592
+     ],
+     "head_top": [
+      253.948,
+      103.571
+     ],
+     "R_shoulder": [
+      306.811,
+      160.231
+     ],
+     "R_elbow": [
+      326.769,
+      226.075
+     ],
+     "R_wrist": [
+      365.311,
+      179.0
+     ],
+     "R_axe_grip": [
+      364.496,
+      187.384
+     ],
+     "R_axe_head_centre": [
+      399.115,
+      225.768
+     ],
+     "R_hip": [
+      279.595,
+      248.136
+     ],
+     "R_knee": [
+      265.039,
+      280.191
+     ],
+     "R_ankle": [
+      255.792,
+      291.596
+     ],
+     "R_toe": [
+      272.498,
+      296.092
+     ],
+     "R_heel": [
+      243.992,
+      316.162
+     ],
+     "L_shoulder": [
+      199.522,
+      154.593
+     ],
+     "L_elbow": [
+      192.094,
+      222.386
+     ],
+     "L_wrist": [
+      181.128,
+      191.568
+     ],
+     "L_axe_grip": [
+      181.267,
+      199.616
+     ],
+     "L_axe_head_centre": [
+      209.683,
+      224.583
+     ],
+     "L_hip": [
+      228.849,
+      242.278
+     ],
+     "L_knee": [
+      233.388,
+      248.544
+     ],
+     "L_ankle": [
+      237.36,
+      289.046
+     ],
+     "L_toe": [
+      255.396,
+      287.831
+     ],
+     "L_heel": [
+      226.625,
+      315.465
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "L_upperarm",
+     "R_forearm",
+     "L_forearm",
+     "R_axe",
+     "torso",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "L_axe",
+     "L_thigh",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.465,
+      "visible_length_scale": 0.984335
+     },
+     "R_upperarm": {
+      "rotation_deg": 16.863,
+      "visible_length_scale": 1.006281
+     },
+     "R_forearm": {
+      "rotation_deg": 140.692,
+      "visible_length_scale": 1.084079
+     },
+     "R_axe": {
+      "rotation_deg": 42.048,
+      "visible_length_scale": 1.032277,
+      "blade_facing_angle_deg": 52.689
+     },
+     "R_thigh": {
+      "rotation_deg": -24.423,
+      "visible_length_scale": 0.986156
+     },
+     "R_shin": {
+      "rotation_deg": -39.035,
+      "visible_length_scale": 0.404009
+     },
+     "R_boot": {
+      "rotation_deg": 125.148,
+      "visible_length_scale": 0.873898
+     },
+     "L_upperarm": {
+      "rotation_deg": -6.253,
+      "visible_length_scale": 0.991128
+     },
+     "L_forearm": {
+      "rotation_deg": -160.413,
+      "visible_length_scale": 0.85347
+     },
+     "L_axe": {
+      "rotation_deg": 48.697,
+      "visible_length_scale": 0.932325,
+      "blade_facing_angle_deg": 70.341
+     },
+     "L_thigh": {
+      "rotation_deg": 35.919,
+      "visible_length_scale": 0.211994
+     },
+     "L_shin": {
+      "rotation_deg": 5.601,
+      "visible_length_scale": 1.095288
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f08": {
+    "joints": {
+     "pelvis": [
+      253.87,
+      233.151
+     ],
+     "chest": [
+      253.87,
+      202.546
+     ],
+     "neck": [
+      252.941,
+      137.51
+     ],
+     "head_top": [
+      253.264,
+      91.492
+     ],
+     "R_shoulder": [
+      305.237,
+      149.99
+     ],
+     "R_elbow": [
+      318.585,
+      217.369
+     ],
+     "R_wrist": [
+      358.763,
+      175.024
+     ],
+     "R_axe_grip": [
+      358.71,
+      183.102
+     ],
+     "R_axe_head_centre": [
+      397.662,
+      215.245
+     ],
+     "R_hip": [
+      279.514,
+      235.412
+     ],
+     "R_knee": [
+      295.207,
+      240.842
+     ],
+     "R_ankle": [
+      287.64,
+      275.463
+     ],
+     "R_toe": [
+      305.739,
+      273.933
+     ],
+     "R_heel": [
+      276.969,
+      301.971
+     ],
+     "L_shoulder": [
+      198.996,
+      140.623
+     ],
+     "L_elbow": [
+      196.498,
+      209.211
+     ],
+     "L_wrist": [
+      188.989,
+      175.14
+     ],
+     "L_axe_grip": [
+      188.442,
+      183.487
+     ],
+     "L_axe_head_centre": [
+      213.009,
+      214.257
+     ],
+     "L_hip": [
+      228.225,
+      230.89
+     ],
+     "L_knee": [
+      227.253,
+      254.177
+     ],
+     "L_ankle": [
+      225.36,
+      295.046
+     ],
+     "L_toe": [
+      243.396,
+      293.831
+     ],
+     "L_heel": [
+      214.625,
+      321.465
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "R_thigh",
+     "L_thigh",
+     "R_shin",
+     "L_axe",
+     "R_boot",
+     "L_shin",
+     "L_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -0.773,
+      "visible_length_scale": 0.984015
+     },
+     "R_upperarm": {
+      "rotation_deg": 11.205,
+      "visible_length_scale": 1.004615
+     },
+     "R_forearm": {
+      "rotation_deg": 136.504,
+      "visible_length_scale": 1.04011
+     },
+     "R_axe": {
+      "rotation_deg": 50.471,
+      "visible_length_scale": 1.008557,
+      "blade_facing_angle_deg": 50.724
+     },
+     "R_thigh": {
+      "rotation_deg": 70.914,
+      "visible_length_scale": 0.465159
+     },
+     "R_shin": {
+      "rotation_deg": -12.329,
+      "visible_length_scale": 0.975121
+     },
+     "R_boot": {
+      "rotation_deg": 134.262,
+      "visible_length_scale": 1.007006
+     },
+     "L_upperarm": {
+      "rotation_deg": -2.086,
+      "visible_length_scale": 0.997446
+     },
+     "L_forearm": {
+      "rotation_deg": -167.571,
+      "visible_length_scale": 0.910291
+     },
+     "L_axe": {
+      "rotation_deg": 38.604,
+      "visible_length_scale": 0.970481,
+      "blade_facing_angle_deg": 69.614
+     },
+     "L_thigh": {
+      "rotation_deg": -2.39,
+      "visible_length_scale": 0.638597
+     },
+     "L_shin": {
+      "rotation_deg": -2.652,
+      "visible_length_scale": 1.101115
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f09": {
+    "joints": {
+     "pelvis": [
+      254.222,
+      227.387
+     ],
+     "chest": [
+      254.222,
+      196.782
+     ],
+     "neck": [
+      252.929,
+      131.708
+     ],
+     "head_top": [
+      253.29,
+      85.693
+     ],
+     "R_shoulder": [
+      304.117,
+      145.995
+     ],
+     "R_elbow": [
+      309.903,
+      213.562
+     ],
+     "R_wrist": [
+      350.97,
+      177.82
+     ],
+     "R_axe_grip": [
+      351.797,
+      185.406
+     ],
+     "R_axe_head_centre": [
+      395.229,
+      209.872
+     ],
+     "R_hip": [
+      280.068,
+      228.974
+     ],
+     "R_knee": [
+      301.351,
+      231.522
+     ],
+     "R_ankle": [
+      319.487,
+      264.909
+     ],
+     "R_toe": [
+      338.44,
+      258.543
+     ],
+     "R_heel": [
+      309.886,
+      292.587
+     ],
+     "L_shoulder": [
+      199.442,
+      132.945
+     ],
+     "L_elbow": [
+      202.462,
+      201.687
+     ],
+     "L_wrist": [
+      197.779,
+      163.256
+     ],
+     "L_axe_grip": [
+      196.45,
+      171.83
+     ],
+     "L_axe_head_centre": [
+      216.187,
+      208.848
+     ],
+     "L_hip": [
+      228.376,
+      225.801
+     ],
+     "L_knee": [
+      220.682,
+      261.447
+     ],
+     "L_ankle": [
+      213.36,
+      301.046
+     ],
+     "L_toe": [
+      231.396,
+      299.831
+     ],
+     "L_heel": [
+      202.625,
+      327.465
+     ]
+    },
+    "draw_order": [
+     "cape",
+     "R_upperarm",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "L_thigh",
+     "R_thigh",
+     "L_shin",
+     "L_axe",
+     "R_shin",
+     "L_boot",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.077,
+      "visible_length_scale": 0.983557
+     },
+     "R_upperarm": {
+      "rotation_deg": 4.894,
+      "visible_length_scale": 0.991831
+     },
+     "R_forearm": {
+      "rotation_deg": 131.034,
+      "visible_length_scale": 0.970081
+     },
+     "R_axe": {
+      "rotation_deg": 60.607,
+      "visible_length_scale": 0.99552,
+      "blade_facing_angle_deg": 48.806
+     },
+     "R_thigh": {
+      "rotation_deg": 83.173,
+      "visible_length_scale": 0.600431
+     },
+     "R_shin": {
+      "rotation_deg": 28.511,
+      "visible_length_scale": 1.045466
+     },
+     "R_boot": {
+      "rotation_deg": 140.012,
+      "visible_length_scale": 1.11381
+     },
+     "L_upperarm": {
+      "rotation_deg": 2.516,
+      "visible_length_scale": 0.999987
+     },
+     "L_forearm": {
+      "rotation_deg": -173.052,
+      "visible_length_scale": 1.010132
+     },
+     "L_axe": {
+      "rotation_deg": 28.065,
+      "visible_length_scale": 1.033991,
+      "blade_facing_angle_deg": 68.641
+     },
+     "L_thigh": {
+      "rotation_deg": -12.18,
+      "visible_length_scale": 0.999158
+     },
+     "L_shin": {
+      "rotation_deg": -10.476,
+      "visible_length_scale": 1.083821
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f10": {
+    "joints": {
+     "pelvis": [
+      255.185,
+      233.809
+     ],
+     "chest": [
+      255.185,
+      203.203
+     ],
+     "neck": [
+      253.628,
+      138.093
+     ],
+     "head_top": [
+      254.017,
+      92.081
+     ],
+     "R_shoulder": [
+      303.848,
+      153.675
+     ],
+     "R_elbow": [
+      303.579,
+      219.924
+     ],
+     "R_wrist": [
+      344.128,
+      190.867
+     ],
+     "R_axe_grip": [
+      345.707,
+      197.915
+     ],
+     "R_axe_head_centre": [
+      392.503,
+      215.427
+     ],
+     "R_hip": [
+      281.133,
+      234.899
+     ],
+     "R_knee": [
+      305.512,
+      249.77
+     ],
+     "R_ankle": [
+      328.916,
+      266.266
+     ],
+     "R_toe": [
+      347.573,
+      261.738
+     ],
+     "R_heel": [
+      318.891,
+      293.54
+     ],
+     "L_shoulder": [
+      200.642,
+      137.969
+     ],
+     "L_elbow": [
+      208.691,
+      205.874
+     ],
+     "L_wrist": [
+      204.998,
+      163.54
+     ],
+     "L_axe_grip": [
+      203.009,
+      172.211
+     ],
+     "L_axe_head_centre": [
+      218.281,
+      214.177
+     ],
+     "L_hip": [
+      229.236,
+      232.718
+     ],
+     "L_knee": [
+      214.241,
+      268.221
+     ],
+     "L_ankle": [
+      201.36,
+      307.046
+     ],
+     "L_toe": [
+      219.396,
+      305.831
+     ],
+     "L_heel": [
+      190.625,
+      333.465
+     ]
+    },
+    "draw_order": [
+     "R_upperarm",
+     "cape",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "L_thigh",
+     "R_thigh",
+     "L_shin",
+     "L_boot",
+     "L_axe",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 1.0
+     },
+     "cape": {
+      "rotation_deg": -1.297,
+      "visible_length_scale": 0.983117
+     },
+     "R_upperarm": {
+      "rotation_deg": -0.233,
+      "visible_length_scale": 0.968945
+     },
+     "R_forearm": {
+      "rotation_deg": 125.625,
+      "visible_length_scale": 0.888876
+     },
+     "R_axe": {
+      "rotation_deg": 69.483,
+      "visible_length_scale": 0.997844,
+      "blade_facing_angle_deg": 47.451
+     },
+     "R_thigh": {
+      "rotation_deg": 58.617,
+      "visible_length_scale": 0.799921
+     },
+     "R_shin": {
+      "rotation_deg": 54.822,
+      "visible_length_scale": 0.787874
+     },
+     "R_boot": {
+      "rotation_deg": 137.953,
+      "visible_length_scale": 1.073505
+     },
+     "L_upperarm": {
+      "rotation_deg": 6.76,
+      "visible_length_scale": 0.993768
+     },
+     "L_forearm": {
+      "rotation_deg": -175.014,
+      "visible_length_scale": 1.108745
+     },
+     "L_axe": {
+      "rotation_deg": 19.997,
+      "visible_length_scale": 1.100725,
+      "blade_facing_angle_deg": 67.878
+     },
+     "L_thigh": {
+      "rotation_deg": -22.897,
+      "visible_length_scale": 1.055953
+     },
+     "L_shin": {
+      "rotation_deg": -18.354,
+      "visible_length_scale": 1.100932
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   },
+   "f11": {
+    "joints": {
+     "pelvis": [
+      256.5,
+      246.346
+     ],
+     "chest": [
+      256.5,
+      215.741
+     ],
+     "neck": [
+      254.848,
+      150.615
+     ],
+     "head_top": [
+      255.247,
+      104.604
+     ],
+     "R_shoulder": [
+      304.68,
+      166.666
+     ],
+     "R_elbow": [
+      301.42,
+      231.557
+     ],
+     "R_wrist": [
+      340.431,
+      206.489
+     ],
+     "R_axe_grip": [
+      342.435,
+      213.182
+     ],
+     "R_axe_head_centre": [
+      390.936,
+      226.59
+     ],
+     "R_hip": [
+      282.477,
+      247.254
+     ],
+     "R_knee": [
+      304.068,
+      253.605
+     ],
+     "R_ankle": [
+      323.64,
+      282.537
+     ],
+     "R_toe": [
+      341.676,
+      281.321
+     ],
+     "R_heel": [
+      312.904,
+      308.956
+     ],
+     "L_shoulder": [
+      202.08,
+      149.997
+     ],
+     "L_elbow": [
+      213.2,
+      216.738
+     ],
+     "L_wrist": [
+      208.74,
+      172.081
+     ],
+     "L_axe_grip": [
+      206.38,
+      180.764
+     ],
+     "L_axe_head_centre": [
+      218.977,
+      225.368
+     ],
+     "L_hip": [
+      230.523,
+      245.438
+     ],
+     "L_knee": [
+      206.534,
+      277.987
+     ],
+     "L_ankle": [
+      189.36,
+      313.046
+     ],
+     "L_toe": [
+      207.396,
+      311.831
+     ],
+     "L_heel": [
+      178.625,
+      339.465
+     ]
+    },
+    "draw_order": [
+     "R_upperarm",
+     "cape",
+     "R_forearm",
+     "R_axe",
+     "torso",
+     "L_upperarm",
+     "L_forearm",
+     "L_thigh",
+     "L_shin",
+     "R_thigh",
+     "L_boot",
+     "L_axe",
+     "R_shin",
+     "R_boot"
+    ],
+    "parts": {
+     "torso": {
+      "rotation_deg": 180.0,
+      "visible_length_scale": 0.999967
+     },
+     "cape": {
+      "rotation_deg": -1.377,
+      "visible_length_scale": 0.982925
+     },
+     "R_upperarm": {
+      "rotation_deg": -2.876,
+      "visible_length_scale": 0.950273
+     },
+     "R_forearm": {
+      "rotation_deg": 122.724,
+      "visible_length_scale": 0.826257
+     },
+     "R_axe": {
+      "rotation_deg": 74.547,
+      "visible_length_scale": 1.00493,
+      "blade_facing_angle_deg": 46.856
+     },
+     "R_thigh": {
+      "rotation_deg": 73.609,
+      "visible_length_scale": 0.630423
+     },
+     "R_shin": {
+      "rotation_deg": 34.078,
+      "visible_length_scale": 0.961142
+     },
+     "R_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 1.000018
+     },
+     "L_upperarm": {
+      "rotation_deg": 9.459,
+      "visible_length_scale": 0.983314
+     },
+     "L_forearm": {
+      "rotation_deg": -174.297,
+      "visible_length_scale": 1.170956
+     },
+     "L_axe": {
+      "rotation_deg": 15.771,
+      "visible_length_scale": 1.142385,
+      "blade_facing_angle_deg": 67.413
+     },
+     "L_thigh": {
+      "rotation_deg": -36.391,
+      "visible_length_scale": 1.107853
+     },
+     "L_shin": {
+      "rotation_deg": -26.098,
+      "visible_length_scale": 1.050696
+     },
+     "L_boot": {
+      "rotation_deg": 133.845,
+      "visible_length_scale": 0.999965
+     }
+    }
+   }
+  },
+  "idle_E": {
+   "joints": {
+    "pelvis": [
+     256.5,
+     226.916
+    ],
+    "chest": [
+     256.5,
+     196.31
+    ],
+    "neck": [
+     256.046,
+     129.81
+    ],
+    "head_top": [
+     256.369,
+     83.792
+    ],
+    "R_shoulder": [
+     308.304,
+     142.25
+    ],
+    "R_elbow": [
+     317.95,
+     209.939
+    ],
+    "R_wrist": [
+     357.64,
+     170.261
+    ],
+    "R_axe_grip": [
+     358.027,
+     178.11
+    ],
+    "R_axe_head_centre": [
+     399.295,
+     206.47
+    ],
+    "R_hip": [
+     282.144,
+     229.177
+    ],
+    "R_knee": [
+     291.454,
+     263.641
+    ],
+    "R_ankle": [
+     298.912,
+     299.21
+    ],
+    "R_toe": [
+     316.948,
+     297.994
+    ],
+    "R_heel": [
+     288.177,
+     325.629
+    ],
+    "L_shoulder": [
+     202.063,
+     132.883
+    ],
+    "L_elbow": [
+     201.893,
+     201.692
+    ],
+    "L_wrist": [
+     193.885,
+     164.211
+    ],
+    "L_axe_grip": [
+     192.945,
+     172.687
+    ],
+    "L_axe_head_centre": [
+     215.144,
+     206.647
+    ],
+    "L_hip": [
+     230.856,
+     224.655
+    ],
+    "L_knee": [
+     222.335,
+     260.144
+    ],
+    "L_ankle": [
+     214.088,
+     296.373
+    ],
+    "L_toe": [
+     232.124,
+     295.157
+    ],
+    "L_heel": [
+     203.352,
+     322.792
+    ]
+   },
+   "draw_order": [
+    "cape",
+    "R_upperarm",
+    "R_forearm",
+    "R_axe",
+    "torso",
+    "L_upperarm",
+    "L_forearm",
+    "R_thigh",
+    "L_thigh",
+    "R_shin",
+    "L_axe",
+    "L_shin",
+    "R_boot",
+    "L_boot"
+   ],
+   "parts": {
+    "torso": {
+     "rotation_deg": 180.0,
+     "visible_length_scale": 1.0
+    },
+    "cape": {
+     "rotation_deg": -1.139,
+     "visible_length_scale": 1.0
+    },
+    "R_upperarm": {
+     "rotation_deg": 8.11,
+     "visible_length_scale": 1.0
+    },
+    "R_forearm": {
+     "rotation_deg": 134.991,
+     "visible_length_scale": 1.0
+    },
+    "R_axe": {
+     "rotation_deg": 55.503,
+     "visible_length_scale": 1.0,
+     "blade_facing_angle_deg": 49.65
+    },
+    "R_thigh": {
+     "rotation_deg": 15.117,
+     "visible_length_scale": 1.0
+    },
+    "R_shin": {
+     "rotation_deg": 11.842,
+     "visible_length_scale": 1.0
+    },
+    "R_boot": {
+     "rotation_deg": 133.846,
+     "visible_length_scale": 1.0
+    },
+    "L_upperarm": {
+     "rotation_deg": -0.142,
+     "visible_length_scale": 1.0
+    },
+    "L_forearm": {
+     "rotation_deg": -167.94,
+     "visible_length_scale": 1.0
+    },
+    "L_axe": {
+     "rotation_deg": 33.172,
+     "visible_length_scale": 1.0,
+     "blade_facing_angle_deg": 69.181
+    },
+    "L_thigh": {
+     "rotation_deg": -13.501,
+     "visible_length_scale": 1.0
+    },
+    "L_shin": {
+     "rotation_deg": -12.824,
+     "visible_length_scale": 1.0
+    },
+    "L_boot": {
+     "rotation_deg": 133.845,
+     "visible_length_scale": 1.0
+    }
+   }
+  }
+ }
+}
