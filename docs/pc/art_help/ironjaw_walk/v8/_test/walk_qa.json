@@ -1,0 +1,4642 @@
+{
+ "frames": {
+  "S_f00": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 151,
+     "top": 82,
+     "bottom": 15
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33236
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2017,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 151,
+     "top": 82,
+     "bottom": 15
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33236
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2017,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2397,
+     "L": 415
+    },
+    "boot_visible_px": {
+     "R": 1183,
+     "L": 134
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 21305,
+     "back": 4370
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1083,
+      "identical_frac": 0.9409
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f01": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 154,
+     "top": 90,
+     "bottom": 21
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32678
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 1947,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 154,
+     "top": 90,
+     "bottom": 21
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32678
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 1947,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1900,
+     "L": 325
+    },
+    "boot_visible_px": {
+     "R": 1115,
+     "L": 21
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 90,
+    "upper_visible_px": {
+     "front": 21122,
+     "back": 4300
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1059,
+      "identical_frac": 0.9603
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f02": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 120,
+     "right": 152,
+     "top": 84,
+     "bottom": 27
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2021,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 120,
+     "right": 152,
+     "top": 84,
+     "bottom": 27
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2021,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1839,
+     "L": 945
+    },
+    "boot_visible_px": {
+     "R": 1092,
+     "L": 211
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 84,
+    "upper_visible_px": {
+     "front": 20255,
+     "back": 4093
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1071,
+      "identical_frac": 0.9664
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f03": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 119,
+     "right": 145,
+     "top": 72,
+     "bottom": 33
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34070
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2181,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 119,
+     "right": 145,
+     "top": 72,
+     "bottom": 33
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34070
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2181,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1994,
+     "L": 1846
+    },
+    "boot_visible_px": {
+     "R": 1135,
+     "L": 863
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 72,
+    "upper_visible_px": {
+     "front": 20776,
+     "back": 3864
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1088,
+      "identical_frac": 0.0395
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f04": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 120,
+     "right": 135,
+     "top": 66,
+     "bottom": 39
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34834
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2389,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 120,
+     "right": 135,
+     "top": 66,
+     "bottom": 39
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34834
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2389,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2060,
+     "L": 2756
+    },
+    "boot_visible_px": {
+     "R": 1197,
+     "L": 1115
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 66,
+    "upper_visible_px": {
+     "front": 20775,
+     "back": 3659
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 939,
+      "identical_frac": 0.0415
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f05": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 124,
+     "top": 71,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34820
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2472,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 124,
+     "top": 71,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34820
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2472,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1579,
+     "L": 2640
+    },
+    "boot_visible_px": {
+     "R": 955,
+     "L": 1156
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 71,
+    "upper_visible_px": {
+     "front": 21479,
+     "back": 3524
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 527,
+      "identical_frac": 0.0323
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f06": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 115,
+     "top": 83,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33873
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2539,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 115,
+     "top": 83,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33873
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2539,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 844,
+     "L": 2579
+    },
+    "boot_visible_px": {
+     "R": 608,
+     "L": 1207
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 83,
+    "upper_visible_px": {
+     "front": 21499,
+     "back": 3465
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1086,
+      "identical_frac": 0.9549
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f07": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 125,
+     "right": 112,
+     "top": 88,
+     "bottom": 34
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32599
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2366,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 125,
+     "right": 112,
+     "top": 88,
+     "bottom": 34
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32599
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2366,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 617,
+     "L": 2327
+    },
+    "boot_visible_px": {
+     "R": 323,
+     "L": 1129
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 88,
+    "upper_visible_px": {
+     "front": 21511,
+     "back": 3113
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1052,
+      "identical_frac": 0.0399
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f08": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 114,
+     "top": 82,
+     "bottom": 40
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33257
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2299,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 114,
+     "top": 82,
+     "bottom": 40
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33257
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2299,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 783,
+     "L": 2128
+    },
+    "boot_visible_px": {
+     "R": 274,
+     "L": 1107
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 21508,
+     "back": 3451
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1064,
+      "identical_frac": 0.9633
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f09": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 123,
+     "right": 121,
+     "top": 69,
+     "bottom": 47
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34522
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2364,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 123,
+     "right": 121,
+     "top": 69,
+     "bottom": 47
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34522
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2364,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1557,
+     "L": 2034
+    },
+    "boot_visible_px": {
+     "R": 992,
+     "L": 1080
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 69,
+    "upper_visible_px": {
+     "front": 21494,
+     "back": 3920
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 699,
+      "identical_frac": 0.9299
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f10": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 123,
+     "right": 133,
+     "top": 64,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34198
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2170,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 123,
+     "right": 133,
+     "top": 64,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34198
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2170,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2310,
+     "L": 1437
+    },
+    "boot_visible_px": {
+     "R": 1137,
+     "L": 701
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 64,
+    "upper_visible_px": {
+     "front": 21515,
+     "back": 4067
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 253,
+      "identical_frac": 0.8498
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "S_f11": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 143,
+     "top": 70,
+     "bottom": 25
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33656
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2107,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 143,
+     "top": 70,
+     "bottom": 25
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33656
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2107,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2594,
+     "L": 598
+    },
+    "boot_visible_px": {
+     "R": 1165,
+     "L": 289
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 70,
+    "upper_visible_px": {
+     "front": 21485,
+     "back": 4257
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 127,
+      "identical_frac": 0.5827
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f00": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 126,
+     "right": 100,
+     "top": 89,
+     "bottom": 24
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34641
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3049,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 126,
+     "right": 100,
+     "top": 89,
+     "bottom": 24
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34641
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 3049,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1737,
+     "L": 2515
+    },
+    "boot_visible_px": {
+     "R": 804,
+     "L": 1066
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 89,
+    "upper_visible_px": {
+     "front": 18300,
+     "back": 10234
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 770,
+      "identical_frac": 0.9545
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f01": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 125,
+     "right": 94,
+     "top": 84,
+     "bottom": 35
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34555
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3040,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 125,
+     "right": 94,
+     "top": 84,
+     "bottom": 35
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34555
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3040,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2040,
+     "L": 2229
+    },
+    "boot_visible_px": {
+     "R": 795,
+     "L": 1139
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 84,
+    "upper_visible_px": {
+     "front": 18393,
+     "back": 10032
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 771,
+      "identical_frac": 0.1102
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f02": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 86,
+     "top": 72,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34669
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2908,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 122,
+     "right": 86,
+     "top": 72,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34669
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2908,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2569,
+     "L": 1624
+    },
+    "boot_visible_px": {
+     "R": 794,
+     "L": 869
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 72,
+    "upper_visible_px": {
+     "front": 18479,
+     "back": 10239
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 761,
+      "identical_frac": 0.9198
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f03": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 117,
+     "right": 78,
+     "top": 66,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34626
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2775,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 117,
+     "right": 78,
+     "top": 66,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34626
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2775,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2712,
+     "L": 616
+    },
+    "boot_visible_px": {
+     "R": 778,
+     "L": 206
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 66,
+    "upper_visible_px": {
+     "front": 18638,
+     "back": 10860
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 693,
+      "identical_frac": 0.8167
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f04": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 111,
+     "right": 74,
+     "top": 72,
+     "bottom": 17
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34259
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2808,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 111,
+     "right": 74,
+     "top": 72,
+     "bottom": 17
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34259
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2808,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2077,
+     "L": 451
+    },
+    "boot_visible_px": {
+     "R": 720,
+     "L": 72
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 71,
+    "upper_visible_px": {
+     "front": 18788,
+     "back": 11167
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 697,
+      "identical_frac": 0.8235
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f05": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 107,
+     "right": 73,
+     "top": 83,
+     "bottom": 11
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33625
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2831,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 107,
+     "right": 73,
+     "top": 83,
+     "bottom": 11
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33625
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2831,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1751,
+     "L": 473
+    },
+    "boot_visible_px": {
+     "R": 790,
+     "L": 128
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 83,
+    "upper_visible_px": {
+     "front": 18969,
+     "back": 10767
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 49,
+      "identical_frac": 0.3673
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f06": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 106,
+     "right": 76,
+     "top": 88,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32683
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2684,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 106,
+     "right": 76,
+     "top": 88,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32683
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2684,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1303,
+     "L": 486
+    },
+    "boot_visible_px": {
+     "R": 733,
+     "L": 259
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 88,
+    "upper_visible_px": {
+     "front": 18974,
+     "back": 10297
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 212,
+      "identical_frac": 0.4245
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f07": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 107,
+     "right": 82,
+     "top": 81,
+     "bottom": 38
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32686
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2694,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 107,
+     "right": 82,
+     "top": 81,
+     "bottom": 38
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32686
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2694,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1122,
+     "L": 910
+    },
+    "boot_visible_px": {
+     "R": 670,
+     "L": 351
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 81,
+    "upper_visible_px": {
+     "front": 18964,
+     "back": 10040
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 347,
+      "identical_frac": 0.8329
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f08": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 111,
+     "right": 89,
+     "top": 69,
+     "bottom": 32
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34804
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2964,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 111,
+     "right": 89,
+     "top": 69,
+     "bottom": 32
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34804
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2964,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1928,
+     "L": 2127
+    },
+    "boot_visible_px": {
+     "R": 803,
+     "L": 1086
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 69,
+    "upper_visible_px": {
+     "front": 18756,
+     "back": 10295
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1020,
+      "identical_frac": 0.0755
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f09": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 116,
+     "right": 97,
+     "top": 64,
+     "bottom": 26
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35968
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3188,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 116,
+     "right": 97,
+     "top": 64,
+     "bottom": 26
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35968
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3188,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1823,
+     "L": 2893
+    },
+    "boot_visible_px": {
+     "R": 816,
+     "L": 1076
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 64,
+    "upper_visible_px": {
+     "front": 18539,
+     "back": 10850
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1052,
+      "identical_frac": 0.9544
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f10": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 121,
+     "right": 101,
+     "top": 70,
+     "bottom": 20
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     36202
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3287,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 121,
+     "right": 101,
+     "top": 70,
+     "bottom": 20
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     36202
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3287,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1867,
+     "L": 2934
+    },
+    "boot_visible_px": {
+     "R": 872,
+     "L": 1084
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 70,
+    "upper_visible_px": {
+     "front": 18413,
+     "back": 11130
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1059,
+      "identical_frac": 0.9509
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "E_f11": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 103,
+     "top": 82,
+     "bottom": 14
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3158,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 103,
+     "top": 82,
+     "bottom": 14
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3158,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1833,
+     "L": 2926
+    },
+    "boot_visible_px": {
+     "R": 849,
+     "L": 1097
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 18276,
+     "back": 10777
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 791,
+      "identical_frac": 0.9482
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f00": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 151,
+     "right": 124,
+     "top": 82,
+     "bottom": 15
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33236
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2017,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 151,
+     "right": 124,
+     "top": 82,
+     "bottom": 15
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33236
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2017,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2397,
+     "L": 415
+    },
+    "boot_visible_px": {
+     "R": 1183,
+     "L": 134
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 21305,
+     "back": 4370
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1083,
+      "identical_frac": 0.9409
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f01": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 154,
+     "right": 122,
+     "top": 90,
+     "bottom": 21
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32678
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 1947,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 154,
+     "right": 122,
+     "top": 90,
+     "bottom": 21
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32678
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 1947,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1900,
+     "L": 325
+    },
+    "boot_visible_px": {
+     "R": 1115,
+     "L": 21
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 90,
+    "upper_visible_px": {
+     "front": 21122,
+     "back": 4300
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1059,
+      "identical_frac": 0.9603
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f02": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 152,
+     "right": 120,
+     "top": 84,
+     "bottom": 27
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2021,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 152,
+     "right": 120,
+     "top": 84,
+     "bottom": 27
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2021,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1839,
+     "L": 945
+    },
+    "boot_visible_px": {
+     "R": 1092,
+     "L": 211
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 84,
+    "upper_visible_px": {
+     "front": 20255,
+     "back": 4093
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1071,
+      "identical_frac": 0.9664
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f03": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 145,
+     "right": 119,
+     "top": 72,
+     "bottom": 33
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34070
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2181,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 145,
+     "right": 119,
+     "top": 72,
+     "bottom": 33
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34070
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2181,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1994,
+     "L": 1846
+    },
+    "boot_visible_px": {
+     "R": 1135,
+     "L": 863
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 72,
+    "upper_visible_px": {
+     "front": 20776,
+     "back": 3864
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 1088,
+      "identical_frac": 0.0395
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f04": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 135,
+     "right": 120,
+     "top": 66,
+     "bottom": 39
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34834
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2389,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 135,
+     "right": 120,
+     "top": 66,
+     "bottom": 39
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34834
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2389,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2060,
+     "L": 2756
+    },
+    "boot_visible_px": {
+     "R": 1197,
+     "L": 1115
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 66,
+    "upper_visible_px": {
+     "front": 20775,
+     "back": 3659
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 939,
+      "identical_frac": 0.0415
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f05": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 122,
+     "top": 71,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34820
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2472,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 124,
+     "right": 122,
+     "top": 71,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34820
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2472,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1579,
+     "L": 2640
+    },
+    "boot_visible_px": {
+     "R": 955,
+     "L": 1156
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 71,
+    "upper_visible_px": {
+     "front": 21479,
+     "back": 3524
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 527,
+      "identical_frac": 0.0323
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f06": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 115,
+     "right": 124,
+     "top": 83,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33873
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2539,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 115,
+     "right": 124,
+     "top": 83,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33873
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2539,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 844,
+     "L": 2579
+    },
+    "boot_visible_px": {
+     "R": 608,
+     "L": 1207
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 83,
+    "upper_visible_px": {
+     "front": 21499,
+     "back": 3465
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1086,
+      "identical_frac": 0.9549
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f07": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 112,
+     "right": 125,
+     "top": 88,
+     "bottom": 34
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32599
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2366,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 112,
+     "right": 125,
+     "top": 88,
+     "bottom": 34
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32599
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2366,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 617,
+     "L": 2327
+    },
+    "boot_visible_px": {
+     "R": 323,
+     "L": 1129
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 88,
+    "upper_visible_px": {
+     "front": 21511,
+     "back": 3113
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1052,
+      "identical_frac": 0.0399
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f08": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 114,
+     "right": 124,
+     "top": 82,
+     "bottom": 40
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33257
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2299,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 114,
+     "right": 124,
+     "top": 82,
+     "bottom": 40
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33257
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2299,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 783,
+     "L": 2128
+    },
+    "boot_visible_px": {
+     "R": 274,
+     "L": 1107
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 21508,
+     "back": 3451
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1064,
+      "identical_frac": 0.9633
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f09": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 121,
+     "right": 123,
+     "top": 69,
+     "bottom": 47
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34522
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2364,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 121,
+     "right": 123,
+     "top": 69,
+     "bottom": 47
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34522
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2364,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1557,
+     "L": 2034
+    },
+    "boot_visible_px": {
+     "R": 992,
+     "L": 1080
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 69,
+    "upper_visible_px": {
+     "front": 21494,
+     "back": 3920
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 699,
+      "identical_frac": 0.9299
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f10": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 133,
+     "right": 123,
+     "top": 64,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34198
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2170,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 133,
+     "right": 123,
+     "top": 64,
+     "bottom": 41
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34198
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2170,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2310,
+     "L": 1437
+    },
+    "boot_visible_px": {
+     "R": 1137,
+     "L": 701
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 64,
+    "upper_visible_px": {
+     "front": 21515,
+     "back": 4067
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 253,
+      "identical_frac": 0.8498
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "W_f11": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 143,
+     "right": 124,
+     "top": 70,
+     "bottom": 25
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33656
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2107,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 143,
+     "right": 124,
+     "top": 70,
+     "bottom": 25
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33656
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2107,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2594,
+     "L": 598
+    },
+    "boot_visible_px": {
+     "R": 1165,
+     "L": 289
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 70,
+    "upper_visible_px": {
+     "front": 21485,
+     "back": 4257
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 127,
+      "identical_frac": 0.5827
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f00": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 100,
+     "right": 126,
+     "top": 89,
+     "bottom": 24
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34641
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3049,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 100,
+     "right": 126,
+     "top": 89,
+     "bottom": 24
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34641
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 3049,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1737,
+     "L": 2515
+    },
+    "boot_visible_px": {
+     "R": 804,
+     "L": 1066
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 89,
+    "upper_visible_px": {
+     "front": 18300,
+     "back": 10234
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 770,
+      "identical_frac": 0.9545
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f01": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 94,
+     "right": 125,
+     "top": 84,
+     "bottom": 35
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34555
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3040,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 94,
+     "right": 125,
+     "top": 84,
+     "bottom": 35
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34555
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3040,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2040,
+     "L": 2229
+    },
+    "boot_visible_px": {
+     "R": 795,
+     "L": 1139
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 84,
+    "upper_visible_px": {
+     "front": 18393,
+     "back": 10032
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 771,
+      "identical_frac": 0.1102
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f02": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 86,
+     "right": 122,
+     "top": 72,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34669
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2908,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 86,
+     "right": 122,
+     "top": 72,
+     "bottom": 29
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34669
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2908,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2569,
+     "L": 1624
+    },
+    "boot_visible_px": {
+     "R": 794,
+     "L": 869
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 72,
+    "upper_visible_px": {
+     "front": 18479,
+     "back": 10239
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 761,
+      "identical_frac": 0.9198
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f03": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 78,
+     "right": 117,
+     "top": 66,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34626
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2775,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 78,
+     "right": 117,
+     "top": 66,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34626
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 1,
+    "edge_px": 2775,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2712,
+     "L": 616
+    },
+    "boot_visible_px": {
+     "R": 778,
+     "L": 206
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 66,
+    "upper_visible_px": {
+     "front": 18638,
+     "back": 10860
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 693,
+      "identical_frac": 0.8167
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f04": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 74,
+     "right": 111,
+     "top": 72,
+     "bottom": 17
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34259
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2808,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 74,
+     "right": 111,
+     "top": 72,
+     "bottom": 17
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34259
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2808,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 2077,
+     "L": 451
+    },
+    "boot_visible_px": {
+     "R": 720,
+     "L": 72
+    },
+    "planted": [
+     "R"
+    ],
+    "upper_top_row": 71,
+    "upper_visible_px": {
+     "front": 18788,
+     "back": 11167
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 697,
+      "identical_frac": 0.8235
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f05": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 73,
+     "right": 107,
+     "top": 83,
+     "bottom": 11
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33625
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2831,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 73,
+     "right": 107,
+     "top": 83,
+     "bottom": 11
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     33625
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2831,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1751,
+     "L": 473
+    },
+    "boot_visible_px": {
+     "R": 790,
+     "L": 128
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 83,
+    "upper_visible_px": {
+     "front": 18969,
+     "back": 10767
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 49,
+      "identical_frac": 0.3673
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f06": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 76,
+     "right": 106,
+     "top": 88,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32683
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2684,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 76,
+     "right": 106,
+     "top": 88,
+     "bottom": 23
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32683
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2684,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1303,
+     "L": 486
+    },
+    "boot_visible_px": {
+     "R": 733,
+     "L": 259
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 88,
+    "upper_visible_px": {
+     "front": 18974,
+     "back": 10297
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 212,
+      "identical_frac": 0.4245
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f07": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 82,
+     "right": 107,
+     "top": 81,
+     "bottom": 38
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32686
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 2,
+    "edge_px": 2694,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 82,
+     "right": 107,
+     "top": 81,
+     "bottom": 38
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     32686
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 4,
+    "edge_px": 2694,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1122,
+     "L": 910
+    },
+    "boot_visible_px": {
+     "R": 670,
+     "L": 351
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 81,
+    "upper_visible_px": {
+     "front": 18964,
+     "back": 10040
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 347,
+      "identical_frac": 0.8329
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f08": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 89,
+     "right": 111,
+     "top": 69,
+     "bottom": 32
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34804
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2964,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 89,
+     "right": 111,
+     "top": 69,
+     "bottom": 32
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     34804
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 2964,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1928,
+     "L": 2127
+    },
+    "boot_visible_px": {
+     "R": 803,
+     "L": 1086
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 69,
+    "upper_visible_px": {
+     "front": 18756,
+     "back": 10295
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1020,
+      "identical_frac": 0.0755
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f09": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 97,
+     "right": 116,
+     "top": 64,
+     "bottom": 26
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35968
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3188,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 97,
+     "right": 116,
+     "top": 64,
+     "bottom": 26
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35968
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3188,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1823,
+     "L": 2893
+    },
+    "boot_visible_px": {
+     "R": 816,
+     "L": 1076
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 64,
+    "upper_visible_px": {
+     "front": 18539,
+     "back": 10850
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1052,
+      "identical_frac": 0.9544
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f10": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 101,
+     "right": 121,
+     "top": 70,
+     "bottom": 20
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     36202
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3287,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 101,
+     "right": 121,
+     "top": 70,
+     "bottom": 20
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     36202
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3287,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1867,
+     "L": 2934
+    },
+    "boot_visible_px": {
+     "R": 872,
+     "L": 1084
+    },
+    "planted": [
+     "L"
+    ],
+    "upper_top_row": 70,
+    "upper_visible_px": {
+     "front": 18413,
+     "back": 11130
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "L"
+    ],
+    "sole_err_px": {
+     "L": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "L": {
+      "px": 1059,
+      "identical_frac": 0.9509
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  },
+  "N_f11": {
+   "rim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 103,
+     "right": 124,
+     "top": 82,
+     "bottom": 14
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3158,
+    "pinholes_le4px": 0
+   },
+   "norim": {
+    "rgba": true,
+    "alpha_values": [
+     0,
+     255
+    ],
+    "alpha_binary": true,
+    "black_under_alpha0": true,
+    "margins": {
+     "left": 103,
+     "right": 124,
+     "top": 82,
+     "bottom": 14
+    },
+    "margin_ok": true,
+    "components": 1,
+    "comp_sizes": [
+     35692
+    ],
+    "edge_near_white": 0,
+    "edge_chroma_px": 0,
+    "edge_grey_halo_px": 0,
+    "edge_px": 3158,
+    "pinholes_le4px": 0
+   },
+   "rig": {
+    "legs_visible_px": {
+     "R": 1833,
+     "L": 2926
+    },
+    "boot_visible_px": {
+     "R": 849,
+     "L": 1097
+    },
+    "planted": [
+     "L",
+     "R"
+    ],
+    "upper_top_row": 82,
+    "upper_visible_px": {
+     "front": 18276,
+     "back": 10777
+    },
+    "torso_rot_deg": 0.0,
+    "arms": "rigid in the upper piece (2 arms, 2 fists, 2 axes)"
+   },
+   "skate_to_next": {
+    "support": [
+     "R"
+    ],
+    "sole_err_px": {
+     "R": {
+      "dx": 0.0,
+      "dy": 0
+     }
+    },
+    "composite_shift_check": {
+     "R": {
+      "px": 791,
+      "identical_frac": 0.9482
+     }
+    },
+    "max_err": 0.0
+   },
+   "verdict": "PASS",
+   "fails": []
+  }
+ },
+ "summary": {
+  "S": {
+   "bob": {
+    "helm_top_rows": [
+     82,
+     90,
+     84,
+     72,
+     66,
+     71,
+     83,
+     88,
+     82,
+     69,
+     64,
+     70
+    ],
+    "range_cell": 26.0,
+    "max_step_cell": 13.0,
+    "range_game030": 7.8,
+    "max_step_game030": 3.9,
+    "v2": {
+     "range_cell": 26.0,
+     "max_step_cell": 13.0
+    },
+    "offset_vs_v2_rows": [
+     -2
+    ]
+   },
+   "bob_ok": true,
+   "verdicts": [
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS"
+   ],
+   "max_skate_px": 0.0,
+   "min_margin": 15,
+   "max_grey_halo_px": 4,
+   "min_composite_identical": 0.0323
+  },
+  "E": {
+   "bob": {
+    "helm_top_rows": [
+     89,
+     84,
+     72,
+     66,
+     71,
+     83,
+     88,
+     81,
+     69,
+     64,
+     70,
+     82
+    ],
+    "range_cell": 25.0,
+    "max_step_cell": 12.0,
+    "range_game030": 7.5,
+    "max_step_game030": 3.6,
+    "v2": {
+     "range_cell": 25.0,
+     "max_step_cell": 12.0
+    },
+    "offset_vs_v2_rows": [
+     2
+    ]
+   },
+   "bob_ok": true,
+   "verdicts": [
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS"
+   ],
+   "max_skate_px": 0.0,
+   "min_margin": 11,
+   "max_grey_halo_px": 4,
+   "min_composite_identical": 0.0755
+  },
+  "W": {
+   "bob": {
+    "helm_top_rows": [
+     82,
+     90,
+     84,
+     72,
+     66,
+     71,
+     83,
+     88,
+     82,
+     69,
+     64,
+     70
+    ],
+    "range_cell": 26.0,
+    "max_step_cell": 13.0,
+    "range_game030": 7.8,
+    "max_step_game030": 3.9,
+    "v2": {
+     "range_cell": 26.0,
+     "max_step_cell": 13.0
+    },
+    "offset_vs_v2_rows": [
+     -2
+    ]
+   },
+   "bob_ok": true,
+   "verdicts": [
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS"
+   ],
+   "max_skate_px": 0.0,
+   "min_margin": 15,
+   "max_grey_halo_px": 4,
+   "min_composite_identical": 0.0323
+  },
+  "N": {
+   "bob": {
+    "helm_top_rows": [
+     89,
+     84,
+     72,
+     66,
+     71,
+     83,
+     88,
+     81,
+     69,
+     64,
+     70,
+     82
+    ],
+    "range_cell": 25.0,
+    "max_step_cell": 12.0,
+    "range_game030": 7.5,
+    "max_step_game030": 3.6,
+    "v2": {
+     "range_cell": 25.0,
+     "max_step_cell": 12.0
+    },
+    "offset_vs_v2_rows": [
+     2
+    ]
+   },
+   "bob_ok": true,
+   "verdicts": [
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS",
+    "PASS"
+   ],
+   "max_skate_px": 0.0,
+   "min_margin": 11,
+   "max_grey_halo_px": 4,
+   "min_composite_identical": 0.0755
+  }
+ },
+ "notes": [
+  "skate: support-boot sole on the full boot layer (v2 matrices, planted boots shifted exactly by the in-place slide)",
+  "bob: top row of the upper piece (helm/horns), game px = cell px x 0.30; must equal v2 frame-for-frame up to one constant lift (the longer legs)",
+  "grey halo: silhouette-edge px that are neutral and within +-10 of the repaint backdrop grey; must be < 1% of edge px",
+  "W/N = exact mirrors of S/E"
+ ],
+ "v2_sole_rows": {
+  "S": {
+   "v4_minus_v2_planted_sole_row": [
+    0
+   ],
+   "n": 14
+  },
+  "E": {
+   "v4_minus_v2_planted_sole_row": [
+    0
+   ],
+   "n": 14
+  }
+ }
+}

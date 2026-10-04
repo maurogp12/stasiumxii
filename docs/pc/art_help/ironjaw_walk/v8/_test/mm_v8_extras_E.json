@@ -1,0 +1,51 @@
+{
+ "motion_bootsole": 100.0,
+ "sole_err_bootsole": [
+  0.19,
+  0.14,
+  0.14,
+  0.14,
+  0.14,
+  0.14,
+  0.05,
+  0.25,
+  0.88,
+  0.88,
+  0.88,
+  0.88
+ ],
+ "leg_ratio_true": 0.666,
+ "leg_ratio_true_detail": {
+  "cand_sole_row": 335,
+  "tgt_sole_row_unclipped": 374.3,
+  "tgt_pelvis_row": 256.6
+ },
+ "secondary_look": {
+  "label": "SECONDARY (not official): repaint vs closest-stance v2 frame",
+  "frame": 2,
+  "v2_lower_iou_per_frame": [
+   0.297,
+   0.398,
+   0.442,
+   0.352,
+   0.319,
+   0.284,
+   0.261,
+   0.311,
+   0.404,
+   0.389,
+   0.414,
+   0.336
+  ],
+  "cand": {
+   "ssim_lower": 0.185,
+   "iou": 0.733,
+   "iou_lower": 0.501
+  },
+  "cand_f00": {
+   "ssim_lower": 0.391,
+   "iou": 0.801,
+   "iou_lower": 0.542
+  }
+ }
+}

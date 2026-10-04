@@ -1,0 +1,3865 @@
+{
+ "cfg": {
+  "S": {
+   "raise": 0,
+   "hip_dx": 0,
+   "hip_w": 1.0,
+   "leg_poly_top": 432,
+   "leg_poly": [
+    [
+     505,
+     432
+    ],
+    [
+     738,
+     432
+    ],
+    [
+     748,
+     560
+    ],
+    [
+     762,
+     712
+    ],
+    [
+     478,
+     712
+    ],
+    [
+     490,
+     600
+    ],
+    [
+     500,
+     500
+    ]
+   ],
+   "src": {
+    "R_thigh": [
+     "R_thigh",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "L_thigh": [
+     "L_thigh",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "R_shin": [
+     "R_shin",
+     false,
+     "/workspace/scratch/ij_walk/v4/legs_v4/"
+    ],
+    "L_shin": [
+     "L_shin",
+     false,
+     "/workspace/scratch/ij_walk/v4/legs_v4/"
+    ],
+    "R_boot": [
+     "R_boot",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "L_boot": [
+     "L_boot",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ]
+   },
+   "width": {
+    "thigh": 48,
+    "shin": 36,
+    "boot": 44
+   },
+   "piv": {
+    "thigh": [
+     0.12,
+     0.8
+    ],
+    "shin": [
+     0.1,
+     0.92
+    ]
+   },
+   "junction_frac": 0.55,
+   "boot_rest_deg": {
+    "R": 0,
+    "L": 0
+   },
+   "boot_sole_off": {
+    "R": [
+     6,
+     1
+    ],
+    "L": [
+     5,
+     1
+    ]
+   },
+   "straight": 0.97,
+   "thigh_share": 0.44,
+   "klim_thigh": [
+    0.5,
+    1.4
+   ],
+   "klim_shin": [
+    0.55,
+    1.3
+   ],
+   "within": [
+    "thigh",
+    "shin",
+    "boot"
+   ],
+   "L_offset": 0.0,
+   "detail_gain": 0.25,
+   "colour_mix": 1.0,
+   "swing_scale": 1.0,
+   "swing_cap_near": 12.0,
+   "swing_cap_far": 99.0,
+   "cape_amp_px": 3.0,
+   "cape_lift": 35,
+   "cape_ripple": 3.0,
+   "cut_shadow": [
+    0.62,
+    0.75,
+    0.88
+   ],
+   "red_th": 6,
+   "red_ymin": 120,
+   "loin_poly": [
+    [
+     585,
+     336
+    ],
+    [
+     742,
+     336
+    ],
+    [
+     748,
+     562
+    ],
+    [
+     578,
+     562
+    ],
+    [
+     560,
+     470
+    ],
+    [
+     495,
+     470
+    ],
+    [
+     495,
+     350
+    ],
+    [
+     585,
+     350
+    ]
+   ],
+   "loin_len": 1.0,
+   "boot_vscale": 0.88,
+   "shin_anchor_top": true,
+   "cape_lift_pow": 3.0,
+   "top_min": 64,
+   "cape_lift_x": null,
+   "scale": 0.3875,
+   "hip_gap": 7.5,
+   "clear_pockets": true,
+   "target": "/workspace/scratch/ij_walk/repaint_E2/rp_S_turn_t1.jpg",
+   "ann": {
+    "pelvis": [
+     640,
+     360
+    ],
+    "raise_px": 0,
+    "arms": [
+     {
+      "name": "near",
+      "pivot": [
+       500,
+       190
+      ],
+      "r0": 70,
+      "r1": 200,
+      "sign": 1,
+      "poly": [
+       [
+        418,
+        30
+       ],
+       [
+        606,
+        30
+       ],
+       [
+        606,
+        150
+       ],
+       [
+        562,
+        222
+       ],
+       [
+        512,
+        238
+       ],
+       [
+        506,
+        330
+       ],
+       [
+        502,
+        418
+       ],
+       [
+        532,
+        440
+       ],
+       [
+        572,
+        468
+       ],
+       [
+        578,
+        618
+       ],
+       [
+        388,
+        618
+       ],
+       [
+        392,
+        480
+       ],
+       [
+        378,
+        442
+       ],
+       [
+        296,
+        332
+       ],
+       [
+        296,
+        296
+       ],
+       [
+        388,
+        296
+       ],
+       [
+        394,
+        220
+       ],
+       [
+        400,
+        118
+       ]
+      ]
+     },
+     {
+      "name": "far",
+      "pivot": [
+       748,
+       200
+      ],
+      "r0": 70,
+      "r1": 200,
+      "sign": -1,
+      "poly": [
+       [
+        758,
+        110
+       ],
+       [
+        802,
+        92
+       ],
+       [
+        832,
+        250
+       ],
+       [
+        842,
+        378
+       ],
+       [
+        922,
+        448
+       ],
+       [
+        922,
+        612
+       ],
+       [
+        758,
+        612
+       ],
+       [
+        744,
+        452
+       ],
+       [
+        728,
+        392
+       ],
+       [
+        722,
+        330
+       ],
+       [
+        724,
+        250
+       ],
+       [
+        745,
+        180
+       ],
+       [
+        758,
+        150
+       ]
+      ]
+     }
+    ],
+    "cape_y": 440,
+    "legs": [
+     [
+      505,
+      430
+     ],
+     [
+      740,
+      430
+     ],
+     [
+      760,
+      712
+     ],
+     [
+      480,
+      712
+     ]
+    ],
+    "loin_y": 440,
+    "cape": {
+     "top": 140,
+     "hem": 612,
+     "amp": 7.0,
+     "ripple": 3.0,
+     "hem_lift": 45
+    },
+    "cape_front": false
+   },
+   "halo_greys": [
+    169,
+    126,
+    106
+   ],
+   "loose_ymin": 430,
+   "grade": "idle",
+   "grade_ab": 0.4,
+   "far_dark": 0.12,
+   "knee": {
+    "rim": [
+     0.66,
+     0.6,
+     0.74
+    ],
+    "overlap": 0.08,
+    "scale": 1.1,
+    "round_rx": 0.5,
+    "round_ry": 0.56,
+    "round_dy": 0.0
+   },
+   "boot_keep": 0.6,
+   "piece_scale": {
+    "R_thigh": 0.22,
+    "L_thigh": 0.22,
+    "R_shin": 0.24,
+    "L_shin": 0.24,
+    "R_boot": 0.27,
+    "L_boot": 0.27
+   },
+   "tas_poly": [
+    [
+     570,
+     352
+    ],
+    [
+     655,
+     350
+    ],
+    [
+     668,
+     395
+    ],
+    [
+     664,
+     438
+    ],
+    [
+     600,
+     440
+    ],
+    [
+     572,
+     415
+    ]
+   ],
+   "tas_side": "R",
+   "tas_deg": 3.0,
+   "body_to_cape_poly": [
+    [
+     495,
+     392
+    ],
+    [
+     574,
+     392
+    ],
+    [
+     574,
+     445
+    ],
+    [
+     495,
+     445
+    ]
+   ],
+   "loin_overlap": 4,
+   "maps_file": "/workspace/scratch/ij_walk/v8/maps_v7_S.pkl",
+   "soft_clips": true,
+   "snap_cuts": true,
+   "snap_r": 8,
+   "feather_px": 3,
+   "shin_cap_r": 16.0,
+   "shin_cap_h": 4.0,
+   "thigh_keys": {
+    "src": [
+     "/workspace/scratch/ij_walk/v8/legs_v8/S_key0.png",
+     "/workspace/scratch/ij_walk/v8/legs_v8/S_key1.png",
+     "/workspace/scratch/ij_walk/v8/legs_v8/S_key2.png"
+    ],
+    "piv": [
+     [
+      0.195,
+      0.85
+     ],
+     [
+      0.45,
+      0.88
+     ],
+     [
+      0.52,
+      0.88
+     ]
+    ],
+    "scale": 0.18,
+    "klim": [
+     0.9,
+     1.1
+    ],
+    "phase_t": 0.33,
+    "top_ext": 6.0,
+    "top_cap": 5.0,
+    "top_r": 22.0,
+    "pre_adj": [
+     [
+      0.77,
+      -6.0
+     ],
+     [
+      0.55,
+      -0.08
+     ],
+     [
+      1,
+      0.35
+     ]
+    ]
+   },
+   "inner_feather": {
+    "tas": 5,
+    "body_legcut": 4
+   },
+   "cape_fill_r": 14,
+   "snap_legcut": 5,
+   "feather_layers": [
+    "near",
+    "far"
+   ]
+  },
+  "E": {
+   "raise": 0,
+   "hip_dx": 0,
+   "hip_w": 1.0,
+   "src": {
+    "R_thigh": [
+     "R_thigh",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "L_thigh": [
+     "L_thigh",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "R_shin": [
+     "R_shin",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "L_shin": [
+     "L_shin",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "R_boot": [
+     "R_boot",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ],
+    "L_boot": [
+     "L_boot",
+     false,
+     "/workspace/scratch/ij_walk/v7/legs_v6/"
+    ]
+   },
+   "width": {
+    "thigh": 46,
+    "shin": 36,
+    "boot": 46
+   },
+   "piv": {
+    "thigh": [
+     0.12,
+     0.88
+    ],
+    "shin": [
+     0.12,
+     0.92
+    ]
+   },
+   "junction_frac": 0.55,
+   "boot_rest_deg": {
+    "R": 0,
+    "L": 0
+   },
+   "boot_sole_off": {
+    "R": [
+     0,
+     0
+    ],
+    "L": [
+     0,
+     0
+    ]
+   },
+   "straight": 0.97,
+   "thigh_share": 0.4,
+   "klim_thigh": [
+    0.7,
+    1.3
+   ],
+   "klim_shin": [
+    0.7,
+    1.3
+   ],
+   "within": [
+    "thigh",
+    "shin",
+    "boot"
+   ],
+   "L_offset": 0.0,
+   "detail_gain": 0.0,
+   "colour_mix": 1.0,
+   "swing_scale": 1.0,
+   "swing_rot": 0.25,
+   "swing_cap_far": 99.0,
+   "cape_amp_px": 3.0,
+   "cape_lift": 15,
+   "cape_ripple": 3.0,
+   "cut_shadow": [
+    0.62,
+    0.75,
+    0.88
+   ],
+   "red_th": 6,
+   "red_ymin": 120,
+   "torso_poly": [
+    [
+     535,
+     85
+    ],
+    [
+     685,
+     85
+    ],
+    [
+     755,
+     200
+    ],
+    [
+     762,
+     445
+    ],
+    [
+     468,
+     445
+    ],
+    [
+     480,
+     200
+    ]
+   ],
+   "boot_vscale": 0.9,
+   "shin_anchor_top": true,
+   "cape_lift_pow": 3.0,
+   "top_min": 64,
+   "swing_stretch_k": 0.15,
+   "haft": {
+    "left": [
+     250,
+     330,
+     1.0
+    ],
+    "right": [
+     250,
+     330,
+     1.0
+    ]
+   },
+   "scale": 0.42,
+   "drop_small": 80,
+   "hip_gap": -1,
+   "cape_lift_osc": -45,
+   "clear_pockets": true,
+   "target": "/workspace/scratch/ij_walk/repaint_E2/rp_E_stride_t2.jpg",
+   "ann": {
+    "pelvis": [
+     610,
+     415
+    ],
+    "raise_px": 0,
+    "arms": [
+     {
+      "name": "left",
+      "pivot": [
+       482,
+       170
+      ],
+      "r0": 60,
+      "r1": 190,
+      "sign": 1,
+      "axis": [
+       -0.12,
+       1
+      ],
+      "poly": [
+       [
+        412,
+        38
+       ],
+       [
+        548,
+        38
+       ],
+       [
+        548,
+        190
+       ],
+       [
+        508,
+        215
+       ],
+       [
+        492,
+        270
+       ],
+       [
+        484,
+        322
+       ],
+       [
+        506,
+        330
+       ],
+       [
+        506,
+        362
+       ],
+       [
+        472,
+        402
+       ],
+       [
+        410,
+        446
+       ],
+       [
+        408,
+        545
+       ],
+       [
+        282,
+        545
+       ],
+       [
+        282,
+        338
+       ],
+       [
+        384,
+        330
+       ],
+       [
+        384,
+        250
+       ],
+       [
+        400,
+        196
+       ]
+      ]
+     },
+     {
+      "name": "right",
+      "pivot": [
+       742,
+       170
+      ],
+      "r0": 60,
+      "r1": 190,
+      "sign": -1,
+      "axis": [
+       0.38,
+       1
+      ],
+      "poly": [
+       [
+        668,
+        32
+       ],
+       [
+        842,
+        32
+       ],
+       [
+        852,
+        150
+       ],
+       [
+        862,
+        240
+       ],
+       [
+        872,
+        330
+       ],
+       [
+        880,
+        352
+       ],
+       [
+        998,
+        352
+       ],
+       [
+        998,
+        552
+       ],
+       [
+        852,
+        552
+       ],
+       [
+        836,
+        442
+       ],
+       [
+        788,
+        422
+       ],
+       [
+        752,
+        352
+       ],
+       [
+        744,
+        300
+       ],
+       [
+        736,
+        240
+       ],
+       [
+        702,
+        205
+       ],
+       [
+        672,
+        150
+       ]
+      ]
+     }
+    ],
+    "cape_y": 440,
+    "legs": [
+     [
+      440,
+      430
+     ],
+     [
+      800,
+      430
+     ],
+     [
+      810,
+      712
+     ],
+     [
+      400,
+      712
+     ]
+    ],
+    "loin_y": 0,
+    "cape": {
+     "top": 85,
+     "hem": 632,
+     "amp": 8.0,
+     "ripple": 3.0,
+     "hem_lift": 45
+    },
+    "cape_front": true
+   },
+   "leg_polys": [
+    [
+     [
+      466,
+      425
+     ],
+     [
+      578,
+      425
+     ],
+     [
+      568,
+      470
+     ],
+     [
+      548,
+      525
+     ],
+     [
+      536,
+      600
+     ],
+     [
+      538,
+      712
+     ],
+     [
+      398,
+      712
+     ],
+     [
+      402,
+      560
+     ],
+     [
+      436,
+      505
+     ],
+     [
+      452,
+      455
+     ]
+    ],
+    [
+     [
+      648,
+      425
+     ],
+     [
+      770,
+      425
+     ],
+     [
+      772,
+      500
+     ],
+     [
+      766,
+      610
+     ],
+     [
+      814,
+      640
+     ],
+     [
+      816,
+      712
+     ],
+     [
+      640,
+      712
+     ],
+     [
+      648,
+      600
+     ],
+     [
+      646,
+      500
+     ]
+    ]
+   ],
+   "halo_greys": [
+    144,
+    126,
+    106
+   ],
+   "loose_ymin": 430,
+   "boot_alt_src": {},
+   "boot_alt_frames": {},
+   "leg_dx": {
+    "L": {
+     "3": -6,
+     "4": -15,
+     "5": -7
+    }
+   },
+   "grade": "idle",
+   "grade_ab": 0.4,
+   "far_dark": 0.12,
+   "knee": {
+    "rim": [
+     0.79,
+     0.78,
+     0.79
+    ],
+    "overlap": 0.06,
+    "round_rx": 0.5,
+    "round_ry": 0.56,
+    "round_dy": 0.0
+   },
+   "boot_keep": 0.6,
+   "piece_scale": {
+    "R_thigh": 0.14,
+    "L_thigh": 0.17,
+    "R_shin": 0.26,
+    "L_shin": 0.23,
+    "R_boot": 0.26,
+    "L_boot": 0.26
+   },
+   "tas_list": [
+    {
+     "poly": [
+      [
+       688,
+       345
+      ],
+      [
+       765,
+       345
+      ],
+      [
+       772,
+       400
+      ],
+      [
+       775,
+       470
+      ],
+      [
+       745,
+       470
+      ],
+      [
+       700,
+       440
+      ],
+      [
+       688,
+       400
+      ]
+     ],
+     "side": "R"
+    },
+    {
+     "poly": [
+      [
+       482,
+       345
+      ],
+      [
+       535,
+       345
+      ],
+      [
+       535,
+       435
+      ],
+      [
+       495,
+       440
+      ],
+      [
+       482,
+       400
+      ]
+     ],
+     "side": "L"
+    }
+   ],
+   "tas_deg": 3.0,
+   "tas_ref_side": "R",
+   "maps_file": "/workspace/scratch/ij_walk/v8/maps_v7_E.pkl",
+   "soft_clips": true,
+   "snap_cuts": true,
+   "snap_r": 8,
+   "feather_px": 3,
+   "shin_cap_r": 16.0,
+   "shin_cap_h": 4.0,
+   "inner_feather": {
+    "tas": 5,
+    "body_legcut": 4
+   },
+   "cape_fill_r": 14,
+   "snap_legcut": 5,
+   "feather_layers": [
+    "left",
+    "right"
+   ]
+  }
+ },
+ "info": {
+  "S": {
+   "leg_L_p95": 28.3,
+   "leg_L_p50": 7.8,
+   "raise_px": 3,
+   "colour_map": {
+    "src_LAB_p10_50_90": [
+     [
+      9.7,
+      19.1,
+      40.3
+     ],
+     [
+      -0.7,
+      -0.2,
+      0.2
+     ],
+     [
+      -0.2,
+      1.1,
+      2.4
+     ]
+    ],
+    "ref_LAB_p10_50_90": [
+     [
+      2.7,
+      9.4,
+      23.5
+     ],
+     [
+      -0.1,
+      1.7,
+      7.8
+     ],
+     [
+      0.9,
+      2.8,
+      5.1
+     ]
+    ],
+    "frozen_from": "/workspace/scratch/ij_walk/v8/maps_v7_S.pkl"
+   },
+   "c0": -2,
+   "dys": [
+    -11,
+    -10,
+    -10,
+    -11,
+    -11,
+    -11,
+    -10,
+    -10,
+    -10,
+    -11,
+    -10,
+    -11
+   ],
+   "nat_tops": [
+    93,
+    100,
+    94,
+    83,
+    77,
+    82,
+    93,
+    98,
+    92,
+    80,
+    74,
+    81
+   ],
+   "arm_deg": {
+    "near": [
+     0.0,
+     0.92,
+     4.06,
+     7.6,
+     9.74,
+     10.6,
+     10.79,
+     10.52,
+     9.64,
+     7.75,
+     4.7,
+     1.55
+    ],
+    "far": [
+     0.0,
+     0.81,
+     -0.92,
+     -4.55,
+     -9.02,
+     -13.28,
+     -16.37,
+     -17.43,
+     -16.08,
+     -12.6,
+     -7.88,
+     -3.22
+    ]
+   },
+   "arm_stretch": {
+    "near": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ],
+    "far": [
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0,
+     1.0
+    ]
+   },
+   "cape_dx": [
+    0.0,
+    0.54,
+    -0.02,
+    -1.14,
+    -1.51,
+    -0.52,
+    0.6,
+    0.14,
+    -1.69,
+    -3.0,
+    -2.7,
+    -1.33
+   ]
+  },
+  "E": {
+   "leg_L_p95": 27.6,
+   "leg_L_p50": 9.3,
+   "raise_px": 0,
+   "colour_map": {
+    "src_LAB_p10_50_90": [
+     [
+      8.8,
+      18.9,
+      36.7
+     ],
+     [
+      -0.7,
+      -0.2,
+      0.5
+     ],
+     [
+      -0.0,
+      1.5,
+      3.0
+     ]
+    ],
+    "ref_LAB_p10_50_90": [
+     [
+      3.0,
+      11.5,
+      24.3
+     ],
+     [
+      -0.4,
+      1.6,
+      6.1
+     ],
+     [
+      0.7,
+      2.3,
+      4.4
+     ]
+    ],
+    "frozen_from": "/workspace/scratch/ij_walk/v8/maps_v7_E.pkl"
+   },
+   "c0": 2,
+   "dys": [
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    4,
+    3
+   ],
+   "nat_tops": [
+    85,
+    80,
+    68,
+    62,
+    67,
+    79,
+    84,
+    77,
+    65,
+    60,
+    66,
+    79
+   ],
+   "arm_deg": {
+    "left": [
+     0.0,
+     0.93,
+     2.72,
+     4.82,
+     6.57,
+     7.51,
+     7.49,
+     6.56,
+     4.92,
+     2.96,
+     1.21,
+     0.12
+    ],
+    "right": [
+     0.0,
+     -2.34,
+     -5.06,
+     -7.19,
+     -8.43,
+     -8.74,
+     -8.15,
+     -6.73,
+     -4.67,
+     -2.31,
+     -0.22,
+     0.78
+    ]
+   },
+   "arm_stretch": {
+    "left": [
+     1.0,
+     0.998,
+     0.997,
+     1.0,
+     1.005,
+     1.01,
+     1.013,
+     1.013,
+     1.01,
+     1.008,
+     1.005,
+     1.003
+    ],
+    "right": [
+     1.0,
+     1.01,
+     1.034,
+     1.066,
+     1.092,
+     1.107,
+     1.106,
+     1.093,
+     1.071,
+     1.045,
+     1.022,
+     1.005
+    ]
+   },
+   "cape_dx": [
+    0.0,
+    -1.98,
+    -3.0,
+    -2.41,
+    -1.25,
+    -0.21,
+    0.73,
+    1.07,
+    0.4,
+    -0.23,
+    0.24,
+    0.89
+   ]
+  }
+ },
+ "per_frame": {
+  "S": [
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": 0.0,
+    "planted": [
+     "L",
+     "R"
+    ],
+    "vis": {
+     "cape": 4370,
+     "far": 4011,
+     "L_boot": 134,
+     "L_shin": 0,
+     "L_thigh": 281,
+     "L_knee": 566,
+     "R_boot": 1183,
+     "R_shin": 778,
+     "R_thigh": 436,
+     "R_knee": 852,
+     "body": 6585,
+     "tas0": 512,
+     "loin": 2729,
+     "near": 10709,
+     "front": 21305,
+     "back": 4370
+    },
+    "upper_top": 82,
+    "dy": -11,
+    "arm_deg": {
+     "near": 0.0,
+     "far": 0.0
+    },
+    "k": {
+     "R_thigh": 1.0642291278000662,
+     "R_shin": 0.9197169499769435,
+     "L_thigh": 0.9322011139623386,
+     "L_shin": 0.5765266819922569
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       234.179,
+       232.052
+      ],
+      "K": [
+       254.97523563439864,
+       262.13668080465317
+      ],
+      "A": [
+       271.8686996631613,
+       311.65432000000004
+      ],
+      "straight": false,
+      "Lt": 36.57282373128031,
+      "Ls": 52.32003171225769,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       278.821,
+       218.64
+      ],
+      "K": [
+       287.0402286412277,
+       250.12724593110232
+      ],
+      "A": [
+       256.6664672962354,
+       262.39772000000005
+      ],
+      "straight": false,
+      "Lt": 32.542316693537614,
+      "Ls": 32.75866163502471,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 12,
+     "grey_halo_recoloured_px": 148,
+     "dropped_small_px": 0,
+     "edge_fix_px": 592,
+     "contact_shadow_px": 288
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": 0.539,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "cape": 4300,
+     "far": 3851,
+     "L_boot": 21,
+     "L_shin": 7,
+     "L_thigh": 297,
+     "L_knee": 624,
+     "R_boot": 1115,
+     "R_shin": 499,
+     "R_thigh": 286,
+     "R_knee": 1073,
+     "body": 6548,
+     "tas0": 513,
+     "loin": 2742,
+     "near": 10723,
+     "front": 21122,
+     "back": 4300
+    },
+    "upper_top": 90,
+    "dy": -10,
+    "arm_deg": {
+     "near": 0.92,
+     "far": 0.81
+    },
+    "k": {
+     "R_thigh": 1.001652121113105,
+     "R_shin": 0.6686106499861536,
+     "L_thigh": 0.9,
+     "L_shin": 0.8304901511520266
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       232.678,
+       238.492
+      ],
+      "K": [
+       245.59543815941532,
+       270.398685962122
+      ],
+      "A": [
+       259.8686996631613,
+       305.65432000000004
+      ],
+      "straight": true,
+      "Lt": 33.23008345676379,
+      "Ls": 36.71793625920949,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       277.691,
+       225.395
+      ],
+      "K": [
+       288.605001787937,
+       253.77454758206082
+      ],
+      "A": [
+       242.93113712115291,
+       241.91265764058016
+      ],
+      "straight": false,
+      "Lt": 30.40582437608865,
+      "Ls": 47.189049011221954,
+      "sole_corr": [
+       -3.98,
+       -1.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 1,
+     "grey_halo_recoloured_px": 115,
+     "dropped_small_px": 0,
+     "edge_fix_px": 513,
+     "contact_shadow_px": 268
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -0.021,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "cape": 4093,
+     "far": 2995,
+     "L_boot": 211,
+     "L_shin": 33,
+     "L_thigh": 701,
+     "L_knee": 1057,
+     "R_boot": 1092,
+     "R_shin": 312,
+     "R_thigh": 435,
+     "R_knee": 1153,
+     "body": 6531,
+     "tas0": 511,
+     "loin": 2768,
+     "near": 10729,
+     "front": 20255,
+     "back": 4093
+    },
+    "upper_top": 84,
+    "dy": -10,
+    "arm_deg": {
+     "near": 4.06,
+     "far": -0.92
+    },
+    "k": {
+     "R_thigh": 1.1,
+     "R_shin": 0.55,
+     "L_thigh": 1.0026530236544455,
+     "L_shin": 0.8881193072490883
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       231.23,
+       232.598
+      ],
+      "K": [
+       240.8522460437884,
+       271.3770165633903
+      ],
+      "A": [
+       247.8686996631613,
+       299.65432000000004
+      ],
+      "straight": true,
+      "Lt": 37.86035331865801,
+      "Ls": 27.607422618851167,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       277.214,
+       220.373
+      ],
+      "K": [
+       307.3427459047521,
+       237.09199193236964
+      ],
+      "A": [
+       256.99412983680764,
+       240.49635468194504
+      ],
+      "straight": false,
+      "Lt": 34.45672678923173,
+      "Ls": 50.463579200131804,
+      "sole_corr": [
+       -3.11,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 4,
+     "grey_halo_recoloured_px": 109,
+     "dropped_small_px": 3,
+     "edge_fix_px": 448,
+     "contact_shadow_px": 251
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -1.138,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "cape": 3864,
+     "far": 3515,
+     "L_boot": 863,
+     "L_shin": 200,
+     "L_thigh": 783,
+     "L_knee": 1057,
+     "R_boot": 1135,
+     "R_shin": 343,
+     "R_thigh": 516,
+     "R_knee": 1146,
+     "body": 6550,
+     "tas0": 519,
+     "loin": 2741,
+     "near": 10711,
+     "front": 20776,
+     "back": 3864
+    },
+    "upper_top": 72,
+    "dy": -11,
+    "arm_deg": {
+     "near": 7.6,
+     "far": -4.55
+    },
+    "k": {
+     "R_thigh": 1.1,
+     "R_shin": 0.565836695802521,
+     "L_thigh": 1.1,
+     "L_shin": 0.55
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       230.269,
+       220.284
+      ],
+      "K": [
+       233.41913986085376,
+       261.55885107033646
+      ],
+      "A": [
+       235.8686996631613,
+       293.65432000000004
+      ],
+      "straight": true,
+      "Lt": 40.424403087875106,
+      "Ls": 31.434157596259375,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       277.47,
+       209.279
+      ],
+      "K": [
+       305.52173620007045,
+       236.63871686835006
+      ],
+      "A": [
+       289.6718484281806,
+       255.26821369796951
+      ],
+      "straight": false,
+      "Lt": 39.184869668720616,
+      "Ls": 24.4597034836137,
+      "sole_corr": [
+       -3.03,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 24,
+     "grey_halo_recoloured_px": 113,
+     "dropped_small_px": 5,
+     "edge_fix_px": 538,
+     "contact_shadow_px": 191
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -1.507,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "cape": 3659,
+     "far": 3536,
+     "R_boot": 1197,
+     "R_shin": 536,
+     "R_thigh": 327,
+     "R_knee": 1148,
+     "L_boot": 1115,
+     "L_shin": 846,
+     "L_thigh": 795,
+     "L_knee": 1054,
+     "body": 6514,
+     "tas0": 513,
+     "loin": 2748,
+     "near": 10725,
+     "front": 20775,
+     "back": 3659
+    },
+    "upper_top": 66,
+    "dy": -11,
+    "arm_deg": {
+     "near": 9.74,
+     "far": -9.02
+    },
+    "k": {
+     "R_thigh": 1.0536717383078318,
+     "R_shin": 0.6899924688111209,
+     "L_thigh": 1.1,
+     "L_shin": 0.8881193072490886
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       230.078,
+       213.543
+      ],
+      "K": [
+       233.9602749959866,
+       249.72209300642865
+      ],
+      "A": [
+       223.8686996631613,
+       287.65432000000004
+      ],
+      "straight": false,
+      "Lt": 36.38679471885749,
+      "Ls": 39.25167177828119,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       278.366,
+       203.788
+      ],
+      "K": [
+       308.5296738807477,
+       226.669518784611
+      ],
+      "A": [
+       321.0273857626457,
+       275.5610315798298
+      ],
+      "straight": false,
+      "Lt": 37.86041631935137,
+      "Ls": 50.463579200131804,
+      "sole_corr": [
+       -4.13,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 13,
+     "grey_halo_recoloured_px": 127,
+     "dropped_small_px": 3,
+     "edge_fix_px": 423,
+     "contact_shadow_px": 160
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "far",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -0.519,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "cape": 3524,
+     "L_boot": 1156,
+     "L_shin": 885,
+     "L_thigh": 599,
+     "L_knee": 1052,
+     "R_boot": 955,
+     "R_shin": 340,
+     "R_thigh": 284,
+     "R_knee": 1156,
+     "far": 4260,
+     "body": 6502,
+     "tas0": 513,
+     "loin": 2749,
+     "near": 10717,
+     "front": 21479,
+     "back": 3524
+    },
+    "upper_top": 71,
+    "dy": -11,
+    "arm_deg": {
+     "near": 10.6,
+     "far": -13.29
+    },
+    "k": {
+     "R_thigh": 1.0307347443411008,
+     "R_shin": 0.5771395941748598,
+     "L_thigh": 1.1,
+     "L_shin": 0.9326684763411185
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       230.685,
+       218.535
+      ],
+      "K": [
+       229.74724091957148,
+       254.11734892364547
+      ],
+      "A": [
+       211.8686996631613,
+       281.65432000000004
+      ],
+      "straight": false,
+      "Lt": 35.59470391809686,
+      "Ls": 32.831798816348,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       279.685,
+       209.713
+      ],
+      "K": [
+       302.92194366971285,
+       244.26496025620722
+      ],
+      "A": [
+       332.4962356129838,
+       288.240182400471
+      ],
+      "straight": true,
+      "Lt": 39.64995508581784,
+      "Ls": 50.463579200131804,
+      "sole_corr": [
+       -2.52,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 39,
+     "grey_halo_recoloured_px": 136,
+     "dropped_small_px": 8,
+     "edge_fix_px": 553,
+     "contact_shadow_px": 149
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "far",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": 0.599,
+    "planted": [
+     "L",
+     "R"
+    ],
+    "vis": {
+     "cape": 3465,
+     "R_boot": 608,
+     "R_shin": 6,
+     "R_thigh": 230,
+     "R_knee": 1115,
+     "L_boot": 1207,
+     "L_shin": 843,
+     "L_thigh": 529,
+     "L_knee": 1019,
+     "far": 4259,
+     "body": 6532,
+     "tas0": 514,
+     "loin": 2740,
+     "near": 10708,
+     "front": 21499,
+     "back": 3465
+    },
+    "upper_top": 83,
+    "dy": -10,
+    "arm_deg": {
+     "near": 10.79,
+     "far": -16.37
+    },
+    "k": {
+     "R_thigh": 1.017000560097474,
+     "R_shin": 0.55,
+     "L_thigh": 1.1,
+     "L_shin": 0.9038713299233219
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       231.879,
+       229.585
+      ],
+      "K": [
+       226.20482733534686,
+       264.6312221718933
+      ],
+      "A": [
+       199.8686996631613,
+       275.65432000000004
+      ],
+      "straight": false,
+      "Lt": 35.50259038366076,
+      "Ls": 28.549961584802023,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       281.121,
+       221.107
+      ],
+      "K": [
+       301.7569577805904,
+       254.65316381860075
+      ],
+      "A": [
+       328.6664672962354,
+       298.39772000000005
+      ],
+      "straight": true,
+      "Lt": 38.69874659833393,
+      "Ls": 50.463579200131804,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 15,
+     "grey_halo_recoloured_px": 157,
+     "dropped_small_px": 9,
+     "edge_fix_px": 579,
+     "contact_shadow_px": 139
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "far",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": 0.139,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "cape": 3113,
+     "R_boot": 323,
+     "R_shin": 34,
+     "R_thigh": 260,
+     "R_knee": 707,
+     "L_boot": 1129,
+     "L_shin": 637,
+     "L_thigh": 561,
+     "L_knee": 971,
+     "far": 4259,
+     "body": 6527,
+     "tas0": 504,
+     "loin": 2757,
+     "near": 10725,
+     "front": 21511,
+     "back": 3113
+    },
+    "upper_top": 88,
+    "dy": -10,
+    "arm_deg": {
+     "near": 10.52,
+     "far": -17.43
+    },
+    "k": {
+     "R_thigh": 1.094064565945725,
+     "R_shin": 0.55,
+     "L_thigh": 1.0281911819225225,
+     "L_shin": 0.7551074938053703
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       233.315,
+       235.039
+      ],
+      "K": [
+       213.24488630334093,
+       267.53334638474524
+      ],
+      "A": [
+       184.70144223264037,
+       255.32749407997676
+      ],
+      "straight": false,
+      "Lt": 38.192826692569234,
+      "Ls": 31.04369549365914,
+      "sole_corr": [
+       -5.42,
+       -1.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       282.315,
+       226.217
+      ],
+      "K": [
+       308.41217370178714,
+       250.29344231719656
+      ],
+      "A": [
+       316.6664672962354,
+       292.39772000000005
+      ],
+      "straight": false,
+      "Lt": 35.506866235624685,
+      "Ls": 42.905752084469654,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 16,
+     "grey_halo_recoloured_px": 138,
+     "dropped_small_px": 6,
+     "edge_fix_px": 601,
+     "contact_shadow_px": 135
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "far",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -1.687,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "cape": 3451,
+     "L_boot": 1107,
+     "L_shin": 452,
+     "L_thigh": 569,
+     "L_knee": 1053,
+     "R_boot": 274,
+     "R_shin": 71,
+     "R_thigh": 438,
+     "R_knee": 963,
+     "far": 4263,
+     "body": 6530,
+     "tas0": 509,
+     "loin": 2745,
+     "near": 10715,
+     "front": 21508,
+     "back": 3451
+    },
+    "upper_top": 82,
+    "dy": -10,
+    "arm_deg": {
+     "near": 9.64,
+     "far": -16.08
+    },
+    "k": {
+     "R_thigh": 1.1,
+     "R_shin": 0.5647464237200528,
+     "L_thigh": 1.1,
+     "L_shin": 0.6346155356886489
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       234.634,
+       229.084
+      ],
+      "K": [
+       225.91711089161058,
+       268.4635320881411
+      ],
+      "A": [
+       197.85762818505557,
+       252.8175776466473
+      ],
+      "straight": false,
+      "Lt": 40.332762156947474,
+      "Ls": 32.12678726771103,
+      "sole_corr": [
+       -5.46,
+       -1.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       282.922,
+       219.33
+      ],
+      "K": [
+       306.14996903957666,
+       250.368936826559
+      ],
+      "A": [
+       304.6664672962354,
+       286.39772000000005
+      ],
+      "straight": false,
+      "Lt": 38.76795255138776,
+      "Ls": 36.05931217288157,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 63,
+     "grey_halo_recoloured_px": 149,
+     "dropped_small_px": 12,
+     "edge_fix_px": 706,
+     "contact_shadow_px": 173
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -3.0,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "cape": 3920,
+     "far": 4268,
+     "L_boot": 1080,
+     "L_shin": 516,
+     "L_thigh": 438,
+     "L_knee": 955,
+     "R_boot": 992,
+     "R_shin": 200,
+     "R_thigh": 365,
+     "R_knee": 1147,
+     "body": 6515,
+     "tas0": 520,
+     "loin": 2749,
+     "near": 10711,
+     "front": 21494,
+     "back": 3920
+    },
+    "upper_top": 69,
+    "dy": -11,
+    "arm_deg": {
+     "near": 7.75,
+     "far": -12.6
+    },
+    "k": {
+     "R_thigh": 1.0377421143073529,
+     "R_shin": 0.55,
+     "L_thigh": 1.1,
+     "L_shin": 0.6721836243394766
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       235.53,
+       217.654
+      ],
+      "K": [
+       244.5690958594528,
+       252.3319933264791
+      ],
+      "A": [
+       230.9053885954865,
+       267.52094245030986
+      ],
+      "straight": false,
+      "Lt": 35.83669174334743,
+      "Ls": 20.43039577888018,
+      "sole_corr": [
+       -5.0,
+       -1.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       282.731,
+       206.649
+      ],
+      "K": [
+       299.1205753895067,
+       242.753026878716
+      ],
+      "A": [
+       292.6664672962354,
+       280.39772000000005
+      ],
+      "straight": false,
+      "Lt": 39.64995508581784,
+      "Ls": 38.19395804934701,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 49,
+     "grey_halo_recoloured_px": 126,
+     "dropped_small_px": 6,
+     "edge_fix_px": 581,
+     "contact_shadow_px": 210
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -2.696,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "cape": 4067,
+     "far": 4233,
+     "L_boot": 701,
+     "L_shin": 402,
+     "L_thigh": 334,
+     "L_knee": 808,
+     "R_boot": 1137,
+     "R_shin": 742,
+     "R_thigh": 431,
+     "R_knee": 677,
+     "body": 6559,
+     "tas0": 506,
+     "loin": 2752,
+     "near": 10723,
+     "front": 21515,
+     "back": 4067
+    },
+    "upper_top": 64,
+    "dy": -10,
+    "arm_deg": {
+     "near": 4.7,
+     "far": -7.88
+    },
+    "k": {
+     "R_thigh": 1.008183018927242,
+     "R_shin": 0.8740862359724547,
+     "L_thigh": 1.0422974896044064,
+     "L_shin": 0.7369143302063093
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       235.786,
+       212.5
+      ],
+      "K": [
+       257.604189718728,
+       239.41403240010482
+      ],
+      "A": [
+       263.8119008845151,
+       288.7492493744448
+      ],
+      "straight": false,
+      "Lt": 34.646768141289876,
+      "Ls": 49.72423264187231,
+      "sole_corr": [
+       -4.53,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       281.77,
+       200.275
+      ],
+      "K": [
+       293.76421324460335,
+       234.62695534731358
+      ],
+      "A": [
+       280.6664672962354,
+       274.39772000000005
+      ],
+      "straight": false,
+      "Lt": 36.38568382675866,
+      "Ls": 41.87200341501903,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 43,
+     "grey_halo_recoloured_px": 154,
+     "dropped_small_px": 11,
+     "edge_fix_px": 650,
+     "contact_shadow_px": 290
+    }
+   },
+   {
+    "order": [
+     "cape",
+     "far",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "loin",
+     "near"
+    ],
+    "sway": -1.333,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "cape": 4257,
+     "far": 4170,
+     "L_boot": 289,
+     "L_shin": 14,
+     "L_thigh": 295,
+     "L_knee": 620,
+     "R_boot": 1165,
+     "R_shin": 884,
+     "R_thigh": 545,
+     "R_knee": 756,
+     "body": 6578,
+     "tas0": 503,
+     "loin": 2734,
+     "near": 10737,
+     "front": 21485,
+     "back": 4257
+    },
+    "upper_top": 70,
+    "dy": -11,
+    "arm_deg": {
+     "near": 1.55,
+     "far": -3.22
+    },
+    "k": {
+     "R_thigh": 1.1,
+     "R_shin": 0.9777963795621086,
+     "L_thigh": 0.997747415065514,
+     "L_shin": 0.6039779882166841
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       235.309,
+       219.357
+      ],
+      "K": [
+       259.0076215202306,
+       251.06843080688125
+      ],
+      "A": [
+       276.81185991892806,
+       303.7660465810269
+      ],
+      "straight": false,
+      "Lt": 39.58837589215745,
+      "Ls": 55.62400213250695,
+      "sole_corr": [
+       -3.08,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       280.322,
+       206.26
+      ],
+      "K": [
+       288.20769853050206,
+       240.18606820117867
+      ],
+      "A": [
+       268.6664672962354,
+       268.39772000000005
+      ],
+      "straight": false,
+      "Lt": 34.83048011304164,
+      "Ls": 34.31846464177876,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 15,
+     "grey_halo_recoloured_px": 110,
+     "dropped_small_px": 0,
+     "edge_fix_px": 625,
+     "contact_shadow_px": 273
+    }
+   }
+  ],
+  "E": [
+   {
+    "order": [
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 0.0,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "R_boot": 804,
+     "R_shin": 858,
+     "R_thigh": 75,
+     "R_knee": 8,
+     "L_boot": 1066,
+     "L_shin": 1133,
+     "L_thigh": 316,
+     "L_knee": 193,
+     "body": 3028,
+     "tas0": 1105,
+     "tas1": 458,
+     "cape": 10234,
+     "left": 6856,
+     "right": 8416,
+     "front": 18300,
+     "back": 10234
+    },
+    "upper_top": 89,
+    "dy": 4,
+    "arm_deg": {
+     "left": 0.0,
+     "right": 0.0
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 1.078601844423239,
+     "L_thigh": 0.7775452236295978,
+     "L_shin": 0.9502542409994476
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       283.764,
+       254.034
+      ],
+      "K": [
+       295.14508816067655,
+       242.6220177155917
+      ],
+      "A": [
+       308.6586894068903,
+       292.58699999999993
+      ],
+      "straight": false,
+      "Lt": 16.117149480622842,
+      "Ls": 51.76018617936856,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       231.867,
+       251.853
+      ],
+      "K": [
+       200.25818178061326,
+       272.6513750548097
+      ],
+      "A": [
+       175.18290441669427,
+       304.19011605165366
+      ],
+      "straight": false,
+      "Lt": 37.83767691265894,
+      "Ls": 40.2922041906803,
+      "sole_corr": [
+       -1.46,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 31,
+     "grey_halo_recoloured_px": 80,
+     "dropped_small_px": 0,
+     "edge_fix_px": 735,
+     "contact_shadow_px": 261
+    }
+   },
+   {
+    "order": [
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -1.984,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "R_boot": 795,
+     "R_shin": 1230,
+     "R_thigh": 15,
+     "R_knee": 20,
+     "L_boot": 1139,
+     "L_shin": 926,
+     "L_thigh": 164,
+     "L_knee": 190,
+     "body": 3069,
+     "tas0": 1102,
+     "tas1": 445,
+     "cape": 10032,
+     "left": 6847,
+     "right": 8477,
+     "front": 18393,
+     "back": 10032
+    },
+    "upper_top": 84,
+    "dy": 4,
+    "arm_deg": {
+     "left": 0.93,
+     "right": -2.34
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 1.0936303895503006,
+     "L_thigh": 0.7,
+     "L_shin": 0.80678444152552
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       284.624,
+       249.072
+      ],
+      "K": [
+       298.10125002029196,
+       246.12545028685867
+      ],
+      "A": [
+       296.6586894068903,
+       298.58699999999993
+      ],
+      "straight": false,
+      "Lt": 13.795594344625812,
+      "Ls": 52.4813793590425,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       232.932,
+       245.898
+      ],
+      "K": [
+       204.6569978321061,
+       261.6580733083635
+      ],
+      "A": [
+       189.6837830405674,
+       292.4159926283756
+      ],
+      "straight": false,
+      "Lt": 32.3705986703891,
+      "Ls": 34.20886964063451,
+      "sole_corr": [
+       -1.24,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 28,
+     "grey_halo_recoloured_px": 66,
+     "dropped_small_px": 2,
+     "edge_fix_px": 625,
+     "contact_shadow_px": 212
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -3.0,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "L_boot": 869,
+     "L_shin": 736,
+     "L_thigh": 19,
+     "L_knee": 0,
+     "R_boot": 794,
+     "R_shin": 1664,
+     "R_thigh": 111,
+     "R_knee": 119,
+     "body": 3022,
+     "tas0": 1114,
+     "tas1": 446,
+     "cape": 10239,
+     "left": 6817,
+     "right": 8640,
+     "front": 18479,
+     "back": 10239
+    },
+    "upper_top": 72,
+    "dy": 4,
+    "arm_deg": {
+     "left": 2.72,
+     "right": -5.06
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 1.092158018355868,
+     "L_thigh": 0.7,
+     "L_shin": 1.1690887969180461
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       284.775,
+       238.042
+      ],
+      "K": [
+       297.57879360990444,
+       253.79374473584159
+      ],
+      "A": [
+       284.6586894068903,
+       304.58699999999993
+      ],
+      "straight": false,
+      "Lt": 20.299127888363643,
+      "Ls": 52.410722881359845,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       233.486,
+       233.521
+      ],
+      "K": [
+       225.84512893508426,
+       227.13930601923875
+      ],
+      "A": [
+       222.75741608888384,
+       276.61416537011354
+      ],
+      "straight": false,
+      "Lt": 9.955346739051866,
+      "Ls": 49.5711173810863,
+      "sole_corr": [
+       -1.05,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 50,
+     "grey_halo_recoloured_px": 86,
+     "dropped_small_px": 44,
+     "edge_fix_px": 846,
+     "contact_shadow_px": 259
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -2.408,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "L_boot": 206,
+     "L_shin": 52,
+     "L_thigh": 358,
+     "L_knee": 0,
+     "R_boot": 778,
+     "R_shin": 1650,
+     "R_thigh": 284,
+     "R_knee": 133,
+     "body": 2946,
+     "tas0": 1107,
+     "tas1": 447,
+     "cape": 10860,
+     "left": 6847,
+     "right": 8845,
+     "front": 18638,
+     "back": 10860
+    },
+    "upper_top": 66,
+    "dy": 4,
+    "arm_deg": {
+     "left": 4.82,
+     "right": -7.19
+    },
+    "k": {
+     "R_thigh": 0.7417843559230192,
+     "R_shin": 1.0811267408899978,
+     "L_thigh": 0.7,
+     "L_shin": 1.1898689632758668
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       284.151,
+       232.594
+      ],
+      "K": [
+       290.15271020505816,
+       261.7440489510328
+      ],
+      "A": [
+       272.6586894068903,
+       310.58699999999993
+      ],
+      "straight": false,
+      "Lt": 29.7614831490823,
+      "Ls": 51.881351474865454,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       233.405,
+       226.737
+      ],
+      "K": [
+       239.65079554726637,
+       218.98464766819137
+      ],
+      "A": [
+       254.56729564351423,
+       267.18138296166796
+      ],
+      "straight": false,
+      "Lt": 9.955346739051866,
+      "Ls": 50.45222758284131,
+      "sole_corr": [
+       -1.76,
+       1.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 33,
+     "grey_halo_recoloured_px": 71,
+     "dropped_small_px": 34,
+     "edge_fix_px": 643,
+     "contact_shadow_px": 249
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -1.252,
+    "planted": [
+     "R"
+    ],
+    "vis": {
+     "L_boot": 72,
+     "L_shin": 63,
+     "L_thigh": 316,
+     "L_knee": 0,
+     "R_boot": 720,
+     "R_shin": 1101,
+     "R_thigh": 256,
+     "R_knee": 131,
+     "body": 2886,
+     "tas0": 1100,
+     "tas1": 449,
+     "cape": 11167,
+     "left": 6882,
+     "right": 9020,
+     "front": 18788,
+     "back": 11167
+    },
+    "upper_top": 71,
+    "dy": 4,
+    "arm_deg": {
+     "left": 6.57,
+     "right": -8.43
+    },
+    "k": {
+     "R_thigh": 0.7825635350836765,
+     "R_shin": 1.085684326069204,
+     "L_thigh": 0.7,
+     "L_shin": 0.821928685418927
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       282.945,
+       238.537
+      ],
+      "K": [
+       283.8278887429294,
+       269.9221882989717
+      ],
+      "A": [
+       260.6586894068903,
+       316.58699999999993
+      ],
+      "straight": false,
+      "Lt": 31.39760400244427,
+      "Ls": 52.100061890227465,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       232.686,
+       231.711
+      ],
+      "K": [
+       251.52677885745743,
+       238.0235310521004
+      ],
+      "A": [
+       267.12231778078564,
+       269.1903715073494
+      ],
+      "straight": false,
+      "Lt": 19.870153402511654,
+      "Ls": 34.851008281999434,
+      "sole_corr": [
+       -0.96,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 23,
+     "grey_halo_recoloured_px": 77,
+     "dropped_small_px": 89,
+     "edge_fix_px": 608,
+     "contact_shadow_px": 214
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -0.209,
+    "planted": [
+     "L",
+     "R"
+    ],
+    "vis": {
+     "L_boot": 128,
+     "L_shin": 21,
+     "L_thigh": 324,
+     "L_knee": 0,
+     "R_boot": 790,
+     "R_shin": 780,
+     "R_thigh": 181,
+     "R_knee": 36,
+     "body": 2923,
+     "tas0": 1107,
+     "tas1": 440,
+     "cape": 10767,
+     "left": 6910,
+     "right": 9136,
+     "front": 18969,
+     "back": 10767
+    },
+    "upper_top": 83,
+    "dy": 4,
+    "arm_deg": {
+     "left": 7.51,
+     "right": -8.74
+    },
+    "k": {
+     "R_thigh": 0.8358677360248522,
+     "R_shin": 0.9740728727191891,
+     "L_thigh": 0.7,
+     "L_shin": 1.154628741849769
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       281.531,
+       249.935
+      ],
+      "K": [
+       272.00216524483903,
+       282.089022850718
+      ],
+      "A": [
+       248.65868940689032,
+       322.58699999999993
+      ],
+      "straight": false,
+      "Lt": 33.53624721515001,
+      "Ls": 46.744026542229555,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       231.469,
+       242.757
+      ],
+      "K": [
+       241.5751361669981,
+       238.21935977732426
+      ],
+      "A": [
+       259.7579563034548,
+       283.67560000000003
+      ],
+      "straight": false,
+      "Lt": 11.078094015504306,
+      "Ls": 48.9579893714636,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 15,
+     "grey_halo_recoloured_px": 82,
+     "dropped_small_px": 72,
+     "edge_fix_px": 527,
+     "contact_shadow_px": 231
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 0.734,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "L_boot": 259,
+     "L_shin": 27,
+     "L_thigh": 200,
+     "L_knee": 0,
+     "R_boot": 733,
+     "R_shin": 467,
+     "R_thigh": 103,
+     "R_knee": 0,
+     "body": 2909,
+     "tas0": 1103,
+     "tas1": 444,
+     "cape": 10297,
+     "left": 6930,
+     "right": 9135,
+     "front": 18974,
+     "back": 10297
+    },
+    "upper_top": 88,
+    "dy": 4,
+    "arm_deg": {
+     "left": 7.49,
+     "right": -8.15
+    },
+    "k": {
+     "R_thigh": 0.8827826774429796,
+     "R_shin": 0.7,
+     "L_thigh": 0.7,
+     "L_shin": 1.2898480652913553
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       280.314,
+       255.041
+      ],
+      "K": [
+       259.514838521224,
+       283.7092426074378
+      ],
+      "A": [
+       261.6733177461374,
+       310.7617408734822
+      ],
+      "straight": false,
+      "Lt": 35.418543905969784,
+      "Ls": 27.13847259885347,
+      "sole_corr": [
+       22.56,
+       4.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       230.055,
+       248.215
+      ],
+      "K": [
+       228.9445499939335,
+       238.32177860963492
+      ],
+      "A": [
+       247.7579563034548,
+       289.67560000000003
+      ],
+      "straight": false,
+      "Lt": 9.955346739051866,
+      "Ls": 54.69149137078508,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 28,
+     "grey_halo_recoloured_px": 79,
+     "dropped_small_px": 38,
+     "edge_fix_px": 708,
+     "contact_shadow_px": 252
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 1.067,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "L_boot": 351,
+     "L_shin": 359,
+     "L_thigh": 200,
+     "L_knee": 0,
+     "R_boot": 670,
+     "R_shin": 325,
+     "R_thigh": 127,
+     "R_knee": 1,
+     "body": 3004,
+     "tas0": 1107,
+     "tas1": 452,
+     "cape": 10040,
+     "left": 6913,
+     "right": 9047,
+     "front": 18964,
+     "back": 10040
+    },
+    "upper_top": 81,
+    "dy": 4,
+    "arm_deg": {
+     "left": 6.56,
+     "right": -6.73
+    },
+    "k": {
+     "R_thigh": 0.8672479043135328,
+     "R_shin": 0.7,
+     "L_thigh": 0.7,
+     "L_shin": 1.2858002115492826
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       279.595,
+       248.136
+      ],
+      "K": [
+       260.54709596905735,
+       277.2545143803665
+      ],
+      "A": [
+       248.84176430013164,
+       295.1484447558497
+      ],
+      "straight": true,
+      "Lt": 30.643993263790286,
+      "Ls": 18.83136875481411,
+      "sole_corr": [
+       -3.39,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       228.849,
+       242.278
+      ],
+      "K": [
+       238.74986460963908,
+       241.23789967967178
+      ],
+      "A": [
+       235.7579563034548,
+       295.6756
+      ],
+      "straight": false,
+      "Lt": 9.955346739051866,
+      "Ls": 54.51985630463893,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 24,
+     "grey_halo_recoloured_px": 80,
+     "dropped_small_px": 12,
+     "edge_fix_px": 654,
+     "contact_shadow_px": 230
+    }
+   },
+   {
+    "order": [
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 0.403,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "L_boot": 1086,
+     "L_shin": 993,
+     "L_thigh": 48,
+     "L_knee": 0,
+     "R_boot": 803,
+     "R_shin": 1099,
+     "R_thigh": 26,
+     "R_knee": 18,
+     "body": 2965,
+     "tas0": 1104,
+     "tas1": 459,
+     "cape": 10295,
+     "left": 6904,
+     "right": 8887,
+     "front": 18756,
+     "back": 10295
+    },
+    "upper_top": 69,
+    "dy": 4,
+    "arm_deg": {
+     "left": 4.92,
+     "right": -4.67
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 0.947141411623739,
+     "L_thigh": 0.7,
+     "L_shin": 1.292641093096191
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       279.514,
+       235.412
+      ],
+      "K": [
+       293.96352582740116,
+       235.03495513668028
+      ],
+      "A": [
+       284.71043531284414,
+       279.5347451404462
+      ],
+      "straight": false,
+      "Lt": 14.45444428076324,
+      "Ls": 45.451633572951486,
+      "sole_corr": [
+       0.02,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       228.225,
+       230.89
+      ],
+      "K": [
+       239.12427406173077,
+       249.0637800165232
+      ],
+      "A": [
+       223.7579563034548,
+       301.6756
+      ],
+      "straight": false,
+      "Lt": 21.191518472296778,
+      "Ls": 54.80991993628595,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 45,
+     "grey_halo_recoloured_px": 81,
+     "dropped_small_px": 12,
+     "edge_fix_px": 688,
+     "contact_shadow_px": 239
+    }
+   },
+   {
+    "order": [
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": -0.233,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "R_boot": 816,
+     "R_shin": 973,
+     "R_thigh": 34,
+     "R_knee": 0,
+     "L_boot": 1076,
+     "L_shin": 1536,
+     "L_thigh": 281,
+     "L_knee": 193,
+     "body": 2917,
+     "tas0": 1109,
+     "tas1": 452,
+     "cape": 10850,
+     "left": 6893,
+     "right": 8729,
+     "front": 18539,
+     "back": 10850
+    },
+    "upper_top": 64,
+    "dy": 4,
+    "arm_deg": {
+     "left": 2.96,
+     "right": -2.31
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 1.015468182675822,
+     "L_thigh": 0.7,
+     "L_shin": 1.2723389571489974
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       280.068,
+       228.974
+      ],
+      "K": [
+       298.3020339044424,
+       225.01962167348958
+      ],
+      "A": [
+       316.42207796437253,
+       270.2559675718784
+      ],
+      "straight": false,
+      "Lt": 18.657896461753957,
+      "Ls": 48.7305139206687,
+      "sole_corr": [
+       -0.54,
+       1.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       228.376,
+       225.801
+      ],
+      "K": [
+       210.5229154272604,
+       253.74065963143912
+      ],
+      "A": [
+       211.7579563034548,
+       307.6756
+      ],
+      "straight": false,
+      "Lt": 33.15655604977786,
+      "Ls": 53.94907894047948,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 48,
+     "grey_halo_recoloured_px": 96,
+     "dropped_small_px": 11,
+     "edge_fix_px": 789,
+     "contact_shadow_px": 240
+    }
+   },
+   {
+    "order": [
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 0.235,
+    "planted": [
+     "L"
+    ],
+    "vis": {
+     "R_boot": 872,
+     "R_shin": 934,
+     "R_thigh": 61,
+     "R_knee": 0,
+     "L_boot": 1084,
+     "L_shin": 1557,
+     "L_thigh": 293,
+     "L_knee": 195,
+     "body": 2965,
+     "tas0": 1110,
+     "tas1": 461,
+     "cape": 11130,
+     "left": 6888,
+     "right": 8560,
+     "front": 18413,
+     "back": 11130
+    },
+    "upper_top": 70,
+    "dy": 4,
+    "arm_deg": {
+     "left": 1.21,
+     "right": -0.22
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 0.7652673350103163,
+     "L_thigh": 0.7200799724603048,
+     "L_shin": 1.2924256847260365
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       281.133,
+       234.899
+      ],
+      "K": [
+       305.2551274680576,
+       240.89800934909243
+      ],
+      "A": [
+       325.52771900856845,
+       271.51925966090204
+      ],
+      "straight": false,
+      "Lt": 24.856893344819245,
+      "Ls": 36.723819769012195,
+      "sole_corr": [
+       -0.7,
+       1.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       229.236,
+       232.718
+      ],
+      "K": [
+       206.37632061043783,
+       259.2759360963071
+      ],
+      "A": [
+       199.7579563034548,
+       313.6756
+      ],
+      "straight": false,
+      "Lt": 35.04124586097226,
+      "Ls": 54.80078629850753,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 39,
+     "grey_halo_recoloured_px": 89,
+     "dropped_small_px": 4,
+     "edge_fix_px": 935,
+     "contact_shadow_px": 250
+    }
+   },
+   {
+    "order": [
+     "R_boot",
+     "R_shin",
+     "R_thigh",
+     "R_knee",
+     "L_boot",
+     "L_shin",
+     "L_thigh",
+     "L_knee",
+     "body",
+     "tas0",
+     "tas1",
+     "cape",
+     "left",
+     "right"
+    ],
+    "sway": 0.886,
+    "planted": [
+     "L",
+     "R"
+    ],
+    "vis": {
+     "R_boot": 849,
+     "R_shin": 937,
+     "R_thigh": 47,
+     "R_knee": 0,
+     "L_boot": 1097,
+     "L_shin": 1489,
+     "L_thigh": 340,
+     "L_knee": 197,
+     "body": 2964,
+     "tas0": 1105,
+     "tas1": 456,
+     "cape": 10777,
+     "left": 6876,
+     "right": 8436,
+     "front": 18276,
+     "back": 10777
+    },
+    "upper_top": 82,
+    "dy": 3,
+    "arm_deg": {
+     "left": 0.12,
+     "right": 0.78
+    },
+    "k": {
+     "R_thigh": 0.7,
+     "R_shin": 0.9335635612247405,
+     "L_thigh": 0.7554723912203578,
+     "L_shin": 1.2334524732570145
+    },
+    "geo": {
+     "R": {
+      "bootkey": "R_boot",
+      "H": [
+       282.477,
+       247.254
+      ],
+      "K": [
+       302.01650757518667,
+       245.84986543065168
+      ],
+      "A": [
+       320.6586894068903,
+       286.587
+      ],
+      "straight": false,
+      "Lt": 19.589894082654354,
+      "Ls": 44.80005665585141,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     },
+     "L": {
+      "bootkey": "L_boot",
+      "H": [
+       230.523,
+       245.438
+      ],
+      "K": [
+       202.80224912122333,
+       269.5858435387071
+      ],
+      "A": [
+       187.7579563034548,
+       319.6756
+      ],
+      "straight": false,
+      "Lt": 36.76354684810859,
+      "Ls": 52.30023373502643,
+      "sole_corr": [
+       0.0,
+       0.0
+      ]
+     }
+    },
+    "clean": {
+     "pinholes_filled_px": 39,
+     "grey_halo_recoloured_px": 65,
+     "dropped_small_px": 0,
+     "edge_fix_px": 618,
+     "contact_shadow_px": 244
+    }
+   }
+  ]
+ }
+}

@@ -1,0 +1,175 @@
+{
+ "note": "v8 (07:52 build, Oct 4 2026 ET). Revised scope: clip edges (part-alpha snap / soft capsule caps), S thigh keys (3 painted keys swapped by phase, stretch 0.9-1.1, graded to v7 leg paint), E boots plant/lift with f04-f07 cape occlusion kept. No leg rim light; leg paint, upper body, arms, axes, cape, timing, joints (+raise) as v7. Built from _v7 sources; _v7 untouched.",
+ "v7_S": {
+  "look_score": 87.5,
+  "ssim_upper": 0.953,
+  "ssim_lower": 0.525,
+  "iou": 0.866,
+  "palette": 0.947,
+  "height_vs_idle": 1.0,
+  "motion_score": 91.7,
+  "sole_err": [
+   1.08,
+   1.08,
+   6.26,
+   1.08,
+   1.08,
+   0.07,
+   0.82,
+   0.82,
+   0.82,
+   0.82,
+   0.07,
+   0.03
+  ],
+  "PASS": {
+   "look": true,
+   "motion": false
+  },
+  "motion_bootsole": 100.0
+ },
+ "v7_E": {
+  "look_score": 85.1,
+  "ssim_upper": 0.98,
+  "ssim_lower": 0.394,
+  "iou": 0.801,
+  "palette": 0.943,
+  "height_vs_idle": 1.0,
+  "motion_score": 100.0,
+  "sole_err": [
+   0.19,
+   0.14,
+   0.14,
+   0.14,
+   0.14,
+   0.14,
+   0.05,
+   0.25,
+   0.88,
+   0.88,
+   0.88,
+   0.88
+  ],
+  "PASS": {
+   "look": true,
+   "motion": true
+  },
+  "motion_bootsole": 100.0
+ },
+ "v8_S": {
+  "look_score": 88.6,
+  "ssim_upper": 0.946,
+  "ssim_lower": 0.588,
+  "iou": 0.885,
+  "palette": 0.948,
+  "height_vs_idle": 1.0,
+  "motion_score": 91.7,
+  "sole_err": [
+   1.08,
+   1.08,
+   6.26,
+   1.08,
+   1.08,
+   0.07,
+   0.82,
+   0.82,
+   0.82,
+   0.82,
+   0.07,
+   0.03
+  ],
+  "PASS": {
+   "look": true,
+   "motion": false
+  },
+  "motion_bootsole": 100.0
+ },
+ "v8_E": {
+  "look_score": 85.1,
+  "ssim_upper": 0.968,
+  "ssim_lower": 0.391,
+  "iou": 0.801,
+  "palette": 0.967,
+  "height_vs_idle": 1.0,
+  "motion_score": 100.0,
+  "sole_err": [
+   0.19,
+   0.14,
+   0.14,
+   0.14,
+   0.14,
+   0.14,
+   0.05,
+   0.25,
+   0.88,
+   0.88,
+   0.88,
+   0.88
+  ],
+  "PASS": {
+   "look": true,
+   "motion": true
+  },
+  "motion_bootsole": 100.0
+ },
+ "qa": {
+  "S": {
+   "pass": 12,
+   "of": 12,
+   "max_skate_px": 0.0
+  },
+  "E": {
+   "pass": 12,
+   "of": 12,
+   "max_skate_px": 0.0
+  },
+  "W": {
+   "pass": 12,
+   "of": 12,
+   "max_skate_px": 0.0
+  },
+  "N": {
+   "pass": 12,
+   "of": 12,
+   "max_skate_px": 0.0
+  }
+ },
+ "targets": {
+  "S": "/workspace/scratch/ij_walk/repaint_E2/rp_S_turn_t1.jpg",
+  "E": "/workspace/scratch/ij_walk/repaint_E2/rp_E_stride_t2.jpg"
+ },
+ "f02_caveat": "S motion_score 91.7 comes only from f02 sole_err 6.26 px: the v2 reference has a black pixel row at y=333 (v8 sole at 332). Same as v7 (Claude #252 5979203568 counts motion as passing); motion_bootsole 100.",
+ "thigh_grade_Lab": {
+  "v7_mean": [
+   8.22,
+   0.52,
+   1.1
+  ],
+  "v7_std": [
+   7.16,
+   1.52,
+   1.4
+  ],
+  "v8_mean": [
+   8.32,
+   0.54,
+   1.16
+  ],
+  "v8_std": [
+   7.08,
+   1.18,
+   1.09
+  ]
+ },
+ "straight_clip_segments_S_ge10px": {
+  "v7": {
+   "n": 179,
+   "total_len": 2772
+  },
+  "v8": {
+   "n": 117,
+   "total_len": 1571,
+   "note": "remaining are painted edges (hafts, boot shafts, cape strands, loin-vs-cape inside red)"
+  }
+ }
+}

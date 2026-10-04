@@ -1,0 +1,23 @@
+{
+ "motion_bootsole": 100.0,
+ "sole_err_bootsole": [
+  1.08,
+  1.08,
+  1.08,
+  1.08,
+  1.08,
+  0.07,
+  0.82,
+  0.82,
+  0.82,
+  0.82,
+  0.07,
+  0.03
+ ],
+ "leg_ratio_true": 0.968,
+ "leg_ratio_true_detail": {
+  "cand_sole_row": 344,
+  "tgt_sole_row_unclipped": 348.2,
+  "tgt_pelvis_row": 216.9
+ }
+}
