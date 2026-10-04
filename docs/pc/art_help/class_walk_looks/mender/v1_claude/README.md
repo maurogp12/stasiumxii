@@ -1,5 +1,7 @@
 # Mender walk v1 (Claude): painted legs on blockout v3.1 (S) / v3 (E)
 
+> **LOCKED, 4 Oct 2026.** Mauro: "Lock in Mender." Walk S/E/W/N at commit `d83d9bb` is final: S is on Mender blockout v3.1 (`ca1a7c3`, foot_w 0.3, Mauro's pick), E is on v3. Don't change these frames without his sign-off.
+
 The Mender walk for S and E, 12 frames each; W and N are mirrors of S and E. First pass for review, not locked.
 
 Same method as the locked Kestrel (`kestrel/v3_claude/`) and Gloam (`gloam/v1_claude/`) walks. Their scripts were copied and adapted here; neither was changed.
