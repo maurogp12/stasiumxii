@@ -24,7 +24,9 @@ const MAX_STAR := 5
 ## Foe toughness per star: [HP multiplier, damage multiplier].
 ## PROVISIONAL — the Blueprint leaves Stasis HP / dmg Open; these are Claude's
 ## proposal that Mauro green-lit by asking for star difficulty. Tune freely.
-const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [2.6, 1.8], 4: [5.9, 3.45], 5: [7.4, 4.2]}
+## ★3–★5 retuned 4 Oct 2026 for the role AI (Mauro: "make them stronger to hit
+## 80 65 50"): dungeon sim, party of 4 AI heroes, 40 runs: 83% / 68% / 48%.
+const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [6.9, 4.75], 4: [7.95, 4.75], 5: [8.9, 5.05]}
 ## Dungeon party (Mauro 1 Oct 2026): ★1 is for 1 player, ★2 for 2, ★3–★5
 ## for a full party of 4. Monsters are tuned for that party whoever enters
 ## ("allowed but brutal"). PARTY_SCALE = [hp, damage] on top of STAR_SCALE.

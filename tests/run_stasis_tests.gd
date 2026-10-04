@@ -126,11 +126,11 @@ func _test_package_and_flow() -> void:
 	eq(int(one[1]["hp"]), StasisCatalog.PROVISIONAL_TRASH_HP, "★1 trash keeps the base HP")
 	StasisCatalog.set_star(5)
 	var five: Array = StasisCatalog.fight_config()["stasis_roster"]
-	eq(int(five[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_TRASH_HP * 7.4 * 3.2), "★5 trash HP x7.4 (star) x3.2 (party of 4)")
-	eq(int(five[1]["attack_base"]), roundi(StasisCatalog.PROVISIONAL_TRASH_ATTACK * 4.2 * 1.6), "★5 trash damage x4.2 x1.6")
+	eq(int(five[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_TRASH_HP * 8.9 * 3.2), "★5 trash HP x8.9 (star) x3.2 (party of 4)")
+	eq(int(five[1]["attack_base"]), roundi(StasisCatalog.PROVISIONAL_TRASH_ATTACK * 5.05 * 1.6), "★5 trash damage x5.05 x1.6")
 	StasisCatalog.room = "b"
 	var boss5: Array = StasisCatalog.fight_config()["stasis_roster"]
-	eq(int(boss5[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_BOSS_HP * 7.4 * 3.2), "★5 boss HP x7.4 x3.2")
+	eq(int(boss5[1]["hp"]), roundi(StasisCatalog.PROVISIONAL_BOSS_HP * 8.9 * 3.2), "★5 boss HP x8.9 x3.2")
 	truthy(StasisCatalog.room_banner().contains("★5"), "the banner shows the star")
 	StasisCatalog.set_star(9)
 	eq(StasisCatalog.star, 5, "stars cap at 5")
@@ -138,6 +138,7 @@ func _test_package_and_flow() -> void:
 	eq(StasisCatalog.star, 1, "stars floor at 1")
 	for value in range(1, 6):
 		truthy(StasisCatalog.hp_mult(value) >= StasisCatalog.hp_mult(maxi(value - 1, 1)), "★%d is at least as tough as the star below" % value)
+		truthy(StasisCatalog.dmg_mult(value) >= StasisCatalog.dmg_mult(maxi(value - 1, 1)), "★%d hits at least as hard as the star below" % value)
 	var run: Node = (load("res://scenes/stasis_run.tscn") as PackedScene).instantiate()
 	run._auto_launch = false
 	StasisCatalog.clear_run()
