@@ -7,6 +7,9 @@
 # with light; soft shadow, aura and sparkles; the Still's emblem on a gold
 # medallion. 128x128, painted at 4x and downsampled.
 # Run: python3 build_tools/art/still_icons.py
+# SUPERSEDED for the shipped icons (Mauro 4 Oct 2026, his painted bottles and
+# shards): run build_tools/art/still_icons_from_refs.py instead. That script
+# still uses medallion() and COLORS from here.
 import math
 import os
 import random
