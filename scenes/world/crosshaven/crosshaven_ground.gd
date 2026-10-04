@@ -343,15 +343,88 @@ func _kit_sea(cell: Vector2i) -> bool:
 	return family == "sea_shallow" or family == "sea_deep"
 
 
-## Shift only the Eastmarch shelf toward the rim sea (#1e6e96).
-## Repo water tiles stay on their own grade.
-func _kit_sea_modulate(cell: Vector2i) -> Color:
-	var depth := _rim_depth(cell)
-	if depth >= 8:
-		return Color.WHITE
-	var t := (8.0 - float(depth)) / 8.0
-	var toward := Color(30.0 / 36.0, 1.0, 150.0 / 158.0)
-	return Color.WHITE.lerp(toward, t * 0.65)
+## Kit sea is already deep blue. The repo tiles are graded to the same hue.
+func _kit_sea_modulate(_cell: Vector2i) -> Color:
+	return Color.WHITE
+
+
+## Open water_a..d are the lighter river blue. These multiplies make sea and swamp.
+const SEA_TINT := Color(36.0 / 94.0, 110.0 / 173.0, 158.0 / 224.0)
+const SWAMP_TINT := Color(92.0 / 94.0, 96.0 / 173.0, 52.0 / 224.0)
+
+
+func _water_grade(cell: Vector2i) -> String:
+	if zone != null and zone.zone_id.contains("swamp"):
+		return "swamp"
+	# Stoneford's channel is the river. Inland pools are the same lighter blue.
+	if zone != null and zone.zone_id.begins_with("crosshaven_stoneford"):
+		return "river"
+	if _rim_depth(cell) > 8 and not _faces_void(cell):
+		return "river"
+	return "sea"
+
+
+func _water_grade_tint(cell: Vector2i) -> Color:
+	var grade := _water_grade(cell)
+	if grade == "swamp":
+		return SWAMP_TINT
+	if grade == "sea":
+		return SEA_TINT
+	return Color.WHITE
+
+
+func _open_water_tile(id: String) -> bool:
+	return id == "water" or id == "water_a" or id == "water_b" or id == "water_c" or id == "water_d" or id.begins_with("water_deep")
+
+
+func _touches_sea_water(cell: Vector2i) -> bool:
+	for dir in _ORTHO:
+		var nb: Vector2i = cell + dir
+		if Art.terrain_seen(zone, nb) == "water" and _water_grade(nb) == "sea":
+			return true
+	return false
+
+
+func _sea_meets_land(cell: Vector2i) -> bool:
+	if _water_grade(cell) != "sea":
+		return false
+	for dir in _ORTHO:
+		var seen := Art.terrain_seen(zone, cell + dir)
+		# Cliff tops read as grass. The shore piece is the sand edge there too.
+		if seen != "" and seen != "water":
+			return true
+	return false
+
+
+func _sand_pick(cell: Vector2i) -> Dictionary:
+	var interiors: Array[String] = ["golden_plains_sand_a", "golden_plains_sand_b", "golden_plains_sand_c"]
+	var floor_id := interiors[Art.h(cell.x, cell.y, interiors.size())]
+	var g: Array[String] = []
+	for side in Art.SIDES:
+		var nb: Vector2i = cell + Art.SIDE_DIR[side]
+		var seen := Art.terrain_seen(zone, nb)
+		var joins := seen == "water" or (seen == "golden_plains" and _touches_sea_water(nb))
+		if not joins:
+			g.append(side)
+	if not g.is_empty():
+		var edge := "golden_plains_sand_edge_" + "_".join(g)
+		if Art.has("tiles", edge):
+			floor_id = edge
+	var corners: Array[String] = []
+	for c_name in ["n", "e", "s", "w"]:
+		var c := str(c_name)
+		var rec: Array = Art.CORNERS[c]
+		if g.has(str(rec[1])) or g.has(str(rec[2])):
+			continue
+		var diag: Vector2i = cell + (rec[0] as Vector2i)
+		var seen := Art.terrain_seen(zone, diag)
+		var joins := seen == "water" or (seen == "golden_plains" and _touches_sea_water(diag))
+		if joins:
+			continue
+		var corner_id := "golden_plains_sand_corner_" + c
+		if Art.has("tiles", corner_id):
+			corners.append(corner_id)
+	return {"floor": floor_id, "corners": corners}
 
 
 func _cave_id(cell: Vector2i) -> String:
@@ -558,6 +631,30 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 	var floor_tint := _floor_modulate(cell, terrain)
 	var pick := Art.pick_tile(zone, cell)
 	var floor_id := str(pick["floor"])
+	var corner_ids: Array = pick["corners"]
+	if terrain == "water" and _sea_meets_land(cell) and floor_id.begins_with("water_bank"):
+		var shore_id := floor_id.replace("water_bank", "water_shore")
+		if Art.has("tiles", shore_id):
+			floor_id = shore_id
+			var shore_corners: Array = []
+			for raw_corner in corner_ids:
+				var cid := str(raw_corner).replace("water_bank", "water_shore")
+				if Art.has("tiles", cid):
+					shore_corners.append(cid)
+			corner_ids = shore_corners
+	if terrain == "water":
+		if _open_water_tile(floor_id):
+			floor_tint = _water_grade_tint(cell)
+		elif _water_grade(cell) == "swamp":
+			floor_tint = SWAMP_TINT
+		else:
+			# Bank and shore art already carry their grade. A multiply would tint the sand.
+			floor_tint = Color.WHITE
+	elif terrain == "golden_plains" and _beach_at(cell) == "" and _touches_sea_water(cell):
+		var sand_pick := _sand_pick(cell)
+		floor_id = str(sand_pick["floor"])
+		corner_ids = sand_pick["corners"]
+		floor_tint = Color.WHITE
 	var drew_ripple := false
 	if terrain == "water" and VisualSettings.current != null and VisualSettings.current.enabled("animations"):
 		drew_ripple = _draw_ripple(ci, floor_id + "_ripple", south_tip, floor_tint)
@@ -568,7 +665,8 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		if not floor_art.is_empty():
 			var size := Art.size_of(floor_art)
 			Art.draw_at(ci, floor_art, south_tip + Vector2(-size.x * 0.5, -size.y), floor_tint)
-	for corner_id in pick["corners"]:
+	for raw_corner in corner_ids:
+		var corner_id := str(raw_corner)
 		var corner_art := Art.texture("tiles", corner_id)
 		if not corner_art.is_empty():
 			var csize := Art.size_of(corner_art)
@@ -630,7 +728,7 @@ func _fade_void_edge(ci: Node2D, cell: Vector2i, steps: int, rank: int, terrain:
 	if _rim_depth(cell) > 8:
 		return
 	# Land keeps its tiles. Olive is not drawn inside the coast.
-	var fade := Color("1e6e96")
+	var fade := Color("246e9e")
 	fade.a = 1.0 if rank == 1 else 0.5
 	ci.draw_colored_polygon(Pick.diamond(cell, float(steps)), fade)
 
@@ -711,11 +809,7 @@ func _floor_modulate(cell: Vector2i, terrain: String) -> Color:
 	if terrain == "cliff":
 		return _with_frost(tint.lerp(Color(0.90, 0.88, 0.84), 0.45), cell, terrain)
 	if terrain == "water":
-		if _weight(weights, "southbridge") > 0.2:
-			return Color(0.68, 0.78, 0.56)
-		if _weight(weights, "northgate") > 0.25 or snow_at_cell(cell) > 0.2:
-			return Color(0.66, 0.80, 0.92)
-		return tint.lerp(Color(0.85, 0.93, 1.0), 0.35)
+		return _water_grade_tint(cell)
 	if _faces_water(cell) and _weight(weights, "eastmarch") > 0.18:
 		tint = tint.lerp(Color(1.0, 0.86, 0.58), 0.72)
 	elif _faces_water(cell) and _weight(weights, "southbridge") > 0.22:

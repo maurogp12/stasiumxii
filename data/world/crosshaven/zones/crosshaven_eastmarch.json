@@ -1083,21 +1083,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_net_rack_01",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 22,
-        "y": 11
-      },
-      "footprint": [
-        {
-          "x": 22,
-          "y": 11
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_scatter_tree_02",
       "type": "tree",
       "blocks": true,
@@ -1949,81 +1934,6 @@
         {
           "x": 21,
           "y": 22
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_density_farm_fence_nwse_33",
-      "type": "farm_fence_nwse",
-      "blocks": true,
-      "origin": {
-        "x": 14,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 14,
-          "y": 23
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_density_farm_fence_nwse_34",
-      "type": "farm_fence_nwse",
-      "blocks": true,
-      "origin": {
-        "x": 15,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 15,
-          "y": 23
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_density_farm_fence_nwse_35",
-      "type": "farm_fence_nwse",
-      "blocks": true,
-      "origin": {
-        "x": 17,
-        "y": 23
-      },
-      "footprint": [
-        {
-          "x": 17,
-          "y": 23
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_density_farm_fence_nesw_36",
-      "type": "farm_fence_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 24
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 24
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_density_farm_fence_nesw_37",
-      "type": "farm_fence_nesw",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 25
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 25
         }
       ]
     },
