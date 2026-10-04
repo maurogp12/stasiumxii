@@ -6,10 +6,10 @@ extends Node2D
 ## Art is data-driven: res://art/pc/look/crosshaven_jungle/ with @2x tried first.
 ## Tunables: res://data/pc/look/crosshaven_backdrop.json
 ## Luca's v1 mock is v1_decor in that json: a sky plate, a mossy clearing,
-## and a foreground leaf frame. Those files are not in the tree yet. Until
-## every one of them exists, the v4 plates stay exactly as they are. The
-## leaf frame, once it is up, sits on the board edges and stops at the
-## action bar. It does not cover a walkable cell.
+## and a foreground leaf frame. Until every one of those files exists, the
+## v4 plates stay exactly as they are. Once they do, each layer sits at the
+## mock v1 centre and size. Leaves are pinned to the board and cut above the
+## action bar. Only the tiles differ from the mock.
 
 const PARAMS_PATH := "res://data/pc/look/crosshaven_backdrop.json"
 const DEFAULT_ROOT := "res://art/pc/look/crosshaven_jungle/"
@@ -110,8 +110,12 @@ uniform sampler2D sway_tex : filter_nearest, repeat_disable;
 uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
+uniform float cut_y = 2.0;
 """ + LIGHT.GRADE_GLSL + """
 void fragment() {
+	if (SCREEN_UV.y > cut_y) {
+		discard;
+	}
 	vec2 off = sway_dir * swing * amplitude_px * TEXTURE_PIXEL_SIZE;
 	vec2 m = textureLod(sway_tex, UV, 0.0).rg;
 	float w = m.r;
@@ -264,6 +268,37 @@ static func v1_root() -> String:
 	if not root.ends_with("/"):
 		root += "/"
 	return root
+
+
+## Mock-v1 placement: explicit board-local centre and world size per layer
+## (v1_decor.placement). Empty unless the v1 kit is live and the block exists.
+static func v1_placement() -> Dictionary:
+	if not v1_ready():
+		return {}
+	var raw: Variant = v1_decor().get("placement", {})
+	if raw is Dictionary:
+		return raw
+	return {}
+
+
+static func _placed(spec: Dictionary, key: String) -> Dictionary:
+	var raw: Variant = spec.get(key, {})
+	if not (raw is Dictionary):
+		return {}
+	var block := raw as Dictionary
+	var c: Variant = block.get("center", [])
+	var s: Variant = block.get("world_size", [])
+	if not (c is Array) or not (s is Array):
+		return {}
+	var center: Array = c
+	var size: Array = s
+	if center.size() < 2 or size.size() < 2:
+		return {}
+	return {
+		"center": Vector2(float(center[0]), float(center[1])),
+		"size": Vector2(float(size[0]), float(size[1])),
+		"z": int(block.get("z", -1)),
+	}
 
 
 ## True only when the sky, the clearing, and all four leaf-frame files import.
@@ -757,7 +792,7 @@ func _cell_edge_guard() -> Rect2:
 ## The action bar is a CanvasLayer above the world. The leaf frame also stops
 ## at that line, so a transparent bar does not show leaves through it.
 func _view_above_hud(view: Rect2) -> Rect2:
-	var clear := float(v1_decor().get("hud_clear_px", 148.0))
+	var clear := float(v1_decor().get("hud_clear_px", 175.0))
 	var cam: Camera2D = null
 	if _board != null:
 		cam = _board.get_node_or_null("BoardCamera") as Camera2D
@@ -784,17 +819,26 @@ func _layout_backs() -> void:
 			root.visible = false
 			continue
 		root.visible = true
-		root.position = cam.position
 		art.modulate = _back_tint(slot)
 		var fraction := _parallax_for(slot)
 		var source := _source_tex(art)
 		var scale := _back_scale(fraction, source.get_size(), view)
 		var drawn := source.get_size() * scale
+		var place_key := "sky" if slot == "back_far" else "clearing"
+		var spot := _placed(v1_placement(), place_key)
+		if not spot.is_empty():
+			drawn = spot["size"]
 		var px := _display_px(slot, drawn, cam.zoom)
 		_assign_display_tex(art, source, px)
 		var shown := art.texture.get_size()
 		art.scale = Vector2(drawn.x / shown.x, drawn.y / shown.y)
-		art.position = -pan * fraction
+		if not spot.is_empty():
+			# Mock v1: the plate sits at its board position at rest and drifts by the parallax on a pan.
+			root.position = (spot["center"] as Vector2) + pan * (1.0 - fraction)
+			art.position = Vector2.ZERO
+		else:
+			root.position = cam.position
+			art.position = -pan * fraction
 		# v4 draws one blended plate. v1 draws the sky on its own, at 0.08.
 		art.visible = false
 		art.material = null
@@ -810,13 +854,17 @@ func _layout_plate(cam: Camera2D, pan: Vector2, view: Vector2) -> void:
 	var far: Sprite2D = _backs["back_far"].get_node("Art")
 	var fraction := _parallax_for("back_mid")
 	var blend_sky := not v1_ready()
+	var at := cam.position - pan * fraction
+	var spot := _placed(v1_placement(), "clearing")
+	if not spot.is_empty():
+		at = (spot["center"] as Vector2) + pan * (1.0 - fraction)
 	if not blend_sky:
 		far.visible = true
 		far.material = _plate_mat
 	_plate_sprite.visible = true
-	_plate_sprite.texture = _composited_plate(far, mid, cam.position - pan * fraction, blend_sky)
+	_plate_sprite.texture = _composited_plate(far, mid, at, blend_sky)
 	_plate_sprite.scale = mid.scale
-	_plate_sprite.position = cam.position - pan * fraction
+	_plate_sprite.position = at
 	_plate_sprite.modulate = Color.WHITE
 
 
@@ -980,6 +1028,15 @@ func _leaf_tex_px(edge: String, source: Texture2D) -> Vector2i:
 
 
 func _layout_leaves() -> void:
+	var spots := v1_placement()
+	if not spots.is_empty():
+		for slot in LEAF_EDGES.keys():
+			_place_leaf_at(slot, str(LEAF_EDGES[slot]), spots)
+		return
+	for slot in _sprites.keys():
+		var mat := (_sprites[slot] as Sprite2D).material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("cut_y", 2.0)
 	var guard := _play_guard()
 	var view := _view_rect()
 	# The v1 leaf frame comes in to the cell edge and stops above the action bar.
@@ -990,6 +1047,61 @@ func _layout_leaves() -> void:
 	var margins := _margins(view, guard)
 	for slot in LEAF_EDGES.keys():
 		_place_leaf(slot, margins[str(LEAF_EDGES[slot])], str(LEAF_EDGES[slot]))
+
+
+## Mock v1: each leaf frame is pinned to the board at its mock position and size
+## (it moves with the board) and is cut at the action bar line in screen space.
+func _place_leaf_at(slot: String, edge: String, spots: Dictionary) -> void:
+	var clip: Node2D = _clips[slot]
+	var pivot: Node2D = _pivots[slot]
+	var sprite: Sprite2D = _sprites[slot]
+	var key := ""
+	var frame: Variant = v1_decor().get("leaf_frame", {})
+	if frame is Dictionary:
+		var names: Variant = (frame as Dictionary).get("slots", {})
+		if names is Dictionary:
+			for name in (names as Dictionary).keys():
+				if str((names as Dictionary)[name]) == edge:
+					key = str(name)
+	var spot := _placed(spots, key)
+	if sprite.texture == null or spot.is_empty():
+		clip.visible = false
+		return
+	var size: Vector2 = spot["size"]
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	var zoom := Vector2.ONE
+	if cam != null:
+		zoom = cam.zoom
+	var source := _source_tex(sprite)
+	clip.visible = true
+	# clip origin is the frame's top-left so margin_size keeps coverage checks exact
+	clip.position = (spot["center"] as Vector2) - size * 0.5
+	if int(spot["z"]) >= 0:
+		clip.z_index = int(spot["z"])
+	clip.set_meta("margin_size", size)
+	sprite.set_meta("crop_frac", Rect2(0, 0, 1, 1))
+	var px := Vector2i(clampi(int(ceil(size.x * zoom.x)), 8, 4096), clampi(int(ceil(size.y * zoom.y)), 8, 4096))
+	_assign_display_tex(sprite, source, px)
+	var full := sprite.get_meta("full_px", sprite.texture.get_size()) as Vector2
+	sprite.scale = Vector2(size.x / maxf(full.x, 1.0), size.y / maxf(full.y, 1.0))
+	sprite.centered = true
+	sprite.offset = Vector2.ZERO
+	sprite.position = Vector2.ZERO
+	pivot.set_meta("base_pos", size * 0.5)
+	pivot.position = size * 0.5
+	pivot.rotation = 0.0
+	sprite.modulate = _leaf_modulate()
+	var mat := sprite.material as ShaderMaterial
+	if mat != null:
+		var swing_px := float(_params.get("sway_amplitude_px", 14.0))
+		mat.set_shader_parameter("amplitude_px", minf(swing_px / maxf(sprite.scale.x, 0.001), float(SWAY_PAD_PX)))
+		mat.set_shader_parameter("sway_dir", _sway_dir(edge))
+		var view_h := 720.0
+		var vp := get_viewport()
+		if vp != null:
+			view_h = vp.get_visible_rect().size.y
+		var clear := float(v1_decor().get("hud_clear_px", 175.0))
+		mat.set_shader_parameter("cut_y", 1.0 - clear / maxf(view_h, 1.0))
 
 
 func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:

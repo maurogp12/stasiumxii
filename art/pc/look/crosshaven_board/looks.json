@@ -3311,205 +3311,392 @@
    ]
   }
  },
- "v1_note": "Luca's v1 mock. Not drawn until v1_decor.props_live is true. Tall pieces are off the 0..14 grid, so they frame the board and do not read as cover. Low plants sit on flat corner grass. (0,0) stays empty. No walls or logs.",
+ "v1_note": "Mock v1 (mock_l9_1280_v1.png) prop and decor positions, cell anchored. Replaces the branch v1_frame/v1_plants.",
  "v1_frame": [
   {
    "x": 0,
-   "y": -1,
-   "new_id": "standing_stone",
-   "height": 0,
-   "layer": "prop",
-   "note": "top corner, off the walkable grid"
-  },
-  {
-   "x": 2,
-   "y": -1,
-   "new_id": "standing_stone",
-   "height": 0,
-   "layer": "prop",
-   "note": "north rim, off the walkable grid"
-  },
-  {
-   "x": 5,
-   "y": -1,
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "layer": "prop",
-   "note": "north rim mossy rocks, off the walkable grid"
-  },
-  {
-   "x": 8,
-   "y": -1,
-   "new_id": "stone_well",
-   "height": 0,
-   "layer": "prop",
-   "note": "upper right well, off the walkable grid"
-  },
-  {
-   "x": 11,
-   "y": -1,
-   "new_id": "standing_stone",
-   "height": 0,
-   "layer": "prop",
-   "note": "north rim, off the walkable grid"
-  },
-  {
-   "x": 13,
-   "y": -1,
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "layer": "prop",
-   "note": "north rim mossy rocks, off the walkable grid"
-  },
-  {
-   "x": -1,
-   "y": 1,
-   "new_id": "standing_stone",
-   "height": 0,
-   "layer": "prop",
-   "note": "west rim, off the walkable grid"
-  },
-  {
-   "x": -1,
-   "y": 6,
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "layer": "prop",
-   "note": "west rim mossy rocks, off the walkable grid"
-  },
-  {
-   "x": -1,
-   "y": 14,
-   "new_id": "standing_stone",
-   "height": 0,
-   "layer": "prop",
-   "note": "left corner, off the walkable grid"
-  },
-  {
-   "x": 15,
    "y": 0,
    "new_id": "standing_stone",
    "height": 0,
    "layer": "prop",
-   "note": "right corner, off the walkable grid"
+   "note": "mock v1 position (old ruins)"
   },
   {
-   "x": 15,
-   "y": 7,
-   "new_id": "boulder_cluster",
+   "x": 1,
+   "y": 0,
+   "new_id": "ruined_wall_short",
    "height": 0,
    "layer": "prop",
-   "note": "east rim mossy rocks, off the walkable grid"
+   "note": "mock v1 position (old fence)"
   },
   {
-   "x": 15,
-   "y": 13,
-   "new_id": "boulder_cluster",
+   "x": 6,
+   "y": 0,
+   "new_id": "lilac_shrub",
    "height": 0,
    "layer": "prop",
-   "note": "east rim mossy rocks, off the walkable grid"
-  },
-  {
-   "x": 4,
-   "y": 15,
-   "new_id": "boulder_cluster",
-   "height": 0,
-   "layer": "prop",
-   "note": "front rim, under the leaf frame, off the walkable grid"
+   "note": "mock v1 position (old hay)"
   },
   {
    "x": 14,
-   "y": 15,
+   "y": 0,
    "new_id": "standing_stone",
    "height": 0,
    "layer": "prop",
-   "note": "bottom corner, off the walkable grid"
+   "note": "mock v1 position (old ruins)"
+  },
+  {
+   "x": 9,
+   "y": 1,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 12,
+   "y": 1,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 3,
+   "y": 3,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 11,
+   "y": 3,
+   "new_id": "lilac_shrub",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old hay)"
+  },
+  {
+   "x": 14,
+   "y": 4,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rock_pillar)"
+  },
+  {
+   "x": 0,
+   "y": 6,
+   "new_id": "lilac_shrub",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old hay)"
+  },
+  {
+   "x": 1,
+   "y": 7,
+   "new_id": "lilac_shrub",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old hay)"
+  },
+  {
+   "x": 14,
+   "y": 7,
+   "new_id": "stone_well",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old well)"
+  },
+  {
+   "x": 13,
+   "y": 8,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 0,
+   "y": 10,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rock_pillar)"
+  },
+  {
+   "x": 2,
+   "y": 10,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old ruins)"
+  },
+  {
+   "x": 12,
+   "y": 10,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 3,
+   "y": 12,
+   "new_id": "ruined_wall_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old fence)"
+  },
+  {
+   "x": 10,
+   "y": 12,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rock_pillar)"
+  },
+  {
+   "x": 2,
+   "y": 13,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
+  },
+  {
+   "x": 5,
+   "y": 13,
+   "new_id": "fallen_log_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old fence)"
+  },
+  {
+   "x": 6,
+   "y": 13,
+   "new_id": "lilac_shrub",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old hay)"
+  },
+  {
+   "x": 0,
+   "y": 14,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old ruins)"
+  },
+  {
+   "x": 4,
+   "y": 14,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old ruins)"
+  },
+  {
+   "x": 8,
+   "y": 14,
+   "new_id": "fallen_log_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old fence)"
+  },
+  {
+   "x": 13,
+   "y": 14,
+   "new_id": "ruined_wall_short",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old fence)"
+  },
+  {
+   "x": 14,
+   "y": 14,
+   "new_id": "boulder_small",
+   "height": 0,
+   "layer": "prop",
+   "note": "mock v1 position (old rubble)"
   }
  ],
  "v1_plants": [
   {
-   "x": 1,
-   "y": 0,
-   "id": "flower_tuft",
-   "height": 0,
-   "where": "corner_grass"
-  },
-  {
    "x": 2,
-   "y": 0,
-   "id": "fern",
-   "height": 0,
-   "where": "corner_grass"
+   "y": 8,
+   "id": "lilac_bush",
+   "height": 1,
+   "where": "cliff_top"
   },
   {
-   "x": 0,
-   "y": 1,
+   "x": 3,
+   "y": 7,
+   "id": "flower_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 4,
+   "y": 3,
+   "id": "lilac_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 5,
+   "y": 5,
+   "id": "fern",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 5,
+   "y": 9,
+   "id": "flower_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 3,
+   "id": "lilac_bush",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 7,
+   "id": "lilac_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 9,
+   "id": "lilac_bush",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 10,
+   "id": "fern",
+   "height": 2,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 11,
+   "id": "flower_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 8,
+   "y": 11,
+   "id": "lilac_bush",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 9,
+   "y": 9,
+   "id": "lilac_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 10,
+   "y": 3,
+   "id": "lilac_bush",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 10,
+   "y": 11,
+   "id": "fern",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 11,
+   "y": 7,
+   "id": "flower_tuft",
+   "height": 1,
+   "where": "cliff_top"
+  },
+  {
+   "x": 7,
+   "y": 13,
    "id": "clover_patch",
    "height": 0,
-   "where": "corner_grass"
-  },
-  {
-   "x": 13,
-   "y": 0,
-   "id": "flower_tuft",
-   "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
    "x": 14,
-   "y": 0,
+   "y": 9,
    "id": "fern",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
-   "x": 13,
+   "x": 10,
    "y": 1,
-   "id": "pebbles_moss",
-   "height": 0,
-   "where": "corner_grass"
-  },
-  {
-   "x": 0,
-   "y": 13,
-   "id": "clover_patch",
-   "height": 0,
-   "where": "corner_grass"
-  },
-  {
-   "x": 0,
-   "y": 14,
    "id": "flower_tuft",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
-   "x": 1,
-   "y": 14,
-   "id": "fern",
+   "x": 11,
+   "y": 9,
+   "id": "clover_patch",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
-   "x": 13,
-   "y": 13,
+   "x": 9,
+   "y": 0,
    "id": "lilac_tuft",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
-   "x": 14,
+   "x": 10,
+   "y": 6,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "grass_edge"
+  },
+  {
+   "x": 5,
+   "y": 14,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "grass_edge"
+  },
+  {
+   "x": 12,
+   "y": 6,
+   "id": "pebbles_moss",
+   "height": 0,
+   "where": "grass_edge"
+  },
+  {
+   "x": 10,
    "y": 13,
    "id": "flower_tuft",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   },
   {
-   "x": 13,
-   "y": 14,
-   "id": "pebbles_moss",
+   "x": 4,
+   "y": 13,
+   "id": "clover_patch",
    "height": 0,
-   "where": "corner_grass"
+   "where": "grass_edge"
   }
  ]
 }

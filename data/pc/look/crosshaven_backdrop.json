@@ -79,21 +79,52 @@
       "over": "the screen frame and the board edge",
       "never_covers": ["walkable_cells", "hud"]
     },
+    "placement": {
+      "space": "board local px; cell (x,y) centre = ((x-y)*32, (x+y)*16). Mock v1 positions, mapped into the game camera",
+      "sky": {
+        "center": [0.0, 308.5],
+        "world_size": [2847.843, 1440.023]
+      },
+      "clearing": {
+        "center": [0.0, 308.5],
+        "world_size": [2847.843, 1440.023]
+      },
+      "leaf_frame_left": {
+        "center": [-702.817, 144.449],
+        "world_size": [1045.07, 1363.102],
+        "z": 722
+      },
+      "leaf_frame_right": {
+        "center": [702.817, 144.449],
+        "world_size": [1045.07, 1363.102],
+        "z": 723
+      },
+      "leaf_frame_top": {
+        "center": [0.0, -199.143],
+        "world_size": [2450.704, 675.918],
+        "z": 720
+      },
+      "leaf_frame_bottom": {
+        "center": [0.0, 651.388],
+        "world_size": [2450.704, 349.224],
+        "z": 721
+      }
+    },
     "masters_px": {
-      "sky": [2048, 1280],
-      "clearing": [4096, 2560],
-      "leaf_frame_left": [1024, 808],
-      "leaf_frame_right": [1024, 1168],
-      "leaf_frame_top": [2560, 592],
-      "leaf_frame_bottom": [2560, 480]
+      "sky": [2848, 1440],
+      "clearing": [5696, 2880],
+      "leaf_frame_left": [1484, 1936],
+      "leaf_frame_right": [1484, 1936],
+      "leaf_frame_top": [3480, 960],
+      "leaf_frame_bottom": [3480, 496]
     },
     "sway_px": {
-      "leaf_frame_left": [512, 404],
-      "leaf_frame_right": [512, 584],
-      "leaf_frame_top": [1280, 296],
-      "leaf_frame_bottom": [1280, 240]
+      "leaf_frame_left": [742, 968],
+      "leaf_frame_right": [742, 968],
+      "leaf_frame_top": [1740, 480],
+      "leaf_frame_bottom": [1740, 248]
     },
-    "hud_clear_px": 148,
-    "props_live": false
+    "hud_clear_px": 175,
+    "props_live": true
   }
 }

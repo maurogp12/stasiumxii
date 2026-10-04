@@ -418,8 +418,8 @@ func _ensure_data() -> void:
 			_by_cell[Vector2i(int(cell.get("x", 0)), int(cell.get("y", 0)))] = cell
 	var prop_rows: Array = looks.get("props", [])
 	var decor_rows: Array = looks.get("decor", [])
-	# Seal slabs stay. The v1 rim replaces the prop layer, and the corner
-	# plants replace decor. props_live is false, so this branch does not run.
+	# Seal slabs stay. The mock v1 frame replaces the prop layer, and the
+	# mock plants replace decor, including plants that sit on raised cells.
 	if v1_props_live():
 		var kept: Array = []
 		for entry in prop_rows:
@@ -445,10 +445,12 @@ func _ensure_data() -> void:
 		if not _props_at.has(at):
 			_props_at[at] = []
 		(_props_at[at] as Array).append(entry)
+	# Mock v1 draws its plants on raised cells too (same places as the mock).
+	var plants_on_raised := DECOR_ON_RAISED or v1_props_live()
 	for entry in decor_rows:
 		if not (entry is Dictionary):
 			continue
-		if not DECOR_ON_RAISED and int(entry.get("height", 0)) > 0:
+		if not plants_on_raised and int(entry.get("height", 0)) > 0:
 			continue
 		var at := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		if not _decor_at.has(at):

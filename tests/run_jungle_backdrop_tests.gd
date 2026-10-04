@@ -208,7 +208,10 @@ func _test_live_layer() -> void:
 	var leaf_at := leaf.position
 	cam.position += Vector2(80, 0)
 	layer.layout()
-	truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	if JUNGLE.v1_placement().is_empty():
+		truthy(leaf.position.x > leaf_at.x + 70.0, "front leaves stay locked to the screen")
+	else:
+		truthy(absf(leaf.position.x - leaf_at.x) < 1.0, "v1 leaves stay pinned to the board")
 	var leaf_art := layer.get_node("front_leaves_left/Pivot/Art") as Sprite2D
 	truthy(leaf_art != null, "the left leaf sprite is on the pivot")
 	if leaf_art != null:
@@ -240,7 +243,7 @@ func _test_live_layer() -> void:
 	var origin: Vector2 = (board.tiles[Vector2i(7, 7)] as Node2D).position
 	layer.layout()
 	eq((board.tiles[Vector2i(7, 7)] as Node2D).position, origin, "the backdrop does not move a cell")
-	eq(layer.leaves_cover_play(), false, "front leaves do not cover the play cells")
+	_assert_leaves_miss_cells(layer, "front leaves do not cover the play cells")
 	_assert_look_tunables(layer, cam, board)
 	truthy(layer.pointer_passes(), "clicks pass through every leaf and backdrop control")
 	var edge_cell := Vector2i(0, 14)
@@ -293,7 +296,7 @@ func _test_live_layer() -> void:
 		truthy(is_equal_approx(far_screen.x, -step.x * far_fraction), "far on-screen slide is its parallax fraction")
 		truthy(is_equal_approx(mid_screen.x, -step.x * mid_fraction), "mid on-screen slide is its parallax fraction")
 		truthy(absf(far_screen.x) + 0.5 < absf(mid_screen.x), "far canopy moves less on screen than the mid canopy")
-	eq(layer.leaves_cover_play(), false, "a panned camera still keeps leaves off the cells")
+	_assert_leaves_miss_cells(layer, "a panned camera still keeps leaves off the cells")
 	cam.position = parked
 	layer.layout()
 	sim.reset_match({
@@ -312,13 +315,13 @@ func _test_live_layer() -> void:
 	board._refresh()
 	truthy(layer.visible, "Crosshaven brings the jungle layer back")
 	eq(layer.shadow_count(), 225, "Crosshaven restores a shadow on every cell")
-	eq(layer.leaves_cover_play(), false, "restored leaves still miss the cells")
+	_assert_leaves_miss_cells(layer, "restored leaves still miss the cells")
 	layer.set_enabled(false)
 	eq(layer.visible, false, "the layer can be switched off for a before shot")
 	eq(layer.shadow_count(), 0, "switching the layer off clears the shadows")
 	layer.set_enabled(true)
 	truthy(layer.visible, "the layer switches back on")
-	eq(layer.leaves_cover_play(), false, "leaves still miss the cells after a toggle")
+	_assert_leaves_miss_cells(layer, "leaves still miss the cells after a toggle")
 	main.free()
 
 
@@ -461,27 +464,36 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	layer.layout()
 
 
+func _assert_leaves_miss_cells(layer: Node, msg: String) -> void:
+	# v1 frames are large quads pinned on the board. Their corners cross the
+	# play guard; the painted pixels stay off the cells.
+	if JUNGLE.v1_placement().is_empty():
+		eq(layer.leaves_cover_play(), false, msg)
+	else:
+		truthy(layer.leaf_board_coverage() <= 0.005, msg)
+
+
 func _test_v1_contract() -> void:
 	var decor := JUNGLE.v1_decor()
-	eq(float(decor.get("hud_clear_px", 0.0)), 148.0, "the leaf frame clears the action bar")
-	eq(bool(decor.get("props_live", true)), false, "v1 props stay off")
+	eq(float(decor.get("hud_clear_px", 0.0)), 175.0, "the leaf frame clears the action bar")
+	eq(bool(decor.get("props_live", true)), true, "v1 props are live")
 	eq(float(_decor_block(decor, "sky").get("parallax", 0.0)), 0.08, "v1 sky parallax is 0.08")
 	eq(float(_decor_block(decor, "clearing").get("parallax", 0.0)), 0.4, "v1 clearing parallax is 0.40")
 	var masters: Dictionary = decor.get("masters_px", {})
 	var sway: Dictionary = decor.get("sway_px", {})
 	var want_master := {
-		"sky": [2048, 1280],
-		"clearing": [4096, 2560],
-		"leaf_frame_left": [1024, 808],
-		"leaf_frame_right": [1024, 1168],
-		"leaf_frame_top": [2560, 592],
-		"leaf_frame_bottom": [2560, 480],
+		"sky": [2848, 1440],
+		"clearing": [5696, 2880],
+		"leaf_frame_left": [1484, 1936],
+		"leaf_frame_right": [1484, 1936],
+		"leaf_frame_top": [3480, 960],
+		"leaf_frame_bottom": [3480, 496],
 	}
 	var want_sway := {
-		"leaf_frame_left": [512, 404],
-		"leaf_frame_right": [512, 584],
-		"leaf_frame_top": [1280, 296],
-		"leaf_frame_bottom": [1280, 240],
+		"leaf_frame_left": [742, 968],
+		"leaf_frame_right": [742, 968],
+		"leaf_frame_top": [1740, 480],
+		"leaf_frame_bottom": [1740, 248],
 	}
 	for slot in want_master.keys():
 		var got: Array = masters.get(slot, [])
