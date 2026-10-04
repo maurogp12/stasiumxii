@@ -2,7 +2,7 @@
 
 Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everything the other bots are working on and where they stop, in case they run out of usage, so you can take over"). It's updated at every check-in and review. Newest state first. Times are UTC.
 
-**HAND-OVER IN PROGRESS (4 Oct 14:50 UTC).** Scenario update 15:05: Luca keeps Scenario on Kestrel (no Claude take-over of Kestrel). WIP safety copies: Kestrel `4bc925a`, Gloam/Mender `6650f02`, NPC sprites `8763e14`. The Northgate snow kit was not in their archives (not started). `HANDOFF_SCENARIO.md` paused. Mauro: the team bots are about to run out of usage. All bots have been asked to push their WIP and write hand-off files:
+**HAND-OVER IN PROGRESS (4 Oct 14:50 UTC).** Scenario update 15:05: Luca keeps Scenario on Kestrel (no Claude take-over of Kestrel). WIP safety copies: Kestrel `4bc925a`, Gloam/Mender `6650f02`, NPC sprites `8763e14`. The Northgate snow kit was not in their archives (not started). `HANDOFF_SCENARIO.md` landed at `b49749b` (fallback; Kestrel state, run commands, open problems). Claude answered its open problems (E-ALT ok, target thigh ratio, Luca's upright legs win, Kestrel blockout v3.1 `ec4beff` fixes the S knee crossing). Mauro: the team bots are about to run out of usage. All bots have been asked to push their WIP and write hand-off files:
 - Scenario Art / TA → `art/ironjaw-walk-help` `docs/pc/art_help/HANDOFF_SCENARIO.md` (asked on #252)
 - World bot → `docs/pc/HANDOFF_WORLD.md` on its WIP branch (asked on #251)
 - Combat bots → `docs/pc/HANDOFF_COMBAT.md` if anything is in progress
