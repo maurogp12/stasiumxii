@@ -214,10 +214,11 @@ static func face_strips(zone: WorldZone, cell: Vector2i) -> Array:
 
 
 ## Draw a kit texture with its top-left at `top_left` (1x pixel space).
-static func draw_at(ci: CanvasItem, art: Dictionary, top_left: Vector2) -> void:
+## `modulate` is the per-theme multiply. White leaves the painted tile alone.
+static func draw_at(ci: CanvasItem, art: Dictionary, top_left: Vector2, modulate: Color = Color.WHITE) -> void:
 	var tex: Texture2D = art["tex"]
 	var s: float = art["scale"]
-	ci.draw_texture_rect(tex, Rect2(top_left, tex.get_size() * s), false)
+	ci.draw_texture_rect(tex, Rect2(top_left, tex.get_size() * s), false, modulate)
 
 
 static func size_of(art: Dictionary) -> Vector2:
@@ -235,7 +236,14 @@ static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zo
 			var id: String = variants[h(origin.x, origin.y, variants.size())]
 			return id if has("props", id) else "tree"
 		"red_roof_cottage":
-			var skin := str(COTTAGE_SKIN.get(zone_id, ""))
+			var skin := ""
+			if COTTAGE_SKIN.has(zone_id):
+				skin = str(COTTAGE_SKIN[zone_id])
+			else:
+				for key in COTTAGE_SKIN.keys():
+					if zone_id.begins_with(str(key)):
+						skin = str(COTTAGE_SKIN[key])
+						break
 			if skin != "" and has("props", skin):
 				return skin
 			if h(origin.x, origin.y, 2) == 1 and has("props", "red_roof_cottage_b"):
@@ -247,8 +255,12 @@ static func prop_art_id(prop_type: String, origin: Vector2i, fence_axis: int, zo
 static func _tree_variants(zone_id: String) -> Array:
 	if zone_id.find("northgate") >= 0:
 		return ["tree_pine", "tree_pine", "tree_oak_a"]
-	if zone_id.find("eastmarch") >= 0 or zone_id.find("westwatch") >= 0:
-		return ["tree_autumn_a", "tree_autumn_b", "tree_oak_b"]
+	if zone_id.find("westwatch") >= 0:
+		return ["tree_birch", "tree_autumn_b", "tree_oak_b"]
+	if zone_id.find("southbridge") >= 0:
+		return ["tree_birch", "tree_oak_b", "tree_autumn_a"]
+	if zone_id.find("eastmarch") >= 0:
+		return ["tree_autumn_a", "tree_autumn_b", "tree_oak_a"]
 	return TREE_VARIANTS
 
 

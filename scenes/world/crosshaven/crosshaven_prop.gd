@@ -8,6 +8,7 @@ extends Node2D
 const PROP_ART_ROOT := "res://art/world/crosshaven/props/"
 const Pick := preload("res://scenes/world/crosshaven/crosshaven_pick.gd")
 const Art := preload("res://scenes/world/crosshaven/crosshaven_art.gd")
+const _SNOW_SHADER := preload("res://scenes/world/crosshaven/snow_cap.gdshader")
 
 const SPIRE_TINT := {
 	"northgate_spire": Color("7d93b8"),
@@ -27,7 +28,11 @@ var base_height := 0
 var cover_rect := Rect2()
 var base_z := 0
 ## 0 everywhere except Northgate and the town half of the north road.
-var snow_amount := 0.0
+var snow_amount := 0.0:
+	set(value):
+		snow_amount = value
+		_sync_snow_shader()
+		queue_redraw()
 var _tex: Texture2D
 var _fence_axis := 0  # 0: along x (NE-SW screen), 1: along y
 
@@ -60,12 +65,14 @@ func setup(zone: WorldZone, record: Dictionary) -> void:
 		scale = Vector2(clutter, clutter)
 		cover_rect = Rect2(cover_rect.position * clutter, cover_rect.size * clutter)
 	_attach_loops()
+	_apply_theme_tint()
 	queue_redraw()
 
 
 var _sway: AnimatedSprite2D
 var _shadow_sway: AnimatedSprite2D
 var _overlay: AnimatedSprite2D
+var _snow_plate: Sprite2D
 var _loops_ready := false
 
 
@@ -120,6 +127,7 @@ func _process(_delta: float) -> void:
 	if _overlay != null and _overlay.visible != anim_on:
 		_overlay.visible = anim_on
 	if changed:
+		_sync_snow_shader()
 		queue_redraw()
 
 
@@ -223,19 +231,145 @@ func _draw() -> void:
 
 
 func _paint_snow_cap() -> void:
-	if snow_amount <= 0.05 or cover_rect.size.y < 8.0:
+	if snow_amount <= 0.05:
 		return
-	var a := clampf(snow_amount, 0.0, 1.0)
-	var y := cover_rect.position.y + minf(16.0, cover_rect.size.y * 0.2)
-	var half := maxf(4.0, minf(16.0, cover_rect.size.x * 0.28))
-	var cap := Color(0.97, 0.98, 1.0, 0.72 * a)
-	draw_colored_polygon(PackedVector2Array([
-		Vector2(-half, y + 5.0),
-		Vector2(0.0, y - 2.0),
-		Vector2(half, y + 4.0),
-		Vector2(half * 0.25, y + 8.0),
-	]), cap)
-	draw_circle(Vector2(half * 0.15, y + 2.0), 2.6, Color(1, 1, 1, 0.5 * a))
+	var kind := _snow_kind()
+	var swayed := _sway != null and _sway.visible
+	if kind != "" and not swayed and _tex != null and _snow_plate == null:
+		_stamp_masked_cap(kind)
+	if _snow_gathers_at_base():
+		_paint_drifts()
+
+
+## Roof, foliage, or rail. Barrels, stalls, crates and carts stay bare.
+func _snow_kind() -> String:
+	var name := prop_type + " " + art_id
+	for token in ["barrel", "stall", "crate", "cart", "sign", "lamp", "well", "brazier", "hay", "scarecrow", "rowboat", "net_rack", "waystone"]:
+		if name.find(token) >= 0:
+			return ""
+	for token in ["cottage", "house", "farmhouse", "tavern", "bakery", "smithy", "mill", "spire", "watchtower", "hut", "barn", "centerpiece"]:
+		if name.find(token) >= 0:
+			return "roof"
+	for token in ["tree", "pine", "oak", "birch"]:
+		if name.find(token) >= 0:
+			return "tree"
+	for token in ["fence", "wall", "hedge"]:
+		if name.find(token) >= 0:
+			return "fence"
+	return ""
+
+
+func _cap_band(kind: String) -> float:
+	if kind == "tree":
+		return 0.58
+	if kind == "fence":
+		return 0.30
+	return 0.62
+
+
+func _cap_strength(kind: String) -> float:
+	var amount := clampf(snow_amount, 0.0, 1.0)
+	if kind == "tree":
+		return amount * 0.95
+	if kind == "fence":
+		return amount * 0.8
+	return amount
+
+
+## Upper slope only, and only where the sprite itself is opaque.
+func _stamp_masked_cap(kind: String) -> void:
+	var full := _tex.get_size()
+	var shown := Art.size_of(_art)
+	var band := _cap_band(kind)
+	var src := Rect2(0, 0, full.x, full.y * band)
+	var dst := Rect2(-shown.x * 0.5, -shown.y, shown.x, shown.y * band)
+	draw_texture_rect_region(_tex, dst, src, Color(1, 1, 1, _cap_strength(kind)))
+
+
+func _sync_snow_shader() -> void:
+	var kind := _snow_kind()
+	if _sway != null:
+		if snow_amount <= 0.05 or kind == "" or not _sway.visible:
+			_sway.material = null
+		else:
+			var mat := ShaderMaterial.new()
+			mat.shader = _SNOW_SHADER
+			mat.set_shader_parameter("snow_amount", _cap_strength(kind))
+			mat.set_shader_parameter("cap", _cap_band(kind))
+			_sway.material = mat
+	_sync_snow_plate(kind)
+
+
+## Still prop (sway hidden). The shader paints the roof slope white.
+## A modulate multiply cannot, so the cap is a second sprite.
+func _sync_snow_plate(kind: String) -> void:
+	var show := snow_amount > 0.05 and kind != "" and _tex != null and (_sway == null or not _sway.visible)
+	if not show:
+		if _snow_plate != null:
+			_snow_plate.visible = false
+		return
+	if _snow_plate == null:
+		_snow_plate = Sprite2D.new()
+		_snow_plate.centered = false
+		_snow_plate.texture = _tex
+		var sc := float(_art.get("scale", 1.0))
+		_snow_plate.scale = Vector2(sc, sc)
+		var s := Art.size_of(_art)
+		_snow_plate.position = Vector2(-s.x * 0.5, -s.y)
+		_snow_plate.z_as_relative = true
+		_snow_plate.z_index = 1
+		var mat := ShaderMaterial.new()
+		mat.shader = _SNOW_SHADER
+		_snow_plate.material = mat
+		add_child(_snow_plate)
+	var plate_mat := _snow_plate.material as ShaderMaterial
+	plate_mat.set_shader_parameter("snow_amount", _cap_strength(kind))
+	plate_mat.set_shader_parameter("cap", _cap_band(kind))
+	_snow_plate.visible = true
+
+
+func _paint_drifts() -> void:
+	var amount := clampf(snow_amount, 0.0, 1.0)
+	var salt := _hash_prop()
+	var frost := Color(0.96, 0.98, 1.0, 0.62 * amount)
+	var soft := Color(0.93, 0.96, 1.0, 0.4 * amount)
+	_snow_blob(Vector2(-14.0 + salt * 8.0, 7.0), 13.0 + salt * 5.0, 4.2, frost, salt)
+	_snow_blob(Vector2(11.0, 9.0), 8.0 + salt * 3.0, 3.2, soft, salt + 1.7)
+	_snow_blob(Vector2(-2.0, 5.0), 6.0, 2.4, Color(1, 1, 1, 0.35 * amount), salt + 0.4)
+
+
+func _snow_blob(at: Vector2, rx: float, ry: float, tint: Color, salt: float) -> void:
+	var pts := PackedVector2Array()
+	for i in 9:
+		var a := TAU * float(i) / 9.0
+		var wobble := 0.72 + 0.28 * absf(sin(a * 3.0 + salt * 5.0))
+		pts.append(at + Vector2(cos(a) * rx * wobble, sin(a) * ry * wobble))
+	draw_colored_polygon(pts, tint)
+
+
+func _hash_prop() -> float:
+	var h := (south_cell.x * 73856093) ^ (south_cell.y * 19349663)
+	h = (h ^ (h >> 13)) * 1274126177
+	return float(absi(h) % 1000) / 1000.0
+
+
+func _snow_gathers_at_base() -> bool:
+	var name := prop_type + " " + art_id
+	for token in ["tree", "fence", "wall", "hedge"]:
+		if name.find(token) >= 0:
+			return true
+	return false
+
+
+## Dead wood in the blight, olive trunks in the swamp, warm crowns on the beach.
+func _apply_theme_tint() -> void:
+	var kind := _snow_kind()
+	if zone_id.find("westwatch") >= 0 and kind == "tree":
+		modulate = Color(0.55, 0.48, 0.66)
+	elif zone_id.find("southbridge") >= 0 and kind == "tree":
+		modulate = Color(0.66, 0.70, 0.55)
+	elif zone_id.find("eastmarch") >= 0 and kind == "tree":
+		modulate = Color(0.98, 0.92, 0.80)
 
 
 func _draw_window_glow(s: Vector2) -> void:

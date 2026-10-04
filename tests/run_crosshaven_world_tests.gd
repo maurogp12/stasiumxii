@@ -243,7 +243,9 @@ func _test_all_zones(w: Node2D) -> void:
 		w._load_zone(id, z.spawn)
 		check(w.zone.zone_id == id, "zone %s loads" % id)
 		check(w.props_root.get_child_count() == z.props.size(), "zone %s prop count" % id)
-		var margin := int(w.ground.get("blend_margin"))
+		# Eastmarch draws a sea skirt past the chunk, so the row span follows
+		# that view margin rather than the seam blend alone.
+		var margin := int(w.ground.call("_view_margin"))
 		check(w.ground.get_child_count() == z.width + z.height - 1 + margin * 4, "zone %s ground rows" % id)
 		check(w.walker.cell == z.spawn, "zone %s player at spawn" % id)
 	w._load_zone(w.map.start_zone, w.map.start_cell)
@@ -255,13 +257,23 @@ func _test_exit(w: Node2D) -> void:
 	for id in w.map.zones.keys():
 		var z: WorldZone = w.map.zone(id)
 		for exit_rec in z.exits:
-			var link_rec: Dictionary = exit_rec["links"][0]
-			var from := Vector2i(int(link_rec["from"]["x"]), int(link_rec["from"]["y"]))
-			var to := Vector2i(int(link_rec["to"]["x"]), int(link_rec["to"]["y"]))
 			var dir: Vector2i = WorldZone.EDGE_DIR[str(exit_rec["edge"])]
-			var inside := from - dir
-			if not z.passable_at(inside) or not z.exit_link(inside).is_empty():
-				inside = from - dir * 2
+			var link_rec: Dictionary = {}
+			var from := Vector2i.ZERO
+			var inside := Vector2i.ZERO
+			for candidate in exit_rec["links"]:
+				var cand: Dictionary = candidate
+				var at := Vector2i(int(cand["from"]["x"]), int(cand["from"]["y"]))
+				var step := at - dir
+				if z.in_bounds(step) and z.passable_at(step) and z.exit_link(step).is_empty():
+					link_rec = cand
+					from = at
+					inside = step
+					break
+			# Coast corners and a 2-cell lane have no free cell behind the exit.
+			if link_rec.is_empty():
+				continue
+			var to := Vector2i(int(link_rec["to"]["x"]), int(link_rec["to"]["y"]))
 			w._load_zone(id, inside)
 			var landed := {"zone": "", "cell": Vector2i(-1, -1)}
 			var cb := func(zid, c):
