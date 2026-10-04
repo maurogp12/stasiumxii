@@ -2417,7 +2417,7 @@ func _movie_wp6b() -> void:
 	if dialogue != null:
 		dialogue.close()
 	await get_tree().create_timer(0.3).timeout
-	_approach_npc(npc_book.by_id("granary_door_keeper"))
+	_approach_npc(npc_book.by_id("crossroads_guide"))
 	await _wait_until_stopped()
 	await get_tree().create_timer(0.9).timeout
 	if dialogue != null:

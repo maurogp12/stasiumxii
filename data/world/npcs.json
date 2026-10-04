@@ -92,10 +92,10 @@
       "id": "granary_door_keeper",
       "name": "Door Keeper",
       "role": "door_keeper",
-      "zone_id": "crosshaven_crossroads",
+      "zone_id": "crosshaven_stoneford",
       "cell": {
-        "x": 24,
-        "y": 15
+        "x": 15,
+        "y": 12
       },
       "facing": "S",
       "body": "npc_door_keeper",
@@ -259,7 +259,7 @@
       "status": "proposed"
     },
     {
-      "id": "millrace_door_keeper",
+      "id": "drowned_abbey_door_keeper",
       "name": "Door Keeper",
       "role": "door_keeper",
       "zone_id": "crosshaven_southbridge",
@@ -270,8 +270,365 @@
       "facing": "S",
       "body": "npc_door_keeper",
       "lines": [
-        "I keep the door to Millrace Vaults.",
+        "I keep the door to the Drowned Abbey.",
         "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 9,
+        "y": 0
+      },
+      "facing": "N",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Stoneford.",
+        "This band is levels 1 to 10."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 13,
+        "y": 16
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Stoneford.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_farmer",
+      "name": "Farmer",
+      "role": "farmer",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 16,
+        "y": 18
+      },
+      "facing": "S",
+      "body": "npc_farmer",
+      "lines": [
+        "The fields are mine to tend.",
+        "The harvest can wait."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "stoneford_woodcutter",
+      "name": "Woodcutter",
+      "role": "woodcutter",
+      "zone_id": "crosshaven_stoneford",
+      "cell": {
+        "x": 16,
+        "y": 21
+      },
+      "facing": "S",
+      "body": "npc_woodcutter",
+      "lines": [
+        "I cut timber for Stoneford.",
+        "The axe is down for now."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "northgate_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 20,
+        "y": 10
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Frostspire Archive.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "northgate_archivist",
+      "name": "Archivist",
+      "role": "archivist",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 19,
+        "y": 13
+      },
+      "facing": "S",
+      "body": "npc_archivist",
+      "lines": [
+        "I keep the Archive's lists.",
+        "The shelves are not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "northgate_forge_master",
+      "name": "Forge Master",
+      "role": "forge_master",
+      "zone_id": "crosshaven_northgate",
+      "cell": {
+        "x": 23,
+        "y": 12
+      },
+      "facing": "S",
+      "body": "npc_forge_master",
+      "lines": [
+        "I am the Forge Master of Northgate.",
+        "The forge is cold for now."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 26,
+        "y": 0
+      },
+      "facing": "N",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Eastmarch.",
+        "This band is levels 20 to 30."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 14,
+        "y": 14
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Eastmarch.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 15,
+        "y": 17
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to Saltmaw Grotto.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "eastmarch_ferry_captain",
+      "name": "Ferry Captain",
+      "role": "ferry_captain",
+      "zone_id": "crosshaven_eastmarch",
+      "cell": {
+        "x": 16,
+        "y": 20
+      },
+      "facing": "S",
+      "body": "npc_ferry_captain",
+      "lines": [
+        "I run the ferry.",
+        "The boat is tied for now."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 39,
+        "y": 22
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Southbridge.",
+        "This band is levels 30 to 40."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 17,
+        "y": 9
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Southbridge.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_fen_guide",
+      "name": "Fen Guide",
+      "role": "fen_guide",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 20,
+        "y": 8
+      },
+      "facing": "S",
+      "body": "npc_fen_guide",
+      "lines": [
+        "I know the fen paths.",
+        "The water is high today."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_hermit",
+      "name": "Hermit",
+      "role": "hermit",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 21,
+        "y": 11
+      },
+      "facing": "S",
+      "body": "npc_hermit",
+      "lines": [
+        "I keep to the reeds.",
+        "Come back when the fog lifts."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "southbridge_coil_engineer",
+      "name": "Coil Engineer",
+      "role": "coil_engineer",
+      "zone_id": "crosshaven_southbridge",
+      "cell": {
+        "x": 24,
+        "y": 10
+      },
+      "facing": "S",
+      "body": "npc_coil_engineer",
+      "lines": [
+        "I mind the coils.",
+        "They are quiet for now."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_warden",
+      "name": "Warden",
+      "role": "warden",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 35,
+        "y": 22
+      },
+      "facing": "S",
+      "body": "npc_warden",
+      "lines": [
+        "I am the Warden of Westwatch.",
+        "This band is levels 40 to 50."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_trader",
+      "name": "Trader",
+      "role": "trader",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 17,
+        "y": 8
+      },
+      "facing": "S",
+      "body": "npc_trader",
+      "lines": [
+        "I trade in Westwatch.",
+        "The shop is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_door_keeper",
+      "name": "Door Keeper",
+      "role": "door_keeper",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 14,
+        "y": 10
+      },
+      "facing": "S",
+      "body": "npc_door_keeper",
+      "lines": [
+        "I keep the door to the Heart of the Blight.",
+        "The way down is not open yet."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_last_watcher",
+      "name": "Last Watcher",
+      "role": "last_watcher",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 17,
+        "y": 11
+      },
+      "facing": "S",
+      "body": "npc_last_watcher",
+      "lines": [
+        "I am the last watcher on this wall.",
+        "The blight has not crossed it."
+      ],
+      "status": "proposed"
+    },
+    {
+      "id": "westwatch_seer",
+      "name": "Shard Seer",
+      "role": "seer",
+      "zone_id": "crosshaven_westwatch",
+      "cell": {
+        "x": 20,
+        "y": 10
+      },
+      "facing": "S",
+      "body": "npc_seer",
+      "lines": [
+        "I read the shards.",
+        "They are dark for now."
       ],
       "status": "proposed"
     },
