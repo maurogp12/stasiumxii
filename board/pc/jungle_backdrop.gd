@@ -198,6 +198,7 @@ var _span_cache := Rect2()
 var _layout_key: String = ""
 var _motion_layout: bool = false
 var _plate_sprite: Sprite2D
+var _plate_hole_mat: ShaderMaterial
 var _plate_mat: ShaderMaterial
 var _cutout_vp: SubViewport
 var _cutout_mat: ShaderMaterial
@@ -406,6 +407,7 @@ func kit_edge() -> bool:
 ## L7. grade_on 0 leaves the plate and the leaves on their old colors.
 func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float = 0.5) -> void:
 	_push_look_grade(_plate_mat, on, sat, contrast, gain, bias, shadow, shade)
+	_push_look_grade(_plate_hole_mat, on, sat, contrast, gain, bias, shadow, shade)
 	for slot in _sprites.keys():
 		var sprite: Sprite2D = _sprites[slot]
 		if sprite != null and sprite.material is ShaderMaterial:
@@ -679,6 +681,7 @@ func _ensure_nodes() -> void:
 		art.name = "Art"
 		art.centered = true
 		art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		art.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 		var path := _plate_path(slot)
 		art.texture = _load_tex(path)
 		art.set_meta("slot_path", path)
@@ -697,6 +700,7 @@ func _ensure_nodes() -> void:
 		sprite.name = "Art"
 		sprite.centered = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 		var path := _plate_path(slot)
 		sprite.texture = _load_tex(path)
 		sprite.set_meta("slot_path", path)
@@ -859,8 +863,15 @@ func _layout_plate(cam: Camera2D, pan: Vector2, view: Vector2) -> void:
 	if not spot.is_empty():
 		at = (spot["center"] as Vector2) + pan * (1.0 - fraction)
 	if not blend_sky:
+		# The clearing's sky hole is transparent. Blending it off would stamp
+		# that hole into the framebuffer, and a viewer shows the hole as white.
 		far.visible = true
-		far.material = _plate_mat
+		far.material = _plate_hole_mat
+		_plate_sprite.material = _plate_hole_mat
+		_plate_sprite.z_index = _z("back_mid")
+	else:
+		_plate_sprite.material = _plate_mat
+		_plate_sprite.z_index = _z("back_far")
 	_plate_sprite.visible = true
 	_plate_sprite.texture = _composited_plate(far, mid, at, blend_sky)
 	_plate_sprite.scale = mid.scale
@@ -985,10 +996,16 @@ func _ensure_plate() -> void:
 		return
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
+	var grade := LIGHT.GRADE_GLSL + "void fragment(){ vec4 c = texture(TEXTURE, UV); c.rgb = l7_grade(c.rgb); COLOR = c; }\n"
 	var shader := Shader.new()
-	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\n" + LIGHT.GRADE_GLSL + "void fragment(){ vec4 c = texture(TEXTURE, UV); c.rgb = l7_grade(c.rgb); COLOR = c; }\n"
+	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\n" + grade
 	_plate_mat = ShaderMaterial.new()
 	_plate_mat.shader = shader
+	# v1 clearing sits over the sky. Alpha blend lets the sky show through the hole.
+	var hole := Shader.new()
+	hole.code = "shader_type canvas_item;\n" + grade
+	_plate_hole_mat = ShaderMaterial.new()
+	_plate_hole_mat.shader = hole
 	_plate_sprite = Sprite2D.new()
 	_plate_sprite.name = "PlateBlit"
 	_plate_sprite.centered = true
@@ -997,6 +1014,7 @@ func _ensure_plate() -> void:
 	_plate_sprite.texture = ImageTexture.create_from_image(image)
 	_plate_sprite.material = _plate_mat
 	_plate_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_plate_sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 	add_child(_plate_sprite)
 
 

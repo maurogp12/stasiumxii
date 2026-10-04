@@ -440,6 +440,7 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	var saved := cam.position
 	cam.position = fit
 	layer.layout()
+	_assert_drawn_backdrop(layer)
 	truthy(is_equal_approx(layer.top_leaf_alpha(), 1.0), "the top canopy is fully visible at the default camera")
 	var cover_default: float = layer.leaf_board_coverage()
 	print("LEAF_COVERAGE default %.4f" % cover_default)
@@ -462,6 +463,91 @@ func _assert_look_tunables(layer: Node, cam: Camera2D, board: Node2D) -> void:
 	truthy(layer.top_leaf_alpha() <= 0.02, "a full +y pan fades the top canopy out")
 	cam.position = saved
 	layer.layout()
+
+
+func _assert_drawn_backdrop(layer: Node) -> void:
+	var far := layer.get_node("back_far/Art") as Sprite2D
+	var mid := layer.get_node("back_mid/Art") as Sprite2D
+	var plate := layer.get_node_or_null("PlateBlit") as Sprite2D
+	truthy(far != null and far.texture != null and far.texture.get_width() > 32, "the far plate has a texture")
+	truthy(mid != null and mid.texture != null and mid.texture.get_width() > 32, "the mid plate has a texture")
+	truthy(plate != null and plate.texture != null and plate.texture.get_width() > 32, "the drawn plate has a texture")
+	for edge in ["left", "right", "top", "bottom"]:
+		var art := layer.get_node("front_leaves_%s/Pivot/Art" % edge) as Sprite2D
+		truthy(art != null and art.texture != null and art.texture.get_width() > 8, "the %s leaf has a texture" % edge)
+		eq(art.texture_repeat, CanvasItem.TEXTURE_REPEAT_DISABLED, "the %s leaf does not repeat or mirror" % edge)
+		_assert_not_flat_white(art.texture, "the %s leaf" % edge)
+	if far == null or plate == null or far.texture == null or plate.texture == null:
+		return
+	eq(far.texture_repeat, CanvasItem.TEXTURE_REPEAT_DISABLED, "the sky does not repeat or mirror")
+	_assert_not_flat_white(far.texture, "the sky")
+	if not JUNGLE.v1_ready():
+		return
+	truthy(far.visible, "the sky layer is visible behind the clearing")
+	var plate_mat := plate.material as ShaderMaterial
+	var plate_code := ""
+	if plate_mat != null and plate_mat.shader != null:
+		plate_code = plate_mat.shader.code
+	var plate_img := plate.texture.get_image()
+	var sky_img := far.texture.get_image()
+	if plate_img == null or sky_img == null:
+		truthy(false, "backdrop images can be read")
+		return
+	if plate_img.is_compressed():
+		plate_img.decompress()
+	if sky_img.is_compressed():
+		sky_img.decompress()
+	var stamps := plate_code.contains("blend_disabled")
+	eq(stamps, false, "the clearing plate blends, so the sky hole is not stamped white")
+	var pw := plate_img.get_width()
+	var ph := plate_img.get_height()
+	var sw := sky_img.get_width()
+	var sh := sky_img.get_height()
+	var hole := 0
+	var bad := 0
+	var y := 0
+	while y < int(float(ph) * 0.55):
+		var x := 0
+		while x < pw:
+			var c := plate_img.get_pixel(x, y)
+			if c.a < 0.08:
+				hole += 1
+				var sx := clampi(int(float(x) / float(maxi(pw, 1)) * float(sw)), 0, sw - 1)
+				var sy := clampi(int(float(y) / float(maxi(ph, 1)) * float(sh)), 0, sh - 1)
+				var sky := sky_img.get_pixel(sx, sy)
+				var white := sky.r > 0.94 and sky.g > 0.94 and sky.b > 0.94
+				if sky.a < 0.9 or white:
+					bad += 1
+			x += 12
+		y += 12
+	truthy(hole > 30, "the clearing keeps a sky opening")
+	truthy(float(bad) <= float(hole) * 0.08, "the sky opening is painted sky, not a white plate")
+
+
+func _assert_not_flat_white(tex: Texture2D, label: String) -> void:
+	var image := tex.get_image()
+	if image == null:
+		truthy(false, "%s image can be read" % label)
+		return
+	if image.is_compressed():
+		image.decompress()
+	var w := image.get_width()
+	var h := image.get_height()
+	var opaque := 0
+	var white := 0
+	var y := 0
+	while y < h:
+		var x := 0
+		while x < w:
+			var c := image.get_pixel(x, y)
+			if c.a > 0.5:
+				opaque += 1
+				if c.r > 0.94 and c.g > 0.94 and c.b > 0.94:
+					white += 1
+			x += 16
+		y += 16
+	truthy(opaque > 8, "%s has painted pixels" % label)
+	truthy(float(white) <= float(opaque) * 0.5, "%s is not a solid white plate" % label)
 
 
 func _assert_leaves_miss_cells(layer: Node, msg: String) -> void:
