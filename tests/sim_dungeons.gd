@@ -38,6 +38,11 @@ func _initialize() -> void:
 	GearBag.save_path = "user://dungeon_sim_bag.json"
 	HeroProgress.save_path = "user://dungeon_sim_hero.json"
 	StillVault.save_path = "user://dungeon_sim_still.json"
+	# DUNGEON_SCALE="3:3.2,2.2;5:9,5" tries other [hp, damage] star scales.
+	for part in OS.get_environment("DUNGEON_SCALE").split(";", false):
+		var kv := part.split(":")
+		var hd := kv[1].split(",")
+		StasisCatalog.star_scale_override[int(kv[0])] = [float(hd[0]), float(hd[1])]
 	KoliseoWallet.save_path = "user://dungeon_sim_wallet.json"
 
 
@@ -49,7 +54,7 @@ func _process(_d: float) -> bool:
 	for s in _stars:
 		var star := int(s)
 		var full := StasisCatalog.party_for_star(star)
-		var sizes := [full] if full == 1 else [full, 1]
+		var sizes := [full] if full == 1 or OS.get_environment("DUNGEON_FULL_ONLY") != "" else [full, 1]
 		for size in sizes:
 			var wins := 0
 			var rooms := {"a": 0, "b": 0}

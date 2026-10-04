@@ -24,7 +24,9 @@ const MAX_STAR := 5
 ## Foe toughness per star: [HP multiplier, damage multiplier].
 ## PROVISIONAL — the Blueprint leaves Stasis HP / dmg Open; these are Claude's
 ## proposal that Mauro green-lit by asking for star difficulty. Tune freely.
-const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [2.6, 1.8], 4: [5.9, 3.45], 5: [7.4, 4.2]}
+## ★3–★5 retuned 4 Oct 2026 for the role AI (Mauro: "make them stronger to hit
+## 80 65 50"): dungeon sim, party of 4 AI heroes, 40 runs: 83% / 68% / 48%.
+const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [6.9, 4.75], 4: [7.95, 4.75], 5: [8.9, 5.05]}
 ## Dungeon party (Mauro 1 Oct 2026): ★1 is for 1 player, ★2 for 2, ★3–★5
 ## for a full party of 4. Monsters are tuned for that party whoever enters
 ## ("allowed but brutal"). PARTY_SCALE = [hp, damage] on top of STAR_SCALE.
@@ -32,6 +34,9 @@ const STAR_SCALE := {1: [1.0, 1.0], 2: [1.4, 1.2], 3: [2.6, 1.8], 4: [5.9, 3.45]
 const PARTY_FOR_STAR := {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}
 const PARTY_SCALE := {1: [1.0, 1.0], 2: [4.0, 2.8], 4: [3.2, 1.6]}
 const MAX_PARTY := 4
+## Dev balance tool only (tests/sim_dungeons.gd): star → [hp, damage] used
+## instead of STAR_SCALE. Empty in the game.
+static var star_scale_override: Dictionary = {}
 const PLAYER_SEAT := 0
 const ENEMY_SEAT := 1
 ## Strike card owner. Not the portrait. See the note above.
@@ -196,12 +201,16 @@ static func set_star(value: int) -> void:
 
 static func hp_mult(for_star: int = -1) -> float:
 	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
-	return float(STAR_SCALE[s][0]) * float(PARTY_SCALE[party_for_star(s)][0])
+	return float(_star_scale(s)[0]) * float(PARTY_SCALE[party_for_star(s)][0])
 
 
 static func dmg_mult(for_star: int = -1) -> float:
 	var s := clampi(star if for_star < 1 else for_star, 1, MAX_STAR)
-	return float(STAR_SCALE[s][1]) * float(PARTY_SCALE[party_for_star(s)][1])
+	return float(_star_scale(s)[1]) * float(PARTY_SCALE[party_for_star(s)][1])
+
+
+static func _star_scale(s: int) -> Array:
+	return star_scale_override.get(s, STAR_SCALE[s])
 
 
 ## Heroes a star is tuned for (1, 2 or 4).
