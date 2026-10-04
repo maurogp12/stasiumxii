@@ -19,12 +19,11 @@ Reference board: `docs/pc/look_target/look_target_refs.jpg`. Today vs target:
 `docs/pc/look_target/grid_options.jpg` (Q3). The clips themselves are Mauro's
 screen recordings (not in the repo).
 
-> **Not now: characters** (Mauro, 3 Oct 2026: "dont focus on characters yet").
-> Focus on maps, boards, light, backdrops and UI. Parked until Mauro says so:
-> new character art or animation (fighters, NPC bodies, monsters), fighter
-> readability work (L5), character scale passes, and walk lean / gait feel
-> (WP13 beyond the glide that is already built). Systems that need a body
-> (NPCs, dungeon foes) use the existing sprites as stand-ins.
+> **Characters: unparked** (Mauro, 3 Oct 2026). The earlier "not now:
+> characters" note no longer applies. L5 (fighter readability) merged as #234.
+> The NPC bodies follow the approved 19-role sheet and the Farmer reference
+> (ZONES 4.5a). The new player characters are L10. Monsters come with WP9.
+> Walk lean and gait feel (WP13) stay parked.
 
 ## The three references
 

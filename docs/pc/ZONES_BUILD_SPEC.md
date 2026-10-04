@@ -12,8 +12,10 @@ Mauro: do not decide them in code.
 > **Current phase: Crosshaven first** (levels and towns: section 00) (Mauro, 3 Oct 2026: "We only doing
 > Crosshaven as of now, Windmere is next phase"; "Crosshaven first until I say
 > otherwise"). Build and polish only Crosshaven: the Crossroads, the five road
-> chunks and the five towns (levels 1–10), the
-> two Crosshaven dungeons (Old Granary Cellar, Millrace Vaults), and its NPCs,
+> chunks and the five towns (levels 1–50, section 00), the outskirts, the
+> five town dungeons of section 00 (Old Granary Cellar, Frostspire Archive,
+> Saltmaw Grotto, Drowned Abbey, Heart of the Blight; Millrace Vaults is
+> dropped and the Crossroads has no dungeon), and its NPCs,
 > missions, coins, sets and combat look. Everything for the nine outer regions
 > (WP5a/WP5b region layouts, the 4.4 region joins, region dressing and art in
 > WP10a, region dungeons) is **next phase: paused**. Keep the region stand-ins
