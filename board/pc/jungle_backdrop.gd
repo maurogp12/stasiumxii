@@ -121,7 +121,8 @@ void fragment() {
 	}
 	vec4 leaf = textureLod(TEXTURE, UV - off * w, 0.0);
 	leaf.rgb = l7_grade(leaf.rgb);
-	COLOR = leaf;
+	// COLOR is the canvas modulate, including the top-leaf fade.
+	COLOR = leaf * COLOR;
 }
 """
 
@@ -207,14 +208,21 @@ class LeafDapple extends Node2D:
 		pass
 
 
+static var _params_cache: Dictionary = {}
+static var _params_loaded := false
+
+
 static func load_params() -> Dictionary:
+	if _params_loaded:
+		return _params_cache
+	_params_loaded = true
 	var text := FileAccess.get_file_as_string(PARAMS_PATH)
 	if text == "":
-		return {}
+		return _params_cache
 	var parsed: Variant = JSON.parse_string(text)
 	if parsed is Dictionary:
-		return parsed
-	return {}
+		_params_cache = parsed
+	return _params_cache
 
 
 static func art_root() -> String:
@@ -282,6 +290,20 @@ static func v1_ready() -> bool:
 		if choose_path(v1_root(), str(slot)) == "":
 			return false
 	return true
+
+
+## v4 masks live next to the jungle plates. v1 masks are leaf_frame_<edge>_sway.png.
+static func sway_mask_path(slot: String) -> String:
+	if v1_ready():
+		var frame: Variant = v1_decor().get("leaf_frame", {})
+		if frame is Dictionary:
+			var slots: Variant = (frame as Dictionary).get("slots", {})
+			if slots is Dictionary:
+				var edge := str(LEAF_EDGES.get(slot, ""))
+				for name in (slots as Dictionary).keys():
+					if str((slots as Dictionary)[name]) == edge:
+						return v1_root() + str(name) + "_sway.png"
+	return art_root() + slot + "_sway.png"
 
 
 static func normalize_map_id(map_id: String) -> String:
@@ -735,7 +757,7 @@ func _cell_edge_guard() -> Rect2:
 ## The action bar is a CanvasLayer above the world. The leaf frame also stops
 ## at that line, so a transparent bar does not show leaves through it.
 func _view_above_hud(view: Rect2) -> Rect2:
-	var clear := float(v1_decor().get("hud_clear_px", 260.0))
+	var clear := float(v1_decor().get("hud_clear_px", 148.0))
 	var cam: Camera2D = null
 	if _board != null:
 		cam = _board.get_node_or_null("BoardCamera") as Camera2D
@@ -773,7 +795,9 @@ func _layout_backs() -> void:
 		var shown := art.texture.get_size()
 		art.scale = Vector2(drawn.x / shown.x, drawn.y / shown.y)
 		art.position = -pan * fraction
+		# v4 draws one blended plate. v1 draws the sky on its own, at 0.08.
 		art.visible = false
+		art.material = null
 		art.set_meta("drawn", drawn)
 	_layout_plate(cam, pan, view)
 
@@ -785,8 +809,12 @@ func _layout_plate(cam: Camera2D, pan: Vector2, view: Vector2) -> void:
 	var mid: Sprite2D = _backs["back_mid"].get_node("Art")
 	var far: Sprite2D = _backs["back_far"].get_node("Art")
 	var fraction := _parallax_for("back_mid")
+	var blend_sky := not v1_ready()
+	if not blend_sky:
+		far.visible = true
+		far.material = _plate_mat
 	_plate_sprite.visible = true
-	_plate_sprite.texture = _composited_plate(far, mid, cam.position - pan * fraction)
+	_plate_sprite.texture = _composited_plate(far, mid, cam.position - pan * fraction, blend_sky)
 	_plate_sprite.scale = mid.scale
 	_plate_sprite.position = cam.position - pan * fraction
 	_plate_sprite.modulate = Color.WHITE
@@ -796,12 +824,16 @@ var _plate_image_tex: ImageTexture
 var _plate_image_key: String = ""
 
 
-func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture2D:
-	var far_tex := far.texture
+func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2, blend_sky: bool = true) -> Texture2D:
 	var mid_tex := mid.texture
-	if far_tex == null or mid_tex == null:
+	if mid_tex == null:
+		return null
+	var far_tex: Texture2D = far.texture if far != null else null
+	if blend_sky and far_tex == null:
 		return mid_tex
-	var key := "%d,%d,%d,%d|k%d" % [far_tex.get_width(), far_tex.get_height(), mid_tex.get_width(), mid_tex.get_height(), 1 if _kit_edge else 0]
+	var far_w := far_tex.get_width() if far_tex != null else 0
+	var far_h := far_tex.get_height() if far_tex != null else 0
+	var key := "%d,%d,%d,%d|k%d|s%d" % [far_w, far_h, mid_tex.get_width(), mid_tex.get_height(), 1 if _kit_edge else 0, 1 if blend_sky else 0]
 	if not _motion_layout:
 		key += "@%d,%d" % [int(round(center.x)), int(round(center.y))]
 	if _motion_layout and _plate_image_tex != null:
@@ -809,24 +841,28 @@ func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture
 	if key == _plate_image_key and _plate_image_tex != null:
 		return _plate_image_tex
 	var mid_image := mid_tex.get_image()
-	var far_image := far_tex.get_image()
-	if mid_image == null or far_image == null:
+	if mid_image == null:
 		return mid_tex
 	mid_image = mid_image.duplicate()
-	far_image = far_image.duplicate()
 	if mid_image.is_compressed():
 		mid_image.decompress()
-	if far_image.is_compressed():
-		far_image.decompress()
-	if far_image.get_width() != mid_image.get_width() or far_image.get_height() != mid_image.get_height():
-		far_image.resize(mid_image.get_width(), mid_image.get_height(), Image.INTERPOLATE_BILINEAR)
 	var mid_tint := _back_tint("back_mid")
-	var far_tint := _back_tint("back_far")
 	_tint_image(mid_image, mid_tint)
-	_tint_image(far_image, far_tint)
-	far_image.blend_rect(mid_image, Rect2i(0, 0, mid_image.get_width(), mid_image.get_height()), Vector2i.ZERO)
-	_stamp_earth(far_image, center, mid.scale)
-	_plate_image_tex = ImageTexture.create_from_image(far_image)
+	var plate := mid_image
+	if blend_sky:
+		var far_image := far_tex.get_image()
+		if far_image == null:
+			return mid_tex
+		far_image = far_image.duplicate()
+		if far_image.is_compressed():
+			far_image.decompress()
+		if far_image.get_width() != mid_image.get_width() or far_image.get_height() != mid_image.get_height():
+			far_image.resize(mid_image.get_width(), mid_image.get_height(), Image.INTERPOLATE_BILINEAR)
+		_tint_image(far_image, _back_tint("back_far"))
+		far_image.blend_rect(mid_image, Rect2i(0, 0, mid_image.get_width(), mid_image.get_height()), Vector2i.ZERO)
+		plate = far_image
+	_stamp_earth(plate, center, mid.scale)
+	_plate_image_tex = ImageTexture.create_from_image(plate)
 	_plate_image_key = key
 	return _plate_image_tex
 
@@ -1492,7 +1528,7 @@ func _pad_image(image: Image, pad: int) -> Image:
 ## It is kept small: the fragment only needs the weight, and a large second fetch misses the frame cap.
 func _leaf_sway_image(art: CanvasItem, _frac: Rect2) -> Image:
 	var slot := str(art.get_parent().get_parent().name)
-	var tex := _load_tex(art_root() + slot + "_sway.png")
+	var tex := _load_tex(sway_mask_path(slot))
 	if tex == null:
 		return null
 	var image := tex.get_image()

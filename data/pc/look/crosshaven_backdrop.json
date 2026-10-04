@@ -79,7 +79,21 @@
       "over": "the screen frame and the board edge",
       "never_covers": ["walkable_cells", "hud"]
     },
-    "hud_clear_px": 260,
+    "masters_px": {
+      "sky": [2048, 1280],
+      "clearing": [4096, 2560],
+      "leaf_frame_left": [1024, 808],
+      "leaf_frame_right": [1024, 1168],
+      "leaf_frame_top": [2560, 592],
+      "leaf_frame_bottom": [2560, 480]
+    },
+    "sway_px": {
+      "leaf_frame_left": [512, 404],
+      "leaf_frame_right": [512, 584],
+      "leaf_frame_top": [1280, 296],
+      "leaf_frame_bottom": [1280, 240]
+    },
+    "hud_clear_px": 148,
     "props_live": false
   }
 }
