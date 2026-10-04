@@ -32,7 +32,10 @@ float noise(vec2 p) {
 float fbm(vec2 p) {
 	float v = 0.0;
 	float a = 0.5;
-	for (int i = 0; i < 5; i++) {
+	// Three octaves. The fourth and fifth are smaller than a phone tile
+	// texel and mostly alias. Cutting them keeps the flow and drops the
+	// hash cost on every lava, rune, and water fragment.
+	for (int i = 0; i < 3; i++) {
 		v += a * noise(p);
 		p = p * 2.02 + vec2(3.1, 1.7);
 		a *= 0.5;
@@ -80,18 +83,19 @@ void fragment() {
 		col = base + vec3(1.0, 0.36, 0.06) * crack * heat * 1.3;
 		col += vec3(0.30, 0.07, 0.01) * smoothstep(0.85, 0.99, ridge) * mask * 0.35;
 	} else if (mode == 3) {
-		vec3 deep = vec3(0.05, 0.03, 0.12);
-		col = mix(deep, base, 0.55);
+		// Stormspire runes: gold arc on a warm dark, violet only in the core.
+		// A hard step flicker read as a glitch. The sine stays a spell pulse.
+		vec3 deep = vec3(0.11, 0.06, 0.07);
+		col = mix(deep, base, 0.62);
 		float flow = fbm(p * 3.2 + vec2(t * 0.35, -t * 0.22));
 		float vein = 1.0 - abs(flow * 2.0 - 1.0);
 		float arc = smoothstep(0.90, 0.985, vein);
-		float flicker = 0.65 + 0.35 * step(0.35, noise(vec2(t * 9.0, p.x * 3.0)));
-		col += vec3(0.55, 0.30, 1.0) * arc * flicker * 1.2;
-		col += vec3(0.25, 0.45, 1.0) * smoothstep(0.75, 0.9, vein) * 0.25;
-		// Soft rune glow breathing from the cell centre.
+		float flicker = 0.74 + 0.26 * sin(t * 5.0 + p.y * 3.0);
+		col += vec3(1.0, 0.72, 0.22) * arc * flicker * 0.95;
+		col += vec3(0.62, 0.28, 0.72) * smoothstep(0.78, 0.94, vein) * 0.28;
 		vec2 c = UV - vec2(0.5);
 		float d = length(c * vec2(1.0, 2.0));
-		col += vec3(0.35, 0.18, 0.75) * (1.0 - smoothstep(0.0, 0.5, d)) * (0.25 + 0.15 * sin(t * 2.0 + p.x));
+		col += vec3(0.85, 0.48, 0.22) * (1.0 - smoothstep(0.0, 0.5, d)) * (0.16 + 0.10 * sin(t * 2.0 + p.x));
 	} else if (mode == 5) {
 		// Two caustic layers drifting against each other, board-continuous.
 		float c1 = 1.0 - abs(fbm(p * 2.4 + vec2(t * 0.18, t * 0.07)) * 2.0 - 1.0);
@@ -100,11 +104,12 @@ void fragment() {
 		float swell = 0.94 + 0.08 * sin(t * 1.3 + p.x * 0.9 + p.y * 0.6);
 		col = base * swell + vec3(0.55, 0.85, 1.0) * caustic * 0.45;
 	} else if (mode == 4) {
-		// Near-black slate, cooled toward the picture's blue-violet night.
+		// Slate keeps the painted stamp. A light warm mix stops the cell
+		// turning into a blue-violet wash that swallows the figures.
 		float lum = dot(base, vec3(0.299, 0.587, 0.114));
-		base = mix(base, vec3(lum) * vec3(0.86, 0.86, 1.08), 0.6);
+		base = mix(base, vec3(lum) * vec3(1.02, 0.94, 0.86), 0.28);
 		float sheen = fbm(p * 1.4 + vec2(t * 0.02, 0.0));
-		col = base + vec3(0.04, 0.04, 0.08) * smoothstep(0.55, 0.8, sheen);
+		col = base + vec3(0.09, 0.06, 0.03) * smoothstep(0.55, 0.8, sheen);
 	}
 	COLOR = vec4(col, tex.a * COLOR.a);
 }

@@ -70,28 +70,33 @@ const _BIOMES := {
 		"shimmer_mul": {"ground": 0.32, "mud": 0.5, "water": 0.4, "lava": 1.3},
 	},
 	"windmere": {
-		"grade": Color(0.96, 1.02, 1.06),
-		"shimmer_color": Color(0.96, 0.98, 1.0),
-		"light": Color(0.92, 0.95, 1.0),
-		"mote": Color(0.9, 0.94, 0.98, 0.45),
+		# Snow stays cooler than the red channel (the map test requires it)
+		# but the gap is small, so the board reads as sunlit snow. The key
+		# light is warm. Sheen on the ground is quiet.
+		"grade": Color(1.0, 1.02, 1.04),
+		"shimmer_color": Color(1.0, 0.96, 0.88),
+		"light": Color(1.0, 0.94, 0.78),
+		"mote": Color(0.96, 0.93, 0.86, 0.4),
 		"direction": Vector2(0.85, 0.45),
 		"gravity": Vector2(14.0, 18.0),
 		"spread": 22.0,
 		"speed_mul": 1.05,
 		"pulse_mul": 0.85,
-		"shimmer_mul": {"ground": 1.45, "mud": 0.8, "water": 1.25, "lava": 1.0},
+		"shimmer_mul": {"ground": 0.72, "mud": 0.55, "water": 1.05, "lava": 1.0},
 	},
 	"stormspire": {
-		"grade": Color(0.94, 0.90, 1.06),
-		"shimmer_color": Color(0.90, 0.80, 1.0),
-		"light": Color(0.78, 0.74, 0.96),
-		"mote": Color(0.78, 0.70, 0.96, 0.45),
+		# Warm stone grade and an amber key. The electric read stays in the
+		# rune surface, not in a violet wash over every cell.
+		"grade": Color(1.05, 0.96, 0.90),
+		"shimmer_color": Color(1.0, 0.82, 0.42),
+		"light": Color(1.0, 0.78, 0.38),
+		"mote": Color(1.0, 0.78, 0.36, 0.42),
 		"direction": Vector2(0.35, -0.55),
 		"gravity": Vector2(-4.0, -6.0),
-		"spread": 78.0,
-		"speed_mul": 1.85,
-		"pulse_mul": 1.45,
-		"shimmer_mul": {"ground": 1.55, "mud": 0.7, "water": 1.2, "lava": 1.1},
+		"spread": 48.0,
+		"speed_mul": 1.15,
+		"pulse_mul": 1.05,
+		"shimmer_mul": {"ground": 0.85, "mud": 0.55, "water": 1.05, "lava": 1.0},
 	},
 }
 

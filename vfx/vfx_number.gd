@@ -87,6 +87,9 @@ func _draw() -> void:
 		return
 	var width := font.get_string_size(_text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size).x
 	var baseline := Vector2(-width * 0.5, _font_size * 0.35 - lift)
+	# Soft plate so an orange number still reads on sunlit snow.
+	var plate := Rect2(baseline.x - 8.0, baseline.y - float(_font_size) * 0.78, width + 16.0, float(_font_size) * 0.95)
+	draw_rect(plate, Color(0.08, 0.03, 0.02, 0.46))
 	font.draw_string(get_canvas_item(), baseline + Vector2(2, 3), _text, HORIZONTAL_ALIGNMENT_LEFT, -1, _font_size, VfxPalette.NUMBER_SHADOW)
 	for ox in range(-4, 5, 2):
 		for oy in range(-4, 5, 2):

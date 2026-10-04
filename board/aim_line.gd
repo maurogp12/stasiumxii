@@ -103,6 +103,20 @@ static func arc_offset(from: Vector2, to: Vector2) -> float:
 	return mid.distance_to((from + to) * 0.5)
 
 
+func _draw_aim_pip(at: Vector2, color: Color, ink: Color) -> void:
+	var gem := PackedVector2Array([
+		at + Vector2(0, -7),
+		at + Vector2(9, 0),
+		at + Vector2(0, 7),
+		at + Vector2(-9, 0),
+	])
+	draw_colored_polygon(gem, Color(color.r, color.g, color.b, 0.42))
+	var loop := gem.duplicate()
+	loop.append(gem[0])
+	draw_polyline(loop, ink, 2.6, true)
+	draw_polyline(loop, color, 1.5, true)
+
+
 func _kind_color(kind: String) -> Color:
 	if kind == "heal":
 		return AIM_HEAL
@@ -118,8 +132,12 @@ func _draw() -> void:
 	if pts.size() < 2:
 		return
 	var color := _kind_color(_kind)
+	var ink := Color(0.08, 0.03, 0.04, 0.92)
 	var i := 0
 	while i < pts.size() - 1:
 		var j := mini(i + DASH_POINTS, pts.size() - 1)
-		draw_line(pts[i], pts[j], color, 3.4, true)
+		# Dark stroke under the dash so the arc reads on snow and on lightning.
+		draw_line(pts[i], pts[j], ink, 6.2, true)
+		draw_line(pts[i], pts[j], color, 3.0, true)
 		i += DASH_POINTS + GAP_POINTS
+	_draw_aim_pip(_to, color, ink)
