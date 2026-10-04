@@ -91,6 +91,8 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 	# 2. Healer and ranged: step out of reach before anything else.
 	if role != "melee" and not moves.is_empty() and not enemies.is_empty() and _nearest(here, enemies) <= DANGER_RANGE:
 		var away := _best_move(moves, here, role, snap, team, enemies, sim, actor, true)
+		if away.is_empty():
+			away = _farther_move(moves, here, enemies)
 		if not away.is_empty():
 			return away
 	# 3. Best expected hit.
@@ -230,6 +232,30 @@ static func _best_hit(casts: Array, snap: Dictionary, team: int, role: String, h
 	return best
 
 
+## Kestrel wants a tile with a clear shot (an enemy 2–5 tiles away in sight).
+static func _shot_bonus(sim: Node, cell: Vector2i, enemies: Array) -> float:
+	if not sim.has_method("has_line_of_sight"):
+		return 0.0
+	for other in enemies:
+		var d := _cheb(cell, other)
+		if d >= 2 and d <= RANGED_BAND.y and bool(sim.has_line_of_sight(cell, other)):
+			return 4.0
+	return 0.0
+
+
+## No fully safe tile: the reachable tile farthest from the enemies, if it is
+## farther than here (Kestrel then has room for Mark Shot, 2+ tiles).
+static func _farther_move(moves: Array, here: Vector2i, enemies: Array) -> Dictionary:
+	var pick := {}
+	var best := _nearest(here, enemies)
+	for intent in moves:
+		var d := _nearest(_cell(intent.get("to")), enemies)
+		if d > best:
+			best = d
+			pick = intent
+	return pick
+
+
 ## The move that best fits the role. `escape`: only moves that leave danger.
 static func _best_move(moves: Array, here: Vector2i, role: String, snap: Dictionary, team: int, enemies: Array, sim: Node, actor: Dictionary, escape: bool) -> Dictionary:
 	var field := {}
@@ -249,14 +275,19 @@ static func _best_move(moves: Array, here: Vector2i, role: String, snap: Diction
 				sources = near
 		field = sim.walk_field(sources)
 	var anchor := _healer_anchor(snap, team, int(actor.get("seat", -1)), enemies) if role == "healer" else Vector2i(-99, -99)
-	var now_score := _place_score(here, role, enemies, field, anchor)
+	var front := _front_gap(snap, team, int(actor.get("seat", -1)), enemies) if role != "melee" else 99
+	var now_score := _place_score(here, role, enemies, field, anchor, front)
+	if role == "ranged":
+		now_score += _shot_bonus(sim, here, enemies)
 	var pick := {}
 	var pick_score := now_score
 	for intent in moves:
 		var to := _cell(intent.get("to"))
 		if escape and _nearest(to, enemies) <= DANGER_RANGE:
 			continue
-		var score := _place_score(to, role, enemies, field, anchor)
+		var score := _place_score(to, role, enemies, field, anchor, front)
+		if role == "ranged":
+			score += _shot_bonus(sim, to, enemies)
 		if score > pick_score + 0.001:
 			pick_score = score
 			pick = intent
@@ -264,13 +295,22 @@ static func _best_move(moves: Array, here: Vector2i, role: String, snap: Diction
 
 
 ## Higher is better.
-static func _place_score(cell: Vector2i, role: String, enemies: Array, field: Dictionary, anchor: Vector2i) -> float:
+## `front`: how close the nearest melee teammate stands to the enemies (99 when
+## none). Healer and ranged never step ahead of it (they used to walk into a
+## lane in front of Bastion and block him).
+static func _place_score(cell: Vector2i, role: String, enemies: Array, field: Dictionary, anchor: Vector2i, front: int = 99) -> float:
 	var d := _nearest(cell, enemies)
+	var behind := 0.0
+	if front < 99 and d <= front:
+		behind = -float(front + 1 - d) * 3.0
 	match role:
 		"melee":
-			return -absf(float(int(field.get(cell, 99)) - 1))
+			if field.has(cell):
+				return -absf(float(int(field[cell]) - 1))
+			# Route blocked (a teammate in the lane): at least get closer.
+			return -float(d) - 20.0
 		"ranged":
-			var score := 0.0
+			var score := behind
 			if d < RANGED_BAND.x:
 				score -= float(RANGED_BAND.x - d) * 3.0
 			elif d > RANGED_BAND.y:
@@ -279,7 +319,7 @@ static func _place_score(cell: Vector2i, role: String, enemies: Array, field: Di
 				score -= 10.0
 			return score
 		"healer":
-			var score := 0.0
+			var score := behind
 			if d < HEALER_SAFE:
 				score -= float(HEALER_SAFE - d) * 4.0
 			if d <= DANGER_RANGE:
@@ -288,10 +328,20 @@ static func _place_score(cell: Vector2i, role: String, enemies: Array, field: Di
 				var reach := _cheb(cell, anchor)
 				if reach > HEALER_REACH:
 					score -= float(reach - HEALER_REACH) * 2.0
-			# Slight pull to stay close behind rather than drift far away.
-			score -= maxf(0.0, float(d - (HEALER_SAFE + 1))) * 0.5
 			return score
 	return 0.0
+
+
+## Nearest-enemy distance of the most forward living melee teammate.
+static func _front_gap(snap: Dictionary, team: int, self_seat: int, enemies: Array) -> int:
+	var best := 99
+	for unit in snap.get("units", []):
+		if int(unit.get("team", 0)) != team or not bool(unit.get("alive", false)) or int(unit.get("seat", -1)) == self_seat or unit.get("pos") == null:
+			continue
+		if role_of(str(unit.get("class_id", ""))) != "melee":
+			continue
+		best = mini(best, _nearest(_cell(unit.get("pos")), enemies))
+	return best
 
 
 ## The ally the healer stays in reach of: the most hurt, else the one nearest
