@@ -17,7 +17,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "name", "level_min", "level_max", "chunks", "color", "dungeon"],
+        "required": ["id", "name", "level_min", "level_max", "chunks", "color"],
         "properties": {
           "id": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
           "name": {"type": "string", "minLength": 1},

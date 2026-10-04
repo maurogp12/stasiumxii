@@ -54,7 +54,7 @@ const HOME_IDS: Array[String] = [
 ## Section 00 bands, then the nine outer zones. Colours start at the spec
 ## example #3fbf4f and step toward purple.
 const EXPECTED := [
-	["crossroads", "Crossroads", 1, 1, "#3fbf4f", "millrace_vaults"],
+	["crossroads", "Crossroads", 1, 1, "#3fbf4f", ""],
 	["stoneford", "Stoneford", 1, 10, "#58bd3c", "old_granary_cellar"],
 	["northgate", "Northgate", 10, 20, "#82bb3a", "frostspire_archive"],
 	["eastmarch", "Eastmarch", 20, 30, "#acb937", "saltmaw_grotto"],
@@ -146,7 +146,10 @@ func _test_plan(levels) -> void:
 		eq(int(zone["level_min"]), int(want[2]), "%s level_min" % want[0])
 		eq(int(zone["level_max"]), int(want[3]), "%s level_max" % want[0])
 		eq(str(zone["color"]), str(want[4]), "%s color" % want[0])
-		eq(str(zone["dungeon"]), str(want[5]), "%s dungeon" % want[0])
+		if str(want[5]) == "":
+			eq(zone.has("dungeon"), false, "%s has no dungeon" % want[0])
+		else:
+			eq(str(zone["dungeon"]), str(want[5]), "%s dungeon" % want[0])
 		var span: Dictionary = levels.band(str(want[0]))
 		eq(int(span["level_min"]), int(want[2]), "band min %s" % want[0])
 		eq(int(span["level_max"]), int(want[3]), "band max %s" % want[0])
