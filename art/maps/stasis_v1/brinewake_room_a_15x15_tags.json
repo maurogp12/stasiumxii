@@ -988,14 +988,14 @@
     {
       "x": 2,
       "y": 9,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
     {
       "x": 3,
       "y": 9,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
@@ -1093,14 +1093,14 @@
     {
       "x": 2,
       "y": 10,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
     {
       "x": 3,
       "y": 10,
-      "terrain": "water",
+      "terrain": "ground",
       "elevation": 0,
       "paint_only": []
     },
