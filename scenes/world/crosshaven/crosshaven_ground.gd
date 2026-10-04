@@ -61,7 +61,7 @@ var _void_dist: Dictionary = {}
 var _void_margin := 0
 ## Northgate's shore lip: 1 on a Northgate cell, less where the coast leaves the town.
 var _snow_shore: Dictionary = {}
-## Diagonals that carry a sea foam line, drawn on their own canvas item.
+## Diagonal -> the foam canvas item hung under that row.
 var _foam_rows: Dictionary = {}
 ## Sample inside the tile and overlap the neighbours so the fringe is not a seam.
 const WATER_OVERLAP := 4.0
@@ -125,13 +125,14 @@ func setup(target: WorldZone) -> void:
 		if _row_has_foam(d):
 			# Foam reaches past its own diamond onto the next water cell and up
 			# the face of a raised bank, so it sorts just after the next row.
+			# It hangs under its row so the ground keeps one child per row.
 			var foam := Node2D.new()
-			foam.name = "Foam%d" % d
+			foam.name = "Foam"
 			foam.z_as_relative = false
 			foam.z_index = row_z(d + 1) + 1
 			foam.draw.connect(_draw_foam_row.bind(foam, d))
-			add_child(foam)
-			_foam_rows[d] = true
+			row.add_child(foam)
+			_foam_rows[d] = foam
 	_mark_water_rows()
 
 
@@ -170,14 +171,17 @@ func _redraw_water() -> void:
 		if row != null:
 			row.queue_redraw()
 	for d in _foam_rows.keys():
-		var foam := get_node_or_null("Foam%d" % int(d))
-		if foam != null:
+		var foam: Node2D = _foam_rows[d]
+		if is_instance_valid(foam):
 			foam.queue_redraw()
 
 
 func redraw_all() -> void:
 	for child in get_children():
 		child.queue_redraw()
+	for foam in _foam_rows.values():
+		if is_instance_valid(foam):
+			(foam as Node2D).queue_redraw()
 
 
 func uses_kit() -> bool:
@@ -783,7 +787,7 @@ func _row_has_foam(s: int) -> bool:
 func _draw_foam_row(ci: Node2D, s: int) -> void:
 	for cell in _row_cells(s):
 		if _foam_cell(cell):
-			_draw_sea_foam(ci, cell, Art.height_seen(zone, cell))
+			_draw_sea_foam(ci, cell, Art.height_seen(zone, cell), true)
 
 
 func _draw_cell(ci: Node2D, cell: Vector2i) -> void:
@@ -923,6 +927,7 @@ func _draw_cell_kit(ci: Node2D, cell: Vector2i, terrain: String, steps: int, ban
 		_draw_sea_surface(ci, cell, steps)
 		if VisualSettings.current != null and VisualSettings.current.enabled("animations"):
 			_draw_sea_sparkle(ci, cell, steps)
+		_draw_sea_foam(ci, cell, steps, false)
 		return
 	var water_overlap := 0.0
 	if terrain == "water":
@@ -1212,7 +1217,7 @@ func _draw_sea_sparkle(ci: Node2D, cell: Vector2i, steps: int) -> void:
 ## edge that thins onto the water over a few pixels, with a slow wobble in
 ## world space so it runs on across cells instead of making a chevron per tile.
 ## In front of the Northgate snow lip it also takes a thin ice rim.
-func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
+func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int, front: bool) -> void:
 	if _water_grade(cell) != "sea":
 		return
 	# Eastmarch kit surf already paints that shore.
@@ -1222,26 +1227,49 @@ func _draw_sea_foam(ci: Node2D, cell: Vector2i, steps: int) -> void:
 	var center := BoardVisualSort.cell_to_local(cell, float(steps))
 	var sides: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 	for k in 4:
+		# Land behind the water (north-west, north-east sides) gets its foam in
+		# the water's own row, so a raised cell in front still covers it. Land
+		# in front gets it from the foam row, which sorts after that land.
+		if (k == 1 or k == 2) != front:
+			continue
 		var nb: Vector2i = cell + sides[k]
 		var seen := Art.terrain_seen(zone, nb)
 		if seen == "" or seen == "water":
+			continue
+		# Eastmarch kit sand carries its own surf on the edge piece.
+		var kit := _beach_at(nb)
+		if kit == "sand" or kit == "wet_sand":
 			continue
 		# A raised bank in front hides the plain edge. The line follows the
 		# visible top of that bank instead.
 		var lift := Vector2.ZERO
 		if k == 1 or k == 2:
-			var rise := maxi(Art.height_seen(zone, nb) - steps, 0)
+			var rise := maxi(_drawn_steps(nb) - steps, 0)
 			lift = Vector2(0, -float(rise) * BoardVisualSort.ELEVATION_PIXELS)
-		_soft_foam_edge(ci, d[k] + lift, d[(k + 1) % 4] + lift, center + lift, snow_shore_at(nb))
+		_soft_foam_edge(ci, d[k] + lift, d[(k + 1) % 4] + lift, center + lift, snow_shore_at(nb), front)
 
 
-func _soft_foam_edge(ci: Node2D, a: Vector2, b: Vector2, center: Vector2, ice: float) -> void:
+## Height a cell is drawn at. The Northgate crag terraces sit above their data height.
+func _drawn_steps(cell: Vector2i) -> int:
+	if _north_crag(cell):
+		return _terrace(cell)
+	return Art.height_seen(zone, cell)
+
+
+func _soft_foam_edge(ci: Node2D, a: Vector2, b: Vector2, center: Vector2, ice: float, front: bool) -> void:
 	var shift := BoardVisualSort.cell_to_local(world_origin)
 	var phase := _sea_phase()
-	# Offsets run straight up or down the screen onto the water, so the band
-	# of one cell meets the next one's on a straight coast with no notch.
+	# Every point moves the same way onto the water, so the band of one cell
+	# meets the next one's on a straight coast with no notch. In front of a
+	# bank it runs straight up the screen. Behind the water it runs square to
+	# the edge, which keeps it inside the cell so the next cell does not cut it.
 	var mid_edge := (a + b) * 0.5
-	var up := -1.0 if center.y < mid_edge.y else 1.0
+	var dir := Vector2(0, -1.0 if center.y < mid_edge.y else 1.0)
+	if not front:
+		var along := (b - a).normalized()
+		dir = Vector2(-along.y, along.x)
+		if dir.dot(center - mid_edge) < 0.0:
+			dir = -dir
 	var segs := 6
 	var rim := PackedVector2Array()
 	var mid := PackedVector2Array()
@@ -1255,10 +1283,10 @@ func _soft_foam_edge(ci: Node2D, a: Vector2, b: Vector2, center: Vector2, ice: f
 		var wob2 := 0.5 + 0.5 * sin(w.x * 0.05 - w.y * 0.11 - phase * 0.5 + 1.7)
 		# In pixels. The first one or two sit under the neighbour's lip.
 		var start := 1.5 + 1.5 * ice
-		base.append(p + Vector2(0, up * 0.5))
-		rim.append(p + Vector2(0, up * start))
-		mid.append(p + Vector2(0, up * (start + 2.6 + 1.6 * wob)))
-		inner.append(p + Vector2(0, up * (start + 6.5 + 2.5 * wob2)))
+		base.append(p + dir * 0.5)
+		rim.append(p + dir * start)
+		mid.append(p + dir * (start + 2.6 + 1.6 * wob))
+		inner.append(p + dir * (start + 6.5 + 2.5 * wob2))
 	var crest := Color(0.95, 0.98, 1.0, 0.80)
 	var veil := Color(0.92, 0.97, 1.0, 0.40)
 	var clear := Color(0.92, 0.97, 1.0, 0.0)

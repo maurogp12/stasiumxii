@@ -2418,17 +2418,17 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_net_rack_24_11",
+      "id": "crosshaven_eastmarch_net_rack_22_13",
       "type": "net_rack",
       "blocks": true,
       "origin": {
-        "x": 24,
-        "y": 11
+        "x": 22,
+        "y": 13
       },
       "footprint": [
         {
-          "x": 24,
-          "y": 11
+          "x": 22,
+          "y": 13
         }
       ]
     },
