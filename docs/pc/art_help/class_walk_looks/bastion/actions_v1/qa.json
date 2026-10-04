@@ -1,0 +1,694 @@
+{
+ "format": {
+  "idle_S": {
+   "bbox_union": [
+    85,
+    73,
+    347,
+    359
+   ]
+  },
+  "attack_S": {
+   "bbox_union": [
+    81,
+    16,
+    382,
+    359
+   ]
+  },
+  "skill_S": {
+   "bbox_union": [
+    86,
+    73,
+    371,
+    359
+   ]
+  },
+  "hit_S": {
+   "bbox_union": [
+    88,
+    70,
+    372,
+    359
+   ]
+  },
+  "death_S": {
+   "bbox_union": [
+    4,
+    73,
+    378,
+    359
+   ]
+  },
+  "idle_E": {
+   "bbox_union": [
+    105,
+    66,
+    429,
+    340
+   ]
+  },
+  "attack_E": {
+   "bbox_union": [
+    93,
+    3,
+    452,
+    340
+   ]
+  },
+  "skill_E": {
+   "bbox_union": [
+    105,
+    1,
+    439,
+    340
+   ]
+  },
+  "hit_E": {
+   "bbox_union": [
+    94,
+    66,
+    411,
+    340
+   ]
+  },
+  "death_E": {
+   "bbox_union": [
+    3,
+    66,
+    421,
+    358
+   ]
+  }
+ },
+ "counts": {
+  "idle_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_S": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_S": {
+   "frames": 13,
+   "blockout": 13
+  },
+  "idle_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_E": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_E": {
+   "frames": 13,
+   "blockout": 13
+  }
+ },
+ "skate": {
+  "idle_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_S": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_S": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_S": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   }
+  },
+  "idle_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_E": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_E": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_E": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 8,
+    "max_px": 0.143,
+    "pairs_where_the_blockout_moves_the_foot": 4
+   }
+  }
+ },
+ "touch_border": [
+  [
+   "idle_S_f00.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "idle_S_f01.png",
+   [
+    88,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "idle_S_f02.png",
+   [
+    88,
+    74,
+    346,
+    359
+   ]
+  ],
+  [
+   "idle_S_f03.png",
+   [
+    87,
+    75,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f04.png",
+   [
+    86,
+    76,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f05.png",
+   [
+    86,
+    77,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f06.png",
+   [
+    85,
+    77,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f07.png",
+   [
+    86,
+    77,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f08.png",
+   [
+    87,
+    76,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f09.png",
+   [
+    88,
+    75,
+    347,
+    359
+   ]
+  ],
+  [
+   "idle_S_f10.png",
+   [
+    88,
+    74,
+    346,
+    359
+   ]
+  ],
+  [
+   "idle_S_f11.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "attack_S_f00.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "attack_S_f01.png",
+   [
+    87,
+    72,
+    353,
+    359
+   ]
+  ],
+  [
+   "attack_S_f02.png",
+   [
+    88,
+    35,
+    362,
+    359
+   ]
+  ],
+  [
+   "attack_S_f03.png",
+   [
+    89,
+    27,
+    362,
+    359
+   ]
+  ],
+  [
+   "attack_S_f04.png",
+   [
+    90,
+    69,
+    363,
+    359
+   ]
+  ],
+  [
+   "attack_S_f05.png",
+   [
+    83,
+    16,
+    370,
+    359
+   ]
+  ],
+  [
+   "attack_S_f06.png",
+   [
+    81,
+    100,
+    380,
+    359
+   ]
+  ],
+  [
+   "attack_S_f07.png",
+   [
+    83,
+    103,
+    381,
+    359
+   ]
+  ],
+  [
+   "attack_S_f08.png",
+   [
+    85,
+    107,
+    382,
+    359
+   ]
+  ],
+  [
+   "attack_S_f09.png",
+   [
+    85,
+    101,
+    378,
+    359
+   ]
+  ],
+  [
+   "attack_S_f10.png",
+   [
+    86,
+    90,
+    368,
+    359
+   ]
+  ],
+  [
+   "attack_S_f11.png",
+   [
+    90,
+    78,
+    354,
+    359
+   ]
+  ],
+  [
+   "skill_S_f00.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "skill_S_f01.png",
+   [
+    89,
+    75,
+    356,
+    359
+   ]
+  ],
+  [
+   "skill_S_f02.png",
+   [
+    88,
+    80,
+    363,
+    359
+   ]
+  ],
+  [
+   "skill_S_f03.png",
+   [
+    87,
+    84,
+    368,
+    359
+   ]
+  ],
+  [
+   "skill_S_f04.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f05.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f06.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f07.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f08.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f09.png",
+   [
+    86,
+    86,
+    371,
+    359
+   ]
+  ],
+  [
+   "skill_S_f10.png",
+   [
+    86,
+    83,
+    367,
+    359
+   ]
+  ],
+  [
+   "skill_S_f11.png",
+   [
+    87,
+    76,
+    358,
+    359
+   ]
+  ],
+  [
+   "hit_S_f00.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "hit_S_f01.png",
+   [
+    89,
+    70,
+    371,
+    359
+   ]
+  ],
+  [
+   "hit_S_f02.png",
+   [
+    91,
+    70,
+    369,
+    359
+   ]
+  ],
+  [
+   "hit_S_f03.png",
+   [
+    89,
+    70,
+    372,
+    359
+   ]
+  ],
+  [
+   "hit_S_f04.png",
+   [
+    88,
+    71,
+    357,
+    359
+   ]
+  ],
+  [
+   "hit_S_f05.png",
+   [
+    88,
+    72,
+    343,
+    359
+   ]
+  ],
+  [
+   "hit_S_f06.png",
+   [
+    88,
+    72,
+    344,
+    359
+   ]
+  ],
+  [
+   "hit_S_f07.png",
+   [
+    89,
+    73,
+    345,
+    359
+   ]
+  ],
+  [
+   "death_S_f00.png",
+   [
+    89,
+    73,
+    346,
+    359
+   ]
+  ],
+  [
+   "death_S_f01.png",
+   [
+    90,
+    76,
+    364,
+    359
+   ]
+  ],
+  [
+   "death_S_f02.png",
+   [
+    91,
+    83,
+    378,
+    359
+   ]
+  ],
+  [
+   "death_S_f03.png",
+   [
+    92,
+    88,
+    372,
+    359
+   ]
+  ]
+ ],
+ "stretch": {
+  "arm_bone_k": [
+   0.85,
+   1.15
+  ],
+  "mace_k": [
+   0.85,
+   1.15
+  ],
+  "leg_k_max": 1.098
+ },
+ "problems": []
+}
