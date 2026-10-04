@@ -243,6 +243,7 @@ const SPELLS := {
 	},
 	# Mauro 3 Oct 2026: "Yes, add it as a sixth spell it cost 6 ap and only once
 	# per match". Range 1–2 and 30% HP are the proposal he answered yes to.
+	# Mauro 4 Oct 2026: "6 pa and 6 pulse yes" — needs and spends full Pulse.
 	# Brings a fallen teammate back; nothing to revive in a 1v1.
 	REKINDLE: {
 		"id": REKINDLE,
@@ -257,6 +258,8 @@ const SPELLS := {
 		"element": "water",
 		"target": "fallen_ally",
 		"revive_pct": 30,
+		"requires_pulse": 6,
+		"spend_pulse": 6,
 		"once_per_match": true,
 		"no_facing": true,
 	},

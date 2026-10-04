@@ -1448,6 +1448,9 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 	if target_kind == "fallen_ally":
 		if bool(def.get("once_per_match", false)) and bool(actor.get("used_" + spell_id, false)):
 			return "once_per_match"
+		var pulse_gate := _resource_gate(actor, def)
+		if pulse_gate != "":
+			return pulse_gate
 		if _fallen_ally_at(actor, to_cell).is_empty():
 			return "no_target"
 		return ""
@@ -1492,7 +1495,7 @@ func _preview_reason(def: Dictionary, actor: Dictionary, target: Dictionary, fro
 func _preview_kit_lines(spell_id: String) -> Dictionary:
 	match spell_id:
 		SpellKits.REKINDLE:
-			return {"on_connect": "A fallen teammate stands up with 30% HP. Once per match.", "on_miss": "No roll."}
+			return {"on_connect": "Spends 6 Pulse. A fallen teammate stands up with 30% HP. Once per match.", "on_miss": "No roll."}
 		SpellKits.MARK_SHOT:
 			return {"on_connect": "8 Air. +1 Mark on the target.", "on_miss": "AP/MP stay spent. No Mark."}
 		SpellKits.DETONATE:
@@ -4964,6 +4967,7 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 	actor["ap"] = int(actor["ap"]) - ap_cost
 	_spend_mp(actor, mp_cost)
 	actor["used_" + spell_id] = true
+	var pulse_spent := _spend_resource(actor, "pulse", int(def.get("spend_pulse", 0))) if int(def.get("spend_pulse", 0)) > 0 else 0
 	var max_hp := maxi(int(body.get("max_hp", 1)), 1)
 	var hp := maxi(roundi(float(max_hp) * float(def.get("revive_pct", 30)) / 100.0), 1)
 	body["alive"] = true
@@ -4988,6 +4992,8 @@ func _resolve_revive(intent: Dictionary, actor: Dictionary, def: Dictionary, des
 		"damage": 0,
 		"healed": hp,
 		"revived": true,
+		"engine": "pulse",
+		"engine_spent": pulse_spent,
 		"coach": _last_coach,
 	})
 	return _accept()

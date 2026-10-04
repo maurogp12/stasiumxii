@@ -3788,6 +3788,7 @@ func _test_mender_rekindle() -> void:
 	var def := SpellKits.spell(SpellKits.REKINDLE)
 	eq(int(def["ap"]), 6, "Rekindle costs 6 AP")
 	eq(bool(def["once_per_match"]), true, "Rekindle is once per match")
+	eq(int(def["requires_pulse"]), 6, "Rekindle needs 6 Pulse (Mauro 4 Oct 2026)")
 	_sim.reset_match({
 		"seed": 1,
 		"flat_board": true,
@@ -3805,6 +3806,12 @@ func _test_mender_rekindle() -> void:
 	_live_unit(2)["hp"] = 0
 	_sim._check_death(_live_unit(2))
 	eq(bool(_unit(2)["alive"]), false, "Ironjaw falls")
+	_live_unit(0)["ap"] = 6
+	_live_unit(0)["pulse"] = 5
+	eq(offered.call(), false, "Rekindle needs 6 Pulse")
+	var short: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
+	eq(str(short.get("reason", "")), "insufficient_pulse", "5 Pulse is refused")
+	_live_unit(0)["pulse"] = 6
 	_live_unit(0)["ap"] = 5
 	eq(offered.call(), false, "Rekindle needs 6 AP")
 	_live_unit(0)["ap"] = 6
@@ -3814,6 +3821,7 @@ func _test_mender_rekindle() -> void:
 	eq(bool(_unit(2)["alive"]), true, "Ironjaw stands up")
 	eq(int(_unit(2)["hp"]), roundi(float(_unit(2)["max_hp"]) * 0.3), "back with 30% of max HP")
 	eq(int(_unit(0)["ap"]), 0, "6 AP spent")
+	eq(int(_unit(0)["pulse"]), 0, "6 Pulse spent")
 	var revive_event := {}
 	for e in res.get("events", []):
 		if str(e.get("spell", "")) == SpellKits.REKINDLE:
@@ -3823,6 +3831,7 @@ func _test_mender_rekindle() -> void:
 	_live_unit(2)["hp"] = 0
 	_sim._check_death(_live_unit(2))
 	_live_unit(0)["ap"] = 12
+	_live_unit(0)["pulse"] = 6
 	eq(offered.call(), false, "Rekindle is not offered twice in a match")
 	var again: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
 	eq(str(again.get("reason", "")), "once_per_match", "a second Rekindle is refused")
@@ -3838,6 +3847,7 @@ func _test_mender_rekindle() -> void:
 	_live_unit(2)["hp"] = 0
 	_sim._check_death(_live_unit(2))
 	_live_unit(0)["ap"] = 6
+	_live_unit(0)["pulse"] = 6
 	eq(offered.call(), false, "a body 4 tiles away is out of reach")
 	var far: Dictionary = _sim.submit({"type": "cast", "spell": SpellKits.REKINDLE, "to": Vector2i(6, 4), "seat": 0})
 	eq(str(far.get("reason", "")), "out_of_range", "out of range is refused")
@@ -3847,6 +3857,7 @@ func _test_mender_rekindle() -> void:
 	# 1v1: no teammate, never offered.
 	_sim.reset_match({"seed": 1, "flat_board": true, "skip_deploy": true, "classes": ["mender", "kestrel"], "positions": [Vector2i(4, 4), Vector2i(5, 4)]})
 	_live_unit(0)["ap"] = 12
+	_live_unit(0)["pulse"] = 6
 	eq(offered.call(), false, "nothing to revive in a 1v1")
 
 
