@@ -1,0 +1,98 @@
+{
+ "f00": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1264,
+  "visible_pct": 76.3,
+  "gap_px": 0.0,
+  "touching": true
+ },
+ "f01": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1263,
+  "visible_pct": 72.0,
+  "gap_px": 0.0,
+  "touching": true
+ },
+ "f02": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1220,
+  "visible_pct": 78.0,
+  "gap_px": 0.0,
+  "touching": true
+ },
+ "f03": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1222,
+  "visible_pct": 84.1,
+  "gap_px": 9.0,
+  "touching": false
+ },
+ "f04": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1228,
+  "visible_pct": 95.0,
+  "gap_px": 34.6,
+  "touching": false
+ },
+ "f05": {
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1232,
+  "visible_pct": 100.0,
+  "gap_px": 41.6,
+  "touching": false
+ },
+ "f06": {
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1266,
+  "visible_pct": 100.0,
+  "gap_px": 28.6,
+  "touching": false
+ },
+ "f07": {
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1254,
+  "visible_pct": 100.0,
+  "gap_px": 26.8,
+  "touching": false
+ },
+ "f08": {
+  "near": "L",
+  "far": "R",
+  "far_boot_px": 1230,
+  "visible_pct": 100.0,
+  "gap_px": 32.8,
+  "touching": false
+ },
+ "f09": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1301,
+  "visible_pct": 99.5,
+  "gap_px": 16.4,
+  "touching": false
+ },
+ "f10": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1269,
+  "visible_pct": 99.1,
+  "gap_px": 4.4,
+  "touching": false
+ },
+ "f11": {
+  "near": "R",
+  "far": "L",
+  "far_boot_px": 1232,
+  "visible_pct": 91.6,
+  "gap_px": 0.0,
+  "touching": true
+ }
+}

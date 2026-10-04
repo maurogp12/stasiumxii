@@ -17,7 +17,8 @@ The upper body is the approved target itself. It is placed with one uniform scal
 | `legs_sheet.json` | Every number for all 12 frames, plus skate for each planted heel and toe. |
 | `metric_S.json`, `metric_E.json` | Bastion metric (`bastion/v2/scripts/bastion_metric.py`, unchanged) against the v3.1 clay. |
 | `parts/` | The cut layers (output of `kcut.py`): `leg_F`, `legfar_F`, `back_F`, `front_F`, and `rig_F.json`. |
-| `scripts/` | `kcut.py` (cut), `krig.py` (rig and render), `sheets.py` (sheet, side-by-side and numbers), `run_metric.py` (scores). |
+| `feet_S_far_boot.png`, `.json` | All 12 S frames zoomed on the feet, with the far boot's visible % and the gap between the boots. |
+| `scripts/` | `kcut.py` (cut), `krig.py` (rig and render), `sheets.py` (sheet, side-by-side and numbers), `run_metric.py` (scores), `boot_vis.py` (far-boot visibility), `kcfg.json` (S boots fix). |
 
 ## Method
 
@@ -79,10 +80,10 @@ Target E: thigh/shoulder 0.353, boot/shoulder 0.339, belt→sole 55.0%, knee lin
 
 | frame | thigh/sh (dev) | boot/sh (dev) | belt→sole (vs tgt) | knee line (vs tgt) | stance bend, k | axis R / L (dev vs the target leg with the same role) |
 |---|---|---|---|---|---|---|
-| S f00 | −0.7 / +0.6% | +1.0 / +0.6% | 62.5% (+1.1) | 73.6% (+0.3) | 7°, 1.00 | +11.9 fwd (+1.2) / −0.4 back (+2.0) |
-| S f03 | +0.9 / +0.9% | +2.0 / +1.5% | 62.3% (+0.9) | 73.3% (0.0) | 7°, 0.96 | +4.5 back (+6.9) / +3.8 fwd (−6.9) |
-| S f06 | −0.1 / −0.1% | +1.5 / −0.8% | 59.7% (−1.6) | 75.7% (+2.4) | 7°, 0.98 | −7.1 back (−4.7) / +17.9 fwd (+7.2) |
-| S f09 | −0.1 / −0.7% | +1.5 / +2.0% | 59.7% (−1.6) | 74.9% (+1.5) | 7°, 0.93 | −5.7 back (−3.3) / +8.2 fwd (−2.5) |
+| S f00 | −0.4 / −0.4% | +1.0 / +2.0% | 62.5% (+1.1) | 74.2% (+0.9) | 7°, 0.97 | +12.8 fwd (+2.1) / +1.4 back (+3.8) |
+| S f03 | +0.9 / −0.4% | +2.0 / +0.6% | 62.3% (+0.9) | 73.9% (+0.6) | 7°, 0.93 | +5.5 back (+7.9) / +5.1 fwd (−5.6) |
+| S f06 | +0.9 / +0.9% | +3.4 / +0.6% | 59.7% (−1.6) | 76.5% (+3.2) | 7°, 1.01 | −5.9 back (−3.5) / +18.1 fwd (+7.4) |
+| S f09 | +0.6 / +0.6% | +1.0 / +1.0% | 59.7% (−1.6) | 75.9% (+2.6) | 7°, 0.97 | −4.9 back (−2.5) / +9.0 fwd (−1.7) |
 | E f00 | −0.1 / +1.7% | +0.3 / −1.1% | 56.3% (+1.2) | 74.7% (+0.5) | 7°, 1.00 | −8.7 back (+4.5) / +8.5 fwd (+2.0) |
 | E f03 | +1.2 / +1.2% | +1.3 / −0.7% | 53.3% (−1.8) | 74.3% (+0.1) | 7°, 1.00 | +8.3 fwd (+1.8) / −6.0 back (+7.2) |
 | E f06 | +0.3 / +0.8% | −0.2 / +0.3% | 53.5% (−1.6) | 76.3% (+2.1) | 7°, 0.91 | +14.2 fwd (+7.7) / −17.9 back (−4.7) |
@@ -94,12 +95,12 @@ How the full cycle sits against each rule:
 - **Boot/shoulder:** within ±2.4%.
 - **Belt→sole:** within −2.3 to +2.5 points (the rule is ±5%).
 - **Knee line:** within −1.6 to +2.4 points.
-- **Hip offset:** 0 px. The rule's hips are 7–9 px from the painted hip points, because the blockout's hip vector is wider and tilted.
-- **Stance legs:** 7° knee bend with k between 0.90 and 1.06. The painted target bend is 4–5°. A planted leg bends more only where the clay leg is shorter than 0.90 of the target leg: S f05 (26°, toe-off), S f11 (44°, toe-off) and E f05 (29°, heel strike).
+- **Hip offset:** 0 px. The rule's hips are 7–9 px from the painted hip points (more on S since the boots fix, which uses `hip_w` 1.6), because the blockout's hip vector is wider and tilted.
+- **Stance legs:** 7° knee bend with k between 0.90 and 1.06. The painted target bend is 4–5°. A planted leg bends more only where the clay leg is shorter than 0.90 of the target leg: S f04 (14°), S f05 (40°, toe-off), S f11 (30°, toe-off) and E f05 (29°, heel strike).
 
 Leg axis against the same-role target leg:
 
-- **S:** every planted leg is within 7.7° (the rule is ±8°). Swing legs reach −10.7° at f08 R.
+- **S:** every planted leg is within 8.0° (the rule is ±8°). Swing legs reach −10.0° at f08 R and +14.2° at f11 R.
 - **E:** f04 R (+11.9°) and f05 R (+12.9°, contact) and the swing L at f02 and f09 (+11.9°, +10.2°) are outside ±8°. The blockout's E stride puts the two feet about 80 px apart in x around contact. With the hips at the target belt and the feet on the clay plants, the angle is fixed by geometry. Moving the plants would skate the feet. I swept the hip width from 0.8 to 1.6 and 1.0 is the best setting.
 
 **Skate.** Planted heels and toes move with the ground to within 0.57 px in every consecutive planted pair, for S and E (`legs_sheet.json` → `skate`).
@@ -108,7 +109,7 @@ Leg axis against the same-role target leg:
 
 | | look | ssim upper / lower | iou | palette | height vs idle | bob err | motion | sole_err per frame (px) |
 |---|---|---|---|---|---|---|---|---|
-| S | **87.3** (PASS) | 0.978 / 0.581 | 0.824 | 0.961 | 1.013 | 0 | 75.0 | 4.69 2.10 1.37 0.59 0.37 0.71 4.66 0.06 0.61 0.50 1.74 0.03 |
+| S | **89.1** (PASS) | 0.987 / 0.653 | 0.831 | 0.972 | 1.013 | 0 | 0.0 (feet deliberately off the clay plants, see S boots fix) | 10.69 8.10 5.16 5.41 5.63 5.29 5.34 9.94 10.61 10.50 4.26 6.03 |
 | E | **86.5** (PASS) | 0.977 / 0.635 | 0.785 | 0.941 | 1.017 | 0 | 41.7 | 5.56 2.11 5.64 2.73 2.41 8.13 1.09 1.81 1.49 1.89 1.68 4.76 |
 
 The motion score fails only because of the metric's sole point, the mean x of the lowest three rows of the support boot:
@@ -118,10 +119,27 @@ The motion score fails only because of the metric's sole point, the mean x of th
 
 The real skate, measured on the planted points, is ≤ 0.57 px.
 
+## S boots fix (after Mauro's review: "when walking west / south the boots disappear")
+
+In the first version the far boot hid straight behind the near leg in S f00–f02 and f11 (44–47 % visible). W mirrors S, so W had the same problem.
+
+S-only settings in `scripts/kcfg.json` (E is unchanged):
+- `foot_lat`: a constant lateral offset of each foot track, L +10 px and R −6 px in x. It is constant over the whole cycle, so a planted foot still moves exactly with the ground (skate ≤ 0.57 px, unchanged).
+- `hip_w` 1.6: the hips spread with the feet, so the legs stay upright. Every planted S leg is still within 8.0° of the same-role target axis.
+- `fill_line`: the S fill behind the legs now ends in a smooth crotch arch, not tatters, so the wider gap between the thighs reads as the legs and not as a grey sawtooth.
+
+Results:
+- `feet_S_far_boot.png` / `.json` (made by `scripts/boot_vis.py S feet_S_far_boot.png`) show the far boot from boot top to toe, rendered alone. Its visible share is the part not covered by the near leg or by the belt and bow layer.
+- Visible share by frame: S f00 76 %, f01 72 %, f02 78 %, f03 84 %, f04 95 %, f05–f08 100 %, f09 100 %, f10 99 %, f11 92 %. The minimum is 72 % against the 60 % target.
+- The boots are apart by 4–42 px in f03–f10. They overlap in f00–f02 and f11, where the far boot is 10 % darker so the edge between them stays visible.
+- Thigh/shoulder, boot/shoulder, belt→sole and knee line stay inside their rules (see `legs_sheet.json`).
+- The Bastion metric's motion score for S drops to 0, with a sole error of 4–11 px. The metric compares the sole point against the clay plants, and the S feet now sit deliberately off those plants. Look rises to 89.1.
+- E was not re-rendered. Its far boot is still hidden behind the near leg in f00 (28 %), f10 (37 %) and f11 (23 %). It is left that way because Mauro approved E.
+
 ## Known flaws (honest list)
 
 - **Arm swing and cape lag are not done.** The upper body is the rigid approved painting moving with the pelvis. The arms do not swing ±20° and the cape and hem do not lag. Legs were the priority.
 - **One source leg per side.** Both legs come from the target's one fully visible leg; the far copy has the strap removed and is 10% darker. The target's other leg is mostly hidden by the near thigh and the bow, so it could not be used as a second pose source. In toe-off and swing, the boot is the painted contact boot rotated, not a separately painted heel-up boot.
 - **E leg axis.** E contact and passing frames lean more sideways than the target, up to 13° off it (see above). Fixing this needs a narrower E stride in the blockout.
-- **Crossing legs.** S f00/f01/f10/f11 and E f00/f01 show the legs crossing at the ankles in screen space, as the v3.1 plants do. Depth order follows the blockout ID maps, so it reads as one leg behind the other, but it is busy at sprite size.
+- **Crossing legs.** E f00/f01 show the legs crossing at the ankles in screen space, as the v3.1 plants do, and the E far boot is mostly hidden in f00, f10 and f11. Depth order follows the blockout ID maps, so it reads as one leg behind the other, but it is busy at sprite size. The S boots fix (above) separated the S boots.
 - **Small artefacts.** A small hem tatter painted on the E thigh moves with the leg. The thin E bow string breaks into dots at cell scale, as it does on the approved target at that scale.

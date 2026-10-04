@@ -129,6 +129,9 @@ def foot_M(F, i, sd, pl):
     ps = (1 - pin) * he_s + pin * to_s; pd = (1 - pin) * he_d + pin * to_d
     M = np.hstack([L, (pd - L @ ps)[:, None]])
     M[:, 2] += np.array(c['foot_o'], float)
+    # per-leg constant lateral offset of the foot track (S: the far boot must not hide straight behind the near leg).
+    # Constant over the whole cycle -> a planted foot still moves exactly with the ground (no skate).
+    M[:, 2] += np.array(c.get('foot_lat', {}).get(sd, (0.0, 0.0)), float)
     return M, pin
 
 def ik_knee(hip, ank, L1, L2, kref):

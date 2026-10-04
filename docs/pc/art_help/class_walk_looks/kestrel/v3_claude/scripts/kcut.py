@@ -35,7 +35,8 @@ CFG = {
    # body pixels above this polyline (and inside x range) hang IN FRONT of the legs
    front_x=(515, 735), front_line=[(515, 470), (582, 470), (590, 362), (668, 362), (676, 560), (735, 560)],
    keep_line=[(515, 350), (562, 352), (578, 340), (590, 340), (598, 345), (662, 348), (672, 340), (680, 356), (735, 358)],   # target pixels above this stay with the body
-   fill_line=[(515, 520), (560, 470), (600, 405), (630, 392), (660, 405), (700, 470), (735, 520)],   # back fill down to here
+   fill_line=[(515, 540), (560, 480), (592, 420), (612, 402), (626, 398), (642, 404), (664, 424), (700, 480), (735, 540)],   # back fill down to here: a smooth crotch arch
+   fill_rag=1.5,
    hips=dict(near=(619, 318), far=(574, 322)), far_ankle=(562, 612),
    belt=((541, 282), (709, 272)), shoulder=((538, 165), (722, 150))),
  'E': dict(
