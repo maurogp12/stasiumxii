@@ -1,0 +1,76 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+Unable to open Android 'build-tools' directory.
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Started Project initialization (5 steps)[39m[0m
+[   0% ] [90m[1mfirst_scan_filesystem[22m | Scanning file structure...[39m[0m
+[  16% ] [90m[1mfirst_scan_filesystem[22m | Loading global class names...[39m[0m
+[  33% ] [90m[1mfirst_scan_filesystem[22m | Verifying GDExtensions...[39m[0m
+[  50% ] [90m[1mfirst_scan_filesystem[22m | Creating autoload scripts...[39m[0m
+[  66% ] [90m[1mfirst_scan_filesystem[22m | Initializing plugins...[39m[0m
+[  83% ] [90m[1mfirst_scan_filesystem[22m | Starting file scan...[39m[0m
+[92m[ DONE ][39m [1mfirst_scan_filesystem[22m
+[0m
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/floor_tiles.png and res://art/pc/look/coilgate_floor/floor_tiles.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/glow_mask.png and res://art/pc/look/coilgate_floor/glow_mask.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/light_pillar.png and res://art/pc/look/coilgate_floor/light_pillar.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/pad_blue.png and res://art/pc/look/coilgate_floor/pad_blue.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/pad_red.png and res://art/pc/look/coilgate_floor/pad_red.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+WARNING: UID duplicate detected between res://art/pc/look/thunderwell_floor/room_edge_dark.png and res://art/pc/look/coilgate_floor/room_edge_dark.png.
+     at: _process_file_system (editor/file_system/editor_file_system.cpp:1405)
+[   0% ] [90m[1mupdate_scripts_classes[22m | Started Registering global classes... (2 steps)[39m[0m
+[   0% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[  33% ] [90m[1mupdate_scripts_classes[22m | [39m[0m
+[92m[ DONE ][39m [1mupdate_scripts_classes[22m
+[0m
+[   0% ] [90m[1m_update_scan_actions[22m | Started Scanning actions... (18 steps)[39m[0m
+[   0% ] [90m[1m_update_scan_actions[22m | boulder_cluster.png[39m[0m
+[   5% ] [90m[1m_update_scan_actions[22m | boulder_cluster@2x.png[39m[0m
+[  10% ] [90m[1m_update_scan_actions[22m | boulder_small.png[39m[0m
+[  15% ] [90m[1m_update_scan_actions[22m | boulder_small@2x.png[39m[0m
+[  21% ] [90m[1m_update_scan_actions[22m | clover_patch.png[39m[0m
+[  26% ] [90m[1m_update_scan_actions[22m | clover_patch@2x.png[39m[0m
+[  31% ] [90m[1m_update_scan_actions[22m | fern.png[39m[0m
+[  36% ] [90m[1m_update_scan_actions[22m | fern@2x.png[39m[0m
+[  42% ] [90m[1m_update_scan_actions[22m | flower_tuft.png[39m[0m
+[  47% ] [90m[1m_update_scan_actions[22m | flower_tuft@2x.png[39m[0m
+[  52% ] [90m[1m_update_scan_actions[22m | lilac_tuft.png[39m[0m
+[  57% ] [90m[1m_update_scan_actions[22m | lilac_tuft@2x.png[39m[0m
+[  63% ] [90m[1m_update_scan_actions[22m | pebbles_moss.png[39m[0m
+[  68% ] [90m[1m_update_scan_actions[22m | pebbles_moss@2x.png[39m[0m
+[  73% ] [90m[1m_update_scan_actions[22m | standing_stone.png[39m[0m
+[  78% ] [90m[1m_update_scan_actions[22m | standing_stone@2x.png[39m[0m
+[  84% ] [90m[1m_update_scan_actions[22m | stone_well.png[39m[0m
+[  89% ] [90m[1m_update_scan_actions[22m | stone_well@2x.png[39m[0m
+[92m[ DONE ][39m [1m_update_scan_actions[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (6 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  14% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  28% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  42% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  57% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[  71% ] [90m[1mreimport[22m | Preparing files to reimport...[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing pre-reimport operations...[39m[0m
+[   0% ] [90m[1mreimport[22m | boulder_cluster.png[39m[0m
+[  14% ] [90m[1mreimport[22m | boulder_cluster@2x.png[39m[0m
+[  28% ] [90m[1mreimport[22m | boulder_small.png[39m[0m
+[  42% ] [90m[1mreimport[22m | boulder_small@2x.png[39m[0m
+[  57% ] [90m[1mreimport[22m | standing_stone.png[39m[0m
+[  71% ] [90m[1mreimport[22m | standing_stone@2x.png[39m[0m
+[  85% ] [90m[1mreimport[22m | Finalizing Asset Import...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mreimport[22m | Started (Re)Importing Assets (6 steps)[39m[0m
+[   0% ] [90m[1mreimport[22m | Executing post-reimport operations...[39m[0m
+[92m[ DONE ][39m [1mreimport[22m
+[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Started Loading editor (5 steps)[39m[0m
+[   0% ] [90m[1mloading_editor_layout[22m | Loading editor layout...[39m[0m
+[  16% ] [90m[1mloading_editor_layout[22m | Loading docks...[39m[0m
+[92m[ DONE ][39m [1mloading_editor_layout[22m
+[0m

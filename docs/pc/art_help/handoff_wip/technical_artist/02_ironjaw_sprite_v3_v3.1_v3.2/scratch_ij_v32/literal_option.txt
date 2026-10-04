@@ -1,0 +1,8 @@
+N literal idle(walk f00 legs)-> attack -1 -31.0 (-16, -6)
+N literal idle(walk f00 legs)-> hit -1 -31.0 (-16, -7)
+N literal idle(walk f00 legs)-> death -1 -31.0 (-16, -7)
+N attack f05 -> literal idle 1 31.0 (16, 5)
+E literal idle(walk f00 legs)-> attack -1 31.0 (16, -6)
+E literal idle(walk f00 legs)-> hit -1 31.0 (16, -7)
+E literal idle(walk f00 legs)-> death -1 31.0 (16, -7)
+E attack f05 -> literal idle 1 -31.0 (-16, 5)

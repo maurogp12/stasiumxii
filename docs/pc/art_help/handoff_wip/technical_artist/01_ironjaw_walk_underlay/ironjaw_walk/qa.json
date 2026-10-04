@@ -1,0 +1,1895 @@
+{
+ "facings": {
+  "S": {
+   "frames": [
+    {
+     "frame": "walk_S_f00",
+     "phase_frame": 0,
+     "helm_top_row": 53,
+     "lowest_row": 329,
+     "head_centroid_y": 94.07,
+     "pelvis_proj_y": 213.35,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 1.6e-05,
+      "ik_ankle_error": 5.3947966093944364e-06,
+      "lowest_row_render": 329,
+      "lowest_row_model": 329
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -7e-06,
+      "ik_ankle_error": 5.3947966093944364e-06,
+      "lowest_row_render": 280,
+      "lowest_row_model": 280
+     }
+    },
+    {
+     "frame": "walk_S_f01",
+     "phase_frame": 1,
+     "helm_top_row": 59,
+     "lowest_row": 323,
+     "head_centroid_y": 100.66,
+     "pelvis_proj_y": 219.94,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 5e-06,
+      "ik_ankle_error": 6.877043295791605e-06,
+      "lowest_row_render": 323,
+      "lowest_row_model": 323
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 7.621077,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 265,
+      "lowest_row_model": 266
+     }
+    },
+    {
+     "frame": "walk_S_f02",
+     "phase_frame": 2,
+     "helm_top_row": 53,
+     "lowest_row": 317,
+     "head_centroid_y": 95.26,
+     "pelvis_proj_y": 214.49,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -5e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 317,
+      "lowest_row_model": 317
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 25.366779,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 260,
+      "lowest_row_model": 261
+     }
+    },
+    {
+     "frame": "walk_S_f03",
+     "phase_frame": 3,
+     "helm_top_row": 40,
+     "lowest_row": 311,
+     "head_centroid_y": 83.63,
+     "pelvis_proj_y": 202.78,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -3e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 311,
+      "lowest_row_model": 311
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 30.94434,
+      "ik_ankle_error": 4.264961199760036e-06,
+      "lowest_row_render": 272,
+      "lowest_row_model": 273
+     }
+    },
+    {
+     "frame": "walk_S_f04",
+     "phase_frame": 4,
+     "helm_top_row": 33,
+     "lowest_row": 305,
+     "head_centroid_y": 77.52,
+     "pelvis_proj_y": 196.67,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -1e-05,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 305,
+      "lowest_row_model": 305
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 21.549452,
+      "ik_ankle_error": 4.264961199760036e-06,
+      "lowest_row_render": 290,
+      "lowest_row_model": 291
+     }
+    },
+    {
+     "frame": "walk_S_f05",
+     "phase_frame": 5,
+     "helm_top_row": 37,
+     "lowest_row": 304,
+     "head_centroid_y": 82.97,
+     "pelvis_proj_y": 202.12,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -6e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 299,
+      "lowest_row_model": 299
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 13.859422,
+      "ik_ankle_error": 3.6252672851201853,
+      "lowest_row_render": 304,
+      "lowest_row_model": 304
+     }
+    },
+    {
+     "frame": "walk_S_f06",
+     "phase_frame": 6,
+     "helm_top_row": 48,
+     "lowest_row": 316,
+     "head_centroid_y": 94.15,
+     "pelvis_proj_y": 213.35,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 1.5e-05,
+      "ik_ankle_error": 1.0789593218788873e-05,
+      "lowest_row_render": 293,
+      "lowest_row_model": 293
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -4e-06,
+      "ik_ankle_error": 1.0789593218788873e-05,
+      "lowest_row_render": 316,
+      "lowest_row_model": 316
+     }
+    },
+    {
+     "frame": "walk_S_f07",
+     "phase_frame": 7,
+     "helm_top_row": 54,
+     "lowest_row": 310,
+     "head_centroid_y": 99.44,
+     "pelvis_proj_y": 218.63,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 7.621077,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 279,
+      "lowest_row_model": 279
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -1e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 310,
+      "lowest_row_model": 310
+     }
+    },
+    {
+     "frame": "walk_S_f08",
+     "phase_frame": 8,
+     "helm_top_row": 49,
+     "lowest_row": 304,
+     "head_centroid_y": 93.05,
+     "pelvis_proj_y": 212.21,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 25.366751,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 273,
+      "lowest_row_model": 274
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 1e-05,
+      "ik_ankle_error": 1.9073486328125e-06,
+      "lowest_row_render": 304,
+      "lowest_row_model": 304
+     }
+    },
+    {
+     "frame": "walk_S_f09",
+     "phase_frame": 9,
+     "helm_top_row": 39,
+     "lowest_row": 298,
+     "head_centroid_y": 81.01,
+     "pelvis_proj_y": 200.15,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 30.944347,
+      "ik_ankle_error": 4.264961199760036e-06,
+      "lowest_row_render": 286,
+      "lowest_row_model": 286
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -2e-05,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 298,
+      "lowest_row_model": 298
+     }
+    },
+    {
+     "frame": "walk_S_f10",
+     "phase_frame": 10,
+     "helm_top_row": 33,
+     "lowest_row": 304,
+     "head_centroid_y": 75.15,
+     "pelvis_proj_y": 194.39,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 21.549419,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 304,
+      "lowest_row_model": 304
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 8e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 292,
+      "lowest_row_model": 292
+     }
+    },
+    {
+     "frame": "walk_S_f11",
+     "phase_frame": 11,
+     "helm_top_row": 40,
+     "lowest_row": 320,
+     "head_centroid_y": 81.54,
+     "pelvis_proj_y": 200.81,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 11.728955,
+      "ik_ankle_error": 0.5574792831917021,
+      "lowest_row_render": 320,
+      "lowest_row_model": 320
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 3e-06,
+      "ik_ankle_error": 1.9073486328125e-06,
+      "lowest_row_render": 286,
+      "lowest_row_model": 286
+     }
+    }
+   ],
+   "planted_intervals": [
+    {
+     "boot": "R",
+     "near_far": "near",
+     "contact_frame": "walk_S_f00",
+     "planted_frames": [
+      "walk_S_f00",
+      "walk_S_f01",
+      "walk_S_f02",
+      "walk_S_f03",
+      "walk_S_f04",
+      "walk_S_f05",
+      "walk_S_f06"
+     ],
+     "world_drift_max_units": 3.814697265625e-05,
+     "screen": [
+      {
+       "frame": "walk_S_f01",
+       "expected_shift_px": [
+        -12.0,
+        -6.0
+       ],
+       "measured_shift_px": [
+        -12,
+        -6
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f02",
+       "expected_shift_px": [
+        -24.0,
+        -12.0
+       ],
+       "measured_shift_px": [
+        -24,
+        -12
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f03",
+       "expected_shift_px": [
+        -36.0,
+        -18.0
+       ],
+       "measured_shift_px": [
+        -36,
+        -18
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f04",
+       "expected_shift_px": [
+        -48.0,
+        -24.0
+       ],
+       "measured_shift_px": [
+        -48,
+        -24
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f05",
+       "expected_shift_px": [
+        -60.0,
+        -30.0
+       ],
+       "measured_shift_px": [
+        -60,
+        -30
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f06",
+       "expected_shift_px": [
+        -72.0,
+        -36.0
+       ],
+       "measured_shift_px": [
+        -72,
+        -36
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      }
+     ],
+     "contact_lowest_row_render": 329,
+     "contact_sole_min_z_world": 1.5929341316223145e-05
+    },
+    {
+     "boot": "L",
+     "near_far": "far",
+     "contact_frame": "walk_S_f06",
+     "planted_frames": [
+      "walk_S_f06",
+      "walk_S_f07",
+      "walk_S_f08",
+      "walk_S_f09",
+      "walk_S_f10",
+      "walk_S_f11",
+      "walk_S_f00"
+     ],
+     "world_drift_max_units": 3.0517578125e-05,
+     "screen": [
+      {
+       "frame": "walk_S_f07",
+       "expected_shift_px": [
+        -12.0,
+        -6.0
+       ],
+       "measured_shift_px": [
+        -12,
+        -6
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f08",
+       "expected_shift_px": [
+        -24.0,
+        -12.0
+       ],
+       "measured_shift_px": [
+        -24,
+        -12
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f09",
+       "expected_shift_px": [
+        -36.0,
+        -18.0
+       ],
+       "measured_shift_px": [
+        -36,
+        -18
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f10",
+       "expected_shift_px": [
+        -48.0,
+        -24.0
+       ],
+       "measured_shift_px": [
+        -48,
+        -24
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f11",
+       "expected_shift_px": [
+        -60.0,
+        -30.0
+       ],
+       "measured_shift_px": [
+        -60,
+        -30
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_S_f00",
+       "expected_shift_px": [
+        -72.0,
+        -36.0
+       ],
+       "measured_shift_px": [
+        -72,
+        -36
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      }
+     ],
+     "contact_lowest_row_render": 316,
+     "contact_sole_min_z_world": -3.7550926208496094e-06
+    }
+   ],
+   "bob_helm_top_row": {
+    "values": [
+     53.0,
+     59.0,
+     53.0,
+     40.0,
+     33.0,
+     37.0,
+     48.0,
+     54.0,
+     49.0,
+     39.0,
+     33.0,
+     40.0
+    ],
+    "range_cell_px": 26.0,
+    "max_step_cell_px": 13.0,
+    "range_final_px": 7.8,
+    "max_step_final_px": 3.9
+   },
+   "bob_head_centroid": {
+    "values": [
+     94.07,
+     100.66,
+     95.26,
+     83.63,
+     77.52,
+     82.97,
+     94.15,
+     99.44,
+     93.05,
+     81.01,
+     75.15,
+     81.54
+    ],
+    "range_cell_px": 25.51,
+    "max_step_cell_px": 12.54,
+    "range_final_px": 7.65,
+    "max_step_final_px": 3.76
+   },
+   "bob_pelvis_model": {
+    "values": [
+     213.35,
+     219.94,
+     214.49,
+     202.78,
+     196.67,
+     202.12,
+     213.35,
+     218.63,
+     212.21,
+     200.15,
+     194.39,
+     200.81
+    ],
+    "range_cell_px": 25.56,
+    "max_step_cell_px": 12.54,
+    "range_final_px": 7.67,
+    "max_step_final_px": 3.76
+   }
+  },
+  "E": {
+   "frames": [
+    {
+     "frame": "walk_E_f00",
+     "phase_frame": 1,
+     "helm_top_row": 77,
+     "lowest_row": 313,
+     "head_centroid_y": 105.07,
+     "pelvis_proj_y": 221.94,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 2.1e-05,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 288,
+      "lowest_row_model": 288
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 7.621083,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 292,
+      "lowest_row_model": 293
+     }
+    },
+    {
+     "frame": "walk_E_f01",
+     "phase_frame": 2,
+     "helm_top_row": 71,
+     "lowest_row": 309,
+     "head_centroid_y": 99.63,
+     "pelvis_proj_y": 216.49,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -9e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 294,
+      "lowest_row_model": 294
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 25.366793,
+      "ik_ankle_error": 1.9073486328125e-06,
+      "lowest_row_render": 284,
+      "lowest_row_model": 284
+     }
+    },
+    {
+     "frame": "walk_E_f02",
+     "phase_frame": 3,
+     "helm_top_row": 60,
+     "lowest_row": 300,
+     "head_centroid_y": 87.95,
+     "pelvis_proj_y": 204.78,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 8e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 300,
+      "lowest_row_model": 300
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 30.944361,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 269,
+      "lowest_row_model": 270
+     }
+    },
+    {
+     "frame": "walk_E_f03",
+     "phase_frame": 4,
+     "helm_top_row": 54,
+     "lowest_row": 306,
+     "head_centroid_y": 81.88,
+     "pelvis_proj_y": 198.67,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 9e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 306,
+      "lowest_row_model": 306
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 21.549433,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 260,
+      "lowest_row_model": 261
+     }
+    },
+    {
+     "frame": "walk_E_f04",
+     "phase_frame": 5,
+     "helm_top_row": 59,
+     "lowest_row": 312,
+     "head_centroid_y": 87.25,
+     "pelvis_proj_y": 204.12,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 1e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 312,
+      "lowest_row_model": 312
+     },
+     "boot_L": {
+      "planted": false,
+      "sole_min_z_world": 11.326221,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 263,
+      "lowest_row_model": 263
+     }
+    },
+    {
+     "frame": "walk_E_f05",
+     "phase_frame": 6,
+     "helm_top_row": 70,
+     "lowest_row": 318,
+     "head_centroid_y": 98.52,
+     "pelvis_proj_y": 215.35,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": -1.2e-05,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 318,
+      "lowest_row_model": 318
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 1e-06,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 276,
+      "lowest_row_model": 277
+     }
+    },
+    {
+     "frame": "walk_E_f06",
+     "phase_frame": 7,
+     "helm_top_row": 76,
+     "lowest_row": 310,
+     "head_centroid_y": 103.83,
+     "pelvis_proj_y": 220.63,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 7.621098,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 298,
+      "lowest_row_model": 298
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -6e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 282,
+      "lowest_row_model": 283
+     }
+    },
+    {
+     "frame": "walk_E_f07",
+     "phase_frame": 8,
+     "helm_top_row": 69,
+     "lowest_row": 305,
+     "head_centroid_y": 97.38,
+     "pelvis_proj_y": 214.21,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 25.366791,
+      "ik_ankle_error": 3.814697265625e-06,
+      "lowest_row_render": 289,
+      "lowest_row_model": 290
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 3e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 288,
+      "lowest_row_model": 289
+     }
+    },
+    {
+     "frame": "walk_E_f08",
+     "phase_frame": 9,
+     "helm_top_row": 57,
+     "lowest_row": 294,
+     "head_centroid_y": 85.28,
+     "pelvis_proj_y": 202.15,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 30.944344,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 275,
+      "lowest_row_model": 275
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -1.5e-05,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 294,
+      "lowest_row_model": 295
+     }
+    },
+    {
+     "frame": "walk_E_f09",
+     "phase_frame": 10,
+     "helm_top_row": 51,
+     "lowest_row": 300,
+     "head_centroid_y": 79.49,
+     "pelvis_proj_y": 196.39,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 21.549427,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 265,
+      "lowest_row_model": 266
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 1.6e-05,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 300,
+      "lowest_row_model": 301
+     }
+    },
+    {
+     "frame": "walk_E_f10",
+     "phase_frame": 11,
+     "helm_top_row": 58,
+     "lowest_row": 306,
+     "head_centroid_y": 85.96,
+     "pelvis_proj_y": 202.81,
+     "boot_R": {
+      "planted": false,
+      "sole_min_z_world": 14.665449,
+      "ik_ankle_error": 4.840876175906516,
+      "lowest_row_render": 266,
+      "lowest_row_model": 267
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": -2e-06,
+      "ik_ankle_error": 0.0,
+      "lowest_row_render": 306,
+      "lowest_row_model": 307
+     }
+    },
+    {
+     "frame": "walk_E_f11",
+     "phase_frame": 0,
+     "helm_top_row": 70,
+     "lowest_row": 312,
+     "head_centroid_y": 98.46,
+     "pelvis_proj_y": 215.35,
+     "boot_R": {
+      "planted": true,
+      "sole_min_z_world": 1.9e-05,
+      "ik_ankle_error": 8.529922399520072e-06,
+      "lowest_row_render": 282,
+      "lowest_row_model": 282
+     },
+     "boot_L": {
+      "planted": true,
+      "sole_min_z_world": 8e-06,
+      "ik_ankle_error": 8.529922399520072e-06,
+      "lowest_row_render": 312,
+      "lowest_row_model": 313
+     }
+    }
+   ],
+   "planted_intervals": [
+    {
+     "boot": "R",
+     "near_far": "near",
+     "contact_frame": "walk_E_f11",
+     "planted_frames": [
+      "walk_E_f11",
+      "walk_E_f00",
+      "walk_E_f01",
+      "walk_E_f02",
+      "walk_E_f03",
+      "walk_E_f04",
+      "walk_E_f05"
+     ],
+     "world_drift_max_units": 4.2879008219642856e-05,
+     "screen": [
+      {
+       "frame": "walk_E_f00",
+       "expected_shift_px": [
+        -12.0,
+        6.0
+       ],
+       "measured_shift_px": [
+        -12,
+        6
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f01",
+       "expected_shift_px": [
+        -24.0,
+        12.0
+       ],
+       "measured_shift_px": [
+        -24,
+        12
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f02",
+       "expected_shift_px": [
+        -36.0,
+        18.0
+       ],
+       "measured_shift_px": [
+        -36,
+        18
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f03",
+       "expected_shift_px": [
+        -48.0,
+        24.0
+       ],
+       "measured_shift_px": [
+        -48,
+        24
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f04",
+       "expected_shift_px": [
+        -60.0,
+        30.0
+       ],
+       "measured_shift_px": [
+        -60,
+        30
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f05",
+       "expected_shift_px": [
+        -72.0,
+        36.0
+       ],
+       "measured_shift_px": [
+        -72,
+        36
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      }
+     ],
+     "contact_lowest_row_render": 282,
+     "contact_sole_min_z_world": 1.9341707229614258e-05
+    },
+    {
+     "boot": "L",
+     "near_far": "far",
+     "contact_frame": "walk_E_f05",
+     "planted_frames": [
+      "walk_E_f05",
+      "walk_E_f06",
+      "walk_E_f07",
+      "walk_E_f08",
+      "walk_E_f09",
+      "walk_E_f10",
+      "walk_E_f11"
+     ],
+     "world_drift_max_units": 3.120303153991699e-05,
+     "screen": [
+      {
+       "frame": "walk_E_f06",
+       "expected_shift_px": [
+        -12.0,
+        6.0
+       ],
+       "measured_shift_px": [
+        -12,
+        6
+       ],
+       "drift_px": [
+        -0.0,
+        0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f07",
+       "expected_shift_px": [
+        -24.0,
+        12.0
+       ],
+       "measured_shift_px": [
+        -24,
+        12
+       ],
+       "drift_px": [
+        -0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f08",
+       "expected_shift_px": [
+        -36.0,
+        18.0
+       ],
+       "measured_shift_px": [
+        -36,
+        18
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f09",
+       "expected_shift_px": [
+        -48.0,
+        24.0
+       ],
+       "measured_shift_px": [
+        -48,
+        24
+       ],
+       "drift_px": [
+        0.0,
+        0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f10",
+       "expected_shift_px": [
+        -60.0,
+        30.0
+       ],
+       "measured_shift_px": [
+        -60,
+        30
+       ],
+       "drift_px": [
+        0.0,
+        -0.0
+       ],
+       "mask_iou": 1.0
+      },
+      {
+       "frame": "walk_E_f11",
+       "expected_shift_px": [
+        -72.0,
+        36.0
+       ],
+       "measured_shift_px": [
+        -72,
+        36
+       ],
+       "drift_px": [
+        -0.0,
+        0.0
+       ],
+       "mask_iou": 1.0
+      }
+     ],
+     "contact_lowest_row_render": 276,
+     "contact_sole_min_z_world": 1.3113021850585938e-06
+    }
+   ],
+   "bob_helm_top_row": {
+    "values": [
+     77.0,
+     71.0,
+     60.0,
+     54.0,
+     59.0,
+     70.0,
+     76.0,
+     69.0,
+     57.0,
+     51.0,
+     58.0,
+     70.0
+    ],
+    "range_cell_px": 26.0,
+    "max_step_cell_px": 12.0,
+    "range_final_px": 7.8,
+    "max_step_final_px": 3.6
+   },
+   "bob_head_centroid": {
+    "values": [
+     105.07,
+     99.63,
+     87.95,
+     81.88,
+     87.25,
+     98.52,
+     103.83,
+     97.38,
+     85.28,
+     79.49,
+     85.96,
+     98.46
+    ],
+    "range_cell_px": 25.58,
+    "max_step_cell_px": 12.5,
+    "range_final_px": 7.67,
+    "max_step_final_px": 3.75
+   },
+   "bob_pelvis_model": {
+    "values": [
+     221.94,
+     216.49,
+     204.78,
+     198.67,
+     204.12,
+     215.35,
+     220.63,
+     214.21,
+     202.15,
+     196.39,
+     202.81,
+     215.35
+    ],
+    "range_cell_px": 25.56,
+    "max_step_cell_px": 12.54,
+    "range_final_px": 7.67,
+    "max_step_final_px": 3.76
+   }
+  }
+ },
+ "summary": {
+  "min_margin_px": 30,
+  "min_margin_at": "clay/walk_S_f00",
+  "alpha_values": [
+   0,
+   255
+  ],
+  "planted_world_drift_max_units": 4.2879008219642856e-05,
+  "planted_screen_drift_max_px": 0.0,
+  "contact_lowest_rows": [
+   [
+    "S",
+    "R",
+    "walk_S_f00",
+    329
+   ],
+   [
+    "S",
+    "L",
+    "walk_S_f06",
+    316
+   ],
+   [
+    "E",
+    "R",
+    "walk_E_f11",
+    282
+   ],
+   [
+    "E",
+    "L",
+    "walk_E_f05",
+    276
+   ]
+  ],
+  "travel_per_frame_cell_px": [
+   12,
+   6
+  ],
+  "travel_per_frame_diag_cell_px": 13.4164,
+  "travel_per_cycle_diag_cell_px": 160.997,
+  "travel_per_cycle_diag_final_px": 48.299,
+  "travel_per_cycle_final_px_xy": [
+   43.2,
+   21.6
+  ],
+  "tile_diag_cell_px_at_draw_scale": 119.257,
+  "frames_per_cell": 8.8889,
+  "cells_per_cycle": 1.35,
+  "tile_sec_at_17.144fps": 0.5185,
+  "board_speed_px_per_s_at_17.144fps": 69.003,
+  "idle_helm_top_row": {
+   "S": 35,
+   "E": 49
+  },
+  "idle_lowest_row": {
+   "S": 314,
+   "E": 298
+  },
+  "body_ground_point_px": [
+   230.5,
+   282.899252470384
+  ],
+  "gif_bytes": 300753,
+  "jpg_bytes": 279712,
+  "jpg_quality": 88
+ },
+ "margins": {
+  "clay/walk_S_f00": {
+   "bbox": [
+    99,
+    53,
+    408,
+    329
+   ],
+   "margin": 30
+  },
+  "clay/walk_S_f01": {
+   "bbox": [
+    98,
+    59,
+    407,
+    323
+   ],
+   "margin": 36
+  },
+  "clay/walk_S_f02": {
+   "bbox": [
+    97,
+    53,
+    403,
+    317
+   ],
+   "margin": 42
+  },
+  "clay/walk_S_f03": {
+   "bbox": [
+    99,
+    40,
+    398,
+    311
+   ],
+   "margin": 40
+  },
+  "clay/walk_S_f04": {
+   "bbox": [
+    102,
+    33,
+    391,
+    305
+   ],
+   "margin": 33
+  },
+  "clay/walk_S_f05": {
+   "bbox": [
+    106,
+    37,
+    385,
+    304
+   ],
+   "margin": 37
+  },
+  "clay/walk_S_f06": {
+   "bbox": [
+    111,
+    48,
+    381,
+    316
+   ],
+   "margin": 43
+  },
+  "clay/walk_S_f07": {
+   "bbox": [
+    113,
+    54,
+    382,
+    310
+   ],
+   "margin": 49
+  },
+  "clay/walk_S_f08": {
+   "bbox": [
+    111,
+    49,
+    387,
+    304
+   ],
+   "margin": 49
+  },
+  "clay/walk_S_f09": {
+   "bbox": [
+    109,
+    39,
+    394,
+    298
+   ],
+   "margin": 39
+  },
+  "clay/walk_S_f10": {
+   "bbox": [
+    105,
+    33,
+    402,
+    304
+   ],
+   "margin": 33
+  },
+  "clay/walk_S_f11": {
+   "bbox": [
+    101,
+    40,
+    407,
+    320
+   ],
+   "margin": 39
+  },
+  "clay/walk_E_f00": {
+   "bbox": [
+    123,
+    77,
+    396,
+    313
+   ],
+   "margin": 46
+  },
+  "clay/walk_E_f01": {
+   "bbox": [
+    128,
+    71,
+    398,
+    309
+   ],
+   "margin": 50
+  },
+  "clay/walk_E_f02": {
+   "bbox": [
+    130,
+    60,
+    398,
+    300
+   ],
+   "margin": 59
+  },
+  "clay/walk_E_f03": {
+   "bbox": [
+    131,
+    54,
+    399,
+    306
+   ],
+   "margin": 53
+  },
+  "clay/walk_E_f04": {
+   "bbox": [
+    128,
+    59,
+    403,
+    312
+   ],
+   "margin": 47
+  },
+  "clay/walk_E_f05": {
+   "bbox": [
+    124,
+    70,
+    403,
+    318
+   ],
+   "margin": 41
+  },
+  "clay/walk_E_f06": {
+   "bbox": [
+    125,
+    76,
+    403,
+    310
+   ],
+   "margin": 49
+  },
+  "clay/walk_E_f07": {
+   "bbox": [
+    127,
+    69,
+    401,
+    305
+   ],
+   "margin": 54
+  },
+  "clay/walk_E_f08": {
+   "bbox": [
+    125,
+    57,
+    397,
+    294
+   ],
+   "margin": 57
+  },
+  "clay/walk_E_f09": {
+   "bbox": [
+    124,
+    51,
+    395,
+    300
+   ],
+   "margin": 51
+  },
+  "clay/walk_E_f10": {
+   "bbox": [
+    124,
+    58,
+    396,
+    306
+   ],
+   "margin": 53
+  },
+  "clay/walk_E_f11": {
+   "bbox": [
+    125,
+    70,
+    396,
+    312
+   ],
+   "margin": 47
+  },
+  "clay/idle_S": {
+   "bbox": [
+    104,
+    35,
+    398,
+    314
+   ],
+   "margin": 35
+  },
+  "clay/idle_E": {
+   "bbox": [
+    128,
+    49,
+    398,
+    298
+   ],
+   "margin": 49
+  },
+  "sides/walk_S_f00": {
+   "bbox": [
+    99,
+    53,
+    408,
+    329
+   ],
+   "margin": 30
+  },
+  "sides/walk_S_f01": {
+   "bbox": [
+    98,
+    59,
+    407,
+    323
+   ],
+   "margin": 36
+  },
+  "sides/walk_S_f02": {
+   "bbox": [
+    97,
+    53,
+    403,
+    317
+   ],
+   "margin": 42
+  },
+  "sides/walk_S_f03": {
+   "bbox": [
+    99,
+    40,
+    398,
+    311
+   ],
+   "margin": 40
+  },
+  "sides/walk_S_f04": {
+   "bbox": [
+    102,
+    33,
+    391,
+    305
+   ],
+   "margin": 33
+  },
+  "sides/walk_S_f05": {
+   "bbox": [
+    106,
+    37,
+    385,
+    304
+   ],
+   "margin": 37
+  },
+  "sides/walk_S_f06": {
+   "bbox": [
+    111,
+    48,
+    381,
+    316
+   ],
+   "margin": 43
+  },
+  "sides/walk_S_f07": {
+   "bbox": [
+    113,
+    54,
+    382,
+    310
+   ],
+   "margin": 49
+  },
+  "sides/walk_S_f08": {
+   "bbox": [
+    111,
+    49,
+    387,
+    304
+   ],
+   "margin": 49
+  },
+  "sides/walk_S_f09": {
+   "bbox": [
+    109,
+    39,
+    394,
+    298
+   ],
+   "margin": 39
+  },
+  "sides/walk_S_f10": {
+   "bbox": [
+    105,
+    33,
+    402,
+    304
+   ],
+   "margin": 33
+  },
+  "sides/walk_S_f11": {
+   "bbox": [
+    101,
+    40,
+    407,
+    320
+   ],
+   "margin": 39
+  },
+  "sides/walk_E_f00": {
+   "bbox": [
+    123,
+    77,
+    396,
+    313
+   ],
+   "margin": 46
+  },
+  "sides/walk_E_f01": {
+   "bbox": [
+    128,
+    71,
+    398,
+    309
+   ],
+   "margin": 50
+  },
+  "sides/walk_E_f02": {
+   "bbox": [
+    130,
+    60,
+    398,
+    300
+   ],
+   "margin": 59
+  },
+  "sides/walk_E_f03": {
+   "bbox": [
+    131,
+    54,
+    399,
+    306
+   ],
+   "margin": 53
+  },
+  "sides/walk_E_f04": {
+   "bbox": [
+    128,
+    59,
+    403,
+    312
+   ],
+   "margin": 47
+  },
+  "sides/walk_E_f05": {
+   "bbox": [
+    124,
+    70,
+    403,
+    318
+   ],
+   "margin": 41
+  },
+  "sides/walk_E_f06": {
+   "bbox": [
+    125,
+    76,
+    403,
+    310
+   ],
+   "margin": 49
+  },
+  "sides/walk_E_f07": {
+   "bbox": [
+    127,
+    69,
+    401,
+    305
+   ],
+   "margin": 54
+  },
+  "sides/walk_E_f08": {
+   "bbox": [
+    125,
+    57,
+    397,
+    294
+   ],
+   "margin": 57
+  },
+  "sides/walk_E_f09": {
+   "bbox": [
+    124,
+    51,
+    395,
+    300
+   ],
+   "margin": 51
+  },
+  "sides/walk_E_f10": {
+   "bbox": [
+    124,
+    58,
+    396,
+    306
+   ],
+   "margin": 53
+  },
+  "sides/walk_E_f11": {
+   "bbox": [
+    125,
+    70,
+    396,
+    312
+   ],
+   "margin": 47
+  },
+  "sides/idle_S": {
+   "bbox": [
+    104,
+    35,
+    398,
+    314
+   ],
+   "margin": 35
+  },
+  "sides/idle_E": {
+   "bbox": [
+    128,
+    49,
+    398,
+    298
+   ],
+   "margin": 49
+  },
+  "sil/walk_S_f00": {
+   "bbox": [
+    99,
+    53,
+    408,
+    329
+   ],
+   "margin": 30
+  },
+  "sil/walk_S_f01": {
+   "bbox": [
+    98,
+    59,
+    407,
+    323
+   ],
+   "margin": 36
+  },
+  "sil/walk_S_f02": {
+   "bbox": [
+    97,
+    53,
+    403,
+    317
+   ],
+   "margin": 42
+  },
+  "sil/walk_S_f03": {
+   "bbox": [
+    99,
+    40,
+    398,
+    311
+   ],
+   "margin": 40
+  },
+  "sil/walk_S_f04": {
+   "bbox": [
+    102,
+    33,
+    391,
+    305
+   ],
+   "margin": 33
+  },
+  "sil/walk_S_f05": {
+   "bbox": [
+    106,
+    37,
+    385,
+    304
+   ],
+   "margin": 37
+  },
+  "sil/walk_S_f06": {
+   "bbox": [
+    111,
+    48,
+    381,
+    316
+   ],
+   "margin": 43
+  },
+  "sil/walk_S_f07": {
+   "bbox": [
+    113,
+    54,
+    382,
+    310
+   ],
+   "margin": 49
+  },
+  "sil/walk_S_f08": {
+   "bbox": [
+    111,
+    49,
+    387,
+    304
+   ],
+   "margin": 49
+  },
+  "sil/walk_S_f09": {
+   "bbox": [
+    109,
+    39,
+    394,
+    298
+   ],
+   "margin": 39
+  },
+  "sil/walk_S_f10": {
+   "bbox": [
+    105,
+    33,
+    402,
+    304
+   ],
+   "margin": 33
+  },
+  "sil/walk_S_f11": {
+   "bbox": [
+    101,
+    40,
+    407,
+    320
+   ],
+   "margin": 39
+  },
+  "sil/walk_E_f00": {
+   "bbox": [
+    123,
+    77,
+    396,
+    313
+   ],
+   "margin": 46
+  },
+  "sil/walk_E_f01": {
+   "bbox": [
+    128,
+    71,
+    398,
+    309
+   ],
+   "margin": 50
+  },
+  "sil/walk_E_f02": {
+   "bbox": [
+    130,
+    60,
+    398,
+    300
+   ],
+   "margin": 59
+  },
+  "sil/walk_E_f03": {
+   "bbox": [
+    131,
+    54,
+    399,
+    306
+   ],
+   "margin": 53
+  },
+  "sil/walk_E_f04": {
+   "bbox": [
+    128,
+    59,
+    403,
+    312
+   ],
+   "margin": 47
+  },
+  "sil/walk_E_f05": {
+   "bbox": [
+    124,
+    70,
+    403,
+    318
+   ],
+   "margin": 41
+  },
+  "sil/walk_E_f06": {
+   "bbox": [
+    125,
+    76,
+    403,
+    310
+   ],
+   "margin": 49
+  },
+  "sil/walk_E_f07": {
+   "bbox": [
+    127,
+    69,
+    401,
+    305
+   ],
+   "margin": 54
+  },
+  "sil/walk_E_f08": {
+   "bbox": [
+    125,
+    57,
+    397,
+    294
+   ],
+   "margin": 57
+  },
+  "sil/walk_E_f09": {
+   "bbox": [
+    124,
+    51,
+    395,
+    300
+   ],
+   "margin": 51
+  },
+  "sil/walk_E_f10": {
+   "bbox": [
+    124,
+    58,
+    396,
+    306
+   ],
+   "margin": 53
+  },
+  "sil/walk_E_f11": {
+   "bbox": [
+    125,
+    70,
+    396,
+    312
+   ],
+   "margin": 47
+  },
+  "sil/idle_S": {
+   "bbox": [
+    104,
+    35,
+    398,
+    314
+   ],
+   "margin": 35
+  },
+  "sil/idle_E": {
+   "bbox": [
+    128,
+    49,
+    398,
+    298
+   ],
+   "margin": 49
+  }
+ }
+}

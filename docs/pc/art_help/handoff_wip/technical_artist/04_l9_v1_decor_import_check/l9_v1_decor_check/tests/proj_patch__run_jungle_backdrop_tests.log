@@ -1,0 +1,13 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+SWAY_OPAQUE_CHANGE changed=123745 opaque=134754 frac=0.9183
+FAIL the far plate uses its json modulate | expected true | got false
+FAIL the mid plate uses its json modulate | expected true | got false
+FAIL a front leaf uses its json modulate | expected true | got false
+LEAF_COVERAGE default 0.0000
+LEAF_COVERAGE x+ 0.0000 alpha 1.000
+LEAF_COVERAGE x- 0.0000 alpha 1.000
+LEAF_COVERAGE y+ 0.0000 alpha 0.000
+LEAF_COVERAGE y- 0.0000 alpha 1.000
+FAIL far on-screen slide is its parallax fraction | expected true | got false
+Jungle backdrop tests: 433 passed, 4 failed

@@ -1,0 +1,247 @@
+{
+ "package": "l9_outdoor_board",
+ "root": "art/pc/look/crosshaven_board/",
+ "note": "checker index (world package): id, size_2x, footprint_cells, anchor_px_2x; full metadata in atlas_meta.json props[] and props/props.json",
+ "props": [
+  {
+   "id": "standing_stone",
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "boulder_cluster",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "lilac_shrub",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "boulder_small",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "ruined_wall_short",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "fallen_log_short",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "stone_well",
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    224
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "ruined_wall_2c",
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "fallen_log_2c",
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_cells": [
+    2,
+    1
+   ],
+   "anchor_px_2x": [
+    96,
+    160
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "lilac_bush",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "lilac_tuft",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "flower_tuft",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "clover_patch",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "pebbles_moss",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  },
+  {
+   "id": "fern",
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_cells": [
+    1,
+    1
+   ],
+   "anchor_px_2x": [
+    64,
+    128
+   ],
+   "blocks": "none"
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+FAIL (0,0) is open ground, not a standing stone | expected false | got true
+FAIL the water cluster keeps its clover | expected true | got false
+FAIL the rim hosts the 2-cell wall | expected true | got false
+Crosshaven board tests: 531 passed, 3 failed

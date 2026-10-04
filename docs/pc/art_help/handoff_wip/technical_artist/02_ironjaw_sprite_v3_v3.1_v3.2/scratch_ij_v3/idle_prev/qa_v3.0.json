@@ -1,0 +1,1565 @@
+{
+ "totals": {
+  "semi": 0,
+  "near_white": 0,
+  "cyan": 0,
+  "isolated_light": 82,
+  "light_fixed": 0
+ },
+ "edge_touch": {},
+ "sizes": [
+  [
+   165,
+   157
+  ],
+  [
+   209,
+   183
+  ]
+ ],
+ "per_frame": {
+  "ironjaw_walk_E_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f06.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f07.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f08.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f09.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 3,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f10.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_E_f11.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f06.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f07.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f08.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f09.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 3,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f10.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_N_f11.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f06.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f07.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f08.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f09.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f10.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_S_f11.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f06.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f07.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f08.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f09.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f10.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_walk_W_f11.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_E_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_E_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_E_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_E_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_N_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_N_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_N_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_N_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_S_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_S_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_S_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_S_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_W_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_W_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_W_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_idle_W_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_E_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_N_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_S_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f04.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_attack_W_f05.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_E_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_E_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_E_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 4,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_E_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_N_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_N_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_N_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 4,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_N_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_S_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_S_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_S_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_S_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_W_f00.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_W_f01.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_W_f02.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 2,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_hit_W_f03.png": {
+   "size": [
+    165,
+    157
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f00.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f01.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f02.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f03.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f04.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_E_f05.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f00.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f01.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f02.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f03.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f04.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_N_f05.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f00.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f01.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f02.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f03.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f04.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_S_f05.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f00.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f01.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f02.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f03.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f04.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 1,
+   "light_fixed": 0,
+   "edge_touch": 0
+  },
+  "ironjaw_death_W_f05.png": {
+   "size": [
+    209,
+    183
+   ],
+   "semi": 0,
+   "near_white": 0,
+   "cyan": 0,
+   "isolated_light": 0,
+   "light_fixed": 0,
+   "edge_touch": 0
+  }
+ },
+ "notes": {
+  "definitions": "semi = 0<alpha<255; near_white = opaque px with min(R,G,B)>=235; cyan = opaque px hue 170-200 deg, sat>0.5, value>0.5; edge_touch = opaque px in the outermost row/column of the cell",
+  "isolated_light": "carried from v2 qa.json per frame: v3 pixels are identical to v2 (integer translation only), painted metal highlights, none near-white",
+  "light_fixed": "0 in v3 (no pixel edits); v2 total was 666",
+  "min_margin_px": 4,
+  "rgb_under_alpha0": "all (0,0,0)"
+ }
+}

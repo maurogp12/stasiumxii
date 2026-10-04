@@ -1,0 +1,486 @@
+{
+ "char": "gloam",
+ "status": "v4 awaiting Mauro",
+ "source": "/workspace/art/gloam_full/v4",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "size_tier": "small",
+ "target_board_height_px": 66,
+ "idle_f0_height_cell_px": {
+  "S": 146,
+  "W": 146,
+  "N": 140,
+  "E": 140
+ },
+ "draw_scale": 0.452,
+ "world_draw_scale": 0.416,
+ "board_height_px": {
+  "S": 66.0,
+  "W": 66.0,
+  "N": 63.3,
+  "E": 63.3
+ },
+ "head_hp_y": -74,
+ "draw_scale_note": "per class (size tiers): sprite scale = draw_scale in combat, world_draw_scale for the world walker (= draw_scale x 0.46/0.5). head_hp_y = -(tallest idle f0 head top above the feet x draw_scale + 8), node origin = feet.",
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 52.1,
+   "W": 52.1,
+   "N": 46.8,
+   "E": 46.8
+  },
+  "board_px_per_frame_at_draw_scale": {
+   "S": 1.963,
+   "W": 1.963,
+   "N": 1.763,
+   "E": 1.763
+  },
+  "per_frame_rootmotion": "/workspace/art/gloam_full/v4/gloam_full_v4_rootmotion.json"
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    135,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      74,
+      151
+     ],
+     "offset": [
+      -74,
+      -151
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/walk/gloam_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      60,
+      151
+     ],
+     "offset": [
+      -60,
+      -151
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/walk/gloam_walk_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      74,
+      143
+     ],
+     "offset": [
+      -74,
+      -143
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/walk/gloam_walk_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      60,
+      143
+     ],
+     "offset": [
+      -60,
+      -143
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/walk/gloam_walk_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    135,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      74,
+      151
+     ],
+     "offset": [
+      -74,
+      -151
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/idle/gloam_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      60,
+      151
+     ],
+     "offset": [
+      -60,
+      -151
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/idle/gloam_idle_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      74,
+      143
+     ],
+     "offset": [
+      -74,
+      -143
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/idle/gloam_idle_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      60,
+      143
+     ],
+     "offset": [
+      -60,
+      -143
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/idle/gloam_idle_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  },
+  "attack": {
+   "frames": 5,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    135,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      74,
+      151
+     ],
+     "offset": [
+      -74,
+      -151
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/attack/gloam_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      60,
+      151
+     ],
+     "offset": [
+      -60,
+      -151
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/attack/gloam_attack_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      74,
+      143
+     ],
+     "offset": [
+      -74,
+      -143
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/attack/gloam_attack_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      60,
+      143
+     ],
+     "offset": [
+      -60,
+      -143
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/attack/gloam_attack_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    135,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      74,
+      151
+     ],
+     "offset": [
+      -74,
+      -151
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/hit/gloam_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      60,
+      151
+     ],
+     "offset": [
+      -60,
+      -151
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/hit/gloam_hit_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      74,
+      143
+     ],
+     "offset": [
+      -74,
+      -143
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/hit/gloam_hit_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      60,
+      143
+     ],
+     "offset": [
+      -60,
+      -143
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/hit/gloam_hit_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  },
+  "cast": {
+   "frames": 4,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    135,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      74,
+      151
+     ],
+     "offset": [
+      -74,
+      -151
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/cast/gloam_cast_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      60,
+      151
+     ],
+     "offset": [
+      -60,
+      -151
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/cast/gloam_cast_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      74,
+      143
+     ],
+     "offset": [
+      -74,
+      -143
+     ],
+     "pivot_file": [
+      74,
+      142
+     ],
+     "frames": "gloam_full/v4/cast/gloam_cast_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      60,
+      143
+     ],
+     "offset": [
+      -60,
+      -143
+     ],
+     "pivot_file": [
+      60,
+      142
+     ],
+     "frames": "gloam_full/v4/cast/gloam_cast_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    240,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      90,
+      151
+     ],
+     "offset": [
+      -90,
+      -151
+     ],
+     "pivot_file": [
+      90,
+      142
+     ],
+     "frames": "gloam_full/v4/death/gloam_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      149,
+      151
+     ],
+     "offset": [
+      -149,
+      -151
+     ],
+     "pivot_file": [
+      149,
+      142
+     ],
+     "frames": "gloam_full/v4/death/gloam_death_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      150,
+      143
+     ],
+     "offset": [
+      -150,
+      -143
+     ],
+     "pivot_file": [
+      150,
+      142
+     ],
+     "frames": "gloam_full/v4/death/gloam_death_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      89,
+      143
+     ],
+     "offset": [
+      -89,
+      -143
+     ],
+     "pivot_file": [
+      89,
+      142
+     ],
+     "frames": "gloam_full/v4/death/gloam_death_E_fNN.png",
+     "baked_flip_of": "N"
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,4 @@
+Not copied. Claude made these, and the Technical Artist has not worked on them yet.
+Location: /workspace/handoff/class_walk_blockouts/ (README.md, PAINT_BRIEF.md, bastion/, kestrel/, gloam/, mender/, scripts/, refs/)
+The TA is only listed as backing Scenario on joints, alpha clips and qa_walk.
+See /workspace/handoff/HANDOFF_TA.md, item 7.

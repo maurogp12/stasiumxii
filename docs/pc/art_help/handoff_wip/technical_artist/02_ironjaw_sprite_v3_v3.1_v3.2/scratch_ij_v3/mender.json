@@ -1,0 +1,398 @@
+{
+ "char": "mender",
+ "status": "v3 fixes in progress",
+ "source": "/workspace/art/mender_full/v3",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "draw_scale": {
+  "combat": 0.5,
+  "world_walker": 0.46
+ },
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 128.0,
+   "W": 128.0,
+   "N": 105.8,
+   "E": 105.8
+  },
+  "board_px_per_frame_at_0.5": {
+   "S": 5.333,
+   "W": 5.333,
+   "N": 4.408,
+   "E": 4.408
+  }
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    129,
+    183
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/walk/mender_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/walk/mender_walk_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/walk/mender_walk_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/walk/mender_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    129,
+    179
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      64,
+      168
+     ],
+     "offset": [
+      -64,
+      -168
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/idle/mender_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      64,
+      168
+     ],
+     "offset": [
+      -64,
+      -168
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/idle/mender_idle_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/idle/mender_idle_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/idle/mender_idle_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    129,
+    179
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      64,
+      168
+     ],
+     "offset": [
+      -64,
+      -168
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/hit/mender_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      64,
+      168
+     ],
+     "offset": [
+      -64,
+      -168
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/hit/mender_hit_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/hit/mender_hit_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/hit/mender_hit_E_fNN.png"
+    }
+   }
+  },
+  "cast": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    129,
+    200
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      64,
+      189
+     ],
+     "offset": [
+      -64,
+      -189
+     ],
+     "pivot_file": [
+      64,
+      196
+     ],
+     "frames": "mender_full/v3/cast/mender_cast_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      64,
+      189
+     ],
+     "offset": [
+      -64,
+      -189
+     ],
+     "pivot_file": [
+      64,
+      196
+     ],
+     "frames": "mender_full/v3/cast/mender_cast_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      64,
+      196
+     ],
+     "offset": [
+      -64,
+      -196
+     ],
+     "pivot_file": [
+      64,
+      196
+     ],
+     "frames": "mender_full/v3/cast/mender_cast_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      64,
+      196
+     ],
+     "offset": [
+      -64,
+      -196
+     ],
+     "pivot_file": [
+      64,
+      196
+     ],
+     "frames": "mender_full/v3/cast/mender_cast_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    230,
+    179
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      64,
+      168
+     ],
+     "offset": [
+      -64,
+      -168
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/death/mender_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      165,
+      168
+     ],
+     "offset": [
+      -165,
+      -168
+     ],
+     "pivot_file": [
+      165,
+      175
+     ],
+     "frames": "mender_full/v3/death/mender_death_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      165,
+      175
+     ],
+     "offset": [
+      -165,
+      -175
+     ],
+     "pivot_file": [
+      165,
+      175
+     ],
+     "frames": "mender_full/v3/death/mender_death_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      64,
+      175
+     ],
+     "offset": [
+      -64,
+      -175
+     ],
+     "pivot_file": [
+      64,
+      175
+     ],
+     "frames": "mender_full/v3/death/mender_death_E_fNN.png"
+    }
+   }
+  }
+ }
+}

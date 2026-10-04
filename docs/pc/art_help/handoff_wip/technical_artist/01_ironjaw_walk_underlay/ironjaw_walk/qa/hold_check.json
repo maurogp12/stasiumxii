@@ -1,0 +1,603 @@
+{
+ "frames": {
+  "walk_S_f00": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.11,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 7.51,
+    "axe_lowest_z_units": 111.23
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.4,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 36.9,
+    "axe_lowest_z_units": 44.19
+   }
+  },
+  "walk_S_f01": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.11,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 7.51,
+    "axe_lowest_z_units": 103.86
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.4,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 36.9,
+    "axe_lowest_z_units": 37.26
+   }
+  },
+  "walk_S_f02": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.08,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 6.84,
+    "axe_lowest_z_units": 112.06
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.44,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 36.12,
+    "axe_lowest_z_units": 41.18
+   }
+  },
+  "walk_S_f03": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.03,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 5.67,
+    "axe_lowest_z_units": 128.83
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.5,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 34.78,
+    "axe_lowest_z_units": 50.19
+   }
+  },
+  "walk_S_f04": {
+   "R": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 7.98,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 4.33,
+    "axe_lowest_z_units": 139.4
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.57,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 33.22,
+    "axe_lowest_z_units": 51.8
+   }
+  },
+  "walk_S_f05": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.93,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 3.16,
+    "axe_lowest_z_units": 135.54
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.63,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.88,
+    "axe_lowest_z_units": 40.22
+   }
+  },
+  "walk_S_f06": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.9,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 2.49,
+    "axe_lowest_z_units": 123.11
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.66,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.1,
+    "axe_lowest_z_units": 23.13
+   }
+  },
+  "walk_S_f07": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.9,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 2.49,
+    "axe_lowest_z_units": 115.73
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.66,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.1,
+    "axe_lowest_z_units": 15.09
+   }
+  },
+  "walk_S_f08": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.93,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 3.16,
+    "axe_lowest_z_units": 120.79
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.63,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.88,
+    "axe_lowest_z_units": 23.72
+   }
+  },
+  "walk_S_f09": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.98,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 4.33,
+    "axe_lowest_z_units": 132.03
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.57,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 33.22,
+    "axe_lowest_z_units": 42.22
+   }
+  },
+  "walk_S_f10": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.03,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 5.67,
+    "axe_lowest_z_units": 136.2
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.5,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 34.78,
+    "axe_lowest_z_units": 55.58
+   }
+  },
+  "walk_S_f11": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.08,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 6.84,
+    "axe_lowest_z_units": 126.81
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.44,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 36.12,
+    "axe_lowest_z_units": 54.63
+   }
+  },
+  "idle_S": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.01,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 5.0,
+    "axe_lowest_z_units": 137.54
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.54,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 34.0,
+    "axe_lowest_z_units": 53.53
+   }
+  },
+  "walk_E_f00": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 6.99,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 28.09,
+    "axe_lowest_z_units": 46.67
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 9.0,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 67.56,
+    "axe_lowest_z_units": 10.95
+   }
+  },
+  "walk_E_f01": {
+   "R": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 7.22,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.89,
+    "axe_lowest_z_units": 51.86
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.9,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 64.13,
+    "axe_lowest_z_units": 17.86
+   }
+  },
+  "walk_E_f02": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.63,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 38.43,
+    "axe_lowest_z_units": 64.43
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.68,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 58.16,
+    "axe_lowest_z_units": 33.52
+   }
+  },
+  "walk_E_f03": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.08,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 45.95,
+    "axe_lowest_z_units": 71.33
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.36,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 51.23,
+    "axe_lowest_z_units": 44.6
+   }
+  },
+  "walk_E_f04": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.42,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 52.4,
+    "axe_lowest_z_units": 64.25
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.05,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 45.22,
+    "axe_lowest_z_units": 41.38
+   }
+  },
+  "walk_E_f05": {
+   "R": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.6,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 56.08,
+    "axe_lowest_z_units": 49.96
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.85,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 41.75,
+    "axe_lowest_z_units": 29.46
+   }
+  },
+  "walk_E_f06": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.6,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 56.08,
+    "axe_lowest_z_units": 42.58
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.85,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 41.75,
+    "axe_lowest_z_units": 22.09
+   }
+  },
+  "walk_E_f07": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.42,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 52.4,
+    "axe_lowest_z_units": 49.5
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.05,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 45.22,
+    "axe_lowest_z_units": 26.63
+   }
+  },
+  "walk_E_f08": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.08,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 45.95,
+    "axe_lowest_z_units": 63.95
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.36,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 51.23,
+    "axe_lowest_z_units": 37.22
+   }
+  },
+  "walk_E_f09": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.63,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 38.43,
+    "axe_lowest_z_units": 71.81
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 8.68,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 58.16,
+    "axe_lowest_z_units": 40.89
+   }
+  },
+  "walk_E_f10": {
+   "R": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 7.22,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 31.89,
+    "axe_lowest_z_units": 66.61
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.9,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 64.13,
+    "axe_lowest_z_units": 32.61
+   }
+  },
+  "walk_E_f11": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 6.99,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 28.09,
+    "axe_lowest_z_units": 54.05
+   },
+   "L": {
+    "wrist_to_grip_units": 9.9,
+    "wrist_to_grip_px_512": 9.0,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 67.56,
+    "axe_lowest_z_units": 18.33
+   }
+  },
+  "idle_E": {
+   "R": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 7.86,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 42.2,
+    "axe_lowest_z_units": 73.82
+   },
+   "L": {
+    "wrist_to_grip_units": 9.899,
+    "wrist_to_grip_px_512": 8.53,
+    "wrist_inside_fist": true,
+    "grip_inside_fist": true,
+    "handle_angle_below_horizontal_deg": 54.7,
+    "axe_lowest_z_units": 44.75
+   }
+  }
+ },
+ "summary": {
+  "wrist_to_grip_units_min_max": [
+   9.899,
+   9.9
+  ],
+  "wrist_to_grip_px_max": 9.0,
+  "wrist_and_grip_inside_fist_all_frames": true,
+  "arm_axe_leg_intersections": [],
+  "axe_lowest_point_z_units": 10.95
+ },
+ "axe_head_visible_fraction": {
+  "walk_S_f00": {
+   "R": 0.975,
+   "L": 0.973
+  },
+  "walk_S_f01": {
+   "R": 0.967,
+   "L": 0.975
+  },
+  "walk_S_f02": {
+   "R": 0.96,
+   "L": 0.971
+  },
+  "walk_S_f03": {
+   "R": 0.971,
+   "L": 0.973
+  },
+  "walk_S_f04": {
+   "R": 0.972,
+   "L": 0.974
+  },
+  "walk_S_f05": {
+   "R": 0.973,
+   "L": 0.976
+  },
+  "walk_S_f06": {
+   "R": 0.967,
+   "L": 0.977
+  },
+  "walk_S_f07": {
+   "R": 0.97,
+   "L": 0.975
+  },
+  "walk_S_f08": {
+   "R": 0.972,
+   "L": 0.972
+  },
+  "walk_S_f09": {
+   "R": 0.965,
+   "L": 0.973
+  },
+  "walk_S_f10": {
+   "R": 0.967,
+   "L": 0.975
+  },
+  "walk_S_f11": {
+   "R": 0.973,
+   "L": 0.972
+  },
+  "idle_S": {
+   "R": 0.972,
+   "L": 0.978
+  },
+  "walk_E_f00": {
+   "R": 0.969,
+   "L": 0.0
+  },
+  "walk_E_f01": {
+   "R": 0.968,
+   "L": 0.0
+  },
+  "walk_E_f02": {
+   "R": 0.96,
+   "L": 0.216
+  },
+  "walk_E_f03": {
+   "R": 0.97,
+   "L": 0.253
+  },
+  "walk_E_f04": {
+   "R": 0.954,
+   "L": 0.232
+  },
+  "walk_E_f05": {
+   "R": 0.964,
+   "L": 0.207
+  },
+  "walk_E_f06": {
+   "R": 0.96,
+   "L": 0.187
+  },
+  "walk_E_f07": {
+   "R": 0.963,
+   "L": 0.172
+  },
+  "walk_E_f08": {
+   "R": 0.96,
+   "L": 0.135
+  },
+  "walk_E_f09": {
+   "R": 0.954,
+   "L": 0.089
+  },
+  "walk_E_f10": {
+   "R": 0.965,
+   "L": 0.066
+  },
+  "walk_E_f11": {
+   "R": 0.958,
+   "L": 0.06
+  },
+  "idle_E": {
+   "R": 0.962,
+   "L": 0.157
+  }
+ },
+ "axe_head_mostly_hidden(<50%)": [
+  "idle_E L",
+  "walk_E_f00 L",
+  "walk_E_f01 L",
+  "walk_E_f02 L",
+  "walk_E_f03 L",
+  "walk_E_f04 L",
+  "walk_E_f05 L",
+  "walk_E_f06 L",
+  "walk_E_f07 L",
+  "walk_E_f08 L",
+  "walk_E_f09 L",
+  "walk_E_f10 L",
+  "walk_E_f11 L"
+ ]
+}

@@ -1,0 +1,9 @@
+proj_base run_jungle_backdrop_tests exit 0
+proj_base run_crosshaven_board_tests exit 0
+proj_wired run_jungle_backdrop_tests exit 1
+proj_wired run_crosshaven_board_tests exit 0
+proj_patch run_jungle_backdrop_tests exit 1
+proj_patch run_crosshaven_board_tests exit 0
+proj_props run_crosshaven_board_tests exit 1
+proj_props run_jungle_backdrop_tests exit 1
+DONE

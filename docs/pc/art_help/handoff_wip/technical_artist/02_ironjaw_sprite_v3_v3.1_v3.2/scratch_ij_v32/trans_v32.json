@@ -1,0 +1,394 @@
+{
+ "S idle->walk_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 2.4
+ },
+ "S walk_f11->idle": {
+  "sole": 22,
+  "fx": 19.0,
+  "foot": [
+   9,
+   -10
+  ],
+  "foot_err": 16.9,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "S idle->attack_f00": {
+  "sole": 0,
+  "fx": 0.5,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 10.6,
+  "head": [
+   -5,
+   4
+  ],
+  "head_err": 15.6
+ },
+ "S attack_f05->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.5,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 3.7
+ },
+ "S idle->hit_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 6.1,
+  "head": [
+   -9,
+   5
+  ],
+  "head_err": 23.5
+ },
+ "S hit_f03->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.5,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 3.7
+ },
+ "S idle->death_f00": {
+  "sole": 0,
+  "fx": 0.5,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 8.0,
+  "head": [
+   -9,
+   6
+  ],
+  "head_err": 23.7
+ },
+ "W idle->walk_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 2.5
+ },
+ "W walk_f11->idle": {
+  "sole": 22,
+  "fx": -19.0,
+  "foot": [
+   -9,
+   -10
+  ],
+  "foot_err": 16.9,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "W idle->attack_f00": {
+  "sole": 0,
+  "fx": -0.5,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 10.6,
+  "head": [
+   5,
+   3
+  ],
+  "head_err": 15.6
+ },
+ "W attack_f05->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.5,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 3.6
+ },
+ "W idle->hit_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 6.1,
+  "head": [
+   9,
+   5
+  ],
+  "head_err": 23.5
+ },
+ "W hit_f03->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.5,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 3.6
+ },
+ "W idle->death_f00": {
+  "sole": 0,
+  "fx": -0.5,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 8.0,
+  "head": [
+   10,
+   5
+  ],
+  "head_err": 23.9
+ },
+ "N idle->walk_f00": {
+  "sole": 0,
+  "fx": -17.0,
+  "foot": [
+   1,
+   0
+  ],
+  "foot_err": 11.9,
+  "head": [
+   -3,
+   1
+  ],
+  "head_err": 19.4
+ },
+ "N walk_f11->idle": {
+  "sole": 3,
+  "fx": 23.5,
+  "foot": [
+   6,
+   3
+  ],
+  "foot_err": 0.2,
+  "head": [
+   2,
+   -1
+  ],
+  "head_err": 20.5
+ },
+ "N idle->attack_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.9,
+  "head": [
+   2,
+   2
+  ],
+  "head_err": 15.4
+ },
+ "N attack_f05->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "N idle->hit_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.4,
+  "head": [
+   7,
+   2
+  ],
+  "head_err": 23.0
+ },
+ "N hit_f03->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "N idle->death_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.4,
+  "head": [
+   8,
+   2
+  ],
+  "head_err": 23.0
+ },
+ "E idle->walk_f00": {
+  "sole": 0,
+  "fx": 17.0,
+  "foot": [
+   -1,
+   0
+  ],
+  "foot_err": 11.9,
+  "head": [
+   3,
+   1
+  ],
+  "head_err": 19.8
+ },
+ "E walk_f11->idle": {
+  "sole": 3,
+  "fx": -23.5,
+  "foot": [
+   -6,
+   3
+  ],
+  "foot_err": 0.2,
+  "head": [
+   -2,
+   -1
+  ],
+  "head_err": 20.8
+ },
+ "E idle->attack_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.9,
+  "head": [
+   -2,
+   2
+  ],
+  "head_err": 15.4
+ },
+ "E attack_f05->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "E idle->hit_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.4,
+  "head": [
+   -7,
+   2
+  ],
+  "head_err": 23.0
+ },
+ "E hit_f03->idle": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 0.0,
+  "head": [
+   0,
+   0
+  ],
+  "head_err": 0.0
+ },
+ "E idle->death_f00": {
+  "sole": 0,
+  "fx": 0.0,
+  "foot": [
+   0,
+   0
+  ],
+  "foot_err": 1.4,
+  "head": [
+   -8,
+   2
+  ],
+  "head_err": 23.0
+ }
+}

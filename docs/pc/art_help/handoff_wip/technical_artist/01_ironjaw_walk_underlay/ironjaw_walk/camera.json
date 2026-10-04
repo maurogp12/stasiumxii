@@ -1,0 +1,101 @@
+{
+ "type": "orthographic",
+ "engine": "Blender 5.2.2 LTS Workbench (flat lighting, anti-aliasing OFF, transparent film, Standard view transform)",
+ "elevation_deg_below_horizontal": 30.0,
+ "blender_rotation_euler_xyz_deg": [
+  60.0,
+  0.0,
+  45.0
+ ],
+ "azimuth_deg": 45.0,
+ "ortho_scale": 494.6236559139785,
+ "sensor_fit": "HORIZONTAL",
+ "resolution": [
+  460,
+  360
+ ],
+ "px_per_world_unit_horizontal": 0.93,
+ "vertical_px_per_world_unit": 0.805403625519528,
+ "body_yaw_cheat_deg": {
+  "S": -20.0,
+  "E": 35.0
+ },
+ "body_yaw_note": "travel (and the planted-foot slide) runs along the 2:1 diagonal = 45 deg from the camera axis; the body (pelvis and up) is turned a further 20 deg toward the camera in S (body 25 deg off the camera axis) and 35 deg away in E (body 10 deg off a pure back view), measured from the v3.2 / HD references (near/far hand and boot heights). Boots split the difference (half the cheat).",
+ "ground_ratio": "2:1 (world X/Y axes project to screen (+-2, +-1) diagonals)",
+ "camera_location": [
+  1797.61865234375,
+  -1798.378662109375,
+  1595.8206787109375
+ ],
+ "camera_matrix_world": [
+  [
+   0.7071067094802856,
+   -0.3535533845424652,
+   0.6123725175857544,
+   1797.61865234375
+  ],
+  [
+   0.7071068286895752,
+   0.3535533547401428,
+   -0.6123723983764648,
+   -1798.378662109375
+  ],
+  [
+   -2.4401655807082534e-08,
+   0.866025447845459,
+   0.4999999701976776,
+   1595.8206787109375
+  ],
+  [
+   0.0,
+   0.0,
+   0.0,
+   1.0
+  ]
+ ],
+ "screen_right_world": [
+  0.7071067094802856,
+  0.7071068286895752,
+  0.0
+ ],
+ "screen_up_world": [
+  -0.3535533845424652,
+  0.35355332493782043,
+  0.866025447845459
+ ],
+ "toward_camera_world": [
+  0.6123725175857544,
+  -0.6123723983764648,
+  0.4999999701976776
+ ],
+ "world_origin_pixel": [
+  230.5,
+  282.899252470384
+ ],
+ "world_origin_note": "world origin = ground point under the pelvis (body pivot). Continuous pixel coords (pixel (i,j) centre = (i+0.5, j+0.5)). The lowest planted sole over all walk frames lands on row 329 (cell pivot row); the body ground point is 47.10 px above it.",
+ "cell": [
+  460,
+  360
+ ],
+ "cell_pivot": [
+  230,
+  329
+ ],
+ "facing_yaw_deg": {
+  "S": -90.0,
+  "E": 0.0
+ },
+ "facing_note": "character +Y forward. S: forward = world +X = screen down-right (3/4 front). E: forward = world +Y = screen up-right (3/4 back). Both facings show his RIGHT side nearest the camera. W/N are flips (not rendered).",
+ "key_light_camera_space": [
+  -0.5014058947563171,
+  0.6217433214187622,
+  0.6016870737075806
+ ],
+ "key_light_world": [
+  -0.20591029524803162,
+  -0.5031846761703491,
+  0.8392890691757202
+ ],
+ "clay_shade": "per-face flat: grey = 0.26 + 0.68*max(0, n.L), written as sRGB",
+ "project_formula": "px = 230.5000 + 0.9300*dot(R, p); py = 282.8993 - 0.9300*dot(U, p)"
+}

@@ -1,0 +1,403 @@
+{
+ "char": "bastion",
+ "status": "v4 fixes in progress",
+ "source": "/workspace/art/bastion_full/v4",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "size_tier": "big",
+ "target_board_height_px": 78,
+ "idle_f0_height_cell_px": {
+  "S": 138,
+  "W": 148,
+  "N": 152,
+  "E": 143
+ },
+ "draw_scale": 0.565,
+ "world_draw_scale": 0.52,
+ "board_height_px": {
+  "S": 78.0,
+  "W": 83.7,
+  "N": 85.9,
+  "E": 80.8
+ },
+ "head_hp_y": -94,
+ "draw_scale_note": "per class (size tiers): sprite scale = draw_scale in combat, world_draw_scale for the world walker (= draw_scale x 0.46/0.5). head_hp_y = -(tallest idle f0 head top above the feet x draw_scale + 8), node origin = feet.",
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 125.06,
+   "W": 115.0,
+   "N": 115.0,
+   "E": 115.0
+  },
+  "board_px_per_frame_at_draw_scale": {
+   "S": 5.891,
+   "W": 5.417,
+   "N": 5.417,
+   "E": 5.417
+  }
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    160,
+    196
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      80,
+      165
+     ],
+     "offset": [
+      -80,
+      -165
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/walk/bastion_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      80,
+      165
+     ],
+     "offset": [
+      -80,
+      -165
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/walk/bastion_walk_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      80,
+      165
+     ],
+     "offset": [
+      -80,
+      -165
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/walk/bastion_walk_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      80,
+      165
+     ],
+     "offset": [
+      -80,
+      -165
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/walk/bastion_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    160,
+    196
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      80,
+      166
+     ],
+     "offset": [
+      -80,
+      -166
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/idle/bastion_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      80,
+      177
+     ],
+     "offset": [
+      -80,
+      -177
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/idle/bastion_idle_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      80,
+      180
+     ],
+     "offset": [
+      -80,
+      -180
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/idle/bastion_idle_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      80,
+      175
+     ],
+     "offset": [
+      -80,
+      -175
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/idle/bastion_idle_E_fNN.png"
+    }
+   }
+  },
+  "attack": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    220,
+    196
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      110,
+      166
+     ],
+     "offset": [
+      -110,
+      -166
+     ],
+     "pivot_file": [
+      110,
+      165
+     ],
+     "frames": "bastion_full/v4/attack/bastion_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      110,
+      177
+     ],
+     "offset": [
+      -110,
+      -177
+     ],
+     "pivot_file": [
+      110,
+      165
+     ],
+     "frames": "bastion_full/v4/attack/bastion_attack_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      110,
+      180
+     ],
+     "offset": [
+      -110,
+      -180
+     ],
+     "pivot_file": [
+      110,
+      165
+     ],
+     "frames": "bastion_full/v4/attack/bastion_attack_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      110,
+      175
+     ],
+     "offset": [
+      -110,
+      -175
+     ],
+     "pivot_file": [
+      110,
+      165
+     ],
+     "frames": "bastion_full/v4/attack/bastion_attack_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    160,
+    196
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      80,
+      166
+     ],
+     "offset": [
+      -80,
+      -166
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/hit/bastion_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      80,
+      177
+     ],
+     "offset": [
+      -80,
+      -177
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/hit/bastion_hit_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      80,
+      180
+     ],
+     "offset": [
+      -80,
+      -180
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/hit/bastion_hit_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      80,
+      175
+     ],
+     "offset": [
+      -80,
+      -175
+     ],
+     "pivot_file": [
+      80,
+      165
+     ],
+     "frames": "bastion_full/v4/hit/bastion_hit_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    330,
+    196
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      165,
+      166
+     ],
+     "offset": [
+      -165,
+      -166
+     ],
+     "pivot_file": [
+      165,
+      165
+     ],
+     "frames": "bastion_full/v4/death/bastion_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      165,
+      177
+     ],
+     "offset": [
+      -165,
+      -177
+     ],
+     "pivot_file": [
+      165,
+      165
+     ],
+     "frames": "bastion_full/v4/death/bastion_death_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      165,
+      180
+     ],
+     "offset": [
+      -165,
+      -180
+     ],
+     "pivot_file": [
+      165,
+      165
+     ],
+     "frames": "bastion_full/v4/death/bastion_death_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      165,
+      175
+     ],
+     "offset": [
+      -165,
+      -175
+     ],
+     "pivot_file": [
+      165,
+      165
+     ],
+     "frames": "bastion_full/v4/death/bastion_death_E_fNN.png"
+    }
+   }
+  }
+ },
+ "note": "pack from frame PNGs; strips/bastion_attack_S_strip.png and bastion_hit_S_strip.png are stale renders"
+}

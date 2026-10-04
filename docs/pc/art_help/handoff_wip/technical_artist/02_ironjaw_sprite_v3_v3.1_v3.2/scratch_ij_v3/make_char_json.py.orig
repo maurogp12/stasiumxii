@@ -1,0 +1,54 @@
+"""Write per-character wiring json (verified values) -> ship/characters_pc/json/<char>.json
+pivot      = value to use (verified / corrected from check_chars.py measurements)
+pivot_file = value stated in README / status PDF
+Facings use the LOCKED art rule: S=front down-right, W=front down-left, N=back up-left, E=back up-right.
+"""
+import json, os, sys
+sys.argv = ['x']
+import check_chars as C
+OUT = "/workspace/stasium-pc-look/ship/characters_pc/json"
+LOOP = {"walk": True, "idle": True}
+# corrections: (char, state or '*', facing) -> pivot y to use
+FIX_Y = {
+  "ironjaw": {},   # optional +4/5 (feet sit 4-5 px under pivot in every state); file values kept
+  "kestrel": {("walk", "S"): 145},
+  "gloam":   {("*", f): (151 if f in "SW" else 143) for f in "SWNE"},
+  "bastion": {(s, f): y for s in ("idle", "attack", "hit", "death") for f, y in (("S", 166), ("W", 177), ("N", 180), ("E", 175))},
+  "mender":  {**{(s, f): 168 for s in ("idle", "hit", "death") for f in "SW"}, **{("cast", f): 189 for f in "SW"}},
+}
+MIRROR = {  # facing -> facing it is a pixel-identical flip of (about the pivot)
+  "ironjaw": {"W": "S", "N": "E"}, "gloam": {"W": "S", "E": "N"}, "mender": {"W": "S", "N": "E"},
+  "kestrel": {}, "bastion": {},
+}
+TRAVEL = {  # cell px per 12-frame walk cycle, along the iso diagonal the walk is drawn on
+  "ironjaw": dict(S=89.2, W=89.2, N=89.2, E=89.2),
+  "kestrel": dict(S=129.0, W=128.9, N=128.9, E=128.9),
+  "gloam":   dict(S=52.1, W=52.1, N=46.8, E=46.8),
+  "bastion": dict(S=125.06, W=115.0, N=115.0, E=115.0),
+  "mender":  dict(S=128.0, W=128.0, N=105.8, E=105.8),
+}
+STATUS = {"ironjaw": "approved v2", "kestrel": "approved v3", "gloam": "v4 awaiting Mauro",
+          "bastion": "v4 fixes in progress", "mender": "v3 fixes in progress"}
+for n, cfg in C.CLAIM.items():
+    fx = FIX_Y[n]; states = {}
+    for st, (cnt, fps, cell, piv) in cfg["states"].items():
+        fac = {}
+        for f in C.FACINGS:
+            px, py = piv[f]
+            y = fx.get((st, f), fx.get(("*", f), py))
+            fac[f] = {"pivot": [px, y], "offset": [-px, -y], "pivot_file": [px, py],
+                      "frames": f"{cfg['dir']}/{st}/{n}_{st}_{f}_fNN.png"}
+            if f in MIRROR[n]: fac[f]["baked_flip_of"] = MIRROR[n][f]
+        states[st] = {"frames": cnt, "fps": round(1000/58.33, 3) if st == "walk" else fps, "loop": LOOP.get(st, False),
+                      "cell": list(cell), "facings": fac}
+    d = {"char": n, "status": STATUS[n], "source": f"/workspace/art/{cfg['dir']}",
+         "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+         "combat_code_letter_from_art": {"e": "S", "s": "W", "n": "E", "w": "N"},
+         "draw_scale": {"combat": 0.5, "world_walker": 0.46},
+         "walk": {"advance": "by distance", "travel_diag_cell_px_per_cycle": TRAVEL[n],
+                  "board_px_per_frame_at_0.5": {k: round(v/12*0.5, 3) for k, v in TRAVEL[n].items()}},
+         "states": states}
+    if n == "gloam": d["walk"]["per_frame_rootmotion"] = f"/workspace/art/{cfg['dir']}/gloam_full_v4_rootmotion.json"
+    if n == "bastion": d["note"] = "pack from frame PNGs; strips/bastion_attack_S_strip.png and bastion_hit_S_strip.png are stale renders"
+    json.dump(d, open(f"{OUT}/{n}.json", "w"), indent=1)
+    print("wrote", f"{OUT}/{n}.json")

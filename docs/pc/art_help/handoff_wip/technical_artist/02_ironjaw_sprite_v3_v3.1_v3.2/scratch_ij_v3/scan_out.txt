@@ -1,0 +1,10 @@
+('/workspace/art/ironjaw_full/v2/attack/ironjaw_attack_S_strip.png', [('attack/ironjaw_attack_S_f02.png', 'S', 466, 30, 966, 155)])
+('/workspace/art/ironjaw_full/v2/attack/ironjaw_attack_W_f02.png', [('attack/ironjaw_attack_S_f02.png', 'flip', 1, 30, 161, 155)])
+('/workspace/art/ironjaw_full/v2/attack/ironjaw_attack_S_f02.png', [('attack/ironjaw_attack_S_f02.png', 'S', 144, 30, 161, 155)])
+('/workspace/art/ironjaw_full/v2/attack/ironjaw_attack_W_strip.png', [('attack/ironjaw_attack_S_f02.png', 'flip', 323, 30, 966, 155)])
+('/workspace/art/ironjaw_full/v2/walk/ironjaw_walk_W_f11.png', [('walk/ironjaw_walk_S_f11.png', 'flip', 1, 96, 161, 155)])
+('/workspace/art/ironjaw_full/v2/walk/ironjaw_walk_S_f11.png', [('walk/ironjaw_walk_S_f11.png', 'S', 144, 96, 161, 155)])
+('/workspace/art/ironjaw_full/v2/walk/ironjaw_walk_S_strip.png', [('walk/ironjaw_walk_S_f11.png', 'S', 1915, 96, 1932, 155)])
+('/workspace/art/ironjaw_full/v2/walk/ironjaw_walk_W_strip.png', [('walk/ironjaw_walk_S_f11.png', 'flip', 1772, 96, 1932, 155)])
+('/workspace/art/ironjaw_full/v2/ironjaw_full_v2_contact_sheet_1x.png', [('walk/ironjaw_walk_S_f11.png', 'S', 2546, 122, 2586, 3646), ('walk/ironjaw_walk_S_f11.png', 'flip', 2403, 303, 2586, 3646), ('attack/ironjaw_attack_S_f02.png', 'S', 674, 1504, 2586, 3646), ('attack/ironjaw_attack_S_f02.png', 'flip', 531, 1685, 2586, 3646)])
+DONE

@@ -1,0 +1,2159 @@
+{
+ "format": "stasium.world_atlas",
+ "format_version": 2,
+ "region": "crosshaven_board",
+ "root": "art/pc/look/crosshaven_board/",
+ "package": "l9_outdoor_board",
+ "date": "2026-10-03",
+ "scope": "PC-only look layer for the crosshaven_15 combat board (L9 outdoor). Does NOT replace shared tiles/ or the map tags json; a PC loader reads this folder.",
+ "grid": {
+  "projection": "2:1 iso",
+  "tile_1x": [
+   64,
+   32
+  ],
+  "tile_2x": [
+   128,
+   64
+  ],
+  "step_px_1x": 10,
+  "step_px_2x": 20,
+  "cell_centre_2x": "((x-y)*64, (x+y)*32 - h*20)",
+  "sort": "(x+y)*10 + h*8, fighters +4"
+ },
+ "step_px_2x": 20,
+ "files": {
+  "tiles": "tiles/<id>.png + tiles/<id>@2x.png",
+  "terrace": "terrace/<id>.png + @2x",
+  "props": "props/<id>.png + @2x (also indexed in props/props.json)",
+  "looks": "looks.json (per-cell look + prop placement for crosshaven_15)"
+ },
+ "anchors": {
+  "tile": "top-left = cell centre + (-64,-32) at 2x",
+  "prop": "bottom-centre on the anchor cell south tip",
+  "terrace": "see each terrace entry"
+ },
+ "lighting": {
+  "key": "#fff0c8 from the top-left",
+  "shade": "#5a6fa0 (right/SE faces, hanging lip on SE)",
+  "shadows": "contact AO only (fringe/foot AO decals, baked soft prop ellipses alpha<=0.3); no baked long/cast shadows",
+  "grade": "neutral warm daylight, NOT pre-graded (Mauro grades later)"
+ },
+ "palette": {
+  "grass": "#78a01c approx mean",
+  "sandstone": "#e0b67e approx",
+  "wet_earth": "#4a3526 approx",
+  "water": "#3e827a approx (v1.4 blue-green; v1.3 was #5ac0ab)",
+  "cliff_earth": "#6e5032 approx",
+  "shore_lip": "#c8bc9e approx",
+  "sand": "#d4b077 approx (v1.4)",
+  "stone_flag": "#7a7f83 approx (v1.4)"
+ },
+ "tiles": [
+  {
+   "id": "grass_top_a",
+   "file": "tiles/grass_top_a.png",
+   "file_2x": "tiles/grass_top_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "grass",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "bright saturated grass (sample_A), a few yellow flowers; all variants share an identical border band so any variant can sit next to any other without a seam; soft cell groove at the border keeps cells countable"
+  },
+  {
+   "id": "grass_top_b",
+   "file": "tiles/grass_top_b.png",
+   "file_2x": "tiles/grass_top_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "grass",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "bright saturated grass (sample_A), a few yellow flowers; all variants share an identical border band so any variant can sit next to any other without a seam; soft cell groove at the border keeps cells countable"
+  },
+  {
+   "id": "grass_top_c",
+   "file": "tiles/grass_top_c.png",
+   "file_2x": "tiles/grass_top_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "grass",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "c",
+   "variant_weight": 1,
+   "note": "bright saturated grass (sample_A), a few yellow flowers; all variants share an identical border band so any variant can sit next to any other without a seam; soft cell groove at the border keeps cells countable"
+  },
+  {
+   "id": "grass_top_d",
+   "file": "tiles/grass_top_d.png",
+   "file_2x": "tiles/grass_top_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "grass",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "d",
+   "variant_weight": 1,
+   "note": "bright saturated grass (sample_A), a few yellow flowers; all variants share an identical border band so any variant can sit next to any other without a seam; soft cell groove at the border keeps cells countable"
+  },
+  {
+   "id": "sandstone_a",
+   "file": "tiles/sandstone_a.png",
+   "file_2x": "tiles/sandstone_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sandstone",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "honey sandstone slab, one slab per cell with a dark grout seam + bevel (plain) (v1.4: kept in the kit, not used by the crosshaven_15 layout; paths are sand / stone_flag)"
+  },
+  {
+   "id": "sandstone_b",
+   "file": "tiles/sandstone_b.png",
+   "file_2x": "tiles/sandstone_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sandstone",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "honey sandstone slab, one slab per cell with a dark grout seam + bevel (crack) (v1.4: kept in the kit, not used by the crosshaven_15 layout; paths are sand / stone_flag)"
+  },
+  {
+   "id": "sandstone_c",
+   "file": "tiles/sandstone_c.png",
+   "file_2x": "tiles/sandstone_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sandstone",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "c",
+   "variant_weight": 1,
+   "note": "honey sandstone slab, one slab per cell with a dark grout seam + bevel (chipped corner) (v1.4: kept in the kit, not used by the crosshaven_15 layout; paths are sand / stone_flag)"
+  },
+  {
+   "id": "sandstone_d",
+   "file": "tiles/sandstone_d.png",
+   "file_2x": "tiles/sandstone_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sandstone",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "d",
+   "variant_weight": 0.12,
+   "note": "honey sandstone slab, one slab per cell with a dark grout seam + bevel (cross-knot carving (keep rare)) (v1.4: kept in the kit, not used by the crosshaven_15 layout; paths are sand / stone_flag)"
+  },
+  {
+   "id": "wet_earth_a",
+   "file": "tiles/wet_earth_a.png",
+   "file_2x": "tiles/wet_earth_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "wet_earth",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "dark painted wet soil with small sky-reflecting puddles (mud cells, 2 MP); darker/cooler than the cliff earth"
+  },
+  {
+   "id": "wet_earth_b",
+   "file": "tiles/wet_earth_b.png",
+   "file_2x": "tiles/wet_earth_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "wet_earth",
+   "base_terrain": "mud",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "dark painted wet soil (mud cells, 2 MP), flipped crop of wet_earth_a; v1.4: the v1.2 painted puddle is removed"
+  },
+  {
+   "id": "water_a",
+   "file": "tiles/water_a.png",
+   "file_2x": "tiles/water_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "water",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "v1.4: calm mid-value blue-green from water_bluegreen.jpg (value lifted, ripples softened to 40 %, big swirls flattened); kept well away from the cyan move-range overlay"
+  },
+  {
+   "id": "water_b",
+   "file": "tiles/water_b.png",
+   "file_2x": "tiles/water_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "water",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "v1.4: calm mid-value blue-green from water_bluegreen.jpg (value lifted, ripples softened to 40 %, big swirls flattened); kept well away from the cyan move-range overlay"
+  },
+  {
+   "id": "sand_a",
+   "file": "tiles/sand_a.png",
+   "file_2x": "tiles/sand_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sand",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "v1.4: fine warm sand from fine_sand.jpg, no joints; graded toward v1 sandstone warmth (-20 % saturation); all four share one border band so any variant joins any other seamlessly"
+  },
+  {
+   "id": "sand_b",
+   "file": "tiles/sand_b.png",
+   "file_2x": "tiles/sand_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sand",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "v1.4: fine warm sand from fine_sand.jpg, no joints; graded toward v1 sandstone warmth (-20 % saturation); all four share one border band so any variant joins any other seamlessly"
+  },
+  {
+   "id": "sand_c",
+   "file": "tiles/sand_c.png",
+   "file_2x": "tiles/sand_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sand",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "c",
+   "variant_weight": 1,
+   "note": "v1.4: fine warm sand from fine_sand.jpg, no joints; graded toward v1 sandstone warmth (-20 % saturation); all four share one border band so any variant joins any other seamlessly"
+  },
+  {
+   "id": "sand_d",
+   "file": "tiles/sand_d.png",
+   "file_2x": "tiles/sand_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "sand",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "d",
+   "variant_weight": 1,
+   "note": "v1.4: fine warm sand from fine_sand.jpg, no joints; graded toward v1 sandstone warmth (-20 % saturation); all four share one border band so any variant joins any other seamlessly"
+  },
+  {
+   "id": "stone_flag_a",
+   "file": "tiles/stone_flag_a.png",
+   "file_2x": "tiles/stone_flag_a@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "stone_flag",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "a",
+   "variant_weight": 1,
+   "note": "v1.4: cool grey worn flagstones with mossy joints from stone_flags.jpg, about 3-5 flags per cell; half a mossy joint + soft bevel on the cell border so neighbouring cells make one joint"
+  },
+  {
+   "id": "stone_flag_b",
+   "file": "tiles/stone_flag_b.png",
+   "file_2x": "tiles/stone_flag_b@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "stone_flag",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "b",
+   "variant_weight": 1,
+   "note": "v1.4: cool grey worn flagstones with mossy joints from stone_flags.jpg, about 3-5 flags per cell; half a mossy joint + soft bevel on the cell border so neighbouring cells make one joint"
+  },
+  {
+   "id": "stone_flag_c",
+   "file": "tiles/stone_flag_c.png",
+   "file_2x": "tiles/stone_flag_c@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "stone_flag",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "c",
+   "variant_weight": 1,
+   "note": "v1.4: cool grey worn flagstones with mossy joints from stone_flags.jpg, about 3-5 flags per cell; half a mossy joint + soft bevel on the cell border so neighbouring cells make one joint"
+  },
+  {
+   "id": "stone_flag_d",
+   "file": "tiles/stone_flag_d.png",
+   "file_2x": "tiles/stone_flag_d@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "floor",
+   "look": "stone_flag",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "variant": "d",
+   "variant_weight": 1,
+   "note": "v1.4: cool grey worn flagstones with mossy joints from stone_flags.jpg, about 3-5 flags per cell; half a mossy joint + soft bevel on the cell border so neighbouring cells make one joint"
+  },
+  {
+   "id": "grass_fringe_ne",
+   "file": "tiles/grass_fringe_ne.png",
+   "file_2x": "tiles/grass_fringe_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass spilling from the grass neighbour (x,y-1) onto this sandstone / wet-earth cell; blades + soft contact AO (no cast shadow) (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_nw",
+   "file": "tiles/grass_fringe_nw.png",
+   "file_2x": "tiles/grass_fringe_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass spilling from the grass neighbour (x-1,y) onto this sandstone / wet-earth cell; blades + soft contact AO (no cast shadow) (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_se",
+   "file": "tiles/grass_fringe_se.png",
+   "file_2x": "tiles/grass_fringe_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass spilling from the grass neighbour (x+1,y) onto this sandstone / wet-earth cell; blades + soft contact AO (no cast shadow) (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_sw",
+   "file": "tiles/grass_fringe_sw.png",
+   "file_2x": "tiles/grass_fringe_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass spilling from the grass neighbour (x,y+1) onto this sandstone / wet-earth cell; blades + soft contact AO (no cast shadow) (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_corner_n",
+   "file": "tiles/grass_fringe_corner_n.png",
+   "file_2x": "tiles/grass_fringe_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass tuft at the n vertex when only the diagonal neighbour (x-1,y-1) is grass (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_corner_e",
+   "file": "tiles/grass_fringe_corner_e.png",
+   "file_2x": "tiles/grass_fringe_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass tuft at the e vertex when only the diagonal neighbour (x+1,y-1) is grass (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_corner_s",
+   "file": "tiles/grass_fringe_corner_s.png",
+   "file_2x": "tiles/grass_fringe_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass tuft at the s vertex when only the diagonal neighbour (x+1,y+1) is grass (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_corner_w",
+   "file": "tiles/grass_fringe_corner_w.png",
+   "file_2x": "tiles/grass_fringe_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "wet_earth"
+   ],
+   "note": "grass tuft at the w vertex when only the diagonal neighbour (x-1,y+1) is grass (v1.4: sand and stone_flag cells use grass_fringe_sand_* / grass_fringe_stone_*)"
+  },
+  {
+   "id": "grass_fringe_sand_ne",
+   "file": "tiles/grass_fringe_sand_ne.png",
+   "file_2x": "tiles/grass_fringe_sand_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass edge where sand meets grass: grass spilling from the grass neighbour (x,y-1) onto this sand cell; thinning grass tufts, warm soft shade and sand dust in the roots (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_sand_nw",
+   "file": "tiles/grass_fringe_sand_nw.png",
+   "file_2x": "tiles/grass_fringe_sand_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass edge where sand meets grass: grass spilling from the grass neighbour (x-1,y) onto this sand cell; thinning grass tufts, warm soft shade and sand dust in the roots (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_sand_se",
+   "file": "tiles/grass_fringe_sand_se.png",
+   "file_2x": "tiles/grass_fringe_sand_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass edge where sand meets grass: grass spilling from the grass neighbour (x+1,y) onto this sand cell; thinning grass tufts, warm soft shade and sand dust in the roots (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_sand_sw",
+   "file": "tiles/grass_fringe_sand_sw.png",
+   "file_2x": "tiles/grass_fringe_sand_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass edge where sand meets grass: grass spilling from the grass neighbour (x,y+1) onto this sand cell; thinning grass tufts, warm soft shade and sand dust in the roots (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_sand_corner_n",
+   "file": "tiles/grass_fringe_sand_corner_n.png",
+   "file_2x": "tiles/grass_fringe_sand_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass tuft at the n vertex of a sand cell when only the diagonal neighbour (x-1,y-1) is grass"
+  },
+  {
+   "id": "grass_fringe_sand_corner_e",
+   "file": "tiles/grass_fringe_sand_corner_e.png",
+   "file_2x": "tiles/grass_fringe_sand_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass tuft at the e vertex of a sand cell when only the diagonal neighbour (x+1,y-1) is grass"
+  },
+  {
+   "id": "grass_fringe_sand_corner_s",
+   "file": "tiles/grass_fringe_sand_corner_s.png",
+   "file_2x": "tiles/grass_fringe_sand_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass tuft at the s vertex of a sand cell when only the diagonal neighbour (x+1,y+1) is grass"
+  },
+  {
+   "id": "grass_fringe_sand_corner_w",
+   "file": "tiles/grass_fringe_sand_corner_w.png",
+   "file_2x": "tiles/grass_fringe_sand_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand"
+   ],
+   "note": "v1.4: grass tuft at the w vertex of a sand cell when only the diagonal neighbour (x-1,y+1) is grass"
+  },
+  {
+   "id": "grass_fringe_stone_ne",
+   "file": "tiles/grass_fringe_stone_ne.png",
+   "file_2x": "tiles/grass_fringe_stone_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass edge where stone_flag meets grass: grass spilling from the grass neighbour (x,y-1) onto this stone_flag cell; grass blades + moss creeping into the flag joints, cool soft contact AO (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_stone_nw",
+   "file": "tiles/grass_fringe_stone_nw.png",
+   "file_2x": "tiles/grass_fringe_stone_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass edge where stone_flag meets grass: grass spilling from the grass neighbour (x-1,y) onto this stone_flag cell; grass blades + moss creeping into the flag joints, cool soft contact AO (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_stone_se",
+   "file": "tiles/grass_fringe_stone_se.png",
+   "file_2x": "tiles/grass_fringe_stone_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass edge where stone_flag meets grass: grass spilling from the grass neighbour (x+1,y) onto this stone_flag cell; grass blades + moss creeping into the flag joints, cool soft contact AO (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_stone_sw",
+   "file": "tiles/grass_fringe_stone_sw.png",
+   "file_2x": "tiles/grass_fringe_stone_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass edge where stone_flag meets grass: grass spilling from the grass neighbour (x,y+1) onto this stone_flag cell; grass blades + moss creeping into the flag joints, cool soft contact AO (no cast shadow)"
+  },
+  {
+   "id": "grass_fringe_stone_corner_n",
+   "file": "tiles/grass_fringe_stone_corner_n.png",
+   "file_2x": "tiles/grass_fringe_stone_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass tuft at the n vertex of a stone_flag cell when only the diagonal neighbour (x-1,y-1) is grass"
+  },
+  {
+   "id": "grass_fringe_stone_corner_e",
+   "file": "tiles/grass_fringe_stone_corner_e.png",
+   "file_2x": "tiles/grass_fringe_stone_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass tuft at the e vertex of a stone_flag cell when only the diagonal neighbour (x+1,y-1) is grass"
+  },
+  {
+   "id": "grass_fringe_stone_corner_s",
+   "file": "tiles/grass_fringe_stone_corner_s.png",
+   "file_2x": "tiles/grass_fringe_stone_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass tuft at the s vertex of a stone_flag cell when only the diagonal neighbour (x+1,y+1) is grass"
+  },
+  {
+   "id": "grass_fringe_stone_corner_w",
+   "file": "tiles/grass_fringe_stone_corner_w.png",
+   "file_2x": "tiles/grass_fringe_stone_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "stone_flag"
+   ],
+   "note": "v1.4: grass tuft at the w vertex of a stone_flag cell when only the diagonal neighbour (x-1,y+1) is grass"
+  },
+  {
+   "id": "wet_earth_fringe_ne",
+   "file": "tiles/wet_earth_fringe_ne.png",
+   "file_2x": "tiles/wet_earth_fringe_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand",
+    "stone_flag",
+    "sandstone"
+   ],
+   "note": "wet earth spilling from (x,y-1) onto a sand / stone_flag (or legacy sandstone) cell, with a damp stain"
+  },
+  {
+   "id": "wet_earth_fringe_nw",
+   "file": "tiles/wet_earth_fringe_nw.png",
+   "file_2x": "tiles/wet_earth_fringe_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand",
+    "stone_flag",
+    "sandstone"
+   ],
+   "note": "wet earth spilling from (x-1,y) onto a sand / stone_flag (or legacy sandstone) cell, with a damp stain"
+  },
+  {
+   "id": "wet_earth_fringe_se",
+   "file": "tiles/wet_earth_fringe_se.png",
+   "file_2x": "tiles/wet_earth_fringe_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand",
+    "stone_flag",
+    "sandstone"
+   ],
+   "note": "wet earth spilling from (x+1,y) onto a sand / stone_flag (or legacy sandstone) cell, with a damp stain"
+  },
+  {
+   "id": "wet_earth_fringe_sw",
+   "file": "tiles/wet_earth_fringe_sw.png",
+   "file_2x": "tiles/wet_earth_fringe_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sand",
+    "stone_flag",
+    "sandstone"
+   ],
+   "note": "wet earth spilling from (x,y+1) onto a sand / stone_flag (or legacy sandstone) cell, with a damp stain"
+  },
+  {
+   "id": "water_edge_ne",
+   "file": "tiles/water_edge_ne.png",
+   "file_2x": "tiles/water_edge_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "pale wet-sand/stone shore lip on the water cell along the side facing the non-water neighbour (x,y-1); v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_nw",
+   "file": "tiles/water_edge_nw.png",
+   "file_2x": "tiles/water_edge_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "pale wet-sand/stone shore lip on the water cell along the side facing the non-water neighbour (x-1,y); v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_se",
+   "file": "tiles/water_edge_se.png",
+   "file_2x": "tiles/water_edge_se@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "pale wet-sand/stone shore lip on the water cell along the side facing the non-water neighbour (x+1,y); v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_sw",
+   "file": "tiles/water_edge_sw.png",
+   "file_2x": "tiles/water_edge_sw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "pale wet-sand/stone shore lip on the water cell along the side facing the non-water neighbour (x,y+1); v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_corner_n",
+   "file": "tiles/water_edge_corner_n.png",
+   "file_2x": "tiles/water_edge_corner_n@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "shore lip at the n vertex when only the diagonal neighbour (x-1,y-1) is not water; v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_corner_e",
+   "file": "tiles/water_edge_corner_e.png",
+   "file_2x": "tiles/water_edge_corner_e@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "shore lip at the e vertex when only the diagonal neighbour (x+1,y-1) is not water; v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_corner_s",
+   "file": "tiles/water_edge_corner_s.png",
+   "file_2x": "tiles/water_edge_corner_s@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "shore lip at the s vertex when only the diagonal neighbour (x+1,y+1) is not water; v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "water_edge_corner_w",
+   "file": "tiles/water_edge_corner_w.png",
+   "file_2x": "tiles/water_edge_corner_w@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "water",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "water"
+   ],
+   "note": "shore lip at the w vertex when only the diagonal neighbour (x-1,y+1) is not water; v1.4: soft white shoreline foam just off the lip"
+  },
+  {
+   "id": "foot_ao_ne",
+   "file": "tiles/foot_ao_ne.png",
+   "file_2x": "tiles/foot_ao_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "any",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "any"
+   ],
+   "note": "soft contact AO at the foot of a higher neighbour (x,y-1) (alpha<=0.38, no long shadow)"
+  },
+  {
+   "id": "raised_rim_ne",
+   "file": "tiles/raised_rim_ne.png",
+   "file_2x": "tiles/raised_rim_ne@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "grass"
+   ],
+   "note": "lit grass edge + thin dark silhouette line on a raised cell whose back neighbour (x,y-1) is lower"
+  },
+  {
+   "id": "foot_ao_nw",
+   "file": "tiles/foot_ao_nw.png",
+   "file_2x": "tiles/foot_ao_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "any",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "any"
+   ],
+   "note": "soft contact AO at the foot of a higher neighbour (x-1,y) (alpha<=0.38, no long shadow)"
+  },
+  {
+   "id": "raised_rim_nw",
+   "file": "tiles/raised_rim_nw.png",
+   "file_2x": "tiles/raised_rim_nw@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "overlay",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "grass"
+   ],
+   "note": "lit grass edge + thin dark silhouette line on a raised cell whose back neighbour (x-1,y) is lower"
+  },
+  {
+   "id": "seal_slab",
+   "file": "tiles/seal_slab.png",
+   "file_2x": "tiles/seal_slab@2x.png",
+   "size": [
+    64,
+    32
+   ],
+   "size_2x": [
+    128,
+    64
+   ],
+   "kind": "decal",
+   "look": "prop_flat",
+   "base_terrain": "ground",
+   "walkable": true,
+   "anchor": "image top-left = cell centre + (-32,-16) at 1x / (-64,-32) at 2x (diamond centre = canvas centre; south tip = bottom-centre)",
+   "draw_on": [
+    "sandstone",
+    "grass"
+   ],
+   "note": "REPLACES floor_seal: v1.1 true top-down square sandstone seal (honey tone of sandstone_a-d, same grout seam and bevel) mapped onto the exact cell diamond; drawn as the first overlay on the cell (no height, no prop node)"
+  }
+ ],
+ "terrace": [
+  {
+   "id": "cliff_left_h1",
+   "file": "terrace/cliff_left_h1.png",
+   "file_2x": "terrace/cliff_left_h1@2x.png",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_left_h1_water",
+   "file": "terrace/cliff_left_h1_water.png",
+   "file_2x": "terrace/cliff_left_h1_water@2x.png",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "water",
+   "draw": "before_top",
+   "note": "replaces cliff_left_h1 when the lower neighbour (x,y+1) is water: wet dark waterline + light foam instead of the earth foot. The water cell's water_edge_ne stone lip along this edge is skipped (the face foot is the shore). crosshaven_15: (10,3)"
+  },
+  {
+   "id": "cliff_right_h1",
+   "file": "terrace/cliff_right_h1.png",
+   "file_2x": "terrace/cliff_right_h1@2x.png",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_right_h1_water",
+   "file": "terrace/cliff_right_h1_water.png",
+   "file_2x": "terrace/cliff_right_h1_water@2x.png",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 1,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "water",
+   "draw": "before_top",
+   "note": "replaces cliff_right_h1 when the lower neighbour (x+1,y) is water: wet dark waterline + light foam instead of the earth foot. The water cell's water_edge_nw stone lip along this edge is skipped (the face foot is the shore). crosshaven_15: (9,5), (3,7), (11,7)"
+  },
+  {
+   "id": "cliff_left_h2",
+   "file": "terrace/cliff_left_h2.png",
+   "file_2x": "terrace/cliff_left_h2@2x.png",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 2,
+   "size_2x": [
+    64,
+    72
+   ],
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_right_h2",
+   "file": "terrace/cliff_right_h2.png",
+   "file_2x": "terrace/cliff_right_h2@2x.png",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 2,
+   "size_2x": [
+    64,
+    72
+   ],
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_left_h3",
+   "file": "terrace/cliff_left_h3.png",
+   "file_2x": "terrace/cliff_left_h3@2x.png",
+   "kind": "face",
+   "edge": "SW",
+   "height_steps": 3,
+   "size_2x": [
+    64,
+    92
+   ],
+   "offset_2x": [
+    -64,
+    0
+   ],
+   "tile_axis": "x",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "cliff_right_h3",
+   "file": "terrace/cliff_right_h3.png",
+   "file_2x": "terrace/cliff_right_h3@2x.png",
+   "kind": "face",
+   "edge": "SE",
+   "height_steps": 3,
+   "size_2x": [
+    64,
+    92
+   ],
+   "offset_2x": [
+    0,
+    0
+   ],
+   "tile_axis": "y",
+   "foot": "ground",
+   "draw": "before_top"
+  },
+  {
+   "id": "grass_overhang_left",
+   "file": "terrace/grass_overhang_left.png",
+   "file_2x": "terrace/grass_overhang_left@2x.png",
+   "kind": "overhang",
+   "edge": "SW",
+   "height_steps": null,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    -64,
+    -8
+   ],
+   "tile_axis": "x",
+   "foot": null,
+   "draw": "after_top",
+   "note": "one size for every height (not 64 x (32+20n)): the cell front edge runs through canvas y 8..40; height_steps / foot do not apply"
+  },
+  {
+   "id": "grass_overhang_right",
+   "file": "terrace/grass_overhang_right.png",
+   "file_2x": "terrace/grass_overhang_right@2x.png",
+   "kind": "overhang",
+   "edge": "SE",
+   "height_steps": null,
+   "size_2x": [
+    64,
+    52
+   ],
+   "offset_2x": [
+    0,
+    -8
+   ],
+   "tile_axis": "y",
+   "foot": null,
+   "draw": "after_top",
+   "note": "one size for every height (not 64 x (32+20n)): the cell front edge runs through canvas y 8..40; height_steps / foot do not apply"
+  },
+  {
+   "id": "grass_overhang_corner_front",
+   "file": "terrace/grass_overhang_corner_front.png",
+   "file_2x": "terrace/grass_overhang_corner_front@2x.png",
+   "kind": "corner",
+   "vertex": "S",
+   "height_steps": null,
+   "size_2x": [
+    40,
+    40
+   ],
+   "offset_2x": [
+    -20,
+    20
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the S vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
+  },
+  {
+   "id": "grass_overhang_corner_left",
+   "file": "terrace/grass_overhang_corner_left.png",
+   "file_2x": "terrace/grass_overhang_corner_left@2x.png",
+   "kind": "corner",
+   "vertex": "W",
+   "height_steps": null,
+   "size_2x": [
+    40,
+    40
+   ],
+   "offset_2x": [
+    -84,
+    -12
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the W vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
+  },
+  {
+   "id": "grass_overhang_corner_right",
+   "file": "terrace/grass_overhang_corner_right.png",
+   "file_2x": "terrace/grass_overhang_corner_right@2x.png",
+   "kind": "corner",
+   "vertex": "E",
+   "height_steps": null,
+   "size_2x": [
+    40,
+    40
+   ],
+   "offset_2x": [
+    44,
+    -12
+   ],
+   "tile_axis": null,
+   "foot": null,
+   "draw": "after_top",
+   "pivot_px_2x": [
+    20,
+    12
+   ],
+   "note": "40x40 (not 64 x (32+20n)); pivot canvas (20,12) = the E vertex of the lifted cell; draw after the overhang strips; height_steps / tile_axis / foot do not apply"
+  }
+ ],
+ "props": [
+  {
+   "id": "standing_stone",
+   "file": "props/standing_stone.png",
+   "file_2x": "props/standing_stone@2x.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tall",
+   "layer": "prop",
+   "replaces": "ruins",
+   "art_x_from_anchor_2x": [
+    -40,
+    36
+   ],
+   "art_height_px_2x": 170,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "v1.1: carved standing stone from props_1cell_nodisc (no ground disc), ~1.3x fighter; tall: keep off front rows if it hides fighters"
+  },
+  {
+   "id": "boulder_cluster",
+   "file": "props/boulder_cluster.png",
+   "file_2x": "props/boulder_cluster@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "prop",
+   "layer": "prop",
+   "replaces": "rock_pillar",
+   "art_x_from_anchor_2x": [
+    -53,
+    48
+   ],
+   "art_height_px_2x": 113,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "v1.1: tall mossy boulder cluster with fern from props_1cell_nodisc (no disc), ~0.85x fighter (rock_pillar replacement)"
+  },
+  {
+   "id": "lilac_shrub",
+   "file": "props/lilac_shrub.png",
+   "file_2x": "props/lilac_shrub@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "prop",
+   "layer": "prop",
+   "replaces": "hay",
+   "art_x_from_anchor_2x": [
+    -37,
+    34
+   ],
+   "art_height_px_2x": 86,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "round lilac shrub ~0.65x fighter"
+  },
+  {
+   "id": "boulder_small",
+   "file": "props/boulder_small.png",
+   "file_2x": "props/boulder_small@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "prop",
+   "layer": "prop",
+   "replaces": "rubble",
+   "art_x_from_anchor_2x": [
+    -27,
+    29
+   ],
+   "art_height_px_2x": 67,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "v1.1: the no-disc boulder cluster mirrored and scaled to ~0.45x fighter (rubble replacement)"
+  },
+  {
+   "id": "ruined_wall_short",
+   "file": "props/ruined_wall_short.png",
+   "file_2x": "props/ruined_wall_short@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "prop",
+   "layer": "prop",
+   "replaces": "fence",
+   "art_x_from_anchor_2x": [
+    -48,
+    48
+   ],
+   "art_height_px_2x": 103,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "v1.1: native 1-cell ruined wall stub with ivy + two loose blocks (props_wall_log_1cell); long axis runs along the y diagonal (SW->NE in screen) as painted"
+  },
+  {
+   "id": "fallen_log_short",
+   "file": "props/fallen_log_short.png",
+   "file_2x": "props/fallen_log_short@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "prop",
+   "layer": "prop",
+   "replaces": "fence",
+   "art_x_from_anchor_2x": [
+    -44,
+    44
+   ],
+   "art_height_px_2x": 79,
+   "lowest_opaque_gap_px_2x": 12,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "v1.1: native 1-cell fallen hollow log section with fern + mushrooms (props_wall_log_1cell); long axis along the +x diagonal"
+  },
+  {
+   "id": "stone_well",
+   "file": "props/stone_well.png",
+   "file_2x": "props/stone_well@2x.png",
+   "size": [
+    64,
+    112
+   ],
+   "size_2x": [
+    128,
+    224
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "tall",
+   "layer": "prop",
+   "replaces": "well",
+   "art_x_from_anchor_2x": [
+    -50,
+    49
+   ],
+   "art_height_px_2x": 133,
+   "lowest_opaque_gap_px_2x": 10,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "stone well ~1x fighter"
+  },
+  {
+   "id": "ruined_wall_2c",
+   "file": "props/ruined_wall_2c.png",
+   "file_2x": "props/ruined_wall_2c@2x.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "kind": "cover_dressing",
+   "layer": "prop",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -79,
+    46
+   ],
+   "art_height_px_2x": 137,
+   "lowest_opaque_gap_px_2x": 19,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "optional 2-cell ruined ivy wall; footprint cells (x,y)+(x-1,y) relative to the anchor cell; anchor on the FRONT (south-most) cell",
+   "footprint_cells_rel": [
+    [
+     0,
+     0
+    ],
+    [
+     -1,
+     0
+    ]
+   ],
+   "anchor_cell": "FRONT (south-most) cell of the pair; the second cell is (x-1,y), i.e. back along the +x diagonal"
+  },
+  {
+   "id": "fallen_log_2c",
+   "file": "props/fallen_log_2c.png",
+   "file_2x": "props/fallen_log_2c@2x.png",
+   "size": [
+    96,
+    80
+   ],
+   "size_2x": [
+    192,
+    160
+   ],
+   "footprint_size": [
+    2,
+    1
+   ],
+   "kind": "cover_dressing",
+   "layer": "prop",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -76,
+    36
+   ],
+   "art_height_px_2x": 109,
+   "lowest_opaque_gap_px_2x": 17,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "optional 2-cell fallen hollow log; footprint as ruined_wall_2c",
+   "footprint_cells_rel": [
+    [
+     0,
+     0
+    ],
+    [
+     -1,
+     0
+    ]
+   ],
+   "anchor_cell": "FRONT (south-most) cell of the pair; the second cell is (x-1,y), i.e. back along the +x diagonal"
+  },
+  {
+   "id": "lilac_bush",
+   "file": "props/lilac_bush.png",
+   "file_2x": "props/lilac_bush@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -37,
+    35
+   ],
+   "art_height_px_2x": 89,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  },
+  {
+   "id": "lilac_tuft",
+   "file": "props/lilac_tuft.png",
+   "file_2x": "props/lilac_tuft@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -23,
+    22
+   ],
+   "art_height_px_2x": 64,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  },
+  {
+   "id": "flower_tuft",
+   "file": "props/flower_tuft.png",
+   "file_2x": "props/flower_tuft@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -28,
+    27
+   ],
+   "art_height_px_2x": 69,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  },
+  {
+   "id": "clover_patch",
+   "file": "props/clover_patch.png",
+   "file_2x": "props/clover_patch@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -26,
+    26
+   ],
+   "art_height_px_2x": 52,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  },
+  {
+   "id": "pebbles_moss",
+   "file": "props/pebbles_moss.png",
+   "file_2x": "props/pebbles_moss@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -28,
+    28
+   ],
+   "art_height_px_2x": 50,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  },
+  {
+   "id": "fern",
+   "file": "props/fern.png",
+   "file_2x": "props/fern@2x.png",
+   "size": [
+    64,
+    64
+   ],
+   "size_2x": [
+    128,
+    128
+   ],
+   "footprint_size": [
+    1,
+    1
+   ],
+   "kind": "decor",
+   "layer": "decor",
+   "replaces": null,
+   "art_x_from_anchor_2x": [
+    -16,
+    35
+   ],
+   "art_height_px_2x": 71,
+   "lowest_opaque_gap_px_2x": 23,
+   "anchor": "image bottom-centre = south tip of the anchor cell (same as tile.gd stock props); lifted with the cell by height*20 at 2x",
+   "sort": "z = (x+y)*10 + height*8 of the anchor cell (props share their cell z; fighters +4 draw over them)",
+   "contact_shadow": "baked: soft cool ellipse, alpha <= 0.30, inside the cell (no cast/long shadow)",
+   "note": "small decor decal for cliff tops / edges (non-blocking); base sits on the cell centre line (lowest opaque row 23 px above the south tip) so the front half of the cell, where fighter feet and the cell highlight read, stays clear"
+  }
+ ],
+ "replacement_map": {
+  "ruins": "standing_stone on rim cells (x or y = 0 / 14); boulder_small on interior cells (v1.4: tall props only on the rim)",
+  "rock_pillar": "boulder_cluster on rim cells; boulder_small on interior cells (v1.4)",
+  "hay": "lilac_shrub",
+  "rubble": "boulder_small",
+  "fence": "ruined_wall_2c / fallen_log_2c where the back cell (x-1,y) fits (same height, no water, no other prop), else ruined_wall_short / fallen_log_short (alternating); v1.4: ruined_wall_2c (137 px) only on rim cells, so (3,12) takes the v1 ruined_wall_short; see looks.json props[]",
+  "floor_seal": "seal_slab (flat tile overlay)",
+  "well": "stone_well"
+ },
+ "optional": {
+  "cover_dressing": [
+   "ruined_wall_2c",
+   "fallen_log_2c"
+  ],
+  "decor": [
+   "lilac_bush",
+   "lilac_tuft",
+   "flower_tuft",
+   "clover_patch",
+   "pebbles_moss",
+   "fern"
+  ]
+ },
+ "not_checked_by_world_gate": "terrace[] pieces are not 128x64 tiles, so the world checker lists their PNGs as unreferenced (WARN, intended)"
+}

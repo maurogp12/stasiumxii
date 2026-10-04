@@ -1,0 +1,9 @@
+Godot Engine v4.7.stable.official.5b4e0cb0f - https://godotengine.org
+
+SWAY_OPAQUE_CHANGE changed=123745 opaque=134754 frac=0.9183
+LEAF_COVERAGE default 0.0000
+LEAF_COVERAGE x+ 0.0000 alpha 1.000
+LEAF_COVERAGE x- 0.0000 alpha 1.000
+LEAF_COVERAGE y+ 0.0000 alpha 0.000
+LEAF_COVERAGE y- 0.0000 alpha 1.000
+Jungle backdrop tests: 437 passed, 0 failed

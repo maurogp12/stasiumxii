@@ -1,0 +1,4 @@
+Reference only. Nothing copied. Read these in place:
+- /workspace/stasium-pc-look/refs/STASIUM_ART_BOT_GUIDE_2026-10-03.md   (Art Bot Guide copy, file mode 600)
+- /workspace/team_learning/SKILL_REPOS_BRIEF.md                        (team brief: PASS / FIX_REQUIRED / BLOCKED gates, SHA-256 manifests, 3D only as a 2D aid)
+See /workspace/handoff/HANDOFF_TA.md, item 6.

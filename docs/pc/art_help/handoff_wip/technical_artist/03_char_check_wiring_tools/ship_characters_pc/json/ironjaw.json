@@ -1,0 +1,418 @@
+{
+ "char": "ironjaw",
+ "status": "v3.2 = movement fix of v3.1 (approved look, no pixel edits): walk N/E re-phased to start on the idle stance boot (f00 = v3.1 f03); v3.1: idle S/W stance = walk S f00 stride; v3: cells padded, pivot on the soles",
+ "source": "/workspace/art/ironjaw_full/v3.2",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "size_tier": "big",
+ "target_board_height_px": 78,
+ "idle_f0_height_cell_px": {
+  "S": 135,
+  "W": 135,
+  "N": 136,
+  "E": 136
+ },
+ "draw_scale": 0.578,
+ "world_draw_scale": 0.532,
+ "board_height_px": {
+  "S": 78.0,
+  "W": 78.0,
+  "N": 78.6,
+  "E": 78.6
+ },
+ "head_hp_y": -87,
+ "draw_scale_note": "per class (size tiers): sprite scale = draw_scale in combat, world_draw_scale for the world walker (= draw_scale x 0.46/0.5). head_hp_y = -(tallest idle f0 head top above the feet x draw_scale + 8), node origin = feet.",
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 89.2,
+   "W": 89.2,
+   "N": 89.2,
+   "E": 89.2
+  },
+  "board_px_per_frame_at_draw_scale": {
+   "S": 4.295,
+   "W": 4.295,
+   "N": 4.295,
+   "E": 4.295
+  },
+  "walk_fps": 17.144,
+  "recommended_tile_sec": 0.486,
+  "walk_fps_if_tile_sec_0_22": 37.9,
+  "frames_per_cell": 8.33,
+  "cell_step_board_px": 35.78,
+  "timing_note": "feet stick when walk_fps x board_px_per_frame_at_draw_scale = board speed. Recommended: keep the authored walk_fps and move one cell per recommended_tile_sec (draw_scale 0.578). If WALK_TILE_SEC stays 0.22 s, the legs need walk_fps_if_tile_sec_0_22 (2.2x the authored cadence) to stick; with distance-driven frames that is what they will run at."
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/walk/ironjaw_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/walk/ironjaw_walk_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/walk/ironjaw_walk_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/walk/ironjaw_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/idle/ironjaw_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/idle/ironjaw_idle_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/idle/ironjaw_idle_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/idle/ironjaw_idle_E_fNN.png"
+    }
+   }
+  },
+  "attack": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/attack/ironjaw_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/attack/ironjaw_attack_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/attack/ironjaw_attack_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/attack/ironjaw_attack_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    165,
+    157
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/hit/ironjaw_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/hit/ironjaw_hit_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/hit/ironjaw_hit_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      82,
+      140
+     ],
+     "offset": [
+      -82,
+      -140
+     ],
+     "pivot_file": [
+      82,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/hit/ironjaw_hit_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    209,
+    183
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/death/ironjaw_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/death/ironjaw_death_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/death/ironjaw_death_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      104,
+      140
+     ],
+     "offset": [
+      -104,
+      -140
+     ],
+     "pivot_file": [
+      104,
+      140
+     ],
+     "frames": "ironjaw_full/v3.2/death/ironjaw_death_E_fNN.png"
+    }
+   }
+  }
+ }
+}
