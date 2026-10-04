@@ -5,6 +5,7 @@ extends SceneTree
 
 const BOARD := preload("res://board/pc/crosshaven_board.gd")
 const HUD := preload("res://ui/hud.gd")
+const PAIR := preload("res://tests/pc/pair_match.gd")
 
 var _out := "/tmp/l9_clip"
 var _size := Vector2i(1280, 720)
@@ -38,17 +39,7 @@ func _go() -> void:
 		await process_frame
 		if bool(board.get("_booted")):
 			break
-	sim.reset_match({
-		"seed": 1,
-		"map_id": "crosshaven",
-		"skip_deploy": true,
-		"classes": ["kestrel", "ironjaw"],
-		"kestrel_pos": Vector2i(7, 7),
-		"ironjaw_pos": _target,
-		"kestrel_facing": "E",
-		"ironjaw_facing": "W",
-		"rolls": [1],
-	})
+	sim.reset_match(PAIR.args("crosshaven", {"rolls": [1]}))
 	board._rebuild_pawns()
 	board._refresh()
 	board._fit_board_camera()

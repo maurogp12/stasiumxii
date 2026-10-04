@@ -1,4 +1,16 @@
-# l9_outdoor_board: Crosshaven combat board look kit (L9 outdoor, option A) — v1.1
+# l9_outdoor_board: Crosshaven combat board look kit (L9 outdoor, option A) — v1.2
+
+## v1.2 polish pass (Sat 3 Oct 2026, ET)
+Same ids, file names, canvas sizes, modes, anchors and json as v1.1. All four json files are byte-identical to v1.1, and the file list and every PNG size match the v1.1 backup (`/workspace/scratch/l9_v11_ship/`). Only pixels changed. Changed ids: `grass_top_a..d`, `grass_fringe_ne/nw/se/sw`, `grass_fringe_corner_n/e/s/w`, `raised_rim_ne/nw`, `grass_overhang_left/right`, `grass_overhang_corner_front/left/right`, `water_a/b` and `wet_earth_b` (each as `@2x` + 1x). Cliff faces, sandstone, `wet_earth_a`, the other overlays, `seal_slab` and props are unchanged.
+
+- **Grass, one new grade on every grass piece.** v1.1 was too dark, cool and noisy. The new grade sits about halfway between v1 and v1.1: sat ×1.45, gain 1.12, gamma 0.80, warm ×[1.60, 1.0, 0.58]. Pixels darker than their local mean (σ 5 px, wrap) are pulled 45 % toward it, then contrast ×0.82 around a fixed 0.6 pivot. Both steps keep the shared border band identical across variants. Result: mid value up, hue warmer toward yellow-green (not lime), dark-gap contrast about 25 % lower.
+  - Tiles: mean ≈ (97,160,34), hue ≈ 90°. v1.1 was (74,149,34), 99°; v1 was (98,158,3), 83° lime. The p5 dark-gap depth went from −31..−34 to −21..−25 (about −27 %).
+  - Whole 2x board, all grass pixels including lips and rims: luma 110 → 118 (v1 118), hue 99° → 93° (v1 83°), dark-gap −34 → −27.
+  - Fringes, fringe corners and `raised_rim_*` sample the new graded base, so they match automatically.
+  - Overhang strips and corners now match the tile colour fully (exponent 0.85 → 1.0). The hang darkening went 0.22 → 0.30, so the **deep-green underside stays as dark as v1.1** (left lip hang ≈ (41,86,24) vs v1.1 (34,82,26)) and raised blocks still pop.
+- **`wet_earth_b` puddle.** The v1.1 puddle covered about half the cell and read as a grey slab. The earth now comes from a puddle-free region of `wet_earth_v2.jpg`, and the swatch's middle puddle is cut out with its outline smoothed. It is shrunk to **≈ 0.20 of the cell area** (scale 4.2 → 5.0) and recoloured as a light-sky reflection: pale (0.74,0.87,0.96) at the far edge to (0.34,0.58,0.82) at the near edge, painted streaks kept, a dark far-bank reflection, a soft glint and a thin bright rim. A dark wet-earth ring (−50 %) grounds it. Only the cell interior is touched (border band unchanged; at most 0.002 of coverage falls in the fade). I chose the small puddle over 2-3 glints: glints would be 2-3 px at 1280 and read as noise, while the puddle reads as a small blue pool.
+- **Water.** Saturation +15 % (grade sat 1.06 → 1.22), plus a touch deeper teal toward each cell's centre. This is a 0 → 38 % pull toward a deeper teal (r ×0.33, g ×0.73, b ×0.88). It is zero in the border band so neighbours stay seamless, and it is broken up by low-frequency noise so it stays painterly and doesn't form a "pillow" per cell. Mean (104,191,171), sat 0.46 → (90,192,171), sat 0.53 (`water_a`).
+- **Board-edge skirt (mock only).** Shipping skirt variants would add ids, so the kit is unchanged. `mock.py` / `engine.render_board(skirt_variants=…)` pick among the shipped face plus 3 offset variants along the long front edges (y=14 row and x=14 column, deterministic sequence, never the same twice in a row). The variants are built by `build_terrace.py` into `/workspace/scratch/l9_build/skirt/v1..v3/`: a half-period shift and/or mirror of the periodic fieldstone strip, plus a vertical course warp that is 0 at both face edges. Variants butt seamlessly. If the loader wants the same effect, it needs either these 3×4 extra faces as new ids (schema change) or a per-cell UV offset.
 
 ## v1.1 polish pass (Sat 3 Oct 2026, ET)
 Same ids, file names, canvas sizes, anchors and json schema as v1 (verified by a key-by-key diff of all four json files, a file-list diff and a PNG size diff against the v1 folder). The json `version` fields stay `1` (int) so no type changes; this README is the revision record.
@@ -52,7 +64,7 @@ Every image ships as `<id>@2x.png` (master) plus a half-size `<id>.png` (premult
 | `props/` + `props/props.json` | Props in the Thunderwell `props.json` convention (props package). They are also listed in `atlas_meta.props[]`. |
 
 ### Tiles (`kind: floor`: exact opaque diamond with a 1 px AA rim)
-- `grass_top_a..d`: v1.1 meadow green from `grass_swatch_v2.jpg` (deeper, with value variation), with a few yellow flowers.
+- `grass_top_a..d`: meadow green from `grass_swatch_v2.jpg` with a few yellow flowers. v1.2 grade: a softer, sunnier yellow-green lawn, halfway between v1 and v1.1 (see the v1.2 section).
   - Variants come from the swatch at different offsets, scales, flips and small rotations, plus tone and clump noise.
   - All four share an **identical border band**, so any variant can sit next to any other with no seam. Seamless was checked on random 5x5 patches.
   - A soft cell groove at the border keeps grass cells countable, as in sample_A.
@@ -174,7 +186,7 @@ The dropped entries are kept in looks.json with `layer: "dropped"` and a note. I
 
 Tiles carry contact AO only through the fringe, foot_ao and lip decals. No long or cast shadows anywhere, so a global day/night or weather tint can recolour freely. If code later adds its own contact ellipse (the Thunderwell style, multiply ~0.35), strip the baked one or halve it to avoid doubling.
 
-## Gate (`python3 tools/check_assets.py`, run from /workspace/stasium-pc-look) — re-run for v1.1, same results as v1
+## Gate (`python3 tools/check_assets.py`, run from /workspace/stasium-pc-look) — re-run for v1.2 (Sat 3 Oct 2026 ET), same results as v1 / v1.1
 - `ship/l9_outdoor_board --package world` → **Overall WARN, 52 checked: 52 PASS, 0 WARN, 0 FAIL**, exit 0. Report: `ship/check_report_world_l9_outdoor_board.md`.
   - The only WARN is **UNREFERENCED terrace/*.png (22 files)**. This is intentional: the terrace pieces are not 128x64 tiles and the world schema has no slot for them. They are listed in `atlas_meta.terrace[]` and `looks.json`.
 - `ship/l9_outdoor_board/props --package props` → **Overall WARN, 0 FAIL, 0 unexpected**, exit 0. The report was moved to `ship/check_report_props_l9_outdoor_board.md` (the checker writes it into `ship/l9_outdoor_board/`, which the wiring PR copies, so it is moved out).
@@ -187,6 +199,8 @@ Tiles carry contact AO only through the fringe, foot_ao and lip decals. No long 
 | `mock_l9_1280.png`, `mock_l9_1920.png` | The board in the ship/crosshaven_jungle v4 backdrop: back_far + back_mid behind, front leaves on top with a cut-out over every cell. Camera matches the L7 capture (board ≈ 680 px wide at 1280, zoom 0.71 at 1x); canopy tint on, no leaf dapple on the board, no grade. |
 | `before_after_1280.jpg` | `current_ref_l7_cast_outdoor_1280.png` vs the new board, labelled. |
 | `kit_contact.png` | Every tile, overlay, terrace piece, assembled h1/h2/h3 blocks and props at 2x with a fighter bar. |
+| `v11_vs_v12_closeup.png`, `v1_vs_v12_closeup.png` | Same 2x crop (600,450)-(1400,950) of `mock_l9_board_2x`: v1.1 (or v1) left, v1.2 right, labelled. |
+| `*_v12.*` | Copies of the v1.2 renders: `mock_l9_board_2x_v12.png`, `mock_l9_1280_v12.png`, `mock_l9_1920_v12.png`, `before_after_1280_v12.jpg`, `kit_contact_v12.png`. The `*_v11.*` files are the v1.1 renders. |
 | `v1_vs_v11_closeup.png` | Same 2x crop of the board centre (600,450)-(1400,950) of `mock_l9_board_2x`: v1 left, v1.1 right. |
 | `*_v1.*` | The v1 renders kept for comparison: `mock_l9_board_2x_v1.png`, `mock_l9_1280_v1.png`, `mock_l9_1920_v1.png`, `before_after_1280_v1.jpg`, `kit_contact_v1.png`. |
 
@@ -197,11 +211,12 @@ Tiles carry contact AO only through the fringe, foot_ao and lip decals. No long 
 4. 2c pieces overdraw a fighter standing on their back cell (paint_only, sorted by the front cell). OK, or fade/block?
 5. Grade: everything is neutral. Mauro to choose.
 
-## Still weak after v1.1 (art that would still help)
-- **Wet-earth puddle** (`wet_earth_b`) is big, about half the cell wide, and reads as a grey slab at 1280. A swatch with smaller puddles (≈ 1/4 cell) would sit better.
+## Still weak after v1.2 (art that would still help)
+- **Puddle**: `wet_earth_b` now reads as water at 1280, but at 2x the recoloured pool is a little flat and pastel next to the painted earth (a sticker feel). A natively painted small sky-reflecting puddle would sit better.
+- **Water**: +15 % saturation and the deeper centre help, but the v1.1 swatch's pale cream streaks keep it lighter and milkier than v1's deep teal. If it should match v1 fully, the next step is to tone down the streaks, not add more saturation.
 - **Wall stub orientation**: `ruined_wall_short` runs along the y diagonal as painted, while both 2c pieces run along +x. It only appears at (1,0) now, but a +x stub would match.
 - **lilac_shrub** is still the v1 cut with a faded disc (the new sheet's shrub was all-purple). A no-disc shrub with green leaves and lilac flowers would finish the prop set.
-- **Board-edge skirt**: the fieldstone face repeats every cell along the long front edges and reads a little like a cobble plinth at 2x.
+- **Board-edge skirt**: v1.2 breaks the exact repeat in the mocks only (offset/mirror/course-warp variants, not shipped). The source strip is still one regular row of rounded cobbles, so it reads as a plinth at 2x. A strip with irregular fieldstones would fix it at the source.
 - **Sandstone grid**: seams are ~30 % softer as asked; at rest the slab grid is still visible (by design, each slab countable). If Mauro wants less, the next step is another ~30 % on grout darkness only.
 
-Build scripts (box only): `/workspace/scratch/l9_build/` (v1 versions backed up in `/workspace/scratch/l9_build_v1_backup/`): `build_tiles.py`, `build_overlays.py`, `build_terrace.py`, `cut.py`, `build_props.py`, `build_seal.py`, `design_looks.py`, `make_meta.py`, `make_atlas.py`, `mock.py`, `contact.py`.
+Build scripts (box only): `/workspace/scratch/l9_build/` (v1 versions backed up in `/workspace/scratch/l9_build_v1_backup/`, v1.1 in `/workspace/scratch/l9_build_v11_backup/`; the v1.1 ship folder is in `/workspace/scratch/l9_v11_ship/`; v1.2 adds `closeup_v12.py`): `build_tiles.py`, `build_overlays.py`, `build_terrace.py`, `cut.py`, `build_props.py`, `build_seal.py`, `design_looks.py`, `make_meta.py`, `make_atlas.py`, `mock.py`, `contact.py`.
