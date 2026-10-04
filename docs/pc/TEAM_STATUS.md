@@ -42,7 +42,7 @@ When those land, Claude reads them, copies the key facts into this file, and con
 
 | Work | PR / branch | Head (last push) | Where it stopped | Next step |
 |---|---|---|---|---|
-| Water regrade + sea shoreline | #251 `cursor/water-regrade-a156` | `e96cb73` (world bot pushed 12:32/12:45 despite hands-off; now hard-stopped) | **Claude take-over agent finishing**: it merges their 2 commits, makes the Northgate shore snow (theirs was sand), keeps the better open-sea fill, and uses soft foam | When it reports: view the stills, run 34 suites, post on #251, send Mauro the Northgate before/after, approve |
+| Water regrade + sea shoreline | #251 `cursor/water-regrade-a156` | `57a8517` | **Claude take-over DONE (15:20):** seamless world-space sea (lattice gone), Northgate snow shore, map-edge cloud sheet follows the camera plus a 4-cell fade, soft foam; world bot commits merged; `pc/world-zones` ef3bcc9 merged in; Fisher-cell rack moved. Agent's run 34/34; **my 34-suite verification is running**. Northgate before/after sent to Mauro. Remaining: faint grid in the Eastmarch inlet/rivers (per-tile water, out of scope); foam steps on stepped coast | When green: post on #251 that the take-over is done, approve, merge into `pc/world-zones` |
 | Town NPCs + missions | #253 (**merged 12:54**) | `4dc3b7d` | **Done.** #250 closed. 34-suite check on the merged `pc/world-zones` (`ef3bcc9`) running | none |
 | Drop Millrace dungeon | #249 (merged 11:12) | `ccb7c56` | **Done** | none |
 | Old NPC stand-ins | #250 | `808d3d8` | **Closed** (superseded by #253) | none |
