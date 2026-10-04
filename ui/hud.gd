@@ -2007,13 +2007,13 @@ func _layout_ability_cluster(primary: String, arc: Array) -> void:
 	for i in arc.size():
 		var spell_id := str(arc[i])
 		if i < arc_centers.size() and _spell_hosts.has(spell_id):
-			_place_spell_host(spell_id, arc_centers[i], false)
+			_place_spell_host(spell_id, arc_centers[i], false, arc.size())
 	_ability_cluster.visible = primary != "" or not arc.is_empty()
 
 
-func _place_spell_host(spell_id: String, center: Vector2, primary: bool) -> void:
+func _place_spell_host(spell_id: String, center: Vector2, primary: bool, arc_count: int = 0) -> void:
 	var host: Control = _spell_hosts[spell_id]
-	var size := TOUCH.cluster_button_size(primary)
+	var size := TOUCH.cluster_button_size(primary, arc_count)
 	host.custom_minimum_size = size
 	host.size = size
 	host.position = center - size * 0.5

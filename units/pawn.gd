@@ -61,6 +61,12 @@ var team: int = 0
 var stasis_sprite: String = ""
 ## Room B foe: drawn bigger, with a BossAura on the ground (view only).
 var stasis_boss: bool = false
+## Mirror of the boss sheet cell on screen (west from an east sheet).
+var _boss_mirror: float = 0.0
+## Boss walk: tiles stepped on this path (one step per tile) and the last
+## gait clock, so a new tile is seen when the clock wraps.
+var _boss_tile: int = 0
+var _boss_last_t: float = 0.0
 var hp: int = 80
 var max_hp: int = 80
 var alive: bool = true
@@ -127,6 +133,7 @@ var _foot: FootMark
 const VIEW_MOTION := preload("res://units/view_motion.gd")
 const STRIP_LIBRARY := preload("res://units/strip_library.gd")
 const FIGURE_SHADER := preload("res://units/figure_read.gdshader")
+const BOSS_SHEETS := preload("res://units/boss_sheets.gd")
 
 const FACING_ISO := {
 	"N": Vector2(20, -10),
@@ -155,7 +162,8 @@ const CLASS_PRESENTATION_SCALE := {
 }
 ## One cell of travel, straight or diagonal. Equal time keeps the slide even.
 ## Phase A tile time. Do not stretch this to hide a short or long cycle.
-const WALK_TILE_SEC := 0.30
+## Glide walk (Mauro 2 Oct 2026): a calmer, Wakfu-like pace per tile.
+const WALK_TILE_SEC := 0.34
 const WALK_HOP_SEC := WALK_TILE_SEC
 ## Authored back/down-left walk: 6 frames at 12 fps (864×160). East march
 ## is 12 frames at 12 fps. Playback is walk_playback_fps(count), so one
@@ -212,9 +220,16 @@ func _monster_scale() -> float:
 
 ## Stasis foe art may be drawn at 2x (288x320): same world size, more detail.
 func _stasis_res() -> float:
-	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite) or _sprite.texture == null:
+	if stasis_sprite == "" or _sprite == null or not is_instance_valid(_sprite):
 		return 1.0
-	var h := float(_sprite.texture.get_height())
+	# The painting sets the size; a boss sheet cell (even a taller walk cell)
+	# draws at the same world scale.
+	var tex := _stasis_texture(stasis_sprite)
+	if tex == null:
+		tex = _sprite.texture
+	if tex == null:
+		return 1.0
+	var h := float(tex.get_height())
 	return 160.0 / h if h > 0.0 else 1.0
 
 
@@ -519,6 +534,10 @@ func begin_segment_walk(dir: String) -> bool:
 		return false
 	_driven_walk = true
 	_path_walk = true
+	# Monsters have no walk strip: the gait moves the painting (or a boss
+	# walk sheet). Without this the glide walk slid them like a card.
+	if stasis_sprite != "":
+		return true
 	if not _present_driven_walk():
 		return false
 	return body_is_segment_walk(face if face != "" else facing)
@@ -761,6 +780,8 @@ func sample_driven_gait(t: float) -> void:
 	_kill_bounce()
 	var u := clampf(t, 0.0, 1.0)
 	_apply_hop_visual(u)
+	if stasis_sprite != "":
+		return
 	_apply_driven_cycle(u)
 
 
@@ -884,6 +905,8 @@ func end_path_walk() -> void:
 	_driven_step = 0
 	_driven_open = false
 	_driven_walk = false
+	_boss_tile = 0
+	_boss_last_t = 0.0
 	_kill_bounce()
 	_kill_action()
 	_motion_playing = false
@@ -1448,6 +1471,63 @@ func _sync_boss_aura() -> void:
 		aura.queue_free()
 
 
+## Shows frame t (0..1) of a boss sheet for the current facing. False when
+## this is not a boss or the sheet is missing (the painting stays up).
+func _boss_frame(anim: String, t: float, cycle: bool = false) -> bool:
+	if not stasis_boss or _sprite == null or not is_instance_valid(_sprite):
+		return false
+	var info := BOSS_SHEETS.frames_for(stasis_sprite, anim, str(facing))
+	if info.is_empty():
+		return false
+	var frames: Array = info["frames"]
+	var index := BOSS_SHEETS.cycle_index(t, frames.size(), _boss_tile) if cycle else BOSS_SHEETS.once_index(t, frames.size())
+	_show_boss_cell(frames[index], bool(info["mirror"]))
+	return true
+
+
+## Boss at rest: the idle sheet loop (clock in seconds), else the painting.
+## True when an idle sheet drew the body.
+func _boss_rest(seconds: float = 0.0) -> bool:
+	if not stasis_boss or _sprite == null or not is_instance_valid(_sprite):
+		return false
+	var info := BOSS_SHEETS.frames_for(stasis_sprite, "idle", str(facing))
+	if info.is_empty():
+		if _sprite.texture != _stasis_texture(stasis_sprite) and BOSS_SHEETS.has_any(stasis_sprite):
+			_sprite.texture = _stasis_texture(stasis_sprite)
+			_sprite.offset = _foe_offset(float(_sprite.texture.get_height()) if _sprite.texture != null else 320.0)
+			_apply_figure_read()
+		return false
+	var frames: Array = info["frames"]
+	_show_boss_cell(frames[BOSS_SHEETS.idle_index(seconds, frames.size())], bool(info["mirror"]))
+	return true
+
+
+func _show_boss_cell(cell: Texture2D, mirror: bool) -> void:
+	if _sprite.texture != cell:
+		_sprite.texture = cell
+		_sprite.offset = _foe_offset(float(cell.get_height()))
+	_boss_mirror = 1.0 if mirror else 0.0
+	var mat := _sprite.material as ShaderMaterial
+	if mat != null:
+		_write_boss_cell_read(mat)
+
+
+## Sprite offset that puts the cell's feet line (FEET_Y) on the tile, the same
+## spot as the painting's feet (painting 320 tall → SPRITE_OFFSET / res).
+func _foe_offset(cell_h: float) -> Vector2:
+	var hover := float(foe_body_for(stasis_sprite)["hover"])
+	var lift := hover / maxf(_sprite.scale.y, 0.001)
+	return Vector2(0.0, -(float(BOSS_SHEETS.FEET_Y) - cell_h * 0.5) - 4.0 - lift)
+
+
+## The painter animates the breath on a boss sheet; the shader breath would
+## double it. The sheet's own mirror replaces the painting's turn.
+func _write_boss_cell_read(mat: ShaderMaterial) -> void:
+	mat.set_shader_parameter("mirror", _boss_mirror)
+	mat.set_shader_parameter("breath", 0.0)
+	mat.set_shader_parameter("sway", 0.0)
+
+
 func _ensure_foot() -> void:
 	if _foot != null and is_instance_valid(_foot):
 		return
@@ -1545,6 +1625,10 @@ const FOE_KIND := {
 	"slagheart_the_emberbrute": ["brute", ""],
 	"serra_the_gale_sentinel": ["flyer", ""],
 	"tyrant_coilspire": ["brute", ""],
+	# 5-star bosses (Mauro 2 Oct 2026): framed sheets; the portrait is idle frame 0.
+	"sheaf_sovereign": ["brute", ""],
+	"brineclaw_sovereign": ["brute", ""],
+	"slagheart_caldera_crown": ["brute", ""],
 	# Caster stand-ins (recoloured melee paintings): they hover like spell
 	# channelers so they read as ranged on the board.
 	"caster_scribe_bolt": ["flyer", "right"],
@@ -1608,6 +1692,8 @@ func _write_figure_read(mat: ShaderMaterial) -> void:
 		mat.set_shader_parameter("breath_rate", float(body["rate"]))
 		mat.set_shader_parameter("breath_phase", float(seat) * 2.1 + float(unit_name.hash() % 97) * 0.13)
 		mat.set_shader_parameter("mirror", foe_mirror(str(body["faces"]), facing_screen()))
+		if stasis_boss and mat == _sprite.material and _sprite.texture is AtlasTexture:
+			_write_boss_cell_read(mat)
 
 
 func _apply_figure_read() -> void:
@@ -1666,6 +1752,7 @@ func _sync_sprite() -> void:
 		_sprite.offset = SPRITE_OFFSET / _stasis_res() - Vector2(0.0, hover / maxf(_sprite.scale.y, 0.001))
 		_sync_boss_aura()
 		_apply_figure_read()
+		_boss_rest()
 		if not _flashing:
 			_sprite.modulate = rest_modulate()
 		_sprite.visible = true
@@ -1813,6 +1900,13 @@ func _apply_foe_gait(t: float) -> void:
 	var body := foe_body_for(stasis_sprite, stasis_boss)
 	var dir_x := signf(facing_screen().x)
 	var gait := foe_gait(str(body.get("kind", "brute")), stasis_boss, t, dir_x)
+	# A boss walk sheet steps on its own legs: keep only a little of the
+	# painting's stomp and lean on top of it.
+	if t < _boss_last_t - 0.25:
+		_boss_tile += 1
+	_boss_last_t = t
+	if _boss_frame("walk", t, true):
+		gait = {"offset": gait["offset"] * 0.25, "lean": float(gait["lean"]) * 0.3, "squash": float(gait["squash"]) * 0.3}
 	_place_body(gait["offset"])
 	_ride_chrome(Vector2.ZERO)
 	_apply_sprite_mul(Vector2.ONE)
@@ -1860,6 +1954,7 @@ func _reset_walk_scale() -> void:
 
 func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 	var pose: Dictionary = VIEW_MOTION.attack_pose(t, dir, reach)
+	_boss_frame("attack", t)
 	_apply_body_pose(pose)
 	_sync_impact_freeze(t, false)
 	_place_gesture(VIEW_MOTION.attack_phase(t), dir, pose.get("pos", Vector2.ZERO))
@@ -1867,6 +1962,7 @@ func _sample_attack(t: float, dir: Vector2, reach: float = -1.0) -> void:
 
 func _sample_cast(t: float, dir: Vector2 = Vector2.ZERO) -> void:
 	var pose: Dictionary = VIEW_MOTION.cast_pose(t, dir)
+	_boss_frame("cast", t)
 	_apply_body_pose(pose)
 	_sync_impact_freeze(t, true)
 	var aim := dir if dir.length_squared() > 0.01 else facing_screen()
@@ -1961,6 +2057,8 @@ func _sample_hit(t: float, dir: Vector2) -> void:
 	# A struck foe reels from the blow (upper body first) and buckles.
 	var reel := sin(clampf(t, 0.0, 1.0) * PI) * (1.0 - clampf(t, 0.0, 1.0) * 0.4)
 	var away := signf(dir.x) if absf(dir.x) > 0.01 else 1.0
+	if _boss_frame("hit", t):
+		reel *= 0.4
 	_set_foe_body(away * reel * FOE_HIT_LEAN, reel * 0.06)
 	var scaled := _body_scale_mul(mul)
 	_sprite.position = pos
@@ -2141,6 +2239,9 @@ func _sample_idle(_t: float) -> void:
 	var bob := Vector2(0.0, sin((now + phase) * TAU / VIEW_MOTION.IDLE_PERIOD) * VIEW_MOTION.IDLE_BOB_PX)
 	if stasis_sprite != "":
 		bob = foe_idle_offset(foe_body_for(stasis_sprite, stasis_boss), now + phase)
+		# A boss idle sheet breathes on its own frames.
+		if _boss_rest(now + phase):
+			bob = Vector2.ZERO
 	_sprite.position = bob
 	if _walk_idle_plant and _active_strip != null and is_instance_valid(_active_strip):
 		_active_strip.position = bob

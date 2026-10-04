@@ -42,6 +42,8 @@ const PULSE_TAP := "pulse_tap"
 const WARD := "ward"
 const CLEANSE := "cleanse"
 const HEARTSTOP := "heartstop"
+## Mender revive (Mauro 3 Oct 2026: sixth spell, 6 AP, once per match).
+const REKINDLE := "rekindle"
 const CUT := "cut"
 const DROP_SHADE := "drop_shade"
 const AMBUSH := "ambush"
@@ -239,6 +241,28 @@ const SPELLS := {
 		"engine_on_connect": "pulse",
 		"remove_cc": 1,
 	},
+	# Mauro 3 Oct 2026: "Yes, add it as a sixth spell it cost 6 ap and only once
+	# per match". Range 1–2 and 30% HP are the proposal he answered yes to.
+	# Mauro 4 Oct 2026: "6 pa and 6 pulse yes" — needs and spends full Pulse.
+	# Brings a fallen teammate back; nothing to revive in a 1v1.
+	REKINDLE: {
+		"id": REKINDLE,
+		"name": "Rekindle",
+		"class_id": CLASS_MENDER,
+		"ap": 6,
+		"mp": 0,
+		"range_mode": "chebyshev",
+		"min_range": 1,
+		"max_range": 2,
+		"rolls": false,
+		"element": "water",
+		"target": "fallen_ally",
+		"revive_pct": 30,
+		"requires_pulse": 6,
+		"spend_pulse": 6,
+		"once_per_match": true,
+		"no_facing": true,
+	},
 	HEARTSTOP: {
 		"id": HEARTSTOP,
 		"name": "Heartstop",
@@ -428,7 +452,7 @@ const SPELLS := {
 const CLASS_SPELLS := {
 	CLASS_KESTREL: [MARK_SHOT, DETONATE],
 	CLASS_IRONJAW: [ADVANCE, STRIKE, SHOULDER, CRUSH],
-	CLASS_MENDER: [MEND, PULSE_TAP, WARD, CLEANSE, HEARTSTOP],
+	CLASS_MENDER: [MEND, PULSE_TAP, WARD, CLEANSE, HEARTSTOP, REKINDLE],
 	CLASS_GLOAM: [CUT, DROP_SHADE, AMBUSH, FADE, NIGHTFOLD],
 	CLASS_BASTION: [BASH, PLANT, HOLD_LINE, SNAP_WALL, AEGIS_BREAK],
 }

@@ -35,6 +35,11 @@ const CLUSTER_EDGE := 8.0
 const CLUSTER_ARC_RADIUS := 160.0
 const CLUSTER_ARC_START_DEG := -96.0
 const CLUSTER_ARC_END_DEG := -176.0
+## Six-spell kits (Mender with Rekindle): five arc circles fit on a wider
+## ring with smaller buttons.
+const CROWDED_ARC_COUNT := 5
+const CROWDED_ARC_RADIUS := 172.0
+const CROWDED_BUTTON_SIZE := Vector2(58, 58)
 ## Unchanged desktop diamond pick. See local_to_grid in board_view.gd.
 const CELL_PICK_RADIUS := 22.0
 ## Off-board finger slop. Interior taps use the painted diamond, not this circle.
@@ -411,19 +416,22 @@ static func cluster_centers(arc_count: int) -> Dictionary:
 	if count > 0:
 		var start := deg_to_rad(CLUSTER_ARC_START_DEG)
 		var end := deg_to_rad(CLUSTER_ARC_END_DEG)
+		var radius := CROWDED_ARC_RADIUS if count >= CROWDED_ARC_COUNT else CLUSTER_ARC_RADIUS
 		for i in count:
 			var t := 0.5 if count == 1 else float(i) / float(count - 1)
 			var angle := lerpf(start, end, t)
-			arc.append(primary + Vector2(CLUSTER_ARC_RADIUS, 0.0).rotated(angle))
+			arc.append(primary + Vector2(radius, 0.0).rotated(angle))
 	return {"primary": primary, "arc": arc}
 
 
-static func cluster_button_size(primary: bool) -> Vector2:
-	return PRIMARY_BUTTON_SIZE if primary else ABILITY_BUTTON_SIZE
+static func cluster_button_size(primary: bool, arc_count: int = 0) -> Vector2:
+	if primary:
+		return PRIMARY_BUTTON_SIZE
+	return CROWDED_BUTTON_SIZE if arc_count >= CROWDED_ARC_COUNT else ABILITY_BUTTON_SIZE
 
 
-static func cluster_button_rect(center: Vector2, primary: bool) -> Rect2:
-	var size := cluster_button_size(primary)
+static func cluster_button_rect(center: Vector2, primary: bool, arc_count: int = 0) -> Rect2:
+	var size := cluster_button_size(primary, arc_count)
 	return Rect2(center - size * 0.5, size)
 
 

@@ -35,6 +35,10 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 				moves.append(intent)
 			"end_turn":
 				end_turn = intent
+	# 0. Bring a fallen teammate back (Mender's Rekindle, once per match).
+	for intent in casts:
+		if str(SpellKits.spell(str(intent.get("spell", ""))).get("target", "")) == "fallen_ally":
+			return intent
 	# 1. Support a hurt teammate.
 	var heal := _best_support(casts, snap, team)
 	if not heal.is_empty():

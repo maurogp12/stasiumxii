@@ -158,7 +158,7 @@ func _test_hud_paints_snapshot() -> void:
 		"classes": ["mender", "bastion"],
 	})
 	var snap: Dictionary = sim.snapshot()
-	eq(CombatHUD.offered_cast_ids(snap["units"][0]), ["mend", "pulse_tap", "ward", "cleanse", "heartstop"], "mender bar uses card ids")
+	eq(CombatHUD.offered_cast_ids(snap["units"][0]), ["mend", "pulse_tap", "ward", "cleanse", "heartstop", "rekindle"], "mender bar uses card ids (Rekindle sixth, Mauro 3 Oct 2026)")
 	eq(CombatHUD.offered_cast_ids(snap["units"][1]).has("snap_wall"), true, "bastion bar includes Snap Wall")
 	eq(CombatHUD.offered_cast_ids(snap["units"][1]).has("nightfold"), false, "bastion bar does not invent Nightfold")
 	var hud := CombatHUD.new()

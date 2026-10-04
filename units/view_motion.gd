@@ -46,9 +46,17 @@ const HOP_PX := 3.0
 ## Last 18% of the tile tween. Travel has arrived, hop Y is 0, and the walk
 ## strip is the foot-down cell. Not a Mario bounce. Do not stretch tile time.
 const HOP_PLANT_AT := 0.82
+## Mauro 2 Oct 2026 ("focus on the walking", Wakfu video): GLIDE walk. One
+## smooth glide at constant speed across the whole path, the stride cycling
+## without a stop on every tile, two soft footfall bobs per tile, easing only
+## on the first and last tile. The hop / plant curves below stay for GLIDE off.
+## A static var so the old hop / plant walk (GLIDE off) stays testable.
+static var glide: bool = true
+## Footfall bob height as a share of the class hop crest.
+const GLIDE_BOB_SHARE := 0.45
 ## One hop per tile. Matches Pawn.WALK_TILE_SEC. Driven steps sample the
 ## strip from the tween, so this period is not a free clock.
-const WALK_STEP_SEC := 0.30
+const WALK_STEP_SEC := 0.34
 ## Weight shift before the first tile and before a direction change only.
 ## About one frame at the 20 fps playback rate. Facing is already set.
 ## A 180 uses this same settle after the plant, not a mid-tile spin.
@@ -119,7 +127,9 @@ const DEATH_SEC := 0.55
 const DEATH_SQUASH_X := 1.28
 const DEATH_SQUASH_Y := 0.34
 const DEATH_TILT_DEG := 26.0
-const DEATH_FADE_ALPHA := 0.0
+## A fallen hero stays on the floor, greyed, so Mender's Rekindle can target
+## the body (Mauro 3 Oct 2026). Monsters still leave the board (Pawn).
+const DEATH_FADE_ALPHA := 0.8
 const DEATH_DROP_PX := 18.0
 ## Collapse finishes here, then the pose holds through the rest of the beat.
 const DEATH_COLLAPSE_AT := 0.42
@@ -521,6 +531,8 @@ static func hop_crest_px(class_id: String) -> float:
 ## time. Straight tiles chain this curve with no extra settle. It is not a
 ## raw lerp, and it is not an expo-out hop.
 static func step_travel(t: float) -> float:
+	if glide:
+		return clampf(t, 0.0, 1.0)
 	if t <= 0.0:
 		return 0.0
 	if t >= HOP_PLANT_AT:
@@ -540,6 +552,12 @@ static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0, c
 	if count <= 1:
 		return 0
 	var plant := clampi(contact, 0, count - 1)
+	if glide:
+		# Continuous stride: every cell in turn across the tile, then the next
+		# tile starts on the contact again, so the seam never repeats a cell.
+		if t <= 0.0 or t >= 1.0:
+			return plant
+		return (plant + clampi(int(floor(t * float(count))), 0, count - 1)) % count
 	if t <= 0.0 or t >= 1.0 or t >= HOP_PLANT_AT:
 		return plant
 	var passing := count - 1
@@ -569,13 +587,33 @@ static func stride_lead(_t: float, _facing_dir: Vector2) -> Vector2:
 
 ## First tile of a path, and a direction change. Not a straight middle tile.
 static func anticipate_segment(segment_index: int, facing_changed: bool) -> bool:
+	if glide:
+		# The glide turns on the move; only the very first step leans in.
+		return segment_index <= 0
 	return segment_index <= 0 or facing_changed
 
 
 ## Dust when the facing changes, and on the last plant. Straight middle
 ## tiles stay quiet.
 static func dust_on_plant(facing_changed: bool, is_final: bool) -> bool:
+	if glide:
+		return is_final
 	return facing_changed or is_final
+
+
+## Glide path ease: the first tile accelerates, the last one slows down, the
+## tiles between keep a constant speed. A one-tile walk eases both ways.
+static func glide_travel(t: float, first: bool, last: bool) -> float:
+	var u := clampf(t, 0.0, 1.0)
+	if first and last:
+		return u * u * (3.0 - 2.0 * u)
+	if first:
+		# Ease-in that leaves the tile at full speed (slope 1 at u = 1).
+		return u * u * (2.0 - u) * 0.5 + u * 0.5
+	if last:
+		var v := 1.0 - u
+		return 1.0 - (v * v * (2.0 - v) * 0.5 + v * 0.5)
+	return u
 
 
 ## The puff is the landing: the sample where hop Y returns to 0.
@@ -645,6 +683,12 @@ static func screen_facing(delta: Vector2) -> String:
 ## Values above 4px clamp, so a class mass cannot clear the cap.
 static func hop_offset(t: float, crest: float = -1.0) -> Vector2:
 	var amp := HOP_PX if crest < 0.0 else clampf(crest, 0.0, 4.0)
+	if glide:
+		# Two footfalls per tile (t = 0, 0.5, 1): a soft rise between them.
+		if t <= 0.0 or t >= 1.0:
+			return Vector2.ZERO
+		var s := sin(t * TAU)
+		return Vector2(0.0, -amp * GLIDE_BOB_SHARE * s * s)
 	if t <= 0.0 or t >= 1.0 or t >= HOP_PLANT_AT:
 		return Vector2.ZERO
 	var rise := 0.0
@@ -661,6 +705,8 @@ static func hop_offset(t: float, crest: float = -1.0) -> Vector2:
 ## plant, Y eases from PLANT_SQUASH_Y back to 1. X stays 1. The pawn node,
 ## the foot, and chrome do not read this.
 static func plant_scale(t: float) -> Vector2:
+	if glide:
+		return Vector2.ONE
 	if t < HOP_PLANT_AT or t >= 1.0:
 		return Vector2.ONE
 	var window := maxf(1.0 - HOP_PLANT_AT, 0.0001)
