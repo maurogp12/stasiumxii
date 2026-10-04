@@ -1,0 +1,5442 @@
+{
+ "meta": {
+  "cell": [
+   512,
+   360
+  ],
+  "pivot": [
+   256,
+   329
+  ],
+  "fps": 17.144,
+  "frames": 12,
+  "camera": {
+   "type": "orthographic",
+   "azimuth_deg": 45.0,
+   "elevation_deg_below_horizontal": 30.0,
+   "ortho_scale": 494.6236559139785
+  },
+  "char": "kestrel",
+  "label": "Kestrel (ranger)",
+  "world_height_units": 250,
+  "notes": "Blockout walk guide (clay + part ID + joints) in the Ironjaw TA format. Joints are camera projections in the 512x360 cell, pivot (256,329) is the ground under the pelvis. S walks down-right, E walks up-right; W = mirror of S, N = mirror of E. draw_order is nearest-camera first (part-centre depth). rotation_deg: 0 = straight down, positive = clockwise on screen. visible_length_scale = projected length / idle."
+ },
+ "facings": {
+  "idle_S": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      216.944
+     ],
+     "chest": [
+      258.553,
+      173.507
+     ],
+     "neck": [
+      260.34,
+      143.101
+     ],
+     "head_top": [
+      264.208,
+      109.421
+     ],
+     "R_shoulder": [
+      240.616,
+      161.395
+     ],
+     "R_elbow": [
+      233.077,
+      200.457
+     ],
+     "R_wrist": [
+      240.058,
+      238.417
+     ],
+     "R_hip": [
+      245.021,
+      226.916
+     ],
+     "R_knee": [
+      260.867,
+      281.112
+     ],
+     "R_ankle": [
+      249.778,
+      325.686
+     ],
+     "R_toe": [
+      268.992,
+      343.865
+     ],
+     "R_heel": [
+      243.374,
+      332.568
+     ],
+     "L_shoulder": [
+      279.043,
+      142.182
+     ],
+     "L_elbow": [
+      280.68,
+      176.932
+     ],
+     "L_wrist": [
+      290.515,
+      211.049
+     ],
+     "L_hip": [
+      266.979,
+      215.937
+     ],
+     "L_knee": [
+      278.183,
+      270.407
+     ],
+     "L_ankle": [
+      262.221,
+      312.144
+     ],
+     "L_toe": [
+      281.435,
+      330.324
+     ],
+     "L_heel": [
+      255.817,
+      319.027
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "cape_u",
+     "L_uarm",
+     "quiver",
+     "R_thigh",
+     "pelvis",
+     "L_farm",
+     "L_hand",
+     "L_thigh",
+     "cape_l",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -168.5,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": 10.92,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -16.3,
+      "visible_length_scale": 1.0
+     },
+     "R_shin": {
+      "rotation_deg": 13.97,
+      "visible_length_scale": 1.0
+     },
+     "R_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -167.26,
+      "visible_length_scale": 1.0
+     },
+     "L_uarm": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -11.62,
+      "visible_length_scale": 1.0
+     },
+     "L_shin": {
+      "rotation_deg": 20.93,
+      "visible_length_scale": 1.0
+     },
+     "L_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -160.95,
+      "visible_length_scale": 1.0
+     },
+     "hood": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.64,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 8.94,
+      "visible_length_scale": 1.0
+     },
+     "cape_l": {
+      "rotation_deg": 6.72,
+      "visible_length_scale": 1.0
+     },
+     "quiver": {
+      "rotation_deg": 153.36,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 141.68,
+      "visible_length_scale": 1.0
+     }
+    }
+   }
+  },
+  "walk_S": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      223.667
+     ],
+     "chest": [
+      258.359,
+      180.32
+     ],
+     "neck": [
+      260.01,
+      149.978
+     ],
+     "head_top": [
+      263.584,
+      116.434
+     ],
+     "R_shoulder": [
+      238.969,
+      167.525
+     ],
+     "R_elbow": [
+      227.296,
+      203.246
+     ],
+     "R_wrist": [
+      229.518,
+      241.216
+     ],
+     "R_hip": [
+      246.229,
+      234.183
+     ],
+     "R_knee": [
+      276.658,
+      283.813
+     ],
+     "R_ankle": [
+      271.384,
+      334.89
+     ],
+     "R_toe": [
+      291.721,
+      347.683
+     ],
+     "R_heel": [
+      267.162,
+      344.462
+     ],
+     "L_shoulder": [
+      280.108,
+      149.77
+     ],
+     "L_elbow": [
+      291.859,
+      189.079
+     ],
+     "L_wrist": [
+      312.415,
+      221.85
+     ],
+     "L_hip": [
+      265.771,
+      222.116
+     ],
+     "L_knee": [
+      282.244,
+      275.599
+     ],
+     "L_ankle": [
+      249.891,
+      300.461
+     ],
+     "L_toe": [
+      266.796,
+      323.004
+     ],
+     "L_heel": [
+      241.66,
+      304.194
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "L_uarm",
+     "L_hand",
+     "L_farm",
+     "cape_u",
+     "quiver",
+     "R_thigh",
+     "pelvis",
+     "R_shin",
+     "R_boot",
+     "R_bootshaft",
+     "L_thigh",
+     "cape_l",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.88,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.27,
+      "visible_length_scale": 0.99
+     },
+     "head": {
+      "rotation_deg": -176.88,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 18.09,
+      "visible_length_scale": 0.945
+     },
+     "R_farm": {
+      "rotation_deg": -3.35,
+      "visible_length_scale": 0.986
+     },
+     "R_hand": {
+      "rotation_deg": -3.35,
+      "visible_length_scale": 0.985
+     },
+     "R_thigh": {
+      "rotation_deg": -31.51,
+      "visible_length_scale": 1.031
+     },
+     "R_shin": {
+      "rotation_deg": 5.89,
+      "visible_length_scale": 1.118
+     },
+     "R_boot": {
+      "rotation_deg": -82.53,
+      "visible_length_scale": 0.885
+     },
+     "R_bootshaft": {
+      "rotation_deg": -174.58,
+      "visible_length_scale": 1.107
+     },
+     "L_uarm": {
+      "rotation_deg": -16.64,
+      "visible_length_scale": 1.179
+     },
+     "L_farm": {
+      "rotation_deg": -32.1,
+      "visible_length_scale": 1.09
+     },
+     "L_hand": {
+      "rotation_deg": -32.1,
+      "visible_length_scale": 1.089
+     },
+     "L_thigh": {
+      "rotation_deg": -17.12,
+      "visible_length_scale": 1.006
+     },
+     "L_shin": {
+      "rotation_deg": 52.46,
+      "visible_length_scale": 0.913
+     },
+     "L_boot": {
+      "rotation_deg": -53.19,
+      "visible_length_scale": 1.121
+     },
+     "L_bootshaft": {
+      "rotation_deg": -132.21,
+      "visible_length_scale": 0.907
+     },
+     "hood": {
+      "rotation_deg": -176.88,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.88,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 10.19,
+      "visible_length_scale": 0.964
+     },
+     "cape_l": {
+      "rotation_deg": 9.66,
+      "visible_length_scale": 0.906
+     },
+     "quiver": {
+      "rotation_deg": 151.73,
+      "visible_length_scale": 1.034
+     },
+     "bow": {
+      "rotation_deg": 144.61,
+      "visible_length_scale": 0.989
+     }
+    }
+   },
+   "f01": {
+    "joints": {
+     "pelvis": [
+      254.902,
+      222.535
+     ],
+     "chest": [
+      257.288,
+      179.177
+     ],
+     "neck": [
+      258.958,
+      148.826
+     ],
+     "head_top": [
+      262.572,
+      115.264
+     ],
+     "R_shoulder": [
+      238.087,
+      166.476
+     ],
+     "R_elbow": [
+      226.914,
+      202.704
+     ],
+     "R_wrist": [
+      229.749,
+      240.733
+     ],
+     "R_hip": [
+      244.962,
+      232.982
+     ],
+     "R_knee": [
+      272.177,
+      284.311
+     ],
+     "R_ankle": [
+      265.792,
+      333.552
+     ],
+     "R_toe": [
+      285.129,
+      351.366
+     ],
+     "R_heel": [
+      259.538,
+      340.65
+     ],
+     "L_shoulder": [
+      278.875,
+      148.52
+     ],
+     "L_elbow": [
+      289.429,
+      187.444
+     ],
+     "L_wrist": [
+      308.985,
+      220.971
+     ],
+     "L_hip": [
+      264.842,
+      221.053
+     ],
+     "L_knee": [
+      280.41,
+      274.225
+     ],
+     "L_ankle": [
+      245.77,
+      293.575
+     ],
+     "L_toe": [
+      259.172,
+      319.192
+     ],
+     "L_heel": [
+      236.174,
+      293.787
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "L_uarm",
+     "cape_u",
+     "quiver",
+     "L_hand",
+     "L_farm",
+     "R_thigh",
+     "pelvis",
+     "R_shin",
+     "L_thigh",
+     "R_bootshaft",
+     "R_boot",
+     "cape_l",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.17,
+      "visible_length_scale": 0.991
+     },
+     "head": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 17.14,
+      "visible_length_scale": 0.953
+     },
+     "R_farm": {
+      "rotation_deg": -4.26,
+      "visible_length_scale": 0.988
+     },
+     "R_hand": {
+      "rotation_deg": -4.26,
+      "visible_length_scale": 0.988
+     },
+     "R_thigh": {
+      "rotation_deg": -27.93,
+      "visible_length_scale": 1.029
+     },
+     "R_shin": {
+      "rotation_deg": 7.39,
+      "visible_length_scale": 1.081
+     },
+     "R_boot": {
+      "rotation_deg": -67.28,
+      "visible_length_scale": 0.991
+     },
+     "R_bootshaft": {
+      "rotation_deg": -173.22,
+      "visible_length_scale": 1.074
+     },
+     "L_uarm": {
+      "rotation_deg": -15.17,
+      "visible_length_scale": 1.159
+     },
+     "L_farm": {
+      "rotation_deg": -30.25,
+      "visible_length_scale": 1.093
+     },
+     "L_hand": {
+      "rotation_deg": -30.26,
+      "visible_length_scale": 1.093
+     },
+     "L_thigh": {
+      "rotation_deg": -16.32,
+      "visible_length_scale": 0.996
+     },
+     "L_shin": {
+      "rotation_deg": 60.82,
+      "visible_length_scale": 0.888
+     },
+     "L_boot": {
+      "rotation_deg": -42.15,
+      "visible_length_scale": 1.224
+     },
+     "L_bootshaft": {
+      "rotation_deg": -124.53,
+      "visible_length_scale": 0.878
+     },
+     "hood": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 10.94,
+      "visible_length_scale": 0.974
+     },
+     "cape_l": {
+      "rotation_deg": 11.73,
+      "visible_length_scale": 0.932
+     },
+     "quiver": {
+      "rotation_deg": 151.94,
+      "visible_length_scale": 1.03
+     },
+     "bow": {
+      "rotation_deg": 144.21,
+      "visible_length_scale": 0.991
+     }
+    }
+   },
+   "f02": {
+    "joints": {
+     "pelvis": [
+      254.098,
+      219.576
+     ],
+     "chest": [
+      256.556,
+      176.185
+     ],
+     "neck": [
+      258.276,
+      145.811
+     ],
+     "head_top": [
+      262.0,
+      112.2
+     ],
+     "R_shoulder": [
+      237.88,
+      163.738
+     ],
+     "R_elbow": [
+      228.161,
+      201.258
+     ],
+     "R_wrist": [
+      232.714,
+      239.355
+     ],
+     "R_hip": [
+      243.709,
+      229.827
+     ],
+     "R_knee": [
+      265.665,
+      282.791
+     ],
+     "R_ankle": [
+      258.318,
+      329.955
+     ],
+     "R_toe": [
+      277.531,
+      348.134
+     ],
+     "R_heel": [
+      251.913,
+      336.838
+     ],
+     "L_shoulder": [
+      277.69,
+      145.241
+     ],
+     "L_elbow": [
+      284.703,
+      182.748
+     ],
+     "L_wrist": [
+      300.799,
+      217.434
+     ],
+     "L_hip": [
+      264.488,
+      218.288
+     ],
+     "L_knee": [
+      272.722,
+      270.625
+     ],
+     "L_ankle": [
+      242.5,
+      294.44
+     ],
+     "L_toe": [
+      257.039,
+      319.32
+     ],
+     "L_heel": [
+      233.243,
+      295.702
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "L_uarm",
+     "cape_u",
+     "quiver",
+     "R_thigh",
+     "L_farm",
+     "pelvis",
+     "L_hand",
+     "R_shin",
+     "L_thigh",
+     "cape_l",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "neck": {
+      "rotation_deg": -168.87,
+      "visible_length_scale": 0.995
+     },
+     "head": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "R_uarm": {
+      "rotation_deg": 14.52,
+      "visible_length_scale": 0.974
+     },
+     "R_farm": {
+      "rotation_deg": -6.81,
+      "visible_length_scale": 0.994
+     },
+     "R_hand": {
+      "rotation_deg": -6.81,
+      "visible_length_scale": 0.994
+     },
+     "R_thigh": {
+      "rotation_deg": -22.51,
+      "visible_length_scale": 1.015
+     },
+     "R_shin": {
+      "rotation_deg": 8.86,
+      "visible_length_scale": 1.039
+     },
+     "R_boot": {
+      "rotation_deg": -66.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -171.9,
+      "visible_length_scale": 1.036
+     },
+     "L_uarm": {
+      "rotation_deg": -10.59,
+      "visible_length_scale": 1.097
+     },
+     "L_farm": {
+      "rotation_deg": -24.89,
+      "visible_length_scale": 1.077
+     },
+     "L_hand": {
+      "rotation_deg": -24.9,
+      "visible_length_scale": 1.077
+     },
+     "L_thigh": {
+      "rotation_deg": -8.94,
+      "visible_length_scale": 0.953
+     },
+     "L_shin": {
+      "rotation_deg": 51.77,
+      "visible_length_scale": 0.861
+     },
+     "L_boot": {
+      "rotation_deg": -45.22,
+      "visible_length_scale": 1.197
+     },
+     "L_bootshaft": {
+      "rotation_deg": -133.12,
+      "visible_length_scale": 0.86
+     },
+     "hood": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "mantle": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "cape_u": {
+      "rotation_deg": 11.92,
+      "visible_length_scale": 0.987
+     },
+     "cape_l": {
+      "rotation_deg": 14.3,
+      "visible_length_scale": 0.967
+     },
+     "quiver": {
+      "rotation_deg": 152.51,
+      "visible_length_scale": 1.017
+     },
+     "bow": {
+      "rotation_deg": 143.12,
+      "visible_length_scale": 0.995
+     }
+    }
+   },
+   "f03": {
+    "joints": {
+     "pelvis": [
+      253.804,
+      218.042
+     ],
+     "chest": [
+      256.357,
+      174.605
+     ],
+     "neck": [
+      258.144,
+      144.199
+     ],
+     "head_top": [
+      262.012,
+      110.519
+     ],
+     "R_shoulder": [
+      238.42,
+      162.493
+     ],
+     "R_elbow": [
+      230.881,
+      201.555
+     ],
+     "R_wrist": [
+      237.862,
+      239.514
+     ],
+     "R_hip": [
+      242.825,
+      228.014
+     ],
+     "R_knee": [
+      259.999,
+      281.652
+     ],
+     "R_ankle": [
+      250.693,
+      326.143
+     ],
+     "R_toe": [
+      269.907,
+      344.322
+     ],
+     "R_heel": [
+      244.289,
+      333.026
+     ],
+     "L_shoulder": [
+      276.847,
+      143.28
+     ],
+     "L_elbow": [
+      278.484,
+      178.03
+     ],
+     "L_wrist": [
+      288.32,
+      212.147
+     ],
+     "L_hip": [
+      264.783,
+      217.034
+     ],
+     "L_knee": [
+      284.67,
+      270.926
+     ],
+     "L_ankle": [
+      255.803,
+      294.441
+     ],
+     "L_toe": [
+      272.447,
+      317.313
+     ],
+     "L_heel": [
+      247.43,
+      297.877
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "cape_u",
+     "L_uarm",
+     "quiver",
+     "R_thigh",
+     "pelvis",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "cape_l",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -168.5,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": 10.92,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -17.75,
+      "visible_length_scale": 0.997
+     },
+     "R_shin": {
+      "rotation_deg": 11.81,
+      "visible_length_scale": 0.99
+     },
+     "R_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -169.24,
+      "visible_length_scale": 0.991
+     },
+     "L_uarm": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -20.26,
+      "visible_length_scale": 1.033
+     },
+     "L_shin": {
+      "rotation_deg": 50.83,
+      "visible_length_scale": 0.833
+     },
+     "L_boot": {
+      "rotation_deg": -52.16,
+      "visible_length_scale": 1.131
+     },
+     "L_bootshaft": {
+      "rotation_deg": -134.12,
+      "visible_length_scale": 0.835
+     },
+     "hood": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.63,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 12.84,
+      "visible_length_scale": 1.0
+     },
+     "cape_l": {
+      "rotation_deg": 16.62,
+      "visible_length_scale": 1.003
+     },
+     "quiver": {
+      "rotation_deg": 153.36,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 141.68,
+      "visible_length_scale": 1.0
+     }
+    }
+   },
+   "f04": {
+    "joints": {
+     "pelvis": [
+      254.098,
+      219.576
+     ],
+     "chest": [
+      256.743,
+      176.091
+     ],
+     "neck": [
+      258.594,
+      145.652
+     ],
+     "head_top": [
+      262.601,
+      111.899
+     ],
+     "R_shoulder": [
+      239.569,
+      164.301
+     ],
+     "R_elbow": [
+      234.415,
+      204.631
+     ],
+     "R_wrist": [
+      245.043,
+      241.94
+     ],
+     "R_hip": [
+      242.56,
+      229.253
+     ],
+     "R_knee": [
+      257.405,
+      283.342
+     ],
+     "R_ankle": [
+      243.069,
+      322.331
+     ],
+     "R_toe": [
+      262.282,
+      340.51
+     ],
+     "R_heel": [
+      236.664,
+      329.214
+     ],
+     "L_shoulder": [
+      276.562,
+      144.396
+     ],
+     "L_elbow": [
+      272.376,
+      175.536
+     ],
+     "L_wrist": [
+      277.563,
+      208.036
+     ],
+     "L_hip": [
+      265.637,
+      218.863
+     ],
+     "L_knee": [
+      293.5,
+      269.733
+     ],
+     "L_ankle": [
+      272.68,
+      302.22
+     ],
+     "L_toe": [
+      291.004,
+      322.498
+     ],
+     "L_heel": [
+      265.406,
+      307.742
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "bow",
+     "R_farm",
+     "R_hand",
+     "mantle",
+     "torso",
+     "cape_u",
+     "quiver",
+     "L_uarm",
+     "R_thigh",
+     "pelvis",
+     "L_thigh",
+     "L_farm",
+     "cape_l",
+     "L_shin",
+     "L_hand",
+     "R_shin",
+     "L_bootshaft",
+     "R_bootshaft",
+     "R_boot",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -168.14,
+      "visible_length_scale": 1.005
+     },
+     "head": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "R_uarm": {
+      "rotation_deg": 7.28,
+      "visible_length_scale": 1.022
+     },
+     "R_farm": {
+      "rotation_deg": -15.9,
+      "visible_length_scale": 1.005
+     },
+     "R_hand": {
+      "rotation_deg": -15.91,
+      "visible_length_scale": 1.005
+     },
+     "R_thigh": {
+      "rotation_deg": -15.35,
+      "visible_length_scale": 0.993
+     },
+     "R_shin": {
+      "rotation_deg": 20.19,
+      "visible_length_scale": 0.904
+     },
+     "R_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -161.75,
+      "visible_length_scale": 0.913
+     },
+     "L_uarm": {
+      "rotation_deg": 7.66,
+      "visible_length_scale": 0.903
+     },
+     "L_farm": {
+      "rotation_deg": -9.07,
+      "visible_length_scale": 0.927
+     },
+     "L_hand": {
+      "rotation_deg": -9.07,
+      "visible_length_scale": 0.927
+     },
+     "L_thigh": {
+      "rotation_deg": -28.71,
+      "visible_length_scale": 1.043
+     },
+     "L_shin": {
+      "rotation_deg": 32.65,
+      "visible_length_scale": 0.864
+     },
+     "L_boot": {
+      "rotation_deg": -60.03,
+      "visible_length_scale": 1.055
+     },
+     "L_bootshaft": {
+      "rotation_deg": -150.62,
+      "visible_length_scale": 0.873
+     },
+     "hood": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "mantle": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "cape_u": {
+      "rotation_deg": 13.48,
+      "visible_length_scale": 1.009
+     },
+     "cape_l": {
+      "rotation_deg": 18.17,
+      "visible_length_scale": 1.029
+     },
+     "quiver": {
+      "rotation_deg": 154.28,
+      "visible_length_scale": 0.983
+     },
+     "bow": {
+      "rotation_deg": 140.27,
+      "visible_length_scale": 1.005
+     }
+    }
+   },
+   "f05": {
+    "joints": {
+     "pelvis": [
+      254.902,
+      222.535
+     ],
+     "chest": [
+      257.612,
+      179.015
+     ],
+     "neck": [
+      259.509,
+      148.551
+     ],
+     "head_top": [
+      263.614,
+      114.744
+     ],
+     "R_shoulder": [
+      241.011,
+      167.452
+     ],
+     "R_elbow": [
+      237.721,
+      208.532
+     ],
+     "R_wrist": [
+      251.033,
+      244.991
+     ],
+     "R_hip": [
+      242.974,
+      231.987
+     ],
+     "R_knee": [
+      255.465,
+      286.594
+     ],
+     "R_ankle": [
+      235.444,
+      318.519
+     ],
+     "R_toe": [
+      254.658,
+      336.698
+     ],
+     "R_heel": [
+      229.04,
+      325.401
+     ],
+     "L_shoulder": [
+      276.923,
+      147.058
+     ],
+     "L_elbow": [
+      268.316,
+      175.081
+     ],
+     "L_wrist": [
+      269.77,
+      205.88
+     ],
+     "L_hip": [
+      266.83,
+      222.048
+     ],
+     "L_knee": [
+      296.324,
+      271.102
+     ],
+     "L_ankle": [
+      287.174,
+      315.071
+     ],
+     "L_toe": [
+      306.71,
+      332.237
+     ],
+     "L_heel": [
+      281.184,
+      322.536
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "bow",
+     "R_hand",
+     "R_farm",
+     "mantle",
+     "torso",
+     "cape_u",
+     "quiver",
+     "L_uarm",
+     "R_thigh",
+     "pelvis",
+     "L_thigh",
+     "L_farm",
+     "L_shin",
+     "cape_l",
+     "L_bootshaft",
+     "R_shin",
+     "L_hand",
+     "L_boot",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "neck": {
+      "rotation_deg": -167.89,
+      "visible_length_scale": 1.009
+     },
+     "head": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "R_uarm": {
+      "rotation_deg": 4.58,
+      "visible_length_scale": 1.036
+     },
+     "R_farm": {
+      "rotation_deg": -20.06,
+      "visible_length_scale": 1.006
+     },
+     "R_hand": {
+      "rotation_deg": -20.06,
+      "visible_length_scale": 1.006
+     },
+     "R_thigh": {
+      "rotation_deg": -12.88,
+      "visible_length_scale": 0.992
+     },
+     "R_shin": {
+      "rotation_deg": 32.09,
+      "visible_length_scale": 0.82
+     },
+     "R_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -151.19,
+      "visible_length_scale": 0.833
+     },
+     "L_uarm": {
+      "rotation_deg": 17.07,
+      "visible_length_scale": 0.843
+     },
+     "L_farm": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 0.868
+     },
+     "L_hand": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 0.868
+     },
+     "L_thigh": {
+      "rotation_deg": -31.02,
+      "visible_length_scale": 1.029
+     },
+     "L_shin": {
+      "rotation_deg": 11.76,
+      "visible_length_scale": 1.005
+     },
+     "L_boot": {
+      "rotation_deg": -69.2,
+      "visible_length_scale": 0.975
+     },
+     "L_bootshaft": {
+      "rotation_deg": -169.31,
+      "visible_length_scale": 1.006
+     },
+     "hood": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "mantle": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "cape_u": {
+      "rotation_deg": 13.67,
+      "visible_length_scale": 1.012
+     },
+     "cape_l": {
+      "rotation_deg": 18.64,
+      "visible_length_scale": 1.038
+     },
+     "quiver": {
+      "rotation_deg": 155.0,
+      "visible_length_scale": 0.971
+     },
+     "bow": {
+      "rotation_deg": 139.27,
+      "visible_length_scale": 1.009
+     }
+    }
+   },
+   "f06": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      223.667
+     ],
+     "chest": [
+      258.733,
+      180.134
+     ],
+     "neck": [
+      260.646,
+      149.66
+     ],
+     "head_top": [
+      264.787,
+      115.833
+     ],
+     "R_shoulder": [
+      242.345,
+      168.651
+     ],
+     "R_elbow": [
+      239.76,
+      209.967
+     ],
+     "R_wrist": [
+      254.051,
+      246.037
+     ],
+     "R_hip": [
+      243.933,
+      233.035
+     ],
+     "R_knee": [
+      256.751,
+      288.346
+     ],
+     "R_ankle": [
+      230.128,
+      310.342
+     ],
+     "R_toe": [
+      247.034,
+      332.885
+     ],
+     "R_heel": [
+      221.897,
+      314.075
+     ],
+     "L_shoulder": [
+      277.854,
+      148.082
+     ],
+     "L_elbow": [
+      267.617,
+      174.875
+     ],
+     "L_wrist": [
+      267.65,
+      204.95
+     ],
+     "L_hip": [
+      268.067,
+      223.264
+     ],
+     "L_knee": [
+      293.825,
+      275.229
+     ],
+     "L_ankle": [
+      291.147,
+      325.009
+     ],
+     "L_toe": [
+      311.483,
+      337.802
+     ],
+     "L_heel": [
+      286.925,
+      334.581
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "bow",
+     "R_hand",
+     "R_farm",
+     "mantle",
+     "torso",
+     "cape_u",
+     "quiver",
+     "L_uarm",
+     "R_thigh",
+     "pelvis",
+     "L_thigh",
+     "L_farm",
+     "L_shin",
+     "cape_l",
+     "R_shin",
+     "L_bootshaft",
+     "L_boot",
+     "L_hand",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.4,
+      "visible_length_scale": 1.002
+     },
+     "neck": {
+      "rotation_deg": -167.8,
+      "visible_length_scale": 1.01
+     },
+     "head": {
+      "rotation_deg": -176.41,
+      "visible_length_scale": 1.003
+     },
+     "R_uarm": {
+      "rotation_deg": 3.58,
+      "visible_length_scale": 1.041
+     },
+     "R_farm": {
+      "rotation_deg": -21.61,
+      "visible_length_scale": 1.005
+     },
+     "R_hand": {
+      "rotation_deg": -21.61,
+      "visible_length_scale": 1.005
+     },
+     "R_thigh": {
+      "rotation_deg": -13.05,
+      "visible_length_scale": 1.006
+     },
+     "R_shin": {
+      "rotation_deg": 50.44,
+      "visible_length_scale": 0.752
+     },
+     "R_boot": {
+      "rotation_deg": -53.19,
+      "visible_length_scale": 1.121
+     },
+     "R_bootshaft": {
+      "rotation_deg": -134.84,
+      "visible_length_scale": 0.76
+     },
+     "L_uarm": {
+      "rotation_deg": 20.91,
+      "visible_length_scale": 0.824
+     },
+     "L_farm": {
+      "rotation_deg": -0.06,
+      "visible_length_scale": 0.847
+     },
+     "L_hand": {
+      "rotation_deg": -0.06,
+      "visible_length_scale": 0.847
+     },
+     "L_thigh": {
+      "rotation_deg": -26.37,
+      "visible_length_scale": 1.043
+     },
+     "L_shin": {
+      "rotation_deg": 3.08,
+      "visible_length_scale": 1.116
+     },
+     "L_boot": {
+      "rotation_deg": -82.53,
+      "visible_length_scale": 0.885
+     },
+     "L_bootshaft": {
+      "rotation_deg": -177.18,
+      "visible_length_scale": 1.106
+     },
+     "hood": {
+      "rotation_deg": -176.41,
+      "visible_length_scale": 1.003
+     },
+     "mantle": {
+      "rotation_deg": -176.41,
+      "visible_length_scale": 1.003
+     },
+     "cape_u": {
+      "rotation_deg": 13.39,
+      "visible_length_scale": 1.008
+     },
+     "cape_l": {
+      "rotation_deg": 17.96,
+      "visible_length_scale": 1.026
+     },
+     "quiver": {
+      "rotation_deg": 155.27,
+      "visible_length_scale": 0.967
+     },
+     "bow": {
+      "rotation_deg": 138.91,
+      "visible_length_scale": 1.01
+     }
+    }
+   },
+   "f07": {
+    "joints": {
+     "pelvis": [
+      257.098,
+      221.437
+     ],
+     "chest": [
+      259.808,
+      177.917
+     ],
+     "neck": [
+      261.704,
+      147.453
+     ],
+     "head_top": [
+      265.81,
+      113.646
+     ],
+     "R_shoulder": [
+      243.206,
+      166.354
+     ],
+     "R_elbow": [
+      239.917,
+      207.434
+     ],
+     "R_wrist": [
+      253.229,
+      243.893
+     ],
+     "R_hip": [
+      245.169,
+      230.89
+     ],
+     "R_knee": [
+      256.245,
+      286.307
+     ],
+     "R_ankle": [
+      226.008,
+      303.456
+     ],
+     "R_toe": [
+      239.409,
+      329.073
+     ],
+     "R_heel": [
+      216.411,
+      303.668
+     ],
+     "L_shoulder": [
+      279.118,
+      145.96
+     ],
+     "L_elbow": [
+      270.512,
+      173.983
+     ],
+     "L_wrist": [
+      271.966,
+      204.782
+     ],
+     "L_hip": [
+      269.026,
+      220.95
+     ],
+     "L_knee": [
+      291.343,
+      274.728
+     ],
+     "L_ankle": [
+      285.555,
+      323.671
+     ],
+     "L_toe": [
+      304.892,
+      341.484
+     ],
+     "L_heel": [
+      279.3,
+      330.769
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "bow",
+     "R_hand",
+     "R_farm",
+     "mantle",
+     "torso",
+     "cape_u",
+     "quiver",
+     "L_uarm",
+     "R_thigh",
+     "pelvis",
+     "L_thigh",
+     "L_farm",
+     "cape_l",
+     "L_shin",
+     "R_shin",
+     "L_hand",
+     "L_bootshaft",
+     "L_boot",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "neck": {
+      "rotation_deg": -167.89,
+      "visible_length_scale": 1.009
+     },
+     "head": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "R_uarm": {
+      "rotation_deg": 4.58,
+      "visible_length_scale": 1.036
+     },
+     "R_farm": {
+      "rotation_deg": -20.06,
+      "visible_length_scale": 1.006
+     },
+     "R_hand": {
+      "rotation_deg": -20.06,
+      "visible_length_scale": 1.006
+     },
+     "R_thigh": {
+      "rotation_deg": -11.3,
+      "visible_length_scale": 1.001
+     },
+     "R_shin": {
+      "rotation_deg": 60.44,
+      "visible_length_scale": 0.757
+     },
+     "R_boot": {
+      "rotation_deg": -42.16,
+      "visible_length_scale": 1.224
+     },
+     "R_bootshaft": {
+      "rotation_deg": -125.58,
+      "visible_length_scale": 0.756
+     },
+     "L_uarm": {
+      "rotation_deg": 17.07,
+      "visible_length_scale": 0.843
+     },
+     "L_farm": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 0.868
+     },
+     "L_hand": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 0.868
+     },
+     "L_thigh": {
+      "rotation_deg": -22.54,
+      "visible_length_scale": 1.047
+     },
+     "L_shin": {
+      "rotation_deg": 6.74,
+      "visible_length_scale": 1.103
+     },
+     "L_boot": {
+      "rotation_deg": -67.28,
+      "visible_length_scale": 0.991
+     },
+     "L_bootshaft": {
+      "rotation_deg": -173.82,
+      "visible_length_scale": 1.094
+     },
+     "hood": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "mantle": {
+      "rotation_deg": -176.44,
+      "visible_length_scale": 1.002
+     },
+     "cape_u": {
+      "rotation_deg": 12.69,
+      "visible_length_scale": 0.997
+     },
+     "cape_l": {
+      "rotation_deg": 16.25,
+      "visible_length_scale": 0.997
+     },
+     "quiver": {
+      "rotation_deg": 155.0,
+      "visible_length_scale": 0.971
+     },
+     "bow": {
+      "rotation_deg": 139.27,
+      "visible_length_scale": 1.009
+     }
+    }
+   },
+   "f08": {
+    "joints": {
+     "pelvis": [
+      257.902,
+      217.674
+     ],
+     "chest": [
+      260.546,
+      174.189
+     ],
+     "neck": [
+      262.398,
+      143.75
+     ],
+     "head_top": [
+      266.405,
+      109.998
+     ],
+     "R_shoulder": [
+      243.372,
+      162.4
+     ],
+     "R_elbow": [
+      238.219,
+      202.73
+     ],
+     "R_wrist": [
+      248.847,
+      240.039
+     ],
+     "R_hip": [
+      246.363,
+      227.351
+     ],
+     "R_knee": [
+      251.614,
+      281.179
+     ],
+     "R_ankle": [
+      222.737,
+      304.321
+     ],
+     "R_toe": [
+      237.276,
+      329.201
+     ],
+     "R_heel": [
+      213.48,
+      305.584
+     ],
+     "L_shoulder": [
+      280.365,
+      142.495
+     ],
+     "L_elbow": [
+      276.18,
+      173.635
+     ],
+     "L_wrist": [
+      281.367,
+      206.135
+     ],
+     "L_hip": [
+      269.44,
+      216.961
+     ],
+     "L_knee": [
+      287.131,
+      272.058
+     ],
+     "L_ankle": [
+      278.08,
+      320.074
+     ],
+     "L_toe": [
+      297.294,
+      338.253
+     ],
+     "L_heel": [
+      271.676,
+      326.957
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "bow",
+     "R_farm",
+     "R_hand",
+     "mantle",
+     "torso",
+     "cape_u",
+     "quiver",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_thigh",
+     "L_farm",
+     "cape_l",
+     "L_hand",
+     "L_shin",
+     "R_shin",
+     "L_bootshaft",
+     "L_boot",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -168.14,
+      "visible_length_scale": 1.005
+     },
+     "head": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "R_uarm": {
+      "rotation_deg": 7.28,
+      "visible_length_scale": 1.022
+     },
+     "R_farm": {
+      "rotation_deg": -15.9,
+      "visible_length_scale": 1.005
+     },
+     "R_hand": {
+      "rotation_deg": -15.9,
+      "visible_length_scale": 1.005
+     },
+     "R_thigh": {
+      "rotation_deg": -5.57,
+      "visible_length_scale": 0.958
+     },
+     "R_shin": {
+      "rotation_deg": 51.29,
+      "visible_length_scale": 0.806
+     },
+     "R_boot": {
+      "rotation_deg": -45.22,
+      "visible_length_scale": 1.197
+     },
+     "R_bootshaft": {
+      "rotation_deg": -133.73,
+      "visible_length_scale": 0.809
+     },
+     "L_uarm": {
+      "rotation_deg": 7.66,
+      "visible_length_scale": 0.903
+     },
+     "L_farm": {
+      "rotation_deg": -9.07,
+      "visible_length_scale": 0.927
+     },
+     "L_hand": {
+      "rotation_deg": -9.07,
+      "visible_length_scale": 0.927
+     },
+     "L_thigh": {
+      "rotation_deg": -17.8,
+      "visible_length_scale": 1.041
+     },
+     "L_shin": {
+      "rotation_deg": 10.67,
+      "visible_length_scale": 1.093
+     },
+     "L_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -170.22,
+      "visible_length_scale": 1.086
+     },
+     "hood": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "mantle": {
+      "rotation_deg": -176.52,
+      "visible_length_scale": 1.001
+     },
+     "cape_u": {
+      "rotation_deg": 11.74,
+      "visible_length_scale": 0.984
+     },
+     "cape_l": {
+      "rotation_deg": 13.84,
+      "visible_length_scale": 0.96
+     },
+     "quiver": {
+      "rotation_deg": 154.28,
+      "visible_length_scale": 0.983
+     },
+     "bow": {
+      "rotation_deg": 140.28,
+      "visible_length_scale": 1.005
+     }
+    }
+   },
+   "f09": {
+    "joints": {
+     "pelvis": [
+      258.196,
+      215.846
+     ],
+     "chest": [
+      260.749,
+      172.409
+     ],
+     "neck": [
+      262.536,
+      142.003
+     ],
+     "head_top": [
+      266.403,
+      108.323
+     ],
+     "R_shoulder": [
+      242.812,
+      160.298
+     ],
+     "R_elbow": [
+      235.273,
+      199.359
+     ],
+     "R_wrist": [
+      242.254,
+      237.319
+     ],
+     "R_hip": [
+      247.217,
+      225.818
+     ],
+     "R_knee": [
+      265.924,
+      280.299
+     ],
+     "R_ankle": [
+      236.04,
+      304.323
+     ],
+     "R_toe": [
+      252.684,
+      327.194
+     ],
+     "R_heel": [
+      227.668,
+      307.759
+     ],
+     "L_shoulder": [
+      281.239,
+      141.084
+     ],
+     "L_elbow": [
+      282.876,
+      175.834
+     ],
+     "L_wrist": [
+      292.711,
+      209.951
+     ],
+     "L_hip": [
+      269.175,
+      214.839
+     ],
+     "L_knee": [
+      283.199,
+      270.052
+     ],
+     "L_ankle": [
+      270.456,
+      316.262
+     ],
+     "L_toe": [
+      289.67,
+      334.441
+     ],
+     "L_heel": [
+      264.051,
+      323.144
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "cape_u",
+     "L_uarm",
+     "quiver",
+     "R_thigh",
+     "pelvis",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "R_shin",
+     "cape_l",
+     "R_bootshaft",
+     "L_shin",
+     "R_boot",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.64,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -168.5,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.64,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": 10.93,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -10.42,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -18.95,
+      "visible_length_scale": 1.02
+     },
+     "R_shin": {
+      "rotation_deg": 51.2,
+      "visible_length_scale": 0.835
+     },
+     "R_boot": {
+      "rotation_deg": -52.15,
+      "visible_length_scale": 1.131
+     },
+     "R_bootshaft": {
+      "rotation_deg": -133.64,
+      "visible_length_scale": 0.835
+     },
+     "L_uarm": {
+      "rotation_deg": -2.7,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -16.08,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -14.25,
+      "visible_length_scale": 1.024
+     },
+     "L_shin": {
+      "rotation_deg": 15.42,
+      "visible_length_scale": 1.073
+     },
+     "L_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -165.89,
+      "visible_length_scale": 1.066
+     },
+     "hood": {
+      "rotation_deg": -176.64,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.64,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 10.78,
+      "visible_length_scale": 0.972
+     },
+     "cape_l": {
+      "rotation_deg": 11.3,
+      "visible_length_scale": 0.926
+     },
+     "quiver": {
+      "rotation_deg": 153.36,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 141.68,
+      "visible_length_scale": 1.0
+     }
+    }
+   },
+   "f10": {
+    "joints": {
+     "pelvis": [
+      257.902,
+      217.674
+     ],
+     "chest": [
+      260.359,
+      174.283
+     ],
+     "neck": [
+      262.08,
+      143.909
+     ],
+     "head_top": [
+      265.803,
+      110.299
+     ],
+     "R_shoulder": [
+      241.683,
+      161.836
+     ],
+     "R_elbow": [
+      231.965,
+      199.356
+     ],
+     "R_wrist": [
+      236.517,
+      237.453
+     ],
+     "R_hip": [
+      247.512,
+      227.926
+     ],
+     "R_knee": [
+      277.38,
+      277.793
+     ],
+     "R_ankle": [
+      252.917,
+      312.102
+     ],
+     "R_toe": [
+      271.241,
+      332.38
+     ],
+     "R_heel": [
+      245.643,
+      317.623
+     ],
+     "L_shoulder": [
+      281.493,
+      143.339
+     ],
+     "L_elbow": [
+      288.506,
+      180.846
+     ],
+     "L_wrist": [
+      304.603,
+      215.532
+     ],
+     "L_hip": [
+      268.291,
+      216.387
+     ],
+     "L_knee": [
+      281.802,
+      271.144
+     ],
+     "L_ankle": [
+      262.831,
+      312.449
+     ],
+     "L_toe": [
+      282.045,
+      330.629
+     ],
+     "L_heel": [
+      256.427,
+      319.332
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "L_uarm",
+     "cape_u",
+     "quiver",
+     "R_thigh",
+     "L_farm",
+     "pelvis",
+     "L_hand",
+     "R_shin",
+     "L_thigh",
+     "R_bootshaft",
+     "R_boot",
+     "cape_l",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "neck": {
+      "rotation_deg": -168.88,
+      "visible_length_scale": 0.995
+     },
+     "head": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "R_uarm": {
+      "rotation_deg": 14.52,
+      "visible_length_scale": 0.974
+     },
+     "R_farm": {
+      "rotation_deg": -6.81,
+      "visible_length_scale": 0.994
+     },
+     "R_hand": {
+      "rotation_deg": -6.81,
+      "visible_length_scale": 0.994
+     },
+     "R_thigh": {
+      "rotation_deg": -30.92,
+      "visible_length_scale": 1.029
+     },
+     "R_shin": {
+      "rotation_deg": 35.49,
+      "visible_length_scale": 0.917
+     },
+     "R_boot": {
+      "rotation_deg": -60.04,
+      "visible_length_scale": 1.055
+     },
+     "R_bootshaft": {
+      "rotation_deg": -147.77,
+      "visible_length_scale": 0.92
+     },
+     "L_uarm": {
+      "rotation_deg": -10.59,
+      "visible_length_scale": 1.097
+     },
+     "L_farm": {
+      "rotation_deg": -24.9,
+      "visible_length_scale": 1.077
+     },
+     "L_hand": {
+      "rotation_deg": -24.89,
+      "visible_length_scale": 1.077
+     },
+     "L_thigh": {
+      "rotation_deg": -13.86,
+      "visible_length_scale": 1.014
+     },
+     "L_shin": {
+      "rotation_deg": 24.67,
+      "visible_length_scale": 1.017
+     },
+     "L_boot": {
+      "rotation_deg": -66.2,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -157.5,
+      "visible_length_scale": 1.014
+     },
+     "hood": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "mantle": {
+      "rotation_deg": -176.76,
+      "visible_length_scale": 0.999
+     },
+     "cape_u": {
+      "rotation_deg": 10.1,
+      "visible_length_scale": 0.963
+     },
+     "cape_l": {
+      "rotation_deg": 9.4,
+      "visible_length_scale": 0.903
+     },
+     "quiver": {
+      "rotation_deg": 152.52,
+      "visible_length_scale": 1.017
+     },
+     "bow": {
+      "rotation_deg": 143.13,
+      "visible_length_scale": 0.995
+     }
+    }
+   },
+   "f11": {
+    "joints": {
+     "pelvis": [
+      257.098,
+      221.437
+     ],
+     "chest": [
+      259.484,
+      178.079
+     ],
+     "neck": [
+      261.154,
+      147.728
+     ],
+     "head_top": [
+      264.768,
+      114.166
+     ],
+     "R_shoulder": [
+      240.283,
+      165.378
+     ],
+     "R_elbow": [
+      229.11,
+      201.606
+     ],
+     "R_wrist": [
+      231.945,
+      239.635
+     ],
+     "R_hip": [
+      247.158,
+      231.884
+     ],
+     "R_knee": [
+      280.938,
+      278.795
+     ],
+     "R_ankle": [
+      267.411,
+      324.952
+     ],
+     "R_toe": [
+      286.948,
+      342.119
+     ],
+     "R_heel": [
+      261.422,
+      332.418
+     ],
+     "L_shoulder": [
+      281.07,
+      147.422
+     ],
+     "L_elbow": [
+      291.624,
+      186.346
+     ],
+     "L_wrist": [
+      311.181,
+      219.873
+     ],
+     "L_hip": [
+      267.038,
+      219.955
+     ],
+     "L_knee": [
+      280.582,
+      274.035
+     ],
+     "L_ankle": [
+      255.207,
+      308.637
+     ],
+     "L_toe": [
+      274.421,
+      326.816
+     ],
+     "L_heel": [
+      248.802,
+      315.52
+     ]
+    },
+    "draw_order": [
+     "head",
+     "hood",
+     "neck",
+     "R_uarm",
+     "mantle",
+     "R_farm",
+     "bow",
+     "R_hand",
+     "torso",
+     "L_uarm",
+     "cape_u",
+     "R_thigh",
+     "quiver",
+     "L_hand",
+     "L_farm",
+     "pelvis",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_thigh",
+     "cape_l",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.17,
+      "visible_length_scale": 0.991
+     },
+     "head": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 17.14,
+      "visible_length_scale": 0.953
+     },
+     "R_farm": {
+      "rotation_deg": -4.26,
+      "visible_length_scale": 0.988
+     },
+     "R_hand": {
+      "rotation_deg": -4.26,
+      "visible_length_scale": 0.988
+     },
+     "R_thigh": {
+      "rotation_deg": -35.75,
+      "visible_length_scale": 1.024
+     },
+     "R_shin": {
+      "rotation_deg": 16.34,
+      "visible_length_scale": 1.047
+     },
+     "R_boot": {
+      "rotation_deg": -69.19,
+      "visible_length_scale": 0.975
+     },
+     "R_bootshaft": {
+      "rotation_deg": -165.04,
+      "visible_length_scale": 1.042
+     },
+     "L_uarm": {
+      "rotation_deg": -15.18,
+      "visible_length_scale": 1.159
+     },
+     "L_farm": {
+      "rotation_deg": -30.26,
+      "visible_length_scale": 1.093
+     },
+     "L_hand": {
+      "rotation_deg": -30.25,
+      "visible_length_scale": 1.093
+     },
+     "L_thigh": {
+      "rotation_deg": -14.05,
+      "visible_length_scale": 1.003
+     },
+     "L_shin": {
+      "rotation_deg": 36.26,
+      "visible_length_scale": 0.96
+     },
+     "L_boot": {
+      "rotation_deg": -66.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -147.0,
+      "visible_length_scale": 0.959
+     },
+     "hood": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.85,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 9.88,
+      "visible_length_scale": 0.96
+     },
+     "cape_l": {
+      "rotation_deg": 8.77,
+      "visible_length_scale": 0.896
+     },
+     "quiver": {
+      "rotation_deg": 151.94,
+      "visible_length_scale": 1.03
+     },
+     "bow": {
+      "rotation_deg": 144.21,
+      "visible_length_scale": 0.991
+     }
+    }
+   }
+  },
+  "idle_E": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      216.944
+     ],
+     "chest": [
+      258.553,
+      170.954
+     ],
+     "neck": [
+      260.34,
+      138.761
+     ],
+     "head_top": [
+      264.208,
+      101.213
+     ],
+     "R_shoulder": [
+      279.043,
+      157.566
+     ],
+     "R_elbow": [
+      282.308,
+      198.764
+     ],
+     "R_wrist": [
+      297.706,
+      225.534
+     ],
+     "R_hip": [
+      266.979,
+      226.916
+     ],
+     "R_knee": [
+      281.772,
+      265.793
+     ],
+     "R_ankle": [
+      269.541,
+      322.026
+     ],
+     "R_toe": [
+      288.755,
+      320.991
+     ],
+     "R_heel": [
+      263.136,
+      335.313
+     ],
+     "L_shoulder": [
+      240.616,
+      138.352
+     ],
+     "L_elbow": [
+      234.671,
+      175.257
+     ],
+     "L_wrist": [
+      238.143,
+      202.72
+     ],
+     "L_hip": [
+      245.021,
+      215.937
+     ],
+     "L_knee": [
+      257.313,
+      258.659
+     ],
+     "L_ankle": [
+      242.459,
+      315.804
+     ],
+     "L_toe": [
+      261.673,
+      314.77
+     ],
+     "L_heel": [
+      236.054,
+      329.092
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "R_hand",
+     "bow",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "R_shin",
+     "R_bootshaft",
+     "L_shin",
+     "R_boot",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -170.4,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": -4.53,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -20.83,
+      "visible_length_scale": 1.0
+     },
+     "R_shin": {
+      "rotation_deg": 12.27,
+      "visible_length_scale": 1.0
+     },
+     "R_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -168.61,
+      "visible_length_scale": 1.0
+     },
+     "L_uarm": {
+      "rotation_deg": 9.15,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -16.05,
+      "visible_length_scale": 1.0
+     },
+     "L_shin": {
+      "rotation_deg": 14.57,
+      "visible_length_scale": 1.0
+     },
+     "L_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -166.45,
+      "visible_length_scale": 1.0
+     },
+     "hood": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.83,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 7.74,
+      "visible_length_scale": 1.0
+     },
+     "cape_l": {
+      "rotation_deg": 6.02,
+      "visible_length_scale": 1.0
+     },
+     "quiver": {
+      "rotation_deg": -148.74,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 104.85,
+      "visible_length_scale": 1.0
+     }
+    }
+   }
+  },
+  "walk_E": {
+   "f00": {
+    "joints": {
+     "pelvis": [
+      254.902,
+      221.437
+     ],
+     "chest": [
+      257.288,
+      175.369
+     ],
+     "neck": [
+      258.958,
+      143.122
+     ],
+     "head_top": [
+      262.572,
+      105.455
+     ],
+     "R_shoulder": [
+      278.875,
+      161.313
+     ],
+     "R_elbow": [
+      286.082,
+      200.434
+     ],
+     "R_wrist": [
+      304.774,
+      220.891
+     ],
+     "R_hip": [
+      264.842,
+      231.884
+     ],
+     "R_knee": [
+      280.41,
+      273.979
+     ],
+     "R_ankle": [
+      245.77,
+      323.567
+     ],
+     "R_toe": [
+      259.172,
+      335.783
+     ],
+     "R_heel": [
+      236.174,
+      333.375
+     ],
+     "L_shoulder": [
+      238.087,
+      143.357
+     ],
+     "L_elbow": [
+      223.69,
+      182.882
+     ],
+     "L_wrist": [
+      218.667,
+      215.465
+     ],
+     "L_hip": [
+      244.962,
+      219.955
+     ],
+     "L_knee": [
+      272.177,
+      248.968
+     ],
+     "L_ankle": [
+      265.792,
+      303.997
+     ],
+     "L_toe": [
+      285.129,
+      302.474
+     ],
+     "L_heel": [
+      259.538,
+      317.35
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "neck",
+     "R_uarm",
+     "cape_u",
+     "quiver",
+     "mantle",
+     "torso",
+     "R_farm",
+     "cape_l",
+     "L_uarm",
+     "R_hand",
+     "bow",
+     "pelvis",
+     "L_farm",
+     "R_thigh",
+     "L_hand",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_thigh",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -171.07,
+      "visible_length_scale": 1.003
+     },
+     "head": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "R_uarm": {
+      "rotation_deg": -10.43,
+      "visible_length_scale": 0.963
+     },
+     "R_farm": {
+      "rotation_deg": -42.42,
+      "visible_length_scale": 0.897
+     },
+     "R_hand": {
+      "rotation_deg": -42.42,
+      "visible_length_scale": 0.897
+     },
+     "R_thigh": {
+      "rotation_deg": -20.29,
+      "visible_length_scale": 1.079
+     },
+     "R_shin": {
+      "rotation_deg": 34.93,
+      "visible_length_scale": 1.051
+     },
+     "R_boot": {
+      "rotation_deg": -84.02,
+      "visible_length_scale": 0.788
+     },
+     "R_bootshaft": {
+      "rotation_deg": -147.35,
+      "visible_length_scale": 1.061
+     },
+     "L_uarm": {
+      "rotation_deg": 20.02,
+      "visible_length_scale": 1.125
+     },
+     "L_farm": {
+      "rotation_deg": 8.77,
+      "visible_length_scale": 1.191
+     },
+     "L_hand": {
+      "rotation_deg": 8.76,
+      "visible_length_scale": 1.191
+     },
+     "L_thigh": {
+      "rotation_deg": -43.17,
+      "visible_length_scale": 0.895
+     },
+     "L_shin": {
+      "rotation_deg": 6.62,
+      "visible_length_scale": 0.938
+     },
+     "L_boot": {
+      "rotation_deg": -120.17,
+      "visible_length_scale": 1.009
+     },
+     "L_bootshaft": {
+      "rotation_deg": -173.88,
+      "visible_length_scale": 0.94
+     },
+     "hood": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "mantle": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "cape_u": {
+      "rotation_deg": 8.94,
+      "visible_length_scale": 1.031
+     },
+     "cape_l": {
+      "rotation_deg": 9.04,
+      "visible_length_scale": 1.08
+     },
+     "quiver": {
+      "rotation_deg": -148.07,
+      "visible_length_scale": 1.027
+     },
+     "bow": {
+      "rotation_deg": 104.1,
+      "visible_length_scale": 0.931
+     }
+    }
+   },
+   "f01": {
+    "joints": {
+     "pelvis": [
+      254.098,
+      217.674
+     ],
+     "chest": [
+      256.556,
+      171.638
+     ],
+     "neck": [
+      258.276,
+      139.413
+     ],
+     "head_top": [
+      262.0,
+      101.796
+     ],
+     "R_shoulder": [
+      277.69,
+      157.869
+     ],
+     "R_elbow": [
+      283.304,
+      197.969
+     ],
+     "R_wrist": [
+      300.772,
+      221.229
+     ],
+     "R_hip": [
+      264.488,
+      227.926
+     ],
+     "R_knee": [
+      272.722,
+      275.011
+     ],
+     "R_ankle": [
+      242.5,
+      327.703
+     ],
+     "R_toe": [
+      257.039,
+      338.044
+     ],
+     "R_heel": [
+      233.243,
+      338.222
+     ],
+     "L_shoulder": [
+      237.88,
+      139.372
+     ],
+     "L_elbow": [
+      226.783,
+      178.153
+     ],
+     "L_wrist": [
+      225.208,
+      208.847
+     ],
+     "L_hip": [
+      243.709,
+      216.387
+     ],
+     "L_knee": [
+      265.665,
+      251.66
+     ],
+     "L_ankle": [
+      258.318,
+      307.875
+     ],
+     "L_toe": [
+      277.531,
+      306.84
+     ],
+     "L_heel": [
+      251.913,
+      321.162
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "neck",
+     "R_uarm",
+     "cape_u",
+     "quiver",
+     "mantle",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "L_uarm",
+     "R_hand",
+     "bow",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "R_shin",
+     "R_bootshaft",
+     "L_hand",
+     "R_boot",
+     "L_thigh",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.94,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -170.78,
+      "visible_length_scale": 1.002
+     },
+     "head": {
+      "rotation_deg": -176.94,
+      "visible_length_scale": 1.001
+     },
+     "R_uarm": {
+      "rotation_deg": -7.96,
+      "visible_length_scale": 0.98
+     },
+     "R_farm": {
+      "rotation_deg": -36.91,
+      "visible_length_scale": 0.942
+     },
+     "R_hand": {
+      "rotation_deg": -36.91,
+      "visible_length_scale": 0.942
+     },
+     "R_thigh": {
+      "rotation_deg": -9.92,
+      "visible_length_scale": 1.149
+     },
+     "R_shin": {
+      "rotation_deg": 29.84,
+      "visible_length_scale": 1.056
+     },
+     "R_boot": {
+      "rotation_deg": -90.43,
+      "visible_length_scale": 0.811
+     },
+     "R_bootshaft": {
+      "rotation_deg": -152.14,
+      "visible_length_scale": 1.063
+     },
+     "L_uarm": {
+      "rotation_deg": 15.97,
+      "visible_length_scale": 1.079
+     },
+     "L_farm": {
+      "rotation_deg": 2.94,
+      "visible_length_scale": 1.11
+     },
+     "L_hand": {
+      "rotation_deg": 2.94,
+      "visible_length_scale": 1.11
+     },
+     "L_thigh": {
+      "rotation_deg": -31.9,
+      "visible_length_scale": 0.935
+     },
+     "L_shin": {
+      "rotation_deg": 7.45,
+      "visible_length_scale": 0.96
+     },
+     "L_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -173.1,
+      "visible_length_scale": 0.961
+     },
+     "hood": {
+      "rotation_deg": -176.94,
+      "visible_length_scale": 1.001
+     },
+     "mantle": {
+      "rotation_deg": -176.94,
+      "visible_length_scale": 1.001
+     },
+     "cape_u": {
+      "rotation_deg": 9.91,
+      "visible_length_scale": 1.026
+     },
+     "cape_l": {
+      "rotation_deg": 11.57,
+      "visible_length_scale": 1.067
+     },
+     "quiver": {
+      "rotation_deg": -148.33,
+      "visible_length_scale": 1.016
+     },
+     "bow": {
+      "rotation_deg": 104.41,
+      "visible_length_scale": 0.961
+     }
+    }
+   },
+   "f02": {
+    "joints": {
+     "pelvis": [
+      253.804,
+      215.846
+     ],
+     "chest": [
+      256.357,
+      169.856
+     ],
+     "neck": [
+      258.144,
+      137.663
+     ],
+     "head_top": [
+      262.012,
+      100.115
+     ],
+     "R_shoulder": [
+      276.847,
+      156.468
+     ],
+     "R_elbow": [
+      280.112,
+      197.666
+     ],
+     "R_wrist": [
+      295.51,
+      224.436
+     ],
+     "R_hip": [
+      264.783,
+      225.818
+     ],
+     "R_knee": [
+      284.67,
+      261.002
+     ],
+     "R_ankle": [
+      255.803,
+      314.401
+     ],
+     "R_toe": [
+      272.447,
+      320.628
+     ],
+     "R_heel": [
+      247.43,
+      326.209
+     ],
+     "L_shoulder": [
+      238.42,
+      137.255
+     ],
+     "L_elbow": [
+      232.475,
+      174.159
+     ],
+     "L_wrist": [
+      235.947,
+      201.622
+     ],
+     "L_hip": [
+      242.825,
+      214.839
+     ],
+     "L_knee": [
+      259.999,
+      254.453
+     ],
+     "L_ankle": [
+      250.693,
+      311.687
+     ],
+     "L_toe": [
+      269.907,
+      310.652
+     ],
+     "L_heel": [
+      244.289,
+      324.974
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "R_hand",
+     "bow",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "R_shin",
+     "R_bootshaft",
+     "L_hand",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -170.4,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": -4.53,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -29.48,
+      "visible_length_scale": 0.972
+     },
+     "R_shin": {
+      "rotation_deg": 28.4,
+      "visible_length_scale": 1.055
+     },
+     "R_boot": {
+      "rotation_deg": -102.58,
+      "visible_length_scale": 0.873
+     },
+     "R_bootshaft": {
+      "rotation_deg": -153.49,
+      "visible_length_scale": 1.062
+     },
+     "L_uarm": {
+      "rotation_deg": 9.15,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -23.44,
+      "visible_length_scale": 0.971
+     },
+     "L_shin": {
+      "rotation_deg": 9.24,
+      "visible_length_scale": 0.982
+     },
+     "L_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -171.42,
+      "visible_length_scale": 0.982
+     },
+     "hood": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.82,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 10.87,
+      "visible_length_scale": 1.021
+     },
+     "cape_l": {
+      "rotation_deg": 14.1,
+      "visible_length_scale": 1.055
+     },
+     "quiver": {
+      "rotation_deg": -148.74,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 104.85,
+      "visible_length_scale": 1.0
+     }
+    }
+   },
+   "f03": {
+    "joints": {
+     "pelvis": [
+      254.098,
+      217.674
+     ],
+     "chest": [
+      256.743,
+      171.732
+     ],
+     "neck": [
+      258.594,
+      139.572
+     ],
+     "head_top": [
+      262.601,
+      102.096
+     ],
+     "R_shoulder": [
+      276.562,
+      158.713
+     ],
+     "R_elbow": [
+      277.299,
+      200.725
+     ],
+     "R_wrist": [
+      291.243,
+      229.573
+     ],
+     "R_hip": [
+      265.637,
+      227.351
+     ],
+     "R_knee": [
+      293.5,
+      248.352
+     ],
+     "R_ankle": [
+      272.68,
+      305.303
+     ],
+     "R_toe": [
+      291.004,
+      307.257
+     ],
+     "R_heel": [
+      265.406,
+      318.098
+     ],
+     "L_shoulder": [
+      239.569,
+      138.808
+     ],
+     "L_elbow": [
+      239.36,
+      172.913
+     ],
+     "L_wrist": [
+      250.92,
+      193.771
+     ],
+     "L_hip": [
+      242.56,
+      216.961
+     ],
+     "L_knee": [
+      257.405,
+      257.54
+     ],
+     "L_ankle": [
+      243.069,
+      315.499
+     ],
+     "L_toe": [
+      262.282,
+      314.465
+     ],
+     "L_heel": [
+      236.664,
+      328.787
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "R_hand",
+     "bow",
+     "cape_l",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "R_shin",
+     "L_hand",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.71,
+      "visible_length_scale": 0.999
+     },
+     "neck": {
+      "rotation_deg": -170.03,
+      "visible_length_scale": 0.998
+     },
+     "head": {
+      "rotation_deg": -176.71,
+      "visible_length_scale": 0.999
+     },
+     "R_uarm": {
+      "rotation_deg": -1.0,
+      "visible_length_scale": 1.017
+     },
+     "R_farm": {
+      "rotation_deg": -25.79,
+      "visible_length_scale": 1.037
+     },
+     "R_hand": {
+      "rotation_deg": -25.8,
+      "visible_length_scale": 1.038
+     },
+     "R_thigh": {
+      "rotation_deg": -52.99,
+      "visible_length_scale": 0.839
+     },
+     "R_shin": {
+      "rotation_deg": 20.08,
+      "visible_length_scale": 1.054
+     },
+     "R_boot": {
+      "rotation_deg": -112.95,
+      "visible_length_scale": 0.947
+     },
+     "R_bootshaft": {
+      "rotation_deg": -161.28,
+      "visible_length_scale": 1.056
+     },
+     "L_uarm": {
+      "rotation_deg": 0.35,
+      "visible_length_scale": 0.912
+     },
+     "L_farm": {
+      "rotation_deg": -28.99,
+      "visible_length_scale": 0.861
+     },
+     "L_hand": {
+      "rotation_deg": -29.0,
+      "visible_length_scale": 0.862
+     },
+     "L_thigh": {
+      "rotation_deg": -20.09,
+      "visible_length_scale": 0.972
+     },
+     "L_shin": {
+      "rotation_deg": 13.89,
+      "visible_length_scale": 1.011
+     },
+     "L_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -167.07,
+      "visible_length_scale": 1.012
+     },
+     "hood": {
+      "rotation_deg": -176.71,
+      "visible_length_scale": 0.999
+     },
+     "mantle": {
+      "rotation_deg": -176.7,
+      "visible_length_scale": 0.999
+     },
+     "cape_u": {
+      "rotation_deg": 11.55,
+      "visible_length_scale": 1.017
+     },
+     "cape_l": {
+      "rotation_deg": 15.91,
+      "visible_length_scale": 1.048
+     },
+     "quiver": {
+      "rotation_deg": -149.2,
+      "visible_length_scale": 0.984
+     },
+     "bow": {
+      "rotation_deg": 105.32,
+      "visible_length_scale": 1.038
+     }
+    }
+   },
+   "f04": {
+    "joints": {
+     "pelvis": [
+      254.902,
+      221.437
+     ],
+     "chest": [
+      257.612,
+      175.531
+     ],
+     "neck": [
+      259.509,
+      143.397
+     ],
+     "head_top": [
+      263.614,
+      105.975
+     ],
+     "R_shoulder": [
+      276.923,
+      162.775
+     ],
+     "R_elbow": [
+      275.709,
+      205.196
+     ],
+     "R_wrist": [
+      288.447,
+      235.439
+     ],
+     "R_hip": [
+      266.83,
+      230.89
+     ],
+     "R_knee": [
+      296.324,
+      246.164
+     ],
+     "R_ankle": [
+      287.174,
+      303.659
+     ],
+     "R_toe": [
+      306.71,
+      301.29
+     ],
+     "R_heel": [
+      281.184,
+      317.114
+     ],
+     "L_shoulder": [
+      241.011,
+      142.381
+     ],
+     "L_elbow": [
+      245.252,
+      173.908
+     ],
+     "L_wrist": [
+      262.466,
+      189.05
+     ],
+     "L_hip": [
+      242.974,
+      220.95
+     ],
+     "L_knee": [
+      255.465,
+      262.012
+     ],
+     "L_ankle": [
+      235.444,
+      319.311
+     ],
+     "L_toe": [
+      254.658,
+      318.277
+     ],
+     "L_heel": [
+      229.04,
+      332.599
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "R_hand",
+     "bow",
+     "cape_l",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "R_shin",
+     "L_shin",
+     "L_bootshaft",
+     "R_bootshaft",
+     "L_boot",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.77,
+      "visible_length_scale": 0.996
+     },
+     "head": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 1.64,
+      "visible_length_scale": 1.027
+     },
+     "R_farm": {
+      "rotation_deg": -22.84,
+      "visible_length_scale": 1.063
+     },
+     "R_hand": {
+      "rotation_deg": -22.84,
+      "visible_length_scale": 1.063
+     },
+     "R_thigh": {
+      "rotation_deg": -62.63,
+      "visible_length_scale": 0.799
+     },
+     "R_shin": {
+      "rotation_deg": 9.05,
+      "visible_length_scale": 1.012
+     },
+     "R_boot": {
+      "rotation_deg": -121.79,
+      "visible_length_scale": 1.023
+     },
+     "R_bootshaft": {
+      "rotation_deg": -171.6,
+      "visible_length_scale": 1.011
+     },
+     "L_uarm": {
+      "rotation_deg": -7.66,
+      "visible_length_scale": 0.851
+     },
+     "L_farm": {
+      "rotation_deg": -48.66,
+      "visible_length_scale": 0.828
+     },
+     "L_hand": {
+      "rotation_deg": -48.67,
+      "visible_length_scale": 0.828
+     },
+     "L_thigh": {
+      "rotation_deg": -16.92,
+      "visible_length_scale": 0.965
+     },
+     "L_shin": {
+      "rotation_deg": 19.26,
+      "visible_length_scale": 1.028
+     },
+     "L_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "L_bootshaft": {
+      "rotation_deg": -162.04,
+      "visible_length_scale": 1.031
+     },
+     "hood": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 11.77,
+      "visible_length_scale": 1.016
+     },
+     "cape_l": {
+      "rotation_deg": 16.5,
+      "visible_length_scale": 1.046
+     },
+     "quiver": {
+      "rotation_deg": -149.57,
+      "visible_length_scale": 0.973
+     },
+     "bow": {
+      "rotation_deg": 105.68,
+      "visible_length_scale": 1.066
+     }
+    }
+   },
+   "f05": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      223.667
+     ],
+     "chest": [
+      258.733,
+      177.774
+     ],
+     "neck": [
+      260.646,
+      145.649
+     ],
+     "head_top": [
+      264.787,
+      108.248
+     ],
+     "R_shoulder": [
+      277.854,
+      165.113
+     ],
+     "R_elbow": [
+      275.908,
+      207.644
+     ],
+     "R_wrist": [
+      288.176,
+      238.369
+     ],
+     "R_hip": [
+      268.067,
+      233.035
+     ],
+     "R_knee": [
+      293.825,
+      254.571
+     ],
+     "R_ankle": [
+      291.147,
+      309.625
+     ],
+     "R_toe": [
+      311.483,
+      302.081
+     ],
+     "R_heel": [
+      286.925,
+      323.419
+     ],
+     "L_shoulder": [
+      242.345,
+      144.543
+     ],
+     "L_elbow": [
+      248.248,
+      175.025
+     ],
+     "L_wrist": [
+      267.409,
+      187.938
+     ],
+     "L_hip": [
+      243.933,
+      223.264
+     ],
+     "L_knee": [
+      256.751,
+      262.102
+     ],
+     "L_ankle": [
+      230.128,
+      316.451
+     ],
+     "L_toe": [
+      247.034,
+      322.089
+     ],
+     "L_heel": [
+      221.897,
+      328.415
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "R_hand",
+     "bow",
+     "cape_l",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_shin",
+     "L_hand",
+     "L_bootshaft",
+     "L_boot",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.59,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.67,
+      "visible_length_scale": 0.996
+     },
+     "head": {
+      "rotation_deg": -176.6,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 2.62,
+      "visible_length_scale": 1.03
+     },
+     "R_farm": {
+      "rotation_deg": -21.77,
+      "visible_length_scale": 1.071
+     },
+     "R_hand": {
+      "rotation_deg": -21.76,
+      "visible_length_scale": 1.071
+     },
+     "R_thigh": {
+      "rotation_deg": -50.1,
+      "visible_length_scale": 0.807
+     },
+     "R_shin": {
+      "rotation_deg": 2.79,
+      "visible_length_scale": 0.958
+     },
+     "R_boot": {
+      "rotation_deg": -130.99,
+      "visible_length_scale": 1.108
+     },
+     "R_bootshaft": {
+      "rotation_deg": -177.43,
+      "visible_length_scale": 0.96
+     },
+     "L_uarm": {
+      "rotation_deg": -10.96,
+      "visible_length_scale": 0.831
+     },
+     "L_farm": {
+      "rotation_deg": -56.03,
+      "visible_length_scale": 0.835
+     },
+     "L_hand": {
+      "rotation_deg": -56.02,
+      "visible_length_scale": 0.835
+     },
+     "L_thigh": {
+      "rotation_deg": -18.27,
+      "visible_length_scale": 0.92
+     },
+     "L_shin": {
+      "rotation_deg": 26.1,
+      "visible_length_scale": 1.025
+     },
+     "L_boot": {
+      "rotation_deg": -104.12,
+      "visible_length_scale": 0.883
+     },
+     "L_bootshaft": {
+      "rotation_deg": -155.65,
+      "visible_length_scale": 1.035
+     },
+     "hood": {
+      "rotation_deg": -176.6,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.59,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 11.46,
+      "visible_length_scale": 1.018
+     },
+     "cape_l": {
+      "rotation_deg": 15.67,
+      "visible_length_scale": 1.049
+     },
+     "quiver": {
+      "rotation_deg": -149.72,
+      "visible_length_scale": 0.968
+     },
+     "bow": {
+      "rotation_deg": 105.82,
+      "visible_length_scale": 1.075
+     }
+    }
+   },
+   "f06": {
+    "joints": {
+     "pelvis": [
+      257.098,
+      222.535
+     ],
+     "chest": [
+      259.808,
+      176.629
+     ],
+     "neck": [
+      261.704,
+      144.495
+     ],
+     "head_top": [
+      265.81,
+      107.073
+     ],
+     "R_shoulder": [
+      279.118,
+      163.873
+     ],
+     "R_elbow": [
+      277.905,
+      206.294
+     ],
+     "R_wrist": [
+      290.643,
+      236.537
+     ],
+     "R_hip": [
+      269.026,
+      231.987
+     ],
+     "R_knee": [
+      291.343,
+      258.551
+     ],
+     "R_ankle": [
+      285.555,
+      313.879
+     ],
+     "R_toe": [
+      304.892,
+      312.355
+     ],
+     "R_heel": [
+      279.3,
+      327.231
+     ],
+     "L_shoulder": [
+      243.206,
+      143.479
+     ],
+     "L_elbow": [
+      247.448,
+      175.006
+     ],
+     "L_wrist": [
+      264.661,
+      190.147
+     ],
+     "L_hip": [
+      245.169,
+      222.048
+     ],
+     "L_knee": [
+      256.245,
+      261.897
+     ],
+     "L_ankle": [
+      226.008,
+      313.686
+     ],
+     "L_toe": [
+      239.409,
+      325.901
+     ],
+     "L_heel": [
+      216.411,
+      323.494
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "R_hand",
+     "bow",
+     "cape_l",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_bootshaft",
+     "L_boot",
+     "L_shin",
+     "L_hand",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "neck": {
+      "rotation_deg": -169.77,
+      "visible_length_scale": 0.996
+     },
+     "head": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "R_uarm": {
+      "rotation_deg": 1.64,
+      "visible_length_scale": 1.027
+     },
+     "R_farm": {
+      "rotation_deg": -22.84,
+      "visible_length_scale": 1.063
+     },
+     "R_hand": {
+      "rotation_deg": -22.84,
+      "visible_length_scale": 1.063
+     },
+     "R_thigh": {
+      "rotation_deg": -40.04,
+      "visible_length_scale": 0.834
+     },
+     "R_shin": {
+      "rotation_deg": 5.97,
+      "visible_length_scale": 0.967
+     },
+     "R_boot": {
+      "rotation_deg": -120.17,
+      "visible_length_scale": 1.009
+     },
+     "R_bootshaft": {
+      "rotation_deg": -174.48,
+      "visible_length_scale": 0.968
+     },
+     "L_uarm": {
+      "rotation_deg": -7.66,
+      "visible_length_scale": 0.851
+     },
+     "L_farm": {
+      "rotation_deg": -48.66,
+      "visible_length_scale": 0.828
+     },
+     "L_hand": {
+      "rotation_deg": -48.67,
+      "visible_length_scale": 0.828
+     },
+     "L_thigh": {
+      "rotation_deg": -15.53,
+      "visible_length_scale": 0.93
+     },
+     "L_shin": {
+      "rotation_deg": 30.28,
+      "visible_length_scale": 1.016
+     },
+     "L_boot": {
+      "rotation_deg": -84.02,
+      "visible_length_scale": 0.788
+     },
+     "L_bootshaft": {
+      "rotation_deg": -151.75,
+      "visible_length_scale": 1.029
+     },
+     "hood": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "mantle": {
+      "rotation_deg": -176.62,
+      "visible_length_scale": 0.998
+     },
+     "cape_u": {
+      "rotation_deg": 10.71,
+      "visible_length_scale": 1.021
+     },
+     "cape_l": {
+      "rotation_deg": 13.68,
+      "visible_length_scale": 1.057
+     },
+     "quiver": {
+      "rotation_deg": -149.57,
+      "visible_length_scale": 0.973
+     },
+     "bow": {
+      "rotation_deg": 105.68,
+      "visible_length_scale": 1.066
+     }
+    }
+   },
+   "f07": {
+    "joints": {
+     "pelvis": [
+      257.902,
+      219.576
+     ],
+     "chest": [
+      260.546,
+      173.633
+     ],
+     "neck": [
+      262.398,
+      141.474
+     ],
+     "head_top": [
+      266.405,
+      103.998
+     ],
+     "R_shoulder": [
+      280.365,
+      160.615
+     ],
+     "R_elbow": [
+      281.102,
+      202.626
+     ],
+     "R_wrist": [
+      295.047,
+      231.474
+     ],
+     "R_hip": [
+      269.44,
+      229.253
+     ],
+     "R_knee": [
+      287.131,
+      262.393
+     ],
+     "R_ankle": [
+      278.08,
+      317.756
+     ],
+     "R_toe": [
+      297.294,
+      316.722
+     ],
+     "R_heel": [
+      271.676,
+      331.043
+     ],
+     "L_shoulder": [
+      243.372,
+      140.71
+     ],
+     "L_elbow": [
+      243.163,
+      174.815
+     ],
+     "L_wrist": [
+      254.723,
+      195.672
+     ],
+     "L_hip": [
+      246.363,
+      218.863
+     ],
+     "L_knee": [
+      251.614,
+      264.457
+     ],
+     "L_ankle": [
+      222.737,
+      317.821
+     ],
+     "L_toe": [
+      237.276,
+      328.162
+     ],
+     "L_heel": [
+      213.48,
+      328.341
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "R_hand",
+     "bow",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.71,
+      "visible_length_scale": 0.999
+     },
+     "neck": {
+      "rotation_deg": -170.03,
+      "visible_length_scale": 0.998
+     },
+     "head": {
+      "rotation_deg": -176.7,
+      "visible_length_scale": 0.999
+     },
+     "R_uarm": {
+      "rotation_deg": -1.01,
+      "visible_length_scale": 1.017
+     },
+     "R_farm": {
+      "rotation_deg": -25.8,
+      "visible_length_scale": 1.038
+     },
+     "R_hand": {
+      "rotation_deg": -25.79,
+      "visible_length_scale": 1.037
+     },
+     "R_thigh": {
+      "rotation_deg": -28.1,
+      "visible_length_scale": 0.903
+     },
+     "R_shin": {
+      "rotation_deg": 9.28,
+      "visible_length_scale": 0.975
+     },
+     "R_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -171.4,
+      "visible_length_scale": 0.976
+     },
+     "L_uarm": {
+      "rotation_deg": 0.35,
+      "visible_length_scale": 0.912
+     },
+     "L_farm": {
+      "rotation_deg": -29.0,
+      "visible_length_scale": 0.862
+     },
+     "L_hand": {
+      "rotation_deg": -29.0,
+      "visible_length_scale": 0.862
+     },
+     "L_thigh": {
+      "rotation_deg": -6.57,
+      "visible_length_scale": 1.032
+     },
+     "L_shin": {
+      "rotation_deg": 28.42,
+      "visible_length_scale": 1.028
+     },
+     "L_boot": {
+      "rotation_deg": -90.42,
+      "visible_length_scale": 0.811
+     },
+     "L_bootshaft": {
+      "rotation_deg": -153.47,
+      "visible_length_scale": 1.036
+     },
+     "hood": {
+      "rotation_deg": -176.7,
+      "visible_length_scale": 0.999
+     },
+     "mantle": {
+      "rotation_deg": -176.7,
+      "visible_length_scale": 0.999
+     },
+     "cape_u": {
+      "rotation_deg": 9.73,
+      "visible_length_scale": 1.027
+     },
+     "cape_l": {
+      "rotation_deg": 11.09,
+      "visible_length_scale": 1.069
+     },
+     "quiver": {
+      "rotation_deg": -149.2,
+      "visible_length_scale": 0.984
+     },
+     "bow": {
+      "rotation_deg": 105.33,
+      "visible_length_scale": 1.038
+     }
+    }
+   },
+   "f08": {
+    "joints": {
+     "pelvis": [
+      258.196,
+      218.042
+     ],
+     "chest": [
+      260.749,
+      172.052
+     ],
+     "neck": [
+      262.536,
+      139.859
+     ],
+     "head_top": [
+      266.403,
+      102.311
+     ],
+     "R_shoulder": [
+      281.239,
+      158.664
+     ],
+     "R_elbow": [
+      284.504,
+      199.862
+     ],
+     "R_wrist": [
+      299.902,
+      226.632
+     ],
+     "R_hip": [
+      269.175,
+      228.014
+     ],
+     "R_knee": [
+      283.199,
+      266.053
+     ],
+     "R_ankle": [
+      270.456,
+      321.568
+     ],
+     "R_toe": [
+      289.67,
+      320.534
+     ],
+     "R_heel": [
+      264.051,
+      334.856
+     ],
+     "L_shoulder": [
+      242.812,
+      139.45
+     ],
+     "L_elbow": [
+      236.867,
+      176.355
+     ],
+     "L_wrist": [
+      240.339,
+      203.818
+     ],
+     "L_hip": [
+      247.217,
+      217.034
+     ],
+     "L_knee": [
+      265.924,
+      251.629
+     ],
+     "L_ankle": [
+      236.04,
+      304.52
+     ],
+     "L_toe": [
+      252.684,
+      310.747
+     ],
+     "L_heel": [
+      227.668,
+      316.328
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "R_uarm",
+     "neck",
+     "cape_u",
+     "mantle",
+     "quiver",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "R_hand",
+     "bow",
+     "L_uarm",
+     "pelvis",
+     "R_thigh",
+     "L_farm",
+     "L_thigh",
+     "L_hand",
+     "R_shin",
+     "R_bootshaft",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot",
+     "R_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.83,
+      "visible_length_scale": 1.0
+     },
+     "neck": {
+      "rotation_deg": -170.4,
+      "visible_length_scale": 1.0
+     },
+     "head": {
+      "rotation_deg": -176.83,
+      "visible_length_scale": 1.0
+     },
+     "R_uarm": {
+      "rotation_deg": -4.53,
+      "visible_length_scale": 1.0
+     },
+     "R_farm": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_hand": {
+      "rotation_deg": -29.91,
+      "visible_length_scale": 1.0
+     },
+     "R_thigh": {
+      "rotation_deg": -20.24,
+      "visible_length_scale": 0.975
+     },
+     "R_shin": {
+      "rotation_deg": 12.93,
+      "visible_length_scale": 0.99
+     },
+     "R_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -168.01,
+      "visible_length_scale": 0.99
+     },
+     "L_uarm": {
+      "rotation_deg": 9.15,
+      "visible_length_scale": 1.0
+     },
+     "L_farm": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_hand": {
+      "rotation_deg": -7.21,
+      "visible_length_scale": 1.0
+     },
+     "L_thigh": {
+      "rotation_deg": -28.39,
+      "visible_length_scale": 0.885
+     },
+     "L_shin": {
+      "rotation_deg": 29.46,
+      "visible_length_scale": 1.029
+     },
+     "L_boot": {
+      "rotation_deg": -102.58,
+      "visible_length_scale": 0.873
+     },
+     "L_bootshaft": {
+      "rotation_deg": -152.48,
+      "visible_length_scale": 1.036
+     },
+     "hood": {
+      "rotation_deg": -176.83,
+      "visible_length_scale": 1.0
+     },
+     "mantle": {
+      "rotation_deg": -176.83,
+      "visible_length_scale": 1.0
+     },
+     "cape_u": {
+      "rotation_deg": 8.78,
+      "visible_length_scale": 1.032
+     },
+     "cape_l": {
+      "rotation_deg": 8.63,
+      "visible_length_scale": 1.083
+     },
+     "quiver": {
+      "rotation_deg": -148.74,
+      "visible_length_scale": 1.0
+     },
+     "bow": {
+      "rotation_deg": 104.86,
+      "visible_length_scale": 1.0
+     }
+    }
+   },
+   "f09": {
+    "joints": {
+     "pelvis": [
+      257.902,
+      219.576
+     ],
+     "chest": [
+      260.359,
+      173.54
+     ],
+     "neck": [
+      262.08,
+      141.315
+     ],
+     "head_top": [
+      265.803,
+      103.697
+     ],
+     "R_shoulder": [
+      281.493,
+      159.77
+     ],
+     "R_elbow": [
+      287.107,
+      199.87
+     ],
+     "R_wrist": [
+      304.576,
+      223.131
+     ],
+     "R_hip": [
+      268.291,
+      229.827
+     ],
+     "R_knee": [
+      281.802,
+      269.739
+     ],
+     "R_ankle": [
+      262.831,
+      325.381
+     ],
+     "R_toe": [
+      282.045,
+      324.346
+     ],
+     "R_heel": [
+      256.427,
+      338.668
+     ],
+     "L_shoulder": [
+      241.683,
+      141.274
+     ],
+     "L_elbow": [
+      230.586,
+      180.055
+     ],
+     "L_wrist": [
+      229.011,
+      210.749
+     ],
+     "L_hip": [
+      247.512,
+      218.288
+     ],
+     "L_knee": [
+      277.38,
+      240.293
+     ],
+     "L_ankle": [
+      252.917,
+      295.422
+     ],
+     "L_toe": [
+      271.241,
+      297.375
+     ],
+     "L_heel": [
+      245.643,
+      308.217
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "neck",
+     "R_uarm",
+     "cape_u",
+     "quiver",
+     "mantle",
+     "R_farm",
+     "torso",
+     "cape_l",
+     "L_uarm",
+     "R_hand",
+     "bow",
+     "pelvis",
+     "L_farm",
+     "R_thigh",
+     "L_hand",
+     "L_thigh",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -176.95,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -170.79,
+      "visible_length_scale": 1.002
+     },
+     "head": {
+      "rotation_deg": -176.95,
+      "visible_length_scale": 1.001
+     },
+     "R_uarm": {
+      "rotation_deg": -7.97,
+      "visible_length_scale": 0.98
+     },
+     "R_farm": {
+      "rotation_deg": -36.9,
+      "visible_length_scale": 0.942
+     },
+     "R_hand": {
+      "rotation_deg": -36.9,
+      "visible_length_scale": 0.942
+     },
+     "R_thigh": {
+      "rotation_deg": -18.7,
+      "visible_length_scale": 1.013
+     },
+     "R_shin": {
+      "rotation_deg": 18.83,
+      "visible_length_scale": 1.022
+     },
+     "R_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -162.49,
+      "visible_length_scale": 1.021
+     },
+     "L_uarm": {
+      "rotation_deg": 15.97,
+      "visible_length_scale": 1.079
+     },
+     "L_farm": {
+      "rotation_deg": 2.94,
+      "visible_length_scale": 1.11
+     },
+     "L_hand": {
+      "rotation_deg": 2.94,
+      "visible_length_scale": 1.11
+     },
+     "L_thigh": {
+      "rotation_deg": -53.62,
+      "visible_length_scale": 0.835
+     },
+     "L_shin": {
+      "rotation_deg": 23.93,
+      "visible_length_scale": 1.022
+     },
+     "L_boot": {
+      "rotation_deg": -112.95,
+      "visible_length_scale": 0.947
+     },
+     "L_bootshaft": {
+      "rotation_deg": -157.69,
+      "visible_length_scale": 1.023
+     },
+     "hood": {
+      "rotation_deg": -176.95,
+      "visible_length_scale": 1.001
+     },
+     "mantle": {
+      "rotation_deg": -176.95,
+      "visible_length_scale": 1.001
+     },
+     "cape_u": {
+      "rotation_deg": 8.12,
+      "visible_length_scale": 1.036
+     },
+     "cape_l": {
+      "rotation_deg": 6.94,
+      "visible_length_scale": 1.094
+     },
+     "quiver": {
+      "rotation_deg": -148.34,
+      "visible_length_scale": 1.016
+     },
+     "bow": {
+      "rotation_deg": 104.41,
+      "visible_length_scale": 0.961
+     }
+    }
+   },
+   "f10": {
+    "joints": {
+     "pelvis": [
+      257.098,
+      222.535
+     ],
+     "chest": [
+      259.484,
+      176.467
+     ],
+     "neck": [
+      261.154,
+      144.22
+     ],
+     "head_top": [
+      264.768,
+      106.553
+     ],
+     "R_shoulder": [
+      281.07,
+      162.411
+     ],
+     "R_elbow": [
+      288.278,
+      201.532
+     ],
+     "R_wrist": [
+      306.97,
+      221.989
+     ],
+     "R_hip": [
+      267.038,
+      232.982
+     ],
+     "R_knee": [
+      280.582,
+      274.571
+     ],
+     "R_ankle": [
+      255.207,
+      329.193
+     ],
+     "R_toe": [
+      274.421,
+      328.158
+     ],
+     "R_heel": [
+      248.802,
+      342.48
+     ],
+     "L_shoulder": [
+      240.283,
+      144.455
+     ],
+     "L_elbow": [
+      225.886,
+      183.98
+     ],
+     "L_wrist": [
+      220.863,
+      216.563
+     ],
+     "L_hip": [
+      247.158,
+      221.053
+     ],
+     "L_knee": [
+      280.938,
+      238.471
+     ],
+     "L_ankle": [
+      267.411,
+      293.778
+     ],
+     "L_toe": [
+      286.948,
+      291.408
+     ],
+     "L_heel": [
+      261.422,
+      307.233
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "neck",
+     "R_uarm",
+     "cape_u",
+     "quiver",
+     "mantle",
+     "torso",
+     "cape_l",
+     "R_farm",
+     "L_uarm",
+     "R_hand",
+     "bow",
+     "pelvis",
+     "L_farm",
+     "R_thigh",
+     "L_hand",
+     "L_thigh",
+     "R_shin",
+     "R_bootshaft",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.001
+     },
+     "neck": {
+      "rotation_deg": -171.07,
+      "visible_length_scale": 1.003
+     },
+     "head": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "R_uarm": {
+      "rotation_deg": -10.44,
+      "visible_length_scale": 0.963
+     },
+     "R_farm": {
+      "rotation_deg": -42.42,
+      "visible_length_scale": 0.897
+     },
+     "R_hand": {
+      "rotation_deg": -42.42,
+      "visible_length_scale": 0.897
+     },
+     "R_thigh": {
+      "rotation_deg": -18.03,
+      "visible_length_scale": 1.051
+     },
+     "R_shin": {
+      "rotation_deg": 24.92,
+      "visible_length_scale": 1.047
+     },
+     "R_boot": {
+      "rotation_deg": -119.21,
+      "visible_length_scale": 1.0
+     },
+     "R_bootshaft": {
+      "rotation_deg": -156.77,
+      "visible_length_scale": 1.047
+     },
+     "L_uarm": {
+      "rotation_deg": 20.02,
+      "visible_length_scale": 1.125
+     },
+     "L_farm": {
+      "rotation_deg": 8.77,
+      "visible_length_scale": 1.191
+     },
+     "L_hand": {
+      "rotation_deg": 8.76,
+      "visible_length_scale": 1.191
+     },
+     "L_thigh": {
+      "rotation_deg": -62.72,
+      "visible_length_scale": 0.855
+     },
+     "L_shin": {
+      "rotation_deg": 13.75,
+      "visible_length_scale": 0.964
+     },
+     "L_boot": {
+      "rotation_deg": -121.8,
+      "visible_length_scale": 1.023
+     },
+     "L_bootshaft": {
+      "rotation_deg": -167.25,
+      "visible_length_scale": 0.965
+     },
+     "hood": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "mantle": {
+      "rotation_deg": -177.04,
+      "visible_length_scale": 1.002
+     },
+     "cape_u": {
+      "rotation_deg": 7.91,
+      "visible_length_scale": 1.037
+     },
+     "cape_l": {
+      "rotation_deg": 6.41,
+      "visible_length_scale": 1.097
+     },
+     "quiver": {
+      "rotation_deg": -148.07,
+      "visible_length_scale": 1.027
+     },
+     "bow": {
+      "rotation_deg": 104.1,
+      "visible_length_scale": 0.931
+     }
+    }
+   },
+   "f11": {
+    "joints": {
+     "pelvis": [
+      256.0,
+      223.667
+     ],
+     "chest": [
+      258.359,
+      177.587
+     ],
+     "neck": [
+      260.01,
+      145.332
+     ],
+     "head_top": [
+      263.584,
+      107.647
+     ],
+     "R_shoulder": [
+      280.108,
+      163.425
+     ],
+     "R_elbow": [
+      287.87,
+      202.152
+     ],
+     "R_wrist": [
+      306.946,
+      221.539
+     ],
+     "R_hip": [
+      265.771,
+      234.183
+     ],
+     "R_knee": [
+      282.244,
+      274.848
+     ],
+     "R_ankle": [
+      249.891,
+      326.332
+     ],
+     "R_toe": [
+      266.796,
+      331.97
+     ],
+     "R_heel": [
+      241.66,
+      338.297
+     ],
+     "L_shoulder": [
+      238.969,
+      145.67
+     ],
+     "L_elbow": [
+      223.478,
+      185.328
+     ],
+     "L_wrist": [
+      217.261,
+      218.494
+     ],
+     "L_hip": [
+      246.229,
+      222.116
+     ],
+     "L_knee": [
+      276.658,
+      245.988
+     ],
+     "L_ankle": [
+      271.384,
+      299.743
+     ],
+     "L_toe": [
+      291.721,
+      292.2
+     ],
+     "L_heel": [
+      267.162,
+      313.538
+     ]
+    },
+    "draw_order": [
+     "hood",
+     "head",
+     "neck",
+     "R_uarm",
+     "cape_u",
+     "quiver",
+     "mantle",
+     "torso",
+     "cape_l",
+     "R_farm",
+     "L_uarm",
+     "L_farm",
+     "R_hand",
+     "pelvis",
+     "bow",
+     "R_thigh",
+     "L_hand",
+     "R_shin",
+     "R_bootshaft",
+     "L_thigh",
+     "R_boot",
+     "L_shin",
+     "L_bootshaft",
+     "L_boot"
+    ],
+    "parts": {
+     "pelvis": {
+      "rotation_deg": -180.0,
+      "visible_length_scale": 1.0
+     },
+     "torso": {
+      "rotation_deg": -177.07,
+      "visible_length_scale": 1.002
+     },
+     "neck": {
+      "rotation_deg": -171.17,
+      "visible_length_scale": 1.004
+     },
+     "head": {
+      "rotation_deg": -177.07,
+      "visible_length_scale": 1.002
+     },
+     "R_uarm": {
+      "rotation_deg": -11.33,
+      "visible_length_scale": 0.956
+     },
+     "R_farm": {
+      "rotation_deg": -44.54,
+      "visible_length_scale": 0.881
+     },
+     "R_hand": {
+      "rotation_deg": -44.55,
+      "visible_length_scale": 0.881
+     },
+     "R_thigh": {
+      "rotation_deg": -22.06,
+      "visible_length_scale": 1.055
+     },
+     "R_shin": {
+      "rotation_deg": 32.14,
+      "visible_length_scale": 1.057
+     },
+     "R_boot": {
+      "rotation_deg": -104.12,
+      "visible_length_scale": 0.883
+     },
+     "R_bootshaft": {
+      "rotation_deg": -149.97,
+      "visible_length_scale": 1.062
+     },
+     "L_uarm": {
+      "rotation_deg": 21.34,
+      "visible_length_scale": 1.139
+     },
+     "L_farm": {
+      "rotation_deg": 10.62,
+      "visible_length_scale": 1.219
+     },
+     "L_hand": {
+      "rotation_deg": 10.62,
+      "visible_length_scale": 1.219
+     },
+     "L_thigh": {
+      "rotation_deg": -51.88,
+      "visible_length_scale": 0.87
+     },
+     "L_shin": {
+      "rotation_deg": 5.6,
+      "visible_length_scale": 0.915
+     },
+     "L_boot": {
+      "rotation_deg": -130.98,
+      "visible_length_scale": 1.108
+     },
+     "L_bootshaft": {
+      "rotation_deg": -174.82,
+      "visible_length_scale": 0.918
+     },
+     "hood": {
+      "rotation_deg": -177.07,
+      "visible_length_scale": 1.002
+     },
+     "mantle": {
+      "rotation_deg": -177.07,
+      "visible_length_scale": 1.002
+     },
+     "cape_u": {
+      "rotation_deg": 8.21,
+      "visible_length_scale": 1.035
+     },
+     "cape_l": {
+      "rotation_deg": 7.16,
+      "visible_length_scale": 1.092
+     },
+     "quiver": {
+      "rotation_deg": -147.98,
+      "visible_length_scale": 1.031
+     },
+     "bow": {
+      "rotation_deg": 103.98,
+      "visible_length_scale": 0.92
+     }
+    }
+   }
+  }
+ }
+}
