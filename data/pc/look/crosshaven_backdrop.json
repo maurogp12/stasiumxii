@@ -47,5 +47,39 @@
     "contact_shadow": -24,
     "leaf_shadow": 0,
     "front_leaves": 720
+  },
+  "v1_decor": {
+    "art_root": "res://art/pc/look/crosshaven_decor/",
+    "note": "Luca's v1 mock. Not drawn until sky, clearing, and the four leaf-frame files exist under art_root. The v4 plates stay up until then. Tiles are not part of this kit.",
+    "sky": {
+      "slot": "sky",
+      "replaces": "back_far",
+      "parallax": 0.08,
+      "modulate": [1.0, 1.0, 1.0],
+      "role": "warm sky gap"
+    },
+    "clearing": {
+      "slot": "clearing",
+      "replaces": "back_mid",
+      "parallax": 0.4,
+      "modulate": [1.0, 1.0, 1.0],
+      "role": "sunlit mossy clearing, roots and tree shadows"
+    },
+    "leaf_frame": {
+      "replaces": "front_leaves",
+      "parallax": 0.0,
+      "z": 720,
+      "modulate": [1.0, 1.0, 1.0],
+      "slots": {
+        "leaf_frame_left": "left",
+        "leaf_frame_right": "right",
+        "leaf_frame_top": "top",
+        "leaf_frame_bottom": "bottom"
+      },
+      "over": "the screen frame and the board edge",
+      "never_covers": ["walkable_cells", "hud"]
+    },
+    "hud_clear_px": 260,
+    "props_live": false
   }
 }

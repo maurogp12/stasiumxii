@@ -3310,5 +3310,206 @@
     "wet_earth_b"
    ]
   }
- }
+ },
+ "v1_note": "Luca's v1 mock. Not drawn until v1_decor.props_live is true. Tall pieces are off the 0..14 grid, so they frame the board and do not read as cover. Low plants sit on flat corner grass. (0,0) stays empty. No walls or logs.",
+ "v1_frame": [
+  {
+   "x": 0,
+   "y": -1,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "top corner, off the walkable grid"
+  },
+  {
+   "x": 2,
+   "y": -1,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "north rim, off the walkable grid"
+  },
+  {
+   "x": 5,
+   "y": -1,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "north rim mossy rocks, off the walkable grid"
+  },
+  {
+   "x": 8,
+   "y": -1,
+   "new_id": "stone_well",
+   "height": 0,
+   "layer": "prop",
+   "note": "upper right well, off the walkable grid"
+  },
+  {
+   "x": 11,
+   "y": -1,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "north rim, off the walkable grid"
+  },
+  {
+   "x": 13,
+   "y": -1,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "north rim mossy rocks, off the walkable grid"
+  },
+  {
+   "x": -1,
+   "y": 1,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "west rim, off the walkable grid"
+  },
+  {
+   "x": -1,
+   "y": 6,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "west rim mossy rocks, off the walkable grid"
+  },
+  {
+   "x": -1,
+   "y": 14,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "left corner, off the walkable grid"
+  },
+  {
+   "x": 15,
+   "y": 0,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "right corner, off the walkable grid"
+  },
+  {
+   "x": 15,
+   "y": 7,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "east rim mossy rocks, off the walkable grid"
+  },
+  {
+   "x": 15,
+   "y": 13,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "east rim mossy rocks, off the walkable grid"
+  },
+  {
+   "x": 4,
+   "y": 15,
+   "new_id": "boulder_cluster",
+   "height": 0,
+   "layer": "prop",
+   "note": "front rim, under the leaf frame, off the walkable grid"
+  },
+  {
+   "x": 14,
+   "y": 15,
+   "new_id": "standing_stone",
+   "height": 0,
+   "layer": "prop",
+   "note": "bottom corner, off the walkable grid"
+  }
+ ],
+ "v1_plants": [
+  {
+   "x": 1,
+   "y": 0,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 2,
+   "y": 0,
+   "id": "fern",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 0,
+   "y": 1,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 13,
+   "y": 0,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 14,
+   "y": 0,
+   "id": "fern",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 13,
+   "y": 1,
+   "id": "pebbles_moss",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 0,
+   "y": 13,
+   "id": "clover_patch",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 0,
+   "y": 14,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 1,
+   "y": 14,
+   "id": "fern",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 13,
+   "y": 13,
+   "id": "lilac_tuft",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 14,
+   "y": 13,
+   "id": "flower_tuft",
+   "height": 0,
+   "where": "corner_grass"
+  },
+  {
+   "x": 13,
+   "y": 14,
+   "id": "pebbles_moss",
+   "height": 0,
+   "where": "corner_grass"
+  }
+ ]
 }
