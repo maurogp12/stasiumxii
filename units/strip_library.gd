@@ -39,7 +39,44 @@ const CELL_W := 144
 ## Attack impact pose, 0-based, Kestrel and Ironjaw. VFX reads this.
 const ATTACK_IMPACT_FRAME := 3
 
+## Painted character strips (new looks, 4 Oct 2026). One raw PNG sheet per
+## class, kind and facing, cells left to right:
+## `art/characters/<class>/<kind>/<class>_<kind>_<n|e|s|w>.pngbin`.
+## Built by `build_tools/mobile_characters/build_mobile_walks.py`, which also
+## writes the cell, pivot, fps and frames-per-tile table it reads
+## (`units/character_strip_specs.gd`). The pivot is the ground point on the
+## 152 sole line, so `Pawn.pivot_offset_for` stands every cell on the tile.
+## Walk: a class with a painted walk spec plays only that walk. A missing
+## facing sheet drops the walk clip, and the pawn shows its static
+## `art/characters/<class>/<class>_<facing>.png` with the old hop.
+## Actions (idle, attack, skill, hit, death) are the drop spot for the next
+## painted strips: a sheet that exists replaces that clip (`skill` plays as
+## `cast_<facing>`). A missing sheet keeps today's export_2x strip or motion.
+## `idle_<facing>` is loaded but the pawn does not play it yet; the standing
+## pose stays walk frame 0 (the static file is that same cell).
+const STRIP_SPECS := preload("res://units/character_strip_specs.gd")
+const PAINTED_ROOT := "res://art/characters/"
+const PAINTED_KINDS: Array[String] = ["walk", "idle", "attack", "skill", "hit", "death"]
+const PAINTED_ANIM := {
+	"walk": "walk",
+	"idle": "idle",
+	"attack": "attack",
+	"skill": "cast",
+	"hit": "hit",
+	"death": "death",
+}
+
+## Tests flip this off to pin the export_2x walk pipeline that a class
+## without a painted spec still uses. The game never turns it off.
+static var painted_looks: bool = true
+
 static var _cache: Dictionary = {}
+static var _painted_cells: Dictionary = {}
+
+
+static func set_painted_looks(enabled: bool) -> void:
+	painted_looks = enabled
+	clear_cache()
 ## East walk frame 0, one ImageTexture per class. Select cards and turn chips.
 static var _idle_cache: Dictionary = {}
 ## Foot-down cell per class facing. 0 when that cell is already frame 0.
@@ -50,6 +87,7 @@ const LEGACY_STAND_ROW := 150
 
 static func clear_cache() -> void:
 	_cache.clear()
+	_painted_cells.clear()
 	_idle_cache.clear()
 	_walk_contact.clear()
 
@@ -119,6 +157,77 @@ static func try_load(path: String) -> Resource:
 	return loaded if loaded is Resource else null
 
 
+## Spec row for a painted kind, or {} when the class has none.
+static func painted_spec(class_id: String, kind: String) -> Dictionary:
+	if not painted_looks:
+		return {}
+	var cls := SpellKits.normalize_class_id(class_id)
+	var row: Variant = STRIP_SPECS.SPECS.get(cls, {})
+	if not (row is Dictionary):
+		return {}
+	var spec: Variant = (row as Dictionary).get(kind, {})
+	return spec if spec is Dictionary else {}
+
+
+## True when the class walks on the painted strips (not the export_2x sheets).
+static func has_painted_look(class_id: String) -> bool:
+	return not painted_spec(class_id, "walk").is_empty()
+
+
+static func painted_path(class_id: String, kind: String, face: String) -> String:
+	var cls := SpellKits.normalize_class_id(class_id)
+	var letter := letter_for_sheet(face)
+	return "%s%s/%s/%s_%s_%s.pngbin" % [PAINTED_ROOT, cls, kind, cls, kind, letter]
+
+
+## One ImageTexture per cell of the painted sheet. Empty when the spec, the
+## file, or the sheet size (frames x cell) is missing or wrong.
+static func painted_cells(class_id: String, kind: String, face: String) -> Array[Texture2D]:
+	var out: Array[Texture2D] = []
+	var spec := painted_spec(class_id, kind)
+	if spec.is_empty():
+		return out
+	var path := painted_path(class_id, kind, face)
+	if _painted_cells.has(path):
+		out.assign(_painted_cells[path])
+		return out
+	_painted_cells[path] = []
+	if not FileAccess.file_exists(path):
+		return out
+	var bytes := FileAccess.get_file_as_bytes(path)
+	var image := Image.new()
+	if bytes.is_empty() or image.load_png_from_buffer(bytes) != OK or image.is_empty():
+		return out
+	var cell: Vector2i = spec.get("cell", Vector2i.ZERO)
+	var count := int(spec.get("frames", 0))
+	if cell.x <= 0 or cell.y <= 0 or count <= 0:
+		return out
+	if image.get_width() != cell.x * count or image.get_height() != cell.y:
+		return out
+	# Same edge pass the importer runs (fix_alpha_border), so linear filtering
+	# does not pull black into the binary-alpha edge.
+	image.fix_alpha_edges()
+	for i in count:
+		var tex := ImageTexture.create_from_image(image.get_region(Rect2i(i * cell.x, 0, cell.x, cell.y)))
+		if tex == null:
+			return []
+		out.append(tex)
+	_painted_cells[path] = out
+	return out
+
+
+## Painted walk cells crossed by one board tile of travel, or 0 when this
+## class and facing has no painted walk on disk. The spec caps it at
+## MAX_LEG_RATE x the authored fps (natural leg speed, small foot slide).
+static func painted_frames_per_tile(class_id: String, face: String) -> float:
+	var spec := painted_spec(class_id, "walk")
+	if spec.is_empty():
+		return 0.0
+	if painted_cells(class_id, "walk", face).size() < 2:
+		return 0.0
+	return float(spec.get("frames_per_tile", 0.0))
+
+
 static func export_png_path(class_id: String, kind: String, face: String) -> String:
 	var cls := SpellKits.normalize_class_id(class_id)
 	return "%s%s/anims/%s_%s_%s.png" % [EXPORT_ROOT, cls, cls, kind, face]
@@ -173,6 +282,9 @@ static func batch1c_png_paths() -> Array[String]:
 ## Seconds from clip start to the impact cell. Playback and VFX share this.
 static func release_sec(class_id: String, kind: String) -> float:
 	var fps := kind_fps(kind)
+	var painted := _painted_action_spec(class_id, kind)
+	if not painted.is_empty():
+		fps = float(painted.get("fps", fps))
 	if fps <= 0.0:
 		return 0.0
 	return float(impact_frame(class_id, kind)) / fps
@@ -214,6 +326,8 @@ static func _load_class(class_id: String) -> SpriteFrames:
 	# Walk playback is the locked export_2x sheet for this class. A tres cell,
 	# a grok fallback, or a shared atlas must not keep another costume.
 	if _force_locked_walk_pngs(built, class_id):
+		any = true
+	if _load_painted_actions(built, class_id):
 		any = true
 	if not any or not _has_playable(built):
 		return null
@@ -295,6 +409,24 @@ static func textures_from_image(image: Image, frame_count: int) -> Array[Texture
 ## Authored attack/cast banks stay. A missing walk sheet leaves the clip loaded.
 static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bool:
 	var any := false
+	if has_painted_look(class_id):
+		# The painted walk is the only walk. An old export_2x clip would be
+		# another costume, so a missing painted facing falls to the static.
+		var spec := painted_spec(class_id, "walk")
+		for face in LETTERS:
+			var anim := "walk_%s" % face
+			if built.has_animation(anim):
+				built.remove_animation(anim)
+			var cells := painted_cells(class_id, "walk", face)
+			if cells.size() < 2:
+				continue
+			if _install_clip(built, anim, {
+				"textures": cells,
+				"fps": float(spec.get("fps", WALK_FPS)),
+				"loop": true,
+			}):
+				any = true
+		return any
 	for face in LETTERS:
 		var textures := _walk_cell_textures(class_id, face)
 		if textures.size() < 2:
@@ -312,6 +444,8 @@ static func _force_locked_walk_pngs(built: SpriteFrames, class_id: String) -> bo
 
 
 static func _walk_cell_textures(class_id: String, face: String) -> Array[Texture2D]:
+	if has_painted_look(class_id):
+		return painted_cells(class_id, "walk", face)
 	var count := walk_sheet_frames(face)
 	var packed := image_from_walk_bytes(class_id, face)
 	if packed != null:
@@ -324,6 +458,42 @@ static func _walk_cell_textures(class_id: String, face: String) -> Array[Texture
 		if full != null and not full.is_empty():
 			return textures_from_image(full, count)
 	return []
+
+
+## Painted action drop. A sheet on disk replaces that clip for its facing.
+## Missing sheets leave the export_2x clip (or no clip) exactly as it was.
+static func _load_painted_actions(built: SpriteFrames, class_id: String) -> bool:
+	var any := false
+	for kind in PAINTED_KINDS:
+		if kind == "walk":
+			continue
+		var spec := painted_spec(class_id, kind)
+		if spec.is_empty():
+			continue
+		for face in LETTERS:
+			var cells := painted_cells(class_id, kind, face)
+			if cells.is_empty():
+				continue
+			var anim := "%s_%s" % [str(PAINTED_ANIM[kind]), face]
+			if built.has_animation(anim):
+				built.remove_animation(anim)
+			if _install_clip(built, anim, {
+				"textures": cells,
+				"fps": float(spec.get("fps", ACTION_FPS)),
+				"loop": bool(spec.get("loop", kind == "idle")),
+			}):
+				any = true
+	return any
+
+
+## Spec of the painted strip that plays as this pawn clip kind, or {}.
+static func _painted_action_spec(class_id: String, kind: String) -> Dictionary:
+	for painted in PAINTED_KINDS:
+		if str(PAINTED_ANIM[painted]) == kind and painted != "walk":
+			if painted_cells(class_id, painted, "e").is_empty():
+				return {}
+			return painted_spec(class_id, painted)
+	return {}
 
 
 static func _load_export_pngs(built: SpriteFrames, class_id: String) -> bool:
@@ -375,6 +545,9 @@ static func _load_grok_fallback(built: SpriteFrames, class_id: String) -> bool:
 ## 0-based impact cell. Death holds the last frame in playback; this index is the collapse.
 static func impact_frame(class_id: String, kind: String) -> int:
 	var cls := SpellKits.normalize_class_id(class_id)
+	var painted := _painted_action_spec(cls, kind)
+	if painted.has("impact"):
+		return int(painted["impact"])
 	match kind:
 		"hit":
 			return 0

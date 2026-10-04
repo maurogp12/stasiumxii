@@ -7,6 +7,12 @@ class_name Pawn
 ## pose is frame 0 of `walk_<facing>` so idle and the stride are one identity.
 ## That cell is drawn on WalkDraw. A paused strip keeps one cell on device
 ## while the pawn eases, which is the idle slide.
+## Painted looks (4 Oct 2026): `art/characters/<class>/walk/` holds the
+## 12-cell walk per facing (StripLibrary.painted_cells). The frame follows the
+## distance walked (painted_walk_frames_per_tile, capped at 1.6x the authored
+## fps for natural leg speed), not one cycle per tile, and
+## the sprite hop is off while it plays. The static files below are that
+## walk's frame 0.
 ## `art/characters/<class>/<class>_<n|e|s|w>.png` stays the fallback when that
 ## sheet is missing. It is not the combat idle under a walk sheet, and it is
 ## not the class card. Select uses `art/ui/select/<class>_select.png`. Mirrors are baked into
@@ -750,7 +756,22 @@ func walk_contact_frame() -> int:
 
 
 func _sampled_walk_frame(t: float, count: int) -> int:
+	var per_tile := painted_walk_frames_per_tile()
+	if per_tile > 0.0:
+		# Painted walk: the frame follows the distance walked on this path
+		# (eased travel), at the spec rate. That rate is capped at natural
+		# leg speed, so a capped class slides its foot a little.
+		var walked := float(_stride_tile) + VIEW_MOTION.step_travel(t)
+		return VIEW_MOTION.painted_walk_frame(walked, per_tile, count, walk_contact_frame())
 	return VIEW_MOTION.walk_cycle_frame(t, count, _stride_tile, walk_contact_frame())
+
+
+## Cells per tile of the painted walk for this facing. 0 without one
+## (export_2x sheet, a missing painted facing, or a Stasis foe).
+func painted_walk_frames_per_tile() -> float:
+	if class_id == "" or stasis_sprite != "":
+		return 0.0
+	return STRIP_LIBRARY.painted_frames_per_tile(class_id, facing)
 
 
 ## Seek the facing's walk clip to the contact frame for this tile.
@@ -1868,6 +1889,13 @@ func _apply_hop_visual(t: float) -> void:
 	if stasis_sprite != "":
 		_apply_foe_gait(t)
 		return
+	if painted_walk_frames_per_tile() > 0.0:
+		# The painted cells carry their own bob and plant. A sprite hop on top
+		# lifts the planted foot off the tile, which reads as a slide.
+		_place_body(Vector2.ZERO)
+		_ride_chrome(Vector2.ZERO)
+		_apply_sprite_mul(Vector2.ONE)
+		return
 	var hop := VIEW_MOTION.hop_offset(t, VIEW_MOTION.hop_crest_px(class_id))
 	_place_body(hop)
 	_ride_chrome(Vector2.ZERO)
@@ -2535,6 +2563,10 @@ func _prepare_walk_loop(strip: AnimatedSprite2D, anim: StringName) -> void:
 	if frames != null and frames.has_animation(anim):
 		count = frames.get_frame_count(anim)
 	strip.speed_scale = walk_strip_speed_scale(count)
+	var per_tile := painted_walk_frames_per_tile()
+	if per_tile > 0.0 and frames != null and frames.get_animation_speed(anim) > 0.0 and WALK_TILE_SEC > 0.0:
+		# A free clock matches the driven rate: per_tile cells every tile.
+		strip.speed_scale = per_tile / (WALK_TILE_SEC * frames.get_animation_speed(anim))
 
 
 func _prepare_play_once(strip: AnimatedSprite2D, anim: StringName) -> void:

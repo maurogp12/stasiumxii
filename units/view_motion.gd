@@ -610,6 +610,17 @@ static func walk_cycle_frame(t: float, frame_count: int, _step_index: int = 0, c
 	return (plant + 1 + slot) % count
 
 
+## Painted walk cell for a distance along the path, in tiles. `per_tile`
+## cells pass per tile (from the strip spec), so the foot keeps pace with the
+## board at any tile ease. 0 tiles is the contact cell.
+static func painted_walk_frame(walked_tiles: float, per_tile: float, frame_count: int, contact: int = 0) -> int:
+	var count := maxi(frame_count, 1)
+	if count <= 1 or per_tile <= 0.0:
+		return 0
+	var step := int(floor(maxf(walked_tiles, 0.0) * per_tile + 1e-4))
+	return posmod(clampi(contact, 0, count - 1) + step, count)
+
+
 ## Exactly one integer cycle per tile. Playback fps falls out of the frame
 ## count and the tile time: 6 frames → 20, 8 frames → about 27.
 static func stride_cycles_per_tile() -> int:
