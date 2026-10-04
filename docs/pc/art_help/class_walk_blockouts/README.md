@@ -13,6 +13,8 @@
 >
 > **Gloam v3.1: S track foot_w 1.5, Mauro's pick 4 Oct.** S only (`idle_S`, `walk_S` clay, ID and joints); E is unchanged from v3 (`ffbfe3a9`). The wider S foot track stops the shins crossing below the knee on the painted legs. `gloam_actions.mp4` is still the v3 render. Options compared in `class_walk_looks/gloam/v1_claude/s_track_options.png` on `claude/gloam-legs`.
 >
+> **Mender v3.1: S track foot_w 0.3, Mauro's pick 4 Oct.** S only (`idle_S`, `walk_S` clay, ID and joints); E is unchanged from v3 (`ffbfe3a9`). The Kestrel-style narrow track keeps the stride on the walk diagonal (contact foot-pair angle f00 44 deg / f06 27 deg); the robe hiding the far boot is accepted. `mender_actions.mp4` is still the v3 render. Options compared in `class_walk_looks/mender/v1_claude/s_track_options.png` on `claude/mender-legs`.
+>
 > Every folder, `joints_512.json`, clay, ID and action video here is v2. `proportions_v2.png` shows painting | old | new. **Rig all painted parts on these v2 joints.**
 
 These are walk guides in the same format as Technical Artist's Ironjaw guide (`docs/pc/art_help/ironjaw_walk/ta_joints/`). Each class has a clay pass, a part-ID pass and a joints file. They are built from Mauro's new designs in `refs/`, not the current sprites (Mauro, 4 Oct 2026: "Don't use current designs, use these ones").
