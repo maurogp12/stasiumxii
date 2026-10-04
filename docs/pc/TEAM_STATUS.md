@@ -12,7 +12,7 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
    - Team branches merge into `pc/world-zones` or `pc/combat-look` only after Claude's approval.
    - Log every decision in `docs/pc/CHANGE_LOG_PC.md`.
 
-**Base branches:** `pc/world-zones` @ `ef3bcc9` (#253 merged 12:54; 34-suite check running). `pc/combat-look` @ `8d93797`. `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
+**Base branches:** `pc/world-zones` @ `ef3bcc9` (#253 merged 12:54; 34-suite check running). `pc/combat-look` @ `a69f7c3` (#254 merged; 20/20 green). `pc/combat-look` @ `8d93797` (#242 merged; all 20 suites green on a fresh worktree, 4 Oct 10:45).
 
 ---
 
@@ -31,8 +31,8 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 | Bot | Work | PR / branch | Head | Where it stopped | Next step |
 |---|---|---|---|---|---|
 | `ae16` | L9 Crosshaven board, light grade | #242 (merged 10:19) | `c15941b` | **Done.** Media sent to Mauro | none |
-| `ae16` | L9b Crosshaven v1 decoration | #254 `cursor/l9b-v1-decor-ae16` | `347d7ad` | **Approved 14:10.** 20/20 green; leaves within 9–12% of mock v1 luma (the double-multiply fixed); sent to Mauro | Merge into `pc/combat-look` |
-| `1dff` → **Claude (took over 11:40)** | L10 new PC characters (Ironjaw v3.1, Kestrel v3), PC walk 0.42 s/cell **locked by Mauro** | #248 `cursor/l10-pc-characters-1dff` | `2910f5b` | **Take-over done**: all 6 items, plus a load-proof lunge test (a flake that also happens on base). 21/21 green. Results posted 12:55 | Merge into `pc/combat-look` |
+| `ae16` | L9b Crosshaven v1 decoration | #254 (**merged 14:07**) | `347d7ad` | **Done.** `pc/combat-look` @ `a69f7c3`, 20/20 green after the merge | none |
+| `1dff` → **Claude (took over 11:40)** | L10 new PC characters, PC walk 0.42 s/cell locked | #248 | `2910f5b`, with local merge `81cbc6a` (`pc/combat-look` a69f7c3 merged in, change-log conflict resolved, no rows lost) | **Mauro: "merge L10" (14:15).** 21-suite run on the merged result in progress | When green: push `81cbc6a`, merge #248 into `pc/combat-look` (not main/mobile), re-verify the base |
 
 ## 3. Scenario Art (Luca's art bot) and Technical Artist
 
