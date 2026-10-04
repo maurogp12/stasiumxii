@@ -413,13 +413,13 @@
           "Walk the Stone Ford, then the Stoneford square."
         ],
         "active": [
-          "A mark is still waiting."
+          "The Stone Ford or the Stoneford square is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen the Crossroads road. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Crossroads roads are yours. Stoneford is next."
         ]
       }
     },
@@ -459,16 +459,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Stoneford's fields are open. Meet the Warden, the Trader, and the Door Keeper of the Old Granary Cellar."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "The Stoneford Warden is still waiting, and so are the others."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Stoneford. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden keeps the square. The Old Granary Cellar is the only cellar in these lands."
         ]
       }
     },
@@ -521,16 +521,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk Stoneford for the Warden. See the ford, the square, and the road on to Northgate."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Stoneford mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked Stoneford. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden knows this ground. The Old Granary Cellar can wait until you are ready."
         ]
       }
     },
@@ -561,16 +561,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Old Granary Cellar. The way down is not open yet."
+          "Clear the Old Granary Cellar. The Warden wants it quiet. The way down is not open yet."
         ],
         "active": [
-          "Old Granary Cellar is still ahead."
+          "The Old Granary Cellar is still ahead."
         ],
         "ready": [
-          "You cleared Old Granary Cellar."
+          "You cleared the Old Granary Cellar."
         ],
         "done": [
-          "The cellar can rest."
+          "The cellar can rest. Go on to Northgate and speak with the Warden there."
         ]
       }
     },
@@ -610,16 +610,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "The frost sits on Northgate. Meet the Warden, the Trader, and the Door Keeper of Frostspire Archive."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Northgate's Warden is still out in the cold, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Northgate. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden holds the frost gate. Frostspire Archive is the door under the snow."
         ]
       }
     },
@@ -672,16 +672,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the frost for the Northgate Warden. Learn the north road, the square, and the way on to Eastmarch."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Northgate mark is still waiting in the frost."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen Northgate's frost. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has your report. Frostspire Archive stays shut until the door is built."
         ]
       }
     },
@@ -712,16 +712,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Frostspire Archive. The way down is not open yet."
+          "Clear Frostspire Archive. The Warden says the frost keeps what was written. The way down is not open yet."
         ],
         "active": [
-          "Frostspire Archive is still ahead."
+          "Frostspire Archive is still ahead, under the frost."
         ],
         "ready": [
           "You cleared Frostspire Archive."
         ],
         "done": [
-          "The cellar can rest."
+          "The archive can keep its cold. Go on to Eastmarch and speak with the Warden there."
         ]
       }
     },
@@ -761,16 +761,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Salt is on the wind in Eastmarch. Meet the Warden, the Trader, and the Door Keeper of the Saltmaw Grotto."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Eastmarch's Warden is still by the water, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Eastmarch. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden watches the coves. The Saltmaw Grotto is the door in the rock."
         ]
       }
     },
@@ -823,16 +823,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk Eastmarch for the Warden. See the east road, the square, and the way on to Southbridge."
         ],
         "active": [
-          "A mark is still waiting."
+          "An Eastmarch mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked the salt ground. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has the report. The Saltmaw Grotto stays shut until the door is built."
         ]
       }
     },
@@ -863,16 +863,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Saltmaw Grotto. The way down is not open yet."
+          "Clear the Saltmaw Grotto. The Warden wants the caves quiet. The way down is not open yet."
         ],
         "active": [
-          "Saltmaw Grotto is still ahead."
+          "The Saltmaw Grotto is still ahead."
         ],
         "ready": [
-          "You cleared Saltmaw Grotto."
+          "You cleared the Saltmaw Grotto."
         ],
         "done": [
-          "The cellar can rest."
+          "The grotto can keep its salt. Go on to Southbridge and speak with the Warden there."
         ]
       }
     },
@@ -912,16 +912,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Fog lies on Southbridge. Meet the Warden, the Trader, and the Door Keeper of the Drowned Abbey."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Southbridge's Warden is still in the fog, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Southbridge. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden knows the fog. The Drowned Abbey is the door in the marsh."
         ]
       }
     },
@@ -974,16 +974,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the fog for the Southbridge Warden. Learn the crossing, the square, and the way on to Westwatch."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Southbridge mark is still lost in the fog."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen through the fog. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has your report. The Drowned Abbey stays shut until the door is built."
         ]
       }
     },
@@ -1014,16 +1014,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Drowned Abbey. The way down is not open yet."
+          "Clear the Drowned Abbey. The Warden says the fog hides the nave. The way down is not open yet."
         ],
         "active": [
-          "Drowned Abbey is still ahead."
+          "The Drowned Abbey is still ahead, under the fog."
         ],
         "ready": [
-          "You cleared Drowned Abbey."
+          "You cleared the Drowned Abbey."
         ],
         "done": [
-          "The cellar can rest."
+          "Let the fog take the abbey. Go on to Westwatch and speak with the Warden there."
         ]
       }
     },
@@ -1063,16 +1063,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Dread hangs on Westwatch. Meet the Warden, the Trader, and the Door Keeper of the Heart of the Blight."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Westwatch's Warden is still on the wall, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Westwatch. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden keeps the last watch. The Heart of the Blight is the door in the dark."
         ]
       }
     },
@@ -1116,16 +1116,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the dread for the Westwatch Warden. See the west road and the square you must hold."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Westwatch mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked Westwatch. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has the report. The Heart of the Blight stays shut until the door is built."
         ]
       }
     },
@@ -1156,16 +1156,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Heart of the Blight. The way down is not open yet."
+          "Clear the Heart of the Blight. The Warden will not name what waits there. The way down is not open yet."
         ],
         "active": [
-          "Heart of the Blight is still ahead."
+          "The Heart of the Blight is still ahead."
         ],
         "ready": [
-          "You cleared Heart of the Blight."
+          "You cleared the Heart of the Blight."
         ],
         "done": [
-          "The cellar can rest."
+          "The dread can stay in the dark. Go back to the Crossroads and speak with the Koliseo Herald."
         ]
       }
     },
