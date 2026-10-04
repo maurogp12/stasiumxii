@@ -1,0 +1,17 @@
+{
+ "S": {
+  "idle_p95_boxmask": 31.2,
+  "v6_p95_TAcapsule": 46.9,
+  "v7_p95_TAcapsule": 35.8,
+  "v7_p95_exact_leg_layers": 28.4,
+  "v7_p50_exact_leg_layers": 7.6
+ },
+ "E": {
+  "idle_p95_boxmask": 31.8,
+  "v6_p95_TAcapsule": 35.1,
+  "v7_p95_TAcapsule": 26.6,
+  "v7_p95_exact_leg_layers": 27.7,
+  "v7_p50_exact_leg_layers": 9.0
+ },
+ "method": "L* (CIELAB, 0-100) 95th percentile. idle: hand box below fists/tassets between the axe heads, crimson rejected (TA idle joints do not sit on the painted HD idle legs). walk TAcapsule: capsules on TA final joints, crimson rejected, all 12 frames (can catch haft/axe px). walk exact: pixels owned by leg layers in the final composite (build), all 12 frames."
+}
