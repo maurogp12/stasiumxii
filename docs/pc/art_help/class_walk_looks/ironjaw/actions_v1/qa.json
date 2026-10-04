@@ -1,0 +1,368 @@
+{
+ "format": {
+  "idle_S": {
+   "bbox_union": [
+    120,
+    64,
+    369,
+    324
+   ]
+  },
+  "attack_S": {
+   "bbox_union": [
+    107,
+    2,
+    389,
+    331
+   ]
+  },
+  "skill_S": {
+   "bbox_union": [
+    113,
+    64,
+    455,
+    331
+   ]
+  },
+  "hit_S": {
+   "bbox_union": [
+    71,
+    50,
+    400,
+    338
+   ]
+  },
+  "death_S": {
+   "bbox_union": [
+    58,
+    64,
+    380,
+    357
+   ]
+  },
+  "idle_E": {
+   "bbox_union": [
+    125,
+    64,
+    426,
+    325
+   ]
+  },
+  "attack_E": {
+   "bbox_union": [
+    71,
+    3,
+    497,
+    331
+   ]
+  },
+  "skill_E": {
+   "bbox_union": [
+    125,
+    61,
+    418,
+    334
+   ]
+  },
+  "hit_E": {
+   "bbox_union": [
+    19,
+    64,
+    409,
+    325
+   ]
+  },
+  "death_E": {
+   "bbox_union": [
+    39,
+    64,
+    409,
+    356
+   ]
+  }
+ },
+ "counts": {
+  "idle_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_S": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_S": {
+   "frames": 13,
+   "blockout": 13
+  },
+  "idle_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_E": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_E": {
+   "frames": 13,
+   "blockout": 13
+  }
+ },
+ "skate": {
+  "idle_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_S": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 5,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 6
+   }
+  },
+  "hit_S": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_S": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   }
+  },
+  "idle_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_E": {
+   "R": {
+    "planted_pairs": 6,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 5
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 5,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 6
+   }
+  },
+  "hit_E": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_E": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 8,
+    "max_px": 0.209,
+    "pairs_where_the_blockout_moves_the_foot": 4
+   }
+  }
+ },
+ "touch_border": [],
+ "arm_stretch": {
+  "upper_arm_k": [
+   0.85,
+   1.15
+  ],
+  "forearm_axe_k": [
+   1.0,
+   1.0
+  ],
+  "max_abs_stretch_pct": 15.0
+ },
+ "edge_turn": [
+  [
+   "attack_S_f03.png",
+   "R",
+   -32.0
+  ],
+  [
+   "attack_S_f04.png",
+   "R",
+   -32.0
+  ],
+  [
+   "death_S_f06.png",
+   "R",
+   -7.0
+  ],
+  [
+   "death_S_f07.png",
+   "R",
+   -7.0
+  ],
+  [
+   "death_S_f08.png",
+   "R",
+   -7.0
+  ],
+  [
+   "death_S_f09.png",
+   "R",
+   -24.0
+  ],
+  [
+   "death_S_f10.png",
+   "R",
+   -24.0
+  ],
+  [
+   "death_S_f11.png",
+   "R",
+   -24.0
+  ],
+  [
+   "death_S_f12.png",
+   "R",
+   -20.0
+  ],
+  [
+   "attack_E_f02.png",
+   "R",
+   -35.0
+  ],
+  [
+   "attack_E_f03.png",
+   "R",
+   -35.0
+  ],
+  [
+   "attack_E_f04.png",
+   "R",
+   -44.0
+  ],
+  [
+   "attack_E_f05.png",
+   "R",
+   -44.0
+  ],
+  [
+   "death_E_f06.png",
+   "L",
+   2.0
+  ],
+  [
+   "death_E_f07.png",
+   "L",
+   -35.0
+  ],
+  [
+   "death_E_f08.png",
+   "L",
+   -35.0
+  ],
+  [
+   "death_E_f09.png",
+   "L",
+   -20.0
+  ]
+ ],
+ "clean": {
+  "halo_px_recoloured": 4600,
+  "pin_hole_px_closed": 2147,
+  "small_holes_left": 0,
+  "specks_left": 0
+ },
+ "legs": {
+  "leg_k_max": 1.1,
+  "leg_k_effective_max": 1.2,
+  "frames_over_1_10": [
+   "death_S_f10.png",
+   "death_S_f11.png",
+   "death_S_f12.png",
+   "skill_E_f06.png",
+   "skill_E_f07.png",
+   "skill_E_f08.png",
+   "skill_E_f09.png"
+  ],
+  "note": "k: the IK bone scale (1.00-1.10). k_effective: hip-to-ankle span / idle leg length; above 1.10 the shin takes the rest"
+ },
+ "problems": []
+}
