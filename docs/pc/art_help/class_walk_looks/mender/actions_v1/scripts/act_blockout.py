@@ -11,6 +11,10 @@ Mode `aimfix` (default; `approved` renders actions.py exactly as in the mp4):
   * The attack step-in goes forward-inward instead of straight forward, so the S boot stays inside the cell (step_in).
   * E death falls to his left (world -X), not straight back toward the camera (straight back leaves the cell). Same screen
     path as the approved S death.
+  * The staff direction is continuous (staff_fix). actions.py switches it from upright (shoulder angle A <= 40) to along the
+    forearm (A > 40) in one frame, so the staff flips by up to 70 deg between two frames (skill f10 -> f11, attack f05 -> f06).
+    Here the two directions are blended with smoothstep over A 20..60, and the raised staff is always along the forearm
+    (actions.py points it along -forearm when the forearm points down, a second 180 deg flip).
 Per frame the json holds the joints (joints_512.json schema) plus hand, head_c, staff_grip / staff_top / staff_butt,
 crook, lantern (hook point under the crook) and lantern_c (cage centre), the torso / pelvis basis, key, draw_order, depth
 and parts (rotation_deg, visible_length_scale vs f00 of the same action).
@@ -68,6 +72,20 @@ def side_fall(C, st):
         elif not kk.startswith('_'): J[kk] = Rt @ (J[kk] - piv) + piv
     return J
 
+def staff_fix(P, C, J, F, M):
+    """continuous staff rule (see the docstring): blend the upright and the along-the-forearm staff by smoothstep(A 20..60)."""
+    Hh = C['H']; Rf = rot(Z, -90) if F == 'S' else np.eye(3); st = J['_act']; w = lambda k: Rf @ J[k]; Rc = Rf @ J['_Rc']
+    g = w('R_hand'); fa = nrm(w('R_wrist') - w('R_elbow')); Aa = st['arms']['R'][0]; up = Rf @ Z
+    up_raise = nrm(up * 0.35 + fa)        # along the forearm (actions.py also flips it to -forearm when the forearm points down)
+    up_rest = nrm(Rc @ np.array([0, 0.06, 1.0]))
+    t = float(np.clip((Aa - 20.0) / 40.0, 0, 1)); t = t * t * (3 - 2 * t)
+    u = nrm(up_rest * (1 - t) + up_raise * t)
+    def setm(k, m): P[k].matrix_world = mathutils.Matrix([list(r) for r in m]); M[k] = m
+    Ms = B.seg_frame(g, g + u, Rc @ X); Ms[:3, 3] = g; setm('staff', Ms)
+    top = g + u * 0.55 * Hh; fw = nrm((Rc @ Y) - u * np.dot(Rc @ Y, u))
+    setm('crook', B.frame(Rc, top + fw * 0.05 * Hh)); setm('lantern', B.frame(Rc, top + fw * 0.10 * Hh - u * 0.01 * Hh))
+    return M
+
 def main():
     cls = 'mender'; C = dict(B.CLASSES[cls]); P = B.build(C); sc = bpy.context.scene; Hh = C['H']
     for d in ('clay', 'id'): os.makedirs(f'{out}/{d}', exist_ok=True)
@@ -84,6 +102,7 @@ def main():
                 if MODE == 'aimfix' and anim in ('attack', 'cast'): J = arms_facing(C, st, J)
                 if MODE == 'aimfix' and anim == 'attack': J = step_in(C, st, J)
                 J['_act'] = st; M = A.place(P, C, J, F)
+                if MODE == 'aimfix': M = staff_fix(P, C, J, F, M)
                 tag = f'{cls}_{name}_{F}_f{i:02d}'
                 B.render(sc, f'{out}/clay/{tag}.png', 'clay'); B.render(sc, f'{out}/id/{tag}.png', 'id')
                 jp = B.joints_px(sc, J, F); pr = lambda p: B.project(sc, p)

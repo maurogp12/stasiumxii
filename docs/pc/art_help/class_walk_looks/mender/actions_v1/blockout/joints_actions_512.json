@@ -11222,24 +11222,24 @@
       240.92
      ],
      "staff_top": [
-      230.136,
-      120.122
+      386.678,
+      303.969
      ],
      "staff_butt": [
-      345.034,
-      328.773
+      231.185,
+      195.067
      ],
      "crook": [
-      238.708,
-      114.155
+      395.682,
+      303.233
      ],
      "lantern": [
-      248.49,
-      110.384
+      403.049,
+      301.352
      ],
      "lantern_c": [
-      247.032,
-      120.683
+      401.591,
+      311.651
      ]
     },
     "basis": {
@@ -11307,11 +11307,11 @@
      }
     },
     "draw_order": [
-     "R_hand",
-     "staff",
-     "R_farm",
-     "lantern",
      "crook",
+     "lantern",
+     "staff",
+     "R_hand",
+     "R_farm",
      "R_uarm",
      "head",
      "hood",
@@ -11364,9 +11364,9 @@
      "robe_R": 1930.489,
      "robe_L": 1966.84,
      "sash": 1930.954,
-     "staff": 1854.609,
-     "crook": 1865.137,
-     "lantern": 1864.83,
+     "staff": 1840.536,
+     "crook": 1777.473,
+     "lantern": 1794.584,
      "pouch_R": 1907.567,
      "pouch_L": 1948.545
     },
@@ -11472,8 +11472,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 151.16,
-      "visible_length_scale": 1.189
+      "rotation_deg": -54.99,
+      "visible_length_scale": 0.948
      },
      "crook": {
       "rotation_deg": -171.94,
@@ -12702,24 +12702,24 @@
       237.16
      ],
      "staff_top": [
-      229.898,
-      122.304
+      398.408,
+      291.553
      ],
      "staff_butt": [
-      358.218,
-      320.693
+      235.665,
+      197.602
      ],
      "crook": [
-      238.944,
-      115.188
+      406.418,
+      293.224
      ],
      "lantern": [
-      249.341,
-      110.161
+      412.715,
+      293.906
      ],
      "lantern_c": [
-      247.605,
-      120.428
+      410.98,
+      304.173
      ]
     },
     "basis": {
@@ -12787,12 +12787,12 @@
      }
     },
     "draw_order": [
-     "R_hand",
-     "staff",
-     "R_farm",
      "crook",
-     "R_uarm",
      "lantern",
+     "staff",
+     "R_hand",
+     "R_farm",
+     "R_uarm",
      "head",
      "hood",
      "neck",
@@ -12844,9 +12844,9 @@
      "robe_R": 1929.963,
      "robe_L": 1967.366,
      "sash": 1931.332,
-     "staff": 1851.472,
-     "crook": 1869.096,
-     "lantern": 1870.466,
+     "staff": 1836.378,
+     "crook": 1772.906,
+     "lantern": 1790.788,
      "pouch_R": 1907.078,
      "pouch_L": 1949.241
     },
@@ -12952,15 +12952,15 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 147.1,
-      "visible_length_scale": 1.18
+      "rotation_deg": -60.0,
+      "visible_length_scale": 0.938
      },
      "crook": {
       "rotation_deg": -170.4,
       "visible_length_scale": 0.962
      },
      "lantern": {
-      "rotation_deg": -170.41,
+      "rotation_deg": -170.4,
       "visible_length_scale": 0.962
      },
      "pouch_R": {
@@ -13072,24 +13072,24 @@
       245.44
      ],
      "staff_top": [
-      280.491,
-      132.196
+      280.569,
+      132.267
      ],
      "staff_butt": [
-      255.046,
-      327.799
+      254.99,
+      327.747
      ],
      "crook": [
-      289.989,
-      137.836
+      290.065,
+      137.916
      ],
      "lantern": [
-      299.219,
-      145.535
+      299.293,
+      145.623
      ],
      "lantern_c": [
-      298.451,
-      156.149
+      298.525,
+      156.237
      ]
     },
     "basis": {
@@ -13214,9 +13214,9 @@
      "robe_R": 1931.962,
      "robe_L": 1967.608,
      "sash": 1931.833,
-     "staff": 1868.695,
-     "crook": 1795.857,
-     "lantern": 1797.909,
+     "staff": 1868.684,
+     "crook": 1795.781,
+     "lantern": 1797.841,
      "pouch_R": 1909.018,
      "pouch_L": 1949.201
     },
@@ -13322,15 +13322,15 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": -172.59,
-      "visible_length_scale": 0.985
+      "rotation_deg": -172.55,
+      "visible_length_scale": 0.984
      },
      "crook": {
       "rotation_deg": -175.86,
       "visible_length_scale": 0.983
      },
      "lantern": {
-      "rotation_deg": -175.86,
+      "rotation_deg": -175.87,
       "visible_length_scale": 0.983
      },
      "pouch_R": {
@@ -15664,24 +15664,24 @@
       176.208
      ],
      "staff_top": [
-      266.232,
-      127.938
+      450.674,
+      141.293
      ],
      "staff_butt": [
-      401.886,
-      211.313
+      267.747,
+      201.601
      ],
      "crook": [
-      269.475,
-      116.063
+      442.601,
+      140.092
      ],
      "lantern": [
-      274.146,
-      105.066
+      432.602,
+      139.526
      ],
      "lantern_c": [
-      273.015,
-      116.659
+      431.47,
+      151.12
      ]
     },
     "basis": {
@@ -15749,8 +15749,6 @@
      }
     },
     "draw_order": [
-     "crook",
-     "lantern",
      "hood",
      "head",
      "neck",
@@ -15762,7 +15760,6 @@
      "pelvis",
      "robe_R",
      "R_farm",
-     "staff",
      "tabard_b",
      "R_thigh",
      "L_farm",
@@ -15770,6 +15767,7 @@
      "pouch_L",
      "sash",
      "L_thigh",
+     "staff",
      "robe_L",
      "L_hand",
      "tabard_f",
@@ -15778,7 +15776,9 @@
      "L_bootshaft",
      "R_bootshaft",
      "L_boot",
-     "R_boot"
+     "R_boot",
+     "crook",
+     "lantern"
     ],
     "depth": {
      "pelvis": 1936.73,
@@ -15806,9 +15806,9 @@
      "robe_R": 1941.117,
      "robe_L": 1973.993,
      "sash": 1961.661,
-     "staff": 1946.342,
-     "crook": 1861.944,
-     "lantern": 1871.562,
+     "staff": 1971.17,
+     "crook": 2050.452,
+     "lantern": 2063.195,
      "pouch_R": 1924.41,
      "pouch_L": 1961.47
     },
@@ -15914,8 +15914,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 121.58,
-      "visible_length_scale": 0.736
+      "rotation_deg": -108.25,
+      "visible_length_scale": 0.89
      },
      "crook": {
       "rotation_deg": -174.42,
@@ -17144,24 +17144,24 @@
       167.841
      ],
      "staff_top": [
-      265.391,
-      130.659
+      449.244,
+      123.727
      ],
      "staff_butt": [
-      405.403,
-      194.882
+      271.692,
+      199.924
      ],
      "crook": [
-      266.443,
-      118.495
+      441.69,
+      125.17
      ],
      "lantern": [
-      268.968,
-      107.006
+      432.268,
+      127.414
      ],
      "lantern_c": [
-      267.835,
-      118.708
+      431.134,
+      139.116
      ]
     },
     "basis": {
@@ -17229,8 +17229,6 @@
      }
     },
     "draw_order": [
-     "crook",
-     "lantern",
      "hood",
      "head",
      "neck",
@@ -17243,7 +17241,6 @@
      "robe_R",
      "R_farm",
      "tabard_b",
-     "staff",
      "R_thigh",
      "L_farm",
      "pouch_L",
@@ -17252,13 +17249,16 @@
      "L_thigh",
      "robe_L",
      "L_hand",
+     "staff",
      "tabard_f",
      "L_shin",
      "R_shin",
      "L_bootshaft",
      "R_bootshaft",
      "L_boot",
-     "R_boot"
+     "R_boot",
+     "crook",
+     "lantern"
     ],
     "depth": {
      "pelvis": 1936.73,
@@ -17286,9 +17286,9 @@
      "robe_R": 1941.718,
      "robe_L": 1973.392,
      "sash": 1961.993,
-     "staff": 1949.739,
-     "crook": 1863.564,
-     "lantern": 1873.344,
+     "staff": 1974.845,
+     "crook": 2054.106,
+     "lantern": 2066.973,
      "pouch_R": 1925.178,
      "pouch_L": 1960.884
     },
@@ -17394,8 +17394,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 114.64,
-      "visible_length_scale": 0.712
+      "rotation_deg": -113.23,
+      "visible_length_scale": 0.893
      },
      "crook": {
       "rotation_deg": -174.47,
@@ -17514,24 +17514,24 @@
       207.325
      ],
      "staff_top": [
-      335.209,
-      80.346
+      335.318,
+      80.323
      ],
      "staff_butt": [
-      313.205,
-      299.673
+      313.125,
+      299.69
      ],
      "crook": [
-      343.422,
-      77.13
+      343.53,
+      77.118
      ],
      "lantern": [
-      351.403,
-      76.224
+      351.508,
+      76.223
      ],
      "lantern_c": [
-      350.739,
-      87.554
+      350.844,
+      87.553
      ]
     },
     "basis": {
@@ -17656,9 +17656,9 @@
      "robe_R": 1936.077,
      "robe_L": 1969.716,
      "sash": 1956.78,
-     "staff": 1935.606,
-     "crook": 1897.434,
-     "lantern": 1912.687,
+     "staff": 1935.616,
+     "crook": 1897.512,
+     "lantern": 1912.768,
      "pouch_R": 1919.26,
      "pouch_L": 1957.18
     },
@@ -17764,7 +17764,7 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": -174.27,
+      "rotation_deg": -174.23,
       "visible_length_scale": 1.019
      },
      "crook": {
@@ -18256,24 +18256,24 @@
       237.948
      ],
      "staff_top": [
-      274.049,
-      121.389
+      275.804,
+      122.777
      ],
      "staff_butt": [
-      260.694,
-      322.718
+      259.417,
+      321.71
      ],
      "crook": [
-      282.987,
-      126.72
+      284.728,
+      128.325
      ],
      "lantern": [
-      291.786,
-      134.169
+      293.48,
+      135.967
      ],
      "lantern_c": [
-      291.619,
-      145.066
+      293.314,
+      146.863
      ]
     },
     "basis": {
@@ -18398,9 +18398,9 @@
      "robe_R": 1933.059,
      "robe_L": 1967.716,
      "sash": 1932.115,
-     "staff": 1865.107,
-     "crook": 1794.514,
-     "lantern": 1795.118,
+     "staff": 1864.859,
+     "crook": 1792.834,
+     "lantern": 1793.613,
      "pouch_R": 1910.091,
      "pouch_L": 1949.159
     },
@@ -18506,15 +18506,15 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": -176.2,
-      "visible_length_scale": 1.007
+      "rotation_deg": -175.29,
+      "visible_length_scale": 0.997
      },
      "crook": {
       "rotation_deg": -179.12,
       "visible_length_scale": 1.007
      },
      "lantern": {
-      "rotation_deg": -179.13,
+      "rotation_deg": -179.12,
       "visible_length_scale": 1.007
      },
      "pouch_R": {
@@ -21956,24 +21956,24 @@
       228.324
      ],
      "staff_top": [
-      208.464,
-      112.382
+      348.433,
+      187.488
      ],
      "staff_butt": [
-      332.307,
-      312.646
+      230.511,
+      258.024
      ],
      "crook": [
-      214.694,
-      106.198
+      354.936,
+      198.374
      ],
      "lantern": [
-      222.228,
-      102.123
+      360.197,
+      210.003
      ],
      "lantern_c": [
-      222.158,
-      113.069
+      360.128,
+      220.949
      ]
     },
     "basis": {
@@ -22041,11 +22041,11 @@
      }
     },
     "draw_order": [
-     "R_hand",
-     "staff",
-     "R_farm",
-     "lantern",
      "crook",
+     "lantern",
+     "staff",
+     "R_hand",
+     "R_farm",
      "R_uarm",
      "head",
      "hood",
@@ -22098,9 +22098,9 @@
      "robe_R": 1933.059,
      "robe_L": 1967.716,
      "sash": 1932.115,
-     "staff": 1863.806,
-     "crook": 1879.611,
-     "lantern": 1876.434,
+     "staff": 1844.821,
+     "crook": 1749.224,
+     "lantern": 1757.414,
      "pouch_R": 1910.091,
      "pouch_L": 1949.159
     },
@@ -22206,8 +22206,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 148.27,
-      "visible_length_scale": 1.175
+      "rotation_deg": -120.88,
+      "visible_length_scale": 0.686
      },
      "crook": {
       "rotation_deg": -179.63,
@@ -22698,24 +22698,24 @@
       199.591
      ],
      "staff_top": [
-      330.129,
-      75.301
+      332.456,
+      74.646
      ],
      "staff_butt": [
-      316.774,
-      289.985
+      315.081,
+      290.46
      ],
      "crook": [
-      339.068,
-      71.692
+      341.377,
+      71.272
      ],
      "lantern": [
-      347.866,
-      70.343
+      350.114,
+      70.17
      ],
      "lantern_c": [
-      347.7,
-      81.406
+      349.948,
+      81.233
      ]
     },
     "basis": {
@@ -22840,9 +22840,9 @@
      "robe_R": 1933.059,
      "robe_L": 1967.716,
      "sash": 1953.96,
-     "staff": 1931.053,
-     "crook": 1886.59,
-     "lantern": 1901.637,
+     "staff": 1931.271,
+     "crook": 1888.298,
+     "lantern": 1903.431,
      "pouch_R": 1916.092,
      "pouch_L": 1955.16
     },
@@ -22948,8 +22948,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": -176.44,
-      "visible_length_scale": 0.994
+      "rotation_deg": -175.39,
+      "visible_length_scale": 1.001
      },
      "crook": {
       "rotation_deg": -179.14,
@@ -22957,7 +22957,7 @@
      },
      "lantern": {
       "rotation_deg": -179.14,
-      "visible_length_scale": 0.993
+      "visible_length_scale": 0.994
      },
      "pouch_R": {
       "rotation_deg": -180.0,
@@ -26398,24 +26398,24 @@
       178.622
      ],
      "staff_top": [
-      247.689,
-      140.305
+      410.048,
+      64.248
      ],
      "staff_butt": [
-      392.007,
-      206.489
+      273.928,
+      261.804
      ],
      "crook": [
-      252.522,
-      128.59
+      415.495,
+      69.159
      ],
      "lantern": [
-      258.874,
-      117.571
+      419.51,
+      76.149
      ],
      "lantern_c": [
-      258.805,
-      128.587
+      419.441,
+      87.165
      ]
     },
     "basis": {
@@ -26483,8 +26483,6 @@
      }
     },
     "draw_order": [
-     "crook",
-     "lantern",
      "hood",
      "head",
      "neck",
@@ -26493,21 +26491,23 @@
      "torso",
      "pouch_R",
      "R_farm",
-     "staff",
      "L_uarm",
      "pelvis",
      "robe_R",
      "R_thigh",
      "tabard_b",
      "R_hand",
+     "staff",
      "sash",
      "pouch_L",
      "L_farm",
      "L_thigh",
+     "crook",
      "tabard_f",
      "robe_L",
      "L_hand",
      "R_shin",
+     "lantern",
      "L_shin",
      "R_bootshaft",
      "L_bootshaft",
@@ -26540,9 +26540,9 @@
      "robe_R": 1933.059,
      "robe_L": 1967.716,
      "sash": 1953.96,
-     "staff": 1929.259,
-     "crook": 1842.143,
-     "lantern": 1850.468,
+     "staff": 1944.766,
+     "crook": 1965.437,
+     "lantern": 1981.271,
      "pouch_R": 1916.092,
      "pouch_L": 1955.16
     },
@@ -26648,8 +26648,8 @@
       "visible_length_scale": 1.0
      },
      "staff": {
-      "rotation_deg": 114.63,
-      "visible_length_scale": 0.734
+      "rotation_deg": -145.43,
+      "visible_length_scale": 1.109
      },
      "crook": {
       "rotation_deg": -179.64,
