@@ -1,0 +1,289 @@
+{
+ "format": {
+  "idle_S": {
+   "bbox_union": [
+    99,
+    103,
+    404,
+    352
+   ]
+  },
+  "attack_S": {
+   "bbox_union": [
+    95,
+    77,
+    420,
+    352
+   ]
+  },
+  "skill_S": {
+   "bbox_union": [
+    88,
+    103,
+    404,
+    352
+   ]
+  },
+  "hit_S": {
+   "bbox_union": [
+    104,
+    94,
+    404,
+    354
+   ]
+  },
+  "death_S": {
+   "bbox_union": [
+    104,
+    103,
+    427,
+    353
+   ]
+  },
+  "idle_E": {
+   "bbox_union": [
+    136,
+    103,
+    370,
+    335
+   ]
+  },
+  "attack_E": {
+   "bbox_union": [
+    136,
+    41,
+    384,
+    335
+   ]
+  },
+  "skill_E": {
+   "bbox_union": [
+    121,
+    103,
+    362,
+    340
+   ]
+  },
+  "hit_E": {
+   "bbox_union": [
+    126,
+    103,
+    362,
+    335
+   ]
+  },
+  "death_E": {
+   "bbox_union": [
+    3,
+    103,
+    363,
+    349
+   ]
+  }
+ },
+ "counts": {
+  "idle_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_S": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_S": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_S": {
+   "frames": 13,
+   "blockout": 13
+  },
+  "idle_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "attack_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "skill_E": {
+   "frames": 12,
+   "blockout": 12
+  },
+  "hit_E": {
+   "frames": 8,
+   "blockout": 8
+  },
+  "death_E": {
+   "frames": 13,
+   "blockout": 13
+  }
+ },
+ "skate": {
+  "idle_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_S": {
+   "R": {
+    "planted_pairs": 5,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 6
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_S": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_S": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_S": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 9,
+    "max_px": 0.198,
+    "pairs_where_the_blockout_moves_the_foot": 3
+   }
+  },
+  "idle_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "attack_E": {
+   "R": {
+    "planted_pairs": 5,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 6
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "skill_E": {
+   "R": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 11,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "hit_E": {
+   "R": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   },
+   "L": {
+    "planted_pairs": 7,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 0
+   }
+  },
+  "death_E": {
+   "R": {
+    "planted_pairs": 3,
+    "max_px": 0.0,
+    "pairs_where_the_blockout_moves_the_foot": 9
+   },
+   "L": {
+    "planted_pairs": 9,
+    "max_px": 0.183,
+    "pairs_where_the_blockout_moves_the_foot": 3
+   }
+  }
+ },
+ "touch_border": [],
+ "arm_stretch": {
+  "arm_bone_k": [
+   0.85,
+   1.15
+  ],
+  "max_abs_stretch_pct": 15.0,
+  "leg_k_max": 1.085,
+  "arms_turned_to_stay_in_cell": [
+   [
+    "death_E_f10.png",
+    "L",
+    -12.0
+   ],
+   [
+    "death_E_f11.png",
+    "L",
+    -17.0
+   ],
+   [
+    "death_E_f12.png",
+    "L",
+    -19.0
+   ]
+  ]
+ },
+ "angles": {
+  "S": {
+   "hit_recoil_deg": 23.0,
+   "hit_head_snap_deg": 13.0,
+   "death_lie_deg": 55.0,
+   "death_lift_px": 0
+  },
+  "E": {
+   "hit_recoil_deg": 23.0,
+   "hit_head_snap_deg": 12.0,
+   "death_lie_deg": -64.0,
+   "death_lift_px": 0
+  }
+ },
+ "problems": []
+}
