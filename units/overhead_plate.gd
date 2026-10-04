@@ -120,13 +120,19 @@ func plate_width() -> float:
 	return minf(wanted, cap)
 
 
+func _bar_y() -> float:
+	if host != null:
+		return host.head_hp_y()
+	return Pawn.HEAD_HP_Y
+
+
 func local_rect() -> Rect2:
 	var font := ThemeDB.fallback_font
 	var ascent := font.get_ascent(Pawn.NAME_FONT_SIZE)
 	var baseline := host.name_baseline() if host != null else Pawn.HEAD_HP_Y - 2.0
 	var top := baseline - ascent - NAME_PAD
 	var bar_h := BAR_H + BAR_RIM * 2.0
-	var bottom := Pawn.HEAD_HP_Y + bar_h + NAME_PAD
+	var bottom := _bar_y() + bar_h + NAME_PAD
 	var w := plate_width()
 	return Rect2(-w * 0.5, top, w, bottom - top)
 
@@ -136,7 +142,7 @@ func bar_rect() -> Rect2:
 	var num := number_rect()
 	var x := plate.position.x + NAME_PAD
 	var w := num.position.x - BAR_GAP - x
-	return Rect2(x, Pawn.HEAD_HP_Y, maxf(w, 4.0), BAR_H + BAR_RIM * 2.0)
+	return Rect2(x, _bar_y(), maxf(w, 4.0), BAR_H + BAR_RIM * 2.0)
 
 
 func number_rect() -> Rect2:
@@ -146,7 +152,7 @@ func number_rect() -> Rect2:
 	var glyph_w := size.x
 	var glyph_h := font.get_ascent(NUM_SIZE) + font.get_descent(NUM_SIZE)
 	var x := plate.position.x + plate.size.x - NAME_PAD - glyph_w - 1.0
-	var bar_mid := Pawn.HEAD_HP_Y + BAR_RIM + BAR_H * 0.5
+	var bar_mid := _bar_y() + BAR_RIM + BAR_H * 0.5
 	var y := bar_mid - glyph_h * 0.5
 	return Rect2(x - 1.0, y - 1.0, glyph_w + 2.0, glyph_h + 2.0)
 

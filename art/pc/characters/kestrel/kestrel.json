@@ -1,0 +1,529 @@
+{
+ "char": "kestrel",
+ "status": "approved v3",
+ "source": "/workspace/art/kestrel_full/v3",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "draw_scale": 0.465,
+ "world_draw_scale": 0.4278,
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 129.0,
+   "W": 128.9,
+   "N": 128.9,
+   "E": 128.9
+  },
+  "board_px_per_frame_at_draw_scale": {
+   "S": 4.99875,
+   "W": 4.994875,
+   "N": 4.994875,
+   "E": 4.994875
+  }
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      145
+     ],
+     "offset": [
+      -68,
+      -145
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "walk/kestrel_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "walk/kestrel_walk_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "walk/kestrel_walk_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "walk/kestrel_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "idle/kestrel_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "idle/kestrel_idle_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "idle/kestrel_idle_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "idle/kestrel_idle_E_fNN.png"
+    }
+   }
+  },
+  "attack": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "attack/kestrel_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "attack/kestrel_attack_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "attack/kestrel_attack_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "attack/kestrel_attack_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "hit/kestrel_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "hit/kestrel_hit_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "hit/kestrel_hit_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "hit/kestrel_hit_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    296,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      158,
+      141
+     ],
+     "offset": [
+      -158,
+      -141
+     ],
+     "pivot_file": [
+      158,
+      141
+     ],
+     "frames": "death/kestrel_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      158,
+      141
+     ],
+     "offset": [
+      -158,
+      -141
+     ],
+     "pivot_file": [
+      158,
+      141
+     ],
+     "frames": "death/kestrel_death_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      158,
+      141
+     ],
+     "offset": [
+      -158,
+      -141
+     ],
+     "pivot_file": [
+      158,
+      141
+     ],
+     "frames": "death/kestrel_death_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      158,
+      141
+     ],
+     "offset": [
+      -158,
+      -141
+     ],
+     "pivot_file": [
+      158,
+      141
+     ],
+     "frames": "death/kestrel_death_E_fNN.png"
+    }
+   }
+  },
+  "cast": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast/kestrel_cast_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast/kestrel_cast_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast/kestrel_cast_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast/kestrel_cast_E_fNN.png"
+    }
+   }
+  },
+  "cast_mark": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    116,
+    160
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast_mark/kestrel_cast_mark_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast_mark/kestrel_cast_mark_W_fNN.png"
+    },
+    "N": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast_mark/kestrel_cast_mark_N_fNN.png"
+    },
+    "E": {
+     "pivot": [
+      68,
+      141
+     ],
+     "offset": [
+      -68,
+      -141
+     ],
+     "pivot_file": [
+      68,
+      141
+     ],
+     "frames": "cast_mark/kestrel_cast_mark_E_fNN.png"
+    }
+   }
+  }
+ },
+ "head_hp_y": -74
+}

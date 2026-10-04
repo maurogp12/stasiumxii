@@ -61,8 +61,14 @@ func _test_roles_and_art() -> void:
 		var tex: Texture2D = _script.load_portrait(class_id)
 		truthy(tex != null, "%s south portrait loads" % class_id)
 		if tex != null:
-			eq(tex.get_width(), 144, "%s portrait width" % class_id)
-			eq(tex.get_height(), 160, "%s portrait height" % class_id)
+			var want_w := 144
+			var want_h := 160
+			if PcCharacters.uses_body(class_id):
+				var cell := PcCharacters.cell_size(class_id, "idle")
+				want_w = cell.x
+				want_h = cell.y
+			eq(tex.get_width(), want_w, "%s portrait width" % class_id)
+			eq(tex.get_height(), want_h, "%s portrait height" % class_id)
 		var imp := FileAccess.get_file_as_string("res://art/characters/%s/%s_s.png.import" % [class_id, class_id])
 		truthy(imp.contains("mipmaps/generate=false"), "%s import mipmaps off" % class_id)
 

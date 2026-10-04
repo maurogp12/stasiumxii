@@ -1,0 +1,399 @@
+{
+ "char": "ironjaw",
+ "status": "approved v2",
+ "source": "/workspace/art/ironjaw_full/v2",
+ "facing_rule": "S=front down-right, W=front down-left, N=back up-left, E=back up-right (locked)",
+ "combat_code_letter_from_art": {
+  "e": "S",
+  "s": "W",
+  "n": "E",
+  "w": "N"
+ },
+ "draw_scale": {
+  "combat": 0.5,
+  "world_walker": 0.46
+ },
+ "walk": {
+  "advance": "by distance",
+  "travel_diag_cell_px_per_cycle": {
+   "S": 89.2,
+   "W": 89.2,
+   "N": 89.2,
+   "E": 89.2
+  },
+  "board_px_per_frame_at_0.5": {
+   "S": 3.717,
+   "W": 3.717,
+   "N": 3.717,
+   "E": 3.717
+  }
+ },
+ "states": {
+  "walk": {
+   "frames": 12,
+   "fps": 17.144,
+   "loop": true,
+   "cell": [
+    161,
+    155
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "walk/ironjaw_walk_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "walk/ironjaw_walk_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "walk/ironjaw_walk_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "walk/ironjaw_walk_E_fNN.png"
+    }
+   }
+  },
+  "idle": {
+   "frames": 4,
+   "fps": 4,
+   "loop": true,
+   "cell": [
+    161,
+    155
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "idle/ironjaw_idle_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "idle/ironjaw_idle_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "idle/ironjaw_idle_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "idle/ironjaw_idle_E_fNN.png"
+    }
+   }
+  },
+  "attack": {
+   "frames": 6,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    161,
+    155
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "attack/ironjaw_attack_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "attack/ironjaw_attack_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "attack/ironjaw_attack_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "attack/ironjaw_attack_E_fNN.png"
+    }
+   }
+  },
+  "hit": {
+   "frames": 4,
+   "fps": 12,
+   "loop": false,
+   "cell": [
+    161,
+    155
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "hit/ironjaw_hit_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "hit/ironjaw_hit_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "hit/ironjaw_hit_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      78,
+      133
+     ],
+     "offset": [
+      -78,
+      -133
+     ],
+     "pivot_file": [
+      78,
+      133
+     ],
+     "frames": "hit/ironjaw_hit_E_fNN.png"
+    }
+   }
+  },
+  "death": {
+   "frames": 6,
+   "fps": 10,
+   "loop": false,
+   "cell": [
+    205,
+    178
+   ],
+   "facings": {
+    "S": {
+     "pivot": [
+      102,
+      133
+     ],
+     "offset": [
+      -102,
+      -133
+     ],
+     "pivot_file": [
+      102,
+      133
+     ],
+     "frames": "death/ironjaw_death_S_fNN.png"
+    },
+    "W": {
+     "pivot": [
+      102,
+      133
+     ],
+     "offset": [
+      -102,
+      -133
+     ],
+     "pivot_file": [
+      102,
+      133
+     ],
+     "frames": "death/ironjaw_death_W_fNN.png",
+     "baked_flip_of": "S"
+    },
+    "N": {
+     "pivot": [
+      102,
+      133
+     ],
+     "offset": [
+      -102,
+      -133
+     ],
+     "pivot_file": [
+      102,
+      133
+     ],
+     "frames": "death/ironjaw_death_N_fNN.png",
+     "baked_flip_of": "E"
+    },
+    "E": {
+     "pivot": [
+      102,
+      133
+     ],
+     "offset": [
+      -102,
+      -133
+     ],
+     "pivot_file": [
+      102,
+      133
+     ],
+     "frames": "death/ironjaw_death_E_fNN.png"
+    }
+   }
+  }
+ },
+ "head_hp_y": -80
+}

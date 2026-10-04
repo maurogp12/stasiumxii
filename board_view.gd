@@ -969,7 +969,10 @@ func _animate_path(seat: int, path: Array, origin: Vector2i = Vector2i(-1, -1)) 
 		for i in range(1, turn.size()):
 			_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, str(turn[i])))
 			_walk_tween.tween_interval(VIEW_MOTION.TURN_FRAME_SEC)
-	var glide_sec := VIEW_MOTION.glide_duration(cells.size(), Pawn.WALK_TILE_SEC)
+	var tile_sec := Pawn.WALK_TILE_SEC
+	if CombatHUD.uses_pc_chrome():
+		tile_sec = Pawn.walk_tile_sec()
+	var glide_sec := VIEW_MOTION.glide_duration(cells.size(), tile_sec)
 	_walk_tween.tween_method(_sample_glide.bind(pawn, glide), 0.0, glide_sec, glide_sec)
 	if committed != "":
 		_walk_tween.tween_callback(_snap_walk_facing.bind(pawn, committed))
@@ -993,8 +996,12 @@ func _sample_glide(time: float, pawn: Pawn, glide: Dictionary) -> void:
 	var route: Dictionary = glide["route"]
 	var marks: Array = route["marks"]
 	var total: float = marks[marks.size() - 1]
-	var d := total * VIEW_MOTION.glide_progress(time, cells.size(), Pawn.WALK_TILE_SEC)
+	var tile_sec := Pawn.WALK_TILE_SEC
+	if CombatHUD.uses_pc_chrome():
+		tile_sec = Pawn.walk_tile_sec()
+	var d := total * VIEW_MOTION.glide_progress(time, cells.size(), tile_sec)
 	pawn.position = VIEW_MOTION.glide_point(route, d)
+	pawn.note_walk_distance(d)
 	# marks[k + 1] is where the body passes cells[k] (marks[0] is the start).
 	while int(glide["next"]) < cells.size() and d >= float(marks[int(glide["next"]) + 1]) - 0.01:
 		var k := int(glide["next"])
