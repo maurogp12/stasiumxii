@@ -15,6 +15,11 @@ extends RefCounted
 ##                     an enemy is within 2, then shoots.
 ##   melee (Ironjaw, Bastion, Gloam)  closes in and fights up close; Bastion
 ##                     goes for the enemy nearest the back line.
+## Mender, a teammate down (Mauro 4 Oct 2026: "if anyone dies he should focus
+## in reviving his team mate"): Rekindle comes first. He keeps every Pulse
+## (Mend / Cleanse earn it; Pulse Tap, Ward and Heartstop are skipped), walks
+## to 1–2 tiles from the body without spending AP first, and casts Rekindle
+## the moment it is legal (6 AP + 6 Pulse).
 ## Order each call: revive → support → step back (healer / ranged) → best hit
 ## → position → end turn.
 
@@ -65,6 +70,16 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 	for intent in casts:
 		if str(SpellKits.spell(str(intent.get("spell", ""))).get("target", "")) == "fallen_ally":
 			return intent
+	var saving := false
+	if role == "healer":
+		var body := _fallen_body(snap, actor)
+		if body.x > -99:
+			saving = true
+			var revive := _revive_plan(casts, moves, actor, snap, team, enemies, body)
+			if not revive.is_empty():
+				return revive
+	if saving:
+		casts = _keep_pulse(casts)
 	# 1. Support a hurt teammate (the healer heals earlier and wards the front).
 	var heal := _best_support(casts, snap, team, HEALER_HEAL_BELOW if role == "healer" else HEAL_BELOW)
 	if not heal.is_empty():
@@ -88,6 +103,97 @@ static func plan(sim: Node, seat: int) -> Dictionary:
 		if not pick.is_empty():
 			return pick
 	return end_turn
+
+
+## The cell of a fallen teammate the Mender can still Rekindle, or (-99, -99).
+static func _fallen_body(snap: Dictionary, actor: Dictionary) -> Vector2i:
+	var cls := SpellKits.normalize_class_id(str(actor.get("class_id", "")))
+	if not SpellKits.has_spell(cls, SpellKits.REKINDLE) or bool(actor.get("used_" + SpellKits.REKINDLE, false)):
+		return Vector2i(-99, -99)
+	var here := _cell(actor.get("pos"))
+	var living := {}
+	for unit in snap.get("units", []):
+		if bool(unit.get("alive", false)) and unit.get("pos") != null:
+			living[_cell(unit.get("pos"))] = true
+	var best := Vector2i(-99, -99)
+	var best_d := 999
+	for unit in snap.get("units", []):
+		if int(unit.get("team", 0)) != int(actor.get("team", 0)) or bool(unit.get("alive", false)) or int(unit.get("seat", -1)) == int(actor.get("seat", -1)):
+			continue
+		if not bool(unit.get("placed", true)) or unit.get("pos") == null:
+			continue
+		var cell := _cell(unit.get("pos"))
+		if living.has(cell):
+			continue
+		var d := _cheb(here, cell)
+		if d < best_d:
+			best_d = d
+			best = cell
+	return best
+
+
+## Rekindle focus. Full Pulse: walk into 1–2 of the body before spending any
+## AP. Short of Pulse: earn it (Mend / Cleanse), then close in on the body.
+static func _revive_plan(casts: Array, moves: Array, actor: Dictionary, snap: Dictionary, team: int, enemies: Array, body: Vector2i) -> Dictionary:
+	var def := SpellKits.spell(SpellKits.REKINDLE)
+	var need_pulse := int(def.get("requires_pulse", 0))
+	var pulse := int(actor.get("pulse", (actor.get("resources", {}) as Dictionary).get("pulse", 0)))
+	var here := _cell(actor.get("pos"))
+	var reach_lo := int(def.get("min_range", 1))
+	var reach_hi := int(def.get("max_range", 2))
+	var in_reach := func(cell: Vector2i) -> bool:
+		var d := _cheb(cell, body)
+		return d >= reach_lo and d <= reach_hi
+	if pulse < need_pulse:
+		var build := _pulse_builder(casts, snap, team)
+		if not build.is_empty():
+			return build
+	var anchor := body
+	# Walk into reach (the safest cell there), or as close as this turn allows.
+	if not in_reach.call(here) and not moves.is_empty():
+		var pick := {}
+		var pick_key := INF
+		for intent in moves:
+			var to := _cell(intent.get("to"))
+			var key := float(maxi(0, _cheb(to, body) - reach_hi)) * 100.0
+			if _cheb(to, body) < reach_lo:
+				key += 100.0
+			key -= _place_score(to, "healer", enemies, {}, anchor)
+			if key < pick_key:
+				pick_key = key
+				pick = intent
+		if not pick.is_empty() and pick_key < float(maxi(0, _cheb(here, body) - reach_hi)) * 100.0 - _place_score(here, "healer", enemies, {}, anchor):
+			return pick
+	return {}
+
+
+## Mend (or Cleanse) earns Pulse: the most hurt ally first.
+static func _pulse_builder(casts: Array, snap: Dictionary, team: int) -> Dictionary:
+	var best := {}
+	var best_ratio := INF
+	for intent in casts:
+		var def := SpellKits.spell(str(intent.get("spell", "")))
+		if str(def.get("engine_on_connect", "")) != "pulse":
+			continue
+		var target := _unit(snap, int(intent.get("target_seat", -1)))
+		if target.is_empty() or int(target.get("team", 0)) != team or not bool(target.get("alive", false)):
+			continue
+		var ratio := float(target.get("hp", 0)) / maxf(1.0, float(target.get("max_hp", 1)))
+		if ratio < best_ratio:
+			best_ratio = ratio
+			best = intent
+	return best
+
+
+## Drop every cast that spends Pulse (saving it for Rekindle).
+static func _keep_pulse(casts: Array) -> Array:
+	var out: Array = []
+	for intent in casts:
+		var def := SpellKits.spell(str(intent.get("spell", "")))
+		if str(def.get("engine_on_connect", "")) == "spend_pulse":
+			continue
+		out.append(intent)
+	return out
 
 
 static func _best_hit(casts: Array, snap: Dictionary, team: int, role: String, here: Vector2i, sim: Node) -> Dictionary:

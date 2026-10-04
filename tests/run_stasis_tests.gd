@@ -1070,7 +1070,57 @@ func _test_hero_ai_roles() -> void:
 	var ij_cells := _hero_ai_turn(1)
 	var ij_end: Vector2i = ij_cells[-1] if not ij_cells.is_empty() else Vector2i(7, 9)
 	eq(chebyshev_of(ij_end, Vector2i(7, 13)) < 4, true, "Ironjaw walks into close combat")
+	# Mauro 4 Oct 2026: "if anyone dies he should focus in reviving his team
+	# mate". Ironjaw down 4 tiles away, Mender on full Pulse: walk into reach
+	# first (no AP spent), then Rekindle.
+	_hero_ai_board(Vector2i(13, 13))
+	for unit in _sim._units:
+		if int(unit["seat"]) == 1:
+			unit["pos"] = Vector2i(7, 11)
+			unit["hp"] = 0
+			_sim._check_death(unit)
+		if int(unit["seat"]) == 0:
+			unit["pulse"] = 6
+	_sim._active_seat = 0
+	var go: Dictionary = HeroAi.plan(_sim, 0)
+	eq(str(go.get("type", "")), "move", "the Mender walks to the fallen teammate before spending AP")
+	if str(go.get("type", "")) == "move":
+		eq(chebyshev_of(_cell_of(go["to"]), Vector2i(7, 11)) <= 2, true, "the Mender stops within Rekindle reach")
+		_sim.submit(go)
+	var raise: Dictionary = HeroAi.plan(_sim, 0)
+	eq(str(raise.get("spell", "")), SpellKits.REKINDLE, "then the Mender casts Rekindle")
+	# Short of Pulse: earn it with Mend, never spend it.
+	_hero_ai_board(Vector2i(13, 13))
+	for unit in _sim._units:
+		if int(unit["seat"]) == 1:
+			unit["pos"] = Vector2i(7, 11)
+			unit["hp"] = 0
+			_sim._check_death(unit)
+		if int(unit["seat"]) == 0:
+			unit["pulse"] = 3
+	var spent := false
+	var built := false
+	_sim._active_seat = 0
+	for _i in 8:
+		var step: Dictionary = HeroAi.plan(_sim, 0)
+		if str(step.get("type", "")) == "end_turn":
+			break
+		var sdef := SpellKits.spell(str(step.get("spell", "")))
+		if str(sdef.get("engine_on_connect", "")) == "spend_pulse":
+			spent = true
+		if str(sdef.get("engine_on_connect", "")) == "pulse":
+			built = true
+		_sim._last_events = []
+		_sim.submit(step)
+	eq(built, true, "the Mender earns Pulse with Mend while a teammate is down")
+	eq(spent, false, "the Mender spends no Pulse while a teammate is down")
 	_sim.reset_match(StasisCatalog.fight_config())
+
+
+func _cell_of(value: Variant) -> Vector2i:
+	if value is Vector2i:
+		return value
+	return Vector2i(int(value[0]), int(value[1]))
 
 
 func eq(actual: Variant, expected: Variant, msg: String) -> void:
