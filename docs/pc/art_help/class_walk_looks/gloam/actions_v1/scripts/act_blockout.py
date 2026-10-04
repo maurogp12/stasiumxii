@@ -9,8 +9,10 @@ Mode `aimfix` (default; `approved` renders actions.py exactly as in the mp4):
     E up-right. Arm angles are applied in the facing frame (lean kept, no yaw), so any torso twist stays the torso's.
   * The attack lunge (R foot 0.20 H forward) goes forward-inward (step_in) so the S boot stays inside the cell.
   * Hit: the recoil lean at the peak key is HIT_LEAN (actions.py -16) so the painted torso reads a clear 20-25 deg recoil.
-  * E death falls to his left (world -X), not straight back toward the camera (straight back leaves the cell). Same screen
-    path as the approved S death.
+  * Death falls to his left side (body -X) in both facings. E: straight back would fall toward the camera and leave the
+    cell. S: the approved fall is straight back (up-left); the painted S cloak trails far to the left, so lying head-left
+    it would hang below the ground and out of the cell (a 55 px lift was needed). Falling to his left he lands head
+    up-right, and the cloak spreads behind him on the ground.
 Per frame the json holds the joints (joints_512.json schema) plus R/L_hand, head_c, cape_top/mid/hem, dagger_{R,L}_hilt /
 _tip (blade line), the torso / pelvis basis, key, draw_order, depth and parts (rotation_deg, visible_length_scale vs f00).
 usage (bpy 4.2 module): python act_blockout.py OUT_DIR [approved|aimfix] [blockout_scripts_dir]"""
@@ -52,8 +54,7 @@ def step_in(C, st, J):
     the boot leaves the cell bottom. Here the same step goes forward-inward (0.6 x forward kept, 0.6 x toward the centre line), as Bastion's."""
     Hh = C['H']; d = st['feet']['R'][0] - 0.06 * Hh
     if d <= 1e-6: return J
-    off = np.array([-(1 - STEP_K) * d, -STEP_K * d, 0.0]) * np.array([1.0, 1.0, 0.0])
-    off = np.array([-(1 - STEP_K) * d, -(1 - STEP_K) * d, 0.0])
+    off = np.array([-STEP_K * d, -(1 - STEP_K) * d, 0.0])
     for k in ('R_heel', 'R_toe', 'R_ankle'): J[k] = J[k] + off
     J['R_knee'] = B.ik(J['R_hip'], J['R_ankle'], C['thigh'] * Hh, C['shin'] * Hh, J['_Rp'] @ Y)
     return J
@@ -93,7 +94,7 @@ def main():
             Rf = rot(Z, -90) if F == 'S' else np.eye(3); key = f'{name}_{F}'; data['facings'][key] = {}; len0 = {}
             for i in range(n):
                 st = A.sample(kl, i); J = A.pose_act(C, st)
-                if MODE == 'aimfix' and anim == 'death' and F == 'E': J = side_fall(C, st)
+                if MODE == 'aimfix' and anim == 'death': J = side_fall(C, st)
                 if MODE == 'aimfix' and anim in ('attack', 'cast'): J = arms_facing(C, st, J)
                 if MODE == 'aimfix' and anim == 'attack': J = step_in(C, st, J)
                 J['_act'] = st; M = A.place(P, C, J, F)
