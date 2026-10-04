@@ -4,6 +4,7 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 
 | Date | What | Why / who asked | Branch | Commit |
 |---|---|---|---|---|
+| 4 Oct 2026 | **Northgate shore is snow, not sand.** Its sea-facing cells get a one-cell snow lip (packed snow with stone at the waterline), soft foam and a thin ice rim, blending into sand over 2–3 cells where the coast leaves Northgate; the other towns keep sand. For now this uses the existing Northgate snow assets, to be replaced by the snow kit | Mauro, 4 Oct: "Make the north shore snow instead of sand" | `cursor/water-regrade-a156` (#251) | decision |
 | 4 Oct 2026 | **Mender blockout approved.** All four class blockouts are approved: Bastion, Kestrel, Gloam, Mender. Scenario paints the Mender look targets next | Mauro, 4 Oct: "Mender good" | `claude/class-walk-blockouts` | decision |
 | 4 Oct 2026 | **Mender design: concept B** (calm cleric: ivory robe with a gold-embroidered hem, sage sash, crook staff with a caged jade lantern). Saved as `class_walk_blockouts/refs/ref_mender.jpg` | Mauro, 4 Oct: "B" | `claude/class-walk-blockouts` | decision |
 | 4 Oct 2026 | **PC combat walk locked at 0.42 s per cell** (`PC_WALK_TILE_SEC`). The phone stays at 0.22. Decided from the 13.5 s side-by-side clip `docs/pc/media/l10/walk_022_vs_042.mp4` (#248 @ `526b015`) | Mauro, 4 Oct: "0.42 is good keep it" | `cursor/l10-pc-characters-1dff` (#248) | decision |

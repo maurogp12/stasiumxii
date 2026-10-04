@@ -21,7 +21,7 @@ This replaces "the only one with light snow" for Northgate. Northgate is now a p
 - **Landmark:** a stone church or chapel with a tall snow-capped spire and a warm doorway. It's the town's tallest building and should be visible from the Crossroads road.
 - **Trees:** dense snowy pines (dark green under white-loaded boughs) ringing the town and in small clusters between houses.
 - **Props:** lamp posts with a warm glow, wooden fences with snow on the rails, crates and barrels with snow tops, a well or stone shrine, and a covered cart.
-- **Edge:** where Northgate meets the cliffs or the sea, a snow-crusted edge with stone showing under it. No bare grass rim.
+- **Edge:** where Northgate meets the cliffs or the sea, a snow-crusted edge with stone showing under it. No bare grass rim. **The north shore is snow, not sand** (Mauro, 4 Oct: "Make the north shore snow instead of sand"): a one-cell snow lip with soft foam and a thin ice rim on the water, thinning into sand where the coast leaves Northgate.
 - **Weather:** light falling snow over the town, as a screen-space particle layer that doesn't hide fighters or clickable cells.
 - **Light:** **daytime**, not night. Cool blue-white snow with soft lilac-blue shadows, warm windows and lamps as accents, a slightly brighter and cooler grade than the rest of Crosshaven. No dark night sky; the reference's night is only the example.
 
