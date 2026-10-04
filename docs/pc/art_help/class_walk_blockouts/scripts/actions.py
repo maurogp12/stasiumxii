@@ -9,12 +9,22 @@ from blockout import rot, nrm, X, Y, Z, ik, smooth
 
 # design colours per class (from Mauro's concepts), by part-name prefix
 LOOK = {
+ 'mender': dict(cloth=(0.86, 0.82, 0.70), gold=(0.74, 0.60, 0.30), sash=(0.46, 0.55, 0.40), wood=(0.36, 0.25, 0.16), jade=(0.45, 0.90, 0.60), skin=(0.78, 0.64, 0.54), belt=(0.38, 0.26, 0.16)),
  'bastion': dict(steel=(0.52, 0.54, 0.58), cloth=(0.16, 0.24, 0.50), gold=(0.78, 0.62, 0.25), dark=(0.30, 0.31, 0.34), belt=(0.36, 0.25, 0.15)),
  'kestrel': dict(steel=(0.26, 0.34, 0.22), cloth=(0.24, 0.32, 0.21), gold=(0.42, 0.28, 0.17), dark=(0.33, 0.23, 0.15), belt=(0.36, 0.24, 0.14), skin=(0.78, 0.62, 0.52)),
  'gloam': dict(steel=(0.70, 0.70, 0.76), cloth=(0.30, 0.22, 0.44), gold=(0.22, 0.17, 0.27), dark=(0.13, 0.12, 0.15), belt=(0.30, 0.22, 0.17), skin=(0.08, 0.06, 0.10)),
 }
 def part_colour(cls, k):
     L = LOOK[cls]
+    if cls == 'mender':
+        if k in ('staff', 'crook'): return L['wood']
+        if k == 'lantern': return L['jade']
+        if k == 'sash': return L['sash']
+        if k == 'head': return L['cloth']                # the face is painted under the hood later
+        if k.startswith('pouch') or k == 'pelvis': return L['belt']
+        if k.endswith(('boot', 'bootshaft')): return (0.34, 0.22, 0.14)
+        if k.endswith('hand'): return L['skin']
+        return L['cloth']
     if cls == 'bastion':
         if k.startswith(('cape', 'tabard')): return L['cloth']
         if k == 'shield': return L['cloth']
@@ -91,6 +101,13 @@ def keys(cls, C, anim):
                 (6, k(drop=0.06 * Hh, fwd=0.07 * Hh, lean=22, arms={'R': (45, 45, 10), 'L': (45, 45, 10)}, feet={'R': (0.20 * Hh, 0.0, 0.0)})),
                 (8, k(drop=0.06 * Hh, fwd=0.07 * Hh, lean=24, arms={'R': (20, 60, 15), 'L': (20, 60, 15)}, feet={'R': (0.20 * Hh, 0.0, 0.0)})),
                 (12, k())]
+    if cls == 'mender' and anim == 'attack':            # lantern swing: staff swept forward, light flares at the end
+        return [(0, k()), (4, k(cyaw=-18, lean=-4, arms={'R': (-30, 20, 30)})),
+                (7, k(drop=0.03 * Hh, fwd=0.04 * Hh, cyaw=16, lean=10, arms={'R': (85, 10, 10)}, feet={'R': (0.15 * Hh, 0.0, 0.0)})),
+                (9, k(drop=0.03 * Hh, fwd=0.04 * Hh, cyaw=16, lean=10, arms={'R': (80, 10, 12)}, feet={'R': (0.15 * Hh, 0.0, 0.0)})), (12, k())]
+    if cls == 'mender' and anim == 'cast':              # heal: raise the lantern high, free hand open to the ally
+        return [(0, k()), (4, k(lean=-6, arms={'R': (150, 8, 10), 'L': (70, -10, 10)})),
+                (9, k(lean=-6, arms={'R': (155, 8, 8), 'L': (75, -12, 8)})), (12, k())]
     if cls == 'gloam' and anim == 'cast':               # shadow step: crouch low, daggers back, rise
         return [(0, k()), (4, k(drop=0.10 * Hh, lean=26, arms={'R': (-40, 30, 40), 'L': (-40, 30, 40)})),
                 (8, k(drop=0.10 * Hh, lean=26, arms={'R': (-45, 32, 40), 'L': (-45, 32, 40)})), (12, k())]
@@ -157,6 +174,15 @@ def place(P, C, J, facing):
             Rh = Rf @ J[f'_R{s}_farm']; out = 1 if s == 'R' else -1
             d = Rh @ nrm(np.array([out * 0.35, 0.85, -0.25]))
             setm(f'dagger_{s}', B.seg_frame(w(f'{s}_hand'), w(f'{s}_hand') + d, Rc @ Z))
+    if 'staff' in P:              # the staff follows the raised or swung arm; the lantern hangs from the crook
+        g = w('R_hand'); fa = nrm(w('R_wrist') - w('R_elbow')); A = st['arms']['R'][0]
+        up = Rf @ Z
+        if A > 40: up = nrm(up * 0.35 + fa) if np.dot(fa, up) > -0.2 else nrm(up * 0.35 - fa)
+        else: up = nrm(Rc @ np.array([0, 0.06, 1.0]))
+        Ms = B.seg_frame(g, g + up, Rc @ X); Ms[:3, 3] = g; setm('staff', Ms)
+        top = g + up * 0.55 * Hh; fw = nrm((Rc @ Y) - up * np.dot(Rc @ Y, up))
+        setm('crook', B.frame(Rc, top + fw * 0.05 * Hh))
+        setm('lantern', B.frame(Rc, top + fw * 0.10 * Hh - up * 0.01 * Hh))
     if 'bow' in P and st['wpn'] > 0.5:                   # drawn: limbs upright, belly facing where she aims
         aim = nrm(w('R_wrist') - w('R_elbow')); up = Rf @ Z
         setm('bow', B.bow_frame(w('R_hand'), z=up - aim * np.dot(up, aim) + aim * 0.0, y=aim))

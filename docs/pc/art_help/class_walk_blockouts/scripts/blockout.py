@@ -34,6 +34,12 @@ CLASSES = {
                extras=['hood_tall', 'cloak_long', 'dagger_R', 'dagger_L']),
  # gold-trimmed knight: kite shield on the left forearm, flanged morning-star mace in the right hand,
  # pauldrons, blue tabard front/back, long ragged blue cape. Heavier, shorter stride, more bob.
+ # calm cleric healer (design B): hood and short mantle, long ivory robe to the boots, sage sash,
+ # tall crook staff in the right hand with a caged jade lantern hanging from the crook, vial pouches at the hips
+ 'mender': dict(BASE, H=245, label='Mender (healer)', sh_w=0.105, torso_w=0.22, torso_d=0.13, pelvis_w=0.21,
+                stride=0.25, drop=0.022, lift=0.05, lean=2.0, arm_swing=(6, 14), elbow=(35, 18), abduct=(12, 8),
+                limb_w=dict(thigh=0.080, shin=0.062, boot=0.072, uarm=0.058, farm=0.052, hand=0.046),
+                extras=['hood', 'robe', 'staff', 'pouches']),
  'bastion': dict(BASE, H=273, label='Bastion (knight)', sh_w=0.145, torso_w=0.30, torso_d=0.17, pelvis_w=0.24,
                  stride=0.24, drop=0.035, lift=0.055, yaw=4.0, arm_swing=(12, 4), elbow=(30, 85), abduct=(9, 14),
                  limb_w=dict(thigh=0.105, shin=0.085, boot=0.095, uarm=0.085, farm=0.075, hand=0.065),
@@ -206,6 +212,19 @@ def build(C):
             P['cape_u'] = mk_box('cape_u', w * Hh, 0.02 * Hh, 0, 1, IDC['cape'], coll)      # length scaled per frame
             P['cape_l'] = mk_box('cape_l', w * Hh * 1.12, 0.02 * Hh, 0, 1, IDC['cape2'], coll)
             C['_cape_len'] = 1.25 if key == 'cloak_long' else (1.15 if key == 'cape' else 0.95)
+    if 'robe' in ex:                                     # robe skirt: front and back panels down to the boot tops
+        P['tabard_f'] = mk_box('tabard_f', 0.24 * Hh, 0.02 * Hh, -0.40 * Hh, 0.02 * Hh, IDC['tabard'], coll)
+        P['tabard_b'] = mk_box('tabard_b', 0.26 * Hh, 0.02 * Hh, -0.42 * Hh, 0.02 * Hh, IDC['tabard'], coll)
+        for sd in 'RL':
+            P[f'robe_{sd}'] = mk_box(f'robe_{sd}', 0.02 * Hh, 0.14 * Hh, -0.38 * Hh, 0.02 * Hh, IDC['tabard'], coll)
+        P['sash'] = mk_box('sash', 0.07 * Hh, 0.015 * Hh, -0.24 * Hh, 0.0, IDC['cape'], coll)
+    if 'staff' in ex:                                    # crook staff: shaft, crook hook, lantern
+        P['staff'] = mk_box('staff', 0.022 * Hh, 0.022 * Hh, -0.40 * Hh, 0.55 * Hh, IDC['weapon_R'], coll)
+        P['crook'] = mk_box('crook', 0.02 * Hh, 0.11 * Hh, -0.02 * Hh, 0.02 * Hh, IDC['weapon_R'], coll)
+        P['lantern'] = mk_box('lantern', 0.06 * Hh, 0.06 * Hh, -0.10 * Hh, 0.0, IDC['weapon_L'], coll)
+    if 'pouches' in ex:
+        for sd in 'RL':
+            P[f'pouch_{sd}'] = mk_box(f'pouch_{sd}', 0.06 * Hh, 0.06 * Hh, -0.07 * Hh, 0.0, IDC['quiver'], coll)
     if 'tabard' in ex:
         P['tabard_f'] = mk_box('tabard_f', 0.13 * Hh, 0.015 * Hh, -0.27 * Hh, 0, IDC['tabard'], coll)
         P['tabard_b'] = mk_box('tabard_b', 0.15 * Hh, 0.015 * Hh, -0.25 * Hh, 0, IDC['tabard'], coll)
@@ -292,8 +311,25 @@ def place(P, C, J, facing):
     if 'tabard_f' in P:
         fw = Rp @ Y
         th = [np.dot(nrm(w(f'{s}_knee') - w(f'{s}_hip')), fw) for s in 'RL']
-        M['tabard_f'] = frame(Rp @ rot(X, math.degrees(max(th)) * 0.9 + 4), w('pelvis') + fw * C['torso_d'] * Hh * 0.52)
-        M['tabard_b'] = frame(Rp @ rot(X, math.degrees(min(th)) * 0.9 - 6), w('pelvis') - fw * C['torso_d'] * Hh * 0.52)
+        k = 0.45 if 'robe' in C['extras'] else 0.9           # a long robe swings less than a tabard
+        M['tabard_f'] = frame(Rp @ rot(X, math.degrees(max(th)) * k + 4), w('pelvis') + fw * C['torso_d'] * Hh * 0.52)
+        M['tabard_b'] = frame(Rp @ rot(X, math.degrees(min(th)) * k - 6), w('pelvis') - fw * C['torso_d'] * Hh * 0.52)
+    for sd in 'RL':
+        if f'robe_{sd}' in P:     # side panels follow the hip, splitting slightly with the stride
+            sg = 1 if sd == 'R' else -1
+            M[f'robe_{sd}'] = frame(Rp, w('pelvis') + Rp @ np.array([sg * C['pelvis_w'] * Hh * 0.55, 0, 0]))
+        if f'pouch_{sd}' in P:
+            sg = 1 if sd == 'R' else -1
+            M[f'pouch_{sd}'] = frame(Rp, w('pelvis') + Rp @ np.array([sg * C['pelvis_w'] * Hh * 0.62, 0.02 * Hh, 0.0]))
+    if 'sash' in P:
+        M['sash'] = frame(Rp, w('pelvis') + (Rp @ Y) * C['torso_d'] * Hh * 0.56)
+    if 'staff' in P:              # held upright in the right fist, swinging a little with the arm
+        g = w('R_hand'); up = nrm(Rc @ rot(X, J.get('_AR', 0.0) * 0.5) @ np.array([0, 0.06, 1.0]))
+        Ms = seg_frame(g, g + up, Rc @ X); Ms[:3, 3] = g; M['staff'] = Ms
+        top = g + up * 0.55 * Hh
+        fw = nrm((Rc @ Y) - up * np.dot(Rc @ Y, up))
+        M['crook'] = frame(Rc, top + fw * 0.05 * Hh)
+        M['lantern'] = frame(Rc, top + fw * 0.10 * Hh)
     if 'quiver' in P:      # on the back, over the left shoulder, tilted
         M['quiver'] = frame(Rc @ rot(Y, 28), w('chest') + Rc @ np.array([-0.05 * Hh, -C['torso_d'] * Hh * 0.75, 0.05 * Hh]))
     if 'bow' in P:         # held low in the right hand, upper limb back and up, lower limb forward and down

@@ -1,4 +1,4 @@
-# Class walk blockouts: Bastion, Kestrel, Gloam (Mender pending)
+# Class walk blockouts: Bastion, Kestrel, Gloam, Mender
 
 These are walk guides in the same format as Technical Artist's Ironjaw guide (`docs/pc/art_help/ironjaw_walk/ta_joints/`). Each class has a clay pass, a part-ID pass and a joints file. They are built from Mauro's new designs in `refs/`, not the current sprites (Mauro, 4 Oct 2026: "Don't use current designs, use these ones").
 
@@ -44,7 +44,11 @@ Each class folder holds:
   - Slight crouch with an 11° forward lean.
   - Twin curved daggers held low and out to the sides, elbows bent about 60°, small arm swing (±9°).
   - Stride 0.27 H, bob 7 px.
-- **Mender:** waiting on Mauro's new design.
+- **Mender (healer), design B** (Mauro picked B, 4 Oct; Scenario's concept in `refs/ref_mender.jpg`).
+  - Hood and short mantle; a long ivory robe to the boot tops (front, back and side panels that follow the hips and swing half as much as a tabard); a sage sash; vial pouches at both hips.
+  - Tall crook staff upright in the right fist, swinging ±6°, with a caged jade lantern hanging from the crook. The free left arm swings ±14°.
+  - Calm walk: stride 0.25 H, small bob, 2° lean.
+  - Actions: attack = a lantern swing (staff swept forward); skill = heal (lantern raised high, free hand open toward the ally).
 
 ## Actions (Mauro, 4 Oct: "show me how they walk and actions")
 
