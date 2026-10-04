@@ -5,6 +5,11 @@ extends Node2D
 ## The grid, the tile records and CombatSim are not touched.
 ## Art is data-driven: res://art/pc/look/crosshaven_jungle/ with @2x tried first.
 ## Tunables: res://data/pc/look/crosshaven_backdrop.json
+## Luca's v1 mock is v1_decor in that json: a sky plate, a mossy clearing,
+## and a foreground leaf frame. Until every one of those files exists, the
+## v4 plates stay exactly as they are. Once they do, each layer sits at the
+## mock v1 centre and size. Leaves are pinned to the board and cut above the
+## action bar. Only the tiles differ from the mock.
 
 const PARAMS_PATH := "res://data/pc/look/crosshaven_backdrop.json"
 const DEFAULT_ROOT := "res://art/pc/look/crosshaven_jungle/"
@@ -105,8 +110,18 @@ uniform sampler2D sway_tex : filter_nearest, repeat_disable;
 uniform float swing = 0.0;
 uniform vec2 sway_dir = vec2(1.0, 0.0);
 uniform float amplitude_px = 16.0;
+uniform float cut_y = 2.0;
+varying vec4 leaf_tint;
 """ + LIGHT.GRADE_GLSL + """
+void vertex() {
+	// Fragment COLOR is already texture * modulate. The painted v1 leaves
+	// are lit, so the tint has to come from here or the leaf is squared.
+	leaf_tint = COLOR;
+}
 void fragment() {
+	if (SCREEN_UV.y > cut_y) {
+		discard;
+	}
 	vec2 off = sway_dir * swing * amplitude_px * TEXTURE_PIXEL_SIZE;
 	vec2 m = textureLod(sway_tex, UV, 0.0).rg;
 	float w = m.r;
@@ -116,7 +131,8 @@ void fragment() {
 	}
 	vec4 leaf = textureLod(TEXTURE, UV - off * w, 0.0);
 	leaf.rgb = l7_grade(leaf.rgb);
-	COLOR = leaf;
+	// leaf_tint is the canvas modulate, including the top-leaf fade.
+	COLOR = leaf * leaf_tint;
 }
 """
 
@@ -188,6 +204,7 @@ var _span_cache := Rect2()
 var _layout_key: String = ""
 var _motion_layout: bool = false
 var _plate_sprite: Sprite2D
+var _plate_hole_mat: ShaderMaterial
 var _plate_mat: ShaderMaterial
 var _cutout_vp: SubViewport
 var _cutout_mat: ShaderMaterial
@@ -202,14 +219,21 @@ class LeafDapple extends Node2D:
 		pass
 
 
+static var _params_cache: Dictionary = {}
+static var _params_loaded := false
+
+
 static func load_params() -> Dictionary:
+	if _params_loaded:
+		return _params_cache
+	_params_loaded = true
 	var text := FileAccess.get_file_as_string(PARAMS_PATH)
 	if text == "":
-		return {}
+		return _params_cache
 	var parsed: Variant = JSON.parse_string(text)
 	if parsed is Dictionary:
-		return parsed
-	return {}
+		_params_cache = parsed
+	return _params_cache
 
 
 static func art_root() -> String:
@@ -237,6 +261,91 @@ static func resolve_slot(slot: String) -> String:
 
 static func slot_path_1x(slot: String) -> String:
 	return art_root() + slot + ".png"
+
+
+static func v1_decor() -> Dictionary:
+	var raw: Variant = load_params().get("v1_decor", {})
+	if raw is Dictionary:
+		return raw
+	return {}
+
+
+static func v1_root() -> String:
+	var root := str(v1_decor().get("art_root", "res://art/pc/look/crosshaven_decor/"))
+	if not root.ends_with("/"):
+		root += "/"
+	return root
+
+
+## Mock-v1 placement: explicit board-local centre and world size per layer
+## (v1_decor.placement). Empty unless the v1 kit is live and the block exists.
+static func v1_placement() -> Dictionary:
+	if not v1_ready():
+		return {}
+	var raw: Variant = v1_decor().get("placement", {})
+	if raw is Dictionary:
+		return raw
+	return {}
+
+
+static func _placed(spec: Dictionary, key: String) -> Dictionary:
+	var raw: Variant = spec.get(key, {})
+	if not (raw is Dictionary):
+		return {}
+	var block := raw as Dictionary
+	var c: Variant = block.get("center", [])
+	var s: Variant = block.get("world_size", [])
+	if not (c is Array) or not (s is Array):
+		return {}
+	var center: Array = c
+	var size: Array = s
+	if center.size() < 2 or size.size() < 2:
+		return {}
+	return {
+		"center": Vector2(float(center[0]), float(center[1])),
+		"size": Vector2(float(size[0]), float(size[1])),
+		"z": int(block.get("z", -1)),
+	}
+
+
+## True only when the sky, the clearing, and all four leaf-frame files import.
+## Missing art keeps the v4 surround.
+static func v1_ready() -> bool:
+	var spec := v1_decor()
+	if spec.is_empty():
+		return false
+	var sky: Variant = spec.get("sky", {})
+	var clearing: Variant = spec.get("clearing", {})
+	if not (sky is Dictionary) or not (clearing is Dictionary):
+		return false
+	if choose_path(v1_root(), str((sky as Dictionary).get("slot", "sky"))) == "":
+		return false
+	if choose_path(v1_root(), str((clearing as Dictionary).get("slot", "clearing"))) == "":
+		return false
+	var frame: Variant = spec.get("leaf_frame", {})
+	if not (frame is Dictionary):
+		return false
+	var slots: Variant = (frame as Dictionary).get("slots", {})
+	if not (slots is Dictionary) or (slots as Dictionary).is_empty():
+		return false
+	for slot in (slots as Dictionary).keys():
+		if choose_path(v1_root(), str(slot)) == "":
+			return false
+	return true
+
+
+## v4 masks live next to the jungle plates. v1 masks are leaf_frame_<edge>_sway.png.
+static func sway_mask_path(slot: String) -> String:
+	if v1_ready():
+		var frame: Variant = v1_decor().get("leaf_frame", {})
+		if frame is Dictionary:
+			var slots: Variant = (frame as Dictionary).get("slots", {})
+			if slots is Dictionary:
+				var edge := str(LEAF_EDGES.get(slot, ""))
+				for name in (slots as Dictionary).keys():
+					if str((slots as Dictionary)[name]) == edge:
+						return v1_root() + str(name) + "_sway.png"
+	return art_root() + slot + "_sway.png"
 
 
 static func normalize_map_id(map_id: String) -> String:
@@ -304,6 +413,7 @@ func kit_edge() -> bool:
 ## L7. grade_on 0 leaves the plate and the leaves on their old colors.
 func set_look_grade(on: bool, sat: float, contrast: float, gain: float, bias: Color, shadow: Color, shade: float = 0.5) -> void:
 	_push_look_grade(_plate_mat, on, sat, contrast, gain, bias, shadow, shade)
+	_push_look_grade(_plate_hole_mat, on, sat, contrast, gain, bias, shadow, shade)
 	for slot in _sprites.keys():
 		var sprite: Sprite2D = _sprites[slot]
 		if sprite != null and sprite.material is ShaderMaterial:
@@ -577,7 +687,8 @@ func _ensure_nodes() -> void:
 		art.name = "Art"
 		art.centered = true
 		art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var path := resolve_slot(slot)
+		art.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+		var path := _plate_path(slot)
 		art.texture = _load_tex(path)
 		art.set_meta("slot_path", path)
 		root.add_child(art)
@@ -595,7 +706,8 @@ func _ensure_nodes() -> void:
 		sprite.name = "Art"
 		sprite.centered = true
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var path := resolve_slot(slot)
+		sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+		var path := _plate_path(slot)
 		sprite.texture = _load_tex(path)
 		sprite.set_meta("slot_path", path)
 		sprite.material = _sway_material(str(LEAF_EDGES[slot]))
@@ -609,13 +721,106 @@ func _ensure_nodes() -> void:
 	_built = true
 
 
+func _plate_path(slot: String) -> String:
+	if not v1_ready():
+		return resolve_slot(slot)
+	var spec := v1_decor()
+	if slot == "back_far":
+		var sky: Dictionary = spec.get("sky", {})
+		return choose_path(v1_root(), str(sky.get("slot", "sky")))
+	if slot == "back_mid":
+		var clearing: Dictionary = spec.get("clearing", {})
+		return choose_path(v1_root(), str(clearing.get("slot", "clearing")))
+	var frame: Dictionary = spec.get("leaf_frame", {})
+	var slots: Dictionary = frame.get("slots", {})
+	var edge := str(LEAF_EDGES.get(slot, ""))
+	for name in slots.keys():
+		if str(slots[name]) == edge:
+			var path := choose_path(v1_root(), str(name))
+			if path != "":
+				return path
+	return resolve_slot(slot)
+
+
+func _parallax_for(slot: String) -> float:
+	var factors: Dictionary = _params.get("parallax", {})
+	var fraction := float(factors.get(slot, 0.0))
+	if not v1_ready():
+		return fraction
+	var spec := v1_decor()
+	if slot == "back_far":
+		var sky: Dictionary = spec.get("sky", {})
+		return float(sky.get("parallax", fraction))
+	if slot == "back_mid":
+		var clearing: Dictionary = spec.get("clearing", {})
+		return float(clearing.get("parallax", fraction))
+	return fraction
+
+
+func _leaf_modulate() -> Color:
+	if v1_ready():
+		return _decor_modulate("leaf_frame", _layer_modulate("front_leaves"))
+	return _layer_modulate("front_leaves")
+
+
+## The painted sky and clearing keep their own colour. The v4 plates stay tinted.
+func _back_tint(slot: String) -> Color:
+	if v1_ready():
+		if slot == "back_far":
+			return _decor_modulate("sky", _layer_modulate(slot))
+		if slot == "back_mid":
+			return _decor_modulate("clearing", _layer_modulate(slot))
+	return _layer_modulate(slot)
+
+
+func _decor_modulate(key: String, fallback: Color) -> Color:
+	var block: Variant = v1_decor().get(key, {})
+	if block is Dictionary:
+		var raw: Variant = (block as Dictionary).get("modulate", [])
+		if raw is Array and (raw as Array).size() >= 3:
+			return Color(float(raw[0]), float(raw[1]), float(raw[2]), 1.0)
+	return fallback
+
+
+## Cell diamonds only. The leaf frame may meet this edge. It does not enter it.
+func _cell_edge_guard() -> Rect2:
+	if _board == null or _board.tiles.is_empty():
+		return _play_guard()
+	var min_x := INF
+	var min_y := INF
+	var max_x := -INF
+	var max_y := -INF
+	for cell in _board.tiles.keys():
+		var at: Vector2 = (_board.tiles[cell] as Node2D).position
+		min_x = minf(min_x, at.x - 32.0)
+		max_x = maxf(max_x, at.x + 32.0)
+		min_y = minf(min_y, at.y - 16.0)
+		max_y = maxf(max_y, at.y + 16.0)
+	return Rect2(Vector2(min_x, min_y), Vector2(max_x - min_x, max_y - min_y))
+
+
+## The action bar is a CanvasLayer above the world. The leaf frame also stops
+## at that line, so a transparent bar does not show leaves through it.
+func _view_above_hud(view: Rect2) -> Rect2:
+	var clear := float(v1_decor().get("hud_clear_px", 175.0))
+	var cam: Camera2D = null
+	if _board != null:
+		cam = _board.get_node_or_null("BoardCamera") as Camera2D
+	var zoom := 1.0
+	if cam != null and cam.zoom.y > 0.01:
+		zoom = cam.zoom.y
+	var world := clear / zoom
+	if world >= view.size.y:
+		return view
+	return Rect2(view.position, Vector2(view.size.x, view.size.y - world))
+
+
 func _layout_backs() -> void:
 	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
 	if cam == null:
 		return
 	var fit: Vector2 = _board.get("_fit_camera_pos")
 	var pan := cam.position - fit
-	var factors: Dictionary = _params.get("parallax", {})
 	var view := _view_rect().size
 	for slot in BACK_SLOTS:
 		var root: Node2D = _backs[slot]
@@ -624,18 +829,29 @@ func _layout_backs() -> void:
 			root.visible = false
 			continue
 		root.visible = true
-		root.position = cam.position
-		art.modulate = _layer_modulate(slot)
-		var fraction := float(factors.get(slot, 0.0))
+		art.modulate = _back_tint(slot)
+		var fraction := _parallax_for(slot)
 		var source := _source_tex(art)
 		var scale := _back_scale(fraction, source.get_size(), view)
 		var drawn := source.get_size() * scale
+		var place_key := "sky" if slot == "back_far" else "clearing"
+		var spot := _placed(v1_placement(), place_key)
+		if not spot.is_empty():
+			drawn = spot["size"]
 		var px := _display_px(slot, drawn, cam.zoom)
 		_assign_display_tex(art, source, px)
 		var shown := art.texture.get_size()
 		art.scale = Vector2(drawn.x / shown.x, drawn.y / shown.y)
-		art.position = -pan * fraction
+		if not spot.is_empty():
+			# Mock v1: the plate sits at its board position at rest and drifts by the parallax on a pan.
+			root.position = (spot["center"] as Vector2) + pan * (1.0 - fraction)
+			art.position = Vector2.ZERO
+		else:
+			root.position = cam.position
+			art.position = -pan * fraction
+		# v4 draws one blended plate. v1 draws the sky on its own, at 0.08.
 		art.visible = false
+		art.material = null
 		art.set_meta("drawn", drawn)
 	_layout_plate(cam, pan, view)
 
@@ -646,12 +862,26 @@ func _layout_plate(cam: Camera2D, pan: Vector2, view: Vector2) -> void:
 		return
 	var mid: Sprite2D = _backs["back_mid"].get_node("Art")
 	var far: Sprite2D = _backs["back_far"].get_node("Art")
-	var factors: Dictionary = _params.get("parallax", {})
-	var fraction := float(factors.get("back_mid", 0.0))
+	var fraction := _parallax_for("back_mid")
+	var blend_sky := not v1_ready()
+	var at := cam.position - pan * fraction
+	var spot := _placed(v1_placement(), "clearing")
+	if not spot.is_empty():
+		at = (spot["center"] as Vector2) + pan * (1.0 - fraction)
+	if not blend_sky:
+		# The clearing's sky hole is transparent. Blending it off would stamp
+		# that hole into the framebuffer, and a viewer shows the hole as white.
+		far.visible = true
+		far.material = _plate_hole_mat
+		_plate_sprite.material = _plate_hole_mat
+		_plate_sprite.z_index = _z("back_mid")
+	else:
+		_plate_sprite.material = _plate_mat
+		_plate_sprite.z_index = _z("back_far")
 	_plate_sprite.visible = true
-	_plate_sprite.texture = _composited_plate(far, mid, cam.position - pan * fraction)
+	_plate_sprite.texture = _composited_plate(far, mid, at, blend_sky)
 	_plate_sprite.scale = mid.scale
-	_plate_sprite.position = cam.position - pan * fraction
+	_plate_sprite.position = at
 	_plate_sprite.modulate = Color.WHITE
 
 
@@ -659,12 +889,16 @@ var _plate_image_tex: ImageTexture
 var _plate_image_key: String = ""
 
 
-func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture2D:
-	var far_tex := far.texture
+func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2, blend_sky: bool = true) -> Texture2D:
 	var mid_tex := mid.texture
-	if far_tex == null or mid_tex == null:
+	if mid_tex == null:
+		return null
+	var far_tex: Texture2D = far.texture if far != null else null
+	if blend_sky and far_tex == null:
 		return mid_tex
-	var key := "%d,%d,%d,%d|k%d" % [far_tex.get_width(), far_tex.get_height(), mid_tex.get_width(), mid_tex.get_height(), 1 if _kit_edge else 0]
+	var far_w := far_tex.get_width() if far_tex != null else 0
+	var far_h := far_tex.get_height() if far_tex != null else 0
+	var key := "%d,%d,%d,%d|k%d|s%d" % [far_w, far_h, mid_tex.get_width(), mid_tex.get_height(), 1 if _kit_edge else 0, 1 if blend_sky else 0]
 	if not _motion_layout:
 		key += "@%d,%d" % [int(round(center.x)), int(round(center.y))]
 	if _motion_layout and _plate_image_tex != null:
@@ -672,24 +906,28 @@ func _composited_plate(far: Sprite2D, mid: Sprite2D, center: Vector2) -> Texture
 	if key == _plate_image_key and _plate_image_tex != null:
 		return _plate_image_tex
 	var mid_image := mid_tex.get_image()
-	var far_image := far_tex.get_image()
-	if mid_image == null or far_image == null:
+	if mid_image == null:
 		return mid_tex
 	mid_image = mid_image.duplicate()
-	far_image = far_image.duplicate()
 	if mid_image.is_compressed():
 		mid_image.decompress()
-	if far_image.is_compressed():
-		far_image.decompress()
-	if far_image.get_width() != mid_image.get_width() or far_image.get_height() != mid_image.get_height():
-		far_image.resize(mid_image.get_width(), mid_image.get_height(), Image.INTERPOLATE_BILINEAR)
-	var mid_tint := _layer_modulate("back_mid")
-	var far_tint := _layer_modulate("back_far")
+	var mid_tint := _back_tint("back_mid")
 	_tint_image(mid_image, mid_tint)
-	_tint_image(far_image, far_tint)
-	far_image.blend_rect(mid_image, Rect2i(0, 0, mid_image.get_width(), mid_image.get_height()), Vector2i.ZERO)
-	_stamp_earth(far_image, center, mid.scale)
-	_plate_image_tex = ImageTexture.create_from_image(far_image)
+	var plate := mid_image
+	if blend_sky:
+		var far_image := far_tex.get_image()
+		if far_image == null:
+			return mid_tex
+		far_image = far_image.duplicate()
+		if far_image.is_compressed():
+			far_image.decompress()
+		if far_image.get_width() != mid_image.get_width() or far_image.get_height() != mid_image.get_height():
+			far_image.resize(mid_image.get_width(), mid_image.get_height(), Image.INTERPOLATE_BILINEAR)
+		_tint_image(far_image, _back_tint("back_far"))
+		far_image.blend_rect(mid_image, Rect2i(0, 0, mid_image.get_width(), mid_image.get_height()), Vector2i.ZERO)
+		plate = far_image
+	_stamp_earth(plate, center, mid.scale)
+	_plate_image_tex = ImageTexture.create_from_image(plate)
 	_plate_image_key = key
 	return _plate_image_tex
 
@@ -764,10 +1002,16 @@ func _ensure_plate() -> void:
 		return
 	var image := Image.create(4, 4, false, Image.FORMAT_RGBA8)
 	image.fill(Color.WHITE)
+	var grade := LIGHT.GRADE_GLSL + "void fragment(){ vec4 c = texture(TEXTURE, UV); c.rgb = l7_grade(c.rgb); COLOR = c; }\n"
 	var shader := Shader.new()
-	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\n" + LIGHT.GRADE_GLSL + "void fragment(){ vec4 c = texture(TEXTURE, UV); c.rgb = l7_grade(c.rgb); COLOR = c; }\n"
+	shader.code = "shader_type canvas_item;\nrender_mode blend_disabled;\n" + grade
 	_plate_mat = ShaderMaterial.new()
 	_plate_mat.shader = shader
+	# v1 clearing sits over the sky. Alpha blend lets the sky show through the hole.
+	var hole := Shader.new()
+	hole.code = "shader_type canvas_item;\n" + grade
+	_plate_hole_mat = ShaderMaterial.new()
+	_plate_hole_mat.shader = hole
 	_plate_sprite = Sprite2D.new()
 	_plate_sprite.name = "PlateBlit"
 	_plate_sprite.centered = true
@@ -776,6 +1020,7 @@ func _ensure_plate() -> void:
 	_plate_sprite.texture = ImageTexture.create_from_image(image)
 	_plate_sprite.material = _plate_mat
 	_plate_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	_plate_sprite.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 	add_child(_plate_sprite)
 
 
@@ -807,11 +1052,80 @@ func _leaf_tex_px(edge: String, source: Texture2D) -> Vector2i:
 
 
 func _layout_leaves() -> void:
+	var spots := v1_placement()
+	if not spots.is_empty():
+		for slot in LEAF_EDGES.keys():
+			_place_leaf_at(slot, str(LEAF_EDGES[slot]), spots)
+		return
+	for slot in _sprites.keys():
+		var mat := (_sprites[slot] as Sprite2D).material as ShaderMaterial
+		if mat != null:
+			mat.set_shader_parameter("cut_y", 2.0)
 	var guard := _play_guard()
 	var view := _view_rect()
+	# The v1 leaf frame comes in to the cell edge and stops above the action bar.
+	# The v4 leaves keep the wider fighter clearance and the full view.
+	if v1_ready():
+		guard = _cell_edge_guard()
+		view = _view_above_hud(view)
 	var margins := _margins(view, guard)
 	for slot in LEAF_EDGES.keys():
 		_place_leaf(slot, margins[str(LEAF_EDGES[slot])], str(LEAF_EDGES[slot]))
+
+
+## Mock v1: each leaf frame is pinned to the board at its mock position and size
+## (it moves with the board) and is cut at the action bar line in screen space.
+func _place_leaf_at(slot: String, edge: String, spots: Dictionary) -> void:
+	var clip: Node2D = _clips[slot]
+	var pivot: Node2D = _pivots[slot]
+	var sprite: Sprite2D = _sprites[slot]
+	var key := ""
+	var frame: Variant = v1_decor().get("leaf_frame", {})
+	if frame is Dictionary:
+		var names: Variant = (frame as Dictionary).get("slots", {})
+		if names is Dictionary:
+			for name in (names as Dictionary).keys():
+				if str((names as Dictionary)[name]) == edge:
+					key = str(name)
+	var spot := _placed(spots, key)
+	if sprite.texture == null or spot.is_empty():
+		clip.visible = false
+		return
+	var size: Vector2 = spot["size"]
+	var cam := _board.get_node_or_null("BoardCamera") as Camera2D
+	var zoom := Vector2.ONE
+	if cam != null:
+		zoom = cam.zoom
+	var source := _source_tex(sprite)
+	clip.visible = true
+	# clip origin is the frame's top-left so margin_size keeps coverage checks exact
+	clip.position = (spot["center"] as Vector2) - size * 0.5
+	if int(spot["z"]) >= 0:
+		clip.z_index = int(spot["z"])
+	clip.set_meta("margin_size", size)
+	sprite.set_meta("crop_frac", Rect2(0, 0, 1, 1))
+	var px := Vector2i(clampi(int(ceil(size.x * zoom.x)), 8, 4096), clampi(int(ceil(size.y * zoom.y)), 8, 4096))
+	_assign_display_tex(sprite, source, px)
+	var full := sprite.get_meta("full_px", sprite.texture.get_size()) as Vector2
+	sprite.scale = Vector2(size.x / maxf(full.x, 1.0), size.y / maxf(full.y, 1.0))
+	sprite.centered = true
+	sprite.offset = Vector2.ZERO
+	sprite.position = Vector2.ZERO
+	pivot.set_meta("base_pos", size * 0.5)
+	pivot.position = size * 0.5
+	pivot.rotation = 0.0
+	sprite.modulate = _leaf_modulate()
+	var mat := sprite.material as ShaderMaterial
+	if mat != null:
+		var swing_px := float(_params.get("sway_amplitude_px", 14.0))
+		mat.set_shader_parameter("amplitude_px", minf(swing_px / maxf(sprite.scale.x, 0.001), float(SWAY_PAD_PX)))
+		mat.set_shader_parameter("sway_dir", _sway_dir(edge))
+		var view_h := 720.0
+		var vp := get_viewport()
+		if vp != null:
+			view_h = vp.get_visible_rect().size.y
+		var clear := float(v1_decor().get("hud_clear_px", 175.0))
+		mat.set_shader_parameter("cut_y", 1.0 - clear / maxf(view_h, 1.0))
 
 
 func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
@@ -863,7 +1177,7 @@ func _place_leaf(slot: String, margin: Rect2, edge: String) -> void:
 	var frac: Rect2 = sprite.get_meta("crop_frac", Rect2(0, 0, 1, 1))
 	var shift := Vector2(frac.position.x + frac.size.x * 0.5 - 0.5, frac.position.y + frac.size.y * 0.5 - 0.5) * disp
 	sprite.position = local + shift
-	sprite.modulate = _layer_modulate("front_leaves")
+	sprite.modulate = _leaf_modulate()
 	var mat := sprite.material as ShaderMaterial
 	if mat != null and sprite.scale.x > 0.001:
 		# Cap at the pad. A squeezed leaf would ask for hundreds of texels, the sample would
@@ -1350,7 +1664,7 @@ func _pad_image(image: Image, pad: int) -> Image:
 ## It is kept small: the fragment only needs the weight, and a large second fetch misses the frame cap.
 func _leaf_sway_image(art: CanvasItem, _frac: Rect2) -> Image:
 	var slot := str(art.get_parent().get_parent().name)
-	var tex := _load_tex(art_root() + slot + "_sway.png")
+	var tex := _load_tex(sway_mask_path(slot))
 	if tex == null:
 		return null
 	var image := tex.get_image()
@@ -1459,7 +1773,7 @@ func _apply_top_fade() -> void:
 	var sprite: Sprite2D = _sprites.get("front_leaves_top")
 	if sprite == null:
 		return
-	var tint := _layer_modulate("front_leaves")
+	var tint := _leaf_modulate()
 	sprite.modulate = Color(tint.r, tint.g, tint.b, _top_fade_alpha())
 
 

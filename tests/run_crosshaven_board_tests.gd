@@ -334,24 +334,24 @@ func _test_live() -> void:
 	truthy(dress != null, "(0,0) has the new dress")
 	var ids: PackedStringArray = dress.piece_ids()
 	eq(ids[0], "grass_top_b", "(0,0) draws its grass top")
-	eq(ids.has("standing_stone"), false, "(0,0) is open ground, not a standing stone")
+	eq(ids.has("standing_stone"), true, "(0,0) draws the mock standing stone")
 	var floor: Dictionary = dress.piece("grass_top_b")
 	var floor_dest: Rect2 = floor.get("dest", Rect2())
 	eq(floor_dest.size, Vector2(64, 32), "the @2x grass top covers the 64x32 diamond")
 	eq(floor_dest.position, Vector2(-32, -16), "the grass top is centred on the cell")
-	var rim = board.tiles[Vector2i(0, 1)].get_node("CrosshavenDress")
-	var stone: Dictionary = rim.piece("standing_stone")
-	truthy(not stone.is_empty(), "the northwest rim cell carries the off-grid standing stone")
+	var stone: Dictionary = dress.piece("standing_stone")
 	var stone_dest: Rect2 = stone.get("dest", Rect2())
-	eq(stone_dest.position, Vector2(-64, -112), "the standing stone is shifted off the walkable cell")
+	eq(stone_dest.position, Vector2(-32, -96), "the standing stone sits on its cell")
+	eq(stone_dest.size, Vector2(64, 112), "the standing stone is the half-scale master")
 	eq(is_equal_approx((stone.get("tint", Color.WHITE) as Color).a, 1.0), true, "the standing stone does not fade")
-	eq(rim.z_index < SORT.UNIT_Z_BIAS, true, "the stone draws under a fighter on its cell")
+	eq(origin.z_index < SORT.UNIT_Z_BIAS, true, "the stone draws under a fighter on its cell")
 	var raised = board.tiles[Vector2i(4, 3)].get_node("CrosshavenDress")
 	var raised_ids := PackedStringArray([
 		"cliff_left_h1", "cliff_right_h1", "grass_top_b",
 		"raised_rim_ne", "raised_rim_nw",
 		"grass_overhang_left", "grass_overhang_right",
 		"grass_overhang_corner_left", "grass_overhang_corner_right", "grass_overhang_corner_front",
+		"lilac_tuft",
 	])
 	eq(raised.piece_ids(), raised_ids, "a raised cell draws faces, then the top, then overlays, then the lip")
 	eq(raised.piece("cliff_left_h1").get("dest", Rect2()).position, Vector2(-32, 0), "the left cliff hangs from the west edge")
@@ -403,10 +403,13 @@ func _test_live() -> void:
 	truthy(sand.piece_ids().has("cliff_right_h2"), "a sandstone edge still gets the earth face")
 	eq(sand.piece_ids().has("grass_overhang_right"), false, "sandstone does not grow a grass overhang")
 	var shrub: Node = board.tiles[Vector2i(2, 8)]
-	eq(shrub.get_node("CrosshavenDress").piece("lilac_bush").is_empty(), true, "the old raised-cell bush is gone")
-	truthy(board.tiles[Vector2i(12, 4)].get_node("CrosshavenDress").piece_ids().has("clover_patch"), "the water cluster keeps its clover")
-	eq(board.tiles[Vector2i(3, 12)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), false, "the old fence cell is not a wall")
-	truthy(board.tiles[Vector2i(7, 0)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), "the rim hosts the 2-cell wall")
+	truthy(shrub.get_node("CrosshavenDress").piece_ids().has("lilac_bush"), "the mock cliff cell keeps its lilac bush")
+	eq(board.tiles[Vector2i(12, 4)].get_node("CrosshavenDress").piece_ids().has("clover_patch"), false, "(12,4) is not a clover in the mock")
+	truthy(board.tiles[Vector2i(7, 13)].get_node("CrosshavenDress").piece_ids().has("clover_patch"), "the mock clover sits on (7,13)")
+	eq(board.tiles[Vector2i(3, 12)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), false, "the old fence cell is not a long wall")
+	truthy(board.tiles[Vector2i(3, 12)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_short"), "the mock short wall sits on (3,12)")
+	eq(board.tiles[Vector2i(7, 0)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_2c"), false, "the northeast rim is not a long wall")
+	truthy(board.tiles[Vector2i(1, 0)].get_node("CrosshavenDress").piece_ids().has("ruined_wall_short"), "the mock short wall sits on (1,0)")
 	var jungle = board.get_node_or_null("JungleBackdrop")
 	truthy(jungle != null and jungle.kit_edge(), "the kit edge replaces the jungle lip")
 	eq(is_equal_approx(jungle.skirt_alpha(0.2), float(jungle.load_params()["ground_skirt"]["strength"])), true, "the jungle skirt math stays for its own tests")
