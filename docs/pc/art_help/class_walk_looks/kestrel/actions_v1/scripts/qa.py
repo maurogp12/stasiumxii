@@ -44,3 +44,16 @@ out['problems'] = bad
 json.dump(out, open(f'{ROOT}/qa.json', 'w'), indent=1)
 for k, v in out['skate'].items(): print(k, out['counts'][k], v, out['format'][k])
 print('problems', bad)
+# ---- arm keys: per frame, the painted key used per arm and its stretch (bone length / key length) for the upper sleeve
+# and the forearm. Rule (round 2): within +-15 % on every frame.
+arms = {}; worst = 0.0
+for F in 'SE':
+    for act, n in ACTS.items():
+        for i in range(n):
+            m = B[F][act][f'f{i:02d}']
+            row = {sd: dict(key=m['arm_' + sd]['key'], up=m['arm_' + sd]['up'], fore=m['arm_' + sd]['fore']) for sd in 'RL'}
+            st_ = max(max(abs(v['up'] - 1), abs(v['fore'] - 1)) for v in row.values()); row['max_dev'] = round(st_, 3)
+            worst = max(worst, st_); arms[f'{act}_{F}_f{i:02d}'] = row
+out['arm_stretch'] = dict(max_dev=round(worst, 3), frames=arms)
+json.dump(out, open(f'{ROOT}/qa.json', 'w'), indent=1)
+print('arm stretch max deviation', round(worst, 3), 'worst frames', sorted(arms, key=lambda k: -arms[k]['max_dev'])[:6])

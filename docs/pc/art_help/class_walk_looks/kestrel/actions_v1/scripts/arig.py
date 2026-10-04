@@ -43,9 +43,9 @@ ARIG = {F: json.load(open(f'{AP}/arig_{F}.json')) for F in 'SE'}
 LRIG = krig.RIG
 CFG = {
  'S': dict(s=253 / 686, elbow_blend=16.0, len_clip=(0.40, 1.25), cape_lag=(0.35, 0.65), cape_trail=(0.25, 0.55),
-           cape_follow=0.45, idle_sway=(0.6, 1.4), string=(112, 98, 76), death_fold_rot=(-20.0, -25.0), fore_max=1.22, up_max=2.2, arrow_len=1.0, bow_k=0.92),
+           cape_follow=0.45, idle_sway=(0.6, 1.4), string=(112, 98, 76), death_fold_rot=(-20.0, -25.0), tilt_gain={'hit': 1.75}, head_snap={'hit': [0, -4, -9, -6, 2, 1.5, 0.5, 0]}, fore_max=1.22, up_max=2.2, arrow_len=1.0, bow_k=0.92, draw_fore_key=0.5),
  'E': dict(s=247 / 665, elbow_blend=16.0, len_clip=(0.40, 1.25), cape_lag=(0.35, 0.65), cape_trail=(0.25, 0.55),
-           cape_follow=0.45, idle_sway=(0.6, 1.4), string=(70, 62, 52), death_fold_rot=(0.0, 0.0), fore_max=1.22, up_max=2.2, arrow_len=1.0, bow_k=0.92),
+           cape_follow=0.45, idle_sway=(0.6, 1.4), string=(70, 62, 52), death_fold_rot=(0.0, 0.0), tilt_gain={'hit': 1.75}, head_snap={'hit': [0, -4, -9, -6, 2, 1.5, 0.5, 0]}, fore_max=1.22, up_max=2.2, arrow_len=1.0, bow_k=0.92, draw_fore_key=0.5, death_drape=(1.15, 1.0)),
 }
 for F_ in 'SE': CFG[F_].update({k: krig.CFG[F_][k] for k in ('foot_o', 'foot_k', 'stretch_max', 'stance_kmin', 'far_dark', 'reach')})
 
@@ -107,7 +107,8 @@ def body_mesh(F):
         A = np.maximum(ptex(f'body_{F}')[..., 3], ptex(f'front_{F}')[..., 3]); V, tris = grid_mesh(A, 4)
         wc = np.asarray(Image.open(f'{AP}/wcape_{F}.png').convert('RGB')).astype(np.float32) / 255.
         xi = np.clip(V[:, 0].astype(int), 0, 1279); yi = np.clip(V[:, 1].astype(int), 0, 719)
-        wu, wl = wc[yi, xi, 0], wc[yi, xi, 1]; W = np.stack([np.clip(1 - wu - wl, 0, 1), wu, wl], 1); W /= W.sum(1, keepdims=True)
+        wu, wl, wh = wc[yi, xi, 0], wc[yi, xi, 1], wc[yi, xi, 2]
+        W = np.stack([np.clip(1 - wu - wl - wh, 0, 1), wu, wl, wh], 1); W /= W.sum(1, keepdims=True)
         _MESH[F] = (V, tris, W)
     return _MESH[F]
 
@@ -146,7 +147,9 @@ def torso_M(F, act, i):
     c = CFG[F]; s = c['s']; R = ARIG[F]; LR = LRIG[F]
     hc_t = (np.array(LR['hips']['near'], float) + np.array(LR['hips']['far'], float)) / 2       # painted hip centre (walk rule)
     u0 = torso_axis(F, 'idle', 0); ui = torso_axis(F, act, i)
-    phi = (ang(ui) - ang(u0) + math.pi) % (2 * math.pi) - math.pi; k = float(np.clip(np.linalg.norm(ui) / np.linalg.norm(u0), 0.35, 1.15))
+    phi = (ang(ui) - ang(u0) + math.pi) % (2 * math.pi) - math.pi
+    phi *= CFG[F].get('tilt_gain', {}).get(act, 1.0)
+    k = float(np.clip(np.linalg.norm(ui) / np.linalg.norm(u0), 0.35, 1.15))
     e = unit(u0); Sx = np.eye(2) + (k - 1) * np.outer(e, e)
     A = R2(phi) @ Sx * s
     # idle f00 placement = the walk rule: x of the painted hip centre on the blockout hip centre, hood top on the clay top row
@@ -240,11 +243,120 @@ def arm_pose(F, act, i, sd, Mt, phi, hand_target=None):
     hd = b(act, i, 'hand') + (1 - r) * (rot @ d_hd) + r * d_sh
     if hand_target is not None: el = el + (np.asarray(hand_target, float) - hd); hd = np.asarray(hand_target, float)
     l1p, l2p = s * math.dist(Sh, El), s * math.dist(El, Hd); short = 0.0
-    if math.dist(sh, el) > l1p * c['up_max']: el = sh + unit(el - sh) * l1p * c['up_max']
-    if math.dist(el, hd) > l2p * c['fore_max']:
-        h2 = el + unit(hd - el) * l2p * c['fore_max']; short = math.dist(h2, hd); hd = h2
     Mu = bone_M(Sh, El, sh, el, s); Mf = bone_M(El, Hd, el, hd, s)
     return dict(Mu=Mu, Mf=Mf, sh=sh, el=el, hand=hd, short=short, f=(math.dist(sh, el) / l1p, math.dist(el, hd) / l2p))
+
+# ------------------------------------------------------------------ raised-arm keys (round 2)
+# Every arm frame uses a painted key whose upper sleeve and forearm are within +-15 % of the length the frame needs:
+#   hang  the arm exactly as cut from the target (arm_<side>_F), used while both its bones fit (idle, most of hit);
+#   keys  sleeve_F_role (the painted visible sleeve, straightened, extended from its own folds) cropped to one of the
+#         UP_KEYS lengths, joined at the elbow to fore_F_role (the painted forearm + fist) cropped to one of the FO_KEYS
+#         lengths from the hand end. Short forearm keys (foreshortened, pointing away) end in a rounded, shaded cuff.
+# role 'bow' = her right arm (holds the bow), 'draw' = her left arm (S: the painted left forearm with the closed fist;
+# E: the same painted forearm and fist, lit like E: never a mirror of the bow arm).
+UP_KEYS = [0.41, 0.51, 0.64, 0.80, 1.0, 1.25, 1.56, 1.95, 2.44]
+FO_KEYS = [0.40, 0.50, 0.62, 0.78, 1.0]
+ROLE = {'R': 'bow', 'L': 'draw'}
+_KEY = {}
+def key_tex(F, role, ku, kf):
+    k = (F, role, ku, kf)
+    if k in _KEY: return _KEY[k]
+    info = ARIG[F]['keys'][role]; L0 = info['upper_len']
+    sl = np.asarray(Image.open(f'{AP}/sleeve_{F}_{role}.png').convert('RGBA')).astype(np.float32) / 255.
+    fo = np.asarray(Image.open(f'{AP}/fore_{F}_{role}.png').convert('RGBA')).astype(np.float32) / 255.
+    Lu = int(round(L0 * ku)); top = 14
+    sl = sl[-min(len(sl), Lu + top):]
+    er, Lf0 = info['fore_elbow_row'], info['fore_len']; hand_row = int(round(er + Lf0))
+    Lf = int(round(Lf0 * kf)); a0 = int(max(0, hand_row - Lf - 6)); fo = fo[a0:].copy()
+    if kf < 0.9:      # foreshortened: a rounded cuff in shadow where the forearm turns away
+        n = fo.shape[0]; w = fo.shape[1]; cap = 12
+        yy, xx = np.mgrid[0:cap, 0:w]; ell = ((xx - w / 2) / (w * 0.42)) ** 2 + ((yy - cap) / cap) ** 2 <= 1
+        fo[:cap, :, 3] *= ell; fo[:cap + 8, :, :3] *= np.linspace(0.62, 1.0, cap + 8)[:, None, None]
+    else:             # full forearm: its top fades over the sleeve end (no hard elbow line)
+        fo[:6, :, 3] *= np.linspace(0, 1, 6)[:, None]
+    W_ = max(sl.shape[1], fo.shape[1]) + 20; el_y = 10 + sl.shape[0] - 0
+    Ht = el_y + fo.shape[0] + 12
+    tex_ = np.zeros((Ht, W_, 4), np.float32); cx = W_ // 2
+    def put(img, y0):
+        x0 = cx - img.shape[1] // 2; pm = np.dstack([img[..., :3] * img[..., 3:], img[..., 3:]])
+        sub = tex_[y0:y0 + img.shape[0], x0:x0 + img.shape[1]]; sub[:] = over(sub, pm)
+    put(sl, 10)
+    fore_y0 = int(el_y - (hand_row - a0 - Lf))                   # the fore crop's elbow row lands on el_y
+    fp = np.zeros_like(tex_); 
+    x0 = cx - fo.shape[1] // 2; pm = np.dstack([fo[..., :3] * fo[..., 3:], fo[..., 3:]])
+    y0 = max(fore_y0, 0); fp[y0:y0 + fo.shape[0] - (y0 - fore_y0), x0:x0 + fo.shape[1]] = pm[y0 - fore_y0:]
+    full = over(tex_, fp)
+    sh_, el_, hd_ = np.array([cx, 10 + top], float), np.array([cx, float(el_y)], float), np.array([cx, float(el_y + Lf)], float)
+    V, tris = grid_mesh(full[..., 3], 3)
+    b = CFG[F]['elbow_blend']; w = ss((V[:, 1] - el_[1] + b) / (2 * b)); Wt = np.stack([1 - w, w], 1)
+    order = np.argsort(Wt[tris].mean(1)[:, 1], kind='stable')
+    _KEY[k] = dict(full=full, fore=fp, J=(sh_, el_, hd_), mesh=(V, tris[order], Wt), Lu=float(el_[1] - sh_[1]), Lf=float(Lf))
+    return _KEY[k]
+
+def pick(d, L0, keys):
+    r_ = d / L0; k = min(keys, key=lambda q: abs(math.log(max(r_, 1e-3) / q))); return k, r_ / k
+
+def hang_fits(F, sd, P):
+    if F == 'E' and sd == 'L': return False
+    s = CFG[F]['s']; J = ARIG[F]['arms'][sd]; Sh, El, Hd = (np.array(J[k], float) for k in ('shoulder', 'elbow', 'hand'))
+    hu = math.dist(P['sh'], P['el']) / s / math.dist(Sh, El); hf = math.dist(P['el'], P['hand']) / s / math.dist(El, Hd)
+    return abs(hu - 1) <= 0.15 and abs(hf - 1) <= 0.15
+
+def arm_render(F, sd, P, RS, canvas, allow_hang=True):
+    """choose the painted key for this frame and skin it; returns full image, fore-only image and the stretch."""
+    s = CFG[F]['s']; J = ARIG[F]['arms'][sd]; Sh, El, Hd = (np.array(J[k], float) for k in ('shoulder', 'elbow', 'hand'))
+    du, df = math.dist(P['sh'], P['el']) / s, math.dist(P['el'], P['hand']) / s
+    hu, hf = du / math.dist(Sh, El), df / math.dist(El, Hd)
+    role = ROLE[sd]; has_hang = not (F == 'E' and sd == 'L')
+    if allow_hang and has_hang and abs(hu - 1) <= 0.15 and abs(hf - 1) <= 0.15:
+        Va, ta, Wa = arm_mesh(F, sd)
+        img, _ = warp(ptex(f'arm_{sd}_{F}'), Va, lbs(Va, Wa, (P['Mu'], P['Mf'])) * RS, ta, *canvas)
+        return img, None, dict(key='hang', up=round(hu, 3), fore=round(hf, 3))
+    info = ARIG[F]['keys'][role]
+    if P.get('keys'):
+        ku, kf = P['keys']; su, sf = du / (ku * info['upper_len']), df / (kf * info['fore_len'])
+    else:
+        ku, su = pick(du, info['upper_len'], UP_KEYS); kf, sf = pick(df, info['fore_len'], FO_KEYS)
+    K = key_tex(F, role, ku, kf); sh_, el_, hd_ = K['J']
+    Mu = bone_M(sh_, el_, P['sh'], P['el'], s); Mf = bone_M(el_, hd_, P['el'], P['hand'], s)
+    V, tris, Wt = K['mesh']; Vd = lbs(V, Wt, (Mu, Mf)) * RS
+    img, maps = warp(K['full'], V, Vd, tris, *canvas); fo = remap_with(K['fore'], maps)
+    return img, fo, dict(key=f'up{ku}_fo{kf}', up=round(su, 3), fore=round(sf, 3))
+
+def arm_pose_keys(F, act, i, sd, Mt, phi, hand_target=None):
+    """raised arms: bone lengths are the blockout's projected lengths (its foreshortening), rounded to the nearest painted
+    key; the elbow is 2-bone IK from the painted shoulder to the hand target, bending to the blockout elbow's side.
+    If the hand is out of reach the bones may stretch up to 15 %, then the upper sleeve takes the next key; only past
+    that does the hand stop short."""
+    P = arm_pose(F, act, i, sd, Mt, phi, hand_target)
+    s = CFG[F]['s']; role = ROLE[sd]; info = ARIG[F]['keys'][role]
+    b = lambda k: jt(F, act, i, f'{sd}_{k}')
+    l1 = np.linalg.norm(b('elbow') - b('shoulder')); l2 = np.linalg.norm(b('hand') - b('elbow'))
+    ku, _ = pick(l1 / s, info['upper_len'], UP_KEYS); kf, _ = pick(l2 / s, info['fore_len'], FO_KEYS)
+    if sd == 'L' and hand_target is not None and CFG[F].get('draw_fore_key'):
+        kf = CFG[F]['draw_fore_key']      # at the string the draw forearm points back, away from the camera: foreshortened key
+    sh, tgt = P['sh'], P['hand']
+    def lens(ku_, kf_): return ku_ * info['upper_len'] * s, kf_ * info['fore_len'] * s
+    L1, L2 = lens(ku, kf); D = math.dist(sh, tgt)
+    while D > (L1 + L2) * 1.15:
+        nu = [q for q in UP_KEYS if q > ku]; nf = [] if (sd == 'L' and hand_target is not None and CFG[F].get('draw_fore_key')) else [q for q in FO_KEYS if q > kf]
+        if nf and (not nu or kf < 1.0): kf = nf[0]
+        elif nu: ku = nu[0]
+        else: break
+        L1, L2 = lens(ku, kf)
+    for _ in range(12):                # folded tighter than the two bones allow: shorten the longer bone's key
+        if not (D < abs(L1 - L2) * 1.08): break
+        if L2 > L1 and [q for q in FO_KEYS if q < kf]: kf = [q for q in FO_KEYS if q < kf][-1]
+        elif [q for q in UP_KEYS if q < ku]: ku = [q for q in UP_KEYS if q < ku][-1]
+        else: break
+        L1, L2 = lens(ku, kf)
+    st = min(1.15, max(1.0, D / (L1 + L2))); short = 0.0
+    fixed_f = sd == 'L' and hand_target is not None and CFG[F].get('draw_fore_key')
+    if D > (L1 + L2) * st:
+        t2 = sh + unit(tgt - sh) * (L1 + L2) * st * 0.999; short = math.dist(t2, tgt); tgt = t2
+    el = ik_knee(sh, tgt, L1 * st, L2 * st, b('elbow') + (sh - b('shoulder')))
+    P.update(el=el, hand=tgt, short=short, keys=(ku, kf))
+    return P
 
 def fore_rigid(F, sd, P):
     """similarity of the forearm bone (scale s, no stretch): the held bow rides on it."""
@@ -337,16 +449,28 @@ def render(F, act, i, RS=3, shift=0.0):
         # toward their hinge along the cloth's own hanging direction (the painted 'down', turned with the torso)
         wf = float(np.clip(abs(tinfo['phi']) / 55.0, 0, 1)); wf = wf * wf * (3 - 2 * wf)
         dn = np.array([0.0, 1.0])          # on the ground the cloth can only recede up the screen, never hang below
-        fr_ = CFG[F]['death_fold_rot']           # and swing along the body toward her feet
-        Mu = rot_about(Mu, pu, math.radians(fr_[0]) * wf); Ml = rot_about(Ml, pu, math.radians(fr_[0]) * wf)
-        Ml = rot_about(Ml, apm(Mu, hinge_t), math.radians(fr_[1]) * wf)
-        hc = apm(Mu, hinge_t)
-        Mu = squash_about(Mu, pu, dn, 1 - 0.5 * wf); Ml = squash_about(Ml, hc, dn, 1 - 0.5 * wf)
-        Ml = squash_about(Ml, apm(Mu, hinge_t), dn, 1 - 0.5 * wf)
+        if CFG[F].get('death_drape'):
+            # the cloak drapes on the ground: both panels are laid into the ground plane (iso foreshortening: the
+            # painted 'down' runs along the ground toward her feet (world +X: screen down-right, half height), the
+            # painted 'across' along the ground sideways (world +Y)), spread a little, pinned at the shoulders
+            gx = np.array([0.7071, 0.3536]); gy = np.array([0.7071, -0.3536]); s_ = CFG[F]['s']; sp = CFG[F]['death_drape']
+            G = np.column_stack([gy * sp[0], gx * sp[1]]) * s_ * np.sqrt(2)
+            cu = np.array(R['cape_upper'], float); Mg = np.hstack([G, (pu - G @ cu)[:, None]])
+            blend = lambda M, w: M * (1 - w) + Mg * w
+            Mu = blend(Mu, 0.55 * wf); Ml = blend(Ml, wf)
+        else:
+            fr_ = CFG[F]['death_fold_rot']           # and swing along the body toward her feet
+            Mu = rot_about(Mu, pu, math.radians(fr_[0]) * wf); Ml = rot_about(Ml, pu, math.radians(fr_[0]) * wf)
+            Ml = rot_about(Ml, apm(Mu, hinge_t), math.radians(fr_[1]) * wf)
+            hc = apm(Mu, hinge_t)
+            Mu = squash_about(Mu, pu, dn, 1 - 0.5 * wf); Ml = squash_about(Ml, hc, dn, 1 - 0.5 * wf)
+            Ml = squash_about(Ml, apm(Mu, hinge_t), dn, 1 - 0.5 * wf)
         meta_fold = wf
     else: meta_fold = 0.0
     V, tris, W = body_mesh(F)
-    Vd = lbs(V, W, (Mt, Mu, Ml))
+    snap = CFG[F]['head_snap'].get(act, [0.0] * ACTS[act])[i]
+    Mh = rot_about(Mt, apm(Mt, R['neck']), math.radians(snap))
+    Vd = lbs(V, W, (Mt, Mu, Ml, Mh))
     if act == 'death' and meta_fold > 0:
         # cloth lying on the ground cannot hang below the body's lowest contact: everything under that floor row is
         # compressed toward it (a per-vertex squash of the same mesh, so the hem stays ragged and there is no cut)
@@ -370,27 +494,34 @@ def render(F, act, i, RS=3, shift=0.0):
     # arms
     phi = tinfo['phi']; arms = {}
     key = fr(F, act, i)['key']; r = key.get('raise_', 0.0); drawn = fr(F, act, i)['drawn']
-    arms['R'] = arm_pose(F, act, i, 'R', Mt, phi)
+    AP_ = arm_pose_keys if r > 0.02 else arm_pose
+    arms['R'] = AP_(F, act, i, 'R', Mt, phi)
     bow_img = None; arrow_img = None; string_pts = None
     if r > 0.02:
         bow_img, tips, gshift = bow_aimed(F, act, i, arms['R']['hand'], RS, canvas)
         j = fr(F, act, i)['joints']; g = np.array(j['bow_grip'])
         nock = np.array(j['nock']) * 1.0
         nock_c = arms['R']['hand'] + (nock - g) * c['bow_k']
+        # at full draw the nock (and the draw hand) sit on the PAINTED cheek: the blockout anchor moved into the painting
+        cheek = apm(Mt, R['cheek']); w_an = float(np.clip(key.get('draw', 0.0), 0, 1)) if drawn else 0.0
+        nock_c = nock_c * (1 - w_an) + cheek * w_an
         if drawn:
-            tip_c = arms['R']['hand'] + (np.array(j['arrow_tip']) - g) * c['bow_k']
+            alen = np.linalg.norm(np.array(j['arrow_tip']) - np.array(j['arrow_nock'])) * c['bow_k']
+            tip_c = nock_c + unit(arms['R']['hand'] - nock_c) * alen
             arrow_img = arrow_piece(nock_c, tip_c, RS, canvas)
             string_pts = [tips[0], nock_c, tips[1]]
-            arms['L'] = arm_pose(F, act, i, 'L', Mt, phi, hand_target=nock_c)
+            arms['L'] = AP_(F, act, i, 'L', Mt, phi, hand_target=nock_c)
         else:
             string_pts = [tips[0], tips[1]]
         meta['nock'] = nock_c.tolist(); meta['bow_tips'] = [t.tolist() for t in tips]
-    if 'L' not in arms: arms['L'] = arm_pose(F, act, i, 'L', Mt, phi)
-    arm_imgs = {}
+    if 'L' not in arms: arms['L'] = AP_(F, act, i, 'L', Mt, phi)
+    arm_imgs = {}; arm_fore = {}
     for sd in 'RL':
-        P = arms[sd]; Va, ta, Wa = arm_mesh(F, sd)
-        arm_imgs[sd], _ = warp(ptex(f'arm_{sd}_{F}'), Va, lbs(Va, Wa, (P['Mu'], P['Mf'])) * RS, ta, *canvas)
-        meta['arm_' + sd] = dict(sh=P['sh'].tolist(), el=P['el'].tolist(), hand=P['hand'].tolist(), short=P['short'], f=P['f'])
+        P = arms[sd]
+        if r <= 0.02 and not hang_fits(F, sd, P):     # hit / death reach: keys + IK instead of stretching the painting
+            P = arms[sd] = arm_pose_keys(F, act, i, sd, Mt, phi)
+        arm_imgs[sd], arm_fore[sd], kinfo = arm_render(F, sd, P, RS, canvas, allow_hang=(r < 0.02))
+        meta['arm_' + sd] = dict(sh=P['sh'].tolist(), el=P['el'].tolist(), hand=P['hand'].tolist(), short=P['short'], **kinfo)
     if bow_img is None:
         Mb = fore_rigid(F, 'R', arms['R'])
         if act == 'death' and meta_fold > 0:
@@ -406,12 +537,18 @@ def render(F, act, i, RS=3, shift=0.0):
     cov = {sd: cv2.warpAffine(ptex(f'cover_{F}_{sd}'), (Mt * RS).astype(np.float32), (Wc, Hc), flags=cv2.INTER_LINEAR, borderValue=0) for sd in 'RL'}
     # ---- composite (back to front)
     if F == 'S':
-        # drawn: the draw arm's elbow is back behind the head, so the arm goes behind the body (the hand is at the far cheek)
-        order = ([arm_imgs['L']] if r > 0.5 else []) + [body] + leg_imgs + [front] + ([] if r > 0.5 else [arm_imgs['L']]) + [cov['L']]
+        # raised: the draw arm's elbow goes back behind the shoulder, so the upper arm is behind the body while the
+        # (foreshortened) forearm and fist come in front of the shoulder to the cheek
+        up = r > 0.5 and arm_fore['L'] is not None
+        order = ([arm_imgs['L']] if up else []) + [body] + leg_imgs + [front] + ([arm_fore['L']] if up else [arm_imgs['L']]) + [cov['L']]
         order += ([arm_imgs['R'], bow_img] + ([arrow_img] if arrow_img is not None else [])) if r > 0.02 else [bow_img, arm_imgs['R']]
         order += [cov['R']]
     else:
-        order = [arm_imgs['L']] + leg_imgs + [body, front, bow_img] + ([arrow_img] if arrow_img is not None else []) + [arm_imgs['R'], cov['R']]
+        # E: the draw arm is behind the cloak and the quiver; raised, its foreshortened forearm and fist come out at the
+        # cheek past the hood (drawn over the body), the string meeting the fist
+        up = r > 0.5 and arm_fore['L'] is not None
+        order = [arm_imgs['L']] + leg_imgs + [body, front] + ([arm_fore['L']] if up else []) + [bow_img] + \
+                ([arrow_img] if arrow_img is not None else []) + [arm_imgs['R'], cov['R']]
     for L_ in order: img = over(img, L_)
     if F == 'S' and krig.CFG['S'].get('crotch_fill'):
         kn_y = min(meta['R']['knee'][1], meta['L']['knee'][1])
@@ -431,10 +568,10 @@ def bottom_of(img, RS):
     ys = np.nonzero(a.any(1))[0]; return int(ys.max()) if len(ys) else 0
 
 def death_shifts(F, RS=2):
-    """smallest lift that keeps every death frame inside the cell (bottom row <= 359), eased and never decreasing."""
+    """smallest lift that keeps every death frame inside the cell (bottom row <= 357), eased and never decreasing."""
     n = ACTS['death']; need = []
     for i in range(n):
-        img, _ = render(F, 'death', i, RS); need.append(max(0, bottom_of(img, RS) - 359))
+        img, _ = render(F, 'death', i, RS); need.append(max(0, bottom_of(img, RS) - 357))
     sh = np.maximum.accumulate(np.array(need, float))
     return [float(math.ceil(v)) for v in sh]
 

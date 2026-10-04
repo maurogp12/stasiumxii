@@ -73,6 +73,8 @@ def aim_fix(C, anim, i, st, J0):
     tR = J['R_hand'] * (1 - r) + grip * r; tL = J['L_hand'] * (1 - r) + hand_L * r
     for side, tgt, hint in (('R', tR, Rc @ np.array([0.6, -0.2, -1.0])), ('L', tL, Rc @ np.array([-1.0, -0.6, 0.15]))):
         sh = J[f'{side}_shoulder']; l2 = f('farm') + 0.5 * f('hand')
+        # bend toward the rest elbow while the arm is down (so f00 is exactly the idle pose), the archery bend when raised
+        h0 = nrm(J[f'{side}_elbow'] - (sh + J[f'{side}_hand']) / 2); hint = nrm(h0 * (1 - r) + nrm(hint) * r)
         el, hd = ik_pt(sh, tgt, f('uarm'), l2, hint)
         J[f'{side}_elbow'] = el; J[f'{side}_hand'] = hd; J[f'{side}_wrist'] = el + nrm(hd - el) * f('farm')
         z = nrm(J[f'{side}_wrist'] - el); x = nrm(np.cross(Rc @ Y, z)); y = np.cross(z, x)
