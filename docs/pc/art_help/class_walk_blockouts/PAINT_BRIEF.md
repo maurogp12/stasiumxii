@@ -36,6 +36,10 @@ Paint each part from the approved target, then rig it on `<class>/joints_512.jso
   5. **Clip with the part's own alpha or a feathered capsule, never a box**, so there are no straight cut edges.
   6. **Capes and cloaks:** two panels with the lag in `joints_512.json`; the hem clears the support sole by 8 px or more. Kestrel's and Gloam's ragged hems are the read from the back.
   7. **Back views (E):** swing reads as foreshortening, not sideways rotation.
+- **Facing and face (Mauro, 4 Oct: "make sure face looks towards the direction he is moving and make sure N, E, S, W is correct"):**
+  - S = front, walks down-right; W = mirror of S (down-left); E = back, walks up-right; N = mirror of E (up-left). `facing_check.png` shows all four classes. The blockout travel is verified from the planted feet.
+  - The head and eyes face the travel direction in every walk frame: head yaw = the blockout chest yaw, plus no more than ±10°.
+  - Name files by these combat letters directly. Never use the old L10 art-letter remap.
 - **House rules:** binary alpha, black under alpha 0, 512×360 cells, pivot (256, 329), 12 frames at 17.144 fps. W mirrors S, N mirrors E.
 - **Actions:** idle, attack, skill, hit and death follow the poses in `<class>/<class>_actions.mp4`. Do the walk first, then the actions in the same way.
 
