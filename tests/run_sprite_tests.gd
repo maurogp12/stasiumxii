@@ -65,7 +65,11 @@ func _test_sprite_node_setup() -> void:
 	else:
 		eq(sprite.centered, true, "sprite is centered")
 		eq(sprite.offset, Vector2(0, -72), "offset puts feet on the origin")
-	eq(sprite.scale, Vector2(0.5, 0.5), "ironjaw uses the shared scale (brute size stays in the art)")
+	if PcCharacters.uses_body("ironjaw"):
+		var drawn := PcCharacters.combat_scale("ironjaw")
+		eq(sprite.scale, Vector2(drawn, drawn), "ironjaw uses the json draw scale")
+	else:
+		eq(sprite.scale, Vector2(0.5, 0.5), "ironjaw uses the shared scale (brute size stays in the art)")
 	eq(sprite.flip_h, false, "ironjaw E/W mirror is not flip_h")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "sprite filter is Linear")
 	eq(sprite.z_index, 0, "sprite z stays relative to the pawn")

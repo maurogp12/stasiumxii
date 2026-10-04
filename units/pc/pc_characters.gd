@@ -234,8 +234,10 @@ static func _load_set(class_id: String) -> Dictionary:
 	}
 
 
-## draw_scale is a number. world_draw_scale is that number times 0.92.
-## The older object form (combat / world_walker) still loads.
+## draw_scale and world_draw_scale come from the json. world_draw_scale
+## is draw_scale × 0.92, already rounded in the file. The older object
+## form (combat / world_walker) still loads, which is how ironjaw_v2.json
+## stays readable as a reference.
 static func _draw_scales(data: Dictionary) -> Vector2:
 	var raw: Variant = data.get("draw_scale", 0.5)
 	if raw is Dictionary:
