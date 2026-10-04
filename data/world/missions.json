@@ -6,11 +6,11 @@
     "Story XP is the 4.7 share of xp_to_next(level_min): talk-only 15%, reach 25%, dungeon 60%. The numbers are stored. Pace is not applied again.",
     "The sample reward_xp of 40 is not used. Welcome to Crosshaven pays 15, which is 15% of the first curve step.",
     "Coins are the low end of the 4.9 band for level_min. Items are empty until the reward catalog is on this branch.",
-    "The 4.5 summary says 18 extra NPCs and about 51 missions. The shipped roster has 20 extras, so this file has 18 chain missions and 20 sides.",
+    "The 4.5 summary says 18 extra NPCs and about 51 missions. The shipped roster has 20 extras, so this file has 17 chain missions and 20 sides.",
     "Town chunks have no landmark point of interest. Town scouts and some sides use the town-center cell.",
     "The Fisher sends you to the cell beside the Eastmarch fishing hut. The Fen Guide sends you to the Sunken Mill door. The Last Watcher sends you to the Heart of the Blight door.",
     "clear_dungeon steps cannot be accepted until dungeon runs exist. They are pending and show as coming soon.",
-    "Story chains are the six section 00 zones in level_zones.json: Crossroads, Stoneford, Northgate, Eastmarch, Southbridge, Westwatch. No story step uses an outer level zone or an outer dungeon. A dungeon step is pending because its door is not built.",
+    "Story chains are the six section 00 zones in level_zones.json: Crossroads, Stoneford, Northgate, Eastmarch, Southbridge, Westwatch. The Crossroads has no dungeon. Millrace Vaults is dropped. The five town dungeons are Old Granary Cellar, Frostspire Archive, Saltmaw Grotto, Drowned Abbey, and Heart of the Blight. No story step uses an outer level zone or an outer dungeon. A dungeon step is pending because its door is not built.",
     "Each town welcome stays in that town: Elder, then Warden, then Trader, then Door Keeper, skipping a role the town does not have. A town with no one left to meet sends you to its own square.",
     "Each zone welcome requires the previous zone's scout, in level_zones.json order."
   ],
@@ -419,46 +419,6 @@
         ],
         "done": [
           "The roads are yours now."
-        ]
-      }
-    },
-    {
-      "id": "heart_dungeon",
-      "name": "The Millrace Vaults",
-      "kind": "story",
-      "chain": "dungeon",
-      "level_zone": "crossroads",
-      "giver": "crossroads_warden",
-      "turn_in": "crossroads_warden",
-      "min_level": 1,
-      "requires": [
-        "heart_scout"
-      ],
-      "steps": [
-        {
-          "type": "clear_dungeon",
-          "dungeon": "millrace_vaults",
-          "place": "Millrace Vaults",
-          "pending_chunk": true
-        }
-      ],
-      "rewards": {
-        "xp": 60,
-        "coins": 20,
-        "items": []
-      },
-      "lines": {
-        "offer": [
-          "Clear Millrace Vaults. The way down is not open yet."
-        ],
-        "active": [
-          "Millrace Vaults is still ahead."
-        ],
-        "ready": [
-          "You cleared Millrace Vaults."
-        ],
-        "done": [
-          "The cellar can rest."
         ]
       }
     },

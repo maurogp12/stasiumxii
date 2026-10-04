@@ -1399,7 +1399,7 @@ func _check_step(mission_id: String, step: Dictionary, levels, npcs, errors: Arr
 		var known := false
 		for zone_value in levels.zones:
 			var zone: Dictionary = zone_value
-			if str(zone["dungeon"]) == dungeon:
+			if str(zone.get("dungeon", "")) == dungeon:
 				known = true
 		if not known:
 			_err(errors, "%s dungeon" % mission_id)
@@ -1456,8 +1456,16 @@ func _check_chain(npcs, errors: Array) -> void:
 		var zone_id := str(zone["id"])
 		var welcome := _one_chain(zone_id, "welcome", errors)
 		var scout := _one_chain(zone_id, "scout", errors)
-		var dungeon := _one_chain(zone_id, "dungeon", errors)
-		if welcome.is_empty() or scout.is_empty() or dungeon.is_empty():
+		var skip_dungeon := str(zone.get("dungeon", "")) == ""
+		var dungeon := {}
+		if skip_dungeon:
+			if zone_id != "crossroads":
+				_err(errors, "%s needs a dungeon" % zone_id)
+			elif _chain_count(zone_id, "dungeon") != 0:
+				_err(errors, "crossroads has no dungeon mission")
+		else:
+			dungeon = _one_chain(zone_id, "dungeon", errors)
+		if welcome.is_empty() or scout.is_empty() or (not skip_dungeon and dungeon.is_empty()):
 			continue
 		var welcome_steps: Array = welcome["steps"]
 		var giver := ""
@@ -1489,7 +1497,7 @@ func _check_chain(npcs, errors: Array) -> void:
 						_err(errors, "%s welcome repeats the giver" % zone_id)
 		if str(welcome["giver"]) != giver or str(welcome["turn_in"]) != giver:
 			_err(errors, "%s welcome giver" % zone_id)
-		if str(scout["giver"]) != giver or str(dungeon["giver"]) != giver:
+		if str(scout["giver"]) != giver or (not skip_dungeon and str(dungeon["giver"]) != giver):
 			_err(errors, "%s chain giver" % zone_id)
 		var scout_steps: Array = scout["steps"]
 		var allowed := _story_chunks(zone)
@@ -1508,18 +1516,19 @@ func _check_chain(npcs, errors: Array) -> void:
 			var last: Dictionary = scout_steps[scout_steps.size() - 1]
 			if not (nxt["chunks"] as Array).has(str(last.get("zone_id", ""))):
 				_err(errors, "%s scout does not hand on" % zone_id)
-		var dungeon_steps: Array = dungeon["steps"]
-		if dungeon_steps.size() != 1 or str(dungeon_steps[0].get("type", "")) != "clear_dungeon":
-			_err(errors, "%s dungeon step" % zone_id)
-		elif str(dungeon_steps[0].get("dungeon", "")) != str(zone["dungeon"]):
-			_err(errors, "%s dungeon id" % zone_id)
-		elif not bool(dungeon_steps[0].get("pending_chunk", false)):
-			_err(errors, "%s dungeon is not pending" % zone_id)
+		if not skip_dungeon:
+			var dungeon_steps: Array = dungeon["steps"]
+			if dungeon_steps.size() != 1 or str(dungeon_steps[0].get("type", "")) != "clear_dungeon":
+				_err(errors, "%s dungeon step" % zone_id)
+			elif str(dungeon_steps[0].get("dungeon", "")) != str(zone.get("dungeon", "")):
+				_err(errors, "%s dungeon id" % zone_id)
+			elif not bool(dungeon_steps[0].get("pending_chunk", false)):
+				_err(errors, "%s dungeon is not pending" % zone_id)
 		if not _same_requires(welcome, previous_scout):
 			_err(errors, "%s welcome requires the previous scout" % zone_id)
 		if not _same_requires(scout, str(welcome["id"])):
 			_err(errors, "%s scout requires the welcome" % zone_id)
-		if not _same_requires(dungeon, str(scout["id"])):
+		if not skip_dungeon and not _same_requires(dungeon, str(scout["id"])):
 			_err(errors, "%s dungeon requires the scout" % zone_id)
 		if zone_id == "crossroads" and str(welcome["id"]) != "heart_welcome":
 			_err(errors, "heart welcome id")
@@ -1641,6 +1650,15 @@ func _index_has(step: Dictionary) -> bool:
 		if int(row.get("x", -1)) == int(cell.get("x", -2)) and int(row.get("y", -1)) == int(cell.get("y", -2)):
 			return true
 	return false
+
+
+func _chain_count(zone_id: String, chain: String) -> int:
+	var count := 0
+	for id in _order:
+		var row: Dictionary = _by_id[id]
+		if str(row["level_zone"]) == zone_id and str(row["chain"]) == chain:
+			count += 1
+	return count
 
 
 func _one_chain(zone_id: String, chain: String, errors: Array) -> Dictionary:
