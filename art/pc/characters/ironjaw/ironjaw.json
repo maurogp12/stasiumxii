@@ -12,20 +12,20 @@
  "size_tier": "big",
  "target_board_height_px": 78,
  "idle_f0_height_cell_px": {
-  "S": 135,
-  "W": 135,
+  "S": 147,
+  "W": 147,
   "N": 136,
   "E": 136
  },
  "draw_scale": 0.578,
  "world_draw_scale": 0.532,
  "board_height_px": {
-  "S": 78.0,
-  "W": 78.0,
+  "S": 85.0,
+  "W": 85.0,
   "N": 78.6,
   "E": 78.6
  },
- "head_hp_y": -87,
+ "head_hp_y": -92,
  "draw_scale_note": "per class (size tiers): sprite scale = draw_scale in combat, world_draw_scale for the world walker (= draw_scale x 0.46/0.5). head_hp_y = -(tallest idle f0 head top above the feet x draw_scale + 8), node origin = feet.",
  "walk": {
   "advance": "by distance",
@@ -55,11 +55,11 @@
     "S": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -70,11 +70,11 @@
     "W": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -128,11 +128,11 @@
     "S": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -143,11 +143,11 @@
     "W": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -201,11 +201,11 @@
     "S": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -216,11 +216,11 @@
     "W": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -274,11 +274,11 @@
     "S": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -289,11 +289,11 @@
     "W": {
      "pivot": [
       82,
-      140
+      152
      ],
      "offset": [
       -82,
-      -140
+      -152
      ],
      "pivot_file": [
       82,
@@ -347,11 +347,11 @@
     "S": {
      "pivot": [
       104,
-      140
+      152
      ],
      "offset": [
       -104,
-      -140
+      -152
      ],
      "pivot_file": [
       104,
@@ -362,11 +362,11 @@
     "W": {
      "pivot": [
       104,
-      140
+      152
      ],
      "offset": [
       -104,
-      -140
+      -152
      ],
      "pivot_file": [
       104,
@@ -408,5 +408,13 @@
     }
    }
   }
- }
+ },
+ "pivot_note": "Pivot y = the frame-0 sole row of each state and facing (the planted foot). S/W rows plant the front foot at y152, N/E at y139-140. Draw scale unchanged; S/W stand 147 cell px above the feet, so head_hp_y is -(146 x 0.578 + 8) = -92.",
+ "portrait_src": [
+  47,
+  1,
+  78,
+  65
+ ],
+ "portrait_note": "Action-bar portrait: head-and-shoulders crop of idle W f00 (code s), [x, y, w, h] in cell px. w:h is 6:5, the 84x70 portrait box, so the bar never stretches it."
 }

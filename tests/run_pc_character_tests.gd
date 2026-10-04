@@ -34,6 +34,9 @@ func _run() -> void:
 	CombatHUD.set_pc_chrome_override(1)
 	_test_remap_and_baked_files()
 	_test_pivots_from_json()
+	_test_soles_on_pivot()
+	_test_cell_edges()
+	_test_action_bar_portraits()
 	_test_distance_formula()
 	_test_unshipped_classes_stay()
 	_test_action_stills()
@@ -80,10 +83,10 @@ func _test_pivots_from_json() -> void:
 				var raw: Array = (faces[art] as Dictionary)["offset"]
 				var got := CHARS.offset_for(class_id, code, str(state))
 				eq(got, Vector2(int(raw[0]), int(raw[1])), "%s %s %s offset is the json use value" % [class_id, state, code])
-	eq(CHARS.offset_for("kestrel", "E", "walk"), Vector2(-68, -145), "kestrel walk S pivot is the verified walk pivot")
+	eq(CHARS.offset_for("kestrel", "E", "walk"), Vector2(-68, -156), "kestrel walk S pivot is the planted f00 sole")
 	eq(CHARS.offset_for("kestrel", "E", "idle"), Vector2(-68, -141), "kestrel idle S pivot stays the idle pivot")
-	eq(CHARS.offset_for("ironjaw", "E", "idle"), Vector2(-82, -140), "ironjaw v3.1 idle pivot is on the soles")
-	eq(CHARS.offset_for("ironjaw", "E", "death"), Vector2(-104, -140), "ironjaw v3.1 death pivot is the wider cell")
+	eq(CHARS.offset_for("ironjaw", "E", "idle"), Vector2(-82, -152), "ironjaw v3.1 idle S pivot is on the planted front foot")
+	eq(CHARS.offset_for("ironjaw", "E", "death"), Vector2(-104, -152), "ironjaw v3.1 death S pivot is the wider cell on the planted foot")
 	eq(CHARS.cell_size("ironjaw", "walk"), Vector2i(165, 157), "ironjaw v3.1 walk cell is 165x157")
 	eq(CHARS.cell_size("ironjaw", "death"), Vector2i(209, 183), "ironjaw v3.1 death cell is 209x183")
 	eq(CHARS.offset_for("kestrel", "S", "death"), Vector2(-158, -141), "kestrel death pivot is the death cell")
@@ -93,7 +96,7 @@ func _test_pivots_from_json() -> void:
 	eq(is_equal_approx(CHARS.combat_scale("kestrel"), 0.465), true, "kestrel draw scale is 0.465")
 	eq(is_equal_approx(CHARS.world_scale("kestrel"), 0.428), true, "kestrel world scale is the json world_draw_scale")
 	eq(is_equal_approx(CHARS.board_px_per_frame("kestrel", "E"), 4.996), true, "kestrel walk step is board px at draw scale")
-	eq(CHARS.head_hp_y("ironjaw"), -87.0, "ironjaw v3.1 plate sits at -87")
+	eq(CHARS.head_hp_y("ironjaw"), -92.0, "ironjaw v3.1 plate sits at -92")
 	eq(CHARS.head_hp_y("kestrel"), -74.0, "kestrel plate sits at -74")
 	eq(Pawn.HEAD_HP_Y, -76.0, "the shipped plate constant stays -76")
 
@@ -192,9 +195,9 @@ func _test_pawn_pivots_and_distance_walk() -> void:
 	var iron_scale := CHARS.combat_scale("ironjaw")
 	eq(sprite.scale, Vector2(iron_scale, iron_scale), "ironjaw combat scale is the json draw scale")
 	eq(sprite.texture_filter, CanvasItem.TEXTURE_FILTER_LINEAR, "ironjaw filters linear")
-	eq(is_equal_approx(iron.head_hp_y(), -87.0), true, "ironjaw head y is -87")
+	eq(is_equal_approx(iron.head_hp_y(), -92.0), true, "ironjaw head y is -92")
 	var plate := iron.get_node("Chrome/OverheadPlate") as OverheadPlate
-	eq(is_equal_approx(plate.bar_rect().position.y, -87.0), true, "ironjaw plate reads the class head y")
+	eq(is_equal_approx(plate.bar_rect().position.y, -92.0), true, "ironjaw plate reads the class head y")
 	var rim := _rim(iron)
 	truthy(rim != null, "the L7 rim follows the ironjaw body")
 	if rim != null:
@@ -212,7 +215,7 @@ func _test_pawn_pivots_and_distance_walk() -> void:
 	var death := _visible_strip(iron)
 	truthy(death != null, "ironjaw death plays a strip")
 	if death != null:
-		eq(death.offset, Vector2(-104, -140), "ironjaw death uses the death pivot")
+		eq(death.offset, Vector2(-104, -152), "ironjaw death uses the death pivot")
 		eq(death.flip_h, false, "ironjaw death does not flip")
 	iron.free()
 
@@ -228,7 +231,7 @@ func _test_pawn_pivots_and_distance_walk() -> void:
 		eq(walk.frame, 0, "a walk starts on frame 0")
 		eq(is_equal_approx(walk.speed_scale, 0.0), true, "PC walk does not advance on the clock")
 		eq(walk.flip_h, false, "kestrel walk does not flip")
-		eq(walk.offset, Vector2(-68, -145), "kestrel code e uses the walk S pivot")
+		eq(walk.offset, Vector2(-68, -156), "kestrel code e uses the walk S pivot")
 		kest.note_walk_distance(20.0)
 		var expected := CHARS.walk_frame_index("kestrel", "E", 20.0, CHARS.combat_scale("kestrel"))
 		eq(walk.frame, expected, "kestrel walk frame follows distance")
@@ -316,6 +319,174 @@ func _test_phone_path_unchanged() -> void:
 	pawn.free()
 	CombatHUD.set_pc_chrome_override(-1)
 	Pawn.set_pc_walk_tile_sec(Pawn.PC_WALK_TILE_SEC)
+
+
+## Pivot y must be the planted sole row. For every state and facing, frame 0 is the
+## planted pose (idle S/W stands in walk f00). Its lowest opaque row minus the pivot y
+## must agree within 2 px across all of a class's rows, so the feet do not drift when
+## the facing or the animation changes.
+func _test_soles_on_pivot() -> void:
+	for class_id in ["ironjaw", "kestrel"]:
+		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://art/pc/characters/%s/%s.json" % [class_id, class_id]))
+		var states: Dictionary = data["states"]
+		var lo := 99999
+		var hi := -99999
+		var where_lo := ""
+		var where_hi := ""
+		for state in states.keys():
+			for code in ["N", "E", "S", "W"]:
+				var path := CHARS.frame_path(class_id, code, str(state), 0)
+				var img := Image.new()
+				if img.load(path) != OK:
+					truthy(false, "%s %s %s frame 0 loads" % [class_id, state, code])
+					continue
+				var sole := _lowest_opaque_row(img)
+				var pivot_y := -int(CHARS.offset_for(class_id, code, str(state)).y)
+				var d := sole - pivot_y
+				truthy(absi(d) <= 2, "%s %s %s sole y%d sits on pivot y%d" % [class_id, state, code, sole, pivot_y])
+				if d < lo:
+					lo = d
+					where_lo = "%s %s" % [state, code]
+				if d > hi:
+					hi = d
+					where_hi = "%s %s" % [state, code]
+		truthy(hi - lo <= 2, "%s sole-to-pivot spread is %d px (%s %+d, %s %+d), max 2" % [class_id, hi - lo, where_lo, lo, where_hi, hi])
+
+
+func _lowest_opaque_row(img: Image) -> int:
+	for y in range(img.get_height() - 1, -1, -1):
+		for x in img.get_width():
+			if img.get_pixel(x, y).a > 0.0:
+				return y
+	return -1
+
+
+## No PC character paint may touch its cell edge. The Kestrel v3 cells that already do
+## are listed in tests/pc/character_edge_allowlist.json and await re-export. Any new
+## edge pixel fails, a listed cell that is now clean fails (drop it from the list),
+## and Ironjaw may have none.
+func _test_cell_edges() -> void:
+	var allow_doc: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/pc/character_edge_allowlist.json"))
+	var allow: Dictionary = allow_doc.get("cells", {})
+	var root := "res://art/pc/characters"
+	var scanned := 0
+	var seen := {}
+	var new_edges: Array[String] = []
+	for class_id in DirAccess.get_directories_at(root):
+		for state in DirAccess.get_directories_at("%s/%s" % [root, class_id]):
+			for file in DirAccess.get_files_at("%s/%s/%s" % [root, class_id, state]):
+				if not file.ends_with(".png"):
+					continue
+				var rel := "%s/%s/%s" % [class_id, state, file]
+				var img := Image.new()
+				if img.load("%s/%s" % [root, rel]) != OK:
+					new_edges.append(rel + " (does not load)")
+					continue
+				scanned += 1
+				var sides := _edge_sides(img)
+				if sides.is_empty():
+					continue
+				seen[rel] = true
+				var listed: Array = allow.get(rel, [])
+				for side in sides:
+					if not listed.has(side):
+						new_edges.append("%s %s" % [rel, side])
+	truthy(scanned >= 300, "edge scan read every PC character cell (%d)" % scanned)
+	eq(new_edges, [] as Array[String], "no PC character cell has new paint on its edge")
+	var stale: Array[String] = []
+	for rel in allow.keys():
+		if not seen.has(rel):
+			stale.append(str(rel))
+		truthy(str(rel).begins_with("kestrel/"), "edge allowlist only holds Kestrel v3 cells (%s)" % rel)
+	eq(stale, [] as Array[String], "every allowlisted edge cell still touches its edge")
+	for rel in seen.keys():
+		truthy(not str(rel).begins_with("ironjaw/"), "ironjaw cell %s is clear of its edges" % rel)
+
+
+func _edge_sides(img: Image) -> Array[String]:
+	var w := img.get_width()
+	var h := img.get_height()
+	var out: Array[String] = []
+	var hit := false
+	for x in w:
+		if img.get_pixel(x, 0).a > 0.0:
+			hit = true
+			break
+	if hit:
+		out.append("top")
+	hit = false
+	for y in h:
+		if img.get_pixel(w - 1, y).a > 0.0:
+			hit = true
+			break
+	if hit:
+		out.append("right")
+	hit = false
+	for x in w:
+		if img.get_pixel(x, h - 1).a > 0.0:
+			hit = true
+			break
+	if hit:
+		out.append("bottom")
+	hit = false
+	for y in h:
+		if img.get_pixel(0, y).a > 0.0:
+			hit = true
+			break
+	if hit:
+		out.append("left")
+	return out
+
+
+## The action-bar portrait is a head-and-shoulders crop at the box aspect, never a
+## stretch, and both portraits take the same world light so a dark set is not lost.
+func _test_action_bar_portraits() -> void:
+	var box: Rect2 = PcActionBar.PORTRAIT_BOX
+	var box_aspect := box.size.x / box.size.y
+	var lumas := {}
+	for class_id in ["ironjaw", "kestrel", "gloam"]:
+		var tex: Texture2D = load(Pawn.sprite_path(class_id, "S"))
+		truthy(tex != null, "%s portrait texture loads" % class_id)
+		if tex == null:
+			continue
+		var src := PcActionBar.portrait_source_rect(class_id, tex.get_size())
+		truthy(absf(src.size.x / src.size.y - box_aspect) < 0.001, "%s portrait source aspect %.4f is the box aspect %.4f" % [class_id, src.size.x / src.size.y, box_aspect])
+		truthy(Rect2(Vector2.ZERO, tex.get_size()).encloses(src), "%s portrait source sits inside the cell" % class_id)
+		if CHARS.has_set(class_id):
+			eq(src, CHARS.portrait_src(class_id), "%s portrait uses the json head-and-shoulders crop" % class_id)
+			truthy(src.size.y < tex.get_height() * 0.5, "%s portrait is head and shoulders, not the body" % class_id)
+		var art := PcActionBar.portrait_art(class_id, tex)
+		var lit: Texture2D = art.get("texture", null)
+		truthy(lit != null, "%s portrait art bakes" % class_id)
+		if lit == null:
+			continue
+		truthy(absf(float(lit.get_width()) / float(lit.get_height()) - box_aspect) < 0.001, "%s baked portrait keeps the box aspect" % class_id)
+		lumas[class_id] = _mean_luma(lit.get_image())
+	if lumas.has("ironjaw") and lumas.has("kestrel"):
+		truthy(float(lumas["ironjaw"]) >= float(lumas["kestrel"]) * 0.85, "the ironjaw portrait reads near kestrel under the world light (%.3f vs %.3f)" % [lumas["ironjaw"], lumas["kestrel"]])
+	var raw := Image.new()
+	raw.load(Pawn.sprite_path("ironjaw", "S"))
+	var raw_crop := raw.get_region(Rect2i(CHARS.portrait_src("ironjaw")))
+	if lumas.has("ironjaw"):
+		truthy(float(lumas["ironjaw"]) > _mean_luma(raw_crop) * 1.2, "the foe portrait is lifted, not drawn raw")
+	var shader := FileAccess.get_file_as_string("res://scenes/pc/pc_world_light.gdshader")
+	truthy(shader.contains("vec3(1.02, 1.0, 0.96)") and shader.contains("saturation = 1.06") and shader.contains("contrast = 1.04"), "the portrait light is the world-light shader's numbers")
+	var grey := PcActionBar.world_light(Color(0.5, 0.5, 0.5, 0.25), 1.0)
+	truthy(absf(grey.r - 0.5110) < 0.001 and absf(grey.g - 0.5000) < 0.001 and absf(grey.b - 0.4779) < 0.001 and grey.a == 0.25, "world light matches the shader on mid grey and keeps alpha (%s)" % grey)
+	var bar_src := FileAccess.get_file_as_string("res://ui/pc/action_bar.gd")
+	eq(bar_src.contains("* 0.72"), false, "the bar no longer squashes the top 72% of the cell")
+
+
+func _mean_luma(img: Image) -> float:
+	var sum := 0.0
+	var count := 0
+	for y in img.get_height():
+		for x in img.get_width():
+			var c := img.get_pixel(x, y)
+			if c.a > 0.8:
+				sum += c.r * 0.2126 + c.g * 0.7152 + c.b * 0.0722
+				count += 1
+	return sum / float(count) if count > 0 else 0.0
 
 
 func _pawn(class_id: String, facing: String, seat: int) -> Pawn:

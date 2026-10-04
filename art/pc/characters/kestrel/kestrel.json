@@ -55,11 +55,11 @@
     "S": {
      "pivot": [
       68,
-      145
+      156
      ],
      "offset": [
       -68,
-      -145
+      -156
      ],
      "pivot_file": [
       68,
@@ -540,5 +540,13 @@
     }
    }
   }
- }
+ },
+ "pivot_note": "Pivot y = the frame-0 sole row of each state and facing (the planted foot). Walk S f00 plants at y156; the v3 walk S cycle lifts that foot to y146 mid-stride (art, awaiting the Kestrel re-export). Every other row plants at y140-141.",
+ "portrait_src": [
+  30,
+  0,
+  72,
+  60
+ ],
+ "portrait_note": "Action-bar portrait: head-and-shoulders crop of idle W f00 (code s), [x, y, w, h] in cell px. w:h is 6:5, the 84x70 portrait box, so the bar never stretches it."
 }

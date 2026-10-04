@@ -62,6 +62,16 @@ static func head_hp_y(class_id: String) -> float:
 	return float(_record(class_id).get("head_hp_y", -76.0))
 
 
+## Action-bar portrait crop of the idle code-s frame, in cell px. Empty when
+## the json has none; the bar then takes a generic top-centred 6:5 crop.
+static func portrait_src(class_id: String) -> Rect2:
+	var raw: Variant = _record(class_id).get("portrait_src", [])
+	if not (raw is Array) or (raw as Array).size() < 4:
+		return Rect2()
+	var r: Array = raw
+	return Rect2(float(r[0]), float(r[1]), float(r[2]), float(r[3]))
+
+
 static func offset_for(class_id: String, code_facing: String, state: String) -> Vector2:
 	var piv: Array = _facing_row(class_id, code_facing, state).get("offset", [-0, -0])
 	if piv.size() < 2:
@@ -231,6 +241,7 @@ static func _load_set(class_id: String) -> Dictionary:
 		"combat_scale": float(draw.x),
 		"world_scale": float(draw.y),
 		"head_hp_y": float(data.get("head_hp_y", -76.0)),
+		"portrait_src": data.get("portrait_src", []),
 	}
 
 
