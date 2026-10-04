@@ -245,8 +245,13 @@ func _test_zorder(w: Node2D) -> void:
 	if tall != null:
 		w.walker.place(z, tall.south_cell)
 		w.walker.position = tall.position + Vector2(0, -40)
+		# A character up there stands on a row behind the base, so sort it from
+		# that row. The prop now keeps its own depth while it fades (it used
+		# to drop to the character's z + 1 and sank under the ground).
+		w.walker.z_index = w.walker._z_for(tall.south_cell - Vector2i(1, 1))
 		tall.update_cover(w.walker.position, w.walker.z_index)
 		check(tall.z_index > w.walker.z_index, "tall prop covers a character standing in its upper half")
+		check(tall.z_index == tall.base_z, "tall prop keeps its own depth while it fades")
 		check(tall.modulate.a < 0.6, "tall prop fades while the character is hidden behind it")
 		w.walker.position = tall.position + Vector2(0, 14)
 		tall.update_cover(w.walker.position, w.walker.z_index)
