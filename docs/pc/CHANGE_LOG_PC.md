@@ -4,6 +4,7 @@ PC game only. Never merged into `main` or `mobile` by an agent; only Mauro merge
 
 | Date | What | Why / who asked | Branch | Commit |
 |---|---|---|---|---|
+| 4 Oct 2026 | **Take-over: water/shore fix (#251)** from `2c874d1`, at Mauro's request. Claude fixes the sea tile lattice, the Northgate snow shore, the map-edge rectangle and fill blend, and the foam style. The world bot moves to its next queue item | Mauro, 4 Oct: "Take over this fix please" | `cursor/water-regrade-a156` | take-over |
 | 4 Oct 2026 | **Northgate shore is snow, not sand.** Its sea-facing cells get a one-cell snow lip (packed snow with stone at the waterline), soft foam and a thin ice rim, blending into sand over 2–3 cells where the coast leaves Northgate; the other towns keep sand. For now this uses the existing Northgate snow assets, to be replaced by the snow kit | Mauro, 4 Oct: "Make the north shore snow instead of sand" | `cursor/water-regrade-a156` (#251) | decision |
 | 4 Oct 2026 | **Mender blockout approved.** All four class blockouts are approved: Bastion, Kestrel, Gloam, Mender. Scenario paints the Mender look targets next | Mauro, 4 Oct: "Mender good" | `claude/class-walk-blockouts` | decision |
 | 4 Oct 2026 | **Mender design: concept B** (calm cleric: ivory robe with a gold-embroidered hem, sage sash, crook staff with a caged jade lantern). Saved as `class_walk_blockouts/refs/ref_mender.jpg` | Mauro, 4 Oct: "B" | `claude/class-walk-blockouts` | decision |
