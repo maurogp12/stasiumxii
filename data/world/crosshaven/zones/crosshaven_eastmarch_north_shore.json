@@ -1558,21 +1558,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_3",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 14,
-        "y": 20
-      },
-      "footprint": [
-        {
-          "x": 14,
-          "y": 20
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_north_shore_fishing_hut_2x2_13_2",
       "type": "fishing_hut_2x2",
       "blocks": true,
@@ -1596,36 +1581,6 @@
         {
           "x": 14,
           "y": 3
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_4_1",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 4,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 4,
-          "y": 1
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_34_1",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 34,
-        "y": 1
-      },
-      "footprint": [
-        {
-          "x": 34,
-          "y": 1
         }
       ]
     },
@@ -1660,51 +1615,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_2_2",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 2,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 2,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_11_2",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 11,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 11,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_27_2",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 27,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 27,
-          "y": 2
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_north_shore_tree_30_2",
       "type": "tree",
       "blocks": true,
@@ -1715,21 +1625,6 @@
       "footprint": [
         {
           "x": 30,
-          "y": 2
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_33_2",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 33,
-        "y": 2
-      },
-      "footprint": [
-        {
-          "x": 33,
           "y": 2
         }
       ]
@@ -1780,51 +1675,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_41_3",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 41,
-        "y": 3
-      },
-      "footprint": [
-        {
-          "x": 41,
-          "y": 3
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_42_3",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 42,
-        "y": 3
-      },
-      "footprint": [
-        {
-          "x": 42,
-          "y": 3
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_7_4",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 7,
-        "y": 4
-      },
-      "footprint": [
-        {
-          "x": 7,
-          "y": 4
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_north_shore_tree_29_4",
       "type": "tree",
       "blocks": true,
@@ -1855,66 +1705,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_5_5",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 5,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 5,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_13_5",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 13,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 13,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_25_5",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 25,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 25,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_27_5",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 27,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 27,
-          "y": 5
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_north_shore_tree_35_5",
       "type": "tree",
       "blocks": true,
@@ -1926,51 +1716,6 @@
         {
           "x": 35,
           "y": 5
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_37_5",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 37,
-        "y": 5
-      },
-      "footprint": [
-        {
-          "x": 37,
-          "y": 5
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_7_6",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 7,
-        "y": 6
-      },
-      "footprint": [
-        {
-          "x": 7,
-          "y": 6
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_14_6",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 14,
-        "y": 6
-      },
-      "footprint": [
-        {
-          "x": 14,
-          "y": 6
         }
       ]
     },
@@ -2035,36 +1780,6 @@
       ]
     },
     {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_28_7",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 28,
-        "y": 7
-      },
-      "footprint": [
-        {
-          "x": 28,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_31_7",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 31,
-        "y": 7
-      },
-      "footprint": [
-        {
-          "x": 31,
-          "y": 7
-        }
-      ]
-    },
-    {
       "id": "crosshaven_eastmarch_north_shore_tree_32_7",
       "type": "tree",
       "blocks": true,
@@ -2106,66 +1821,6 @@
         {
           "x": 17,
           "y": 8
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_40_8",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 40,
-        "y": 8
-      },
-      "footprint": [
-        {
-          "x": 40,
-          "y": 8
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_2_9",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 2,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 2,
-          "y": 9
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_5_9",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 5,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 5,
-          "y": 9
-        }
-      ]
-    },
-    {
-      "id": "crosshaven_eastmarch_north_shore_net_rack_9_9",
-      "type": "net_rack",
-      "blocks": true,
-      "origin": {
-        "x": 9,
-        "y": 9
-      },
-      "footprint": [
-        {
-          "x": 9,
-          "y": 9
         }
       ]
     },
@@ -2481,6 +2136,36 @@
         {
           "x": 17,
           "y": 13
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_north_shore_net_rack_12_2",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 2
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "id": "crosshaven_eastmarch_north_shore_net_rack_12_3",
+      "type": "net_rack",
+      "blocks": true,
+      "origin": {
+        "x": 12,
+        "y": 3
+      },
+      "footprint": [
+        {
+          "x": 12,
+          "y": 3
         }
       ]
     }

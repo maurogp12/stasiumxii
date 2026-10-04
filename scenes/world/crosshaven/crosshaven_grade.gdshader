@@ -19,6 +19,8 @@ uniform vec3 haze_col : source_color = vec3(0.45, 0.52, 0.62);
 // so the colour reads in a thumbnail, not only as a slight multiply.
 uniform vec3 tint_col : source_color = vec3(1.0, 1.0, 1.0);
 uniform float tint_amount : hint_range(0.0, 0.55) = 0.0;
+// Northgate snow: a slightly cooler, brighter daylight while the hero is in town.
+uniform float snow_grade : hint_range(0.0, 1.0) = 0.0;
 
 void fragment() {
 	vec2 uv = SCREEN_UV;
@@ -38,6 +40,11 @@ void fragment() {
 	luma = dot(c, vec3(0.2126, 0.7152, 0.0722));
 	c = mix(c, luma * tint_col, tint_amount * grade_amt);
 	c = (c - vec3(0.5)) * contrast + vec3(0.5);
+	// Cool the key and lift it a touch. Warm lights (red well above blue)
+	// keep their colour, so windows and lamps stay amber accents.
+	float warm_px = smoothstep(0.12, 0.35, c.r - c.b);
+	vec3 cool = c * vec3(0.965, 1.0, 1.045) * 1.035 + vec3(0.012, 0.014, 0.02);
+	c = mix(c, mix(cool, c, warm_px), snow_grade);
 	// Window glow, lamp heads, fire, and water sparkles. Excess above the threshold, not the midtones.
 	vec3 hi = max(c - vec3(bloom_threshold), vec3(0.0));
 	c += hi * bloom_strength;

@@ -10,6 +10,9 @@ extends SceneTree
 ## Stills (one per role at zoom 1.0 and 1.6, one world pixel per screen pixel):
 ##   xvfb-run ... godot --rendering-driver opengl3 --audio-driver Dummy --path . \
 ##     --resolution 1920x1080 -s res://tests/pc/capture_npc_tour.gd -- --mode=stills --out=/tmp/npc_stills
+## Scene stills (full 1920x1080 frames): the Eastmarch Ferry Captain seen
+## through the faded house in front of him, and the Northgate square in snow:
+##   xvfb-run ... -s res://tests/pc/capture_npc_tour.gd -- --mode=scenes --out=docs/pc/media/npcs
 
 const WORLD := preload("res://scenes/world/crosshaven/crosshaven_world.tscn")
 const Roam := preload("res://scenes/world/npc/npc_roam.gd")
@@ -72,7 +75,7 @@ func _initialize() -> void:
 
 func _go() -> void:
 	root.size = Vector2i(1920, 1080)
-	if _mode == "stills":
+	if _mode == "stills" or _mode == "scenes":
 		# 1:1 so "zoom 1.0" means one world pixel per image pixel.
 		root.content_scale_size = Vector2i(1920, 1080)
 	else:
@@ -94,6 +97,8 @@ func _go() -> void:
 	await _frames(2)
 	if _mode == "stills":
 		await _stills()
+	elif _mode == "scenes":
+		await _scenes()
 	else:
 		await _tour()
 	quit(0)
@@ -328,3 +333,41 @@ func _stills() -> void:
 		done[role] = true
 		print("still %s from %s" % [role, str(record["id"])])
 	print("stills done: %d roles" % done.size())
+
+
+func _scenes() -> void:
+	var folder := _out
+	if folder.begins_with("res://") or not folder.begins_with("/"):
+		folder = ProjectSettings.globalize_path("res://" + folder.trim_prefix("res://"))
+	DirAccess.make_dir_recursive_absolute(folder)
+	# Eastmarch: the hero waits on the square; the house in front of the
+	# Ferry Captain fades so he reads through it.
+	_enter("crosshaven_eastmarch")
+	var captain: Node2D = _w._npc_node("eastmarch_ferry_captain")
+	if captain != null:
+		captain.roam_enabled = false
+		_follow = captain
+		_follow_lift = -60.0
+		_cam_zoom = 1.3
+		await _frames(12)
+		_save_full(folder.path_join("eastmarch_ferry_captain_behind_faded_house.png"))
+	# Northgate square in the snow with its NPCs.
+	_follow = null
+	_w.enter_zone("crosshaven_northgate", Vector2i(20, 15), false)
+	_w.weather.set_weather("clear")
+	_w.weather.time_of_day = 12.0
+	_w.weather.settle()
+	_w._sync_snowfall(true)
+	var elder: Node2D = _w._npc_node("northgate_archivist")
+	_cam_pos = elder.global_position + Vector2(0, -20) if elder != null else _w.walker.global_position
+	_cam_zoom = 1.15
+	await _frames(40)
+	_save_full(folder.path_join("northgate_square_snow_npcs.png"))
+
+
+func _save_full(path: String) -> void:
+	var image := root.get_texture().get_image()
+	if image.get_size() != Vector2i(1920, 1080):
+		image.resize(1920, 1080, Image.INTERPOLATE_BILINEAR)
+	image.save_png(path)
+	print("scene still %s" % path)

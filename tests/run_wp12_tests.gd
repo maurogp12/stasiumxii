@@ -223,7 +223,10 @@ func _test_snow() -> void:
 			snowy = true
 			break
 	eq(snowy, true, "a Northgate roof wears light snow")
+	_test_snow_town(w)
 	w.enter_zone("crosshaven_stoneford", Vector2i(16, 16), false)
+	eq(float(w.ground.call("cover_at", Vector2i(16, 16))), 0.0, "Stoneford has no town snow")
+	eq(float(w.snow_level), 0.0, "no snowfall in Stoneford")
 	eq(w.ground.call("void_rank", Vector2i(0, 8)), 1, "Stoneford's outer water cell is a bank")
 	var clear := true
 	for child in w.props_root.get_children():
@@ -232,6 +235,41 @@ func _test_snow() -> void:
 			break
 	eq(clear, true, "Stoneford props stay clear")
 	w.free()
+
+
+## Northgate snow town: snow ground, pines, lit houses, snowfall, thin edge.
+func _test_snow_town(w: Node2D) -> void:
+	eq(float(w.ground.call("cover_at", Vector2i(20, 12))), 1.0, "the Northgate square is under full snow")
+	eq(float(w.ground.call("cover_at", Vector2i(2, 28))), 1.0, "the Northgate edge is under full snow")
+	var pines := 0
+	var lit := 0
+	var bare_trees := 0
+	for child in w.props_root.get_children():
+		if child.prop_type == "tree":
+			if str(child.art_id).begins_with("tree_pine_snow"):
+				pines += 1
+			else:
+				bare_trees += 1
+		if child.prop_type == "red_roof_cottage" and bool(child.call("has_glow")):
+			lit += 1
+	eq(pines > 0 and bare_trees == 0, true, "every Northgate tree is a snowy pine")
+	eq(lit > 0, true, "Northgate cottages have warm lit windows")
+	var cells: Array = w.snow_pine_cells(w.zone)
+	eq(cells.size() > 4, true, "pines ring Northgate on its cliffs")
+	var bad := 0
+	for c in cells:
+		if w.zone.passable_at(c) or not w.zone.exit_link(c).is_empty():
+			bad += 1
+	eq(bad, 0, "ring pines never stand on a walkable or exit cell")
+	var snow: Control = w.get_node("SnowfallLayer/Snowfall")
+	eq(snow.mouse_filter, Control.MOUSE_FILTER_IGNORE, "snowfall never takes clicks")
+	eq(int(snow.call("flake_count")) <= 140, true, "snowfall flake count is capped")
+	eq(float(w.snow_level) > 0.9, true, "snow falls in Northgate")
+	w.enter_zone("crosshaven_road_north", Vector2i(12, 1), false)
+	var edge := float(w.ground.call("cover_at", Vector2i(12, 1)))
+	eq(edge > 0.0 and edge < 1.0, true, "the snow thins on the north road")
+	eq(float(w.ground.call("cover_at", Vector2i(12, 12))), 0.0, "the north road is clear past the blend")
+	w.enter_zone("crosshaven_northgate", Vector2i(20, 12), false)
 
 
 func _test_save() -> void:

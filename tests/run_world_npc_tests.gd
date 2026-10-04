@@ -46,6 +46,8 @@ func _run() -> void:
 	_test_roam_rules(atlas_loaded["atlas"] if bool(atlas_loaded.get("ok", false)) else null)
 	_test_walkers()
 	_test_click_stops_walker()
+	_test_npc_cover()
+	_test_northgate_snow_npcs()
 	_test_grades()
 	await _test_grade_hues()
 	_finish()
@@ -949,6 +951,152 @@ func _test_click_stops_walker() -> void:
 			resumed = true
 			break
 	eq(resumed, true, "the Farmer resumes the route after the dialogue")
+	w.queue_free()
+
+
+## A building or tall prop over an NPC fades like it does over the hero, and
+## lets go once nothing stands behind it. The Eastmarch Ferry Captain stands
+## right behind a house.
+func _test_npc_cover() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	w.npc_roam = false
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	var crosshaven: WorldMap = w.atlas.maps["crosshaven"]
+	w.enter_zone("crosshaven_eastmarch", crosshaven.zone("crosshaven_eastmarch").spawn, false)
+	var captain: Node2D = w._npc_node("eastmarch_ferry_captain")
+	eq(captain != null, true, "the Eastmarch Ferry Captain spawns")
+	if captain == null:
+		w.queue_free()
+		return
+	# Park the hero on an open cell no prop or decor covers, so every fade
+	# seen below comes from the NPC.
+	var open_cell := Vector2i(-1, -1)
+	for y in w.zone.height:
+		for x in w.zone.width:
+			var c := Vector2i(x, y)
+			if open_cell.x >= 0 or not w.zone.passable_at(c) or not w.zone.exit_link(c).is_empty():
+				continue
+			if not w._npc_at(c).is_empty() or Roam.cells_apart(c, captain.cell) < 6:
+				continue
+			var spot: Vector2 = w.Pick.cell_center(w.zone, c)
+			var hidden := false
+			for root_node in [w.props_root, w.decor_root]:
+				for child in root_node.get_children():
+					if child.hides_feet(spot):
+						hidden = true
+			if not hidden:
+				open_cell = c
+	eq(open_cell.x >= 0, true, "Eastmarch has an open cell for the hero")
+	w.enter_zone("crosshaven_eastmarch", open_cell, false)
+	captain = w._npc_node("eastmarch_ferry_captain")
+	var feet: Vector2 = w.props_root.to_local(captain.global_position)
+	var hero_feet: Vector2 = w.props_root.to_local(w.to_global(w.walker.position))
+	var cover: Node2D = null
+	for prop in w.props_root.get_children():
+		if prop.hides_feet(feet) and not prop.hides_feet(hero_feet):
+			cover = prop
+			break
+	eq(cover != null, true, "a building stands in front of the Ferry Captain")
+	if cover == null:
+		w.queue_free()
+		return
+	print("ferry captain cover: %s" % str(cover.prop_type))
+	eq(cover.cover_rect.size.y > 36.0, true, "the Ferry Captain's cover is a tall prop")
+	eq(int(cover.z_index) > int(captain.z_index), true, "unfaded, the building draws over the Ferry Captain")
+	eq(w._npc_cover_feet().size(), w.npcs_root.get_child_count(), "cover checks only this chunk's NPCs")
+	w._process(0.016)
+	eq(bool(cover.covering_npc), true, "the building knows an NPC is behind it")
+	eq(cover.modulate.a < 0.9, true, "the building over the Ferry Captain fades")
+	eq(int(cover.z_index) > int(captain.z_index), true, "the faded building still sorts over the Ferry Captain")
+	eq(int(cover.z_index), maxi(int(cover.base_z), int(captain.z_index) + 1), "an NPC-only fade keeps the building's own depth")
+	eq(bool(w.walker._covered), false, "an NPC behind a building does not give the hero the cover rim")
+	var faded := 0
+	for root_node in [w.props_root, w.decor_root]:
+		for prop in root_node.get_children():
+			if prop.modulate.a < 0.9 and not prop.covering_npc and not bool(prop.get("night_only")):
+				faded += 1
+	eq(faded, 0, "no prop fades with nothing behind it")
+	# Step the captain out in front of the house: the fade lets go.
+	var at := captain.position
+	captain.position = at + Vector2(0, 400)
+	w._process(0.016)
+	eq(bool(cover.covering_npc), false, "the building lets go once the Ferry Captain is out")
+	eq(is_equal_approx(cover.modulate.a, 1.0), true, "the building is opaque again with nothing behind it")
+	eq(int(cover.z_index), int(cover.base_z), "the building sorts back to its own depth")
+	captain.position = at
+	w._process(0.016)
+	eq(cover.modulate.a < 0.9, true, "the fade comes back with the Ferry Captain")
+	captain.visible = false
+	w._process(0.016)
+	eq(is_equal_approx(cover.modulate.a, 1.0), true, "a hidden NPC holds no fade")
+	w.queue_free()
+
+
+## Northgate snow with NPCs: the snowfall sits under the name plates and the
+## HUD, and no ring pine lands on an NPC post or a walker's cells.
+func _test_northgate_snow_npcs() -> void:
+	var settings := VisualSettings.new()
+	settings.apply_preset("Full")
+	var w: Node2D = WORLD.instantiate()
+	w.instant_transitions = true
+	root.add_child(w)
+	w.walker.auto_advance = false
+	w.weather.auto_rotate = false
+	w.enter_zone("crosshaven_northgate", Vector2i(20, 14), false)
+	var snow_layer: CanvasLayer = w.get_node("SnowfallLayer")
+	var hud_layer := 0
+	for child in w.get_children():
+		if child is CanvasLayer and child.find_child("HudSheet", false, false) != null:
+			hud_layer = child.layer
+	eq(snow_layer.layer < w.npc_plates.layer, true, "snowfall draws under the NPC name plates")
+	eq(hud_layer > 0 and snow_layer.layer < hud_layer, true, "snowfall draws under the HUD")
+	eq(w.npcs_root.get_child_count() > 0, true, "Northgate spawns its NPCs")
+	var pines: Array = w._snow_pines_for(w.zone)
+	eq(pines.size() > 4, true, "pines still ring Northgate")
+	var pine_set := {}
+	for c in pines:
+		pine_set[c] = true
+	var on_npc := 0
+	var on_route := 0
+	for node in w.npcs_root.get_children():
+		var home: Vector2i = node.home
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				if pine_set.has(home + Vector2i(dx, dy)):
+					on_npc += 1
+		for c in node.allowed_cells().keys():
+			if pine_set.has(c):
+				on_route += 1
+		for spot in node.pause_spots():
+			if pine_set.has(spot["cell"]):
+				on_route += 1
+		for stop in node.patrol_stops():
+			if pine_set.has(stop):
+				on_route += 1
+	eq(on_npc, 0, "no Northgate pine stands on or beside an NPC post")
+	eq(on_route, 0, "no Northgate pine stands on a walker's cells")
+	var keep: Dictionary = w.npc_keep_clear(w.zone, w.npc_book.for_zone(w.zone.zone_id))
+	var clash := 0
+	for c in w.snow_pine_cells(w.zone, keep):
+		if keep.has(c):
+			clash += 1
+	eq(clash, 0, "snow_pine_cells honours the NPC keep-clear set")
+	var forbid: Dictionary = w._roam_forbidden(w.zone, w.npc_book.for_zone(w.zone.zone_id)[0], false)
+	var open := 0
+	for c in pines:
+		if not forbid.has(c):
+			open += 1
+	eq(open, 0, "pine cells are forbidden to NPC walkers")
+	var decor_pines := 0
+	for d in w.decor_root.get_children():
+		if str(d.decor_type).begins_with("tree_pine_snow"):
+			decor_pines += 1
+	eq(decor_pines, pines.size(), "every kept pine is planted in Northgate")
 	w.queue_free()
 
 
