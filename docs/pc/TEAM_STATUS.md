@@ -14,6 +14,14 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 - Northgate snow town, WP7 doors, WP8 Old Granary run, WP9 monsters: not started, in that queue order.
 - #251: Claude-owned. The world bot reports it conflicts with `pc/world-zones` @ `ef3bcc9`, so merge the base before approving.
 
+
+**TA hand-off received (15:14):** `art/ironjaw-walk-help` `HANDOFF_TA.md` @ `8893931`; copies in `docs/pc/art_help/handoff_wip/technical_artist/` (Ironjaw `.blend` and src included; venvs and backups stay on Luca's box). Flags:
+1. The L9 outdoor board kit was rewritten to "v1.4" (sand fringe) on Luca's box after TA accepted v1.3, and TA hasn't checked it. **The shipped L9/L9b in `pc/combat-look` is v1.3; check v1.4 if it's ever pushed.**
+2. `PC_IMPORT_WIRING_NOTE.md` says Ironjaw v3, but the json is v3.2.
+3. Ironjaw `SHA256SUMS` is stale (README, pad512.py).
+4. Ironjaw knee cop and tassets aren't separate joint parts. That matters only if Ironjaw v8+ resumes (parked).
+5. Scripts use hard-coded `/workspace` paths and write in place.
+
 When those land, Claude reads them, copies the key facts into this file, and continues each open item from its last commit.
 
 **How to take over a stopped bot's work**
