@@ -7,6 +7,13 @@ Kept by Claude, the PC supervisor (Mauro, 4 Oct 2026: "keep a record of everythi
 - World bot → `docs/pc/HANDOFF_WORLD.md` on its WIP branch (asked on #251)
 - Combat bots → `docs/pc/HANDOFF_COMBAT.md` if anything is in progress
 
+
+**World hand-off received (15:10):** `wip/world-handoff` @ `f5ac779`, `docs/pc/HANDOFF_WORLD.md`. No unpushed world code existed.
+- L10 world walker: **not started; Luca put the new characters on hold** for the walker. Don't wire it until that lifts.
+- Painted NPC wiring: not started. The world bot says Scenario was rewriting all 19 and to wait for a **fresh** tarball. Scenario's `8763e14` push is labelled WIP from their machine, so confirm with Scenario/Luca it's final before importing.
+- Northgate snow town, WP7 doors, WP8 Old Granary run, WP9 monsters: not started, in that queue order.
+- #251: Claude-owned. The world bot reports it conflicts with `pc/world-zones` @ `ef3bcc9`, so merge the base before approving.
+
 When those land, Claude reads them, copies the key facts into this file, and continues each open item from its last commit.
 
 **How to take over a stopped bot's work**
