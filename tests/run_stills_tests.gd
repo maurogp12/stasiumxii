@@ -31,6 +31,7 @@ func _run() -> void:
 	_test_opening_and_carry()
 	_test_consume_and_chest()
 	_test_screen()
+	_test_clear_text_and_icons()
 	_wipe()
 	print("Stills tests: %d passed, %d failed" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
@@ -217,6 +218,33 @@ func _test_consume_and_chest() -> void:
 	eq(KoliseoWallet.load_saved().trophies, 2, "the extra trophy is banked")
 	eq(StillVault.load_saved().socket, "", "the Koliseo fight consumed Crown")
 	net.free()
+
+
+## Mauro 4 Oct 2026: "the stills information is not understandable, please
+## explain better and also we need a better look for stills and fragments".
+func _test_clear_text_and_icons() -> void:
+	for id in StillVault.IDS:
+		for mode in StillVault.MODES:
+			eq(StillVault.plain(id, mode).length() > 12, true, "%s %s has a plain sentence" % [id, mode])
+		for frag in [false, true]:
+			var tex := StillVault.icon(id, frag)
+			eq(tex != null, true, "%s %s icon is in the game" % [id, "fragment" if frag else "forged"])
+			if tex != null:
+				eq(tex.get_size(), Vector2(128, 128), "%s icon is 128x128" % id)
+	eq(StillVault.HOW_TO.size(), 4, "how Stills work is four steps")
+	eq(StillVault.forge_summary(7), "5 more to forge one.", "short of 12 says how many more")
+	eq(StillVault.forge_summary(100), "Ready to forge (enough fragments for 8).", "100 fragments reads as ready, not 100/12")
+	# The Vault says why Forge is off when the socket is full.
+	var v := StillVault.new()
+	v.fragments = {"end": 100}
+	v.socket = "stride"
+	v.save()
+	var screen: StillsScreen = load("res://scenes/stills_screen.gd").new()
+	root.add_child(screen)
+	screen.pick("end")
+	var why := screen.find_child("ForgeWhy", true, false) as Label
+	eq(why != null and why.text.contains("already holds Stride"), true, "a full socket explains why Forge is off")
+	screen.free()
 
 
 func _test_screen() -> void:

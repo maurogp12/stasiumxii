@@ -45,6 +45,32 @@ const EFFECTS := {
 	"end": {"intact": "Once: a lethal hit leaves you at 1 HP", "overwound": "Same (+ attacker pushed 1: next update)", "built": true},
 }
 
+## Plain wording for players (Mauro 4 Oct 2026: "the stills information is not
+## understandable, please explain better"). Same effects as EFFECTS, in full
+## sentences. Effects not built yet say so in the UI.
+const PLAIN := {
+	"opening": {"intact": "You take the first turn of the fight, whatever your Initiative.", "overwound": "You take the first turn. Coming in the next update: an extra turn after round 1."},
+	"stride": {"intact": "+1 AP and +1 MP for the whole fight (up to 8 AP and 5 MP).", "overwound": "+4 AP and +2 MP on your first 2 turns, even past the cap. On your 3rd turn it cracks: −1 AP and −2 MP. Then you are back to normal."},
+	"cut": {"intact": "Your first attack that hits deals +4 extra damage.", "overwound": "Your first attack that hits deals +10 extra damage."},
+	"mercy": {"intact": "Your first heal heals 8 more.", "overwound": "Your first heal heals 16 more and also Cleanses."},
+	"guard": {"intact": "The first hit you take deals 25% less damage.", "overwound": "The first hit you take deals no damage."},
+	"quiet": {"intact": "Enemies cannot target you until you spend AP.", "overwound": "You are invisible until you spend AP or end your turn."},
+	"root": {"intact": "An enemy that walks next to you loses 1 MP on its next turn.", "overwound": "That enemy cannot walk at all on its next turn."},
+	"ember": {"intact": "Your first damaging spell deals +4 damage.", "overwound": "Your first damaging spell deals +4, and the target burns for 4 on its next turn."},
+	"tide": {"intact": "Your first push moves the enemy 1 extra tile.", "overwound": "Your first push moves the enemy 2 extra tiles."},
+	"silence": {"intact": "An enemy spell of 4 AP or more aimed at you costs them 1 more AP.", "overwound": "That spell fails, and the enemy keeps its AP."},
+	"crown": {"intact": "Win an online Koliseo fight: +1 extra trophy.", "overwound": "+1 extra trophy and a gold crown glow on your hero."},
+	"end": {"intact": "Once per fight: a hit that would knock you out leaves you at 1 HP instead.", "overwound": "Same as Intact. Coming in the next update: the attacker is also pushed back 1 tile."},
+}
+## How Stills work, in four steps (shown in the Inventory and the Vault).
+const HOW_TO: Array[String] = [
+	"1. Stasis chests drop Still fragments.",
+	"2. 12 fragments of the same Still forge that Still into your Still socket.",
+	"3. Choose Intact (safe bonus) or Overwound (bigger bonus, then it cracks).",
+	"4. It powers your next Stasis or online Koliseo fight, then it breaks.",
+]
+const ICON_DIR := "res://art/ui/stills/"
+
 static var save_path: String = "user://stills.json"
 
 var fragments: Dictionary = {}  # id → count
@@ -56,6 +82,29 @@ var test_grant: Dictionary = {}
 
 static func display_name(id: String) -> String:
 	return id.capitalize()
+
+
+## Plain sentence for a Still's mode, with the not-built note.
+static func plain(id: String, mode: String) -> String:
+	return str((PLAIN.get(id, {}) as Dictionary).get(mode, ""))
+
+
+## Painted icon: the forged hourglass, or a fragment shard.
+static func icon_path(id: String, fragment: bool = false) -> String:
+	return "%sstill_%s%s.png" % [ICON_DIR, id, "_fragment" if fragment else ""]
+
+
+static func icon(id: String, fragment: bool = false) -> Texture2D:
+	var path := icon_path(id, fragment)
+	return load(path) as Texture2D if ResourceLoader.exists(path) else null
+
+
+## How many Stills these fragments forge, and how many more the next one needs.
+static func forge_summary(count: int) -> String:
+	if count >= FORGE_COST:
+		var n := count / FORGE_COST
+		return "Ready to forge (enough fragments for %d)." % n
+	return "%d more to forge one." % (FORGE_COST - count)
 
 
 static func is_id(id: String) -> bool:

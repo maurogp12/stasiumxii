@@ -141,24 +141,57 @@ func _refresh() -> void:
 		tile.pressed.connect(pick.bind(id))
 		_grid.add_child(tile)
 	var fx: Dictionary = StillVault.EFFECTS[selected]
-	var head := _label("%s — %d / %d fragments" % [StillVault.display_name(selected), _vault.count(selected), StillVault.FORGE_COST], 18, StillVault.COLORS[selected].lerp(GOLD_BRIGHT, 0.4))
+	var head_row := HBoxContainer.new()
+	head_row.add_theme_constant_override("separation", 12)
+	var big := TextureRect.new()
+	big.texture = StillVault.icon(selected)
+	big.custom_minimum_size = Vector2(84, 84)
+	big.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	big.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	head_row.add_child(big)
+	var head_text := VBoxContainer.new()
+	head_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var head := _label("%s Still" % StillVault.display_name(selected), 20, StillVault.COLORS[selected].lerp(GOLD_BRIGHT, 0.4))
 	head.name = "StillHead"
-	_detail.add_child(head)
-	_detail.add_child(_label("Intact: %s" % fx["intact"], 15, GOLD_BRIGHT))
-	_detail.add_child(_label("Overwound: %s" % fx["overwound"], 15, GOLD_BRIGHT))
+	head_text.add_child(head)
+	var have := _vault.count(selected)
+	head_text.add_child(_label("Fragments: %d / %d.  %s" % [have, StillVault.FORGE_COST, StillVault.forge_summary(have)], 15, GREEN if have >= StillVault.FORGE_COST else GOLD))
+	head_row.add_child(head_text)
+	_detail.add_child(head_row)
+	_detail.add_child(_label("Intact — safe: %s" % StillVault.plain(selected, "intact"), 15, GOLD_BRIGHT))
+	_detail.add_child(_label("Overwound — stronger, then it cracks: %s" % StillVault.plain(selected, "overwound"), 15, GOLD_BRIGHT))
 	if not bool(fx["built"]):
-		_detail.add_child(_label("Effect arrives in the next update — forging it now keeps it for later fights.", 13, GOLD_DIM))
+		_detail.add_child(_label("This effect arrives in the next update. Forging it now keeps it for later fights.", 13, GOLD_DIM))
 	var forge_button := _button("Forge %s" % StillVault.display_name(selected))
 	forge_button.name = "Forge"
 	forge_button.disabled = not bool(_vault.can_forge(selected).get("ok", false))
 	forge_button.pressed.connect(forge)
 	_detail.add_child(forge_button)
-	_detail.add_child(_label("Fragments drop from Stasis chests (5 loot clears a day). 12 of the same Still forge it. It powers one fight, then breaks.", 12, GOLD_DIM))
-	var socket_label := _label("Socket: empty", 16, GOLD)
+	var gate: Dictionary = _vault.can_forge(selected)
+	if not bool(gate.get("ok", false)):
+		var why := "Collect %d more %s fragments to forge it." % [StillVault.FORGE_COST - _vault.count(selected), StillVault.display_name(selected)]
+		if str(gate.get("reason", "")) == "socket_full":
+			why = "Your Still socket already holds %s. Use it in a fight first; then you can forge another." % StillVault.display_name(_vault.socket)
+		var why_label := _label(why, 13, GOLD_DIM)
+		why_label.name = "ForgeWhy"
+		_detail.add_child(why_label)
+	_detail.add_child(_label("How Stills work", 14, GOLD))
+	for step in StillVault.HOW_TO:
+		_detail.add_child(_label(step, 13, GOLD_DIM))
+	var socket_icon := TextureRect.new()
+	socket_icon.custom_minimum_size = Vector2(48, 48)
+	socket_icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	socket_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	socket_icon.texture = StillVault.icon(_vault.socket) if _vault.socket != "" else null
+	_socket_box.add_child(socket_icon)
+	var socket_label := _label("Still socket: empty. Forge a Still to fill it.", 16, GOLD)
 	socket_label.name = "SocketLabel"
+	# One line beside the buttons (word wrap in a row squeezed it to one letter).
+	socket_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	socket_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	_socket_box.add_child(socket_label)
 	if _vault.socket != "":
-		socket_label.text = "Socket: %s" % StillVault.display_name(_vault.socket)
+		socket_label.text = "Still socket: %s — for your next fight:" % StillVault.display_name(_vault.socket)
 		socket_label.add_theme_color_override("font_color", StillVault.COLORS[_vault.socket].lerp(Color.WHITE, 0.3))
 		for mode in StillVault.MODES:
 			var b := _button("Keep Intact" if mode == "intact" else "Overwind")
@@ -211,17 +244,33 @@ class StillTile extends Button:
 	var count := 0
 	var picked := false
 	var font: Font
+	var _art: Texture2D
 
 	func _ready() -> void:
 		flat = true
 		focus_mode = Control.FOCUS_ALL
 		text = ""
+		# Load before drawing: a texture first loaded inside _draw came out
+		# as a blank white cell on the OpenGL (phone) renderer.
+		_art = StillVault.icon(still_id, count < StillVault.FORGE_COST)
 
 	func _draw() -> void:
 		var tint: Color = StillVault.COLORS.get(still_id, Color.WHITE)
 		var rect := Rect2(Vector2.ZERO, size)
 		draw_rect(rect, Color(0.07, 0.05, 0.14, 0.95))
 		draw_rect(rect, Color(1.0, 0.86, 0.5) if picked else Color(0.4, 0.3, 0.55), false, 2.0 if picked else 1.0)
+		var art := _art
+		if art != null:
+			# Painted icon: the hourglass once 12 are in hand, else the shard
+			# (dimmed with none). A bar under it fills toward 12.
+			var side := minf(size.x - 12.0, size.y - 40.0)
+			var box := Rect2(Vector2((size.x - side) * 0.5, 4.0), Vector2(side, side))
+			draw_texture_rect(art, box, false, Color(1, 1, 1, 1.0 if count > 0 else 0.35))
+			var bar := Rect2(Vector2(8, size.y - 34), Vector2(size.x - 16, 5))
+			draw_rect(bar, Color(0.18, 0.14, 0.24))
+			draw_rect(Rect2(bar.position, Vector2(bar.size.x * clampf(float(count) / float(StillVault.FORGE_COST), 0.0, 1.0), bar.size.y)), tint if count < StillVault.FORGE_COST else Color(0.66, 0.84, 0.25))
+			_draw_caption()
+			return
 		var c := Vector2(size.x * 0.5, size.y * 0.42)
 		var w := size.x * 0.22
 		var h := size.y * 0.28
@@ -240,11 +289,15 @@ class StillTile extends Button:
 		draw_polyline(PackedVector2Array([c + Vector2(w, -h), c, c + Vector2(w, h)]), frame, 1.4, true)
 		draw_line(c + Vector2(-w * 1.3, -h), c + Vector2(w * 1.3, -h), frame, 2.5, true)
 		draw_line(c + Vector2(-w * 1.3, h), c + Vector2(w * 1.3, h), frame, 2.5, true)
+		_draw_caption()
+
+	func _draw_caption() -> void:
 		var f := font if font != null else ThemeDB.fallback_font
 		var name := StillVault.display_name(still_id)
 		var fs := 12
 		var tw := f.get_string_size(name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x
 		draw_string(f, Vector2((size.x - tw) * 0.5, size.y - 18), name, HORIZONTAL_ALIGNMENT_LEFT, -1, fs, Color(0.95, 0.85, 0.6))
-		var ct := "%d/12" % count
+		# "7/12" while collecting; "Ready ×8" once a forge is possible (100/12 read badly).
+		var ct := "%d/12" % count if count < StillVault.FORGE_COST else "Ready ×%d" % (count / StillVault.FORGE_COST)
 		var cw := f.get_string_size(ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
 		draw_string(f, Vector2((size.x - cw) * 0.5, size.y - 5), ct, HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(0.66, 0.84, 0.25) if count >= 12 else Color(0.7, 0.62, 0.5))
