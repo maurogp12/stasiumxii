@@ -1324,8 +1324,8 @@ func _test_strip_library_missing_and_slice() -> void:
 				truthy(played_tex is ImageTexture, "%s %s is baked off the compressed atlas" % [cls, anim_name])
 				if anim_name == "walk_e":
 					var east_w := played_tex.get_width()
-					eq(east_w > 144, true, "%s east march cell is wider than the old 144" % cls)
-					eq(played_tex.get_height() >= 160, true, "%s east march cell is at least 160 tall" % cls)
+					eq(east_w, 144, "%s east march cell is the old 144 width" % cls)
+					eq(played_tex.get_height(), 160, "%s east march cell is the old 160 height" % cls)
 				else:
 					eq(played_tex.get_width(), 144, "%s %s cell is 144 wide, not the whole strip" % [cls, anim_name])
 					eq(played_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, anim_name])
@@ -1364,8 +1364,8 @@ func _test_strip_library_missing_and_slice() -> void:
 			eq(atlas.atlas.resource_path, drop, "%s %s plays the drop PNG" % [cls, walk_name])
 			if face == "e":
 				eq(walk_bank.get_frame_count(walk_name), StripLibrary.LOCKED_EAST_WALK_FRAMES, "%s east march is 12 frames" % cls)
-				eq(int(atlas.region.size.x) > 144, true, "%s east march cell is wider than 144" % cls)
-				eq(int(atlas.region.size.y) >= 160, true, "%s east march cell is at least 160 tall" % cls)
+				eq(int(atlas.region.size.x), 144, "%s east march cell is the old 144 width" % cls)
+				eq(int(atlas.region.size.y), 160, "%s east march cell is the old 160 height" % cls)
 			else:
 				eq(atlas.region.size, Vector2(144, 160), "%s %s cell is 144×160" % [cls, walk_name])
 				eq(walk_bank.get_frame_count(walk_name), 6, "%s %s is six frames" % [cls, walk_name])
@@ -1396,9 +1396,9 @@ func _test_strip_library_missing_and_slice() -> void:
 			var cell_tex := walk_only.get_frame_texture(walk_name, 0)
 			truthy(cell_tex != null, "%s %s frame 0 texture is non-null" % [cls, walk_name])
 			if face == "e":
-				eq(cell_tex.get_width() * StripLibrary.LOCKED_EAST_WALK_FRAMES > 864, true, "%s east march sheet replaces the six-cell strip" % cls)
-				eq(cell_tex.get_width() < 400, true, "%s east march cell is one frame" % cls)
-				eq(cell_tex.get_height() >= 160, true, "%s east march cell is at least 160 tall" % cls)
+				eq(cell_tex.get_width(), 144, "%s east march cell is the old 144 width" % cls)
+				eq(cell_tex.get_height(), 160, "%s east march cell is the old 160 height" % cls)
+				eq(cell_tex.get_width() * StripLibrary.LOCKED_EAST_WALK_FRAMES, 1728, "%s east march is twelve old cells" % cls)
 			else:
 				eq(cell_tex.get_width(), 144, "%s %s cell is 144 wide" % [cls, walk_name])
 				eq(cell_tex.get_height(), 160, "%s %s cell is 160 tall" % [cls, walk_name])

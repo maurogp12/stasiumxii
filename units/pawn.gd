@@ -666,15 +666,24 @@ func _publish_walk_cell() -> void:
 
 func _cell_texture_for_draw(frames: SpriteFrames, anim: StringName, index: int) -> Texture2D:
 	var tex := frames.get_frame_texture(anim, index)
+	# ImageTextures are already this class's own cells (sliced from its pngbin).
 	if tex is ImageTexture:
 		return tex
-	var key := "%s:%s" % [class_id, str(anim)]
+	var anim_name := str(anim)
+	# Fallback for an AtlasTexture. The cache key is "class:walk_e"; the
+	# facing is the animation suffix, not that whole key. trim_prefix on the
+	# key missed the pngbin, and a shared compressed page then drew one
+	# region for every frame (another class, or two poses in one cell).
+	var key := "%s:%s" % [class_id, anim_name]
 	if not _walk_draw_cache.has(key):
 		var built: Array[Texture2D] = []
-		var face := key.trim_prefix("walk_")
-		var packed := STRIP_LIBRARY.image_from_walk_bytes(class_id, face)
+		var face := anim_name.trim_prefix("walk_") if anim_name.begins_with("walk_") else ""
+		var packed := STRIP_LIBRARY.image_from_walk_bytes(class_id, face) if face != "" else null
 		if packed != null:
-			built = STRIP_LIBRARY.textures_from_image(packed, frames.get_frame_count(anim))
+			var count := frames.get_frame_count(anim) if frames != null else 0
+			if count < 2:
+				count = STRIP_LIBRARY.walk_sheet_frames(face)
+			built = STRIP_LIBRARY.textures_from_image(packed, count)
 		_walk_draw_cache[key] = built
 	var cached: Array = _walk_draw_cache[key]
 	if index >= 0 and index < cached.size() and cached[index] != null:
