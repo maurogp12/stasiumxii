@@ -2935,8 +2935,8 @@
     {
       "x": 33,
       "y": 1,
-      "terrain": "water",
-      "walkable": false,
+      "terrain": "golden_plains",
+      "walkable": true,
       "height": 0
     },
     {

@@ -12,7 +12,8 @@
     "clear_dungeon steps cannot be accepted until dungeon runs exist. They are pending and show as coming soon.",
     "Story chains are the six section 00 zones in level_zones.json: Crossroads, Stoneford, Northgate, Eastmarch, Southbridge, Westwatch. The Crossroads has no dungeon. Millrace Vaults is dropped. The five town dungeons are Old Granary Cellar, Frostspire Archive, Saltmaw Grotto, Drowned Abbey, and Heart of the Blight. No story step uses an outer level zone or an outer dungeon. A dungeon step is pending because its door is not built.",
     "Each town welcome stays in that town: Elder, then Warden, then Trader, then Door Keeper, skipping a role the town does not have. A town with no one left to meet sends you to its own square.",
-    "Each zone welcome requires the previous zone's scout, in level_zones.json order."
+    "Each zone welcome requires the previous zone's scout, in level_zones.json order.",
+    "The five towns add 10 extras on top of those 20, so this file has 17 chain missions and 30 sides."
   ],
   "reach_index": [
     {
@@ -345,8 +346,8 @@
         },
         {
           "type": "talk",
-          "npc": "granary_door_keeper",
-          "place": "Door Keeper"
+          "npc": "crossroads_guide",
+          "place": "Guide"
         }
       ],
       "rewards": {
@@ -356,10 +357,10 @@
       },
       "lines": {
         "offer": [
-          "New face? Meet the trader and the door keeper."
+          "New face? Meet the trader and the guide."
         ],
         "active": [
-          "The trader and the door keeper are still waiting."
+          "The trader and the guide are still waiting."
         ],
         "ready": [
           "You met them. I can mark this done."
@@ -412,13 +413,13 @@
           "Walk the Stone Ford, then the Stoneford square."
         ],
         "active": [
-          "A mark is still waiting."
+          "The Stone Ford or the Stoneford square is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen the Crossroads road. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Crossroads roads are yours. Stoneford is next."
         ]
       }
     },
@@ -436,32 +437,38 @@
       ],
       "steps": [
         {
-          "type": "reach",
-          "zone_id": "crosshaven_stoneford",
-          "cell": {
-            "x": 16,
-            "y": 16
-          },
-          "place": "Stoneford square"
+          "type": "talk",
+          "npc": "stoneford_warden",
+          "place": "Warden"
+        },
+        {
+          "type": "talk",
+          "npc": "stoneford_trader",
+          "place": "Trader"
+        },
+        {
+          "type": "talk",
+          "npc": "granary_door_keeper",
+          "place": "Door Keeper"
         }
       ],
       "rewards": {
-        "xp": 25,
+        "xp": 15,
         "coins": 20,
         "items": []
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Stoneford's fields are open. Meet the Warden, the Trader, and the Door Keeper of the Old Granary Cellar."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "The Stoneford Warden is still waiting, and so are the others."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Stoneford. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden keeps the square. The Old Granary Cellar is the only cellar in these lands."
         ]
       }
     },
@@ -514,16 +521,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk Stoneford for the Warden. See the ford, the square, and the road on to Northgate."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Stoneford mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked Stoneford. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden knows this ground. The Old Granary Cellar can wait until you are ready."
         ]
       }
     },
@@ -554,16 +561,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Old Granary Cellar. The way down is not open yet."
+          "Clear the Old Granary Cellar. The Warden wants it quiet. The way down is not open yet."
         ],
         "active": [
-          "Old Granary Cellar is still ahead."
+          "The Old Granary Cellar is still ahead."
         ],
         "ready": [
-          "You cleared Old Granary Cellar."
+          "You cleared the Old Granary Cellar."
         ],
         "done": [
-          "The cellar can rest."
+          "The cellar can rest. Go on to Northgate and speak with the Warden there."
         ]
       }
     },
@@ -589,6 +596,11 @@
           "type": "talk",
           "npc": "towns_trader",
           "place": "Trader"
+        },
+        {
+          "type": "talk",
+          "npc": "northgate_door_keeper",
+          "place": "Door Keeper"
         }
       ],
       "rewards": {
@@ -598,16 +610,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "The frost sits on Northgate. Meet the Warden, the Trader, and the Door Keeper of Frostspire Archive."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Northgate's Warden is still out in the cold, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Northgate. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden holds the frost gate. Frostspire Archive is the door under the snow."
         ]
       }
     },
@@ -660,16 +672,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the frost for the Northgate Warden. Learn the north road, the square, and the way on to Eastmarch."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Northgate mark is still waiting in the frost."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen Northgate's frost. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has your report. Frostspire Archive stays shut until the door is built."
         ]
       }
     },
@@ -700,16 +712,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Frostspire Archive. The way down is not open yet."
+          "Clear Frostspire Archive. The Warden says the frost keeps what was written. The way down is not open yet."
         ],
         "active": [
-          "Frostspire Archive is still ahead."
+          "Frostspire Archive is still ahead, under the frost."
         ],
         "ready": [
           "You cleared Frostspire Archive."
         ],
         "done": [
-          "The cellar can rest."
+          "The archive can keep its cold. Go on to Eastmarch and speak with the Warden there."
         ]
       }
     },
@@ -727,32 +739,38 @@
       ],
       "steps": [
         {
-          "type": "reach",
-          "zone_id": "crosshaven_eastmarch",
-          "cell": {
-            "x": 16,
-            "y": 16
-          },
-          "place": "Eastmarch square"
+          "type": "talk",
+          "npc": "eastmarch_warden",
+          "place": "Warden"
+        },
+        {
+          "type": "talk",
+          "npc": "eastmarch_trader",
+          "place": "Trader"
+        },
+        {
+          "type": "talk",
+          "npc": "eastmarch_door_keeper",
+          "place": "Door Keeper"
         }
       ],
       "rewards": {
-        "xp": 3018,
+        "xp": 1811,
         "coins": 60,
         "items": []
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Salt is on the wind in Eastmarch. Meet the Warden, the Trader, and the Door Keeper of the Saltmaw Grotto."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Eastmarch's Warden is still by the water, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Eastmarch. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden watches the coves. The Saltmaw Grotto is the door in the rock."
         ]
       }
     },
@@ -805,16 +823,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk Eastmarch for the Warden. See the east road, the square, and the way on to Southbridge."
         ],
         "active": [
-          "A mark is still waiting."
+          "An Eastmarch mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked the salt ground. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has the report. The Saltmaw Grotto stays shut until the door is built."
         ]
       }
     },
@@ -845,16 +863,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Saltmaw Grotto. The way down is not open yet."
+          "Clear the Saltmaw Grotto. The Warden wants the caves quiet. The way down is not open yet."
         ],
         "active": [
-          "Saltmaw Grotto is still ahead."
+          "The Saltmaw Grotto is still ahead."
         ],
         "ready": [
-          "You cleared Saltmaw Grotto."
+          "You cleared the Saltmaw Grotto."
         ],
         "done": [
-          "The cellar can rest."
+          "The grotto can keep its salt. Go on to Southbridge and speak with the Warden there."
         ]
       }
     },
@@ -873,7 +891,17 @@
       "steps": [
         {
           "type": "talk",
-          "npc": "millrace_door_keeper",
+          "npc": "southbridge_warden",
+          "place": "Warden"
+        },
+        {
+          "type": "talk",
+          "npc": "southbridge_trader",
+          "place": "Trader"
+        },
+        {
+          "type": "talk",
+          "npc": "drowned_abbey_door_keeper",
           "place": "Door Keeper"
         }
       ],
@@ -884,16 +912,16 @@
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Fog lies on Southbridge. Meet the Warden, the Trader, and the Door Keeper of the Drowned Abbey."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Southbridge's Warden is still in the fog, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Southbridge. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden knows the fog. The Drowned Abbey is the door in the marsh."
         ]
       }
     },
@@ -946,16 +974,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the fog for the Southbridge Warden. Learn the crossing, the square, and the way on to Westwatch."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Southbridge mark is still lost in the fog."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have seen through the fog. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has your report. The Drowned Abbey stays shut until the door is built."
         ]
       }
     },
@@ -986,16 +1014,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Drowned Abbey. The way down is not open yet."
+          "Clear the Drowned Abbey. The Warden says the fog hides the nave. The way down is not open yet."
         ],
         "active": [
-          "Drowned Abbey is still ahead."
+          "The Drowned Abbey is still ahead, under the fog."
         ],
         "ready": [
-          "You cleared Drowned Abbey."
+          "You cleared the Drowned Abbey."
         ],
         "done": [
-          "The cellar can rest."
+          "Let the fog take the abbey. Go on to Westwatch and speak with the Warden there."
         ]
       }
     },
@@ -1013,32 +1041,38 @@
       ],
       "steps": [
         {
-          "type": "reach",
-          "zone_id": "crosshaven_westwatch",
-          "cell": {
-            "x": 16,
-            "y": 10
-          },
-          "place": "Westwatch square"
+          "type": "talk",
+          "npc": "westwatch_warden",
+          "place": "Warden"
+        },
+        {
+          "type": "talk",
+          "npc": "westwatch_trader",
+          "place": "Trader"
+        },
+        {
+          "type": "talk",
+          "npc": "westwatch_door_keeper",
+          "place": "Door Keeper"
         }
       ],
       "rewards": {
-        "xp": 9145,
+        "xp": 5487,
         "coins": 300,
         "items": []
       },
       "lines": {
         "offer": [
-          "Meet the people of this town, in order."
+          "Dread hangs on Westwatch. Meet the Warden, the Trader, and the Door Keeper of the Heart of the Blight."
         ],
         "active": [
-          "Someone in town is still waiting."
+          "Westwatch's Warden is still on the wall, and the others are waiting."
         ],
         "ready": [
-          "You met them. I can mark this done."
+          "You have met Westwatch. I can mark this done."
         ],
         "done": [
-          "Good. Now you know who to ask."
+          "The Warden keeps the last watch. The Heart of the Blight is the door in the dark."
         ]
       }
     },
@@ -1082,16 +1116,16 @@
       },
       "lines": {
         "offer": [
-          "Walk the marks in this town. Stay inside its ground."
+          "Walk the dread for the Westwatch Warden. See the west road and the square you must hold."
         ],
         "active": [
-          "A mark is still waiting."
+          "A Westwatch mark is still waiting."
         ],
         "ready": [
-          "You have seen the ground. I can mark this done."
+          "You have walked Westwatch. I can mark this done."
         ],
         "done": [
-          "The roads are yours now."
+          "The Warden has the report. The Heart of the Blight stays shut until the door is built."
         ]
       }
     },
@@ -1122,16 +1156,16 @@
       },
       "lines": {
         "offer": [
-          "Clear Heart of the Blight. The way down is not open yet."
+          "Clear the Heart of the Blight. The Warden will not name what waits there. The way down is not open yet."
         ],
         "active": [
-          "Heart of the Blight is still ahead."
+          "The Heart of the Blight is still ahead."
         ],
         "ready": [
-          "You cleared Heart of the Blight."
+          "You cleared the Heart of the Blight."
         ],
         "done": [
-          "The cellar can rest."
+          "The dread can stay in the dark. Go back to the Crossroads and speak with the Koliseo Herald."
         ]
       }
     },
@@ -1971,6 +2005,416 @@
         ],
         "done": [
           "You have seen the end of the wood."
+        ]
+      }
+    },
+    {
+      "id": "stoneford_farmer_errand",
+      "name": "The west field",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "stoneford",
+      "giver": "stoneford_farmer",
+      "turn_in": "stoneford_farmer",
+      "min_level": 1,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_stoneford",
+          "cell": {
+            "x": 17,
+            "y": 19
+          },
+          "place": "Stoneford field"
+        }
+      ],
+      "rewards": {
+        "xp": 25,
+        "coins": 20,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk the field just south of the farm."
+        ],
+        "active": [
+          "The field is still ahead."
+        ],
+        "ready": [
+          "You stood in the field."
+        ],
+        "done": [
+          "The rows can wait. You know the ground."
+        ]
+      }
+    },
+    {
+      "id": "stoneford_woodcutter_errand",
+      "name": "The timber line",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "stoneford",
+      "giver": "stoneford_woodcutter",
+      "turn_in": "stoneford_woodcutter",
+      "min_level": 1,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_stoneford",
+          "cell": {
+            "x": 13,
+            "y": 22
+          },
+          "place": "Stoneford timber"
+        }
+      ],
+      "rewards": {
+        "xp": 25,
+        "coins": 20,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the timber just off the cottages."
+        ],
+        "active": [
+          "The timber is still ahead."
+        ],
+        "ready": [
+          "You reached the timber."
+        ],
+        "done": [
+          "The axe can wait. You know the trees."
+        ]
+      }
+    },
+    {
+      "id": "northgate_archivist_errand",
+      "name": "The archive step",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "northgate",
+      "giver": "northgate_archivist",
+      "turn_in": "northgate_archivist",
+      "min_level": 10,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_northgate",
+          "cell": {
+            "x": 16,
+            "y": 14
+          },
+          "place": "Northgate archive"
+        }
+      ],
+      "rewards": {
+        "xp": 995,
+        "coins": 20,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the step beside the archive."
+        ],
+        "active": [
+          "The archive step is still ahead."
+        ],
+        "ready": [
+          "You reached the archive step."
+        ],
+        "done": [
+          "The books can wait. You know the way."
+        ]
+      }
+    },
+    {
+      "id": "northgate_forge_master_errand",
+      "name": "The forge yard",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "northgate",
+      "giver": "northgate_forge_master",
+      "turn_in": "northgate_forge_master",
+      "min_level": 10,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_northgate",
+          "cell": {
+            "x": 25,
+            "y": 13
+          },
+          "place": "Northgate forge yard"
+        }
+      ],
+      "rewards": {
+        "xp": 995,
+        "coins": 20,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk the yard beside the forge."
+        ],
+        "active": [
+          "The forge yard is still ahead."
+        ],
+        "ready": [
+          "You stood in the forge yard."
+        ],
+        "done": [
+          "The hammer can wait. You know the yard."
+        ]
+      }
+    },
+    {
+      "id": "eastmarch_ferry_captain_errand",
+      "name": "The ferry landing",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "eastmarch",
+      "giver": "eastmarch_ferry_captain",
+      "turn_in": "eastmarch_ferry_captain",
+      "min_level": 20,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_eastmarch",
+          "cell": {
+            "x": 18,
+            "y": 22
+          },
+          "place": "Eastmarch landing"
+        }
+      ],
+      "rewards": {
+        "xp": 3018,
+        "coins": 60,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the landing south of the ferry."
+        ],
+        "active": [
+          "The landing is still ahead."
+        ],
+        "ready": [
+          "You reached the landing."
+        ],
+        "done": [
+          "The boat can wait. You know the shore."
+        ]
+      }
+    },
+    {
+      "id": "southbridge_fen_guide_errand",
+      "name": "The reed path",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "southbridge",
+      "giver": "southbridge_fen_guide",
+      "turn_in": "southbridge_fen_guide",
+      "min_level": 30,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_southbridge",
+          "cell": {
+            "x": 18,
+            "y": 6
+          },
+          "place": "Southbridge reeds"
+        }
+      ],
+      "rewards": {
+        "xp": 5773,
+        "coins": 150,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk the reed path north of the square."
+        ],
+        "active": [
+          "The reeds are still ahead."
+        ],
+        "ready": [
+          "You reached the reeds."
+        ],
+        "done": [
+          "The fen can wait. You know the path."
+        ]
+      }
+    },
+    {
+      "id": "southbridge_hermit_errand",
+      "name": "The quiet bank",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "southbridge",
+      "giver": "southbridge_hermit",
+      "turn_in": "southbridge_hermit",
+      "min_level": 30,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_southbridge",
+          "cell": {
+            "x": 22,
+            "y": 12
+          },
+          "place": "Southbridge bank"
+        }
+      ],
+      "rewards": {
+        "xp": 5773,
+        "coins": 150,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the quiet bank past the cottages."
+        ],
+        "active": [
+          "The bank is still ahead."
+        ],
+        "ready": [
+          "You stood on the bank."
+        ],
+        "done": [
+          "The hut can wait. You know the bank."
+        ]
+      }
+    },
+    {
+      "id": "southbridge_coil_engineer_errand",
+      "name": "The coil post",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "southbridge",
+      "giver": "southbridge_coil_engineer",
+      "turn_in": "southbridge_coil_engineer",
+      "min_level": 30,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_southbridge",
+          "cell": {
+            "x": 25,
+            "y": 7
+          },
+          "place": "Southbridge coil post"
+        }
+      ],
+      "rewards": {
+        "xp": 5773,
+        "coins": 150,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the post east of the market."
+        ],
+        "active": [
+          "The post is still ahead."
+        ],
+        "ready": [
+          "You reached the post."
+        ],
+        "done": [
+          "The coil can wait. You know the mark."
+        ]
+      }
+    },
+    {
+      "id": "westwatch_last_watcher_errand",
+      "name": "The watch line",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "westwatch",
+      "giver": "westwatch_last_watcher",
+      "turn_in": "westwatch_last_watcher",
+      "min_level": 40,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_westwatch",
+          "cell": {
+            "x": 15,
+            "y": 13
+          },
+          "place": "Westwatch line"
+        }
+      ],
+      "rewards": {
+        "xp": 9145,
+        "coins": 300,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk the line south of the watch."
+        ],
+        "active": [
+          "The line is still ahead."
+        ],
+        "ready": [
+          "You reached the line."
+        ],
+        "done": [
+          "The watch can wait. You know the line."
+        ]
+      }
+    },
+    {
+      "id": "westwatch_seer_errand",
+      "name": "The shard mark",
+      "kind": "side",
+      "chain": "side",
+      "level_zone": "westwatch",
+      "giver": "westwatch_seer",
+      "turn_in": "westwatch_seer",
+      "min_level": 40,
+      "requires": [],
+      "steps": [
+        {
+          "type": "reach",
+          "zone_id": "crosshaven_westwatch",
+          "cell": {
+            "x": 23,
+            "y": 12
+          },
+          "place": "Westwatch shard mark"
+        }
+      ],
+      "rewards": {
+        "xp": 9145,
+        "coins": 300,
+        "items": []
+      },
+      "lines": {
+        "offer": [
+          "Walk to the mark east of the square."
+        ],
+        "active": [
+          "The mark is still ahead."
+        ],
+        "ready": [
+          "You reached the mark."
+        ],
+        "done": [
+          "The shard can wait. You know the ground."
         ]
       }
     }

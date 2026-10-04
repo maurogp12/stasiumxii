@@ -107,13 +107,24 @@ func _test_catalog(book) -> void:
 			continue
 		var ratio := float(budgets[higher]) / float(budgets[tier]) - 1.0
 		eq(ratio >= 0.25 and ratio <= 0.35, true, "tier %s to %s steps 25 to 35 percent" % [str(tier), str(higher)])
-	eq(dungeons.size(), 11, "eleven dungeon tables")
+	eq(dungeons.size(), 10, "ten dungeon tables after Millrace is dropped")
 	var seen := {}
+	var millrace := false
+	var granary: Dictionary = {}
 	for row in dungeons:
 		var dungeon: Dictionary = row
 		var set_id := str(dungeon["set_id"])
 		eq(seen.has(set_id), false, "%s has its own set" % str(dungeon["id"]))
 		seen[set_id] = true
+		if str(dungeon["id"]) == "millrace_vaults":
+			millrace = true
+		if str(dungeon["id"]) == "old_granary_cellar":
+			granary = dungeon
+	eq(millrace, false, "Millrace is not a reward source")
+	eq(str(granary.get("also_set_id", "")), "millwright", "the cellar also drops Millwright")
+	var granary_extras: Array = granary["extras"]
+	eq(granary_extras.has("sackcloth"), true, "the cellar keeps its own extras")
+	eq(granary_extras.has("millstone_stew") and granary_extras.has("gear_cog") and granary_extras.has("water_wheel_model"), true, "Millrace extras sit on the cellar")
 
 
 func _test_tables() -> void:
@@ -170,7 +181,19 @@ func _test_rolls(book) -> void:
 			ninth_box = true
 	eq(ninth_box, false, "rank 1 does not give a box")
 	eq(int(ninth["coins"]) >= 20 and int(ninth["coins"]) <= 40, true, "tier-1 mission coins stay in band")
-	var extras := {"sackcloth": true, "granary_bread": true, "old_grain_barrel": true}
+	var extras := {"sackcloth": true, "granary_bread": true, "old_grain_barrel": true, "millstone_stew": true, "gear_cog": true, "water_wheel_model": true}
+	var saw_rat := false
+	var saw_mill := false
+	for n in 80:
+		var probe: Dictionary = book.roll("dungeon", {
+			"dungeon_id": "old_granary_cellar", "stars": 1, "class_id": "Ironjaw", "level": 1,
+		}, _rng(400 + n))
+		var probe_id := str((probe["items"] as Array)[0]["item_id"])
+		if probe_id.begins_with("ratcatcher_"):
+			saw_rat = true
+		if probe_id.begins_with("millwright_"):
+			saw_mill = true
+	eq(saw_rat and saw_mill, true, "the cellar drops Ratcatcher and Millwright")
 	for n in 40:
 		var drop: Dictionary = book.roll("dungeon", {
 			"dungeon_id": "old_granary_cellar", "stars": 5, "class_id": "Bastion", "level": 1,
