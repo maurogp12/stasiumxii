@@ -1070,6 +1070,22 @@ func _test_hero_ai_roles() -> void:
 	var ij_cells := _hero_ai_turn(1)
 	var ij_end: Vector2i = ij_cells[-1] if not ij_cells.is_empty() else Vector2i(7, 9)
 	eq(chebyshev_of(ij_end, Vector2i(7, 13)) < 4, true, "Ironjaw walks into close combat")
+	# Mauro 4 Oct 2026 ("Bastion and Kestrel not working, the AI just stand"):
+	# with the enemy far away the Mender must not walk ahead of the front line
+	# (it blocked Bastion's lane), and Kestrel with no shot walks to one.
+	_hero_ai_board(Vector2i(7, 1))
+	_sim._active_seat = 0
+	_hero_ai_turn(0)
+	var mender_at: Vector2i
+	var tank_at: Vector2i
+	for unit in _sim.snapshot()["units"]:
+		if int(unit["seat"]) == 0:
+			mender_at = unit["pos"]
+		if int(unit["seat"]) == 1:
+			tank_at = unit["pos"]
+	eq(chebyshev_of(mender_at, Vector2i(7, 1)) >= chebyshev_of(tank_at, Vector2i(7, 1)), true, "the Mender is not ahead of the melee teammate (Mender %s, Ironjaw %s)" % [mender_at, tank_at])
+	eq(HeroAi._farther_move([{"type": "move", "to": Vector2i(5, 5)}, {"type": "move", "to": Vector2i(3, 3)}], Vector2i(6, 6), [Vector2i(7, 7)]).get("to"), Vector2i(3, 3), "no safe tile: Kestrel still takes the farthest step")
+	eq(HeroAi._place_score(Vector2i(5, 5), "melee", [Vector2i(5, 3)], {}, Vector2i(-99, -99)) > HeroAi._place_score(Vector2i(5, 8), "melee", [Vector2i(5, 3)], {}, Vector2i(-99, -99)), true, "a blocked melee lane still walks closer")
 	# Mauro 4 Oct 2026: "if anyone dies he should focus in reviving his team
 	# mate". Ironjaw down 4 tiles away, Mender on full Pulse: walk into reach
 	# first (no AP spent), then Rekindle.
