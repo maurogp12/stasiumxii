@@ -6,7 +6,7 @@
     "A dungeon win's guaranteed part is an even split between that dungeon's own set and a class set of its tier. Section 4.9 names both and does not weight them.",
     "Heart missions split evenly between Wayfarer and a tier-1 class set. Both are named sources.",
     "Crosshaven world fights drop the shared set for that half of the city. Other regions drop a class set of the region's tier.",
-    "Millrace, Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources.",
+    "Frostspire, Cinderforge and Sunken Mill drop the class tier just below the top of their zone band. Thunderwell Core is named with the tier-30 sources. Millrace Vaults is dropped. Its Millwright set and its stew, cog, and water-wheel extras drop from Old Granary Cellar.",
     "Unique extras, Epics and Relics have drop Open, so the roller does not grant them.",
     "A full set (5 parts + the 2-part bonus + the 3-part bonus) is worth B(T) = round(98 \u00d7 1.3^((T-50)/10)), half away from zero. One part and the 2-part bonus are the same split. The 3-part line takes the remainder so the total equals B(T). budget is the one-part point total; full_budget is B(T).",
     "A Rare part is 1.5 times that one-part total, rounded half away from zero, plus one point in the first of Mastery, Vitality, Swift, Resist that the part does not already lean to. Shared and dungeon parts already list all four, so that point goes to Mastery.",
@@ -4082,22 +4082,12 @@
       "extras": [
         "granary_bread",
         "sackcloth",
-        "old_grain_barrel"
-      ]
-    },
-    {
-      "id": "millrace_vaults",
-      "name": "Millrace Vaults",
-      "zone_id": "crosshaven_towns",
-      "set_id": "millwright",
-      "class_tier": 1,
-      "coin_level": 8,
-      "title": "Millwright",
-      "extras": [
+        "old_grain_barrel",
         "millstone_stew",
         "gear_cog",
         "water_wheel_model"
-      ]
+      ],
+      "also_set_id": "millwright"
     },
     {
       "id": "rotting_orchard_barrow",

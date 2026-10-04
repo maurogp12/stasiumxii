@@ -444,7 +444,11 @@ func _roll_dungeon(context: Dictionary, rng: RandomNumberGenerator, items: Array
 func _dungeon_part_set(dungeon: Dictionary, context: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
 	var split: Dictionary = _doc["guaranteed_split"]
 	if rng.randf() < float(split.get("dungeon_set", 0)):
-		return set_by_id(str(dungeon.get("set_id", "")))
+		var set_id := str(dungeon.get("set_id", ""))
+		var also := str(dungeon.get("also_set_id", ""))
+		if also != "" and rng.randf() < 0.5:
+			set_id = also
+		return set_by_id(set_id)
 	var hero := str(context.get("class_id", ""))
 	var classes: Array = _doc["classes"]
 	var picked := pick_class(rng, hero, classes)
