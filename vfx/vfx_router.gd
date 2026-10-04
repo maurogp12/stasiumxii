@@ -1007,6 +1007,9 @@ static func _foe_choreography(event: Dictionary) -> Array:
 	if bool(def.get("aoe", false)):
 		# Area spell: every covered tile flashes, a shock ring at the caster,
 		# the boss sigil flares.
+		if shape == "blast":
+			# Cannon: a shot to the impact, then the blast tiles flash.
+			out.append(_shot(caster_cell, to_cell, tint, 9.0, 0.22, 6.0))
 		for raw in event.get("area", []):
 			out.append(_ring(cell_of(raw), tint, false, 0.32, 0.0))
 		out.append(_ring(caster_cell, tint, false, 0.42, 0.0, "crack"))

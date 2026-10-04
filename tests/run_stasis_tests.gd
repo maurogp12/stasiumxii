@@ -258,9 +258,10 @@ func _test_fighters_block_sight() -> void:
 
 
 ## Mauro's Stasis kit sheets + answers (29 Sep 2026): monster spells as data.
-func _boss_fight(biome: String, player_pos: Vector2i, boss_pos: Vector2i, tiles: Array = []) -> void:
+func _boss_fight(biome: String, player_pos: Vector2i, boss_pos: Vector2i, tiles: Array = [], star: int = 1) -> void:
 	StasisCatalog.clear_run()
 	StasisCatalog.begin(biome)
+	StasisCatalog.set_star(star)
 	StasisCatalog.class_id = "kestrel"
 	StasisCatalog.room = "b"
 	var cfg: Dictionary = StasisCatalog.fight_config()
@@ -336,6 +337,32 @@ func _test_foe_kits() -> void:
 	truthy(_has_foe_cast(1, "coil.pulse"), "Grid Pulse hits ground next to a Charged pad")
 	_boss_fight("stormspire", Vector2i(3, 3), Vector2i(10, 10))
 	eq(_has_foe_cast(1, "coil.pulse"), false, "no pad near the player, no Grid Pulse")
+	# Mauro 4 Oct 2026: the 5-star forms' special attacks deal damage.
+	_boss_fight("brinewake", Vector2i(7, 3), Vector2i(7, 7), [], 4)
+	eq(_sim._unit_by_seat(1).get("foe_kit", []).has("brine.cannon"), false, "★4 Brineclaw has no cannon")
+	_boss_fight("brinewake", Vector2i(7, 3), Vector2i(7, 7), [], 5)
+	eq(_sim._unit_by_seat(1).get("foe_kit", []).has("brine.cannon"), true, "★5 Brineclaw Sovereign carries the cannon")
+	truthy(_has_foe_cast(1, "brine.cannon"), "the cannon reaches a hero at 4")
+	eq(str(StasisAi.plan(_sim, 1).get("spell", "")) in ["brine.cannon", "brine.fan"], true, "the planner opens with an area spell")
+	var hp_c := int(_sim._unit_by_seat(0)["hp"])
+	var shot: Dictionary = _sim.submit({"type": "cast", "spell": "brine.cannon", "to": Vector2i(7, 3), "seat": 1})
+	eq(bool(shot.get("ok", false)), true, "the cannon fires (%s)" % str(shot.get("reason", "")))
+	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp_c, "the cannon hurts the hero")
+	var blast_area: Array = []
+	for e in shot.get("events", []):
+		if str(e.get("spell", "")) == "brine.cannon":
+			blast_area = e.get("area", [])
+	eq(blast_area.size(), 9, "the blast covers the 3x3 around the impact")
+	eq(_has_foe_cast(1, "brine.cannon"), false, "the cannon has a cooldown")
+	_boss_fight("slagcrown", Vector2i(7, 5), Vector2i(7, 7), [], 5)
+	eq(_sim._unit_by_seat(1).get("foe_kit", []).has("slag.caldera"), true, "★5 Caldera Crown carries the floor punch")
+	truthy(_has_foe_cast(1, "slag.caldera"), "the floor punch reaches a hero 2 tiles away")
+	var hp_p := int(_sim._unit_by_seat(0)["hp"])
+	var punch: Dictionary = _sim.submit({"type": "cast", "spell": "slag.caldera", "to": Vector2i(7, 7), "seat": 1})
+	eq(bool(punch.get("ok", false)), true, "the floor punch resolves (%s)" % str(punch.get("reason", "")))
+	truthy(int(_sim._unit_by_seat(0)["hp"]) < hp_p, "the floor punch hurts the hero at 2")
+	_boss_fight("slagcrown", Vector2i(7, 4), Vector2i(7, 7), [], 5)
+	eq(_has_foe_cast(1, "slag.caldera"), false, "a hero 3 tiles away is outside the punch")
 	# Room 1 caster: bolt 3–7 with sight; never walks into 0–1 when it can shoot.
 	StasisCatalog.clear_run()
 	StasisCatalog.begin("crosshaven")
